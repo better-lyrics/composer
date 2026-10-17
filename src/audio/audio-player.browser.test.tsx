@@ -1,8 +1,12 @@
 import { AudioPlayer } from "@/audio/audio-player";
+import { isCountingIn } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
+import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { describe, expect, it } from "vitest";
 
 function setupAudioSource() {
@@ -43,6 +47,32 @@ describe("AudioPlayer", () => {
     expect(useAudioStore.getState().isPlaying).toBe(false);
   });
 
+  it("counts in before playing in Sync from the song start", async () => {
+    setupAudioSource();
+    useAudioStore.setState({ currentTime: 0 });
+    useProjectStore.setState({ activeTab: "sync" });
+    useSettingsStore.setState({ syncCountIn: 3 });
+    const screen = await render(<AudioPlayer />);
+    await screen.getByRole("button", { name: "Play" }).click();
+    expect(isCountingIn()).toBe(true);
+    expect(useAudioStore.getState().isPlaying).toBe(false);
+  });
+
+  it("shows the pause state during the count, and a click cancels it", async () => {
+    setupAudioSource();
+    useAudioStore.setState({ currentTime: 0 });
+    useProjectStore.setState({ activeTab: "sync" });
+    useSettingsStore.setState({ syncCountIn: 3 });
+    const screen = await render(<AudioPlayer />);
+    await screen.getByRole("button", { name: "Play" }).click();
+    await expect.element(screen.getByRole("button", { name: "Pause" }), { timeout: 500 }).toBeInTheDocument();
+    expect(isCountingIn()).toBe(true);
+    await screen.getByRole("button", { name: "Pause" }).click();
+    expect(isCountingIn()).toBe(false);
+    expect(useAudioStore.getState().isPlaying).toBe(false);
+    await expect.element(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+  });
+
   it("opens the playback rate popover and applies a preset", async () => {
     setupAudioSource();
     const screen = await render(<AudioPlayer />);
@@ -73,5 +103,34 @@ describe("AudioPlayer", () => {
     await screen.getByRole("button", { name: "Volume" }).click();
     await screen.getByRole("button", { name: "Mute" }).click();
     expect(useAudioStore.getState().isMuted).toBe(true);
+  });
+
+  it("marks the open group on the seek bar only on the Timeline tab", async () => {
+    setupAudioSource();
+    useProjectStore.setState({
+      activeTab: "timeline",
+      groups: [createGroup({ id: "g1", label: "Chorus", sharesTiming: true })],
+      lines: [
+        createLine({
+          id: "c0",
+          text: "go",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [createWord({ text: "go", begin: 15, end: 30 })],
+        }),
+      ],
+    });
+    const screen = await render(<AudioPlayer />);
+    const band = () => document.querySelector<HTMLElement>("[data-seek-bar-focus-band]");
+    expect(band()).toBeNull();
+
+    useTimelineStore.getState().openGroup("g1", 0);
+    await expect.poll(() => band()?.style.left).toBe("25%");
+    expect(band()?.style.width).toBe("25%");
+    expect(screen.getByRole("slider", { name: "Audio progress" }).element().contains(band())).toBe(true);
+
+    useProjectStore.setState({ activeTab: "preview" });
+    await expect.poll(band).toBeNull();
   });
 });

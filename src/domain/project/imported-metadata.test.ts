@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import {
+  changedMetadata,
   filledMetadata,
   importedKeysAfterWrite,
   isMetadataKey,
@@ -7,6 +7,7 @@ import {
 } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -109,6 +110,55 @@ describe("importedKeysAfterWrite", () => {
 
     it("keeps every key for an empty write", () => {
       expect(importedKeysAfterWrite(["title"], {})).toEqual(["title"]);
+    });
+  });
+});
+
+describe("changedMetadata", () => {
+  const current = { title: "Song", artists: ["A"], album: "", duration: 0 };
+
+  it("keeps only the values that differ from the current metadata", () => {
+    expect(changedMetadata(current, { title: "Song", artists: ["A", "B"] })).toEqual({ artists: ["A", "B"] });
+  });
+
+  describe("edge cases", () => {
+    it("never clears a value the incoming patch leaves empty or out", () => {
+      expect(changedMetadata(current, { title: "", album: "" })).toEqual({});
+      expect(changedMetadata(current, {})).toEqual({});
+    });
+
+    it("sees the same artists in a new array as unchanged", () => {
+      expect(changedMetadata(current, { artists: ["A"] })).toEqual({});
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: sees a language tag in its canonical casing as unchanged", () => {
+      expect(changedMetadata({ ...current, language: "en-us" }, { language: "en-US" })).toEqual({});
+    });
+
+    it("regression: still sees a different language as changed", () => {
+      expect(changedMetadata({ ...current, language: "en-us" }, { language: "fr" })).toEqual({ language: "fr" });
+    });
+
+    it("regression: sees the artists without a blank artist row as unchanged", () => {
+      expect(changedMetadata({ ...current, artists: ["A", ""] }, { artists: ["A"] })).toEqual({});
+    });
+
+    it("regression: sees the songwriters without a blank row as unchanged", () => {
+      expect(changedMetadata({ ...current, songwriters: ["", "W"] }, { songwriters: ["W"] })).toEqual({});
+    });
+
+    it("regression: sees custom fields without a blank value as unchanged", () => {
+      expect(changedMetadata({ ...current, extra: { mood: "calm", note: "" } }, { extra: { mood: "calm" } })).toEqual(
+        {},
+      );
+    });
+
+    it("regression: still sees an added artist next to a blank row as changed", () => {
+      expect(changedMetadata({ ...current, artists: ["A", ""] }, { artists: ["A", "B"] })).toEqual({
+        artists: ["A", "B"],
+      });
     });
   });
 });

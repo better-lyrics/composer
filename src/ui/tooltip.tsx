@@ -1,3 +1,5 @@
+import { openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
+import { cn } from "@/utils/cn";
 import {
   FloatingArrow,
   FloatingPortal,
@@ -14,8 +16,6 @@ import {
   useRole,
 } from "@floating-ui/react";
 import type { Placement } from "@floating-ui/react";
-import { useModalStackStore } from "@/stores/modal-stack";
-import { cn } from "@/utils/cn";
 import { useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -37,7 +37,7 @@ const ARROW_SIZE = 4;
 const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top", delay = SHOW_DELAY }) => {
   const [isOpen, setIsOpen] = useState(false);
   const arrowRef = useRef(null);
-  const isInModal = useModalStackStore((state) => state.count > 0);
+  const isInModal = useEscapeLayerStackStore((state) => openModalCount(state) > 0);
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,

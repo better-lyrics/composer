@@ -1,19 +1,20 @@
-import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
+import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { GROUP_COLORS } from "@/utils/group-colors";
 import { formatKey } from "@/utils/format-key";
+import { GROUP_COLORS } from "@/utils/group-colors";
 import { isMac } from "@/utils/platform";
+import { pluralize } from "@/utils/pluralize";
+import { type ContextMenuState, type ContextMenuTarget, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type ContextMenuTargets, useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useGroupMenuActions } from "@/views/timeline/use-group-menu-actions";
 import { useInstanceMenuActions } from "@/views/timeline/use-instance-menu-actions";
 import { useLineMenuActions } from "@/views/timeline/use-line-menu-actions";
-import { type ContextMenuState, type ContextMenuTarget, useTimelineStore } from "@/views/timeline/timeline-store";
+import { useSharedTimingMenuActions } from "@/views/timeline/use-shared-timing-menu-actions";
 import { useWordMenuActions } from "@/views/timeline/use-word-menu-actions";
+import { FloatingPortal, flip, shift, size, useFloating } from "@floating-ui/react";
 import { IconCommand } from "@tabler/icons-react";
-import { flip, FloatingPortal, shift, size, useFloating } from "@floating-ui/react";
 import { useEffect, useLayoutEffect } from "react";
-import { pluralize } from "@/utils/pluralize";
 
 function MenuItem({
   label,
@@ -265,12 +266,13 @@ function WordMenuSection({ targets, clearContextMenu }: SectionProps) {
 
 function TrackMenuSection({ targets, clearContextMenu }: SectionProps) {
   const { handleAddWordHere } = useWordMenuActions(targets, clearContextMenu);
-  const { handlePlaceLineHere } = useLineMenuActions(targets, clearContextMenu);
+  const { handlePlaceLineHere, handlePlaceAtPlayhead } = useLineMenuActions(targets, clearContextMenu);
 
   return (
     <>
       <MenuItem label="Add word here" shortcut={["Double Click"]} onClick={handleAddWordHere} />
       {targets.placeLineHereInfo && <MenuItem label="Place line here" onClick={handlePlaceLineHere} />}
+      {targets.placeAtPlayheadInfo && <MenuItem label="Place at playhead" onClick={handlePlaceAtPlayhead} />}
       <SelectionGrouping targets={targets} clearContextMenu={clearContextMenu} />
     </>
   );
@@ -308,12 +310,16 @@ function AgentAssignment({ targets, clearContextMenu, lineIndex }: SectionProps 
 }
 
 function GutterMenuSection({ targets, clearContextMenu, lineIndex }: SectionProps & { lineIndex: number }) {
-  const { handleAddLine, handleDeleteLine, handleDetachLine } = useLineMenuActions(targets, clearContextMenu);
+  const { handleAddLine, handleDeleteLine, handleDetachLine, handlePlaceAtPlayhead } = useLineMenuActions(
+    targets,
+    clearContextMenu,
+  );
 
   return (
     <>
       <MenuItem label="Add line above" shortcut={["Shift", "N"]} onClick={() => handleAddLine("above")} />
       <MenuItem label="Add line below" shortcut={["N"]} onClick={() => handleAddLine("below")} />
+      {targets.placeAtPlayheadInfo && <MenuItem label="Place at playhead" onClick={handlePlaceAtPlayhead} />}
       <SelectionGrouping targets={targets} clearContextMenu={clearContextMenu} />
       <MenuDivider />
       <AgentAssignment targets={targets} clearContextMenu={clearContextMenu} lineIndex={lineIndex} />
@@ -344,10 +350,21 @@ function GroupBannerMenuSection({ targets, clearContextMenu, target }: SectionPr
     handleJumpPrevInstance,
     handleJumpNextInstance,
   } = useInstanceMenuActions(clearContextMenu);
+  const { sharingLabel, handleSharingAction } = useSharedTimingMenuActions(
+    target.groupId,
+    target.instanceIdx,
+    clearContextMenu,
+  );
   const isCollapsed = useTimelineStore.getState().collapsedInstances[`${target.groupId}:${target.instanceIdx}`];
+  const openGroup = useTimelineStore((s) => s.openGroup);
 
   return (
     <>
+      <MenuItem
+        label="Open group"
+        shortcut={getEffectiveKeysArray("timeline.openGroup")}
+        onClick={() => openGroup(target.groupId, target.instanceIdx)}
+      />
       <MenuItem
         label={isCollapsed ? "Expand instance" : "Collapse instance"}
         shortcut={getEffectiveKeysArray("timeline.toggleCollapseInstance")}
@@ -384,8 +401,14 @@ function GroupBannerMenuSection({ targets, clearContextMenu, target }: SectionPr
         shortcut={getEffectiveKeysArray("timeline.jumpNextInstance")}
         onClick={handleJumpNextInstance}
       />
+      {sharingLabel && (
+        <>
+          <MenuDivider />
+          <MenuItem label={sharingLabel} onClick={handleSharingAction} />
+        </>
+      )}
       <MenuDivider />
-      <MenuItem label="Rename" shortcut={["Double Click"]} onClick={handleRenameStart} />
+      <MenuItem label="Rename" onClick={handleRenameStart} />
       <MenuDivider />
       <p className="px-3 pt-1.5 pb-1 text-xs text-composer-text-muted">Recolor</p>
       <div className="px-3 pb-1.5 grid grid-cols-5 gap-1.5">

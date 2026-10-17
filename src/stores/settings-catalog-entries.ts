@@ -1,45 +1,38 @@
 import type { SettingsState } from "@/stores/settings";
 import type { SettingEntry } from "@/stores/settings-catalog";
+import { GENERAL_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-general";
+import { STORAGE_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-storage";
 import { MOD_KEY } from "@/utils/platform";
+import { pluralize } from "@/utils/pluralize";
 
-// -- Catalog -------------------------------------------------------------------
+// -- Helpers ------------------------------------------------------------------
+
+function syncCountInDescription(seconds: number): string {
+  if (seconds === 0) return "Playback starts right away in Sync.";
+  return `Count down for ${pluralize(seconds, "second")} before Sync plays from the start of the song, so you are ready for the first word.`;
+}
+
+// -- Catalog ------------------------------------------------------------------
 
 const SETTINGS_CATALOG = {
-  showShortcutHints: {
-    section: "general",
-    label: "Show shortcut hints",
-    description: "Display keyboard shortcut badges on toolbar buttons.",
-    keywords: ["badges", "keys", "hotkeys"],
-    settingKey: "showShortcutHints",
+  ...GENERAL_CATALOG_ENTRIES,
+  libraryView: {
+    section: "projects",
+    label: "Library view",
+    description: "How the Projects page shows your songs. The toggle on that page changes this too.",
+    settingKey: "libraryView",
   },
-  showSyllableIndicators: {
-    section: "general",
-    label: "Show syllable indicators",
-    description: "Visually group syllables split from one word.",
-    keywords: ["split", "pipe"],
-    settingKey: "showSyllableIndicators",
+  librarySort: {
+    section: "projects",
+    label: "Default sort",
+    description: "The order projects appear in when you open Projects.",
+    settingKey: "librarySort",
   },
-  autoExtractBackgroundVocals: {
-    section: "general",
-    label: "Auto-extract background vocals",
-    description: "Move parenthesised text into background vocals when lyrics are pasted, imported, or edited.",
-    keywords: ["bg", "parentheses", "brackets"],
-    settingKey: "autoExtractBackgroundVocals",
-  },
-  mergeStandaloneBackgroundLines: {
-    section: "general",
-    label: "Merge standalone background lines",
-    description:
-      "When a whole line is in parentheses, attach it to the line above instead of keeping it as its own line.",
-    keywords: ["bg", "parentheses"],
-    settingKey: "mergeStandaloneBackgroundLines",
-  },
-  preserveBracketsOnExtraction: {
-    section: "general",
-    label: "Preserve brackets when extracting",
-    description: "Keep parentheses around extracted background vocals. Multiple snippets share one outer pair.",
-    keywords: ["bg", "parentheses"],
-    settingKey: "preserveBracketsOnExtraction",
+  launchScreen: {
+    section: "projects",
+    label: "On launch",
+    description: "What Composer shows when you open it.",
+    settingKey: "launchScreen",
   },
   theme: {
     section: "theme",
@@ -111,6 +104,20 @@ const SETTINGS_CATALOG = {
     label: "Vocal onset snap",
     description: "Include detected vocal onset anchors as snap targets in the timeline.",
     settingKey: "vocalOnsetSnap",
+  },
+  shareTimingInNewGroups: {
+    section: "timeline",
+    label: "Share timing in new groups",
+    description: "Sync one instance of a new group and the others follow, each from its own start.",
+    keywords: ["group", "instance", "chorus", "linked", "repeat"],
+    settingKey: "shareTimingInNewGroups",
+  },
+  loopOpenGroup: {
+    section: "timeline",
+    label: "Loop an open group",
+    description: "Play an open group on repeat instead of stopping at its end.",
+    keywords: ["group", "instance", "chorus", "repeat", "solo"],
+    settingKey: "loopOpenGroup",
   },
   timelineSnapThreshold: {
     section: "timeline",
@@ -186,20 +193,22 @@ const SETTINGS_CATALOG = {
   redoPreroll: {
     section: "sync",
     label: "Re-record pre-roll",
-    description: "How far before the selected line or word playback starts when re-recording in Sync.",
+    description:
+      "How far before the target line or word Sync starts playback after a jump, such as when you re-record a line or word, or when Sync skips past a repeat that already shares its timing.",
     settingKey: "redoPreroll",
+  },
+  syncCountIn: {
+    section: "sync",
+    label: "Count-in",
+    descriptionFor: (state) => syncCountInDescription(state.syncCountIn),
+    keywords: ["countdown", "pre-roll", "start delay"],
+    settingKey: "syncCountIn",
   },
   defaultGranularity: {
     section: "sync",
     label: "Default granularity",
     description: "Whether new projects start in word or line timing mode.",
     settingKey: "defaultGranularity",
-  },
-  confirmReplaceProjectFromHash: {
-    section: "confirmations",
-    label: "Confirm replacing project from URL",
-    description: "Show a warning when an import URL would replace your current project.",
-    settingKey: "confirmReplaceProjectFromHash",
   },
   confirmReplaceLyrics: {
     section: "confirmations",
@@ -255,12 +264,7 @@ const SETTINGS_CATALOG = {
     description: "Show a warning before a new song clears imported details you have not exported.",
     settingKey: "confirmClearImportedSongDetails",
   },
-  autoSaveDelay: {
-    section: "storage",
-    label: "Auto-save delay",
-    description: "How long to wait after your last edit before auto-saving.",
-    settingKey: "autoSaveDelay",
-  },
+  ...STORAGE_CATALOG_ENTRIES,
   previewRenderer: {
     section: "advanced",
     label: "Preview renderer",
@@ -283,6 +287,6 @@ const SETTINGS_CATALOG = {
   },
 } as const satisfies Record<string, SettingEntry>;
 
-// -- Exports -------------------------------------------------------------------
+// -- Exports ------------------------------------------------------------------
 
 export { SETTINGS_CATALOG };

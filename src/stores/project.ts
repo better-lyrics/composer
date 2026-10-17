@@ -32,4 +32,4 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
 
 export { useProjectStore, INITIAL_STATE };
 
-export type { GranularityMode, SimpleTab } from "@/stores/project/types";
+export type { GranularityMode } from "@/stores/project/types";

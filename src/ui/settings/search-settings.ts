@@ -1,12 +1,15 @@
-import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { SHORTCUT_SCOPE_GROUPS, type ShortcutDefinition, getShortcutsByScope } from "@/stores/shortcut-registry";
+import type { SettingsState } from "@/stores/settings";
 import {
   SETTING_IDS,
   type SettingId,
   type SettingsSectionId,
   sectionLabel,
+  settingDescription,
   settingEntry,
+  visibleSettingIds,
 } from "@/stores/settings-catalog";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { SHORTCUT_SCOPE_GROUPS, type ShortcutDefinition, getShortcutsByScope } from "@/stores/shortcut-registry";
 import { matchesAllTerms, splitSearchTerms } from "@/utils/search-terms";
 
 // -- Types ---------------------------------------------------------------------
@@ -18,9 +21,9 @@ interface SettingsSearchResult {
 
 // -- Haystacks -----------------------------------------------------------------
 
-function settingHaystack(id: SettingId): string {
-  const { label, description, keywords = [], section } = settingEntry(id);
-  return [label, description, ...keywords, sectionLabel(section)].join(" ");
+function settingHaystack(id: SettingId, state: SettingsState): string {
+  const { label, keywords = [], section } = settingEntry(id);
+  return [label, settingDescription(id, state), ...keywords, sectionLabel(section)].join(" ");
 }
 
 function shortcutHaystack(definition: ShortcutDefinition, scopeTitle: string): string {
@@ -29,11 +32,11 @@ function shortcutHaystack(definition: ShortcutDefinition, scopeTitle: string): s
 
 // -- Search --------------------------------------------------------------------
 
-function searchSettings(query: string): SettingsSearchResult | null {
+function searchSettings(query: string, state: SettingsState): SettingsSearchResult | null {
   const terms = splitSearchTerms(query);
   if (terms.length === 0) return null;
   return {
-    settings: SETTING_IDS.filter((id) => matchesAllTerms(settingHaystack(id), terms)),
+    settings: visibleSettingIds(SETTING_IDS, state).filter((id) => matchesAllTerms(settingHaystack(id, state), terms)),
     shortcuts: SHORTCUT_SCOPE_GROUPS.flatMap(({ scope, title }) =>
       getShortcutsByScope(scope).filter((definition) => matchesAllTerms(shortcutHaystack(definition, title), terms)),
     ),

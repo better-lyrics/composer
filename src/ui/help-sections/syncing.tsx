@@ -1,7 +1,8 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { PROSE } from "@/ui/typography";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { HelpTopic } from "@/ui/help-topic";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { SettingLink } from "@/ui/setting-link";
+import { PROSE } from "@/ui/typography";
 
 // -- Syncing ------------------------------------------------------------------
 
@@ -18,6 +19,15 @@ const SyncSection: React.FC = () => (
         music plays, tap <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} /> on each word right when the singer
         says it. Each tap marks the word's start time, and the previous word's end time is set to the same moment,
         creating gapless transitions.
+      </p>
+    </HelpTopic>
+
+    <HelpTopic title="Counting in">
+      <p className={PROSE}>
+        When you start syncing from the very beginning of the song, Sync counts down before playback starts so you are
+        ready for the first word. Taps wait until the count ends. Change the length in{" "}
+        <SettingLink setting="syncCountIn" />. Set it to 0 to turn it off. Press Escape to skip the count and play at
+        once.
       </p>
     </HelpTopic>
 
@@ -67,7 +77,8 @@ const SyncSection: React.FC = () => (
       <p className={PROSE}>
         Press <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeLeft")} /> to nudge the last synced word 50ms
         earlier. <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeRight")} /> nudges it 50ms later. You can also
-        press <InlineKeyBadge keys={getEffectiveKeysArray("global.undo")} /> to undo. Each hold produces two undo steps (start and end) so you can step back precisely.
+        press <InlineKeyBadge keys={getEffectiveKeysArray("global.undo")} /> to undo. Each hold produces two undo steps
+        (start and end) so you can step back precisely.
       </p>
     </HelpTopic>
 

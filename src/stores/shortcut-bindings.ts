@@ -1,12 +1,12 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import {
+  SHORTCUT_REGISTRY,
   type ShortcutBinding,
   type ShortcutDefinition,
   type ShortcutScope,
-  SHORTCUT_REGISTRY,
   getShortcutById,
 } from "@/stores/shortcut-registry";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 // -- Types --------------------------------------------------------------------
 
@@ -49,7 +49,11 @@ const useShortcutBindingsStore = create<ShortcutBindingsState>()(
         }),
       resetAllBindings: () => set({ overrides: {} }),
     }),
-    { name: "composer-shortcut-bindings", version: SHORTCUT_BINDINGS_PERSIST_VERSION, migrate: migrateShortcutBindings },
+    {
+      name: "composer-shortcut-bindings",
+      version: SHORTCUT_BINDINGS_PERSIST_VERSION,
+      migrate: migrateShortcutBindings,
+    },
   ),
 );
 

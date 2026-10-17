@@ -1,4 +1,4 @@
-import { isAnyModalOpen } from "@/stores/modal-stack";
+import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { getEffectiveBinding } from "@/stores/shortcut-bindings";
 import { findMatchingShortcut, isCommandBinding } from "@/utils/shortcut-matcher";
 import { isTypingTarget } from "@/utils/typing-target";
@@ -41,4 +41,4 @@ function useKeyboardShortcuts(actions: ShortcutActions, options: ShortcutOptions
   }, []);
 }
 
-export { useKeyboardShortcuts };
+export { isTypingTarget, useKeyboardShortcuts };

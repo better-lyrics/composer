@@ -47,9 +47,7 @@ function legacyHistoryAction(event: KeyboardEvent, redoOnY: boolean): HistoryAct
 function isClaimedByOtherShortcut(event: KeyboardEvent, scope: ShortcutScope | undefined): boolean {
   const scopes: ShortcutScope[] = scope ? ["global", scope] : ["global"];
   return scopes.some((candidate) =>
-    getShortcutsByScope(candidate).some(
-      ({ id }) => !HISTORY_SHORTCUT_IDS.has(id) && matchesShortcutBinding(event, id),
-    ),
+    getShortcutsByScope(candidate).some(({ id }) => !HISTORY_SHORTCUT_IDS.has(id) && matchesShortcutBinding(event, id)),
   );
 }
 

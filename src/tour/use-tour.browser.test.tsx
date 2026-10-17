@@ -1,13 +1,17 @@
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
+import { appQueryClient } from "@/lib/app-query-client";
 import { useAudioStore } from "@/stores/audio";
-import { isAnyModalOpen, useModalStackStore } from "@/stores/modal-stack";
+import { isAnyModalOpen, openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
+import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { GuideCard } from "@/tour/guide-card";
 import { BEST_PRACTICES_STEP_TITLE, createTourSteps } from "@/tour/tour-steps";
 import { TOUR_RESUME_KEY, TOUR_SEEN_KEY, resetTour, useTour } from "@/tour/use-tour";
+import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Harness ------------------------------------------------------------------
@@ -19,6 +23,12 @@ function TourHarness() {
       <button type="button" data-testid="start" onClick={() => startTour()}>
         Start
       </button>
+      <button type="button" data-tour="import-lyrics-button">
+        Import Lyrics
+      </button>
+      <QueryClientProvider client={appQueryClient}>
+        <LyricsImportModalHost />
+      </QueryClientProvider>
       <GuideCard state={guideCard} onSkip={skipGuideCard} />
     </div>
   );
@@ -59,11 +69,23 @@ const driverProgress = () => document.querySelector(".driver-popover-progress-te
 const driverTitle = () => document.querySelector(".driver-popover-title")?.textContent ?? "";
 const driverCloseBtn = () => document.querySelector<HTMLButtonElement>(".driver-popover-close-btn");
 const VIDEO_BTN_CLASS = "composer-tour-video-btn";
+const DRIVER_TRANSITION_MS = 400;
 const driverWatchBtn = () => document.querySelector(`.${VIDEO_BTN_CLASS}`) as HTMLButtonElement | null;
 
 async function clickNext() {
   await expect.poll(() => driverNextBtn() !== null).toBe(true);
   driverNextBtn()?.click();
+}
+
+// driver.js ignores Next until a step's highlight transition ends, and the modal step's popover shows halfway through it.
+async function clickNextThroughImportLyrics() {
+  await clickNext();
+  await expect.poll(driverTitle).toBe("Import lyrics you already have");
+  await clickNext();
+  await expect.poll(driverTitle).toBe("Search, paste, or upload");
+  await new Promise((resolve) => setTimeout(resolve, DRIVER_TRANSITION_MS));
+  await stepFrames(2);
+  await clickNext();
 }
 
 function setAudioLoaded() {
@@ -201,27 +223,27 @@ describe("useTour skipGuideCard", () => {
     const screen = await render(<TourHarness />);
 
     await screen.getByTestId("start").click();
-    await expect.poll(driverProgress).toBe("1 / 13");
+    await expect.poll(driverProgress).toBe("1 / 15");
     await clickNext();
-    await expect.poll(driverProgress).toBe("2 / 13");
+    await expect.poll(driverProgress).toBe("2 / 15");
     await clickNext();
     // Audio gate fails -> guide card replaces the popover.
-    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 13");
+    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 15");
 
-    // Skip audio guide -> step 3 Edit "Type or paste lyrics" (4/13).
+    // Skip audio guide -> Edit "Type or paste lyrics" (4/15).
     await screen.getByRole("button", { name: "Skip" }).click();
-    await expect.poll(driverProgress).toBe("4 / 13");
+    await expect.poll(driverProgress).toBe("4 / 15");
     await expect.poll(driverTitle).toBe("Type or paste lyrics");
 
-    // Step 3 -> step 4 gated lyrics -> guide card.
-    await clickNext();
-    await expect.poll(() => screen.container.textContent).toContain("Step 5 / 13");
+    // Edit -> Import Lyrics button -> Import Lyrics modal -> gated lyrics -> guide card.
+    await clickNextThroughImportLyrics();
+    await expect.poll(() => screen.container.textContent).toContain("Step 7 / 15");
 
-    // BUG: skip jumps back to step 3 (4/13) because the skip logic re-scans gates
+    // BUG: skip jumps back to Edit (4/15) because the skip logic re-scans gates
     // and picks the first failing one (audio), not the one the user is currently on.
-    // FIX: skip advances to step 5 Languages (6/13).
+    // FIX: skip advances to Languages (8/15).
     await screen.getByRole("button", { name: "Skip" }).click();
-    await expect.poll(driverProgress).toBe("6 / 13");
+    await expect.poll(driverProgress).toBe("8 / 15");
     await expect.poll(driverTitle).toBe("Translate and transliterate");
   });
 
@@ -231,10 +253,10 @@ describe("useTour skipGuideCard", () => {
     await screen.getByTestId("start").click();
     await clickNext();
     await clickNext();
-    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 13");
+    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 15");
 
     await screen.getByRole("button", { name: "Skip" }).click();
-    await expect.poll(driverProgress).toBe("4 / 13");
+    await expect.poll(driverProgress).toBe("4 / 15");
     await expect.poll(driverTitle).toBe("Type or paste lyrics");
   });
 
@@ -245,14 +267,14 @@ describe("useTour skipGuideCard", () => {
     await screen.getByTestId("start").click();
     await clickNext();
     await clickNext();
-    // Audio gate passes -> driver auto-advances past step 2 to step 3 (Edit, 4/13).
-    await expect.poll(driverProgress).toBe("4 / 13");
+    // Audio gate passes -> driver auto-advances past the audio gate to Edit (4/15).
+    await expect.poll(driverProgress).toBe("4 / 15");
 
-    await clickNext();
-    await expect.poll(() => screen.container.textContent).toContain("Step 5 / 13");
+    await clickNextThroughImportLyrics();
+    await expect.poll(() => screen.container.textContent).toContain("Step 7 / 15");
 
     await screen.getByRole("button", { name: "Skip" }).click();
-    await expect.poll(driverProgress).toBe("6 / 13");
+    await expect.poll(driverProgress).toBe("8 / 15");
     await expect.poll(driverTitle).toBe("Translate and transliterate");
   });
 
@@ -264,19 +286,19 @@ describe("useTour skipGuideCard", () => {
     await screen.getByTestId("start").click();
     await clickNext();
     await clickNext();
-    await expect.poll(driverProgress).toBe("4 / 13");
+    await expect.poll(driverProgress).toBe("4 / 15");
+    await clickNextThroughImportLyrics();
+    // Lyrics gate passes -> auto-advance to Languages (8/15).
+    await expect.poll(driverProgress).toBe("8 / 15");
     await clickNext();
-    // Lyrics gate passes -> auto-advance to step 5 Languages (6/13).
-    await expect.poll(driverProgress).toBe("6 / 13");
-    await clickNext();
-    await expect.poll(driverProgress).toBe("7 / 13");
+    await expect.poll(driverProgress).toBe("9 / 15");
     await expect.poll(driverTitle).toBe("Sync your lyrics");
     await clickNext();
     // Sync gate fails -> guide card replaces the popover.
-    await expect.poll(() => screen.container.textContent).toContain("Step 8 / 13");
+    await expect.poll(() => screen.container.textContent).toContain("Step 10 / 15");
 
     await screen.getByRole("button", { name: "Skip" }).click();
-    await expect.poll(driverProgress).toBe("9 / 13");
+    await expect.poll(driverProgress).toBe("11 / 15");
     await expect.poll(driverTitle).toBe("Fine-tune on the timeline");
   });
 
@@ -287,9 +309,9 @@ describe("useTour skipGuideCard", () => {
     await screen.getByTestId("start").click();
     await clickNext();
     await clickNext();
-    await expect.poll(driverProgress).toBe("4 / 13");
-    await clickNext();
-    await expect.poll(() => screen.container.textContent).toContain("Step 5 / 13");
+    await expect.poll(driverProgress).toBe("4 / 15");
+    await clickNextThroughImportLyrics();
+    await expect.poll(() => screen.container.textContent).toContain("Step 7 / 15");
 
     // Populate lyrics. The gate poll detects the pass, flashes "Done!", then advances.
     setLyrics();
@@ -297,7 +319,7 @@ describe("useTour skipGuideCard", () => {
     await expect.poll(() => screen.container.textContent).toContain("Done!");
     // The advance is intentionally delayed by GATE_SUCCESS_DELAY (800ms) after "Done!",
     // so this needs more than the default 1000ms poll budget under load.
-    await expect.poll(driverProgress, { timeout: 4000 }).toBe("6 / 13");
+    await expect.poll(driverProgress, { timeout: 4000 }).toBe("8 / 15");
     await expect.poll(driverTitle).toBe("Translate and transliterate");
   });
 
@@ -309,15 +331,15 @@ describe("useTour skipGuideCard", () => {
     await screen.getByTestId("start").click();
     await clickNext();
     await clickNext();
-    await expect.poll(driverProgress).toBe("4 / 13");
+    await expect.poll(driverProgress).toBe("4 / 15");
+    await clickNextThroughImportLyrics();
+    await expect.poll(driverProgress).toBe("8 / 15");
     await clickNext();
-    await expect.poll(driverProgress).toBe("6 / 13");
+    await expect.poll(driverProgress).toBe("9 / 15");
     await clickNext();
-    await expect.poll(driverProgress).toBe("7 / 13");
-    await clickNext();
-    await expect.poll(driverProgress).toBe("9 / 13");
+    await expect.poll(driverProgress).toBe("11 / 15");
     await expect.poll(driverTitle).toBe("Fine-tune on the timeline");
-    expect(screen.container.textContent).not.toContain("Step 8 / 13");
+    expect(screen.container.textContent).not.toContain("Step 10 / 15");
     expect(screen.container.textContent).not.toContain("Sync at least one line");
   });
 });
@@ -401,11 +423,11 @@ describe("useTour lifecycle", () => {
       .element()
       .dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await expect.poll(driverTitle).toBe("Welcome to Composer");
-    expect(useModalStackStore.getState().count).toBe(1);
+    expect(openModalCount(useEscapeLayerStackStore.getState())).toBe(1);
 
     driverCloseBtn()?.click();
     await expect.poll(() => document.querySelector(".driver-popover")).toBe(null);
-    expect(useModalStackStore.getState().count).toBe(0);
+    expect(openModalCount(useEscapeLayerStackStore.getState())).toBe(0);
   });
 
   it("releases the modal entry when a gate hands over to the guide card", async () => {
@@ -413,8 +435,8 @@ describe("useTour lifecycle", () => {
     await screen.getByTestId("start").click();
     await clickNext();
     await clickNext();
-    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 13");
-    expect(useModalStackStore.getState().count).toBe(0);
+    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 15");
+    expect(openModalCount(useEscapeLayerStackStore.getState())).toBe(0);
   });
 
   it("releases the modal entry when the host unmounts mid tour", async () => {
@@ -422,7 +444,7 @@ describe("useTour lifecycle", () => {
     await screen.getByTestId("start").click();
     await expect.poll(driverTitle).toBe("Welcome to Composer");
     await screen.unmount();
-    expect(useModalStackStore.getState().count).toBe(0);
+    expect(openModalCount(useEscapeLayerStackStore.getState())).toBe(0);
   });
 
   it("does not reopen the tour when the host unmounts while a passed gate is flashing Done", async () => {
@@ -430,13 +452,13 @@ describe("useTour lifecycle", () => {
     await screen.getByTestId("start").click();
     await clickNext();
     await clickNext();
-    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 13");
+    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 15");
     setAudioLoaded();
     await expect.poll(() => screen.container.textContent).toContain("Done!");
     await screen.unmount();
 
     await new Promise((resolve) => setTimeout(resolve, 1200));
-    expect(useModalStackStore.getState().count).toBe(0);
+    expect(openModalCount(useEscapeLayerStackStore.getState())).toBe(0);
     expect(document.querySelector(".driver-popover")).toBe(null);
   });
 });

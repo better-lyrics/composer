@@ -17,6 +17,7 @@ interface ScrollableLineLinkInfo {
   label: string;
   ordinal: number;
   totalInstances: number;
+  shared?: boolean;
 }
 
 interface ScrollableLineProps {
@@ -297,9 +298,13 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
             }}
           >
             <IconLink className="size-2.5" />
-            <span className="tabular-nums">
-              {linkInfo.ordinal}/{linkInfo.totalInstances}
-            </span>
+            {linkInfo.shared ? (
+              <span>Shared</span>
+            ) : (
+              <span className="tabular-nums">
+                {linkInfo.ordinal}/{linkInfo.totalInstances}
+              </span>
+            )}
           </span>
         )}
       </span>
@@ -353,7 +358,8 @@ const ScrollableLine = memo(ScrollableLineInner, (prev, next) => {
     prev.linkInfo?.color === next.linkInfo?.color &&
     prev.linkInfo?.label === next.linkInfo?.label &&
     prev.linkInfo?.ordinal === next.linkInfo?.ordinal &&
-    prev.linkInfo?.totalInstances === next.linkInfo?.totalInstances
+    prev.linkInfo?.totalInstances === next.linkInfo?.totalInstances &&
+    prev.linkInfo?.shared === next.linkInfo?.shared
   );
 });
 

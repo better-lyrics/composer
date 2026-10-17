@@ -262,3 +262,47 @@ describe("findBoundaryTarget", () => {
     });
   });
 });
+
+describe("group focus", () => {
+  const chorus = (id: string, instanceIdx: number, begin: number) =>
+    createLine({ id, groupId: "g1", instanceIdx, templateLineIdx: 0, words: [{ text: "go", begin, end: begin + 1 }] });
+  const verse = createLine({ id: "verse", words: [{ text: "verse", begin: 2, end: 3 }] });
+  const lines = [chorus("c0", 0, 0), verse, chorus("c1", 1, 10)];
+  const focusOnSecond = { groupId: "g1", hearInstanceIdx: 1 };
+
+  it("finds only words of the focused instance at the playhead", () => {
+    expect(findWordsAtTime(lines, 0.5, focusOnSecond)).toEqual([]);
+    expect(findWordsAtTime(lines, 10.5, focusOnSecond)).toEqual<WordSelection[]>([
+      { lineId: "c1", lineIndex: 2, wordIndex: 0, type: "word" },
+    ]);
+  });
+
+  it("reaches only words of the focused instance across a gap", () => {
+    expect(findBoundaryTarget(lines, 1.5, "begin", focusOnSecond)).toEqual<WordSelection>({
+      lineId: "c1",
+      lineIndex: 2,
+      wordIndex: 0,
+      type: "word",
+    });
+    expect(findBoundaryTarget(lines, 5, "end", focusOnSecond)).toBeNull();
+  });
+
+  it("does not claim a hidden word that contains the playhead", () => {
+    expect(findBoundaryTarget(lines, 2.5, "begin", focusOnSecond)?.lineId).toBe("c1");
+  });
+
+  describe("edge cases", () => {
+    it("behaves as without focus when the focus is null", () => {
+      expect(findWordsAtTime(lines, 2.5, null)).toEqual(findWordsAtTime(lines, 2.5));
+      expect(findBoundaryTarget(lines, 1.5, "begin", null)).toEqual(findBoundaryTarget(lines, 1.5, "begin"));
+    });
+  });
+
+  describe("invariants", () => {
+    it("keeps each match's index into the whole song", () => {
+      for (const match of findWordsAtTime(lines, 10.5, focusOnSecond)) {
+        expect(lines[match.lineIndex].id).toBe(match.lineId);
+      }
+    });
+  });
+});

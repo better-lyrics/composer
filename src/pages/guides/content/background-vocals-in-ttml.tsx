@@ -1,3 +1,5 @@
+import { GuideCode } from "@/pages/guides/guide-code";
+
 const BackgroundVocalsContent: React.FC = () => (
   <>
     <p>
@@ -22,8 +24,9 @@ const BackgroundVocalsContent: React.FC = () => (
       A background vocal lives inside the paragraph of the line it accompanies. The outer x-bg span carries no timing.
       Inner spans carry the timing.
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<p begin="00:00:12.000" end="00:00:16.000" ttm:agent="v1">
+    <GuideCode
+      format="ttml"
+      code={`<p begin="00:00:12.000" end="00:00:16.000" ttm:agent="v1">
   <span begin="00:00:12.000" end="00:00:13.500">Main lyric word one</span>
   <span begin="00:00:13.500" end="00:00:16.000">two</span>
   <span ttm:role="x-bg">
@@ -31,7 +34,7 @@ const BackgroundVocalsContent: React.FC = () => (
     <span begin="00:00:14.500" end="00:00:16.000">ooh</span>
   </span>
 </p>`}
-    </pre>
+    />
     <p>
       The outer <code className="font-mono text-composer-accent-text">&lt;span ttm:role="x-bg"&gt;</code> has no{" "}
       <code className="font-mono text-composer-accent-text">begin</code> or{" "}
@@ -67,11 +70,12 @@ const BackgroundVocalsContent: React.FC = () => (
 
     <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Line-level background vocals</h2>
     <p>If the background part has no word-level timing, you can use a single timed span inside the x-bg wrapper:</p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<span ttm:role="x-bg">
+    <GuideCode
+      format="ttml"
+      code={`<span ttm:role="x-bg">
   <span begin="00:00:13.000" end="00:00:14.500">background phrase</span>
 </span>`}
-    </pre>
+    />
     <p>This still follows the rule that the outer x-bg span has no timing and inner spans do.</p>
 
     <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Authoring x-bg in Composer</h2>

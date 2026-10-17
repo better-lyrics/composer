@@ -1,6 +1,6 @@
+import { type SettingsState, useSettingsStore } from "@/stores/settings";
 import type { ReactNode } from "react";
 import { create } from "zustand";
-import { type SettingsState, useSettingsStore } from "@/stores/settings";
 
 // -- Types --------------------------------------------------------------------
 

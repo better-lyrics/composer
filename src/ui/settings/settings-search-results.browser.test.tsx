@@ -1,14 +1,14 @@
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
-import { useSettingsStore } from "@/stores/settings";
+import { DEFAULTS, type SettingsState, useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
 import { render } from "@/test/render";
 import { searchSettings } from "@/ui/settings/search-settings";
 import { SettingsSearchQueryContext } from "@/ui/settings/settings-search-query";
 import { SettingsSearchResults } from "@/ui/settings/settings-search-results";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
-function renderResults(query: string) {
-  const results = searchSettings(query);
+function renderResults(query: string, state: SettingsState = DEFAULTS) {
+  const results = searchSettings(query, state);
   if (!results) throw new Error(`expected results for "${query}"`);
   return render(
     <SettingsSearchQueryContext value={query}>
@@ -52,6 +52,15 @@ describe("SettingsSearchResults", () => {
       await expect.element(screen.getByRole("status")).toHaveTextContent('No settings match "zzzqqq"');
       await screen.getByRole("button", { name: "Clear search" }).click();
       expect(useUIStore.getState().settingsQuery).toBe("");
+    });
+
+    it("renders exactly what the search owner already filtered for visibility (positive control)", async () => {
+      const hidden = await renderResults("quota limit", { ...DEFAULTS, smartCleanup: false });
+      expect(hidden.getByRole("button", { name: "Storage limit" }).elements()).toHaveLength(0);
+      await expect.element(hidden.getByRole("status")).toHaveTextContent('No settings match "quota limit"');
+
+      const visible = await renderResults("quota limit", { ...DEFAULTS, smartCleanup: true });
+      await expect.element(visible.getByRole("button", { name: "Storage limit" })).toBeInTheDocument();
     });
   });
 });

@@ -132,15 +132,27 @@ describe("clampBoundaryTime", () => {
   });
 
   it("caps an end edge at the audio duration", () => {
-    expect(clamp({ wordIndex: 2, edge: "end", time: 99, duration: 5 })).toBe(5);
+    expect(clamp({ wordIndex: 2, edge: "end", time: 99, range: { min: 0, max: 5 } })).toBe(5);
   });
 
   it("prefers the next word's begin over a later audio duration", () => {
-    expect(clamp({ edge: "end", time: 99, duration: 5 })).toBe(2);
+    expect(clamp({ edge: "end", time: 99, range: { min: 0, max: 5 } })).toBe(2);
   });
 
   it("leaves an end edge unbounded when no duration is supplied", () => {
     expect(clamp({ wordIndex: 2, edge: "end", time: 99 })).toBe(99);
+  });
+
+  it("floors the first word's begin at the start of a shared range", () => {
+    expect(clamp({ wordIndex: 0, time: -5, range: { min: 0.5, max: 60 } })).toBe(0.5);
+  });
+
+  it("caps the last word's end at the end of a shared range", () => {
+    expect(clamp({ wordIndex: 2, edge: "end", time: 99, range: { min: 0, max: 4 } })).toBe(4);
+  });
+
+  it("keeps a neighbour's edge ahead of the range inside a word", () => {
+    expect(clamp({ time: -5, range: { min: 0.5, max: 60 } })).toBe(1);
   });
 
   describe("edge cases", () => {
@@ -180,7 +192,7 @@ describe("clampBoundaryTime", () => {
 
     it("regression: never inverts the last word when the audio ends before it begins", () => {
       const late: WordTiming[] = [w("a", 0, 1), w("b", 1, 2)];
-      expect(clamp({ words: late, wordIndex: 1, edge: "end", time: 1.7, duration: 0.5 })).toBe(1);
+      expect(clamp({ words: late, wordIndex: 1, edge: "end", time: 1.7, range: { min: 0, max: 0.5 } })).toBe(1);
     });
 
     it("regression: never inverts a word whose predecessor ends after it does", () => {

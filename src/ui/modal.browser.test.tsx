@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { Modal } from "@/ui/modal";
-import { useModalStackStore } from "@/stores/modal-stack";
+import { openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { render } from "@/test/render";
+import { Modal } from "@/ui/modal";
+import { describe, expect, it } from "vitest";
 
 // -- Render -------------------------------------------------------------------
 
@@ -68,6 +68,43 @@ describe("Modal", () => {
     expect(closeCalls).toBeGreaterThan(0);
   });
 
+  it("regression: Escape closes only the modal on top of the stack", async () => {
+    const closed: string[] = [];
+    const Stack: React.FC<{ showSecond: boolean }> = ({ showSecond }) => (
+      <>
+        <Modal isOpen onClose={() => closed.push("first")} title="First">
+          <div>One</div>
+        </Modal>
+        <Modal isOpen={showSecond} onClose={() => closed.push("second")} title="Second">
+          <div>Two</div>
+        </Modal>
+      </>
+    );
+    const screen = await render(<Stack showSecond={false} />);
+    await screen.rerender(<Stack showSecond />);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(closed).toEqual(["second"]);
+    await screen.rerender(<Stack showSecond={false} />);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(closed).toEqual(["second", "first"]);
+  });
+
+  it("regression: Escape leaves a modal alone while another layer on the shared stack is on top", async () => {
+    let closeCalls = 0;
+    await render(
+      <Modal isOpen onClose={() => closeCalls++}>
+        <div>Body</div>
+      </Modal>,
+    );
+    const { push, pop } = useEscapeLayerStackStore.getState();
+    const tourToken = push("modal");
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(closeCalls).toBe(0);
+    pop(tourToken);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(closeCalls).toBe(1);
+  });
+
   it("closes when the overlay backdrop is clicked", async () => {
     let closeCalls = 0;
     await render(
@@ -95,15 +132,15 @@ describe("Modal", () => {
   // -- Modal stack ------------------------------------------------------------
 
   it("pushes onto the modal stack while open", async () => {
-    expect(useModalStackStore.getState().count).toBe(0);
+    expect(openModalCount(useEscapeLayerStackStore.getState())).toBe(0);
     const { unmount } = await render(
       <Modal isOpen onClose={() => {}}>
         <div />
       </Modal>,
     );
-    expect(useModalStackStore.getState().count).toBe(1);
+    expect(openModalCount(useEscapeLayerStackStore.getState())).toBe(1);
     await unmount();
-    expect(useModalStackStore.getState().count).toBe(0);
+    expect(openModalCount(useEscapeLayerStackStore.getState())).toBe(0);
   });
 
   it("locks document.body overflow while open and restores it on close", async () => {
@@ -122,17 +159,43 @@ describe("Modal", () => {
 
   it("renders an icon-only close button next to the title that fires onClose", async () => {
     let closeCalls = 0;
-    await render(
+    const screen = await render(
       <Modal isOpen onClose={() => closeCalls++} title="Tour">
         <div>Body</div>
       </Modal>,
     );
+    await expect.element(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
     const titleId = document.querySelector("dialog")?.getAttribute("aria-labelledby");
     const titleBar = titleId ? document.getElementById(titleId)?.parentElement : null;
     const closeButton = titleBar?.querySelector("button");
     expect(closeButton).not.toBeNull();
     closeButton?.click();
     expect(closeCalls).toBeGreaterThan(0);
+  });
+
+  // -- Role and description ----------------------------------------------------
+
+  it("defaults to the dialog role and takes no describedby when unset", async () => {
+    const screen = await render(
+      <Modal isOpen onClose={() => {}} title="Settings">
+        <div>Body</div>
+      </Modal>,
+    );
+    const dialog = screen.getByRole("dialog", { name: "Settings" });
+    await expect.element(dialog).toBeInTheDocument();
+    expect(dialog.element().hasAttribute("aria-describedby")).toBe(false);
+  });
+
+  it("supports an alertdialog role with aria-describedby, additive to other callers", async () => {
+    const screen = await render(
+      <Modal isOpen onClose={() => {}} title="Danger" role="alertdialog" describedById="modal-danger-body">
+        <div>Body copy</div>
+      </Modal>,
+    );
+    const dialog = screen.getByRole("alertdialog", { name: "Danger" });
+    await expect.element(dialog).toBeInTheDocument();
+    expect(dialog.element().getAttribute("aria-describedby")).toBe("modal-danger-body");
+    expect(document.getElementById("modal-danger-body")?.textContent).toBe("Body copy");
   });
 
   it("renders the header accessory next to the title", async () => {

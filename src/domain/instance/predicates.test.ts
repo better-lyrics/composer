@@ -1,6 +1,6 @@
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
-import { belongsToInstance, isLinked } from "@/domain/instance/predicates";
+import { belongsToInstance, isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -55,5 +55,22 @@ describe("belongsToInstance", () => {
 
   it("returns false for standalone lines", () => {
     expect(belongsToInstance(line(), "g1", 0)).toBe(false);
+  });
+});
+
+describe("isAttachedToInstance", () => {
+  it("returns true for an attached line of the instance", () => {
+    expect(isAttachedToInstance(line({ groupId: "g1", instanceIdx: 0 }), "g1", 0)).toBe(true);
+  });
+
+  it("returns false for a detached line of the instance", () => {
+    expect(isAttachedToInstance({ ...line({ groupId: "g1", instanceIdx: 0 }), detached: true }, "g1", 0)).toBe(false);
+  });
+
+  describe("edge cases", () => {
+    it("returns false for another instance or a standalone line", () => {
+      expect(isAttachedToInstance(line({ groupId: "g1", instanceIdx: 1 }), "g1", 0)).toBe(false);
+      expect(isAttachedToInstance(line(), "g1", 0)).toBe(false);
+    });
   });
 });

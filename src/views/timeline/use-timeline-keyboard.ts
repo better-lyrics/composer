@@ -1,5 +1,8 @@
+import { withNewInstance } from "@/domain/group/own-timing";
+import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
+import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { instanceCount, instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
+import { instanceCount, linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveBounds } from "@/domain/line/bounds";
@@ -9,11 +12,11 @@ import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import type { WordSelection } from "@/domain/selection/model";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
-import { useAudioStore } from "@/stores/audio";
-import { isAnyModalOpen } from "@/stores/modal-stack";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
+import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { showGroupActionToast } from "@/utils/group-toast";
+import { showGroupActionToast, showGroupedToast, showSharedSongEdgeToast } from "@/utils/group-toast";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { MOD_KEY } from "@/utils/platform";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
@@ -26,22 +29,21 @@ import { centerTimeScrollLeft, revealTimeScrollLeft } from "@/views/timeline/coo
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
+import { currentEffectiveFocus, scrollToFocusStart } from "@/views/timeline/effective-focus";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
+import { isInFocus } from "@/views/timeline/group-focus";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
+import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
+import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
+import { pingGroup } from "@/views/timeline/ping-group";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
 import { GUTTER_WIDTH, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
-import {
-  computeRowLayout,
-  getWordsInInstance,
-  partitionNudgeSelections,
-  shiftSelectionsTogether,
-} from "@/views/timeline/utils";
+import { computeRowLayout, partitionNudgeSelections, shiftSelectionsTogether } from "@/views/timeline/utils";
 import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
-import { pluralize } from "@/utils/pluralize";
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -82,13 +84,12 @@ function useTimelineKeyboard(
 
   const handleSetWordTiming = useCallback(
     (edge: "begin" | "end") => {
-      const audioEl = useAudioStore.getState().audioElement;
-      const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+      const currentTime = livePlaybackTime();
 
       const { selectedWords, zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
       const selectedWord = selectedWords[0] ?? null;
       const fromPlayhead = !selectedWord;
-      const targetWord = selectedWord ?? findBoundaryTarget(lines, currentTime, edge);
+      const targetWord = selectedWord ?? findBoundaryTarget(lines, currentTime, edge, currentEffectiveFocus());
       if (!targetWord) {
         toast(edge === "begin" ? "No word starts after the playhead" : "No word ends before the playhead");
         return;
@@ -107,12 +108,13 @@ function useTimelineKeyboard(
       const scrollContainer = scrollContainerRef.current;
 
       if (fromPlayhead && scrollContainer) {
-        const collapsedInstances = useTimelineStore.getState().collapsedInstances;
+        const { collapsedInstances, focusedGroup } = useTimelineStore.getState();
         const layout = computeRowLayout({
           lines,
           rowHeights,
           defaultRowHeight,
           collapsedInstances,
+          focusedGroup,
           waveformHeight: WAVEFORM_HEIGHT,
           groupHeaderHeight: GROUP_HEADER_HEIGHT,
         });
@@ -157,7 +159,7 @@ function useTimelineKeyboard(
         edge,
         time: currentTime,
         minDuration: useSettingsStore.getState().minWordDuration,
-        duration,
+        range: timeRangeResolver(useProjectStore.getState().lines, useProjectStore.getState().groups, duration)(line),
         rolling: useTimelineStore.getState().rollingEditMode,
         syllablesFollowRolling: useSettingsStore.getState().syllablesFollowRolling,
         updateLineWithHistory: useProjectStore.getState().updateLineWithHistory,
@@ -207,8 +209,10 @@ function useTimelineKeyboard(
       if (e.code === "KeyA" && (e.metaKey || e.ctrlKey) && !e.repeat) {
         e.preventDefault();
         const allSelections: WordSelection[] = [];
+        const focus = currentEffectiveFocus();
         for (let li = 0; li < lines.length; li++) {
           const line = lines[li];
+          if (!isInFocus(line, focus)) continue;
           for (let wi = 0; wi < (line.words?.length ?? 0); wi++)
             allSelections.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "word" });
           for (let wi = 0; wi < (line.backgroundWords?.length ?? 0); wi++)
@@ -265,8 +269,7 @@ function useTimelineKeyboard(
           const scrollContainer = scrollContainerRef.current;
           if (!scrollContainer) return;
 
-          const audioEl = useAudioStore.getState().audioElement;
-          const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const currentTime = livePlaybackTime();
           const { zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
 
           scrollContainer.scrollLeft = centerTimeScrollLeft(currentTime, zoom, scrollContainer.clientWidth);
@@ -282,12 +285,13 @@ function useTimelineKeyboard(
 
           if (activeLineIndex >= 0) {
             const line = lines[activeLineIndex];
-            const collapsedInstances = useTimelineStore.getState().collapsedInstances;
+            const { collapsedInstances, focusedGroup } = useTimelineStore.getState();
             const layout = computeRowLayout({
               lines,
               rowHeights,
               defaultRowHeight,
               collapsedInstances,
+              focusedGroup,
               waveformHeight: WAVEFORM_HEIGHT,
               groupHeaderHeight: GROUP_HEADER_HEIGHT,
             });
@@ -311,9 +315,8 @@ function useTimelineKeyboard(
         }
         case "timeline.selectWordAtPlayhead": {
           e.preventDefault();
-          const audioEl = useAudioStore.getState().audioElement;
-          const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-          const matches = findWordsAtTime(lines, currentTime);
+          const currentTime = livePlaybackTime();
+          const matches = findWordsAtTime(lines, currentTime, currentEffectiveFocus());
           const next = pickNextWordAtPlayhead(matches, useTimelineStore.getState().selectedWords);
           if (!next) {
             toast("No word under the playhead");
@@ -342,8 +345,7 @@ function useTimelineKeyboard(
           break;
         case "timeline.dropSnapMarkerAtPlayhead": {
           e.preventDefault();
-          const audioEl = useAudioStore.getState().audioElement;
-          const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const playheadTime = livePlaybackTime();
           useProjectStore.getState().addCustomSnapPoint(playheadTime);
           break;
         }
@@ -363,7 +365,7 @@ function useTimelineKeyboard(
           const { selectedWords: nSel } = useTimelineStore.getState();
           if (nSel.length === 0) break;
           const position = matched === "timeline.insertLineAbove" ? "above" : "below";
-          useProjectStore.getState().insertEmptyLineWithHistory(nSel[0].lineId, position);
+          insertEmptyLine(nSel[0].lineId, position);
           break;
         }
         case "timeline.editWord": {
@@ -460,15 +462,19 @@ function useTimelineKeyboard(
             toast.error("Some lines in this range are already part of a group");
             break;
           }
-          const result = createGroupFromSelection(projectState.lines, filled.expanded, projectState.groups);
+          const result = createGroupFromSelection(
+            projectState.lines,
+            filled.expanded,
+            projectState.groups,
+            useSettingsStore.getState().shareTimingInNewGroups,
+            { duration: useAudioStore.getState().duration },
+          );
           if (!result) {
             toast.error("Could not create group from this selection");
             break;
           }
           projectState.addGroupWithLines(result.group, result.updatedLines);
-          const totalCount = filled.expanded.size;
-          const grouped = `Grouped ${pluralize(totalCount, "line")}`;
-          toast.success(filled.addedCount > 0 ? `${grouped} (filled ${pluralize(filled.addedCount, "gap")})` : grouped);
+          showGroupedToast(result.group, filled.expanded.size, filled.addedCount);
           break;
         }
         case "timeline.duplicateAsLinked": {
@@ -493,9 +499,13 @@ function useTimelineKeyboard(
           const [groupId, instanceIdxStr] = groupKey.split(":");
           const sourceInstanceIdx = Number.parseInt(instanceIdxStr, 10);
 
-          const audioEl = useAudioStore.getState().audioElement;
-          const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-          const template = instanceToTemplate(projectState.lines, groupId, sourceInstanceIdx);
+          const playheadTime = livePlaybackTime();
+          const group = projectState.groups.find((candidate) => candidate.id === groupId);
+          const template = instanceToTemplate(
+            projectState.lines,
+            groupId,
+            pickedTemplateSource(projectState.lines, group, sourceInstanceIdx),
+          );
           if (template.length === 0) {
             toast.error("Could not derive instance template");
             break;
@@ -507,7 +517,10 @@ function useTimelineKeyboard(
             playheadTime,
           });
           if (placement.kind === "fill") {
-            projectState.setLinesWithHistory(placement.updatedLines);
+            projectState.setLinesWithHistory(
+              placement.updatedLines,
+              withNewInstance(projectState.groups, groupId, placement.instanceIdx),
+            );
             toast.success("Linked instance placed in empty rows");
           } else if (placement.kind === "insert") {
             projectState.addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);
@@ -552,22 +565,20 @@ function useTimelineKeyboard(
         case "timeline.jumpPrevInstance":
         case "timeline.jumpNextInstance": {
           const projectLines = useProjectStore.getState().lines;
-          const inst = currentInstanceFromSelection(projectLines, useTimelineStore.getState().selectedWords);
+          const focus = currentEffectiveFocus();
+          const inst = focus
+            ? { groupId: focus.groupId, instanceIdx: focus.hearInstanceIdx }
+            : currentInstanceFromSelection(projectLines, useTimelineStore.getState().selectedWords);
           if (!inst) {
             toast.error("Select words inside one instance first");
             break;
           }
-          const all = instanceIndicesOf(projectLines, inst.groupId);
-          if (all.length < 2) {
+          if (instanceCount(projectLines, inst.groupId) < 2) {
             toast.error("This group has only one instance");
             break;
           }
-          const here = all.indexOf(inst.instanceIdx);
-          const dir = matched === "timeline.jumpNextInstance" ? 1 : -1;
-          const nextIdx = all[(here + dir + all.length) % all.length];
           e.preventDefault();
-          useTimelineStore.getState().setSelectedWords(getWordsInInstance(projectLines, inst.groupId, nextIdx));
-          scrollToInstanceHeader(inst.groupId, nextIdx);
+          jumpToAdjacentInstance(inst.groupId, inst.instanceIdx, matched === "timeline.jumpNextInstance" ? 1 : -1);
           break;
         }
         case "timeline.detachInstance": {
@@ -608,12 +619,7 @@ function useTimelineKeyboard(
             break;
           }
           e.preventDefault();
-          useTimelineStore.getState().setPingingGroupId(inst.groupId);
-          window.setTimeout(() => {
-            if (useTimelineStore.getState().pingingGroupId === inst.groupId) {
-              useTimelineStore.getState().setPingingGroupId(null);
-            }
-          }, 700);
+          pingGroup(inst.groupId);
           break;
         }
         case "timeline.nudgeLeft":
@@ -623,9 +629,15 @@ function useTimelineKeyboard(
           e.preventDefault();
           const nudgeAmount = useSettingsStore.getState().nudgeAmount;
           const requestedDelta = matched === "timeline.nudgeLeft" ? -nudgeAmount : nudgeAmount;
-          const rawLines = useProjectStore.getState().lines;
+          const { lines: rawLines, groups } = useProjectStore.getState();
           const partitioned = partitionNudgeSelections(rawLines, nudgeSel);
-          const result = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, duration);
+          const rangeOf = timeRangeResolver(rawLines, groups, duration);
+          const result = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, rangeOf);
+          if (Math.abs(result.appliedDelta) < Math.abs(requestedDelta)) {
+            const wholeSong = () => wholeSongRange(duration);
+            const unshared = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, wholeSong);
+            if (Math.abs(unshared.appliedDelta) > Math.abs(result.appliedDelta)) showSharedSongEdgeToast();
+          }
           if (result.updates.length === 0) break;
           if (result.updates.length === 1) {
             useProjectStore.getState().updateLineWithHistory(result.updates[0].id, result.updates[0].updates, {
@@ -637,6 +649,12 @@ function useTimelineKeyboard(
           break;
         }
         case "timeline.jumpToInstanceStart": {
+          const focusScrollContainer = scrollContainerRef.current;
+          if (currentEffectiveFocus() && focusScrollContainer) {
+            e.preventDefault();
+            scrollToFocusStart(focusScrollContainer);
+            break;
+          }
           const projectLines = useProjectStore.getState().lines;
           const inst = currentInstanceFromSelection(projectLines, useTimelineStore.getState().selectedWords);
           if (!inst) {
@@ -666,12 +684,13 @@ function useTimelineKeyboard(
           const instanceLines = linesOfInstance(projectLines, inst.groupId, inst.instanceIdx);
           const bounds = instanceBounds(instanceLines);
           if (!bounds) break;
-          const audioEl = useAudioStore.getState().audioElement;
-          const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const playheadTime = livePlaybackTime();
           const delta = playheadTime - bounds.begin;
           if (Math.abs(delta) < 0.001) break;
           e.preventDefault();
-          useProjectStore.getState().shiftInstance(inst.groupId, inst.instanceIdx, delta);
+          useProjectStore
+            .getState()
+            .shiftInstance(inst.groupId, inst.instanceIdx, delta, useAudioStore.getState().duration);
           break;
         }
         case "timeline.jumpPrevSnapPoint":
@@ -681,8 +700,7 @@ function useTimelineKeyboard(
           e.preventDefault();
           const dir: 1 | -1 = matched.includes("Next") ? 1 : -1;
           const fine = matched.includes("Fine");
-          const audioEl = useAudioStore.getState().audioElement;
-          const current = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const current = livePlaybackTime();
           const pins = useProjectStore.getState().customSnapPoints;
           const onsets = fine ? useTimelineStore.getState().vocalOnsetSnapPoints : [];
           const points = normalizeTimes([...snapPointTimes(pins), ...onsets]);

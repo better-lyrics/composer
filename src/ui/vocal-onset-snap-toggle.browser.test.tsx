@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 import { VocalOnsetSnapToggle } from "@/ui/vocal-onset-snap-toggle";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { describe, expect, it } from "vitest";
 
 // -- Vocal Onset Snap Toggle --------------------------------------------------
 
@@ -39,7 +39,7 @@ describe("VocalOnsetSnapToggle", () => {
     it("shows a detecting hint while detection is processing", async () => {
       useTimelineStore.setState({ vocalOnsetDetectionStatus: "processing" });
       const screen = await render(<VocalOnsetSnapToggle />);
-      await expect.element(screen.getByText("Detecting onsets...")).toBeInTheDocument();
+      await expect.element(screen.getByText("Detecting vocal onsets")).toBeInTheDocument();
     });
 
     it("shows the snap point count when points exist", async () => {
@@ -87,7 +87,7 @@ describe("VocalOnsetSnapToggle", () => {
         vocalOnsetSnapPoints: [0.2, 0.4],
       });
       const screen = await render(<VocalOnsetSnapToggle />);
-      await expect.element(screen.getByText("Detecting onsets...")).toBeInTheDocument();
+      await expect.element(screen.getByText("Detecting vocal onsets")).toBeInTheDocument();
     });
 
     it("surfaces an error over stale points from a prior successful run", async () => {

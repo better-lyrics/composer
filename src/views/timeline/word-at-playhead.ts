@@ -3,13 +3,15 @@ import type { WordSelection } from "@/domain/selection/model";
 import { sameWordSelection } from "@/domain/selection/identity";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
+import { type GroupFocus, isInFocus } from "@/views/timeline/group-focus";
 
 // -- Functions -----------------------------------------------------------------
 
-function findWordsAtTime(lines: LyricLine[], time: number): WordSelection[] {
+function findWordsAtTime(lines: LyricLine[], time: number, focus: GroupFocus | null = null): WordSelection[] {
   const matches: WordSelection[] = [];
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
+    if (!isInFocus(line, focus)) continue;
     if (line.words) {
       for (let wordIndex = 0; wordIndex < line.words.length; wordIndex++) {
         const word = line.words[wordIndex];
@@ -60,11 +62,17 @@ function nearestInTrack(
   return nearestIndex === -1 ? null : { wordIndex: nearestIndex, distance: nearestDistance };
 }
 
-function findWordAcrossGap(lines: LyricLine[], time: number, edge: BoundaryEdge): WordSelection | null {
+function findWordAcrossGap(
+  lines: LyricLine[],
+  time: number,
+  edge: BoundaryEdge,
+  focus: GroupFocus | null,
+): WordSelection | null {
   let nearest: WordSelection | null = null;
   let nearestDistance = Number.POSITIVE_INFINITY;
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
+    if (!isInFocus(line, focus)) continue;
     const main = nearestInTrack(line.words, time, edge);
     if (main && main.distance < nearestDistance) {
       nearestDistance = main.distance;
@@ -87,9 +95,15 @@ function containsForEdge(word: WordTiming, time: number, edge: BoundaryEdge): bo
   return startedBefore && time < word.end;
 }
 
-function findContainingWord(lines: LyricLine[], time: number, edge: BoundaryEdge): WordSelection | null {
+function findContainingWord(
+  lines: LyricLine[],
+  time: number,
+  edge: BoundaryEdge,
+  focus: GroupFocus | null,
+): WordSelection | null {
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
+    if (!isInFocus(line, focus)) continue;
     const mainIndex = line.words?.findIndex((word) => containsForEdge(word, time, edge)) ?? -1;
     if (mainIndex !== -1) return { lineId: line.id, lineIndex, wordIndex: mainIndex, type: "word" };
     const bgIndex = line.backgroundWords?.findIndex((word) => containsForEdge(word, time, edge)) ?? -1;
@@ -100,8 +114,13 @@ function findContainingWord(lines: LyricLine[], time: number, edge: BoundaryEdge
 
 // Containment resolves first, so anything the gap search still sees lies wholly on one
 // side of the playhead and can be ranked by plain distance.
-function findBoundaryTarget(lines: LyricLine[], time: number, edge: BoundaryEdge): WordSelection | null {
-  return findContainingWord(lines, time, edge) ?? findWordAcrossGap(lines, time, edge);
+function findBoundaryTarget(
+  lines: LyricLine[],
+  time: number,
+  edge: BoundaryEdge,
+  focus: GroupFocus | null = null,
+): WordSelection | null {
+  return findContainingWord(lines, time, edge, focus) ?? findWordAcrossGap(lines, time, edge, focus);
 }
 
 // -- Exports -------------------------------------------------------------------

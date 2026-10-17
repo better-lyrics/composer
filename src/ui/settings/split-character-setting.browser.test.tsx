@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 import { SplitCharacterSetting } from "@/ui/settings/split-character-setting";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 describe("SplitCharacterSetting", () => {
   it("shows the current split character", async () => {

@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
 import { applySavedProject } from "@/lib/apply-saved-project";
-import type { SavedProject } from "@/lib/persistence";
+import { buildSaveInput } from "@/lib/project-snapshot";
+import type { SavedProject } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createProjectSaveInput } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
+import { beforeEach, describe, expect, it } from "vitest";
 
 const FILE_AGENTS: Agent[] = [
   { id: "v1", type: "person", name: "File Lead" },
@@ -80,6 +81,33 @@ describe("applySavedProject", () => {
 
       expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["file line"]);
       expect(useProjectStore.getState().groups.map((group) => group.id)).toEqual(["gb"]);
+    });
+  });
+
+  describe("export timing", () => {
+    it("restores a line export timing from storage and from a file", () => {
+      applySavedProject(projectFile({ exportTiming: "line" }), "storage");
+      expect(useProjectStore.getState().exportTiming).toBe("line");
+
+      resetAllStores();
+      applySavedProject(projectFile({ exportTiming: "line" }), "file");
+      expect(useProjectStore.getState().exportTiming).toBe("line");
+    });
+
+    it("defaults to word when the saved project has no export timing", () => {
+      useProjectStore.getState().setExportTiming("line");
+
+      applySavedProject(projectFile({ exportTiming: undefined }), "storage");
+
+      expect(useProjectStore.getState().exportTiming).toBe("word");
+    });
+
+    it("saves the export timing with the project", () => {
+      applySavedProject(projectFile(), "storage");
+      useProjectStore.getState().setExportTiming("line");
+
+      expect(useProjectStore.getState().isDirty).toBe(true);
+      expect(buildSaveInput()?.exportTiming).toBe("line");
     });
   });
 });

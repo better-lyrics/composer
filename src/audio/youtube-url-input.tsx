@@ -1,20 +1,26 @@
-import { IconBrandYoutube, IconLoader2 } from "@tabler/icons-react";
-import { useCallback, useState } from "react";
-import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
+import { isYouTubeLoadError, isYouTubeLoadFailure, useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
-import { extractVideoId } from "@/utils/youtube-url";
+import { INVALID_YOUTUBE_LINK_MESSAGE, extractVideoId } from "@/utils/youtube-url";
+import { IconBrandYoutube, IconLoader2 } from "@tabler/icons-react";
+import { useCallback, useState } from "react";
+
+// -- Constants ----------------------------------------------------------------
+
+const LOG_PREFIX = "[YouTubeUrlInput]";
 
 // -- Component ----------------------------------------------------------------
 
 interface YouTubeUrlInputProps {
   placeholder?: string;
   className?: string;
+  onLoadVideo?: (videoId: string) => Promise<void>;
 }
 
 const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
   placeholder = "Paste YouTube URL or video ID",
   className,
+  onLoadVideo,
 }) => {
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,17 +31,21 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
   const handleSubmit = useCallback(async () => {
     const videoId = extractVideoId(value);
     if (!videoId) {
-      setError("That doesn't look like a valid YouTube URL or ID");
+      setError(INVALID_YOUTUBE_LINK_MESSAGE);
       return;
     }
     setError(null);
     try {
-      await loadYouTubeSource(videoId);
+      await (onLoadVideo ?? loadYouTubeSource)(videoId);
       setValue("");
-    } catch {
-      // Error is surfaced via the store's youtubeLoadError; keep the input populated for retry.
+    } catch (error) {
+      if (isYouTubeLoadError(error) && !isYouTubeLoadFailure(error)) {
+        console.info(LOG_PREFIX, "ignored a superseded video load", error);
+        return;
+      }
+      if (!isYouTubeLoadError(error)) console.error(LOG_PREFIX, "could not load the video", error);
     }
-  }, [value, loadYouTubeSource]);
+  }, [value, loadYouTubeSource, onLoadVideo]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {

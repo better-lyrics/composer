@@ -22,6 +22,9 @@ interface PopoverProps {
   placement?: Placement;
   offsetPx?: number;
   hasPopup?: "dialog" | "listbox" | "menu";
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  "aria-label"?: string;
 }
 
 // -- Component ----------------------------------------------------------------
@@ -32,8 +35,16 @@ const Popover: React.FC<PopoverProps> = ({
   placement = "bottom",
   offsetPx = 8,
   hasPopup = "dialog",
+  open,
+  onOpenChange,
+  "aria-label": ariaLabel,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isOpen = open ?? uncontrolledOpen;
+  const setIsOpen = (next: boolean) => {
+    if (open === undefined) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
@@ -44,7 +55,8 @@ const Popover: React.FC<PopoverProps> = ({
   });
 
   const click = useClick(context);
-  const dismiss = useDismiss(context);
+  // Dismissing on click, after mousedown moved focus to the body, lets focus return to the trigger.
+  const dismiss = useDismiss(context, { outsidePressEvent: "click" });
   const role = useRole(context);
 
   const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
@@ -64,6 +76,7 @@ const Popover: React.FC<PopoverProps> = ({
               ref={refs.setFloating}
               style={floatingStyles}
               {...getFloatingProps()}
+              aria-label={ariaLabel}
               className="layer-floating border select-none shadow-2xl rounded-xl bg-composer-bg border-composer-border"
             >
               {typeof children === "function" ? children(() => setIsOpen(false)) : children}

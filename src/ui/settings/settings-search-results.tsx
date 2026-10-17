@@ -1,5 +1,5 @@
-import type { ShortcutDefinition } from "@/stores/shortcut-registry";
 import { SETTINGS_SECTIONS, type SettingId, type SettingsSectionId, settingEntry } from "@/stores/settings-catalog";
+import type { ShortcutDefinition } from "@/stores/shortcut-registry";
 import { useUIStore } from "@/stores/ui";
 import { Button } from "@/ui/button";
 import { NoMatches } from "@/ui/no-matches";

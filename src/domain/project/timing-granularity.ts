@@ -14,3 +14,4 @@ function timingGranularityOf(lines: readonly LyricLine[]): TimingGranularity {
 // -- Exports ------------------------------------------------------------------
 
 export { timingGranularityOf };
+export type { TimingGranularity };

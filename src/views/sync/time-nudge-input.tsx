@@ -1,11 +1,6 @@
+import { focusAndSelectOnMount } from "@/utils/focus-and-select-on-mount";
 import { getNudgeAmount, formatTimeMs, parseTimeMs } from "@/utils/sync-helpers";
 import { useState } from "react";
-
-const focusAndSelectOnMount = (el: HTMLInputElement | null) => {
-  if (!el) return;
-  el.focus();
-  el.select();
-};
 
 // -- Interfaces ---------------------------------------------------------------
 

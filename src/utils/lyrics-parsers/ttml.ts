@@ -1,4 +1,5 @@
 import type { Agent, AgentType } from "@/domain/agent/model";
+import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
@@ -11,8 +12,8 @@ import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { parseTtmlAlternates } from "@/utils/lyrics-parsers/ttml-alternates";
 import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
-import { parseXmlDocument } from "@/utils/xml-document";
 import { getSplitCharacter } from "@/utils/split-character";
+import { parseXmlDocument } from "@/utils/xml-document";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -38,6 +39,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const metadata: Partial<ProjectMetadata> = {};
   const lines: LyricLine[] = [];
   const lineIndexByKey = new Map<string, number>();
+  const lineKeys: (string | undefined)[] = [];
   const paragraphByKey = new Map<string, Element>();
 
   const unescapedContent = content.replace(/\\"/g, '"').replace(/\\n/g, "\n");
@@ -85,7 +87,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     const id = el.getAttribute("xml:id");
     const type = (el.getAttribute("type") as AgentType) || "person";
     const nameEl = el.getElementsByTagName("ttm:name")[0];
-    const name = nameEl?.textContent || `Voice ${agents.length + 1}`;
+    const name = nameEl?.textContent || placeholderAgentName(agents.length);
     if (id) {
       agents.push({ id, type, name });
     }
@@ -105,7 +107,19 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     const color = el.getAttribute("color") ?? "#9ca3af";
     const versionStr = el.getAttribute("templateVersion");
     const templateVersion = versionStr ? Number.parseInt(versionStr, 10) || 1 : 1;
-    groups.push({ id, label, color, templateVersion });
+    const ownTimingInstances = (el.getAttribute("ownTimingInstances") ?? "")
+      .split(",")
+      .filter((part) => part.trim() !== "")
+      .map(Number)
+      .filter((instanceIdx) => Number.isInteger(instanceIdx) && instanceIdx >= 0);
+    groups.push({
+      id,
+      label,
+      color,
+      templateVersion,
+      ...(el.getAttribute("sharesTiming") === "true" ? { sharesTiming: true as const } : {}),
+      ...(ownTimingInstances.length ? { ownTimingInstances } : {}),
+    });
   }
 
   // Parse lyrics - look for <p> elements with timing
@@ -221,7 +235,8 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
         );
       }
     }
-    if (lineKey && lines.length > lineCountBefore) {
+    if (lines.length > lineCountBefore) lineKeys.push(lineKey ?? undefined);
+    if (lineKey && lines.length > lineCountBefore && !lineIndexByKey.has(lineKey)) {
       lineIndexByKey.set(lineKey, lines.length - 1);
       paragraphByKey.set(lineKey, p);
     }
@@ -235,6 +250,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     hasTimingData: lines.some((l) => l.begin !== undefined || l.words?.length),
     agents: agents.length > 0 ? agents : undefined,
     groups: groups.length > 0 ? groups : undefined,
+    lineKeys,
     issues: [],
   };
 }

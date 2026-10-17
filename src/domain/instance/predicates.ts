@@ -14,7 +14,11 @@ function belongsToInstance(line: LyricLine, groupId: string, instanceIdx: number
   return line.groupId === groupId && line.instanceIdx === instanceIdx;
 }
 
+function isAttachedToInstance(line: LyricLine, groupId: string, instanceIdx: number): boolean {
+  return belongsToInstance(line, groupId, instanceIdx) && !line.detached;
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export type { LinkedLine };
-export { belongsToInstance, isLinked };
+export { belongsToInstance, isAttachedToInstance, isLinked };

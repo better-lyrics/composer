@@ -153,4 +153,15 @@ describe("capturing a new key combination", () => {
     const badges = Array.from(document.querySelectorAll("dialog span.inline-flex > span")).map((el) => el.textContent);
     expect(badges.at(-1)).toBe("T");
   });
+
+  it("regression: re-recording the default save binding shows no browser warning", async () => {
+    const saveNow = getShortcutById("global.saveNow") as ShortcutDefinition;
+    const screen = await render(<ShortcutRebindRow definition={saveNow} />);
+    await openCapture(screen);
+    const modifier = isMac ? { metaKey: true } : { ctrlKey: true };
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "s", code: "KeyS", ...modifier, bubbles: true }));
+    await expect.element(screen.getByText("Press a new key combination")).not.toBeInTheDocument();
+    expect(screen.getByText("may be reserved by the browser.").elements()).toHaveLength(0);
+    expect(getEffectiveBinding(saveNow.id)).toEqual(saveNow.defaultBinding);
+  });
 });

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { Slider } from "@/ui/slider";
 import { render } from "@/test/render";
+import { Slider } from "@/ui/slider";
+import { describe, expect, it } from "vitest";
 
 interface ControlledHarnessProps {
   initial: number;
@@ -183,5 +183,17 @@ describe("Slider", () => {
       }),
     );
     expect([40, 50, 60]).toContain(value);
+  });
+
+  // -- Track content ----------------------------------------------------------
+
+  it("draws children inside the track, before the fill", async () => {
+    const screen = await render(
+      <Slider value={50} min={0} max={100} aria-label="Progress" onChange={() => {}}>
+        <span data-testid="band" />
+      </Slider>,
+    );
+    const slider = screen.getByRole("slider", { name: "Progress" }).element();
+    expect(slider.firstElementChild).toBe(screen.getByTestId("band").element());
   });
 });

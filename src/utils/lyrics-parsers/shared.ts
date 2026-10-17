@@ -19,6 +19,7 @@ interface ParseResult {
   issues: ParseIssue[];
   agents?: Agent[];
   groups?: LinkGroup[];
+  lineKeys?: (string | undefined)[];
 }
 
 type ParserFn = (content: string, fallbackDuration?: number) => ParseResult;

@@ -1,4 +1,5 @@
 import { Button } from "@/ui/button";
+import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import { Scroll } from "@/ui/scroll";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
 import { TtmlDiffViewer } from "@/views/export/ttml-diff-viewer";
@@ -30,15 +31,17 @@ const TtmlEditor: React.FC<TtmlEditorProps> = ({ value, generatedTtml, onChange 
         </div>
       )}
       {viewingDiff ? (
-        <Scroll className="flex-1 rounded-lg bg-composer-bg-elevated p-2">
+        <Scroll className="flex-1 lyrics-code-surface p-2">
           <TtmlDiffViewer oldTtml={generatedTtml} newTtml={value} />
         </Scroll>
       ) : (
-        <textarea
+        <LyricsCodeEditor
           value={value}
+          format="ttml"
           aria-label="Edit TTML content"
           onChange={(event) => onChange(event.target.value)}
-          className="w-full flex-1 p-4 rounded-lg font-mono text-xs bg-composer-bg-elevated text-composer-text resize-none focus:outline-none focus:ring-1 focus:ring-composer-accent"
+          frameClassName="flex-1 min-h-0"
+          className="p-4 font-mono text-xs focus:outline-none"
           spellCheck={false}
         />
       )}

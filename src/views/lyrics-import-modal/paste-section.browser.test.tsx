@@ -1,8 +1,10 @@
+import { editorHighlightTexts } from "@/test/editor-highlights";
+import { render } from "@/test/render";
+import { PasteSection } from "@/views/lyrics-import-modal/paste-section";
+import { TOKEN_TYPES } from "@braccato/highlight";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
-import { PasteSection } from "@/views/lyrics-import-modal/paste-section";
-import { render } from "@/test/render";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -36,6 +38,14 @@ describe("PasteSection", () => {
     const textarea = screen.getByLabelText("Lyrics text");
     await expect.element(textarea).toBeInTheDocument();
     expect((textarea.element() as HTMLTextAreaElement).placeholder).toMatch(/Paste lyrics here/i);
+  });
+
+  it("says a whole lyrics or project file can be pasted, naming every supported format", async () => {
+    const screen = await render(<Controlled />);
+    const placeholder = (screen.getByLabelText("Lyrics text").element() as HTMLTextAreaElement).placeholder;
+    expect(placeholder).toContain(
+      "A whole .txt, .lrc, .srt, .ttml, .qrc file works too, and so does a project file (.json).",
+    );
   });
 
   it("autofocuses the textarea on mount", async () => {
@@ -147,5 +157,49 @@ describe("PasteSection", () => {
   it("exposes the textarea via an accessible name", async () => {
     const screen = await render(<Controlled />);
     await expect.element(screen.getByRole("textbox", { name: "Lyrics text" })).toBeInTheDocument();
+  });
+});
+
+describe("PasteSection · highlighting", () => {
+  function layer(): HTMLElement | null {
+    return document.querySelector<HTMLElement>(".bh-edit > .bh-layer");
+  }
+
+  function paintedLayer(): HTMLElement {
+    const rendered = layer();
+    if (!rendered) throw new Error("highlight layer not rendered");
+    return rendered;
+  }
+
+  it("highlights a pasted LRC file", async () => {
+    await render(<Controlled />);
+    const textarea = document.querySelector("textarea") as HTMLTextAreaElement;
+    textarea.focus();
+    await userEvent.fill(textarea, "[00:01.00]First\n[00:02.50]Second");
+    expect(editorHighlightTexts(paintedLayer(), "timestamp")).toEqual(["00:01.00", "00:02.50"]);
+  });
+
+  it("highlights a prefilled TTML file", async () => {
+    const ttml = `<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:01.000" end="00:02.000">Hi</p></div></body></tt>`;
+    await render(<Controlled initial={ttml} />);
+    expect(layer()?.textContent).toBe(ttml);
+    expect(editorHighlightTexts(paintedLayer(), "tag")[0]).toBe("tt");
+  });
+
+  it("shows plain lyrics with split characters as plain text", async () => {
+    await render(<Controlled initial={"beau|ti|ful day\nsecond line"} />);
+    expect(layer()?.textContent).toBe("beau|ti|ful day\nsecond line");
+    for (const type of TOKEN_TYPES) expect(editorHighlightTexts(paintedLayer(), type), type).toEqual([]);
+  });
+
+  it("uses a monospace font so the highlight stays under the caret", async () => {
+    await render(<Controlled />);
+    expect(document.querySelector("textarea")?.classList.contains("font-mono")).toBe(true);
+  });
+
+  it("keeps the placeholder and an empty layer when empty", async () => {
+    await render(<Controlled />);
+    expect((document.querySelector("textarea") as HTMLTextAreaElement).placeholder).toMatch(/Paste lyrics here/);
+    expect(layer()?.textContent).toBe("");
   });
 });

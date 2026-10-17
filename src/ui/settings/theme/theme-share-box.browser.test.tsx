@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { encodeThemeCode } from "@/domain/theme/code";
 import type { Theme } from "@/domain/theme/model";
 import { PRESET_BY_ID } from "@/domain/theme/presets";
-import { ThemeShareBox } from "@/ui/settings/theme/theme-share-box";
 import { type ClipboardStub, stubClipboard } from "@/test/clipboard";
 import { render } from "@/test/render";
+import { ThemeShareBox } from "@/ui/settings/theme/theme-share-box";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // -- Fixtures ------------------------------------------------------------------
 

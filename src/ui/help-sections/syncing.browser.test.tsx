@@ -27,4 +27,12 @@ describe("SyncSection", () => {
       .poll(() => [...screen.container.querySelectorAll("[data-inline-key-badge]")].map((badge) => badge.textContent))
       .toContainEqual(expect.stringMatching(/B$/));
   });
+
+  it("documents the count-in, its setting and how to skip it", async () => {
+    const screen = await render(<SyncSection />);
+    await expect.element(screen.getByRole("heading", { name: "Counting in" })).toBeInTheDocument();
+    expect(screen.container.textContent).toContain("Count-in");
+    expect(screen.container.textContent).toContain("Set it to 0 to turn it off");
+    expect(screen.container.textContent).toContain("Press Escape to skip");
+  });
 });

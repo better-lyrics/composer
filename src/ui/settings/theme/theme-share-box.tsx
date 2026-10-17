@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { encodeThemeCode } from "@/domain/theme/code";
 import type { Theme } from "@/domain/theme/model";
 import { Button } from "@/ui/button";
 import { IconCheck, IconCopy } from "@tabler/icons-react";
+import { useState } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 

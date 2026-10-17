@@ -108,9 +108,11 @@ describe("resolveOverlapsForward", () => {
 
 // -- findInsertionSlot ---------------------------------------------------------
 
+const WHOLE_SONG = { min: 0, max: 10 };
+
 describe("findInsertionSlot", () => {
   it("centers a word in an empty track", () => {
-    const slot = findInsertionSlot([], 5, 1, 10);
+    const slot = findInsertionSlot([], 5, 1, WHOLE_SONG);
     expect(slot).toEqual({ begin: 4.5, end: 5.5 });
   });
 
@@ -119,7 +121,7 @@ describe("findInsertionSlot", () => {
       { text: "a", begin: 0, end: 1 },
       { text: "b", begin: 5, end: 6 },
     ];
-    const slot = findInsertionSlot(words, 3, 1, 10);
+    const slot = findInsertionSlot(words, 3, 1, WHOLE_SONG);
     expect(slot).toEqual({ begin: 2.5, end: 3.5 });
   });
 
@@ -128,7 +130,7 @@ describe("findInsertionSlot", () => {
       { text: "a", begin: 0, end: 2 },
       { text: "b", begin: 5, end: 6 },
     ];
-    const slot = findInsertionSlot(words, 2.1, 1, 10);
+    const slot = findInsertionSlot(words, 2.1, 1, WHOLE_SONG);
     expect(slot?.begin).toBe(2);
     expect(slot?.end).toBe(3);
   });
@@ -138,7 +140,7 @@ describe("findInsertionSlot", () => {
       { text: "a", begin: 0, end: 1 },
       { text: "b", begin: 5, end: 6 },
     ];
-    const slot = findInsertionSlot(words, 4.9, 1, 10);
+    const slot = findInsertionSlot(words, 4.9, 1, WHOLE_SONG);
     expect(slot?.end).toBe(5);
     expect(slot?.begin).toBe(4);
   });
@@ -148,7 +150,7 @@ describe("findInsertionSlot", () => {
       { text: "a", begin: 0, end: 2 },
       { text: "b", begin: 2.6, end: 5 },
     ];
-    const slot = findInsertionSlot(words, 2.3, 1, 10);
+    const slot = findInsertionSlot(words, 2.3, 1, WHOLE_SONG);
     expect(slot).toEqual({ begin: 2, end: 2.6 });
   });
 
@@ -157,7 +159,7 @@ describe("findInsertionSlot", () => {
       { text: "a", begin: 0, end: 2 },
       { text: "b", begin: 2.02, end: 5 },
     ];
-    expect(findInsertionSlot(words, 2.01, 1, 10, 0.05)).toBeNull();
+    expect(findInsertionSlot(words, 2.01, 1, WHOLE_SONG, 0.05)).toBeNull();
   });
 
   it("snaps to the next gap when click lands inside an existing word", () => {
@@ -165,20 +167,76 @@ describe("findInsertionSlot", () => {
       { text: "a", begin: 0, end: 2 },
       { text: "b", begin: 5, end: 6 },
     ];
-    const slot = findInsertionSlot(words, 1, 1, 10);
+    const slot = findInsertionSlot(words, 1, 1, WHOLE_SONG);
     expect(slot?.begin).toBe(2);
     expect(slot?.end).toBeLessThanOrEqual(5);
   });
 
   it("clamps to audioDuration when click is past the last word", () => {
     const words: WordTiming[] = [{ text: "a", begin: 0, end: 8 }];
-    const slot = findInsertionSlot(words, 9.9, 1, 10);
+    const slot = findInsertionSlot(words, 9.9, 1, WHOLE_SONG);
     expect(slot?.end).toBe(10);
     expect(slot?.begin).toBe(9);
   });
 
   it("returns null when there is no room past the last word", () => {
     const words: WordTiming[] = [{ text: "a", begin: 0, end: 9.99 }];
-    expect(findInsertionSlot(words, 9.995, 1, 10, 0.05)).toBeNull();
+    expect(findInsertionSlot(words, 9.995, 1, WHOLE_SONG, 0.05)).toBeNull();
+  });
+
+  describe("shared time range", () => {
+    const SHARED = { min: 3, max: 7 };
+
+    it("keeps a word placed near the range end inside it", () => {
+      expect(findInsertionSlot([], 6.9, 1, SHARED)).toEqual({ begin: 6, end: 7 });
+    });
+
+    it("keeps a word placed near the range start inside it", () => {
+      expect(findInsertionSlot([], 3.1, 1, SHARED)).toEqual({ begin: 3, end: 4 });
+    });
+
+    it("moves a word placed after the range back to its end", () => {
+      expect(findInsertionSlot([], 9, 1, SHARED)).toEqual({ begin: 6, end: 7 });
+    });
+
+    it("keeps a word placed past the last word inside the range", () => {
+      const words: WordTiming[] = [{ text: "a", begin: 3, end: 5 }];
+      expect(findInsertionSlot(words, 6.8, 1, SHARED)).toEqual({ begin: 6, end: 7 });
+    });
+
+    describe("edge cases", () => {
+      it("returns null when the gap lies wholly after the range", () => {
+        const words: WordTiming[] = [{ text: "a", begin: 3, end: 7 }];
+        expect(findInsertionSlot(words, 8, 1, SHARED)).toBeNull();
+      });
+
+      it("returns null when the gap lies wholly before the range", () => {
+        const words: WordTiming[] = [{ text: "a", begin: 3, end: 5 }];
+        expect(findInsertionSlot(words, 1, 1, SHARED)).toBeNull();
+      });
+
+      it("shrinks the word to the part of the gap inside the range", () => {
+        expect(findInsertionSlot([], 6.9, 1, { min: 6.5, max: 7 })).toEqual({ begin: 6.5, end: 7 });
+      });
+
+      it("returns null when the part of the gap inside the range is below minDuration", () => {
+        expect(findInsertionSlot([], 5, 1, { min: 5, max: 5.01 }, 0.05)).toBeNull();
+      });
+    });
+
+    describe("invariants", () => {
+      it("never places a word outside the range", () => {
+        const words: WordTiming[] = [
+          { text: "a", begin: 3.5, end: 4 },
+          { text: "b", begin: 5, end: 6 },
+        ];
+        for (const time of [0, 2.9, 3.2, 4.5, 6.5, 6.99, 12]) {
+          const slot = findInsertionSlot(words, time, 1, SHARED);
+          if (!slot) continue;
+          expect(slot.begin).toBeGreaterThanOrEqual(SHARED.min);
+          expect(slot.end).toBeLessThanOrEqual(SHARED.max);
+        }
+      });
+    });
   });
 });

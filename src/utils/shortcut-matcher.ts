@@ -69,6 +69,7 @@ function bindingFromKeyboardEvent(event: KeyboardEvent): ShortcutBinding | null 
 
 function matchesBinding(event: KeyboardEvent, binding: ShortcutBinding): boolean {
   if (binding.key === "") return false;
+  if (event.getModifierState("AltGraph")) return false;
   const eventKey = getEventKey(event);
   const bindingKey = binding.key.length === 1 ? binding.key.toLowerCase() : binding.key;
 
@@ -129,7 +130,6 @@ const RESERVED_BROWSER_SHORTCUTS: ShortcutBinding[] = [
 
   // Page actions
   { key: "p", mod: true },
-  { key: "s", mod: true },
   { key: "d", mod: true },
 
   // Developer tools

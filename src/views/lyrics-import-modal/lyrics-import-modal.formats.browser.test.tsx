@@ -1,15 +1,16 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "sonner";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
+import { hasAnyTiming } from "@/domain/line/predicates";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
+import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { restoreProvidersForTests, snapshotProvidersForTests } from "@/utils/lyrics-search/registry";
 import type { LyricsSearchProvider } from "@/utils/lyrics-search/types";
-import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "sonner";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 const SRT = "1\n00:00:02,000 --> 00:00:04,500\nFirst subtitle line\n\n2\n00:00:05,000 --> 00:00:07,000\nSecond line";
 const TTML =
@@ -20,6 +21,9 @@ const WEIRD_LRC = "[00:99.99]Invalid time\n[aa:bb.cc]garbage\nplain line no time
 const LRC_WITH_IGNORED_TAG = "[00:01.00][00:75.00]Chorus\n[00:99.00]Broken\n[00:05.00]Next\n";
 const LRCLIB_STYLE_PASTE =
   "\n\n  [ar: Queen]\n[ti: Bohemian Rhapsody]\n[length: 05:55]\n\n[00:00.63] Is this the real life?\n[00:04.21] Is this just fantasy?\n";
+
+const RTF_SAVED_LRC =
+  "{\\rtf1\\ansi\\ansicpg1252\\cocoartf2867\n\\f0\\fs24 \\cf0 [00:09.49]Say, John Henry\\\n[00:13.04]Showed you progress\\\n[00:16.29]My, my\\\n[00:24.77]Twelve long hours\\\n}";
 
 let providerSnapshot: readonly LyricsSearchProvider[] = [];
 
@@ -113,6 +117,15 @@ describe("pasted LRC", () => {
     const screen = await render(host());
     await pasteAndImport(screen, "First line\nSecond line");
     expect(useProjectStore.getState().lines.map((line) => line.agentId)).toEqual(["v2", "v2"]);
+  });
+
+  it("regression: never imports a rich text paste as timed lines", async () => {
+    useSettingsStore.setState({ autoExtractBackgroundVocals: false });
+    const screen = await render(host());
+    await pasteAndImport(screen, RTF_SAVED_LRC);
+    const { lines } = useProjectStore.getState();
+    expect(lines.length).toBeGreaterThan(0);
+    expect(lines.some(hasAnyTiming)).toBe(false);
   });
 });
 

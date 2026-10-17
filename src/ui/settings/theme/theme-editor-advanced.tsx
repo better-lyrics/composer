@@ -1,5 +1,5 @@
 import { deriveTheme } from "@/domain/theme/derive";
-import { type Theme, type TokenMeta, TOKENS, type TokenKey } from "@/domain/theme/model";
+import { TOKENS, type Theme, type TokenKey, type TokenMeta } from "@/domain/theme/model";
 import { ThemeTokenInput } from "@/ui/settings/theme/theme-token-input";
 
 // -- Interfaces ----------------------------------------------------------------

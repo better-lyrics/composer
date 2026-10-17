@@ -2,6 +2,7 @@ import { isValidLanguageTag, normalizeLanguageTag } from "@/domain/project/langu
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { INPUT_STYLES } from "@/ui/input-styles";
+import { Scroll } from "@/ui/scroll";
 import { accordionTransition, accordionVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
@@ -41,12 +42,12 @@ const MetadataPanel: React.FC = () => {
   const reducedMotion = useReducedMotion();
 
   return (
-    <div className="border-b border-composer-border">
+    <div className="flex flex-col min-h-0 max-h-[60%] border-b border-composer-border">
       <Button
         hasIcon
         variant="ghost"
         size="md"
-        className="w-full justify-start rounded-none h-8 px-6 text-composer-text-secondary"
+        className="w-full shrink-0 justify-start rounded-none h-8 px-6 text-composer-text-secondary"
         aria-expanded={open}
         onClick={() => setOpen((prev) => !prev)}
       >
@@ -63,91 +64,93 @@ const MetadataPanel: React.FC = () => {
             animate="visible"
             exit="hidden"
             transition={reducedMotion ? { duration: 0 } : accordionTransition}
-            className="overflow-hidden"
+            className="flex flex-col min-h-0 overflow-hidden"
           >
-            <div className="flex flex-col gap-4 px-6 pt-4 pb-4">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-composer-text-secondary select-none">Title</span>
-                <input
-                  type="text"
-                  aria-label="Title"
-                  value={metadata.title}
-                  placeholder="Song title"
-                  onChange={(e) => setMetadata({ title: e.target.value })}
-                  className={cn("flex-1", INPUT_STYLES)}
-                />
-              </label>
+            <Scroll className="flex-1 min-h-0">
+              <div className="flex flex-col gap-4 px-6 pt-4 pb-4">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-composer-text-secondary select-none">Title</span>
+                  <input
+                    type="text"
+                    aria-label="Title"
+                    value={metadata.title}
+                    placeholder="Song title"
+                    onChange={(e) => setMetadata({ title: e.target.value })}
+                    className={cn("flex-1", INPUT_STYLES)}
+                  />
+                </label>
 
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-composer-text-secondary select-none">Album</span>
-                <input
-                  type="text"
-                  aria-label="Album"
-                  value={metadata.album}
-                  placeholder="Album name"
-                  onChange={(e) => setMetadata({ album: e.target.value })}
-                  className={cn("flex-1", INPUT_STYLES)}
-                />
-              </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-composer-text-secondary select-none">Album</span>
+                  <input
+                    type="text"
+                    aria-label="Album"
+                    value={metadata.album}
+                    placeholder="Album name"
+                    onChange={(e) => setMetadata({ album: e.target.value })}
+                    className={cn("flex-1", INPUT_STYLES)}
+                  />
+                </label>
 
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-composer-text-secondary select-none">ISRC</span>
-                <input
-                  type="text"
-                  aria-label="ISRC"
-                  aria-invalid={isrcInvalid}
-                  value={isrcValue}
-                  placeholder="e.g. USQX91700001"
-                  onChange={(e) => handleIsrcChange(e.target.value)}
-                  className={cn("flex-1", INPUT_STYLES)}
-                />
-                {isrcInvalid && (
-                  <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
-                    Invalid ISRC ・ expected 12 characters like USQX91700001
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-composer-text-secondary select-none">ISRC</span>
+                  <input
+                    type="text"
+                    aria-label="ISRC"
+                    aria-invalid={isrcInvalid}
+                    value={isrcValue}
+                    placeholder="e.g. USQX91700001"
+                    onChange={(e) => handleIsrcChange(e.target.value)}
+                    className={cn("flex-1", INPUT_STYLES)}
+                  />
+                  {isrcInvalid && (
+                    <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
+                      Invalid ISRC ・ expected 12 characters like USQX91700001
+                    </span>
+                  )}
+                </label>
+
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-composer-text-secondary select-none">Language</span>
+                  <input
+                    type="text"
+                    aria-label="Language"
+                    aria-describedby={languageHintId}
+                    aria-invalid={languageInvalid}
+                    value={languageValue}
+                    placeholder="e.g. en, ja, pt-BR"
+                    onChange={(e) => handleLanguageChange(e.target.value)}
+                    className={cn("flex-1", INPUT_STYLES)}
+                  />
+                  {languageInvalid && (
+                    <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
+                      Invalid language ・ expected a BCP-47 tag like en or pt-BR
+                    </span>
+                  )}
+                  <span id={languageHintId} className="text-xs text-composer-text-muted select-none">
+                    BCP-47 tag ・ leave blank to let players detect it
                   </span>
-                )}
-              </label>
+                </label>
 
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-composer-text-secondary select-none">Language</span>
-                <input
-                  type="text"
-                  aria-label="Language"
-                  aria-describedby={languageHintId}
-                  aria-invalid={languageInvalid}
-                  value={languageValue}
-                  placeholder="e.g. en, ja, pt-BR"
-                  onChange={(e) => handleLanguageChange(e.target.value)}
-                  className={cn("flex-1", INPUT_STYLES)}
+                <MetadataFieldList
+                  label="Artists"
+                  itemNoun="Artist"
+                  placeholder="Artist name"
+                  values={metadata.artists}
+                  onChange={(next) => setMetadata({ artists: next })}
                 />
-                {languageInvalid && (
-                  <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
-                    Invalid language ・ expected a BCP-47 tag like en or pt-BR
-                  </span>
-                )}
-                <span id={languageHintId} className="text-xs text-composer-text-muted select-none">
-                  BCP-47 tag ・ leave blank to let players detect it
-                </span>
-              </label>
 
-              <MetadataFieldList
-                label="Artists"
-                itemNoun="Artist"
-                placeholder="Artist name"
-                values={metadata.artists}
-                onChange={(next) => setMetadata({ artists: next })}
-              />
+                <MetadataFieldList
+                  label="Songwriters"
+                  itemNoun="Songwriter"
+                  placeholder="Songwriter name"
+                  values={metadata.songwriters ?? []}
+                  onChange={(next) => setMetadata({ songwriters: next })}
+                />
 
-              <MetadataFieldList
-                label="Songwriters"
-                itemNoun="Songwriter"
-                placeholder="Songwriter name"
-                values={metadata.songwriters ?? []}
-                onChange={(next) => setMetadata({ songwriters: next })}
-              />
-
-              <ExtraFieldList values={metadata.extra ?? {}} onChange={(next) => setMetadata({ extra: next })} />
-            </div>
+                <ExtraFieldList values={metadata.extra ?? {}} onChange={(next) => setMetadata({ extra: next })} />
+              </div>
+            </Scroll>
           </m.div>
         )}
       </AnimatePresence>

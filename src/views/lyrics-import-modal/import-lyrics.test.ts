@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
@@ -7,6 +6,7 @@ import { useProjectStore } from "@/stores/project";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import { generateTTML } from "@/utils/ttml";
 import { type ImportContext, importLyrics } from "@/views/lyrics-import-modal/import-lyrics";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -419,6 +419,32 @@ describe("importLyrics onResult", () => {
       buildContext({ sourceLabel: "File", onResult: (_parsed, src) => labels.push(src.label) }),
     );
     expect(labels).toEqual(["LRCLib"]);
+  });
+
+  it("regression: reports no audio-bound song details from an LRC that carries a length", async () => {
+    const reported: ParseResult[] = [];
+    await importLyrics(
+      { filename: "song.lrc", content: `[ti:Bohemian Rhapsody]\n[length: 05:55]\n${LRC_WITHOUT_TAGS}` },
+      buildContext({ onResult: (parsed) => reported.push(parsed) }),
+    );
+    expect(reported).toHaveLength(1);
+    expect(reported[0].metadata).not.toHaveProperty("duration");
+    expect(reported[0].metadata.title).toBe("Bohemian Rhapsody");
+  });
+
+  it("regression: reports no audio-bound song details from a pasted parse result", async () => {
+    const reported: ParseResult[] = [];
+    const parsed: ParseResult = {
+      lines: [lineFactory("a", "Hello")],
+      metadata: { title: "Song", duration: 99, thumbnailDataUrl: "data:other", thumbnailForVideoId: "OTHER" },
+      hasTimingData: false,
+      issues: [],
+    };
+    await importLyrics(
+      { filename: "Pasted text", content: "Hello", parsed },
+      buildContext({ onResult: (result) => reported.push(result) }),
+    );
+    expect(reported[0].metadata).toEqual({ title: "Song" });
   });
 
   it("does not call onResult when import was rejected via confirm", async () => {

@@ -15,6 +15,7 @@ import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
 import { selectionGripEdges } from "@/views/timeline/stretch-grips";
+import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
@@ -145,6 +146,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       const syllablesFollowRollingAtStart = useSettingsStore.getState().syllablesFollowRolling;
       const minWordDuration = useSettingsStore.getState().minWordDuration;
       const boundaryEdge: BoundaryEdge = edge === "left" ? "begin" : "end";
+      const range = storedLineTimeRange(lineId, duration);
 
       setResizing(true);
       lastPointerRef.current = { clientX: startX, clientY: 0 };
@@ -194,7 +196,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
           time: edgeAtStart + (rawDeltaPx + snapShiftPx) / zoom,
           minDuration: minWordDuration,
           rollNeighbour: adjacentWordIndex !== null,
-          duration,
+          range,
         });
 
         const adjacent =
@@ -364,9 +366,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
     const clickX = e.clientX - rect.left;
     const time = clickX / zoom;
 
-    const audioDuration = useAudioStore.getState().duration;
+    const range = storedLineTimeRange(lineId, useAudioStore.getState().duration);
     const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
-    const slot = findInsertionSlot(words, time, defaultWordDuration, audioDuration, minWordDuration);
+    const slot = findInsertionSlot(words, time, defaultWordDuration, range, minWordDuration);
     if (!slot) return;
 
     const newWord: WordTiming = { text: "... ", begin: slot.begin, end: slot.end };

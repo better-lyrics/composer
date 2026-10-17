@@ -1,0 +1,28 @@
+import { useEscapeLayer } from "@/hooks/useEscapeLayer";
+import { cancelCountIn, skipCountIn } from "@/lib/sync-count-in";
+import { selectIsCountingIn, useSyncCountInStore } from "@/stores/sync-count-in";
+import { CountInDots } from "@/views/sync/count-in-dots";
+import { CountInStatus } from "@/views/sync/count-in-status";
+import { useEffect } from "react";
+
+// -- Interfaces ---------------------------------------------------------------
+
+interface SyncCountInView {
+  countingIn: boolean;
+  dots: React.ReactNode;
+  status: React.ReactNode;
+}
+
+// -- Hook ---------------------------------------------------------------------
+
+function useSyncCountIn(): SyncCountInView {
+  const countingIn = useSyncCountInStore(selectIsCountingIn);
+  useEscapeLayer("panel", countingIn, skipCountIn);
+  useEffect(() => cancelCountIn, []);
+  if (!countingIn) return { countingIn, dots: undefined, status: undefined };
+  return { countingIn, dots: <CountInDots />, status: <CountInStatus /> };
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export { useSyncCountIn };

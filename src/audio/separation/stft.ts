@@ -100,19 +100,19 @@ interface StftOptions {
   normalized?: boolean;
 }
 
-function stft(signal: Float32Array, opts: StftOptions = {}): Spectrogram {
-  const { center = true, normalized = false } = opts;
+function stftFrameCount(signalLength: number, center = true): number {
+  const framedLength = center ? signalLength + WIN_LENGTH : signalLength;
+  return 1 + Math.floor((framedLength - WIN_LENGTH) / HOP_LENGTH);
+}
+
+type StftFrameVisitor = (frame: number, real: Float32Array, imag: Float32Array) => void;
+
+function forEachStftFrame(signal: Float32Array, onFrame: StftFrameVisitor, center = true): void {
   const window = hannWindow(WIN_LENGTH);
-
   const framed = center ? reflectPad(signal, WIN_LENGTH / 2, WIN_LENGTH / 2) : signal;
-  const numFrames = 1 + Math.floor((framed.length - WIN_LENGTH) / HOP_LENGTH);
-  const numBins = N_FFT / 2 + 1;
-  const real = new Float32Array(numFrames * numBins);
-  const imag = new Float32Array(numFrames * numBins);
-
+  const numFrames = stftFrameCount(signal.length, center);
   const frameReal = new Float32Array(N_FFT);
   const frameImag = new Float32Array(N_FFT);
-  const scale = normalized ? 1 / Math.sqrt(N_FFT) : 1;
 
   for (let f = 0; f < numFrames; f++) {
     const start = f * HOP_LENGTH;
@@ -122,11 +122,28 @@ function stft(signal: Float32Array, opts: StftOptions = {}): Spectrogram {
     if (N_FFT > WIN_LENGTH) frameReal.fill(0, WIN_LENGTH);
     frameImag.fill(0);
     fftRadix2(frameReal, frameImag);
-    for (let b = 0; b < numBins; b++) {
-      real[f * numBins + b] = frameReal[b] * scale;
-      imag[f * numBins + b] = frameImag[b] * scale;
-    }
+    onFrame(f, frameReal, frameImag);
   }
+}
+
+function stft(signal: Float32Array, opts: StftOptions = {}): Spectrogram {
+  const { center = true, normalized = false } = opts;
+  const numFrames = stftFrameCount(signal.length, center);
+  const numBins = N_FFT / 2 + 1;
+  const real = new Float32Array(numFrames * numBins);
+  const imag = new Float32Array(numFrames * numBins);
+  const scale = normalized ? 1 / Math.sqrt(N_FFT) : 1;
+
+  forEachStftFrame(
+    signal,
+    (f, frameReal, frameImag) => {
+      for (let b = 0; b < numBins; b++) {
+        real[f * numBins + b] = frameReal[b] * scale;
+        imag[f * numBins + b] = frameImag[b] * scale;
+      }
+    },
+    center,
+  );
 
   return { real, imag, numFrames, numBins };
 }
@@ -175,5 +192,5 @@ function istft(spec: Spectrogram, outputLength: number, opts: IstftOptions = {})
   return result;
 }
 
-export { N_FFT, HOP_LENGTH, reflectPad, stft, istft };
+export { N_FFT, HOP_LENGTH, reflectPad, stft, stftFrameCount, forEachStftFrame, istft };
 export type { Spectrogram };

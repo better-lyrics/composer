@@ -1,22 +1,24 @@
 import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-errors";
 import { getLanguageReviewItems } from "@/domain/language/review";
+import { PROJECT_TABS, type ProjectTab } from "@/domain/project/tab";
 import { useProjectStore } from "@/stores/project";
-import type { SimpleTab } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
 
-const TABS: { id: SimpleTab; label: string }[] = [
-  { id: "import", label: "Import" },
-  { id: "edit", label: "Edit" },
-  { id: "languages", label: "Languages" },
-  { id: "sync", label: "Sync" },
-  { id: "timeline", label: "Timeline" },
-  { id: "preview", label: "Preview" },
-  { id: "export", label: "Export" },
-];
+const TAB_LABELS: Record<ProjectTab, string> = {
+  import: "Import",
+  edit: "Edit",
+  languages: "Languages",
+  sync: "Sync",
+  timeline: "Timeline",
+  preview: "Preview",
+  export: "Export",
+};
+
+const TABS = PROJECT_TABS.map((id) => ({ id, label: TAB_LABELS[id] }));
 
 const TabBar: React.FC = () => {
   const activeTab = useProjectStore((s) => s.activeTab);

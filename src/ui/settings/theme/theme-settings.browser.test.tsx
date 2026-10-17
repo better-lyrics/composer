@@ -1,9 +1,11 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import { encodeThemeCode } from "@/domain/theme/code";
 import { DEFAULT_PRESET_ID, PRESET_BY_ID } from "@/domain/theme/presets";
 import { useThemeStore } from "@/stores/theme";
-import { ThemeSettings } from "@/ui/settings/theme/theme-settings";
 import { render } from "@/test/render";
+import { Modal } from "@/ui/modal";
+import { ThemeSettings } from "@/ui/settings/theme/theme-settings";
+import { beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 // -- Tests --------------------------------------------------------------------
 
@@ -79,5 +81,24 @@ describe("ThemeSettings", () => {
     await expect.element(screen.getByRole("button", { name: "Customize current" })).toBeInTheDocument();
     const resolvedBg = PRESET_BY_ID.get(DEFAULT_PRESET_ID)?.tokens.bg;
     expect(document.documentElement.style.getPropertyValue("--color-composer-bg").trim()).toBe(resolvedBg);
+  });
+
+  describe("regressions", () => {
+    it("regression: Escape in the editor closes only the editor and leaves Settings open", async () => {
+      let settingsCloses = 0;
+      const screen = await render(
+        <Modal isOpen onClose={() => settingsCloses++} title="Settings">
+          <ThemeSettings />
+        </Modal>,
+      );
+      await screen.getByRole("button", { name: "Customize current" }).click();
+      await screen.getByLabelText("Theme name").click();
+      await userEvent.keyboard("{Escape}");
+      await expect.element(screen.getByLabelText("Theme name")).not.toBeInTheDocument();
+      await expect.element(screen.getByRole("button", { name: "Customize current" })).toBeInTheDocument();
+      expect(settingsCloses).toBe(0);
+      await userEvent.keyboard("{Escape}");
+      expect(settingsCloses).toBe(1);
+    });
   });
 });

@@ -1,3 +1,4 @@
+import { type TimeRange, UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
 import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -12,7 +13,7 @@ interface BoundaryClampInput {
   time: number;
   minDuration: number;
   rollNeighbour: boolean;
-  duration?: number;
+  range?: TimeRange;
 }
 
 interface RollDecisionInput {
@@ -77,20 +78,20 @@ function clampBoundaryTime({
   time,
   minDuration,
   rollNeighbour,
-  duration,
+  range = UNBOUNDED_TIME_RANGE,
 }: BoundaryClampInput): number {
   const word = words[wordIndex];
   if (!word) return time;
 
   if (edge === "begin") {
     const prev = words[wordIndex - 1];
-    const floor = rollNeighbour && prev ? prev.begin + minDuration : (prev?.end ?? 0);
+    const floor = rollNeighbour && prev ? prev.begin + minDuration : (prev?.end ?? range.min);
     return Math.min(word.end, Math.max(floor, Math.min(word.end - minDuration, time)));
   }
 
   const next = words[wordIndex + 1];
   const neighbourCeiling = rollNeighbour && next ? next.end : (next?.begin ?? Number.POSITIVE_INFINITY);
-  const hardCeiling = Math.max(word.begin, Math.min(neighbourCeiling, duration ?? Number.POSITIVE_INFINITY));
+  const hardCeiling = Math.max(word.begin, Math.min(neighbourCeiling, range.max));
   const ceiling = rollNeighbour && next ? next.end - minDuration : hardCeiling;
   return Math.min(hardCeiling, Math.max(word.begin + minDuration, Math.min(ceiling, time)));
 }

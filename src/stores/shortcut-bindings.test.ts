@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
   assignBinding,
   bindingToKeys,
@@ -7,7 +6,9 @@ import {
   migrateShortcutBindings,
   useShortcutBindingsStore,
 } from "@/stores/shortcut-bindings";
+import { SHORTCUT_REGISTRY } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
+import { describe, expect, it } from "vitest";
 
 describe("assignBinding", () => {
   it("sets the binding", () => {
@@ -61,7 +62,9 @@ describe("migrateShortcutBindings", () => {
   });
 
   it("keeps undo and redo bound when a saved binding uses their keys, because both fired before", () => {
-    const saved = { overrides: { "global.goToSync": { key: "z", mod: true }, "sync.tap": { key: "z", mod: true, shift: true } } };
+    const saved = {
+      overrides: { "global.goToSync": { key: "z", mod: true }, "sync.tap": { key: "z", mod: true, shift: true } },
+    };
 
     expect(migrateShortcutBindings(saved, 0)).toEqual(saved);
   });
@@ -74,7 +77,9 @@ describe("migrateShortcutBindings", () => {
     });
 
     it.skipIf(isMac)("keeps a saved choice for the alternate redo itself", () => {
-      const saved = { overrides: { "timeline.toggleFollow": CTRL_Y, "global.redoAlternate": { key: "y", mod: true, shift: true } } };
+      const saved = {
+        overrides: { "timeline.toggleFollow": CTRL_Y, "global.redoAlternate": { key: "y", mod: true, shift: true } },
+      };
 
       expect(migrateShortcutBindings(saved, 0)).toEqual(saved);
     });
@@ -111,6 +116,18 @@ describe("bindingToKeys", () => {
   describe("edge cases", () => {
     it("returns no keys for an unbound shortcut", () => {
       expect(bindingToKeys({ key: "" })).toEqual([]);
+    });
+  });
+});
+
+describe("default bindings", () => {
+  describe("invariants", () => {
+    it("never conflict with each other", () => {
+      useShortcutBindingsStore.setState({ overrides: {} });
+      const conflicts = SHORTCUT_REGISTRY.flatMap((definition) =>
+        detectConflicts(definition.id, definition.defaultBinding).map((other) => `${definition.id} / ${other.id}`),
+      );
+      expect(conflicts).toEqual([]);
     });
   });
 });

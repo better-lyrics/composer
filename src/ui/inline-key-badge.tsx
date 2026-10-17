@@ -5,13 +5,25 @@ import { IconCommand } from "@tabler/icons-react";
 // -- Types --------------------------------------------------------------------
 
 interface InlineKeyBadgeProps {
-  keys: string[];
+  keys?: string[];
+  text?: string;
 }
 
 // -- Component ----------------------------------------------------------------
 
-const InlineKeyBadge: React.FC<InlineKeyBadgeProps> = ({ keys }) => {
-  if (keys.length === 0) {
+const InlineKeyBadge: React.FC<InlineKeyBadgeProps> = ({ keys, text }) => {
+  if (text !== undefined) {
+    return (
+      <span
+        data-inline-key-badge
+        className="inline-flex items-center h-5 px-1.5 text-xs font-medium rounded-[5px] bg-composer-button text-composer-text-muted"
+      >
+        {text}
+      </span>
+    );
+  }
+  const resolvedKeys = keys ?? [];
+  if (resolvedKeys.length === 0) {
     return (
       <span
         data-inline-key-badge
@@ -23,7 +35,7 @@ const InlineKeyBadge: React.FC<InlineKeyBadgeProps> = ({ keys }) => {
   }
   return (
     <span data-inline-key-badge className="inline-flex items-center gap-0.5 ml-1.5">
-      {keys.map((key) => (
+      {resolvedKeys.map((key) => (
         <span
           key={key}
           className="inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-medium rounded bg-current/10 leading-none shadow-[0_2px_0_0_rgba(0,0,0,0.3)]"

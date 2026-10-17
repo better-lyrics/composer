@@ -1,5 +1,7 @@
+import { togglePlayback } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
+import { selectIsCountingIn, useSyncCountInStore } from "@/stores/sync-count-in";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { Popover } from "@/ui/popover";
@@ -7,6 +9,7 @@ import { Slider } from "@/ui/slider";
 import { VocalSeparationDropdown } from "@/ui/vocal-separation-dropdown";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
+import { SeekBarFocusBand } from "@/views/timeline/seek-bar-focus-band";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled, IconVolume, IconVolume2, IconVolume3 } from "@tabler/icons-react";
 import { useCallback } from "react";
 
@@ -160,13 +163,13 @@ const AudioPlayer: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const seekTo = useAudioStore((s) => s.seekTo);
   const isPlaying = useAudioStore((s) => s.isPlaying);
+  const countingIn = useSyncCountInStore(selectIsCountingIn);
   const currentTime = useAudioStore((s) => s.currentTime);
   const duration = useAudioStore((s) => s.duration);
   const playbackRate = useAudioStore((s) => s.playbackRate);
   const preservePitch = useSettingsStore((s) => s.preservePitch);
   const volume = useAudioStore((s) => s.volume);
   const isMuted = useAudioStore((s) => s.isMuted);
-  const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
   const setPlaybackRate = useAudioStore((s) => s.setPlaybackRate);
   const setVolume = useAudioStore((s) => s.setVolume);
   const toggleMute = useAudioStore((s) => s.toggleMute);
@@ -176,7 +179,7 @@ const AudioPlayer: React.FC = () => {
 
   return (
     <div className="flex items-center gap-4 p-4 border-t select-none border-composer-border bg-composer-bg-dark">
-      <PlayButton isPlaying={isPlaying} onClick={() => setIsPlaying(!isPlaying)} />
+      <PlayButton isPlaying={isPlaying || countingIn} onClick={togglePlayback} />
       <Slider
         value={currentTime}
         min={0}
@@ -184,7 +187,9 @@ const AudioPlayer: React.FC = () => {
         onChange={seekTo}
         aria-label="Audio progress"
         className="flex-1"
-      />
+      >
+        <SeekBarFocusBand duration={duration} />
+      </Slider>
       <TimeDisplay current={currentTime} duration={duration} />
       <VolumeControl volume={volume} isMuted={isMuted} onChangeVolume={setVolume} onToggleMute={toggleMute} />
       <PlaybackRateControl

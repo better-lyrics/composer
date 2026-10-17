@@ -1,3 +1,4 @@
+import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LineSyncedLine, LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
@@ -16,7 +17,7 @@ interface StretchSelectionRef {
 type StretchAnchor = "start" | "end";
 
 interface StretchClampOptions {
-  duration: number;
+  rangeOf: (line: LyricLine) => TimeRange;
   minWordDuration: number;
   anchor?: StretchAnchor;
 }
@@ -144,10 +145,10 @@ function selectionExtremes(targets: StretchTargets): {
 // -- Constraint derivation -----------------------------------------------------
 
 // Every selected item maps affinely around the anchor A: newX = A + (x - A) * k
-// with k > 0, which is strictly increasing — selected items can never start
-// overlapping each other. Only non-selected neighbours and global bounds
-// constrain k (per item, b = begin, e = end, L = left neighbour end or 0,
-// R = right neighbour begin or duration):
+// with k > 0, which is strictly increasing, so selected items can never start
+// overlapping each other. Only non-selected neighbours and the line's time
+// range constrain k (per item, b = begin, e = end, L = left neighbour end or
+// range start, R = right neighbour begin or range end):
 //   min duration         k >= minWordDuration / (e - b)
 //   grow past L (b < A)  k <= (A - L) / (A - b)
 //   grow past R (e > A)  k <= (R - A) / (e - A)
@@ -155,13 +156,38 @@ function selectionExtremes(targets: StretchTargets): {
 //   shrink across R      k >= (A - R) / (A - e)   [e < A, R < A]
 // At k = 1 every bound is satisfied for valid input, so 1 is always feasible
 // unless a word already sits below minWordDuration.
+interface FactorBounds {
+  kLo: number;
+  kHi: number;
+}
+
+interface StretchItem {
+  begin: number;
+  end: number;
+  leftLimit: number;
+  rightLimit: number;
+}
+
+function limitFactor(bounds: FactorBounds, anchorTime: number, minWordDuration: number, item: StretchItem): void {
+  const { begin: b, end: e, leftLimit: left, rightLimit: right } = item;
+  if (e - b > STRETCH_EPS) bounds.kLo = Math.max(bounds.kLo, minWordDuration / (e - b));
+  if (b > anchorTime + STRETCH_EPS && left > anchorTime + STRETCH_EPS) {
+    bounds.kLo = Math.max(bounds.kLo, (left - anchorTime) / (b - anchorTime));
+  }
+  if (b < anchorTime - STRETCH_EPS) bounds.kHi = Math.min(bounds.kHi, (anchorTime - left) / (anchorTime - b));
+  if (e > anchorTime + STRETCH_EPS) bounds.kHi = Math.min(bounds.kHi, (right - anchorTime) / (e - anchorTime));
+  if (e < anchorTime - STRETCH_EPS && right < anchorTime - STRETCH_EPS) {
+    bounds.kLo = Math.max(bounds.kLo, (anchorTime - right) / (anchorTime - e));
+  }
+}
+
 function deriveBounds(
   targets: StretchTargets,
   options: StretchClampOptions,
 ): { t0: number; t1: number; anchorTime: number; kLo: number; kHi: number } | null {
-  // Non-finite duration (streams without metadata) or corrupt timings must not
-  // leak NaN into the factor — every bound below is checked before use.
-  if (!Number.isFinite(options.duration) || !Number.isFinite(options.minWordDuration)) return null;
+  // Non-finite range ends (streams without metadata) or corrupt timings must not
+  // leak NaN into the factor: every bound below is checked before use.
+  if (!Number.isFinite(options.minWordDuration)) return null;
 
   const { t0, t1 } = selectionExtremes(targets);
 
@@ -169,56 +195,51 @@ function deriveBounds(
   if (!Number.isFinite(t0) || !Number.isFinite(t1) || span <= STRETCH_EPS) return null;
   const anchorTime = options.anchor === "end" ? t1 : t0;
 
-  let kLo = 0;
-  let kHi = Number.POSITIVE_INFINITY;
+  const bounds: FactorBounds = { kLo: 0, kHi: Number.POSITIVE_INFINITY };
 
   for (const { track, words, idx, word } of selectedFiniteWords(targets)) {
-    const b = word.begin;
-    const e = word.end;
-    if (e - b > STRETCH_EPS) kLo = Math.max(kLo, options.minWordDuration / (e - b));
+    const range = options.rangeOf(track.line);
+    if (!Number.isFinite(range.max)) return null;
     // Nearest non-selected neighbours, skipping selected indices.
-    let leftEnd = 0;
+    let leftLimit = range.min;
     for (let i = idx - 1; i >= 0; i--) {
       if (!track.indices.has(i)) {
-        leftEnd = words[i].end;
+        leftLimit = words[i].end;
         break;
       }
     }
-    let rightBegin = options.duration;
+    let rightLimit = range.max;
     for (let i = idx + 1; i < words.length; i++) {
       if (!track.indices.has(i)) {
-        rightBegin = words[i].begin;
+        rightLimit = words[i].begin;
         break;
       }
     }
-    if (b > anchorTime + STRETCH_EPS && leftEnd > anchorTime + STRETCH_EPS) {
-      kLo = Math.max(kLo, (leftEnd - anchorTime) / (b - anchorTime));
-    }
-    if (b < anchorTime - STRETCH_EPS) {
-      kHi = Math.min(kHi, (anchorTime - leftEnd) / (anchorTime - b));
-    }
-    if (e > anchorTime + STRETCH_EPS) {
-      kHi = Math.min(kHi, (rightBegin - anchorTime) / (e - anchorTime));
-    }
-    if (e < anchorTime - STRETCH_EPS && rightBegin < anchorTime - STRETCH_EPS) {
-      kLo = Math.max(kLo, (anchorTime - rightBegin) / (anchorTime - e));
-    }
+    limitFactor(bounds, anchorTime, options.minWordDuration, {
+      begin: word.begin,
+      end: word.end,
+      leftLimit,
+      rightLimit,
+    });
   }
 
   // Line-synced rows: same affine map on begin/end. Rows may overlap in time,
-  // so only min-duration and the global 0/duration bounds apply (mirrors
+  // so only min-duration and the row's time range apply (mirrors
   // shiftLineSyncedRows in utils.ts).
   for (const line of targets.lineSynced) {
-    const b = line.begin;
-    const e = line.end;
-    if (!Number.isFinite(b) || !Number.isFinite(e)) continue;
-    if (e - b > STRETCH_EPS) kLo = Math.max(kLo, options.minWordDuration / (e - b));
-    if (b < anchorTime - STRETCH_EPS) kHi = Math.min(kHi, anchorTime / (anchorTime - b));
-    if (e > anchorTime + STRETCH_EPS) kHi = Math.min(kHi, (options.duration - anchorTime) / (e - anchorTime));
+    if (!Number.isFinite(line.begin) || !Number.isFinite(line.end)) continue;
+    const range = options.rangeOf(line);
+    if (!Number.isFinite(range.max)) return null;
+    limitFactor(bounds, anchorTime, options.minWordDuration, {
+      begin: line.begin,
+      end: line.end,
+      leftLimit: range.min,
+      rightLimit: range.max,
+    });
   }
 
-  if (kLo > kHi + STRETCH_EPS) return null;
-  return { t0, t1, anchorTime, kLo, kHi };
+  if (bounds.kLo > bounds.kHi + STRETCH_EPS) return null;
+  return { t0, t1, anchorTime, ...bounds };
 }
 
 // -- Exports -------------------------------------------------------------------

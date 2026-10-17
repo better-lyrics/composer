@@ -1,8 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
-import { Toaster } from "sonner";
-import { LYRICS_FILE_ACCEPT_ATTRIBUTE, SUPPORTED_LYRICS_FORMATS } from "@/domain/lyrics-file/supported-formats";
-import { UploadSection } from "@/views/lyrics-import-modal/upload-section";
+import { SUPPORTED_LYRICS_FORMATS } from "@/domain/lyrics-file/supported-formats";
+import { projectFileNamed } from "@/test/project-file-fixtures";
 import { render } from "@/test/render";
+import { LYRICS_IMPORT_ACCEPT_ATTRIBUTE } from "@/views/lyrics-import-modal/accepted-files";
+import { UploadSection } from "@/views/lyrics-import-modal/upload-section";
+import { Toaster } from "sonner";
+import { describe, expect, it, vi } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -39,6 +41,7 @@ describe("UploadSection", () => {
     expect(document.body.textContent).toContain(".srt");
     expect(document.body.textContent).toContain(".ttml");
     expect(document.body.textContent).toContain(".qrc");
+    expect(document.body.textContent).toContain(".json");
   });
 
   it("advertises every supported format and never the alias extension", async () => {
@@ -51,8 +54,17 @@ describe("UploadSection", () => {
 
   it("offers every accepted extension to the native file picker", async () => {
     await render(<UploadSection onFile={noop} onSwitchToSearch={noop} onSwitchToPaste={noop} />);
-    expect(getFileInput().accept).toBe(LYRICS_FILE_ACCEPT_ATTRIBUTE);
+    expect(getFileInput().accept).toBe(LYRICS_IMPORT_ACCEPT_ATTRIBUTE);
     expect(getFileInput().accept).toContain(".qrc");
+    expect(getFileInput().accept).toContain(".ttml-project.json");
+  });
+
+  it("calls onFile with a dropped project file", async () => {
+    const onFile = vi.fn();
+    await render(<UploadSection onFile={onFile} onSwitchToSearch={noop} onSwitchToPaste={noop} />);
+    dispatchDragEvent(getDropZone(), "drop", [projectFileNamed("song.ttml-project.json")]);
+    expect(onFile).toHaveBeenCalledTimes(1);
+    expect(onFile.mock.calls[0][0].name).toBe("song.ttml-project.json");
   });
 
   it("triggers the hidden file input click when the drop zone is clicked", async () => {
@@ -116,7 +128,7 @@ describe("UploadSection", () => {
       </>,
     );
     dispatchDragEvent(getDropZone(), "drop", [new File(["x"], "cover.png", { type: "image/png" })]);
-    await expect.poll(() => document.body.textContent).toMatch(/Unsupported file type\. Use .*\.qrc/);
+    await expect.poll(() => document.body.textContent).toMatch(/Unsupported file type\. Use .*\.qrc or a project file/);
   });
 
   it("does not call onFile for a .png file and surfaces a toast error", async () => {

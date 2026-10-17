@@ -11,6 +11,7 @@ interface SliderProps {
   onChange: (value: number) => void;
   "aria-label"?: string;
   className?: string;
+  children?: React.ReactNode;
 }
 
 // -- Component ----------------------------------------------------------------
@@ -23,6 +24,7 @@ const Slider: React.FC<SliderProps> = ({
   onChange,
   "aria-label": ariaLabel,
   className = "",
+  children,
 }) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
@@ -120,6 +122,7 @@ const Slider: React.FC<SliderProps> = ({
       onMouseDown={handleMouseDown}
       onKeyDown={handleKeyDown}
     >
+      {children}
       <div className="absolute inset-y-0 left-0 rounded-full bg-composer-accent" style={{ width: `${percent}%` }} />
       <div
         className="absolute top-1/2 size-3 -translate-y-1/2 rounded-full bg-composer-text opacity-0 group-hover:opacity-100 transition-opacity"

@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "@/test/render";
 import { CobaltInstanceAddForm, CobaltInstanceEditRow } from "@/ui/settings/cobalt-instance-forms";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 describe("CobaltInstanceAddForm", () => {
   it("keeps Add disabled until a valid label and URL are entered", async () => {

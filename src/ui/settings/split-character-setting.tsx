@@ -1,6 +1,7 @@
 import { DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
+import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
 import { useCallback, useEffect, useState } from "react";
 
@@ -72,7 +73,7 @@ const SplitCharacterSetting: React.FC = () => {
 
   return (
     <>
-      <div className="flex items-center justify-between py-3">
+      <SettingRowLayout>
         <SettingText id="splitCharacter" />
         <div className="flex items-center gap-2">
           {!isDefault && (
@@ -92,7 +93,7 @@ const SplitCharacterSetting: React.FC = () => {
             <span className="text-sm font-mono text-composer-text">{splitCharacter}</span>
           </button>
         </div>
-      </div>
+      </SettingRowLayout>
 
       <Modal isOpen={captureState.status === "listening"} onClose={cancelCapture} title="Change split character">
         <div className="text-center py-4 pb-0 space-y-10">

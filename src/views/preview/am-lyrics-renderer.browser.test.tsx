@@ -355,3 +355,26 @@ describe("AmLyricsRenderer unmount", () => {
     expect(useAudioStore.getState().currentTime).toBe(0);
   });
 });
+
+describe("AmLyricsRenderer open group range", () => {
+  const lineWithText = (el: Element, text: string) =>
+    [...(el.shadowRoot?.querySelectorAll<HTMLElement>(".lyrics-line:not(.lyrics-gap)") ?? [])].find((line) =>
+      line.textContent?.includes(text),
+    );
+
+  it("fades the lines outside the range and clears them once the range goes", async () => {
+    const ttml = buildSyncedTtml();
+    const screen = await render(
+      <AmLyricsRenderer ttmlString={ttml} durationSeconds={30} layout="sidebar" focusRange={{ begin: 12, end: 18 }} />,
+    );
+    const el = await waitForAmLyrics(screen.container);
+    await waitForLyrics(el);
+
+    await expect.poll(() => lineWithText(el, "first")?.hasAttribute("data-outside-focus")).toBe(true);
+    expect(lineWithText(el, "second")?.hasAttribute("data-outside-focus")).toBe(false);
+
+    await screen.rerender(<AmLyricsRenderer ttmlString={ttml} durationSeconds={30} layout="sidebar" />);
+
+    await expect.poll(() => lineWithText(el, "first")?.hasAttribute("data-outside-focus")).toBe(false);
+  });
+});

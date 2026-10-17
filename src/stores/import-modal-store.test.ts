@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { INITIAL_STATE, useImportModal, useImportModalStore } from "@/stores/import-modal-store";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
+import { beforeEach, describe, expect, it } from "vitest";
 
 function makeParseResult(overrides: Partial<ParseResult> = {}): ParseResult {
   const lines: LyricLine[] = [];

@@ -1,10 +1,10 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { GroupsExtras } from "@/ui/help-sections/groups-extras";
-import { PROSE } from "@/ui/typography";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { MOD_KEY } from "@/utils/platform";
-import { SettingLink } from "@/ui/setting-link";
 import { HelpTopic } from "@/ui/help-topic";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { SettingLink } from "@/ui/setting-link";
+import { PROSE } from "@/ui/typography";
+import { MOD_KEY } from "@/utils/platform";
 
 // -- Linked Groups ------------------------------------------------------------
 
@@ -12,8 +12,9 @@ const GroupsSection: React.FC = () => (
   <div className="space-y-5">
     <p className={PROSE}>
       A group is a set of contiguous lines that repeat in the song (chorus, verse, bridge). Group them once and edits to
-      text, splits, agents, or background vocals propagate to every instance. Each instance still owns its own absolute
-      timing, so you can shift one chorus by 5 seconds without moving the others.
+      text, splits, agents, or background vocals propagate to every instance. Each instance sits at its own place in the
+      song, so you can shift one chorus by 5 seconds without moving the others. New groups also share their timing (see
+      Shared timing below).
     </p>
 
     <HelpTopic title="Why bother">
@@ -69,7 +70,8 @@ const GroupsSection: React.FC = () => (
         A third route is <strong>Conform</strong>: select contiguous ungrouped lines, right-click, and pick "Conform to
         [Chorus]". The item only shows when the selection is exactly as long as the group. It swaps those lines' text,
         timing, agent and background vocals for the group's, landing where the selection already sat, or at the playhead
-        when those lines had no timing yet. Composer asks before overwriting, and <InlineKeyBadge keys={getEffectiveKeysArray("global.undo")} /> undoes it.
+        when those lines had no timing yet. Composer asks before overwriting, and{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("global.undo")} /> undoes it.
       </p>
     </HelpTopic>
 
@@ -92,9 +94,9 @@ const GroupsSection: React.FC = () => (
           instance, delete group).
         </li>
         <li>
-          <strong>Double-click anywhere on the header row</strong>: drops the gutter label into an inline input so you
-          can rename the group. Enter saves, Escape cancels. The Rename item in the right-click menu does the same
-          thing.
+          <strong>Double-click the group name</strong>: drops the gutter label into an inline input so you can rename
+          the group. Enter saves, Escape cancels. The Rename item in the right-click menu does the same thing.
+          Double-click anywhere else on the banner to open the group.
         </li>
         <li>
           <strong>Hover the "1 of N" badge</strong>: every sibling instance pings briefly with the group's color so you
@@ -160,8 +162,10 @@ const GroupsSection: React.FC = () => (
 
     <HelpTopic title="Suggestions banner">
       <p className={PROSE}>
-        When the timeline detects two or more contiguous runs of identical lines that aren't grouped yet, a small bulb
-        banner appears under the toolbar. One suggestion shows inline with a Group them button. Multiple suggestions
+        When Composer detects two or more contiguous runs of identical lines that aren't grouped yet, a small bulb
+        banner appears below the lyrics in Edit (hidden while you type) and under the Timeline toolbar. With{" "}
+        <SettingLink setting="shareTimingInNewGroups" /> on, group them in Edit before you sync, so each chorus shares
+        its timing from the first tap. One suggestion shows inline with a Group them button. Multiple suggestions
         collapse into a Review N button that opens a modal with each block previewed and a per-row Group / dismiss
         action, plus a Group all button.
       </p>

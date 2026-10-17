@@ -1,9 +1,9 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { type SnapPoint, toSnapPoints } from "@/domain/snap-point/model";
 import type { WordTiming } from "@/domain/word/timing";
 import type { ProjectSaveInput } from "@/lib/persistence";
-import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
 
 interface FactoryLineOptions {
   id?: string;
@@ -33,6 +33,8 @@ interface FactoryGroupOptions {
   label?: string;
   color?: string;
   templateVersion?: number;
+  sharesTiming?: true;
+  ownTimingInstances?: number[];
 }
 
 let lineCounter = 0;
@@ -79,6 +81,8 @@ function createGroup(opts: FactoryGroupOptions = {}) {
     label: opts.label ?? `Group ${groupCounter}`,
     color: opts.color ?? "#a3c9ff",
     templateVersion: opts.templateVersion ?? 0,
+    ...(opts.sharesTiming ? { sharesTiming: opts.sharesTiming } : {}),
+    ...(opts.ownTimingInstances ? { ownTimingInstances: opts.ownTimingInstances } : {}),
   };
 }
 
@@ -89,6 +93,7 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
     lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
     groups: [],
     granularity: "word",
+    exportTiming: "word",
     syllableSplitDefaults: DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
     audioSource: { kind: "file", name: "silence.mp3" },
     dismissedSuggestions: [],

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { localDateStamp } from "@/lib/download-file";
 import { NOT_FOUND_RESULT, type RecoveredProject, buildRecoveryResult } from "@/lib/recovery";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -19,16 +19,16 @@ describe("buildRecoveryResult", () => {
     expect(result.title).toBe("My Song");
   });
 
-  it("falls back to 'recovered' when title is missing", () => {
-    expect(buildRecoveryResult(project({ metadata: undefined })).title).toBe("recovered");
+  it("falls back to 'Untitled' when title is missing", () => {
+    expect(buildRecoveryResult(project({ metadata: undefined })).title).toBe("Untitled");
   });
 
-  it("falls back to 'recovered' when title is an empty string", () => {
-    expect(buildRecoveryResult(project({ metadata: { title: "" } })).title).toBe("recovered");
+  it("falls back to 'Untitled' when title is an empty string", () => {
+    expect(buildRecoveryResult(project({ metadata: { title: "" } })).title).toBe("Untitled");
   });
 
-  it("falls back to 'recovered' when title is whitespace-only", () => {
-    expect(buildRecoveryResult(project({ metadata: { title: "   " } })).title).toBe("recovered");
+  it("falls back to 'Untitled' when title is whitespace-only", () => {
+    expect(buildRecoveryResult(project({ metadata: { title: "   " } })).title).toBe("Untitled");
   });
 
   it("constructs filename as title-YYYY-MM-DD.ttml-project.json", () => {
@@ -38,7 +38,7 @@ describe("buildRecoveryResult", () => {
 
   it("uses the fallback title in the filename when title is missing", () => {
     const result = buildRecoveryResult(project({ metadata: undefined }));
-    expect(result.filename).toBe(`recovered-${TODAY}.ttml-project.json`);
+    expect(result.filename).toBe(`Untitled-${TODAY}.ttml-project.json`);
   });
 
   it("counts lines from the project array", () => {

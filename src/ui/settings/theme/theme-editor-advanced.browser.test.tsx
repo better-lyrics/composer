@@ -1,9 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
 import { deriveTheme } from "@/domain/theme/derive";
-import { type Theme, TOKENS } from "@/domain/theme/model";
+import { TOKENS, type Theme } from "@/domain/theme/model";
 import { PRESET_BY_ID } from "@/domain/theme/presets";
-import { ThemeEditorAdvanced } from "@/ui/settings/theme/theme-editor-advanced";
 import { render } from "@/test/render";
+import { ThemeEditorAdvanced } from "@/ui/settings/theme/theme-editor-advanced";
+import { describe, expect, it, vi } from "vitest";
 
 // -- Fixtures ------------------------------------------------------------------
 

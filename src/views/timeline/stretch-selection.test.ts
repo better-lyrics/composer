@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+import type { TimeRange } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { planStretchDrag } from "./stretch-drag";
@@ -12,7 +13,9 @@ function makeLine(id: string, words: { text: string; begin: number; end: number 
   return { id, text: words.map((w) => w.text).join(""), agentId: "v1", words };
 }
 
-const OPTS = { duration: 60, minWordDuration: 0.1 };
+const wholeSong = (duration: number) => (): TimeRange => ({ min: 0, max: duration });
+
+const OPTS = { rangeOf: wholeSong(60), minWordDuration: 0.1 };
 
 const word = (lineId: string, wordIndex: number) => ({ lineId, type: "word" as const, wordIndex });
 
@@ -182,7 +185,7 @@ describe("planStretchDrag", () => {
         lines,
         [word("L", 1), word("L", 2)],
         { lineId: "L", type: "word", wordIndex: 2, edge: "right" },
-        { duration: Number.NaN, minWordDuration: 0.1 },
+        { rangeOf: wholeSong(Number.NaN), minWordDuration: 0.1 },
       ),
     ).toBeNull();
   });
@@ -446,7 +449,7 @@ describe("stretchSelections · clamping", () => {
   it("clamps growth at audio duration", () => {
     const lines = [makeLine("L", [{ text: "a", begin: 50, end: 55 }])];
     // Right bound from duration: k <= (60 - 50) / 5 = 2.
-    const result = stretchSelections(lines, [word("L", 0)], 10, { duration: 60, minWordDuration: 0.1 });
+    const result = stretchSelections(lines, [word("L", 0)], 10, { rangeOf: wholeSong(60), minWordDuration: 0.1 });
     expect(result.appliedFactor).toBeCloseTo(2);
     expect(result.updates[0].updates.words![0].end).toBeCloseTo(60);
   });
@@ -542,7 +545,7 @@ describe("stretchSelections · tracks and line types", () => {
 
   it("clamps a line-synced-only selection at duration", () => {
     const lines: LyricLine[] = [{ id: "B", text: "y", agentId: "v1", begin: 50, end: 55 }];
-    const result = stretchSelections(lines, [word("B", 0)], 10, { duration: 60, minWordDuration: 0.1 });
+    const result = stretchSelections(lines, [word("B", 0)], 10, { rangeOf: wholeSong(60), minWordDuration: 0.1 });
     // duration bound: k <= (60 - 50) / 5 = 2.
     expect(result.appliedFactor).toBeCloseTo(2);
     expect(result.updates[0].updates.end).toBeCloseTo(60);
@@ -578,7 +581,10 @@ describe("stretchSelections · degenerate cases", () => {
   });
 
   it("is a no-op when duration or word timings are non-finite (no NaN writes)", () => {
-    const nanDuration = stretchSelections(lines, selections, 2, { duration: Number.NaN, minWordDuration: 0.1 });
+    const nanDuration = stretchSelections(lines, selections, 2, {
+      rangeOf: wholeSong(Number.NaN),
+      minWordDuration: 0.1,
+    });
     expect(nanDuration.updates).toHaveLength(0);
 
     const nanWords: LyricLine[] = [

@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 import { DefaultPlaybackRateSetting } from "@/ui/settings/default-playback-rate-setting";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 describe("DefaultPlaybackRateSetting", () => {
   it("shows the stored rate formatted as a multiplier", async () => {

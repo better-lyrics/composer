@@ -1,5 +1,7 @@
+import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
+import { LazyMotion, domAnimation } from "motion/react";
 import { describe, expect, it } from "vitest";
 
 const LINES = [
@@ -82,5 +84,159 @@ describe("SyncCarousel ripple", () => {
     const secondRipple = screen.container.querySelector(RIPPLE_SELECTOR);
     expect(secondRipple).not.toBeNull();
     expect(secondRipple).not.toBe(firstRipple);
+  });
+});
+
+describe("SyncCarousel shared tags", () => {
+  const RED = "rgb(255, 0, 0)";
+  const tag = (label: string, placement: "above" | "below") => ({ label, color: RED, placement });
+
+  it("names the coming instance under the next line", async () => {
+    const lines = [LINES[0], LINES[1], { ...LINES[2], sharedTag: tag("Chorus 2", "below") }];
+    const screen = await render(<SyncCarousel lines={lines} lineIndex={1} wordIndex={0} granularity="line" />);
+    const label = screen.getByText("Chorus 2");
+    await expect.element(label).toBeInTheDocument();
+    const lineText = screen.getByText("Third line");
+    expect(lineText.element().compareDocumentPosition(label.element()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("asks for the placing tap above the current line", async () => {
+    const lines = [LINES[0], { ...LINES[1], sharedTag: tag("Tap to place", "above") }, LINES[2]];
+    const screen = await render(<SyncCarousel lines={lines} lineIndex={1} wordIndex={0} granularity="line" />);
+    const label = screen.getByText("Tap to place");
+    await expect.element(label).toBeInTheDocument();
+    const lineText = screen.getByText("Second line");
+    expect(lineText.element().compareDocumentPosition(label.element()) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  });
+
+  it("shows a skipped line as shared in the group colour", async () => {
+    const lines = [
+      { ...WORD_LINES[0], sharedTag: tag("Shared", "below") },
+      { id: "l2", text: "next one" },
+    ];
+    const screen = await render(<SyncCarousel lines={lines} lineIndex={1} wordIndex={0} granularity="word" />);
+    await expect.element(screen.getByText("Shared")).toHaveStyle({ color: RED });
+  });
+
+  describe("invariants", () => {
+    it("keeps the line text in place when a tag appears", async () => {
+      const screen = await render(<SyncCarousel lines={LINES} lineIndex={1} wordIndex={0} granularity="line" />);
+      const styles = [await installUtilitiesUsedIn(screen.container)];
+      const top = () => screen.getByText("Second line").element().getBoundingClientRect().top;
+      const before = top();
+      const tagged = [LINES[0], { ...LINES[1], sharedTag: tag("Tap to place", "above") }, LINES[2]];
+      await screen.rerender(<SyncCarousel lines={tagged} lineIndex={1} wordIndex={0} granularity="line" />);
+      await expect.element(screen.getByText("Tap to place")).toBeInTheDocument();
+      styles.push(await installUtilitiesUsedIn(screen.container));
+      expect(top()).toBe(before);
+      for (const style of styles) style.remove();
+    });
+  });
+});
+
+describe("SyncCarousel · above current slot", () => {
+  const TAGGED_LINES = [
+    { id: "l1", text: "First line", begin: 0 },
+    {
+      id: "l2",
+      text: "Second line",
+      begin: 1,
+      sharedTag: { label: "Tap to place", color: "rgb(244, 114, 182)", placement: "above" as const },
+    },
+  ];
+
+  it("renders the slot above the current line and keeps its tag", async () => {
+    const screen = await render(
+      <SyncCarousel
+        lines={TAGGED_LINES}
+        lineIndex={1}
+        wordIndex={0}
+        granularity="line"
+        aboveCurrent={<span data-slot-probe="">probe</span>}
+      />,
+    );
+    await expect.element(screen.getByText("probe", { exact: true })).toBeInTheDocument();
+    await expect.element(screen.getByText("Tap to place", { exact: true })).toBeInTheDocument();
+  });
+
+  it("keeps the tag when no slot is given", async () => {
+    const screen = await render(<SyncCarousel lines={TAGGED_LINES} lineIndex={1} wordIndex={0} granularity="line" />);
+    await expect.element(screen.getByText("Tap to place", { exact: true })).toBeInTheDocument();
+  });
+
+  it("regression: the slot never moves the line, so nothing shifts when it goes away", async () => {
+    const lineTop = (container: HTMLElement) =>
+      [...container.querySelectorAll("span")]
+        .find((span) => span.textContent === "Second line")
+        ?.getBoundingClientRect().top;
+    const plain = await render(<SyncCarousel lines={TAGGED_LINES} lineIndex={1} wordIndex={0} granularity="line" />);
+    const plainCss = await installUtilitiesUsedIn(plain.container);
+    let withoutSlot: number | undefined;
+    try {
+      withoutSlot = lineTop(plain.container);
+    } finally {
+      plainCss.remove();
+    }
+    await plain.unmount();
+    const slotted = await render(
+      <SyncCarousel
+        lines={TAGGED_LINES}
+        lineIndex={1}
+        wordIndex={0}
+        granularity="line"
+        aboveCurrent={<span style={{ display: "block", height: 40 }}>probe</span>}
+      />,
+    );
+    const slottedCss = await installUtilitiesUsedIn(slotted.container);
+    try {
+      expect(lineTop(slotted.container)).toBe(withoutSlot);
+      const probe = slotted.getByText("probe", { exact: true }).element().getBoundingClientRect();
+      expect(probe.bottom).toBeLessThanOrEqual(lineTop(slotted.container) ?? 0);
+    } finally {
+      slottedCss.remove();
+    }
+  });
+
+  it("renders the slot only once, on the current line", async () => {
+    const screen = await render(
+      <SyncCarousel
+        lines={LINES}
+        lineIndex={0}
+        wordIndex={0}
+        granularity="line"
+        aboveCurrent={<span data-slot-probe="">probe</span>}
+      />,
+    );
+    expect(screen.container.querySelectorAll("[data-slot-probe]")).toHaveLength(1);
+  });
+});
+
+describe("SyncCarousel · mount", () => {
+  function textColorsRightAfterMount(container: HTMLElement): string[] {
+    return [...container.querySelectorAll<HTMLElement>("span.relative.inline-flex, div.text-4xl > span")].map(
+      (span) => span.style.color,
+    );
+  }
+
+  it("regression: line text starts at its color instead of animating into it", async () => {
+    const screen = await render(
+      <LazyMotion features={domAnimation} strict>
+        <SyncCarousel lines={LINES} lineIndex={1} wordIndex={0} granularity="line" />
+      </LazyMotion>,
+    );
+    const colors = textColorsRightAfterMount(screen.container);
+    expect(colors.length).toBeGreaterThan(0);
+    for (const color of colors) expect(color).not.toBe("");
+  });
+
+  it("regression: word text starts at its color instead of animating into it", async () => {
+    const screen = await render(
+      <LazyMotion features={domAnimation} strict>
+        <SyncCarousel lines={WORD_LINES} lineIndex={0} wordIndex={1} granularity="word" />
+      </LazyMotion>,
+    );
+    const colors = textColorsRightAfterMount(screen.container);
+    expect(colors.length).toBeGreaterThan(0);
+    for (const color of colors) expect(color).not.toBe("");
   });
 });

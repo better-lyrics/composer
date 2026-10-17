@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
-import { ThemeTokenInput } from "@/ui/settings/theme/theme-token-input";
 import { render } from "@/test/render";
+import { ThemeTokenInput } from "@/ui/settings/theme/theme-token-input";
+import { describe, expect, it, vi } from "vitest";
 
 // -- Tests --------------------------------------------------------------------
 

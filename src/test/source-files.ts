@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -38,4 +38,4 @@ function findProductionMatches(pattern: RegExp, allowed: (relPath: string) => bo
 
 // -- Exports ------------------------------------------------------------------
 
-export { findProductionMatches, isTestFile, walkSourceFiles };
+export { SRC_ROOT, findProductionMatches, isTestFile, walkSourceFiles };

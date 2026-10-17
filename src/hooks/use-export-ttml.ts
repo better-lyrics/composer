@@ -4,8 +4,12 @@ import { rebaseTtmlEdits } from "@/utils/ttml-merge";
 import { useMemo } from "react";
 
 function useExportTtml() {
-  const generated = useGeneratedTtml();
   const editState = useProjectStore((state) => state.ttmlEditState);
+  const savedExportTiming = useProjectStore((state) => state.exportTiming);
+  const setExportTiming = useProjectStore((state) => state.setExportTiming);
+  const editBlocksLineTiming = editState !== null;
+  const exportTiming = editBlocksLineTiming ? "word" : savedExportTiming;
+  const generated = useGeneratedTtml(exportTiming);
   const setEditState = useProjectStore((state) => state.setTtmlEditState);
   const drift = editState !== null && editState.source !== generated.content;
   const rebased = useMemo(
@@ -27,6 +31,9 @@ function useExportTtml() {
     content: editedContent ?? generated.content,
     editState,
     editedContent,
+    editBlocksLineTiming,
+    exportTiming,
+    setExportTiming,
     generatedContent: generated.content,
     hasConflict: drift && rebased?.status === "conflict",
     setEditState,

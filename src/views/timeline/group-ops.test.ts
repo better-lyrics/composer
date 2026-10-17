@@ -33,7 +33,7 @@ describe("lineIdsAreContiguous", () => {
 describe("createGroupFromSelection", () => {
   it("creates a new group with sequential templateLineIdx", () => {
     const ls = lines([{ id: "a" }, { id: "b" }, { id: "c" }]);
-    const result = createGroupFromSelection(ls, new Set(["a", "b"]), []);
+    const result = createGroupFromSelection(ls, new Set(["a", "b"]), [], false);
     expect(result).not.toBeNull();
     expect(result?.group.label).toMatch(/Group/);
     expect(result?.updatedLines.find((l) => l.id === "a")?.templateLineIdx).toBe(0);
@@ -43,14 +43,27 @@ describe("createGroupFromSelection", () => {
 
   it("rejects non-contiguous selection", () => {
     const ls = lines([{ id: "a" }, { id: "b" }, { id: "c" }]);
-    const result = createGroupFromSelection(ls, new Set(["a", "c"]), []);
+    const result = createGroupFromSelection(ls, new Set(["a", "c"]), [], false);
     expect(result).toBeNull();
   });
 
   it("rejects selection overlapping existing groups", () => {
     const ls = lines([{ id: "a", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }, { id: "b" }]);
     expect(selectionTouchesAnyGroup(ls, new Set(["a"]))).toBe(true);
-    expect(createGroupFromSelection(ls, new Set(["a", "b"]), [])).toBeNull();
+    expect(createGroupFromSelection(ls, new Set(["a", "b"]), [], false)).toBeNull();
+  });
+
+  it("shares timing in the new group when the setting is on", () => {
+    const ls = lines([{ id: "a", begin: 1, end: 2 }, { id: "b" }]);
+    const result = createGroupFromSelection(ls, new Set(["a", "b"]), [], true);
+    expect(result?.group.sharesTiming).toBe(true);
+    expect(result?.group.ownTimingInstances).toBeUndefined();
+  });
+
+  it("creates an old group when the setting is off", () => {
+    const ls = lines([{ id: "a", begin: 1, end: 2 }]);
+    const result = createGroupFromSelection(ls, new Set(["a"]), [], false);
+    expect(result?.group.sharesTiming).toBeUndefined();
   });
 });
 
@@ -187,7 +200,7 @@ describe("createGroupFromSelection · group color", () => {
   it("picks an unused color from the palette", () => {
     const existing: LinkGroup[] = [{ id: "g1", label: "x", color: "#f472b6", templateVersion: 1 }];
     const ls = lines([{ id: "a" }]);
-    const result = createGroupFromSelection(ls, new Set(["a"]), existing);
+    const result = createGroupFromSelection(ls, new Set(["a"]), existing, false);
     expect(result?.group.color).not.toBe("#f472b6");
   });
 });

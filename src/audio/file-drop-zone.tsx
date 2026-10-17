@@ -1,90 +1,23 @@
-import { useCallback, useId, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useFileDrop } from "@/audio/use-file-drop";
+import { PROJECT_FILE_ACCEPT } from "@/lib/project-file-read";
+import { cn } from "@/utils/cn";
+import { useCallback, useId } from "react";
 
 // -- Types --------------------------------------------------------------------
 
 interface FileDropZoneProps {
   accept: string;
   onFileDrop: (file: File) => void;
+  onProjectFileDrop?: (file: File) => void;
   children?: React.ReactNode;
+  className?: string;
 }
-
-// -- Constants ----------------------------------------------------------------
-
-const ACCEPTED_AUDIO_TYPES = [
-  "audio/mpeg",
-  "audio/mp3",
-  "audio/wav",
-  "audio/wave",
-  "audio/x-wav",
-  "audio/mp4",
-  "audio/m4a",
-  "audio/x-m4a",
-  "audio/ogg",
-  "audio/flac",
-];
-
-const ACCEPTED_AUDIO_EXTENSIONS = ["mp3", "wav", "m4a", "ogg", "flac"];
-
-const ACCEPTED_AUDIO_EXTENSION_REGEX = new RegExp(String.raw`\.(${ACCEPTED_AUDIO_EXTENSIONS.join("|")})$`, "i");
-
-const UNSUPPORTED_AUDIO_FILE_MESSAGE = `Unsupported file type. Use ${ACCEPTED_AUDIO_EXTENSIONS.map((ext) => `.${ext}`).join(" ")}`;
 
 // -- Component ----------------------------------------------------------------
 
-const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, children }) => {
-  const [isDragging, setIsDragging] = useState(false);
+const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, onProjectFileDrop, children, className }) => {
   const inputId = useId();
-  const dragCountRef = useRef(0);
-
-  const handleFile = useCallback(
-    (file: File) => {
-      if (ACCEPTED_AUDIO_TYPES.includes(file.type) || ACCEPTED_AUDIO_EXTENSION_REGEX.test(file.name)) {
-        onFileDrop(file);
-        return;
-      }
-      toast.error(UNSUPPORTED_AUDIO_FILE_MESSAGE);
-    },
-    [onFileDrop],
-  );
-
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCountRef.current++;
-    if (dragCountRef.current === 1) {
-      setIsDragging(true);
-    }
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCountRef.current--;
-    if (dragCountRef.current === 0) {
-      setIsDragging(false);
-    }
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dragCountRef.current = 0;
-      setIsDragging(false);
-
-      const file = e.dataTransfer.files[0];
-      if (file) {
-        handleFile(file);
-      }
-    },
-    [handleFile],
-  );
+  const { isDragging, handlers, handleFile } = useFileDrop({ onFileDrop, onProjectFileDrop });
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,21 +33,19 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, childre
   return (
     <label
       htmlFor={inputId}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-      className={`size-full flex cursor-pointer flex-col items-center justify-center p-8 transition-colors ${
-        isDragging
-          ? "border-composer-accent bg-composer-accent/10"
-          : "border-composer-border hover:border-composer-border-hover"
-      }`}
+      {...handlers}
+      className={cn(
+        "size-full flex cursor-pointer flex-col items-center justify-center p-8 transition-colors",
+        "border-composer-border hover:border-composer-border-hover",
+        className,
+        isDragging && "border-composer-accent bg-composer-accent/10",
+      )}
     >
       <input
         id={inputId}
         type="file"
-        aria-label="Upload audio file"
-        accept={accept}
+        aria-label={onProjectFileDrop ? "Upload audio or project file" : "Upload audio file"}
+        accept={onProjectFileDrop ? `${accept},${PROJECT_FILE_ACCEPT}` : accept}
         onChange={handleInputChange}
         className="sr-only"
       />

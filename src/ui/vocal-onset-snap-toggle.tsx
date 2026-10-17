@@ -1,8 +1,9 @@
 import { useSettingsStore } from "@/stores/settings";
+import { DETECTING_VOCAL_ONSETS } from "@/ui/vocal-onset-status-copy";
 import { cn } from "@/utils/cn";
-import { IconWaveSine } from "@tabler/icons-react";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { pluralize } from "@/utils/pluralize";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { IconWaveSine } from "@tabler/icons-react";
 
 // -- Status hint --------------------------------------------------------------
 
@@ -11,7 +12,7 @@ function describeOnsetStatus(
   pointCount: number,
   error: string | null,
 ): string {
-  if (status === "processing") return "Detecting onsets...";
+  if (status === "processing") return DETECTING_VOCAL_ONSETS;
   if (status === "error") return error ? `Detection failed: ${error}` : "Detection failed";
   if (pointCount > 0) return pluralize(pointCount, "snap point");
   return "Separate vocals to detect onsets";

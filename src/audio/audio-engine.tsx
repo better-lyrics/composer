@@ -1,6 +1,5 @@
 import { decodeAudioToWav, needsWavConversion } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
-import { scrubPreview } from "@/audio/scrub-preview";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -97,20 +96,7 @@ const AudioEngine: React.FC = () => {
       }
     };
 
-    const loadScrubBuffer = async () => {
-      try {
-        const bytes = await playableFile.arrayBuffer();
-        if (aborted) return;
-        const audioBuffer = await scrubPreview.decode(bytes);
-        if (aborted) return;
-        scrubStemRouter.setOriginalBuffer(audioBuffer);
-      } catch (err) {
-        if (aborted) return;
-        console.warn(LOG_PREFIX, "scrub-preview decode failed", err);
-        scrubStemRouter.setOriginalBuffer(null);
-      }
-    };
-    void loadScrubBuffer();
+    scrubStemRouter.setOriginalSource(playableFile);
 
     const setup = async () => {
       let objectUrl: string;
@@ -227,7 +213,7 @@ const AudioEngine: React.FC = () => {
   }, [currentStem, stemUrls, audioElement, setIsPlaying]);
 
   useEffect(() => {
-    scrubStemRouter.selectStem(currentStem, () => stemUrls[currentStem]);
+    scrubStemRouter.selectStem(currentStem, (stem) => stemUrls[stem]);
   }, [currentStem, stemUrls]);
 
   return null;

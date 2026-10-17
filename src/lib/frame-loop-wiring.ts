@@ -1,14 +1,16 @@
 import { holdFrames, wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useAuthStore } from "@/stores/auth";
+import { useChoiceStore } from "@/stores/choice-store";
 import { useConfirmStore } from "@/stores/confirm-store";
-import { useDivergenceStore } from "@/stores/divergence-store";
+import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useImportModalStore } from "@/stores/import-modal-store";
-import { useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
+import { useSyncCountInStore } from "@/stores/sync-count-in";
+import { useSyncEditModeStore } from "@/stores/sync-edit-mode";
 import { useThemeStore } from "@/stores/theme";
 import { useUIStore } from "@/stores/ui";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -82,13 +84,15 @@ function wireFrameLoop(): () => void {
     useAudioStore.subscribe(syncAudio),
     useAuthStore.subscribe(wakeFromThisWiring),
     useConfirmStore.subscribe(wakeFromThisWiring),
-    useDivergenceStore.subscribe(wakeFromThisWiring),
     useImportModalStore.subscribe(wakeFromThisWiring),
-    useModalStackStore.subscribe(wakeFromThisWiring),
+    useChoiceStore.subscribe(wakeFromThisWiring),
+    useEscapeLayerStackStore.subscribe(wakeFromThisWiring),
     useProjectStore.subscribe(wakeFromThisWiring),
     useSeparationStore.subscribe(wakeFromThisWiring),
     useSettingsStore.subscribe(wakeFromThisWiring),
     useShortcutBindingsStore.subscribe(wakeFromThisWiring),
+    useSyncCountInStore.subscribe(wakeFromThisWiring),
+    useSyncEditModeStore.subscribe(wakeFromThisWiring),
     useThemeStore.subscribe(wakeFromThisWiring),
     useUIStore.subscribe(wakeFromThisWiring),
     useTimelineStore.subscribe(wakeFromThisWiring),

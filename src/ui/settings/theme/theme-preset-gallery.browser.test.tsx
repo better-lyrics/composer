@@ -1,9 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
 import type { Theme } from "@/domain/theme/model";
 import { useThemeStore } from "@/stores/theme";
+import { render } from "@/test/render";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { ThemePresetGallery } from "@/ui/settings/theme/theme-preset-gallery";
-import { render } from "@/test/render";
+import { describe, expect, it, vi } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 

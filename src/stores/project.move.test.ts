@@ -1,9 +1,9 @@
+import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 /**
  * @vitest-environment node
  */
 import { useProjectStore } from "@/stores/project";
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
-import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 import { beforeEach, describe, expect, it } from "vitest";
 
 const DURATION = 30;

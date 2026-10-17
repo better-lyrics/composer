@@ -1,3 +1,4 @@
+import type { TimeRange } from "@/domain/group/shared-timing";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type ReadableLine, effectiveMainWordEdit } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
@@ -87,7 +88,7 @@ function applySameLineReorder(
   wordsToMove: WordSelection[],
   lines: readonly ReadableLine[],
   timeDelta: number,
-  duration: number,
+  rangeOf: (line: LyricLine) => TimeRange,
   updateLineWithHistory: ReturnType<typeof useProjectStore.getState>["updateLineWithHistory"],
 ) {
   if (wordsToMove.length > 1) {
@@ -101,15 +102,16 @@ function applySameLineReorder(
       if (!line) continue;
 
       const lineUpdates: Partial<LyricLine> = {};
+      const range = rangeOf(line);
       const wordIndices = new Set(selections.flatMap((s) => (s.type === "word" ? [s.wordIndex] : [])));
       const bgIndices = new Set(selections.flatMap((s) => (s.type === "bg" ? [s.wordIndex] : [])));
 
       if (wordIndices.size > 0 && line.words) {
-        const edit = effectiveMainWordEdit(line, reorderWordTrack(line.words, wordIndices, timeDelta, duration));
+        const edit = effectiveMainWordEdit(line, reorderWordTrack(line.words, wordIndices, timeDelta, range));
         if (edit) Object.assign(lineUpdates, edit);
       }
       if (bgIndices.size > 0 && line.backgroundWords) {
-        const reordered = reorderWordTrack(line.backgroundWords, bgIndices, timeDelta, duration);
+        const reordered = reorderWordTrack(line.backgroundWords, bgIndices, timeDelta, range);
         Object.assign(lineUpdates, manualBackgroundWordEdit(reordered));
       }
 
@@ -130,7 +132,7 @@ function applySameLineReorder(
   const wordIndex = activeData.wordIndex;
   if (wordIndex < 0 || wordIndex >= wordsArray.length) return;
 
-  const normalized = reorderWordTrack(wordsArray, new Set([wordIndex]), timeDelta, duration);
+  const normalized = reorderWordTrack(wordsArray, new Set([wordIndex]), timeDelta, rangeOf(line));
   if (activeData.trackType === "word") {
     const edit = effectiveMainWordEdit(line, normalized);
     if (edit) updateLineWithHistory(activeData.lineId, edit, { propagateToSiblings: false });
@@ -148,7 +150,7 @@ interface CrossLineMoveArgs {
   wordsToMove: WordSelection[];
   lines: readonly ReadableLine[];
   timeDelta: number;
-  duration: number;
+  rangeOf: (line: LyricLine) => TimeRange;
 }
 
 function buildCrossLineMoves({
@@ -158,11 +160,12 @@ function buildCrossLineMoves({
   wordsToMove,
   lines,
   timeDelta,
-  duration,
+  rangeOf,
 }: CrossLineMoveArgs): WordMove[] {
   const linesById = new Map<string, LyricLine>();
   for (const l of lines) linesById.set(l.id, l);
   const moves: WordMove[] = [];
+  const targetRange = rangeOf(targetLine);
 
   for (const sel of wordsToMove) {
     if (sel.lineId !== activeData.lineId) continue;
@@ -172,8 +175,8 @@ function buildCrossLineMoves({
     const source = sourceArr?.[sel.wordIndex];
     if (!source) continue;
 
-    const newBegin = Math.max(0, source.begin + timeDelta);
-    const newEnd = Math.min(duration, source.end + timeDelta);
+    const newBegin = Math.max(targetRange.min, source.begin + timeDelta);
+    const newEnd = Math.min(targetRange.max, source.end + timeDelta);
     if (newEnd <= newBegin) continue;
 
     moves.push({
@@ -199,7 +202,7 @@ function applyCrossLineMove(args: CrossLineMoveArgs) {
   const moves = buildCrossLineMoves(args);
   if (moves.length === 0) return;
 
-  const result = applyWordMoveAcrossLines(args.lines, moves, args.duration);
+  const result = applyWordMoveAcrossLines(args.lines, moves, args.rangeOf);
   if (result.ok) {
     useProjectStore.getState().updateLinesWithHistory(result.updates, { propagateToSiblings: false });
     return;

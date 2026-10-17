@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";
 import { MetadataPanel } from "@/views/export/metadata-panel";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -313,5 +313,19 @@ describe("MetadataPanel · language validation", () => {
     await expect.poll(() => useProjectStore.getState().metadata.language).toBe("en-US");
     useProjectStore.getState().setMetadata({ language: "ja" });
     await expect.element(language).toHaveValue("ja");
+  });
+
+  describe("regressions", () => {
+    it("regression: puts the expanded fields in a scroll area so a tall panel stays reachable", async () => {
+      seedMetadata();
+      const screen = await render(<MetadataPanel />);
+      await screen.getByRole("button", { name: "Metadata" }).click();
+      const title = screen.getByRole("textbox", { name: "Title" });
+      await expect.element(title).toBeInTheDocument();
+      await expect.poll(() => title.element().closest("[data-overlayscrollbars-viewport]")).not.toBeNull();
+      expect(
+        screen.getByRole("button", { name: "Metadata" }).element().closest("[data-overlayscrollbars-viewport]"),
+      ).toBeNull();
+    });
   });
 });

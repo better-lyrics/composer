@@ -1,8 +1,9 @@
-import { cdp, userEvent } from "vitest/browser";
+import { userEvent } from "vitest/browser";
 import { describe, expect, it } from "vitest";
 import { groupAnchorId } from "@/best-practices/anchors";
 import { BEST_PRACTICE_GROUPS } from "@/best-practices/groups";
 import { comesBefore } from "@/test/dom-order";
+import { emulateReducedMotion } from "@/test/reduced-motion";
 import { render } from "@/test/render";
 import { HelpSectionContent } from "@/ui/help-sections";
 import { BestPracticesSection } from "@/ui/help-sections/best-practices";
@@ -27,16 +28,6 @@ function recordScrollIntoView(element: Element): ScrollIntoViewOptions[] {
     if (typeof options === "object") calls.push(options);
   };
   return calls;
-}
-
-// Motion caches the preference in a module global refreshed only by the media
-// query change event, so settle on the event rather than on matchMedia.
-async function emulateReducedMotion(value: "reduce" | "no-preference"): Promise<void> {
-  const query = window.matchMedia("(prefers-reduced-motion)");
-  if (query.matches === (value === "reduce")) return;
-  const settled = new Promise<void>((resolve) => query.addEventListener("change", () => resolve(), { once: true }));
-  await cdp().send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value }] });
-  await settled;
 }
 
 async function clickEveryChip(screen: Screen): Promise<Map<string, ScrollIntoViewOptions[]>> {

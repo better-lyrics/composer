@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { EmptyState } from "@/ui/empty-state";
 import { Button } from "@/ui/button";
 import { render } from "@/test/render";
+import { IconSearchOff } from "@tabler/icons-react";
 
 describe("EmptyState", () => {
   it("renders the primary message", async () => {
@@ -24,5 +25,12 @@ describe("EmptyState", () => {
   it("omits the action region when none is provided", async () => {
     const screen = await render(<EmptyState message="Empty" hint="Nothing here yet" />);
     expect(screen.container.querySelectorAll("button")).toHaveLength(0);
+  });
+
+  it("shows an optional icon hidden from assistive technology", async () => {
+    const screen = await render(<EmptyState icon={IconSearchOff} message="No projects" hint="Try again" />);
+    const icon = screen.container.querySelector("svg");
+    expect(icon).not.toBeNull();
+    expect(icon?.getAttribute("aria-hidden")).toBe("true");
   });
 });

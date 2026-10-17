@@ -1,7 +1,7 @@
-import { parseLamePriming } from "@/audio/lame-priming";
 import { scrubPreview } from "@/audio/scrub-preview";
 import { useSettingsStore } from "@/stores/settings";
-import { createMp3File, encodeWav, makeSineBuffer } from "@/test/audio-fixtures";
+import { makeSineBuffer } from "@/test/audio-fixtures";
+import { allowConsole } from "@/test/console-guard";
 import { afterEach, describe, expect, test } from "vitest";
 
 describe("scrub-preview", () => {
@@ -65,33 +65,97 @@ describe("scrub-preview", () => {
     }
   });
 
-  test("decode round-trips an ArrayBuffer into an AudioBuffer", async () => {
-    const ctx = new AudioContext();
-    const sourceBuffer = ctx.createBuffer(1, 44100, 44100);
-    const offline = new OfflineAudioContext(1, 44100, 44100);
-    const src = offline.createBufferSource();
-    src.buffer = sourceBuffer;
-    src.connect(offline.destination);
-    src.start();
-    const rendered = await offline.startRendering();
-    const wavBytes = encodeWav(rendered);
-    const decoded = await scrubPreview.decode(wavBytes);
-    expect(decoded.duration).toBeCloseTo(1, 1);
-  });
+  describe("lazy buffer", () => {
+    function countingLoader(seconds = 1): { load: () => Promise<AudioBuffer>; calls: () => number } {
+      let calls = 0;
+      const buffer = makeSineBuffer(seconds);
+      return {
+        load: async () => {
+          calls += 1;
+          return buffer;
+        },
+        calls: () => calls,
+      };
+    }
 
-  test("decode strips LAME priming from an MP3 source", async () => {
-    const mp3 = createMp3File();
-    const bytes = await mp3.arrayBuffer();
-    const { samples, sampleRate } = parseLamePriming(bytes);
-    expect(samples).toBeGreaterThan(0);
-    expect(sampleRate).toBeGreaterThan(0);
+    test("does not load the buffer until the first scrub", async () => {
+      const loader = countingLoader();
+      scrubPreview.useLazyBuffer(loader.load);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(loader.calls()).toBe(0);
+    });
 
-    const ctx = new AudioContext();
-    const unstripped = await ctx.decodeAudioData(bytes.slice(0));
-    await ctx.close();
+    test("the first scrub still plays once the buffer arrives", async () => {
+      scrubPreview.useLazyBuffer(countingLoader().load);
+      scrubPreview.play(0.3, 1);
+      await expect.poll(() => scrubPreview.getActiveSnippet()?.time).toBe(0.3);
+    });
 
-    const decoded = await scrubPreview.decode(bytes);
-    const expectedStrip = Math.round((samples * unstripped.sampleRate) / sampleRate);
-    expect(decoded.length).toBe(unstripped.length - expectedStrip);
+    test("plays the latest scrub position once the buffer arrives", async () => {
+      scrubPreview.useLazyBuffer(countingLoader().load);
+      scrubPreview.play(0.2, 1);
+      scrubPreview.play(0.6, 2);
+      await expect.poll(() => scrubPreview.getActiveSnippet()).toEqual({ time: 0.6, rate: 2 });
+    });
+
+    test("loads once however many scrubs arrive while loading", async () => {
+      const loader = countingLoader();
+      scrubPreview.useLazyBuffer(loader.load);
+      for (let i = 0; i < 5; i++) scrubPreview.play(0.1 * i, 1);
+      await expect.poll(() => scrubPreview.getActiveSnippet()).not.toBeNull();
+      scrubPreview.play(0.5, 1);
+      expect(loader.calls()).toBe(1);
+    });
+
+    describe("edge cases", () => {
+      test("stays silent when the scrub stops before the buffer arrives", async () => {
+        scrubPreview.useLazyBuffer(countingLoader().load);
+        scrubPreview.play(0.3, 1);
+        scrubPreview.stop();
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(scrubPreview.getActiveSnippet()).toBeNull();
+        scrubPreview.play(0.4, 1);
+        expect(scrubPreview.getActiveSnippet()?.time).toBe(0.4);
+      });
+
+      test("does not load while scrub preview is turned off", async () => {
+        const loader = countingLoader();
+        scrubPreview.useLazyBuffer(loader.load);
+        useSettingsStore.setState({ audioScrubPreview: false });
+        try {
+          scrubPreview.play(0.3, 1);
+          expect(loader.calls()).toBe(0);
+        } finally {
+          useSettingsStore.setState({ audioScrubPreview: true });
+        }
+      });
+    });
+
+    describe("invariants", () => {
+      test("a buffer installed during a pending load wins over the stale load", async () => {
+        scrubPreview.useLazyBuffer(countingLoader(5).load);
+        scrubPreview.play(0.3, 1);
+        scrubPreview.useBuffer(makeSineBuffer(0.5));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        scrubPreview.play(99, 1);
+        expect(scrubPreview.getActiveSnippet()?.time).toBeCloseTo(0.5 - 0.12, 2);
+      });
+    });
+
+    describe("error paths", () => {
+      test("a failed load leaves scrub silent without retrying on every scrub", async () => {
+        let calls = 0;
+        allowConsole(/\[ScrubPreview\]/);
+        scrubPreview.useLazyBuffer(async () => {
+          calls += 1;
+          throw new Error("decode failed");
+        });
+        scrubPreview.play(0.3, 1);
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        scrubPreview.play(0.3, 1);
+        expect(scrubPreview.getActiveSnippet()).toBeNull();
+        expect(calls).toBe(1);
+      });
+    });
   });
 });

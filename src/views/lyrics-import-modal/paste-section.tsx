@@ -1,7 +1,10 @@
-import { IconArrowLeft, IconUpload } from "@tabler/icons-react";
+import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { Button } from "@/ui/button";
+import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
+import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
+import { IconArrowLeft, IconUpload } from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -27,6 +30,10 @@ function countNonEmptyLines(text: string): number {
   return count;
 }
 
+// -- Constants ----------------------------------------------------------------
+
+const PASTE_PLACEHOLDER = `Paste lyrics here, one line per line. Use | to split syllables. A whole ${LYRICS_FORMATS_PROSE} file works too, and so does ${PROJECT_FILE_PROSE}.`;
+
 // -- Component ----------------------------------------------------------------
 
 const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchToSearch, onSwitchToUpload }) => {
@@ -48,20 +55,16 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
           Upload file instead
         </button>
       </div>
-      <textarea
+      <LyricsCodeEditor
         ref={focusOnMount}
         aria-label="Lyrics text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => e.stopPropagation()}
-        placeholder="Paste lyrics here, one line per line. Use | to split syllables"
+        placeholder={PASTE_PLACEHOLDER}
         spellCheck={false}
-        className={cn(
-          "h-32 p-3 text-sm rounded-lg resize-none",
-          "bg-composer-overlay border border-composer-border",
-          "text-composer-text placeholder:text-composer-text-muted",
-          "focus:outline-none focus:border-composer-accent",
-        )}
+        frameClassName="h-32"
+        className="p-3 font-mono text-sm focus:outline-none"
       />
       <div className="flex items-center justify-between">
         <span className="text-[11px] text-composer-text-muted">

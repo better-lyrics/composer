@@ -1,8 +1,13 @@
-import { describe, expect, it } from "vitest";
-import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
+import { assignBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS } from "@/stores/shortcut-definitions";
 import { isMac } from "@/utils/platform";
-import { bindingFromKeyboardEvent, findMatchingShortcut, matchesShortcutBinding } from "@/utils/shortcut-matcher";
+import {
+  bindingFromKeyboardEvent,
+  findMatchingShortcut,
+  isReservedBrowserShortcut,
+  matchesShortcutBinding,
+} from "@/utils/shortcut-matcher";
+import { describe, expect, it } from "vitest";
 
 const MOD = { metaKey: isMac, ctrlKey: !isMac };
 
@@ -14,6 +19,11 @@ describe("findMatchingShortcut", () => {
   describe("happy paths", () => {
     it("matches a first keydown to its shortcut", () => {
       expect(findMatchingShortcut(keydown({ key: "r" }), "timeline")).toBe("timeline.toggleRollingEdit");
+    });
+
+    it("matches Ctrl+Alt+N to the new project shortcut", () => {
+      const event = keydown({ key: "n", code: "KeyN", ctrlKey: true, altKey: true });
+      expect(findMatchingShortcut(event, "global")).toBe("global.newProject");
     });
 
     it("matches held-key repeats of a repeatable shortcut", () => {
@@ -37,6 +47,17 @@ describe("findMatchingShortcut", () => {
     it("regression: a held insert-line key does not insert a line per auto-repeat", () => {
       expect(findMatchingShortcut(keydown({ key: "n", repeat: true }), "timeline")).toBeNull();
     });
+
+    it("regression: AltGr+N does not trigger new project even though it reports ctrlKey and altKey", () => {
+      const event = keydown({
+        key: "\u0144",
+        code: "KeyN",
+        ctrlKey: true,
+        altKey: true,
+        modifierAltGraph: true,
+      } as KeyboardEventInit);
+      expect(findMatchingShortcut(event, "global")).toBeNull();
+    });
   });
 
   describe("edge cases", () => {
@@ -58,36 +79,63 @@ describe("findMatchingShortcut", () => {
 });
 
 describe("matchesShortcutBinding", () => {
-  it("matches a key press to the shortcut's effective binding", () => {
-    expect(matchesShortcutBinding(keydown({ key: "z", ...MOD }), "global.undo")).toBe(true);
+  const modS = (init: KeyboardEventInit = {}) =>
+    keydown({ key: "s", code: "KeyS", metaKey: isMac, ctrlKey: !isMac, ...init });
+
+  it("matches the shortcut's binding", () => {
+    expect(matchesShortcutBinding(modS(), "global.saveNow")).toBe(true);
   });
 
-  it("matches a held repeat that findMatchingShortcut ignores, so handlers can consume it", () => {
-    const held = keydown({ key: "z", ...MOD, repeat: true });
-
-    expect(matchesShortcutBinding(held, "global.undo")).toBe(true);
-    expect(findMatchingShortcut(held, "global")).toBeNull();
-  });
-
-  it("follows a remapped binding instead of the default", () => {
-    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
-
-    expect(matchesShortcutBinding(keydown({ key: "b", ...MOD }), "global.undo")).toBe(true);
-    expect(matchesShortcutBinding(keydown({ key: "z", ...MOD }), "global.undo")).toBe(false);
+  it("matches held-key repeats that findMatchingShortcut ignores", () => {
+    expect(matchesShortcutBinding(modS({ repeat: true }), "global.saveNow")).toBe(true);
+    expect(findMatchingShortcut(modS({ repeat: true }), "global")).toBeNull();
   });
 
   describe("edge cases", () => {
-    it("never matches an unbound shortcut", () => {
-      useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "" } } });
+    it("does not match other keys or a missing modifier", () => {
+      expect(matchesShortcutBinding(keydown({ key: "s", code: "KeyS" }), "global.saveNow")).toBe(false);
+      expect(matchesShortcutBinding(modS({ key: "d", code: "KeyD" }), "global.saveNow")).toBe(false);
+    });
 
+    it("follows a remapped binding", () => {
+      assignBinding("global.saveNow", { key: "k", mod: true, shift: true });
+      expect(matchesShortcutBinding(modS(), "global.saveNow")).toBe(false);
+      expect(matchesShortcutBinding(modS({ key: "k", code: "KeyK", shiftKey: true }), "global.saveNow")).toBe(true);
+    });
+  });
+
+  describe("undo and redo", () => {
+    it("matches a key press to the shortcut's effective binding", () => {
+      expect(matchesShortcutBinding(keydown({ key: "z", ...MOD }), "global.undo")).toBe(true);
+    });
+
+    it("matches a held repeat that findMatchingShortcut ignores, so handlers can consume it", () => {
+      const held = keydown({ key: "z", ...MOD, repeat: true });
+
+      expect(matchesShortcutBinding(held, "global.undo")).toBe(true);
+      expect(findMatchingShortcut(held, "global")).toBeNull();
+    });
+
+    it("follows a remapped binding instead of the default", () => {
+      useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
+
+      expect(matchesShortcutBinding(keydown({ key: "b", ...MOD }), "global.undo")).toBe(true);
       expect(matchesShortcutBinding(keydown({ key: "z", ...MOD }), "global.undo")).toBe(false);
     });
 
-    it("tells undo from redo by Shift", () => {
-      const redo = keydown({ key: "Z", ...MOD, shiftKey: true });
+    describe("edge cases", () => {
+      it("never matches an unbound shortcut", () => {
+        useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "" } } });
 
-      expect(matchesShortcutBinding(redo, "global.undo")).toBe(false);
-      expect(matchesShortcutBinding(redo, "global.redo")).toBe(true);
+        expect(matchesShortcutBinding(keydown({ key: "z", ...MOD }), "global.undo")).toBe(false);
+      });
+
+      it("tells undo from redo by Shift", () => {
+        const redo = keydown({ key: "Z", ...MOD, shiftKey: true });
+
+        expect(matchesShortcutBinding(redo, "global.undo")).toBe(false);
+        expect(matchesShortcutBinding(redo, "global.redo")).toBe(true);
+      });
     });
   });
 });
@@ -142,6 +190,18 @@ describe("bindingFromKeyboardEvent", () => {
 
     it.each(["Shift", "Alt", "Control", "Meta", "AltGraph", "CapsLock"])("ignores a bare %s", (key) => {
       expect(bindingFromKeyboardEvent(keydown({ key }))).toBeNull();
+    });
+  });
+});
+
+describe("isReservedBrowserShortcut", () => {
+  it("flags a browser shortcut the app does not own", () => {
+    expect(isReservedBrowserShortcut({ key: "t", mod: true })).toBe(true);
+  });
+
+  describe("regressions", () => {
+    it("regression: never flags Mod+S, which the app owns for saving", () => {
+      expect(isReservedBrowserShortcut({ key: "s", mod: true })).toBe(false);
     });
   });
 });

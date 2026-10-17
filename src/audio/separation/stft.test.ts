@@ -1,4 +1,4 @@
-import { istft, stft } from "@/audio/separation/stft";
+import { HOP_LENGTH, N_FFT, forEachStftFrame, istft, stft, stftFrameCount } from "@/audio/separation/stft";
 import { describe, expect, it } from "vitest";
 
 function rms(a: Float32Array): number {
@@ -52,5 +52,46 @@ describe("stft", () => {
     const ref = rms(a);
     expect(err / ref).toBeLessThan(0.05);
     expect(rms(b) / ref).toBeGreaterThan(0.95);
+  });
+});
+
+function seededNoise(length: number, seed: number): Float32Array {
+  const out = new Float32Array(length);
+  let state = seed;
+  for (let i = 0; i < length; i++) {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    out[i] = (state / 0x100000000) * 2 - 1;
+  }
+  return out;
+}
+
+describe("forEachStftFrame", () => {
+  it("yields every frame of stft one at a time with identical coefficients", () => {
+    const signal = seededNoise(N_FFT * 3 + 517, 7);
+    const spec = stft(signal);
+    let seen = 0;
+    forEachStftFrame(signal, (frame, real, imag) => {
+      expect(frame).toBe(seen);
+      for (let bin = 0; bin < spec.numBins; bin++) {
+        expect(real[bin]).toBe(spec.real[frame * spec.numBins + bin]);
+        expect(imag[bin]).toBe(spec.imag[frame * spec.numBins + bin]);
+      }
+      seen++;
+    });
+    expect(seen).toBe(spec.numFrames);
+  });
+
+  it("reuses one frame buffer instead of allocating per frame", () => {
+    const buffers = new Set<Float32Array>();
+    forEachStftFrame(seededNoise(N_FFT * 2, 3), (_frame, real) => buffers.add(real));
+    expect(buffers.size).toBe(1);
+  });
+
+  describe("edge cases", () => {
+    it("counts frames the same way stft does", () => {
+      for (const length of [1, HOP_LENGTH, N_FFT, N_FFT + 1, N_FFT * 4 + 3]) {
+        expect(stftFrameCount(length)).toBe(stft(seededNoise(length, length)).numFrames);
+      }
+    });
   });
 });

@@ -7,6 +7,7 @@ import { readToken } from "@/utils/theme/read-token";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
 import { snapTimeToOnset } from "@/views/timeline/snap-marker-math";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
+import { WaveformFocusShade } from "@/views/timeline/waveform-focus-shade";
 import WavesurferPlayer from "@wavesurfer/react";
 import { useCallback, useEffect, useState } from "react";
 import type WaveSurfer from "wavesurfer.js";
@@ -155,6 +156,7 @@ const TimelineWaveform: React.FC = () => {
           />
         </div>
       )}
+      <WaveformFocusShade />
       <div
         role="button"
         tabIndex={-1}

@@ -11,7 +11,7 @@ interface ShortcutBinding {
   mod?: boolean;
 }
 
-type ShortcutScope = "global" | "sync" | "timeline";
+type ShortcutScope = "global" | "sync" | "timeline" | "library";
 
 interface ShortcutDefinition {
   id: string;
@@ -29,6 +29,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     scope: "global",
     description: "Play / Pause",
     defaultBinding: { key: "Enter" },
+  },
+  {
+    id: "global.togglePlaybackSpeed",
+    scope: "global",
+    description: "Switch between normal speed and the last speed you used (0.75x at first)",
+    defaultBinding: { key: "r", shift: true },
   },
   {
     id: "global.help",
@@ -91,6 +97,24 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "7", mod: true },
   },
   {
+    id: "global.openProjectSwitcher",
+    scope: "global",
+    description: "Switch project",
+    defaultBinding: { key: "o", mod: true },
+  },
+  {
+    id: "global.newProject",
+    scope: "global",
+    description: "New project",
+    defaultBinding: { key: "n", mod: true, alt: true },
+  },
+  {
+    id: "global.saveNow",
+    scope: "global",
+    description: "Save now",
+    defaultBinding: { key: "s", mod: true },
+  },
+  {
     id: "global.undo",
     scope: "global",
     description: "Undo",
@@ -112,6 +136,18 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
           defaultBinding: { key: "y", mod: true },
         },
       ]),
+  {
+    id: "library.focusSearch",
+    scope: "library",
+    description: "Search projects",
+    defaultBinding: { key: "/" },
+  },
+  {
+    id: "library.deleteSelection",
+    scope: "library",
+    description: "Delete selected projects",
+    defaultBinding: { key: "Backspace" },
+  },
   {
     id: "sync.tap",
     scope: "sync",
@@ -261,6 +297,24 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     scope: "timeline",
     description: "Collapse / expand all instances",
     defaultBinding: { key: "c", shift: true },
+  },
+  {
+    id: "timeline.openGroup",
+    scope: "timeline",
+    description: "Open group",
+    defaultBinding: { key: "Enter", shift: true },
+  },
+  {
+    id: "timeline.closeGroup",
+    scope: "timeline",
+    description: "Close group",
+    defaultBinding: { key: "Escape" },
+  },
+  {
+    id: "timeline.toggleGroupLoop",
+    scope: "timeline",
+    description: "Loop the open group",
+    defaultBinding: { key: "l", shift: true },
   },
   {
     id: "timeline.jumpPrevInstance",

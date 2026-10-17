@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
 import { QUICK_TOKENS, type Theme } from "@/domain/theme/model";
 import { PRESET_BY_ID } from "@/domain/theme/presets";
-import { ThemeEditorQuick } from "@/ui/settings/theme/theme-editor-quick";
 import { render } from "@/test/render";
+import { ThemeEditorQuick } from "@/ui/settings/theme/theme-editor-quick";
+import { describe, expect, it, vi } from "vitest";
 
 // -- Fixtures ------------------------------------------------------------------
 

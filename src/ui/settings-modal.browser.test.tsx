@@ -1,41 +1,41 @@
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
-import { useModalStackStore } from "@/stores/modal-stack";
+import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
-import { SettingsModal } from "@/ui/settings-modal";
-import { allowConsole } from "@/test/console-guard";
 import { installStyleSheet } from "@/test/browser-css";
+import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
+import { SettingsModal } from "@/ui/settings-modal";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 describe("SettingsModal", () => {
   it("renders nothing when isOpen is false", async () => {
-    await render(<SettingsModal isOpen={false} onClose={() => {}} onResetTour={() => {}} />);
+    await render(<SettingsModal isOpen={false} onClose={() => {}} />);
     expect(document.querySelector("dialog")).toBeNull();
   });
 
   it("opens with the Settings title and a sidebar of section buttons", async () => {
-    const screen = await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    const screen = await render(<SettingsModal isOpen onClose={() => {}} />);
     await expect.element(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
     const sectionButtons = document.querySelectorAll("dialog button");
     expect(sectionButtons.length).toBeGreaterThan(5);
   });
 
   it("switches the visible content when a different section is clicked", async () => {
-    const screen = await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    const screen = await render(<SettingsModal isOpen onClose={() => {}} />);
     await screen.getByRole("button", { name: /Shortcuts/i }).click();
     expect(document.querySelector("dialog")?.textContent ?? "").toContain("Shortcut");
   });
 
   it("shows the theme gallery when the Theme section is selected", async () => {
-    const screen = await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    const screen = await render(<SettingsModal isOpen onClose={() => {}} />);
     await screen.getByRole("button", { name: /Theme/i }).click();
     await expect.element(screen.getByRole("button", { name: /Default/ })).toBeInTheDocument();
   });
 
   it("invokes onClose when Escape is pressed", async () => {
     let closes = 0;
-    await render(<SettingsModal isOpen onClose={() => closes++} onResetTour={() => {}} />);
+    await render(<SettingsModal isOpen onClose={() => closes++} />);
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(closes).toBeGreaterThan(0);
   });
@@ -45,18 +45,18 @@ describe("SettingsModal", () => {
       allowConsole(/cannot be a descendant of/);
       allowConsole(/cannot contain a nested/);
       useUIStore.getState().openSettings({ target: { setting: "youtubeBridge" } });
-      await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+      await render(<SettingsModal isOpen onClose={() => {}} />);
       expect(document.querySelector('[data-testid="bridge-section"]')).not.toBeNull();
     });
 
     it("opens on General when there is no target", async () => {
       useUIStore.getState().openSettings();
-      await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+      await render(<SettingsModal isOpen onClose={() => {}} />);
       expect(document.querySelector('[data-testid="bridge-section"]')).toBeNull();
     });
 
     it("writes section changes to the store", async () => {
-      const screen = await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+      const screen = await render(<SettingsModal isOpen onClose={() => {}} />);
       await screen.getByRole("button", { name: /Sync & Timing/ }).click();
       expect(useUIStore.getState().settingsSection).toBe("sync");
     });
@@ -71,7 +71,7 @@ describe("SettingsModal", () => {
         selectedCobaltInstanceId: "test-inst",
       });
 
-      const screen = await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+      const screen = await render(<SettingsModal isOpen onClose={() => {}} />);
       await screen.getByRole("button", { name: /Advanced/i }).click();
       await screen.getByRole("button", { name: /Self-hosted/i }).click();
 
@@ -108,7 +108,7 @@ describe("SettingsModal target", () => {
   it("centers the target row and nudges it", async () => {
     installStyleSheet("[data-overlayscrollbars-viewport]{max-height:200px!important;overflow-y:scroll!important}");
     useUIStore.getState().openSettings({ target: { setting: "timelineHorizontalScroll" } });
-    await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    await render(<SettingsModal isOpen onClose={() => {}} />);
     await expect.poll(() => row("timelineHorizontalScroll")?.hasAttribute("data-nudge")).toBe(true);
     expect(settingsViewport()?.scrollTop ?? 0).toBeGreaterThan(0);
     expect(useUIStore.getState().settingsTarget).toBeNull();
@@ -116,7 +116,7 @@ describe("SettingsModal target", () => {
 
   it("removes the nudge when its animation ends", async () => {
     useUIStore.getState().openSettings({ target: { setting: "followPlayhead" } });
-    await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    await render(<SettingsModal isOpen onClose={() => {}} />);
     await expect.poll(() => row("followPlayhead")?.hasAttribute("data-nudge")).toBe(true);
     row("followPlayhead")?.dispatchEvent(new AnimationEvent("animationend"));
     expect(row("followPlayhead")?.hasAttribute("data-nudge")).toBe(false);
@@ -124,7 +124,7 @@ describe("SettingsModal target", () => {
 
   it("opens a section target without nudging anything", async () => {
     useUIStore.getState().openSettings({ target: { section: "timeline" } });
-    await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    await render(<SettingsModal isOpen onClose={() => {}} />);
     await expect.poll(() => useUIStore.getState().settingsTarget).toBeNull();
     expect(document.querySelector("[data-nudge]")).toBeNull();
   });
@@ -133,7 +133,7 @@ describe("SettingsModal target", () => {
     allowConsole(/cannot be a descendant of/);
     allowConsole(/cannot contain a nested/);
     useUIStore.getState().openSettings();
-    await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    await render(<SettingsModal isOpen onClose={() => {}} />);
     useUIStore.getState().openSettings({ target: { setting: "youtubeBridge" } });
     await expect.poll(() => row("youtubeBridge")?.hasAttribute("data-nudge")).toBe(true);
   });
@@ -142,14 +142,24 @@ describe("SettingsModal target", () => {
     allowConsole(/cannot be a descendant of/);
     allowConsole(/cannot contain a nested/);
     useUIStore.getState().openSettings({ target: { setting: "youtubeBridge" } });
-    await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    await render(<SettingsModal isOpen onClose={() => {}} />);
     await expect.poll(() => row("youtubeBridge")?.querySelector('[data-testid="bridge-section"]')).not.toBeNull();
+  });
+
+  it("opens the section without nudging or leaving a stale target when the row is hidden", async () => {
+    useSettingsStore.setState({ smartCleanup: false });
+    useUIStore.getState().openSettings({ target: { setting: "storageLimit" } });
+    await render(<SettingsModal isOpen onClose={() => {}} />);
+    expect(useUIStore.getState().settingsSection).toBe("storage");
+    await expect.poll(() => useUIStore.getState().settingsTarget).toBeNull();
+    expect(document.querySelector("[data-nudge]")).toBeNull();
+    expect(row("storageLimit")).toBeNull();
   });
 });
 
 describe("SettingsModal search", () => {
   const openModal = async () => {
-    const screen = await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    const screen = await render(<SettingsModal isOpen onClose={() => {}} />);
     await expect.poll(() => document.querySelector("dialog")?.contains(document.activeElement)).toBe(true);
     return screen;
   };
@@ -187,6 +197,18 @@ describe("SettingsModal search", () => {
     await expect.element(screen.getByRole("button", { name: "General" })).toHaveAttribute("data-dimmed");
   });
 
+  it("updates results and the section badge when a setting changes while a search is active", async () => {
+    useSettingsStore.setState({ smartCleanup: false });
+    const screen = await openModal();
+    await searchBox(screen).fill("quota limit");
+    await expect.element(screen.getByRole("status")).toHaveTextContent('No settings match "quota limit"');
+    await expect.element(screen.getByRole("button", { name: "Save & Storage" })).toHaveAttribute("data-dimmed");
+
+    useSettingsStore.setState({ smartCleanup: true });
+    await expect.element(screen.getByRole("button", { name: "Storage limit" })).toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: /^Save & Storage\s*\d+$/ })).toBeInTheDocument();
+  });
+
   it("finds shortcuts and renders them as rebind rows", async () => {
     const screen = await openModal();
     await searchBox(screen).fill("toggle snap");
@@ -212,7 +234,7 @@ describe("SettingsModal search", () => {
 
   it("clears the query on Escape before closing", async () => {
     let closes = 0;
-    const screen = await render(<SettingsModal isOpen onClose={() => closes++} onResetTour={() => {}} />);
+    const screen = await render(<SettingsModal isOpen onClose={() => closes++} />);
     await searchBox(screen).fill("snap");
     await userEvent.keyboard("{Escape}");
     await expect.element(searchBox(screen)).toHaveValue("");
@@ -221,10 +243,38 @@ describe("SettingsModal search", () => {
     expect(closes).toBe(1);
   });
 
+  describe("regressions", () => {
+    const openThemeEditor = async (screen: Awaited<ReturnType<typeof openModal>>) => {
+      await screen.getByRole("button", { name: /Theme/i }).click();
+      await screen.getByRole("button", { name: "Customize current" }).click();
+      await expect.element(screen.getByLabelText("Theme name")).toBeInTheDocument();
+    };
+
+    it("regression: typing starts a search while the theme editor is open", async () => {
+      const screen = await openModal();
+      await openThemeEditor(screen);
+      (document.querySelector("dialog") as HTMLElement).focus();
+      await userEvent.keyboard("snap");
+      await expect.element(searchBox(screen)).toHaveValue("snap");
+    });
+
+    it("regression: Escape closes the theme editor before Settings", async () => {
+      let closes = 0;
+      const screen = await render(<SettingsModal isOpen onClose={() => closes++} />);
+      await openThemeEditor(screen);
+      await userEvent.keyboard("{Escape}");
+      await expect.element(screen.getByLabelText("Theme name")).not.toBeInTheDocument();
+      expect(closes).toBe(0);
+      await userEvent.keyboard("{Escape}");
+      expect(closes).toBe(1);
+    });
+  });
+
   describe("edge cases", () => {
     it("does not steal keys while a nested modal is open", async () => {
       await openModal();
-      useModalStackStore.setState({ count: 2 });
+      useEscapeLayerStackStore.getState().push("modal");
+      useEscapeLayerStackStore.getState().push("modal");
       (document.querySelector("dialog") as HTMLElement).focus();
       await userEvent.keyboard("a");
       expect(useUIStore.getState().settingsQuery).toBe("");

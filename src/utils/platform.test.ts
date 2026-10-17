@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { ALT_KEY, isMac, MOD_KEY } from "./platform";
+import { ALT_KEY, MOD_KEY, isChromiumBrands, isMac } from "./platform";
 
 describe("platform mod-key constants", () => {
   it("MOD_KEY matches isMac", () => {
@@ -11,6 +11,42 @@ describe("platform mod-key constants", () => {
 
   it("ALT_KEY matches isMac", () => {
     expect(ALT_KEY).toBe(isMac ? "Option" : "Alt");
+  });
+});
+
+describe("isChromiumBrands", () => {
+  it("recognizes Chrome's brand list", () => {
+    expect(
+      isChromiumBrands([
+        { brand: "Not)A;Brand", version: "24" },
+        { brand: "Chromium", version: "128" },
+        { brand: "Google Chrome", version: "128" },
+      ]),
+    ).toBe(true);
+  });
+
+  it("recognizes Edge's brand list", () => {
+    expect(
+      isChromiumBrands([
+        { brand: "Not)A;Brand", version: "24" },
+        { brand: "Chromium", version: "128" },
+        { brand: "Microsoft Edge", version: "128" },
+      ]),
+    ).toBe(true);
+  });
+
+  describe("edge cases", () => {
+    it("returns false for an empty brand list", () => {
+      expect(isChromiumBrands([])).toBe(false);
+    });
+
+    it("returns false when userAgentData is missing (Firefox, Safari)", () => {
+      expect(isChromiumBrands(undefined)).toBe(false);
+    });
+
+    it("returns false for a brand list without Chromium", () => {
+      expect(isChromiumBrands([{ brand: "Not)A;Brand", version: "24" }])).toBe(false);
+    });
   });
 });
 

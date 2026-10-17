@@ -1,6 +1,6 @@
-import { describe, expect, it, beforeEach } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { beforeEach, describe, expect, it } from "vitest";
 
 describe("project.splitSyllablesAcrossIdenticalWordsWithHistory", () => {
   beforeEach(() => {

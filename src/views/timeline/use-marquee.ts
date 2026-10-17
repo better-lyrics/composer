@@ -96,12 +96,13 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
   const computeSelection = useCallback((rect: MarqueeRect): WordSelection[] => {
     const lines = getEffectiveLines(useProjectStore.getState().lines);
-    const { zoom, rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
+    const { zoom, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
     const layout = computeRowLayout({
       lines,
       rowHeights,
       defaultRowHeight,
       collapsedInstances,
+      focusedGroup,
       waveformHeight: WAVEFORM_HEIGHT,
       groupHeaderHeight: GROUP_HEADER_HEIGHT,
     });

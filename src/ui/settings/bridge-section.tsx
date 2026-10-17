@@ -1,18 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
-import { IconCheck, IconExclamationCircle, IconLoader2 } from "@tabler/icons-react";
 import { useSettingsStore } from "@/stores/settings";
 import { settingEntry } from "@/stores/settings-catalog";
-import { hasBridgeEverBeenDetected, markBridgeDetected } from "@/utils/bridge-detection";
-import {
-  type BridgeHealth,
-  checkBridgeHealth,
-  DEFAULT_BRIDGE_URL,
-  HEALTH_QUERY_KEY,
-} from "@/utils/composer-bridge-api";
-import { cn } from "@/utils/cn";
 import { BridgeInstallGuide } from "@/ui/settings/bridge-install-guide";
 import { BridgeUrlField } from "@/ui/settings/bridge-url-field";
+import { hasBridgeEverBeenDetected, markBridgeDetected } from "@/utils/bridge-detection";
+import { cn } from "@/utils/cn";
+import {
+  type BridgeHealth,
+  DEFAULT_BRIDGE_URL,
+  HEALTH_QUERY_KEY,
+  checkBridgeHealth,
+} from "@/utils/composer-bridge-api";
+import { IconCheck, IconExclamationCircle, IconLoader2 } from "@tabler/icons-react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
