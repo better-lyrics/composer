@@ -1,10 +1,10 @@
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { isCountingIn } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
-import { useSettingsStore } from "@/stores/settings";
-import { createAudioFile } from "@/test/audio-fixtures";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
+import { createAudioFile } from "@/test/audio-fixtures";
 import { render } from "@/test/render";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
@@ -200,6 +200,45 @@ describe("useGlobalShortcuts · playback speed toggle", () => {
       } finally {
         input.remove();
       }
+    });
+
+    it("goes back to the last speed other than normal", async () => {
+      useAudioStore.getState().setPlaybackRate(0.5);
+      useAudioStore.getState().setPlaybackRate(1);
+      await renderEditorShortcuts();
+      pressSpeedToggle();
+      expect(useAudioStore.getState().playbackRate).toBe(0.5);
+    });
+
+    it("remembers a faster speed too", async () => {
+      useAudioStore.getState().setPlaybackRate(1.25);
+      await renderEditorShortcuts();
+      pressSpeedToggle();
+      expect(useAudioStore.getState().playbackRate).toBe(1);
+      pressSpeedToggle();
+      expect(useAudioStore.getState().playbackRate).toBe(1.25);
+    });
+
+    it("starts from a saved default speed other than normal", async () => {
+      useSettingsStore.setState({ defaultPlaybackRate: 0.6 });
+      useAudioStore.getState().reset();
+      useAudioStore.getState().setPlaybackRate(1);
+      await renderEditorShortcuts();
+      pressSpeedToggle();
+      expect(useAudioStore.getState().playbackRate).toBe(0.6);
+    });
+  });
+
+  describe("invariants", () => {
+    it("never remembers normal speed as the other speed", async () => {
+      useAudioStore.getState().setPlaybackRate(0.5);
+      useAudioStore.getState().setPlaybackRate(1);
+      useAudioStore.getState().setPlaybackRate(1);
+      await renderEditorShortcuts();
+      pressSpeedToggle();
+      pressSpeedToggle();
+      pressSpeedToggle();
+      expect(useAudioStore.getState().playbackRate).toBe(0.5);
     });
   });
 });

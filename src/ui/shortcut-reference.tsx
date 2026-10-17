@@ -26,7 +26,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["Enter"], description: "Play / Pause audio", shortcutId: "global.playPause" },
       {
         keys: ["Shift", "R"],
-        description: "Switch between 0.75x and normal speed",
+        description: "Switch between normal speed and the last speed you used (0.75x at first)",
         shortcutId: "global.togglePlaybackSpeed",
       },
       { keys: ["Mod", "O"], description: "Switch project", shortcutId: "global.openProjectSwitcher" },

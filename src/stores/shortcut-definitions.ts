@@ -31,7 +31,7 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
   {
     id: "global.togglePlaybackSpeed",
     scope: "global",
-    description: "Switch between 0.75x and normal speed",
+    description: "Switch between normal speed and the last speed you used (0.75x at first)",
     defaultBinding: { key: "r", shift: true },
   },
   {

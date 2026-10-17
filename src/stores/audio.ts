@@ -13,6 +13,7 @@ interface AudioState {
   currentTime: number;
   duration: number;
   playbackRate: number;
+  otherPlaybackRate: number;
   volume: number;
   isMuted: boolean;
   isLoading: boolean;
@@ -45,6 +46,9 @@ interface AudioActions {
 
 // -- Constants ----------------------------------------------------------------
 
+const NORMAL_PLAYBACK_RATE = 1;
+const FIRST_OTHER_PLAYBACK_RATE = 0.75;
+
 function createInitialState(): AudioState {
   const settings = useSettingsStore.getState();
   return {
@@ -53,6 +57,8 @@ function createInitialState(): AudioState {
     currentTime: 0,
     duration: 0,
     playbackRate: settings.defaultPlaybackRate,
+    otherPlaybackRate:
+      settings.defaultPlaybackRate === NORMAL_PLAYBACK_RATE ? FIRST_OTHER_PLAYBACK_RATE : settings.defaultPlaybackRate,
     volume: settings.rememberVolume ? settings.lastVolume : 1,
     isMuted: false,
     isLoading: false,
@@ -148,7 +154,7 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   setPlaybackRate: (playbackRate) => {
     if (!Number.isFinite(playbackRate) || playbackRate <= 0) return;
     useSettingsStore.getState().set("defaultPlaybackRate", playbackRate);
-    set({ playbackRate });
+    set(playbackRate === NORMAL_PLAYBACK_RATE ? { playbackRate } : { playbackRate, otherPlaybackRate: playbackRate });
   },
   setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
   toggleMute: () => set((s) => ({ isMuted: !s.isMuted })),
@@ -168,6 +174,11 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
 
 // -- Readers ------------------------------------------------------------------
 
+function toggledPlaybackRate(): number {
+  const { playbackRate, otherPlaybackRate } = useAudioStore.getState();
+  return playbackRate === NORMAL_PLAYBACK_RATE ? otherPlaybackRate : NORMAL_PLAYBACK_RATE;
+}
+
 function livePlaybackTime(): number {
   const { audioElement, currentTime } = useAudioStore.getState();
   return audioElement?.currentTime ?? currentTime;
@@ -175,5 +186,5 @@ function livePlaybackTime(): number {
 
 // -- Exports ------------------------------------------------------------------
 
-export { livePlaybackTime, useAudioStore };
+export { livePlaybackTime, toggledPlaybackRate, useAudioStore };
 export type { AudioSource };
