@@ -51,14 +51,14 @@ const FIRST_OTHER_PLAYBACK_RATE = 0.75;
 
 function createInitialState(): AudioState {
   const settings = useSettingsStore.getState();
+  const startRate = settings.rememberPlaybackRate ? settings.lastPlaybackRate : settings.defaultPlaybackRate;
   return {
     source: null,
     isPlaying: false,
     currentTime: 0,
     duration: 0,
-    playbackRate: settings.defaultPlaybackRate,
-    otherPlaybackRate:
-      settings.defaultPlaybackRate === NORMAL_PLAYBACK_RATE ? FIRST_OTHER_PLAYBACK_RATE : settings.defaultPlaybackRate,
+    playbackRate: startRate,
+    otherPlaybackRate: startRate === NORMAL_PLAYBACK_RATE ? FIRST_OTHER_PLAYBACK_RATE : startRate,
     volume: settings.rememberVolume ? settings.lastVolume : 1,
     isMuted: false,
     isLoading: false,
@@ -153,7 +153,8 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   setDuration: (duration) => set({ duration }),
   setPlaybackRate: (playbackRate) => {
     if (!Number.isFinite(playbackRate) || playbackRate <= 0) return;
-    useSettingsStore.getState().set("defaultPlaybackRate", playbackRate);
+    const settings = useSettingsStore.getState();
+    if (settings.rememberPlaybackRate) settings.set("lastPlaybackRate", playbackRate);
     set(playbackRate === NORMAL_PLAYBACK_RATE ? { playbackRate } : { playbackRate, otherPlaybackRate: playbackRate });
   },
   setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
