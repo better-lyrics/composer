@@ -7,45 +7,86 @@ const WIN_LENGTH = N_FFT;
 // default. The symmetric variant (divisor `size - 1`) introduces a small but
 // consistent shape error across every frame that gets amplified through the
 // HTDemucs magnitude branch — audible as distortion in the separated stems.
+const hannWindows = new Map<number, Float32Array>();
+
 function hannWindow(size: number): Float32Array {
+  const cached = hannWindows.get(size);
+  if (cached) return cached;
   const w = new Float32Array(size);
   for (let i = 0; i < size; i++) {
     w[i] = 0.5 * (1 - Math.cos((2 * Math.PI * i) / size));
   }
+  hannWindows.set(size, w);
   return w;
 }
 
-function bitReverse(value: number, bits: number): number {
-  let reversed = 0;
-  let v = value;
-  for (let i = 0; i < bits; i++) {
-    reversed = (reversed << 1) | (v & 1);
-    v >>>= 1;
+// Twiddle factors and the bit-reversal permutation depend only on the FFT
+// length, so build them once. Recomputing cos/sin per butterfly dominated the
+// per-chunk CPU time and left the GPU idle between inference calls.
+interface FftPlan {
+  bitReversed: Uint32Array;
+  cos: Float64Array;
+  sin: Float64Array;
+}
+
+const fftPlans = new Map<number, FftPlan>();
+
+function getFftPlan(n: number): FftPlan {
+  const cached = fftPlans.get(n);
+  if (cached) return cached;
+
+  const bits = Math.log2(n);
+  if (!Number.isInteger(bits)) throw new Error("FFT length must be power of 2");
+
+  const bitReversed = new Uint32Array(n);
+  for (let i = 0; i < n; i++) {
+    let reversed = 0;
+    let v = i;
+    for (let b = 0; b < bits; b++) {
+      reversed = (reversed << 1) | (v & 1);
+      v >>>= 1;
+    }
+    bitReversed[i] = reversed;
   }
-  return reversed;
+
+  // w_k = exp(-2*pi*i*k/n) for k in [0, n/2). A stage of size `size` uses every
+  // (n/size)-th entry.
+  const cos = new Float64Array(n / 2);
+  const sin = new Float64Array(n / 2);
+  for (let k = 0; k < n / 2; k++) {
+    const angle = (-2 * Math.PI * k) / n;
+    cos[k] = Math.cos(angle);
+    sin[k] = Math.sin(angle);
+  }
+
+  const plan = { bitReversed, cos, sin };
+  fftPlans.set(n, plan);
+  return plan;
 }
 
 function fftRadix2(real: Float32Array, imag: Float32Array): void {
   const n = real.length;
-  const bits = Math.log2(n);
-  if (!Number.isInteger(bits)) throw new Error("FFT length must be power of 2");
+  const { bitReversed, cos, sin } = getFftPlan(n);
 
   for (let i = 0; i < n; i++) {
-    const j = bitReverse(i, bits);
+    const j = bitReversed[i];
     if (j > i) {
-      [real[i], real[j]] = [real[j], real[i]];
-      [imag[i], imag[j]] = [imag[j], imag[i]];
+      const tr = real[i];
+      real[i] = real[j];
+      real[j] = tr;
+      const ti = imag[i];
+      imag[i] = imag[j];
+      imag[j] = ti;
     }
   }
 
   for (let size = 2; size <= n; size *= 2) {
     const halfsize = size / 2;
-    const angleStep = (-2 * Math.PI) / size;
+    const tableStep = n / size;
     for (let i = 0; i < n; i += size) {
       for (let k = 0; k < halfsize; k++) {
-        const angle = angleStep * k;
-        const wr = Math.cos(angle);
-        const wi = Math.sin(angle);
+        const wr = cos[k * tableStep];
+        const wi = sin[k * tableStep];
         const idx = i + k;
         const jdx = idx + halfsize;
         const tr = wr * real[jdx] - wi * imag[jdx];
