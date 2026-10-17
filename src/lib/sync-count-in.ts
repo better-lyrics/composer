@@ -2,6 +2,7 @@ import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { SYNC_COUNT_IN_IDLE, useSyncCountInStore } from "@/stores/sync-count-in";
+import { useSyncEditModeStore } from "@/stores/sync-edit-mode";
 
 // -- Types --------------------------------------------------------------------
 
@@ -38,6 +39,7 @@ function isAtSongStart(): boolean {
 function countsIn(): boolean {
   return (
     useProjectStore.getState().activeTab === "sync" &&
+    !useSyncEditModeStore.getState().editMode &&
     useAudioStore.getState().source !== null &&
     isAtSongStart() &&
     useSettingsStore.getState().syncCountIn > 0

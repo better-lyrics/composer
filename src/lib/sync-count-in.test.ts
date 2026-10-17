@@ -3,6 +3,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useSyncCountInStore } from "@/stores/sync-count-in";
+import { setSyncEditMode } from "@/stores/sync-edit-mode";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 function loadSong(): void {
@@ -19,6 +20,7 @@ beforeEach(() => {
   loadSong();
   useProjectStore.setState({ activeTab: "sync" });
   useSettingsStore.setState({ syncCountIn: 3 });
+  setSyncEditMode(false);
 });
 
 afterEach(() => {
@@ -84,6 +86,12 @@ describe("requestPlayback", () => {
       useProjectStore.setState({ activeTab: "timeline" });
       expect(requestPlayback()).toBe("playing");
       expect(isPlaying()).toBe(true);
+    });
+
+    it("plays at once in Sync edit mode", () => {
+      setSyncEditMode(true);
+      expect(requestPlayback()).toBe("playing");
+      expect(isCountingIn()).toBe(false);
     });
 
     it("plays at once without a song, so no count runs for nothing", () => {

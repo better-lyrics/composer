@@ -10,6 +10,7 @@ import { useSeparationStore } from "@/stores/separation";
 import { DEFAULTS as SETTINGS_DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { SYNC_COUNT_IN_IDLE, useSyncCountInStore } from "@/stores/sync-count-in";
+import { setSyncEditMode } from "@/stores/sync-edit-mode";
 import { INITIAL_STATE as THEME_INITIAL_STATE, useThemeStore } from "@/stores/theme";
 import { UI_INITIAL_STATE, useUIStore } from "@/stores/ui";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -28,6 +29,7 @@ function hasLocalStorage(): boolean {
 async function resetAllStores(): Promise<void> {
   cancelCountIn();
   useSyncCountInStore.setState(SYNC_COUNT_IN_IDLE);
+  setSyncEditMode(false);
   await clearPersistedStorage(useSettingsStore);
   useSettingsStore.setState(SETTINGS_DEFAULTS);
 

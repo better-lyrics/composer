@@ -11,6 +11,7 @@ import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { setSyncEditMode, useSyncEditModeStore } from "@/stores/sync-edit-mode";
 import { EmptyState } from "@/ui/empty-state";
 import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
@@ -70,7 +71,8 @@ const SyncPanel: React.FC = () => {
     isActive: false,
   });
   const [showPulse, setShowPulse] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const editMode = useSyncEditModeStore((s) => s.editMode);
+  useEffect(() => () => setSyncEditMode(false), []);
   const [isHolding, setIsHolding] = useState(false);
   const [rippleTarget, setRippleTarget] = useState<RippleTarget | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -238,7 +240,7 @@ const SyncPanel: React.FC = () => {
 
   const handleToggleEdit = useCallback(() => {
     const entering = !editMode;
-    setEditMode(entering);
+    setSyncEditMode(entering);
     if (entering && isPlaying) setIsPlaying(false);
   }, [editMode, isPlaying, setIsPlaying]);
 

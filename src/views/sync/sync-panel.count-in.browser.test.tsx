@@ -1,5 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
-import { isCountingIn } from "@/lib/sync-count-in";
+import { isCountingIn, togglePlayback } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -181,6 +181,24 @@ describe("Sync count-in · regressions", () => {
     expect(isCountingIn()).toBe(false);
     await expect.poll(() => words().length).toBe(1);
     key({ key: "f", code: "KeyF" }, "keyup");
+  });
+
+  it("regression: play in edit mode at the song start plays at once", async () => {
+    load([createLine({ id: "l0", text: "Hold me close", begin: 1, end: 2 })], 3);
+    const screen = await render(<SyncPanel />);
+    await screen.getByRole("button", { name: "Edit" }).click();
+    togglePlayback();
+    expect(isCountingIn()).toBe(false);
+    expect(isPlaying()).toBe(true);
+  });
+
+  it("counts in again after leaving edit mode", async () => {
+    load([createLine({ id: "l0", text: "Hold me close" })], 3);
+    const screen = await render(<SyncPanel />);
+    await screen.getByRole("button", { name: "Edit" }).click();
+    await screen.getByRole("button", { name: "Done" }).click();
+    togglePlayback();
+    expect(isCountingIn()).toBe(true);
   });
 });
 
