@@ -40,6 +40,7 @@ async function mountSyncHandlers(opts: MountOptions = {}) {
   const getSyncState = () => syncState;
   const startTime = opts.initialCurrentTime ?? 0;
   const playingCalls: boolean[] = [];
+  if (opts.initialCurrentTime !== undefined) useAudioStore.setState({ currentTime: opts.initialCurrentTime });
 
   const { result, rerender, act } = await renderHook(
     (props?: HookProps) => {
@@ -49,7 +50,6 @@ async function mountSyncHandlers(opts: MountOptions = {}) {
         lines,
         syncState: state,
         setSyncState,
-        currentTime: props?.currentTime ?? startTime,
         editMode: opts.editMode ?? false,
         granularity: opts.granularity ?? "word",
         setShowPulse: noopBool,
@@ -59,7 +59,12 @@ async function mountSyncHandlers(opts: MountOptions = {}) {
     { initialProps: { syncState, currentTime: startTime } },
   );
 
-  return { result, rerender, act, getSyncState, playingCalls };
+  const rerenderAt = async (props: HookProps) => {
+    useAudioStore.setState({ currentTime: props.currentTime });
+    await rerender(props);
+  };
+
+  return { result, rerender: rerenderAt, act, getSyncState, playingCalls };
 }
 
 describe("useSyncHandlers.handleTap (word granularity)", () => {

@@ -7,7 +7,7 @@ import { previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { isCountingIn } from "@/lib/sync-count-in";
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -109,7 +109,6 @@ const SyncPanel: React.FC = () => {
     lines,
     syncState,
     setSyncState,
-    currentTime,
     editMode,
     granularity,
     setShowPulse,
@@ -187,14 +186,12 @@ const SyncPanel: React.FC = () => {
     handleHoldEndRaw();
   }, [handleHoldEndRaw, triggerRippleAtCurrentPosition]);
 
-  // Smooth word progress updates (reads audioElement.currentTime directly)
   useFrameLoop(
     () => {
       const container = scrollContainerRef.current;
       if (!container) return;
 
-      const audioEl = useAudioStore.getState().audioElement;
-      const time = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+      const time = livePlaybackTime();
 
       const wordEls = container.querySelectorAll<HTMLElement>("[data-word-begin]");
       for (const el of wordEls) {

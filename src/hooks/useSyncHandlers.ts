@@ -12,7 +12,7 @@ import { isCursorPastEnd, nextSyncableLineIndex, previousSlot } from "@/domain/s
 import type { WordTiming } from "@/domain/word/timing";
 import { keptSyncReRecording, syncReRecordingAt, useSyncCursor } from "@/hooks/useSyncCursor";
 import { requestPlayback } from "@/lib/sync-count-in";
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -30,7 +30,6 @@ interface UseSyncHandlersProps {
   lines: LyricLine[];
   syncState: SyncState;
   setSyncState: React.Dispatch<React.SetStateAction<SyncState>>;
-  currentTime: number;
   editMode: boolean;
   granularity: "line" | "word";
   setShowPulse: (show: boolean) => void;
@@ -59,7 +58,6 @@ function useSyncHandlers({
   lines,
   syncState,
   setSyncState,
-  currentTime,
   editMode,
   granularity,
   setShowPulse,
@@ -77,19 +75,12 @@ function useSyncHandlers({
   const currentLine = lines[lineIndex];
   const isComplete = isCursorPastEnd(lines, cursor);
 
-  // Store `currentTime` only advances on `timeupdate` (~4 Hz); read the element's
-  // live clock so taps under that interval don't collide into zero-length syllables.
-  const readTapTime = useCallback(
-    () => useAudioStore.getState().audioElement?.currentTime ?? currentTime,
-    [currentTime],
-  );
-
   const runGesture = useCallback(
     (gesture: SyncGesture): boolean => {
       const ctx = {
         cursor,
         jumped,
-        time: readTapTime(),
+        time: livePlaybackTime(),
         defaultWordDuration: useSettingsStore.getState().defaultWordDuration,
         groups: useProjectStore.getState().groups,
         skippedInstances,
@@ -148,7 +139,6 @@ function useSyncHandlers({
       cursor,
       jumped,
       skippedInstances,
-      readTapTime,
       updateLinesWithHistory,
       setSyncState,
       seekTo,
