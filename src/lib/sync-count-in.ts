@@ -95,4 +95,3 @@ function togglePlayback(): void {
 // -- Exports ------------------------------------------------------------------
 
 export { cancelCountIn, isCountingIn, requestPlayback, skipCountIn, togglePlayback };
-export type { PlaybackRequest };

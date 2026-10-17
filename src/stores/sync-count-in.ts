@@ -23,4 +23,3 @@ const useSyncCountInStore = create<SyncCountInState>(() => SYNC_COUNT_IN_IDLE);
 // -- Exports ------------------------------------------------------------------
 
 export { SYNC_COUNT_IN_IDLE, selectIsCountingIn, useSyncCountInStore };
-export type { SyncCountInState };
