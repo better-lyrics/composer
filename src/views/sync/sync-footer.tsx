@@ -1,8 +1,8 @@
 import { getEffectiveKeysArray, getShortcutDescription } from "@/stores/shortcut-bindings";
 import { syncCarouselTransition, syncPulseVariants } from "@/utils/animationVariants";
+import { cn } from "@/utils/cn";
 import { TimingDisplay } from "@/views/sync/timing-display";
 import { m } from "motion/react";
-import { cn } from "@/utils/cn";
 
 interface SyncGestureControlsProps {
   currentWord?: string;
@@ -24,7 +24,11 @@ const SyncGestureControls: React.FC<SyncGestureControlsProps> = ({
   handleTapPointerDown,
 }) => (
   <div className="flex items-center gap-4">
-    {currentWord && <span className="text-xl font-medium text-composer-text">{displayWord ?? currentWord}</span>}
+    {currentWord && (
+      <span className="rounded-md border border-composer-accent/40 bg-composer-accent/10 px-2.5 py-1 text-xl font-medium text-composer-accent-text">
+        {displayWord ?? currentWord}
+      </span>
+    )}
     <div className="flex items-center gap-2">
       <m.button
         type="button"
