@@ -58,16 +58,19 @@ describe("AudioPlayer", () => {
     expect(useAudioStore.getState().isPlaying).toBe(false);
   });
 
-  it("cancels a running count-in when clicked again", async () => {
+  it("shows the pause state during the count, and a click cancels it", async () => {
     setupAudioSource();
     useAudioStore.setState({ currentTime: 0 });
     useProjectStore.setState({ activeTab: "sync" });
     useSettingsStore.setState({ syncCountIn: 3 });
     const screen = await render(<AudioPlayer />);
     await screen.getByRole("button", { name: "Play" }).click();
-    await screen.getByRole("button", { name: "Play" }).click();
+    await expect.element(screen.getByRole("button", { name: "Pause" }), { timeout: 500 }).toBeInTheDocument();
+    expect(isCountingIn()).toBe(true);
+    await screen.getByRole("button", { name: "Pause" }).click();
     expect(isCountingIn()).toBe(false);
     expect(useAudioStore.getState().isPlaying).toBe(false);
+    await expect.element(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
   });
 
   it("opens the playback rate popover and applies a preset", async () => {
