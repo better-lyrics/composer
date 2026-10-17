@@ -1,3 +1,4 @@
+import { editorHighlightTexts } from "@/test/editor-highlights";
 import { render } from "@/test/render";
 import { TtmlEditor } from "@/views/export/ttml-editor";
 import { useState } from "react";
@@ -86,16 +87,16 @@ describe("TtmlEditor · highlighting", () => {
     const screen = await render(<EditorHarness initialValue={VALID} generatedTtml={VALID} />);
     const layer = layerIn(screen.container);
     expect(layer?.textContent).toBe(VALID);
-    expect([...(layer?.querySelectorAll(".bh-timestamp") ?? [])].map((stamp) => stamp.textContent)).toEqual([
-      "00:01.000",
-      "00:02.000",
-    ]);
+    if (!layer) throw new Error("highlight layer not rendered");
+    expect(editorHighlightTexts(layer, "timestamp")).toEqual(["00:01.000", "00:02.000"]);
   });
 
   it("keeps highlighting a TTML edit that no longer looks like TTML", async () => {
     const fragment = `<p begin="00:01.000" end="00:02.000">Hello</p>`;
     const screen = await render(<EditorHarness initialValue={fragment} generatedTtml={VALID} />);
-    expect(layerIn(screen.container)?.querySelectorAll(".bh-timestamp")).toHaveLength(2);
+    const layer = layerIn(screen.container);
+    if (!layer) throw new Error("highlight layer not rendered");
+    expect(editorHighlightTexts(layer, "timestamp")).toEqual(["00:01.000", "00:02.000"]);
   });
 
   it("re-highlights when the value is replaced from outside", async () => {

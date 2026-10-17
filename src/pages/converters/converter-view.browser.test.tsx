@@ -7,6 +7,7 @@ import {
   installStyleSheet,
   installUtilitiesUsedIn,
 } from "@/test/browser-css";
+import { editorHighlightTexts } from "@/test/editor-highlights";
 import { render } from "@/test/render";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
@@ -253,8 +254,9 @@ describe("converter highlighting", () => {
     const screen = await renderLrcConverter();
     await screen.getByRole("textbox", { name: "Converter input" }).fill("[00:01.00]Hello");
     const layer = screen.container.querySelector(".bh-edit > .bh-layer");
-    expect(layer?.textContent).toBe("[00:01.00]Hello");
-    expect(layer?.querySelector(".bh-timestamp")?.textContent).toBe("00:01.00");
+    if (!layer) throw new Error("highlight layer not rendered");
+    expect(layer.textContent).toBe("[00:01.00]Hello");
+    expect(editorHighlightTexts(layer, "timestamp")).toEqual(["00:01.00"]);
   });
 
   it("highlights the loaded sample in the input", async () => {

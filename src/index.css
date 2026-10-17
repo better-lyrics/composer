@@ -492,6 +492,7 @@ input[type="range"].settings-slider::-moz-range-progress {
 .bh-edit {
   --bh-text: var(--color-composer-text);
   --bh-bgText: color-mix(in srgb, var(--color-composer-text) 80%, var(--color-composer-bg));
+  --bh-bgText-editor: color-mix(in srgb, var(--color-composer-text) 70%, var(--color-composer-bg));
   --bh-timestamp: color-mix(
     in srgb,
     color-mix(in srgb, var(--color-composer-accent-text) 80%, var(--color-composer-text)) 70%,

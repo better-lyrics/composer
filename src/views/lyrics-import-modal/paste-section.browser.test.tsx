@@ -1,5 +1,7 @@
+import { editorHighlightTexts } from "@/test/editor-highlights";
 import { render } from "@/test/render";
 import { PasteSection } from "@/views/lyrics-import-modal/paste-section";
+import { TOKEN_TYPES } from "@braccato/highlight";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
@@ -163,28 +165,31 @@ describe("PasteSection · highlighting", () => {
     return document.querySelector<HTMLElement>(".bh-edit > .bh-layer");
   }
 
+  function paintedLayer(): HTMLElement {
+    const rendered = layer();
+    if (!rendered) throw new Error("highlight layer not rendered");
+    return rendered;
+  }
+
   it("highlights a pasted LRC file", async () => {
     await render(<Controlled />);
     const textarea = document.querySelector("textarea") as HTMLTextAreaElement;
     textarea.focus();
     await userEvent.fill(textarea, "[00:01.00]First\n[00:02.50]Second");
-    expect([...(layer()?.querySelectorAll(".bh-timestamp") ?? [])].map((stamp) => stamp.textContent)).toEqual([
-      "00:01.00",
-      "00:02.50",
-    ]);
+    expect(editorHighlightTexts(paintedLayer(), "timestamp")).toEqual(["00:01.00", "00:02.50"]);
   });
 
   it("highlights a prefilled TTML file", async () => {
     const ttml = `<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:01.000" end="00:02.000">Hi</p></div></body></tt>`;
     await render(<Controlled initial={ttml} />);
     expect(layer()?.textContent).toBe(ttml);
-    expect(layer()?.querySelector(".bh-tag")?.textContent).toBe("tt");
+    expect(editorHighlightTexts(paintedLayer(), "tag")[0]).toBe("tt");
   });
 
   it("shows plain lyrics with split characters as plain text", async () => {
     await render(<Controlled initial={"beau|ti|ful day\nsecond line"} />);
     expect(layer()?.textContent).toBe("beau|ti|ful day\nsecond line");
-    expect(layer()?.querySelectorAll("span:not(.bh-line)")).toHaveLength(0);
+    for (const type of TOKEN_TYPES) expect(editorHighlightTexts(paintedLayer(), type), type).toEqual([]);
   });
 
   it("uses a monospace font so the highlight stays under the caret", async () => {

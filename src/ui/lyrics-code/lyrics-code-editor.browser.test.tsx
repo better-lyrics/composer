@@ -2,6 +2,7 @@ import { deriveTheme } from "@/domain/theme/derive";
 import { TOKENS } from "@/domain/theme/model";
 import { PRESET_BY_ID } from "@/domain/theme/presets";
 import { CODE_SURFACE_TINT, LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
+import { editorHighlightTexts } from "@/test/editor-highlights";
 import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { resolvedColor } from "@/test/resolved-color";
@@ -105,7 +106,7 @@ describe("LyricsCodeEditor", () => {
     expect(textarea.parentElement?.parentElement).toBe(frame);
     expect(textarea.classList.contains("bh-input")).toBe(true);
     expect(layer.getAttribute("aria-hidden")).toBe("true");
-    await expect.poll(() => layer.querySelectorAll(".bh-wordTime")).toHaveLength(2);
+    await expect.poll(() => editorHighlightTexts(layer, "wordTime")).toEqual(["00:01.00", "00:01.50"]);
   });
 
   it("frames the editor in a recessed pane whose border takes the accent while focused", async () => {
@@ -135,7 +136,7 @@ describe("LyricsCodeEditor", () => {
     textarea.focus();
     await userEvent.keyboard("[[00:01.00]Hi");
     expect(textarea.value).toBe("[00:01.00]Hi");
-    await expect.poll(() => layerIn(screen.container).querySelector(".bh-timestamp")?.textContent).toBe("00:01.00");
+    await expect.poll(() => editorHighlightTexts(layerIn(screen.container), "timestamp")).toEqual(["00:01.00"]);
   });
 
   it("refreshes the layer when the value changes from code", async () => {
@@ -152,9 +153,11 @@ describe("LyricsCodeEditor", () => {
     const fragment = `<p begin="00:00:12.000" end="00:00:15.200">Line</p>`;
     const screen = await render(<Harness initial={fragment} />);
     await stepFrames(2);
-    expect(layerIn(screen.container).querySelector(".bh-timestamp")).toBeNull();
+    expect(editorHighlightTexts(layerIn(screen.container), "timestamp")).toEqual([]);
     await screen.rerender(<Harness initial={fragment} format="ttml" />);
-    await expect.poll(() => layerIn(screen.container).querySelectorAll(".bh-timestamp")).toHaveLength(2);
+    await expect
+      .poll(() => editorHighlightTexts(layerIn(screen.container), "timestamp"))
+      .toEqual(["00:00:12.000", "00:00:15.200"]);
   });
 
   it("shares the textarea's box with the layer so the colours sit under the caret", async () => {

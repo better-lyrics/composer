@@ -1,4 +1,5 @@
 import { LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
+import { editorHighlightTexts } from "@/test/editor-highlights";
 import { render } from "@/test/render";
 import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import type { LyricFormat } from "@braccato/highlight";
@@ -86,7 +87,9 @@ describe("LyricsCodeEditor regressions", () => {
     document.execCommand("insertText", false, "x");
     await expect.poll(() => textarea.value).toBe(`${TTML_FRAGMENT}x`);
     await screen.rerender(<Harness initial={TTML_FRAGMENT} format="ttml" />);
-    await expect.poll(() => layerIn(screen.container).querySelectorAll(".bh-timestamp")).toHaveLength(2);
+    await expect
+      .poll(() => editorHighlightTexts(layerIn(screen.container), "timestamp"))
+      .toEqual(["00:00:12.000", "00:00:15.200"]);
     expect(textarea.parentElement?.classList.contains("bh-edit")).toBe(true);
     expect(document.execCommand("undo")).toBe(true);
     await expect.poll(() => textarea.value).toBe(TTML_FRAGMENT);
@@ -99,6 +102,8 @@ describe("LyricsCodeEditor regressions", () => {
     textarea.focus();
     textarea.setSelectionRange(textarea.value.length, textarea.value.length);
     await userEvent.keyboard(" ");
-    await expect.poll(() => layerIn(screen.container).querySelectorAll(".bh-timestamp")).toHaveLength(2);
+    await expect
+      .poll(() => editorHighlightTexts(layerIn(screen.container), "timestamp"))
+      .toEqual(["00:00:12.000", "00:00:15.200"]);
   });
 });

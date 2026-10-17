@@ -9,14 +9,14 @@ importers:
   .:
     dependencies:
       '@braccato/core':
-        specifier: ^1.16.6
-        version: 1.16.6
+        specifier: ^1.16.7
+        version: 1.16.7
       '@braccato/highlight':
-        specifier: ^0.2.0
-        version: 0.2.2
-      '@braccato/parsers':
         specifier: ^0.3.2
         version: 0.3.2
+      '@braccato/parsers':
+        specifier: ^0.4.0
+        version: 0.4.0
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -362,14 +362,14 @@ packages:
   '@borewit/text-codec@0.2.2':
     resolution: {integrity: sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ==}
 
-  '@braccato/core@1.16.6':
-    resolution: {integrity: sha512-WpOAd5yBEwcTRh6baX/RPtmUNmJvFPXzllPttvh3Hvg/uS7I8TBvLNVpFBX945VZZqsNSr+o+yFT/5ZpPlH9XA==}
+  '@braccato/core@1.16.7':
+    resolution: {integrity: sha512-xK73FHtw7b07ce07uj1PGv/d9McunpPEFTbtYZ9f5HC1ItRuvyDa5QPb67L/4Il3j0qaLT/oqkbDPKN1EjRxTw==}
 
-  '@braccato/highlight@0.2.2':
-    resolution: {integrity: sha512-7xqtWnPncz3iBWjiP+xNNY1vkjAxK+hZ/5ezXnicBj0kF0fFyjSlZCmNq8uGdRm9xHYVD1XKL908LlQ6cggm4g==}
+  '@braccato/highlight@0.3.2':
+    resolution: {integrity: sha512-1ZbgvqOhp3jsNnFbduyZdJRGMy78qv8JJyu64Zq//vld7aE4pk9HssAhitrh9eK8ByItM1U0RGOAroN+AxWIjg==}
 
-  '@braccato/parsers@0.3.2':
-    resolution: {integrity: sha512-Ppsq3f8s8MW+EXsGJES7FCqrihec2ReUnRfUM3fasQIMNaZkmh/KqenzMtJ6TTCat119raZVOljb2vUFPVePGQ==}
+  '@braccato/parsers@0.4.0':
+    resolution: {integrity: sha512-SXOMgPRPEHGQJ7fA1gZQVxE2ZZ9VEXMX0w5CskeQgGLZRzDF7/b/kU9znR9fo2qXfe7DgoPzqPgV6858JDSTZA==}
 
   '@braccato/types@1.0.0':
     resolution: {integrity: sha512-BHrCdJ5Uuc8IYJJqKT/4ULHkkbL8lk6KtAhfrx8bh3gC/huYwLDTBtOQAQSMriu3yMhV7TSvDd8L0loB5b1oeA==}
@@ -3032,15 +3032,15 @@ snapshots:
 
   '@borewit/text-codec@0.2.2': {}
 
-  '@braccato/core@1.16.6':
+  '@braccato/core@1.16.7':
     dependencies:
       '@braccato/types': 1.0.0
 
-  '@braccato/highlight@0.2.2':
+  '@braccato/highlight@0.3.2':
     dependencies:
-      '@braccato/parsers': 0.3.2
+      '@braccato/parsers': 0.4.0
 
-  '@braccato/parsers@0.3.2':
+  '@braccato/parsers@0.4.0':
     dependencies:
       '@braccato/types': 1.0.0
       fast-xml-parser: 5.10.1

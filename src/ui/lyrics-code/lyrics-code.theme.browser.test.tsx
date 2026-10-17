@@ -5,6 +5,7 @@ import { LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { resolvedColor } from "@/test/resolved-color";
 import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
+import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import { applyResolvedTheme } from "@/utils/theme/apply";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -72,9 +73,13 @@ function surfaceColor(layers: string[]): Rgba {
   return layers.map(tokenColor).reduce((below, above) => composite(above, below));
 }
 
-function codeSurface(pre: HTMLElement, view: string, layers: string[]): Rgba {
+function codeSurface(pane: HTMLElement, view: string, layers: string[]): Rgba {
   const page = surfaceColor(layers);
-  return OWN_BACKGROUND_VIEWS.has(view) ? page : composite(parseColor(getComputedStyle(pre).backgroundColor), page);
+  return OWN_BACKGROUND_VIEWS.has(view) ? page : composite(parseColor(getComputedStyle(pane).backgroundColor), page);
+}
+
+function editorHighlightColor(line: HTMLElement, type: string): Rgba {
+  return parseColor(getComputedStyle(line, `::highlight(bh-${type})`).color);
 }
 
 function contrastByType(pre: HTMLElement, surface: Rgba): Record<string, number> {
@@ -164,6 +169,32 @@ describe("LyricsCode theme ratios", () => {
       if (!pre || !bgText) throw new Error("background vocals not rendered");
       expect(getComputedStyle(bgText).color).not.toBe(getComputedStyle(pre).color);
       expect(getComputedStyle(bgText).fontStyle).toBe("italic");
+    });
+
+    describe("editor", () => {
+      async function renderEditor() {
+        const screen = await render(<LyricsCodeEditor value={TTML} aria-label="Lyrics source" onChange={() => {}} />);
+        const frame = screen.container.querySelector<HTMLElement>(".lyrics-code-frame");
+        const line = screen.container.querySelector<HTMLElement>(".bh-edit > .bh-layer > .bh-line");
+        if (!frame || !line) throw new Error("editor not rendered");
+        return { frame, text: parseColor(getComputedStyle(line).color), bgText: editorHighlightColor(line, "bgText") };
+      }
+
+      it.each(Object.entries(SURFACE_LAYERS_BY_VIEW))(
+        "keeps background vocals readable and below the main words on %s",
+        async (view, layers) => {
+          const { frame, text, bgText } = await renderEditor();
+          const surface = codeSurface(frame, view, layers);
+          expect(contrastOn(bgText, surface)).toBeGreaterThanOrEqual(MIN_CONTRAST.bgText);
+          expect(contrastOn(bgText, surface)).toBeLessThan(contrastOn(text, surface));
+        },
+      );
+
+      it("paints background vocals in an opaque colour apart from the main words", async () => {
+        const { text, bgText } = await renderEditor();
+        expect(bgText[3]).toBe(1);
+        expect(bgText).not.toEqual(text);
+      });
     });
   });
 });
