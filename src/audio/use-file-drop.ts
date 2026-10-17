@@ -1,5 +1,6 @@
 import { UNSUPPORTED_AUDIO_FILE_MESSAGE, isSupportedAudioFile } from "@/domain/audio-file/supported-formats";
 import { PROJECT_FILE_EXTENSIONS_LABEL, isProjectFileName } from "@/lib/project-file-read";
+import { isFileDrag } from "@/utils/file-drag";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -35,14 +36,6 @@ const UNSUPPORTED_AUDIO_OR_PROJECT_FILE_MESSAGE = `${UNSUPPORTED_AUDIO_FILE_MESS
 const ONE_SONG_AT_A_TIME_MESSAGE = "Only one song loads at a time";
 
 // -- Helpers ------------------------------------------------------------------
-
-// Chrome adds the image file when a linked thumbnail is dragged, so a link that carries only images is a link drag.
-function carriesFiles(e: React.DragEvent): boolean {
-  const { types, items } = e.dataTransfer;
-  if (!types.includes("Files")) return false;
-  if (!types.includes("text/uri-list")) return true;
-  return Array.from(items).some((item) => item.kind === "file" && !item.type.startsWith("image/"));
-}
 
 function isUsableFile(file: File, takesProjectFiles: boolean): boolean {
   return (takesProjectFiles && isProjectFileName(file.name)) || isSupportedAudioFile(file);
@@ -89,7 +82,7 @@ function useFileDrop({ onFileDrop, onProjectFileDrop, capture = false }: FileDro
   );
 
   const onDragEnter = useCallback((e: React.DragEvent) => {
-    if (!carriesFiles(e)) return;
+    if (!isFileDrag(e.dataTransfer)) return;
     e.preventDefault();
     e.stopPropagation();
     const entered = enteredNodesRef.current;
@@ -99,7 +92,7 @@ function useFileDrop({ onFileDrop, onProjectFileDrop, capture = false }: FileDro
   }, []);
 
   const onDragLeave = useCallback((e: React.DragEvent) => {
-    if (!carriesFiles(e)) return;
+    if (!isFileDrag(e.dataTransfer)) return;
     e.preventDefault();
     e.stopPropagation();
     const entered = enteredNodesRef.current;
@@ -109,14 +102,14 @@ function useFileDrop({ onFileDrop, onProjectFileDrop, capture = false }: FileDro
   }, []);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
-    if (!carriesFiles(e)) return;
+    if (!isFileDrag(e.dataTransfer)) return;
     e.preventDefault();
     e.stopPropagation();
   }, []);
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
-      if (!carriesFiles(e)) return;
+      if (!isFileDrag(e.dataTransfer)) return;
       e.preventDefault();
       e.stopPropagation();
       endDrag();
