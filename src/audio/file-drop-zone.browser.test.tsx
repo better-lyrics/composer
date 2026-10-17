@@ -1,6 +1,8 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
+import { UNSUPPORTED_AUDIO_FILE_MESSAGE } from "@/domain/audio-file/supported-formats";
 import { createAudioFile } from "@/test/audio-fixtures";
-import { dragFile } from "@/test/file-drag";
+import { dispatchDrag, dragFile } from "@/test/file-drag";
+import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
@@ -172,6 +174,52 @@ describe("FileDropZone ids", () => {
     await expect.poll(() => label.classList.contains("border-composer-accent")).toBe(true);
     dragFile(label, "dragleave", createAudioFile());
     await expect.poll(() => label.classList.contains("border-composer-accent")).toBe(false);
+  });
+
+  describe("several files", () => {
+    async function renderZone(onFileDrop: (file: File) => void) {
+      const screen = await render(
+        <>
+          <FileDropZone accept="audio/*" onFileDrop={onFileDrop}>
+            <span>Drop</span>
+          </FileDropZone>
+          <Toaster />
+        </>,
+      );
+      const label = screen.container.querySelector("label");
+      if (!label) throw new Error("Drop zone not rendered");
+      return { screen, label };
+    }
+
+    it("loads the first supported file and says only one song loads", async () => {
+      const dropped: string[] = [];
+      const { screen, label } = await renderZone((file) => dropped.push(file.name));
+      const notes = new File(["x"], "notes.txt", { type: "text/plain" });
+      dispatchDrag(label, "drop", { files: [notes, createAudioFile("first.wav"), createAudioFile("second.wav")] });
+      expect(dropped).toEqual(["first.wav"]);
+      await expect.element(screen.getByText("Only one song loads at a time")).toBeInTheDocument();
+    });
+
+    it("says nothing extra for a single file", async () => {
+      const dropped: string[] = [];
+      const { screen, label } = await renderZone((file) => dropped.push(file.name));
+      dragFile(label, "drop", createAudioFile("only.wav"));
+      expect(dropped).toEqual(["only.wav"]);
+      await stepFrames(2);
+      expect(screen.container.ownerDocument.body.textContent).not.toContain("Only one song loads at a time");
+    });
+
+    it("refuses several files when none is supported", async () => {
+      const dropped: string[] = [];
+      const { screen, label } = await renderZone((file) => dropped.push(file.name));
+      const files = [
+        new File(["x"], "a.txt", { type: "text/plain" }),
+        new File(["x"], "b.txt", { type: "text/plain" }),
+      ];
+      dispatchDrag(label, "drop", { files });
+      expect(dropped).toEqual([]);
+      await expect.element(screen.getByText(UNSUPPORTED_AUDIO_FILE_MESSAGE)).toBeInTheDocument();
+    });
   });
 
   describe("project files", () => {

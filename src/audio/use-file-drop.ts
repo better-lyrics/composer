@@ -32,6 +32,7 @@ interface FileDrop {
 // -- Constants ----------------------------------------------------------------
 
 const UNSUPPORTED_FILE_MESSAGE = `${UNSUPPORTED_AUDIO_FILE_MESSAGE} or a project file (${PROJECT_FILE_EXTENSIONS_LABEL})`;
+const ONE_SONG_AT_A_TIME_MESSAGE = "Only one song loads at a time";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -39,6 +40,10 @@ const UNSUPPORTED_FILE_MESSAGE = `${UNSUPPORTED_AUDIO_FILE_MESSAGE} or a project
 function carriesFiles(e: React.DragEvent): boolean {
   const { types } = e.dataTransfer;
   return types.includes("Files") && !types.includes("text/uri-list");
+}
+
+function isUsableFile(file: File, takesProjectFiles: boolean): boolean {
+  return (takesProjectFiles && isProjectFileName(file.name)) || isSupportedAudioFile(file);
 }
 
 function forgetDetachedNodes(entered: Set<EventTarget>): void {
@@ -113,10 +118,13 @@ function useFileDrop({ onFileDrop, onProjectFileDrop, capture = false }: FileDro
       e.preventDefault();
       e.stopPropagation();
       endDrag();
-      const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
+      const files = Array.from(e.dataTransfer.files);
+      const file = files.find((candidate) => isUsableFile(candidate, onProjectFileDrop !== undefined)) ?? files[0];
+      if (!file) return;
+      handleFile(file);
+      if (files.length > 1) toast(ONE_SONG_AT_A_TIME_MESSAGE);
     },
-    [handleFile, endDrag],
+    [handleFile, endDrag, onProjectFileDrop],
   );
 
   const handlers: FileDropHandlers = capture
