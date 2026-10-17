@@ -24,7 +24,7 @@ const CountInStatus: React.FC = () => {
       <span aria-hidden="true">・</span>
       <span className="inline-flex items-center">
         <InlineKeyBadge keys={["Esc"]} />
-        <span className="ml-1.5">to cancel</span>
+        <span className="ml-1.5">to skip</span>
       </span>
     </div>
   );

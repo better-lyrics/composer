@@ -1,5 +1,3 @@
-import { Activity } from "react";
-import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { isCountingIn } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
@@ -9,6 +7,8 @@ import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { SyncPanel } from "@/views/sync/sync-panel";
+import { Activity } from "react";
+import { describe, expect, it } from "vitest";
 
 function load(lines: LyricLine[], countIn: number): void {
   useSettingsStore.setState({ syncCountIn: countIn });
@@ -72,14 +72,14 @@ describe("Sync count-in", () => {
       .toHaveTextContent("Starting in 3");
   });
 
-  it("cancels on Escape and stays paused", async () => {
-    load([createLine({ id: "l0", text: "Hold me close" })], 1);
+  it("skips the wait on Escape and plays at once", async () => {
+    load([createLine({ id: "l0", text: "Hold me close" })], 3);
     const screen = await render(<SyncPanel />);
     space();
     await expect.poll(() => screen.container.querySelector("[data-count-in-dots]")).not.toBeNull();
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     expect(isCountingIn()).toBe(false);
-    expect(isPlaying()).toBe(false);
+    expect(isPlaying()).toBe(true);
     await expect.poll(() => screen.container.querySelector("[data-count-in-dots]")).toBeNull();
   });
 

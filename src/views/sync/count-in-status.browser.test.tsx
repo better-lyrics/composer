@@ -9,12 +9,12 @@ function startCount(seconds: number, elapsedMs: number): void {
 }
 
 describe("CountInStatus", () => {
-  it("reads Starting in with the ring and how to cancel", async () => {
+  it("reads Starting in with the ring and how to skip the wait", async () => {
     startCount(3, 0);
     const screen = await render(<CountInStatus />);
     await expect.element(screen.getByText("Starting in", { exact: true })).toBeInTheDocument();
     await expect.element(screen.getByText("Esc", { exact: true })).toBeInTheDocument();
-    await expect.element(screen.getByText("to cancel", { exact: true })).toBeInTheDocument();
+    await expect.element(screen.getByText("to skip", { exact: true })).toBeInTheDocument();
   });
 
   it("counts the remaining whole seconds in the ring", async () => {

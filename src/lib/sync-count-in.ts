@@ -66,6 +66,12 @@ function cancelCountIn(): void {
   if (isCountingIn()) endCount();
 }
 
+function skipCountIn(): void {
+  if (!isCountingIn()) return;
+  endCount();
+  useAudioStore.getState().setIsPlaying(true);
+}
+
 function togglePlayback(): void {
   if (isCountingIn()) {
     cancelCountIn();
@@ -81,5 +87,5 @@ function togglePlayback(): void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { cancelCountIn, isCountingIn, requestPlayback, togglePlayback };
+export { cancelCountIn, isCountingIn, requestPlayback, skipCountIn, togglePlayback };
 export type { PlaybackRequest };

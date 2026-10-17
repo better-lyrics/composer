@@ -1,4 +1,4 @@
-import { cancelCountIn, isCountingIn, requestPlayback, togglePlayback } from "@/lib/sync-count-in";
+import { cancelCountIn, isCountingIn, requestPlayback, skipCountIn, togglePlayback } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -130,6 +130,28 @@ describe("regressions", () => {
     requestPlayback();
     useAudioStore.setState({ currentTime: 12, volume: 0.5 });
     expect(isCountingIn()).toBe(true);
+  });
+});
+
+describe("skipCountIn", () => {
+  it("ends a running count and plays at once", () => {
+    requestPlayback();
+    skipCountIn();
+    expect(isCountingIn()).toBe(false);
+    expect(isPlaying()).toBe(true);
+  });
+
+  it("does nothing without a running count", () => {
+    skipCountIn();
+    expect(isPlaying()).toBe(false);
+  });
+
+  it("does not play a second time when the count would have ended", () => {
+    requestPlayback();
+    skipCountIn();
+    useAudioStore.getState().setIsPlaying(false);
+    vi.advanceTimersByTime(5000);
+    expect(isPlaying()).toBe(false);
   });
 });
 
