@@ -200,6 +200,38 @@ describe("Sync count-in · regressions", () => {
     togglePlayback();
     expect(isCountingIn()).toBe(true);
   });
+
+  it("regression: entering edit mode during the count-in cancels it so the song never plays", async () => {
+    load([createLine({ id: "l0", text: "Hold me close" })], 1);
+    const screen = await render(<SyncPanel />);
+    space();
+    expect(isCountingIn()).toBe(true);
+    await screen.getByRole("button", { name: "Edit" }).click();
+    expect(isCountingIn()).toBe(false);
+    await new Promise((resolve) => setTimeout(resolve, 1300));
+    expect(isPlaying()).toBe(false);
+  });
+
+  it("regression: edit mode survives hiding the Sync tab", async () => {
+    load([createLine({ id: "l0", text: "Hold me close", begin: 1, end: 2 })], 3);
+    const screen = await render(
+      <Activity mode="visible">
+        <SyncPanel />
+      </Activity>,
+    );
+    await screen.getByRole("button", { name: "Edit" }).click();
+    await screen.rerender(
+      <Activity mode="hidden">
+        <SyncPanel />
+      </Activity>,
+    );
+    await screen.rerender(
+      <Activity mode="visible">
+        <SyncPanel />
+      </Activity>,
+    );
+    await expect.element(screen.getByRole("button", { name: "Done" })).toBeVisible();
+  });
 });
 
 describe("Sync count-in · invariants", () => {

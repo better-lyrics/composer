@@ -6,7 +6,7 @@ import { isSyncComplete, syncProgress } from "@/domain/line/sync-progress";
 import { previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
-import { isCountingIn } from "@/lib/sync-count-in";
+import { cancelCountIn, isCountingIn } from "@/lib/sync-count-in";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
@@ -28,8 +28,8 @@ import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
 import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
 import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
 import { SyncHeader } from "@/views/sync/sync-header";
-import { useSharedSyncView } from "@/views/sync/use-shared-sync-view";
 import { usePlacementPreroll } from "@/views/sync/use-placement-preroll";
+import { useSharedSyncView } from "@/views/sync/use-shared-sync-view";
 import { useSyncCountIn } from "@/views/sync/use-sync-count-in";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { m } from "motion/react";
@@ -72,7 +72,6 @@ const SyncPanel: React.FC = () => {
   });
   const [showPulse, setShowPulse] = useState(false);
   const editMode = useSyncEditModeStore((s) => s.editMode);
-  useEffect(() => () => setSyncEditMode(false), []);
   const [isHolding, setIsHolding] = useState(false);
   const [rippleTarget, setRippleTarget] = useState<RippleTarget | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -237,6 +236,7 @@ const SyncPanel: React.FC = () => {
 
   const handleToggleEdit = useCallback(() => {
     const entering = !editMode;
+    if (entering) cancelCountIn();
     setSyncEditMode(entering);
     if (entering && isPlaying) setIsPlaying(false);
   }, [editMode, isPlaying, setIsPlaying]);
