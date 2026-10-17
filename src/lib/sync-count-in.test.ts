@@ -128,8 +128,23 @@ describe("regressions", () => {
 
   it("keeps counting through unrelated audio changes", () => {
     requestPlayback();
-    useAudioStore.setState({ currentTime: 12, volume: 0.5 });
+    useAudioStore.setState({ volume: 0.5 });
     expect(isCountingIn()).toBe(true);
+  });
+
+  it("regression: external play during the count ends it so taps are accepted", () => {
+    requestPlayback();
+    useAudioStore.getState().setIsPlaying(true);
+    expect(isCountingIn()).toBe(false);
+    expect(useSyncCountInStore.getState()).toMatchObject({ startedAt: null, endsAt: null });
+  });
+
+  it("regression: an external pause after an external play is not overridden by the count", () => {
+    requestPlayback();
+    useAudioStore.getState().setIsPlaying(true);
+    useAudioStore.getState().setIsPlaying(false);
+    vi.advanceTimersByTime(3000);
+    expect(isPlaying()).toBe(false);
   });
 });
 

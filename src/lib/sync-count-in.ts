@@ -15,7 +15,7 @@ const SONG_START_WINDOW_SECONDS = 0.05;
 // -- State --------------------------------------------------------------------
 
 let startTimer: ReturnType<typeof setTimeout> | null = null;
-let stopWatchingSource: (() => void) | null = null;
+let stopWatchingPlayback: (() => void) | null = null;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -26,8 +26,8 @@ function isCountingIn(): boolean {
 function endCount(): void {
   if (startTimer !== null) clearTimeout(startTimer);
   startTimer = null;
-  stopWatchingSource?.();
-  stopWatchingSource = null;
+  stopWatchingPlayback?.();
+  stopWatchingPlayback = null;
   useSyncCountInStore.setState(SYNC_COUNT_IN_IDLE);
 }
 
@@ -55,8 +55,8 @@ function requestPlayback(): PlaybackRequest {
     endCount();
     useAudioStore.getState().setIsPlaying(true);
   }, seconds * 1000);
-  stopWatchingSource = useAudioStore.subscribe((state, previous) => {
-    if (state.source !== previous.source) cancelCountIn();
+  stopWatchingPlayback = useAudioStore.subscribe((state, previous) => {
+    if (state.source !== previous.source || state.isPlaying !== previous.isPlaying) cancelCountIn();
   });
   useSyncCountInStore.setState({ startedAt, endsAt: startedAt + seconds * 1000, seconds });
   return "counting";
