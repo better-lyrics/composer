@@ -1,9 +1,9 @@
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { PROSE } from "@/ui/typography";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { MOD_KEY } from "@/utils/platform";
 import { HelpTopic } from "@/ui/help-topic";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { PROSE } from "@/ui/typography";
+import { MOD_KEY } from "@/utils/platform";
 
 // -- Getting Started ----------------------------------------------------------
 
@@ -63,8 +63,9 @@ const GettingStartedSection: React.FC = () => (
         <p className={PROSE}>
           The Sync tab lets you sync words to the music using two keys: tap Space to mark gapless word boundaries, or
           hold F to capture a word's full duration. You can also tap Space while holding F to create gapless syllable
-          boundaries. If you miss one, use the arrow keys to nudge the timing. For finer control, switch to Timeline and
-          drag word blocks directly on the waveform.
+          boundaries. If you miss one, use <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeLeft")} /> or{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeRight")} /> to nudge the timing. For finer control,
+          switch to Timeline and drag word blocks directly on the waveform.
         </p>
       </HelpTopic>
       <HelpTopic title="4. Preview and export">

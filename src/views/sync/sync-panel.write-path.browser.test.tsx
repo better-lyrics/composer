@@ -1,5 +1,3 @@
-import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
@@ -10,6 +8,8 @@ import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
 
 function settle(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 30));
@@ -86,7 +86,7 @@ describe("D2 undo mid word-sync", () => {
     await tapAt(3);
     await undo();
     await tapAt(4);
-    key({ key: "ArrowLeft", code: "ArrowLeft" });
+    key({ key: "ArrowLeft", code: "ArrowLeft", shiftKey: true });
     await settle();
     expect(lines()[0].text).toContain("the rumors");
   });
@@ -97,7 +97,7 @@ describe("sibling: nudge mid-sync truncates untapped text", () => {
     load([createLine({ id: "l0", text: "one two three" })]);
     await render(<SyncPanel />);
     await tapAt(1);
-    key({ key: "ArrowLeft", code: "ArrowLeft" });
+    key({ key: "ArrowLeft", code: "ArrowLeft", shiftKey: true });
     await settle();
     expect(lines()[0].text).toBe("one two three");
   });
@@ -249,7 +249,7 @@ describe("T3 tap then hold across a line boundary", () => {
 });
 
 describe("T4 nudge targets the last tapped word", () => {
-  it("ArrowRight right after a tap nudges that word, not the last timed word of the song", async () => {
+  it("Shift+ArrowRight right after a tap nudges that word, not the last timed word of the song", async () => {
     load([
       createLine({ id: "l0", text: "a b" }),
       createLine({
@@ -263,7 +263,7 @@ describe("T4 nudge targets the last tapped word", () => {
     ]);
     await render(<SyncPanel />);
     await tapAt(1);
-    key({ key: "ArrowRight", code: "ArrowRight" });
+    key({ key: "ArrowRight", code: "ArrowRight", shiftKey: true });
     await settle();
     expect(lines()[1].words?.[1].begin).toBe(11);
     expect(lines()[0].words?.[0].begin).toBeGreaterThan(1);

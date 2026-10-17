@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS } from "@/stores/shortcut-definitions";
 import { bindingFromKeyboardEvent, findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { describe, expect, it } from "vitest";
 
 function keydown(init: KeyboardEventInit): KeyboardEvent {
   return new KeyboardEvent("keydown", { bubbles: true, ...init });
@@ -17,6 +17,17 @@ describe("findMatchingShortcut", () => {
       expect(findMatchingShortcut(keydown({ key: "ArrowRight", repeat: true }), "timeline")).toBe(
         "timeline.nudgeRight",
       );
+    });
+
+    it("matches repeated sync seeks", () => {
+      expect(findMatchingShortcut(keydown({ key: "ArrowLeft", repeat: true }), "sync")).toBe("sync.seekBackward");
+      expect(findMatchingShortcut(keydown({ key: "ArrowRight", repeat: true }), "sync")).toBe("sync.seekForward");
+    });
+
+    it("can identify a non-repeatable binding so a capture handler can consume its repeats", () => {
+      const event = keydown({ key: "ArrowLeft", shiftKey: true, repeat: true });
+      expect(findMatchingShortcut(event, "sync")).toBeNull();
+      expect(findMatchingShortcut(event, "sync", { includeRepeats: true })).toBe("sync.nudgeLeft");
     });
   });
 
@@ -37,10 +48,10 @@ describe("findMatchingShortcut", () => {
   });
 
   describe("invariants", () => {
-    it("only nudges and jumps opt into auto-repeat", () => {
+    it("only nudges, jumps, and seeks opt into auto-repeat", () => {
       const repeatable = SHORTCUT_DEFINITIONS.filter((definition) => definition.repeatable).map(({ id }) => id);
       for (const id of repeatable) {
-        expect(id).toMatch(/\.(nudge|jump)/);
+        expect(id).toMatch(/\.(nudge|jump|seek)/);
       }
       expect(repeatable).toContain("timeline.nudgeLeft");
       expect(repeatable).toContain("timeline.nudgeRight");

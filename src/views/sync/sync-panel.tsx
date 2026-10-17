@@ -29,6 +29,10 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { m } from "motion/react";
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 
+// -- Constants ----------------------------------------------------------------
+
+const SEEK_STEP_SECONDS = 1;
+
 // -- Components ---------------------------------------------------------------
 
 const SyncPanel: React.FC = () => {
@@ -321,7 +325,38 @@ const SyncPanel: React.FC = () => {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
   useEffect(() => {
+    // Claim seeking and nudging before the focused seeker handles the same key.
+    const handleSeekAndNudgeKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || activeTab !== "sync" || isAnyModalOpen()) return;
+      const target = e.target;
+      if (target instanceof HTMLElement) {
+        if (target.closest("input, textarea, select") || target.isContentEditable) return;
+        const slider = target.closest('[role="slider"]');
+        if (slider && slider.getAttribute("aria-label") !== "Audio progress") return;
+      }
+
+      const matched = findMatchingShortcut(e, "sync", { includeRepeats: true });
+      const seeking = matched === "sync.seekBackward" || matched === "sync.seekForward";
+      const nudging = matched === "sync.nudgeLeft" || matched === "sync.nudgeRight";
+      if (!seeking && !nudging) return;
+      if (findMatchingShortcut(e, "global", { includeRepeats: true })) return;
+
+      const audio = useAudioStore.getState();
+      if (!audio.source || (seeking && (!Number.isFinite(audio.duration) || audio.duration <= 0))) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (seeking) {
+        const time = audio.audioElement?.currentTime ?? audio.currentTime;
+        const delta = matched === "sync.seekBackward" ? -SEEK_STEP_SECONDS : SEEK_STEP_SECONDS;
+        audio.seekTo(Math.max(0, Math.min(audio.duration, time + delta)));
+      } else if (!e.repeat) {
+        handleNudgeLastSynced(matched === "sync.nudgeLeft" ? -getNudgeAmount() : getNudgeAmount());
+      }
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
       if (activeTab !== "sync") return;
       if (isAnyModalOpen()) return;
 
@@ -349,14 +384,6 @@ const SyncPanel: React.FC = () => {
           heldKeyCodeRef.current = e.code;
           beginKeyboardHold();
           break;
-        case "sync.nudgeLeft":
-          e.preventDefault();
-          handleNudgeLastSynced(-getNudgeAmount());
-          break;
-        case "sync.nudgeRight":
-          e.preventDefault();
-          handleNudgeLastSynced(getNudgeAmount());
-          break;
         case "sync.toggleTextVariant":
           e.preventDefault();
           if (hasTransliteration) toggleTextVariant();
@@ -382,10 +409,12 @@ const SyncPanel: React.FC = () => {
       }
     };
 
+    window.addEventListener("keydown", handleSeekAndNudgeKeyDown, true);
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     window.addEventListener("blur", handleBlur);
     return () => {
+      window.removeEventListener("keydown", handleSeekAndNudgeKeyDown, true);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);

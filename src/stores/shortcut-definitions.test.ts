@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { getShortcutDescription } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS, type ShortcutBinding, type ShortcutScope } from "@/stores/shortcut-definitions";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -19,6 +19,20 @@ const SCOPES: ShortcutScope[] = ["global", "sync", "timeline"];
 // -- Tests --------------------------------------------------------------------
 
 describe("SHORTCUT_DEFINITIONS", () => {
+  it("separates sync seeking from timing nudges", () => {
+    const expectedBindings: Record<string, ShortcutBinding> = {
+      "sync.seekBackward": { key: "ArrowLeft" },
+      "sync.seekForward": { key: "ArrowRight" },
+      "sync.nudgeLeft": { key: "ArrowLeft", shift: true },
+      "sync.nudgeRight": { key: "ArrowRight", shift: true },
+    };
+    for (const [id, binding] of Object.entries(expectedBindings)) {
+      const definition = SHORTCUT_DEFINITIONS.find((d) => d.id === id);
+      expect(definition?.scope).toBe("sync");
+      expect(definition?.defaultBinding).toEqual(binding);
+    }
+  });
+
   it("registers the marker-mode toggle with default key 'i' in the timeline scope", () => {
     const markerMode = SHORTCUT_DEFINITIONS.find((d) => d.id === "timeline.toggleMarkerMode");
 
