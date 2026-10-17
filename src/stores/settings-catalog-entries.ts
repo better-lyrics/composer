@@ -43,7 +43,7 @@ const SETTINGS_CATALOG = {
   defaultPlaybackRate: {
     section: "playback",
     label: "Default playback rate",
-    description: "Starting playback speed when your last speed is not remembered.",
+    description: "Starting playback speed while Remember playback speed is off.",
     keywords: ["speed", "tempo"],
     settingKey: "defaultPlaybackRate",
   },

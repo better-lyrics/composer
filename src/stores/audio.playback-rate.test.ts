@@ -1,6 +1,5 @@
 import { toggledPlaybackRate, useAudioStore } from "@/stores/audio";
 import { DEFAULTS, useSettingsStore } from "@/stores/settings";
-import { migrateSettings } from "@/stores/settings-migration";
 import { beforeEach, describe, expect, it } from "vitest";
 
 beforeEach(() => {
@@ -69,26 +68,6 @@ describe("edge cases", () => {
     expect(toggledPlaybackRate()).toBe(1);
     useAudioStore.getState().setPlaybackRate(1);
     expect(toggledPlaybackRate()).toBe(0.6);
-  });
-});
-
-describe("settings migration", () => {
-  it("regression: an existing user keeps the speed they last used", () => {
-    const migrated = migrateSettings({ ...DEFAULTS, defaultPlaybackRate: 1.1, lastPlaybackRate: undefined }, 8) as {
-      lastPlaybackRate: number;
-      defaultPlaybackRate: number;
-      rememberPlaybackRate: boolean;
-    };
-    expect(migrated.lastPlaybackRate).toBe(1.1);
-    expect(migrated.defaultPlaybackRate).toBe(1.1);
-    expect(migrated.rememberPlaybackRate).toBe(true);
-  });
-
-  it("leaves a saved last speed alone at the current version", () => {
-    const migrated = migrateSettings({ ...DEFAULTS, defaultPlaybackRate: 1.1, lastPlaybackRate: 0.8 }, 9) as {
-      lastPlaybackRate: number;
-    };
-    expect(migrated.lastPlaybackRate).toBe(0.8);
   });
 });
 

@@ -187,11 +187,11 @@ describe("useAudioStore - setPlaybackRate", () => {
 
   it("ignores invalid playback rates", () => {
     useAudioStore.setState({ playbackRate: 1 });
-    useSettingsStore.getState().set("defaultPlaybackRate", 1);
+    useSettingsStore.getState().set("lastPlaybackRate", 1);
     useAudioStore.getState().setPlaybackRate(0);
     useAudioStore.getState().setPlaybackRate(Number.NaN);
     expect(useAudioStore.getState().playbackRate).toBe(1);
-    expect(useSettingsStore.getState().defaultPlaybackRate).toBe(1);
+    expect(useSettingsStore.getState().lastPlaybackRate).toBe(1);
   });
 });
 
