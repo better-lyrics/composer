@@ -1,18 +1,17 @@
-import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
+import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { WordSelection } from "@/domain/selection/model";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
-import { BackgroundTextEditor } from "@/views/timeline/background-text-editor";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { getEffectiveLines } from "@/domain/line/effective-words";
+import { BackgroundTextEditor } from "@/views/timeline/background-text-editor";
 import {
   type GroupHighlight,
   type MultiSelectionSummary,
@@ -21,6 +20,7 @@ import {
   selectionCountLabel,
   selectionGroupHighlight,
 } from "@/views/timeline/selection-info";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { formatTime } from "@/views/timeline/utils";
 import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
 import { useCallback, useMemo } from "react";
@@ -130,8 +130,7 @@ const TimelineInfoPanel: React.FC = () => {
   const setSelectedWordBoundary = useCallback(
     (edge: BoundaryEdge) => {
       if (!selectedWord) return;
-      const audioEl = useAudioStore.getState().audioElement;
-      const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+      const currentTime = livePlaybackTime();
       const setBoundaryOp = selectedWord.type === "word" ? setWordBoundary : setBgWordBoundary;
       setBoundaryOp({
         lines,

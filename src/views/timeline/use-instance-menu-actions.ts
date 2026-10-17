@@ -2,7 +2,7 @@ import { withNewInstance } from "@/domain/group/own-timing";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { MOD_KEY } from "@/utils/platform";
@@ -38,8 +38,7 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
   const handleAddInstanceAtPlayhead = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
     const { groupId, instanceIdx } = contextMenu.target;
-    const audioEl = useAudioStore.getState().audioElement;
-    const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+    const playheadTime = livePlaybackTime();
     const { lines: projectLines, groups } = useProjectStore.getState();
     const group = groups.find((candidate) => candidate.id === groupId);
     const template = instanceToTemplate(projectLines, groupId, pickedTemplateSource(projectLines, group, instanceIdx));
@@ -71,8 +70,7 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
   const handleShiftToPlayhead = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
     const { groupId, instanceIdx } = contextMenu.target;
-    const audioEl = useAudioStore.getState().audioElement;
-    const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+    const playheadTime = livePlaybackTime();
     const projectLines = useProjectStore.getState().lines;
     const instanceLines = linesOfInstance(projectLines, groupId, instanceIdx);
     const bounds = instanceBounds(instanceLines);

@@ -12,7 +12,7 @@ import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import type { WordSelection } from "@/domain/selection/model";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -82,8 +82,7 @@ function useTimelineKeyboard(
 
   const handleSetWordTiming = useCallback(
     (edge: "begin" | "end") => {
-      const audioEl = useAudioStore.getState().audioElement;
-      const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+      const currentTime = livePlaybackTime();
 
       const { selectedWords, zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
       const selectedWord = selectedWords[0] ?? null;
@@ -272,8 +271,7 @@ function useTimelineKeyboard(
           const scrollContainer = scrollContainerRef.current;
           if (!scrollContainer) return;
 
-          const audioEl = useAudioStore.getState().audioElement;
-          const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const currentTime = livePlaybackTime();
           const { zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
 
           scrollContainer.scrollLeft = centerTimeScrollLeft(currentTime, zoom, scrollContainer.clientWidth);
@@ -319,8 +317,7 @@ function useTimelineKeyboard(
         }
         case "timeline.selectWordAtPlayhead": {
           e.preventDefault();
-          const audioEl = useAudioStore.getState().audioElement;
-          const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const currentTime = livePlaybackTime();
           const matches = findWordsAtTime(lines, currentTime, currentEffectiveFocus());
           const next = pickNextWordAtPlayhead(matches, useTimelineStore.getState().selectedWords);
           if (!next) {
@@ -350,8 +347,7 @@ function useTimelineKeyboard(
           break;
         case "timeline.dropSnapMarkerAtPlayhead": {
           e.preventDefault();
-          const audioEl = useAudioStore.getState().audioElement;
-          const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const playheadTime = livePlaybackTime();
           useProjectStore.getState().addCustomSnapPoint(playheadTime);
           break;
         }
@@ -505,8 +501,7 @@ function useTimelineKeyboard(
           const [groupId, instanceIdxStr] = groupKey.split(":");
           const sourceInstanceIdx = Number.parseInt(instanceIdxStr, 10);
 
-          const audioEl = useAudioStore.getState().audioElement;
-          const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const playheadTime = livePlaybackTime();
           const group = projectState.groups.find((candidate) => candidate.id === groupId);
           const template = instanceToTemplate(
             projectState.lines,
@@ -691,8 +686,7 @@ function useTimelineKeyboard(
           const instanceLines = linesOfInstance(projectLines, inst.groupId, inst.instanceIdx);
           const bounds = instanceBounds(instanceLines);
           if (!bounds) break;
-          const audioEl = useAudioStore.getState().audioElement;
-          const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const playheadTime = livePlaybackTime();
           const delta = playheadTime - bounds.begin;
           if (Math.abs(delta) < 0.001) break;
           e.preventDefault();
@@ -708,8 +702,7 @@ function useTimelineKeyboard(
           e.preventDefault();
           const dir: 1 | -1 = matched.includes("Next") ? 1 : -1;
           const fine = matched.includes("Fine");
-          const audioEl = useAudioStore.getState().audioElement;
-          const current = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const current = livePlaybackTime();
           const pins = useProjectStore.getState().customSnapPoints;
           const onsets = fine ? useTimelineStore.getState().vocalOnsetSnapPoints : [];
           const points = normalizeTimes([...snapPointTimes(pins), ...onsets]);

@@ -1,9 +1,9 @@
 import { scrubPreview } from "@/audio/scrub-preview";
-import { computeScrubVelocity, DEFAULT_SCRUB_OPTS, type ScrubSample } from "@/audio/scrub-velocity";
-import { useAudioStore } from "@/stores/audio";
+import { DEFAULT_SCRUB_OPTS, type ScrubSample, computeScrubVelocity } from "@/audio/scrub-velocity";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { computeAnchoredScrollLeft } from "@/utils/timeline/zoom-anchor";
-import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeScrubTime, decideWheelAction, normalizeWheelDelta } from "@/views/timeline/timeline-wheel";
 import { type RefObject, useCallback, useEffect, useRef } from "react";
 
@@ -54,8 +54,7 @@ function useTimelineWheel(scrollContainerRef: RefObject<HTMLDivElement | null>, 
       }
 
       if (action.kind === "scrub") {
-        const audioEl = useAudioStore.getState().audioElement;
-        const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+        const currentTime = livePlaybackTime();
         const newTime = computeScrubTime(currentTime, normalizeWheelDelta(e.deltaY, e.deltaMode), zoom, duration);
         useAudioStore.getState().seekTo(newTime);
         const playheadX = newTime * zoom;

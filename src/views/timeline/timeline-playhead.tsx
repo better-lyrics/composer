@@ -1,18 +1,18 @@
-import { useFrameLoop } from "@/hooks/use-frame-loop";
-import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
-import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
-import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
-import { createPlayheadDrag } from "@/views/timeline/playhead-drag";
-import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
-import { GUTTER_WIDTH, timeToX } from "@/views/timeline/coords";
-import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds } from "@/domain/line/bounds";
-import { computeRowLayout } from "@/views/timeline/utils";
+import { useFrameLoop } from "@/hooks/use-frame-loop";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
+import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
+import { GUTTER_WIDTH, timeToX } from "@/views/timeline/coords";
 import { currentFocusScrollRange } from "@/views/timeline/effective-focus";
 import { clampScrollLeft } from "@/views/timeline/group-focus";
+import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
+import { createPlayheadDrag } from "@/views/timeline/playhead-drag";
+import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
+import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
+import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
+import { computeRowLayout } from "@/views/timeline/utils";
 import { useEffect, useMemo, useRef } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -48,9 +48,8 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
     if (!playheadRef.current) return;
 
     // Read directly from audio element for smooth updates
-    const audioEl = useAudioStore.getState().audioElement;
     const isPlaying = useAudioStore.getState().isPlaying;
-    const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+    const currentTime = livePlaybackTime();
     const { zoom, scrollLeft, isDraggingPlayhead, dragTime, followEnabled } = useTimelineStore.getState();
 
     // Auto-scroll to keep playhead centered when follow is enabled
@@ -211,10 +210,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         getDuration: () => duration,
         getZoom: () => useTimelineStore.getState().zoom,
         getStoreScrollLeft: () => useTimelineStore.getState().scrollLeft,
-        getCurrentTime: () => {
-          const audioEl = useAudioStore.getState().audioElement;
-          return audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-        },
+        getCurrentTime: livePlaybackTime,
         setIsPlaying,
         setDraggingPlayhead,
         setDragTime,

@@ -1,5 +1,5 @@
 import { useFrameLoop } from "@/hooks/use-frame-loop";
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime } from "@/stores/audio";
 import { formatTimeMs } from "@/utils/sync-helpers";
 import { useRef } from "react";
 
@@ -17,8 +17,7 @@ const TimingDisplay: React.FC<TimingDisplayProps> = ({ lastSyncedTime }) => {
   useFrameLoop(() => {
     const el = currentTimeRef.current;
     if (el) {
-      const audioEl = useAudioStore.getState().audioElement;
-      const time = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+      const time = livePlaybackTime();
       el.textContent = formatTimeMs(time);
     }
   }, "timing-display");

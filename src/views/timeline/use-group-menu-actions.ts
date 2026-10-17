@@ -1,6 +1,6 @@
 import { withNewInstance } from "@/domain/group/own-timing";
 import { instanceCount } from "@/domain/instance/enumerate";
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast, showGroupedToast } from "@/utils/group-toast";
@@ -71,8 +71,7 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
         toast.error("That group no longer exists");
         return;
       }
-      const audioEl = useAudioStore.getState().audioElement;
-      const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+      const playheadTime = livePlaybackTime();
       const result = conformLinesToInstance({
         lines: projectState.lines,
         groupId,
