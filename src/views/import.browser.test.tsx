@@ -1,4 +1,4 @@
-import { UNSUPPORTED_AUDIO_FILE_MESSAGE } from "@/domain/audio-file/supported-formats";
+import { UNSUPPORTED_AUDIO_OR_PROJECT_FILE_MESSAGE } from "@/audio/use-file-drop";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -51,7 +51,10 @@ function id3v2(frames: Array<[string, string]>): Uint8Array {
 }
 
 function audioDropZone(container: Element): HTMLLabelElement | null {
-  return container.querySelector<HTMLInputElement>("input[aria-label='Upload audio file']")?.closest("label") ?? null;
+  return (
+    container.querySelector<HTMLInputElement>("input[aria-label='Upload audio or project file']")?.closest("label") ??
+    null
+  );
 }
 
 function playableWav(name: string, lastModified?: number): File {
@@ -83,7 +86,7 @@ describe("ImportPanel: no source", () => {
 
   it("shows the drop zone CTA copy", async () => {
     const screen = await render(withQueryClient(<ImportPanel />));
-    await expect.element(screen.getByText("Drop audio file here")).toBeInTheDocument();
+    await expect.element(screen.getByText("Drop an audio or project file here")).toBeInTheDocument();
     await expect.element(screen.getByText(/Supports MP3, WAV, M4A/)).toBeInTheDocument();
   });
 });
@@ -119,7 +122,7 @@ describe("ImportPanel: drop anywhere", () => {
     useAudioStore.setState({ source: null });
     const screen = await render(withQueryClient(<ImportPanel />));
     dragFile(importArea(screen.container), "dragenter", createAudioFile("anywhere.wav"));
-    await expect.element(screen.getByText("Drop to load this audio", { exact: true })).toBeInTheDocument();
+    await expect.element(screen.getByText("Drop to load audio or open a project", { exact: true })).toBeInTheDocument();
     expect(overlay(screen.container)?.parentElement).toBe(importArea(screen.container));
   });
 
@@ -127,7 +130,9 @@ describe("ImportPanel: drop anywhere", () => {
     useAudioStore.setState({ source: { type: "file", file: createAudioFile("first.wav") } });
     const screen = await render(withQueryClient(<ImportPanel />));
     dragFile(importArea(screen.container), "dragenter", createAudioFile("second.wav"));
-    await expect.element(screen.getByText("Drop to replace the audio", { exact: true })).toBeInTheDocument();
+    await expect
+      .element(screen.getByText("Drop to replace the audio or open a project", { exact: true }))
+      .toBeInTheDocument();
   });
 
   it("replaces loaded audio dropped outside the replace box", async () => {
@@ -221,7 +226,7 @@ describe("ImportPanel: drop anywhere", () => {
         </>,
       );
       dragFile(importArea(screen.container), "drop", new File(["x"], "notes.txt", { type: "text/plain" }));
-      await expect.element(screen.getByText(UNSUPPORTED_AUDIO_FILE_MESSAGE)).toBeInTheDocument();
+      await expect.element(screen.getByText(UNSUPPORTED_AUDIO_OR_PROJECT_FILE_MESSAGE)).toBeInTheDocument();
       await stepFrames(2);
       expect(useAudioStore.getState().source).toBeNull();
     });

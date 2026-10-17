@@ -6,13 +6,21 @@ import { cn } from "@/utils/cn";
 
 interface FileDropAreaProps extends Omit<React.ComponentProps<"div">, "onDrop"> {
   onFileDrop: (file: File) => void;
+  onProjectFileDrop?: (file: File) => void;
   dropLabel: string;
 }
 
 // -- Component ----------------------------------------------------------------
 
-const FileDropArea: React.FC<FileDropAreaProps> = ({ onFileDrop, dropLabel, className, children, ...divProps }) => {
-  const { isDragging, handlers } = useFileDrop({ onFileDrop, capture: true });
+const FileDropArea: React.FC<FileDropAreaProps> = ({
+  onFileDrop,
+  onProjectFileDrop,
+  dropLabel,
+  className,
+  children,
+  ...divProps
+}) => {
+  const { isDragging, handlers } = useFileDrop({ onFileDrop, onProjectFileDrop, capture: true });
   return (
     <div {...divProps} className={cn("relative", className)} {...handlers}>
       {children}

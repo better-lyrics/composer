@@ -1,10 +1,12 @@
-import { FileDropZone } from "@/audio/file-drop-zone";
 import { FileDropArea } from "@/audio/file-drop-area";
+import { FileDropZone } from "@/audio/file-drop-zone";
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
 import { youtubeSourceTitle } from "@/domain/project/display-title";
 import { useBridgeThumb } from "@/hooks/useBridgeThumb";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
+import { PROJECT_FILE_EXTENSIONS_LABEL } from "@/lib/project-file-read";
+import { importProjectFile } from "@/lib/project-import";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -16,10 +18,15 @@ import { IconBrandYoutube, IconClock, IconFile, IconLoader2, IconMusic } from "@
 
 // -- Constants ----------------------------------------------------------------
 
-const LOAD_DROP_LABEL = "Drop to load this audio";
-const REPLACE_DROP_LABEL = "Drop to replace the audio";
+const LOAD_DROP_LABEL = "Drop to load audio or open a project";
+const REPLACE_DROP_LABEL = "Drop to replace the audio or open a project";
+const SUPPORTED_FILES_PROSE = `Supports ${AUDIO_FORMATS_PROSE}, or a project file (${PROJECT_FILE_EXTENSIONS_LABEL})`;
 
 // -- Helpers ------------------------------------------------------------------
+
+function openProjectFile(file: File): void {
+  void importProjectFile(file);
+}
 
 function formatDuration(seconds: number): string {
   if (seconds <= 0) return "--:--";
@@ -53,8 +60,8 @@ interface ReplaceControlsProps {
 const ReplaceControls: React.FC<ReplaceControlsProps> = ({ onFileDrop }) => (
   <div className="flex flex-col items-center gap-4 flex-1 p-6 w-full">
     <div className="w-full max-w-md flex-1 min-h-32">
-      <FileDropZone accept="audio/*" onFileDrop={onFileDrop}>
-        <p className="text-sm text-composer-text-muted">Drop another file to replace</p>
+      <FileDropZone accept="audio/*" onFileDrop={onFileDrop} onProjectFileDrop={openProjectFile}>
+        <p className="text-sm text-composer-text-muted">Drop another file to replace, or a project file to open it</p>
       </FileDropZone>
     </div>
     <OrDivider />
@@ -112,6 +119,7 @@ const ImportPanel: React.FC = () => {
         data-tour="import-dropzone"
         className="flex flex-col-reverse flex-1 size-full"
         onFileDrop={handleFileDrop}
+        onProjectFileDrop={openProjectFile}
         dropLabel={REPLACE_DROP_LABEL}
       >
         <div className="flex border-t border-composer-border">
@@ -154,6 +162,7 @@ const ImportPanel: React.FC = () => {
         data-tour="import-dropzone"
         className="flex flex-col-reverse flex-1 size-full"
         onFileDrop={handleFileDrop}
+        onProjectFileDrop={openProjectFile}
         dropLabel={REPLACE_DROP_LABEL}
       >
         <div className="flex border-t border-composer-border">
@@ -194,14 +203,15 @@ const ImportPanel: React.FC = () => {
       data-tour="import-dropzone"
       className="flex flex-col items-center justify-center gap-6 flex-1 size-full p-6"
       onFileDrop={handleFileDrop}
+      onProjectFileDrop={openProjectFile}
       dropLabel={LOAD_DROP_LABEL}
     >
       <div className="w-full max-w-md flex-1 max-h-72 min-h-40">
-        <FileDropZone accept="audio/*" onFileDrop={handleFileDrop}>
+        <FileDropZone accept="audio/*" onFileDrop={handleFileDrop} onProjectFileDrop={openProjectFile}>
           <IconMusic className="size-12 mb-4 opacity-50 text-composer-text" stroke={1.5} />
-          <p className="text-composer-text-secondary">Drop audio file here</p>
+          <p className="text-composer-text-secondary">Drop an audio or project file here</p>
           <p className="mt-1 text-sm text-composer-text-muted">or click to browse</p>
-          <p className="mt-4 text-xs text-composer-text-muted">Supports {AUDIO_FORMATS_PROSE}</p>
+          <p className="mt-4 text-xs text-composer-text-muted">{SUPPORTED_FILES_PROSE}</p>
         </FileDropZone>
       </div>
 

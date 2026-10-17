@@ -31,7 +31,7 @@ interface FileDrop {
 
 // -- Constants ----------------------------------------------------------------
 
-const UNSUPPORTED_FILE_MESSAGE = `${UNSUPPORTED_AUDIO_FILE_MESSAGE} or a project file (${PROJECT_FILE_EXTENSIONS_LABEL})`;
+const UNSUPPORTED_AUDIO_OR_PROJECT_FILE_MESSAGE = `${UNSUPPORTED_AUDIO_FILE_MESSAGE} or a project file (${PROJECT_FILE_EXTENSIONS_LABEL})`;
 const ONE_SONG_AT_A_TIME_MESSAGE = "Only one song loads at a time";
 
 // -- Helpers ------------------------------------------------------------------
@@ -81,7 +81,7 @@ function useFileDrop({ onFileDrop, onProjectFileDrop, capture = false }: FileDro
         onFileDrop(file);
         return;
       }
-      toast.error(onProjectFileDrop ? UNSUPPORTED_FILE_MESSAGE : UNSUPPORTED_AUDIO_FILE_MESSAGE);
+      toast.error(onProjectFileDrop ? UNSUPPORTED_AUDIO_OR_PROJECT_FILE_MESSAGE : UNSUPPORTED_AUDIO_FILE_MESSAGE);
     },
     [onFileDrop, onProjectFileDrop],
   );
@@ -140,4 +140,4 @@ function useFileDrop({ onFileDrop, onProjectFileDrop, capture = false }: FileDro
 
 // -- Exports ------------------------------------------------------------------
 
-export { useFileDrop };
+export { UNSUPPORTED_AUDIO_OR_PROJECT_FILE_MESSAGE, useFileDrop };
