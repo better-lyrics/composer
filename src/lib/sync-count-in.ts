@@ -7,6 +7,11 @@ import { SYNC_COUNT_IN_IDLE, useSyncCountInStore } from "@/stores/sync-count-in"
 
 type PlaybackRequest = "counting" | "playing";
 
+// -- Constants ----------------------------------------------------------------
+
+// A seek to the very start can land a millisecond in, so the start is a small window, not exactly zero.
+const SONG_START_WINDOW_SECONDS = 0.05;
+
 // -- State --------------------------------------------------------------------
 
 let startTimer: ReturnType<typeof setTimeout> | null = null;
@@ -30,7 +35,7 @@ function countsIn(): boolean {
   return (
     useProjectStore.getState().activeTab === "sync" &&
     useAudioStore.getState().source !== null &&
-    livePlaybackTime() === 0 &&
+    livePlaybackTime() < SONG_START_WINDOW_SECONDS &&
     useSettingsStore.getState().syncCountIn > 0
   );
 }

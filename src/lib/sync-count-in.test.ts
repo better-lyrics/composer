@@ -69,8 +69,13 @@ describe("requestPlayback", () => {
       expect(isCountingIn()).toBe(false);
     });
 
+    it("regression: counts in when the playhead rests a hair past the start", () => {
+      useAudioStore.setState({ currentTime: 0.001 });
+      expect(requestPlayback()).toBe("counting");
+    });
+
     it("plays at once just past the song start", () => {
-      useAudioStore.setState({ currentTime: 0.01 });
+      useAudioStore.setState({ currentTime: 0.1 });
       expect(requestPlayback()).toBe("playing");
       expect(isCountingIn()).toBe(false);
     });
