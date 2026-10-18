@@ -60,6 +60,37 @@ const BracketWarning: React.FC<{ count: number }> = ({ count }) => {
   );
 };
 
+const BackgroundTextInput: React.FC<{
+  initialText: string;
+  onCommit: (text: string) => void;
+  onClose: () => void;
+}> = ({ initialText, onCommit, onClose }) => {
+  const [text, setText] = useState(initialText);
+  const commitIfEdited = () => {
+    if (text !== initialText) onCommit(text);
+  };
+
+  return (
+    <input
+      type="text"
+      aria-label="Background vocals text"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commitIfEdited}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commitIfEdited();
+          onClose();
+        }
+      }}
+      placeholder="ooh, ah, etc."
+      className="w-full px-2 py-1 text-sm border rounded bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent"
+    />
+  );
+};
+
 const LinePreview: React.FC<{
   line: ParsedLine;
   agents: { id: string; name?: string }[];
@@ -91,14 +122,7 @@ const LinePreview: React.FC<{
   onGutterMouseEnter,
   didDragRef,
 }) => {
-  const [bgInput, setBgInput] = useState(line.backgroundText ?? "");
   const agentColor = getAgentColor(line.agentId);
-
-  const handleBgBlur = useCallback(() => {
-    if (line.lineId) {
-      onBackgroundChange(line.lineId, bgInput);
-    }
-  }, [line.lineId, bgInput, onBackgroundChange]);
 
   const selectLineForBulkEdit = useCallback(
     (e: React.MouseEvent) => {
@@ -234,21 +258,10 @@ const LinePreview: React.FC<{
                     Pull from ( )
                   </button>
                 )}
-                <input
-                  type="text"
-                  aria-label="Background vocals text"
-                  value={bgInput}
-                  onChange={(e) => setBgInput(e.target.value)}
-                  onBlur={handleBgBlur}
-                  onKeyDown={(e) => {
-                    e.stopPropagation();
-                    if (e.key === "Enter") {
-                      handleBgBlur();
-                      close();
-                    }
-                  }}
-                  placeholder="ooh, ah, etc."
-                  className="w-full px-2 py-1 text-sm border rounded bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent"
+                <BackgroundTextInput
+                  initialText={line.backgroundText ?? ""}
+                  onCommit={(text) => onBackgroundChange(line.lineId, text)}
+                  onClose={close}
                 />
               </div>
             )}
