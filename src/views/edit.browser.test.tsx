@@ -226,6 +226,28 @@ describe("manual background vocal editing", () => {
     expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBeUndefined();
   });
+
+  it("regression #277: shows background text changed outside Edit when the popover opens", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world", backgroundText: "yea" })] });
+    const screen = await render(<EditPanel />);
+
+    useProjectStore.getState().updateLineWithHistory("l1", { backgroundText: "yeah" });
+    await screen.getByRole("button", { name: "BG", exact: true }).click();
+
+    await expect.element(screen.getByRole("textbox", { name: "Background vocals text" })).toHaveValue("yeah");
+  });
+
+  it("regression #277: closing the popover keeps background text changed outside Edit", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world", backgroundText: "yea" })] });
+    const screen = await render(<EditPanel />);
+
+    useProjectStore.getState().updateLineWithHistory("l1", { backgroundText: "yeah" });
+    await screen.getByRole("button", { name: "BG", exact: true }).click();
+    await screen.getByRole("textbox", { name: "Background vocals text" }).click();
+    await userEvent.keyboard("{Enter}");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("yeah");
+  });
 });
 
 describe("agent assignment", () => {
