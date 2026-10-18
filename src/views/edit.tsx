@@ -66,6 +66,9 @@ const BackgroundTextInput: React.FC<{
   onClose: () => void;
 }> = ({ initialText, onCommit, onClose }) => {
   const [text, setText] = useState(initialText);
+  const commitIfEdited = () => {
+    if (text !== initialText) onCommit(text);
+  };
 
   return (
     <input
@@ -73,11 +76,12 @@ const BackgroundTextInput: React.FC<{
       aria-label="Background vocals text"
       value={text}
       onChange={(e) => setText(e.target.value)}
-      onBlur={() => onCommit(text)}
+      onBlur={commitIfEdited}
       onKeyDown={(e) => {
         e.stopPropagation();
         if (e.key === "Enter") {
-          onCommit(text);
+          e.preventDefault();
+          commitIfEdited();
           onClose();
         }
       }}
