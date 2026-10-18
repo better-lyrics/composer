@@ -121,3 +121,32 @@ describe("previewSidebarWidth", () => {
     expect(useSettingsStore.getState().previewSidebarWidth).toBe(480);
   });
 });
+
+describe("lastPlaybackRate", () => {
+  function v8Blob(defaultPlaybackRate: unknown): Record<string, unknown> {
+    const { lastPlaybackRate: _last, rememberPlaybackRate: _remember, ...blob } = legacyBlob({ defaultPlaybackRate });
+    return blob;
+  }
+
+  it("regression: an existing user keeps the speed they last used", async () => {
+    await rehydrateAt(8, v8Blob(1.1));
+    expect(useSettingsStore.getState().lastPlaybackRate).toBe(1.1);
+    expect(useSettingsStore.getState().defaultPlaybackRate).toBe(1.1);
+    expect(useSettingsStore.getState().rememberPlaybackRate).toBe(true);
+  });
+
+  it("falls back to the default when an old blob has no usable rate", async () => {
+    await rehydrateAt(8, v8Blob("fast"));
+    expect(useSettingsStore.getState().lastPlaybackRate).toBe(DEFAULTS.lastPlaybackRate);
+  });
+
+  it("copies nothing at the current version", async () => {
+    await rehydrateAt(9, v8Blob(1.1));
+    expect(useSettingsStore.getState().lastPlaybackRate).toBe(DEFAULTS.lastPlaybackRate);
+  });
+
+  it("leaves a saved last speed alone", async () => {
+    await rehydrateAt(8, { ...v8Blob(1.1), lastPlaybackRate: 0.8 });
+    expect(useSettingsStore.getState().lastPlaybackRate).toBe(0.8);
+  });
+});

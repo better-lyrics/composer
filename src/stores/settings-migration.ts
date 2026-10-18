@@ -12,7 +12,7 @@ interface RetiredSettings {
 
 // -- Constants ----------------------------------------------------------------
 
-const SETTINGS_PERSIST_VERSION = 8;
+const SETTINGS_PERSIST_VERSION = 9;
 
 // -- Migration ----------------------------------------------------------------
 
@@ -32,6 +32,10 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   if (next.syncCountIn === undefined) next.syncCountIn = 3;
   // Old blobs carry an explicit false from before the default flipped, so an undefined guard never reaches them.
   if (version < 6) next.preserveBracketsOnExtraction = true;
+  // Before 9 every speed change was written into the default, so the default is the speed last used.
+  if (version < 9 && next.lastPlaybackRate === undefined && typeof next.defaultPlaybackRate === "number") {
+    next.lastPlaybackRate = next.defaultPlaybackRate;
+  }
   const { librarySort, libraryView, launchScreen, keepYouTubeAudio, smartCleanup, storageLimit, ...rest } = next;
   return {
     ...rest,

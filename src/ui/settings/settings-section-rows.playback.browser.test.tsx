@@ -18,6 +18,13 @@ describe("SettingsSectionRows (playback)", () => {
     await expect.poll(() => useSettingsStore.getState().rememberVolume).toBe(false);
   });
 
+  it("flips Remember playback speed when its toggle is clicked", async () => {
+    useSettingsStore.setState({ rememberPlaybackRate: true });
+    const screen = await render(<SettingsSectionRows section="playback" />);
+    await screen.getByRole("switch", { name: "Remember playback speed" }).click();
+    await expect.poll(() => useSettingsStore.getState().rememberPlaybackRate).toBe(false);
+  });
+
   it("renders the Audio scrub preview toggle on by default", async () => {
     const screen = await render(<SettingsSectionRows section="playback" />);
     const toggle = screen.getByRole("switch", { name: "Audio scrub preview" });

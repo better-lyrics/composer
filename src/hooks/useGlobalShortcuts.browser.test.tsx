@@ -219,8 +219,17 @@ describe("useGlobalShortcuts · playback speed toggle", () => {
       expect(useAudioStore.getState().playbackRate).toBe(1.25);
     });
 
-    it("starts from a saved default speed other than normal", async () => {
-      useSettingsStore.setState({ defaultPlaybackRate: 0.6 });
+    it("starts from a remembered speed other than normal", async () => {
+      useSettingsStore.setState({ lastPlaybackRate: 0.6 });
+      useAudioStore.getState().reset();
+      useAudioStore.getState().setPlaybackRate(1);
+      await renderEditorShortcuts();
+      pressSpeedToggle();
+      expect(useAudioStore.getState().playbackRate).toBe(0.6);
+    });
+
+    it("starts from the default speed when the last speed is not remembered", async () => {
+      useSettingsStore.setState({ rememberPlaybackRate: false, defaultPlaybackRate: 0.6 });
       useAudioStore.getState().reset();
       useAudioStore.getState().setPlaybackRate(1);
       await renderEditorShortcuts();
