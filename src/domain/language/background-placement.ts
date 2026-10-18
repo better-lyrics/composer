@@ -4,12 +4,6 @@ type BackgroundPlacement = { position: "front" } | { position: "middle"; afterWo
 
 const TIMING_EPSILON = 1e-4;
 
-function distanceToGap(time: number, gapBegin: number, gapEnd: number): number {
-  if (time < gapBegin) return gapBegin - time;
-  if (time > gapEnd) return time - gapEnd;
-  return 0;
-}
-
 function alternateBackgroundPlacement(line: LyricLine): BackgroundPlacement {
   const mainWords = line.words;
   const backgroundWords = line.backgroundWords;
@@ -18,24 +12,21 @@ function alternateBackgroundPlacement(line: LyricLine): BackgroundPlacement {
   const mainBegin = Math.min(...mainWords.map((word) => word.begin));
   const mainEnd = Math.max(...mainWords.map((word) => word.end));
   const backgroundBegin = Math.min(...backgroundWords.map((word) => word.begin));
+  const backgroundEnd = Math.max(...backgroundWords.map((word) => word.end));
 
   if (backgroundBegin < mainBegin - TIMING_EPSILON) return { position: "front" };
   if (backgroundBegin >= mainEnd - TIMING_EPSILON) return { position: "end" };
 
-  const gaps = mainWords.flatMap((word, index) => {
+  // Background content only sits inside the line when it fits entirely within a pause in the main words.
+  const gapIndex = mainWords.findIndex((word, index) => {
     const next = mainWords[index + 1];
-    return next && next.begin > word.end + TIMING_EPSILON
-      ? [{ afterWordIndex: index, begin: word.end, end: next.begin }]
-      : [];
+    return (
+      next !== undefined &&
+      backgroundBegin >= word.end - TIMING_EPSILON &&
+      backgroundEnd <= next.begin + TIMING_EPSILON
+    );
   });
-  if (gaps.length === 0) return { position: "end" };
-
-  const closest = gaps.reduce((best, gap) =>
-    distanceToGap(backgroundBegin, gap.begin, gap.end) < distanceToGap(backgroundBegin, best.begin, best.end)
-      ? gap
-      : best,
-  );
-  return { position: "middle", afterWordIndex: closest.afterWordIndex };
+  return gapIndex === -1 ? { position: "end" } : { position: "middle", afterWordIndex: gapIndex };
 }
 
 export { alternateBackgroundPlacement };

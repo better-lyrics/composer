@@ -23,14 +23,34 @@ describe("alternateBackgroundPlacement", () => {
     expect(alternateBackgroundPlacement(line)).toEqual({ position: "front" });
   });
 
-  it("places background content in the closest foreground timing break", () => {
-    const line = timedLine(2.7, [
+  it("places background content in a foreground timing break it fits inside", () => {
+    const line = timedLine(2.5, [
       { text: "one ", begin: 1, end: 1.4 },
       { text: "two ", begin: 2, end: 2.4 },
       { text: "three", begin: 3, end: 3.4 },
     ]);
 
     expect(alternateBackgroundPlacement(line)).toEqual({ position: "middle", afterWordIndex: 1 });
+  });
+
+  it("places background content at the end when it overlaps the foreground", () => {
+    const line = timedLine(2.2, [
+      { text: "one ", begin: 1, end: 1.4 },
+      { text: "two ", begin: 2, end: 2.4 },
+      { text: "three", begin: 3, end: 3.4 },
+    ]);
+
+    expect(alternateBackgroundPlacement(line)).toEqual({ position: "end" });
+  });
+
+  it("places background content at the end when it outlasts the timing break", () => {
+    const line = timedLine(2.7, [
+      { text: "one ", begin: 1, end: 1.4 },
+      { text: "two ", begin: 2, end: 2.4 },
+      { text: "three", begin: 2.9, end: 3.4 },
+    ]);
+
+    expect(alternateBackgroundPlacement(line)).toEqual({ position: "end" });
   });
 
   it("defaults to the end when the foreground has no timing break", () => {
