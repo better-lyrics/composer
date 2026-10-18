@@ -44,7 +44,7 @@ const TimelineWaveform: React.FC = () => {
     wave: readToken("wave"),
     progress: readToken("wave-progress"),
   }));
-  // @wavesurfer/react rebuilds the instance whenever any option changes; later zooms go through ws.zoom().
+  // @wavesurfer/react rebuilds the instance whenever any option changes; later zooms go through ws.setOptions(), which unlike ws.zoom() never throws mid-reload.
   const [initialZoom] = useState(() => useTimelineStore.getState().zoom);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: activeThemeId re-applies DOM-resolved colors on theme change without remounting WaveSurfer

@@ -54,6 +54,9 @@ describe("TimelineWaveform source reload", () => {
 
   describe("regressions", () => {
     it("regression: zooming while a stem switch reloads the waveform neither throws No audio loaded nor leaks the aborted reload", async () => {
+      const unhandledReloads: unknown[] = [];
+      const recordUnhandled = (event: PromiseRejectionEvent) => unhandledReloads.push(event.reason);
+      window.addEventListener("unhandledrejection", recordUnhandled);
       const audio = setupPlayableAudio();
       useTimelineStore.setState({ zoom: 50 });
       await render(<TimelineWaveform />);
@@ -64,7 +67,8 @@ describe("TimelineWaveform source reload", () => {
       useTimelineStore.setState({ zoom: 100 });
 
       await expect.poll(drawnWaveformWidth, { timeout: 5000 }).toBe(RELOADED_DURATION_SECONDS * 100);
-      expect(document.querySelector("[data-waveform-loading-dots]")).not.toBeNull();
+      window.removeEventListener("unhandledrejection", recordUnhandled);
+      expect(unhandledReloads).toEqual([]);
     });
   });
 });
