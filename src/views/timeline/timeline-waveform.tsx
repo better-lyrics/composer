@@ -2,6 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
+import { isAbortError } from "@/utils/abort-error";
 import { cn } from "@/utils/cn";
 import { readToken } from "@/utils/theme/read-token";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
@@ -15,6 +16,7 @@ import type WaveSurfer from "wavesurfer.js";
 // -- Constants -----------------------------------------------------------------
 
 const FADE_SETTLE_MS = 260;
+const LOG_PREFIX = "[TimelineWaveform]";
 
 // -- Component -----------------------------------------------------------------
 
@@ -54,7 +56,10 @@ const TimelineWaveform: React.FC = () => {
   useEffect(() => {
     if (!ws || !audioElement) return;
     const onLoadStart = () => {
-      if (audioElement.src) void ws.load(audioElement.src);
+      if (!audioElement.src) return;
+      ws.load(audioElement.src).catch((error: unknown) => {
+        if (!isAbortError(error)) console.error(LOG_PREFIX, "waveform reload failed", error);
+      });
     };
     audioElement.addEventListener("loadstart", onLoadStart);
     return () => audioElement.removeEventListener("loadstart", onLoadStart);
@@ -62,7 +67,7 @@ const TimelineWaveform: React.FC = () => {
 
   useEffect(() => {
     if (!ws) return;
-    ws.zoom(zoom);
+    ws.setOptions({ minPxPerSec: zoom });
   }, [ws, zoom]);
 
   useEffect(() => {
