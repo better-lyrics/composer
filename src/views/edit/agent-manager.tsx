@@ -54,75 +54,76 @@ const AgentBadge: React.FC<
   );
 };
 
-const EditAgentPopover: React.FC<{
+const EditAgentForm: React.FC<{
   agent: Agent;
-  removable?: boolean;
+  removable: boolean;
   onRemove?: () => void;
-}> = ({ agent, removable = true, onRemove }) => {
+  onClose: () => void;
+}> = ({ agent, removable, onRemove, onClose }) => {
   const updateAgent = useProjectStore((s) => s.updateAgent);
   const [name, setName] = useState(() => agent.name || "");
   const [type, setType] = useState<AgentType>(() => agent.type);
 
-  const handleSave = useCallback(
-    (close: () => void) => {
-      updateAgent(agent.id, { name: name.trim() || undefined, type });
-      close();
-    },
-    [updateAgent, agent.id, name, type],
-  );
+  const handleSave = useCallback(() => {
+    updateAgent(agent.id, { name: name.trim() || undefined, type });
+    onClose();
+  }, [updateAgent, agent.id, name, type, onClose]);
 
-  const handleDelete = useCallback(
-    (close: () => void) => {
-      onRemove?.();
-      close();
-    },
-    [onRemove],
-  );
+  const handleDelete = useCallback(() => {
+    onRemove?.();
+    onClose();
+  }, [onRemove, onClose]);
 
   return (
-    <Popover placement="bottom-start" trigger={<AgentBadge agent={agent} />}>
-      {(close) => (
-        <div className="w-64 p-3">
-          <p className="mb-2 text-xs font-medium text-composer-text-secondary">Edit Agent · {agent.id}</p>
-          <div className="flex flex-col gap-2">
-            <input
-              type="text"
-              aria-label="Agent name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Agent name"
-              className="px-2 py-1.5 text-sm rounded-md bg-composer-input border border-composer-border focus:outline-none focus:border-composer-accent"
-            />
-            <Select
-              aria-label="Agent type"
-              value={type}
-              onChange={(next) => setType(next as AgentType)}
-              options={AGENT_TYPE_OPTIONS}
-              placement="bottom-start"
-              className="w-full"
-            />
-            <div className="flex gap-2">
-              <Button size="sm" variant="primary" onClick={() => handleSave(close)} className="flex-1">
-                Save
-              </Button>
-              {removable && onRemove && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  aria-label="Delete agent"
-                  onClick={() => handleDelete(close)}
-                  className="text-composer-error-text bg-composer-error/80 hover:bg-composer-error flex items-center gap-2"
-                >
-                  <IconTrash className="size-4" />
-                </Button>
-              )}
-            </div>
-          </div>
+    <div className="w-64 p-3">
+      <p className="mb-2 text-xs font-medium text-composer-text-secondary">Edit Agent · {agent.id}</p>
+      <div className="flex flex-col gap-2">
+        <input
+          type="text"
+          aria-label="Agent name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Agent name"
+          className="px-2 py-1.5 text-sm rounded-md bg-composer-input border border-composer-border focus:outline-none focus:border-composer-accent"
+        />
+        <Select
+          aria-label="Agent type"
+          value={type}
+          onChange={(next) => setType(next as AgentType)}
+          options={AGENT_TYPE_OPTIONS}
+          placement="bottom-start"
+          className="w-full"
+        />
+        <div className="flex gap-2">
+          <Button size="sm" variant="primary" onClick={handleSave} className="flex-1">
+            Save
+          </Button>
+          {removable && onRemove && (
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label="Delete agent"
+              onClick={handleDelete}
+              className="text-composer-error-text bg-composer-error/80 hover:bg-composer-error flex items-center gap-2"
+            >
+              <IconTrash className="size-4" />
+            </Button>
+          )}
         </div>
-      )}
-    </Popover>
+      </div>
+    </div>
   );
 };
+
+const EditAgentPopover: React.FC<{
+  agent: Agent;
+  removable?: boolean;
+  onRemove?: () => void;
+}> = ({ agent, removable = true, onRemove }) => (
+  <Popover placement="bottom-start" trigger={<AgentBadge agent={agent} />}>
+    {(close) => <EditAgentForm agent={agent} removable={removable} onRemove={onRemove} onClose={close} />}
+  </Popover>
+);
 
 const AddAgentPopover: React.FC = () => {
   const agents = useProjectStore((s) => s.agents);
