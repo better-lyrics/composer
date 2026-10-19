@@ -9,7 +9,7 @@ import {
 } from "@/audio/separation/stem-store";
 import { SeparationWorker } from "@/audio/separation/worker-host";
 import { useAudioStore } from "@/stores/audio";
-import { isStemJobInUse, useSeparationStore } from "@/stores/separation";
+import { isStemJobInUse, toggledStem, useSeparationStore } from "@/stores/separation";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -181,6 +181,40 @@ describe("separate", () => {
       model.finishNextRun();
       await second;
       expect(useSeparationStore.getState().status).toBe("ready");
+    });
+  });
+});
+
+describe("toggledStem", () => {
+  const ALL_STEMS = ["original", "vocals", "instrumental"] as const;
+
+  it("switches from Original to Vocals the first time", () => {
+    useSeparationStore.setState({ availableStems: [...ALL_STEMS], currentStem: "original" });
+    expect(toggledStem()).toBe("vocals");
+  });
+
+  it("goes back to Original from a stem", () => {
+    useSeparationStore.setState({ availableStems: [...ALL_STEMS], currentStem: "vocals" });
+    expect(toggledStem()).toBe("original");
+  });
+
+  it("returns to the last stem the user picked", () => {
+    useSeparationStore.setState({ availableStems: [...ALL_STEMS] });
+    useSeparationStore.getState().selectStem("instrumental");
+    useSeparationStore.getState().selectStem("original");
+    expect(toggledStem()).toBe("instrumental");
+  });
+
+  describe("edge cases", () => {
+    it("selecting the toggled stem does nothing before separation", () => {
+      useSeparationStore.getState().selectStem(toggledStem());
+      expect(useSeparationStore.getState().currentStem).toBe("original");
+    });
+
+    it("an unavailable stem pick does not change the remembered stem", () => {
+      useSeparationStore.getState().selectStem("instrumental");
+      useSeparationStore.setState({ availableStems: [...ALL_STEMS], currentStem: "original" });
+      expect(toggledStem()).toBe("vocals");
     });
   });
 });

@@ -2,6 +2,7 @@ import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { isCountingIn } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { createAudioFile } from "@/test/audio-fixtures";
@@ -249,5 +250,28 @@ describe("useGlobalShortcuts · playback speed toggle", () => {
       pressSpeedToggle();
       expect(useAudioStore.getState().playbackRate).toBe(0.5);
     });
+  });
+});
+
+describe("useGlobalShortcuts · stem toggle", () => {
+  async function renderEditorShortcuts() {
+    await renderHook(() =>
+      useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {} }),
+    );
+  }
+
+  it("switches between Original and Vocals on Shift+O", async () => {
+    useSeparationStore.setState({ availableStems: ["original", "vocals", "instrumental"], currentStem: "original" });
+    await renderEditorShortcuts();
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "O", code: "KeyO", shiftKey: true, bubbles: true }));
+    expect(useSeparationStore.getState().currentStem).toBe("vocals");
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "O", code: "KeyO", shiftKey: true, bubbles: true }));
+    expect(useSeparationStore.getState().currentStem).toBe("original");
+  });
+
+  it("stays on Original before vocals are separated", async () => {
+    await renderEditorShortcuts();
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "O", code: "KeyO", shiftKey: true, bubbles: true }));
+    expect(useSeparationStore.getState().currentStem).toBe("original");
   });
 });

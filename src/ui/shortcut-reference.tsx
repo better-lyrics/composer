@@ -29,6 +29,11 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
         description: "Switch between normal speed and the last speed you used (0.75x at first)",
         shortcutId: "global.togglePlaybackSpeed",
       },
+      {
+        keys: ["Shift", "O"],
+        description: "Switch between the original audio and the last stem you used (vocals at first)",
+        shortcutId: "global.toggleStem",
+      },
       { keys: ["Mod", "O"], description: "Switch project", shortcutId: "global.openProjectSwitcher" },
       { keys: ["Mod", "Alt", "N"], description: "New project", shortcutId: "global.newProject" },
       { keys: ["Mod", "S"], description: "Save now", shortcutId: "global.saveNow" },

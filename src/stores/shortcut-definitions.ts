@@ -37,6 +37,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "r", shift: true },
   },
   {
+    id: "global.toggleStem",
+    scope: "global",
+    description: "Switch between the original audio and the last stem you used (vocals at first)",
+    defaultBinding: { key: "o", shift: true },
+  },
+  {
     id: "global.help",
     scope: "global",
     description: "Show help",
