@@ -91,7 +91,9 @@ function generatedLanguageUpdates(
         translations[generated.language] = fresh;
       }
     }
-    const changed = generatedTranslations.some(({ language }) => translations[language] !== line.translations?.[language]);
+    const changed = generatedTranslations.some(
+      ({ language }) => translations[language] !== line.translations?.[language],
+    );
     if (changed) updates.translations = translations;
   }
 

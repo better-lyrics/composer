@@ -57,7 +57,11 @@ describe("staleGeneratedLanguages", () => {
 
   it("collects every stale line and language across the song", () => {
     const lines = [
-      lineWithTracks("a", "Здравствуй", { sourceText: "Привет", transliteration: "google", translations: { en: "google" } }),
+      lineWithTracks("a", "Здравствуй", {
+        sourceText: "Привет",
+        transliteration: "google",
+        translations: { en: "google" },
+      }),
       lineWithTracks("b", "Где ты", { transliteration: "google", translations: { en: "google" } }),
       lineWithTracks("c", "Мой друг", { sourceText: "Друг", translations: { de: "google", en: "google" } }),
     ];
@@ -102,7 +106,11 @@ describe("staleGeneratedLanguages", () => {
 
     it.each(["manual", "import"] as const)("never refreshes %s tracks", (origin) => {
       const lines = [
-        lineWithTracks("a", "Здравствуй", { sourceText: "Привет", transliteration: origin, translations: { en: origin } }),
+        lineWithTracks("a", "Здравствуй", {
+          sourceText: "Привет",
+          transliteration: origin,
+          translations: { en: origin },
+        }),
       ];
 
       expect(staleGeneratedLanguages(lines)).toBeNull();
