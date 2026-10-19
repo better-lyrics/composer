@@ -15,7 +15,7 @@ interface LanguageGenerationRequest {
 interface LanguageGenerationResult {
   transliteration?: TransliterationGeneration;
   translations: TranslationGeneration[];
-  anyFailed: boolean;
+  failedLineIds: ReadonlySet<string>;
   detectedLanguage?: string;
 }
 
@@ -55,8 +55,10 @@ async function requestLanguageGeneration(
       main: new Map(translationResults[index * 2].lines.map((result) => [result.id, result])),
       background: new Map(translationResults[index * 2 + 1].lines.map((result) => [result.id, result])),
     })),
-    anyFailed: [...(romanizationResults ?? []), ...translationResults].some((batch) =>
-      batch.lines.some((result) => result.failed),
+    failedLineIds: new Set(
+      [...(romanizationResults ?? []), ...translationResults].flatMap((batch) =>
+        batch.lines.flatMap((result) => (result.failed ? [result.id] : [])),
+      ),
     ),
     detectedLanguage: romanMain?.detectedLanguage || translationResults[0]?.detectedLanguage,
   };

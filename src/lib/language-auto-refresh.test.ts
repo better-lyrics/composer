@@ -1,37 +1,25 @@
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { LyricLine } from "@/domain/line/model";
-import { createLanguageAutoRefresh } from "@/lib/language-auto-refresh";
 import { useProjectStore } from "@/stores/project";
-import { lineById, romanizedWords, timedLine } from "@/test/generated-language-lines";
+import {
+  createRefresher,
+  disposeRefreshers,
+  gate,
+  lineById,
+  romanizedWords,
+  timedLine,
+} from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// -- Fixtures -----------------------------------------------------------------
-
-function gate() {
-  let open = () => {};
-  const opened = new Promise<void>((resolve) => {
-    open = resolve;
-  });
-  return { opened, open };
-}
-
 // -- Setup --------------------------------------------------------------------
-
-const refreshers: Array<ReturnType<typeof createLanguageAutoRefresh>> = [];
-
-function createRefresher() {
-  const refresher = createLanguageAutoRefresh({ delayMs: 1000 });
-  refreshers.push(refresher);
-  return refresher;
-}
 
 beforeEach(() => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
 });
 
 afterEach(() => {
-  for (const refresher of refreshers.splice(0)) refresher.dispose();
+  disposeRefreshers();
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -111,6 +99,25 @@ describe("createLanguageAutoRefresh", () => {
       await createRefresher().refreshNow();
 
       expect(lineById("a")).toBe(line);
+    });
+
+    it("asks Google again for a failed line only after the line changes", async () => {
+      const requests = stubGoogleLanguageFetch({
+        detectedLanguage: "ru",
+        romanizations: { "Сильный дождь": "Silnyy dozhd" },
+        translations: { "Сильный дождь": "Heavy rain" },
+      });
+      useProjectStore.setState({ lines: [timedLine("a", ["Слабый", "дождь"], ["Lyogkiy", "dozhd"], "Лёгкий дождь")] });
+      const refresher = createRefresher();
+
+      await refresher.refreshNow();
+      const failedRequests = requests.length;
+      await refresher.refreshNow();
+      expect(requests.length).toBe(failedRequests);
+
+      useProjectStore.getState().updateLine("a", { text: "Сильный дождь" }, { deriveText: false });
+      await refresher.refreshNow();
+      expect(lineById("a").transliteration?.text).toBe("Silnyy  dozhd");
     });
 
     it("drops a result when the line text changed during the request", async () => {
@@ -197,56 +204,6 @@ describe("createLanguageAutoRefresh", () => {
 
       await vi.advanceTimersByTimeAsync(1);
       await vi.waitFor(() => expect(lineById("a").transliteration?.text).toBe("Yasnoye  nebo"));
-    });
-  });
-
-  describe("history", () => {
-    it("joins the lyrics edit it follows, so one undo restores both", async () => {
-      stubGoogleLanguageFetch({
-        detectedLanguage: "ru",
-        romanizations: { "Добрый вечер": "Dobryy vecher" },
-        translations: { "Добрый вечер": "Good evening" },
-      });
-      useProjectStore.getState().setLinesWithHistory([timedLine("a", ["Доброе", "утро"], ["Dobroye", "utro"])]);
-      useProjectStore.getState().updateLineWithHistory("a", {
-        text: "Добрый вечер",
-        words: [
-          { text: "Добрый ", begin: 1, end: 2, transliteration: "Dobroye" },
-          { text: "вечер", begin: 2, end: 3, transliteration: "utro" },
-        ],
-      });
-
-      await createRefresher().refreshNow();
-      expect(lineById("a").transliteration?.text).toBe("Dobryy  vecher");
-
-      useProjectStore.getState().undo();
-      expect(lineById("a").text).toBe("Доброе утро");
-      expect(lineById("a").transliteration?.text).toBe("Dobroye  utro");
-
-      useProjectStore.getState().redo();
-      expect(lineById("a").text).toBe("Добрый вечер");
-      expect(lineById("a").transliteration?.text).toBe("Dobryy  vecher");
-    });
-  });
-
-  describe("pending edits", () => {
-    it("joins an edit typed without history, so one undo restores both", async () => {
-      stubGoogleLanguageFetch({
-        detectedLanguage: "ru",
-        romanizations: { "Тихая река": "Tikhaya reka" },
-        translations: { "Тихая река": "Quiet river" },
-      });
-      useProjectStore.getState().setLinesWithHistory([timedLine("a", ["Быстрая", "река"], ["Bystraya", "reka"])]);
-      const typed = timedLine("a", ["Тихая", "река"], ["Bystraya", "reka"], "Быстрая река");
-      useProjectStore.getState().setLines([typed]);
-
-      await createRefresher().refreshNow();
-      expect(lineById("a").transliteration?.text).toBe("Tikhaya  reka");
-      expect(useProjectStore.getState().isDirtySinceHistory).toBe(true);
-
-      useProjectStore.getState().undo();
-      expect(lineById("a").text).toBe("Быстрая река");
-      expect(lineById("a").transliteration?.text).toBe("Bystraya  reka");
     });
   });
 

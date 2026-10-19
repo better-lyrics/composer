@@ -71,7 +71,7 @@ const LanguagesPanel: React.FC = () => {
         ) {
           return;
         }
-        if (generation.anyFailed) toast.error("Couldn't generate some lines. Try Regenerate.");
+        if (generation.failedLineIds.size > 0) toast.error("Couldn't generate some lines. Try Regenerate.");
         const updates = mergeGeneratedLanguageUpdates(
           startingLines,
           currentState.lines,

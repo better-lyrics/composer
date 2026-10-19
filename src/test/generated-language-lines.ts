@@ -1,5 +1,6 @@
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { LyricLine } from "@/domain/line/model";
+import { createLanguageAutoRefresh } from "@/lib/language-auto-refresh";
 import { useProjectStore } from "@/stores/project";
 
 // -- Helpers -----------------------------------------------------------------
@@ -41,6 +42,26 @@ function romanizedWords(id: string): Array<string | undefined> {
   return lineById(id).words?.map((word) => word.transliteration) ?? [];
 }
 
+function gate() {
+  let open = () => {};
+  const opened = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  return { opened, open };
+}
+
+const refreshers: Array<ReturnType<typeof createLanguageAutoRefresh>> = [];
+
+function createRefresher() {
+  const refresher = createLanguageAutoRefresh({ delayMs: 1000 });
+  refreshers.push(refresher);
+  return refresher;
+}
+
+function disposeRefreshers(): void {
+  for (const refresher of refreshers.splice(0)) refresher.dispose();
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { lineById, romanizedWords, timedLine };
+export { createRefresher, disposeRefreshers, gate, lineById, romanizedWords, timedLine };
