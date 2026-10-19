@@ -1,6 +1,7 @@
 import { planTransliterationAlignment } from "@/domain/language/align";
 import type { TransliterationTrack } from "@/domain/language/model";
 import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
+import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 
@@ -227,6 +228,27 @@ describe("splitWordsKeepingTransliteration", () => {
 
       expect(result?.words.map((word) => word.text)).toEqual(["일", "단은"]);
       expect(result?.transliteration?.text).toBe("ildan eun");
+    });
+
+    it("regression: a multi-word line-synced line keeps every word of its transliteration (#296)", () => {
+      const line: LyricLine = {
+        id: "line",
+        agentId: "v1",
+        text: "일단은 나",
+        begin: 0,
+        end: 1,
+        transliteration: { ...track, text: "ildan eun  na" },
+      };
+
+      expect(getEffectiveLines([line])[0].words?.[0].transliteration).toBe("ildan eun  na");
+
+      const result = splitWordsKeepingTransliteration(line, "word", 0, [
+        { text: "일", begin: 0, end: 0.4, transliteration: "il", transliterationJoinerAfter: "", syllableGroupId: "g" },
+        { text: "단은 나", begin: 0.4, end: 1, transliteration: "dan eun  na", syllableGroupId: "g" },
+      ]);
+
+      expect(result?.words.map((word) => word.transliteration)).toEqual(["il", "dan eun  na"]);
+      expect(result?.transliteration?.text).toBe("ildan eun  na");
     });
 
     it("splits the background track and writes backgroundText", () => {
