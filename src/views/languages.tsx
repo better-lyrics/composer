@@ -1,17 +1,16 @@
 import { pastedRows } from "@/domain/language/paste-import";
-import { googleLanguageProvider } from "@/services/google-language-provider";
 import { useProjectStore } from "@/stores/project";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
 import { Select } from "@/ui/select";
 import { watchGenerationEdits } from "@/views/languages/generation-edit-guard";
-import { languageGenerationInputs } from "@/views/languages/generation-inputs";
 import { LANGUAGE_OPTIONS, SOURCE_LANGUAGE_OPTIONS } from "@/views/languages/language-options";
 import { LanguageTrackBar } from "@/views/languages/language-track-bar";
 import { LanguageLineEditor } from "@/views/languages/line-editor";
 import { mergeGeneratedLanguageUpdates } from "@/views/languages/merge-generated-language-updates";
 import { PasteImportModal } from "@/views/languages/paste-import-modal";
 import { RegenerateLanguageControl } from "@/views/languages/regenerate-language-control";
+import { requestLanguageGeneration } from "@/views/languages/request-language-generation";
 import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
 import { useLanguageTargets } from "@/views/languages/use-language-targets";
 import { pluralize } from "@/utils/pluralize";
@@ -56,21 +55,12 @@ const LanguagesPanel: React.FC = () => {
       const { edits, stop } = watchGenerationEdits(startingLines, requestedTargets, controller.signal);
       setIsGenerating(true);
       try {
-        const { mainInputs, bgInputs } = languageGenerationInputs(startingState.lines);
-        const [romanizationResults, translationResults] = await Promise.all([
-          includeTransliteration
-            ? Promise.all([
-                googleLanguageProvider.transliterate(mainInputs, requestedSource, controller.signal),
-                googleLanguageProvider.transliterate(bgInputs, requestedSource, controller.signal),
-              ])
-            : Promise.resolve(null),
-          Promise.all(
-            requestedTargets.flatMap((language) => [
-              googleLanguageProvider.translate(mainInputs, language, requestedSource, controller.signal),
-              googleLanguageProvider.translate(bgInputs, language, requestedSource, controller.signal),
-            ]),
-          ),
-        ]);
+        const generation = await requestLanguageGeneration(startingState.lines, {
+          translations: requestedTargets,
+          transliteration: includeTransliteration,
+          sourceLanguage: requestedSource,
+          signal: controller.signal,
+        });
         const currentState = useProjectStore.getState();
         if (
           controller.signal.aborted ||
@@ -81,37 +71,16 @@ const LanguagesPanel: React.FC = () => {
         ) {
           return;
         }
-        if (
-          [...(romanizationResults ?? []), ...translationResults].some((batch) =>
-            batch.lines.some((result) => result.failed),
-          )
-        ) {
-          toast.error("Couldn't generate some lines. Try Regenerate.");
-        }
-        const romanMain = romanizationResults?.[0];
-        const romanBg = romanizationResults?.[1];
-        const transliterationGeneration = romanMain
-          ? {
-              language: romanMain.language,
-              backgroundLanguage: romanBg?.language,
-              main: new Map(romanMain.lines.map((result) => [result.id, result])),
-              background: new Map(romanBg?.lines.map((result) => [result.id, result]) ?? []),
-            }
-          : undefined;
-        const translationPairs = requestedTargets.map((language, index) => ({
-          language,
-          main: new Map(translationResults[index * 2].lines.map((result) => [result.id, result])),
-          background: new Map(translationResults[index * 2 + 1].lines.map((result) => [result.id, result])),
-        }));
+        if (generation.anyFailed) toast.error("Couldn't generate some lines. Try Regenerate.");
         const updates = mergeGeneratedLanguageUpdates(
           startingLines,
           currentState.lines,
           targetsRef.current,
-          { force, transliteration: transliterationGeneration, translations: translationPairs },
+          { force, transliteration: generation.transliteration, translations: generation.translations },
           edits,
         );
         if (updates.length > 0) updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
-        const detected = romanMain?.detectedLanguage || translationResults[0]?.detectedLanguage;
+        const detected = generation.detectedLanguage;
         if (updates.length > 0 && !currentState.metadata.language && detected && detected !== "auto") {
           setMetadata({ language: detected });
         }

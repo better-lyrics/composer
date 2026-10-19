@@ -98,3 +98,4 @@ function generatedLanguageUpdates(
 }
 
 export { generatedLanguageUpdates };
+export type { TranslationGeneration, TransliterationGeneration };
