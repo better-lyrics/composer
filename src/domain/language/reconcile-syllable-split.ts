@@ -2,7 +2,7 @@ import { mappedTransliteration, withAlignedWords } from "@/domain/language/align
 import type { TransliterationAlignmentStatus, TransliterationTrack } from "@/domain/language/model";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import type { WordTrack } from "@/domain/line/tracks";
+import { trackWords, type WordTrack } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -66,7 +66,7 @@ function splitWordsKeepingTransliteration(
   const aligned = withAlignedWords(
     reconcileLine(type === "word" ? { ...line, words: effective } : { ...line, backgroundWords: effective }),
   );
-  const base = (type === "word" ? aligned.words : aligned.backgroundWords) ?? effective;
+  const base = trackWords(aligned, type) ?? effective;
 
   const words = base.toSpliced(
     wordIndex,
