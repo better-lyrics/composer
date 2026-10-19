@@ -1,27 +1,9 @@
 import { HELP_CONTENT_SCROLLER_CSS, installStyleSheet } from "@/test/browser-css";
+import { holdIdleCallbacks, releaseIdleCallbacks } from "@/test/idle-callbacks";
 import { render } from "@/test/render";
 import { HelpModal } from "@/ui/help-modal";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-
-// -- Idle control --------------------------------------------------------------
-
-// OverlayScrollbars initializes its viewport from an idle callback. Holding those callbacks
-// reproduces a slow machine where the reader opens a topic before the scroller is ready.
-const heldIdleCallbacks: IdleRequestCallback[] = [];
-const realRequestIdleCallback = window.requestIdleCallback;
-
-function holdIdleCallbacks(): void {
-  window.requestIdleCallback = (callback) => {
-    heldIdleCallbacks.push(callback);
-    return heldIdleCallbacks.length;
-  };
-}
-
-function releaseIdleCallbacks(): void {
-  window.requestIdleCallback = realRequestIdleCallback;
-  for (const callback of heldIdleCallbacks.splice(0)) callback({ didTimeout: false, timeRemaining: () => 50 });
-}
 
 // -- Helpers ------------------------------------------------------------------
 
