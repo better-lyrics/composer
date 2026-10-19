@@ -2,6 +2,7 @@
  * @vitest-environment node
  */
 import type { LyricLine } from "@/domain/line/model";
+import { useProjectStore } from "@/stores/project";
 import { describe, expect, it } from "vitest";
 import { applyWordDeletion, type DeletionSelection } from "./apply-word-deletion";
 
@@ -25,7 +26,7 @@ describe("applyWordDeletion", () => {
     expect(result[0].words?.map((w) => w.text)).toEqual(["I ", "you"]);
   });
 
-  it("leaves a word-timed line in place with empty words AND clears begin/end when ALL words are deleted", () => {
+  it("leaves a word-timed line in place with no words AND clears begin/end when ALL words are deleted", () => {
     const lines: LyricLine[] = [
       {
         id: "l1",
@@ -43,7 +44,7 @@ describe("applyWordDeletion", () => {
     ];
     const result = applyWordDeletion(lines, sel);
     expect(result).toHaveLength(1);
-    expect(result[0].words).toEqual([]);
+    expect(result[0].words).toBeUndefined();
     expect(result[0].begin).toBeUndefined();
     expect(result[0].end).toBeUndefined();
     expect(result[0].text).toBe("I love");
@@ -61,7 +62,7 @@ describe("applyWordDeletion", () => {
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "word", wordIndex: 0 }];
     const result = applyWordDeletion(lines, sel);
     expect(result).toHaveLength(1);
-    expect(result[0].words).toEqual([]);
+    expect(result[0].words).toBeUndefined();
     expect(result[0].begin).toBeUndefined();
   });
 
@@ -243,7 +244,7 @@ describe("applyWordDeletion", () => {
     ];
     const result = applyWordDeletion(lines, sel);
     expect(result).toHaveLength(1);
-    expect(result[0].words).toEqual([]);
+    expect(result[0].words).toBeUndefined();
     expect(result[0].backgroundWords).toBeUndefined();
     expect(result[0].begin).toBeUndefined();
     expect(result[0].end).toBeUndefined();
@@ -310,7 +311,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
     expect(result[0].id).toBe("L1");
     expect(result[0].text).toBe("x");
     // Existing applyWordDeletion contract: words becomes [] after deleting all words
-    expect(result[0].words).toEqual([]);
+    expect(result[0].words).toBeUndefined();
     expect(result[0].begin).toBeUndefined();
     expect(result[0].end).toBeUndefined();
   });
@@ -375,7 +376,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
     // A1 is now empty but A2 still has words → instance stays alive
     expect(result.find((l) => l.id === "A1")?.groupId).toBe("cannon");
     expect(result.find((l) => l.id === "A2")?.groupId).toBe("cannon");
-    expect(result.find((l) => l.id === "A1")?.words).toEqual([]);
+    expect(result.find((l) => l.id === "A1")?.words).toBeUndefined();
     expect(result.find((l) => l.id === "A2")?.words).toEqual([{ text: "you", begin: 6, end: 7 }]);
   });
 
@@ -420,7 +421,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
     const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }]);
     // Main words gone but bg still present → not fully empty → instance stays
     expect(result[0].groupId).toBe("cannon");
-    expect(result[0].words).toEqual([]);
+    expect(result[0].words).toBeUndefined();
     expect(result[0].backgroundWords?.length).toBe(1);
   });
 
@@ -503,7 +504,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
     const lines: LyricLine[] = [{ id: "L1", text: "x", agentId: "v1", words: [{ text: "x", begin: 5, end: 6 }] }];
     const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }]);
     expect(result[0].groupId).toBeUndefined();
-    expect(result[0].words).toEqual([]);
+    expect(result[0].words).toBeUndefined();
     expect(result[0].id).toBe("L1");
     expect(result[0].text).toBe("x");
   });
@@ -545,5 +546,34 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
     const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 1 }]);
     expect(result[0].groupId).toBe("cannon");
     expect(result[0].words?.length).toBe(2);
+  });
+});
+
+describe("applyWordDeletion · regressions", () => {
+  it("regression: Place times a grouped line after all its words are deleted (#280)", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "c1",
+        text: "hold me",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [
+          { text: "hold ", begin: 4, end: 4.5 },
+          { text: "me", begin: 4.5, end: 5 },
+        ],
+      },
+    ];
+    const deleted = applyWordDeletion(lines, [
+      { lineId: "c1", type: "word", wordIndex: 0 },
+      { lineId: "c1", type: "word", wordIndex: 1 },
+    ]);
+    useProjectStore.setState({ lines: deleted, groups: [] });
+
+    useProjectStore.getState().updateLineWithHistory("c1", { begin: 7, end: 8 });
+
+    expect(useProjectStore.getState().lines[0]).toMatchObject({ begin: 7, end: 8 });
+    expect(useProjectStore.getState().lines[0].words).toBeUndefined();
   });
 });
