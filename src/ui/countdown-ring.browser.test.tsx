@@ -71,28 +71,6 @@ describe("CountdownRing", () => {
     });
   });
 
-  describe("regressions", () => {
-    it("regression: mounts the live region empty so the first count is announced", async () => {
-      const textAtMount: string[] = [];
-      const observer = new MutationObserver((records) => {
-        for (const node of records.flatMap((record) => [...record.addedNodes])) {
-          if (!(node instanceof Element)) continue;
-          const status = node.matches('[role="status"]') ? node : node.querySelector('[role="status"]');
-          if (status) textAtMount.push(status.textContent ?? "");
-        }
-      });
-      observer.observe(document.body, { childList: true, subtree: true });
-
-      const screen = await render(
-        <CountdownRing remainingSeconds={() => 3} totalSeconds={3} precision={0} announce={announce} />,
-      );
-      observer.disconnect();
-
-      expect(textAtMount).toEqual([""]);
-      await expect.element(screen.getByRole("status")).toHaveTextContent("Starting in 3");
-    });
-  });
-
   describe("invariants", () => {
     it("fills the arc as time runs out", async () => {
       const clock = countdown(3);

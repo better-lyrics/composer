@@ -67,14 +67,6 @@ describe("HelpModal initialSection", () => {
 });
 
 describe("HelpModal initialScrollTop", () => {
-  it("restores the content scroll position once the viewport initializes", async () => {
-    installStyleSheet(HELP_CONTENT_SCROLLER_CSS);
-    await render(<HelpModal isOpen initialSection="timeline" initialScrollTop={150} onClose={() => {}} />);
-    const viewport = () =>
-      document.querySelector("[data-help-content]")?.closest<HTMLElement>("[data-overlayscrollbars-viewport]") ?? null;
-    await expect.poll(() => viewport()?.scrollTop).toBe(150);
-  });
-
   it("regression: opens already at the saved position instead of jumping from the top", async () => {
     installStyleSheet(HELP_CONTENT_SCROLLER_CSS);
     await render(<HelpModal isOpen initialSection="timeline" initialScrollTop={150} onClose={() => {}} />);
