@@ -247,7 +247,7 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
   // been populated yet. refreshForCurrentSource handles eviction by overwriting
   // back to "original" when the cached stems are gone.
   restoreCurrentStem: (stem) => {
-    set({ currentStem: stem });
+    set(stem === "original" ? { currentStem: stem } : { currentStem: stem, otherStem: stem });
   },
 
   cancel: () => {

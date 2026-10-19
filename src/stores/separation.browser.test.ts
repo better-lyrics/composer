@@ -205,6 +205,15 @@ describe("toggledStem", () => {
     expect(toggledStem()).toBe("instrumental");
   });
 
+  describe("regressions", () => {
+    it("regression: returns to the stem a project was restored on", () => {
+      useSeparationStore.getState().restoreCurrentStem("instrumental");
+      useSeparationStore.setState({ availableStems: [...ALL_STEMS] });
+      useSeparationStore.getState().selectStem(toggledStem());
+      expect(toggledStem()).toBe("instrumental");
+    });
+  });
+
   describe("edge cases", () => {
     it("selecting the toggled stem does nothing before separation", () => {
       useSeparationStore.getState().selectStem(toggledStem());
