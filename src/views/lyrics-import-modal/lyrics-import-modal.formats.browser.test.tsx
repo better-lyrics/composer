@@ -2,6 +2,7 @@ import { hasAnyTiming } from "@/domain/line/predicates";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { SINGER_TAGGED_LRC } from "@/test/lrc-fixtures";
 import { render } from "@/test/render";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { restoreProvidersForTests, snapshotProvidersForTests } from "@/utils/lyrics-search/registry";
@@ -166,6 +167,24 @@ describe("partially readable lyrics files", () => {
     await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
     expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Chorus", "Next"]);
     await expect.element(screen.getByText("Imported 2 lines. 1 line could not be read.")).toBeInTheDocument();
+  });
+});
+
+describe("LRC with singer or background vocal tags", () => {
+  it("refuses the file, says why and leaves the project unchanged", async () => {
+    const before = useProjectStore.getState();
+    const screen = await render(host());
+    await uploadAndImport(screen, "cry_babies.lrc", SINGER_TAGGED_LRC);
+    await expect
+      .element(
+        screen.getByText(
+          "Could not import cry_babies.lrc. This LRC uses singer or background vocal tags (v1:, [bg:]) that are not part of LRC. Use a TTML or plain LRC version instead.",
+        ),
+      )
+      .toBeInTheDocument();
+    const after = useProjectStore.getState();
+    expect(after.lines).toBe(before.lines);
+    expect(after.history).toBe(before.history);
   });
 });
 
