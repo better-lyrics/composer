@@ -27,6 +27,7 @@ function wordSlotCount(line: LyricLine): number {
 }
 
 function timedWordCount(line: LyricLine): number {
+  if (isLineSynced(line)) return wordSlotCount(line);
   return Math.min(line.words?.length ?? 0, wordSlotCount(line));
 }
 
