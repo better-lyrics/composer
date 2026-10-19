@@ -56,6 +56,23 @@ describe("TimelineWaveform · layout", () => {
     });
   });
 
+  describe("invariants", () => {
+    it("never lets its content spill over the rows below", async () => {
+      useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 30, audioElement: null });
+      const screen = await render(
+        <div>
+          <TimelineWaveform />
+          <div data-rows />
+        </div>,
+      );
+      const waveform = screen.container.querySelector<HTMLElement>("[data-waveform-redraw-bg]")?.parentElement;
+      const rows = screen.container.querySelector<HTMLElement>("[data-rows]");
+      if (!waveform || !rows) throw new Error("waveform or rows not rendered");
+
+      expect(rows.offsetTop - waveform.offsetTop).toBeGreaterThanOrEqual(waveform.scrollHeight);
+    });
+  });
+
   describe("edge cases", () => {
     it("keeps the waveform height when the duration is still unknown", async () => {
       useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 0, audioElement: null });
