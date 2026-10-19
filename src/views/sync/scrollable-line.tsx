@@ -35,6 +35,7 @@ interface ScrollableLineProps {
   words?: WordTiming[];
   lineBegin?: number;
   lineEnd?: number;
+  lineSynced?: boolean;
   granularity: "line" | "word";
   currentTime: number;
   editMode: boolean;
@@ -72,6 +73,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   words,
   lineBegin,
   lineEnd,
+  lineSynced,
   granularity,
   currentTime,
   editMode,
@@ -309,7 +311,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
         )}
       </span>
       <div className="flex flex-col flex-1 gap-1">
-        {granularity === "line" ? (
+        {granularity === "line" || lineSynced ? (
           <div className="flex items-start justify-between gap-2">
             {renderLineContent()}
             {lineBegin !== undefined && onNudgeLine && onSetLineTime && (
@@ -354,6 +356,7 @@ const ScrollableLine = memo(ScrollableLineInner, (prev, next) => {
     prev.editMode === next.editMode &&
     prev.lineBegin === next.lineBegin &&
     prev.lineEnd === next.lineEnd &&
+    prev.lineSynced === next.lineSynced &&
     prev.words === next.words &&
     prev.linkInfo?.color === next.linkInfo?.color &&
     prev.linkInfo?.label === next.linkInfo?.label &&

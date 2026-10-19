@@ -120,7 +120,6 @@ describe("SnapMarkerPin", () => {
         return el;
       });
 
-      if (headEl) await userEvent.unhover(headEl);
       await userEvent.hover(button);
       await expect.poll(() => tooltip()).not.toBeNull();
 

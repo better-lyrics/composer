@@ -1,6 +1,5 @@
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { SyncCursor } from "@/domain/sync/cursor";
 import type { ReRecording } from "@/domain/sync/skipped-instances";
@@ -102,10 +101,6 @@ function convertLineToWord<T extends ConvertibleLine>(line: T): T {
   return { ...line, words, begin: undefined, end: undefined };
 }
 
-function hasLineTiming(lines: LyricLine[]): boolean {
-  return lines.some(isLineSynced);
-}
-
 // -- Word Distribution --------------------------------------------------------
 
 const DEFAULT_BG_WORD_DURATION = 0.3;
@@ -169,7 +164,6 @@ export {
   getNudgeAmount,
   convertLineToWord,
   formatTimeMs,
-  hasLineTiming,
   parseTimeMs,
   splitIntoWords,
   splitIntoWordsWithMeta,

@@ -13,6 +13,7 @@ import {
   applyMoveToBg,
 } from "@/stores/project/lines-slice-helpers";
 import { applySyllableSplitToLines } from "@/stores/project/syllable-split-helpers";
+import { markTransientLines } from "@/stores/project/transient-lines";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
 import { applySiblingWords } from "@/utils/word-diff";
@@ -39,7 +40,12 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
   // gesture ends, and must verify (by array identity) that no other writer
   // replaced lines mid-gesture. Reserved for drag previews (e.g. the timeline
   // selection stretch) — never for durable edits.
-  setTransientLines: (lines) => set({ lines }),
+  setTransientLines: (lines) => {
+    markTransientLines(lines);
+    set({ lines });
+  },
+
+  restoreTransientLines: (lines) => set({ lines }),
 
   setLinesWithHistory: (lines, groups) => set((state) => commitHistory(state, groups ? { lines, groups } : { lines })),
 
