@@ -17,18 +17,16 @@ const US_PUNCTUATION_BY_CODE: Record<string, [base: string, shifted: string]> = 
   Period: [".", ">"],
   Slash: ["/", "?"],
 };
-const US_SHIFTED_DIGITS = ")!@#$%^&*(";
 
 function physicalKey(event: KeyboardEvent): string | null {
   const { code, shiftKey } = event;
   if (code.startsWith("Key") && code.length === 4) return code.slice(3).toLowerCase();
-  if (code.startsWith("Digit") && code.length === 6) return shiftKey ? US_SHIFTED_DIGITS[Number(code[5])] : code[5];
   const punctuation = US_PUNCTUATION_BY_CODE[code];
   return punctuation ? punctuation[shiftKey ? 1 : 0] : null;
 }
 
-function isNonAsciiGlyph(key: string): boolean {
-  return key.length === 1 && key.charCodeAt(0) > 0x7f;
+function isNonLatinLetter(key: string): boolean {
+  return key.length === 1 && /\p{L}/u.test(key) && !/\p{Script=Latin}/u.test(key);
 }
 
 // Layout glyphs (Option on macOS: Alt+E → "´"; non-Latin layouts: E → "у")
@@ -38,7 +36,7 @@ function getEventKey(event: KeyboardEvent): string {
     if (event.code.startsWith("Key") && event.code.length === 4) return event.code.slice(3).toLowerCase();
     if (event.code.startsWith("Digit") && event.code.length === 6) return event.code.slice(5);
   }
-  if (isNonAsciiGlyph(event.key)) return physicalKey(event) ?? event.key;
+  if (isNonLatinLetter(event.key)) return physicalKey(event) ?? event.key;
   return event.key.length === 1 ? event.key.toLowerCase() : event.key;
 }
 

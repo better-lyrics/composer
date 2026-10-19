@@ -235,15 +235,31 @@ describe("keyboard layouts", () => {
   });
 
   describe("edge cases", () => {
-    it("uses the US shifted character for a shifted digit with a non-ASCII glyph", () => {
+    it("uses the US shifted character for shifted punctuation on a Cyrillic key", () => {
+      expect(bindingFromKeyboardEvent(keydown({ key: "Х", code: "BracketLeft", shiftKey: true }))).toEqual({
+        key: "{",
+        shift: true,
+      });
+    });
+
+    it("keeps a non-letter glyph such as the numero sign", () => {
       expect(bindingFromKeyboardEvent(keydown({ key: "№", code: "Digit3", shiftKey: true }))).toEqual({
-        key: "#",
+        key: "№",
         shift: true,
       });
     });
 
     it("keeps the printed key on a Latin layout such as AZERTY", () => {
       expect(bindingFromKeyboardEvent(keydown({ key: "a", code: "KeyQ" }))).toEqual({ key: "a" });
+    });
+
+    it("keeps accented Latin letters such as German ü", () => {
+      expect(bindingFromKeyboardEvent(keydown({ key: "ü", code: "BracketLeft" }))).toEqual({ key: "ü" });
+    });
+
+    it("regression: a saved accented Latin binding still matches", () => {
+      useShortcutBindingsStore.setState({ overrides: { "global.help": { key: "é" } } });
+      expect(matchesShortcutBinding(keydown({ key: "é", code: "Digit2" }), "global.help")).toBe(true);
     });
 
     it("keeps a non-ASCII glyph when the physical key has no US mapping", () => {
