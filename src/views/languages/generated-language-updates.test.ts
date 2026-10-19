@@ -137,5 +137,16 @@ describe("generated language updates", () => {
 
       expect(updates).toEqual({});
     });
+
+    it("regression: leaves a track already marked stale untouched when Google has no new text", () => {
+      const line = sourceLine();
+      line.translations!.en.stale = true;
+      const updates = generatedLanguageUpdates(line, {
+        force: false,
+        translations: [{ language: "en", main: translation(null), background: translation(null) }],
+      });
+
+      expect(updates).toEqual({});
+    });
   });
 });

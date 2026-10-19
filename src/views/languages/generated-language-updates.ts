@@ -85,7 +85,7 @@ function generatedLanguageUpdates(
           sourceFingerprint: fingerprint,
         };
       } else if (current && current.sourceFingerprint !== fingerprint) {
-        translations[generated.language] = { ...current, stale: true };
+        if (!current.stale) translations[generated.language] = { ...current, stale: true };
       } else if (current?.stale) {
         const { stale: _stale, ...fresh } = current;
         translations[generated.language] = fresh;

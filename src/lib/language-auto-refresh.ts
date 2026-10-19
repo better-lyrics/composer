@@ -24,19 +24,27 @@ const LOG_PREFIX = "[LanguageAutoRefresh]";
 
 async function refreshStaleGeneratedLanguages(signal: AbortSignal): Promise<void> {
   const starting = useProjectStore.getState();
-  const stale = staleGeneratedLanguages(starting.lines);
-  if (!stale) return;
-  const staleIds = new Set(stale.lineIds);
-  const requestedLines = starting.lines.filter((line) => staleIds.has(line.id));
-  const startingLines = new Map(requestedLines.map((line) => [line.id, line]));
-  const { edits, stop } = watchGenerationEdits(startingLines, stale.translations, signal);
+  const groups = staleGeneratedLanguages(starting.lines);
+  if (groups.length === 0) return;
+  const startingById = new Map(starting.lines.map((line) => [line.id, line]));
+  const requests = groups.map((group) => {
+    const lines = group.lineIds.flatMap((id) => startingById.get(id) ?? []);
+    return { group, lines, startingLines: new Map(lines.map((line) => [line.id, line])) };
+  });
+  const watchedLines = new Map(requests.flatMap(({ startingLines }) => [...startingLines]));
+  const watchedLanguages = [...new Set(groups.flatMap((group) => group.translations))];
+  const { edits, stop } = watchGenerationEdits(watchedLines, watchedLanguages, signal);
   try {
-    const generation = await requestLanguageGeneration(requestedLines, {
-      translations: stale.translations,
-      transliteration: stale.transliteration,
-      sourceLanguage: starting.metadata.language || "auto",
-      signal,
-    });
+    const generations = await Promise.all(
+      requests.map(({ group, lines }) =>
+        requestLanguageGeneration(lines, {
+          translations: group.translations,
+          transliteration: group.transliteration,
+          sourceLanguage: starting.metadata.language || "auto",
+          signal,
+        }),
+      ),
+    );
     const current = useProjectStore.getState();
     if (
       signal.aborted ||
@@ -45,12 +53,18 @@ async function refreshStaleGeneratedLanguages(signal: AbortSignal): Promise<void
     ) {
       return;
     }
-    const updates = mergeGeneratedLanguageUpdates(
-      startingLines,
-      current.lines,
-      stale.translations,
-      { force: false, transliteration: generation.transliteration, translations: generation.translations },
-      edits,
+    const updates = requests.flatMap(({ group, startingLines }, index) =>
+      mergeGeneratedLanguageUpdates(
+        startingLines,
+        current.lines,
+        group.translations,
+        {
+          force: false,
+          transliteration: generations[index].transliteration,
+          translations: generations[index].translations,
+        },
+        edits,
+      ),
     );
     if (updates.length > 0) current.applyLineUpdatesToCurrentStep(updates);
   } finally {

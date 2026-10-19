@@ -251,6 +251,47 @@ describe("createLanguageAutoRefresh", () => {
   });
 
   describe("regressions", () => {
+    it("regression: settles when Google returns the line unchanged instead of a translation", async () => {
+      stubGoogleLanguageFetch({
+        detectedLanguage: "en",
+        romanizations: {},
+        translations: { "Okay baby": "Okay baby" },
+      });
+      const line = timedLine("a", ["Okay", "baby"], ["Okey", "detka"], "Окей детка");
+      useProjectStore.setState({ lines: [{ ...line, transliteration: undefined }] });
+      const refresher = createRefresher();
+
+      await refresher.refreshNow();
+      const marked = lineById("a");
+      await refresher.refreshNow();
+
+      expect(marked.translations?.en).toMatchObject({ text: "Old translation", stale: true });
+      expect(lineById("a")).toBe(marked);
+    });
+
+    it("regression: never brings back a track the user removed from a line", async () => {
+      stubGoogleLanguageFetch({
+        detectedLanguage: "ru",
+        romanizations: { "Снова дома": "Snova doma" },
+        translations: { "Снова дома": "Home again", "Опять одна": "Alone again" },
+      });
+      const removedTranslation = timedLine("b", ["Снова", "дома"], ["Opyat", "doma"], "Опять дома");
+      const removedTransliteration = timedLine("c", ["Опять", "одна"], ["Opyat", "odin"], "Опять один");
+      useProjectStore.setState({
+        lines: [
+          { ...removedTranslation, translations: {} },
+          { ...removedTransliteration, transliteration: undefined },
+        ],
+      });
+
+      await createRefresher().refreshNow();
+
+      expect(lineById("b").transliteration?.text).toBe("Snova  doma");
+      expect(lineById("b").translations?.en).toBeUndefined();
+      expect(lineById("c").translations?.en.text).toBe("Alone again");
+      expect(lineById("c").transliteration).toBeUndefined();
+    });
+
     it("regression: #283 a lyrics edit outside Languages refreshes the word transliteration", async () => {
       stubGoogleLanguageFetch({
         detectedLanguage: "ru",
