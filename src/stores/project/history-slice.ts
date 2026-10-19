@@ -1,4 +1,11 @@
-import { canUndoFrom, commitPendingEdit, redoState, undoState } from "@/stores/project/history-helpers";
+import { applyLineUpdates } from "@/domain/line/apply-line-updates";
+import {
+  amendCurrentStep,
+  canUndoFrom,
+  commitPendingEdit,
+  redoState,
+  undoState,
+} from "@/stores/project/history-helpers";
 import type { HistoryActions, HistoryState, ProjectStore } from "@/stores/project/types";
 import type { StateCreator } from "zustand";
 
@@ -28,6 +35,9 @@ const createHistorySlice: StateCreator<ProjectStore, [], [], HistoryState & Hist
 
   commitPendingLineEdit: (baseline, baselineWasDirty) =>
     set((state) => commitPendingEdit(state, baseline, baselineWasDirty)),
+
+  applyLineUpdatesToCurrentStep: (updates) =>
+    set((state) => amendCurrentStep(state, applyLineUpdates(state.lines, updates))),
 
   canUndo: () => canUndoFrom(get()),
 

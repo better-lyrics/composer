@@ -126,4 +126,16 @@ describe("generated language updates", () => {
     expect(replaced.transliteration?.backgroundText).toBe("an nyeong");
     expect(replaced.translations?.en).toMatchObject({ text: "", backgroundText: "Hello", origin: "google" });
   });
+
+  describe("regressions", () => {
+    it("regression: returns no update when every request failed", () => {
+      const updates = generatedLanguageUpdates(sourceLine(), {
+        force: false,
+        transliteration: { language: "ko-Latn", main: roman(null, true), background: roman(null, true) },
+        translations: [{ language: "en", main: translation(null, true), background: translation(null, true) }],
+      });
+
+      expect(updates).toEqual({});
+    });
+  });
 });

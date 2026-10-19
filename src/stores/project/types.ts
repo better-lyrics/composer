@@ -148,6 +148,7 @@ interface HistoryActions {
   markDirty: () => void;
   markClean: () => void;
   commitPendingLineEdit: (baseline: LyricLine[], baselineWasDirty?: boolean) => void;
+  applyLineUpdatesToCurrentStep: (updates: LineUpdate[]) => void;
 }
 
 interface LineActions {
