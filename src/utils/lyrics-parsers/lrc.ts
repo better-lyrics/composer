@@ -14,7 +14,7 @@ const LINE_TIMESTAMP_REGEX = new RegExp(String.raw`\[${CLOCK}\]`, "g");
 const INLINE_WORD_TAG_REGEX = new RegExp(`<${CLOCK}>`, "g");
 const LENGTH_REGEX = new RegExp(`^${CLOCK}$`);
 const LRC_METADATA_TAG_REGEX = /^\[([a-z]+):(.*)\]$/i;
-const SINGER_OR_BACKGROUND_TAG_REGEX = /^(?:\[[\d:.]+\]\s*)*v\d+:|\[bg:/i;
+const SINGER_OR_BACKGROUND_TAG_REGEX = /^(?:\[[\d:.]+\]\s*)*v\d+:|\[[bB][gG]:/;
 const PENDING_WORD_END = -1;
 const SECONDS_PER_MINUTE = 60;
 

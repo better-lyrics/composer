@@ -166,12 +166,6 @@ describe("LRC metadata tags with an empty value", () => {
 });
 
 describe("LRC with singer or background vocal tags", () => {
-  it("refuses the whole file instead of importing the tags as lyrics", () => {
-    const parsed = parseLyricsFile("song.lrc", SINGER_TAGGED_LRC, 30);
-    expect(parsed.lines).toEqual([]);
-    expect(parsed.hasTimingData).toBe(false);
-  });
-
   it("reports only the first tagged line, as unsupported", () => {
     const parsed = parseLyricsFile("song.lrc", SINGER_TAGGED_LRC, 30);
     expect(parsed.issues).toEqual([
@@ -200,6 +194,17 @@ describe("LRC with singer or background vocal tags", () => {
       expect(parsed.issues.map((issue) => issue.reason)).toEqual(["unsupported-tags"]);
     });
 
+    it("keeps a lyric that starts with an uppercase V and a number", () => {
+      const parsed = parseLyricsFile("song.lrc", "[00:01.00]V8: engine roar", 10);
+      expect(parsed.issues).toEqual([]);
+      expect(parsed.lines.map((line) => line.text)).toEqual(["V8: engine roar"]);
+    });
+
+    it("refuses an uppercase background tag", () => {
+      const parsed = parseLyricsFile("song.lrc", "[00:01.00]Hi\n[BG:<00:01.50>oh <00:02.00>]", 10);
+      expect(parsed.issues.map((issue) => issue.reason)).toEqual(["unsupported-tags"]);
+    });
+
     it("keeps lyrics that only mention v1 or bg", () => {
       const parsed = parseLyricsFile("song.lrc", "[00:01.00]Track v1: the bg mix\n[00:02.00]Say v2:", 10);
       expect(parsed.issues).toEqual([]);
@@ -215,6 +220,14 @@ describe("LRC with singer or background vocal tags", () => {
 
     it("counts the refusal as a skipped line", () => {
       expect(skippedLineCount(parseLyricsFile("song.lrc", SINGER_TAGGED_LRC, 30).issues)).toBe(1);
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: does not import singer prefixes and background tags as lyric text", () => {
+      const parsed = parseLyricsFile("song.lrc", SINGER_TAGGED_LRC, 30);
+      expect(parsed.lines).toEqual([]);
+      expect(parsed.hasTimingData).toBe(false);
     });
   });
 });

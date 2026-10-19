@@ -27,7 +27,7 @@ type ParserFn = (content: string, fallbackDuration?: number) => ParseResult;
 // -- Copy ---------------------------------------------------------------------
 
 const UNSUPPORTED_LRC_TAGS_MESSAGE =
-  "This LRC uses singer or background vocal tags (v1:, [bg:]) that are not part of LRC. Use the TTML version instead.";
+  "This LRC uses singer or background vocal tags (v1:, [bg:]) that are not part of LRC. Use a TTML or plain LRC version instead.";
 
 // -- Helpers ------------------------------------------------------------------
 

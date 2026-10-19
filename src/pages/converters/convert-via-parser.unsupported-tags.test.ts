@@ -16,7 +16,7 @@ describe("convertViaParser with unsupported LRC tags", () => {
     const args = { input: SINGER_TAGGED_LRC, filename: "cry_babies.lrc", format: TTML_OUTPUT };
     expect(convertViaParser(LRC_CONVERSION, args)).toEqual({
       error:
-        "This LRC uses singer or background vocal tags (v1:, [bg:]) that are not part of LRC. Use the TTML version instead.",
+        "This LRC uses singer or background vocal tags (v1:, [bg:]) that are not part of LRC. Use a TTML or plain LRC version instead.",
     });
   });
 
