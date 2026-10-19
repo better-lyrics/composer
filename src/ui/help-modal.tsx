@@ -1,5 +1,6 @@
 import { useTypeToSearch } from "@/hooks/useTypeToSearch";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { type HelpLocation, useUIStore } from "@/stores/ui";
 import { Button } from "@/ui/button";
 import { HELP_SECTIONS } from "@/ui/help-nav";
 import { HelpSearchResults } from "@/ui/help-search/help-search-results";
@@ -11,7 +12,6 @@ import { NoMatches } from "@/ui/no-matches";
 import { revealElement } from "@/ui/reveal-element";
 import { SearchField } from "@/ui/search-field";
 import { SettingLinkContext, type SettingLinkHost } from "@/ui/setting-link-context";
-import { type HelpLocation, useUIStore } from "@/stores/ui";
 import { KeyBadge } from "@/ui/shortcut-reference";
 import { splitSearchTerms } from "@/utils/search-terms";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
