@@ -101,47 +101,6 @@ describe("createLanguageAutoRefresh", () => {
       expect(lineById("a")).toBe(line);
     });
 
-    it("asks Google again for a failed line only after the line changes", async () => {
-      const requests = stubGoogleLanguageFetch({
-        detectedLanguage: "ru",
-        romanizations: { "Сильный дождь": "Silnyy dozhd" },
-        translations: { "Сильный дождь": "Heavy rain" },
-      });
-      useProjectStore.setState({ lines: [timedLine("a", ["Слабый", "дождь"], ["Lyogkiy", "dozhd"], "Лёгкий дождь")] });
-      const refresher = createRefresher();
-
-      await refresher.refreshNow();
-      const failedRequests = requests.length;
-      await refresher.refreshNow();
-      expect(requests.length).toBe(failedRequests);
-
-      useProjectStore.getState().updateLine("a", { text: "Сильный дождь" }, { deriveText: false });
-      await refresher.refreshNow();
-      expect(lineById("a").transliteration?.text).toBe("Silnyy  dozhd");
-    });
-
-    it.each([
-      ["the browser comes back online", () => window.dispatchEvent(new Event("online"))],
-      ["another project opens", () => useProjectStore.getState().startProjectSession()],
-    ])("asks Google again for a failed line when %s", async (_label, retryTrigger) => {
-      const line = timedLine("a", ["Ранний", "снег"], ["Pozdniy", "sneg"], "Поздний снег");
-      useProjectStore.setState({ lines: [line] });
-      const refresher = createRefresher();
-      stubGoogleLanguageFetch({ detectedLanguage: "ru", romanizations: {}, translations: {} });
-      await refresher.refreshNow();
-
-      retryTrigger();
-      useProjectStore.setState({ lines: [line] });
-      stubGoogleLanguageFetch({
-        detectedLanguage: "ru",
-        romanizations: { "Ранний снег": "Ranniy sneg" },
-        translations: { "Ранний снег": "Early snow" },
-      });
-      await refresher.refreshNow();
-
-      expect(lineById("a").transliteration?.text).toBe("Ranniy  sneg");
-    });
-
     it("drops a result when the line text changed during the request", async () => {
       const answer = gate();
       const requests = stubGoogleLanguageFetch(

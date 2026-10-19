@@ -40,7 +40,7 @@ async function refreshStaleGeneratedLanguages(signal: AbortSignal, failures: Fai
   if (isTransientLines(starting.lines)) return;
   if (failures.projectSession !== starting.projectSession) {
     failures.projectSession = starting.projectSession;
-    failures.sourceKeys.clear();
+    failures.sourceKeys = new Set();
   }
   const failedSources = failures.sourceKeys;
   const groups = staleGeneratedLanguages(starting.lines.filter((line) => !failedSources.has(sourceKey(line))));
@@ -105,8 +105,6 @@ function createLanguageAutoRefresh({ delayMs }: LanguageAutoRefreshOptions): Lan
   let timer: ReturnType<typeof setTimeout> | null = null;
   let queue: Promise<void> = Promise.resolve();
   const failures: FailedSources = { projectSession: useProjectStore.getState().projectSession, sourceKeys: new Set() };
-  const retryFailed = () => failures.sourceKeys.clear();
-  window.addEventListener("online", retryFailed);
 
   const refreshNow = (): Promise<void> => {
     queue = queue.then(async () => {
@@ -128,6 +126,13 @@ function createLanguageAutoRefresh({ delayMs }: LanguageAutoRefreshOptions): Lan
       void refreshNow();
     }, delayMs);
   };
+
+  // A fresh set, so a request still failing from before the reconnect records into the old one.
+  const retryFailed = (): void => {
+    failures.sourceKeys = new Set();
+    schedule();
+  };
+  window.addEventListener("online", retryFailed);
 
   const dispose = (): void => {
     controller.abort();
