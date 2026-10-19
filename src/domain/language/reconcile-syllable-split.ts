@@ -1,9 +1,65 @@
-import { mappedTransliteration } from "@/domain/language/align";
-import type { TransliterationTrack } from "@/domain/language/model";
+import { mappedTransliteration, withAlignedWords } from "@/domain/language/align";
+import type { TransliterationAlignmentStatus, TransliterationTrack } from "@/domain/language/model";
+import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import type { WordTrack } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
 
+// -- Types --------------------------------------------------------------------
+
 type TimingField = "words" | "backgroundWords";
+
+interface WordSplitResult {
+  words: WordTiming[];
+  transliteration: TransliterationTrack | null;
+}
+
+// -- Functions ----------------------------------------------------------------
+
+function trackWithText(
+  line: LyricLine,
+  track: TransliterationTrack,
+  type: WordTrack,
+  text: string,
+  status: TransliterationAlignmentStatus | undefined,
+): TransliterationTrack {
+  const { stale: _stale, ...current } = track;
+  if (type === "word") {
+    return {
+      ...current,
+      text,
+      segments: [{ original: line.text, transliteration: text }],
+      origin: "manual",
+      alignmentStatus: status,
+    };
+  }
+  return {
+    ...current,
+    backgroundText: text,
+    backgroundSegments: [{ original: line.backgroundText ?? "", transliteration: text }],
+    origin: "manual",
+    backgroundAlignmentStatus: status,
+  };
+}
+
+function splitWordsKeepingTransliteration(
+  line: LyricLine,
+  type: WordTrack,
+  wordIndex: number,
+  replacementWords: WordTiming[],
+): WordSplitResult | null {
+  const aligned = withAlignedWords(line);
+  const base = effectiveTrackWords(aligned, type);
+  if (!base?.length) return null;
+
+  const words = base.toSpliced(wordIndex, 1, ...replacementWords);
+  const track = aligned.transliteration;
+  const text = track ? mappedTransliteration(words) : null;
+  if (!track || text === null) return { words, transliteration: null };
+
+  const status = type === "word" ? track.alignmentStatus : track.backgroundAlignmentStatus;
+  return { words, transliteration: trackWithText(line, track, type, text, status) };
+}
 
 function reconcileTransliterationAfterSyllableSplit(
   line: LyricLine,
@@ -15,28 +71,11 @@ function reconcileTransliterationAfterSyllableSplit(
   const words = line[field];
   if (!track || !words) return null;
 
-  const updatedWords = words.toSpliced(wordIndex, 1, ...replacementWords);
-  const reconciledText = mappedTransliteration(updatedWords);
+  const reconciledText = mappedTransliteration(words.toSpliced(wordIndex, 1, ...replacementWords));
   if (reconciledText === null) return null;
-  const { stale: _stale, ...current } = track;
-
-  if (field === "words") {
-    return {
-      ...current,
-      text: reconciledText,
-      segments: [{ original: line.text, transliteration: reconciledText }],
-      origin: "manual",
-      alignmentStatus: "confirmed",
-    };
-  }
-
-  return {
-    ...current,
-    backgroundText: reconciledText,
-    backgroundSegments: [{ original: line.backgroundText ?? "", transliteration: reconciledText }],
-    origin: "manual",
-    backgroundAlignmentStatus: "confirmed",
-  };
+  return trackWithText(line, track, field === "words" ? "word" : "bg", reconciledText, "confirmed");
 }
 
-export { reconcileTransliterationAfterSyllableSplit };
+// -- Exports ------------------------------------------------------------------
+
+export { reconcileTransliterationAfterSyllableSplit, splitWordsKeepingTransliteration };

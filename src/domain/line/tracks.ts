@@ -13,3 +13,5 @@ function trackWords(line: LyricLine, type: WordTrack): WordTiming[] | undefined 
 }
 
 export { trackField, trackWords };
+
+export type { WordTrack };
