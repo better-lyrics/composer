@@ -94,6 +94,16 @@ describe("splitWordsKeepingTransliteration", () => {
   });
 
   describe("regressions", () => {
+    it("regression: an unpaired split never duplicates the piece into the track (#283)", () => {
+      const result = splitWordsKeepingTransliteration(koreanLine(), "word", 1, [
+        { text: "일", begin: 0.5, end: 0.8, transliteration: "ildan eun", syllableGroupId: "g" },
+        { text: "단은 ", begin: 0.8, end: 1.5, transliteration: "ildan eun", syllableGroupId: "g" },
+      ]);
+
+      expect(result?.transliteration).toBeNull();
+      expect(result?.words.map((word) => word.transliteration)).toEqual(["Uh", undefined, undefined, "na"]);
+    });
+
     it("regression: keeps the user's split when stored words lost their pieces (#283)", () => {
       const result = splitWordsKeepingTransliteration(koreanLine(), "word", 1, ILDAN_SPLIT);
 
@@ -132,7 +142,7 @@ describe("splitWordsKeepingTransliteration", () => {
           text: "있",
           begin: 2,
           end: 2.5,
-          transliteration: "iss",
+          transliteration: "ss",
           transliterationJoinerAfter: "",
           syllableGroupId: "g",
         },
