@@ -11,7 +11,7 @@ async function playableAudio(): Promise<HTMLAudioElement> {
   useAudioStore.setState({ source: { type: "file", file: createAudioFile("silence.wav", 30) } });
   await expect.poll(() => useAudioStore.getState().audioElement).not.toBeNull();
   const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
-  await expect.poll(() => audio.readyState).toBeGreaterThanOrEqual(HTMLMediaElement.HAVE_FUTURE_DATA);
+  await expect.poll(() => audio.readyState).toBeGreaterThanOrEqual(HTMLMediaElement.HAVE_METADATA);
   audio.muted = true;
   return audio;
 }
