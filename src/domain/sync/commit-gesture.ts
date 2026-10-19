@@ -218,7 +218,7 @@ function closeHeld(lines: readonly LyricLine[], cursor: SyncCursor, time: number
 
 // -- Merge and apply ---------------------------------------------------------------
 
-// Narrows like reconcileLine, so one merged update lands the same as the two applied in order.
+// Narrows like reconcileLine for timed words, so one merged update lands the same as the two applied in order.
 function mergeLineUpdate(first: Partial<LyricLine>, second: Partial<LyricLine>): Partial<LyricLine> {
   const merged: Partial<LooseLine> = { ...first, ...second };
   const { words, begin, end, ...rest } = merged;
