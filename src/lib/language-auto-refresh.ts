@@ -19,6 +19,11 @@ interface LanguageAutoRefresh {
   dispose: () => void;
 }
 
+interface FailedSources {
+  projectSession: number;
+  sourceKeys: Set<string>;
+}
+
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[LanguageAutoRefresh]";
@@ -30,9 +35,14 @@ function sourceKey(line: LyricLine): string {
 }
 
 // A drag preview is never refreshed: the write would end the gesture, and the drag's own commit schedules the next refresh.
-async function refreshStaleGeneratedLanguages(signal: AbortSignal, failedSources: Set<string>): Promise<void> {
+async function refreshStaleGeneratedLanguages(signal: AbortSignal, failures: FailedSources): Promise<void> {
   const starting = useProjectStore.getState();
   if (isTransientLines(starting.lines)) return;
+  if (failures.projectSession !== starting.projectSession) {
+    failures.projectSession = starting.projectSession;
+    failures.sourceKeys.clear();
+  }
+  const failedSources = failures.sourceKeys;
   const groups = staleGeneratedLanguages(starting.lines.filter((line) => !failedSources.has(sourceKey(line))));
   if (groups.length === 0) return;
   const startingById = new Map(starting.lines.map((line) => [line.id, line]));
@@ -94,13 +104,15 @@ function createLanguageAutoRefresh({ delayMs }: LanguageAutoRefreshOptions): Lan
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | null = null;
   let queue: Promise<void> = Promise.resolve();
-  const failedSources = new Set<string>();
+  const failures: FailedSources = { projectSession: useProjectStore.getState().projectSession, sourceKeys: new Set() };
+  const retryFailed = () => failures.sourceKeys.clear();
+  window.addEventListener("online", retryFailed);
 
   const refreshNow = (): Promise<void> => {
     queue = queue.then(async () => {
       if (controller.signal.aborted) return;
       try {
-        await refreshStaleGeneratedLanguages(controller.signal, failedSources);
+        await refreshStaleGeneratedLanguages(controller.signal, failures);
       } catch (error) {
         if ((error as Error).name !== "AbortError") console.warn(LOG_PREFIX, "refresh failed", error);
       }
@@ -119,6 +131,7 @@ function createLanguageAutoRefresh({ delayMs }: LanguageAutoRefreshOptions): Lan
 
   const dispose = (): void => {
     controller.abort();
+    window.removeEventListener("online", retryFailed);
     if (timer) clearTimeout(timer);
     timer = null;
   };

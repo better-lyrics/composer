@@ -155,6 +155,7 @@ interface LineActions {
   setLines: (lines: RawLine[]) => void;
   // See the JSDoc on the implementation in lines-slice.ts before using this.
   setTransientLines: (lines: RawLine[]) => void;
+  restoreTransientLines: (lines: RawLine[]) => void;
   setLinesWithHistory: (lines: RawLine[], groups?: LinkGroup[]) => void;
   insertEmptyLineWithHistory: (anchorLineId: string, position: "above" | "below") => void;
   updateLine: (id: string, updates: Partial<LyricLine>, options?: { deriveText?: boolean }) => void;

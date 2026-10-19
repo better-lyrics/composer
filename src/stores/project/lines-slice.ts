@@ -45,6 +45,8 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
     set({ lines });
   },
 
+  restoreTransientLines: (lines) => set({ lines }),
+
   setLinesWithHistory: (lines, groups) => set((state) => commitHistory(state, groups ? { lines, groups } : { lines })),
 
   insertEmptyLineWithHistory: (anchorLineId, position) =>

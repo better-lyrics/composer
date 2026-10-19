@@ -109,5 +109,23 @@ describe("createLanguageAutoRefresh history", () => {
       await refresher.refreshNow();
       expect(lineById("a").transliteration?.text).toBe(`Dlinnaya  doroga  ${typed}`);
     });
+
+    it("regression: refreshes after a drag that was discarded", async () => {
+      stubGoogleLanguageFetch({
+        detectedLanguage: "ru",
+        romanizations: { "Тихий берег": "Tikhiy bereg" },
+        translations: { "Тихий берег": "Quiet shore" },
+      });
+      useProjectStore
+        .getState()
+        .setLinesWithHistory([timedLine("a", ["Тихий", "берег"], ["Shumnyy", "bereg"], "Шумный берег")]);
+      const committed = useProjectStore.getState().lines;
+
+      useProjectStore.getState().setTransientLines([stretched(lineById("a"))]);
+      useProjectStore.getState().restoreTransientLines(committed);
+      await createRefresher().refreshNow();
+
+      expect(lineById("a").transliteration?.text).toBe("Tikhiy  bereg");
+    });
   });
 });
