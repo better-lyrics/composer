@@ -11,6 +11,7 @@ import { NoMatches } from "@/ui/no-matches";
 import { revealElement } from "@/ui/reveal-element";
 import { SearchField } from "@/ui/search-field";
 import { SettingLinkContext, type SettingLinkHost } from "@/ui/setting-link-context";
+import { type HelpLocation, useUIStore } from "@/stores/ui";
 import { KeyBadge } from "@/ui/shortcut-reference";
 import { splitSearchTerms } from "@/utils/search-terms";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -46,16 +47,22 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
 
   useTypeToSearch(searchInputRef, query, setQuery);
 
-  const linkHost = useMemo<SettingLinkHost>(
-    () => ({
-      returnPoint: () => ({
-        section: activeSection,
-        scrollTop: viewportRef.current?.scrollTop ?? 0,
-        ...(query.trim() ? { query } : {}),
-      }),
+  const scrollTopRef = useRef(initialScrollTop);
+  const trackScrollTop = useCallback((scrollTop: number) => {
+    scrollTopRef.current = scrollTop;
+  }, []);
+
+  const currentLocation = useCallback(
+    (): HelpLocation => ({
+      section: activeSection,
+      scrollTop: scrollTopRef.current,
+      ...(query.trim() ? { query } : {}),
     }),
     [activeSection, query],
   );
+  const linkHost = useMemo<SettingLinkHost>(() => ({ returnPoint: currentLocation }), [currentLocation]);
+
+  useLayoutEffect(() => () => useUIStore.getState().rememberHelpLocation(currentLocation()), [currentLocation]);
 
   const openSection = useCallback((section: string) => {
     setQuery("");
@@ -111,6 +118,7 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
       contentInitialScrollTop={initialScrollTop}
       contentViewportRef={viewportRef}
       onContentInitialized={revealPendingTopic}
+      onContentScrollTopChange={trackScrollTop}
     >
       <SettingLinkContext value={linkHost}>
         <div data-help-content>

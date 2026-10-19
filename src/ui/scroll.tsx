@@ -15,6 +15,7 @@ interface ScrollProps {
   initialScrollTop?: number;
   viewportRef?: MutableRefObject<HTMLDivElement | null>;
   onInitialized?: (viewport: HTMLDivElement) => void;
+  onScrollTopChange?: (scrollTop: number) => void;
 }
 
 // -- Component ----------------------------------------------------------------
@@ -27,6 +28,7 @@ const Scroll: React.FC<ScrollProps> = ({
   initialScrollTop,
   viewportRef,
   onInitialized,
+  onScrollTopChange,
 }) => {
   const componentRef = useRef<OverlayScrollbarsComponentRef>(null);
   const scrollTopRef = useRef(initialScrollTop);
@@ -54,6 +56,7 @@ const Scroll: React.FC<ScrollProps> = ({
         },
         scroll: (instance) => {
           scrollTopRef.current = instance.elements().viewport.scrollTop;
+          onScrollTopChange?.(scrollTopRef.current);
         },
         destroyed: () => {
           if (viewportRef) viewportRef.current = null;

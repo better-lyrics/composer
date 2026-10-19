@@ -44,7 +44,7 @@ describe("App", () => {
     expect(useProjectStore.getState().activeTab).toBe("edit");
   });
 
-  it("reopening settings normally resets the section, not stuck on the last highlighted one", async () => {
+  it("reopening settings picks up at the section it was closed on", async () => {
     allowConsole(/cannot be a descendant of/);
     allowConsole(/cannot contain a nested/);
     localStorage.setItem(TOUR_SEEN_KEY, "true");
@@ -58,10 +58,11 @@ describe("App", () => {
 
     useUIStore.getState().openSettings();
     await expect.poll(() => document.querySelector("dialog") !== null).toBe(true);
-    expect(bridgeSectionVisible()).toBe(false);
+    expect(bridgeSectionVisible()).toBe(true);
+    expect(useUIStore.getState().settingsTarget).toBeNull();
   });
 
-  it("regression: reopening help resets the section instead of restoring the last one viewed", async () => {
+  it("reopening help picks up at the section it was closed on", async () => {
     allowConsole(/cannot be a descendant of/);
     allowConsole(/cannot contain a nested/);
     localStorage.setItem(TOUR_SEEN_KEY, "true");
@@ -79,7 +80,7 @@ describe("App", () => {
 
     helpButton().click();
     await expect.poll(helpModalOpen).toBe(true);
-    expect(activeHelpSection()).toBe("Getting Started");
+    expect(activeHelpSection()).toBe("Exporting");
   });
 
   it("wires the frame loop so a store write wakes it", async () => {

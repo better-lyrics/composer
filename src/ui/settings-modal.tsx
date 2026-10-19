@@ -15,7 +15,7 @@ import { SettingsSearchResults } from "@/ui/settings/settings-search-results";
 import { SETTINGS_SECTION_ICONS } from "@/ui/settings/settings-section-icons";
 import { SettingsSectionRows } from "@/ui/settings/settings-section-rows";
 import { ShortcutsSettingsSection } from "@/ui/shortcuts-settings-section";
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -72,7 +72,17 @@ const SettingsModalBody: React.FC = () => {
     if (settingsTarget) revealPendingTarget();
   }, [settingsTarget, revealPendingTarget]);
 
+  const [initialScrollTop] = useState(() => useUIStore.getState().settingsScrollTop);
+  const scrollTopRef = useRef(initialScrollTop);
+  const trackScrollTop = useCallback((scrollTop: number) => {
+    scrollTopRef.current = scrollTop;
+  }, []);
+  useLayoutEffect(() => () => useUIStore.getState().rememberSettingsScrollTop(scrollTopRef.current), []);
+
+  const lastQueryRef = useRef(settingsQuery);
   useLayoutEffect(() => {
+    if (lastQueryRef.current === settingsQuery) return;
+    lastQueryRef.current = settingsQuery;
     if (settingsQuery) viewportRef.current?.scrollTo({ top: 0 });
   }, [settingsQuery]);
 
@@ -96,8 +106,10 @@ const SettingsModalBody: React.FC = () => {
           />
         }
         contentClassName="px-6 py-2"
+        contentInitialScrollTop={initialScrollTop}
         contentViewportRef={viewportRef}
         onContentInitialized={revealPendingTarget}
+        onContentScrollTopChange={trackScrollTop}
       >
         <div data-settings-content>
           <SettingsSearchQueryContext value={settingsQuery}>
