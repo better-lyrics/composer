@@ -53,17 +53,6 @@ function buildSyncedTtml(durationSeconds?: number): string {
   return generateTTML({ metadata, agents, lines: threeSyncedLines(), groups: [], duration: durationSeconds });
 }
 
-/** The three `buildSyncedTtml` lines, credited to `songwriters` the way Composer writes them. */
-function buildSongwriterTtml(songwriters: string[]): string {
-  const { metadata, agents } = useProjectStore.getState();
-  return generateTTML({ metadata: { ...metadata, songwriters }, agents, lines: threeSyncedLines(), groups: [] });
-}
-
-/** One timed line credited through Apple's `<iTunesMetadata><songwriters>` list, as an imported Apple TTML carries it. */
-function buildAppleSongwriterTtml(): string {
-  return `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xml:lang="en"><head><metadata><ttm:agent type="person" xml:id="v1"/><iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal"><songwriters><songwriter>Apple Writer</songwriter><songwriter>Second Writer</songwriter></songwriters></iTunesMetadata></metadata></head><body dur="10s"><div><p begin="0s" end="5s" ttm:agent="v1">Apple line</p></div></body></tt>`;
-}
-
 /** One word-synced line 2-6s carrying a background vocal over its second half. */
 function buildBackgroundVocalTtml(): string {
   const lines = [
@@ -205,10 +194,8 @@ function buildMatchingAlternateLanguageTtml(): string {
 
 export {
   buildAlternateBackgroundLanguageTtml,
-  buildAppleSongwriterTtml,
   buildAlternateLanguageTtml,
   buildBackgroundVocalTtml,
   buildMatchingAlternateLanguageTtml,
-  buildSongwriterTtml,
   buildSyncedTtml,
 };

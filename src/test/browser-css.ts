@@ -17,10 +17,6 @@ const POSITION_UTILITIES_CSS = ".relative{position:relative}.absolute{position:a
 const HIT_TESTING_UTILITIES_CSS =
   ".inset-0{inset:0}.pointer-events-none{pointer-events:none}.pointer-events-auto{pointer-events:auto}.z-1{z-index:1}.z-2{z-index:2}";
 
-// A capped, truncating label only caps and truncates once these utilities exist.
-const TRUNCATION_UTILITIES_CSS =
-  ".inline-flex{display:inline-flex}.min-w-0{min-width:0}.max-w-\\[380px\\]{max-width:380px}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}";
-
 // -- Helpers -------------------------------------------------------------------
 
 function extractCssBlock(header: RegExp): string {
@@ -61,11 +57,6 @@ async function installUtilitiesUsedIn(root: Element): Promise<HTMLStyleElement> 
 
 // -- Rules ---------------------------------------------------------------------
 
-const THEME_TOKENS_CSS = `:root {${extractCssBlock(/@theme\s*\{/)}}`;
-
-const TEXT_COLOR_UTILITIES_CSS =
-  ".text-composer-text{color:var(--color-composer-text)}.text-composer-text-muted{color:var(--color-composer-text-muted)}.opacity-50{opacity:.5}";
-
 // Help's content only scrolls once it is height-bound: the deferred host before OverlayScrollbars starts, the viewport after.
 const HELP_CONTENT_SCROLLER_CSS = [
   "[data-overlayscrollbars-initialize]:not([data-overlayscrollbars]):has([data-help-content])",
@@ -75,8 +66,6 @@ const HELP_CONTENT_SCROLLER_CSS = [
   .concat("{max-height:200px!important;overflow-y:scroll!important}");
 
 const WAVEFORM_SWEEP_CSS = [utilityRule(WAVEFORM_DOTS_UTILITY), keyframesRule(WAVEFORM_SWEEP_ANIMATION)].join("\n");
-
-const FLOATING_LAYER_CSS = utilityRule("layer-floating");
 
 function utilityDeclaration(name: string, property: string): string {
   const value = new RegExp(`${property}:\\s*([^;]+);`).exec(
@@ -99,16 +88,12 @@ const LYRICS_CODE_CSS = [
 
 export {
   CODE_SURFACE_TINT,
-  FLOATING_LAYER_CSS,
   HELP_CONTENT_SCROLLER_CSS,
   HIT_TESTING_UTILITIES_CSS,
   installStyleSheet,
   installUtilitiesUsedIn,
   LYRICS_CODE_CSS,
   POSITION_UTILITIES_CSS,
-  TEXT_COLOR_UTILITIES_CSS,
-  THEME_TOKENS_CSS,
-  TRUNCATION_UTILITIES_CSS,
   WAVEFORM_SWEEP_ANIMATION,
   WAVEFORM_SWEEP_CSS,
 };

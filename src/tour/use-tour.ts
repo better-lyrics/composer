@@ -286,4 +286,4 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
 
 // -- Exports ------------------------------------------------------------------
 
-export { resetTour, TOUR_RESUME_KEY, TOUR_SEEN_KEY, useTour };
+export { resetTour, TOUR_SEEN_KEY, useTour };

@@ -137,4 +137,3 @@ const RegenerateLanguageControl: React.FC<RegenerateLanguageControlProps> = ({
 // -- Exports ------------------------------------------------------------------
 
 export { RegenerateLanguageControl };
-export type { LanguageGenerationSelection };
