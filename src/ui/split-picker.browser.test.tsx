@@ -1,6 +1,7 @@
 import { render } from "@/test/render";
 import { SplitPicker, SplitPickerLegend } from "@/ui/split-picker";
 import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 // -- Tests --------------------------------------------------------------------
 
@@ -117,7 +118,7 @@ describe("SplitPickerLegend", () => {
   it("explains a kind in a tooltip on keyboard focus", async () => {
     const screen = await render(<SplitPickerLegend kinds={["word"]} />);
     const trigger = screen.getByRole("button", { name: "Word break" });
-    (trigger.element() as HTMLButtonElement).focus();
+    await userEvent.tab();
     expect(document.activeElement).toBe(trigger.element());
     await expect.element(screen.getByRole("tooltip")).toHaveTextContent("Two spaces between words.");
   });
