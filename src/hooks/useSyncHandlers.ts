@@ -1,5 +1,5 @@
 import { timeRangeResolver } from "@/domain/group/shared-timing";
-import { reconcileTransliterationAfterSyllableSplit } from "@/domain/language/reconcile-syllable-split";
+import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
@@ -371,17 +371,16 @@ function useSyncHandlers({
       const line = lines[lineIdx];
       if (!line?.words) return;
 
-      const updatedWords = [...line.words];
-      updatedWords.splice(wordIdx, 1, ...newWords);
-      const newLineText = updatedWords
+      const split = splitWordsKeepingTransliteration(line, "word", wordIdx, newWords);
+      if (!split) return;
+      const newLineText = split.words
         .map((w) => w.text)
         .join("")
         .trimEnd();
-      const transliteration = reconcileTransliterationAfterSyllableSplit(line, "words", wordIdx, newWords);
       updateLineWithHistory(line.id, {
-        words: updatedWords,
+        words: split.words,
         text: newLineText,
-        ...(transliteration ? { transliteration } : {}),
+        ...(split.transliteration ? { transliteration: split.transliteration } : {}),
       });
     },
     [lines, updateLineWithHistory],

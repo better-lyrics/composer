@@ -7,8 +7,6 @@ import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
-type TimingField = "words" | "backgroundWords";
-
 interface WordSplitResult {
   words: WordTiming[];
   transliteration: TransliterationTrack | null;
@@ -61,21 +59,6 @@ function splitWordsKeepingTransliteration(
   return { words, transliteration: trackWithText(line, track, type, text, status) };
 }
 
-function reconcileTransliterationAfterSyllableSplit(
-  line: LyricLine,
-  field: TimingField,
-  wordIndex: number,
-  replacementWords: WordTiming[],
-): TransliterationTrack | null {
-  const track = line.transliteration;
-  const words = line[field];
-  if (!track || !words) return null;
-
-  const reconciledText = mappedTransliteration(words.toSpliced(wordIndex, 1, ...replacementWords));
-  if (reconciledText === null) return null;
-  return trackWithText(line, track, field === "words" ? "word" : "bg", reconciledText, "confirmed");
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export { reconcileTransliterationAfterSyllableSplit, splitWordsKeepingTransliteration };
+export { splitWordsKeepingTransliteration };
