@@ -36,4 +36,3 @@ function stubClipboard(writeText: (text: string) => Promise<void> = () => Promis
 // -- Exports -------------------------------------------------------------------
 
 export { stubClipboard };
-export type { ClipboardStub };

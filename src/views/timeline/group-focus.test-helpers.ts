@@ -3,7 +3,6 @@ import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
-import { isMac } from "@/utils/platform";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createElement } from "react";
@@ -41,8 +40,6 @@ function seedGroupFocusSong() {
 
 const focus = () => useTimelineStore.getState().focusedGroup;
 const store = () => useProjectStore.getState();
-const lineById = (id: string) => store().lines.find((line) => line.id === id);
-const selectedLineIds = () => useTimelineStore.getState().selectedWords.map((word) => word.lineId);
 
 function shownLineIndices(): number[] {
   return [...document.querySelectorAll<HTMLElement>('[data-track="word"]')].map((el) => Number(el.dataset.lineIndex));
@@ -54,24 +51,10 @@ function banner(instanceIdx: number): HTMLElement {
   return el;
 }
 
-function scrollContainer(): HTMLDivElement {
-  const container = document.querySelector<HTMLDivElement>("[data-scroll-container]");
-  if (!container) throw new Error("no scroll container");
-  return container;
-}
-
 // -- Actions ------------------------------------------------------------------
 
 function press(key: string, init: KeyboardEventInit = {}) {
   window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...init }));
-}
-
-function pressMod(key: string, code: string, init: KeyboardEventInit = {}) {
-  press(key, { code, metaKey: isMac, ctrlKey: !isMac, ...init });
-}
-
-function pressSelectAll() {
-  pressMod("a", "KeyA");
 }
 
 async function renderOpen(instanceIdx: number) {
@@ -84,19 +67,4 @@ async function renderOpen(instanceIdx: number) {
 
 // -- Exports ------------------------------------------------------------------
 
-export {
-  banner,
-  chorus,
-  focus,
-  lineById,
-  press,
-  pressMod,
-  pressSelectAll,
-  renderOpen,
-  scrollContainer,
-  seedGroupFocusSong,
-  selectedLineIds,
-  shownLineIndices,
-  store,
-  verse,
-};
+export { focus, press, renderOpen, seedGroupFocusSong, shownLineIndices, store };

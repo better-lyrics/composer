@@ -253,4 +253,4 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
 
 // -- Exports ------------------------------------------------------------------
 
-export { BraccatoRenderer, RESUME_AFFORDANCE_WAKE_MS };
+export { BraccatoRenderer };

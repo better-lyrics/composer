@@ -18,21 +18,6 @@ function indexEntry(id: string, overrides: Partial<ProjectIndexEntry> = {}): Pro
   };
 }
 
-function countingIndexEntry(
-  id: string,
-  overrides: Partial<ProjectIndexEntry>,
-  onTitleRead: () => void,
-): ProjectIndexEntry {
-  const base = indexEntry(id, overrides);
-  return {
-    ...base,
-    get title() {
-      onTitleRead();
-      return base.title;
-    },
-  };
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export { indexEntry, countingIndexEntry };
+export { indexEntry };
