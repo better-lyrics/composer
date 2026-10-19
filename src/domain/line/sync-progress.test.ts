@@ -63,8 +63,12 @@ describe("syncProgress", () => {
   it("line granularity counts only syncable lines (regression U2: blank lines are not in the denominator)", () => {
     expect(syncProgress(lines, "line")).toEqual({ done: 2, total: 3 });
   });
-  it("word granularity counts word slots and timed words", () => {
-    expect(syncProgress(lines, "word")).toEqual({ done: 1, total: 5 });
+  it("word granularity counts word slots and timed words, with a line-synced line counting every slot", () => {
+    expect(syncProgress(lines, "word")).toEqual({ done: 2, total: 5 });
+  });
+  it("regression #290: line-synced lines stay done in word granularity", () => {
+    const lineSynced = [createLine({ text: "a b c", begin: 1, end: 2 }), createLine({ text: "d e", begin: 2, end: 3 })];
+    expect(syncProgress(lineSynced, "word")).toEqual({ done: 5, total: 5 });
   });
   it("is zero over zero for no lines", () => {
     expect(syncProgress([], "line")).toEqual({ done: 0, total: 0 });
