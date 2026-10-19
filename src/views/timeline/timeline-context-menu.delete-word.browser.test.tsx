@@ -76,6 +76,27 @@ describe("TimelineContextMenu · delete word", () => {
   });
 
   describe("regressions", () => {
+    it("regression: removes the word from every linked instance", async () => {
+      const chorus = (instanceIdx: number, begin: number) =>
+        createLine({
+          id: `c${instanceIdx}`,
+          text: "go now",
+          words: [
+            { text: "go ", begin, end: begin + 1 },
+            { text: "now", begin: begin + 1, end: begin + 2 },
+          ],
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 0,
+        });
+      seed([chorus(0, 10), chorus(1, 40)], "c1", 0);
+      useProjectStore.setState({ groups: [createGroup({ id: "g1", label: "Chorus" })] });
+      await clickDelete();
+
+      expect(lineById("c0")?.words?.map((word) => word.text)).toEqual(["now"]);
+      expect(lineById("c1")?.words?.map((word) => word.text)).toEqual(["now"]);
+    });
+
     it("regression: removes the timing of a line-synced line (issue #285)", async () => {
       seed([createLine({ id: "l1", text: "hello world", begin: 1, end: 3 })], "l1", 0);
       await clickDelete();
