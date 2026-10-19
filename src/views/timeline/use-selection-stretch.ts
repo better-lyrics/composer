@@ -25,9 +25,7 @@ interface StretchDragArgs {
 }
 
 interface UseSelectionStretchOptions {
-  // Mirrors word-track's justResized guard: invoked with dragged=true when a
-  // stretch gesture moved past the drag threshold, so the trailing click does
-  // not rewrite the selection.
+  // Called with dragged=true once the stretch moved past the drag threshold.
   onDragEnd?: (dragged: boolean) => void;
 }
 

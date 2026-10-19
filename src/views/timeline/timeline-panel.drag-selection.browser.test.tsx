@@ -77,6 +77,21 @@ function row(lineIndex: number): HTMLElement {
   return el;
 }
 
+function wordBlock(lineIndex: number, wordIndex: number): HTMLElement {
+  const block = track(lineIndex, "word").querySelectorAll<HTMLElement>("[data-word-block]")[wordIndex];
+  if (!block) throw new Error(`no word ${wordIndex} on line ${lineIndex}`);
+  return block;
+}
+
+async function dragRightEdgeTo(lineIndex: number, wordIndex: number, toX: number, toY = 20) {
+  const block = wordBlock(lineIndex, wordIndex);
+  const { width, height } = block.getBoundingClientRect();
+  await userEvent.dragAndDrop(block, track(lineIndex, "word"), {
+    sourcePosition: { x: width - 6, y: height / 2 },
+    targetPosition: { x: toX, y: toY },
+  });
+}
+
 async function dragWithin(element: HTMLElement, fromX: number, toX: number, fromY: number, toY = fromY) {
   await userEvent.dragAndDrop(element, element, {
     sourcePosition: { x: fromX, y: fromY },
@@ -90,7 +105,7 @@ const words = (lineId: string, lineIndex: number, type: "word" | "bg", indices: 
 
 // -- Tests --------------------------------------------------------------------
 
-describe("TimelinePanel · marquee", () => {
+describe("TimelinePanel · drag selection", () => {
   it("keeps the words a drag inside one track selects", async () => {
     await renderTimeline();
 
@@ -139,6 +154,67 @@ describe("TimelinePanel · marquee", () => {
       expect(useTimelineStore.getState().rowHeights.l0).toBeGreaterThan(ROW_HEIGHT);
       expect(selected()).toEqual(words("l1", 1, "word", [1]));
       expect(document.querySelector(".border-dashed")).toBeNull();
+    });
+  });
+
+  describe("word edge drags", () => {
+    it("keeps a resized word selected when the drag ends over an empty track", async () => {
+      await renderTimeline();
+      useTimelineStore.getState().setSelectedWords(words("l0", 0, "word", [1]));
+
+      await dragRightEdgeTo(0, 1, 7 * ZOOM);
+
+      expect(useProjectStore.getState().lines[0].words?.[1].end).toBeGreaterThan(5);
+      expect(selected()).toEqual(words("l0", 0, "word", [1]));
+    });
+
+    it("keeps a stretched selection when the drag ends over an empty track", async () => {
+      await renderTimeline();
+      useTimelineStore.getState().setSelectedWords(words("l0", 0, "word", [0, 1]));
+
+      await dragRightEdgeTo(0, 1, 7 * ZOOM);
+
+      expect(useProjectStore.getState().lines[0].words?.[0].end).toBeGreaterThan(4);
+      expect(selected()).toEqual(words("l0", 0, "word", [0, 1]));
+    });
+
+    it("keeps the selection when a resize stops at the next word and the pointer moves on", async () => {
+      await renderTimeline();
+      useTimelineStore.getState().setSelectedWords(words("l0", 0, "word", [0]));
+
+      await dragRightEdgeTo(0, 0, 4.6 * ZOOM);
+
+      expect(useProjectStore.getState().lines[0].words?.[0].end).toBe(4);
+      expect(selected()).toEqual(words("l0", 0, "word", [0]));
+    });
+
+    it("keeps the selection when the pointer drifts below the word during a resize", async () => {
+      await renderTimeline();
+      useTimelineStore.getState().setSelectedWords(words("l0", 0, "word", [1]));
+
+      await dragRightEdgeTo(0, 1, 7 * ZOOM, ROW_HEIGHT - 2);
+
+      expect(useProjectStore.getState().lines[0].words?.[1].end).toBeGreaterThan(5);
+      expect(selected()).toEqual(words("l0", 0, "word", [1]));
+    });
+
+    it("keeps a stretched selection when the pointer drifts below the words", async () => {
+      await renderTimeline();
+      useTimelineStore.getState().setSelectedWords(words("l0", 0, "word", [0, 1]));
+
+      await dragRightEdgeTo(0, 1, 7 * ZOOM, ROW_HEIGHT - 2);
+
+      expect(selected()).toEqual(words("l0", 0, "word", [0, 1]));
+    });
+
+    it("lets the next click on a word select it after a resize", async () => {
+      await renderTimeline();
+      useTimelineStore.getState().setSelectedWords(words("l0", 0, "word", [1]));
+      await dragRightEdgeTo(0, 1, 7 * ZOOM);
+
+      await userEvent.click(wordBlock(0, 0));
+
+      expect(selected()).toEqual(words("l0", 0, "word", [0]));
     });
   });
 

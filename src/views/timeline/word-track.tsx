@@ -6,7 +6,7 @@ import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
-import { nextFrame } from "@/lib/frame-loop";
+import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -89,7 +89,6 @@ const WordTrack: React.FC<WordTrackProps> = ({
   // react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [resizing, setResizing] = useState(false);
   const dragStateRef = useRef<DragState | null>(null);
-  const justResizedRef = useRef(false);
   const draggedRef = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
   const lastPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
@@ -109,11 +108,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   // memoized handlers.
   const { tryStart: tryStartStretch } = useSelectionStretchDrag({
     onDragEnd: (dragged) => {
-      if (!dragged) return;
-      justResizedRef.current = true;
-      nextFrame(() => {
-        justResizedRef.current = false;
-      });
+      if (dragged) swallowTrailingClick();
     },
   });
 
@@ -225,12 +220,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
         dragStateRef.current = null;
         setDragState(null);
 
-        if (dragged) {
-          justResizedRef.current = true;
-          nextFrame(() => {
-            justResizedRef.current = false;
-          });
-        }
+        if (dragged) swallowTrailingClick();
 
         if (dragged && finalState && resizeChangedTiming(initialState, finalState, words)) {
           if (finalState.adjacentWordIndex !== undefined) {
@@ -315,7 +305,6 @@ const WordTrack: React.FC<WordTrackProps> = ({
   };
 
   const handleSelect = (wordIndex: number, e: React.MouseEvent) => {
-    if (justResizedRef.current) return;
     if (e.shiftKey) {
       const pos = syllablePositions[wordIndex];
       if (pos !== "none") {
