@@ -15,6 +15,8 @@ import { PARSERS, parseLyricsFile } from "@/utils/lyrics-parsers";
 import {
   type ParseIssue,
   type ParseResult,
+  UNSUPPORTED_LRC_TAGS_MESSAGE,
+  hasUnsupportedTags,
   skippedLineCount,
   skippedLinesMessage,
 } from "@/utils/lyrics-parsers/shared";
@@ -55,6 +57,7 @@ interface ImportLyricsInput {
 
 function noLyricsMessage(filename: string, issues: ParseIssue[]): string {
   if (issues.some((issue) => issue.reason === "empty-document")) return `Could not read ${filename}.`;
+  if (hasUnsupportedTags(issues)) return `Could not import ${filename}. ${UNSUPPORTED_LRC_TAGS_MESSAGE}`;
   const skipped = skippedLineCount(issues);
   if (skipped === 0) return `No lyrics found in ${filename}.`;
   return `No lyrics could be read from ${filename}. ${skippedLinesMessage(skipped)}`;
