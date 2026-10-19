@@ -1,3 +1,4 @@
+import { SINGER_TAGGED_LRC } from "@/test/lrc-fixtures";
 import { backupText, projectFileText } from "@/test/project-file-fixtures";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { classifyPastedText } from "@/views/edit/smart-paste";
@@ -129,6 +130,16 @@ describe("classifyPastedText", () => {
 
     it("keeps a lone timestamp line with no lyric as text", () => {
       expect(classifyPastedText("[00:01.00]").kind).toBe("typed-text");
+    });
+  });
+
+  describe("unsupported LRC tags", () => {
+    it("routes a refused singer-tagged LRC to the import so the refusal is shown", () => {
+      const pasted = classifyPastedText(SINGER_TAGGED_LRC);
+      expect(pasted.kind).toBe("lyrics-file");
+      if (pasted.kind !== "lyrics-file") return;
+      expect(pasted.parsed.lines).toEqual([]);
+      expect(pasted.parsed.issues.map((issue) => issue.reason)).toEqual(["unsupported-tags"]);
     });
   });
 });

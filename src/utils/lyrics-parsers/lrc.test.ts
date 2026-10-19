@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
 import { effectiveBounds } from "@/domain/line/bounds";
+import { SINGER_TAGGED_LRC } from "@/test/lrc-fixtures";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { parseLrcClock } from "@/utils/lyrics-parsers/lrc";
 import { skippedLineCount } from "@/utils/lyrics-parsers/shared";
+import { describe, expect, it } from "vitest";
 
 const RUMORS_LRC = `[ti:Rumors]
 [ar:Test Artist]
@@ -161,5 +162,72 @@ describe("LRC metadata tags with an empty value", () => {
   it("still reports a section label as unparsed", () => {
     const parsed = parseLyricsFile("song.lrc", "[Chorus]\n[00:01.00]Only", 10);
     expect(parsed.issues).toEqual([{ line: 1, text: "[Chorus]", reason: "unparsed" }]);
+  });
+});
+
+describe("LRC with singer or background vocal tags", () => {
+  it("reports only the first tagged line, as unsupported", () => {
+    const parsed = parseLyricsFile("song.lrc", SINGER_TAGGED_LRC, 30);
+    expect(parsed.issues).toEqual([
+      {
+        line: 2,
+        text: "[00:00.753]v2:<00:00.753>Oo-<00:01.729>oo-<00:02.823>oo-<00:03.833>ooh <00:004.89>",
+        reason: "unsupported-tags",
+      },
+    ]);
+  });
+
+  describe("edge cases", () => {
+    it("refuses a file whose only tag is a standalone background line", () => {
+      const parsed = parseLyricsFile("song.lrc", "[00:01.00]<00:01.00>Hi <00:02.00>\n[bg:<00:01.50>oh <00:02.00>]", 10);
+      expect(parsed.lines).toEqual([]);
+      expect(parsed.issues).toEqual([{ line: 2, text: "[bg:<00:01.50>oh <00:02.00>]", reason: "unsupported-tags" }]);
+    });
+
+    it("refuses a singer tag behind a malformed line timestamp", () => {
+      const parsed = parseLyricsFile("song.lrc", "[00:004.89]v2:<00:004.89>Oo <00:06.02>", 10);
+      expect(parsed.issues.map((issue) => issue.reason)).toEqual(["unsupported-tags"]);
+    });
+
+    it("refuses a singer tag on a line without word timing", () => {
+      const parsed = parseLyricsFile("song.lrc", "[00:01.00]v1:Hello there", 10);
+      expect(parsed.issues.map((issue) => issue.reason)).toEqual(["unsupported-tags"]);
+    });
+
+    it("keeps a lyric that starts with an uppercase V and a number", () => {
+      const parsed = parseLyricsFile("song.lrc", "[00:01.00]V8: engine roar", 10);
+      expect(parsed.issues).toEqual([]);
+      expect(parsed.lines.map((line) => line.text)).toEqual(["V8: engine roar"]);
+    });
+
+    it("refuses an uppercase background tag", () => {
+      const parsed = parseLyricsFile("song.lrc", "[00:01.00]Hi\n[BG:<00:01.50>oh <00:02.00>]", 10);
+      expect(parsed.issues.map((issue) => issue.reason)).toEqual(["unsupported-tags"]);
+    });
+
+    it("keeps lyrics that only mention v1 or bg", () => {
+      const parsed = parseLyricsFile("song.lrc", "[00:01.00]Track v1: the bg mix\n[00:02.00]Say v2:", 10);
+      expect(parsed.issues).toEqual([]);
+      expect(parsed.lines.map((line) => line.text)).toEqual(["Track v1: the bg mix", "Say v2:"]);
+    });
+  });
+
+  describe("invariants", () => {
+    it("drops the metadata of a refused file", () => {
+      const parsed = parseLyricsFile("song.lrc", `[ti:Cry Babies]\n${SINGER_TAGGED_LRC}`, 30);
+      expect(parsed.metadata).toEqual({});
+    });
+
+    it("counts the refusal as a skipped line", () => {
+      expect(skippedLineCount(parseLyricsFile("song.lrc", SINGER_TAGGED_LRC, 30).issues)).toBe(1);
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: does not import singer prefixes and background tags as lyric text", () => {
+      const parsed = parseLyricsFile("song.lrc", SINGER_TAGGED_LRC, 30);
+      expect(parsed.lines).toEqual([]);
+      expect(parsed.hasTimingData).toBe(false);
+    });
   });
 });

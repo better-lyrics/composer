@@ -2,7 +2,7 @@ import { QRC_LINE_HEADER_REGEX, QRC_WORD_TAG_REGEX } from "@/domain/lyrics-file/
 import type { ProjectFileContents } from "@/lib/project-file-read";
 import { PARSERS } from "@/utils/lyrics-parsers";
 import { type LyricsFileType, detectFileType } from "@/utils/lyrics-parsers/detect";
-import type { ParseResult } from "@/utils/lyrics-parsers/shared";
+import { type ParseResult, hasUnsupportedTags } from "@/utils/lyrics-parsers/shared";
 import { readProjectFileText } from "@/views/lyrics-import-modal/import-lyrics-source";
 
 // -- Types --------------------------------------------------------------------
@@ -39,7 +39,7 @@ function classifyPastedText(text: string, fallbackDuration?: number): PastedText
   const fileType = detectFileType("", body);
   if (fileType === "txt" || fileType === "unknown" || !readsAsWholeDocument(fileType, body)) return TYPED_TEXT;
   const parsed = PARSERS[fileType](body, fallbackDuration);
-  return parsed.lines.length > 0 ? { kind: "lyrics-file", parsed } : TYPED_TEXT;
+  return parsed.lines.length > 0 || hasUnsupportedTags(parsed.issues) ? { kind: "lyrics-file", parsed } : TYPED_TEXT;
 }
 
 // -- Exports ------------------------------------------------------------------
