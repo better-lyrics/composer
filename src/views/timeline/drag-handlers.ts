@@ -29,7 +29,7 @@ interface DragData {
 
 const DRAG_X_MIN_THRESHOLD = 5;
 const LINE_SYNCED_REJECT_MESSAGE = "Sync this line into words first";
-const OVERLAP_REJECT_MESSAGE = "That spot is taken. Drop it into a gap";
+const OVERLAP_REJECT_MESSAGE = "That spot is taken. Drop into a gap";
 
 // -- Selection helpers --------------------------------------------------------
 

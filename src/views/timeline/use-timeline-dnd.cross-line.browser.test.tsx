@@ -346,7 +346,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
     const after = JSON.stringify(useProjectStore.getState().lines);
     expect(after).toEqual(before);
     const fired = toast.getHistory().slice(baseline);
-    expect(fired.some((t) => "title" in t && /Drop it into a gap/.test(String(t.title)))).toBe(true);
+    expect(fired.some((t) => "title" in t && /Drop into a gap/.test(String(t.title)))).toBe(true);
   });
 
   it("no-ops when cursor falls outside any row on drop", async () => {
