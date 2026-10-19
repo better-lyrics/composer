@@ -146,7 +146,7 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
   // registry visually (no orphan banner at x=0). The rows remain so the
   // existing Cmd+D / paste-as-instance fill flow can repopulate them.
   const affectedInstanceKeys = new Set<string>();
-  for (const sel of selections) {
+  for (const sel of selectedWords) {
     const updated = updatedById.get(sel.lineId);
     if (updated && isLinked(updated)) {
       affectedInstanceKeys.add(`${updated.groupId}:${updated.instanceIdx}`);

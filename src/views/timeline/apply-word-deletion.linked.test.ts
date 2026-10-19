@@ -133,6 +133,21 @@ describe("applyWordDeletion · linked instances", () => {
     });
   });
 
+  describe("regressions", () => {
+    it("regression: keeps an instance the delete only reached through its link", () => {
+      const secondLine = { text: "la", agentId: "v1", groupId: "g1", templateLineIdx: 1 };
+      const timedSecond: LyricLine = { ...secondLine, id: "b0", instanceIdx: 0, begin: 12, end: 13 };
+      const untimedSecond: LyricLine = { ...secondLine, id: "b1", instanceIdx: 1 };
+      const lines = [chorusLine(0, 10), timedSecond, chorusLine(1, 40), untimedSecond];
+
+      const result = applyWordDeletion(lines, [del("c0-0", 0), del("c0-0", 1), del("c0-0", 2)]);
+
+      expect(byId(result, "c1-0")?.words).toBeUndefined();
+      expect(byId(result, "c1-0")?.groupId).toBe("g1");
+      expect(byId(result, "b1")?.groupId).toBe("g1");
+    });
+  });
+
   describe("edge cases", () => {
     it("deletes a word once when the same word is selected in two instances", () => {
       const lines = [chorusLine(0, 10), chorusLine(1, 40), chorusLine(2, 70)];
