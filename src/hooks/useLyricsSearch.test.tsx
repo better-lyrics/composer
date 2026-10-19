@@ -21,6 +21,7 @@ interface FakeProviderOptions {
   name: ProviderName;
   results?: LyricsSearchResult[];
   delayMs?: number;
+  settleAfter?: Promise<void>;
   throwError?: LyricsSearchError;
   canSearch?: (query: LyricsSearchQuery) => boolean;
 }
@@ -50,7 +51,9 @@ function fakeProviderFactory(options: FakeProviderOptions): FakeProviderHandle {
             resolve(options.results ?? []);
           }
         };
-        if (options.delayMs && options.delayMs > 0) {
+        if (options.settleAfter) {
+          void options.settleAfter.then(settle);
+        } else if (options.delayMs && options.delayMs > 0) {
           setTimeout(settle, options.delayMs);
         } else {
           queueMicrotask(settle);
@@ -215,27 +218,32 @@ describe("useLyricsSearch", () => {
   });
 
   it("merges results from multiple providers in registry order and runs them in parallel", async () => {
+    let releaseProviders = () => {};
+    const settleAfter = new Promise<void>((resolve) => {
+      releaseProviders = resolve;
+    });
     const a = track(
       fakeProviderFactory({
         name: "lrclib",
         results: [makeResult("lrclib-1", "lrclib"), makeResult("lrclib-2", "lrclib")],
-        delayMs: 30,
+        settleAfter,
       }),
     );
     const b = track(
       fakeProviderFactory({
         name: "binimum",
         results: [makeResult("binimum-1", "binimum"), makeResult("binimum-2", "binimum")],
-        delayMs: 30,
+        settleAfter,
       }),
     );
-    const start = Date.now();
     const h = createHarness({ query: { track: "hi" }, options: { debounceMs: 0 } });
+
+    await waitUntil(() => a.calls.length === 1 && b.calls.length === 1);
+    expect(a.signalAtSettle).toHaveLength(0);
+    releaseProviders();
     await waitUntil(() => (h.result.current?.results.length ?? 0) === 4);
-    const elapsed = Date.now() - start;
 
     expect(h.result.current?.results.map((r) => r.id)).toEqual(["lrclib-1", "lrclib-2", "binimum-1", "binimum-2"]);
-    expect(elapsed).toBeLessThan(120);
     expect(a.calls.length).toBe(1);
     expect(b.calls.length).toBe(1);
 
