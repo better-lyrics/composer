@@ -5,6 +5,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
+import { setCurrentTime } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -72,6 +73,35 @@ describe("SyncPanel granularity switch", () => {
 
       await expect.element(screen.getByText("Not", { exact: true })).toBeInTheDocument();
       await expect.element(screen.getByText("yet", { exact: true })).toBeInTheDocument();
+    });
+  });
+
+  describe("word sync on a line-synced line", () => {
+    it("a Word-mode tap starts word-syncing only that line, and undo restores its line timing", async () => {
+      useAudioStore.setState({
+        source: { type: "file", file: createAudioFile() },
+        duration: 10,
+        currentTime: 0,
+        isPlaying: true,
+      });
+      useProjectStore.setState({ activeTab: "sync", granularity: "word", lines: [lineSynced, untimed] });
+      const screen = await render(<SyncPanel />);
+      await expect.element(screen.getByRole("group", { name: "Timing granularity" })).toBeInTheDocument();
+
+      setCurrentTime(1.5);
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, cancelable: true }));
+
+      await expect.poll(() => useProjectStore.getState().lines[0].words?.map((word) => word.text)).toEqual(["Hello "]);
+      const [tapped, next] = useProjectStore.getState().lines;
+      expect(tapped.words?.[0].begin).toBe(1.5);
+      expect(isLineSynced(tapped)).toBe(false);
+      expect(next).toBe(untimed);
+
+      useProjectStore.getState().undo();
+
+      const restored = useProjectStore.getState().lines[0];
+      expect(isLineSynced(restored)).toBe(true);
+      expect(restored).toMatchObject({ begin: 1, end: 3 });
     });
   });
 
