@@ -29,6 +29,7 @@ interface DragData {
 
 const DRAG_X_MIN_THRESHOLD = 5;
 const LINE_SYNCED_REJECT_MESSAGE = "Sync this line into words first";
+const OVERLAP_REJECT_MESSAGE = "That spot is taken. Drop it into a gap";
 
 // -- Selection helpers --------------------------------------------------------
 
@@ -215,6 +216,7 @@ function applyCrossLineMove(args: CrossLineMoveArgs) {
     toast.error(LINE_SYNCED_REJECT_MESSAGE);
     return;
   }
+  if (result.reject === "overlap") toast.error(OVERLAP_REJECT_MESSAGE);
 }
 
 // -- Exports -------------------------------------------------------------------

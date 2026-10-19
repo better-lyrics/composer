@@ -304,7 +304,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
     expect(fired.some((t) => "title" in t && /Sync this line into words first/.test(String(t.title)))).toBe(true);
   });
 
-  it("silently rejects an overlap and leaves both lines untouched", async () => {
+  it("rejects an overlap with a toast and leaves both lines untouched", async () => {
     useProjectStore.setState({
       lines: [
         {
@@ -345,7 +345,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
 
     const after = JSON.stringify(useProjectStore.getState().lines);
     expect(after).toEqual(before);
-    expect(toast.getHistory().length).toBe(baseline);
+    const fired = toast.getHistory().slice(baseline);
+    expect(fired.some((t) => "title" in t && /Drop it into a gap/.test(String(t.title)))).toBe(true);
   });
 
   it("no-ops when cursor falls outside any row on drop", async () => {
