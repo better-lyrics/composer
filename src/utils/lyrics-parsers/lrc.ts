@@ -1,11 +1,11 @@
+import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
-import { reconcileLine, type LooseLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { WordTiming } from "@/domain/word/timing";
+import { type ParseIssue, type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { getSplitCharacter } from "@/utils/split-character";
 import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
-import { generateLineId, type ParseIssue, type ParseResult } from "@/utils/lyrics-parsers/shared";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -14,6 +14,7 @@ const LINE_TIMESTAMP_REGEX = new RegExp(String.raw`\[${CLOCK}\]`, "g");
 const INLINE_WORD_TAG_REGEX = new RegExp(`<${CLOCK}>`, "g");
 const LENGTH_REGEX = new RegExp(`^${CLOCK}$`);
 const LRC_METADATA_TAG_REGEX = /^\[([a-z]+):(.*)\]$/i;
+const SINGER_OR_BACKGROUND_TAG_REGEX = /^(?:\[[\d:.]+\]\s*)*v\d+:|\[bg:/i;
 const PENDING_WORD_END = -1;
 const SECONDS_PER_MINUTE = 60;
 
@@ -124,15 +125,24 @@ function fillLineEnds(lines: LooseLine[], gapMarkers: number[], songEnd: number 
   }
 }
 
+function unsupportedTagIssue(rawLines: readonly string[]): ParseIssue | null {
+  const index = rawLines.findIndex((line) => SINGER_OR_BACKGROUND_TAG_REGEX.test(line.trim()));
+  return index === -1 ? null : { line: index + 1, text: rawLines[index].trim(), reason: "unsupported-tags" };
+}
+
 // -- LRC Parser ---------------------------------------------------------------
 
 function parseLrc(content: string, fallbackDuration?: number): ParseResult {
+  const rawLines = content.split(/\r?\n/);
+  const unsupported = unsupportedTagIssue(rawLines);
+  if (unsupported) return { lines: [], metadata: {}, hasTimingData: false, issues: [unsupported] };
+
   const metadata: Partial<ProjectMetadata> = {};
   const lines: LooseLine[] = [];
   const gapMarkers: number[] = [];
   const issues: ParseIssue[] = [];
 
-  content.split(/\r?\n/).forEach((line, index) => {
+  rawLines.forEach((line, index) => {
     const trimmed = line.trim();
     if (!trimmed) return;
     const lineNumber = index + 1;
