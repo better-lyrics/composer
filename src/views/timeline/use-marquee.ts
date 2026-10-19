@@ -1,5 +1,5 @@
 import { useFrameLoop } from "@/hooks/use-frame-loop";
-import { holdFrames } from "@/lib/frame-loop";
+import { holdFrames, nextFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import type { WordSelection } from "@/domain/selection/model";
@@ -26,6 +26,19 @@ const ACTIVATION_THRESHOLD = 5;
 const AUTO_SCROLL_ZONE = 40;
 const AUTO_SCROLL_SPEED = 8;
 const AUTO_SCROLL_LABEL = "marquee-scroll";
+
+// -- Helpers -------------------------------------------------------------------
+
+function swallowClick(event: MouseEvent) {
+  event.stopPropagation();
+  event.preventDefault();
+}
+
+// The click that ends a drag lands on whatever track is under the pointer, and track clicks clear the selection.
+function swallowTrailingClick() {
+  window.addEventListener("click", swallowClick, { capture: true, once: true });
+  nextFrame(() => window.removeEventListener("click", swallowClick, { capture: true }));
+}
 
 // -- Hook ----------------------------------------------------------------------
 
@@ -154,7 +167,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
   const handleMarqueeMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || e.defaultPrevented) return;
 
       const target = e.target as HTMLElement;
       if (target.closest("[data-word-block]")) return;
@@ -200,6 +213,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       setAutoScrolling(false);
 
       if (stateRef.current === "active") {
+        swallowTrailingClick();
         const rect = computeRect();
         if (rect) {
           const newSelections = computeSelection(rect);
