@@ -127,7 +127,7 @@ const TimelineWaveform: React.FC = () => {
 
   // A bunch of heights here are -1 to account for the 1px border at the bottom of the waveform container.
   return (
-    <div className="sticky ml-12 top-0 z-40 bg-composer-bg w-max">
+    <div className="sticky ml-12 top-0 z-40 bg-composer-bg w-max" style={{ height: WAVEFORM_HEIGHT }}>
       <div
         data-waveform-redraw-bg
         className="absolute top-0 left-0 bg-composer-bg border-b border-composer-border shadow-lg pointer-events-none"
