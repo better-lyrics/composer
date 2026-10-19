@@ -1,5 +1,6 @@
 import { render } from "@/test/render";
 import { CountdownRing } from "@/ui/countdown-ring";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 function countdown(start: number) {
@@ -73,11 +74,10 @@ describe("CountdownRing", () => {
 
   describe("regressions", () => {
     it("regression: mounts the live region empty so the first count is announced", async () => {
-      const screen = await render(
-        <CountdownRing remainingSeconds={() => 3} totalSeconds={3} precision={0} announce={announce} />,
-      );
-      const status = screen.container.querySelector('[role="status"]');
-      expect(status?.textContent).toBe("");
+      const ring = <CountdownRing remainingSeconds={() => 3} totalSeconds={3} precision={0} announce={announce} />;
+      const mounted = new DOMParser().parseFromString(renderToStaticMarkup(ring), "text/html");
+      expect(mounted.querySelector('[role="status"]')?.textContent).toBe("");
+      const screen = await render(ring);
       await expect.element(screen.getByRole("status")).toHaveTextContent("Starting in 3");
     });
   });
