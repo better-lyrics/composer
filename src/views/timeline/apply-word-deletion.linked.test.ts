@@ -149,6 +149,17 @@ describe("applyWordDeletion · linked instances", () => {
   });
 
   describe("edge cases", () => {
+    it("keeps every instance linked when partial deletes in two instances add up to all the words", () => {
+      const lines = [chorusLine(0, 10), chorusLine(1, 40), chorusLine(2, 70)];
+
+      const result = applyWordDeletion(lines, [del("c0-0", 0), del("c0-0", 1), del("c1-0", 2)]);
+
+      for (const id of ["c0-0", "c1-0", "c2-0"]) {
+        expect(byId(result, id)?.words).toBeUndefined();
+        expect(byId(result, id)?.groupId).toBe("g1");
+      }
+    });
+
     it("deletes a word once when the same word is selected in two instances", () => {
       const lines = [chorusLine(0, 10), chorusLine(1, 40), chorusLine(2, 70)];
 

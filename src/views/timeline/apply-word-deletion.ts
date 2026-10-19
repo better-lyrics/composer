@@ -138,44 +138,11 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
   const selections = withLinkedSiblings(lines, selectedWords, emptied);
   const updatedById = deleteFromLines(lines, selections);
 
-  let result = lines.map((line) => updatedById.get(line.id) ?? line);
+  const result = lines.map((line) => updatedById.get(line.id) ?? line);
+  if (emptied.size === 0) return result;
 
-  // Auto-cleanup: when every line in a touched instance is now fully empty
-  // (no words, no bg words, no begin/end), strip the group attrs so the rows
-  // become standalone placeholders. The instance disappears from the group
-  // registry visually (no orphan banner at x=0). The rows remain so the
-  // existing Cmd+D / paste-as-instance fill flow can repopulate them.
-  const affectedInstanceKeys = new Set<string>();
-  for (const sel of selectedWords) {
-    const updated = updatedById.get(sel.lineId);
-    if (updated && isLinked(updated)) {
-      affectedInstanceKeys.add(`${updated.groupId}:${updated.instanceIdx}`);
-    }
-  }
-
-  if (affectedInstanceKeys.size > 0) {
-    const linesByInstanceKey = new Map<string, LyricLine[]>();
-    for (const l of result) {
-      if (!isLinked(l)) continue;
-      const key = `${l.groupId}:${l.instanceIdx}`;
-      const bucket = linesByInstanceKey.get(key);
-      if (bucket) bucket.push(l);
-      else linesByInstanceKey.set(key, [l]);
-    }
-
-    const keysToStrip = new Set<string>();
-    for (const key of affectedInstanceKeys) {
-      const instanceLines = linesByInstanceKey.get(key);
-      if (!instanceLines || instanceLines.length === 0) continue;
-      if (instanceLines.every(isLineFullyEmpty)) keysToStrip.add(key);
-    }
-
-    if (keysToStrip.size > 0) {
-      result = unlinkLines(result, (line) => isLinked(line) && keysToStrip.has(`${line.groupId}:${line.instanceIdx}`));
-    }
-  }
-
-  return result;
+  // An emptied instance becomes standalone placeholder rows, so paste-as-instance can refill it without an orphan banner.
+  return unlinkLines(result, (line) => emptied.has(instanceKey(line) ?? ""));
 }
 
 export { applyWordDeletion };
