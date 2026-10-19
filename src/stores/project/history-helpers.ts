@@ -154,6 +154,16 @@ function redoState(state: ProjectState) {
   };
 }
 
+// Data that follows the lyrics joins the step that changed them, so undo never stops between the two.
+function amendCurrentStep(state: ProjectState, lines: RawLine[]) {
+  if (state.isDirtySinceHistory || state.historyIndex < 0) return { lines, isDirty: true, isDirtySinceHistory: true };
+  return {
+    lines,
+    isDirty: true,
+    history: state.history.with(state.historyIndex, snapshotEntry({ ...state, lines })),
+  };
+}
+
 function canUndoFrom(state: ProjectState): boolean {
   return state.historyIndex > 0 || (state.isDirtySinceHistory && state.historyIndex >= 0);
 }
@@ -161,6 +171,7 @@ function canUndoFrom(state: ProjectState): boolean {
 // -- Exports ------------------------------------------------------------------
 
 export {
+  amendCurrentStep,
   canUndoFrom,
   commitHistory,
   commitPendingEdit,

@@ -2,7 +2,7 @@ import { languageSourceText } from "@/domain/language/source-text";
 import type { LyricLine } from "@/domain/line/model";
 import type { LanguageLineInput } from "@/services/language-provider";
 
-function languageGenerationInputs(lines: LyricLine[]) {
+function languageGenerationInputs(lines: readonly LyricLine[]) {
   const mainInputs: LanguageLineInput[] = [];
   const bgInputs: LanguageLineInput[] = [];
   for (const line of lines) {
