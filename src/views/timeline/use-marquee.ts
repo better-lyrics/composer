@@ -1,5 +1,6 @@
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { holdFrames } from "@/lib/frame-loop";
+import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import type { WordSelection } from "@/domain/selection/model";
@@ -154,7 +155,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
   const handleMarqueeMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || e.defaultPrevented) return;
 
       const target = e.target as HTMLElement;
       if (target.closest("[data-word-block]")) return;
@@ -200,6 +201,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       setAutoScrolling(false);
 
       if (stateRef.current === "active") {
+        swallowTrailingClick();
         const rect = computeRect();
         if (rect) {
           const newSelections = computeSelection(rect);

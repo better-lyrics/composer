@@ -4,15 +4,39 @@ import { isMac } from "@/utils/platform";
 
 // -- Matching -----------------------------------------------------------------
 
-// On macOS, holding Option/Alt rewrites `event.key` to the layout-specific
-// glyph (Alt+E → "´", Alt+Shift+E → "´") instead of the base letter. Fall back
-// to `event.code` (e.g., "KeyE", "Digit1") which reflects the physical key
-// regardless of modifiers, so alt-bearing bindings still match.
+const US_PUNCTUATION_BY_CODE: Record<string, [base: string, shifted: string]> = {
+  Backquote: ["`", "~"],
+  Minus: ["-", "_"],
+  Equal: ["=", "+"],
+  BracketLeft: ["[", "{"],
+  BracketRight: ["]", "}"],
+  Backslash: ["\\", "|"],
+  Semicolon: [";", ":"],
+  Quote: ["'", '"'],
+  Comma: [",", "<"],
+  Period: [".", ">"],
+  Slash: ["/", "?"],
+};
+
+function physicalKey(event: KeyboardEvent): string | null {
+  const { code, shiftKey } = event;
+  if (code.startsWith("Key") && code.length === 4) return code.slice(3).toLowerCase();
+  const punctuation = US_PUNCTUATION_BY_CODE[code];
+  return punctuation ? punctuation[shiftKey ? 1 : 0] : null;
+}
+
+function isNonLatinLetter(key: string): boolean {
+  return key.length === 1 && /\p{L}/u.test(key) && !/\p{Script=Latin}/u.test(key);
+}
+
+// Layout glyphs (Option on macOS: Alt+E → "´"; non-Latin layouts: E → "у")
+// fall back to the physical key so bindings match on any layout.
 function getEventKey(event: KeyboardEvent): string {
   if (event.altKey) {
     if (event.code.startsWith("Key") && event.code.length === 4) return event.code.slice(3).toLowerCase();
     if (event.code.startsWith("Digit") && event.code.length === 6) return event.code.slice(5);
   }
+  if (isNonLatinLetter(event.key)) return physicalKey(event) ?? event.key;
   return event.key.length === 1 ? event.key.toLowerCase() : event.key;
 }
 
@@ -98,6 +122,10 @@ function findMatchingShortcut(event: KeyboardEvent, scope: ShortcutScope): strin
   return null;
 }
 
+function isCommandBinding(binding: ShortcutBinding): boolean {
+  return !!(binding.mod || binding.ctrl || binding.meta);
+}
+
 function matchesShortcutBinding(event: KeyboardEvent, id: string): boolean {
   return matchesBinding(event, getEffectiveBinding(id));
 }
@@ -161,4 +189,10 @@ function isReservedBrowserShortcut(binding: ShortcutBinding): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
-export { bindingFromKeyboardEvent, findMatchingShortcut, isReservedBrowserShortcut, matchesShortcutBinding };
+export {
+  bindingFromKeyboardEvent,
+  findMatchingShortcut,
+  isCommandBinding,
+  isReservedBrowserShortcut,
+  matchesShortcutBinding,
+};

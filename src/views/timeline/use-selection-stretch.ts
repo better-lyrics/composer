@@ -25,9 +25,7 @@ interface StretchDragArgs {
 }
 
 interface UseSelectionStretchOptions {
-  // Mirrors word-track's justResized guard: invoked with dragged=true when a
-  // stretch gesture moved past the drag threshold, so the trailing click does
-  // not rewrite the selection.
+  // Called with dragged=true once the stretch moved past the drag threshold.
   onDragEnd?: (dragged: boolean) => void;
 }
 
@@ -212,7 +210,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
         if (stillOurs) {
           // Restore the snapshot first so the history entry below captures the
           // true pre-drag state (and a discarded drag leaves no trace at all).
-          writePreviewLines(snapshotLines);
+          useProjectStore.getState().restoreTransientLines(snapshotLines);
         }
         teardown();
         if (stillOurs && commit && dragged && Math.abs(currentFactor - 1) >= COMMIT_FACTOR_EPS) {

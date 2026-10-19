@@ -1,7 +1,6 @@
-import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
+import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { trackWords } from "@/domain/line/tracks";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
-import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -10,6 +9,7 @@ import { mergeWordText } from "@/utils/word-merge";
 import { createBgWordsFromTextAt } from "@/utils/sync-helpers";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
+import { applyWordDeletion } from "@/views/timeline/apply-word-deletion";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useCallback } from "react";
@@ -63,21 +63,11 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   const handleDeleteWord = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return;
     const { lineId, wordIndex, type } = contextMenu.target;
-    const line = lines.find((l) => l.id === lineId);
-    if (!line) return;
-
-    const wordsArray = trackWords(line, type);
-    if (!wordsArray) return;
-
-    const absorbed = absorbDeletedSyllablesIntoNeighbors(wordsArray, [wordIndex]);
-    const remaining = absorbed.filter((_, i) => i !== wordIndex);
-    if (type === "word") {
-      updateLineWithHistory(lineId, { words: remaining });
-    } else {
-      updateLineWithHistory(lineId, remaining.length > 0 ? manualBackgroundWordEdit(remaining) : CLEARED_BACKGROUND);
-    }
+    const { lines: rawLines, setLinesWithHistory } = useProjectStore.getState();
+    const nextLines = applyWordDeletion(rawLines, [{ lineId, wordIndex, type }]);
+    if (nextLines !== rawLines) setLinesWithHistory(nextLines);
     clearContextMenu();
-  }, [contextMenu, lines, updateLineWithHistory, clearContextMenu]);
+  }, [contextMenu, clearContextMenu]);
 
   const handleAddWordHere = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "track") return;

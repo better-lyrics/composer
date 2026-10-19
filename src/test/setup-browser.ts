@@ -5,9 +5,11 @@ import { __resetPersistenceSettledForTests } from "@/lib/persistence-settled";
 import { resetSaveStatus } from "@/lib/save-status";
 import { addGlobalAllowedConsolePattern, registerConsoleGuard } from "@/test/console-guard";
 import { deleteDatabase } from "@/test/idb";
+import { installPromptIdleCallbacks } from "@/test/idle-callbacks";
 import { resetAllStores } from "@/test/stores";
 import { toast } from "sonner";
 import { beforeAll, beforeEach } from "vitest";
+import { cdp } from "vitest/browser";
 import { cleanup } from "vitest-browser-react/pure";
 
 const COMPOSER_DBS = ["ttml-composer"];
@@ -21,6 +23,9 @@ beforeAll(() => {
 beforeEach(async () => {
   // Unmount first so a previous test's live subscriptions cannot race the wipe.
   await cleanup();
+  installPromptIdleCallbacks();
+  // The cursor otherwise rests where the last test left it and hovers whatever the next test renders there.
+  await cdp().send("Input.dispatchMouseEvent", { type: "mouseMoved", x: -1, y: -1 });
   appQueryClient.clear();
   await Promise.all(COMPOSER_DBS.map(deleteDatabase));
   forgetOpenProjectId();

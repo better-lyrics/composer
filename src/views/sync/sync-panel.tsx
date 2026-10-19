@@ -2,6 +2,7 @@ import { instancePositionsByLineId } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
+import { isLineSynced } from "@/domain/line/predicates";
 import { isSyncComplete, syncProgress } from "@/domain/line/sync-progress";
 import { previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
@@ -14,14 +15,9 @@ import { useSettingsStore } from "@/stores/settings";
 import { setSyncEditMode, useSyncEditModeStore } from "@/stores/sync-edit-mode";
 import { EmptyState } from "@/ui/empty-state";
 import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
+import { historyShortcutAction } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
-import {
-  type SyncState,
-  convertLineToWord,
-  getNudgeAmount,
-  hasLineTiming,
-  withSeededBackgroundWords,
-} from "@/utils/sync-helpers";
+import { type SyncState, getNudgeAmount, withSeededBackgroundWords } from "@/utils/sync-helpers";
 import { readToken } from "@/utils/theme/read-token";
 import { ScrollableLine, type ScrollableLineLinkInfo } from "@/views/sync/scrollable-line";
 import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
@@ -41,7 +37,6 @@ const SyncPanel: React.FC = () => {
   const storeLines = useProjectStore((s) => s.lines);
   const lines = useMemo(() => storeLines.map(withSeededBackgroundWords), [storeLines]);
   const groups = useProjectStore((s) => s.groups);
-  const setLinesWithHistory = useProjectStore((s) => s.setLinesWithHistory);
   const undo = useProjectStore((s) => s.undo);
   const redo = useProjectStore((s) => s.redo);
   const activeTab = useProjectStore((s) => s.activeTab);
@@ -223,15 +218,9 @@ const SyncPanel: React.FC = () => {
   const handleGranularityChange = useCallback(
     (newGranularity: "line" | "word") => {
       if (newGranularity === granularity) return;
-
-      if (newGranularity === "word" && hasLineTiming(lines)) {
-        const convertedLines = lines.map((line) => convertLineToWord(line));
-        setLinesWithHistory(convertedLines);
-      }
-
       setGranularity(newGranularity);
     },
-    [granularity, lines, setLinesWithHistory, setGranularity],
+    [granularity, setGranularity],
   );
 
   const handleToggleEdit = useCallback(() => {
@@ -372,13 +361,12 @@ const SyncPanel: React.FC = () => {
       if (activeTab !== "sync") return;
       if (isAnyModalOpen()) return;
 
-      if (e.code === "KeyZ" && (e.metaKey || e.ctrlKey) && !e.repeat) {
+      const historyAction = historyShortcutAction(e, { scope: "sync" });
+      if (historyAction) {
         e.preventDefault();
-        if (e.shiftKey) {
-          redo();
-        } else {
-          undo();
-        }
+        if (e.repeat) return;
+        if (historyAction === "undo") undo();
+        else redo();
         return;
       }
 
@@ -503,6 +491,7 @@ const SyncPanel: React.FC = () => {
                     words={displayLine.words ?? line.words}
                     lineBegin={timing?.begin}
                     lineEnd={timing?.end}
+                    lineSynced={isLineSynced(line)}
                     granularity={granularity}
                     currentTime={currentTime}
                     editMode={editMode}

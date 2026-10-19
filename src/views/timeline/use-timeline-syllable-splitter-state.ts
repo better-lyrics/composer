@@ -1,8 +1,6 @@
-import { reconcileTransliterationAfterSyllableSplit } from "@/domain/language/reconcile-syllable-split";
+import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
 import { splitTransliterationAtBoundaries } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { effectiveTrackWords } from "@/domain/line/effective-words";
-import { trackField } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
 import { livePlaybackTime } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
@@ -135,21 +133,15 @@ function useTimelineSyllableSplitterState({
     const line = currentLines.find((l) => l.id === lineId);
     if (!line) return;
 
-    const wordsArray = effectiveTrackWords(line, type);
-    if (!wordsArray) return;
-
-    const updatedWords = [...wordsArray.slice(0, wordIndex), ...newWords, ...wordsArray.slice(wordIndex + 1)];
-    const transliteration =
-      mode === "syllable"
-        ? reconcileTransliterationAfterSyllableSplit(line, trackField(type), wordIndex, newWords)
-        : null;
-    const extraUpdates = transliteration ? { transliteration } : {};
+    const split = splitWordsKeepingTransliteration(line, type, wordIndex, newWords);
+    if (!split) return;
+    const extraUpdates = split.transliteration ? { transliteration: split.transliteration } : {};
 
     if (type === "word") {
-      void handleWordChangeWithDivergenceCheck(lineId, updatedWords, "words", extraUpdates);
+      void handleWordChangeWithDivergenceCheck(lineId, split.words, "words", extraUpdates);
     } else {
-      void handleWordChangeWithDivergenceCheck(lineId, updatedWords, "backgroundWords", {
-        ...manualBackgroundWordEdit(updatedWords),
+      void handleWordChangeWithDivergenceCheck(lineId, split.words, "backgroundWords", {
+        ...manualBackgroundWordEdit(split.words),
         ...extraUpdates,
       });
     }

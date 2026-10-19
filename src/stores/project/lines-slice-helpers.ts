@@ -1,4 +1,5 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
+import { withAlignedWords } from "@/domain/language/align";
 import { CLEARED_BACKGROUND, applyBackground, manualBackgroundWordEdit } from "@/domain/line/background";
 import { applyMainWordEdit } from "@/domain/line/main-words";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
@@ -150,7 +151,7 @@ function applyMergeSyllableGroup(
     const isSource = line.id === lineId;
     const isSibling = !isSource && isLinkedSibling(line, linkScope) && line[field]?.length === sourceCount;
     if (!isSource && !isSibling) return line;
-    const lineWords = line[field];
+    const lineWords = withAlignedWords(line)[field];
     if (!lineWords) return line;
 
     const runs = computeByGroupId(lineWords);
@@ -171,6 +172,7 @@ function applyMergeSyllableGroup(
       if (touched) {
         const runWords = lineWords.slice(run.startIndex, run.endIndex + 1);
         const first = lineWords[run.startIndex];
+        const last = lineWords[run.endIndex];
         const {
           syllableGroupId: _drop,
           transliteration: _firstTransliteration,
@@ -182,8 +184,11 @@ function applyMergeSyllableGroup(
           ...rest,
           text: runWords.map((word) => word.text).join(""),
           begin: first.begin,
-          end: lineWords[run.endIndex].end,
+          end: last.end,
           ...(transliteration ? { transliteration } : {}),
+          ...(last.transliterationJoinerAfter !== undefined
+            ? { transliterationJoinerAfter: last.transliterationJoinerAfter }
+            : {}),
         });
         changed = true;
       } else {

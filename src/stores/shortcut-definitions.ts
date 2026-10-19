@@ -1,3 +1,5 @@
+import { isMac } from "@/utils/platform";
+
 // -- Types --------------------------------------------------------------------
 
 interface ShortcutBinding {
@@ -33,6 +35,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     scope: "global",
     description: "Switch between normal speed and the last speed you used (0.75x at first)",
     defaultBinding: { key: "r", shift: true },
+  },
+  {
+    id: "global.toggleStem",
+    scope: "global",
+    description: "Switch between the original audio and the last stem you used (vocals at first)",
+    defaultBinding: { key: "o", shift: true },
   },
   {
     id: "global.help",
@@ -112,6 +120,28 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     description: "Save now",
     defaultBinding: { key: "s", mod: true },
   },
+  {
+    id: "global.undo",
+    scope: "global",
+    description: "Undo",
+    defaultBinding: { key: "z", mod: true },
+  },
+  {
+    id: "global.redo",
+    scope: "global",
+    description: "Redo",
+    defaultBinding: { key: "z", mod: true, shift: true },
+  },
+  ...(isMac
+    ? []
+    : [
+        {
+          id: "global.redoAlternate",
+          scope: "global" as const,
+          description: "Redo (alternate)",
+          defaultBinding: { key: "y", mod: true },
+        },
+      ]),
   {
     id: "library.focusSearch",
     scope: "library",

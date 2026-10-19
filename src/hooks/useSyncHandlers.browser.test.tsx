@@ -251,6 +251,47 @@ describe("useSyncHandlers.handleSplitWord", () => {
     expect(saved.words?.map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
     expect(saved.words?.map((word) => word.transliterationJoinerAfter)).toEqual(["", " ", undefined]);
   });
+
+  it("regression: keeps the chosen roman split when stored words lost their pieces (#283)", async () => {
+    const line: LyricLine = {
+      id: "l0",
+      agentId: "v1",
+      text: "Uh 일단은 나",
+      words: [
+        { text: "Uh ", begin: 0, end: 0.5 },
+        { text: "일단은 ", begin: 0.5, end: 1.5 },
+        { text: "나", begin: 1.5, end: 2 },
+      ],
+      transliteration: {
+        language: "ko-Latn",
+        text: "Uh  ildan eun  na",
+        segments: [{ original: "Uh 일단은 나", transliteration: "Uh  ildan eun  na" }],
+        origin: "google" as const,
+        sourceFingerprint: "source",
+      },
+    };
+    useProjectStore.getState().setLines([line]);
+    const { result, act } = await mountSyncHandlers();
+
+    await act(() => {
+      result.current.handleSplitWord(0, 1, [
+        {
+          text: "일",
+          begin: 0.5,
+          end: 0.8,
+          transliteration: "il",
+          transliterationJoinerAfter: "",
+          syllableGroupId: "g",
+        },
+        { text: "단은 ", begin: 0.8, end: 1.5, transliteration: "dan eun", syllableGroupId: "g" },
+      ]);
+    });
+
+    const saved = useProjectStore.getState().lines[0];
+    expect(saved.words?.map((word) => word.transliteration)).toEqual(["Uh", "il", "dan eun", "na"]);
+    expect(saved.transliteration?.text).toBe("Uh  ildan eun  na");
+    expect(saved.transliteration?.alignmentStatus).toBe("inferred");
+  });
 });
 
 describe("useSyncHandlers live audio time (issue #203)", () => {

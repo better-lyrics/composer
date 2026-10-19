@@ -492,7 +492,7 @@ describe("moveWordToBg · linked propagation", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0?.words?.length).toBe(0);
+    expect(a0?.words).toBeUndefined();
     expect(a0?.backgroundWords?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
 
     expect(a1?.words?.map((w) => w.text.trimEnd())).toEqual(["ev", "y"]);
@@ -570,7 +570,7 @@ describe("moveWordToBg clears line.begin/end when main empties", () => {
     useProjectStore.getState().moveWordToBg("line-1", [1], 5, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words).toEqual([]);
+    expect(line.words).toBeUndefined();
     expect(line.begin).toBeUndefined();
     expect(line.end).toBeUndefined();
     expect(line.backgroundWords?.length).toBe(3);

@@ -2,6 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
+import { isAbortError } from "@/utils/abort-error";
 import { cn } from "@/utils/cn";
 import { readToken } from "@/utils/theme/read-token";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
@@ -15,6 +16,7 @@ import type WaveSurfer from "wavesurfer.js";
 // -- Constants -----------------------------------------------------------------
 
 const FADE_SETTLE_MS = 260;
+const LOG_PREFIX = "[TimelineWaveform]";
 
 // -- Component -----------------------------------------------------------------
 
@@ -42,7 +44,7 @@ const TimelineWaveform: React.FC = () => {
     wave: readToken("wave"),
     progress: readToken("wave-progress"),
   }));
-  // @wavesurfer/react rebuilds the instance whenever any option changes; later zooms go through ws.zoom().
+  // @wavesurfer/react rebuilds the instance whenever any option changes; later zooms go through ws.setOptions(), which unlike ws.zoom() never throws mid-reload.
   const [initialZoom] = useState(() => useTimelineStore.getState().zoom);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: activeThemeId re-applies DOM-resolved colors on theme change without remounting WaveSurfer
@@ -54,7 +56,10 @@ const TimelineWaveform: React.FC = () => {
   useEffect(() => {
     if (!ws || !audioElement) return;
     const onLoadStart = () => {
-      if (audioElement.src) void ws.load(audioElement.src);
+      if (!audioElement.src) return;
+      ws.load(audioElement.src).catch((error: unknown) => {
+        if (!isAbortError(error)) console.error(LOG_PREFIX, "waveform reload failed", error);
+      });
     };
     audioElement.addEventListener("loadstart", onLoadStart);
     return () => audioElement.removeEventListener("loadstart", onLoadStart);
@@ -62,7 +67,7 @@ const TimelineWaveform: React.FC = () => {
 
   useEffect(() => {
     if (!ws) return;
-    ws.zoom(zoom);
+    ws.setOptions({ minPxPerSec: zoom });
   }, [ws, zoom]);
 
   useEffect(() => {
@@ -122,7 +127,7 @@ const TimelineWaveform: React.FC = () => {
 
   // A bunch of heights here are -1 to account for the 1px border at the bottom of the waveform container.
   return (
-    <div className="sticky ml-12 top-0 z-40 bg-composer-bg w-max">
+    <div className="sticky ml-12 top-0 z-40 bg-composer-bg w-max" style={{ minHeight: WAVEFORM_HEIGHT }}>
       <div
         data-waveform-redraw-bg
         className="absolute top-0 left-0 bg-composer-bg border-b border-composer-border shadow-lg pointer-events-none"

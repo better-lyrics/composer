@@ -2,6 +2,7 @@ import type { ProjectTab } from "@/domain/project/tab";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { togglePlayback } from "@/lib/sync-count-in";
 import { toggledPlaybackRate, useAudioStore } from "@/stores/audio";
+import { toggledStem, useSeparationStore } from "@/stores/separation";
 
 interface GlobalShortcutActions {
   setActiveTab: (tab: ProjectTab) => void;
@@ -12,6 +13,10 @@ interface GlobalShortcutActions {
 
 function togglePlaybackSpeed(): void {
   useAudioStore.getState().setPlaybackRate(toggledPlaybackRate());
+}
+
+function toggleStem(): void {
+  useSeparationStore.getState().selectStem(toggledStem());
 }
 
 function useGlobalShortcuts(actions: GlobalShortcutActions): void {
@@ -33,6 +38,7 @@ function useGlobalShortcuts(actions: GlobalShortcutActions): void {
           "global.goToExport": () => setActiveTab("export"),
           "global.playPause": togglePlayback,
           "global.togglePlaybackSpeed": togglePlaybackSpeed,
+          "global.toggleStem": toggleStem,
           ...general,
         }
       : general,

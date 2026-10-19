@@ -29,6 +29,7 @@ interface SeparationState {
   progress: { loaded: number; total: number };
   error: SeparationError | null;
   currentStem: Stem;
+  otherStem: Exclude<Stem, "original">;
   availableStems: Stem[];
   modelCached: boolean;
   jobKey: string | null;
@@ -72,6 +73,7 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
   progress: { loaded: 0, total: 0 },
   error: null,
   currentStem: "original",
+  otherStem: "vocals",
   availableStems: ["original"],
   modelCached: false,
   jobKey: null,
@@ -235,7 +237,7 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
   selectStem: (stem) => {
     const available = get().availableStems;
     if (!available.includes(stem)) return;
-    set({ currentStem: stem });
+    set(stem === "original" ? { currentStem: stem } : { currentStem: stem, otherStem: stem });
   },
 
   // Called once at boot by usePersistence to seed currentStem from the saved
@@ -245,7 +247,7 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
   // been populated yet. refreshForCurrentSource handles eviction by overwriting
   // back to "original" when the cached stems are gone.
   restoreCurrentStem: (stem) => {
-    set({ currentStem: stem });
+    set(stem === "original" ? { currentStem: stem } : { currentStem: stem, otherStem: stem });
   },
 
   cancel: () => {
@@ -269,6 +271,7 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
       progress: { loaded: 0, total: 0 },
       error: null,
       currentStem: "original",
+      otherStem: "vocals",
       availableStems: ["original"],
       jobKey: null,
       stemUrls: {},
@@ -276,8 +279,13 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
   },
 }));
 
+function toggledStem(): Stem {
+  const { currentStem, otherStem } = useSeparationStore.getState();
+  return currentStem === "original" ? otherStem : "original";
+}
+
 function isStemJobInUse(jobKey: string): boolean {
   return jobKey === useSeparationStore.getState().jobKey || isStemJobLoading(jobKey);
 }
 
-export { useSeparationStore, isStemJobInUse };
+export { useSeparationStore, isStemJobInUse, toggledStem };

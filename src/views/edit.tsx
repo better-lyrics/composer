@@ -12,6 +12,7 @@ import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { historyShortcutAction } from "@/utils/history-shortcut";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
@@ -60,6 +61,37 @@ const BracketWarning: React.FC<{ count: number }> = ({ count }) => {
   );
 };
 
+const BackgroundTextInput: React.FC<{
+  initialText: string;
+  onCommit: (text: string) => void;
+  onClose: () => void;
+}> = ({ initialText, onCommit, onClose }) => {
+  const [text, setText] = useState(initialText);
+  const commitIfEdited = () => {
+    if (text !== initialText) onCommit(text);
+  };
+
+  return (
+    <input
+      type="text"
+      aria-label="Background vocals text"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commitIfEdited}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commitIfEdited();
+          onClose();
+        }
+      }}
+      placeholder="ooh, ah, etc."
+      className="w-full px-2 py-1 text-sm border rounded bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent"
+    />
+  );
+};
+
 const LinePreview: React.FC<{
   line: ParsedLine;
   agents: { id: string; name?: string }[];
@@ -91,14 +123,7 @@ const LinePreview: React.FC<{
   onGutterMouseEnter,
   didDragRef,
 }) => {
-  const [bgInput, setBgInput] = useState(line.backgroundText ?? "");
   const agentColor = getAgentColor(line.agentId);
-
-  const handleBgBlur = useCallback(() => {
-    if (line.lineId) {
-      onBackgroundChange(line.lineId, bgInput);
-    }
-  }, [line.lineId, bgInput, onBackgroundChange]);
 
   const selectLineForBulkEdit = useCallback(
     (e: React.MouseEvent) => {
@@ -234,21 +259,10 @@ const LinePreview: React.FC<{
                     Pull from ( )
                   </button>
                 )}
-                <input
-                  type="text"
-                  aria-label="Background vocals text"
-                  value={bgInput}
-                  onChange={(e) => setBgInput(e.target.value)}
-                  onBlur={handleBgBlur}
-                  onKeyDown={(e) => {
-                    e.stopPropagation();
-                    if (e.key === "Enter") {
-                      handleBgBlur();
-                      close();
-                    }
-                  }}
-                  placeholder="ooh, ah, etc."
-                  className="w-full px-2 py-1 text-sm border rounded bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent"
+                <BackgroundTextInput
+                  initialText={line.backgroundText ?? ""}
+                  onCommit={(text) => onBackgroundChange(line.lineId, text)}
+                  onClose={close}
                 />
               </div>
             )}
@@ -473,17 +487,13 @@ const EditPanel: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "edit") return;
       if (isAnyModalOpen()) return;
-      if (!(e.metaKey || e.ctrlKey)) return;
       const target = e.target as HTMLElement;
       if ((target.tagName === "INPUT" || target.tagName === "TEXTAREA") && target.id !== textareaId) return;
-      const key = e.key.toLowerCase();
-      const isUndo = key === "z" && !e.shiftKey;
-      const isRedo = (key === "z" && e.shiftKey) || key === "y";
-      if (!isUndo && !isRedo) return;
+      const historyAction = historyShortcutAction(e, { redoOnY: true });
+      if (!historyAction) return;
       e.preventDefault();
       finalizeRun();
-      if (isUndo) useProjectStore.getState().undo();
-      else useProjectStore.getState().redo();
+      useProjectStore.getState()[historyAction]();
     };
 
     window.addEventListener("keydown", handleKeyDown);

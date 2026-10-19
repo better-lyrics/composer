@@ -3,7 +3,6 @@ import { HelpTopic } from "@/ui/help-topic";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SettingLink } from "@/ui/setting-link";
 import { PROSE } from "@/ui/typography";
-import { MOD_KEY } from "@/utils/platform";
 
 // -- Syncing ------------------------------------------------------------------
 
@@ -78,7 +77,8 @@ const SyncSection: React.FC = () => (
       <p className={PROSE}>
         Press <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeLeft")} /> to nudge the last synced word 50ms
         earlier. <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeRight")} /> nudges it 50ms later. You can also
-        press {MOD_KEY} + Z to undo. Each hold produces two undo steps (start and end) so you can step back precisely.
+        press <InlineKeyBadge keys={getEffectiveKeysArray("global.undo")} /> to undo. Each hold produces two undo steps
+        (start and end) so you can step back precisely.
       </p>
     </HelpTopic>
 

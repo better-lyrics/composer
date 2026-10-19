@@ -61,11 +61,11 @@ interface LineUpdate {
 // Partial<LyricLine> updates or fresh timing fields. A generic spread widens
 // past the LyricLine union, so reconcileLine re-narrows a freshly merged line
 // into exactly one variant by its runtime shape. It enforces the core
-// invariant: a line is never both word-synced and line-synced. A `words` array
-// (even empty) wins and drops begin/end.
+// invariant: a line is never both word-synced and line-synced. A non-empty
+// `words` array wins and drops begin/end; an empty one counts as no words.
 function reconcileLine(line: LooseLine): LyricLine {
   const { words, begin, end, ...rest } = line;
-  if (words !== undefined) return { ...rest, words };
+  if (words?.length) return { ...rest, words };
   if (begin !== undefined && end !== undefined) return { ...rest, begin, end };
   return rest;
 }

@@ -7,9 +7,66 @@ on:
     branches: [master]
 
 jobs:
-  test:
+  checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Duplication check
+        run: pnpm jscpd
+
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests (jsdom)
+        run: pnpm test:unit --shard=${{ matrix.shard }}/2
+
+  component:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
 
     steps:
       - uses: actions/checkout@v4
@@ -41,14 +98,15 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm exec playwright install-deps chromium
 
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Duplication check
-        run: pnpm jscpd
-
-      - name: Unit tests (jsdom)
-        run: pnpm test:unit
-
       - name: Component tests (Chromium)
-        run: pnpm test:component
+        run: pnpm test:component --shard=${{ matrix.shard }}/3
+
+  # The master ruleset requires a check named "test".
+  test:
+    if: always()
+    needs: [checks, unit, component]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: All test jobs passed
+        run: test "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}" = "false"

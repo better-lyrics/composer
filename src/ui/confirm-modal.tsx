@@ -3,7 +3,7 @@ import { useConfirmStore } from "@/stores/confirm-store";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import { cn } from "@/utils/cn";
-import { MOD_KEY } from "@/utils/platform";
+import { UndoHint } from "@/ui/undo-hint";
 
 // -- Component ----------------------------------------------------------------
 
@@ -51,7 +51,7 @@ const ConfirmModalHost: React.FC = () => {
         {description && (
           <div className="text-sm text-composer-text-secondary leading-relaxed select-text">{description}</div>
         )}
-        {recoverable && <div className="text-xs text-composer-text-muted">This can be undone with {MOD_KEY}+Z.</div>}
+        {recoverable && <UndoHint />}
 
         <div className={cn("flex items-center pt-2", showDontAskAgain ? "justify-between" : "justify-end")}>
           {showDontAskAgain && (

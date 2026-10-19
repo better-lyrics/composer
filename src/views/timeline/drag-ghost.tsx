@@ -100,4 +100,3 @@ const TimelineDragOverlay: React.FC<{ children?: React.ReactNode }> = ({ childre
 // -- Exports -------------------------------------------------------------------
 
 export { DragGhost, HoverSizedDragGhost, TimelineDragOverlay };
-export type { DragGhostCell };

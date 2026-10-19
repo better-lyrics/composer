@@ -44,9 +44,10 @@ function Banner({ group, instanceIdx }: { group: LinkGroup; instanceIdx: number 
   );
 }
 
-function PingingBanner({ group }: { group: LinkGroup }) {
+// Hook only: a rendered banner under the resting test cursor pings on hover and would mask the copy ping.
+function PingSubscriber() {
   useSharedTimingPing();
-  return <Banner group={group} instanceIdx={1} />;
+  return null;
 }
 
 async function linkIconColor(group: LinkGroup, instanceIdx: number): Promise<string> {
@@ -77,7 +78,8 @@ describe("GroupBanner · shared timing", () => {
   it("pings the group when a timing edit is copied to its instances", async () => {
     const group = createGroup({ id: "g1", label: "Chorus", sharesTiming: true });
     seed(group);
-    await render(<PingingBanner group={group} />);
+    await render(<PingSubscriber />);
+    expect(useTimelineStore.getState().pingingGroupId).toBeNull();
 
     const words = (useProjectStore.getState().lines[0].words ?? []).map((word, i) =>
       i === 1 ? { ...word, begin: word.begin + 0.2 } : word,
@@ -123,7 +125,7 @@ describe("GroupBanner · shared timing", () => {
     it("does not ping for an edit in an old group", async () => {
       const group = createGroup({ id: "g1", label: "Chorus" });
       seed(group);
-      await render(<PingingBanner group={group} />);
+      await render(<PingSubscriber />);
 
       const words = (useProjectStore.getState().lines[0].words ?? []).map((word, i) =>
         i === 1 ? { ...word, begin: word.begin + 0.2 } : word,
@@ -139,7 +141,7 @@ describe("GroupBanner · shared timing", () => {
     it("stops pinging once the subscriber unmounts", async () => {
       const group = createGroup({ id: "g1", label: "Chorus", sharesTiming: true });
       seed(group);
-      const screen = await render(<PingingBanner group={group} />);
+      const screen = await render(<PingSubscriber />);
       await screen.unmount();
 
       const words = (useProjectStore.getState().lines[0].words ?? []).map((word, i) =>

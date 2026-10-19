@@ -616,7 +616,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     expect(applyUpdates(input, result.updates)).not.toEqual(input);
   });
 
-  it("source line that becomes empty has words: [] and undefined begin/end via reconcileLine", () => {
+  it("source line that becomes empty has no words and undefined begin/end via reconcileLine", () => {
     const lineA = createLine({
       id: "A",
       words: [{ text: "only", begin: 0, end: 0.5 }],
@@ -643,7 +643,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
-    expect(a.words).toEqual([]);
+    expect(a.words).toBeUndefined();
     expect(a.begin).toBeUndefined();
     expect(a.end).toBeUndefined();
   });

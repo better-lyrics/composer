@@ -83,3 +83,28 @@ describe("splitWordIntoWords · text containing spaces", () => {
     });
   });
 });
+
+describe("splitWordIntoWords · transliteration", () => {
+  const word: WordTiming = {
+    text: "приветмир ",
+    begin: 3,
+    end: 4,
+    transliteration: "privet mir",
+    transliterationJoinerAfter: "  ",
+  };
+
+  it("regression: parts never copy the parent's transliteration (#283)", () => {
+    const out = splitWordIntoWords(word, [6]);
+    expect(out.map((w) => w.text)).toEqual(["привет ", "мир "]);
+    for (const part of out) {
+      expect(part).not.toHaveProperty("transliteration");
+      expect(part).not.toHaveProperty("transliterationJoinerAfter");
+    }
+  });
+
+  it("does not mutate the source word", () => {
+    const before = structuredClone(word);
+    splitWordIntoWords(word, [6]);
+    expect(word).toEqual(before);
+  });
+});

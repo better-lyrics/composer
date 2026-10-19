@@ -1,4 +1,4 @@
-import { unlinkLines } from "@/domain/group/linking";
+import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
 import { isLinked } from "@/domain/instance/predicates";
 import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
 import { isLineSynced } from "@/domain/line/predicates";
@@ -13,6 +13,10 @@ interface DeletionSelection {
   wordIndex: number;
 }
 
+// -- Helpers ------------------------------------------------------------------
+
+const instanceKey = (line: LyricLine): string | null => (isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null);
+
 function isLineFullyEmpty(line: LyricLine): boolean {
   return (
     (line.words?.length ?? 0) === 0 &&
@@ -22,13 +26,16 @@ function isLineFullyEmpty(line: LyricLine): boolean {
   );
 }
 
-function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<DeletionSelection>): LyricLine[] {
-  if (selectedWords.length === 0) return lines;
+function trackLength(line: LyricLine, type: "word" | "bg"): number {
+  if (type === "bg") return line.backgroundWords?.length ?? 0;
+  return isLineSynced(line) ? 1 : (line.words?.length ?? 0);
+}
 
+function deleteFromLines(lines: LyricLine[], selections: ReadonlyArray<DeletionSelection>): Map<string, LyricLine> {
   const splitChar = getSplitCharacter();
 
   const byLine = new Map<string, { mainIdxs: Set<number>; bgIdxs: Set<number> }>();
-  for (const sel of selectedWords) {
+  for (const sel of selections) {
     let entry = byLine.get(sel.lineId);
     if (!entry) {
       entry = { mainIdxs: new Set(), bgIdxs: new Set() };
@@ -80,44 +87,62 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
     updatedById.set(lineId, updatedLine);
   }
 
-  let result = lines.map((line) => updatedById.get(line.id) ?? line);
+  return updatedById;
+}
 
-  // Auto-cleanup: when every line in a touched instance is now fully empty
-  // (no words, no bg words, no begin/end), strip the group attrs so the rows
-  // become standalone placeholders. The instance disappears from the group
-  // registry visually (no orphan banner at x=0). The rows remain so the
-  // existing Cmd+D / paste-as-instance fill flow can repopulate them.
-  const affectedInstanceKeys = new Set<string>();
-  for (const sel of selectedWords) {
-    const updated = updatedById.get(sel.lineId);
-    if (updated && isLinked(updated)) {
-      affectedInstanceKeys.add(`${updated.groupId}:${updated.instanceIdx}`);
-    }
+function emptiedInstanceKeys(lines: LyricLine[], updatedById: Map<string, LyricLine>): Set<string> {
+  const touched = new Set<string>();
+  for (const updated of updatedById.values()) {
+    const key = instanceKey(updated);
+    if (key) touched.add(key);
   }
 
-  if (affectedInstanceKeys.size > 0) {
-    const linesByInstanceKey = new Map<string, LyricLine[]>();
-    for (const l of result) {
-      if (!isLinked(l)) continue;
-      const key = `${l.groupId}:${l.instanceIdx}`;
-      const bucket = linesByInstanceKey.get(key);
-      if (bucket) bucket.push(l);
-      else linesByInstanceKey.set(key, [l]);
-    }
+  const emptied = new Set(touched);
+  for (const line of lines) {
+    const key = instanceKey(line);
+    if (key && emptied.has(key) && !isLineFullyEmpty(updatedById.get(line.id) ?? line)) emptied.delete(key);
+  }
+  return emptied;
+}
 
-    const keysToStrip = new Set<string>();
-    for (const key of affectedInstanceKeys) {
-      const instanceLines = linesByInstanceKey.get(key);
-      if (!instanceLines || instanceLines.length === 0) continue;
-      if (instanceLines.every(isLineFullyEmpty)) keysToStrip.add(key);
-    }
+// A partial delete is a structure edit, so it reaches every linked instance; emptying a whole instance clears only that one.
+function withLinkedSiblings(
+  lines: LyricLine[],
+  selections: ReadonlyArray<DeletionSelection>,
+  emptied: Set<string>,
+): DeletionSelection[] {
+  const linesById = new Map<string, LyricLine>();
+  for (const l of lines) linesById.set(l.id, l);
 
-    if (keysToStrip.size > 0) {
-      result = unlinkLines(result, (line) => isLinked(line) && keysToStrip.has(`${line.groupId}:${line.instanceIdx}`));
+  const expanded = [...selections];
+  for (const sel of selections) {
+    const line = linesById.get(sel.lineId);
+    const scope = line ? getLinkScope(line) : null;
+    if (!line || !scope || emptied.has(instanceKey(line) ?? "")) continue;
+    for (const sibling of lines) {
+      if (sibling.id === line.id || !isLinkedSibling(sibling, scope)) continue;
+      if (emptied.has(instanceKey(sibling) ?? "")) continue;
+      if (trackLength(sibling, sel.type) !== trackLength(line, sel.type)) continue;
+      expanded.push({ lineId: sibling.id, type: sel.type, wordIndex: sel.wordIndex });
     }
   }
+  return expanded;
+}
 
-  return result;
+// -- Deletion -----------------------------------------------------------------
+
+function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<DeletionSelection>): LyricLine[] {
+  if (selectedWords.length === 0) return lines;
+
+  const emptied = emptiedInstanceKeys(lines, deleteFromLines(lines, selectedWords));
+  const selections = withLinkedSiblings(lines, selectedWords, emptied);
+  const updatedById = deleteFromLines(lines, selections);
+
+  const result = lines.map((line) => updatedById.get(line.id) ?? line);
+  if (emptied.size === 0) return result;
+
+  // An emptied instance becomes standalone placeholder rows, so paste-as-instance can refill it without an orphan banner.
+  return unlinkLines(result, (line) => emptied.has(instanceKey(line) ?? ""));
 }
 
 export { applyWordDeletion };
