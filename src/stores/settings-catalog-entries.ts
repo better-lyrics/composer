@@ -43,9 +43,16 @@ const SETTINGS_CATALOG = {
   defaultPlaybackRate: {
     section: "playback",
     label: "Default playback rate",
-    description: "Starting playback speed when audio is loaded.",
+    description: "Starting playback speed while Remember playback speed is off.",
     keywords: ["speed", "tempo"],
     settingKey: "defaultPlaybackRate",
+  },
+  rememberPlaybackRate: {
+    section: "playback",
+    label: "Remember playback speed",
+    description: "Keep your playback speed between sessions.",
+    keywords: ["speed", "tempo"],
+    settingKey: "rememberPlaybackRate",
   },
   preservePitch: {
     section: "playback",

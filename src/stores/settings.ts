@@ -36,6 +36,8 @@ const DEFAULT_COBALT_INSTANCE_ID = "default";
 
 interface SettingsState {
   defaultPlaybackRate: number;
+  rememberPlaybackRate: boolean;
+  lastPlaybackRate: number;
   preservePitch: boolean;
   rememberVolume: boolean;
   lastVolume: number;
@@ -117,6 +119,8 @@ interface SettingsActions {
 
 const DEFAULTS: SettingsState = {
   defaultPlaybackRate: 0.75,
+  rememberPlaybackRate: true,
+  lastPlaybackRate: 0.75,
   preservePitch: true,
   rememberVolume: true,
   lastVolume: 1,

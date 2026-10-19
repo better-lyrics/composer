@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
@@ -88,5 +89,34 @@ describe("AgentManager", () => {
     const screen = await render(<AgentManager />);
     await screen.getByRole("button", { name: /v3/ }).click();
     await expect.element(screen.getByRole("button", { name: "Delete agent" })).toBeInTheDocument();
+  });
+});
+
+describe("regressions", () => {
+  it("regression: saving keeps an agent rename made outside the popover", async () => {
+    useProjectStore.setState({ agents: [{ id: "v1", name: "Lead", type: "person" }] });
+    const screen = await render(<AgentManager />);
+
+    useProjectStore.getState().updateAgent("v1", { name: "Alice", type: "group" });
+    await screen.getByRole("button", { name: /v1/ }).click();
+    await expect.element(screen.getByRole("textbox", { name: "Agent name" })).toHaveValue("Alice");
+    await screen.getByRole("button", { name: "Save" }).click();
+
+    await expect
+      .poll(() => useProjectStore.getState().agents.find((a) => a.id === "v1"))
+      .toMatchObject({ name: "Alice", type: "group" });
+  });
+
+  it("regression: reopening the popover drops an unsaved name edit", async () => {
+    useProjectStore.setState({ agents: [{ id: "v1", name: "Lead", type: "person" }] });
+    const screen = await render(<AgentManager />);
+
+    await screen.getByRole("button", { name: /v1/ }).click();
+    await screen.getByRole("textbox", { name: "Agent name" }).fill("Draft");
+    await userEvent.keyboard("{Escape}");
+    await expect.element(screen.getByRole("textbox", { name: "Agent name" })).not.toBeInTheDocument();
+
+    await screen.getByRole("button", { name: /v1/ }).click();
+    await expect.element(screen.getByRole("textbox", { name: "Agent name" })).toHaveValue("Lead");
   });
 });
