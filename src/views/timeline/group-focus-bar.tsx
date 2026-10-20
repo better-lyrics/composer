@@ -4,25 +4,24 @@ import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { instanceName } from "@/domain/instance/name";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { ToggleButton } from "@/ui/toggle-button";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
 import { useEffectiveFocus, useEffectiveFocusGroup } from "@/views/timeline/effective-focus";
 import { adjacentHeardInstance, focusBounds, heardInstances } from "@/views/timeline/group-focus";
 import { hearInstance } from "@/views/timeline/hear-instance";
-import { toggleLoop } from "@/views/timeline/selection-playback";
+import { LoopToggle } from "@/views/timeline/loop-toggle";
+import { STRIP_CONTROL } from "@/views/timeline/strip-control";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
   SHARING_MENU_LABELS,
   applySharingMenuAction,
   sharingMenuAction,
 } from "@/views/timeline/use-shared-timing-menu-actions";
-import { IconChevronLeft, IconChevronRight, IconRepeat } from "@tabler/icons-react";
+import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -34,7 +33,6 @@ interface OpenInstanceProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const STRIP_CONTROL = "h-6 rounded-md";
 const STEP_BUTTON = "size-6 rounded-md";
 
 // -- Functions -----------------------------------------------------------------
@@ -123,17 +121,6 @@ const InstanceStatus: React.FC<OpenInstanceProps> = (props) => (
     ))}
   </span>
 );
-
-const LoopToggle: React.FC = () => {
-  const loop = useSettingsStore((s) => s.loopRange);
-  return (
-    <ToggleButton pressed={loop} size="sm" hasIcon className={cn(STRIP_CONTROL, "pr-1.5")} onClick={toggleLoop}>
-      <IconRepeat aria-hidden="true" className="size-3.5" />
-      Loop
-      <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleLoop")} />
-    </ToggleButton>
-  );
-};
 
 const FocusedGroupBar: React.FC<Omit<OpenInstanceProps, "lines">> = ({ group, hearInstanceIdx }) => {
   const lines = useProjectStore((s) => s.lines);

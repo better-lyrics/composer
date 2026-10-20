@@ -25,6 +25,7 @@ import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
 import { BLOCK_INSET_PX, bgTrackHeight } from "@/views/timeline/row-geometry";
+import { SelectionPlaybackBar } from "@/views/timeline/selection-playback-bar";
 import { SharedTimingSuggestionsBanner } from "@/views/timeline/shared-timing-suggestions-banner";
 import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
@@ -384,6 +385,7 @@ const TimelinePanel: React.FC = () => {
           <SharedTimingSuggestionsBanner />
           <ExplicitSuggestionsBanner />
           <GroupFocusBar />
+          <SelectionPlaybackBar />
 
           <div className="flex flex-1 overflow-hidden">
             <div className="flex flex-col flex-1 overflow-hidden">
