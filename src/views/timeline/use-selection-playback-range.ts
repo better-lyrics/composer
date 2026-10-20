@@ -17,7 +17,7 @@ interface SelectionPlaybackRange {
 // -- Hook ---------------------------------------------------------------------
 
 function useSelectionPlaybackRange(): SelectionPlaybackRange | null {
-  const active = useTimelineStore((s) => s.selectionPlayback);
+  const active = useTimelineStore((s) => s.selectionPlayback !== null);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const lines = useProjectStore((s) => s.lines);
   const leadIn = useSettingsStore((s) => s.selectionLeadIn);

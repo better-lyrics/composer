@@ -53,7 +53,7 @@ interface SettingsState {
   timelineSnapThreshold: number;
   vocalOnsetSnap: boolean;
   shareTimingInNewGroups: boolean;
-  loopRange: boolean;
+  loopOpenGroup: boolean;
   snapPlayheadToPoints: boolean;
   syllablesFollowRolling: boolean;
   timelineHorizontalScroll: boolean;
@@ -137,7 +137,7 @@ const DEFAULTS: SettingsState = {
   timelineSnapThreshold: 12,
   vocalOnsetSnap: true,
   shareTimingInNewGroups: true,
-  loopRange: false,
+  loopOpenGroup: false,
   snapPlayheadToPoints: true,
   syllablesFollowRolling: false,
   timelineHorizontalScroll: false,

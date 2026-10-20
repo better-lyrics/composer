@@ -35,12 +35,12 @@ const TIMELINE_CATALOG_ENTRIES = {
     keywords: ["group", "instance", "chorus", "linked", "repeat"],
     settingKey: "shareTimingInNewGroups",
   },
-  loopRange: {
+  loopOpenGroup: {
     section: "timeline",
-    label: "Loop playback range",
-    description: "Play an open group or a played selection on repeat instead of stopping at its end.",
-    keywords: ["group", "instance", "chorus", "repeat", "solo", "selection", "word", "line"],
-    settingKey: "loopRange",
+    label: "Loop an open group",
+    description: "Play an open group on repeat instead of stopping at its end.",
+    keywords: ["group", "instance", "chorus", "repeat", "solo"],
+    settingKey: "loopOpenGroup",
   },
   selectionLeadIn: {
     section: "timeline",

@@ -47,7 +47,7 @@ function handleGroupFocusKeyDown(event: KeyboardEvent): void {
   }
 
   if (matched === "timeline.toggleLoop") {
-    if (focus !== null || timeline.selectionPlayback) toggleLoop();
+    if (focus !== null || timeline.selectionPlayback !== null) toggleLoop();
     else if (!loopSelection()) return;
     event.preventDefault();
     return;

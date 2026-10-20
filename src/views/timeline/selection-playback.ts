@@ -9,7 +9,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { focusBounds } from "@/views/timeline/group-focus";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { type SelectionPlaybackMode, useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Reads --------------------------------------------------------------------
 
@@ -20,18 +20,26 @@ function currentSelectionBounds(): Bounds | null {
 function currentPlaybackRange(): Bounds | null {
   const focus = currentEffectiveFocus();
   return playbackRange({
-    selection: useTimelineStore.getState().selectionPlayback ? currentSelectionBounds() : null,
+    selection: useTimelineStore.getState().selectionPlayback !== null ? currentSelectionBounds() : null,
     focus: focus ? focusBounds(useProjectStore.getState().lines, focus) : null,
     leadIn: useSettingsStore.getState().selectionLeadIn,
     duration: useAudioStore.getState().duration,
   });
 }
 
+function loopsRange(selectionPlayback: SelectionPlaybackMode | null, loopOpenGroup: boolean): boolean {
+  return selectionPlayback === null ? loopOpenGroup : selectionPlayback === "loop";
+}
+
+function currentlyLoops(): boolean {
+  return loopsRange(useTimelineStore.getState().selectionPlayback, useSettingsStore.getState().loopOpenGroup);
+}
+
 // -- Actions ------------------------------------------------------------------
 
-function playSelection(): boolean {
+function playSelection(mode: SelectionPlaybackMode = "once"): boolean {
   if (!currentSelectionBounds()) return false;
-  useTimelineStore.getState().setSelectionPlayback(true);
+  useTimelineStore.getState().setSelectionPlayback(mode);
   const range = currentPlaybackRange();
   if (!range) return false;
   const audio = useAudioStore.getState();
@@ -41,19 +49,22 @@ function playSelection(): boolean {
 }
 
 function loopSelection(): boolean {
-  if (!currentSelectionBounds()) return false;
-  useSettingsStore.getState().set("loopRange", true);
-  return playSelection();
+  return playSelection("loop");
 }
 
 function stopSelectionPlayback({ pause }: { pause: boolean }): void {
-  useTimelineStore.getState().setSelectionPlayback(false);
+  useTimelineStore.getState().setSelectionPlayback(null);
   if (pause) useAudioStore.getState().setIsPlaying(false);
 }
 
 function toggleLoop(): void {
+  const { selectionPlayback, setSelectionPlayback } = useTimelineStore.getState();
+  if (selectionPlayback !== null) {
+    setSelectionPlayback(selectionPlayback === "loop" ? "once" : "loop");
+    return;
+  }
   const settings = useSettingsStore.getState();
-  settings.set("loopRange", !settings.loopRange);
+  settings.set("loopOpenGroup", !settings.loopOpenGroup);
 }
 
 function selectWordUnlessSelected(target: WordSelection): void {
@@ -71,6 +82,8 @@ function selectLine(lineId: string, lineIndex: number): void {
 export {
   currentPlaybackRange,
   currentSelectionBounds,
+  currentlyLoops,
+  loopsRange,
   loopSelection,
   playSelection,
   selectLine,

@@ -30,13 +30,15 @@ interface EditingWord {
   type: "word" | "bg";
 }
 
+type SelectionPlaybackMode = "once" | "loop";
+
 interface TimelineState {
   zoom: number;
   followEnabled: boolean;
   previewSidebarOpen: boolean;
   textVariant: "original" | "transliteration";
   selectedWords: WordSelection[];
-  selectionPlayback: boolean;
+  selectionPlayback: SelectionPlaybackMode | null;
 
   clipboard: ClipboardData | null;
   pasteMode: PasteMode;
@@ -73,7 +75,7 @@ interface TimelineActions {
   togglePreviewSidebar: () => void;
   toggleTextVariant: () => void;
   setSelectedWords: (selections: WordSelection[]) => void;
-  setSelectionPlayback: (active: boolean) => void;
+  setSelectionPlayback: (mode: SelectionPlaybackMode | null) => void;
 
   toggleSelection: (selection: WordSelection) => void;
   clearSelection: () => void;
@@ -126,7 +128,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     previewSidebarOpen: settings.defaultPreviewSidebar,
     textVariant: "original",
     selectedWords: [],
-    selectionPlayback: false,
+    selectionPlayback: null,
 
     clipboard: null,
     pasteMode: { status: "idle" },
@@ -185,7 +187,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     resetProjectScope: () =>
       set({
         selectedWords: [],
-        selectionPlayback: false,
+        selectionPlayback: null,
         contextMenu: null,
         editingWord: null,
         pasteMode: { status: "idle" },
@@ -227,4 +229,4 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
 // -- Exports -------------------------------------------------------------------
 
 export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP };
-export type { ContextMenuState, ContextMenuTarget, TrackHit };
+export type { ContextMenuState, ContextMenuTarget, SelectionPlaybackMode, TrackHit };

@@ -1,10 +1,10 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
 import { useEffectiveFocus } from "@/views/timeline/effective-focus";
 import {
   currentPlaybackRange,
   currentSelectionBounds,
+  currentlyLoops,
   stopSelectionPlayback,
 } from "@/views/timeline/selection-playback";
 import { isOutsideRange, soloPlayStart, soloPlaybackEnd } from "@/views/timeline/solo-playback";
@@ -14,7 +14,7 @@ import { useEffect } from "react";
 // -- Helpers ------------------------------------------------------------------
 
 function isPlayingSelection(): boolean {
-  return useTimelineStore.getState().selectionPlayback;
+  return useTimelineStore.getState().selectionPlayback !== null;
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -22,7 +22,7 @@ function isPlayingSelection(): boolean {
 // Keeps playback inside the active range (a played selection, else the open group): its end stops or loops.
 function useRangePlayback(): void {
   const groupOpen = useEffectiveFocus() !== null;
-  const selectionPlayback = useTimelineStore((s) => s.selectionPlayback);
+  const selectionPlayback = useTimelineStore((s) => s.selectionPlayback !== null);
   const audio = useAudioStore((s) => s.audioElement);
   const active = groupOpen || selectionPlayback;
 
@@ -42,7 +42,7 @@ function useRangePlayback(): void {
     const checkEnd = () => {
       const range = currentPlaybackRange();
       if (!range || audio.paused || seekPending) return;
-      const step = soloPlaybackEnd(audio.currentTime, range, useSettingsStore.getState().loopRange);
+      const step = soloPlaybackEnd(audio.currentTime, range, currentlyLoops());
       if (!step) {
         scheduleEnd();
         return;

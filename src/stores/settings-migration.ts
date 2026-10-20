@@ -8,22 +8,18 @@ import type { SettingsState } from "@/stores/settings";
 
 interface RetiredSettings {
   confirmReplaceProjectFromHash?: boolean;
-  loopOpenGroup?: boolean;
 }
 
 // -- Constants ----------------------------------------------------------------
 
-const SETTINGS_PERSIST_VERSION = 10;
+const SETTINGS_PERSIST_VERSION = 9;
 
 // -- Migration ----------------------------------------------------------------
 
 function migrateSettings(persistedState: unknown, version: number): unknown {
   if (!persistedState || typeof persistedState !== "object") return persistedState;
-  const {
-    confirmReplaceProjectFromHash: _retired,
-    loopOpenGroup,
-    ...state
-  } = persistedState as Partial<SettingsState> & RetiredSettings;
+  const { confirmReplaceProjectFromHash: _retired, ...state } = persistedState as Partial<SettingsState> &
+    RetiredSettings;
   const next: Partial<SettingsState> = { ...state };
   if (version < 2 || next.vocalModelVariant === "fp16") {
     next.vocalModelVariant = "fp32";
@@ -34,7 +30,6 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   if (next.snapPlayheadToPoints === undefined) next.snapPlayheadToPoints = true;
   if (next.redoPreroll === undefined) next.redoPreroll = 1.5;
   if (next.syncCountIn === undefined) next.syncCountIn = 3;
-  if (next.loopRange === undefined) next.loopRange = loopOpenGroup ?? false;
   if (next.selectionLeadIn === undefined) next.selectionLeadIn = 0.3;
   // Old blobs carry an explicit false from before the default flipped, so an undefined guard never reaches them.
   if (version < 6) next.preserveBracketsOnExtraction = true;
