@@ -151,7 +151,9 @@ React, TypeScript, Vite, Tailwind CSS v4, Zustand, Motion, Vitest
 
 > [!IMPORTANT]
 >
-> Composer is free and always will be. If it saves you time or you find it useful, a donation helps keep it going!
+> Composer is free for everyone, hosted or self-hosted. If it saves you time or you find it useful, a donation helps keep it going!
+>
+> Releasing lyrics made with Composer commercially, as a label, distributor or company? See [License](#license) or reach out at composer@boidu.dev.
 
 <a href="https://www.buymeacoffee.com/boidu" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="42" /></a>
 
