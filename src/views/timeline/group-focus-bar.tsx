@@ -125,7 +125,7 @@ const InstanceStatus: React.FC<OpenInstanceProps> = (props) => (
 );
 
 const LoopToggle: React.FC = () => {
-  const loop = useSettingsStore((s) => s.loopOpenGroup);
+  const loop = useSettingsStore((s) => s.loopRange);
   return (
     <ToggleButton pressed={loop} size="sm" hasIcon className={cn(STRIP_CONTROL, "pr-1.5")} onClick={toggleGroupLoop}>
       <IconRepeat aria-hidden="true" className="size-3.5" />

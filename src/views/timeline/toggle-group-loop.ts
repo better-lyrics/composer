@@ -4,7 +4,7 @@ import { useSettingsStore } from "@/stores/settings";
 
 function toggleGroupLoop(): void {
   const settings = useSettingsStore.getState();
-  settings.set("loopOpenGroup", !settings.loopOpenGroup);
+  settings.set("loopRange", !settings.loopRange);
 }
 
 // -- Exports ------------------------------------------------------------------

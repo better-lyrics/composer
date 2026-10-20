@@ -53,7 +53,7 @@ interface SettingsState {
   timelineSnapThreshold: number;
   vocalOnsetSnap: boolean;
   shareTimingInNewGroups: boolean;
-  loopOpenGroup: boolean;
+  loopRange: boolean;
   snapPlayheadToPoints: boolean;
   syllablesFollowRolling: boolean;
   timelineHorizontalScroll: boolean;
@@ -62,6 +62,7 @@ interface SettingsState {
   defaultWordDuration: number;
   minWordDuration: number;
   redoPreroll: number;
+  selectionLeadIn: number;
   syncCountIn: number;
   defaultGranularity: GranularityDefault;
 
@@ -136,7 +137,7 @@ const DEFAULTS: SettingsState = {
   timelineSnapThreshold: 12,
   vocalOnsetSnap: true,
   shareTimingInNewGroups: true,
-  loopOpenGroup: false,
+  loopRange: false,
   snapPlayheadToPoints: true,
   syllablesFollowRolling: false,
   timelineHorizontalScroll: false,
@@ -145,6 +146,7 @@ const DEFAULTS: SettingsState = {
   defaultWordDuration: 0.3,
   minWordDuration: DEFAULT_MIN_WORD_DURATION,
   redoPreroll: 1.5,
+  selectionLeadIn: 0.3,
   syncCountIn: 3,
   defaultGranularity: "word",
 

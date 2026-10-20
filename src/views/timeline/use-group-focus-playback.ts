@@ -35,7 +35,7 @@ function useGroupFocusPlayback(): void {
     const checkEnd = () => {
       const bounds = currentSoloBounds();
       if (!bounds || audio.paused) return;
-      const step = soloPlaybackEnd(audio.currentTime, bounds, useSettingsStore.getState().loopOpenGroup);
+      const step = soloPlaybackEnd(audio.currentTime, bounds, useSettingsStore.getState().loopRange);
       if (!step) {
         scheduleEnd();
         return;

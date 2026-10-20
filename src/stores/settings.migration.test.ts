@@ -150,3 +150,27 @@ describe("lastPlaybackRate", () => {
     expect(useSettingsStore.getState().lastPlaybackRate).toBe(0.8);
   });
 });
+
+describe("loopRange migration", () => {
+  it("carries an enabled loopOpenGroup over to loopRange", async () => {
+    const { loopRange: _drop, ...blob } = legacyBlob({ loopOpenGroup: true });
+    await rehydrateAt(9, blob);
+    expect(useSettingsStore.getState().loopRange).toBe(true);
+    expect("loopOpenGroup" in useSettingsStore.getState()).toBe(false);
+  });
+
+  it("defaults loopRange to off when the old key is missing", () => {
+    const { loopRange: _drop, ...blob } = legacyBlob();
+    expect((migrateSettings(blob, 9) as Record<string, unknown>).loopRange).toBe(false);
+  });
+
+  it("defaults selectionLeadIn to 0.3", () => {
+    const { selectionLeadIn: _drop, ...blob } = legacyBlob();
+    expect((migrateSettings(blob, 9) as Record<string, unknown>).selectionLeadIn).toBe(0.3);
+  });
+
+  it("keeps a chosen lead-in of 0", () => {
+    const migrated = migrateSettings(legacyBlob({ selectionLeadIn: 0 }), 10) as Record<string, unknown>;
+    expect(migrated.selectionLeadIn).toBe(0);
+  });
+});
