@@ -1,10 +1,13 @@
+import { appQueryClient } from "@/lib/app-query-client";
 import { downloadRecoveryFile } from "@/lib/recovery";
+import { isStaleBuildWithSavedWork } from "@/lib/stale-build";
 import { Button } from "@/ui/button";
 import { ClearRecoveryButton } from "@/ui/clear-recovery-button";
 import { Scroll } from "@/ui/scroll";
-import { describeError, type ErrorPresentation, safeStringify } from "@/pages/error-presentation";
+import { describeError, describeStaleBuild, type ErrorPresentation, safeStringify } from "@/pages/error-presentation";
 import { PageHead } from "@/seo/page-head";
 import { IconChevronDown, IconChevronRight, IconDownload, IconHome2, IconRefresh } from "@tabler/icons-react";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useLocation, useRouteError } from "react-router-dom";
 
@@ -140,12 +143,20 @@ const ErrorFallbackPanel: React.FC<{ details: ErrorPresentation }> = ({ details 
   );
 };
 
-const ErrorFallback: React.FC = () => {
+const RouteErrorPage: React.FC = () => {
   const error = useRouteError();
-  const details = describeError(error);
   const { pathname } = useLocation();
+  const staleBuild = useQuery({
+    queryKey: ["stale-build-with-saved-work"],
+    queryFn: ({ signal }) => isStaleBuildWithSavedWork(signal),
+    staleTime: Number.POSITIVE_INFINITY,
+    gcTime: 0,
+  });
 
   console.error(LOG_PREFIX, "route error", error);
+
+  if (staleBuild.isPending) return null;
+  const details = staleBuild.data ? describeStaleBuild(error) : describeError(error);
 
   return (
     <>
@@ -154,6 +165,12 @@ const ErrorFallback: React.FC = () => {
     </>
   );
 };
+
+const ErrorFallback: React.FC = () => (
+  <QueryClientProvider client={appQueryClient}>
+    <RouteErrorPage />
+  </QueryClientProvider>
+);
 
 // -- Exports -------------------------------------------------------------------
 
