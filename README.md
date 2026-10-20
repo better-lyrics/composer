@@ -151,9 +151,7 @@ React, TypeScript, Vite, Tailwind CSS v4, Zustand, Motion, Vitest
 
 > [!IMPORTANT]
 >
-> Composer is free to use, but running it isn't. Hosting, the model bucket for vocal separation, and the time that goes into building it all cost something.
->
-> If Composer saves you time, a donation helps keep it running and improving.
+> Composer is free and always will be. If it saves you time or you find it useful, a donation helps keep it going!
 
 <a href="https://www.buymeacoffee.com/boidu" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="42" /></a>
 
