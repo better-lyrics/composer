@@ -20,65 +20,82 @@
 
 ## Why Composer
 
-Tools like [AMLL TTML Tool](https://amll-ttml-tool.stevexmh.net/) are powerful and feature-rich. If you know what you're doing, they're great. But if you're new to lyrics syncing, the learning curve is steep. There's no clear starting point, the interface assumes familiarity with TTML structure, and you're expected to already understand concepts like word-level timing and agent roles.
+Tools like [AMLL TTML Tool](https://amll-ttml-tool.stevexmh.net/) are powerful, and if you already know TTML they're great. If you're new to syncing lyrics, the learning curve is steep. There's no obvious place to start, and the interface expects you to understand word-level timing and agent roles before you've synced a single line.
 
-Composer takes a different approach. It's built around a linear mental model: import, edit, sync, export. Each tab is one step. You don't need to know what TTML is to get started. Just paste lyrics, tap along with the music, and you get a synced file.
+Composer is built around one linear path: import, edit, sync, export. Each tab is one step. You don't need to know what TTML is. Paste your lyrics, tap along with the music, and you have a synced file.
 
-For users who want more control, the Timeline view is a full GUI where you can do everything without leaving that single screen. Import audio, add lyrics, drag word blocks on the waveform, split syllables, assign agents, preview your work. It's designed so beginners start with the guided tabs and naturally graduate to the Timeline as they get comfortable.
+When you want more control, the Timeline does everything from one screen: load audio, add lyrics, drag word blocks on the waveform, split syllables, assign singers, and preview the result. Most people start with the tabs and move to the Timeline once they're comfortable.
 
-## What it does
+## How it works
 
-Composer turns plain lyrics into precisely timed TTML files. You import audio, paste your lyrics, tap along to sync each word, then export the result. Everything runs in the browser with no server required.
+1. **Import** an audio file (MP3, WAV, M4A, OGG, FLAC) or paste a YouTube link
+2. **Edit** the lyrics, assign singers, and add background vocals
+3. **Sync** by tapping along with the music, or by dragging word blocks on the Timeline
+4. **Export** TTML, or keep working later from the projects library
 
-Four-step workflow:
-
-1. **Import** your audio (MP3, WAV, M4A, OGG, FLAC) or paste a YouTube URL
-2. **Edit** your lyrics, assign agents (singers), add background vocals
-3. **Sync** by tapping along with the music, or drag word blocks on the Timeline
-4. **Export** as TTML, or save a project file to continue later
+Your work saves automatically in the browser as you go. Audio files you load stay on your machine.
 
 ## Features
 
-- **W3C TTML 1 subset** - Standard XML output that reads in TTML 1 parsers
-- **Linked groups** - Group repeating sections (choruses, hooks). Edit one instance, every linked instance updates.
-- **Tap-to-sync** - Press Space in time with the music to stamp each word
-- **YouTube import** - Paste a video URL to pull the audio straight in, no manual download needed
-- **Timeline editor** - DAW-style view with draggable word blocks on a waveform
-- **Snap (magnet)** - Word edges magnetically lock onto neighbors and the playhead when dragging or resizing
-- **Multiple agents** - Assign lines to different singers with distinct colors
-- **Background vocals** - Separate track for backing vocals with `x-bg` TTML role
-- **Syllable splitting** - Break words into individually timed syllables
-- **Live preview** - See your lyrics rendered in real time with Better Lyrics' engine
-- **Lyrics import** - Drop .lrc, .srt, .ttml, or .txt files to get started quickly
-- **Project files** - Save and share your work as JSON
-- **Keyboard-driven** - Comprehensive shortcuts for every action
-- **Client-side only** - No uploads, no accounts, your audio never leaves your machine
+### Syncing
+
+- Tap-to-sync: press Space in time with the music to stamp each word, or hold to stretch it. Works with touch too.
+- Timeline editor: a DAW-style view with draggable word blocks on a waveform, multi-select, and proportional stretch
+- Snapping to neighboring words, the playhead, your own markers, and detected vocal onsets
+- Syllable splitting, so each part of a word gets its own timing
+- Linked groups for repeated sections like choruses. Edit one instance and the others follow, timing included.
+- Vocal separation that isolates the vocal stem in the browser, so you can sync against the voice alone
+
+### Lyrics
+
+- Multiple singers, each with their own color, plus background vocals exported with the TTML `x-bg` role
+- Translations and romanization, generated automatically or written by hand
+- Song details and songwriter credits
+- A lyric best practices guide that checks your lyrics against common conventions
+
+### Import and export
+
+- Lyrics import from `.txt`, `.lrc`, `.srt`, `.ttml`, and `.qrc` files, or pasted straight into the Edit tab
+- TTML export, with an editable TTML view before you download
+- Standalone converters between TTML and LRC, SRT, and QRC
+- Project files and backup bundles you can share or restore on another machine
+
+### Everything else
+
+- Projects library with search, recent projects, and storage management
+- Live preview rendered with Better Lyrics' own engine
+- Themes, with dark and light presets and a custom theme editor
+- Keyboard shortcuts for nearly everything, all of them remappable
+- Searchable help and settings, plus [written guides](https://composer.betterlyrics.org/guides) on TTML and syncing
 
 ## Standards
 
-Composer emits a restricted subset of **TTML 1** ([W3C Recommendation, Nov 2018](https://www.w3.org/TR/2018/REC-ttml1-20181108/)). Word-span times are absolute and timestamps omit the hours field when it is zero, so the output is not strict TTML 1. Linked groups and per-instance metadata are exposed via foreign-namespace extensions the spec explicitly permits, which downstream tools can safely ignore.
+Composer emits a restricted subset of **TTML 1** ([W3C Recommendation, Nov 2018](https://www.w3.org/TR/2018/REC-ttml1-20181108/)). Word-span times are absolute and timestamps omit the hours field when it is zero, so the output is not strict TTML 1. Linked groups and per-instance metadata use foreign-namespace extensions, which the spec allows and downstream tools can ignore.
 
-For the full breakdown, see **Help → TTML & standards** in-app.
+For the full breakdown, see **Help → TTML & standards** in the app.
+
+## Services Composer talks to
+
+Composer is a static site, and almost everything runs in the browser. A few optional features need a network service:
+
+| Feature | Service | Without it |
+| --- | --- | --- |
+| YouTube import | A [Cobalt](https://github.com/imputnet/cobalt) instance (`VITE_COBALT_API_URL`), or [Composer Bridge](https://github.com/better-lyrics/composer-bridge) running on your own machine | Load audio files instead |
+| Translations and romanization | Google Translate, called from the browser | Write them by hand or paste them in |
+| Vocal separation | The HTDemucs model, downloaded once from `VITE_VOCAL_MODEL_BASE_URL` | The stem picker is hidden |
 
 ## Self-hosting
-
-Composer is a static site with zero backend dependencies. All processing happens in the browser.
 
 ```bash
 pnpm install
 pnpm build
 ```
 
-Serve the `dist/` folder with any static file server. That's it.
-
-```bash
-# Example with any static server
-npx serve dist
-
-# Or drop dist/ into nginx, Caddy, Vercel, Netlify, GitHub Pages, etc.
-```
+Serve `dist/` with any static file server, for example `npx serve dist`, nginx, Caddy, or Cloudflare. The hosted version deploys to Cloudflare Workers with `wrangler.jsonc`.
 
 ## Development
+
+Requires Node 24 and pnpm 10.
 
 ```bash
 pnpm install
@@ -92,45 +109,55 @@ pnpm typecheck         # Type check
 
 ## Vocal separation hosting
 
-Composer ships an optional HTDemucs (Hybrid Transformer Demucs v4) vocal-separation feature that runs entirely in the browser via ONNX Runtime Web (WebGPU primary, WASM fallback). The model file is too large for Cloudflare Pages' 25 MB asset limit, so it is **not** bundled — instead it's served from a public Cloudflare R2 bucket. Egress from R2 is free, and serving via a custom domain keeps the file cached at Cloudflare's edge without going through a Worker.
+Vocal separation uses HTDemucs (Hybrid Transformer Demucs v4) and runs entirely in the browser through ONNX Runtime Web, on WebGPU when available and WASM otherwise. The model is larger than Cloudflare's 25 MiB static asset limit, so it isn't bundled. It's served from a public Cloudflare R2 bucket instead: R2 egress is free, and a custom domain keeps the file cached at Cloudflare's edge without a Worker in the way.
 
-If `VITE_VOCAL_MODEL_BASE_URL` is unset, the vocal-separation dropdown is hidden entirely.
+If `VITE_VOCAL_MODEL_BASE_URL` is unset, the vocal separation picker is hidden.
 
 ### Where the model comes from
 
-HTDemucs is the **official Facebook AI Research model** (`facebookresearch/demucs`, the "Hybrid Transformer" variant published Nov 2022). The PyTorch weights are auto-downloaded from `dl.fbaipublicfiles.com` by the `demucs` Python package — you don't grab them manually. The two community ONNX export tools are:
+HTDemucs is the official Facebook AI Research model (`facebookresearch/demucs`, the Hybrid Transformer variant from Nov 2022). The `demucs` Python package downloads the PyTorch weights from `dl.fbaipublicfiles.com` on its own. Two community projects handle the ONNX side:
 
-- **`sevagh/demucs.onnx`** — the most complete PyTorch → ONNX export pipeline; ships a forked `demucs` package that pulls STFT/iSTFT outside the graph so it exports cleanly. This is what the build script below uses.
-- **`gianlourbano/demucs-onnx`** — onnxruntime-web reference implementation; useful for cross-referencing the JS-side STFT/inference shape.
+- [`sevagh/demucs.onnx`](https://github.com/sevagh/demucs.onnx) has the most complete PyTorch to ONNX export. Its fork of `demucs` moves STFT and iSTFT outside the graph so the model exports cleanly. The build script below uses it.
+- [`gianlourbano/demucs-onnx`](https://github.com/gianlourbano/demucs-onnx) is an onnxruntime-web reference, useful for checking the STFT and inference shapes on the JS side.
 
 ### Build the ONNX models
 
-Two scripts in `scripts/` do the work:
-
 ```bash
-# 1. Build fp32 + fp16 ONNX models. Outputs ./htdemucs-onnx-out/.
-#    Takes ~10–30 min on CPU and needs ~10 GB of free disk while building.
+# 1. Build fp32 + fp16 ONNX models into ./htdemucs-onnx-out/.
+#    Takes 10 to 30 minutes on CPU and needs about 10 GB of free disk.
 ./scripts/build-htdemucs-onnx.sh
 
-# 2. Upload to your R2 bucket (requires `wrangler login` first).
+# 2. Upload to your R2 bucket (run `wrangler login` first).
 ./scripts/upload-htdemucs.sh composer-vocal-models
 ```
 
-`build-htdemucs-onnx.sh` will clone `sevagh/demucs.onnx` into `/tmp/composer-htdemucs-build/`, spin up a Python venv, run the official converter, then quantize the fp32 export to fp16 via `onnxconverter-common`. It prints the model's input/output names + SHA-256 at the end — verify those against `src/audio/separation/worker.ts` and `src/audio/separation/model-registry.ts`.
+`build-htdemucs-onnx.sh` clones `sevagh/demucs.onnx` into `/tmp/composer-htdemucs-build/`, sets up a Python venv, runs the official converter, then converts the fp32 export to fp16 with `onnxconverter-common`. At the end it prints the model's input and output names and its SHA-256. Check those against `src/audio/separation/worker.ts` and `src/audio/separation/model-registry.ts`.
 
 ### One-time R2 setup
 
-1. Create a public R2 bucket (e.g. `composer-vocal-models`).
-2. Bind a custom domain to the bucket (e.g. `models.composer.betterlyrics.org`). **Avoid `r2.dev`** — it's rate-limited and intended for development.
-3. Add a Cloudflare page rule `Cache Everything` for that hostname so binary files are edge-cached.
-4. Add a CORS rule allowing your site origin(s).
+1. Create a public R2 bucket (for example `composer-vocal-models`).
+2. Bind a custom domain to it (for example `models.composer.betterlyrics.org`). Avoid `r2.dev`: it's rate-limited and meant for development.
+3. Add a Cloudflare `Cache Everything` page rule for that hostname so the model is cached at the edge.
+4. Add a CORS rule that allows your site's origin.
 5. Set `VITE_VOCAL_MODEL_BASE_URL=https://models.composer.betterlyrics.org` at build time.
 
-Cost: free egress; ~$0.0015/month storage for the fp16 model.
+Cost: free egress, and about $0.0015 a month to store the fp16 model.
 
 ## Tech stack
 
-React, TypeScript, Vite, TailwindCSS v4, Zustand, Vitest
+React, TypeScript, Vite, Tailwind CSS v4, Zustand, Motion, Vitest
+
+## Funding
+
+> [!IMPORTANT]
+>
+> Composer is free, and so is everything behind it: the YouTube import backend, the model bucket for vocal separation, and the time that goes into building it.
+>
+> If Composer saves you time, a donation helps keep it running and improving.
+
+<a href="https://www.buymeacoffee.com/boidu" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="42" /></a>
+
+[![Github Sponsors](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23F20C33)](https://github.com/sponsors/boidushya)
 
 ## License
 
