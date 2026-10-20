@@ -1,4 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useEffectiveFocus } from "@/views/timeline/effective-focus";
 import {
@@ -77,10 +78,16 @@ function useRangePlayback(): void {
       scheduleEnd();
     };
 
-    const unsubscribeSelection = useTimelineStore.subscribe((state, previous) => {
-      if (state.selectedWords === previous.selectedWords || !state.selectionPlayback) return;
+    const followSelection = () => {
+      if (!isPlayingSelection()) return;
       if (currentSelectionBounds()) scheduleEnd();
       else stopSelectionPlayback({ pause: true });
+    };
+    const unsubscribeSelection = useTimelineStore.subscribe((state, previous) => {
+      if (state.selectedWords !== previous.selectedWords) followSelection();
+    });
+    const unsubscribeLines = useProjectStore.subscribe((state, previous) => {
+      if (state.lines !== previous.lines) followSelection();
     });
 
     if (!audio.paused) handlePlay();
@@ -92,6 +99,7 @@ function useRangePlayback(): void {
     return () => {
       clearTimeout(endTimer);
       unsubscribeSelection();
+      unsubscribeLines();
       audio.removeEventListener("play", handlePlay);
       audio.removeEventListener("seeking", handleSeeking);
       audio.removeEventListener("seeked", handleSeeked);
