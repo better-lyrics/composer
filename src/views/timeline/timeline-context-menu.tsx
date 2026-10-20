@@ -215,12 +215,12 @@ function PlaybackMenuItems({
   lines: readonly LyricLine[];
   selections: readonly WordSelection[];
   noun: string;
-  select: () => void;
+  select?: () => void;
   clearContextMenu: () => void;
 }) {
   if (!selectionBounds(lines, selections)) return null;
   const selectAndRun = (start: () => boolean) => {
-    select();
+    select?.();
     start();
     clearContextMenu();
   };
@@ -332,11 +332,18 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
 }
 
 function TrackMenuSection({ targets, clearContextMenu }: SectionProps) {
+  const selectedWords = useTimelineStore((s) => s.selectedWords);
   const { handleAddWordHere } = useWordMenuActions(targets, clearContextMenu);
   const { handlePlaceLineHere, handlePlaceAtPlayhead } = useLineMenuActions(targets, clearContextMenu);
 
   return (
     <>
+      <PlaybackMenuItems
+        lines={targets.lines}
+        selections={selectedWords}
+        noun={pluralize(selectedWords.length, "word")}
+        clearContextMenu={clearContextMenu}
+      />
       <MenuItem label="Add word here" shortcut={["Double Click"]} onClick={handleAddWordHere} />
       {targets.placeLineHereInfo && <MenuItem label="Place line here" onClick={handlePlaceLineHere} />}
       {targets.placeAtPlayheadInfo && <MenuItem label="Place at playhead" onClick={handlePlaceAtPlayhead} />}
