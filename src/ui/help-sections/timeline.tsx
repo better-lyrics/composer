@@ -73,9 +73,9 @@ const TimelineSection: React.FC = () => (
     <HelpTopic title="Play a selection">
       <p className={PROSE}>
         Select words or a line and press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.playSelection")} /> to
-        hear only that part, or right-click it and choose <strong>Play word</strong> or <strong>Play line</strong>.
-        Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleLoop")} /> to loop it instead. The loop reads
-        the timing again on every pass, so a nudge or a dragged edge is audible on the next one.
+        hear only that part, or right-click it and choose <strong>Play</strong> from the menu. Press{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleLoop")} /> to loop it instead. The loop reads the
+        timing again on every pass, so a nudge or a dragged edge is audible on the next one.
       </p>
       <p className={`${PROSE} mt-2`}>
         A little audio before and after the selection plays too, so you hear whether a word runs into its neighbours.
