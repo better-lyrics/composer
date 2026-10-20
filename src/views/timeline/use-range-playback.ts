@@ -26,6 +26,7 @@ function useRangePlayback(): void {
   const audio = useAudioStore((s) => s.audioElement);
   const active = groupOpen || selectionPlayback;
 
+  // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- endTimer is set from nested handlers and cleared in the returned cleanup
   useEffect(() => {
     if (!active || !audio) return;
     let endTimer: ReturnType<typeof setTimeout> | undefined;
