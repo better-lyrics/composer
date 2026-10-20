@@ -1,6 +1,7 @@
 {
   "name": "composer",
   "compatibility_date": "2026-01-09",
+  "preview_urls": false,
   "assets": {
     "directory": "./dist"
   },
