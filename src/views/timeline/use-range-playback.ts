@@ -28,6 +28,7 @@ function useRangePlayback(): void {
   useEffect(() => {
     if (!active || !audio) return;
     let endTimer: ReturnType<typeof setTimeout> | undefined;
+    let seekPending = false;
 
     const scheduleEnd = () => {
       clearTimeout(endTimer);
@@ -39,7 +40,7 @@ function useRangePlayback(): void {
 
     const checkEnd = () => {
       const range = currentPlaybackRange();
-      if (!range || audio.paused) return;
+      if (!range || audio.paused || seekPending) return;
       const step = soloPlaybackEnd(audio.currentTime, range, useSettingsStore.getState().loopRange);
       if (!step) {
         scheduleEnd();
@@ -60,7 +61,14 @@ function useRangePlayback(): void {
       scheduleEnd();
     };
 
+    // Chrome fires a timeupdate at the seek target before seeked, with audio.seeking already false.
+    const handleSeeking = () => {
+      seekPending = true;
+      clearTimeout(endTimer);
+    };
+
     const handleSeeked = () => {
+      seekPending = false;
       const range = currentPlaybackRange();
       if (isPlayingSelection() && range && isOutsideRange(audio.currentTime, range)) {
         stopSelectionPlayback({ pause: false });
@@ -77,6 +85,7 @@ function useRangePlayback(): void {
 
     if (!audio.paused) handlePlay();
     audio.addEventListener("play", handlePlay);
+    audio.addEventListener("seeking", handleSeeking);
     audio.addEventListener("seeked", handleSeeked);
     audio.addEventListener("ratechange", scheduleEnd);
     audio.addEventListener("timeupdate", checkEnd);
@@ -84,6 +93,7 @@ function useRangePlayback(): void {
       clearTimeout(endTimer);
       unsubscribeSelection();
       audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("seeking", handleSeeking);
       audio.removeEventListener("seeked", handleSeeked);
       audio.removeEventListener("ratechange", scheduleEnd);
       audio.removeEventListener("timeupdate", checkEnd);
