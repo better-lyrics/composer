@@ -45,6 +45,8 @@ const SYLLABLE_RADIUS: Record<SyllablePosition, string> = {
   last: "rounded-r-xl rounded-l-none",
 };
 
+const EDGE_HIT_AREA = "before:absolute before:-inset-y-px before:content-['']";
+
 const WordBlock: React.FC<WordBlockProps> = ({
   id,
   lineId,
@@ -124,7 +126,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
       data-syllable-position={syllablePosition}
       className={cn(
         "absolute top-1 bottom-1 flex items-center justify-center",
-        "text-xs text-composer-text truncate select-none cursor-grab",
+        "text-xs text-composer-text whitespace-nowrap select-none cursor-grab",
         "border transition-opacity duration-100",
         SYLLABLE_RADIUS[syllablePosition],
         isDimmed && "opacity-30",
@@ -166,7 +168,9 @@ const WordBlock: React.FC<WordBlockProps> = ({
         aria-orientation="vertical"
         aria-hidden="true"
         className={cn(
-          "absolute left-0 top-0 bottom-0 w-2 z-10",
+          "absolute left-0 top-0 bottom-0 w-2 z-10 rounded-tl-[inherit] rounded-bl-[inherit]",
+          EDGE_HIT_AREA,
+          "before:-left-px before:right-0",
           showLeftGrip
             ? "cursor-ew-resize bg-composer-text/10 hover:bg-composer-text/20"
             : [
@@ -192,7 +196,9 @@ const WordBlock: React.FC<WordBlockProps> = ({
         aria-orientation="vertical"
         aria-hidden="true"
         className={cn(
-          "absolute right-0 top-0 bottom-0 w-2 z-10",
+          "absolute right-0 top-0 bottom-0 w-2 z-10 rounded-tr-[inherit] rounded-br-[inherit]",
+          EDGE_HIT_AREA,
+          "before:left-0 before:-right-px",
           showRightGrip
             ? "cursor-ew-resize bg-composer-text/10 hover:bg-composer-text/20"
             : [

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { WordBlock } from "@/views/timeline/word-block";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { render } from "@/test/render";
+import { installStyleSheet, installUtilitiesUsedIn } from "@/test/browser-css";
 
 const DEFAULT_PROPS = {
   id: "wb-1",
@@ -269,5 +270,40 @@ describe("WordBlock", () => {
     expect(leftEdge.className).toContain("bg-composer-text/10");
     expect(rightEdge.className).toContain("bg-composer-text/10");
     expect(leftEdge.className).not.toContain("bg-white/10");
+  });
+
+  it("regression: the border and rounded corners of a word edge resize instead of grabbing the word", async () => {
+    const preflight = installStyleSheet("*,::before,::after{box-sizing:border-box}");
+    const screen = await render(
+      <div className="relative h-10 w-100">
+        <WordBlock {...DEFAULT_PROPS} rightConjoined />
+        <WordBlock {...DEFAULT_PROPS} id="wb-2" wordIndex={1} begin={3} end={5} leftConjoined />
+      </div>,
+      { dndContext: true },
+    );
+    const utilities = await installUtilitiesUsedIn(screen.container);
+    const [first, second] = screen.container.querySelectorAll<HTMLElement>("[data-word-block]");
+    const edgeZones = [
+      { block: first, side: "left" },
+      { block: first, side: "right" },
+      { block: second, side: "left" },
+    ];
+    const misses: string[] = [];
+    for (const { block, side } of edgeZones) {
+      const rect = block.getBoundingClientRect();
+      const handleWidth = (block.querySelector(`[data-edge="${side}"]`) as HTMLElement).offsetWidth;
+      for (let offset = 0; offset < handleWidth; offset++) {
+        const x = side === "left" ? rect.left + offset : rect.right - 1 - offset;
+        for (let y = rect.top; y < rect.bottom; y++) {
+          const hit = document.elementFromPoint(x, y) as HTMLElement | null;
+          if (hit?.closest("[data-edge]") !== block.querySelector(`[data-edge="${side}"]`)) {
+            misses.push(`${block.id} ${side} (${x}, ${y})`);
+          }
+        }
+      }
+    }
+    utilities.remove();
+    preflight.remove();
+    expect(misses).toEqual([]);
   });
 });
