@@ -80,7 +80,7 @@ Composer is a static site, and almost everything runs in the browser. A few opti
 
 | Feature | Service | Without it |
 | --- | --- | --- |
-| YouTube import | A [Cobalt](https://github.com/imputnet/cobalt) instance (`VITE_COBALT_API_URL`), or [Composer Bridge](https://github.com/better-lyrics/composer-bridge) running on your own machine | Load audio files instead |
+| YouTube import | [Composer Bridge](https://github.com/better-lyrics/composer-bridge) running on your own machine, or a [Cobalt](https://github.com/imputnet/cobalt) instance (`VITE_COBALT_API_URL`) | Load audio files instead |
 | Translations and romanization | Google Translate, called from the browser | Write them by hand or paste them in |
 | Vocal separation | The HTDemucs model, downloaded once from `VITE_VOCAL_MODEL_BASE_URL` | The stem picker is hidden |
 
@@ -151,7 +151,7 @@ React, TypeScript, Vite, Tailwind CSS v4, Zustand, Motion, Vitest
 
 > [!IMPORTANT]
 >
-> Composer is free, and so is everything behind it: the YouTube import backend, the model bucket for vocal separation, and the time that goes into building it.
+> Composer is free to use, but running it isn't. Hosting, the model bucket for vocal separation, and the time that goes into building it all cost something.
 >
 > If Composer saves you time, a donation helps keep it running and improving.
 
