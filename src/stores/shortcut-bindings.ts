@@ -18,22 +18,35 @@ interface ShortcutBindingsState {
 
 // -- Migration ----------------------------------------------------------------
 
-const SHORTCUT_BINDINGS_PERSIST_VERSION = 1;
+const SHORTCUT_BINDINGS_PERSIST_VERSION = 2;
 const UNBOUND: ShortcutBinding = { key: "" };
 const ALTERNATE_REDO_ID = "global.redoAlternate";
 
-function migrateShortcutBindings(persistedState: unknown, version: number): unknown {
-  if (version >= 1 || !persistedState || typeof persistedState !== "object") return persistedState;
-  const { overrides } = persistedState as Partial<ShortcutBindingsState>;
+const RENAMED_SHORTCUT_IDS: Record<string, string> = { "timeline.toggleGroupLoop": "timeline.toggleLoop" };
+
+function unbindTakenAlternateRedo(state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> {
+  const { overrides } = state;
   const alternateRedo = getShortcutById(ALTERNATE_REDO_ID);
-  if (!overrides || typeof overrides !== "object" || !alternateRedo || overrides[ALTERNATE_REDO_ID]) {
-    return persistedState;
-  }
+  if (!overrides || typeof overrides !== "object" || !alternateRedo || overrides[ALTERNATE_REDO_ID]) return state;
   const keysTaken = Object.values(overrides).some(
     (binding) => typeof binding?.key === "string" && bindingsEqual(binding, alternateRedo.defaultBinding),
   );
-  if (!keysTaken) return persistedState;
-  return { ...persistedState, overrides: { ...overrides, [ALTERNATE_REDO_ID]: UNBOUND } };
+  if (!keysTaken) return state;
+  return { ...state, overrides: { ...overrides, [ALTERNATE_REDO_ID]: UNBOUND } };
+}
+
+function renameShortcutIds(state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> {
+  const { overrides } = state;
+  if (!overrides || typeof overrides !== "object") return state;
+  const renamed = Object.entries(overrides).map(([id, binding]) => [RENAMED_SHORTCUT_IDS[id] ?? id, binding]);
+  return { ...state, overrides: Object.fromEntries(renamed) };
+}
+
+function migrateShortcutBindings(persistedState: unknown, version: number): unknown {
+  if (!persistedState || typeof persistedState !== "object") return persistedState;
+  const state = persistedState as Partial<ShortcutBindingsState>;
+  const withRedo = version < 1 ? unbindTakenAlternateRedo(state) : state;
+  return version < 2 ? renameShortcutIds(withRedo) : withRedo;
 }
 
 // -- Store --------------------------------------------------------------------

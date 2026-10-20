@@ -317,9 +317,15 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "Escape" },
   },
   {
-    id: "timeline.toggleGroupLoop",
+    id: "timeline.playSelection",
     scope: "timeline",
-    description: "Loop the open group",
+    description: "Play the selection",
+    defaultBinding: { key: "Enter", alt: true },
+  },
+  {
+    id: "timeline.toggleLoop",
+    scope: "timeline",
+    description: "Loop the playback range",
     defaultBinding: { key: "l", shift: true },
   },
   {

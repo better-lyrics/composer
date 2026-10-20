@@ -96,6 +96,27 @@ describe("migrateShortcutBindings", () => {
   });
 });
 
+describe("toggleLoop id migration", () => {
+  it("moves a rebinding from timeline.toggleGroupLoop to timeline.toggleLoop", () => {
+    const binding = { key: "k", shift: true };
+    const migrated = migrateShortcutBindings({ overrides: { "timeline.toggleGroupLoop": binding } }, 1);
+
+    expect(migrated).toEqual({ overrides: { "timeline.toggleLoop": binding } });
+  });
+
+  it("leaves overrides without the old id alone", () => {
+    const saved = { overrides: { "timeline.editWord": { key: "q" } } };
+
+    expect(migrateShortcutBindings(saved, 1)).toEqual(saved);
+  });
+
+  it("runs only for state saved before the rename", () => {
+    const saved = { overrides: { "timeline.toggleGroupLoop": { key: "k" } } };
+
+    expect(migrateShortcutBindings(saved, 2)).toEqual(saved);
+  });
+});
+
 describe("bindingToKeys", () => {
   it("uppercases a single-character key", () => {
     expect(bindingToKeys({ key: "p", shift: true })).toEqual(["Shift", "P"]);
