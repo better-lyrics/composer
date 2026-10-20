@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { WordBlock } from "@/views/timeline/word-block";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { render } from "@/test/render";
@@ -272,38 +272,83 @@ describe("WordBlock", () => {
     expect(leftEdge.className).not.toContain("bg-white/10");
   });
 
-  it("regression: the border and rounded corners of a word edge resize instead of grabbing the word", async () => {
-    const preflight = installStyleSheet("*,::before,::after{box-sizing:border-box}");
-    const screen = await render(
-      <div className="relative h-10 w-100">
-        <WordBlock {...DEFAULT_PROPS} rightConjoined />
-        <WordBlock {...DEFAULT_PROPS} id="wb-2" wordIndex={1} begin={3} end={5} leftConjoined />
-      </div>,
-      { dndContext: true },
-    );
-    const utilities = await installUtilitiesUsedIn(screen.container);
-    const [first, second] = screen.container.querySelectorAll<HTMLElement>("[data-word-block]");
-    const edgeZones = [
-      { block: first, side: "left" },
-      { block: first, side: "right" },
-      { block: second, side: "left" },
-    ];
-    const misses: string[] = [];
-    for (const { block, side } of edgeZones) {
-      const rect = block.getBoundingClientRect();
-      const handleWidth = (block.querySelector(`[data-edge="${side}"]`) as HTMLElement).offsetWidth;
-      for (let offset = 0; offset < handleWidth; offset++) {
-        const x = side === "left" ? rect.left + offset : rect.right - 1 - offset;
-        for (let y = rect.top; y < rect.bottom; y++) {
-          const hit = document.elementFromPoint(x, y) as HTMLElement | null;
-          if (hit?.closest("[data-edge]") !== block.querySelector(`[data-edge="${side}"]`)) {
-            misses.push(`${block.id} ${side} (${x}, ${y})`);
+  describe("edge hit areas", () => {
+    let styles: HTMLStyleElement[] = [];
+
+    afterEach(() => {
+      for (const style of styles) style.remove();
+      styles = [];
+    });
+
+    async function renderWithRealCss(ui: React.ReactElement) {
+      styles.push(installStyleSheet("*,::before,::after{box-sizing:border-box}"));
+      const screen = await render(<div className="relative h-10 w-200">{ui}</div>, { dndContext: true });
+      styles.push(await installUtilitiesUsedIn(screen.container));
+      return screen.container.querySelectorAll<HTMLElement>("[data-word-block]");
+    }
+
+    function edgeAt(x: number, y: number): Element | null | undefined {
+      return document.elementFromPoint(x, y)?.closest("[data-edge]");
+    }
+
+    function edgeOf(block: HTMLElement, side: "left" | "right"): HTMLElement {
+      return block.querySelector(`[data-edge="${side}"]`) as HTMLElement;
+    }
+
+    it("regression: the border and rounded corners of a word edge resize instead of grabbing the word", async () => {
+      const [first, second, firstSyllable, lastSyllable] = await renderWithRealCss(
+        <>
+          <WordBlock {...DEFAULT_PROPS} rightConjoined />
+          <WordBlock {...DEFAULT_PROPS} id="wb-2" wordIndex={1} begin={3} end={5} leftConjoined />
+          <WordBlock
+            {...DEFAULT_PROPS}
+            id="wb-3"
+            wordIndex={2}
+            begin={6}
+            end={7}
+            syllablePosition="first"
+            syllableEdgesJoin={false}
+          />
+          <WordBlock
+            {...DEFAULT_PROPS}
+            id="wb-4"
+            wordIndex={3}
+            begin={7}
+            end={8}
+            syllablePosition="last"
+            syllableEdgesJoin={false}
+          />
+        </>,
+      );
+      const edgeZones = [
+        { block: first, side: "left" },
+        { block: first, side: "right" },
+        { block: second, side: "left" },
+        { block: firstSyllable, side: "right" },
+        { block: lastSyllable, side: "left" },
+      ] as const;
+      const misses: string[] = [];
+      for (const { block, side } of edgeZones) {
+        const rect = block.getBoundingClientRect();
+        const handle = edgeOf(block, side);
+        for (let offset = 0; offset < handle.offsetWidth; offset++) {
+          const x = side === "left" ? rect.left + offset : rect.right - 1 - offset;
+          for (let y = rect.top; y < rect.bottom; y++) {
+            if (edgeAt(x, y) !== handle) misses.push(`${block.id} ${side} (${x}, ${y})`);
           }
         }
       }
-    }
-    utilities.remove();
-    preflight.remove();
-    expect(misses).toEqual([]);
+      expect(misses).toEqual([]);
+    });
+
+    it("regression: a narrow word keeps its resize handles inside its own bounds", async () => {
+      const [narrow] = await renderWithRealCss(<WordBlock {...DEFAULT_PROPS} begin={1} end={1.04} />);
+      const rect = narrow.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      const outside = [rect.left - 4, rect.left - 2, rect.right + 1, rect.right + 3];
+      expect(outside.map((x) => edgeAt(x, midY) ?? null)).toEqual([null, null, null, null]);
+      expect(edgeAt(rect.left, midY)).toBe(edgeOf(narrow, "left"));
+      expect(edgeAt(rect.right - 1, midY)).toBe(edgeOf(narrow, "right"));
+    });
   });
 });
