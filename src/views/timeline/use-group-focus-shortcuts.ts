@@ -4,8 +4,8 @@ import { useProjectStore } from "@/stores/project";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { type InstanceRef, selectedBannerInstance } from "@/views/timeline/selected-banner";
+import { toggleLoop } from "@/views/timeline/selection-playback";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { toggleGroupLoop } from "@/views/timeline/toggle-group-loop";
 import { useEffect } from "react";
 
 // -- Helpers -------------------------------------------------------------------
@@ -48,7 +48,7 @@ function handleGroupFocusKeyDown(event: KeyboardEvent): void {
 
   if (matched === "timeline.toggleLoop" && focus !== null) {
     event.preventDefault();
-    toggleGroupLoop();
+    toggleLoop();
     return;
   }
 

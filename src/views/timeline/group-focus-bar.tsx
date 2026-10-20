@@ -15,8 +15,8 @@ import { formatTime } from "@/utils/format-time";
 import { useEffectiveFocus, useEffectiveFocusGroup } from "@/views/timeline/effective-focus";
 import { adjacentHeardInstance, focusBounds, heardInstances } from "@/views/timeline/group-focus";
 import { hearInstance } from "@/views/timeline/hear-instance";
+import { toggleLoop } from "@/views/timeline/selection-playback";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { toggleGroupLoop } from "@/views/timeline/toggle-group-loop";
 import {
   SHARING_MENU_LABELS,
   applySharingMenuAction,
@@ -127,7 +127,7 @@ const InstanceStatus: React.FC<OpenInstanceProps> = (props) => (
 const LoopToggle: React.FC = () => {
   const loop = useSettingsStore((s) => s.loopRange);
   return (
-    <ToggleButton pressed={loop} size="sm" hasIcon className={cn(STRIP_CONTROL, "pr-1.5")} onClick={toggleGroupLoop}>
+    <ToggleButton pressed={loop} size="sm" hasIcon className={cn(STRIP_CONTROL, "pr-1.5")} onClick={toggleLoop}>
       <IconRepeat aria-hidden="true" className="size-3.5" />
       Loop
       <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleLoop")} />

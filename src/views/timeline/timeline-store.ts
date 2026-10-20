@@ -36,6 +36,7 @@ interface TimelineState {
   previewSidebarOpen: boolean;
   textVariant: "original" | "transliteration";
   selectedWords: WordSelection[];
+  selectionPlayback: boolean;
 
   clipboard: ClipboardData | null;
   pasteMode: PasteMode;
@@ -72,6 +73,7 @@ interface TimelineActions {
   togglePreviewSidebar: () => void;
   toggleTextVariant: () => void;
   setSelectedWords: (selections: WordSelection[]) => void;
+  setSelectionPlayback: (active: boolean) => void;
 
   toggleSelection: (selection: WordSelection) => void;
   clearSelection: () => void;
@@ -124,6 +126,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     previewSidebarOpen: settings.defaultPreviewSidebar,
     textVariant: "original",
     selectedWords: [],
+    selectionPlayback: false,
 
     clipboard: null,
     pasteMode: { status: "idle" },
@@ -159,6 +162,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     toggleTextVariant: () =>
       set((s) => ({ textVariant: s.textVariant === "original" ? "transliteration" : "original" })),
     setSelectedWords: (selectedWords) => set({ selectedWords }),
+    setSelectionPlayback: (selectionPlayback) => set({ selectionPlayback }),
 
     toggleSelection: (selection) => set((s) => ({ selectedWords: toggleWordSelection(s.selectedWords, selection) })),
     clearSelection: () => set({ selectedWords: [] }),
@@ -181,6 +185,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     resetProjectScope: () =>
       set({
         selectedWords: [],
+        selectionPlayback: false,
         contextMenu: null,
         editingWord: null,
         pasteMode: { status: "idle" },
