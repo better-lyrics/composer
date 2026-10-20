@@ -1,7 +1,6 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { getAgentColor } from "@/domain/agent/colors";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
-import { mainBounds } from "@/domain/line/bounds";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
@@ -51,7 +50,7 @@ import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { useTimelineWheel } from "@/views/timeline/use-timeline-wheel";
-import { computeRowLayout, distributeLinesTiming } from "@/views/timeline/utils";
+import { computeRowLayout } from "@/views/timeline/utils";
 import { WordEditOverlay } from "@/views/timeline/word-edit-overlay";
 import { DndContext } from "@dnd-kit/core";
 import { IconMusic } from "@tabler/icons-react";
@@ -84,7 +83,6 @@ const TimelinePanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const duration = useAudioStore((s) => s.duration);
   const lines = useProjectStore((s) => s.lines);
-  const setLines = useProjectStore((s) => s.setLines);
   const zoom = useTimelineStore((s) => s.zoom);
   const setScrollLeft = useTimelineStore((s) => s.setScrollLeft);
   const previewSidebarOpen = useTimelineStore((s) => s.previewSidebarOpen);
@@ -142,21 +140,6 @@ const TimelinePanel: React.FC = () => {
   useGroupFocusPlayback();
   useTimelineWheel(scrollContainerRef, !!source && lines.length > 0);
   useTimelineFrameWake(scrollContainerRef, contentRef, !!source && lines.length > 0);
-
-  const lastDistributedDurationRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (duration <= 0 || lines.length === 0) return;
-    if (lastDistributedDurationRef.current === duration) return;
-
-    const hasAnyTiming = lines.some((l) => mainBounds(l) !== null);
-
-    if (!hasAnyTiming) {
-      const distributed = distributeLinesTiming(lines, duration);
-      setLines(distributed);
-    }
-    lastDistributedDurationRef.current = duration;
-  }, [duration, lines, setLines]);
 
   useEffect(() => {
     const { selectedWords } = useTimelineStore.getState();
