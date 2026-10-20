@@ -158,8 +158,8 @@ describe("SettingsModal target", () => {
 });
 
 describe("SettingsModal search", () => {
-  const openModal = async () => {
-    const screen = await render(<SettingsModal isOpen onClose={() => {}} />);
+  const openModal = async (onClose: () => void = () => {}) => {
+    const screen = await render(<SettingsModal isOpen onClose={onClose} />);
     await expect.poll(() => document.querySelector("dialog")?.contains(document.activeElement)).toBe(true);
     return screen;
   };
@@ -234,8 +234,9 @@ describe("SettingsModal search", () => {
 
   it("clears the query on Escape before closing", async () => {
     let closes = 0;
-    const screen = await render(<SettingsModal isOpen onClose={() => closes++} />);
+    const screen = await openModal(() => closes++);
     await searchBox(screen).fill("snap");
+    await expect.element(searchBox(screen)).toHaveValue("snap");
     await userEvent.keyboard("{Escape}");
     await expect.element(searchBox(screen)).toHaveValue("");
     expect(closes).toBe(0);
