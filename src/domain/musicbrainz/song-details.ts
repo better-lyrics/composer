@@ -12,6 +12,7 @@ interface SongDetails {
   title: string;
   album: string | null;
   isrc: string | null;
+  isrcs: string[];
   artists: string[];
   songwriters: string[];
   coverReleaseGroupId: string | null;
@@ -59,6 +60,7 @@ function songDetailsFrom(recording: MbRecording): SongDetails {
     title: recording.title,
     album: album?.title ?? null,
     isrc: recording.isrcs?.[0] ?? null,
+    isrcs: recording.isrcs ?? [],
     artists: (recording["artist-credit"] ?? []).map((credit) => credit.name),
     songwriters: songwritersOf(recording),
     coverReleaseGroupId: album?.["release-group"]?.id ?? null,

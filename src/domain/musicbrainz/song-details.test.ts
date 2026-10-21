@@ -25,6 +25,7 @@ describe("songDetailsFrom", () => {
   it("reads the album, ISRC, artists and songwriters", () => {
     expect(details.album).toBe("Happier Than Ever");
     expect(details.isrc).toBe("USUM72105934");
+    expect(details.isrcs).toEqual(["USUM72105934"]);
     expect(details.artists).toEqual(["Billie Eilish"]);
     expect(details.songwriters).toEqual(["Billie Eilish", "FINNEAS"]);
   });

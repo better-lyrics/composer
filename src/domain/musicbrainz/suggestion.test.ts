@@ -8,6 +8,7 @@ const details: SongDetails = {
   title: "Your Power",
   album: "Happier Than Ever",
   isrc: "USUM72105934",
+  isrcs: ["USUM72105934", "USUM72106000"],
   artists: ["Billie Eilish"],
   songwriters: ["Billie Eilish", "FINNEAS"],
   coverReleaseGroupId: null,
@@ -48,8 +49,12 @@ describe("metadataSuggestions", () => {
       expect(metadataSuggestions(details, metadata({ isrc: "us-um7-21-05934" })).isrc).toBeUndefined();
     });
 
+    it("accepts any of the recording's ISRCs as the same value", () => {
+      expect(metadataSuggestions(details, metadata({ isrc: "USUM72106000" })).isrc).toBeUndefined();
+    });
+
     it("skips values MusicBrainz does not have", () => {
-      const sparse: SongDetails = { ...details, album: null, isrc: null, artists: [], songwriters: [] };
+      const sparse: SongDetails = { ...details, album: null, isrc: null, isrcs: [], artists: [], songwriters: [] };
       expect(metadataSuggestions(sparse, metadata())).toEqual({});
     });
 

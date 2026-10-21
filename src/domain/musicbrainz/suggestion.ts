@@ -45,7 +45,8 @@ function listSuggestion(current: string[] | undefined, next: string[]): Suggesti
 function metadataSuggestions(details: SongDetails, metadata: ProjectMetadata): MetadataSuggestions {
   const suggestions: MetadataSuggestions = {};
   const album = textSuggestion(metadata.album, details.album);
-  const isrc = textSuggestion(metadata.isrc && (normalizeIsrc(metadata.isrc) ?? metadata.isrc), details.isrc);
+  const currentIsrc = metadata.isrc && (normalizeIsrc(metadata.isrc) ?? metadata.isrc);
+  const isrc = details.isrcs.includes(currentIsrc ?? "") ? undefined : textSuggestion(currentIsrc, details.isrc);
   const artists = listSuggestion(metadata.artists, details.artists);
   const songwriters = listSuggestion(metadata.songwriters, details.songwriters);
   if (album) suggestions.album = album;
