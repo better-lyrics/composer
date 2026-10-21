@@ -3,6 +3,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
 import { installStyleSheet } from "@/test/browser-css";
 import { allowConsole } from "@/test/console-guard";
+import { untilDialogFocused } from "@/test/dialog-focus";
 import { render } from "@/test/render";
 import { SettingsModal } from "@/ui/settings-modal";
 import { describe, expect, it } from "vitest";
@@ -160,7 +161,7 @@ describe("SettingsModal target", () => {
 describe("SettingsModal search", () => {
   const openModal = async (onClose: () => void = () => {}) => {
     const screen = await render(<SettingsModal isOpen onClose={onClose} />);
-    await expect.poll(() => document.querySelector("dialog")?.contains(document.activeElement)).toBe(true);
+    await untilDialogFocused();
     return screen;
   };
   const searchBox = (screen: Awaited<ReturnType<typeof openModal>>) =>

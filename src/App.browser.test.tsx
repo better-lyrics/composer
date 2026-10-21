@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { HELP_CONTENT_SCROLLER_CSS, installStyleSheet } from "@/test/browser-css";
 import { allowConsole } from "@/test/console-guard";
+import { untilDialogFocused } from "@/test/dialog-focus";
 import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { TOUR_SEEN_KEY } from "@/tour/use-tour";
@@ -149,6 +150,7 @@ describe("App", () => {
     };
 
     useUIStore.getState().openHelp();
+    await untilDialogFocused();
     await screen.getByRole("textbox", { name: "Search help" }).fill("loop");
     await expect.poll(() => helpScroller()?.matches("[data-overlayscrollbars-viewport]")).toBe(true);
     const scroller = helpScroller();
@@ -163,6 +165,7 @@ describe("App", () => {
     helpButton().click();
     await expect.poll(helpModalOpen).toBe(true);
     await expect.element(screen.getByRole("textbox", { name: "Search help" })).toHaveValue("loop");
+    await expect.poll(() => helpScroller()?.matches("[data-overlayscrollbars-viewport]")).toBe(true);
     await expect.poll(() => helpScroller()?.scrollTop).toBe(300);
   });
 
@@ -173,7 +176,9 @@ describe("App", () => {
     const screen = await render(<App />, { withRouter: { initialEntries: ["/editor"] } });
 
     useUIStore.getState().openHelp();
+    await untilDialogFocused();
     await screen.getByRole("textbox", { name: "Search help" }).fill("snap threshold");
+    await expect.element(screen.getByRole("textbox", { name: "Search help" })).toHaveValue("snap threshold");
     await screen.getByRole("button", { name: /^Open setting Snap threshold/ }).click();
     await expect.element(screen.getByRole("button", { name: 'Back to Help ・ "snap threshold"' })).toBeInTheDocument();
 
