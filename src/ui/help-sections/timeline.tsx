@@ -126,7 +126,10 @@ const TimelineSection: React.FC = () => (
           words.
         </li>
         <li>{ALT_KEY} + drag selected words to duplicate them.</li>
-        <li>Press Delete or Backspace to remove selected words.</li>
+        <li>
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.deleteSelection")} /> or{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.deleteSelectionAlternate")} /> to remove selected words.
+        </li>
       </ul>
     </HelpTopic>
 
@@ -233,8 +236,8 @@ const TimelineSection: React.FC = () => (
           and the onset tucks behind the pin so you do not see two markers stacked.
         </li>
         <li>
-          Hover a pin to see its time. The trash icon to delete it sits under the head, or press Delete (or Backspace)
-          while hovering to remove it.
+          Hover a pin to see its time. The trash icon to delete it sits under the head, or press{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.deleteSelection")} /> while hovering to remove it.
         </li>
         <li>
           Turn on <SettingLink setting="snapPlayheadToPoints" /> (on by default), and clicking or dragging the playhead

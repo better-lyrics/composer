@@ -29,6 +29,7 @@ import { centerTimeScrollLeft, revealTimeScrollLeft } from "@/views/timeline/coo
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
+import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
 import { currentEffectiveFocus, scrollToFocusStart } from "@/views/timeline/effective-focus";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import { isInFocus } from "@/views/timeline/group-focus";
@@ -80,7 +81,7 @@ function useTimelineKeyboard(
   duration: number,
   onOpenLyricsModal?: () => void,
 ) {
-  const { handleCopy, handleDelete, handleCut, handlePaste } = useTimelineClipboard(lines);
+  const { handleCopy, handleCut, handlePaste } = useTimelineClipboard(lines);
 
   const handleSetWordTiming = useCallback(
     (edge: "begin" | "end") => {
@@ -222,21 +223,6 @@ function useTimelineKeyboard(
         return;
       }
 
-      if (e.key === "Delete" || e.key === "Backspace") {
-        const { hoveredSnapPointId, selectedWords } = useTimelineStore.getState();
-        if (hoveredSnapPointId !== null) {
-          e.preventDefault();
-          useProjectStore.getState().removeCustomSnapPoint(hoveredSnapPointId);
-          useTimelineStore.getState().setHoveredSnapPointId(null);
-          return;
-        }
-        if (selectedWords.length > 0) {
-          e.preventDefault();
-          handleDelete();
-          return;
-        }
-      }
-
       if (e.key === "Escape") {
         const { pasteMode } = useTimelineStore.getState();
         if (pasteMode.status === "preview") {
@@ -264,6 +250,19 @@ function useTimelineKeyboard(
       if (!matched) return;
 
       switch (matched) {
+        case "timeline.deleteSelection":
+        case "timeline.deleteSelectionAlternate": {
+          const { hoveredSnapPointId, selectedWords } = useTimelineStore.getState();
+          if (hoveredSnapPointId !== null) {
+            e.preventDefault();
+            useProjectStore.getState().removeCustomSnapPoint(hoveredSnapPointId);
+            useTimelineStore.getState().setHoveredSnapPointId(null);
+          } else if (selectedWords.length > 0) {
+            e.preventDefault();
+            deleteSelectedWords();
+          }
+          return;
+        }
         case "timeline.jumpToPlayhead": {
           e.preventDefault();
           const scrollContainer = scrollContainerRef.current;
@@ -727,7 +726,7 @@ function useTimelineKeyboard(
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleSetWordTiming, handleCopy, handleCut, handlePaste, handleDelete, onOpenLyricsModal, lines]);
+  }, [handleSetWordTiming, handleCopy, handleCut, handlePaste, onOpenLyricsModal, lines]);
 }
 
 // -- Exports -------------------------------------------------------------------

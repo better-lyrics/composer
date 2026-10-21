@@ -1,9 +1,8 @@
 import type { ReadableLine } from "@/domain/line/effective-words";
 import { trackWords } from "@/domain/line/tracks";
-import { useProjectStore } from "@/stores/project";
 import { pluralize } from "@/utils/pluralize";
-import { applyWordDeletion } from "@/views/timeline/apply-word-deletion";
 import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";
+import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
 import { selectedBannerInstance } from "@/views/timeline/selected-banner";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -55,22 +54,10 @@ function useTimelineClipboard(lines: readonly ReadableLine[]) {
     );
   }, [lines]);
 
-  const handleDelete = useCallback(() => {
-    const { selectedWords } = useTimelineStore.getState();
-    if (selectedWords.length === 0) return;
-
-    const rawLines = useProjectStore.getState().lines;
-    const newLines = applyWordDeletion(rawLines, selectedWords);
-    if (newLines === rawLines) return;
-
-    useProjectStore.getState().setLinesWithHistory(newLines);
-    useTimelineStore.getState().clearSelection();
-  }, []);
-
   const handleCut = useCallback(() => {
     handleCopy();
-    handleDelete();
-  }, [handleCopy, handleDelete]);
+    deleteSelectedWords();
+  }, [handleCopy]);
 
   const handlePaste = useCallback(() => {
     const { clipboard, pasteMode } = useTimelineStore.getState();
@@ -83,7 +70,7 @@ function useTimelineClipboard(lines: readonly ReadableLine[]) {
     }
   }, []);
 
-  return { handleCopy, handleDelete, handleCut, handlePaste };
+  return { handleCopy, handleCut, handlePaste };
 }
 
 // -- Exports ------------------------------------------------------------------

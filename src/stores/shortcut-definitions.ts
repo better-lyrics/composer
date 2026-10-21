@@ -251,6 +251,18 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "s", shift: true },
   },
   {
+    id: "timeline.deleteSelection",
+    scope: "timeline",
+    description: "Delete selected words",
+    defaultBinding: { key: "Backspace" },
+  },
+  {
+    id: "timeline.deleteSelectionAlternate",
+    scope: "timeline",
+    description: "Delete selected words (alternate)",
+    defaultBinding: { key: "Delete" },
+  },
+  {
     id: "timeline.mergeWords",
     scope: "timeline",
     description: "Merge words",

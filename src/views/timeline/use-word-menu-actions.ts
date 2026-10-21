@@ -10,6 +10,7 @@ import { createBgWordsFromTextAt } from "@/utils/sync-helpers";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { applyWordDeletion } from "@/views/timeline/apply-word-deletion";
+import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useCallback } from "react";
@@ -17,7 +18,7 @@ import { useCallback } from "react";
 // -- Hook ---------------------------------------------------------------------
 
 function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () => void) {
-  const { lines, explicitToggleContext, mergeInfo, groupedWordInfo } = targets;
+  const { lines, explicitToggleContext, mergeInfo, groupedWordInfo, deletableSelectionCount } = targets;
   const contextMenu = useTimelineStore((s) => s.contextMenu);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const toggleWordExplicit = useProjectStore((s) => s.toggleWordExplicit);
@@ -62,12 +63,17 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
   const handleDeleteWord = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return;
+    if (deletableSelectionCount !== null) {
+      deleteSelectedWords();
+      clearContextMenu();
+      return;
+    }
     const { lineId, wordIndex, type } = contextMenu.target;
     const { lines: rawLines, setLinesWithHistory } = useProjectStore.getState();
     const nextLines = applyWordDeletion(rawLines, [{ lineId, wordIndex, type }]);
     if (nextLines !== rawLines) setLinesWithHistory(nextLines);
     clearContextMenu();
-  }, [contextMenu, clearContextMenu]);
+  }, [contextMenu, deletableSelectionCount, clearContextMenu]);
 
   const handleAddWordHere = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "track") return;

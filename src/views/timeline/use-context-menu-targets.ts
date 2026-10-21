@@ -10,6 +10,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
+import { isWordSelected } from "@/domain/selection/identity";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -55,17 +56,20 @@ function useContextMenuTargets() {
     if (!wordsArray || wordsArray.length === 0) return null;
 
     const selectedWords = useTimelineStore.getState().selectedWords;
-    const selectionMatchesTarget = selectedWords.some(
-      (w) => w.lineId === lineId && w.type === type && w.wordIndex === wordIndex,
-    );
     const indices =
-      selectionMatchesTarget && selectedWords.length > 1
+      isWordSelected(selectedWords, lineId, wordIndex, type) && selectedWords.length > 1
         ? selectedWords.flatMap((w) => (w.lineId === lineId && w.type === type ? [w.wordIndex] : []))
         : [wordIndex];
 
     const allMarked = indices.every((i) => wordsArray[i]?.explicit === true);
     return { lineId, field, indices, allMarked };
   }, [contextMenu, rawLines]);
+
+  const deletableSelectionCount = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word" || selectedWords.length < 2) return null;
+    const { lineId, wordIndex, type } = contextMenu.target;
+    return isWordSelected(selectedWords, lineId, wordIndex, type) ? selectedWords.length : null;
+  }, [contextMenu, selectedWords]);
 
   const gutterLineGroupInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "gutter") return null;
@@ -184,6 +188,7 @@ function useContextMenuTargets() {
   return {
     lines,
     explicitToggleContext,
+    deletableSelectionCount,
     gutterLineGroupInfo,
     groupableSelection,
     conformableSelection,

@@ -119,6 +119,11 @@ function splitIntoWordsLabel(count: number): string {
   return count > 1 ? `Split ${count} lines into words` : "Split into words";
 }
 
+function deleteWordLabel(selectionCount: number | null, isSyllable: boolean): string {
+  if (selectionCount !== null) return `Delete ${pluralize(selectionCount, "word")}`;
+  return isSyllable ? "Delete syllable" : "Delete word";
+}
+
 // -- Positioning --------------------------------------------------------------
 
 function useContextMenuFloating(contextMenu: ContextMenuState | null, clearContextMenu: () => void) {
@@ -195,7 +200,8 @@ function SelectionGrouping({ targets, clearContextMenu }: SectionProps) {
 }
 
 function WordMenuSection({ targets, clearContextMenu }: SectionProps) {
-  const { mergeInfo, groupedWordInfo, snapNeededInfo, splitIntoWordsInfo, explicitToggleContext } = targets;
+  const { mergeInfo, groupedWordInfo, snapNeededInfo, splitIntoWordsInfo, explicitToggleContext, deletableSelectionCount } =
+    targets;
   const {
     handleEditWord,
     handleSplitSyllables,
@@ -255,8 +261,8 @@ function WordMenuSection({ targets, clearContextMenu }: SectionProps) {
       )}
       <MenuDivider />
       <MenuItem
-        label={groupedWordInfo ? "Delete syllable" : "Delete word"}
-        shortcut={["Del"]}
+        label={deleteWordLabel(deletableSelectionCount, groupedWordInfo !== null)}
+        shortcut={getEffectiveKeysArray("timeline.deleteSelection")}
         onClick={handleDeleteWord}
         danger
       />

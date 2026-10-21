@@ -104,7 +104,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["Mod", "C"], description: "Copy selected words" },
       { keys: ["Mod", "X"], description: "Cut selected words" },
       { keys: ["Mod", "V"], description: "Paste (ghost preview, click to place)" },
-      { keys: ["Delete"], description: "Delete selected words" },
+      { keys: ["Backspace"], description: "Delete selected words", shortcutId: "timeline.deleteSelection" },
       { keys: ["Alt", "Drag"], description: "Duplicate selected words" },
       { keys: ["E"], description: "Edit selected word text", shortcutId: "timeline.editWord" },
       { keys: ["F2"], description: "Edit selected word text" },
