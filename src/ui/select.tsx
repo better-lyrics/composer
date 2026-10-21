@@ -101,6 +101,7 @@ const Select: React.FC<SelectProps> = ({
                   role="option"
                   aria-selected={isSelected}
                   tabIndex={index === tabStopIndex ? 0 : -1}
+                  data-active={index === activeIndex || undefined}
                   {...getItemProps({
                     onClick: () => {
                       onChange(option.value);
@@ -108,7 +109,7 @@ const Select: React.FC<SelectProps> = ({
                     },
                   })}
                   className={cn(
-                    "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm text-left text-composer-text transition-colors",
+                    "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm text-left text-composer-text transition-colors data-active:bg-composer-button-hover",
                     isSelected ? "bg-composer-button font-medium" : "cursor-pointer hover:bg-composer-button",
                   )}
                 >
