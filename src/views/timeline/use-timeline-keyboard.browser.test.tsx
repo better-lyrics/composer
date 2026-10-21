@@ -147,6 +147,29 @@ describe("useTimelineKeyboard", () => {
     const mergedLine = useProjectStore.getState().lines[0];
     expect(mergedLine.words).toEqual([{ text: "everyday", begin: 1, end: 2 }]);
   });
+
+  it("regression: a remapped import lyrics binding opens the import", async () => {
+    useProjectStore.setState({ activeTab: "timeline" });
+    assignBinding("timeline.importLyrics", { key: "j" });
+    let opened = 0;
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0, () => opened++));
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "V",
+        code: "KeyV",
+        metaKey: true,
+        ctrlKey: true,
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(opened).toBe(0);
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "j", code: "KeyJ", bubbles: true }));
+    expect(opened).toBe(1);
+  });
 });
 
 describe("useTimelineKeyboard · jump to snap point", () => {

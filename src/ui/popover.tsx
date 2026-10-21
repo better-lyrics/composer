@@ -9,22 +9,33 @@ import {
   useDismiss,
   useFloating,
   useInteractions,
+  useListNavigation,
   useRole,
 } from "@floating-ui/react";
 import type { Placement } from "@floating-ui/react";
-import { type ReactElement, type ReactNode, cloneElement, useState } from "react";
+import { type MutableRefObject, type ReactElement, type ReactNode, cloneElement, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
+type GetItemProps = ReturnType<typeof useInteractions>["getItemProps"];
+
+interface PopoverListNavigation {
+  listRef: MutableRefObject<Array<HTMLElement | null>>;
+  activeIndex: number | null;
+  selectedIndex: number | null;
+  onNavigate: (index: number | null) => void;
+}
+
 interface PopoverProps {
   trigger: ReactElement;
-  children: ReactNode | ((close: () => void) => ReactNode);
+  children: ReactNode | ((close: () => void, getItemProps: GetItemProps) => ReactNode);
   placement?: Placement;
   offsetPx?: number;
   hasPopup?: "dialog" | "listbox" | "menu";
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   "aria-label"?: string;
+  listNavigation?: PopoverListNavigation;
 }
 
 // -- Component ----------------------------------------------------------------
@@ -38,6 +49,7 @@ const Popover: React.FC<PopoverProps> = ({
   open,
   onOpenChange,
   "aria-label": ariaLabel,
+  listNavigation,
 }) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isOpen = open ?? uncontrolledOpen;
@@ -58,8 +70,17 @@ const Popover: React.FC<PopoverProps> = ({
   // Dismissing on click, after mousedown moved focus to the body, lets focus return to the trigger.
   const dismiss = useDismiss(context, { outsidePressEvent: "click" });
   const role = useRole(context);
+  const unusedListRef = useRef<Array<HTMLElement | null>>([]);
+  const navigation = useListNavigation(context, {
+    listRef: listNavigation?.listRef ?? unusedListRef,
+    activeIndex: listNavigation?.activeIndex ?? null,
+    selectedIndex: listNavigation?.selectedIndex ?? null,
+    onNavigate: listNavigation?.onNavigate,
+    loop: true,
+    enabled: listNavigation !== undefined,
+  });
 
-  const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
+  const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([click, dismiss, role, navigation]);
 
   return (
     <>
@@ -79,7 +100,7 @@ const Popover: React.FC<PopoverProps> = ({
               aria-label={ariaLabel}
               className="layer-floating border select-none shadow-2xl rounded-xl bg-composer-bg border-composer-border"
             >
-              {typeof children === "function" ? children(() => setIsOpen(false)) : children}
+              {typeof children === "function" ? children(() => setIsOpen(false), getItemProps) : children}
             </div>
           </FloatingFocusManager>
         </FloatingPortal>

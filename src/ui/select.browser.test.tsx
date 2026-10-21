@@ -66,6 +66,42 @@ describe("Select", () => {
     expect(changes).toBe(0);
   });
 
+  it("regression: moves between options with the arrow keys, keeps one tab stop, and returns focus on Escape", async () => {
+    let selected = "a";
+    const screen = await render(
+      <Select
+        aria-label="Letter"
+        value="a"
+        onChange={(value) => {
+          selected = value;
+        }}
+        options={OPTIONS}
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: "Letter" });
+    await userEvent.tab();
+    await expect.element(trigger).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await expect.element(screen.getByRole("option", { name: "Alpha" })).toHaveFocus();
+    await userEvent.keyboard("{ArrowDown}{ArrowDown}");
+    await expect.element(screen.getByRole("option", { name: "Gamma" })).toHaveFocus();
+    await expect.element(screen.getByRole("option", { name: "Alpha" })).toHaveAttribute("tabindex", "-1");
+    await userEvent.keyboard("{ArrowDown}");
+    await expect.element(screen.getByRole("option", { name: "Alpha" })).toHaveFocus();
+    await userEvent.keyboard("{End}");
+    await expect.element(screen.getByRole("option", { name: "Gamma" })).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    expect(selected).toBe("c");
+    await expect.element(screen.getByRole("listbox")).not.toBeInTheDocument();
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard("{Home}");
+    await expect.element(screen.getByRole("option", { name: "Alpha" })).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    await expect.element(screen.getByRole("listbox")).not.toBeInTheDocument();
+    await expect.element(trigger).toHaveFocus();
+    expect(selected).toBe("c");
+  });
+
   it("shows the placeholder on the trigger when the value matches no option", async () => {
     const screen = await render(
       <Select aria-label="Letter" value="" placeholder="Pick one" onChange={() => {}} options={OPTIONS} />,
