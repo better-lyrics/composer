@@ -190,6 +190,27 @@ describe("followStep", () => {
         resized.lineTops.get("too-hot"),
       ]);
     });
+
+    it("regression: expanding the playing group moves the view from its header to the line", () => {
+      const lines = [
+        createLine({ id: "intro", begin: 1, end: 3 }),
+        createLine({ id: "chorus-a", begin: 4, end: 6, groupId: "chorus", instanceIdx: 0 }),
+      ];
+      const collapsed = { "chorus:0": true };
+      const memory = createFollowMemory();
+      const frame = (collapsedInstances: Record<string, boolean>) =>
+        followStep(memory, {
+          lines,
+          time: 5,
+          selection: null,
+          layout: layoutOf(lines, collapsedInstances),
+          collapsedInstances,
+          viewportHeight: TALL_VIEWPORT,
+          coveredTop: WAVEFORM_COVER,
+        });
+      expect(frame(collapsed)).toEqual(layoutOf(lines, collapsed).headerTops.get("chorus:0"));
+      expect(frame({})).toEqual(layoutOf(lines).lineTops.get("chorus-a"));
+    });
   });
 
   describe("followScrollTop", () => {

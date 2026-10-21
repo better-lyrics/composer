@@ -10,7 +10,6 @@ import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
 import { createRowLayoutCache } from "@/views/timeline/row-layout-cache";
 import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
-import type { RowLayout } from "@/views/timeline/utils";
 import {
   type FollowInput,
   createFollowMemory,
@@ -30,7 +29,20 @@ interface TimelinePlayheadProps {
 // -- Constants -----------------------------------------------------------------
 
 const HIT_BUFFER_PX = 18;
-const EMPTY_LAYOUT: RowLayout = { lineTops: new Map(), headerTops: new Map() };
+
+// -- Helpers -------------------------------------------------------------------
+
+function createFollowInput(): FollowInput {
+  return {
+    lines: [],
+    time: 0,
+    selection: null,
+    layout: { lineTops: new Map(), headerTops: new Map() },
+    collapsedInstances: {},
+    viewportHeight: 0,
+    coveredTop: WAVEFORM_HEIGHT,
+  };
+}
 
 // -- Component -----------------------------------------------------------------
 
@@ -44,16 +56,8 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
   const containerRef = useRef<HTMLDivElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
-  const followMemoryRef = useRef(createFollowMemory());
-  const followInputRef = useRef<FollowInput>({
-    lines: [],
-    time: 0,
-    selection: null,
-    layout: EMPTY_LAYOUT,
-    collapsedInstances: {},
-    viewportHeight: 0,
-    coveredTop: WAVEFORM_HEIGHT,
-  });
+  const [followMemory] = useState(createFollowMemory);
+  const [followInput] = useState(createFollowInput);
   const [rowLayoutFor] = useState(createRowLayoutCache);
   const verticalTargetRef = useRef<number | null>(null);
   const lastMaskRef = useRef<string>("");
@@ -79,14 +83,13 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
       const lines = useProjectStore.getState().lines;
       const timeline = useTimelineStore.getState();
-      const followInput = followInputRef.current;
       followInput.lines = lines;
       followInput.time = currentTime;
       followInput.selection = timeline.selectionPlayback !== null ? timeline.selectedWords : null;
       followInput.layout = rowLayoutFor(lines, timeline);
       followInput.collapsedInstances = timeline.collapsedInstances;
       followInput.viewportHeight = container.clientHeight;
-      const rows = followStep(followMemoryRef.current, followInput);
+      const rows = followStep(followMemory, followInput);
       if (rows) verticalTargetRef.current = followScrollTop(rows, followInput, container.scrollHeight);
 
       // Lerp vertical scroll only while animating toward target
@@ -100,7 +103,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         }
       }
     } else {
-      resetFollowMemory(followMemoryRef.current);
+      resetFollowMemory(followMemory);
       verticalTargetRef.current = null;
     }
 

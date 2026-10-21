@@ -18,6 +18,7 @@ interface FollowMemory {
   viewportHeight: number;
   heldRows: RowSpan | null;
   lineId: string | null;
+  lineLayout: RowLayout | null;
   rowKey: string | null;
 }
 
@@ -40,6 +41,7 @@ const IDLE_FOLLOW: Readonly<FollowMemory> = {
   viewportHeight: 0,
   heldRows: null,
   lineId: null,
+  lineLayout: null,
   rowKey: null,
 };
 
@@ -129,8 +131,9 @@ function followStep(memory: FollowMemory, input: FollowInput): RowSpan | null {
   if (memory.heldRows) return null;
 
   const line = lineAt(input.lines, input.time, selectedLineIds);
-  if (!line || line.id === memory.lineId) return null;
+  if (!line || (line.id === memory.lineId && input.layout === memory.lineLayout)) return null;
   memory.lineId = line.id;
+  memory.lineLayout = input.layout;
   const rowKey = collapsedInstanceKey(line, input.collapsedInstances) ?? line.id;
   if (rowKey === memory.rowKey) return null;
   memory.rowKey = rowKey;
