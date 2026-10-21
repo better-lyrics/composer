@@ -66,7 +66,7 @@ describe("Select", () => {
     expect(changes).toBe(0);
   });
 
-  it("moves between options with the arrow keys, keeps one tab stop, and returns focus on Escape", async () => {
+  it("regression: moves between options with the arrow keys, keeps one tab stop, and returns focus on Escape", async () => {
     let selected = "a";
     const screen = await render(
       <Select
