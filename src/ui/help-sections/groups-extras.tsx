@@ -67,10 +67,11 @@ const GroupsExtras: React.FC = () => (
         the instance. Edits still reach every shared instance.
       </p>
       <p className={`${PROSE} mt-2`}>
-        Playback stays inside the instance. Play starts at its first word, and at its end playback stops and goes back
-        to the start. Turn on <strong>Loop</strong> (
-        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleLoop")} />) to keep it repeating. The waveform and
-        the seek bar shade everything outside the instance, and Preview fades the other lines.
+        Playback stays inside the instance, on every tab. Play starts at its first word, and at its end playback stops
+        and goes back to the start. Turn on <strong>Loop</strong> in the strip to keep it repeating. With nothing
+        selected, <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleLoop")} /> does the same; with words
+        selected, it loops just those words. The waveform and the seek bar shade everything outside the instance, and
+        Preview fades the other lines.
       </p>
       <p className={`${PROSE} mt-2`}>
         Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.closeGroup")} /> or click <strong>Done</strong> to
