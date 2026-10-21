@@ -3,7 +3,7 @@ import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
 import { cn } from "@/utils/cn";
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
-import { type ReactElement, cloneElement } from "react";
+import { type KeyboardEvent, type ReactElement, cloneElement, useRef, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -27,10 +27,8 @@ interface SelectProps {
 
 // -- Helpers ------------------------------------------------------------------
 
-const focusSelectedOption = (viewport: HTMLDivElement) => {
-  const option =
-    viewport.querySelector<HTMLElement>('[role="option"][aria-selected="true"]') ??
-    viewport.querySelector<HTMLElement>('[role="option"]');
+const focusTabStopOption = (viewport: HTMLDivElement) => {
+  const option = viewport.querySelector<HTMLElement>('[role="option"][tabindex="0"]');
   option?.scrollIntoView({ block: "nearest" });
   option?.focus();
 };
@@ -49,7 +47,11 @@ const Select: React.FC<SelectProps> = ({
   disabled = false,
   trigger,
 }) => {
-  const selected = options.find((option) => option.value === value);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const listRef = useRef<Array<HTMLElement | null>>([]);
+  const selectedIndex = options.findIndex((option) => option.value === value);
+  const selected = options[selectedIndex];
+  const tabStopIndex = activeIndex ?? (selected ? selectedIndex : 0);
   const showPlaceholder = !selected && placeholder !== undefined;
   const triggerLabel = selected?.label ?? placeholder ?? value;
 
@@ -71,24 +73,51 @@ const Select: React.FC<SelectProps> = ({
     </button>
   );
 
+  const jumpToEdge = (event: KeyboardEvent) => {
+    if (event.key !== "Home" && event.key !== "End") return;
+    event.preventDefault();
+    setActiveIndex(event.key === "Home" ? 0 : options.length - 1);
+  };
+
   return (
-    <Popover placement={placement} hasPopup="listbox" trigger={triggerElement}>
-      {(close) => (
-        <Scroll className="max-h-80" onInitialized={focusSelectedOption}>
+    <Popover
+      placement={placement}
+      hasPopup="listbox"
+      trigger={triggerElement}
+      listNavigation={{
+        listRef,
+        activeIndex,
+        selectedIndex: selected ? selectedIndex : null,
+        onNavigate: setActiveIndex,
+      }}
+    >
+      {(close, getItemProps) => (
+        <Scroll className="max-h-80" onInitialized={focusTabStopOption}>
           {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role -- styled single-select popover; datalist is input autocomplete, not a listbox, and would reintroduce native chrome */}
-          <div role="listbox" aria-label={ariaLabel} className="flex flex-col gap-0.5 p-1 w-max min-w-36">
-            {options.map((option) => {
+          <div
+            role="listbox"
+            aria-label={ariaLabel}
+            onKeyDown={jumpToEdge}
+            className="flex flex-col gap-0.5 p-1 w-max min-w-36"
+          >
+            {options.map((option, index) => {
               const isSelected = option.value === value;
               return (
                 <button
                   key={option.value}
+                  ref={(node) => {
+                    listRef.current[index] = node;
+                  }}
                   type="button"
                   role="option"
                   aria-selected={isSelected}
-                  onClick={() => {
-                    onChange(option.value);
-                    close();
-                  }}
+                  tabIndex={index === tabStopIndex ? 0 : -1}
+                  {...getItemProps({
+                    onClick: () => {
+                      onChange(option.value);
+                      close();
+                    },
+                  })}
                   className={cn(
                     "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm text-left text-composer-text transition-colors",
                     isSelected ? "bg-composer-button font-medium" : "cursor-pointer hover:bg-composer-button",
