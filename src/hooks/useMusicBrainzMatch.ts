@@ -1,4 +1,4 @@
-import type { MusicBrainzLookup } from "@/domain/musicbrainz/lookup-mode";
+import { waitingStatus } from "@/domain/musicbrainz/match-status";
 import type { SongQuery } from "@/domain/musicbrainz/query";
 import { recordingLookupUrl } from "@/domain/musicbrainz/query";
 import { type RankedMatch, rankMatches } from "@/domain/musicbrainz/rank-matches";
@@ -31,21 +31,6 @@ type MusicBrainzMatch =
       detailsFailed: boolean;
       retry: () => void;
     };
-
-// -- Status -------------------------------------------------------------------
-
-function waitingStatus(
-  mode: MusicBrainzLookup,
-  requested: boolean,
-  live: SongQuery,
-  debounced: SongQuery,
-): MusicBrainzMatch | null {
-  if (mode === "off") return { status: "off" };
-  if (live.title === "") return { status: "missing-title" };
-  if (mode === "manual" && !requested) return { status: "idle" };
-  if (live.title !== debounced.title || live.artist !== debounced.artist) return { status: "searching" };
-  return null;
-}
 
 // -- Hook ---------------------------------------------------------------------
 
@@ -89,8 +74,15 @@ function useMusicBrainzMatch(chosenRecordingId: string | null, requested: boolea
   });
   const details = useMemo(() => (lookup.data ? songDetailsFrom(lookup.data) : null), [lookup.data]);
 
-  const waiting = waitingStatus(mode, requested, { title, artist, isrc }, query);
-  if (waiting) return waiting;
+  const waiting = waitingStatus({
+    mode,
+    requested,
+    live: { title, artist, isrc },
+    searched: query,
+    showingPreviousResults: search.isPlaceholderData,
+    knownIsrcs: details?.isrcs ?? chosen?.recording.isrcs ?? [],
+  });
+  if (waiting) return { status: waiting };
   if (search.isError) return { status: "error", retry: () => void search.refetch() };
   if (search.isPending) return { status: "searching" };
   if (!chosen) return { status: "none" };
