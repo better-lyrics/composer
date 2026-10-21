@@ -1,6 +1,7 @@
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { WordSelection } from "@/domain/selection/model";
+import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { handleAltDuplicate } from "@/views/timeline/alt-duplicate";
@@ -81,6 +82,7 @@ function useTimelineDnd(lines: ReadableLine[]) {
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
+      swallowTrailingClick();
       setActiveDrag(null);
       useTimelineStore.getState().setWordDragHover(null);
       document.body.style.cursor = "";
