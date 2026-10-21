@@ -67,6 +67,18 @@ function toggleLoop(): void {
   settings.set("loopOpenGroup", !settings.loopOpenGroup);
 }
 
+// Same order as Play: a playing selection, then a timed selection, then the open group.
+function toggleRangeLoop(): boolean {
+  if (useTimelineStore.getState().selectionPlayback !== null) {
+    toggleLoop();
+    return true;
+  }
+  if (loopSelection()) return true;
+  if (currentEffectiveFocus() === null) return false;
+  toggleLoop();
+  return true;
+}
+
 function selectWordUnlessSelected(target: WordSelection): void {
   const { selectedWords, setSelectedWords } = useTimelineStore.getState();
   if (!isWordSelected(selectedWords, target.lineId, target.wordIndex, target.type)) setSelectedWords([target]);
@@ -89,5 +101,5 @@ export {
   selectLine,
   selectWordUnlessSelected,
   stopSelectionPlayback,
-  toggleLoop,
+  toggleRangeLoop,
 };
