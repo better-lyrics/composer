@@ -6,11 +6,14 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 let target: HTMLButtonElement;
 let clicks = 0;
+let doubleClicks = 0;
 
 beforeEach(() => {
   clicks = 0;
+  doubleClicks = 0;
   target = document.createElement("button");
   target.addEventListener("click", () => clicks++);
+  target.addEventListener("dblclick", () => doubleClicks++);
   document.body.append(target);
 });
 
@@ -24,6 +27,10 @@ function click(): MouseEvent {
   return event;
 }
 
+function doubleClick() {
+  target.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true }));
+}
+
 // -- Tests --------------------------------------------------------------------
 
 describe("swallowTrailingClick", () => {
@@ -34,6 +41,18 @@ describe("swallowTrailingClick", () => {
 
     expect(clicks).toBe(0);
     expect(event.defaultPrevented).toBe(true);
+  });
+
+  describe("regressions", () => {
+    it("regression: a drag that starts on a second click does not double-click its drop target", () => {
+      swallowTrailingClick();
+
+      click();
+      doubleClick();
+
+      expect(clicks).toBe(0);
+      expect(doubleClicks).toBe(0);
+    });
   });
 
   describe("invariants", () => {

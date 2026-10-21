@@ -1,5 +1,9 @@
 import { nextFrame } from "@/lib/frame-loop";
 
+// -- Constants -----------------------------------------------------------------
+
+const TRAILING_CLICK_EVENTS = ["click", "dblclick"] as const;
+
 // -- Functions -----------------------------------------------------------------
 
 function swallowClick(event: MouseEvent) {
@@ -7,10 +11,16 @@ function swallowClick(event: MouseEvent) {
   event.preventDefault();
 }
 
-// A drag ends with a click on whatever sits under the pointer; without this, that click runs its handler (track clicks clear the selection).
+// A drag ends with a click on whatever sits under the pointer, and with a dblclick too when the drag began on a second click; without this, those run their handlers (track clicks clear the selection, track double-clicks add a word).
 function swallowTrailingClick() {
-  window.addEventListener("click", swallowClick, { capture: true, once: true });
-  nextFrame(() => window.removeEventListener("click", swallowClick, { capture: true }));
+  for (const type of TRAILING_CLICK_EVENTS) {
+    window.addEventListener(type, swallowClick, { capture: true, once: true });
+  }
+  nextFrame(() => {
+    for (const type of TRAILING_CLICK_EVENTS) {
+      window.removeEventListener(type, swallowClick, { capture: true });
+    }
+  });
 }
 
 // -- Exports -------------------------------------------------------------------
