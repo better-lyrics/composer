@@ -68,10 +68,10 @@ const GroupsExtras: React.FC = () => (
       </p>
       <p className={`${PROSE} mt-2`}>
         Playback stays inside the instance, on every tab. Play starts at its first word, and at its end playback stops
-        and goes back to the start. Turn on <strong>Loop</strong> in the strip to keep it repeating. With nothing
-        selected, <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleLoop")} /> does the same; with words
-        selected, it loops just those words. The waveform and the seek bar shade everything outside the instance, and
-        Preview fades the other lines.
+        and goes back to the start. Turn on <strong>Loop</strong> in the strip to keep it repeating. On the Timeline
+        tab, <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleLoop")} /> does the same with nothing selected,
+        and loops just the selected words when they are timed. The waveform and the seek bar shade everything outside
+        the instance, and Preview fades the other lines.
       </p>
       <p className={`${PROSE} mt-2`}>
         Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.closeGroup")} /> or click <strong>Done</strong> to

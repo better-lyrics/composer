@@ -6,7 +6,8 @@ import { useSettingsStore } from "@/stores/settings";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
-import { selectionPlaybackIcon, selectionPlaybackLabel } from "@/views/timeline/selection-playback-icon";
+import { useEffectiveFocus } from "@/views/timeline/effective-focus";
+import { rangePlaybackIndicator } from "@/views/timeline/selection-playback-icon";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
 
@@ -30,7 +31,9 @@ const TabBar: React.FC = () => {
   const languageReviewCount = getLanguageReviewItems(lines).length;
   const languageErrorCount = getLanguageAlignmentErrorItems(lines).length;
   const selectionPlayback = useTimelineStore((s) => s.selectionPlayback);
-  const SelectionPlaybackIcon = selectionPlayback ? selectionPlaybackIcon(selectionPlayback) : null;
+  const loopOpenGroup = useSettingsStore((s) => s.loopOpenGroup);
+  const groupOpen = useEffectiveFocus() !== null;
+  const rangeIndicator = rangePlaybackIndicator(selectionPlayback, groupOpen && loopOpenGroup);
 
   return (
     <nav data-tour="tab-bar" className="flex border-b border-composer-border select-none">
@@ -53,10 +56,10 @@ const TabBar: React.FC = () => {
           >
             <span className="inline-flex items-center gap-1.5">
               {tab.label}
-              {tab.id === "timeline" && SelectionPlaybackIcon && selectionPlayback && (
-                <SelectionPlaybackIcon
-                  role="img"
-                  aria-label={selectionPlaybackLabel(selectionPlayback)}
+              {tab.id === "timeline" && rangeIndicator && (
+                <rangeIndicator.icon
+                  aria-hidden="true"
+                  title={rangeIndicator.label}
                   className="size-3.5 text-composer-accent-text"
                 />
               )}

@@ -74,11 +74,11 @@ const TimelineSection: React.FC = () => (
       <p className={PROSE}>
         Select words or a line and press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.playSelection")} /> to
         hear only that part, or right-click it and use the <strong>Play</strong> item at the top of the menu. Press{" "}
-        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleLoop")} /> to loop it instead, or switch a play to a
+        <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleLoop")} /> to loop it instead, or switch a play to a
         loop and back with <strong>Loop</strong> in the strip. The loop reads the timing again on every pass, so a nudge
         or a dragged edge is audible on the next one. It keeps looping when you switch tabs, so you can watch it in
         Preview. The Timeline tab shows a loop icon while it runs, and{" "}
-        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleLoop")} /> turns the loop off from any tab.
+        <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleLoop")} /> turns the loop on or off from any tab.
       </p>
       <p className={`${PROSE} mt-2`}>
         A little audio before and after the selection plays too, so you hear whether a word runs into its neighbours.
