@@ -69,6 +69,7 @@ const MetadataFieldList: React.FC<MetadataFieldListProps> = ({
       ))}
       {suggestion?.kind === "fill" &&
         suggestion.value.map((value, index) => (
+          // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- the index only breaks ties between same-name people; the value is the identity
           <SuggestedRow key={`${index}-${value}`} value={value} fieldName={label} onUse={() => handleUseOne(value)} />
         ))}
       {suggestion?.kind === "differs" && (
