@@ -35,11 +35,29 @@ function unbindTakenAlternateRedo(state: Partial<ShortcutBindingsState>): Partia
   return { ...state, overrides: { ...overrides, [ALTERNATE_REDO_ID]: UNBOUND } };
 }
 
+function clashesWithAnotherBinding(
+  id: string,
+  binding: ShortcutBinding,
+  overrides: Record<string, ShortcutBinding>,
+): boolean {
+  return SHORTCUT_REGISTRY.some(
+    (definition) =>
+      definition.id !== id && bindingsEqual(overrides[definition.id] ?? definition.defaultBinding, binding),
+  );
+}
+
+// A renamed id can land in a wider scope, so a rebinding that was legal before may now clash; it falls back to the default.
 function renameShortcutIds(state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> {
   const { overrides } = state;
   if (!overrides || typeof overrides !== "object") return state;
-  const renamed = Object.entries(overrides).map(([id, binding]) => [RENAMED_SHORTCUT_IDS[id] ?? id, binding]);
-  return { ...state, overrides: Object.fromEntries(renamed) };
+  const renamed: Record<string, ShortcutBinding> = Object.fromEntries(
+    Object.entries(overrides).map(([id, binding]) => [RENAMED_SHORTCUT_IDS[id] ?? id, binding]),
+  );
+  for (const [oldId, newId] of Object.entries(RENAMED_SHORTCUT_IDS)) {
+    const binding = renamed[newId];
+    if (oldId in overrides && binding && clashesWithAnotherBinding(newId, binding, renamed)) delete renamed[newId];
+  }
+  return { ...state, overrides: renamed };
 }
 
 function migrateShortcutBindings(persistedState: unknown, version: number): unknown {

@@ -110,6 +110,16 @@ describe("toggleLoop id migration", () => {
     expect(migrateShortcutBindings(saved, 1)).toEqual(saved);
   });
 
+  it("drops a renamed rebinding that now clashes with a binding in another scope", () => {
+    const syncTextVariant = { key: "l" };
+    const migrated = migrateShortcutBindings(
+      { overrides: { "timeline.toggleGroupLoop": syncTextVariant, "timeline.toggleTextVariant": { key: "q" } } },
+      1,
+    );
+
+    expect(migrated).toEqual({ overrides: { "timeline.toggleTextVariant": { key: "q" } } });
+  });
+
   it("runs only for state saved before the rename", () => {
     const saved = { overrides: { "timeline.toggleGroupLoop": { key: "k" } } };
 
