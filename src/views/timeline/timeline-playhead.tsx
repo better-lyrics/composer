@@ -1,5 +1,3 @@
-import { isLinked } from "@/domain/instance/predicates";
-import { effectiveBounds } from "@/domain/line/bounds";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -13,6 +11,7 @@ import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
 import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
+import { type FollowMemory, IDLE_FOLLOW, followStep } from "@/views/timeline/vertical-follow";
 import { useEffect, useMemo, useRef } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -38,7 +37,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
   const containerRef = useRef<HTMLDivElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
-  const lastFollowedLineRef = useRef<number>(-1);
+  const followMemoryRef = useRef<FollowMemory>(IDLE_FOLLOW);
   const verticalTargetRef = useRef<number | null>(null);
   const lastMaskRef = useRef<string>("");
   const playheadCenterXLocalRef = useRef<number>(0);
@@ -62,46 +61,34 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
       container.scrollLeft = focusRange ? clampScrollLeft(targetScrollLeft, focusRange) : targetScrollLeft;
 
       const lines = useProjectStore.getState().lines;
-      let activeLineIndex = -1;
-      for (let i = 0; i < lines.length; i++) {
-        const timing = effectiveBounds(lines[i]);
-        if (timing && currentTime >= timing.begin && currentTime < timing.end) {
-          activeLineIndex = i;
-          break;
-        }
-      }
+      const { rowHeights, defaultRowHeight, collapsedInstances, focusedGroup, selectionPlayback, selectedWords } =
+        useTimelineStore.getState();
+      const viewportHeight = container.clientHeight;
+      const step = followStep(followMemoryRef.current, {
+        lines,
+        time: currentTime,
+        selection: selectionPlayback !== null ? selectedWords : null,
+        layout: () =>
+          computeRowLayout({
+            lines,
+            rowHeights,
+            defaultRowHeight,
+            collapsedInstances,
+            focusedGroup,
+            waveformHeight: WAVEFORM_HEIGHT,
+            groupHeaderHeight: GROUP_HEADER_HEIGHT,
+          }),
+        collapsedInstances,
+        viewportHeight,
+      });
+      followMemoryRef.current = step.memory;
 
-      if (activeLineIndex >= 0 && activeLineIndex !== lastFollowedLineRef.current) {
-        lastFollowedLineRef.current = activeLineIndex;
-        const { rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
-
-        const layout = computeRowLayout({
-          lines,
-          rowHeights,
-          defaultRowHeight,
-          collapsedInstances,
-          focusedGroup,
-          waveformHeight: WAVEFORM_HEIGHT,
-          groupHeaderHeight: GROUP_HEADER_HEIGHT,
-        });
-
-        const activeLine = lines[activeLineIndex];
-        const activeInstanceKey = isLinked(activeLine) ? `${activeLine.groupId}:${activeLine.instanceIdx}` : null;
-        const isActiveCollapsed = activeInstanceKey !== null && collapsedInstances[activeInstanceKey];
-
-        const target =
-          isActiveCollapsed && activeInstanceKey !== null
-            ? layout.headerTops.get(activeInstanceKey)
-            : layout.lineTops.get(activeLine.id);
-
-        if (target) {
-          const viewportHeight = container.clientHeight;
-          const rowCenter = target.top + target.height / 2;
-          verticalTargetRef.current = Math.max(
-            0,
-            Math.min(container.scrollHeight - viewportHeight, rowCenter - viewportHeight / 2),
-          );
-        }
+      if (step.rows) {
+        const rowsCenter = step.rows.top + step.rows.height / 2;
+        verticalTargetRef.current = Math.max(
+          0,
+          Math.min(container.scrollHeight - viewportHeight, rowsCenter - viewportHeight / 2),
+        );
       }
 
       // Lerp vertical scroll only while animating toward target
@@ -115,7 +102,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         }
       }
     } else {
-      lastFollowedLineRef.current = -1;
+      followMemoryRef.current = IDLE_FOLLOW;
       verticalTargetRef.current = null;
     }
 
