@@ -29,6 +29,7 @@ interface ProjectSaveInput {
   audioSource: SavedAudioSource | undefined;
   dismissedSuggestions: string[];
   dismissedExplicitSuggestions: string[];
+  dismissedMetadataMatches: string[];
   currentStem: Stem;
   primingStripped: boolean;
   customSnapPoints: SnapPoint[];

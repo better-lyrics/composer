@@ -34,6 +34,7 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   state.setAgents(project.agents && project.agents.length > 0 ? project.agents : DEFAULT_AGENTS);
   state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
   state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
+  state.setDismissedMetadataMatches(project.dismissedMetadataMatches ?? []);
   // The flag describes stored timings against the stored audio, which a project file does not carry.
   if (origin === "storage") state.setPrimingStripped(project.primingStripped ?? false);
   state.setCustomSnapPoints(project.customSnapPoints ?? []);

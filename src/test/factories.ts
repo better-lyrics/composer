@@ -98,6 +98,7 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
     audioSource: { kind: "file", name: "silence.mp3" },
     dismissedSuggestions: [],
     dismissedExplicitSuggestions: [],
+    dismissedMetadataMatches: [],
     currentStem: "original",
     primingStripped: false,
     customSnapPoints: [],

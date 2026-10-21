@@ -28,6 +28,7 @@ interface SavedProject {
   audioSource?: SavedAudioSource;
   dismissedSuggestions?: string[];
   dismissedExplicitSuggestions?: string[];
+  dismissedMetadataMatches?: string[];
   currentStem?: Stem;
   primingStripped?: boolean;
   customSnapPoints?: (SnapPoint | number)[];

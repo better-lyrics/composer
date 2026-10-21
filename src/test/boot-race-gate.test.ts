@@ -33,6 +33,7 @@ const STATE_WRITER_PATTERNS: RegExp[] = [
   /\.setSyllableSplitDefaults\b/,
   /\.setDismissedSuggestions\b/,
   /\.setDismissedExplicitSuggestions\b/,
+  /\.setDismissedMetadataMatches\b/,
   /\.setSource\b/,
   /\.setYouTubeSource\b/,
   /\.setYouTubeFile\b/,
