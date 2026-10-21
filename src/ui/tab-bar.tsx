@@ -6,6 +6,8 @@ import { useSettingsStore } from "@/stores/settings";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
+import { selectionPlaybackIcon, selectionPlaybackLabel } from "@/views/timeline/selection-playback-icon";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
 
 const TAB_LABELS: Record<ProjectTab, string> = {
@@ -27,6 +29,8 @@ const TabBar: React.FC = () => {
   const showHints = useSettingsStore((s) => s.showShortcutHints);
   const languageReviewCount = getLanguageReviewItems(lines).length;
   const languageErrorCount = getLanguageAlignmentErrorItems(lines).length;
+  const selectionPlayback = useTimelineStore((s) => s.selectionPlayback);
+  const SelectionPlaybackIcon = selectionPlayback ? selectionPlaybackIcon(selectionPlayback) : null;
 
   return (
     <nav data-tour="tab-bar" className="flex border-b border-composer-border select-none">
@@ -49,6 +53,13 @@ const TabBar: React.FC = () => {
           >
             <span className="inline-flex items-center gap-1.5">
               {tab.label}
+              {tab.id === "timeline" && SelectionPlaybackIcon && selectionPlayback && (
+                <SelectionPlaybackIcon
+                  role="img"
+                  aria-label={selectionPlaybackLabel(selectionPlayback)}
+                  className="size-3.5 text-composer-accent-text"
+                />
+              )}
               {showLanguageError && (
                 <StatusChip
                   tone="error"

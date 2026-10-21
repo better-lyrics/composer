@@ -4,18 +4,19 @@ import { formatTime } from "@/utils/format-time";
 import { pluralize } from "@/utils/pluralize";
 import { LoopToggle } from "@/views/timeline/loop-toggle";
 import { stopSelectionPlayback } from "@/views/timeline/selection-playback";
+import { selectionPlaybackIcon } from "@/views/timeline/selection-playback-icon";
 import { STRIP_CONTROL } from "@/views/timeline/strip-control";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useSelectionPlaybackRange } from "@/views/timeline/use-selection-playback-range";
-import { IconPlayerPlay, IconRepeat } from "@tabler/icons-react";
 
 // -- Components ----------------------------------------------------------------
 
 const SelectionPlaybackBar: React.FC = () => {
   const playback = useSelectionPlaybackRange();
   const wordCount = useTimelineStore((s) => s.selectedWords.length);
-  const ModeIcon = useTimelineStore((s) => s.selectionPlayback) === "loop" ? IconRepeat : IconPlayerPlay;
-  if (!playback) return null;
+  const mode = useTimelineStore((s) => s.selectionPlayback);
+  if (!playback || !mode) return null;
+  const ModeIcon = selectionPlaybackIcon(mode);
 
   return (
     <div
