@@ -105,6 +105,45 @@ describe("TimelineContextMenu · delete word", () => {
       expect(line && hasAnyTiming(line)).toBe(false);
       expect(line?.text).toBe("hello world");
     });
+
+    const threeWords = () =>
+      createLine({
+        id: "l1",
+        text: "one two three",
+        words: [
+          { text: "one ", begin: 1, end: 2 },
+          { text: "two ", begin: 2, end: 3 },
+          { text: "three", begin: 3, end: 4 },
+        ],
+      });
+
+    it("regression: deletes the whole selection when the clicked word is in it", async () => {
+      seed([threeWords()], "l1", 1);
+      useTimelineStore.setState({
+        selectedWords: [
+          { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" },
+          { lineId: "l1", lineIndex: 0, wordIndex: 1, type: "word" },
+        ],
+      });
+      await clickDelete("Delete 2 words");
+
+      expect(lineById("l1")?.words).toEqual([createWord({ text: "three", begin: 3, end: 4 })]);
+      expect(useTimelineStore.getState().selectedWords).toEqual([]);
+    });
+
+    it("regression: deletes only the clicked word outside the selection and drops the stale selection", async () => {
+      seed([threeWords()], "l1", 2);
+      useTimelineStore.setState({
+        selectedWords: [
+          { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" },
+          { lineId: "l1", lineIndex: 0, wordIndex: 1, type: "word" },
+        ],
+      });
+      await clickDelete();
+
+      expect(lineById("l1")?.words?.map((word) => word.text)).toEqual(["one ", "two "]);
+      expect(useTimelineStore.getState().selectedWords).toEqual([]);
+    });
   });
 
   describe("edge cases", () => {
@@ -160,46 +199,6 @@ describe("TimelineContextMenu · delete word", () => {
       expect(c1 && isLinked(c1)).toBe(false);
       const c0 = lineById("c0");
       expect(c0 && isLinked(c0)).toBe(true);
-    });
-  });
-
-  describe("regressions", () => {
-    const threeWords = () =>
-      createLine({
-        id: "l1",
-        text: "one two three",
-        words: [
-          { text: "one ", begin: 1, end: 2 },
-          { text: "two ", begin: 2, end: 3 },
-          { text: "three", begin: 3, end: 4 },
-        ],
-      });
-
-    it("regression: deletes the whole selection when the clicked word is in it", async () => {
-      seed([threeWords()], "l1", 1);
-      useTimelineStore.setState({
-        selectedWords: [
-          { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" },
-          { lineId: "l1", lineIndex: 0, wordIndex: 1, type: "word" },
-        ],
-      });
-      await clickDelete("Delete 2 words");
-
-      expect(lineById("l1")?.words).toEqual([createWord({ text: "three", begin: 3, end: 4 })]);
-      expect(useTimelineStore.getState().selectedWords).toEqual([]);
-    });
-
-    it("deletes only the clicked word when it is outside the selection", async () => {
-      seed([threeWords()], "l1", 2);
-      useTimelineStore.setState({
-        selectedWords: [
-          { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" },
-          { lineId: "l1", lineIndex: 0, wordIndex: 1, type: "word" },
-        ],
-      });
-      await clickDelete();
-
-      expect(lineById("l1")?.words?.map((word) => word.text)).toEqual(["one ", "two "]);
     });
   });
 

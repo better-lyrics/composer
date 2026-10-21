@@ -65,8 +65,8 @@ function useContextMenuTargets() {
     return { lineId, field, indices, allMarked };
   }, [contextMenu, rawLines]);
 
-  const deletableSelectionCount = useMemo(() => {
-    if (!contextMenu || contextMenu.target.kind !== "word" || selectedWords.length < 2) return null;
+  const clickedSelectionCount = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word") return null;
     const { lineId, wordIndex, type } = contextMenu.target;
     return isWordSelected(selectedWords, lineId, wordIndex, type) ? selectedWords.length : null;
   }, [contextMenu, selectedWords]);
@@ -188,7 +188,7 @@ function useContextMenuTargets() {
   return {
     lines,
     explicitToggleContext,
-    deletableSelectionCount,
+    clickedSelectionCount,
     gutterLineGroupInfo,
     groupableSelection,
     conformableSelection,

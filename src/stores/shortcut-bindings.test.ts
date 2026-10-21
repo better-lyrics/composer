@@ -69,7 +69,25 @@ describe("migrateShortcutBindings", () => {
     expect(migrateShortcutBindings(saved, 0)).toEqual(saved);
   });
 
+  it("unbinds a timeline delete key when a saved timeline or global binding already uses it", () => {
+    const saved = { overrides: { "timeline.mergeWords": { key: "Delete" }, "global.goToSync": { key: "Backspace" } } };
+
+    expect(migrateShortcutBindings(saved, 1)).toEqual({
+      overrides: {
+        ...saved.overrides,
+        "timeline.deleteSelection": { key: "" },
+        "timeline.deleteSelectionAlternate": { key: "" },
+      },
+    });
+  });
+
   describe("edge cases", () => {
+    it("keeps the timeline delete keys when only another scope uses them", () => {
+      const saved = { overrides: { "sync.tap": { key: "Backspace" } } };
+
+      expect(migrateShortcutBindings(saved, 1)).toEqual(saved);
+    });
+
     it("leaves saved bindings without a collision untouched", () => {
       const saved = { overrides: { "timeline.toggleFollow": { key: "q" } } };
 

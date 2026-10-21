@@ -120,7 +120,7 @@ function splitIntoWordsLabel(count: number): string {
 }
 
 function deleteWordLabel(selectionCount: number | null, isSyllable: boolean): string {
-  if (selectionCount !== null) return `Delete ${pluralize(selectionCount, "word")}`;
+  if (selectionCount !== null && selectionCount > 1) return `Delete ${pluralize(selectionCount, "word")}`;
   return isSyllable ? "Delete syllable" : "Delete word";
 }
 
@@ -200,8 +200,14 @@ function SelectionGrouping({ targets, clearContextMenu }: SectionProps) {
 }
 
 function WordMenuSection({ targets, clearContextMenu }: SectionProps) {
-  const { mergeInfo, groupedWordInfo, snapNeededInfo, splitIntoWordsInfo, explicitToggleContext, deletableSelectionCount } =
-    targets;
+  const {
+    mergeInfo,
+    groupedWordInfo,
+    snapNeededInfo,
+    splitIntoWordsInfo,
+    explicitToggleContext,
+    clickedSelectionCount,
+  } = targets;
   const {
     handleEditWord,
     handleSplitSyllables,
@@ -261,8 +267,8 @@ function WordMenuSection({ targets, clearContextMenu }: SectionProps) {
       )}
       <MenuDivider />
       <MenuItem
-        label={deleteWordLabel(deletableSelectionCount, groupedWordInfo !== null)}
-        shortcut={getEffectiveKeysArray("timeline.deleteSelection")}
+        label={deleteWordLabel(clickedSelectionCount, groupedWordInfo !== null)}
+        shortcut={clickedSelectionCount === null ? undefined : getEffectiveKeysArray("timeline.deleteSelection")}
         onClick={handleDeleteWord}
         danger
       />

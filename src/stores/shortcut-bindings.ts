@@ -18,22 +18,43 @@ interface ShortcutBindingsState {
 
 // -- Migration ----------------------------------------------------------------
 
-const SHORTCUT_BINDINGS_PERSIST_VERSION = 1;
+const SHORTCUT_BINDINGS_PERSIST_VERSION = 2;
 const UNBOUND: ShortcutBinding = { key: "" };
-const ALTERNATE_REDO_ID = "global.redoAlternate";
+
+// A shortcut added after users saved bindings starts unbound if its default keys already belong to one of them.
+const SHORTCUTS_ADDED_IN_VERSION: readonly { version: number; ids: readonly string[] }[] = [
+  { version: 1, ids: ["global.redoAlternate"] },
+  { version: 2, ids: ["timeline.deleteSelection", "timeline.deleteSelectionAlternate"] },
+];
+
+function unbindIfKeysTaken(
+  overrides: Record<string, ShortcutBinding>,
+  addedId: string,
+): Record<string, ShortcutBinding> {
+  const added = getShortcutById(addedId);
+  if (!added || overrides[addedId]) return overrides;
+  const keysTaken = Object.entries(overrides).some(([id, binding]) => {
+    const owner = getShortcutById(id);
+    return (
+      owner !== undefined &&
+      scopesConflict(added.scope, owner.scope) &&
+      typeof binding?.key === "string" &&
+      bindingsEqual(binding, added.defaultBinding)
+    );
+  });
+  return keysTaken ? { ...overrides, [addedId]: UNBOUND } : overrides;
+}
 
 function migrateShortcutBindings(persistedState: unknown, version: number): unknown {
-  if (version >= 1 || !persistedState || typeof persistedState !== "object") return persistedState;
+  if (!persistedState || typeof persistedState !== "object") return persistedState;
   const { overrides } = persistedState as Partial<ShortcutBindingsState>;
-  const alternateRedo = getShortcutById(ALTERNATE_REDO_ID);
-  if (!overrides || typeof overrides !== "object" || !alternateRedo || overrides[ALTERNATE_REDO_ID]) {
-    return persistedState;
+  if (!overrides || typeof overrides !== "object") return persistedState;
+  let migrated = overrides;
+  for (const step of SHORTCUTS_ADDED_IN_VERSION) {
+    if (version >= step.version) continue;
+    for (const id of step.ids) migrated = unbindIfKeysTaken(migrated, id);
   }
-  const keysTaken = Object.values(overrides).some(
-    (binding) => typeof binding?.key === "string" && bindingsEqual(binding, alternateRedo.defaultBinding),
-  );
-  if (!keysTaken) return persistedState;
-  return { ...persistedState, overrides: { ...overrides, [ALTERNATE_REDO_ID]: UNBOUND } };
+  return migrated === overrides ? persistedState : { ...persistedState, overrides: migrated };
 }
 
 // -- Store --------------------------------------------------------------------
