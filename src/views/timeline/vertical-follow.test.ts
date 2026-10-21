@@ -2,7 +2,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 import { createLine } from "@/test/factories";
 import { computeRowLayout } from "@/views/timeline/utils";
-import { type FollowMemory, IDLE_FOLLOW, followScrollTop, followStep } from "@/views/timeline/vertical-follow";
+import { type FollowInput, createFollowMemory, followScrollTop, followStep } from "@/views/timeline/vertical-follow";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -62,19 +62,19 @@ function playFrames(times: number[], options: PlaybackOptions = {}) {
   const lines = options.lines ?? verse;
   const collapsedInstances = options.collapsedInstances ?? {};
   const layout = layoutOf(lines, collapsedInstances);
-  let memory: FollowMemory = IDLE_FOLLOW;
+  const memory = createFollowMemory();
   const moves: { top: number; height: number }[] = [];
   for (const time of times) {
-    const step = followStep(memory, {
+    const rows = followStep(memory, {
       lines,
       time,
       selection: options.selection ?? null,
       layout,
       collapsedInstances,
-      viewport: { height: options.viewportHeight ?? TALL_VIEWPORT, coveredTop: WAVEFORM_COVER },
+      viewportHeight: options.viewportHeight ?? TALL_VIEWPORT,
+      coveredTop: WAVEFORM_COVER,
     });
-    memory = step.memory;
-    if (step.rows) moves.push({ top: step.rows.top, height: step.rows.height });
+    if (rows) moves.push({ top: rows.top, height: rows.height });
   }
   return moves;
 }
@@ -162,40 +162,54 @@ describe("followStep", () => {
       const frames = [
         { layout: expanded, height: TALL_VIEWPORT },
         { layout: layoutOf(verse), height: TALL_VIEWPORT },
-        { layout: resized, height: TALL_VIEWPORT },
+        { layout: expanded, height: TALL_VIEWPORT - 100 },
+        { layout: resized, height: TALL_VIEWPORT - 100 },
         { layout: resized, height: WAVEFORM_COVER + ROW_HEIGHT * 2 },
       ];
-      let memory: FollowMemory = IDLE_FOLLOW;
-      const moves = frames.map(({ layout, height }) => {
-        const step = followStep(memory, {
+      const memory = createFollowMemory();
+      const moves = frames.map(({ layout, height }) =>
+        followStep(memory, {
           lines: verse,
           time: 21.15,
           selection,
           layout,
           collapsedInstances: {},
-          viewport: { height, coveredTop: WAVEFORM_COVER },
-        });
-        memory = step.memory;
-        return step.rows;
-      });
+          viewportHeight: height,
+          coveredTop: WAVEFORM_COVER,
+        }),
+      );
       const blockOf = (layout: typeof expanded) => {
         const tooHot = layout.lineTops.get("too-hot");
         return tooHot && { top: WAVEFORM_COVER, height: tooHot.top + tooHot.height - WAVEFORM_COVER };
       };
-      expect(moves).toEqual([blockOf(expanded), null, blockOf(resized), resized.lineTops.get("too-hot")]);
+      expect(moves).toEqual([
+        blockOf(expanded),
+        null,
+        blockOf(expanded),
+        blockOf(resized),
+        resized.lineTops.get("too-hot"),
+      ]);
     });
   });
 
   describe("followScrollTop", () => {
-    const viewport = { height: 400, coveredTop: WAVEFORM_COVER, scrollHeight: 2000 };
+    const input: FollowInput = {
+      lines: verse,
+      time: 0,
+      selection: null,
+      layout: layoutOf(verse),
+      collapsedInstances: {},
+      viewportHeight: 400,
+      coveredTop: WAVEFORM_COVER,
+    };
 
     it("centers the rows in the space below the waveform", () => {
-      expect(followScrollTop({ top: 500, height: 60 }, viewport)).toBe(290);
+      expect(followScrollTop({ top: 500, height: 60 }, input, 2000)).toBe(290);
     });
 
     it("clamps to the top and the bottom of the content", () => {
-      expect(followScrollTop({ top: 90, height: 60 }, viewport)).toBe(0);
-      expect(followScrollTop({ top: 1950, height: 40 }, viewport)).toBe(1600);
+      expect(followScrollTop({ top: 90, height: 60 }, input, 2000)).toBe(0);
+      expect(followScrollTop({ top: 1950, height: 40 }, input, 2000)).toBe(1600);
     });
   });
 
@@ -227,17 +241,17 @@ describe("followStep", () => {
 
     it("a new selection is followed again even when the playhead stays on the same line", () => {
       const lines = verse;
-      let memory: FollowMemory = IDLE_FOLLOW;
+      const memory = createFollowMemory();
       const input = {
         lines,
         time: 21.3,
         layout: layoutOf(lines),
         collapsedInstances: {},
-        viewport: { height: TALL_VIEWPORT, coveredTop: WAVEFORM_COVER },
+        viewportHeight: TALL_VIEWPORT,
+        coveredTop: WAVEFORM_COVER,
       };
-      memory = followStep(memory, { ...input, selection: [word(lines, "too-hot", 1)] }).memory;
-      const reselected = followStep(memory, { ...input, selection: [word(lines, "too-hot", 1)] });
-      expect(reselected.rows).toEqual(rowOf("too-hot"));
+      followStep(memory, { ...input, selection: [word(lines, "too-hot", 1)] });
+      expect(followStep(memory, { ...input, selection: [word(lines, "too-hot", 1)] })).toEqual(rowOf("too-hot"));
     });
   });
 });

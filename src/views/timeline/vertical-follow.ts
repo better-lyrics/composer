@@ -11,17 +11,13 @@ interface RowSpan {
   height: number;
 }
 
-interface FollowViewport {
-  height: number;
-  coveredTop: number;
-}
-
 interface FollowMemory {
   selection: readonly WordSelection[] | null;
   selectedLineIds: ReadonlySet<string> | null;
   layout: RowLayout | null;
   viewportHeight: number;
   heldRows: RowSpan | null;
+  lineId: string | null;
   rowKey: string | null;
 }
 
@@ -31,22 +27,19 @@ interface FollowInput {
   selection: readonly WordSelection[] | null;
   layout: RowLayout;
   collapsedInstances: Record<string, boolean>;
-  viewport: FollowViewport;
-}
-
-interface FollowStep {
-  memory: FollowMemory;
-  rows: RowSpan | null;
+  viewportHeight: number;
+  coveredTop: number;
 }
 
 // -- Constants ----------------------------------------------------------------
 
-const IDLE_FOLLOW: FollowMemory = {
+const IDLE_FOLLOW: Readonly<FollowMemory> = {
   selection: null,
   selectedLineIds: null,
   layout: null,
   viewportHeight: 0,
   heldRows: null,
+  lineId: null,
   rowKey: null,
 };
 
@@ -81,61 +74,76 @@ function spanOfRows(
   return bottom > top ? { top, height: bottom - top } : null;
 }
 
-function lineAt(lines: readonly LyricLine[], time: number, lineIds: ReadonlySet<string> | null): LyricLine | undefined {
-  return lines.find((line) => {
-    if (lineIds && !lineIds.has(line.id)) return false;
+function lineAt(lines: readonly LyricLine[], time: number, lineIds: ReadonlySet<string> | null): LyricLine | null {
+  for (const line of lines) {
+    if (lineIds && !lineIds.has(line.id)) continue;
     const bounds = effectiveBounds(line);
-    return bounds !== null && time >= bounds.begin && time < bounds.end;
-  });
+    if (bounds !== null && time >= bounds.begin && time < bounds.end) return line;
+  }
+  return null;
 }
-
-// -- Functions ----------------------------------------------------------------
 
 function sameSpan(a: RowSpan | null, b: RowSpan | null): boolean {
   return a !== null && b !== null && a.top === b.top && a.height === b.height;
 }
 
+// -- Functions ----------------------------------------------------------------
+
+function createFollowMemory(): FollowMemory {
+  return { ...IDLE_FOLLOW };
+}
+
+function resetFollowMemory(memory: FollowMemory): void {
+  Object.assign(memory, IDLE_FOLLOW);
+}
+
+function recheckSelection(memory: FollowMemory, input: FollowInput, selectedLineIds: ReadonlySet<string>) {
+  const span = spanOfRows(input.lines, selectedLineIds, input.layout, input.collapsedInstances);
+  const fits = span !== null && span.height <= input.viewportHeight - input.coveredTop;
+  const unchanged = sameSpan(span, memory.heldRows) && input.viewportHeight === memory.viewportHeight;
+  const wasHeld = memory.heldRows !== null;
+  memory.layout = input.layout;
+  memory.viewportHeight = input.viewportHeight;
+  memory.heldRows = fits ? span : null;
+  if (fits || wasHeld) {
+    memory.lineId = null;
+    memory.rowKey = null;
+  }
+  return fits && !unchanged ? span : null;
+}
+
+// Runs every playback frame and allocates only when the followed rows change.
 // A played selection is kept in view as a whole when it fits, so a loop never drags the view between its lines.
-function followStep(memory: FollowMemory, input: FollowInput): FollowStep {
-  const { lines, time, selection, layout, collapsedInstances, viewport } = input;
-  let current = memory;
-
-  if (selection !== memory.selection) {
-    const selectedLineIds = selection ? new Set(selection.map((word) => word.lineId)) : null;
-    current = { ...IDLE_FOLLOW, selection, selectedLineIds };
+function followStep(memory: FollowMemory, input: FollowInput): RowSpan | null {
+  if (input.selection !== memory.selection) {
+    resetFollowMemory(memory);
+    memory.selection = input.selection;
+    memory.selectedLineIds = input.selection ? new Set(input.selection.map((word) => word.lineId)) : null;
   }
 
-  if (current.selectedLineIds && (layout !== current.layout || viewport.height !== current.viewportHeight)) {
-    const span = spanOfRows(lines, current.selectedLineIds, layout, collapsedInstances);
-    const heldRows = span && span.height <= viewport.height - viewport.coveredTop ? span : null;
-    const previousHeld = current.heldRows;
-    current = {
-      ...current,
-      layout,
-      viewportHeight: viewport.height,
-      heldRows,
-      rowKey: heldRows ? null : current.rowKey,
-    };
-    if (heldRows) return { memory: current, rows: sameSpan(heldRows, previousHeld) ? null : heldRows };
-    if (previousHeld) current = { ...current, rowKey: null };
+  const selectedLineIds = memory.selectedLineIds;
+  if (selectedLineIds && (input.layout !== memory.layout || input.viewportHeight !== memory.viewportHeight)) {
+    const rows = recheckSelection(memory, input, selectedLineIds);
+    if (memory.heldRows) return rows;
   }
+  if (memory.heldRows) return null;
 
-  if (current.heldRows) return { memory: current, rows: null };
-
-  const line = lineAt(lines, time, current.selectedLineIds);
-  if (!line) return { memory: current, rows: null };
-  const rowKey = collapsedInstanceKey(line, collapsedInstances) ?? line.id;
-  if (rowKey === current.rowKey) return { memory: current, rows: null };
-  return { memory: { ...current, rowKey }, rows: rowOf(line, layout, collapsedInstances) ?? null };
+  const line = lineAt(input.lines, input.time, selectedLineIds);
+  if (!line || line.id === memory.lineId) return null;
+  memory.lineId = line.id;
+  const rowKey = collapsedInstanceKey(line, input.collapsedInstances) ?? line.id;
+  if (rowKey === memory.rowKey) return null;
+  memory.rowKey = rowKey;
+  return rowOf(line, input.layout, input.collapsedInstances) ?? null;
 }
 
 // The sticky waveform covers the top of the scroll container, so rows are centered in the space below it.
-function followScrollTop(rows: RowSpan, viewport: FollowViewport & { scrollHeight: number }): number {
-  const centered = rows.top + rows.height / 2 - (viewport.coveredTop + viewport.height) / 2;
-  return Math.max(0, Math.min(viewport.scrollHeight - viewport.height, centered));
+function followScrollTop(rows: RowSpan, input: FollowInput, scrollHeight: number): number {
+  const centered = rows.top + rows.height / 2 - (input.coveredTop + input.viewportHeight) / 2;
+  return Math.max(0, Math.min(scrollHeight - input.viewportHeight, centered));
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { IDLE_FOLLOW, followScrollTop, followStep };
-export type { FollowMemory };
+export { createFollowMemory, followScrollTop, followStep, resetFollowMemory };
+export type { FollowInput, FollowMemory };

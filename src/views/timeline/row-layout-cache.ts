@@ -1,28 +1,40 @@
+import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
+import { WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { type RowLayout, type RowLayoutInput, computeRowLayout } from "@/views/timeline/utils";
 
-// -- Helpers ------------------------------------------------------------------
+// -- Types --------------------------------------------------------------------
 
-function sameLayoutInput(a: RowLayoutInput, b: RowLayoutInput): boolean {
-  return (
-    a.lines === b.lines &&
-    a.rowHeights === b.rowHeights &&
-    a.defaultRowHeight === b.defaultRowHeight &&
-    a.collapsedInstances === b.collapsedInstances &&
-    a.focusedGroup === b.focusedGroup &&
-    a.waveformHeight === b.waveformHeight &&
-    a.groupHeaderHeight === b.groupHeaderHeight
-  );
-}
+type RowLayoutView = Pick<RowLayoutInput, "rowHeights" | "defaultRowHeight" | "collapsedInstances" | "focusedGroup">;
 
 // -- Functions ----------------------------------------------------------------
 
-// Per-frame readers get the same layout object until an input changes.
-function createRowLayoutCache(): (input: RowLayoutInput) => RowLayout {
-  let cached: { input: RowLayoutInput; layout: RowLayout } | null = null;
-  return (input) => {
-    if (cached && sameLayoutInput(cached.input, input)) return cached.layout;
-    cached = { input, layout: computeRowLayout(input) };
-    return cached.layout;
+// Per-frame readers get the same layout object, without allocating, until the lines or the row view change.
+function createRowLayoutCache(): (lines: RowLayoutInput["lines"], view: RowLayoutView) => RowLayout {
+  let cached: RowLayoutInput | null = null;
+  let layout: RowLayout | null = null;
+  return (lines, view) => {
+    if (
+      layout &&
+      cached &&
+      cached.lines === lines &&
+      cached.rowHeights === view.rowHeights &&
+      cached.defaultRowHeight === view.defaultRowHeight &&
+      cached.collapsedInstances === view.collapsedInstances &&
+      cached.focusedGroup === view.focusedGroup
+    ) {
+      return layout;
+    }
+    cached = {
+      lines,
+      rowHeights: view.rowHeights,
+      defaultRowHeight: view.defaultRowHeight,
+      collapsedInstances: view.collapsedInstances,
+      focusedGroup: view.focusedGroup,
+      waveformHeight: WAVEFORM_HEIGHT,
+      groupHeaderHeight: GROUP_HEADER_HEIGHT,
+    };
+    layout = computeRowLayout(cached);
+    return layout;
   };
 }
 
