@@ -3,7 +3,7 @@ import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
 import { cn } from "@/utils/cn";
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
-import { type KeyboardEvent, type ReactElement, cloneElement, useRef, useState } from "react";
+import { type ReactElement, cloneElement, useRef, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -73,12 +73,6 @@ const Select: React.FC<SelectProps> = ({
     </button>
   );
 
-  const jumpToEdge = (event: KeyboardEvent) => {
-    if (event.key !== "Home" && event.key !== "End") return;
-    event.preventDefault();
-    setActiveIndex(event.key === "Home" ? 0 : options.length - 1);
-  };
-
   return (
     <Popover
       placement={placement}
@@ -94,12 +88,7 @@ const Select: React.FC<SelectProps> = ({
       {(close, getItemProps) => (
         <Scroll className="max-h-80" onInitialized={focusTabStopOption}>
           {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role -- styled single-select popover; datalist is input autocomplete, not a listbox, and would reintroduce native chrome */}
-          <div
-            role="listbox"
-            aria-label={ariaLabel}
-            onKeyDown={jumpToEdge}
-            className="flex flex-col gap-0.5 p-1 w-max min-w-36"
-          >
+          <div role="listbox" aria-label={ariaLabel} className="flex flex-col gap-0.5 p-1 w-max min-w-36">
             {options.map((option, index) => {
               const isSelected = option.value === value;
               return (
