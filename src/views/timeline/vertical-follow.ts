@@ -11,10 +11,17 @@ interface RowSpan {
   height: number;
 }
 
+interface FollowViewport {
+  height: number;
+  coveredTop: number;
+}
+
 interface FollowMemory {
   selection: readonly WordSelection[] | null;
   selectedLineIds: ReadonlySet<string> | null;
-  holdsSelection: boolean;
+  layout: RowLayout | null;
+  viewportHeight: number;
+  heldRows: RowSpan | null;
   rowKey: string | null;
 }
 
@@ -22,9 +29,9 @@ interface FollowInput {
   lines: readonly LyricLine[];
   time: number;
   selection: readonly WordSelection[] | null;
-  layout: () => RowLayout;
+  layout: RowLayout;
   collapsedInstances: Record<string, boolean>;
-  viewportHeight: number;
+  viewport: FollowViewport;
 }
 
 interface FollowStep {
@@ -34,7 +41,14 @@ interface FollowStep {
 
 // -- Constants ----------------------------------------------------------------
 
-const IDLE_FOLLOW: FollowMemory = { selection: null, selectedLineIds: null, holdsSelection: false, rowKey: null };
+const IDLE_FOLLOW: FollowMemory = {
+  selection: null,
+  selectedLineIds: null,
+  layout: null,
+  viewportHeight: 0,
+  heldRows: null,
+  rowKey: null,
+};
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -77,32 +91,51 @@ function lineAt(lines: readonly LyricLine[], time: number, lineIds: ReadonlySet<
 
 // -- Functions ----------------------------------------------------------------
 
+function sameSpan(a: RowSpan | null, b: RowSpan | null): boolean {
+  return a !== null && b !== null && a.top === b.top && a.height === b.height;
+}
+
 // A played selection is kept in view as a whole when it fits, so a loop never drags the view between its lines.
 function followStep(memory: FollowMemory, input: FollowInput): FollowStep {
-  const { lines, time, selection, collapsedInstances } = input;
+  const { lines, time, selection, layout, collapsedInstances, viewport } = input;
   let current = memory;
 
   if (selection !== memory.selection) {
     const selectedLineIds = selection ? new Set(selection.map((word) => word.lineId)) : null;
-    current = { selection, selectedLineIds, holdsSelection: false, rowKey: null };
-    if (selectedLineIds) {
-      const span = spanOfRows(lines, selectedLineIds, input.layout(), collapsedInstances);
-      if (span && span.height <= input.viewportHeight) {
-        return { memory: { ...current, holdsSelection: true }, rows: span };
-      }
-    }
+    current = { ...IDLE_FOLLOW, selection, selectedLineIds };
   }
 
-  if (current.holdsSelection) return { memory: current, rows: null };
+  if (current.selectedLineIds && (layout !== current.layout || viewport.height !== current.viewportHeight)) {
+    const span = spanOfRows(lines, current.selectedLineIds, layout, collapsedInstances);
+    const heldRows = span && span.height <= viewport.height - viewport.coveredTop ? span : null;
+    const previousHeld = current.heldRows;
+    current = {
+      ...current,
+      layout,
+      viewportHeight: viewport.height,
+      heldRows,
+      rowKey: heldRows ? null : current.rowKey,
+    };
+    if (heldRows) return { memory: current, rows: sameSpan(heldRows, previousHeld) ? null : heldRows };
+    if (previousHeld) current = { ...current, rowKey: null };
+  }
+
+  if (current.heldRows) return { memory: current, rows: null };
 
   const line = lineAt(lines, time, current.selectedLineIds);
   if (!line) return { memory: current, rows: null };
   const rowKey = collapsedInstanceKey(line, collapsedInstances) ?? line.id;
   if (rowKey === current.rowKey) return { memory: current, rows: null };
-  return { memory: { ...current, rowKey }, rows: rowOf(line, input.layout(), collapsedInstances) ?? null };
+  return { memory: { ...current, rowKey }, rows: rowOf(line, layout, collapsedInstances) ?? null };
+}
+
+// The sticky waveform covers the top of the scroll container, so rows are centered in the space below it.
+function followScrollTop(rows: RowSpan, viewport: FollowViewport & { scrollHeight: number }): number {
+  const centered = rows.top + rows.height / 2 - (viewport.coveredTop + viewport.height) / 2;
+  return Math.max(0, Math.min(viewport.scrollHeight - viewport.height, centered));
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { IDLE_FOLLOW, followStep };
+export { IDLE_FOLLOW, followScrollTop, followStep };
 export type { FollowMemory };

@@ -1,17 +1,17 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { lineRowHeight } from "@/views/timeline/row-geometry";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-words";
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { trackWords } from "@/domain/line/tracks";
+import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
-import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { distributeWordsInLine } from "@/utils/sync-helpers";
 import { type GroupFocus, effectiveFocus, isInFocus } from "@/views/timeline/group-focus";
+import { lineRowHeight } from "@/views/timeline/row-geometry";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -439,4 +439,4 @@ export {
   shiftLineSyncedRows,
   shiftSelectionsTogether,
 };
-export type { EffectiveRow, GroupHeaderRow, RowLayout };
+export type { EffectiveRow, GroupHeaderRow, RowLayout, RowLayoutInput };

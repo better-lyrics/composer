@@ -8,11 +8,11 @@ import { clampScrollLeft } from "@/views/timeline/group-focus";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createPlayheadDrag } from "@/views/timeline/playhead-drag";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
+import { createRowLayoutCache } from "@/views/timeline/row-layout-cache";
 import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
-import { computeRowLayout } from "@/views/timeline/utils";
-import { type FollowMemory, IDLE_FOLLOW, followStep } from "@/views/timeline/vertical-follow";
-import { useEffect, useMemo, useRef } from "react";
+import { type FollowMemory, IDLE_FOLLOW, followScrollTop, followStep } from "@/views/timeline/vertical-follow";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -38,6 +38,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
   const containerRef = useRef<HTMLDivElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
   const followMemoryRef = useRef<FollowMemory>(IDLE_FOLLOW);
+  const [rowLayoutFor] = useState(createRowLayoutCache);
   const verticalTargetRef = useRef<number | null>(null);
   const lastMaskRef = useRef<string>("");
   const playheadCenterXLocalRef = useRef<number>(0);
@@ -63,32 +64,27 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
       const lines = useProjectStore.getState().lines;
       const { rowHeights, defaultRowHeight, collapsedInstances, focusedGroup, selectionPlayback, selectedWords } =
         useTimelineStore.getState();
-      const viewportHeight = container.clientHeight;
+      const viewport = { height: container.clientHeight, coveredTop: WAVEFORM_HEIGHT };
       const step = followStep(followMemoryRef.current, {
         lines,
         time: currentTime,
         selection: selectionPlayback !== null ? selectedWords : null,
-        layout: () =>
-          computeRowLayout({
-            lines,
-            rowHeights,
-            defaultRowHeight,
-            collapsedInstances,
-            focusedGroup,
-            waveformHeight: WAVEFORM_HEIGHT,
-            groupHeaderHeight: GROUP_HEADER_HEIGHT,
-          }),
+        layout: rowLayoutFor({
+          lines,
+          rowHeights,
+          defaultRowHeight,
+          collapsedInstances,
+          focusedGroup,
+          waveformHeight: WAVEFORM_HEIGHT,
+          groupHeaderHeight: GROUP_HEADER_HEIGHT,
+        }),
         collapsedInstances,
-        viewportHeight,
+        viewport,
       });
       followMemoryRef.current = step.memory;
 
       if (step.rows) {
-        const rowsCenter = step.rows.top + step.rows.height / 2;
-        verticalTargetRef.current = Math.max(
-          0,
-          Math.min(container.scrollHeight - viewportHeight, rowsCenter - viewportHeight / 2),
-        );
+        verticalTargetRef.current = followScrollTop(step.rows, { ...viewport, scrollHeight: container.scrollHeight });
       }
 
       // Lerp vertical scroll only while animating toward target

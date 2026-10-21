@@ -2,12 +2,13 @@ import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 import { createLine } from "@/test/factories";
 import { computeRowLayout } from "@/views/timeline/utils";
-import { type FollowMemory, IDLE_FOLLOW, followStep } from "@/views/timeline/vertical-follow";
+import { type FollowMemory, IDLE_FOLLOW, followScrollTop, followStep } from "@/views/timeline/vertical-follow";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
 const ROW_HEIGHT = 60;
+const WAVEFORM_COVER = 80;
 const TALL_VIEWPORT = 600;
 
 const verse = [
@@ -40,7 +41,7 @@ function layoutOf(lines: LyricLine[], collapsedInstances: Record<string, boolean
     defaultRowHeight: ROW_HEIGHT,
     collapsedInstances,
     focusedGroup: null,
-    waveformHeight: 80,
+    waveformHeight: WAVEFORM_COVER,
     groupHeaderHeight: 28,
   });
 }
@@ -60,6 +61,7 @@ interface PlaybackOptions {
 function playFrames(times: number[], options: PlaybackOptions = {}) {
   const lines = options.lines ?? verse;
   const collapsedInstances = options.collapsedInstances ?? {};
+  const layout = layoutOf(lines, collapsedInstances);
   let memory: FollowMemory = IDLE_FOLLOW;
   const moves: { top: number; height: number }[] = [];
   for (const time of times) {
@@ -67,9 +69,9 @@ function playFrames(times: number[], options: PlaybackOptions = {}) {
       lines,
       time,
       selection: options.selection ?? null,
-      layout: () => layoutOf(lines, collapsedInstances),
+      layout,
       collapsedInstances,
-      viewportHeight: options.viewportHeight ?? TALL_VIEWPORT,
+      viewport: { height: options.viewportHeight ?? TALL_VIEWPORT, coveredTop: WAVEFORM_COVER },
     });
     memory = step.memory;
     if (step.rows) moves.push({ top: step.rows.top, height: step.rows.height });
@@ -111,7 +113,7 @@ describe("followStep", () => {
   it("follows each selected line when the selection is taller than the viewport", () => {
     const selection = [word(verse, "too-hot", 2), word(verse, "ceo", 0), word(verse, "labels", 0)];
     const pass = [21.3, 22.0, 23.5, 25.0, 26.5, 28.3];
-    expect(playFrames([...pass, ...pass], { selection, viewportHeight: ROW_HEIGHT * 2 })).toEqual([
+    expect(playFrames([...pass, ...pass], { selection, viewportHeight: WAVEFORM_COVER + ROW_HEIGHT * 2 })).toEqual([
       rowOf("too-hot"),
       rowOf("ceo"),
       rowOf("labels"),
@@ -128,8 +130,72 @@ describe("followStep", () => {
 
     it("regression: a tall selection's lead-in over an unselected line never pulls the view to it", () => {
       const selection = [word(verse, "too-hot", 0), word(verse, "ceo", 0)];
-      const moves = playFrames([20.7, 21.0, 23.5, 25.9, 20.7, 21.0], { selection, viewportHeight: ROW_HEIGHT });
+      const moves = playFrames([20.7, 21.0, 23.5, 25.9, 20.7, 21.0], {
+        selection,
+        viewportHeight: WAVEFORM_COVER + ROW_HEIGHT,
+      });
       expect(moves).toEqual([rowOf("too-hot"), rowOf("ceo"), rowOf("too-hot")]);
+    });
+
+    it("regression: a block taller than the rows visible below the waveform is not held", () => {
+      const selection = [word(verse, "yeah", 0), word(verse, "too-hot", 0), word(verse, "ceo", 0)];
+      const viewportHeight = ROW_HEIGHT * 3 + WAVEFORM_COVER / 2;
+      expect(playFrames([19.2, 21.3, 24.0], { selection, viewportHeight })).toEqual([
+        rowOf("yeah"),
+        rowOf("too-hot"),
+        rowOf("ceo"),
+      ]);
+    });
+
+    it("regression: a held block is checked again when the rows or the viewport change", () => {
+      const selection = [word(verse, "yeah", 2), word(verse, "too-hot", 0)];
+      const expanded = layoutOf(verse);
+      const resized = computeRowLayout({
+        lines: verse,
+        rowHeights: { yeah: ROW_HEIGHT * 2 },
+        defaultRowHeight: ROW_HEIGHT,
+        collapsedInstances: {},
+        focusedGroup: null,
+        waveformHeight: WAVEFORM_COVER,
+        groupHeaderHeight: 28,
+      });
+      const frames = [
+        { layout: expanded, height: TALL_VIEWPORT },
+        { layout: layoutOf(verse), height: TALL_VIEWPORT },
+        { layout: resized, height: TALL_VIEWPORT },
+        { layout: resized, height: WAVEFORM_COVER + ROW_HEIGHT * 2 },
+      ];
+      let memory: FollowMemory = IDLE_FOLLOW;
+      const moves = frames.map(({ layout, height }) => {
+        const step = followStep(memory, {
+          lines: verse,
+          time: 21.15,
+          selection,
+          layout,
+          collapsedInstances: {},
+          viewport: { height, coveredTop: WAVEFORM_COVER },
+        });
+        memory = step.memory;
+        return step.rows;
+      });
+      const blockOf = (layout: typeof expanded) => {
+        const tooHot = layout.lineTops.get("too-hot");
+        return tooHot && { top: WAVEFORM_COVER, height: tooHot.top + tooHot.height - WAVEFORM_COVER };
+      };
+      expect(moves).toEqual([blockOf(expanded), null, blockOf(resized), resized.lineTops.get("too-hot")]);
+    });
+  });
+
+  describe("followScrollTop", () => {
+    const viewport = { height: 400, coveredTop: WAVEFORM_COVER, scrollHeight: 2000 };
+
+    it("centers the rows in the space below the waveform", () => {
+      expect(followScrollTop({ top: 500, height: 60 }, viewport)).toBe(290);
+    });
+
+    it("clamps to the top and the bottom of the content", () => {
+      expect(followScrollTop({ top: 90, height: 60 }, viewport)).toBe(0);
+      expect(followScrollTop({ top: 1950, height: 40 }, viewport)).toBe(1600);
     });
   });
 
@@ -165,9 +231,9 @@ describe("followStep", () => {
       const input = {
         lines,
         time: 21.3,
-        layout: () => layoutOf(lines),
+        layout: layoutOf(lines),
         collapsedInstances: {},
-        viewportHeight: TALL_VIEWPORT,
+        viewport: { height: TALL_VIEWPORT, coveredTop: WAVEFORM_COVER },
       };
       memory = followStep(memory, { ...input, selection: [word(lines, "too-hot", 1)] }).memory;
       const reselected = followStep(memory, { ...input, selection: [word(lines, "too-hot", 1)] });
