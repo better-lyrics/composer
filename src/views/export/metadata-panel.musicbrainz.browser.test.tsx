@@ -2,6 +2,7 @@ import { resetMusicBrainzQueue } from "@/lib/musicbrainz-client";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import type { MbRecording } from "@/domain/musicbrainz/types";
 import { YOUR_POWER_ALBUM_RECORDING } from "@/test/musicbrainz-recording-fixtures";
 import { YOUR_POWER_SEARCH } from "@/test/musicbrainz-search-fixtures";
 import { render } from "@/test/render";
@@ -15,13 +16,21 @@ const LOOKUP_TIMEOUT = { timeout: 8000 };
 
 // -- Helpers ------------------------------------------------------------------
 
+// Without release groups no cover art loads, so the test never reaches coverartarchive.org.
+function withoutCoverArt(recording: MbRecording): MbRecording {
+  return {
+    ...recording,
+    releases: recording.releases?.map(({ "release-group": _releaseGroup, ...release }) => release),
+  };
+}
+
 function stubMusicBrainz(): void {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string) => {
       const body = new URL(url).pathname.startsWith("/ws/2/recording/")
-        ? YOUR_POWER_ALBUM_RECORDING
-        : YOUR_POWER_SEARCH;
+        ? withoutCoverArt(YOUR_POWER_ALBUM_RECORDING)
+        : { recordings: YOUR_POWER_SEARCH.recordings.map(withoutCoverArt) };
       return Response.json(body);
     }),
   );

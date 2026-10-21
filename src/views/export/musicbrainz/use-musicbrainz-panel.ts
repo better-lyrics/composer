@@ -31,6 +31,7 @@ interface PanelSession {
 interface MusicBrainzPanel {
   match: MusicBrainzMatch;
   shown: ShownMatch | null;
+  dismissed: boolean;
   suggestions: MetadataSuggestions;
   detailCount: number;
   fillCount: number;
@@ -107,6 +108,7 @@ function useMusicBrainzPanel(): MusicBrainzPanel {
   return {
     match,
     shown,
+    dismissed: dismissed && !revealed,
     suggestions,
     detailCount: suggestionCount(suggestions),
     fillCount: Object.keys(fill).length,

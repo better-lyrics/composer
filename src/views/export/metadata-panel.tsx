@@ -16,7 +16,7 @@ import { useMusicBrainzPanel } from "@/views/export/musicbrainz/use-musicbrainz-
 import { useNormalizedDraft } from "@/views/export/use-normalized-draft";
 import { IconChevronRight } from "@tabler/icons-react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 
 // -- Component ----------------------------------------------------------------
 
@@ -26,6 +26,12 @@ const MetadataPanel: React.FC = () => {
 
   const languageHintId = useId();
   const [open, setOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  // These actions unmount the button that ran them, so focus moves to the stable Metadata toggle.
+  const thenFocusToggle = (action: () => void) => () => {
+    action();
+    toggleRef.current?.focus();
+  };
   const [isrcValue, setIsrcDraft] = useNormalizedDraft(metadata.isrc, normalizeIsrc);
   const trimmedIsrc = isrcValue.trim();
   const isrcInvalid = trimmedIsrc !== "" && !isValidIsrc(trimmedIsrc);
@@ -52,6 +58,7 @@ const MetadataPanel: React.FC = () => {
     <div className="flex flex-col min-h-0 max-h-[60%] border-b border-composer-border">
       <div className="flex h-8 shrink-0 items-center gap-1 pr-2">
         <Button
+          ref={toggleRef}
           hasIcon
           variant="ghost"
           size="md"
@@ -62,7 +69,12 @@ const MetadataPanel: React.FC = () => {
           <IconChevronRight className={cn("size-4 transition-transform", open && "rotate-90")} />
           Metadata
         </Button>
-        <MusicBrainzHeaderSlot panel={musicBrainz} onReview={() => setOpen(true)} />
+        <MusicBrainzHeaderSlot
+          panel={musicBrainz}
+          onReview={() => setOpen(true)}
+          onRequest={thenFocusToggle(musicBrainz.request)}
+          onDismiss={thenFocusToggle(musicBrainz.dismiss)}
+        />
       </div>
 
       <AnimatePresence initial={false}>
@@ -173,8 +185,8 @@ const MetadataPanel: React.FC = () => {
               <MusicBrainzFooter
                 recordingId={shown.match.chosen.recording.id}
                 fillCount={musicBrainz.fillCount}
-                onDismiss={musicBrainz.dismiss}
-                onFill={musicBrainz.fillAll}
+                onDismiss={thenFocusToggle(musicBrainz.dismiss)}
+                onFill={thenFocusToggle(musicBrainz.fillAll)}
               />
             )}
           </m.div>

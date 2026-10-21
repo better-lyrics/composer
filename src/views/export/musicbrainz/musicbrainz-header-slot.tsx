@@ -22,6 +22,8 @@ import {
 interface MusicBrainzHeaderSlotProps {
   panel: MusicBrainzPanel;
   onReview: () => void;
+  onRequest: () => void;
+  onDismiss: () => void;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -32,7 +34,7 @@ const SLOT_BUTTON = "h-6";
 // -- Components ---------------------------------------------------------------
 
 const LookingUp: React.FC<{ title: string }> = ({ title }) => (
-  <span role="status" className={cn("flex items-center gap-2 pr-1", SLOT_TEXT)}>
+  <span className={cn("flex items-center gap-2 pr-1", SLOT_TEXT)}>
     <IconLoader2 className="size-3.5 opacity-70 motion-safe:animate-spin" />
     Looking up {title}
   </span>
@@ -48,7 +50,7 @@ const DidNotAnswer: React.FC<{ retry: () => void }> = ({ retry }) => (
   </>
 );
 
-const MusicBrainzHeaderSlot: React.FC<MusicBrainzHeaderSlotProps> = ({ panel, onReview }) => {
+const SlotContent: React.FC<MusicBrainzHeaderSlotProps> = ({ panel, onReview, onRequest, onDismiss }) => {
   const title = useProjectStore((state) => state.metadata.title.trim());
   const { match, shown, detailCount } = panel;
 
@@ -59,7 +61,7 @@ const MusicBrainzHeaderSlot: React.FC<MusicBrainzHeaderSlotProps> = ({ panel, on
       return <span className={cn("pr-1", SLOT_TEXT)}>Add a title to look it up on MusicBrainz</span>;
     case "idle":
       return (
-        <Button hasIcon variant="ghost" size="sm" className={SLOT_BUTTON} onClick={panel.request}>
+        <Button hasIcon variant="ghost" size="sm" className={SLOT_BUTTON} onClick={onRequest}>
           <IconSearch className="size-3.5" />
           Find on MusicBrainz
         </Button>
@@ -101,11 +103,11 @@ const MusicBrainzHeaderSlot: React.FC<MusicBrainzHeaderSlotProps> = ({ panel, on
           Review
         </Button>
         <IconButton
-          label="Dismiss"
+          label="Dismiss MusicBrainz suggestions"
           variant="ghost"
           className="size-6"
           icon={<IconX className="size-3.5" />}
-          onClick={panel.dismiss}
+          onClick={onDismiss}
         />
       </>
     );
@@ -113,10 +115,14 @@ const MusicBrainzHeaderSlot: React.FC<MusicBrainzHeaderSlotProps> = ({ panel, on
 
   return (
     <>
-      <span className={cn("flex items-center gap-1.5", SLOT_TEXT)}>
-        <IconCheck className="size-3.5" />
-        Matches MusicBrainz
-      </span>
+      {panel.dismissed ? (
+        <span className={SLOT_TEXT}>Suggestions dismissed</span>
+      ) : (
+        <span className={cn("flex items-center gap-1.5", SLOT_TEXT)}>
+          <IconCheck className="size-3.5" />
+          Matches MusicBrainz
+        </span>
+      )}
       <IconButton
         label="Change match"
         variant="ghost"
@@ -127,6 +133,28 @@ const MusicBrainzHeaderSlot: React.FC<MusicBrainzHeaderSlotProps> = ({ panel, on
           onReview();
         }}
       />
+    </>
+  );
+};
+
+function slotAnnouncement(panel: MusicBrainzPanel, title: string): string {
+  const { match } = panel;
+  if (match.status === "searching") return `Looking up ${title} on MusicBrainz`;
+  if (match.status === "none") return "Not on MusicBrainz yet";
+  if (match.status === "error") return "MusicBrainz did not answer";
+  if (match.status !== "found" || !match.details) return "";
+  if (panel.shown && panel.detailCount > 0) return `${pluralize(panel.detailCount, "detail")} found on MusicBrainz`;
+  return panel.dismissed ? "" : "Matches MusicBrainz";
+}
+
+const MusicBrainzHeaderSlot: React.FC<MusicBrainzHeaderSlotProps> = (props) => {
+  const title = useProjectStore((state) => state.metadata.title.trim());
+  return (
+    <>
+      <span role="status" className="sr-only">
+        {slotAnnouncement(props.panel, title)}
+      </span>
+      <SlotContent {...props} />
     </>
   );
 };
