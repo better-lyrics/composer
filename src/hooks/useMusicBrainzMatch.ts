@@ -9,7 +9,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { normalizeIsrc } from "@/utils/isrc";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 // -- Constants ----------------------------------------------------------------
@@ -43,10 +43,13 @@ function useMusicBrainzMatch(chosenRecordingId: string | null, requested: boolea
   const query = useMemo((): SongQuery => JSON.parse(identityKey), [identityKey]);
   const enabled = mode !== "off" && query.title !== "" && (mode === "auto" || requested);
 
-  const search = useQuery({
+  const search = useQuery<MbSearchResponse>({
     queryKey: ["musicbrainz-search", query.title, query.artist, query.isrc],
     enabled,
-    placeholderData: keepPreviousData,
+    placeholderData: (previousData, previousQuery) =>
+      previousQuery?.queryKey[1] === query.title && previousQuery.queryKey[2] === query.artist
+        ? previousData
+        : undefined,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 0,
     retry: false,
@@ -72,6 +75,7 @@ function useMusicBrainzMatch(chosenRecordingId: string | null, requested: boolea
   if (mode === "off") return { status: "off" };
   if (title === "") return { status: "missing-title" };
   if (!enabled) return { status: "idle" };
+  if (title !== query.title || artist !== query.artist) return { status: "searching" };
   if (search.isError) return { status: "error", retry: () => void search.refetch() };
   if (search.isPending) return { status: "searching" };
   if (!chosen) return { status: "none" };

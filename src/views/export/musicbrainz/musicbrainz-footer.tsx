@@ -27,7 +27,7 @@ const MusicBrainzFooter: React.FC<MusicBrainzFooterProps> = ({ recordingId, fill
     {fillCount > 0 && (
       <Button hasIcon variant="primary" size="sm" onClick={onFill}>
         <IconCheck className="size-3.5" />
-        Fill {pluralize(fillCount, "empty field")}
+        Fill {pluralize(fillCount, "field")}
       </Button>
     )}
   </div>

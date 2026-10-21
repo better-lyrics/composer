@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pickAlbumRelease, songDetailsFrom } from "@/domain/musicbrainz/song-details";
+import { pickAlbumRelease, pickDisplayRelease, songDetailsFrom } from "@/domain/musicbrainz/song-details";
 import type { MbRecording, MbRelease } from "@/domain/musicbrainz/types";
 import { YOUR_POWER_ALBUM_RECORDING } from "@/test/musicbrainz-recording-fixtures";
 
@@ -59,6 +59,12 @@ describe("songDetailsFrom", () => {
         release("single", "Official", "2020", "Single"),
       ]);
       expect(picked?.title).toBe("single");
+    });
+
+    it("still names a live take's release for display", () => {
+      const live = release("Prime Day Show", "Official", "2021", "Album", ["Live"]);
+      expect(pickAlbumRelease([live])).toBeNull();
+      expect(pickDisplayRelease([live])?.title).toBe("Prime Day Show");
     });
 
     it("ignores releases that are not official", () => {

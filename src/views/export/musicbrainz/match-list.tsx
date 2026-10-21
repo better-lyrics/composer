@@ -1,5 +1,5 @@
 import type { RankedMatch } from "@/domain/musicbrainz/rank-matches";
-import { pickAlbumRelease } from "@/domain/musicbrainz/song-details";
+import { pickDisplayRelease } from "@/domain/musicbrainz/song-details";
 import { Button } from "@/ui/button";
 import { LinkButton } from "@/ui/link-button";
 import { cn } from "@/utils/cn";
@@ -47,10 +47,11 @@ const DeltaChip: React.FC<{ match: RankedMatch }> = ({ match }) => {
 };
 
 const MatchRow: React.FC<MatchRowProps> = ({ match, chosen, onSelect }) => {
-  const release = pickAlbumRelease(match.recording.releases ?? []);
+  const release = pickDisplayRelease(match.recording.releases ?? []);
   const releaseGroup = release?.["release-group"];
   const coverId = releaseGroup?.id ?? null;
-  const subtitle = match.recording.disambiguation || releaseGroup?.["primary-type"];
+  const subtitle =
+    match.recording.disambiguation || releaseGroup?.["secondary-types"]?.[0] || releaseGroup?.["primary-type"];
   return (
     <Button
       role="option"
@@ -76,30 +77,34 @@ const MatchRow: React.FC<MatchRowProps> = ({ match, chosen, onSelect }) => {
   );
 };
 
-const MatchList: React.FC<MatchListProps> = ({ matches, chosenId, title, onChoose, close }) => (
-  <div className="flex w-100 flex-col p-1">
-    <p className="px-2.5 pt-1.5 pb-1 text-xs text-composer-text-muted select-none">Recordings of {title}</p>
-    <div role="listbox" aria-label={`Recordings of ${title}`} className="flex flex-col">
-      {matches.slice(0, MAX_MATCHES).map((match) => (
-        <MatchRow
-          key={match.recording.id}
-          match={match}
-          chosen={match.recording.id === chosenId}
-          onSelect={() => {
-            onChoose(match.recording.id);
-            close();
-          }}
-        />
-      ))}
+const MatchList: React.FC<MatchListProps> = ({ matches, chosenId, title, onChoose, close }) => {
+  const artist = matches[0]?.recording["artist-credit"]?.[0]?.name;
+  const heading = artist ? `Recordings of ${title} by ${artist}` : `Recordings of ${title}`;
+  return (
+    <div className="flex w-100 flex-col p-1">
+      <p className="px-2.5 pt-1.5 pb-1 text-xs text-composer-text-muted select-none">{heading}</p>
+      <div role="listbox" aria-label={heading} className="flex flex-col">
+        {matches.slice(0, MAX_MATCHES).map((match) => (
+          <MatchRow
+            key={match.recording.id}
+            match={match}
+            chosen={match.recording.id === chosenId}
+            onSelect={() => {
+              onChoose(match.recording.id);
+              close();
+            }}
+          />
+        ))}
+      </div>
+      <div className="mt-1 flex border-t border-composer-border px-1 pt-1">
+        <LinkButton href={recordingSearchPageUrl(title)} external variant="ghost" size="sm" className="gap-1">
+          Search on musicbrainz.org
+          <IconExternalLink className="size-3.5" />
+        </LinkButton>
+      </div>
     </div>
-    <div className="mt-1 flex border-t border-composer-border px-1 pt-1">
-      <LinkButton href={recordingSearchPageUrl(title)} external variant="ghost" size="sm" className="gap-1">
-        Search on musicbrainz.org
-        <IconExternalLink className="size-3.5" />
-      </LinkButton>
-    </div>
-  </div>
-);
+  );
+};
 
 // -- Exports ------------------------------------------------------------------
 

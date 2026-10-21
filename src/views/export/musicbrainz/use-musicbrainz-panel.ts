@@ -44,7 +44,7 @@ function previousValues(patch: Partial<ProjectMetadata>, metadata: ProjectMetada
   if ("album" in patch) previous.album = metadata.album;
   if ("isrc" in patch) previous.isrc = metadata.isrc;
   if ("artists" in patch) previous.artists = metadata.artists;
-  if ("songwriters" in patch) previous.songwriters = metadata.songwriters ?? [];
+  if ("songwriters" in patch) previous.songwriters = metadata.songwriters;
   return previous;
 }
 
@@ -67,7 +67,7 @@ function useMusicBrainzPanel(): MusicBrainzPanel {
     () => (lookedUp && (!dismissed || revealed) ? metadataSuggestions(lookedUp, metadata) : NO_SUGGESTIONS),
     [lookedUp, dismissed, revealed, metadata],
   );
-  const fill = fillPatch(suggestions);
+  const fill = fillPatch(suggestions, metadata);
   const shown =
     found && (!dismissed || revealed)
       ? { match: found, details: lookedUp ?? songDetailsFrom(found.chosen.recording) }

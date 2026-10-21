@@ -31,6 +31,11 @@ function pickAlbumRelease(releases: readonly MbRelease[]): MbRelease | null {
   return candidates.find((release) => release["release-group"]?.["primary-type"] === "Album") ?? candidates[0] ?? null;
 }
 
+function pickDisplayRelease(releases: readonly MbRelease[]): MbRelease | null {
+  const official = releases.filter((release) => release.status === "Official");
+  return pickAlbumRelease(releases) ?? official.toSorted(byReleaseDate)[0] ?? releases[0] ?? null;
+}
+
 // -- Songwriters --------------------------------------------------------------
 
 function songwritersOf(recording: MbRecording): string[] {
@@ -64,5 +69,5 @@ function songDetailsFrom(recording: MbRecording): SongDetails {
 
 // -- Exports ------------------------------------------------------------------
 
-export { pickAlbumRelease, songDetailsFrom };
+export { pickAlbumRelease, pickDisplayRelease, songDetailsFrom };
 export type { SongDetails };

@@ -36,7 +36,7 @@ describe("metadataSuggestions", () => {
   it("offers a different value without filling it", () => {
     const suggestions = metadataSuggestions(details, metadata({ album: "Other" }));
     expect(suggestions.album).toEqual({ kind: "differs", value: "Happier Than Ever" });
-    expect(fillPatch(suggestions).album).toBeUndefined();
+    expect(fillPatch(suggestions, metadata({ album: "Other" })).album).toBeUndefined();
   });
 
   describe("edge cases", () => {
@@ -57,15 +57,34 @@ describe("metadataSuggestions", () => {
       expect(metadataSuggestions(details, metadata({ songwriters: [" "] })).songwriters?.kind).toBe("fill");
     });
 
-    it("offers a different list when the order or members differ", () => {
-      expect(metadataSuggestions(details, metadata({ songwriters: ["FINNEAS"] })).songwriters?.kind).toBe("differs");
+    it("offers a different list when it holds a name MusicBrainz does not", () => {
+      expect(metadataSuggestions(details, metadata({ songwriters: ["FINNEAS", "Someone Else"] })).songwriters).toEqual({
+        kind: "differs",
+        value: ["Billie Eilish", "FINNEAS"],
+      });
+    });
+
+    it("treats the same names in another order as the same list", () => {
+      expect(
+        metadataSuggestions(details, metadata({ songwriters: ["finneas", "Billie Eilish"] })).songwriters,
+      ).toBeUndefined();
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: keeps offering the remaining names after one is used", () => {
+      const partial = metadata({ songwriters: ["Billie Eilish"] });
+      const suggestions = metadataSuggestions(details, partial);
+      expect(suggestions.songwriters).toEqual({ kind: "fill", value: ["FINNEAS"] });
+      expect(fillPatch(suggestions, partial).songwriters).toEqual(["Billie Eilish", "FINNEAS"]);
     });
   });
 
   describe("invariants", () => {
     it("fillPatch writes only fill suggestions, and the count includes every suggestion", () => {
-      const suggestions = metadataSuggestions(details, metadata({ album: "Other" }));
-      expect(fillPatch(suggestions)).toEqual({
+      const current = metadata({ album: "Other" });
+      const suggestions = metadataSuggestions(details, current);
+      expect(fillPatch(suggestions, current)).toEqual({
         isrc: "USUM72105934",
         artists: ["Billie Eilish"],
         songwriters: ["Billie Eilish", "FINNEAS"],
@@ -75,7 +94,7 @@ describe("metadataSuggestions", () => {
 
     it("suggests nothing once the fill has been applied", () => {
       const before = metadata();
-      const after = { ...before, ...fillPatch(metadataSuggestions(details, before)) };
+      const after = { ...before, ...fillPatch(metadataSuggestions(details, before), before) };
       expect(metadataSuggestions(details, after)).toEqual({});
     });
   });

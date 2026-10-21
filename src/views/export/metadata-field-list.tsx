@@ -68,8 +68,8 @@ const MetadataFieldList: React.FC<MetadataFieldListProps> = ({
         </div>
       ))}
       {suggestion?.kind === "fill" &&
-        suggestion.value.map((value) => (
-          <SuggestedRow key={value} value={value} fieldName={label} onUse={() => handleUseOne(value)} />
+        suggestion.value.map((value, index) => (
+          <SuggestedRow key={`${index}-${value}`} value={value} fieldName={label} onUse={() => handleUseOne(value)} />
         ))}
       {suggestion?.kind === "differs" && (
         <SuggestionNote

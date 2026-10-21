@@ -4,6 +4,7 @@ import { normalizeIsrc } from "@/utils/isrc";
 
 // -- Types --------------------------------------------------------------------
 
+// A list fill holds only the names missing from the field; Fill appends them.
 interface Suggestion<T> {
   kind: "fill" | "differs";
   value: T;
@@ -22,8 +23,8 @@ type SuggestedField = keyof MetadataSuggestions;
 
 const comparable = (value: string): string => value.trim().split(/\s+/).join(" ").toLowerCase();
 
-const sameList = (a: string[], b: string[]): boolean =>
-  a.length === b.length && a.every((value, index) => comparable(value) === comparable(b[index]));
+const includesName = (names: string[], name: string): boolean =>
+  names.some((existing) => comparable(existing) === comparable(name));
 
 const nonBlank = (values: string[] | undefined): string[] => (values ?? []).filter((value) => value.trim() !== "");
 
@@ -36,8 +37,9 @@ function textSuggestion(current: string | undefined, next: string | null): Sugge
 function listSuggestion(current: string[] | undefined, next: string[]): Suggestion<string[]> | undefined {
   if (next.length === 0) return undefined;
   const existing = nonBlank(current);
-  if (existing.length === 0) return { kind: "fill", value: next };
-  return sameList(existing, next) ? undefined : { kind: "differs", value: next };
+  if (existing.some((name) => !includesName(next, name))) return { kind: "differs", value: next };
+  const missing = next.filter((name) => !includesName(existing, name));
+  return missing.length === 0 ? undefined : { kind: "fill", value: missing };
 }
 
 // -- Suggestions --------------------------------------------------------------
@@ -55,12 +57,15 @@ function metadataSuggestions(details: SongDetails, metadata: ProjectMetadata): M
   return suggestions;
 }
 
-function fillPatch(suggestions: MetadataSuggestions): Partial<ProjectMetadata> {
+function fillPatch(suggestions: MetadataSuggestions, metadata: ProjectMetadata): Partial<ProjectMetadata> {
   const patch: Partial<ProjectMetadata> = {};
   if (suggestions.album?.kind === "fill") patch.album = suggestions.album.value;
   if (suggestions.isrc?.kind === "fill") patch.isrc = suggestions.isrc.value;
-  if (suggestions.artists?.kind === "fill") patch.artists = suggestions.artists.value;
-  if (suggestions.songwriters?.kind === "fill") patch.songwriters = suggestions.songwriters.value;
+  if (suggestions.artists?.kind === "fill")
+    patch.artists = [...nonBlank(metadata.artists), ...suggestions.artists.value];
+  if (suggestions.songwriters?.kind === "fill") {
+    patch.songwriters = [...nonBlank(metadata.songwriters), ...suggestions.songwriters.value];
+  }
   return patch;
 }
 
