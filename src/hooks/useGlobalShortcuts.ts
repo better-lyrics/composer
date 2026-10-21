@@ -3,6 +3,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { togglePlayback } from "@/lib/sync-count-in";
 import { toggledPlaybackRate, useAudioStore } from "@/stores/audio";
 import { toggledStem, useSeparationStore } from "@/stores/separation";
+import { toggleLoopShortcut } from "@/views/timeline/selection-playback";
 
 interface GlobalShortcutActions {
   setActiveTab: (tab: ProjectTab) => void;
@@ -39,6 +40,7 @@ function useGlobalShortcuts(actions: GlobalShortcutActions): void {
           "global.playPause": togglePlayback,
           "global.togglePlaybackSpeed": togglePlaybackSpeed,
           "global.toggleStem": toggleStem,
+          "global.toggleLoop": toggleLoopShortcut,
           ...general,
         }
       : general,

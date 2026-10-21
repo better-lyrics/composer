@@ -1,5 +1,8 @@
+import { useScrollTopOnSearch } from "@/hooks/useScrollTopOnSearch";
+import { useTrackedScrollTop } from "@/hooks/useTrackedScrollTop";
 import { useTypeToSearch } from "@/hooks/useTypeToSearch";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { type HelpLocation, useUIStore } from "@/stores/ui";
 import { Button } from "@/ui/button";
 import { HELP_SECTIONS } from "@/ui/help-nav";
 import { HelpSearchResults } from "@/ui/help-search/help-search-results";
@@ -37,7 +40,7 @@ interface PendingTopic {
 const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialScrollTop = 0, initialQuery = "" }) => {
   const [activeSection, setActiveSection] = useState(initialSection ?? "getting-started");
   const [query, setQuery] = useState(initialQuery);
-  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [counts, setCounts] = useState<Record<string, number> | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const pendingTopicRef = useRef<PendingTopic | null>(null);
@@ -46,16 +49,19 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
 
   useTypeToSearch(searchInputRef, query, setQuery);
 
-  const linkHost = useMemo<SettingLinkHost>(
-    () => ({
-      returnPoint: () => ({
-        section: activeSection,
-        scrollTop: viewportRef.current?.scrollTop ?? 0,
-        ...(query.trim() ? { query } : {}),
-      }),
+  const [scrollTopRef, trackScrollTop] = useTrackedScrollTop(initialScrollTop);
+
+  const currentLocation = useCallback(
+    (): HelpLocation => ({
+      section: activeSection,
+      scrollTop: scrollTopRef.current,
+      ...(query.trim() ? { query } : {}),
     }),
-    [activeSection, query],
+    [activeSection, query, scrollTopRef],
   );
+  const linkHost = useMemo<SettingLinkHost>(() => ({ returnPoint: currentLocation }), [currentLocation]);
+
+  useLayoutEffect(() => () => useUIStore.getState().rememberHelpLocation(currentLocation()), [currentLocation]);
 
   const openSection = useCallback((section: string) => {
     setQuery("");
@@ -69,12 +75,7 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
     setActiveSection(section);
   }, []);
 
-  const lastQueryRef = useRef(query);
-  useLayoutEffect(() => {
-    if (lastQueryRef.current === query) return;
-    lastQueryRef.current = query;
-    if (query.trim()) viewportRef.current?.scrollTo({ top: 0 });
-  }, [query]);
+  useScrollTopOnSearch(viewportRef, query);
 
   const shownContentRef = useRef({ activeSection, isSearching });
 
@@ -95,10 +96,10 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
   }, [activeSection, isSearching, revealPendingTopic]);
 
   const navSections = useMemo(
-    () => (isSearching ? withMatchCounts(HELP_SECTIONS, counts) : HELP_SECTIONS),
+    () => (isSearching && counts ? withMatchCounts(HELP_SECTIONS, counts) : HELP_SECTIONS),
     [isSearching, counts],
   );
-  const hasNoMatches = isSearching && Object.keys(counts).length === 0;
+  const hasNoMatches = isSearching && counts !== null && Object.keys(counts).length === 0;
 
   return (
     <ModalNavLayout
@@ -111,6 +112,7 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
       contentInitialScrollTop={initialScrollTop}
       contentViewportRef={viewportRef}
       onContentInitialized={revealPendingTopic}
+      onContentScrollTopChange={trackScrollTop}
     >
       <SettingLinkContext value={linkHost}>
         <div data-help-content>

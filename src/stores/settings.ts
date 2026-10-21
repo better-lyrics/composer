@@ -63,6 +63,7 @@ interface SettingsState {
   defaultWordDuration: number;
   minWordDuration: number;
   redoPreroll: number;
+  selectionLeadIn: number;
   syncCountIn: number;
   defaultGranularity: GranularityDefault;
 
@@ -147,6 +148,7 @@ const DEFAULTS: SettingsState = {
   defaultWordDuration: 0.3,
   minWordDuration: DEFAULT_MIN_WORD_DURATION,
   redoPreroll: 1.5,
+  selectionLeadIn: 0.3,
   syncCountIn: 3,
   defaultGranularity: "word",
 

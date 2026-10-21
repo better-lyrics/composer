@@ -15,16 +15,17 @@ import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { useAudioStore } from "@/stores/audio";
 import { useImportModal } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
+import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
 import { HoverSizedDragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
 import { trackSnapModifier } from "@/views/timeline/drag-track-snap";
 import { EmptyTimelineImport } from "@/views/timeline/empty-timeline-import";
 import { ExplicitSuggestionsBanner } from "@/views/timeline/explicit-suggestions-banner";
 import { GroupFocusBar } from "@/views/timeline/group-focus-bar";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
 import { BLOCK_INSET_PX, bgTrackHeight } from "@/views/timeline/row-geometry";
+import { SelectionPlaybackBar } from "@/views/timeline/selection-playback-bar";
 import { SharedTimingSuggestionsBanner } from "@/views/timeline/shared-timing-suggestions-banner";
 import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
@@ -38,7 +39,6 @@ import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
-import { useGroupFocusPlayback } from "@/views/timeline/use-group-focus-playback";
 import { useGroupFocusScroll } from "@/views/timeline/use-group-focus-scroll";
 import { useGroupFocusShortcuts } from "@/views/timeline/use-group-focus-shortcuts";
 import { useMarquee } from "@/views/timeline/use-marquee";
@@ -137,7 +137,6 @@ const TimelinePanel: React.FC = () => {
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
   useGroupFocusShortcuts();
   useGroupFocusScroll(scrollContainerRef);
-  useGroupFocusPlayback();
   useTimelineWheel(scrollContainerRef, !!source && lines.length > 0);
   useTimelineFrameWake(scrollContainerRef, contentRef, !!source && lines.length > 0);
 
@@ -384,6 +383,7 @@ const TimelinePanel: React.FC = () => {
           <SharedTimingSuggestionsBanner />
           <ExplicitSuggestionsBanner />
           <GroupFocusBar />
+          <SelectionPlaybackBar />
 
           <div className="flex flex-1 overflow-hidden">
             <div className="flex flex-col flex-1 overflow-hidden">

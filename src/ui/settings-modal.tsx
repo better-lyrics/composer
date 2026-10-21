@@ -1,3 +1,5 @@
+import { useScrollTopOnSearch } from "@/hooks/useScrollTopOnSearch";
+import { useTrackedScrollTop } from "@/hooks/useTrackedScrollTop";
 import { useTypeToSearch } from "@/hooks/useTypeToSearch";
 import { useSettingsStore } from "@/stores/settings";
 import { SETTINGS_SECTIONS, type SettingsSectionId } from "@/stores/settings-catalog";
@@ -15,7 +17,7 @@ import { SettingsSearchResults } from "@/ui/settings/settings-search-results";
 import { SETTINGS_SECTION_ICONS } from "@/ui/settings/settings-section-icons";
 import { SettingsSectionRows } from "@/ui/settings/settings-section-rows";
 import { ShortcutsSettingsSection } from "@/ui/shortcuts-settings-section";
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -72,9 +74,10 @@ const SettingsModalBody: React.FC = () => {
     if (settingsTarget) revealPendingTarget();
   }, [settingsTarget, revealPendingTarget]);
 
-  useLayoutEffect(() => {
-    if (settingsQuery) viewportRef.current?.scrollTo({ top: 0 });
-  }, [settingsQuery]);
+  const [initialScrollTop] = useState(() => useUIStore.getState().settingsScrollTop);
+  const [scrollTopRef, trackScrollTop] = useTrackedScrollTop(initialScrollTop);
+  useLayoutEffect(() => () => useUIStore.getState().rememberSettingsScrollTop(scrollTopRef.current), [scrollTopRef]);
+  useScrollTopOnSearch(viewportRef, settingsQuery);
 
   const navSections = useMemo(
     () => (results ? withMatchCounts(NAV_SECTIONS, countMatchesBySection(results)) : NAV_SECTIONS),
@@ -96,8 +99,10 @@ const SettingsModalBody: React.FC = () => {
           />
         }
         contentClassName="px-6 py-2"
+        contentInitialScrollTop={initialScrollTop}
         contentViewportRef={viewportRef}
         onContentInitialized={revealPendingTarget}
+        onContentScrollTopChange={trackScrollTop}
       >
         <div data-settings-content>
           <SettingsSearchQueryContext value={settingsQuery}>

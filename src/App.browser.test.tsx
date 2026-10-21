@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { HELP_CONTENT_SCROLLER_CSS, installStyleSheet } from "@/test/browser-css";
 import { allowConsole } from "@/test/console-guard";
+import { untilDialogFocused } from "@/test/dialog-focus";
 import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { TOUR_SEEN_KEY } from "@/tour/use-tour";
@@ -44,7 +45,7 @@ describe("App", () => {
     expect(useProjectStore.getState().activeTab).toBe("edit");
   });
 
-  it("reopening settings normally resets the section, not stuck on the last highlighted one", async () => {
+  it("reopening settings picks up at the section it was closed on", async () => {
     allowConsole(/cannot be a descendant of/);
     allowConsole(/cannot contain a nested/);
     localStorage.setItem(TOUR_SEEN_KEY, "true");
@@ -58,10 +59,11 @@ describe("App", () => {
 
     useUIStore.getState().openSettings();
     await expect.poll(() => document.querySelector("dialog") !== null).toBe(true);
-    expect(bridgeSectionVisible()).toBe(false);
+    expect(bridgeSectionVisible()).toBe(true);
+    expect(useUIStore.getState().settingsTarget).toBeNull();
   });
 
-  it("regression: reopening help resets the section instead of restoring the last one viewed", async () => {
+  it("reopening help picks up at the section it was closed on", async () => {
     allowConsole(/cannot be a descendant of/);
     allowConsole(/cannot contain a nested/);
     localStorage.setItem(TOUR_SEEN_KEY, "true");
@@ -79,7 +81,7 @@ describe("App", () => {
 
     helpButton().click();
     await expect.poll(helpModalOpen).toBe(true);
-    expect(activeHelpSection()).toBe("Getting Started");
+    expect(activeHelpSection()).toBe("Exporting");
   });
 
   it("wires the frame loop so a store write wakes it", async () => {
@@ -132,6 +134,41 @@ describe("App", () => {
     await expect.poll(() => helpViewport()?.scrollTop).toBe(scrollTopAtClick);
   });
 
+  it("regression: reopening help on a search restores the scrolled results", async () => {
+    allowConsole(/cannot be a descendant of/);
+    allowConsole(/cannot contain a nested/);
+    installStyleSheet(HELP_CONTENT_SCROLLER_CSS);
+    localStorage.setItem(TOUR_SEEN_KEY, "true");
+    const screen = await render(<App />, { withRouter: { initialEntries: ["/editor"] } });
+    const helpScroller = () => {
+      const content = document.querySelector("[data-help-content]");
+      return (
+        content?.closest<HTMLElement>("[data-overlayscrollbars-viewport]") ??
+        content?.closest<HTMLElement>("[data-overlayscrollbars-initialize]") ??
+        null
+      );
+    };
+
+    useUIStore.getState().openHelp();
+    await untilDialogFocused();
+    await screen.getByRole("textbox", { name: "Search help" }).fill("loop");
+    await expect.poll(() => helpScroller()?.matches("[data-overlayscrollbars-viewport]")).toBe(true);
+    const scroller = helpScroller();
+    if (!scroller) throw new Error("help scroller missing");
+    const scrolled = new Promise((resolve) => scroller.addEventListener("scroll", resolve, { once: true }));
+    scroller.scrollTop = 300;
+    await scrolled;
+
+    useUIStore.getState().closeHelp();
+    await expect.poll(helpModalOpen).toBe(false);
+    expect(useUIStore.getState().helpLocation).toMatchObject({ scrollTop: 300, query: "loop" });
+    helpButton().click();
+    await expect.poll(helpModalOpen).toBe(true);
+    await expect.element(screen.getByRole("textbox", { name: "Search help" })).toHaveValue("loop");
+    await expect.poll(() => helpScroller()?.matches("[data-overlayscrollbars-viewport]")).toBe(true);
+    await expect.poll(() => helpScroller()?.scrollTop).toBe(300);
+  });
+
   it("returns to the same Help search after a setting link trip from a result", async () => {
     allowConsole(/cannot be a descendant of/);
     allowConsole(/cannot contain a nested/);
@@ -139,7 +176,9 @@ describe("App", () => {
     const screen = await render(<App />, { withRouter: { initialEntries: ["/editor"] } });
 
     useUIStore.getState().openHelp();
+    await untilDialogFocused();
     await screen.getByRole("textbox", { name: "Search help" }).fill("snap threshold");
+    await expect.element(screen.getByRole("textbox", { name: "Search help" })).toHaveValue("snap threshold");
     await screen.getByRole("button", { name: /^Open setting Snap threshold/ }).click();
     await expect.element(screen.getByRole("button", { name: 'Back to Help ・ "snap threshold"' })).toBeInTheDocument();
 

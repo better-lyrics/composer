@@ -1,10 +1,20 @@
 import { getAgentColor } from "@/domain/agent/colors";
+import type { LyricLine } from "@/domain/line/model";
+import { selectionBounds } from "@/domain/selection/bounds";
+import { lineWordSelections } from "@/domain/selection/line-selections";
+import type { WordSelection } from "@/domain/selection/model";
 import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { formatKey } from "@/utils/format-key";
 import { GROUP_COLORS } from "@/utils/group-colors";
 import { isMac } from "@/utils/platform";
 import { pluralize } from "@/utils/pluralize";
+import {
+  loopSelection,
+  playSelection,
+  selectLine,
+  selectWordUnlessSelected,
+} from "@/views/timeline/selection-playback";
 import { type ContextMenuState, type ContextMenuTarget, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type ContextMenuTargets, useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useGroupMenuActions } from "@/views/timeline/use-group-menu-actions";
@@ -199,7 +209,47 @@ function SelectionGrouping({ targets, clearContextMenu }: SectionProps) {
   );
 }
 
-function WordMenuSection({ targets, clearContextMenu }: SectionProps) {
+function PlaybackMenuItems({
+  lines,
+  selections,
+  noun,
+  select,
+  clearContextMenu,
+}: {
+  lines: readonly LyricLine[];
+  selections: readonly WordSelection[];
+  noun: string;
+  select?: () => void;
+  clearContextMenu: () => void;
+}) {
+  if (!selectionBounds(lines, selections)) return null;
+  const selectAndRun = (start: () => boolean) => {
+    select?.();
+    start();
+    clearContextMenu();
+  };
+
+  return (
+    <>
+      <MenuItem
+        label={`Play ${noun}`}
+        shortcut={getEffectiveKeysArray("timeline.playSelection")}
+        onClick={() => selectAndRun(playSelection)}
+      />
+      <MenuItem
+        label={`Loop ${noun}`}
+        shortcut={getEffectiveKeysArray("global.toggleLoop")}
+        onClick={() => selectAndRun(loopSelection)}
+      />
+      <MenuDivider />
+    </>
+  );
+}
+
+type WordTarget = Extract<ContextMenuTarget, { kind: "word" }>;
+
+function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & { target: WordTarget }) {
+  const selectedWords = useTimelineStore((s) => s.selectedWords);
   const {
     mergeInfo,
     groupedWordInfo,
@@ -219,9 +269,25 @@ function WordMenuSection({ targets, clearContextMenu }: SectionProps) {
     handleMergeWords,
   } = useWordMenuActions(targets, clearContextMenu);
   const { handleSplitIntoWords } = useLineMenuActions(targets, clearContextMenu);
+  const word: WordSelection = {
+    lineId: target.lineId,
+    lineIndex: target.lineIndex,
+    wordIndex: target.wordIndex,
+    type: target.type,
+  };
+  const playedWords = clickedSelectionCount === null ? [word] : selectedWords;
+  const noun =
+    clickedSelectionCount !== null && clickedSelectionCount > 1 ? pluralize(clickedSelectionCount, "word") : "word";
 
   return (
     <>
+      <PlaybackMenuItems
+        lines={targets.lines}
+        selections={playedWords}
+        noun={noun}
+        select={() => selectWordUnlessSelected(word)}
+        clearContextMenu={clearContextMenu}
+      />
       <MenuItem label="Edit text" shortcut={getEffectiveKeysArray("timeline.editWord")} onClick={handleEditWord} />
       <MenuItem
         label="Split syllables"
@@ -277,11 +343,18 @@ function WordMenuSection({ targets, clearContextMenu }: SectionProps) {
 }
 
 function TrackMenuSection({ targets, clearContextMenu }: SectionProps) {
+  const selectedWords = useTimelineStore((s) => s.selectedWords);
   const { handleAddWordHere } = useWordMenuActions(targets, clearContextMenu);
   const { handlePlaceLineHere, handlePlaceAtPlayhead } = useLineMenuActions(targets, clearContextMenu);
 
   return (
     <>
+      <PlaybackMenuItems
+        lines={targets.lines}
+        selections={selectedWords}
+        noun={pluralize(selectedWords.length, "word")}
+        clearContextMenu={clearContextMenu}
+      />
       <MenuItem label="Add word here" shortcut={["Double Click"]} onClick={handleAddWordHere} />
       {targets.placeLineHereInfo && <MenuItem label="Place line here" onClick={handlePlaceLineHere} />}
       {targets.placeAtPlayheadInfo && <MenuItem label="Place at playhead" onClick={handlePlaceAtPlayhead} />}
@@ -321,14 +394,26 @@ function AgentAssignment({ targets, clearContextMenu, lineIndex }: SectionProps 
   );
 }
 
-function GutterMenuSection({ targets, clearContextMenu, lineIndex }: SectionProps & { lineIndex: number }) {
+type GutterTarget = Extract<ContextMenuTarget, { kind: "gutter" }>;
+
+function GutterMenuSection({ targets, clearContextMenu, target }: SectionProps & { target: GutterTarget }) {
   const { handleAddLine, handleDeleteLine, handleDetachLine, handlePlaceAtPlayhead } = useLineMenuActions(
     targets,
     clearContextMenu,
   );
+  const { lineId, lineIndex } = target;
+  const line = targets.lines.find((candidate) => candidate.id === lineId);
+  const lineSelections = line ? lineWordSelections(line, lineIndex) : [];
 
   return (
     <>
+      <PlaybackMenuItems
+        lines={targets.lines}
+        selections={lineSelections}
+        noun="line"
+        select={() => selectLine(lineId, lineIndex)}
+        clearContextMenu={clearContextMenu}
+      />
       <MenuItem label="Add line above" shortcut={["Shift", "N"]} onClick={() => handleAddLine("above")} />
       <MenuItem label="Add line below" shortcut={["N"]} onClick={() => handleAddLine("below")} />
       {targets.placeAtPlayheadInfo && <MenuItem label="Place at playhead" onClick={handlePlaceAtPlayhead} />}
@@ -471,9 +556,9 @@ const TimelineContextMenu: React.FC = () => {
         className="layer-floating min-w-36 p-1 border shadow-2xl rounded-lg bg-composer-bg border-composer-border select-none overflow-y-auto overscroll-contain"
         style={floatingStyles}
       >
-        {target.kind === "word" && <WordMenuSection {...section} />}
+        {target.kind === "word" && <WordMenuSection {...section} target={target} />}
         {target.kind === "track" && <TrackMenuSection {...section} />}
-        {target.kind === "gutter" && <GutterMenuSection {...section} lineIndex={target.lineIndex} />}
+        {target.kind === "gutter" && <GutterMenuSection {...section} target={target} />}
         {target.kind === "group-banner" && <GroupBannerMenuSection {...section} target={target} />}
       </div>
     </FloatingPortal>

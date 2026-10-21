@@ -1,10 +1,10 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { PROSE } from "@/ui/typography";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { TimelineExtras } from "@/ui/help-sections/timeline-extras";
-import { ALT_KEY, MOD_KEY } from "@/utils/platform";
-import { SettingLink } from "@/ui/setting-link";
 import { HelpTopic } from "@/ui/help-topic";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { SettingLink } from "@/ui/setting-link";
+import { PROSE } from "@/ui/typography";
+import { ALT_KEY, MOD_KEY } from "@/utils/platform";
 
 // -- Timeline -----------------------------------------------------------------
 
@@ -67,6 +67,23 @@ const TimelineSection: React.FC = () => (
         If you've separated the song into stems, scrubbing follows the stem you have selected: pick "Vocals" from the
         stem dropdown and the scrub previews vocals only, which makes it much easier to pin down a syllable boundary.
         The full track plays back as normal regardless of the stem choice.
+      </p>
+    </HelpTopic>
+
+    <HelpTopic title="Play a selection">
+      <p className={PROSE}>
+        Select words or a line and press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.playSelection")} /> to
+        hear only that part, or right-click it and use the <strong>Play</strong> item at the top of the menu. Press{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleLoop")} /> to loop it instead, or switch a play to a
+        loop and back with <strong>Loop</strong> in the strip. The loop reads the timing again on every pass, so a nudge
+        or a dragged edge is audible on the next one. It keeps looping when you switch tabs, so you can watch it in
+        Preview. The Timeline tab shows a loop icon while it runs, and{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleLoop")} /> turns the loop on or off from any tab.
+      </p>
+      <p className={`${PROSE} mt-2`}>
+        A little audio before and after the selection plays too, so you hear whether a word runs into its neighbours.
+        Change the amount, or set it to 0, with <SettingLink setting="selectionLeadIn" />. Click <strong>Stop</strong>{" "}
+        in the strip, clear the selection, or seek outside the range to end it.
       </p>
     </HelpTopic>
 

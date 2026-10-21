@@ -3,6 +3,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
 import { installStyleSheet } from "@/test/browser-css";
 import { allowConsole } from "@/test/console-guard";
+import { untilDialogFocused } from "@/test/dialog-focus";
 import { render } from "@/test/render";
 import { SettingsModal } from "@/ui/settings-modal";
 import { describe, expect, it } from "vitest";
@@ -158,9 +159,9 @@ describe("SettingsModal target", () => {
 });
 
 describe("SettingsModal search", () => {
-  const openModal = async () => {
-    const screen = await render(<SettingsModal isOpen onClose={() => {}} />);
-    await expect.poll(() => document.querySelector("dialog")?.contains(document.activeElement)).toBe(true);
+  const openModal = async (onClose: () => void = () => {}) => {
+    const screen = await render(<SettingsModal isOpen onClose={onClose} />);
+    await untilDialogFocused();
     return screen;
   };
   const searchBox = (screen: Awaited<ReturnType<typeof openModal>>) =>
@@ -234,8 +235,9 @@ describe("SettingsModal search", () => {
 
   it("clears the query on Escape before closing", async () => {
     let closes = 0;
-    const screen = await render(<SettingsModal isOpen onClose={() => closes++} />);
+    const screen = await openModal(() => closes++);
     await searchBox(screen).fill("snap");
+    await expect.element(searchBox(screen)).toHaveValue("snap");
     await userEvent.keyboard("{Escape}");
     await expect.element(searchBox(screen)).toHaveValue("");
     expect(closes).toBe(0);

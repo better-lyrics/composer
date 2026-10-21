@@ -72,7 +72,7 @@ describe("migrateShortcutBindings", () => {
   it("unbinds a timeline delete key when a saved timeline or global binding already uses it", () => {
     const saved = { overrides: { "timeline.mergeWords": { key: "Delete" }, "global.goToSync": { key: "Backspace" } } };
 
-    expect(migrateShortcutBindings(saved, 1)).toEqual({
+    expect(migrateShortcutBindings(saved, 2)).toEqual({
       overrides: {
         ...saved.overrides,
         "timeline.deleteSelection": { key: "" },
@@ -85,7 +85,7 @@ describe("migrateShortcutBindings", () => {
     it("keeps the timeline delete keys when only another scope uses them", () => {
       const saved = { overrides: { "sync.tap": { key: "Backspace" } } };
 
-      expect(migrateShortcutBindings(saved, 1)).toEqual(saved);
+      expect(migrateShortcutBindings(saved, 2)).toEqual(saved);
     });
 
     it("leaves saved bindings without a collision untouched", () => {
@@ -111,6 +111,71 @@ describe("migrateShortcutBindings", () => {
     it.each([null, undefined, "garbage", {}])("passes malformed saved state %s through", (saved) => {
       expect(migrateShortcutBindings(saved, 0)).toEqual(saved);
     });
+  });
+});
+
+describe("toggleLoop id migration", () => {
+  it("moves a rebinding from timeline.toggleGroupLoop to global.toggleLoop", () => {
+    const binding = { key: "k", shift: true };
+    const migrated = migrateShortcutBindings({ overrides: { "timeline.toggleGroupLoop": binding } }, 1);
+
+    expect(migrated).toEqual({ overrides: { "global.toggleLoop": binding } });
+  });
+
+  it("leaves overrides without the old id alone", () => {
+    const saved = { overrides: { "timeline.editWord": { key: "q" } } };
+
+    expect(migrateShortcutBindings(saved, 1)).toEqual(saved);
+  });
+
+  it("drops a renamed rebinding that now clashes with a binding in another scope", () => {
+    const syncTextVariant = { key: "l" };
+    const migrated = migrateShortcutBindings(
+      { overrides: { "timeline.toggleGroupLoop": syncTextVariant, "timeline.toggleTextVariant": { key: "q" } } },
+      1,
+    );
+
+    expect(migrated).toEqual({ overrides: { "timeline.toggleTextVariant": { key: "q" } } });
+  });
+
+  it("regression: keeps a deliberately unbound group loop unbound", () => {
+    const saved = { overrides: { "timeline.toggleGroupLoop": { key: "" }, "timeline.editWord": { key: "" } } };
+
+    expect(migrateShortcutBindings(saved, 1)).toEqual({
+      overrides: { "global.toggleLoop": { key: "" }, "timeline.editWord": { key: "" } },
+    });
+  });
+
+  it("regression: unbinds the loop when its default would clash with a binding in another scope", () => {
+    const saved = { overrides: { "sync.tap": { key: "l", shift: true } } };
+
+    expect(migrateShortcutBindings(saved, 1)).toEqual({
+      overrides: { "sync.tap": { key: "l", shift: true }, "global.toggleLoop": { key: "" } },
+    });
+  });
+
+  it("unbinds the loop when both its rebinding and its default clash", () => {
+    const saved = {
+      overrides: {
+        "timeline.toggleGroupLoop": { key: "l" },
+        "timeline.toggleTextVariant": { key: "q" },
+        "sync.tap": { key: "l", shift: true },
+      },
+    };
+
+    expect(migrateShortcutBindings(saved, 1)).toEqual({
+      overrides: {
+        "global.toggleLoop": { key: "" },
+        "timeline.toggleTextVariant": { key: "q" },
+        "sync.tap": { key: "l", shift: true },
+      },
+    });
+  });
+
+  it("runs only for state saved before the rename", () => {
+    const saved = { overrides: { "timeline.toggleGroupLoop": { key: "k" } } };
+
+    expect(migrateShortcutBindings(saved, 2)).toEqual(saved);
   });
 });
 

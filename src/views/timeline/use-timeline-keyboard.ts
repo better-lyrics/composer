@@ -40,6 +40,7 @@ import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { pingGroup } from "@/views/timeline/ping-group";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
+import { playSelection } from "@/views/timeline/selection-playback";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
 import { GUTTER_WIDTH, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
@@ -328,6 +329,9 @@ function useTimelineKeyboard(
           useTimelineStore.getState().setSelectedWords([next]);
           break;
         }
+        case "timeline.playSelection":
+          if (playSelection()) e.preventDefault();
+          break;
         case "timeline.toggleFollow":
           useTimelineStore.getState().toggleFollow();
           break;

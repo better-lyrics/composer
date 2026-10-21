@@ -30,6 +30,7 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   if (next.snapPlayheadToPoints === undefined) next.snapPlayheadToPoints = true;
   if (next.redoPreroll === undefined) next.redoPreroll = 1.5;
   if (next.syncCountIn === undefined) next.syncCountIn = 3;
+  if (next.selectionLeadIn === undefined) next.selectionLeadIn = 0.3;
   // Old blobs carry an explicit false from before the default flipped, so an undefined guard never reaches them.
   if (version < 6) next.preserveBracketsOnExtraction = true;
   // Before 9 every speed change was written into the default, so the default is the speed last used.
