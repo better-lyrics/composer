@@ -55,7 +55,7 @@ const MatchStrip: React.FC<MatchStripProps> = ({ matches, chosen, details, onCho
       </div>
       <LengthStatus match={chosen} />
       <Popover
-        hasPopup="listbox"
+        hasPopup="dialog"
         placement="bottom-end"
         aria-label="Change match"
         trigger={

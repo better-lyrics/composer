@@ -54,8 +54,7 @@ const MatchRow: React.FC<MatchRowProps> = ({ match, chosen, onSelect }) => {
     match.recording.disambiguation || releaseGroup?.["secondary-types"]?.[0] || releaseGroup?.["primary-type"];
   return (
     <Button
-      role="option"
-      aria-selected={chosen}
+      aria-pressed={chosen}
       variant="ghost"
       onClick={onSelect}
       className={cn(
@@ -83,7 +82,7 @@ const MatchList: React.FC<MatchListProps> = ({ matches, chosenId, title, onChoos
   return (
     <div className="flex w-100 flex-col p-1">
       <p className="px-2.5 pt-1.5 pb-1 text-xs text-composer-text-muted select-none">{heading}</p>
-      <div role="listbox" aria-label={heading} className="flex flex-col">
+      <div role="group" aria-label={heading} className="flex flex-col">
         {matches.slice(0, MAX_MATCHES).map((match) => (
           <MatchRow
             key={match.recording.id}
