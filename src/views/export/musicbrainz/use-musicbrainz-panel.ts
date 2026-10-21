@@ -6,6 +6,7 @@ import {
   suggestionCount,
 } from "@/domain/musicbrainz/suggestion";
 import { type MusicBrainzMatch, useMusicBrainzMatch } from "@/hooks/useMusicBrainzMatch";
+import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { useProjectStore } from "@/stores/project";
 import { showMusicBrainzFillToast } from "@/utils/musicbrainz-toast";
@@ -18,6 +19,13 @@ type FoundMatch = Extract<MusicBrainzMatch, { status: "found" }>;
 interface ShownMatch {
   match: FoundMatch;
   details: SongDetails;
+}
+
+interface PanelSession {
+  projectId: string | undefined;
+  chosenRecordingId: string | null;
+  requested: boolean;
+  revealed: boolean;
 }
 
 interface MusicBrainzPanel {
@@ -48,12 +56,21 @@ function previousValues(patch: Partial<ProjectMetadata>, metadata: ProjectMetada
   return previous;
 }
 
+const freshSession = (projectId: string | undefined): PanelSession => ({
+  projectId,
+  chosenRecordingId: null,
+  requested: false,
+  revealed: false,
+});
+
 // -- Hook ---------------------------------------------------------------------
 
 function useMusicBrainzPanel(): MusicBrainzPanel {
-  const [chosenRecordingId, setChosenRecordingId] = useState<string | null>(null);
-  const [requested, setRequested] = useState(false);
-  const [revealed, setRevealed] = useState(false);
+  const projectId = useOpenProjectId();
+  const [storedSession, setStoredSession] = useState<PanelSession>(() => freshSession(projectId));
+  const session = storedSession.projectId === projectId ? storedSession : freshSession(projectId);
+  const { chosenRecordingId, requested, revealed } = session;
+  const updateSession = (patch: Partial<PanelSession>) => setStoredSession({ ...session, ...patch });
   const match = useMusicBrainzMatch(chosenRecordingId, requested);
   const metadata = useProjectStore((state) => state.metadata);
   const dismissedMatches = useProjectStore((state) => state.dismissedMetadataMatches);
@@ -76,6 +93,7 @@ function useMusicBrainzPanel(): MusicBrainzPanel {
   const fillAll = () => {
     if (Object.keys(fill).length === 0) return;
     const previous = previousValues(fill, useProjectStore.getState().metadata);
+    if (found) updateSession({ chosenRecordingId: found.chosen.recording.id });
     setMetadata(fill);
     showMusicBrainzFillToast(previous);
   };
@@ -83,7 +101,7 @@ function useMusicBrainzPanel(): MusicBrainzPanel {
   const dismiss = () => {
     if (!found) return;
     dismissMetadataMatch(found.chosen.recording.id);
-    setRevealed(false);
+    updateSession({ revealed: false });
   };
 
   return {
@@ -92,9 +110,9 @@ function useMusicBrainzPanel(): MusicBrainzPanel {
     suggestions,
     detailCount: suggestionCount(suggestions),
     fillCount: Object.keys(fill).length,
-    request: () => setRequested(true),
-    choose: setChosenRecordingId,
-    reveal: () => setRevealed(true),
+    request: () => updateSession({ requested: true }),
+    choose: (recordingId) => updateSession({ chosenRecordingId: recordingId }),
+    reveal: () => updateSession({ revealed: true }),
     fillAll,
     dismiss,
   };

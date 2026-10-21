@@ -1,6 +1,7 @@
 import { resetMusicBrainzQueue } from "@/lib/musicbrainz-client";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { YOUR_POWER_ALBUM_RECORDING } from "@/test/musicbrainz-recording-fixtures";
 import { YOUR_POWER_SEARCH } from "@/test/musicbrainz-search-fixtures";
 import { render } from "@/test/render";
@@ -36,6 +37,7 @@ describe("MetadataPanel MusicBrainz suggestions", () => {
 
   it("fills the empty fields from MusicBrainz and Undo restores them", async () => {
     stubMusicBrainz();
+    useSettingsStore.setState({ musicBrainzLookup: "auto" });
     useAudioStore.setState({ duration: 246 });
     useProjectStore.setState({
       metadata: { title: "Your Power", artists: ["Billie Eilish"], album: "Mine", duration: 0 },

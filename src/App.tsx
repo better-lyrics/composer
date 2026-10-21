@@ -46,6 +46,11 @@ const TOUR_START_DELAY_MS = 500;
 
 // -- Shell --------------------------------------------------------------------
 
+const MusicBrainzWarmup: React.FC = () => {
+  useMusicBrainzMatch(null, false);
+  return null;
+};
+
 const AppShell: React.FC = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -101,7 +106,6 @@ const AppShell: React.FC = () => {
   usePersistence();
   useStorageMaintenance();
   useLanguageAutoRefresh();
-  useMusicBrainzMatch(null, false);
   useProjectChannel();
   useProjectShortcuts(isEditor);
   useSaveShortcut(isEditor);
@@ -138,6 +142,7 @@ const AppShell: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-composer-bg text-composer-text">
+      <MusicBrainzWarmup />
       <AppHeader
         screen={screen}
         onSettingsOpen={() => openSettings()}

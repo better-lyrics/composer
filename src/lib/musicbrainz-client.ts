@@ -3,6 +3,7 @@
 const MIN_REQUEST_GAP_MS = 1000;
 const RETRY_AFTER_MS = 1500;
 const RATE_LIMITED_STATUS = 503;
+const REQUEST_TIMEOUT_MS = 15_000;
 const LOG_PREFIX = "[MusicBrainz]";
 
 // -- Queue --------------------------------------------------------------------
@@ -44,7 +45,8 @@ function enqueue<T>(task: () => Promise<T>): Promise<T> {
 async function fetchInTurn(url: string, signal?: AbortSignal): Promise<Response> {
   await wait(Math.max(0, lastRequestAt + MIN_REQUEST_GAP_MS - Date.now()), signal);
   lastRequestAt = Date.now();
-  return fetch(url, { signal });
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  return fetch(url, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
 }
 
 function fetchMusicBrainz<T>(url: string, signal?: AbortSignal): Promise<T> {

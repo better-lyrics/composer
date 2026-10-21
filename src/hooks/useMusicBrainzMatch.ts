@@ -74,7 +74,7 @@ function useMusicBrainzMatch(chosenRecordingId: string | null, requested: boolea
 
   if (mode === "off") return { status: "off" };
   if (title === "") return { status: "missing-title" };
-  if (!enabled) return { status: "idle" };
+  if (mode === "manual" && !requested) return { status: "idle" };
   if (title !== query.title || artist !== query.artist) return { status: "searching" };
   if (search.isError) return { status: "error", retry: () => void search.refetch() };
   if (search.isPending) return { status: "searching" };
