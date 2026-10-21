@@ -187,6 +187,12 @@ function useTimelineKeyboard(
 
       const matched = findMatchingShortcut(e, "timeline");
       const claimedByUser = matched !== null && useShortcutBindingsStore.getState().overrides[matched] !== undefined;
+      if (matched === "timeline.importLyrics") {
+        e.preventDefault();
+        onOpenLyricsModal?.();
+        return;
+      }
+
       if (!claimedByUser) {
         if (e.code === "KeyC" && (e.metaKey || e.ctrlKey) && !e.repeat) {
           e.preventDefault();
@@ -197,12 +203,6 @@ function useTimelineKeyboard(
         if (e.code === "KeyX" && (e.metaKey || e.ctrlKey) && !e.repeat) {
           e.preventDefault();
           handleCut();
-          return;
-        }
-
-        if (e.code === "KeyV" && (e.metaKey || e.ctrlKey) && e.shiftKey && !e.repeat) {
-          e.preventDefault();
-          onOpenLyricsModal?.();
           return;
         }
 
