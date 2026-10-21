@@ -9,7 +9,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { normalizeIsrc } from "@/utils/isrc";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 // -- Constants ----------------------------------------------------------------
@@ -46,6 +46,7 @@ function useMusicBrainzMatch(chosenRecordingId: string | null, requested: boolea
   const search = useQuery({
     queryKey: ["musicbrainz-search", query.title, query.artist, query.isrc],
     enabled,
+    placeholderData: keepPreviousData,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 0,
     retry: false,
