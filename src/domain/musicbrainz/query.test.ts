@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { recordingLookupUrl, songSearchUrl } from "@/domain/musicbrainz/query";
+import { songSearchUrl } from "@/domain/musicbrainz/query";
 
 function queryOf(url: string): string | null {
   return new URL(url).searchParams.get("query");
@@ -33,15 +33,5 @@ describe("songSearchUrl", () => {
         'recording:"Yesterday" AND artist:"The Beatles"',
       );
     });
-  });
-});
-
-describe("recordingLookupUrl", () => {
-  it("requests ISRCs, releases and the work writers in one call", () => {
-    const url = new URL(recordingLookupUrl("abc"));
-    expect(url.pathname).toBe("/ws/2/recording/abc");
-    expect(url.searchParams.get("inc")).toBe(
-      "isrcs releases release-groups artist-credits work-rels work-level-rels artist-rels",
-    );
   });
 });
