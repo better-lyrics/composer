@@ -1,3 +1,5 @@
+import { composeAbortSignals } from "@/utils/abort-signals";
+
 // -- Constants ----------------------------------------------------------------
 
 const MIN_REQUEST_GAP_MS = 1000;
@@ -57,8 +59,13 @@ function enqueue<T>(task: () => Promise<T>): Promise<T> {
 async function fetchInTurn(url: string, signal?: AbortSignal): Promise<Response> {
   await wait(Math.max(0, lastRequestAt + MIN_REQUEST_GAP_MS - Date.now()), signal);
   lastRequestAt = Date.now();
-  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
-  return fetch(url, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
+  const timeout = new AbortController();
+  const timer = setTimeout(() => timeout.abort(), REQUEST_TIMEOUT_MS);
+  // The timer stays armed after the headers arrive so it also bounds the body read.
+  return fetch(url, { signal: composeAbortSignals(signal, timeout.signal) }).catch((error: unknown) => {
+    clearTimeout(timer);
+    throw error;
+  });
 }
 
 function fetchMusicBrainz<T>(url: string, signal?: AbortSignal): Promise<T> {

@@ -2,6 +2,7 @@
 // users run locally to extract YouTube audio through their residential IP.
 // See `experiments/composer-bridge/README.md` for what the binary is.
 
+import { composeAbortSignals } from "@/utils/abort-signals";
 import { stripTrailingSlashes } from "@/utils/url";
 
 const DEFAULT_BRIDGE_URL = "http://localhost:7777";
@@ -9,22 +10,6 @@ const HEALTH_QUERY_KEY = "composer-bridge-health";
 const HEALTH_TIMEOUT_MS = 1500;
 const AUDIO_TIMEOUT_MS = 5 * 60 * 1000;
 const THUMB_TIMEOUT_MS = 15 * 1000;
-
-// composeAbortSignals returns an AbortSignal that aborts when EITHER input
-// aborts. Falls back to a manual listener pair when AbortSignal.any is missing
-// so a caller-provided signal still propagates to the underlying fetch.
-function composeAbortSignals(a: AbortSignal | undefined, b: AbortSignal): AbortSignal {
-  if (!a) return b;
-  const composed = AbortSignal.any?.([a, b]);
-  if (composed) return composed;
-  const local = new AbortController();
-  const abortLocal = () => local.abort();
-  if (a.aborted) local.abort();
-  else a.addEventListener("abort", abortLocal, { once: true });
-  if (b.aborted) local.abort();
-  else b.addEventListener("abort", abortLocal, { once: true });
-  return local.signal;
-}
 
 interface BridgeHealth {
   bridge: string;
@@ -182,7 +167,6 @@ export {
   getThumbFromBridge,
   formatBridgeErrorForToast,
   isBridgeUnreachable,
-  composeAbortSignals,
   normalizeBaseUrl,
   decodeHeader,
   extensionForBridgeMime,
