@@ -1,6 +1,7 @@
 import { AudioEngine } from "@/audio/audio-engine";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
@@ -12,6 +13,8 @@ import { describe, expect, it } from "vitest";
 // -- Helpers ------------------------------------------------------------------
 
 const SONG_SECONDS = 2;
+const LEAD_IN = 0.3;
+const WORD_BEGIN = 1.5;
 
 const RangePlaybackHost: React.FC = () => {
   useRangePlayback();
@@ -25,8 +28,9 @@ async function selectLastWordOfSong(): Promise<HTMLAudioElement> {
   const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
   await expect.poll(() => useAudioStore.getState().duration).toBeGreaterThan(0);
   audio.muted = true;
+  useSettingsStore.setState({ selectionLeadIn: LEAD_IN });
   useProjectStore.setState({
-    lines: [createLine({ id: "a", text: "end", words: [{ text: "end", begin: 1.5, end: SONG_SECONDS }] })],
+    lines: [createLine({ id: "a", text: "end", words: [{ text: "end", begin: WORD_BEGIN, end: SONG_SECONDS }] })],
   });
   useTimelineStore.getState().setSelectedWords([{ lineId: "a", lineIndex: 0, wordIndex: 0, type: "word" }]);
   return audio;
@@ -48,7 +52,8 @@ describe("useRangePlayback", () => {
     await runToSongEnd(audio);
 
     await expect.poll(() => audio.paused).toBe(false);
-    expect(audio.currentTime).toBeLessThan(1.5);
+    expect(audio.currentTime).toBeGreaterThanOrEqual(WORD_BEGIN - LEAD_IN - 0.005);
+    expect(audio.currentTime).toBeLessThan(WORD_BEGIN);
     expect(useTimelineStore.getState().selectionPlayback).toBe("loop");
   });
 
