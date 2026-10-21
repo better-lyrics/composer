@@ -44,8 +44,9 @@ function clashesWithAnotherBinding(
   binding: ShortcutBinding,
   overrides: Record<string, ShortcutBinding>,
 ): boolean {
+  const scope = getShortcutById(id)?.scope;
   return SHORTCUT_REGISTRY.some((definition) => {
-    if (definition.id === id) return false;
+    if (definition.id === id || !scope || !scopesConflict(scope, definition.scope)) return false;
     const other = overrides[definition.id] ?? definition.defaultBinding;
     return isBound(other) && bindingsEqual(other, binding);
   });
@@ -63,7 +64,13 @@ function renameShortcutIds(state: Partial<ShortcutBindingsState>): Partial<Short
     const override = renamed[newId];
     if (isBound(override) && clashesWithAnotherBinding(newId, override, renamed)) delete renamed[newId];
     const fallback = getShortcutById(newId)?.defaultBinding;
-    if (!(newId in renamed) && fallback && clashesWithAnotherBinding(newId, fallback, renamed)) {
+    const deliberatelyUnbound = renamed[newId]?.key === "";
+    if (
+      !isBound(renamed[newId]) &&
+      !deliberatelyUnbound &&
+      fallback &&
+      clashesWithAnotherBinding(newId, fallback, renamed)
+    ) {
       renamed[newId] = UNBOUND;
     }
   }

@@ -136,6 +136,24 @@ describe("toggleLoop id migration", () => {
     });
   });
 
+  it("unbinds the loop when both its rebinding and its default clash", () => {
+    const saved = {
+      overrides: {
+        "timeline.toggleGroupLoop": { key: "l" },
+        "timeline.toggleTextVariant": { key: "q" },
+        "sync.tap": { key: "l", shift: true },
+      },
+    };
+
+    expect(migrateShortcutBindings(saved, 1)).toEqual({
+      overrides: {
+        "global.toggleLoop": { key: "" },
+        "timeline.toggleTextVariant": { key: "q" },
+        "sync.tap": { key: "l", shift: true },
+      },
+    });
+  });
+
   it("runs only for state saved before the rename", () => {
     const saved = { overrides: { "timeline.toggleGroupLoop": { key: "k" } } };
 
