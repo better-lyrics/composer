@@ -1,3 +1,5 @@
+import { useScrollTopOnSearch } from "@/hooks/useScrollTopOnSearch";
+import { useTrackedScrollTop } from "@/hooks/useTrackedScrollTop";
 import { useTypeToSearch } from "@/hooks/useTypeToSearch";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { type HelpLocation, useUIStore } from "@/stores/ui";
@@ -47,10 +49,7 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
 
   useTypeToSearch(searchInputRef, query, setQuery);
 
-  const scrollTopRef = useRef(initialScrollTop);
-  const trackScrollTop = useCallback((scrollTop: number) => {
-    scrollTopRef.current = scrollTop;
-  }, []);
+  const [scrollTopRef, trackScrollTop] = useTrackedScrollTop(initialScrollTop);
 
   const currentLocation = useCallback(
     (): HelpLocation => ({
@@ -58,7 +57,7 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
       scrollTop: scrollTopRef.current,
       ...(query.trim() ? { query } : {}),
     }),
-    [activeSection, query],
+    [activeSection, query, scrollTopRef],
   );
   const linkHost = useMemo<SettingLinkHost>(() => ({ returnPoint: currentLocation }), [currentLocation]);
 
@@ -76,12 +75,7 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
     setActiveSection(section);
   }, []);
 
-  const lastQueryRef = useRef(query);
-  useLayoutEffect(() => {
-    if (lastQueryRef.current === query) return;
-    lastQueryRef.current = query;
-    if (query.trim()) viewportRef.current?.scrollTo({ top: 0 });
-  }, [query]);
+  useScrollTopOnSearch(viewportRef, query);
 
   const shownContentRef = useRef({ activeSection, isSearching });
 

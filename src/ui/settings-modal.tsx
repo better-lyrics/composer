@@ -1,3 +1,5 @@
+import { useScrollTopOnSearch } from "@/hooks/useScrollTopOnSearch";
+import { useTrackedScrollTop } from "@/hooks/useTrackedScrollTop";
 import { useTypeToSearch } from "@/hooks/useTypeToSearch";
 import { useSettingsStore } from "@/stores/settings";
 import { SETTINGS_SECTIONS, type SettingsSectionId } from "@/stores/settings-catalog";
@@ -73,18 +75,9 @@ const SettingsModalBody: React.FC = () => {
   }, [settingsTarget, revealPendingTarget]);
 
   const [initialScrollTop] = useState(() => useUIStore.getState().settingsScrollTop);
-  const scrollTopRef = useRef(initialScrollTop);
-  const trackScrollTop = useCallback((scrollTop: number) => {
-    scrollTopRef.current = scrollTop;
-  }, []);
-  useLayoutEffect(() => () => useUIStore.getState().rememberSettingsScrollTop(scrollTopRef.current), []);
-
-  const lastQueryRef = useRef(settingsQuery);
-  useLayoutEffect(() => {
-    if (lastQueryRef.current === settingsQuery) return;
-    lastQueryRef.current = settingsQuery;
-    if (settingsQuery) viewportRef.current?.scrollTo({ top: 0 });
-  }, [settingsQuery]);
+  const [scrollTopRef, trackScrollTop] = useTrackedScrollTop(initialScrollTop);
+  useLayoutEffect(() => () => useUIStore.getState().rememberSettingsScrollTop(scrollTopRef.current), [scrollTopRef]);
+  useScrollTopOnSearch(viewportRef, settingsQuery);
 
   const navSections = useMemo(
     () => (results ? withMatchCounts(NAV_SECTIONS, countMatchesBySection(results)) : NAV_SECTIONS),
