@@ -10,6 +10,7 @@ import { useEffectiveFocus } from "@/views/timeline/effective-focus";
 import { rangePlaybackIndicator } from "@/views/timeline/selection-playback-icon";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
+import { useId } from "react";
 
 const TAB_LABELS: Record<ProjectTab, string> = {
   import: "Import",
@@ -34,6 +35,7 @@ const TabBar: React.FC = () => {
   const loopOpenGroup = useSettingsStore((s) => s.loopOpenGroup);
   const groupOpen = useEffectiveFocus() !== null;
   const rangeIndicator = rangePlaybackIndicator(selectionPlayback, groupOpen && loopOpenGroup);
+  const rangeStateId = useId();
 
   return (
     <nav data-tour="tab-bar" className="flex border-b border-composer-border select-none">
@@ -47,6 +49,7 @@ const TabBar: React.FC = () => {
             type="button"
             data-tour={`tab-${tab.id}`}
             onClick={() => setActiveTab(tab.id)}
+            aria-describedby={tab.id === "timeline" && rangeIndicator ? rangeStateId : undefined}
             className={cn(
               "cursor-pointer px-4 py-3 text-sm font-medium transition-colors",
               isActive
@@ -94,6 +97,11 @@ const TabBar: React.FC = () => {
           </button>
         );
       })}
+      {rangeIndicator && (
+        <span id={rangeStateId} hidden>
+          {rangeIndicator.label}
+        </span>
+      )}
     </nav>
   );
 };

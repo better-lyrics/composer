@@ -18,8 +18,10 @@ function rangePlaybackIndicator(
   selectionPlayback: SelectionPlaybackMode | null,
   groupLoops: boolean,
 ): RangePlaybackIndicator | null {
-  if (selectionPlayback === "loop") return { icon: IconRepeat, label: "Looping a selection" };
-  if (selectionPlayback === "once") return { icon: IconPlayerPlay, label: "Playing a selection" };
+  if (selectionPlayback !== null) {
+    const label = selectionPlayback === "loop" ? "Looping a selection" : "Playing a selection";
+    return { icon: selectionPlaybackIcon(selectionPlayback), label };
+  }
   return groupLoops ? { icon: IconRepeat, label: "Looping the open group" } : null;
 }
 

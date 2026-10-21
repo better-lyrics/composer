@@ -37,6 +37,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["Mod", "O"], description: "Switch project", shortcutId: "global.openProjectSwitcher" },
       { keys: ["Mod", "Alt", "N"], description: "New project", shortcutId: "global.newProject" },
       { keys: ["Mod", "S"], description: "Save now", shortcutId: "global.saveNow" },
+      { keys: ["Shift", "L"], description: "Loop the playback range", shortcutId: "global.toggleLoop" },
       { keys: ["Mod", "Shift", "Alt", "E"], description: "Download saved work", shortcutId: "global.panicRecovery" },
     ],
   },
