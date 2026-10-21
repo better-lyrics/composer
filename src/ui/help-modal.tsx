@@ -40,7 +40,7 @@ interface PendingTopic {
 const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialScrollTop = 0, initialQuery = "" }) => {
   const [activeSection, setActiveSection] = useState(initialSection ?? "getting-started");
   const [query, setQuery] = useState(initialQuery);
-  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [counts, setCounts] = useState<Record<string, number> | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const pendingTopicRef = useRef<PendingTopic | null>(null);
@@ -96,10 +96,10 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
   }, [activeSection, isSearching, revealPendingTopic]);
 
   const navSections = useMemo(
-    () => (isSearching ? withMatchCounts(HELP_SECTIONS, counts) : HELP_SECTIONS),
+    () => (isSearching && counts ? withMatchCounts(HELP_SECTIONS, counts) : HELP_SECTIONS),
     [isSearching, counts],
   );
-  const hasNoMatches = isSearching && Object.keys(counts).length === 0;
+  const hasNoMatches = isSearching && counts !== null && Object.keys(counts).length === 0;
 
   return (
     <ModalNavLayout

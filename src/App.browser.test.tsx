@@ -133,6 +133,39 @@ describe("App", () => {
     await expect.poll(() => helpViewport()?.scrollTop).toBe(scrollTopAtClick);
   });
 
+  it("regression: reopening help on a search restores the scrolled results", async () => {
+    allowConsole(/cannot be a descendant of/);
+    allowConsole(/cannot contain a nested/);
+    installStyleSheet(HELP_CONTENT_SCROLLER_CSS);
+    localStorage.setItem(TOUR_SEEN_KEY, "true");
+    const screen = await render(<App />, { withRouter: { initialEntries: ["/editor"] } });
+    const helpScroller = () => {
+      const content = document.querySelector("[data-help-content]");
+      return (
+        content?.closest<HTMLElement>("[data-overlayscrollbars-viewport]") ??
+        content?.closest<HTMLElement>("[data-overlayscrollbars-initialize]") ??
+        null
+      );
+    };
+
+    useUIStore.getState().openHelp();
+    await screen.getByRole("textbox", { name: "Search help" }).fill("loop");
+    await expect.poll(() => helpScroller()?.matches("[data-overlayscrollbars-viewport]")).toBe(true);
+    const scroller = helpScroller();
+    if (!scroller) throw new Error("help scroller missing");
+    const scrolled = new Promise((resolve) => scroller.addEventListener("scroll", resolve, { once: true }));
+    scroller.scrollTop = 300;
+    await scrolled;
+
+    useUIStore.getState().closeHelp();
+    await expect.poll(helpModalOpen).toBe(false);
+    expect(useUIStore.getState().helpLocation).toMatchObject({ scrollTop: 300, query: "loop" });
+    helpButton().click();
+    await expect.poll(helpModalOpen).toBe(true);
+    await expect.element(screen.getByRole("textbox", { name: "Search help" })).toHaveValue("loop");
+    await expect.poll(() => helpScroller()?.scrollTop).toBe(300);
+  });
+
   it("returns to the same Help search after a setting link trip from a result", async () => {
     allowConsole(/cannot be a descendant of/);
     allowConsole(/cannot contain a nested/);
