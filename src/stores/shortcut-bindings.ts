@@ -18,22 +18,98 @@ interface ShortcutBindingsState {
 
 // -- Migration ----------------------------------------------------------------
 
-const SHORTCUT_BINDINGS_PERSIST_VERSION = 1;
+const SHORTCUT_BINDINGS_PERSIST_VERSION = 3;
 const UNBOUND: ShortcutBinding = { key: "" };
-const ALTERNATE_REDO_ID = "global.redoAlternate";
 
-function migrateShortcutBindings(persistedState: unknown, version: number): unknown {
-  if (version >= 1 || !persistedState || typeof persistedState !== "object") return persistedState;
-  const { overrides } = persistedState as Partial<ShortcutBindingsState>;
+const ALTERNATE_REDO_ID = "global.redoAlternate";
+const DELETE_SELECTION_IDS = ["timeline.deleteSelection", "timeline.deleteSelectionAlternate"];
+
+function unbindIfKeysTaken(
+  overrides: Record<string, ShortcutBinding>,
+  addedId: string,
+): Record<string, ShortcutBinding> {
+  const added = getShortcutById(addedId);
+  if (!added || overrides[addedId]) return overrides;
+  const keysTaken = Object.entries(overrides).some(([id, binding]) => {
+    const owner = getShortcutById(id);
+    return (
+      owner !== undefined &&
+      scopesConflict(added.scope, owner.scope) &&
+      typeof binding?.key === "string" &&
+      bindingsEqual(binding, added.defaultBinding)
+    );
+  });
+  return keysTaken ? { ...overrides, [addedId]: UNBOUND } : overrides;
+}
+
+function unbindTakenDeleteKeys(state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> {
+  const { overrides } = state;
+  if (!overrides || typeof overrides !== "object") return state;
+  const migrated = DELETE_SELECTION_IDS.reduce(unbindIfKeysTaken, overrides);
+  return migrated === overrides ? state : { ...state, overrides: migrated };
+}
+
+const RENAMED_SHORTCUT_IDS: Record<string, string> = { "timeline.toggleGroupLoop": "global.toggleLoop" };
+
+function unbindTakenAlternateRedo(state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> {
+  const { overrides } = state;
   const alternateRedo = getShortcutById(ALTERNATE_REDO_ID);
-  if (!overrides || typeof overrides !== "object" || !alternateRedo || overrides[ALTERNATE_REDO_ID]) {
-    return persistedState;
-  }
+  if (!overrides || typeof overrides !== "object" || !alternateRedo || overrides[ALTERNATE_REDO_ID]) return state;
   const keysTaken = Object.values(overrides).some(
     (binding) => typeof binding?.key === "string" && bindingsEqual(binding, alternateRedo.defaultBinding),
   );
-  if (!keysTaken) return persistedState;
-  return { ...persistedState, overrides: { ...overrides, [ALTERNATE_REDO_ID]: UNBOUND } };
+  if (!keysTaken) return state;
+  return { ...state, overrides: { ...overrides, [ALTERNATE_REDO_ID]: UNBOUND } };
+}
+
+function isBound(binding: ShortcutBinding | undefined): binding is ShortcutBinding {
+  return typeof binding?.key === "string" && binding.key !== "";
+}
+
+function clashesWithAnotherBinding(
+  id: string,
+  binding: ShortcutBinding,
+  overrides: Record<string, ShortcutBinding>,
+): boolean {
+  const scope = getShortcutById(id)?.scope;
+  return SHORTCUT_REGISTRY.some((definition) => {
+    if (definition.id === id || !scope || !scopesConflict(scope, definition.scope)) return false;
+    const other = overrides[definition.id] ?? definition.defaultBinding;
+    return isBound(other) && bindingsEqual(other, binding);
+  });
+}
+
+// A renamed id can land in a wider scope, so a binding that was legal before may now clash: a clashing override
+// falls back to the default, and a clashing default is unbound. A deliberate unbind stays.
+function renameShortcutIds(state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> {
+  const { overrides } = state;
+  if (!overrides || typeof overrides !== "object") return state;
+  const renamed: Record<string, ShortcutBinding> = Object.fromEntries(
+    Object.entries(overrides).map(([id, binding]) => [RENAMED_SHORTCUT_IDS[id] ?? id, binding]),
+  );
+  for (const newId of Object.values(RENAMED_SHORTCUT_IDS)) {
+    const override = renamed[newId];
+    if (isBound(override) && clashesWithAnotherBinding(newId, override, renamed)) delete renamed[newId];
+    const fallback = getShortcutById(newId)?.defaultBinding;
+    const deliberatelyUnbound = renamed[newId]?.key === "";
+    if (
+      !isBound(renamed[newId]) &&
+      !deliberatelyUnbound &&
+      fallback &&
+      clashesWithAnotherBinding(newId, fallback, renamed)
+    ) {
+      renamed[newId] = UNBOUND;
+    }
+  }
+  return { ...state, overrides: renamed };
+}
+
+function migrateShortcutBindings(persistedState: unknown, version: number): unknown {
+  if (!persistedState || typeof persistedState !== "object") return persistedState;
+  const state = persistedState as Partial<ShortcutBindingsState>;
+  const withRedo = version < 1 ? unbindTakenAlternateRedo(state) : state;
+  const renamed = version < 2 ? renameShortcutIds(withRedo) : withRedo;
+  return version < 3 ? unbindTakenDeleteKeys(renamed) : renamed;
 }
 
 // -- Store --------------------------------------------------------------------

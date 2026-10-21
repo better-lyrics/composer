@@ -150,3 +150,15 @@ describe("lastPlaybackRate", () => {
     expect(useSettingsStore.getState().lastPlaybackRate).toBe(0.8);
   });
 });
+
+describe("selectionLeadIn migration", () => {
+  it("defaults selectionLeadIn to 0.3", () => {
+    const { selectionLeadIn: _drop, ...blob } = legacyBlob();
+    expect((migrateSettings(blob, 9) as Record<string, unknown>).selectionLeadIn).toBe(0.3);
+  });
+
+  it("keeps a chosen lead-in of 0", () => {
+    const migrated = migrateSettings(legacyBlob({ selectionLeadIn: 0 }), 9) as Record<string, unknown>;
+    expect(migrated.selectionLeadIn).toBe(0);
+  });
+});

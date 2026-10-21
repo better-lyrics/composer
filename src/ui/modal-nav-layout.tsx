@@ -23,6 +23,7 @@ interface ModalNavLayoutProps<T extends string> {
   contentInitialScrollTop?: number;
   contentViewportRef?: MutableRefObject<HTMLDivElement | null>;
   onContentInitialized?: (viewport: HTMLDivElement) => void;
+  onContentScrollTopChange?: (scrollTop: number) => void;
 }
 
 // -- Component -----------------------------------------------------------------
@@ -38,6 +39,7 @@ function ModalNavLayout<T extends string>({
   contentInitialScrollTop,
   contentViewportRef,
   onContentInitialized,
+  onContentScrollTopChange,
 }: ModalNavLayoutProps<T>) {
   return (
     <div className="flex flex-1 min-h-0">
@@ -76,6 +78,7 @@ function ModalNavLayout<T extends string>({
         initialScrollTop={contentInitialScrollTop}
         viewportRef={contentViewportRef}
         onInitialized={onContentInitialized}
+        onScrollTopChange={onContentScrollTopChange}
       >
         {children}
       </Scroll>

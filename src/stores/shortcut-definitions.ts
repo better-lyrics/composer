@@ -121,6 +121,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "s", mod: true },
   },
   {
+    id: "global.toggleLoop",
+    scope: "global",
+    description: "Loop the playback range",
+    defaultBinding: { key: "l", shift: true },
+  },
+  {
     id: "global.undo",
     scope: "global",
     description: "Undo",
@@ -251,6 +257,18 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "s", shift: true },
   },
   {
+    id: "timeline.deleteSelection",
+    scope: "timeline",
+    description: "Delete selected words",
+    defaultBinding: { key: "Backspace" },
+  },
+  {
+    id: "timeline.deleteSelectionAlternate",
+    scope: "timeline",
+    description: "Delete selected words (alternate)",
+    defaultBinding: { key: "Delete" },
+  },
+  {
     id: "timeline.mergeWords",
     scope: "timeline",
     description: "Merge words",
@@ -317,10 +335,10 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "Escape" },
   },
   {
-    id: "timeline.toggleGroupLoop",
+    id: "timeline.playSelection",
     scope: "timeline",
-    description: "Loop the open group",
-    defaultBinding: { key: "l", shift: true },
+    description: "Play the selection",
+    defaultBinding: { key: "Enter", alt: true },
   },
   {
     id: "timeline.jumpPrevInstance",

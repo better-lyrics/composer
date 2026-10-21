@@ -1,15 +1,15 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { type ReactNode, act, createElement, useEffect } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
-import { useLyricsSearch, type UseLyricsSearchOptions, type UseLyricsSearchResult } from "@/hooks/useLyricsSearch";
+import { type UseLyricsSearchOptions, type UseLyricsSearchResult, useLyricsSearch } from "@/hooks/useLyricsSearch";
 import {
   registerProviderForTests,
   restoreProvidersForTests,
   snapshotProvidersForTests,
 } from "@/utils/lyrics-search/registry";
 import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { type ReactNode, act, createElement, useEffect } from "react";
+import { type Root, createRoot } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 // -- IS_REACT_ACT_ENVIRONMENT -----------------------------------------------
 
@@ -330,6 +330,10 @@ describe("useLyricsSearch", () => {
   });
 
   it("debounces rapid query changes so only the final query fires", async () => {
+    vi.useFakeTimers();
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const fake = track(fakeProviderFactory({ name: "lrclib", results: [makeResult("lrclib-final", "lrclib")] }));
 
     const h = createHarness({ query: {}, options: { debounceMs: 50 } });
@@ -344,8 +348,10 @@ describe("useLyricsSearch", () => {
     await advanceMicrotasks();
     expect(fake.calls.length).toBe(0);
 
-    await waitUntil(() => fake.calls.length >= 1, 1000);
-    expect(fake.calls.length).toBe(1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
+    });
+    await vi.waitFor(() => expect(fake.calls.length).toBe(1));
     expect(fake.calls[0]?.query.track).toBe("abcd");
 
     await h.unmount();

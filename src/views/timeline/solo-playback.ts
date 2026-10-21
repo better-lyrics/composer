@@ -17,6 +17,10 @@ function isAtEnd(time: number, bounds: Bounds): boolean {
   return time >= bounds.end - END_TOLERANCE_SECONDS;
 }
 
+function isOutsideRange(time: number, bounds: Bounds): boolean {
+  return time < bounds.begin - END_TOLERANCE_SECONDS || time > bounds.end + END_TOLERANCE_SECONDS;
+}
+
 function soloPlayStart(time: number, bounds: Bounds): number | null {
   return time < bounds.begin || isAtEnd(time, bounds) ? bounds.begin : null;
 }
@@ -27,4 +31,4 @@ function soloPlaybackEnd(time: number, bounds: Bounds, loop: boolean): SoloEndSt
 
 // -- Exports ------------------------------------------------------------------
 
-export { soloPlaybackEnd, soloPlayStart };
+export { isOutsideRange, soloPlaybackEnd, soloPlayStart };

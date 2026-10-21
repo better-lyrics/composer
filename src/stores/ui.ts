@@ -20,6 +20,7 @@ interface UIState {
   settingsOpen: boolean;
   settingsSection: SettingsSectionId;
   settingsQuery: string;
+  settingsScrollTop: number;
   settingsTarget: SettingsTarget | null;
   settingsReturnTo: HelpLocation | null;
   helpOpen: boolean;
@@ -33,8 +34,10 @@ interface UIActions {
   setSettingsSection: (section: SettingsSectionId) => void;
   setSettingsQuery: (query: string) => void;
   consumeSettingsTarget: () => void;
+  rememberSettingsScrollTop: (scrollTop: number) => void;
   openHelp: (section?: string) => void;
   closeHelp: () => void;
+  rememberHelpLocation: (location: HelpLocation) => void;
   setProjectSwitcherOpen: (open: boolean) => void;
 }
 
@@ -46,6 +49,7 @@ const UI_INITIAL_STATE: UIState = {
   settingsOpen: false,
   settingsSection: "general",
   settingsQuery: "",
+  settingsScrollTop: 0,
   settingsTarget: null,
   settingsReturnTo: null,
   helpOpen: false,
@@ -61,14 +65,13 @@ function sectionOfTarget(target: SettingsTarget): SettingsSectionId {
 
 // -- Store ---------------------------------------------------------------------
 
-const useUIStore = create<UIState & UIActions>((set) => ({
+const useUIStore = create<UIState & UIActions>((set, get) => ({
   ...UI_INITIAL_STATE,
 
   openSettings: ({ target, returnTo } = {}) =>
     set((state) => ({
       settingsOpen: true,
-      settingsSection: target ? sectionOfTarget(target) : UI_INITIAL_STATE.settingsSection,
-      settingsQuery: "",
+      ...(target ? { settingsSection: sectionOfTarget(target), settingsQuery: "", settingsScrollTop: 0 } : {}),
       settingsTarget: target ?? null,
       settingsReturnTo: returnTo ?? (state.settingsOpen ? state.settingsReturnTo : null),
       helpOpen: returnTo ? false : state.helpOpen,
@@ -88,8 +91,13 @@ const useUIStore = create<UIState & UIActions>((set) => ({
   setSettingsSection: (settingsSection) => set({ settingsSection, settingsQuery: "" }),
   setSettingsQuery: (settingsQuery) => set({ settingsQuery }),
   consumeSettingsTarget: () => set({ settingsTarget: null }),
-  openHelp: (section = DEFAULT_HELP_SECTION) => set({ helpOpen: true, helpLocation: { section, scrollTop: 0 } }),
+  rememberSettingsScrollTop: (settingsScrollTop) => set({ settingsScrollTop }),
+  openHelp: (section) => set({ helpOpen: true, ...(section ? { helpLocation: { section, scrollTop: 0 } } : {}) }),
   closeHelp: () => set({ helpOpen: false }),
+  rememberHelpLocation: (helpLocation) => {
+    // Help also remounts while open when asked for another section; that request wins.
+    if (!get().helpOpen) set({ helpLocation });
+  },
   setProjectSwitcherOpen: (projectSwitcherOpen) => set({ projectSwitcherOpen }),
 }));
 

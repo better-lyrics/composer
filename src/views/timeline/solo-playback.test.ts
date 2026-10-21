@@ -1,4 +1,4 @@
-import { soloPlayStart, soloPlaybackEnd } from "@/views/timeline/solo-playback";
+import { isOutsideRange, soloPlayStart, soloPlaybackEnd } from "@/views/timeline/solo-playback";
 import { describe, expect, it } from "vitest";
 
 const chorus = { begin: 40, end: 48 };
@@ -44,5 +44,23 @@ describe("soloPlaybackEnd", () => {
     it("treats a time a hair before the end as the end", () => {
       expect(soloPlaybackEnd(47.998, chorus, false)).toEqual({ seekTo: 40, pause: true });
     });
+  });
+});
+
+describe("isOutsideRange", () => {
+  it("is false at both edges and inside", () => {
+    expect(isOutsideRange(40, chorus)).toBe(false);
+    expect(isOutsideRange(44, chorus)).toBe(false);
+    expect(isOutsideRange(48, chorus)).toBe(false);
+  });
+
+  it("is true before the begin and after the end", () => {
+    expect(isOutsideRange(39.9, chorus)).toBe(true);
+    expect(isOutsideRange(48.1, chorus)).toBe(true);
+  });
+
+  it("tolerates float noise at the edges", () => {
+    expect(isOutsideRange(39.999, chorus)).toBe(false);
+    expect(isOutsideRange(48.004, chorus)).toBe(false);
   });
 });

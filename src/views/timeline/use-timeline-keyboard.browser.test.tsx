@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { assignBinding } from "@/stores/shortcut-bindings";
 import { snapPoints } from "@/test/factories";
 import { createLine } from "@/test/factories";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -379,6 +380,26 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
 
     expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([5]);
     expect(useTimelineStore.getState().selectedWords).toHaveLength(0);
+  });
+
+  it("regression: a delete binding the user assigned to a built-in key deletes instead of running the built-in", async () => {
+    const line = createLine({
+      text: "hi there",
+      words: [
+        { text: "hi ", begin: 0, end: 1 },
+        { text: "there", begin: 1, end: 2 },
+      ],
+    });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line] });
+    useTimelineStore.setState({ selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }] });
+    assignBinding("timeline.deleteSelection", { key: "F2" });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "F2", bubbles: true }));
+
+    expect(useTimelineStore.getState().editingWord).toBeNull();
+    expect(useProjectStore.getState().lines[0].words?.map((word) => word.text)).toEqual(["there"]);
   });
 });
 

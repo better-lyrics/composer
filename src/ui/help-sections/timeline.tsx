@@ -1,10 +1,10 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { PROSE } from "@/ui/typography";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { TimelineExtras } from "@/ui/help-sections/timeline-extras";
-import { ALT_KEY, MOD_KEY } from "@/utils/platform";
-import { SettingLink } from "@/ui/setting-link";
 import { HelpTopic } from "@/ui/help-topic";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { SettingLink } from "@/ui/setting-link";
+import { PROSE } from "@/ui/typography";
+import { ALT_KEY, MOD_KEY } from "@/utils/platform";
 
 // -- Timeline -----------------------------------------------------------------
 
@@ -70,6 +70,23 @@ const TimelineSection: React.FC = () => (
       </p>
     </HelpTopic>
 
+    <HelpTopic title="Play a selection">
+      <p className={PROSE}>
+        Select words or a line and press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.playSelection")} /> to
+        hear only that part, or right-click it and use the <strong>Play</strong> item at the top of the menu. Press{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleLoop")} /> to loop it instead, or switch a play to a
+        loop and back with <strong>Loop</strong> in the strip. The loop reads the timing again on every pass, so a nudge
+        or a dragged edge is audible on the next one. It keeps looping when you switch tabs, so you can watch it in
+        Preview. The Timeline tab shows a loop icon while it runs, and{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleLoop")} /> turns the loop on or off from any tab.
+      </p>
+      <p className={`${PROSE} mt-2`}>
+        A little audio before and after the selection plays too, so you hear whether a word runs into its neighbours.
+        Change the amount, or set it to 0, with <SettingLink setting="selectionLeadIn" />. Click <strong>Stop</strong>{" "}
+        in the strip, clear the selection, or seek outside the range to end it.
+      </p>
+    </HelpTopic>
+
     <HelpTopic title="Selecting words">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>Click a word block to select it. {MOD_KEY} + Click to add or remove from selection.</li>
@@ -126,7 +143,10 @@ const TimelineSection: React.FC = () => (
           words.
         </li>
         <li>{ALT_KEY} + drag selected words to duplicate them.</li>
-        <li>Press Delete or Backspace to remove selected words.</li>
+        <li>
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.deleteSelection")} /> or{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.deleteSelectionAlternate")} /> to remove selected words.
+        </li>
       </ul>
     </HelpTopic>
 
@@ -233,8 +253,8 @@ const TimelineSection: React.FC = () => (
           and the onset tucks behind the pin so you do not see two markers stacked.
         </li>
         <li>
-          Hover a pin to see its time. The trash icon to delete it sits under the head, or press Delete (or Backspace)
-          while hovering to remove it.
+          Hover a pin to see its time. The trash icon to delete it sits under the head, or press{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.deleteSelection")} /> while hovering to remove it.
         </li>
         <li>
           Turn on <SettingLink setting="snapPlayheadToPoints" /> (on by default), and clicking or dragging the playhead
