@@ -1,9 +1,11 @@
+import type { Suggestion } from "@/domain/musicbrainz/suggestion";
 import { useReconciledBuffer } from "@/hooks/useReconciledBuffer";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { cn } from "@/utils/cn";
 import { type Row, reconcileRows, sameStrings, seedRows } from "@/views/export/metadata-field-rows";
+import { SuggestedRow, SuggestionNote } from "@/views/export/musicbrainz/suggested-value";
 import { IconPlus, IconX } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
 
@@ -15,11 +17,21 @@ interface MetadataFieldListProps {
   values: string[];
   placeholder?: string;
   onChange: (next: string[]) => void;
+  suggestion?: Suggestion<string[]>;
+  onUseSuggestion?: (values: string[]) => void;
 }
 
 // -- Component ----------------------------------------------------------------
 
-const MetadataFieldList: React.FC<MetadataFieldListProps> = ({ label, itemNoun, values, placeholder, onChange }) => {
+const MetadataFieldList: React.FC<MetadataFieldListProps> = ({
+  label,
+  itemNoun,
+  values,
+  placeholder,
+  onChange,
+  suggestion,
+  onUseSuggestion,
+}) => {
   const { rows, commit } = useReconciledBuffer<Row, string[]>(values, onChange, {
     seed: seedRows,
     reconcile: reconcileRows,
@@ -31,6 +43,8 @@ const MetadataFieldList: React.FC<MetadataFieldListProps> = ({ label, itemNoun, 
     commit(rows.map((row) => (row.id === id ? { ...row, value } : row)));
   const handleRemove = (id: string) => commit(rows.filter((row) => row.id !== id));
   const handleAdd = () => commit([...rows, { id: nanoid(), value: "" }]);
+  const handleUseOne = (value: string) =>
+    onUseSuggestion?.([...values.filter((existing) => existing.trim() !== ""), value]);
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -53,6 +67,17 @@ const MetadataFieldList: React.FC<MetadataFieldListProps> = ({ label, itemNoun, 
           />
         </div>
       ))}
+      {suggestion?.kind === "fill" &&
+        suggestion.value.map((value) => (
+          <SuggestedRow key={value} value={value} fieldName={label} onUse={() => handleUseOne(value)} />
+        ))}
+      {suggestion?.kind === "differs" && (
+        <SuggestionNote
+          value={suggestion.value.join(", ")}
+          fieldName={label}
+          onUse={() => onUseSuggestion?.(suggestion.value)}
+        />
+      )}
       <Button
         hasIcon
         size="sm"
