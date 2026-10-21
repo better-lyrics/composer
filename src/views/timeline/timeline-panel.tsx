@@ -42,7 +42,6 @@ import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useGroupFocusScroll } from "@/views/timeline/use-group-focus-scroll";
 import { useGroupFocusShortcuts } from "@/views/timeline/use-group-focus-shortcuts";
 import { useMarquee } from "@/views/timeline/use-marquee";
-import { useRangePlayback } from "@/views/timeline/use-range-playback";
 import { useSharedTimingPing } from "@/views/timeline/use-shared-timing-ping";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
@@ -138,7 +137,6 @@ const TimelinePanel: React.FC = () => {
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
   useGroupFocusShortcuts();
   useGroupFocusScroll(scrollContainerRef);
-  useRangePlayback();
   useTimelineWheel(scrollContainerRef, !!source && lines.length > 0);
   useTimelineFrameWake(scrollContainerRef, contentRef, !!source && lines.length > 0);
 

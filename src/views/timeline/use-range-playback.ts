@@ -19,7 +19,7 @@ function isPlayingSelection(): boolean {
 
 // -- Hook ---------------------------------------------------------------------
 
-// Keeps playback inside the active range (a played selection, else the open group): its end stops or loops.
+// Keeps playback inside the active range (a played selection, else the open group) on every tab: its end stops or loops.
 function useRangePlayback(): void {
   const groupOpen = useEffectiveFocus() !== null;
   const selectionPlayback = useTimelineStore((s) => s.selectionPlayback !== null);
