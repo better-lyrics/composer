@@ -101,5 +101,6 @@ export {
   selectLine,
   selectWordUnlessSelected,
   stopSelectionPlayback,
+  toggleLoop,
   toggleRangeLoop,
 };

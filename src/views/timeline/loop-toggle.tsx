@@ -3,7 +3,7 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { ToggleButton } from "@/ui/toggle-button";
 import { cn } from "@/utils/cn";
-import { loopsRange, toggleRangeLoop } from "@/views/timeline/selection-playback";
+import { loopsRange, toggleLoop } from "@/views/timeline/selection-playback";
 import { STRIP_CONTROL } from "@/views/timeline/strip-control";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconRepeat } from "@tabler/icons-react";
@@ -15,7 +15,7 @@ const LoopToggle: React.FC = () => {
   const loopOpenGroup = useSettingsStore((s) => s.loopOpenGroup);
   const loop = loopsRange(selectionPlayback, loopOpenGroup);
   return (
-    <ToggleButton pressed={loop} size="sm" hasIcon className={cn(STRIP_CONTROL, "pr-1.5")} onClick={toggleRangeLoop}>
+    <ToggleButton pressed={loop} size="sm" hasIcon className={cn(STRIP_CONTROL, "pr-1.5")} onClick={toggleLoop}>
       <IconRepeat aria-hidden="true" className="size-3.5" />
       Loop
       <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleLoop")} />
