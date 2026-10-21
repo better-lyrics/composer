@@ -79,6 +79,16 @@ function useRangePlayback(): void {
       scheduleEnd();
     };
 
+    // A range clamped to the song end can reach it before the end timer: the element pauses itself with `ended`.
+    const handleEnded = () => {
+      const range = currentPlaybackRange();
+      if (!range) return;
+      const store = useAudioStore.getState();
+      store.seekTo(range.begin);
+      if (currentlyLoops()) store.setIsPlaying(true);
+      else if (isPlayingSelection()) stopSelectionPlayback({ pause: true });
+    };
+
     const followSelection = () => {
       if (!isPlayingSelection()) return;
       if (currentSelectionBounds()) scheduleEnd();
@@ -96,6 +106,7 @@ function useRangePlayback(): void {
     audio.addEventListener("seeking", handleSeeking);
     audio.addEventListener("seeked", handleSeeked);
     audio.addEventListener("ratechange", scheduleEnd);
+    audio.addEventListener("ended", handleEnded);
     audio.addEventListener("timeupdate", checkEnd);
     return () => {
       clearTimeout(endTimer);
@@ -105,6 +116,7 @@ function useRangePlayback(): void {
       audio.removeEventListener("seeking", handleSeeking);
       audio.removeEventListener("seeked", handleSeeked);
       audio.removeEventListener("ratechange", scheduleEnd);
+      audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("timeupdate", checkEnd);
       if (isPlayingSelection()) stopSelectionPlayback({ pause: false });
     };
