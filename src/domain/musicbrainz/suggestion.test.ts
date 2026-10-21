@@ -7,6 +7,7 @@ const details: SongDetails = {
   recordingId: "r",
   title: "Your Power",
   album: "Happier Than Ever",
+  releaseTitle: "Happier Than Ever",
   isrc: "USUM72105934",
   isrcs: ["USUM72105934", "USUM72106000"],
   artists: ["Billie Eilish"],

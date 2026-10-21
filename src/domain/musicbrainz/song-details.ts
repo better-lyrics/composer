@@ -11,6 +11,7 @@ interface SongDetails {
   recordingId: string;
   title: string;
   album: string | null;
+  releaseTitle: string | null;
   isrc: string | null;
   isrcs: string[];
   artists: string[];
@@ -54,17 +55,20 @@ function songwritersOf(recording: MbRecording): string[] {
 // -- Details ------------------------------------------------------------------
 
 function songDetailsFrom(recording: MbRecording): SongDetails {
-  const album = pickAlbumRelease(recording.releases ?? []);
+  const releases = recording.releases ?? [];
+  const album = pickAlbumRelease(releases);
+  const shownRelease = album ?? pickDisplayRelease(releases);
   return {
     recordingId: recording.id,
     title: recording.title,
     album: album?.title ?? null,
+    releaseTitle: shownRelease?.title ?? null,
     isrc: recording.isrcs?.[0] ?? null,
     isrcs: recording.isrcs ?? [],
     artists: (recording["artist-credit"] ?? []).map((credit) => credit.name),
     songwriters: songwritersOf(recording),
-    coverReleaseGroupId: album?.["release-group"]?.id ?? null,
-    releaseYear: album?.date?.slice(0, 4) || null,
+    coverReleaseGroupId: shownRelease?.["release-group"]?.id ?? null,
+    releaseYear: shownRelease?.date?.slice(0, 4) || null,
     lengthSec: recording.length ? recording.length / 1000 : null,
   };
 }

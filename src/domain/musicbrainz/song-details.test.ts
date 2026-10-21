@@ -62,6 +62,16 @@ describe("songDetailsFrom", () => {
       expect(picked?.title).toBe("single");
     });
 
+    it("names a live take's release for display but never as its album", () => {
+      const details = songDetailsFrom({
+        id: "r",
+        title: "Your Power",
+        releases: [release("Prime Day Show", "Official", "2021", "Album", ["Live"])],
+      });
+      expect(details).toMatchObject({ album: null, releaseTitle: "Prime Day Show", releaseYear: "2021" });
+      expect(details.coverReleaseGroupId).toBe("group-Prime Day Show");
+    });
+
     it("still names a live take's release for display", () => {
       const live = release("Prime Day Show", "Official", "2021", "Album", ["Live"]);
       expect(pickAlbumRelease([live])).toBeNull();

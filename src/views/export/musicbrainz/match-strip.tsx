@@ -39,7 +39,7 @@ const LengthStatus: React.FC<{ match: RankedMatch }> = ({ match }) => {
 };
 
 const MatchStrip: React.FC<MatchStripProps> = ({ matches, chosen, details, onChoose }) => {
-  const subtitle = [details.artists.join(", "), details.album, details.releaseYear].filter(Boolean).join(" ・ ");
+  const subtitle = [details.artists.join(", "), details.releaseTitle, details.releaseYear].filter(Boolean).join(" ・ ");
   return (
     <div className="flex items-center gap-3 rounded-[10px] border border-composer-border bg-composer-input p-2 pr-2.5">
       <CoverArt
