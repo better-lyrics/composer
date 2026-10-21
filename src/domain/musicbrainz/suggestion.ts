@@ -17,8 +17,6 @@ interface MetadataSuggestions {
   songwriters?: Suggestion<string[]>;
 }
 
-type SuggestedField = keyof MetadataSuggestions;
-
 // -- Comparison ---------------------------------------------------------------
 
 const comparable = (value: string): string => value.trim().split(/\s+/).join(" ").toLowerCase();
@@ -74,4 +72,4 @@ const suggestionCount = (suggestions: MetadataSuggestions): number => Object.key
 // -- Exports ------------------------------------------------------------------
 
 export { fillPatch, metadataSuggestions, suggestionCount };
-export type { MetadataSuggestions, SuggestedField, Suggestion };
+export type { MetadataSuggestions, Suggestion };
