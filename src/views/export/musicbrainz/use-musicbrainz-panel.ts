@@ -6,7 +6,9 @@ import {
   suggestionCount,
 } from "@/domain/musicbrainz/suggestion";
 import { type MusicBrainzMatch, useMusicBrainzMatch } from "@/hooks/useMusicBrainzMatch";
+import type { ProjectMetadata } from "@/domain/project/metadata";
 import { useProjectStore } from "@/stores/project";
+import { showMusicBrainzFillToast } from "@/utils/musicbrainz-toast";
 import { useMemo, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -35,6 +37,17 @@ interface MusicBrainzPanel {
 
 const NO_SUGGESTIONS: MetadataSuggestions = {};
 
+// -- Helpers ------------------------------------------------------------------
+
+function previousValues(patch: Partial<ProjectMetadata>, metadata: ProjectMetadata): Partial<ProjectMetadata> {
+  const previous: Partial<ProjectMetadata> = {};
+  if ("album" in patch) previous.album = metadata.album;
+  if ("isrc" in patch) previous.isrc = metadata.isrc;
+  if ("artists" in patch) previous.artists = metadata.artists;
+  if ("songwriters" in patch) previous.songwriters = metadata.songwriters ?? [];
+  return previous;
+}
+
 // -- Hook ---------------------------------------------------------------------
 
 function useMusicBrainzPanel(): MusicBrainzPanel {
@@ -62,7 +75,9 @@ function useMusicBrainzPanel(): MusicBrainzPanel {
 
   const fillAll = () => {
     if (Object.keys(fill).length === 0) return;
+    const previous = previousValues(fill, useProjectStore.getState().metadata);
     setMetadata(fill);
+    showMusicBrainzFillToast(previous);
   };
 
   const dismiss = () => {
