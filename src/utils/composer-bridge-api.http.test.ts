@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { composeAbortSignals, getAudioFromBridge } from "@/utils/composer-bridge-api";
+import { composeAbortSignals } from "@/utils/abort-signals";
+import { getAudioFromBridge } from "@/utils/composer-bridge-api";
 
 // -- composeAbortSignals ------------------------------------------------------
 

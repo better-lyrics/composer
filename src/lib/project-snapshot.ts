@@ -52,6 +52,7 @@ function currentSaveInput(): ProjectSaveInput {
     audioSource: toSavedAudioSource(audioState.source) ?? audioState.expectedAudio ?? undefined,
     dismissedSuggestions: projectState.dismissedSuggestions,
     dismissedExplicitSuggestions: projectState.dismissedExplicitSuggestions,
+    dismissedMetadataMatches: projectState.dismissedMetadataMatches,
     currentStem: useSeparationStore.getState().currentStem,
     primingStripped: projectState.primingStripped,
     customSnapPoints: projectState.customSnapPoints,

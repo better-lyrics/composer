@@ -7,6 +7,7 @@ function createDismissalsInitialState(): DismissalsState {
   return {
     dismissedSuggestions: [],
     dismissedExplicitSuggestions: [],
+    dismissedMetadataMatches: [],
   };
 }
 
@@ -37,6 +38,14 @@ const createDismissalsSlice: StateCreator<ProjectStore, [], [], DismissalsState 
   setDismissedExplicitSuggestions: (fingerprints) => set({ dismissedExplicitSuggestions: fingerprints }),
 
   clearDismissedExplicitSuggestions: () => set({ dismissedExplicitSuggestions: [], isDirty: true }),
+
+  dismissMetadataMatch: (recordingId) =>
+    set((state) => {
+      if (state.dismissedMetadataMatches.includes(recordingId)) return state;
+      return { dismissedMetadataMatches: [...state.dismissedMetadataMatches, recordingId], isDirty: true };
+    }),
+
+  setDismissedMetadataMatches: (recordingIds) => set({ dismissedMetadataMatches: recordingIds }),
 });
 
 // -- Exports ------------------------------------------------------------------

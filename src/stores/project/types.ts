@@ -67,6 +67,7 @@ interface UiState {
 interface DismissalsState {
   dismissedSuggestions: string[];
   dismissedExplicitSuggestions: string[];
+  dismissedMetadataMatches: string[];
 }
 
 interface SnapPointsState {
@@ -128,6 +129,8 @@ interface DismissalActions {
   dismissExplicitSuggestion: (fingerprint: string) => void;
   setDismissedExplicitSuggestions: (fingerprints: string[]) => void;
   clearDismissedExplicitSuggestions: () => void;
+  dismissMetadataMatch: (recordingId: string) => void;
+  setDismissedMetadataMatches: (recordingIds: string[]) => void;
 }
 
 interface SnapPointActions {

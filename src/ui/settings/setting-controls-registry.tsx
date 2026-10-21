@@ -44,6 +44,14 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   autoExtractBackgroundVocals: TOGGLE,
   mergeStandaloneBackgroundLines: TOGGLE,
   preserveBracketsOnExtraction: TOGGLE,
+  musicBrainzLookup: {
+    kind: "select",
+    options: [
+      { value: "auto", label: "Automatic" },
+      { value: "manual", label: "On request" },
+      { value: "off", label: "Off" },
+    ],
+  },
   resetTour: { kind: "custom", Component: ResetTourSetting },
   resetAllSettings: { kind: "custom", Component: ResetAllSettingsSetting },
   libraryView: { kind: "custom", Component: LibraryViewSetting },

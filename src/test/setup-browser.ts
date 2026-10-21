@@ -2,10 +2,12 @@ import { appQueryClient } from "@/lib/app-query-client";
 import { forgetOpenProjectId } from "@/lib/open-project-session";
 import { __resetPendingDeletionsForTests } from "@/lib/pending-deletions";
 import { __resetPersistenceSettledForTests } from "@/lib/persistence-settled";
+import { resetMusicBrainzQueue } from "@/lib/musicbrainz-client";
 import { resetSaveStatus } from "@/lib/save-status";
 import { addGlobalAllowedConsolePattern, registerConsoleGuard } from "@/test/console-guard";
 import { deleteDatabase } from "@/test/idb";
 import { installPromptIdleCallbacks } from "@/test/idle-callbacks";
+import { useSettingsStore } from "@/stores/settings";
 import { resetAllStores } from "@/test/stores";
 import { toast } from "sonner";
 import { beforeAll, beforeEach } from "vitest";
@@ -31,6 +33,9 @@ beforeEach(async () => {
   forgetOpenProjectId();
   __resetPendingDeletionsForTests();
   await resetAllStores();
+  // Tests must never reach musicbrainz.org; the MusicBrainz flow test opts back in.
+  useSettingsStore.setState({ musicBrainzLookup: "off" });
+  resetMusicBrainzQueue();
   __resetPersistenceSettledForTests();
   resetSaveStatus();
   toast.dismiss();

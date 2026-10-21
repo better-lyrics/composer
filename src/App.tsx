@@ -6,6 +6,7 @@ import { useImportFromHash } from "@/hooks/useImportFromHash";
 import { useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
 import { useLanguageAutoRefresh } from "@/hooks/useLanguageAutoRefresh";
+import { useMusicBrainzMatch } from "@/hooks/useMusicBrainzMatch";
 import { usePanicRecovery } from "@/hooks/usePanicRecovery";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useProjectChannel } from "@/hooks/useProjectChannel";
@@ -45,6 +46,11 @@ import { Toaster } from "sonner";
 const TOUR_START_DELAY_MS = 500;
 
 // -- Shell --------------------------------------------------------------------
+
+const MusicBrainzWarmup: React.FC = () => {
+  useMusicBrainzMatch(null, false);
+  return null;
+};
 
 const AppShell: React.FC = () => {
   const { pathname } = useLocation();
@@ -138,6 +144,7 @@ const AppShell: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-composer-bg text-composer-text">
+      <MusicBrainzWarmup />
       <AppHeader
         screen={screen}
         onSettingsOpen={() => openSettings()}
