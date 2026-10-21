@@ -35,27 +35,37 @@ function unbindTakenAlternateRedo(state: Partial<ShortcutBindingsState>): Partia
   return { ...state, overrides: { ...overrides, [ALTERNATE_REDO_ID]: UNBOUND } };
 }
 
+function isBound(binding: ShortcutBinding | undefined): binding is ShortcutBinding {
+  return typeof binding?.key === "string" && binding.key !== "";
+}
+
 function clashesWithAnotherBinding(
   id: string,
   binding: ShortcutBinding,
   overrides: Record<string, ShortcutBinding>,
 ): boolean {
-  return SHORTCUT_REGISTRY.some(
-    (definition) =>
-      definition.id !== id && bindingsEqual(overrides[definition.id] ?? definition.defaultBinding, binding),
-  );
+  return SHORTCUT_REGISTRY.some((definition) => {
+    if (definition.id === id) return false;
+    const other = overrides[definition.id] ?? definition.defaultBinding;
+    return isBound(other) && bindingsEqual(other, binding);
+  });
 }
 
-// A renamed id can land in a wider scope, so a rebinding that was legal before may now clash; it falls back to the default.
+// A renamed id can land in a wider scope, so a binding that was legal before may now clash: a clashing override
+// falls back to the default, and a clashing default is unbound. A deliberate unbind stays.
 function renameShortcutIds(state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> {
   const { overrides } = state;
   if (!overrides || typeof overrides !== "object") return state;
   const renamed: Record<string, ShortcutBinding> = Object.fromEntries(
     Object.entries(overrides).map(([id, binding]) => [RENAMED_SHORTCUT_IDS[id] ?? id, binding]),
   );
-  for (const [oldId, newId] of Object.entries(RENAMED_SHORTCUT_IDS)) {
-    const binding = renamed[newId];
-    if (oldId in overrides && binding && clashesWithAnotherBinding(newId, binding, renamed)) delete renamed[newId];
+  for (const newId of Object.values(RENAMED_SHORTCUT_IDS)) {
+    const override = renamed[newId];
+    if (isBound(override) && clashesWithAnotherBinding(newId, override, renamed)) delete renamed[newId];
+    const fallback = getShortcutById(newId)?.defaultBinding;
+    if (!(newId in renamed) && fallback && clashesWithAnotherBinding(newId, fallback, renamed)) {
+      renamed[newId] = UNBOUND;
+    }
   }
   return { ...state, overrides: renamed };
 }

@@ -120,6 +120,22 @@ describe("toggleLoop id migration", () => {
     expect(migrated).toEqual({ overrides: { "timeline.toggleTextVariant": { key: "q" } } });
   });
 
+  it("regression: keeps a deliberately unbound group loop unbound", () => {
+    const saved = { overrides: { "timeline.toggleGroupLoop": { key: "" }, "timeline.editWord": { key: "" } } };
+
+    expect(migrateShortcutBindings(saved, 1)).toEqual({
+      overrides: { "global.toggleLoop": { key: "" }, "timeline.editWord": { key: "" } },
+    });
+  });
+
+  it("regression: unbinds the loop when its default would clash with a binding in another scope", () => {
+    const saved = { overrides: { "sync.tap": { key: "l", shift: true } } };
+
+    expect(migrateShortcutBindings(saved, 1)).toEqual({
+      overrides: { "sync.tap": { key: "l", shift: true }, "global.toggleLoop": { key: "" } },
+    });
+  });
+
   it("runs only for state saved before the rename", () => {
     const saved = { overrides: { "timeline.toggleGroupLoop": { key: "k" } } };
 
