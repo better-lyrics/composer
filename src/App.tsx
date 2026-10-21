@@ -22,7 +22,6 @@ import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { GuideCard } from "@/tour/guide-card";
 import { useTour } from "@/tour/use-tour";
-import { useRangeLoopShortcut } from "@/views/timeline/use-range-loop-shortcut";
 import { useRangePlayback } from "@/views/timeline/use-range-playback";
 import "@/tour/tour-theme.css";
 import { AppHeader } from "@/ui/app-header";
@@ -103,7 +102,6 @@ const AppShell: React.FC = () => {
   useStorageMaintenance();
   useLanguageAutoRefresh();
   useRangePlayback();
-  useRangeLoopShortcut(isEditor);
   useProjectChannel();
   useProjectShortcuts(isEditor);
   useSaveShortcut(isEditor);

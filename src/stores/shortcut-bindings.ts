@@ -22,7 +22,7 @@ const SHORTCUT_BINDINGS_PERSIST_VERSION = 2;
 const UNBOUND: ShortcutBinding = { key: "" };
 const ALTERNATE_REDO_ID = "global.redoAlternate";
 
-const RENAMED_SHORTCUT_IDS: Record<string, string> = { "timeline.toggleGroupLoop": "timeline.toggleLoop" };
+const RENAMED_SHORTCUT_IDS: Record<string, string> = { "timeline.toggleGroupLoop": "global.toggleLoop" };
 
 function unbindTakenAlternateRedo(state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> {
   const { overrides } = state;

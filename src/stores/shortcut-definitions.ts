@@ -121,6 +121,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "s", mod: true },
   },
   {
+    id: "global.toggleLoop",
+    scope: "global",
+    description: "Loop the playback range",
+    defaultBinding: { key: "l", shift: true },
+  },
+  {
     id: "global.undo",
     scope: "global",
     description: "Undo",
@@ -321,12 +327,6 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     scope: "timeline",
     description: "Play the selection",
     defaultBinding: { key: "Enter", alt: true },
-  },
-  {
-    id: "timeline.toggleLoop",
-    scope: "timeline",
-    description: "Loop the playback range",
-    defaultBinding: { key: "l", shift: true },
   },
   {
     id: "timeline.jumpPrevInstance",

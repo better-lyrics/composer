@@ -68,10 +68,14 @@ function toggleLoop(): void {
 }
 
 // Away from the Timeline only a range that is already running can change.
-function toggleActiveRangeLoop(): boolean {
-  if (useTimelineStore.getState().selectionPlayback === null && currentEffectiveFocus() === null) return false;
+function toggleActiveRangeLoop(): void {
+  if (useTimelineStore.getState().selectionPlayback === null && currentEffectiveFocus() === null) return;
   toggleLoop();
-  return true;
+}
+
+function toggleLoopShortcut(): void {
+  if (useProjectStore.getState().activeTab === "timeline") toggleRangeLoop();
+  else toggleActiveRangeLoop();
 }
 
 // Same order as Play: a playing selection, then a timed selection, then the open group.
@@ -108,7 +112,6 @@ export {
   selectLine,
   selectWordUnlessSelected,
   stopSelectionPlayback,
-  toggleActiveRangeLoop,
   toggleLoop,
-  toggleRangeLoop,
+  toggleLoopShortcut,
 };

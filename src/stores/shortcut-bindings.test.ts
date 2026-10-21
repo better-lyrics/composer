@@ -97,11 +97,11 @@ describe("migrateShortcutBindings", () => {
 });
 
 describe("toggleLoop id migration", () => {
-  it("moves a rebinding from timeline.toggleGroupLoop to timeline.toggleLoop", () => {
+  it("moves a rebinding from timeline.toggleGroupLoop to global.toggleLoop", () => {
     const binding = { key: "k", shift: true };
     const migrated = migrateShortcutBindings({ overrides: { "timeline.toggleGroupLoop": binding } }, 1);
 
-    expect(migrated).toEqual({ overrides: { "timeline.toggleLoop": binding } });
+    expect(migrated).toEqual({ overrides: { "global.toggleLoop": binding } });
   });
 
   it("leaves overrides without the old id alone", () => {

@@ -234,7 +234,7 @@ function PlaybackMenuItems({
       />
       <MenuItem
         label={`Loop ${noun}`}
-        shortcut={getEffectiveKeysArray("timeline.toggleLoop")}
+        shortcut={getEffectiveKeysArray("global.toggleLoop")}
         onClick={() => selectAndRun(loopSelection)}
       />
       <MenuDivider />

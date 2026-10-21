@@ -18,7 +18,7 @@ const LoopToggle: React.FC = () => {
     <ToggleButton pressed={loop} size="sm" hasIcon className={cn(STRIP_CONTROL, "pr-1.5")} onClick={toggleLoop}>
       <IconRepeat aria-hidden="true" className="size-3.5" />
       Loop
-      <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleLoop")} />
+      <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleLoop")} />
     </ToggleButton>
   );
 };
