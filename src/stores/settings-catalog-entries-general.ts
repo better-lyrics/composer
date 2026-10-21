@@ -39,6 +39,16 @@ const GENERAL_CATALOG_ENTRIES = {
     keywords: ["bg", "parentheses"],
     settingKey: "preserveBracketsOnExtraction",
   },
+  musicBrainzLookup: {
+    section: "general",
+    label: "Song details from MusicBrainz",
+    descriptionFor: (state) =>
+      state.musicBrainzLookup === "off"
+        ? "Composer never contacts MusicBrainz."
+        : "Suggests album, ISRC, artists and songwriters in Export. Nothing is filled until you confirm.",
+    keywords: ["metadata", "isrc", "songwriters", "album", "lookup"],
+    settingKey: "musicBrainzLookup",
+  },
   resetTour: {
     section: "general",
     label: "Reset product tour",

@@ -1,4 +1,5 @@
 import type { LibrarySort } from "@/domain/project/library-order";
+import type { MusicBrainzLookup } from "@/domain/musicbrainz/lookup-mode";
 import type { LaunchScreen, LibraryView } from "@/domain/project/library-preferences";
 import type { KeepYouTubeAudio } from "@/domain/storage/audio-retention";
 import type { StorageLimit } from "@/domain/storage/storage-limit";
@@ -67,6 +68,7 @@ interface SettingsState {
 
   autoSaveDelay: number;
   keepYouTubeAudio: KeepYouTubeAudio;
+  musicBrainzLookup: MusicBrainzLookup;
   smartCleanup: boolean;
   storageLimit: StorageLimit;
 
@@ -150,6 +152,7 @@ const DEFAULTS: SettingsState = {
 
   autoSaveDelay: 2000,
   keepYouTubeAudio: "auto",
+  musicBrainzLookup: "auto",
   smartCleanup: true,
   storageLimit: "2gb",
 
