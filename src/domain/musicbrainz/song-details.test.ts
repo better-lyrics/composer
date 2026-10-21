@@ -3,7 +3,13 @@ import { pickAlbumRelease, songDetailsFrom } from "@/domain/musicbrainz/song-det
 import type { MbRecording, MbRelease } from "@/domain/musicbrainz/types";
 import { YOUR_POWER_ALBUM_RECORDING } from "@/test/musicbrainz-recording-fixtures";
 
-function release(id: string, status: string, date: string, primaryType: string, secondaryTypes: string[] = []): MbRelease {
+function release(
+  id: string,
+  status: string,
+  date: string,
+  primaryType: string,
+  secondaryTypes: string[] = [],
+): MbRelease {
   return {
     id,
     title: id,
@@ -48,7 +54,10 @@ describe("songDetailsFrom", () => {
     });
 
     it("falls back to the earliest official studio release when there is no album", () => {
-      const picked = pickAlbumRelease([release("live", "Official", "2019", "Album", ["Live"]), release("single", "Official", "2020", "Single")]);
+      const picked = pickAlbumRelease([
+        release("live", "Official", "2019", "Album", ["Live"]),
+        release("single", "Official", "2020", "Single"),
+      ]);
       expect(picked?.title).toBe("single");
     });
 
@@ -57,7 +66,10 @@ describe("songDetailsFrom", () => {
     });
 
     it("puts undated releases last", () => {
-      const picked = pickAlbumRelease([release("undated", "Official", "", "Album"), release("dated", "Official", "2001", "Album")]);
+      const picked = pickAlbumRelease([
+        release("undated", "Official", "", "Album"),
+        release("dated", "Official", "2001", "Album"),
+      ]);
       expect(picked?.title).toBe("dated");
     });
 
@@ -89,9 +101,15 @@ describe("songDetailsFrom", () => {
       const work = (id: string, artistId: string) => ({
         type: "performance",
         "target-type": "work",
-        work: { id, title: id, relations: [{ type: "composer", "target-type": "artist", artist: { id: artistId, name: artistId } }] },
+        work: {
+          id,
+          title: id,
+          relations: [{ type: "composer", "target-type": "artist", artist: { id: artistId, name: artistId } }],
+        },
       });
-      expect(songDetailsFrom({ id: "r", title: "t", relations: [work("w1", "A"), work("w2", "B")] }).songwriters).toEqual(["A", "B"]);
+      expect(
+        songDetailsFrom({ id: "r", title: "t", relations: [work("w1", "A"), work("w2", "B")] }).songwriters,
+      ).toEqual(["A", "B"]);
     });
 
     it("lists each credited artist separately", () => {
