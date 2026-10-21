@@ -4,7 +4,6 @@ import { useProjectStore } from "@/stores/project";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { type InstanceRef, selectedBannerInstance } from "@/views/timeline/selected-banner";
-import { toggleRangeLoop } from "@/views/timeline/selection-playback";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect } from "react";
 
@@ -43,11 +42,6 @@ function handleGroupFocusKeyDown(event: KeyboardEvent): void {
     event.preventDefault();
     event.stopImmediatePropagation();
     timeline.openGroup(instance.groupId, instance.instanceIdx);
-    return;
-  }
-
-  if (matched === "timeline.toggleLoop") {
-    if (toggleRangeLoop()) event.preventDefault();
     return;
   }
 

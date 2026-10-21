@@ -67,6 +67,13 @@ function toggleLoop(): void {
   settings.set("loopOpenGroup", !settings.loopOpenGroup);
 }
 
+// Away from the Timeline only a range that is already running can change.
+function toggleActiveRangeLoop(): boolean {
+  if (useTimelineStore.getState().selectionPlayback === null && currentEffectiveFocus() === null) return false;
+  toggleLoop();
+  return true;
+}
+
 // Same order as Play: a playing selection, then a timed selection, then the open group.
 function toggleRangeLoop(): boolean {
   if (useTimelineStore.getState().selectionPlayback !== null) {
@@ -101,6 +108,7 @@ export {
   selectLine,
   selectWordUnlessSelected,
   stopSelectionPlayback,
+  toggleActiveRangeLoop,
   toggleLoop,
   toggleRangeLoop,
 };
