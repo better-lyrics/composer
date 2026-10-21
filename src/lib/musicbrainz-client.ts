@@ -6,6 +6,18 @@ const RATE_LIMITED_STATUS = 503;
 const REQUEST_TIMEOUT_MS = 15_000;
 const LOG_PREFIX = "[MusicBrainz]";
 
+// -- Errors -------------------------------------------------------------------
+
+class MusicBrainzHttpError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(`MusicBrainz request failed: ${status}`);
+    this.name = "MusicBrainzHttpError";
+    this.status = status;
+  }
+}
+
 // -- Queue --------------------------------------------------------------------
 
 let queueTail: Promise<unknown> = Promise.resolve();
@@ -57,11 +69,11 @@ function fetchMusicBrainz<T>(url: string, signal?: AbortSignal): Promise<T> {
       await wait(RETRY_AFTER_MS, signal);
       response = await fetchInTurn(url, signal);
     }
-    if (!response.ok) throw new Error(`MusicBrainz request failed: ${response.status}`);
+    if (!response.ok) throw new MusicBrainzHttpError(response.status);
     return (await response.json()) as T;
   });
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { fetchMusicBrainz, resetMusicBrainzQueue };
+export { MusicBrainzHttpError, fetchMusicBrainz, resetMusicBrainzQueue };

@@ -1,11 +1,12 @@
 import type { MusicBrainzLookup } from "@/domain/musicbrainz/lookup-mode";
 import type { SongQuery } from "@/domain/musicbrainz/query";
-import { recordingLookupUrl, songSearchUrl } from "@/domain/musicbrainz/query";
+import { recordingLookupUrl } from "@/domain/musicbrainz/query";
 import { type RankedMatch, rankMatches } from "@/domain/musicbrainz/rank-matches";
 import { type SongDetails, songDetailsFrom } from "@/domain/musicbrainz/song-details";
 import type { MbRecording, MbSearchResponse } from "@/domain/musicbrainz/types";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { fetchMusicBrainz } from "@/lib/musicbrainz-client";
+import { searchRecordings } from "@/lib/musicbrainz-search";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -69,7 +70,7 @@ function useMusicBrainzMatch(chosenRecordingId: string | null, requested: boolea
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 0,
     retry: false,
-    queryFn: ({ signal }) => fetchMusicBrainz<MbSearchResponse>(songSearchUrl(query), signal),
+    queryFn: ({ signal }) => searchRecordings(query, signal),
   });
   const matches = useMemo(
     () => (search.data ? rankMatches(search.data.recordings, durationSec) : []),
