@@ -34,7 +34,45 @@ interface SnapMarkerPinProps {
   onHoverChange?: (id: string, hovering: boolean) => void;
 }
 
-// -- Component -----------------------------------------------------------------
+// -- Helpers -------------------------------------------------------------------
+
+function dropInMotion(reduceMotion: boolean | null) {
+  return {
+    variants: pinDropInVariants,
+    initial: reduceMotion ? (false as const) : "initial",
+    animate: "animate",
+    exit: reduceMotion ? undefined : "exit",
+  };
+}
+
+// -- Components ----------------------------------------------------------------
+
+const SnapMarkerHead: React.FC<{
+  left: number;
+  label: string;
+  isDragging: boolean;
+  dropIn: ReturnType<typeof dropInMotion>;
+  buttonRef: (element: HTMLElement | null) => void;
+  buttonProps: Record<string, unknown>;
+}> = ({ left, label, isDragging, dropIn, buttonRef, buttonProps }) => (
+  <m.div data-snap-marker-head-anchor className="absolute inset-y-0 w-0" style={{ left }} {...dropIn}>
+    <div className="absolute top-[19px] bottom-0 -left-px w-0.5 bg-composer-snap pointer-events-none" />
+    <button
+      ref={buttonRef}
+      type="button"
+      data-snap-marker-head
+      data-dragging={isDragging || undefined}
+      aria-label={label}
+      className={cn(
+        "snap-custom-head expanded-hit-sm absolute top-[5px] -left-[5px] pointer-events-auto select-none border-none",
+        isDragging ? "cursor-grabbing" : "cursor-grab",
+      )}
+      {...buttonProps}
+    >
+      <i />
+    </button>
+  </m.div>
+);
 
 const SnapMarkerPin = memo(function SnapMarkerPin({
   id,
@@ -96,6 +134,7 @@ const SnapMarkerPin = memo(function SnapMarkerPin({
   // tracking the head as the exit transform shrinks and lifts it, so the
   // floating tooltip drifts up and to the side before the pin unmounts.
   const showTooltip = isOpen && !isDragging && isPresent;
+  const dropIn = dropInMotion(reduceMotion);
 
   return (
     <m.div
@@ -104,10 +143,7 @@ const SnapMarkerPin = memo(function SnapMarkerPin({
       data-snap-marker-drop-in
       className="absolute top-0"
       style={{ left: time * zoom }}
-      variants={pinDropInVariants}
-      initial={reduceMotion ? false : "initial"}
-      animate="animate"
-      exit={reduceMotion ? undefined : "exit"}
+      {...dropIn}
     >
       <div
         data-snap-marker-line
@@ -128,33 +164,16 @@ const SnapMarkerPin = memo(function SnapMarkerPin({
       )}
       {headHost &&
         createPortal(
-          <m.div
-            data-snap-marker-head-anchor
-            className="absolute inset-y-0 w-0"
-            style={{ left: time * zoom }}
-            variants={pinDropInVariants}
-            initial={reduceMotion ? false : "initial"}
-            animate="animate"
-            exit={reduceMotion ? undefined : "exit"}
-          >
-            <div className="absolute top-[19px] bottom-0 -left-px w-0.5 bg-composer-snap pointer-events-none" />
-            <button
-              ref={refs.setReference}
-              type="button"
-              data-snap-marker-head
-              data-dragging={isDragging || undefined}
-              aria-label={`Custom snap point at ${formatTime(time)}`}
-              className={cn(
-                "snap-custom-head expanded-hit-sm absolute top-[5px] -left-[5px] pointer-events-auto select-none border-none",
-                isDragging ? "cursor-grabbing" : "cursor-grab",
-              )}
-              {...getReferenceProps({
-                onPointerDown: (event: React.PointerEvent<HTMLElement>) => onHeadPointerDown(id, event),
-              })}
-            >
-              <i />
-            </button>
-          </m.div>,
+          <SnapMarkerHead
+            left={time * zoom}
+            label={`Custom snap point at ${formatTime(time)}`}
+            isDragging={isDragging}
+            dropIn={dropIn}
+            buttonRef={refs.setReference}
+            buttonProps={getReferenceProps({
+              onPointerDown: (event: React.PointerEvent<HTMLElement>) => onHeadPointerDown(id, event),
+            })}
+          />,
           headHost,
         )}
       {showTooltip && (
