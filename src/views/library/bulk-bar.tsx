@@ -32,7 +32,7 @@ const BulkBar: React.FC<BulkBarProps> = ({ selectedCount, visibleCount, onSelect
   return (
     <div className="fixed inset-x-0 bottom-6 z-60 flex justify-center pointer-events-none">
       <div role="toolbar" aria-label="Selected projects" className={BAR_STYLES}>
-        <span className="pl-2 pr-2.5 font-medium tabular-nums">{selectedCount} selected</span>
+        <span className="pl-2 pr-2.5 text-[13px] font-medium tabular-nums">{selectedCount} selected</span>
         {selectedCount < visibleCount && (
           <>
             <Button variant="quiet" size="sm" onClick={onSelectAll}>

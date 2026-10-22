@@ -14,7 +14,6 @@ interface Bar {
   y: number;
   width: number;
   height: number;
-  centre: number;
 }
 
 interface Painter {
@@ -61,7 +60,7 @@ function layoutBars(values: readonly number[], height: number, pixelRatio: numbe
       ) / pixelRatio;
     const x = snap(index * BAR_PITCH);
     const width = Math.max(snap(BAR_WIDTH), 1 / pixelRatio);
-    return { x, y: snap(height / 2) - half, width, height: half * 2, centre: x + width / 2 };
+    return { x, y: snap(height / 2) - half, width, height: half * 2 };
   });
 }
 
@@ -70,11 +69,23 @@ function paintBars(painter: Painter, from: number, to: number, headX: number): v
   if (!context) return;
   for (let index = Math.max(0, from); index <= Math.min(bars.length - 1, to); index++) {
     const bar = bars[index];
+    const radius = Math.min(bar.width / 2, 1.5);
     context.clearRect(bar.x, 0, bar.width, context.canvas.height);
-    context.fillStyle = bar.centre <= headX ? painter.played : painter.idle;
+    context.fillStyle = painter.idle;
     context.beginPath();
-    context.roundRect(bar.x, bar.y, bar.width, bar.height, Math.min(bar.width / 2, 1.5));
+    context.roundRect(bar.x, bar.y, bar.width, bar.height, radius);
     context.fill();
+    const playedWidth = Math.min(bar.width, headX - bar.x);
+    if (playedWidth <= 0) continue;
+    context.save();
+    context.beginPath();
+    context.rect(bar.x, 0, playedWidth, context.canvas.height);
+    context.clip();
+    context.fillStyle = painter.played;
+    context.beginPath();
+    context.roundRect(bar.x, bar.y, bar.width, bar.height, radius);
+    context.fill();
+    context.restore();
   }
 }
 
@@ -112,7 +123,6 @@ const OverviewScrub: React.FC = () => {
     const headX = (livePlaybackTime() / duration) * painter.width;
     if (headRef.current) headRef.current.style.translate = `${headX - 1}px 0`;
     const headBar = Math.floor(headX / BAR_PITCH);
-    if (headBar === painter.headBar) return;
     if (painter.headBar < 0) paintBars(painter, 0, painter.bars.length - 1, headX);
     else paintBars(painter, Math.min(painter.headBar, headBar) - 1, Math.max(painter.headBar, headBar) + 1, headX);
     painter.headBar = headBar;
@@ -159,7 +169,17 @@ const OverviewScrub: React.FC = () => {
       <div className="absolute inset-x-2 inset-y-1.5 pointer-events-none">
         <SeekBarFocusBand duration={duration} />
       </div>
-      <canvas ref={canvasRef} className="absolute inset-x-2 inset-y-2 size-[calc(100%-16px)]" />
+      <div
+        aria-hidden="true"
+        data-loaded={envelope ? "" : undefined}
+        data-sweeping={envelope ? undefined : ""}
+        className="absolute inset-x-2 inset-y-1.5 overflow-hidden rounded-lg waveform-loading-dots pointer-events-none transition-opacity duration-200 ease-out data-loaded:opacity-0"
+      />
+      <canvas
+        ref={canvasRef}
+        data-loaded={envelope ? "" : undefined}
+        className="absolute inset-x-2 inset-y-2 size-[calc(100%-16px)] opacity-0 transition-opacity duration-150 ease-in data-loaded:opacity-100"
+      />
       <div
         ref={headRef}
         aria-hidden="true"
