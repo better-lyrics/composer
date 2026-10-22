@@ -1,0 +1,73 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { usePersistence } from "@/hooks/usePersistence";
+import { findOpenProjectId } from "@/lib/open-project-session";
+import { cancelPendingSave, flushPendingSave } from "@/lib/persistence-debounce";
+import { getPersistenceSettled } from "@/lib/persistence-settled";
+import { loadProjectIndexEntry } from "@/lib/project-repository";
+import { flushResumePosition } from "@/lib/resume-position";
+import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
+import { createAudioFile } from "@/test/audio-fixtures";
+import { render } from "@/test/render";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+
+// -- Helpers ------------------------------------------------------------------
+
+const PersistenceHost: React.FC = () => {
+  usePersistence();
+  return null;
+};
+
+async function openProjectEntry() {
+  const id = await findOpenProjectId();
+  return id ? loadProjectIndexEntry(id) : undefined;
+}
+
+async function startSavedProject(): Promise<void> {
+  await render(<PersistenceHost />);
+  await getPersistenceSettled();
+  useAudioStore.getState().setSource({ type: "file", file: createAudioFile("alpha.wav") });
+  useProjectStore.getState().setMetadata({ title: "Alpha" });
+  await flushPendingSave();
+  await expect.poll(openProjectEntry).toBeTruthy();
+}
+
+beforeEach(() => {
+  cancelPendingSave();
+  useSettingsStore.getState().set("autoSaveDelay", 60_000);
+});
+
+// -- Tests --------------------------------------------------------------------
+
+describe("usePersistence: resume position", () => {
+  it("remembers the playhead and zoom when playback pauses", async () => {
+    await startSavedProject();
+    useAudioStore.getState().setIsPlaying(true);
+    useAudioStore.getState().setCurrentTime(30);
+    useTimelineStore.getState().setZoom(180);
+    useAudioStore.getState().setIsPlaying(false);
+    await flushResumePosition();
+    expect((await openProjectEntry())?.resumePosition).toEqual({ time: 30, zoom: 180 });
+  });
+
+  it("includes the Timeline scroll once the Timeline has scrolled", async () => {
+    await startSavedProject();
+    useTimelineStore.getState().setScrollLeft(500);
+    useTimelineStore.getState().setScrollTop(80);
+    await flushResumePosition();
+    expect((await openProjectEntry())?.resumePosition?.scroll).toEqual({ left: 500, top: 80 });
+  });
+
+  describe("invariants", () => {
+    it("does not move the project's last edited time", async () => {
+      await startSavedProject();
+      const updatedAt = (await openProjectEntry())?.updatedAt;
+      useAudioStore.getState().seekTo(12);
+      await flushResumePosition();
+      const entry = await openProjectEntry();
+      expect(entry?.resumePosition?.time).toBe(12);
+      expect(entry?.updatedAt).toBe(updatedAt);
+    });
+  });
+});
