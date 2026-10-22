@@ -6,6 +6,8 @@ import { lineStarts, startedLineIndex } from "@/domain/line/line-at-time";
 interface TimelineLights {
   lit: Set<HTMLElement>;
   speaking: Set<HTMLElement>;
+  nextLit: Set<HTMLElement>;
+  nextSpeaking: Set<HTMLElement>;
   current: HTMLElement | null;
   startsOf: readonly LyricLine[] | null;
   starts: number[];
@@ -21,7 +23,15 @@ const CURRENT_LINE_LEAD_SECONDS = 0.15;
 // -- Functions -----------------------------------------------------------------
 
 function createTimelineLights(): TimelineLights {
-  return { lit: new Set(), speaking: new Set(), current: null, startsOf: null, starts: [] };
+  return {
+    lit: new Set(),
+    speaking: new Set(),
+    nextLit: new Set(),
+    nextSpeaking: new Set(),
+    current: null,
+    startsOf: null,
+    starts: [],
+  };
 }
 
 function restartHit(row: HTMLElement): void {
@@ -49,14 +59,16 @@ function paintTimelineLights(
   lines: readonly LyricLine[],
   time: number,
 ): void {
-  const lit = new Set<HTMLElement>();
+  const lit = lights.nextLit;
+  lit.clear();
   for (const word of root.querySelectorAll<HTMLElement>("[data-word-block][data-begin]")) {
     const begin = Number(word.dataset.begin);
     const end = Number(word.dataset.end);
     if (time >= begin && time < Math.max(end, begin + MIN_LIT_SECONDS)) lit.add(word);
   }
 
-  const speaking = new Set<HTMLElement>();
+  const speaking = lights.nextSpeaking;
+  speaking.clear();
   for (const word of lit) {
     const row = word.closest<HTMLElement>("[data-timeline-row]");
     if (row) speaking.add(row);
@@ -67,6 +79,8 @@ function paintTimelineLights(
   for (const word of lights.lit) if (!lit.has(word)) word.removeAttribute("data-lit");
   for (const row of speaking) if (!lights.speaking.has(row)) row.setAttribute("data-speaking", "");
   for (const row of lights.speaking) if (!speaking.has(row)) row.removeAttribute("data-speaking");
+  lights.nextLit = lights.lit;
+  lights.nextSpeaking = lights.speaking;
   lights.lit = lit;
   lights.speaking = speaking;
 

@@ -1,9 +1,9 @@
+import { floatingEntrance } from "@/utils/animationVariants";
 import { type FloatingContext, type Placement, type VirtualElement, useTransitionStyles } from "@floating-ui/react";
+import { useReducedMotion, useReducedMotionConfig } from "motion/react";
 
 // -- Constants ----------------------------------------------------------------
 
-const ENTRANCE_MS = 150;
-const ENTRANCE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 const ORIGIN_SIDE: Record<string, string> = { top: "bottom", bottom: "top", left: "right", right: "left" };
 const ORIGIN_ALIGN_X: Record<string, string> = { start: "left", end: "right" };
 const ORIGIN_ALIGN_Y: Record<string, string> = { start: "top", end: "bottom" };
@@ -34,13 +34,17 @@ function unscaledReference(element: HTMLElement): VirtualElement {
 
 // -- Hooks --------------------------------------------------------------------
 
+// Reduced motion keeps the fade but drops the scale, so the layer never moves under the pointer.
 function useFloatingEntrance(context: FloatingContext) {
+  const configReduced = useReducedMotionConfig();
+  const systemReduced = useReducedMotion();
+  const reduced = configReduced === true || systemReduced === true;
   return useTransitionStyles(context, {
-    duration: ENTRANCE_MS,
-    initial: { opacity: 0, scale: "0.97" },
+    duration: floatingEntrance.durationMs,
+    initial: reduced ? floatingEntrance.reducedInitial : floatingEntrance.initial,
     common: ({ placement }) => ({
       transformOrigin: entranceOrigin(placement),
-      transitionTimingFunction: ENTRANCE_EASE,
+      transitionTimingFunction: floatingEntrance.ease,
     }),
   });
 }

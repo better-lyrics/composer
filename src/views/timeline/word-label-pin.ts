@@ -3,6 +3,8 @@
 const LABEL_PADDING_PX = { word: 8, bg: 6, narrow: 3 } as const;
 // Roughly two letters and an ellipsis; a sliver narrower than this shows no label at all.
 const MIN_LABEL_WIDTH_PX = 16;
+// Reused every frame; the pass is synchronous, so one scratch set serves every caller.
+const stillPinned = new Set<HTMLElement>();
 
 // -- Functions -----------------------------------------------------------------
 
@@ -20,7 +22,7 @@ function unpin(label: HTMLElement): void {
 
 // A word cut by the left edge of the lanes keeps its label in the visible part, as a lane header would.
 function pinCutWordLabels(root: ParentNode, scrollLeft: number, pinned: Set<HTMLElement>): void {
-  const stillPinned = new Set<HTMLElement>();
+  stillPinned.clear();
   for (const block of root.querySelectorAll<HTMLElement>("[data-word-block][data-begin]")) {
     const label = block.querySelector<HTMLElement>(":scope > span");
     if (!label) continue;
@@ -37,6 +39,7 @@ function pinCutWordLabels(root: ParentNode, scrollLeft: number, pinned: Set<HTML
   for (const label of pinned) if (!stillPinned.has(label)) unpin(label);
   pinned.clear();
   for (const label of stillPinned) pinned.add(label);
+  stillPinned.clear();
 }
 
 // -- Exports -------------------------------------------------------------------

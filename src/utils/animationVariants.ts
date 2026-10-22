@@ -97,6 +97,16 @@ const snapFlashVariants: Variants = {
   },
 };
 
+// -- Floating Entrance --------------------------------------------------------
+
+// Popovers and menus grow out of their trigger; floating-ui runs it as a CSS transition.
+const floatingEntrance = {
+  durationMs: 150,
+  ease: "cubic-bezier(0.22, 1, 0.36, 1)",
+  initial: { opacity: 0, scale: "0.97" },
+  reducedInitial: { opacity: 0 },
+} as const;
+
 // -- Stagger Container --------------------------------------------------------
 
 // -- Exports ------------------------------------------------------------------
@@ -112,4 +122,5 @@ export {
   shimmerVariants,
   pinDropInVariants,
   snapFlashVariants,
+  floatingEntrance,
 };
