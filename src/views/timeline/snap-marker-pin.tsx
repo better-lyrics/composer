@@ -15,7 +15,7 @@ import { IconTrash } from "@tabler/icons-react";
 import { m, useIsPresent, useReducedMotion } from "motion/react";
 import { memo, useEffect, useRef, useState } from "react";
 import { cn } from "@/utils/cn";
-import { pinDropInVariants, snapFlashVariants } from "@/utils/animationVariants";
+import { snapFlashVariants } from "@/utils/animationVariants";
 import { formatTime } from "@/utils/format-time";
 
 // -- Types ---------------------------------------------------------------------
@@ -101,10 +101,6 @@ const SnapMarkerPin = memo(function SnapMarkerPin({
       data-snap-marker-drop-in
       className="absolute top-0"
       style={{ left: time * zoom }}
-      variants={pinDropInVariants}
-      initial={reduceMotion ? false : "initial"}
-      animate="animate"
-      exit={reduceMotion ? undefined : "exit"}
     >
       <div
         data-snap-marker-line

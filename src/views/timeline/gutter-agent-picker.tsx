@@ -55,6 +55,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
 
   return (
     <Popover
+      instant
       placement="right-start"
       trigger={
         <button
@@ -93,7 +94,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
                   type="button"
                   onClick={() => handleAssign(agent.id, close)}
                   className={cn(
-                    "flex items-center justify-between gap-2 h-9 px-2 rounded-lg cursor-pointer transition-colors hover:bg-(--layer-2)",
+                    "flex items-center justify-between gap-2 h-9 px-2 rounded-lg cursor-pointer hover:bg-(--layer-2)",
                     isActive && "bg-(--layer-1)",
                   )}
                 >

@@ -59,31 +59,29 @@ const ThemeMenu: React.FC = () => {
         />
         <span className="max-[1279px]:sr-only">{activeTheme.name}</span>
       </Button>
-      {anchor && (
-        <Menu
-          anchor={anchor}
-          onClose={() => setAnchor(null)}
-          aria-label="Favorite themes"
-          className="w-[232px] rounded-[14px]"
-        >
-          {favorites.map((theme) => (
-            <MenuRadioItem
-              key={theme.id}
-              lead={<ThemeSwatch theme={theme} />}
-              label={theme.name}
-              description={theme.scheme === "light" ? "Light" : "Dark"}
-              checked={theme.id === activeThemeId}
-              onSelect={() => setActiveTheme(theme.id)}
-            />
-          ))}
-          <MenuItem
-            icon={IconPalette}
-            label="All themes"
-            onSelect={() => openSettings({ target: { section: "theme" } })}
-            className="mt-1 py-2 rounded-t-none text-[13.5px] text-(--muted) shadow-[inset_0_1px_0_var(--divider)] [&>svg]:w-7"
+      <Menu
+        anchor={anchor}
+        onClose={() => setAnchor(null)}
+        aria-label="Favorite themes"
+        className="w-[232px] rounded-[14px]"
+      >
+        {favorites.map((theme) => (
+          <MenuRadioItem
+            key={theme.id}
+            lead={<ThemeSwatch theme={theme} />}
+            label={theme.name}
+            description={theme.scheme === "light" ? "Light" : "Dark"}
+            checked={theme.id === activeThemeId}
+            onSelect={() => setActiveTheme(theme.id)}
           />
-        </Menu>
-      )}
+        ))}
+        <MenuItem
+          icon={IconPalette}
+          label="All themes"
+          onSelect={() => openSettings({ target: { section: "theme" } })}
+          className="mt-1 py-2 rounded-t-none text-[13.5px] text-(--muted) shadow-[inset_0_1px_0_var(--divider)] [&>svg]:w-7"
+        />
+      </Menu>
     </>
   );
 };

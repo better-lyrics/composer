@@ -1,6 +1,7 @@
 import { floatingEntrance } from "@/utils/animationVariants";
 import { type FloatingContext, type Placement, type VirtualElement, useTransitionStyles } from "@floating-ui/react";
 import { useReducedMotion, useReducedMotionConfig } from "motion/react";
+import type { CSSProperties } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -34,12 +35,15 @@ function unscaledReference(element: HTMLElement): VirtualElement {
 
 // -- Hooks --------------------------------------------------------------------
 
+const NO_ENTRANCE_STYLES: CSSProperties = {};
+
 // Reduced motion keeps the fade but drops the scale, so the layer never moves under the pointer.
-function useFloatingEntrance(context: FloatingContext) {
+// Instant layers (the Timeline's) show and hide on the spot: a DAW never makes the user wait for a menu.
+function useFloatingEntrance(context: FloatingContext, instant = false) {
   const configReduced = useReducedMotionConfig();
   const systemReduced = useReducedMotion();
   const reduced = configReduced === true || systemReduced === true;
-  return useTransitionStyles(context, {
+  const entrance = useTransitionStyles(context, {
     duration: floatingEntrance.durationMs,
     initial: reduced ? floatingEntrance.reducedInitial : floatingEntrance.initial,
     common: ({ placement }) => ({
@@ -47,6 +51,7 @@ function useFloatingEntrance(context: FloatingContext) {
       transitionTimingFunction: floatingEntrance.ease,
     }),
   });
+  return instant ? { isMounted: context.open, styles: NO_ENTRANCE_STYLES } : entrance;
 }
 
 // -- Exports ------------------------------------------------------------------

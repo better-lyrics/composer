@@ -173,7 +173,7 @@ const TimelineWaveform: React.FC = () => {
         tabIndex={-1}
         aria-label={markerMode ? "Place snap point" : "Seek to position"}
         className={cn(
-          "absolute top-0 left-0 z-10 transition-shadow duration-200 ease-out",
+          "absolute top-0 left-0 z-10",
           markerMode ? "waveform-armed" : altHeld ? "cursor-crosshair" : "cursor-pointer",
         )}
         key="waveform-click-layer"

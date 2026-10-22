@@ -209,11 +209,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
     >
       <IconButton
         label={isCollapsed ? "Expand instance" : "Collapse instance"}
-        icon={
-          <IconChevronDown
-            className={cn("size-[13px] transition-transform duration-200 ease-out", isCollapsed && "-rotate-90")}
-          />
-        }
+        icon={<IconChevronDown className={cn("size-[13px]", isCollapsed && "-rotate-90")} />}
         variant="ghost"
         onClick={handleChevronClick}
         onPointerDown={handleChevronPointerDown}

@@ -90,7 +90,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
                 key={`${time}-${index}`}
                 data-snap-marker="onset"
                 data-covered={coveredOnsets.has(index) ? "" : undefined}
-                className={`snap-onset-line snap-onset-enter absolute top-0 -translate-x-1/2 pointer-events-none ${
+                className={`snap-onset-line absolute top-0 -translate-x-1/2 pointer-events-none ${
                   coveredOnsets.has(index) ? "snap-onset-covered" : ""
                 }`}
                 style={{

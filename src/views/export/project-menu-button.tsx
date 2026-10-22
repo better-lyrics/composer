@@ -1,10 +1,10 @@
 import { useProjectFileActions } from "@/hooks/useProjectFileActions";
 import { PROJECT_FILE_ACCEPT } from "@/lib/project-file-read";
 import { Button } from "@/ui/button";
-import { Menu, MenuItem, MenuSeparator } from "@/ui/menu";
+import { Menu, type MenuAnchor, MenuItem, MenuSeparator } from "@/ui/menu";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
 import { IconChevronDown, IconFolder, IconFolderOpen, IconTrash, IconUpload } from "@tabler/icons-react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 // -- Hooks --------------------------------------------------------------------
 
@@ -30,6 +30,10 @@ function useProjectFileInput() {
 const ProjectMenuButton: React.FC = () => {
   const [trigger, setTrigger] = useState<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
+  const anchor = useMemo<MenuAnchor | null>(
+    () => (open && trigger ? { kind: "element", element: trigger } : null),
+    [open, trigger],
+  );
   const { input, pickFile } = useProjectFileInput();
   const { handleExportProject, handleClearProject } = useProjectFileActions();
 
@@ -49,9 +53,9 @@ const ProjectMenuButton: React.FC = () => {
         Project
         <IconChevronDown className="size-3.5 opacity-50 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90" />
       </Button>
-      {open && trigger && (
+      {trigger && (
         <Menu
-          anchor={{ kind: "element", element: trigger }}
+          anchor={anchor}
           align="start"
           aria-label="Project"
           onClose={() => setOpen(false)}

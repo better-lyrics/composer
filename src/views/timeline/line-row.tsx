@@ -82,11 +82,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
         <div
           data-line-index={lineIndex}
           data-track="word"
-          className={cn(
-            "transition-colors relative",
-            !mainWords && "opacity-50",
-            hoveredTrack === "word" && "bg-composer-accent/10",
-          )}
+          className={cn("relative", !mainWords && "opacity-50", hoveredTrack === "word" && "bg-composer-accent/10")}
           style={{ transform: shiftTransform }}
         >
           {mainWords ? (
@@ -110,7 +106,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
             data-line-index={lineIndex}
             data-track="bg"
             className={cn(
-              "relative transition-colors shadow-[inset_0_1px_0_var(--divider)]",
+              "relative shadow-[inset_0_1px_0_var(--divider)]",
               hoveredTrack === "bg"
                 ? "bg-composer-accent/10"
                 : "bg-[color-mix(in_oklab,var(--color-composer-bg-dark)_35%,transparent)]",
@@ -138,7 +134,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
         aria-orientation="horizontal"
         aria-hidden="true"
         className={cn(
-          "absolute left-0 right-0 bottom-0 h-1 cursor-ns-resize hover:bg-composer-accent/30 transition-colors z-10",
+          "absolute left-0 right-0 bottom-0 h-1 cursor-ns-resize hover:bg-composer-accent/30 z-10",
           isResizing && "bg-composer-accent/50",
         )}
         onMouseDown={startResize}

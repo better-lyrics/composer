@@ -25,12 +25,14 @@ import { type ReactNode, createContext, useContext, useLayoutEffect, useMemo, us
 type MenuAnchor = { kind: "element"; element: Element } | { kind: "point"; x: number; y: number; within: Element };
 
 interface MenuProps {
-  anchor: MenuAnchor;
+  // Null closes the menu; it stays mounted with the last anchor until its exit finishes.
+  anchor: MenuAnchor | null;
   align?: "start" | "end";
   onClose: () => void;
   "aria-label": string;
   children: ReactNode;
   className?: string;
+  instant?: boolean;
 }
 
 interface MenuItemProps {
@@ -86,12 +88,16 @@ const Menu: React.FC<MenuProps> = ({
   "aria-label": ariaLabel,
   children,
   className,
+  instant = false,
 }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
   const listRef = useRef<Array<HTMLElement | null>>([]);
-  const isPoint = anchor.kind === "point";
+  const [lastAnchor, setLastAnchor] = useState(anchor);
+  if (anchor && anchor !== lastAnchor) setLastAnchor(anchor);
+  const shownAnchor = anchor ?? lastAnchor;
+  const isPoint = shownAnchor?.kind === "point";
   const { refs, floatingStyles, context } = useFloating({
-    open: true,
+    open: anchor !== null,
     onOpenChange: (open) => {
       if (!open) onClose();
     },
@@ -108,23 +114,28 @@ const Menu: React.FC<MenuProps> = ({
       }),
     ],
     whileElementsMounted: autoUpdate,
-    elements: isPoint ? undefined : { reference: anchor.element },
+    elements: shownAnchor?.kind === "element" ? { reference: shownAnchor.element } : undefined,
   });
-  const { styles: entranceStyles } = useFloatingEntrance(context);
+  const { isMounted, styles: entranceStyles } = useFloatingEntrance(context, instant);
 
   useLayoutEffect(() => {
-    if (anchor.kind === "point") refs.setPositionReference(pointReference(anchor.x, anchor.y, anchor.within));
-    else if (anchor.element instanceof HTMLElement) refs.setPositionReference(unscaledReference(anchor.element));
-  }, [anchor, refs]);
+    if (!shownAnchor) return;
+    if (shownAnchor.kind === "point")
+      refs.setPositionReference(pointReference(shownAnchor.x, shownAnchor.y, shownAnchor.within));
+    else if (shownAnchor.element instanceof HTMLElement)
+      refs.setPositionReference(unscaledReference(shownAnchor.element));
+  }, [shownAnchor, refs]);
   const dismiss = useDismiss(context, {
-    ancestorScroll: anchor.kind === "point",
+    ancestorScroll: isPoint,
     outsidePress: ({ target }) =>
-      !(anchor.kind === "element" && target instanceof Node && anchor.element.contains(target)),
+      !(shownAnchor?.kind === "element" && target instanceof Node && shownAnchor.element.contains(target)),
   });
   const role = useRole(context, { role: "menu" });
   const navigation = useListNavigation(context, { listRef, activeIndex, onNavigate: setActiveIndex, loop: true });
   const { getFloatingProps, getItemProps } = useInteractions([dismiss, role, navigation]);
   const menu = useMemo(() => ({ activeIndex, getItemProps, close: onClose }), [activeIndex, getItemProps, onClose]);
+
+  if (!isMounted) return null;
 
   return (
     <FloatingPortal>

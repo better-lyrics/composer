@@ -73,22 +73,6 @@ const shimmerVariants: Variants = {
 
 // -- Snap Markers -------------------------------------------------------------
 
-const pinDropInVariants: Variants = {
-  initial: { opacity: 0, y: -8, scale: 0.6 },
-  animate: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { type: "spring", stiffness: 600, damping: 20, mass: 0.8 },
-  },
-  exit: {
-    opacity: 0,
-    y: -8,
-    scale: 0.6,
-    transition: { type: "spring", stiffness: 500, damping: 28, mass: 0.7 },
-  },
-};
-
 const snapFlashVariants: Variants = {
   initial: { opacity: 0 },
   animate: {
@@ -120,7 +104,6 @@ export {
   buildGroupPingVariants,
   shimmerTransition,
   shimmerVariants,
-  pinDropInVariants,
   snapFlashVariants,
   floatingEntrance,
 };

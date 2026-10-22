@@ -9,7 +9,7 @@ import { useShallow } from "zustand/react/shallow";
 
 interface ProjectMenuProps {
   project: ProjectIndexEntry;
-  anchor: MenuAnchor;
+  anchor: MenuAnchor | null;
   onClose: () => void;
   onOpen: (id: string) => void;
   onRename: (project: ProjectIndexEntry) => void;

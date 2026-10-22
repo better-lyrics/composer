@@ -74,6 +74,9 @@ const LibraryScreen: React.FC = () => {
   const [filter, setFilter] = useState<LibraryFilter>("all");
   const [query, setQuery] = useState("");
   const [menu, setMenu] = useState<OpenMenu | null>(null);
+  // The last menu stays rendered while it plays its exit.
+  const [shownMenu, setShownMenu] = useState(menu);
+  if (menu && menu !== shownMenu) setShownMenu(menu);
   const [renaming, setRenaming] = useState<ProjectIndexEntry | null>(null);
   const [firstPaint, setFirstPaint] = useState(true);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -229,11 +232,11 @@ const LibraryScreen: React.FC = () => {
           onClear={clear}
         />
       )}
-      {menu && (
+      {shownMenu && (
         <ProjectMenu
-          key={menuKey(menu)}
-          project={menu.project}
-          anchor={menu.anchor}
+          key={menuKey(shownMenu)}
+          project={shownMenu.project}
+          anchor={menu === shownMenu ? menu.anchor : null}
           onClose={closeMenu}
           onOpen={actions.open}
           onRename={setRenaming}

@@ -127,7 +127,7 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
             type="button"
             onClick={openGroupMenu}
             onContextMenu={openGroupMenu}
-            className="w-full h-full flex items-center justify-center cursor-pointer hover:brightness-110 transition-[filter]"
+            className="w-full h-full flex items-center justify-center cursor-pointer hover:brightness-110"
             title={`${group.label} · ${ordinal} of ${totalInstances}`}
           >
             <span className="max-w-full pl-1 pr-1.5 text-[10px] font-semibold text-composer-text truncate leading-none">

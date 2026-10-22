@@ -47,6 +47,7 @@ interface PopoverProps {
   listNavigation?: PopoverListNavigation;
   // Positions against this element instead of the trigger, such as the whole control group the trigger sits in.
   positionAnchor?: HTMLElement | null;
+  instant?: boolean;
 }
 
 // -- Component ----------------------------------------------------------------
@@ -62,6 +63,7 @@ const Popover: React.FC<PopoverProps> = ({
   "aria-label": ariaLabel,
   listNavigation,
   positionAnchor,
+  instant = false,
 }) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isOpen = open ?? uncontrolledOpen;
@@ -78,7 +80,7 @@ const Popover: React.FC<PopoverProps> = ({
     whileElementsMounted: autoUpdate,
   });
 
-  const { isMounted, styles: entranceStyles } = useFloatingEntrance(context);
+  const { isMounted, styles: entranceStyles } = useFloatingEntrance(context, instant);
   const { setReference, setPositionReference } = refs;
   const setTrigger = useCallback(
     (element: HTMLElement | null) => {
