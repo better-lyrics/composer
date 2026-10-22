@@ -103,8 +103,7 @@ function applyProjectToStores(payload: RestorePayload): void {
     if (payload.project) applyStoredProject(payload.project, payload.audio);
     else if (payload.audio) useAudioStore.getState().setSource({ type: "file", file: payload.audio });
     if (payload.lastTab) useProjectStore.getState().setActiveTab(payload.lastTab);
-    if (payload.resumePosition) resumeTimeline(payload.resumePosition);
-    else useTimelineStore.getState().setZoom(useSettingsStore.getState().defaultZoom);
+    resumeTimeline(payload.resumePosition ?? { time: 0, zoom: useSettingsStore.getState().defaultZoom });
     useProjectStore.getState().markClean();
   } finally {
     restoring = false;

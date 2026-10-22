@@ -122,7 +122,8 @@ describe("project-restore", () => {
       await setInStore(PROJECT_INDEX_STORE_NAME, "p1", { ...entry, resumePosition: { time: -1, zoom: 0 } });
       expect((await loadProjectForRestore("p1")).resumePosition).toBeUndefined();
       applyProjectToStores(await loadProjectForRestore("p1"));
-      expect(useTimelineStore.getState().pendingResumeView).toBeNull();
+      const defaultZoom = useSettingsStore.getState().defaultZoom;
+      expect(useTimelineStore.getState().pendingResumeView).toEqual({ time: 0, zoom: defaultZoom });
     });
 
     it("falls back to safe defaults and warns on a malformed record", async () => {
@@ -171,6 +172,16 @@ describe("project-restore", () => {
   });
 
   describe("regressions", () => {
+    it("regression: a project without a saved position frames the playhead instead of keeping the last view", async () => {
+      await seedStoredProject("p1");
+      useTimelineStore.getState().setZoom(400);
+      useTimelineStore.getState().setScrollTop(500);
+      applyProjectToStores(await loadProjectForRestore("p1"));
+      const defaultZoom = useSettingsStore.getState().defaultZoom;
+      expect(useTimelineStore.getState().zoom).toBe(defaultZoom);
+      expect(useTimelineStore.getState().pendingResumeView).toEqual({ time: 0, zoom: defaultZoom });
+    });
+
     it("regression: a boot restore does not save the project again or move its last edited time", async () => {
       useSettingsStore.setState({ autoSaveDelay: 60_000 });
       await seedStoredProject("p1", { open: true, project: { savedAt: 111, currentStem: "vocals" } });
