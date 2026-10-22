@@ -13,7 +13,7 @@ import { RegenerateLanguageControl } from "@/views/languages/regenerate-language
 import { requestLanguageGeneration } from "@/views/languages/request-language-generation";
 import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
 import { useLanguageTargets } from "@/views/languages/use-language-targets";
-import { pluralize } from "@/utils/pluralize";
+import { pluralWord, pluralize } from "@/utils/pluralize";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -162,22 +162,31 @@ const LanguagesPanel: React.FC = () => {
         });
       }}
     >
-      <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border select-none">
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-lg font-medium">Languages</h2>
-          <span className="font-mono text-sm text-composer-text-muted tabular-nums">
-            {pluralize(lines.length, "line")} ・ {pluralize(trackCount, "track")}
+      <div className="flex items-center justify-between gap-4 h-13 shrink-0 pl-5 pr-2 border-b border-(--divider) select-none">
+        <div className="flex items-center gap-3 min-w-0">
+          <h2 className="sr-only">Languages</h2>
+          <span className="shrink-0 text-[13px] text-(--muted) tabular-nums">
+            <b className="font-mono text-[15px] font-bold text-composer-text">{lines.length}</b>{" "}
+            {pluralWord(lines.length, "line", "lines")} ・ {pluralize(trackCount, "track")}
           </span>
+          <LanguageTrackBar
+            targets={targets}
+            languageNames={languageName}
+            availableLanguages={availableLanguages}
+            disabled={isGenerating}
+            onAdd={addTarget}
+            onRemove={removeTarget}
+          />
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-composer-text-muted">Source</span>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="text-[13px] text-(--muted)">Source</span>
           <Select
             aria-label="Source language"
             value={metadata.language ?? ""}
             disabled={isGenerating}
             onChange={changeSourceLanguage}
             options={SOURCE_SELECT_OPTIONS}
-            className="h-8"
+            className="h-9 rounded-xl"
           />
           <RegenerateLanguageControl
             isGenerating={isGenerating}
@@ -190,18 +199,10 @@ const LanguagesPanel: React.FC = () => {
           />
         </div>
       </div>
-      <LanguageTrackBar
-        targets={targets}
-        languageNames={languageName}
-        availableLanguages={availableLanguages}
-        disabled={isGenerating}
-        onAdd={addTarget}
-        onRemove={removeTarget}
-      />
 
       <Scroll className="flex-1">
         <LanguageStatusSummaries lines={lines} languageNames={languageName} />
-        <div className="mt-4 border-b border-composer-border">
+        <div>
           {lines.map((line, index) => (
             <LanguageLineEditor
               key={line.id}

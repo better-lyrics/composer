@@ -39,16 +39,12 @@ const LanguageField: React.FC<LanguageFieldProps> = ({
   const tone = error ? "error" : status;
 
   return (
-    <div className="grid grid-cols-[7rem_minmax(0,1fr)_4.5rem] items-start gap-2">
+    <div className="grid grid-cols-[7.5rem_minmax(0,1fr)_4.75rem] items-start gap-2">
       <label
         htmlFor={inputId}
         className={cn(
           "flex min-h-8 items-center gap-1 text-xs select-none",
-          tone === "error"
-            ? "text-composer-negative"
-            : tone === "review"
-              ? "text-composer-warning"
-              : "text-composer-text-muted",
+          tone === "error" ? "text-composer-negative" : tone === "review" ? "text-composer-warning" : "text-(--muted)",
         )}
       >
         {tone === "error" && <IconAlertCircle aria-hidden="true" className="size-3 shrink-0" />}
