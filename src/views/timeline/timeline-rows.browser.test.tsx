@@ -5,6 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { render } from "@/test/render";
+import { BG_LANE_HEIGHT } from "@/views/timeline/row-geometry";
 
 function Harness() {
   const ref = useRef<HTMLDivElement>(null);
@@ -76,13 +77,14 @@ describe("TimelineRows", () => {
       expect(sizerHeight(screen.container)).toBe(`${2 * (60 + 24 + 1)}px`);
     });
 
+    // The background lane is a fixed slim lane since 2.0; only the main track follows the resize.
     it("sizes a resized row with background words from its own main height", async () => {
       useTimelineStore.setState({ defaultRowHeight: 44, rowHeights: { a: 80 } });
       useProjectStore.setState({
         lines: [createLine({ id: "a", text: "one", backgroundWords: [createWord({ text: "ooh", begin: 0, end: 1 })] })],
       });
       const screen = await render(<Harness />);
-      expect(sizerHeight(screen.container)).toBe(`${80 + 80 + 1}px`);
+      expect(sizerHeight(screen.container)).toBe(`${80 + BG_LANE_HEIGHT + 1}px`);
     });
   });
 });

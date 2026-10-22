@@ -41,7 +41,11 @@ const ShortcutToggleButton: React.FC<ShortcutToggleButtonProps> = ({
       onClick={onClick}
       disabled={disabled}
       hasIcon
-      className={cn("h-7 pl-2 text-[13px] [&_svg]:size-4", showHints ? "pr-1.5" : "pr-2.5", className)}
+      className={cn(
+        "h-7 pl-2 text-[13px] [&>svg]:size-4 [&>[data-inline-key-badge]]:ml-0",
+        showHints ? "pr-1.5" : "pr-2.5",
+        className,
+      )}
       title={title}
     >
       {children}

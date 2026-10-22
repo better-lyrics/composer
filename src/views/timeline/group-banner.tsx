@@ -211,7 +211,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
         label={isCollapsed ? "Expand instance" : "Collapse instance"}
         icon={
           <IconChevronDown
-            className={cn("size-3.5 transition-transform duration-200 ease-out", isCollapsed && "-rotate-90")}
+            className={cn("size-[13px] transition-transform duration-200 ease-out", isCollapsed && "-rotate-90")}
           />
         }
         variant="ghost"
@@ -232,7 +232,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
         onMouseEnter={handleBadgeMouseEnter}
         onMouseLeave={handleBadgeMouseLeave}
       >
-        <IconLink className="size-3.5" style={isShared ? { color: group.color } : undefined} />
+        <IconLink className="size-[13px]" style={isShared ? { color: group.color } : undefined} />
         {ordinal} of {totalInstances}
         {isDragging && (
           <span className="ml-1 text-composer-text">

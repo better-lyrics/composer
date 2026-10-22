@@ -1,14 +1,12 @@
 import { getAgentColor } from "@/domain/agent/colors";
 import { belongsToInstance } from "@/domain/instance/predicates";
-import { isLineSoundingAt } from "@/domain/line/line-at-time";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
-import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { lineColumnRail } from "@/ui/line-column";
 import { cn } from "@/utils/cn";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tracks";
+import { bgTrackHeight } from "@/views/timeline/row-geometry";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRowResize } from "@/views/timeline/use-row-resize";
 import { WordTrack } from "@/views/timeline/word-track";
@@ -51,7 +49,6 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
   const dragShiftPx = useTimelineStore((s) => dragShiftPxFor(line, s.draggedGroupShift));
   const shiftTransform = dragShiftPx !== 0 ? `translateX(${dragShiftPx}px)` : undefined;
   const { isResizing, startResize, resetHeight } = useRowResize(line.id, rowHeight);
-  const isSounding = useAudioStore((s) => isLineSoundingAt(line, s.currentTime));
 
   const hoveredTrack = useTimelineStore((s) =>
     s.wordDragHover?.lineIndex === lineIndex ? s.wordDragHover.track : null,
@@ -61,15 +58,15 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
   const bgWords = line.backgroundWords?.length ? line.backgroundWords : null;
 
   return (
-    <div data-timeline-row className={cn("relative flex", isSounding && "bg-composer-accent/7")}>
-      <div
-        className="shrink-0 flex items-center justify-center text-xs text-composer-text-muted border-r-2 shadow-[inset_0_-1px_0_0_var(--divider)] w-12 sticky left-0 z-60"
-        style={{
-          background: groupColor ? `color-mix(in oklab, ${groupColor} 6%, var(--gutter-bg))` : "var(--gutter-bg)",
-          borderRightColor: lineColumnRail(color, isSounding),
-        }}
-      >
-        <GutterAgentPicker lineId={line.id} lineIndex={lineIndex} agentId={line.agentId} isCurrent={isSounding} />
+    <div
+      data-timeline-row
+      data-row-line={lineIndex}
+      data-in-group={groupColor ? "" : undefined}
+      className="group/row relative flex"
+      style={{ "--agent": color, "--group": groupColor }}
+    >
+      <div className="line-cell shrink-0 w-12 sticky left-0 z-60">
+        <GutterAgentPicker lineId={line.id} lineIndex={lineIndex} agentId={line.agentId} numberHeight={rowHeight} />
       </div>
 
       <div className={cn("flex-1 border-b border-(--divider) relative", mainWords && "overflow-hidden")}>
@@ -113,7 +110,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
             data-line-index={lineIndex}
             data-track="bg"
             className={cn(
-              "relative opacity-70 transition-colors border-t border-(--divider)",
+              "relative transition-colors shadow-[inset_0_1px_0_var(--divider)]",
               hoveredTrack === "bg"
                 ? "bg-composer-accent/10"
                 : "bg-[color-mix(in_oklab,var(--color-composer-bg-dark)_35%,transparent)]",
@@ -127,7 +124,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               color={color}
               trackType="bg"
               duration={duration}
-              height={rowHeight}
+              height={bgTrackHeight(line)}
               onUpdateWord={onUpdateBgWord}
             />
           </div>

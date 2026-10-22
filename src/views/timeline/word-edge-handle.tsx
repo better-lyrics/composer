@@ -9,7 +9,6 @@ interface WordEdgeHandleProps {
   edge: WordEdge;
   syllablePosition: SyllablePosition;
   syllableEdgesJoin: boolean;
-  borderless?: boolean;
   conjoined?: boolean;
   highlighted?: boolean;
   showGrip?: boolean;
@@ -19,15 +18,9 @@ interface WordEdgeHandleProps {
 
 // -- Constants -----------------------------------------------------------------
 
-// The hit area reaches over the block's border so no pixel between the edge and the handle grabs the word.
 const EDGE_CLASSES: Record<WordEdge, string> = {
-  left: "left-0 rounded-tl-[inherit] rounded-bl-[inherit] before:-left-px before:right-0",
-  right: "right-0 rounded-tr-[inherit] rounded-br-[inherit] before:left-0 before:-right-px",
-};
-
-const BORDERLESS_EDGE_CLASSES: Record<WordEdge, string> = {
-  left: "before:left-0",
-  right: "before:right-0",
+  left: "left-0 rounded-tl-[inherit] rounded-bl-[inherit]",
+  right: "right-0 rounded-tr-[inherit] rounded-br-[inherit]",
 };
 
 const SYLLABLE_JOINS_AT: Record<WordEdge, ReadonlySet<SyllablePosition>> = {
@@ -41,7 +34,6 @@ const WordEdgeHandle: React.FC<WordEdgeHandleProps> = ({
   edge,
   syllablePosition,
   syllableEdgesJoin,
-  borderless,
   conjoined,
   highlighted,
   showGrip,
@@ -64,9 +56,8 @@ const WordEdgeHandle: React.FC<WordEdgeHandleProps> = ({
       aria-orientation="vertical"
       aria-hidden="true"
       className={cn(
-        "absolute top-0 bottom-0 w-2 max-w-1/2 z-10 before:absolute before:-inset-y-px before:content-['']",
+        "absolute top-0 bottom-0 w-2 max-w-1/2 z-10",
         EDGE_CLASSES[edge],
-        borderless && BORDERLESS_EDGE_CLASSES[edge],
         showGrip
           ? "cursor-ew-resize bg-composer-text/10 hover:bg-composer-text/20"
           : [

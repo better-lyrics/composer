@@ -21,7 +21,7 @@ const VARIANT_STYLES: Record<ButtonVariant, string> = {
   primary: "btn-lit",
   secondary: "btn-raised text-[var(--label)] hover:text-composer-text",
   ghost: "text-[var(--muted)] hover:text-[var(--label)] hover:bg-[var(--layer-1)]",
-  latch: "latch-on [&_svg]:text-composer-accent-text",
+  latch: "latch-on [&_svg]:text-composer-accent-text [&_[data-inline-key-badge]]:text-composer-accent-text",
   quiet:
     "text-composer-text/60 hover:text-composer-text hover:bg-[var(--layer-1)] [&_svg]:text-composer-text [&_svg]:opacity-60 [&_svg]:transition-opacity hover:[&_svg]:opacity-100",
   danger: "text-composer-negative hover:bg-composer-negative/14",

@@ -1,5 +1,6 @@
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GUTTER_WIDTH, timeToX } from "@/views/timeline/coords";
 import { currentFocusScrollRange } from "@/views/timeline/effective-focus";
@@ -9,15 +10,18 @@ import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
 import { createFollowInput, fillFollowInput } from "@/views/timeline/follow-input";
 import { createRowLayoutCache } from "@/views/timeline/row-layout-cache";
 import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
+import { createTimelineLights, paintTimelineLights } from "@/views/timeline/timeline-lights";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createFollowMemory, followScrollTop, followStep, resetFollowMemory } from "@/views/timeline/vertical-follow";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 // -- Types ---------------------------------------------------------------------
 
 interface TimelinePlayheadProps {
   containerHeight: number;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
+  capHost?: HTMLElement | null;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -28,7 +32,25 @@ const HIT_BUFFER_PX = 18;
 
 // -- Component -----------------------------------------------------------------
 
-const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, scrollContainerRef }) => {
+// The grabbable cap rides in the ruler, above the rows, with a short stem down to the line.
+const PlayheadCap: React.FC<{ ref: React.Ref<HTMLDivElement>; onMouseDown: React.MouseEventHandler }> = ({
+  ref,
+  onMouseDown,
+}) => (
+  // react-doctor-disable-next-line react-doctor/no-permanent-will-change -- moved by the frame loop every frame while playing or scrolling, so it needs its own compositor layer
+  <div ref={ref} aria-hidden="true" className="absolute inset-y-0 left-0 w-0 will-change-transform pointer-events-none">
+    <div className="absolute top-[18px] bottom-0 -left-px w-0.5 rounded-[1px] bg-composer-accent" />
+    <div
+      className="absolute top-0.5 -left-2 flex justify-center gap-0.5 w-4 h-5 pt-1.5 rounded-[6px_6px_8px_8px] bg-composer-accent shadow-[inset_0_1px_0_color-mix(in_oklab,white_40%,transparent)] cursor-grab active:cursor-grabbing pointer-events-auto"
+      onMouseDown={onMouseDown}
+    >
+      <i className="block w-[1.5px] h-2 rounded-[1px] bg-[color-mix(in_oklab,white_55%,transparent)]" />
+      <i className="block w-[1.5px] h-2 rounded-[1px] bg-[color-mix(in_oklab,white_55%,transparent)]" />
+    </div>
+  </div>
+);
+
+const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, scrollContainerRef, capHost }) => {
   const duration = useAudioStore((s) => s.duration);
   const seekTo = useAudioStore((s) => s.seekTo);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
@@ -38,9 +60,11 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
   const containerRef = useRef<HTMLDivElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
+  const capRef = useRef<HTMLDivElement>(null);
   const [followMemory] = useState(createFollowMemory);
   const [followInput] = useState(createFollowInput);
   const [rowLayoutFor] = useState(createRowLayoutCache);
+  const [lights] = useState(createTimelineLights);
   const verticalTargetRef = useRef<number | null>(null);
   const lastMaskRef = useRef<string>("");
   const playheadCenterXLocalRef = useRef<number>(0);
@@ -88,10 +112,12 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
     const actualScrollLeft = container?.scrollLeft ?? scrollLeft;
     const position = timeToX(displayTime, zoom, actualScrollLeft) - 1; // -1 to center the 2px wide playhead
     playheadRef.current.style.transform = `translate3d(${position}px, 0, 0)`;
+    if (capRef.current) capRef.current.style.transform = `translate3d(${position + 1 - GUTTER_WIDTH}px, 0, 0)`;
 
     // Update height to match full scrollable content
     if (container) {
       playheadRef.current.style.height = `${container.scrollHeight}px`;
+      paintTimelineLights(lights, container, useProjectStore.getState().lines, displayTime);
     }
 
     const containerRect = containerRef.current?.getBoundingClientRect();
@@ -198,12 +224,11 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         role="separator"
         aria-label="Playhead"
         aria-orientation="vertical"
-        className="timeline-playhead-bar absolute top-0 left-0 w-0.5 bg-composer-accent cursor-ew-resize pointer-events-auto expanded-hit-x-sm"
+        className="timeline-playhead-bar absolute top-0 left-0 w-0.5 rounded-[1px] bg-composer-accent cursor-ew-resize pointer-events-auto expanded-hit-x-sm"
         style={{ height: containerHeight }}
         onMouseDown={drag.onMouseDown}
-      >
-        <div className="absolute top-0 -left-1.5 w-3.5 h-3 bg-composer-accent rounded-t expanded-hit-lg" />
-      </div>
+      ></div>
+      {capHost && createPortal(<PlayheadCap ref={capRef} onMouseDown={drag.onMouseDown} />, capHost)}
     </div>
   );
 };

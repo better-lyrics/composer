@@ -728,10 +728,124 @@ input[type="range"].settings-slider::-moz-range-progress {
   transition: opacity 0.15s ease;
 }
 
+/* Timeline word: an elevated face tinted with the singer colour (--agent). The lane, fit and lit states are data attributes. */
+@layer components {
+  .word-face {
+    padding: 0 8px;
+    border-radius: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    color: color-mix(in oklab, var(--ink) 94%, transparent);
+    background-color: color-mix(in oklab, var(--agent) 30%, var(--word-face));
+    background-image: linear-gradient(to bottom, color-mix(in oklab, var(--ink) 6%, transparent), transparent 60%);
+    box-shadow: var(--word-elev);
+    transition-property: background-color, color, box-shadow, opacity;
+    transition-duration: 250ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    &:hover {
+      color: var(--ink);
+    }
+    &[data-fit="narrow"] {
+      padding: 0 3px;
+      font-size: 11px;
+      text-overflow: clip;
+    }
+    &[data-fit="tick"] {
+      padding: 0;
+      font-size: 0;
+      border-radius: 4px;
+    }
+    &[data-lane="bg"] {
+      padding: 0 6px;
+      border-radius: 7px;
+      font-size: 11.5px;
+      font-style: italic;
+      opacity: 0.78;
+      &[data-fit="narrow"] {
+        padding: 0 2px;
+      }
+      &[data-fit="tick"] {
+        padding: 0;
+        font-size: 0;
+        border-radius: 3px;
+      }
+    }
+    &[data-lit] {
+      color: var(--ink);
+      opacity: 1;
+      background-color: color-mix(in oklab, var(--agent) 58%, var(--word-face));
+      background-image: linear-gradient(to bottom, color-mix(in oklab, white 14%, transparent), transparent 70%);
+      box-shadow:
+        inset 0 1px 0 color-mix(in oklab, white 30%, transparent),
+        inset 0 0 0 1px color-mix(in oklab, var(--ink) 6%, transparent), 0 1px 1px var(--word-shadow),
+        0 3px 8px -4px var(--word-shadow);
+      transition-duration: 60ms;
+    }
+    &[data-selected] {
+      color: var(--ink);
+      box-shadow: inset 0 0 0 2px var(--ink), inset 0 1px 0 var(--highlight);
+    }
+  }
+  html[data-scheme="light"] .word-face {
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--agent) 6%, white),
+      color-mix(in oklab, var(--agent) 14%, color-mix(in oklab, white 70%, var(--color-composer-bg-dark)))
+    );
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--agent) 30%, var(--edge)), 0 1px 2px rgb(var(--shade) / 0.14);
+    &[data-lit] {
+      color: #fff;
+      background-image: none;
+      background-color: color-mix(in oklab, var(--agent) 80%, black);
+    }
+    &[data-selected] {
+      box-shadow: inset 0 0 0 2px var(--ink), inset 0 1px 0 var(--highlight);
+    }
+  }
+}
+
+/* Timeline line cell: the singer tint (--agent) with a 2px edge that lights while a word of the line is sung and flashes on each new word. */
+@layer components {
+  .line-cell {
+    --cell-bg: var(--gutter-bg);
+    --rail: color-mix(in oklab, var(--agent) 45%, var(--cell-bg));
+    background: color-mix(in oklab, var(--agent) 8%, var(--cell-bg));
+    box-shadow: inset -2px 0 0 var(--rail), inset 0 -1px 0 var(--divider);
+    transition-property: background-color, box-shadow;
+    transition-duration: 280ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    &:hover {
+      background: color-mix(in oklab, var(--agent) 12%, var(--cell-bg));
+    }
+  }
+  [data-in-group] > .line-cell {
+    --cell-bg: color-mix(in oklab, var(--group) 6%, var(--gutter-bg));
+  }
+  [data-speaking] > .line-cell {
+    --rail: var(--agent);
+    transition-duration: 40ms;
+    &[data-hit] {
+      animation: line-cell-hit 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  }
+  [data-timeline-row][data-current] {
+    background: color-mix(in oklab, var(--color-composer-accent) 7%, transparent);
+  }
+}
+
+@keyframes line-cell-hit {
+  from {
+    box-shadow: inset -2px 0 0 color-mix(in oklab, var(--agent) 65%, white), inset 0 -1px 0 var(--divider);
+  }
+}
+
 .is-explicit-word {
   background-image: repeating-linear-gradient(
     45deg,
-    color-mix(in srgb, var(--color-composer-explicit) 20%, transparent) 0 3px,
+    color-mix(in oklab, var(--color-composer-explicit) 18%, transparent) 0 3px,
     transparent 3px 8px
   );
 }
@@ -743,7 +857,7 @@ input[type="range"].settings-slider::-moz-range-progress {
 
 .is-snapped {
   box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-composer-snap) 85%, transparent), 0 0 14px 2px
-    color-mix(in srgb, var(--color-composer-snap) 28%, transparent), 0 1px 2px rgba(0, 0, 0, 0.4);
+    color-mix(in srgb, var(--color-composer-snap) 28%, transparent), var(--word-elev);
   transition: box-shadow 110ms cubic-bezier(0.25, 1.4, 0.5, 1);
 }
 

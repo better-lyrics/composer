@@ -16,6 +16,8 @@ import type WaveSurfer from "wavesurfer.js";
 // -- Constants -----------------------------------------------------------------
 
 const FADE_SETTLE_MS = 260;
+// The bars sit in a 13px margin inside the 80px band.
+const WAVEFORM_BARS_HEIGHT = 54;
 const LOG_PREFIX = "[TimelineWaveform]";
 
 // -- Component -----------------------------------------------------------------
@@ -141,10 +143,14 @@ const TimelineWaveform: React.FC = () => {
         style={{ width: totalWidth, height: WAVEFORM_HEIGHT - 1, opacity: ws ? 0 : 1 }}
       />
       {audioElement && (
-        <div data-waveform-fade className="transition-opacity duration-150 ease-in" style={{ opacity: ws ? 1 : 0 }}>
+        <div
+          data-waveform-fade
+          className="pt-[13px] transition-opacity duration-150 ease-in"
+          style={{ opacity: ws ? 1 : 0 }}
+        >
           <WavesurferPlayer
             key={waveformKey}
-            height={WAVEFORM_HEIGHT}
+            height={WAVEFORM_BARS_HEIGHT}
             waveColor={initialColors.wave}
             progressColor={initialColors.progress}
             cursorColor="transparent"

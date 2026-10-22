@@ -6,25 +6,19 @@ import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
 import { isWordSelected } from "@/domain/selection/identity";
 import { boundsOverlap } from "@/domain/word/overlap";
-import {
-  type SyllablePosition,
-  expandSelectionToGroupmates,
-  getSyllablePositions,
-} from "@/domain/word/syllable-groups";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { useAudioStore } from "@/stores/audio";
 import { useImportModal } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
 import { HoverSizedDragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
+import { dragGhostCells } from "@/views/timeline/drag-ghost-cells";
 import { trackSnapModifier } from "@/views/timeline/drag-track-snap";
 import { EmptyTimelineImport } from "@/views/timeline/empty-timeline-import";
 import { ExplicitSuggestionsBanner } from "@/views/timeline/explicit-suggestions-banner";
 import { GroupFocusBar } from "@/views/timeline/group-focus-bar";
-import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
-import { BLOCK_INSET_PX, bgTrackHeight } from "@/views/timeline/row-geometry";
 import { SelectionPlaybackBar } from "@/views/timeline/selection-playback-bar";
 import { SharedTimingSuggestionsBanner } from "@/views/timeline/shared-timing-suggestions-banner";
 import { selfKey } from "@/views/timeline/snap";
@@ -37,7 +31,7 @@ import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
-import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useGroupFocusScroll } from "@/views/timeline/use-group-focus-scroll";
@@ -52,7 +46,6 @@ import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { useTimelineWheel } from "@/views/timeline/use-timeline-wheel";
-import { computeRowLayout } from "@/views/timeline/utils";
 import { WordEditOverlay } from "@/views/timeline/word-edit-overlay";
 import { DndContext } from "@dnd-kit/core";
 import { IconMusic, IconWaveSine } from "@tabler/icons-react";
@@ -96,6 +89,7 @@ const TimelinePanel: React.FC = () => {
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState(400);
+  const [rulerLane, setRulerLane] = useState<HTMLDivElement | null>(null);
   const openImportModal = useImportModal();
 
   const effectiveLines = useMemo(() => getEffectiveLines(lines), [lines]);
@@ -191,127 +185,10 @@ const TimelinePanel: React.FC = () => {
     ? getAgentColor(effectiveLines.find((l) => l.id === activeDrag.lineId)?.agentId ?? "")
     : "#888";
 
-  const dragCells = useMemo(() => {
-    if (!activeDrag) return null;
-    const { selectedWords, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } =
-      useTimelineStore.getState();
-    const inSelection = isWordSelected(selectedWords, activeDrag.lineId, activeDrag.wordIndex, activeDrag.trackType);
-
-    const layout = computeRowLayout({
-      lines: effectiveLines,
-      rowHeights,
-      defaultRowHeight,
-      collapsedInstances,
-      focusedGroup,
-      waveformHeight: WAVEFORM_HEIGHT,
-      groupHeaderHeight: GROUP_HEADER_HEIGHT,
-    });
-
-    const rowTops: Record<string, number> = {};
-    const rowMainHeights: Record<string, number> = {};
-    const rowBgTops: Record<string, number> = {};
-    const rowBgHeights: Record<string, number> = {};
-    for (const line of effectiveLines) {
-      const pos = layout.lineTops.get(line.id);
-      if (!pos) continue;
-      const mainH = rowHeights[line.id] ?? defaultRowHeight;
-      const bgH = bgTrackHeight(line, mainH);
-      rowTops[line.id] = pos.top;
-      rowMainHeights[line.id] = mainH;
-      rowBgTops[line.id] = pos.top + mainH;
-      rowBgHeights[line.id] = bgH;
-    }
-
-    const anchorLeft = activeDrag.begin * zoom;
-    const anchorTop = activeDrag.trackType === "bg" ? rowBgTops[activeDrag.lineId] : rowTops[activeDrag.lineId];
-    const anchorHeight =
-      activeDrag.trackType === "bg" ? rowBgHeights[activeDrag.lineId] : rowMainHeights[activeDrag.lineId];
-
-    const baseSelections =
-      inSelection && selectedWords.length > 1
-        ? selectedWords
-        : [
-            {
-              lineId: activeDrag.lineId,
-              lineIndex: activeDrag.lineIndex,
-              wordIndex: activeDrag.wordIndex,
-              type: activeDrag.trackType,
-            },
-          ];
-
-    const lineById = new Map(effectiveLines.map((l) => [l.id, l]));
-
-    const wordsToShow: typeof baseSelections = [];
-    const seen = new Set<string>();
-    for (const sel of baseSelections) {
-      const line = lineById.get(sel.lineId);
-      const wordsArray = line ? trackWords(line, sel.type) : undefined;
-      if (!line || !wordsArray) continue;
-      const indices = expandSelectionToGroupmates(wordsArray, [sel.wordIndex]);
-      for (const idx of indices) {
-        const key = `${sel.lineId}:${sel.type}:${idx}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        wordsToShow.push({ lineId: sel.lineId, lineIndex: sel.lineIndex, wordIndex: idx, type: sel.type });
-      }
-    }
-
-    if (wordsToShow.length <= 1) {
-      const w = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
-      return {
-        cells: [
-          {
-            text: activeDrag.text,
-            left: 0,
-            top: 0,
-            width: w,
-            height: anchorHeight - BLOCK_INSET_PX * 2,
-            syllablePosition: "none" as SyllablePosition,
-          },
-        ],
-        anchorWidth: w,
-        anchorHeight: anchorHeight - BLOCK_INSET_PX * 2,
-      };
-    }
-
-    const positionsByLineTrack = new Map<string, SyllablePosition[]>();
-    const positionFor = (lineId: string, type: "word" | "bg", idx: number): SyllablePosition => {
-      const key = `${lineId}:${type}`;
-      let positions = positionsByLineTrack.get(key);
-      if (!positions) {
-        const line = lineById.get(lineId);
-        const wordsArray = line ? trackWords(line, type) : undefined;
-        positions = wordsArray ? getSyllablePositions(wordsArray) : [];
-        positionsByLineTrack.set(key, positions);
-      }
-      return positions[idx] ?? "none";
-    };
-
-    const cells = wordsToShow.map((sel) => {
-      const line = lineById.get(sel.lineId);
-      const wordsArray = line ? trackWords(line, sel.type) : undefined;
-      const word = wordsArray?.[sel.wordIndex];
-      if (!word || !line)
-        return { text: "", left: 0, top: 0, width: 0, height: 0, syllablePosition: "none" as SyllablePosition };
-
-      const cellLeft = word.begin * zoom - anchorLeft;
-      const cellTop = (sel.type === "bg" ? rowBgTops[line.id] : rowTops[line.id]) - anchorTop;
-      const cellWidth = Math.max((word.end - word.begin) * zoom, 4);
-      const cellHeight = (sel.type === "bg" ? rowBgHeights[line.id] : rowMainHeights[line.id]) - BLOCK_INSET_PX * 2;
-
-      return {
-        text: word.text.trimEnd(),
-        left: cellLeft,
-        top: cellTop,
-        syllablePosition: positionFor(sel.lineId, sel.type, sel.wordIndex),
-        width: cellWidth,
-        height: cellHeight,
-      };
-    });
-
-    const anchorW = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
-    return { cells, anchorWidth: anchorW, anchorHeight: anchorHeight - BLOCK_INSET_PX * 2 };
-  }, [activeDrag, zoom, effectiveLines]);
+  const dragCells = useMemo(
+    () => (activeDrag ? dragGhostCells(activeDrag, zoom, effectiveLines) : null),
+    [activeDrag, zoom, effectiveLines],
+  );
 
   if (!source) {
     return (
@@ -392,7 +269,7 @@ const TimelinePanel: React.FC = () => {
 
           <div className="flex flex-1 overflow-hidden">
             <div className="flex flex-col flex-1 overflow-hidden">
-              <TimelineRuler scrollContainerRef={scrollContainerRef} />
+              <TimelineRuler scrollContainerRef={scrollContainerRef} laneRef={setRulerLane} />
               <div
                 ref={contentRef}
                 data-timeline-scroll-host
@@ -421,7 +298,11 @@ const TimelinePanel: React.FC = () => {
                   <TimelineRows scrollContainerRef={scrollContainerRef} />
                 </div>
 
-                <TimelinePlayhead containerHeight={contentHeight} scrollContainerRef={scrollContainerRef} />
+                <TimelinePlayhead
+                  containerHeight={contentHeight}
+                  scrollContainerRef={scrollContainerRef}
+                  capHost={rulerLane}
+                />
 
                 <SnapGuideline />
 

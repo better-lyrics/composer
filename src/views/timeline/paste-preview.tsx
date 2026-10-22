@@ -16,7 +16,7 @@ import { applyPasteToLines, pastedWordBounds, pasteOverlaps } from "@/views/time
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
-import { bgTrackHeight } from "@/views/timeline/row-geometry";
+import { bgTrackHeight, wordBlockWidth, wordInsetPx } from "@/views/timeline/row-geometry";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { findMatchingTemplate } from "@/views/timeline/structural-match";
 import { GUTTER_WIDTH, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
@@ -260,21 +260,20 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
       {ghosts.map((ghost) => (
         <div
           key={`${ghost.left}-${ghost.trackTop}-${ghost.text}-${ghost.isBg ? "bg" : "w"}`}
-          className={cn(
-            "absolute flex items-center justify-center text-xs text-composer-text truncate rounded-xl border pointer-events-none",
-            ghost.overlaps || ghost.outOfBounds
-              ? "bg-red-500/30 border-red-500/60"
-              : "bg-composer-accent/30 border-composer-accent/60",
-            ghost.isBg && "opacity-70",
-          )}
+          data-lane={ghost.isBg ? "bg" : "word"}
+          className="word-face absolute flex items-center justify-center whitespace-nowrap pointer-events-none"
           style={{
             left: ghost.left - scrollLeft,
-            top: ghost.trackTop - scrollTop + 4,
+            top: ghost.trackTop - scrollTop + wordInsetPx(ghost.isBg ? "bg" : "word"),
             width: ghost.width,
-            height: ghost.trackHeight - 8,
+            height: ghost.trackHeight - wordInsetPx(ghost.isBg ? "bg" : "word") * 2,
+            "--agent":
+              ghost.overlaps || ghost.outOfBounds ? "var(--color-composer-error)" : "var(--color-composer-accent)",
           }}
         >
-          <span className="px-1 truncate opacity-70">{ghost.text}</span>
+          <span className="min-w-0 overflow-hidden whitespace-nowrap [text-overflow:inherit] opacity-70">
+            {ghost.text}
+          </span>
         </div>
       ))}
     </div>
@@ -311,7 +310,7 @@ function computeGhosts(
     const pasted = pastedWordBounds(entry.word, timeDelta, targetLine ? rangeOf(targetLine) : wholeSongRange(duration));
 
     const left = GUTTER_WIDTH + pasted.begin * zoom;
-    const width = Math.max((pasted.end - pasted.begin) * zoom, 4);
+    const width = wordBlockWidth(pasted.begin, pasted.end, zoom);
 
     let overlaps = outOfBounds;
     if (targetLine && !outOfBounds) {
@@ -327,7 +326,7 @@ function computeGhosts(
       trackHeight = defaultRowHeight;
     } else {
       const mainHeight = targetPos.mainBottom - targetPos.top;
-      const bgHeight = bgTrackHeight(targetLine, mainHeight);
+      const bgHeight = bgTrackHeight(targetLine);
       if (isBg) {
         trackTop = targetPos.top + mainHeight + BG_BORDER;
         trackHeight = bgHeight;

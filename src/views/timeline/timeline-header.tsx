@@ -243,7 +243,7 @@ const HeaderAction: React.FC<{
     hasIcon
     onClick={onClick}
     title={title}
-    className={cn("shrink-0 [&_svg]:size-4", showHint && "pr-2")}
+    className={cn("shrink-0 [&>svg]:size-4 [&>[data-inline-key-badge]]:ml-0", showHint && "pr-2")}
   >
     {children}
     <span>{label}</span>

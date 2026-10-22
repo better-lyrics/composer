@@ -114,11 +114,10 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
       onDoubleClick={renaming ? undefined : startRename}
     >
       <div
-        className="shrink-0 w-12 sticky left-0 z-[60] flex items-center justify-center px-1 select-none overflow-hidden border-r-2"
+        className="shrink-0 w-12 sticky left-0 z-[60] flex items-center justify-center select-none overflow-hidden"
         style={{
           background: `color-mix(in oklab, ${group.color} 12%, var(--gutter-bg))`,
-          borderRightColor: `color-mix(in oklab, ${group.color} 60%, var(--gutter-bg))`,
-          boxShadow: `inset 0 1px 0 color-mix(in oklab, ${group.color} 30%, transparent), inset 0 -1px 0 var(--divider)`,
+          boxShadow: `inset 0 1px 0 color-mix(in oklab, ${group.color} 30%, transparent), inset -2px 0 0 color-mix(in oklab, ${group.color} 60%, color-mix(in oklab, ${group.color} 12%, var(--gutter-bg))), inset 0 -1px 0 var(--divider)`,
         }}
       >
         {renaming ? (
@@ -131,7 +130,7 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
             className="w-full h-full flex items-center justify-center cursor-pointer hover:brightness-110 transition-[filter]"
             title={`${group.label} · ${ordinal} of ${totalInstances}`}
           >
-            <span className="text-[10px] font-semibold text-composer-text truncate w-full text-center leading-none">
+            <span className="max-w-full pl-1 pr-1.5 text-[10px] font-semibold text-composer-text truncate leading-none">
               {group.label}
             </span>
           </button>

@@ -15,16 +15,15 @@ interface GutterAgentPickerProps {
   lineId: string;
   lineIndex: number;
   agentId: string;
-  isCurrent?: boolean;
+  numberHeight: number;
 }
 
 // -- Component ----------------------------------------------------------------
 
-const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex, agentId, isCurrent = false }) => {
+const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex, agentId, numberHeight }) => {
   const agents = useProjectStore((s) => s.agents);
   const addAgent = useProjectStore((s) => s.addAgent);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
-  const color = getAgentColor(agentId);
   const [newAgentName, setNewAgentName] = useState("");
 
   const handleAssign = useCallback(
@@ -60,8 +59,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
       trigger={
         <button
           type="button"
-          className="size-full flex items-center justify-center cursor-pointer"
-          style={{ backgroundColor: `${color}15` }}
+          className="size-full flex justify-center items-start cursor-pointer"
           title="Assign agent"
           onContextMenu={(e) => {
             e.preventDefault();
@@ -75,10 +73,8 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
           }}
         >
           <span
-            className={cn(
-              "text-xs tabular-nums",
-              isCurrent ? "font-semibold text-composer-text" : "text-composer-text-muted",
-            )}
+            className="grid place-items-center font-mono font-medium text-xs leading-none tabular-nums text-(--muted) transition-colors duration-[280ms] group-data-current/row:font-semibold group-data-current/row:text-composer-text"
+            style={{ height: numberHeight }}
           >
             {lineIndex + 1}
           </span>

@@ -11,6 +11,7 @@ import { GUTTER_WIDTH, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timelin
 import { computeRowLayout } from "@/views/timeline/utils";
 import { useRef } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
+import { wordBlockWidth } from "@/views/timeline/row-geometry";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -205,7 +206,7 @@ describe("PastePreview · paste words onto a line of a group that shares timing"
 
     const { overlay } = await hoverRow(screen, "c0", 12.5);
 
-    expect(ghostWidth(overlay)).toBeCloseTo(0.5 * ZOOM, 3);
+    expect(ghostWidth(overlay)).toBeCloseTo(wordBlockWidth(12.5, 13, ZOOM), 3);
   });
 
   describe("regressions", () => {
@@ -213,7 +214,7 @@ describe("PastePreview · paste words onto a line of a group that shares timing"
       seedChorus(false);
       const screen = await render(<Harness clipboard={wordClipboard} />);
 
-      expect(ghostWidth((await hoverRow(screen, "c0", 12.5)).overlay)).toBeCloseTo(ZOOM, 3);
+      expect(ghostWidth((await hoverRow(screen, "c0", 12.5)).overlay)).toBeCloseTo(wordBlockWidth(12.5, 13.5, ZOOM), 3);
       await pasteOnRow(screen, "c0", 12.5);
 
       await expect.poll(() => lineById("c0")?.words).toHaveLength(3);

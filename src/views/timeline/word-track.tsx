@@ -405,9 +405,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
         const display = getDisplay(wordIndex);
         const wordKey = `${lineId}-${trackType}-${wordIndex}`;
         const syllablePosition = showSyllableIndicators ? syllablePositions[wordIndex] : "none";
-        const gapBefore =
-          (syllablePosition === "middle" || syllablePosition === "last") &&
-          getDisplay(wordIndex - 1).end < display.begin;
+        const inGroup = syllablePosition !== "none";
+        const gapBefore = inGroup && syllablePosition !== "first" && getDisplay(wordIndex - 1).end < display.begin;
+        const gapAfter = inGroup && syllablePosition !== "last" && getDisplay(wordIndex + 1).begin > display.end;
         return (
           <WordBlock
             key={wordKey}
@@ -434,6 +434,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
             syllablePosition={syllablePosition}
             syllableEdgesJoin={!syllablesFollowRolling}
             gapBefore={gapBefore}
+            gapAfter={gapAfter}
             leftHighlighted={hoveredBoundary === wordIndex - 1 && isBoundaryConjoined(wordIndex - 1)}
             rightHighlighted={hoveredBoundary === wordIndex && isBoundaryConjoined(wordIndex)}
             leftConjoined={isBoundaryConjoined(wordIndex - 1)}

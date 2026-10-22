@@ -20,7 +20,7 @@ const TimelineZoomControls: React.FC<{ scrollContainerRef?: React.RefObject<HTML
     <div className="tray">
       <IconButton
         label="Zoom out"
-        icon={<IconMinus size={16} />}
+        icon={<IconMinus size={18} />}
         variant="ghost"
         onClick={zoomOut}
         disabled={zoom <= MIN_ZOOM}
@@ -33,7 +33,7 @@ const TimelineZoomControls: React.FC<{ scrollContainerRef?: React.RefObject<HTML
 
       <IconButton
         label="Zoom in"
-        icon={<IconPlus size={16} />}
+        icon={<IconPlus size={18} />}
         variant="ghost"
         onClick={zoomIn}
         disabled={zoom >= MAX_ZOOM}
