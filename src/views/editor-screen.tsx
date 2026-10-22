@@ -3,7 +3,6 @@ import type { ProjectTab } from "@/domain/project/tab";
 import { useMissingAudioNotice } from "@/hooks/useMissingAudioNotice";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { TabBar } from "@/ui/tab-bar";
 import { EditPanel } from "@/views/edit";
 import { ExportPanel } from "@/views/export";
 import { ImportPanel } from "@/views/import";
@@ -11,6 +10,7 @@ import { LanguagesPanel } from "@/views/languages";
 import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
+import { cn } from "@/utils/cn";
 import { Activity } from "react";
 
 // -- Constants ----------------------------------------------------------------
@@ -37,8 +37,7 @@ const EditorScreen: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <TabBar />
-      <main className="relative flex-1 overflow-hidden">
+      <main className={cn("flex-1 min-h-0 workspace-card", !showPlayer && "mb-2")}>
         {PANELS.map(({ tab, Panel }) => (
           <Activity key={tab} mode={activeTab === tab ? "visible" : "hidden"}>
             <div className="absolute inset-0 flex flex-col">

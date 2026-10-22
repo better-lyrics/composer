@@ -173,7 +173,7 @@ const LibraryScreen: React.FC = () => {
   const indexState: LibraryIndexState = entries ? "loaded" : error ? "failed" : "loading";
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-composer-bg">
+    <div className="flex flex-col flex-1 min-h-0 mb-2 workspace-card">
       <main ref={mainRef} className="flex-1 overflow-y-auto [scrollbar-gutter:stable]">
         <div
           data-first-paint={firstPaint}

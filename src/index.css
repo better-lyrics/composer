@@ -405,6 +405,23 @@ braccato-lyrics .blyrics-container {
   }
 }
 
+@utility workspace-card {
+  position: relative;
+  margin-inline: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--color-composer-bg);
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 200;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: var(--raised-edge);
+  }
+}
+
 @utility surface-floating {
   background: var(--pop);
   box-shadow: var(--float-shadow);

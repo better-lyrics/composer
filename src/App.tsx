@@ -143,7 +143,7 @@ const AppShell: React.FC = () => {
   }, [isEditor, resumeOrStartTour, navigate]);
 
   return (
-    <div className="flex flex-col h-screen bg-composer-bg text-composer-text">
+    <div className="flex flex-col h-screen bg-composer-bg-dark text-composer-text">
       <MusicBrainzWarmup />
       <AppHeader
         screen={screen}
