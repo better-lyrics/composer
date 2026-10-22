@@ -162,7 +162,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
             {group.words.map((word) => (
               <span
                 key={`${word.begin}-${word.end}-${word.text}`}
-                className="inline-flex h-7 items-baseline gap-2 rounded-lg bg-composer-button px-2.5 text-sm leading-7"
+                className="inline-flex h-7 items-baseline gap-2 rounded-lg bg-(--layer-2) px-2.5 text-sm leading-7"
               >
                 <span className="select-text">{word.text.trimEnd()}</span>
                 <span className="font-mono text-[11px] text-composer-text-muted tabular-nums select-text">
@@ -195,7 +195,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-composer-border px-5 py-4">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-(--divider) px-5 py-4">
         <SplitPickerLegend kinds={separatorKinds([reading], "literal")} />
         <div className="ml-auto flex gap-2 select-none">
           <Button onClick={onClose}>Cancel</Button>

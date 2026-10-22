@@ -181,7 +181,7 @@ function SuggestionsModal<T extends { fingerprint: string }>(props: SuggestionsM
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} className="max-w-xl" bodyClassName="p-0">
-      <div className="px-5 py-3 border-b border-composer-border flex items-center justify-between gap-3 text-sm">
+      <div className="px-5 py-3 border-b border-(--divider) flex items-center justify-between gap-3 text-sm">
         <div className="flex items-center gap-2 text-composer-text-muted min-w-0">
           <LeadingIcon className="size-4 text-composer-text shrink-0 opacity-50" />
           <span className="truncate">{countText(suggestions.length)}</span>
@@ -200,7 +200,7 @@ function SuggestionsModal<T extends { fingerprint: string }>(props: SuggestionsM
         )}
       </div>
       <Scroll className="max-h-[60vh]">
-        <ul className="divide-y divide-composer-border">
+        <ul className="divide-y divide-(--divider)">
           {suggestions.map((suggestion) => (
             <li key={rowKey(suggestion)} className="flex flex-col gap-2 px-5 py-3">
               <div className="flex items-start justify-between gap-3">

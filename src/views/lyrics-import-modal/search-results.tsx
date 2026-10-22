@@ -67,14 +67,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           >
             <span className="min-w-0 flex flex-col gap-0.5">
               <span className="flex items-center h-5">
-                <span className="block h-3 rounded bg-white/4 w-3/4" />
+                <span className="block h-3 rounded bg-(--layer-2) w-3/4" />
               </span>
               <span className="flex items-center h-4">
-                <span className="block h-2.5 rounded bg-white/4 w-1/2" />
+                <span className="block h-2.5 rounded bg-(--layer-2) w-1/2" />
               </span>
             </span>
             <span className="flex items-center h-5">
-              <span className="block h-3 rounded bg-white/4 w-20" />
+              <span className="block h-3 rounded bg-(--layer-2) w-20" />
             </span>
           </div>
         ))}

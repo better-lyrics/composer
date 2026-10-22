@@ -40,7 +40,7 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
   const lineCount = countNonEmptyLines(value);
 
   return (
-    <div className={cn("flex flex-col gap-2.5 p-3 rounded-lg", "bg-composer-input border border-composer-border")}>
+    <div className={cn("flex flex-col gap-2.5 p-3 rounded-lg", "bg-(--layer-1) border border-(--edge)")}>
       <div className="flex items-center justify-between gap-2">
         <Button variant="secondary" size="sm" hasIcon onClick={onSwitchToSearch}>
           <IconArrowLeft size={14} stroke={2} />
@@ -69,7 +69,7 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
       <div className="flex items-center justify-between">
         <span className="text-[11px] text-composer-text-muted">
           Use{" "}
-          <code className="font-mono text-[10.5px] px-1 py-px rounded bg-composer-input-hover text-composer-text-secondary">
+          <code className="font-mono text-[10.5px] px-1 py-px rounded bg-(--layer-2) text-(--label)">
             |
           </code>{" "}
           to split syllables (e.g. beau|ti|ful)

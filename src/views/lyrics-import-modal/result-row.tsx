@@ -121,7 +121,7 @@ const ResultRow: React.FC<ResultRowProps> = ({
       aria-busy={isSelecting}
       className={cn(
         "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-1.5 rounded-lg w-full text-left cursor-pointer transition-colors",
-        isActive && "bg-composer-button/30",
+        isActive && "bg-(--layer-2)",
         isSelecting && "opacity-60 cursor-progress",
       )}
     >
