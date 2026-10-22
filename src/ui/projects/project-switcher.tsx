@@ -58,12 +58,7 @@ const SwitcherRow: React.FC<SwitcherRowProps> = ({ project, optionId, isActive, 
     <ProjectArt src={project.thumbnailDataUrl} size="md" />
     <span className="min-w-0">
       <span className="block truncate text-sm font-medium text-composer-text">{displayTitle(project.title)}</span>
-      <span
-        className={cn(
-          "block truncate text-[13px]",
-          isActive ? "text-(--label)" : "text-(--muted)",
-        )}
-      >
+      <span className={cn("block truncate text-[13px]", isActive ? "text-(--label)" : "text-(--muted)")}>
         {displayArtists(project.artists)}
       </span>
     </span>
@@ -191,13 +186,7 @@ const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({ onClose }) => {
         </div>
       </Scroll>
       <div className="flex items-center justify-between p-1 border-t border-(--divider)">
-        <Button
-          variant="ghost"
-          size="sm"
-          hasIcon
-          onClick={startNewProject}
-          className="text-[13px] text-(--label)"
-        >
+        <Button variant="ghost" size="sm" hasIcon onClick={startNewProject} className="text-[13px] text-(--label)">
           <IconPlus aria-hidden="true" className="size-[15px] text-composer-text opacity-50" />
           New project
           <InlineKeyBadge keys={getEffectiveKeysArray("global.newProject")} />
@@ -205,10 +194,7 @@ const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({ onClose }) => {
         <Link
           to={LIBRARY_PATH}
           onClick={onClose}
-          className={cn(
-            buttonClassName({ variant: "ghost", size: "sm" }),
-            "gap-2 text-[13px] text-(--label)",
-          )}
+          className={cn(buttonClassName({ variant: "ghost", size: "sm" }), "gap-2 text-[13px] text-(--label)")}
         >
           All projects
           <IconArrowRight aria-hidden="true" className="size-[15px] text-composer-text opacity-50" />

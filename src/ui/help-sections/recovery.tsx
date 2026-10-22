@@ -22,12 +22,7 @@ const RecoverySection: React.FC = () => (
     <HelpTopic title="The app is frozen">
       <p className={PROSE}>
         Open{" "}
-        <a
-          href="/recover"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={PROSE_LINK}
-        >
+        <a href="/recover" target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
           /recover
         </a>{" "}
         in a new tab. It's a tiny page that fetches your work without loading anything else, so it still works when

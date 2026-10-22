@@ -53,12 +53,7 @@ const AboutSection: React.FC = () => (
     <HelpTopic title="Open source">
       <p className={PROSE}>
         AGPL v3. Source on{" "}
-        <a
-          href={GITHUB_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={PROSE_LINK}
-        >
+        <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
           GitHub
         </a>
         . PRs welcome if you spot something to fix.
@@ -70,10 +65,7 @@ const AboutSection: React.FC = () => (
         Composer is also available under a commercial license that removes the AGPL copyleft obligations and covers
         commercial use of its output, such as a label or distributor publishing generated lyrics in a release. For
         commercial or enterprise licensing, reach out to{" "}
-        <a
-          href="mailto:composer@boidu.dev"
-          className={PROSE_LINK}
-        >
+        <a href="mailto:composer@boidu.dev" className={PROSE_LINK}>
           composer@boidu.dev
         </a>
         .
@@ -83,23 +75,13 @@ const AboutSection: React.FC = () => (
     <HelpTopic title="Community">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
-          <a
-            href={DISCORD_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={PROSE_LINK}
-          >
+          <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
             Discord
           </a>{" "}
           for questions and chat.
         </li>
         <li>
-          <a
-            href={ISSUE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={PROSE_LINK}
-          >
+          <a href={ISSUE_URL} target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
             File an issue
           </a>{" "}
           if something's broken.
@@ -109,21 +91,11 @@ const AboutSection: React.FC = () => (
 
     <HelpTopic title="Made by">
       <p className={PROSE}>
-        <a
-          href="https://boidu.dev"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={PROSE_LINK}
-        >
+        <a href="https://boidu.dev" target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
           Boidu
         </a>
         , with thanks to everyone in the{" "}
-        <a
-          href="https://betterlyrics.org"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={PROSE_LINK}
-        >
+        <a href="https://betterlyrics.org" target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
           Better Lyrics
         </a>{" "}
         community who's tested it, reported bugs, and put up with the rough edges.

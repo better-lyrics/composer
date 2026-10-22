@@ -68,11 +68,8 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
       />
       <div className="flex items-center justify-between">
         <span className="text-[11px] text-composer-text-muted">
-          Use{" "}
-          <code className="font-mono text-[10.5px] px-1 py-px rounded bg-(--layer-2) text-(--label)">
-            |
-          </code>{" "}
-          to split syllables (e.g. beau|ti|ful)
+          Use <code className="font-mono text-[10.5px] px-1 py-px rounded bg-(--layer-2) text-(--label)">|</code> to
+          split syllables (e.g. beau|ti|ful)
         </span>
         {lineCount > 0 && (
           <span className="text-xs text-composer-text-muted select-text">{pluralize(lineCount, "line")}</span>

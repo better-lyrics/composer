@@ -82,7 +82,12 @@ const ThemePresetGallery: React.FC<ThemePresetGalleryProps> = ({ onCustomize, on
 
   return (
     <div className="flex flex-col gap-4">
-      <ThemeGroup label="Built-in" themes={COMPOSER_PRESETS} activeThemeId={activeThemeId} favoriteThemeIds={favoriteThemeIds} />
+      <ThemeGroup
+        label="Built-in"
+        themes={COMPOSER_PRESETS}
+        activeThemeId={activeThemeId}
+        favoriteThemeIds={favoriteThemeIds}
+      />
       <ThemeGroup
         label="Classics"
         themes={CLASSIC_PRESETS}

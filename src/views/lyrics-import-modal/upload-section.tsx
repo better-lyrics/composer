@@ -101,9 +101,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
         className={cn(
           "flex flex-col items-center justify-center gap-2 px-4 py-7 rounded-lg text-center cursor-pointer w-full",
           "bg-(--well) border border-dashed transition-colors",
-          isDragOver
-            ? "border-composer-accent bg-composer-accent/8"
-            : "border-(--edge-strong) hover:border-(--muted)",
+          isDragOver ? "border-composer-accent bg-composer-accent/8" : "border-(--edge-strong) hover:border-(--muted)",
         )}
       >
         <IconMusic size={32} stroke={1.5} className="text-composer-text opacity-50 mb-0.5" />

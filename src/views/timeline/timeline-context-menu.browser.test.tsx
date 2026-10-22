@@ -49,7 +49,6 @@ describe("TimelineContextMenu", () => {
     expect(useTimelineStore.getState().contextMenu).toBeNull();
   });
 
-
   it("toggles word explicit flag when the 'Mark explicit' action is invoked", async () => {
     const line = createLine({
       words: [createWord({ text: "darn", begin: 0, end: 1 })],

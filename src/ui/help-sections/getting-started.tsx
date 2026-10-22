@@ -12,24 +12,14 @@ const GettingStartedSection: React.FC = () => (
   <div className="space-y-5">
     <p className={PROSE}>
       Composer is the lyrics editor for{" "}
-      <a
-        href="https://betterlyrics.org"
-        target="_blank"
-        rel="noopener noreferrer"
-        className={PROSE_LINK}
-      >
+      <a href="https://betterlyrics.org" target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
         Better Lyrics
       </a>
       . It guides you through four steps to create synced lyrics. Follow the tabs left-to-right for a guided experience,
       or jump straight to the Timeline for a DAW-like workflow.
       <br /> As of now, Composer is still in early access, so expect some rough edges. If you run into any issues or
       have feedback, please reach out on{" "}
-      <a
-        href="https://discord.gg/UsHE3d5fWF"
-        target="_blank"
-        rel="noopener noreferrer"
-        className={PROSE_LINK}
-      >
+      <a href="https://discord.gg/UsHE3d5fWF" target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
         Discord
       </a>{" "}
       or submit an issue on{" "}

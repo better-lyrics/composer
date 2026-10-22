@@ -21,9 +21,7 @@ function alternateBackgroundPlacement(line: LyricLine): BackgroundPlacement {
   const gapIndex = mainWords.findIndex((word, index) => {
     const next = mainWords[index + 1];
     return (
-      next !== undefined &&
-      backgroundBegin >= word.end - TIMING_EPSILON &&
-      backgroundEnd <= next.begin + TIMING_EPSILON
+      next !== undefined && backgroundBegin >= word.end - TIMING_EPSILON && backgroundEnd <= next.begin + TIMING_EPSILON
     );
   });
   return gapIndex === -1 ? { position: "end" } : { position: "middle", afterWordIndex: gapIndex };

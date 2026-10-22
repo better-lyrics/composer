@@ -7,12 +7,7 @@ const PreviewSection: React.FC = () => (
   <HelpTopic title="Preview" showTitle={false} className="space-y-4">
     <p className={PROSE}>
       The Preview tab shows you how your synced lyrics will look with{" "}
-      <a
-        href="https://betterlyrics.org"
-        target="_blank"
-        rel="noopener noreferrer"
-        className={PROSE_LINK}
-      >
+      <a href="https://betterlyrics.org" target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
         Better Lyrics
       </a>
       ' rendering engine. Words fill in progressively as they're sung, matching the timing you set.

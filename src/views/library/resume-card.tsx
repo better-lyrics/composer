@@ -67,7 +67,16 @@ const ResumeProgress: React.FC<{ project: ProjectIndexEntry }> = ({ project }) =
         className="grid grid-flow-col auto-cols-fr gap-[3px] h-2.5"
       >
         {Array.from({ length: ledCount }, (_, index) => (
-          <i key={index} className={cn("rounded-[2px]", index < litCount ? "bg-[color-mix(in_oklab,var(--color-composer-accent)_85%,white)] shadow-[inset_0_0_0_0.5px_rgb(255_255_255/0.12)]" : "bg-white/14")} />
+          // biome-ignore lint/suspicious/noArrayIndexKey: one LED per line in a fixed, ordered strip
+          <i
+            key={index}
+            className={cn(
+              "rounded-[2px]",
+              index < litCount
+                ? "bg-[color-mix(in_oklab,var(--color-composer-accent)_85%,white)] shadow-[inset_0_0_0_0.5px_rgb(255_255_255/0.12)]"
+                : "bg-white/14",
+            )}
+          />
         ))}
       </div>
     </div>

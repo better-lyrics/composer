@@ -66,7 +66,8 @@ const TimelineExtras: React.FC = () => (
           Right-click a word: Edit text, Split syllables, Split word. Merge words appears when multiple words are
           selected. On a word already split into syllables you also get Merge syllables and Snap syllables flush. Mark
           as explicit (or Unmark explicit) toggles the explicit flag. Group this line and Split into words show up when
-          they apply, and Delete word is always there. Right-click inside a selection of several words and it deletes them all.
+          they apply, and Delete word is always there. Right-click inside a selection of several words and it deletes
+          them all.
         </li>
         <li>Right-click empty track space: Add word here.</li>
         <li>Right-click the gutter: Add line above/below, Assign agent, Delete line.</li>

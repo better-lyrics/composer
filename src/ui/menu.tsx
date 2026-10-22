@@ -182,7 +182,9 @@ const MenuItem: React.FC<MenuItemProps> = ({
           : "text-(--label) hover:bg-(--layer-2) hover:text-composer-text data-active:bg-(--layer-2) data-active:text-composer-text",
       )}
     >
-      {ItemIcon && <ItemIcon aria-hidden="true" className={cn("size-4 shrink-0", tone === "default" && "opacity-70")} />}
+      {ItemIcon && (
+        <ItemIcon aria-hidden="true" className={cn("size-4 shrink-0", tone === "default" && "opacity-70")} />
+      )}
       {lead}
       <span className="truncate">{label}</span>
       {end && (
