@@ -46,7 +46,7 @@ function dragGhostCells(activeDrag: DragData, zoom: number, effectiveLines: Lyri
     const pos = layout.lineTops.get(line.id);
     if (!pos) continue;
     const mainH = rowHeights[line.id] ?? defaultRowHeight;
-    const bgH = bgTrackHeight(line);
+    const bgH = bgTrackHeight(line, mainH);
     rowTops[line.id] = pos.top;
     rowMainHeights[line.id] = mainH;
     rowBgTops[line.id] = pos.top + mainH;

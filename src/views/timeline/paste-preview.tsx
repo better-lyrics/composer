@@ -326,7 +326,7 @@ function computeGhosts(
       trackHeight = defaultRowHeight;
     } else {
       const mainHeight = targetPos.mainBottom - targetPos.top;
-      const bgHeight = bgTrackHeight(targetLine);
+      const bgHeight = bgTrackHeight(targetLine, mainHeight);
       if (isBg) {
         trackTop = targetPos.top + mainHeight + BG_BORDER;
         trackHeight = bgHeight;

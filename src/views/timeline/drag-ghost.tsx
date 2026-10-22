@@ -73,7 +73,7 @@ function useHoveredBlockHeight(lines: LyricLine[]): number | null {
     const line = hover ? lines[hover.lineIndex] : undefined;
     if (!hover || !line) return null;
     const mainHeight = s.rowHeights[line.id] ?? s.defaultRowHeight;
-    const trackHeight = hover.track === "word" ? mainHeight : bgTrackHeight(line);
+    const trackHeight = hover.track === "word" ? mainHeight : bgTrackHeight(line, mainHeight);
     return trackHeight - wordInsetPx(hover.track) * 2;
   });
 }

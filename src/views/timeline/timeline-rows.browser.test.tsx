@@ -5,7 +5,6 @@ import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { render } from "@/test/render";
-import { BG_LANE_HEIGHT } from "@/views/timeline/row-geometry";
 
 function Harness() {
   const ref = useRef<HTMLDivElement>(null);
@@ -84,7 +83,7 @@ describe("TimelineRows", () => {
         lines: [createLine({ id: "a", text: "one", backgroundWords: [createWord({ text: "ooh", begin: 0, end: 1 })] })],
       });
       const screen = await render(<Harness />);
-      expect(sizerHeight(screen.container)).toBe(`${80 + BG_LANE_HEIGHT + 1}px`);
+      expect(sizerHeight(screen.container)).toBe(`${80 + 80 + 1}px`);
     });
   });
 });

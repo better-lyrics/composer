@@ -7,18 +7,17 @@ type WordTrackType = "word" | "bg";
 // -- Constants -----------------------------------------------------------------
 
 const BG_DROP_ZONE_HEIGHT = 24;
-const BG_LANE_HEIGHT = 26;
 const ROW_BORDER = 1;
 const WORD_INSET_PX: Record<WordTrackType, number> = { word: 5, bg: 3 };
 
 // -- Functions -----------------------------------------------------------------
 
-function bgTrackHeight(line: LyricLine): number {
-  return line.backgroundWords?.length ? BG_LANE_HEIGHT : BG_DROP_ZONE_HEIGHT;
+function bgTrackHeight(line: LyricLine, mainHeight: number): number {
+  return line.backgroundWords?.length ? mainHeight : BG_DROP_ZONE_HEIGHT;
 }
 
 function lineRowHeight(line: LyricLine, mainHeight: number): number {
-  return mainHeight + bgTrackHeight(line) + ROW_BORDER;
+  return mainHeight + bgTrackHeight(line, mainHeight) + ROW_BORDER;
 }
 
 function emptyBgRowHeight(mainHeight: number): number {
@@ -37,12 +36,4 @@ function wordInsetPx(track: string | undefined): number {
 // -- Exports -------------------------------------------------------------------
 
 export type { WordTrackType };
-export {
-  BG_DROP_ZONE_HEIGHT,
-  BG_LANE_HEIGHT,
-  bgTrackHeight,
-  emptyBgRowHeight,
-  lineRowHeight,
-  wordBlockWidth,
-  wordInsetPx,
-};
+export { BG_DROP_ZONE_HEIGHT, bgTrackHeight, emptyBgRowHeight, lineRowHeight, wordBlockWidth, wordInsetPx };

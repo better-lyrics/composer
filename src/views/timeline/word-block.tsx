@@ -155,11 +155,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
         onEdgeHover={onEdgeHover}
       />
 
-      {fit !== "tick" && (
-        <span className="min-w-0 overflow-hidden whitespace-nowrap pointer-events-none">
-          {text}
-        </span>
-      )}
+      {fit !== "tick" && <span className="min-w-0 overflow-hidden whitespace-nowrap pointer-events-none">{text}</span>}
 
       <WordEdgeHandle
         edge="right"

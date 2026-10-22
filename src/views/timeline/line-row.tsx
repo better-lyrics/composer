@@ -6,7 +6,6 @@ import { useProjectStore } from "@/stores/project";
 import { cn } from "@/utils/cn";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tracks";
-import { bgTrackHeight } from "@/views/timeline/row-geometry";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRowResize } from "@/views/timeline/use-row-resize";
 import { WordTrack } from "@/views/timeline/word-track";
@@ -120,7 +119,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               color={color}
               trackType="bg"
               duration={duration}
-              height={bgTrackHeight(line)}
+              height={rowHeight}
               onUpdateWord={onUpdateBgWord}
             />
           </div>
