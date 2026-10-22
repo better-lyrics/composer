@@ -44,7 +44,7 @@ interface MenuContextValue {
 
 // -- Constants ----------------------------------------------------------------
 
-const MENU_SURFACE = "layer-floating w-[236px] p-1 rounded-xl bg-composer-bg select-none outline-none shadow-pop";
+const MENU_SURFACE = "layer-floating w-[236px] p-1 rounded-xl surface-floating select-none outline-none";
 
 const MenuContext = createContext<MenuContextValue | null>(null);
 

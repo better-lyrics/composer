@@ -17,7 +17,7 @@ interface BulkBarProps {
 // -- Constants ----------------------------------------------------------------
 
 const BAR_STYLES =
-  "flex items-center gap-1 p-1.5 rounded-[14px] bg-composer-bg-elevated pointer-events-auto select-none animate-[library-toast-in_200ms_var(--ease-emphasized)] shadow-pop";
+  "flex items-center gap-1 p-1.5 rounded-[14px] surface-floating pointer-events-auto select-none animate-[library-toast-in_200ms_var(--ease-emphasized)]";
 
 // -- Sub-components -------------------------------------------------------------
 

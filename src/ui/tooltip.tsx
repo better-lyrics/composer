@@ -1,5 +1,3 @@
-import { openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
-import { cn } from "@/utils/cn";
 import {
   FloatingArrow,
   FloatingPortal,
@@ -37,7 +35,6 @@ const ARROW_SIZE = 4;
 const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top", delay = SHOW_DELAY }) => {
   const [isOpen, setIsOpen] = useState(false);
   const arrowRef = useRef(null);
-  const isInModal = useEscapeLayerStackStore((state) => openModalCount(state) > 0);
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
@@ -65,10 +62,7 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top",
             ref={refs.setFloating}
             style={floatingStyles}
             {...getFloatingProps()}
-            className={cn(
-              "layer-floating w-max max-w-48 select-none px-2 py-1.5 text-xs text-center leading-snug rounded text-composer-text shadow-lg",
-              isInModal ? "bg-composer-bg-elevated" : "bg-composer-bg-dark",
-            )}
+            className="layer-floating w-max max-w-48 select-none px-2 py-1.5 text-xs text-center leading-snug rounded-lg text-composer-text surface-floating"
           >
             {content}
             <FloatingArrow
@@ -76,7 +70,7 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top",
               context={context}
               width={ARROW_SIZE * 2}
               height={ARROW_SIZE}
-              className={isInModal ? "fill-composer-bg-elevated" : "fill-composer-bg-dark"}
+              className="fill-[var(--pop)]"
             />
           </div>
         </FloatingPortal>

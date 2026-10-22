@@ -98,7 +98,7 @@ const Popover: React.FC<PopoverProps> = ({
               style={floatingStyles}
               {...getFloatingProps()}
               aria-label={ariaLabel}
-              className="layer-floating border select-none shadow-2xl rounded-xl bg-composer-bg border-composer-border"
+              className="layer-floating select-none rounded-[14px] surface-floating"
             >
               {typeof children === "function" ? children(() => setIsOpen(false), getItemProps) : children}
             </div>

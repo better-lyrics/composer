@@ -343,8 +343,9 @@ braccato-lyrics .blyrics-container {
   );
 }
 
-@utility shadow-pop {
-  box-shadow: 0 0 0 1px var(--color-composer-border), 0 12px 32px -8px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.25);
+@utility surface-floating {
+  background: var(--pop);
+  box-shadow: var(--float-shadow);
 }
 
 /* Timeline panning mode */

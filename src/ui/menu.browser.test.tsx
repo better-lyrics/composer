@@ -50,7 +50,7 @@ describe("Menu", () => {
     await screen.getByRole("button", { name: "More" }).click();
     const menu = screen.getByRole("menu", { name: "Actions for Heat Waves" });
     await expect.element(menu).toBeInTheDocument();
-    await expect.element(menu).toHaveClass("shadow-pop");
+    await expect.element(menu).toHaveClass("surface-floating");
     await expect.element(screen.getByRole("menuitem", { name: "Rename" })).toHaveFocus();
   });
 
