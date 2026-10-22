@@ -353,7 +353,7 @@ describe("U2 line counter", () => {
     await tapAt(1);
     await tapAt(2);
     await settle();
-    expect(screen.container.querySelector("h2 + span")?.textContent).toBe("2/2");
+    expect(screen.container.querySelector("h2 + span")?.textContent).toBe("2 / 2 lines synced");
   });
 });
 

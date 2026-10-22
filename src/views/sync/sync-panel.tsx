@@ -212,7 +212,6 @@ const SyncPanel: React.FC = () => {
   );
 
   const progress = useMemo(() => syncProgress(lines, granularity), [lines, granularity]);
-  const progressText = `${progress.done}/${progress.total}`;
   const syncComplete = useMemo(() => isSyncComplete(lines), [lines]);
 
   const handleGranularityChange = useCallback(
@@ -452,7 +451,7 @@ const SyncPanel: React.FC = () => {
   return (
     <div data-tour="sync-panel" className="flex flex-col flex-1 overflow-hidden select-none">
       <SyncHeader
-        progressText={progressText}
+        progress={progress}
         textVariant={textVariant}
         hasTransliteration={hasTransliteration}
         toggleTextVariant={toggleTextVariant}
@@ -467,8 +466,8 @@ const SyncPanel: React.FC = () => {
 
       {/* Main sync area */}
       {showScrollableView ? (
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overscroll-contain">
-          <div className="py-2">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overscroll-none">
+          <div>
             {lines.map((line, index) => {
               const displayLine = displayLines[index];
               const timing = effectiveBounds(line);

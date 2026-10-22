@@ -60,14 +60,14 @@ const TimeNudgeInput: React.FC<TimeNudgeInputProps> = ({
   };
 
   return (
-    <span className="flex items-center gap-1 font-mono text-[10px] tabular-nums">
+    <span className="flex items-center font-mono text-[10.5px] font-normal leading-4 tabular-nums">
       <button
         type="button"
         onClick={(e) => canDecrease && handleNudgeClick(e, -getNudgeAmount())}
-        className={`px-1 ${
+        className={`px-[3px] rounded ${
           canDecrease
-            ? "text-composer-text-muted hover:text-composer-text cursor-pointer"
-            : "text-composer-text-muted/30 cursor-not-allowed"
+            ? "text-(--muted) hover:text-composer-text hover:bg-(--layer-2) cursor-pointer"
+            : "text-(--muted) opacity-30 cursor-not-allowed"
         }`}
       >
         -
@@ -82,13 +82,13 @@ const TimeNudgeInput: React.FC<TimeNudgeInputProps> = ({
           onBlur={handleCommit}
           onKeyDown={handleKeyDown}
           onClick={(e) => e.stopPropagation()}
-          className="w-16 px-1 text-center border rounded select-text bg-composer-bg-elevated border-composer-accent text-composer-accent-text"
+          className="w-16 px-1 text-center border rounded select-text bg-(--well) border-(--lit-ring) text-composer-accent-text focus:outline-none"
         />
       ) : (
         <button
           type="button"
           onClick={handleStartEdit}
-          className="text-composer-accent-text hover:underline cursor-text"
+          className="px-0.5 text-composer-accent-text hover:underline cursor-text"
         >
           {formatTimeMs(value)}
         </button>
@@ -96,10 +96,10 @@ const TimeNudgeInput: React.FC<TimeNudgeInputProps> = ({
       <button
         type="button"
         onClick={(e) => canIncrease && handleNudgeClick(e, getNudgeAmount())}
-        className={`px-1 ${
+        className={`px-[3px] rounded ${
           canIncrease
-            ? "text-composer-text-muted hover:text-composer-text cursor-pointer"
-            : "text-composer-text-muted/30 cursor-not-allowed"
+            ? "text-(--muted) hover:text-composer-text hover:bg-(--layer-2) cursor-pointer"
+            : "text-(--muted) opacity-30 cursor-not-allowed"
         }`}
       >
         +

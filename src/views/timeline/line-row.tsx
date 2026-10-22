@@ -5,6 +5,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { lineColumnRail } from "@/ui/line-column";
 import { cn } from "@/utils/cn";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tracks";
@@ -65,7 +66,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
         className="shrink-0 flex items-center justify-center text-xs text-composer-text-muted border-r-2 shadow-[inset_0_-1px_0_0_var(--divider)] w-12 sticky left-0 z-60"
         style={{
           background: groupColor ? `color-mix(in oklab, ${groupColor} 6%, var(--gutter-bg))` : "var(--gutter-bg)",
-          borderRightColor: isSounding ? color : `color-mix(in oklab, ${color} 45%, var(--gutter-bg))`,
+          borderRightColor: lineColumnRail(color, isSounding),
         }}
       >
         <GutterAgentPicker lineId={line.id} lineIndex={lineIndex} agentId={line.agentId} isCurrent={isSounding} />

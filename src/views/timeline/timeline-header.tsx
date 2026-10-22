@@ -7,10 +7,11 @@ import { useSettingsStore } from "@/stores/settings";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { cn } from "@/utils/cn";
 import { MOD_KEY } from "@/utils/platform";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { TimelineToggleButton, TimelineZoomControls } from "@/views/timeline/timeline-header-controls";
+import { TimelineZoomControls } from "@/views/timeline/timeline-header-controls";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
   IconArrowBarBoth,
@@ -135,7 +136,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
       <h2 className="sr-only">Timeline</h2>
       <div className="flex items-center gap-3 min-w-0">
         <div className="tray">
-          <TimelineToggleButton
+          <ShortcutToggleButton
             active={textVariant === "transliteration"}
             label={textVariant === "transliteration" ? "Transliteration" : "Original"}
             stateInLabel
@@ -145,19 +146,19 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
             title="Toggle original / transliteration labels"
           >
             <IconLanguage />
-          </TimelineToggleButton>
+          </ShortcutToggleButton>
         </div>
 
         <div className="tray">
-          <TimelineToggleButton
+          <ShortcutToggleButton
             active={followEnabled}
             label="Follow"
             shortcut="timeline.toggleFollow"
             onClick={toggleFollow}
           >
             <IconFocusCentered />
-          </TimelineToggleButton>
-          <TimelineToggleButton
+          </ShortcutToggleButton>
+          <ShortcutToggleButton
             active={rollingEditMode}
             label="Rolling"
             shortcut="timeline.toggleRollingEdit"
@@ -165,19 +166,19 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
             title="Rolling edit: drag a shared word boundary and both words move together"
           >
             <IconArrowBarBoth />
-          </TimelineToggleButton>
-          <TimelineToggleButton
+          </ShortcutToggleButton>
+          <ShortcutToggleButton
             active={previewSidebarOpen}
             label="Preview"
             shortcut="timeline.togglePreview"
             onClick={togglePreviewSidebar}
           >
             <IconEye />
-          </TimelineToggleButton>
+          </ShortcutToggleButton>
         </div>
 
         <div className="tray">
-          <TimelineToggleButton
+          <ShortcutToggleButton
             active={snapEnabled}
             label="Snap"
             shortcut="timeline.toggleSnap"
@@ -186,8 +187,8 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
             title={`Snap${toggleSnapKeys.length ? ` (${toggleSnapKeys.join(" ")})` : ""} · hold ${MOD_KEY} to bypass`}
           >
             <IconMagnet />
-          </TimelineToggleButton>
-          <TimelineToggleButton
+          </ShortcutToggleButton>
+          <ShortcutToggleButton
             active={markerMode}
             label="Marker"
             shortcut="timeline.toggleMarkerMode"
@@ -195,7 +196,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
             title={`Marker mode${toggleMarkerKeys.length ? ` (${toggleMarkerKeys.join(" ")})` : ""}`}
           >
             <IconMapPin />
-          </TimelineToggleButton>
+          </ShortcutToggleButton>
         </div>
 
         {onImportLyrics && (
