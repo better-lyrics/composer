@@ -57,6 +57,53 @@ describe("useRangePlayback", () => {
     expect(useTimelineStore.getState().selectionPlayback).toBe("loop");
   });
 
+  it("regression: a loop survives a main thread stall that outlasts its own seek back", async () => {
+    const audio = await selectLastWordOfSong();
+    useSettingsStore.setState({ selectionLeadIn: 0 });
+    useProjectStore.setState({
+      lines: [createLine({ id: "a", text: "up", words: [{ text: "up", begin: 0.2, end: 0.3 }] })],
+    });
+    expect(loopSelection()).toBe(true);
+    await expect.poll(() => audio.paused).toBe(false);
+    await expect.poll(() => audio.currentTime).toBeGreaterThan(0.25);
+
+    // Chrome fires a timeupdate once the seek back lands and before seeked: stalling there lets playback run on.
+    const stalled = new Promise((resolve) =>
+      audio.addEventListener(
+        "seeking",
+        () =>
+          audio.addEventListener(
+            "timeupdate",
+            () => {
+              const until = performance.now() + 400;
+              while (performance.now() < until) {
+                // Busy wait: a main thread stall, like a lag spike.
+              }
+              resolve(null);
+            },
+            { once: true },
+          ),
+        { once: true },
+      ),
+    );
+    await stalled;
+    await new Promise((resolve) => audio.addEventListener("seeked", resolve, { once: true }));
+
+    await expect.poll(() => audio.currentTime).toBeLessThan(0.3);
+    expect(useTimelineStore.getState().selectionPlayback).toBe("loop");
+  });
+
+  it("ends a loop when the user seeks outside it", async () => {
+    const audio = await selectLastWordOfSong();
+    expect(loopSelection()).toBe(true);
+    await expect.poll(() => audio.currentTime).toBeGreaterThan(WORD_BEGIN - LEAD_IN + 0.05);
+
+    useAudioStore.getState().seekTo(0.2);
+
+    await expect.poll(() => useTimelineStore.getState().selectionPlayback).toBeNull();
+    expect(audio.paused).toBe(false);
+  });
+
   it("regression: a single play that reaches the end of the song ends the selection play", async () => {
     const audio = await selectLastWordOfSong();
     expect(playSelection()).toBe(true);
