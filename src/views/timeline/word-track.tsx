@@ -1,7 +1,6 @@
 import { timedTransliterationSlice } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { isWordSelected } from "@/domain/selection/identity";
-import { selectionsAfterWordInsert } from "@/domain/selection/set-ops";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
@@ -373,7 +372,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     }
 
     const timeline = useTimelineStore.getState();
-    timeline.setSelectedWords(selectionsAfterWordInsert(timeline.selectedWords, lineId, trackType, newIndex));
+    timeline.clearSelection();
     timeline.setEditingWord({ lineId, wordIndex: newIndex, type: trackType });
   };
 
