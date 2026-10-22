@@ -64,7 +64,7 @@ const Modal: React.FC<ModalProps> = ({
           ref={overlayRef}
           role="presentation"
           onMouseDown={handleOverlayMouseDown}
-          className="fixed inset-0 layer-floating flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 layer-floating flex items-center justify-center modal-scrim"
         >
           <dialog
             ref={refs.setFloating as unknown as React.Ref<HTMLDialogElement>}
@@ -74,13 +74,13 @@ const Modal: React.FC<ModalProps> = ({
             aria-describedby={describedById}
             tabIndex={-1}
             className={cn(
-              "relative w-full max-w-md mx-4 border shadow-2xl text-composer-text rounded-xl bg-composer-bg-dark border-composer-border focus:outline-none overflow-clip",
+              "relative w-full max-w-md mx-4 text-composer-text rounded-2xl surface-modal focus:outline-none overflow-clip",
               className,
             )}
           >
             {title && (
-              <div className="flex items-center px-5 py-4 border-b border-composer-border bg-composer-bg-dark sticky top-0 z-10">
-                <h2 id={titleId} className="text-lg font-medium">
+              <div className="flex items-center gap-3 h-14 pl-5 pr-2.5 border-b border-(--divider) bg-(--pop) sticky top-0 z-10">
+                <h2 id={titleId} className="text-base font-bold text-balance">
                   {title}
                 </h2>
                 {headerAccessory}
