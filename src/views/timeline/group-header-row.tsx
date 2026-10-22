@@ -44,7 +44,7 @@ interface GroupHeaderRowProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const GROUP_HEADER_HEIGHT = 38;
+const GROUP_HEADER_HEIGHT = 30;
 
 // -- Component -----------------------------------------------------------------
 
@@ -116,9 +116,9 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
       <div
         className="shrink-0 w-12 sticky left-0 z-[60] flex items-center justify-center px-1 select-none overflow-hidden border-r-2"
         style={{
-          background: `color-mix(in srgb, ${group.color} 30%, var(--color-composer-bg))`,
-          borderRightColor: group.color,
-          boxShadow: `0 -1px 0 0 color-mix(in srgb, ${group.color} 40%, var(--color-composer-border)), inset 0 -1px 0 0 color-mix(in srgb, ${group.color} 35%, var(--color-composer-border)), 10px 0 15px -3px rgb(0 0 0 / 0.1), 4px 0 6px -4px rgb(0 0 0 / 0.1)`,
+          background: `color-mix(in oklab, ${group.color} 12%, var(--gutter-bg))`,
+          borderRightColor: `color-mix(in oklab, ${group.color} 60%, var(--gutter-bg))`,
+          boxShadow: `inset 0 1px 0 color-mix(in oklab, ${group.color} 30%, transparent), inset 0 -1px 0 var(--divider)`,
         }}
       >
         {renaming ? (
@@ -137,7 +137,13 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
           </button>
         )}
       </div>
-      <div className="flex-1 overflow-hidden border-b border-composer-border relative">
+      <div
+        className="flex-1 overflow-hidden border-b border-(--divider) relative"
+        style={{
+          background: `color-mix(in oklab, ${group.color} 9%, transparent)`,
+          boxShadow: `inset 0 1px 0 color-mix(in oklab, ${group.color} 30%, transparent)`,
+        }}
+      >
         <GroupBanner
           group={group}
           instanceIdx={instanceIdx}

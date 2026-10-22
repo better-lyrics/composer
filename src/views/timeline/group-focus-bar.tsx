@@ -132,7 +132,7 @@ const FocusedGroupBar: React.FC<Omit<OpenInstanceProps, "lines">> = ({ group, he
       data-group-focus-bar
       role="group"
       aria-label="Open group"
-      className="flex h-10 shrink-0 select-none items-center gap-3 border-b border-composer-border pl-3 pr-2 text-xs"
+      className="flex h-10 shrink-0 select-none items-center gap-3 border-b border-(--divider) pl-3 pr-2 text-xs"
       style={{ background: `color-mix(in srgb, ${group.color} 7%, var(--color-composer-bg-dark))` }}
     >
       <span className="flex items-center gap-1.5 font-semibold text-composer-text">

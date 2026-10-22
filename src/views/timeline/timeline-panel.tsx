@@ -54,7 +54,7 @@ import { useTimelineWheel } from "@/views/timeline/use-timeline-wheel";
 import { computeRowLayout } from "@/views/timeline/utils";
 import { WordEditOverlay } from "@/views/timeline/word-edit-overlay";
 import { DndContext } from "@dnd-kit/core";
-import { IconMusic } from "@tabler/icons-react";
+import { IconMusic, IconWaveSine } from "@tabler/icons-react";
 import { useOverlayScrollbars } from "overlayscrollbars-react";
 import "overlayscrollbars/overlayscrollbars.css";
 import { Activity, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -411,14 +411,8 @@ const TimelinePanel: React.FC = () => {
                     }
                   }}
                 >
-                  <div className="absolute grid place-items-center text-xs text-composer-text-muted top-0 left-0 z-100 w-12 h-20 border-b border-r-2 border-composer-border bg-composer-bg shadow-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="size-4" viewBox="0 0 24 24">
-                      <title>Music Icon</title>
-                      <path
-                        fill="currentColor"
-                        d="M10 21q-1.65 0-2.825-1.175T6 17t1.175-2.825T10 13q.575 0 1.063.138t.937.412V4q0-.425.288-.712T13 3h4q.425 0 .713.288T18 4v2q0 .425-.288.713T17 7h-3v10q0 1.65-1.175 2.825T10 21"
-                      />
-                    </svg>
+                  <div className="absolute grid place-items-center top-0 left-0 z-100 w-12 h-20 border-b border-r-2 border-(--divider) bg-(--gutter-bg) text-composer-text-faint">
+                    <IconWaveSine aria-hidden="true" className="size-4" />
                   </div>
                   <TimelineWaveform />
 

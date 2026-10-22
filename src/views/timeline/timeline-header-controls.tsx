@@ -3,6 +3,7 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { IconButton } from "@/ui/icon-button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { ToggleButton } from "@/ui/toggle-button";
+import { cn } from "@/utils/cn";
 import { MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineZoom } from "@/views/timeline/use-timeline-zoom";
 import { IconMinus, IconPlus } from "@tabler/icons-react";
@@ -40,7 +41,7 @@ const TimelineToggleButton: React.FC<TimelineToggleButtonProps> = ({
       onClick={onClick}
       disabled={disabled}
       hasIcon
-      className={className}
+      className={cn("h-7 pl-2 text-[13px] [&_svg]:size-4", showHints ? "pr-1.5" : "pr-2.5", className)}
       title={title}
     >
       {children}
@@ -63,17 +64,19 @@ const TimelineZoomControls: React.FC<{ scrollContainerRef?: React.RefObject<HTML
 
   const zoomPercent = Math.round(((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100);
   return (
-    <div className="flex items-center gap-1">
+    <div className="tray">
       <IconButton
         label="Zoom out"
         icon={<IconMinus size={16} />}
         variant="ghost"
         onClick={zoomOut}
         disabled={zoom <= MIN_ZOOM}
-        className="size-7"
+        className="size-7 hover:bg-(--layer-2) hover:text-composer-text"
       />
 
-      <span className="w-12 text-center text-xs text-composer-text-muted select-none tabular-nums">{zoomPercent}%</span>
+      <span className="min-w-11 text-center font-mono text-xs text-composer-accent-text select-none tabular-nums">
+        {zoomPercent}%
+      </span>
 
       <IconButton
         label="Zoom in"
@@ -81,7 +84,7 @@ const TimelineZoomControls: React.FC<{ scrollContainerRef?: React.RefObject<HTML
         variant="ghost"
         onClick={zoomIn}
         disabled={zoom >= MAX_ZOOM}
-        className="size-7"
+        className="size-7 hover:bg-(--layer-2) hover:text-composer-text"
       />
     </div>
   );

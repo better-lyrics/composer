@@ -23,7 +23,7 @@ const SelectionPlaybackBar: React.FC = () => {
       data-selection-playback-bar
       role="group"
       aria-label="Playing selection"
-      className="flex h-10 shrink-0 select-none items-center gap-3 border-b border-composer-border bg-[color-mix(in_srgb,var(--color-composer-accent)_7%,var(--color-composer-bg-dark))] pl-3 pr-2 text-xs"
+      className="flex h-10 shrink-0 select-none items-center gap-3 border-b border-(--divider) bg-[color-mix(in_srgb,var(--color-composer-accent)_7%,var(--color-composer-bg-dark))] pl-3 pr-2 text-xs"
     >
       <span className="flex items-center gap-1.5 font-semibold text-composer-text">
         <ModeIcon aria-hidden="true" className="size-3.5" />

@@ -108,7 +108,7 @@ function SuggestionsBanner<T extends { fingerprint: string }>(props: Suggestions
   if (visible.length === 0) return null;
 
   const shellClass = cn(
-    "flex items-center justify-between gap-3 px-4 py-2 border-b border-composer-border text-sm",
+    "flex items-center justify-between gap-3 px-4 py-2 border-b border-(--divider) text-sm",
     accentClass,
     className,
   );

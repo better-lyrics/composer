@@ -1,7 +1,9 @@
 import { getAgentColor } from "@/domain/agent/colors";
 import { belongsToInstance } from "@/domain/instance/predicates";
+import { isLineSoundingAt } from "@/domain/line/line-at-time";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { cn } from "@/utils/cn";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
@@ -48,6 +50,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
   const dragShiftPx = useTimelineStore((s) => dragShiftPxFor(line, s.draggedGroupShift));
   const shiftTransform = dragShiftPx !== 0 ? `translateX(${dragShiftPx}px)` : undefined;
   const { isResizing, startResize, resetHeight } = useRowResize(line.id, rowHeight);
+  const isSounding = useAudioStore((s) => isLineSoundingAt(line, s.currentTime));
 
   const hoveredTrack = useTimelineStore((s) =>
     s.wordDragHover?.lineIndex === lineIndex ? s.wordDragHover.track : null,
@@ -57,21 +60,24 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
   const bgWords = line.backgroundWords?.length ? line.backgroundWords : null;
 
   return (
-    <div data-timeline-row className="relative flex">
+    <div data-timeline-row className={cn("relative flex", isSounding && "bg-composer-accent/7")}>
       <div
-        className="shrink-0 flex items-center justify-center text-xs text-composer-text-muted border-r-2 shadow-[inset_0_-1px_0_0_var(--color-composer-border),10px_0_15px_-3px_rgb(0_0_0/0.1),4px_0_6px_-4px_rgb(0_0_0/0.1)] bg-composer-bg w-12 sticky left-0 z-60"
-        style={{ borderRightColor: color }}
+        className="shrink-0 flex items-center justify-center text-xs text-composer-text-muted border-r-2 shadow-[inset_0_-1px_0_0_var(--divider)] w-12 sticky left-0 z-60"
+        style={{
+          background: groupColor ? `color-mix(in oklab, ${groupColor} 6%, var(--gutter-bg))` : "var(--gutter-bg)",
+          borderRightColor: isSounding ? color : `color-mix(in oklab, ${color} 45%, var(--gutter-bg))`,
+        }}
       >
-        <GutterAgentPicker lineId={line.id} lineIndex={lineIndex} agentId={line.agentId} />
+        <GutterAgentPicker lineId={line.id} lineIndex={lineIndex} agentId={line.agentId} isCurrent={isSounding} />
       </div>
 
-      <div className={cn("flex-1 border-b border-composer-border relative", mainWords && "overflow-hidden")}>
+      <div className={cn("flex-1 border-b border-(--divider) relative", mainWords && "overflow-hidden")}>
         <div className="absolute inset-0 pointer-events-none" style={{ transform: shiftTransform }}>
           {groupColor && (
             <div
               aria-hidden
               className="absolute inset-0 pointer-events-none z-0"
-              style={{ background: groupColor, opacity: 0.06 }}
+              style={{ background: groupColor, opacity: 0.04 }}
             />
           )}
         </div>
@@ -106,8 +112,10 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
             data-line-index={lineIndex}
             data-track="bg"
             className={cn(
-              "relative opacity-70 transition-colors border-t border-composer-border/50",
-              hoveredTrack === "bg" ? "bg-composer-accent/10" : "bg-composer-bg-elevated/25",
+              "relative opacity-70 transition-colors border-t border-(--divider)",
+              hoveredTrack === "bg"
+                ? "bg-composer-accent/10"
+                : "bg-[color-mix(in_oklab,var(--color-composer-bg-dark)_35%,transparent)]",
             )}
             style={{ transform: shiftTransform }}
           >

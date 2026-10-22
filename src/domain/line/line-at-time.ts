@@ -16,6 +16,11 @@ function startedLineIndex(starts: readonly number[], time: number): number {
   return index;
 }
 
+function isLineSoundingAt(line: LyricLine, time: number): boolean {
+  const bounds = effectiveBounds(line);
+  return bounds !== null && bounds.begin <= time && time < bounds.end;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { lineStarts, startedLineIndex };
+export { isLineSoundingAt, lineStarts, startedLineIndex };

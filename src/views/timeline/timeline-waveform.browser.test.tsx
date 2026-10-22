@@ -147,19 +147,18 @@ describe("TimelineWaveform redraw background", () => {
     expect(bg?.style.height).toBe("80px");
   });
 
-  it("background uses bg-composer-bg so it matches the page and the area never visually 'pops'", async () => {
+  it("background uses the well surface so the area never visually 'pops'", async () => {
     setupWaveformAudio(30);
     await render(<TimelineWaveform />);
-    expect(getBackground()?.className).toContain("bg-composer-bg");
+    expect(getBackground()?.className).toContain("bg-(--well)");
   });
 
-  it("background owns the border and shadow so they remain visible while the WaveSurfer fade-in is mid-flight", async () => {
+  it("background owns the border so it remains visible while the WaveSurfer fade-in is mid-flight", async () => {
     setupWaveformAudio(30);
     await render(<TimelineWaveform />);
     const bg = getBackground();
     expect(bg?.className).toContain("border-b");
-    expect(bg?.className).toContain("border-composer-border");
-    expect(bg?.className).toContain("shadow-lg");
+    expect(bg?.className).toContain("border-(--divider)");
   });
 
   it("the WaveSurfer fade wrapper holds the opacity transition, NOT the outer sticky host", async () => {

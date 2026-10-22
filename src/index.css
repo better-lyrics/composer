@@ -95,6 +95,12 @@
   --gutter-bg: color-mix(in oklab, var(--color-composer-bg) 40%, var(--color-composer-bg-dark));
   --float-shadow: inset 0 0 0 1px var(--edge), inset 0 1px 0 var(--highlight), 0 18px 40px -12px
     rgb(var(--shade) / 0.55);
+  --word-face: color-mix(in oklab, var(--ink) 11%, var(--color-composer-bg));
+  --word-shadow: color-mix(in oklab, color-mix(in oklab, var(--color-composer-bg-dark) 45%, black) 28%, transparent);
+  --word-elev:
+    inset 0 1px 0 color-mix(in oklab, white 9%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, var(--ink) 6%, transparent), 0 1px 1px var(--word-shadow),
+    0 3px 8px -4px var(--word-shadow);
   --radius-card: 16px;
   --tray-pad: 4px;
 }
@@ -429,6 +435,34 @@ braccato-lyrics .blyrics-container {
     border-radius: inherit;
     pointer-events: none;
     box-shadow: var(--raised-edge);
+  }
+}
+
+/* A singer's name in the singer colour, the label form of the line column's tint. */
+@utility singer-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 2px 8px 0;
+  border-radius: 7px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: color-mix(in oklab, var(--agent) 62%, var(--ink));
+  background: color-mix(in oklab, var(--agent) 16%, transparent);
+}
+
+/* Elevation on a pseudo layer, so the ping ring motion animates on the element itself never overwrites it. */
+@utility banner-elevation {
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: var(--word-elev);
+    pointer-events: none;
   }
 }
 
