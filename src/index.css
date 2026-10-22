@@ -768,6 +768,9 @@ input[type="range"].settings-slider::-moz-range-progress {
       font-size: 11px;
       text-overflow: clip;
     }
+    &[data-cut] > span {
+      mask-image: linear-gradient(to right, #000 calc(100% - 8px), transparent);
+    }
     &[data-fit="tick"] {
       padding: 0;
       font-size: 0;
@@ -781,6 +784,9 @@ input[type="range"].settings-slider::-moz-range-progress {
       opacity: 0.78;
       &[data-fit="narrow"] {
         padding: 0 2px;
+      }
+      &[data-cut] > span {
+        mask-image: linear-gradient(to right, #000 calc(100% - 6px), transparent);
       }
       &[data-fit="tick"] {
         padding: 0;
