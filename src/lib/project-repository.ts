@@ -1,5 +1,6 @@
 import { type ProjectIndexEntry, buildIndexEntry } from "@/domain/project/index-entry";
 import { estimateRecordBytes } from "@/domain/project/record-bytes";
+import type { ResumePosition } from "@/domain/project/resume-position";
 import type { ProjectTab } from "@/domain/project/tab";
 import { protectStorageForFirstProject } from "@/lib/browser-storage";
 import {
@@ -27,6 +28,7 @@ interface IndexCarriedFields {
   storedAudioBytes: number;
   openedAt?: number;
   lastTab?: ProjectTab;
+  resumePosition?: ResumePosition;
 }
 
 interface IndexEntryWrite {
@@ -67,7 +69,12 @@ function indexEntryForProject(id: string, project: SavedProject, carried: IndexC
 }
 
 function carriedIndexFields(entry: ProjectIndexEntry): IndexCarriedFields {
-  return { storedAudioBytes: entry.storedAudioBytes, openedAt: entry.openedAt, lastTab: entry.lastTab };
+  return {
+    storedAudioBytes: entry.storedAudioBytes,
+    openedAt: entry.openedAt,
+    lastTab: entry.lastTab,
+    resumePosition: entry.resumePosition,
+  };
 }
 
 // -- Open project pointer -----------------------------------------------------
@@ -241,6 +248,10 @@ function setProjectLastTab(id: string, lastTab: ProjectTab): Promise<void> {
   return patchProjectIndex(id, { lastTab });
 }
 
+function setProjectResumePosition(id: string, resumePosition: ResumePosition): Promise<void> {
+  return patchProjectIndex(id, { resumePosition });
+}
+
 // -- Removal ------------------------------------------------------------------
 
 function removeProjectData(id: string): Promise<void> {
@@ -274,6 +285,7 @@ export {
   findProjectByVideoId,
   markProjectOpened,
   setProjectLastTab,
+  setProjectResumePosition,
   patchIndexEntry,
   removeProjectData,
 };

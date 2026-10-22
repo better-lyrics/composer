@@ -1,3 +1,4 @@
+import type { ResumePosition } from "@/domain/project/resume-position";
 import type { WordSelection } from "@/domain/selection/model";
 import { toggleWordSelection } from "@/domain/selection/set-ops";
 import { useSettingsStore } from "@/stores/settings";
@@ -43,6 +44,8 @@ interface TimelineState {
   clipboard: ClipboardData | null;
   pasteMode: PasteMode;
   scrollLeft: number;
+  scrollTop: number | null;
+  pendingResumeView: ResumePosition | null;
   rowHeights: Record<string, number>;
   defaultRowHeight: number;
   isDraggingPlayhead: boolean;
@@ -82,6 +85,8 @@ interface TimelineActions {
   setClipboard: (clipboard: ClipboardData | null) => void;
   setPasteMode: (mode: PasteMode) => void;
   setScrollLeft: (scrollLeft: number) => void;
+  setScrollTop: (scrollTop: number) => void;
+  setPendingResumeView: (view: ResumePosition | null) => void;
   setRowHeight: (lineId: string, height: number) => void;
   setDraggingPlayhead: (isDragging: boolean, time?: number) => void;
   setDragTime: (time: number) => void;
@@ -133,6 +138,8 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     clipboard: null,
     pasteMode: { status: "idle" },
     scrollLeft: 0,
+    scrollTop: null,
+    pendingResumeView: null,
     rowHeights: {},
     defaultRowHeight: settings.defaultRowHeight,
     isDraggingPlayhead: false,
@@ -171,6 +178,8 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setClipboard: (clipboard) => set({ clipboard }),
     setPasteMode: (pasteMode) => set({ pasteMode }),
     setScrollLeft: (scrollLeft) => set({ scrollLeft }),
+    setScrollTop: (scrollTop) => set({ scrollTop }),
+    setPendingResumeView: (pendingResumeView) => set({ pendingResumeView }),
     setRowHeight: (lineId, height) =>
       set((s) => ({
         rowHeights: {
@@ -192,6 +201,8 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
         editingWord: null,
         pasteMode: { status: "idle" },
         scrollLeft: 0,
+        scrollTop: null,
+        pendingResumeView: null,
         focusedGroup: null,
       }),
     toggleRollingEditMode: () => set((s) => ({ rollingEditMode: !s.rollingEditMode })),
