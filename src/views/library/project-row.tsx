@@ -43,7 +43,7 @@ const ROW_STYLES = cn(
   ROW_GRID,
   "group/row relative h-14 pl-3 pr-13 rounded-[10px] select-none transition-colors duration-100",
   "[content-visibility:auto] [contain-intrinsic-size:auto_56px]",
-  "hover:bg-composer-input data-menu:bg-composer-input data-selected:bg-composer-accent/14",
+  "hover:bg-(--layer-1) data-menu:bg-(--layer-1) data-selected:bg-composer-accent/14",
   "has-[[data-row-open]:focus-visible]:outline-2 has-[[data-row-open]:focus-visible]:-outline-offset-2 has-[[data-row-open]:focus-visible]:outline-composer-accent",
 );
 const REVEAL_ON_ROW = "opacity-0 group-hover/row:opacity-100 group-data-[selecting=true]/list:opacity-100";
@@ -121,7 +121,7 @@ const ProjectRowContent: React.FC<ProjectItemProps> = ({
           type="button"
           data-row-open
           onClick={() => onOpen(project.id)}
-          className="block max-w-full truncate text-left font-medium text-composer-text cursor-pointer outline-none after:absolute after:inset-0 after:rounded-[inherit]"
+          className="block max-w-full truncate text-left text-sm font-medium text-composer-text cursor-pointer outline-none after:absolute after:inset-0 after:rounded-[inherit]"
         >
           {title}
         </button>

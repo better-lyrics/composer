@@ -21,7 +21,7 @@ const BAR_STYLES =
 
 // -- Sub-components -------------------------------------------------------------
 
-const Divider: React.FC = () => <span aria-hidden="true" className="w-px h-5 mx-1 bg-composer-border" />;
+const Divider: React.FC = () => <span aria-hidden="true" className="w-px h-5 mx-1 bg-(--edge)" />;
 
 // -- Component ----------------------------------------------------------------
 

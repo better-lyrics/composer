@@ -14,7 +14,7 @@ import {
 import { SegmentedControl } from "@/ui/segmented-control";
 import { Select } from "@/ui/select";
 import { formatShortcut } from "@/utils/format-key";
-import { IconArrowsSort, IconSearch } from "@tabler/icons-react";
+import { IconArrowsSort, IconChevronDown, IconSearch } from "@tabler/icons-react";
 import { useMemo } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -60,9 +60,9 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({
   const sortLabel = LIBRARY_SORT_LABELS[sort];
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
-      <h1 className="flex items-baseline gap-1.5 mr-1 text-lg font-bold">
-        Projects <span className="text-sm font-medium text-composer-text-muted tabular-nums">{count}</span>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pb-3">
+      <h1 className="flex items-baseline gap-2 mr-2 text-xl font-bold tracking-[-0.01em]">
+        Projects <span className="text-[15px] font-medium text-(--muted) tabular-nums">{count}</span>
       </h1>
       <SegmentedControl
         aria-label="Filter by progress"
@@ -79,6 +79,7 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           wrapperClassName="flex-[0_1_260px] min-w-35"
+          className="h-9 rounded-[10px]"
           trailing={searchShortcut ? <InlineKeyBadge text={searchShortcut} /> : undefined}
         />
         <Select
@@ -91,12 +92,14 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({
           trigger={
             <Button
               variant="secondary"
+              size="lg"
               hasIcon
               aria-label={`Sort: ${sortLabel}`}
-              className="shrink-0 whitespace-nowrap"
+              className="shrink-0 whitespace-nowrap pr-2.5"
             >
               <IconArrowsSort aria-hidden="true" className="size-4" />
               {sortLabel}
+              <IconChevronDown aria-hidden="true" className="size-3.5 opacity-60" />
             </Button>
           }
         />

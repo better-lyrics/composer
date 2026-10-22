@@ -33,11 +33,11 @@ const AudioStatusLabel: React.FC<AudioStatusLabelProps> = ({ project, compact = 
   }
   const StatusIcon = status.kind === "youtube" ? IconBrandYoutube : IconFileMusic;
   return (
-    <span className={cn(LABEL_STYLES, textSize, "text-composer-text-secondary")}>
-      <StatusIcon aria-hidden="true" className="size-4 shrink-0 text-composer-text opacity-50" />
+    <span className={cn(LABEL_STYLES, textSize, "text-(--muted)")}>
+      <StatusIcon aria-hidden="true" className="size-4 shrink-0" />
       {status.kind === "youtube" ? "YouTube" : status.format}
       {status.kind === "file" && !compact && (
-        <span className="tabular-nums text-composer-text-muted">{formatFileSize(status.bytes)}</span>
+        <span className="tabular-nums text-composer-text-faint">{formatFileSize(status.bytes)}</span>
       )}
     </span>
   );

@@ -47,7 +47,7 @@ const ProjectListColumns: React.FC = () => (
     aria-hidden="true"
     className={cn(
       ROW_GRID,
-      "h-8 shadow-[inset_0_-1px_0_var(--color-composer-border)] text-xs font-medium text-composer-text-muted",
+      "h-8 shadow-[inset_0_-1px_0_var(--divider)] text-xs font-medium text-(--muted)",
     )}
   >
     <span className="col-span-2">Title</span>
