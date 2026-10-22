@@ -12,6 +12,7 @@ import { cn } from "@/utils/cn";
 import { MOD_KEY } from "@/utils/platform";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { TimelineZoomControls } from "@/views/timeline/timeline-header-controls";
+import { TimelineNotices } from "@/views/timeline/timeline-notices";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
   IconArrowBarBoth,
@@ -132,9 +133,9 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   }, [handleExpandAll]);
 
   return (
-    <div className="flex items-center justify-between gap-4 h-13 shrink-0 px-2 border-b border-(--divider)">
+    <div className="@container flex items-center justify-between gap-4 h-13 shrink-0 px-2 border-b border-(--divider) @max-[72rem]:[&_[data-inline-key-badge]]:hidden">
       <h2 className="sr-only">Timeline</h2>
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-3 shrink-0">
         <div className="tray">
           <ShortcutToggleButton
             active={textVariant === "transliteration"}
@@ -224,7 +225,10 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
         )}
       </div>
 
-      <TimelineZoomControls scrollContainerRef={scrollContainerRef} />
+      <div className="flex flex-1 min-w-0 items-center justify-end gap-3">
+        <TimelineNotices />
+        <TimelineZoomControls scrollContainerRef={scrollContainerRef} />
+      </div>
     </div>
   );
 };

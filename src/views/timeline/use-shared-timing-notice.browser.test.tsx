@@ -3,7 +3,8 @@ import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
-import { SharedTimingSuggestionsBanner } from "@/views/timeline/shared-timing-suggestions-banner";
+import { HeaderNotices } from "@/ui/notices/header-notices";
+import { useSharedTimingNotice } from "@/views/timeline/use-shared-timing-notice";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
 
@@ -36,21 +37,24 @@ function seed(groups: LinkGroup[], lines: LyricLine[]) {
 const store = () => useProjectStore.getState();
 const INLINE_TEXT = "Chorus 1 is synced. Share its timing with 2 instances?";
 
+const SharedTimingNotices: React.FC = () => <HeaderNotices kinds={[useSharedTimingNotice()]} />;
+
 async function renderBanner() {
   return render(
     <>
       <Toaster />
-      <SharedTimingSuggestionsBanner />
+      <SharedTimingNotices />
     </>,
   );
 }
 
 // -- Tests --------------------------------------------------------------------
 
-describe("SharedTimingSuggestionsBanner", () => {
+describe("Shared timing notice", () => {
   it("suggests sharing timing for an old group with a synced instance", async () => {
     seed([OLD_CHORUS], [member(0, 10), member(1), member(2)]);
     const screen = await renderBanner();
+    await screen.getByRole("button", { name: "Chorus 1 can share its timing" }).click();
 
     await expect.element(screen.getByText(INLINE_TEXT)).toBeVisible();
   });
@@ -81,7 +85,7 @@ describe("SharedTimingSuggestionsBanner", () => {
     seed([OLD_CHORUS, verse], [member(0, 10), member(1), member(0, 30, "g2"), member(1, undefined, "g2")]);
     const screen = await renderBanner();
 
-    await expect.element(screen.getByRole("button", { name: "Review 2" })).toBeVisible();
+    await expect.element(screen.getByRole("button", { name: "Review" })).toBeVisible();
   });
 
   describe("edge cases", () => {
@@ -106,7 +110,7 @@ describe("SharedTimingSuggestionsBanner", () => {
       expect(screen.container.textContent).toBe("");
     });
 
-    it("says when sharing replaces the own timing of a timed instance", async () => {
+    it("asks for a review when sharing replaces the own timing of a timed instance", async () => {
       seed(
         [OLD_CHORUS],
         [
@@ -116,13 +120,15 @@ describe("SharedTimingSuggestionsBanner", () => {
         ],
       );
       const screen = await renderBanner();
+      expect(screen.container.textContent).not.toContain("Share timing");
+      await screen.getByRole("button", { name: "Review" }).click();
 
       await expect
         .element(
           screen.getByText("Chorus 1 is synced. Share its timing with 2 instances? 1 of them loses its own timing."),
         )
         .toBeVisible();
-      await screen.getByRole("button", { name: "Share timing" }).click();
+      await screen.getByRole("button", { name: "Share", exact: true }).click();
 
       await expect
         .element(screen.getByText("Chorus shares timing in 3 instances. The own timing of 1 instance was replaced."))
@@ -133,6 +139,7 @@ describe("SharedTimingSuggestionsBanner", () => {
     it("uses the singular for one instance with no timing", async () => {
       seed([OLD_CHORUS], [member(0, 10), member(1)]);
       const screen = await renderBanner();
+      await screen.getByRole("button", { name: "Chorus 1 can share its timing" }).click();
 
       await expect.element(screen.getByText("Chorus 1 is synced. Share its timing with 1 instance?")).toBeVisible();
     });

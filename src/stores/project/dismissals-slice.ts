@@ -26,6 +26,12 @@ const createDismissalsSlice: StateCreator<ProjectStore, [], [], DismissalsState 
 
   clearDismissedSuggestions: () => set({ dismissedSuggestions: [], isDirty: true }),
 
+  restoreSuggestions: (fingerprints) =>
+    set((state) => ({
+      dismissedSuggestions: state.dismissedSuggestions.filter((fingerprint) => !fingerprints.includes(fingerprint)),
+      isDirty: true,
+    })),
+
   dismissExplicitSuggestion: (fingerprint) =>
     set((state) => {
       if (state.dismissedExplicitSuggestions.includes(fingerprint)) return state;
@@ -38,6 +44,14 @@ const createDismissalsSlice: StateCreator<ProjectStore, [], [], DismissalsState 
   setDismissedExplicitSuggestions: (fingerprints) => set({ dismissedExplicitSuggestions: fingerprints }),
 
   clearDismissedExplicitSuggestions: () => set({ dismissedExplicitSuggestions: [], isDirty: true }),
+
+  restoreExplicitSuggestions: (fingerprints) =>
+    set((state) => ({
+      dismissedExplicitSuggestions: state.dismissedExplicitSuggestions.filter(
+        (fingerprint) => !fingerprints.includes(fingerprint),
+      ),
+      isDirty: true,
+    })),
 
   dismissMetadataMatch: (recordingId) =>
     set((state) => {

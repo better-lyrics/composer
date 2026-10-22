@@ -10,17 +10,14 @@ import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { useAudioStore } from "@/stores/audio";
 import { useImportModal } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
-import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
 import { HoverSizedDragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
 import { dragGhostCells } from "@/views/timeline/drag-ghost-cells";
 import { trackSnapModifier } from "@/views/timeline/drag-track-snap";
 import { EmptyTimelineImport } from "@/views/timeline/empty-timeline-import";
-import { ExplicitSuggestionsBanner } from "@/views/timeline/explicit-suggestions-banner";
 import { GroupFocusBar } from "@/views/timeline/group-focus-bar";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
 import { SelectionPlaybackBar } from "@/views/timeline/selection-playback-bar";
-import { SharedTimingSuggestionsBanner } from "@/views/timeline/shared-timing-suggestions-banner";
 import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
@@ -262,9 +259,6 @@ const TimelinePanel: React.FC = () => {
       <div data-timeline-mask-root className="contents">
         <div data-tour="timeline-panel" className="flex flex-col flex-1 overflow-hidden select-none">
           <TimelineHeader onImportLyrics={openLyricsModal} scrollContainerRef={scrollContainerRef} />
-          <GroupingSuggestionsBanner />
-          <SharedTimingSuggestionsBanner />
-          <ExplicitSuggestionsBanner />
           <GroupFocusBar />
           <SelectionPlaybackBar />
 

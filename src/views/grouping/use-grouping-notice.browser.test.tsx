@@ -5,7 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
-import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
+import { GroupingNotices } from "@/test/grouping-notices";
 import { Toaster, toast } from "sonner";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -46,7 +46,7 @@ const lineById = (id: string) => store().lines.find((line) => line.id === id);
 async function renderBanner() {
   return render(
     <>
-      <GroupingSuggestionsBanner />
+      <GroupingNotices />
       <Toaster />
     </>,
   );
@@ -54,10 +54,10 @@ async function renderBanner() {
 
 // -- Tests --------------------------------------------------------------------
 
-describe("GroupingSuggestionsBanner", () => {
+describe("Grouping notice", () => {
   it("renders nothing for an empty project", async () => {
     useProjectStore.setState({ lines: [] });
-    const screen = await render(<GroupingSuggestionsBanner />);
+    const screen = await render(<GroupingNotices />);
     expect(screen.container.textContent ?? "").toBe("");
   });
 });
@@ -150,7 +150,7 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
       ],
     });
     const screen = await renderBanner();
-    await screen.getByRole("button", { name: "Review 2" }).click();
+    await screen.getByRole("button", { name: "Review" }).click();
     await screen.getByRole("button", { name: "Group all" }).click();
 
     await expect.poll(() => store().groups.map((group) => group.ownTimingInstances)).toEqual([undefined, undefined]);
@@ -239,7 +239,7 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
         ],
       });
       const screen = await renderBanner();
-      await screen.getByRole("button", { name: "Review 2" }).click();
+      await screen.getByRole("button", { name: "Review" }).click();
       await screen.getByRole("button", { name: "Group all" }).click();
 
       await expect

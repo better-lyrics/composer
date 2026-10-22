@@ -52,7 +52,7 @@ const GroupsExtras: React.FC = () => (
         </li>
         <li>
           <strong>Older groups</strong> keep their own timing. Right-click a banner and pick{" "}
-          <strong>Share timing across group</strong>, or accept the suggestion at the top of the Timeline.
+          <strong>Share timing across group</strong>, or accept the suggestion in the Timeline header.
         </li>
       </ul>
     </HelpTopic>

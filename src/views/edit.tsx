@@ -20,7 +20,7 @@ import { AgentManager } from "@/views/edit/agent-manager";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { linesToEditText } from "@/views/edit/edit-text";
-import { BracketWarning } from "@/views/edit/bracket-warning";
+import { EditNotices } from "@/views/edit/edit-notices";
 import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { LinePreview, PreviewGroupHeader } from "@/views/edit/line-preview";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
@@ -30,7 +30,6 @@ import { PreviewSelectionBar } from "@/views/edit/preview-selection-bar";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
-import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
 import { IconFileImport, IconMicrophone } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
@@ -85,7 +84,6 @@ const EditPanel: React.FC = () => {
 
   const defaultAgentId = agents?.[0]?.id ?? "v1";
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);
-  const bracketCount = useMemo(() => parsed.filter((p) => p.hasBrackets).length, [parsed]);
   const nonEmptyCount = useMemo(() => parsed.filter((p) => !p.isEmpty).length, [parsed]);
   const instanceCountByGroup = useMemo(
     () => new Map(groups.map((g) => [g.id, instanceCount(lines, g.id)])),
@@ -386,7 +384,7 @@ const EditPanel: React.FC = () => {
       onDragOver={preventDefaultDragOver}
     >
       <div className="flex items-center justify-between gap-4 h-13 shrink-0 pl-5 pr-2 border-b border-(--divider) select-none">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <h2 className="sr-only">Lyrics Editor</h2>
           <span className="flex items-baseline gap-1.5 text-[13px] text-(--muted) tabular-nums">
             <b className="font-mono text-[15px] font-bold text-composer-text">{nonEmptyCount}</b>{" "}
@@ -394,7 +392,8 @@ const EditPanel: React.FC = () => {
           </span>
           <AgentManager />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-1 min-w-0 items-center justify-end gap-3">
+          <EditNotices parsed={parsed} isTyping={isTypingLyrics} />
           <Button
             hasIcon
             size="lg"
@@ -428,8 +427,6 @@ const EditPanel: React.FC = () => {
             onDismiss={() => useImportModalStore.getState().clearImportResult()}
           />
         )}
-
-        <BracketWarning count={bracketCount} />
 
         <div className="flex flex-1 min-h-0 gap-4">
           {/* Input */}
@@ -517,8 +514,6 @@ const EditPanel: React.FC = () => {
             </Scroll>
           </div>
         </div>
-
-        {!isTypingLyrics && <GroupingSuggestionsBanner className="rounded-xl border-b-0 px-3" />}
       </div>
     </div>
   );

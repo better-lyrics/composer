@@ -34,7 +34,7 @@ const ROW_BODY = "flex flex-1 min-w-0 items-center gap-2 pl-3 pr-2 border-b bord
 
 function rowBodyTone(isSelected: boolean, hasBrackets: boolean, inGroup: boolean): string {
   if (isSelected) return "bg-composer-accent/15";
-  if (hasBrackets) return "bg-composer-error/8";
+  if (hasBrackets) return "bg-composer-warning/8";
   return inGroup ? "bg-[color-mix(in_oklab,var(--group)_4%,transparent)]" : "group-hover:bg-(--layer-1)";
 }
 
@@ -175,7 +175,7 @@ const LinePreview: React.FC<LinePreviewProps> = ({
           className={cn(
             "text-sm truncate",
             line.hasBrackets
-              ? "text-[color-mix(in_oklab,var(--color-composer-error)_70%,var(--ink))]"
+              ? "text-[color-mix(in_oklab,var(--color-composer-warning)_70%,var(--ink))]"
               : "text-composer-text",
           )}
         >

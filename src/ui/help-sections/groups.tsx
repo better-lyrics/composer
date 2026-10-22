@@ -160,18 +160,18 @@ const GroupsSection: React.FC = () => (
       </p>
     </HelpTopic>
 
-    <HelpTopic title="Suggestions banner">
+    <HelpTopic title="Grouping suggestions">
       <p className={PROSE}>
-        When Composer detects two or more contiguous runs of identical lines that aren't grouped yet, a small bulb
-        banner appears below the lyrics in Edit (hidden while you type) and under the Timeline toolbar. With{" "}
+        When Composer detects two or more contiguous runs of identical lines that aren't grouped yet, a bulb suggestion
+        appears in the header pill of Edit (hidden while you type) and the Timeline. With{" "}
         <SettingLink setting="shareTimingInNewGroups" /> on, group them in Edit before you sync, so each chorus shares
-        its timing from the first tap. One suggestion shows inline with a Group them button. Multiple suggestions
-        collapse into a Review N button that opens a modal with each block previewed and a per-row Group / dismiss
-        action, plus a Group all button.
+        its timing from the first tap. One suggestion shows a Group them button in the pill. Click the pill, or Review,
+        to open the list with each block previewed, a per-row Group and dismiss, and Group all.
       </p>
       <p className={`${PROSE} mt-2`}>
         Dismissals are per-project and content-based, so adding or removing unrelated lines elsewhere will not bring a
-        suggestion back. Editing the actual text inside a dismissed block does, since the structure has changed.
+        suggestion back. Editing the actual text inside a dismissed block does, since the structure has changed. A
+        dismissal can be undone for a few seconds, and Show dismissed at the bottom of the list brings them all back.
       </p>
     </HelpTopic>
 

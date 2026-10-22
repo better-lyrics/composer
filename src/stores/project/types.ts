@@ -126,9 +126,11 @@ interface DismissalActions {
   dismissSuggestion: (fingerprint: string) => void;
   setDismissedSuggestions: (fingerprints: string[]) => void;
   clearDismissedSuggestions: () => void;
+  restoreSuggestions: (fingerprints: readonly string[]) => void;
   dismissExplicitSuggestion: (fingerprint: string) => void;
   setDismissedExplicitSuggestions: (fingerprints: string[]) => void;
   clearDismissedExplicitSuggestions: () => void;
+  restoreExplicitSuggestions: (fingerprints: readonly string[]) => void;
   dismissMetadataMatch: (recordingId: string) => void;
   setDismissedMetadataMatches: (recordingIds: string[]) => void;
 }
