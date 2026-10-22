@@ -87,6 +87,7 @@ describe("useRangePlayback", () => {
       ),
     );
     await stalled;
+    await new Promise((resolve) => audio.addEventListener("seeked", resolve, { once: true }));
 
     await expect.poll(() => audio.currentTime).toBeLessThan(0.3);
     expect(useTimelineStore.getState().selectionPlayback).toBe("loop");
