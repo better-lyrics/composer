@@ -156,7 +156,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
       />
 
       {fit !== "tick" && (
-        <span className="min-w-0 overflow-hidden whitespace-nowrap [text-overflow:inherit] pointer-events-none">
+        <span className="min-w-0 overflow-hidden whitespace-nowrap pointer-events-none">
           {text}
         </span>
       )}
