@@ -126,7 +126,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
         overlayColor: "#000",
         overlayOpacity: 0.6,
         stagePadding: 8,
-        stageRadius: 12,
+        stageRadius: 16,
         animate: !reducedMotion,
         smoothScroll: false,
         showProgress: true,

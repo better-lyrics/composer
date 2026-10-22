@@ -98,7 +98,7 @@ const SelectSetting: React.FC<{ id: SettingId; options: SelectOption[] }> = ({ i
         value={value}
         onChange={(next) => set(settingKey, next)}
         options={options}
-        className="h-9 pl-3 pr-2.5 rounded-[10px] border-transparent hover:border-transparent btn-raised"
+        className="h-9 pl-3 pr-[5px] rounded-xl border-transparent hover:border-transparent btn-raised [&>svg]:size-3.5 [&>svg]:duration-150"
       />
     </SettingRowLayout>
   );
@@ -107,11 +107,8 @@ const SelectSetting: React.FC<{ id: SettingId; options: SelectOption[] }> = ({ i
 const SettingsGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="group/settings">
-      <h3
-        id={headingId}
-        className="mt-5 mb-0.5 text-xs font-medium text-(--label) select-none group-first/settings:mt-2"
-      >
+    <section aria-labelledby={headingId}>
+      <h3 id={headingId} className="mt-[18px] mb-0.5 text-xs font-semibold text-(--muted) select-none">
         {title}
       </h3>
       <div className="divide-y divide-(--divider)">{children}</div>

@@ -8,11 +8,11 @@ import { Button } from "@/ui/button";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { type SegmentedOption, SegmentedControl } from "@/ui/segmented-control";
 import { ThemeEditorAdvanced } from "@/ui/settings/theme/theme-editor-advanced";
-import { ThemeEditorQuick } from "@/ui/settings/theme/theme-editor-quick";
-import { ThemeShareBox } from "@/ui/settings/theme/theme-share-box";
+import { QuickModeNote, ThemeEditorQuick } from "@/ui/settings/theme/theme-editor-quick";
+import { CopyThemeCodeButton, ThemeShareBox } from "@/ui/settings/theme/theme-share-box";
 import { cn } from "@/utils/cn";
 import { applyResolvedTheme } from "@/utils/theme/apply";
-import { IconAlertTriangle, IconMoonStars, IconSun } from "@tabler/icons-react";
+import { IconAlertTriangle, IconCheck, IconMoonStars, IconSun } from "@tabler/icons-react";
 import { Activity, useEffect, useState } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -98,9 +98,9 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ target, onClose }) => {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3">
-        <span className="text-xs text-(--muted) select-none">Theme name</span>
+    <div className="flex flex-col">
+      <div className="flex flex-col gap-3.5 pt-[18px] pb-4 border-b border-(--divider)">
+        <span className="-mb-1.5 text-xs text-(--muted) select-none">Theme name</span>
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -108,36 +108,45 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ target, onClose }) => {
             onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
             aria-label="Theme name"
             spellCheck={false}
-            className={cn(INPUT_STYLES, "flex-1 min-w-0 h-9 px-3 text-sm rounded-[10px] select-text")}
+            className={cn(INPUT_STYLES, "flex-1 min-w-0 h-9 px-2.5 text-sm rounded-[10px] select-text")}
           />
           <Button size="lg" variant="ghost" onClick={onClose}>
             Close
           </Button>
         </div>
-      </div>
 
-      <div className="flex items-center gap-3">
-        <span className="text-[13px] text-(--label) select-none">Base</span>
-        <SegmentedControl
-          aria-label="Color scheme"
-          value={draft.scheme}
-          options={SCHEMES}
-          onChange={(scheme) => setDraft((current) => ({ ...current, scheme }))}
-        />
-        <span className="text-xs text-composer-text-faint select-none">flips contrast and color-scheme</span>
-      </div>
-
-      <SegmentedControl aria-label="Editor mode" value={tab} options={TABS} onChange={setTab} className="self-start" />
-
-      {lowContrast && (
-        <div
-          role="alert"
-          className="flex items-center gap-2 rounded-lg border border-composer-warning/20 bg-composer-warning/10 px-2.5 py-2 text-xs text-composer-warning select-text cursor-text"
-        >
-          <IconAlertTriangle size={14} className="shrink-0" />
-          <span>{`Text on background is ${ratio.toFixed(1)}:1, below WCAG AA (4.5:1)`}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-[13px] text-(--label) select-none">Base</span>
+          <SegmentedControl
+            aria-label="Color scheme"
+            value={draft.scheme}
+            options={SCHEMES}
+            onChange={(scheme) => setDraft((current) => ({ ...current, scheme }))}
+            className="[&_svg]:size-[15px]"
+          />
+          <span className="text-xs text-composer-text-faint select-none">flips contrast and color-scheme</span>
         </div>
-      )}
+
+        <SegmentedControl
+          aria-label="Editor mode"
+          value={tab}
+          options={TABS}
+          onChange={setTab}
+          className="self-start"
+        />
+
+        {tab === "quick" && <QuickModeNote />}
+
+        {lowContrast && (
+          <div
+            role="alert"
+            className="flex items-center gap-2 rounded-lg border border-composer-warning/20 bg-composer-warning/10 px-2.5 py-2 text-xs text-composer-warning select-text cursor-text"
+          >
+            <IconAlertTriangle size={14} className="shrink-0" />
+            <span>{`Text on background is ${ratio.toFixed(1)}:1, below WCAG AA (4.5:1)`}</span>
+          </div>
+        )}
+      </div>
 
       <Activity mode={tab === "quick" ? "visible" : "hidden"}>
         <ThemeEditorQuick draft={draft} onTokenChange={handleTokenChange} />
@@ -150,12 +159,15 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ target, onClose }) => {
         <ThemeShareBox draft={draft} />
       </div>
 
-      <div className="flex items-center gap-2 border-t border-(--divider) pt-4">
-        <Button size="lg" variant="primary" onClick={handleSave}>
-          {isEdit ? "Save changes" : "Save theme"}
-        </Button>
+      <div className="flex items-center gap-2 pt-4">
+        <CopyThemeCodeButton draft={draft} />
+        <span className="flex-1" />
         <Button size="lg" variant="ghost" onClick={onClose}>
           Discard
+        </Button>
+        <Button size="lg" variant="primary" hasIcon onClick={handleSave}>
+          <IconCheck className="size-4" />
+          {isEdit ? "Save changes" : "Save theme"}
         </Button>
       </div>
     </div>

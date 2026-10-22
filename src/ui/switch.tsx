@@ -28,7 +28,7 @@ const Switch: React.FC<SwitchProps> = ({ checked, onCheckedChange, label, disabl
   >
     <span
       className={cn(
-        "block size-4 rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.25)] transition-[translate]",
+        "block size-4 rounded-full bg-white transition-[translate] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)]",
         checked && "translate-x-4",
       )}
     />

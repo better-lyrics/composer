@@ -17,7 +17,6 @@ interface ModalNavLayoutProps<T extends string> {
   activeSection: T | null;
   onSectionChange: (id: T) => void;
   children: React.ReactNode;
-  sidebarClassName?: string;
   contentClassName?: string;
   sidebarHeader?: React.ReactNode;
   contentInitialScrollTop?: number;
@@ -33,7 +32,6 @@ function ModalNavLayout<T extends string>({
   activeSection,
   onSectionChange,
   children,
-  sidebarClassName,
   contentClassName,
   sidebarHeader,
   contentInitialScrollTop,
@@ -43,7 +41,7 @@ function ModalNavLayout<T extends string>({
 }: ModalNavLayoutProps<T>) {
   return (
     <div className="flex flex-1 min-h-0">
-      <Scroll className={cn("w-[196px] shrink-0 border-r border-(--divider) select-none", sidebarClassName)}>
+      <Scroll className="w-[196px] shrink-0 border-r border-(--divider) select-none">
         <div className="flex flex-col gap-0.5 px-2.5 py-3">
           {sidebarHeader}
           {sections.map((section) => {

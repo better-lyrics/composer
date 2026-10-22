@@ -410,7 +410,7 @@ function GroupBannerMenuSection({ targets, clearContextMenu, target }: SectionPr
             aria-label={`Color ${c}`}
             aria-pressed={c === groupColor}
             onClick={() => handleRecolorGroup(c)}
-            className="size-[18px] rounded-full cursor-pointer shadow-[inset_0_0_0_1px_rgb(0_0_0/0.2)] transition-[box-shadow] hover:shadow-[0_0_0_2px_var(--pop),0_0_0_3.5px_var(--edge-strong)] aria-pressed:shadow-[0_0_0_2px_var(--pop),0_0_0_3.5px_var(--ink)]"
+            className="size-[18px] rounded-full cursor-pointer shadow-[inset_0_0_0_1px_rgb(255_255_255/0.15)] transition-[box-shadow] hover:shadow-[0_0_0_2px_var(--pop),0_0_0_3.5px_var(--edge-strong)] aria-pressed:shadow-[0_0_0_2px_var(--pop),0_0_0_3.5px_var(--ink)]"
             style={{ backgroundColor: c }}
           />
         ))}
@@ -448,7 +448,7 @@ const TimelineContextMenu: React.FC = () => {
   const section = { targets, clearContextMenu };
 
   return (
-    <Menu anchor={anchor} onClose={clearContextMenu} aria-label="Timeline actions" className="w-auto min-w-[236px]">
+    <Menu anchor={anchor} onClose={clearContextMenu} aria-label="Timeline actions" className="w-auto min-w-[232px]">
       {target.kind === "word" && <WordMenuSection {...section} target={target} />}
       {target.kind === "track" && <TrackMenuSection {...section} />}
       {target.kind === "gutter" && <GutterMenuSection {...section} target={target} />}

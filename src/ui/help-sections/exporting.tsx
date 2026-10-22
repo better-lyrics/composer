@@ -4,9 +4,9 @@ import { HelpTopic } from "@/ui/help-topic";
 // -- Exporting ----------------------------------------------------------------
 
 const ExportSection: React.FC = () => (
-  <HelpTopic title="Exporting" showTitle={false} className="space-y-5">
+  <HelpTopic title="Exporting" showTitle={false} className="space-y-3 max-w-[68ch]">
     <p className={PROSE}>The Export tab shows a syntax-highlighted preview of your TTML output.</p>
-    <ul className={`${PROSE} list-disc pl-4 space-y-1.5`}>
+    <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1.5`}>
       <li>
         <strong>Download TTML</strong>: Saves the file to your computer. The filename uses your project title.
       </li>

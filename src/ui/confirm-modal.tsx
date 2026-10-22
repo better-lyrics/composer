@@ -48,9 +48,9 @@ const ConfirmModalHost: React.FC = () => {
       className="max-w-md"
       initialFocusRef={variant === "destructive" ? cancelButtonRef : confirmButtonRef}
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {description && (
-          <div className="text-sm text-composer-text-secondary leading-relaxed select-text">{description}</div>
+          <div className="text-sm text-(--label) leading-normal text-pretty select-text">{description}</div>
         )}
         {recoverable && <UndoHint />}
 
@@ -61,10 +61,10 @@ const ConfirmModalHost: React.FC = () => {
             </Checkbox>
           )}
           <div className="flex gap-2 select-none">
-            <Button ref={cancelButtonRef} variant="secondary" size="sm" onClick={handleClose}>
+            <Button ref={cancelButtonRef} variant="secondary" size="lg" onClick={handleClose}>
               {cancelLabel}
             </Button>
-            <Button ref={confirmButtonRef} size="sm" variant={variant} onClick={handleConfirm}>
+            <Button ref={confirmButtonRef} size="lg" variant={variant} onClick={handleConfirm}>
               {confirmLabel}
             </Button>
           </div>

@@ -18,7 +18,7 @@ const FRAME_SIZES: Record<ProjectArtSize, string> = {
   sm: "size-[30px] rounded-[7px]",
   md: "size-9 rounded-md",
   row: "size-10 rounded-md",
-  dialog: "size-12 rounded-md",
+  dialog: "size-12 rounded-lg",
   hero: "size-30 rounded-[10px] shadow-[0_12px_32px_-8px_rgb(0_0_0/0.5)]",
   card: "w-full aspect-square rounded-[10px]",
 };

@@ -190,6 +190,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
       {...itemProps}
       className={cn(
         ITEM_STYLES,
+        end !== undefined && "pr-1.5",
         tone === "danger"
           ? "text-composer-negative hover:bg-composer-negative/12 data-active:bg-composer-negative/12"
           : "text-(--label) hover:bg-(--layer-2) hover:text-composer-text data-active:bg-(--layer-2) data-active:text-composer-text",
@@ -202,7 +203,13 @@ const MenuItem: React.FC<MenuItemProps> = ({
       {lead}
       <span className="truncate">{label}</span>
       {end && (
-        <span aria-hidden="true" className="ms-auto ps-4 flex gap-[3px] text-(--muted)">
+        <span
+          aria-hidden="true"
+          className={cn(
+            "ms-auto ps-4 flex gap-[3px] [&>[data-inline-key-badge]]:ml-0",
+            tone === "danger" ? "text-composer-negative opacity-80" : "text-(--muted)",
+          )}
+        >
           {end}
         </span>
       )}
@@ -237,10 +244,10 @@ const MenuRadioItem: React.FC<MenuRadioItemProps> = ({ lead, label, description,
   );
 };
 
-const MenuSeparator: React.FC = () => <hr className="h-px mx-1.5 my-1 border-0 bg-(--divider)" />;
+const MenuSeparator: React.FC = () => <hr className="h-px mx-1.5 my-[5px] border-0 bg-(--divider)" />;
 
 const MenuLabel: React.FC<{ children: ReactNode }> = ({ children }) => (
-  <p className="px-2.5 pt-1.5 pb-1 text-xs text-(--muted)">{children}</p>
+  <p className="px-2.5 pt-1.5 pb-1 text-[11.5px] font-semibold text-(--muted)">{children}</p>
 );
 
 // -- Exports ------------------------------------------------------------------

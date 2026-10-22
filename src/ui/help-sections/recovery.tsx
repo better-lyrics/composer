@@ -6,7 +6,7 @@ import { HelpTopic } from "@/ui/help-topic";
 // -- Recovery -----------------------------------------------------------------
 
 const RecoverySection: React.FC = () => (
-  <div className="space-y-5">
+  <div className="space-y-[22px] max-w-[68ch]">
     <p className={PROSE}>
       Composer saves your work as you go. If the app crashes, freezes, or you accidentally close the tab, your lyrics
       and timing are still there. Here's how to get them back.

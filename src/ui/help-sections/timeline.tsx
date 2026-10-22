@@ -9,7 +9,7 @@ import { ALT_KEY, MOD_KEY } from "@/utils/platform";
 // -- Timeline -----------------------------------------------------------------
 
 const TimelineSection: React.FC = () => (
-  <div className="space-y-5">
+  <div className="space-y-[22px] max-w-[68ch]">
     <p className={PROSE}>
       The Timeline is where you do the detailed work. While the Sync tab is great for tapping out rough timing, Timeline
       gives you full control over every word. You can drag words to reposition them, resize their boundaries, split
@@ -26,7 +26,7 @@ const TimelineSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Navigation">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           A plain scroll wheel scrolls vertically through the lines. To move through time, scroll horizontally with a
           trackpad gesture.
@@ -88,7 +88,7 @@ const TimelineSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Selecting words">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>Click a word block to select it. {MOD_KEY} + Click to add or remove from selection.</li>
         <li>Shift + Click a syllable to select every syllable in that word's group at once.</li>
         <li>Click and drag on empty space to marquee-select multiple words.</li>
@@ -105,7 +105,7 @@ const TimelineSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Editing words">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>Double-click a word block to edit its text inline. Press Enter to confirm, Escape to cancel.</li>
         <li>Double-click on empty track space to create a new word at that position.</li>
         <li>
@@ -137,7 +137,7 @@ const TimelineSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Copy, cut, paste">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           {MOD_KEY} + C / X / V work as expected. When you paste, a ghost preview appears. Click to place the pasted
           words.
@@ -156,7 +156,7 @@ const TimelineSection: React.FC = () => (
         background track, or on the background track of its own line. Multi-select moves the whole selection at once:
         each word keeps its offset from the one you grabbed, and linked syllables stay joined.
       </p>
-      <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) mt-1.5 space-y-1`}>
         <li>Keep the word on its own line and the same drag reorders it within that row instead.</li>
         <li>
           Dropping a word onto a background track converts its role, and the destination line gets <strong>x-bg</strong>{" "}
@@ -171,7 +171,7 @@ const TimelineSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Boundary dragging">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           Two flush syllables share one boundary: drag either edge and both move, staying flush. Once a gap opens, each
           edge drags on its own. Turn on <SettingLink setting="syllablesFollowRolling" /> to join them only while
@@ -198,7 +198,7 @@ const TimelineSection: React.FC = () => (
         background track), line edges for line-synced lines, and the playhead. A yellow halo appears on the moving block
         while snapped, and a thin dashed line marks the anchor on the timeline.
       </p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleSnap")} /> or click the magnet button in the
           toolbar to toggle snap. The setting persists across sessions.
@@ -225,7 +225,7 @@ const TimelineSection: React.FC = () => (
         onsets" in the stem dropdown. Solid pins are custom snap points you place yourself. Both pull word edges in the
         way the magnet does, and custom points keep snapping even when Snap and onset snapping are both off.
       </p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           Click the pin button in the toolbar or press{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleMarkerMode")} /> to enter marker mode. The

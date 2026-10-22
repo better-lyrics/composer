@@ -80,7 +80,13 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({
           onChange={(event) => onQueryChange(event.target.value)}
           wrapperClassName="flex-[0_1_260px] min-w-35"
           className="h-9 rounded-[10px]"
-          trailing={searchShortcut ? <InlineKeyBadge text={searchShortcut} /> : undefined}
+          trailing={
+            searchShortcut ? (
+              <span className="flex text-(--muted) *:ml-0">
+                <InlineKeyBadge keys={getEffectiveKeysArray(SEARCH_SHORTCUT_ID)} />
+              </span>
+            ) : undefined
+          }
         />
         <Select
           aria-label="Sort projects"

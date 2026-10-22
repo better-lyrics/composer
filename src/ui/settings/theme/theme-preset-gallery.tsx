@@ -4,6 +4,7 @@ import { useConfirm } from "@/stores/confirm-store";
 import { useThemeStore } from "@/stores/theme";
 import { Button } from "@/ui/button";
 import { ThemePresetCard } from "@/ui/settings/theme/theme-preset-card";
+import { IconPalette } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -45,7 +46,7 @@ const ThemeGroup: React.FC<ThemeGroupProps> = ({
 }) => {
   const favorites = new Set(favoriteThemeIds);
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-2.5 mt-[18px]">
       <span className={GROUP_LABEL}>{label}</span>
       <div className={GROUP_GRID}>
         {themes.map((theme) => (
@@ -84,7 +85,7 @@ const ThemePresetGallery: React.FC<ThemePresetGalleryProps> = ({ onCustomize, on
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col">
       <ThemeGroup
         label="Built-in"
         themes={COMPOSER_PRESETS}
@@ -109,8 +110,9 @@ const ThemePresetGallery: React.FC<ThemePresetGalleryProps> = ({ onCustomize, on
         />
       )}
       {onCustomize && (
-        <div>
-          <Button variant="secondary" size="lg" onClick={onCustomize}>
+        <div className="flex justify-end mt-3.5">
+          <Button variant="secondary" size="lg" hasIcon onClick={onCustomize}>
+            <IconPalette className="size-4" />
             Customize current
           </Button>
         </div>

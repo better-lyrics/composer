@@ -86,14 +86,14 @@ const Modal: React.FC<ModalProps> = ({
                 {headerAccessory}
                 <IconButton
                   label="Close"
-                  icon={<IconX className="size-5" />}
+                  icon={<IconX className="size-[18px]" />}
                   variant="ghost"
                   onClick={onClose}
-                  className="ml-auto"
+                  className="ml-auto size-9 rounded-[10px]"
                 />
               </div>
             )}
-            <div id={describedById} className={cn(title ? "p-5" : "p-5 pt-4", bodyClassName)}>
+            <div id={describedById} className={cn(title ? "pt-[18px] px-5 pb-5" : "p-5 pt-4", bodyClassName)}>
               {children}
             </div>
           </dialog>

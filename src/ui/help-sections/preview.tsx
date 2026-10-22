@@ -4,7 +4,7 @@ import { HelpTopic } from "@/ui/help-topic";
 // -- Preview ------------------------------------------------------------------
 
 const PreviewSection: React.FC = () => (
-  <HelpTopic title="Preview" showTitle={false} className="space-y-4">
+  <HelpTopic title="Preview" showTitle={false} className="space-y-3 max-w-[68ch]">
     <p className={PROSE}>
       The Preview tab shows you how your synced lyrics will look with{" "}
       <a href="https://betterlyrics.org" target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
@@ -12,7 +12,7 @@ const PreviewSection: React.FC = () => (
       </a>
       ' rendering engine. Words fill in progressively as they're sung, matching the timing you set.
     </p>
-    <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+    <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
       <li>Agent lines are positioned based on their inferred location (left, right, center).</li>
       <li>Background vocals appear below the main line in a smaller style.</li>
       <li>

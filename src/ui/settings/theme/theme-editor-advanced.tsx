@@ -30,7 +30,7 @@ const ThemeEditorAdvanced: React.FC<ThemeEditorAdvancedProps> = ({ draft, onToke
   const resolved = deriveTheme(draft);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 pt-4">
       <p className="rounded-lg border border-composer-accent/20 bg-composer-accent/10 px-2.5 py-2 text-xs text-composer-text-muted select-none">
         {HINT}
       </p>

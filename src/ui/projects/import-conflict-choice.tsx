@@ -25,26 +25,24 @@ function syncedCounts(counts: ProgressCounts): string {
 // -- Component ----------------------------------------------------------------
 
 const ImportConflictSummary: React.FC<ImportConflictSummaryProps> = ({ existing, fileSummary, askedAt }) => (
-  <div className="flex flex-col gap-4">
-    <div className="flex items-center gap-3">
-      <ProjectArt src={existing.thumbnailDataUrl} size="dialog" />
+  <div className="grid grid-cols-[48px_1fr] items-center gap-3 p-3 rounded-xl bg-(--layer-1) shadow-[inset_0_0_0_1px_var(--edge)]">
+    <ProjectArt src={existing.thumbnailDataUrl} size="dialog" />
+    <div className="flex flex-col gap-1.5 min-w-0">
       <div className="min-w-0">
         <div className="truncate font-medium select-text">{displayTitle(existing.title)}</div>
-        <div className="truncate text-[13px] text-composer-text-muted select-text">
-          {displayArtists(existing.artists)}
-        </div>
+        <div className="truncate text-[13px] text-(--muted) select-text">{displayArtists(existing.artists)}</div>
       </div>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 m-0 text-[13px] tabular-nums">
+        <dt className="text-(--muted) select-none">In the file</dt>
+        <dd className="m-0 select-text">
+          Saved {formatShortDate(fileSummary.savedAt, askedAt)}, {syncedCounts(fileSummary)}
+        </dd>
+        <dt className="text-(--muted) select-none">In your library</dt>
+        <dd className="m-0 select-text">
+          Edited {formatRelativeTimeInline(existing.updatedAt, askedAt)}, {syncedCounts(existing)}
+        </dd>
+      </dl>
     </div>
-    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 m-0 text-[13px] tabular-nums">
-      <dt className="text-composer-text-muted select-none">In the file</dt>
-      <dd className="m-0 select-text">
-        Saved {formatShortDate(fileSummary.savedAt, askedAt)}, {syncedCounts(fileSummary)}
-      </dd>
-      <dt className="text-composer-text-muted select-none">In your library</dt>
-      <dd className="m-0 select-text">
-        Edited {formatRelativeTimeInline(existing.updatedAt, askedAt)}, {syncedCounts(existing)}
-      </dd>
-    </dl>
   </div>
 );
 

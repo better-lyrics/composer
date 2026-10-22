@@ -107,8 +107,7 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
       activeSection={isSearching ? null : activeSection}
       onSectionChange={openSection}
       sidebarHeader={<SearchField label="Search help" value={query} onChange={setQuery} inputRef={searchInputRef} />}
-      sidebarClassName="w-48"
-      contentClassName="p-6"
+      contentClassName="px-6 pt-5 pb-4"
       contentInitialScrollTop={initialScrollTop}
       contentViewportRef={viewportRef}
       onContentInitialized={revealPendingTopic}
@@ -145,12 +144,12 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, ...bodyProps }) 
     isOpen={isOpen}
     onClose={onClose}
     title="Help"
-    className="max-w-4xl h-[80%] flex flex-col"
+    className="max-w-4xl h-[min(80vh,760px)] flex flex-col"
     bodyClassName="p-0 flex-1 min-h-0 flex flex-col"
   >
     <HelpModalBody {...bodyProps} />
 
-    <div className="px-5 py-3 border-t border-(--divider) text-xs text-(--muted) text-center shrink-0 select-none flex items-center justify-center gap-1.5">
+    <div className="flex items-center justify-center gap-1.5 h-11 px-5 border-t border-(--divider) text-[12.5px] text-(--muted) shrink-0 select-none">
       Press <InlineKeyBadge keys={getEffectiveKeysArray("global.help")} /> to open anytime
     </div>
   </Modal>

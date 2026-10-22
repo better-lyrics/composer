@@ -1,3 +1,4 @@
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { cn } from "@/utils/cn";
 import { IconSearch, IconX } from "@tabler/icons-react";
@@ -14,11 +15,10 @@ interface SearchFieldProps {
 // -- Component -----------------------------------------------------------------
 
 const SearchField: React.FC<SearchFieldProps> = ({ label, value, onChange, inputRef }) => (
-  <div className="relative mb-1.5">
+  <div className="relative shrink-0 mb-2">
     <IconSearch
-      size={14}
       aria-hidden="true"
-      className="absolute left-2.5 top-1/2 -translate-y-1/2 text-composer-text-muted pointer-events-none"
+      className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-(--muted) pointer-events-none"
     />
     <input
       ref={inputRef}
@@ -29,7 +29,7 @@ const SearchField: React.FC<SearchFieldProps> = ({ label, value, onChange, input
       onChange={(event) => onChange(event.target.value)}
       autoComplete="off"
       spellCheck={false}
-      className={cn(INPUT_STYLES, "w-full h-8 pl-8 pr-8 text-[13px] select-text")}
+      className={cn(INPUT_STYLES, "w-full h-[34px] pl-[34px] pr-8 rounded-[10px] text-[13px] select-text")}
     />
     {value ? (
       <button
@@ -44,9 +44,9 @@ const SearchField: React.FC<SearchFieldProps> = ({ label, value, onChange, input
         <IconX size={12} />
       </button>
     ) : (
-      <kbd className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 rounded bg-composer-button font-mono text-[10px] text-composer-text-muted pointer-events-none">
-        /
-      </kbd>
+      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 flex text-(--muted) pointer-events-none *:ml-0">
+        <InlineKeyBadge keys={["/"]} />
+      </span>
     )}
   </div>
 );

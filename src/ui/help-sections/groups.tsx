@@ -9,7 +9,7 @@ import { MOD_KEY } from "@/utils/platform";
 // -- Linked Groups ------------------------------------------------------------
 
 const GroupsSection: React.FC = () => (
-  <div className="space-y-5">
+  <div className="space-y-[22px] max-w-[68ch]">
     <p className={PROSE}>
       A group is a set of contiguous lines that repeat in the song (chorus, verse, bridge). Group them once and edits to
       text, splits, agents, or background vocals propagate to every instance. Each instance sits at its own place in the
@@ -26,7 +26,7 @@ const GroupsSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Creating a group">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>Select the lines you want to group (click, then Shift-click the last line, or drag down the gutter).</li>
         <li>
           Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.createGroup")} />, or right-click any selected
@@ -46,7 +46,7 @@ const GroupsSection: React.FC = () => (
         <InlineKeyBadge keys={getEffectiveKeysArray("timeline.duplicateAsLinked")} /> (or right-click the banner and
         pick "Add instance at playhead"). Composer picks one of three landings, in this order:
       </p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           <strong>Fills empty placeholder rows in place</strong> if a matching run of empty rows sits right after the
           last timed line ending at or before the playhead. Nothing shifts down, the placeholders just light up.
@@ -76,7 +76,7 @@ const GroupsSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="The banner">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           <strong>Click anywhere on it</strong>: selects every word in the instance. Use this before arrow-key nudge,
           {MOD_KEY} + C, or any of the keyboard shortcuts below.
@@ -112,7 +112,7 @@ const GroupsSection: React.FC = () => (
         Most of these act on the instance containing your current selection. Click a banner first to "focus" an
         instance.
       </p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.createGroup")} />: group selected lines.
         </li>
@@ -177,7 +177,7 @@ const GroupsSection: React.FC = () => (
 
     <HelpTopic title="Pasting between instances">
       <p className={PROSE}>Two paste flows can land in an instance, and both behave the same way at the destination:</p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           Copy every word of an existing instance and paste somewhere. Composer treats the clipboard as a known instance
           and links the destination automatically.

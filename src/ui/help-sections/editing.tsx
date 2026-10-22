@@ -9,7 +9,7 @@ const EditSection: React.FC = () => {
   const splitCharacter = useSettingsStore((s) => s.splitCharacter);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-[22px] max-w-[68ch]">
       <p className={PROSE}>
         Each row is one line of lyrics. Type normally, press Enter for a new line. To reorder lines, drag them using the
         handle on the left side.

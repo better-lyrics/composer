@@ -10,7 +10,7 @@ import { HelpTopic } from "@/ui/help-topic";
 const TimelineExtras: React.FC = () => (
   <>
     <HelpTopic title="Splitting and merging">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.splitSyllable")} /> with a word selected to open
           the splitter in syllable mode. Click between letters to mark where the word should break. The result is a
@@ -61,7 +61,7 @@ const TimelineExtras: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Right-click menus">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           Right-click a word: Edit text, Split syllables, Split word. Merge words appears when multiple words are
           selected. On a word already split into syllables you also get Merge syllables and Snap syllables flush. Mark
@@ -85,7 +85,7 @@ const TimelineExtras: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Header toolbar">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           <strong>Follow</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleFollow")} />
           ): auto-scrolls the view to keep the playhead visible during playback.
@@ -124,7 +124,7 @@ const TimelineExtras: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Other features">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.insertLineBelow")} /> with a word selected to
           insert a new empty line below it.

@@ -4,7 +4,7 @@ import { INLINE_CODE, PROSE } from "@/ui/typography";
 // -- TTML Standards -----------------------------------------------------------
 
 const TtmlStandardsSection: React.FC = () => (
-  <div className="space-y-5">
+  <div className="space-y-[22px] max-w-[68ch]">
     <HelpTopic title="What Composer outputs">
       <p className={PROSE}>
         Composer emits a restricted subset of{" "}
@@ -78,7 +78,7 @@ const TtmlStandardsSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="References">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1.5`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1.5`}>
         <li>
           <a
             href="https://www.w3.org/TR/2018/REC-ttml1-20181108/"

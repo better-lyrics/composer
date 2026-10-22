@@ -32,7 +32,7 @@ const CORNER_BUTTON =
 const ACTION_CLUSTER =
   "absolute right-2 top-2 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100";
 
-const ACTION_BUTTON = cn(CORNER_BUTTON, "bg-(--cap) shadow-(--raised-edge) text-(--label) hover:text-composer-text");
+const ACTION_BUTTON = cn(CORNER_BUTTON, "bg-(--cap) shadow-(--raised-edge) text-(--muted) hover:text-composer-text");
 
 // -- Components ----------------------------------------------------------------
 
@@ -45,10 +45,10 @@ const FavoriteButton: React.FC<{ favorite: boolean; onToggle: () => void }> = ({
     onClick={onToggle}
     className={cn(
       CORNER_BUTTON,
-      "absolute top-[39px] right-1.5",
+      "absolute top-[39px] right-1.5 hover:bg-(--layer-2)",
       favorite
         ? "text-composer-warning"
-        : "text-(--muted) opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-(--layer-2) hover:text-composer-text",
+        : "text-(--muted) opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-composer-text",
     )}
   >
     {favorite ? <IconStarFilled className="size-[15px]" /> : <IconStar className="size-[15px]" />}

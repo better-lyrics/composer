@@ -10,7 +10,7 @@ const GroupsExtras: React.FC = () => (
   <>
     <HelpTopic title="What propagates and what doesn't">
       <p className={PROSE}>Linked across all instances:</p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>Word text and line text edits.</li>
         <li>Agent assignments.</li>
         <li>Background vocal text.</li>
@@ -22,7 +22,7 @@ const GroupsExtras: React.FC = () => (
         <li>Moving a word between main and background tracks.</li>
       </ul>
       <p className={`${PROSE} mt-2`}>Stays local to one instance:</p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>Absolute begin and end times, except in a group that shares timing (below).</li>
         <li>Banner shifts and arrow-key nudge.</li>
         <li>Anything you do on a line that's been detached.</li>
@@ -35,7 +35,7 @@ const GroupsExtras: React.FC = () => (
         of one and the others change too, and their banners pulse to show it. Turn this off for new groups in{" "}
         <SettingLink setting="shareTimingInNewGroups" />.
       </p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1 mt-2`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1 mt-2`}>
         <li>
           <strong>Placing an instance</strong>: an instance with no timing yet needs a start. In Sync, one tap on its
           first word places the whole instance and skips ahead, starting playback a little before the next line (set in{" "}
@@ -98,7 +98,7 @@ const GroupsExtras: React.FC = () => (
         Real songs aren't perfectly repetitive. The last chorus might add an extra "yeah" or land on a different agent.
         Two ways to break the link:
       </p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           Right-click a line in the gutter and pick <strong>Detach this line</strong>. That single line stops syncing
           with siblings; everything else stays linked.
@@ -136,7 +136,7 @@ const GroupsExtras: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="How groups look outside the Timeline">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           <strong>Edit view</strong>: a colored divider with the group name and instance count appears before each
           instance, plus a thin closing line at the end. Each grouped line also gets a left-edge stripe in the group

@@ -631,8 +631,8 @@ input[type="range"].settings-slider::-webkit-slider-thumb {
   height: 18px;
   border-radius: 50%;
   background: linear-gradient(to bottom, #fff, color-mix(in oklab, white 88%, var(--color-composer-bg)));
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
-  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(0 0 0 / 0.08);
+  cursor: grab;
   margin-top: -6px;
   border: none;
 }
@@ -647,8 +647,8 @@ input[type="range"].settings-slider::-moz-range-thumb {
   height: 18px;
   border-radius: 50%;
   background: linear-gradient(to bottom, #fff, color-mix(in oklab, white 88%, var(--color-composer-bg)));
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
-  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(0 0 0 / 0.08);
+  cursor: grab;
   border: none;
 }
 
@@ -866,8 +866,8 @@ input[type="range"].settings-slider::-moz-range-progress {
 }
 
 [data-help-content] [data-inline-key-badge] {
-  margin-left: 0.25rem;
-  margin-right: 0.25rem;
+  color: var(--muted);
+  vertical-align: 1px;
 }
 
 .is-snapped {
@@ -1024,7 +1024,22 @@ input[type="range"].settings-slider::-moz-range-progress {
 }
 
 [data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-icon] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  align-self: center;
   color: var(--muted);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"]:has([data-description]) [data-icon] {
+  align-self: flex-start;
+  margin-top: 1px;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-icon] svg {
+  width: 18px;
+  height: 18px;
+  margin: 0;
 }
 
 [data-sonner-toaster] [data-sonner-toast][data-type="success"] [data-icon] {
