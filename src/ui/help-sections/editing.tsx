@@ -17,8 +17,8 @@ const EditSection: React.FC = () => {
 
       <HelpTopic title="Agents (singers)">
         <p className={PROSE}>
-          Click a line's agent dot to assign it to a different singer. Each agent gets a unique color. Add new agents
-          with the "+" button in the agent manager at the top.
+          Hover a line in the preview and click its agent tag to assign it to a different singer. Each agent gets a
+          unique color. Add, rename or remove agents from the Agents button at the top.
         </p>
       </HelpTopic>
 

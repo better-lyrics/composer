@@ -59,7 +59,8 @@ function dispatchWindowRedo(init: KeyboardEventInit = REDO): KeyboardEvent {
 }
 
 async function openAgentNameInput(screen: Awaited<ReturnType<typeof render>>): Promise<HTMLInputElement> {
-  await screen.getByRole("button", { name: /Add/ }).click();
+  await screen.getByRole("button", { name: /^Agents/ }).click();
+  await screen.getByRole("button", { name: /Add agent/ }).click();
   const input = screen.getByPlaceholder("Agent name");
   await expect.element(input).toBeInTheDocument();
   return input.element() as HTMLInputElement;

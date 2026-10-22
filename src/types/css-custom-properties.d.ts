@@ -4,5 +4,6 @@ import "react";
 declare module "react" {
   interface CSSProperties {
     "--agent"?: string;
+    "--group"?: string;
   }
 }
