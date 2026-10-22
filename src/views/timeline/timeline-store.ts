@@ -240,4 +240,4 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
 // -- Exports -------------------------------------------------------------------
 
 export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP };
-export type { ContextMenuState, ContextMenuTarget, SelectionPlaybackMode, TrackHit };
+export type { ContextMenuTarget, SelectionPlaybackMode, TrackHit };
