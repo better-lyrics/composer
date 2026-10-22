@@ -42,26 +42,29 @@ const ThemeGroup: React.FC<ThemeGroupProps> = ({
   custom = false,
   onEdit,
   onDelete,
-}) => (
-  <div className="flex flex-col gap-2.5">
-    <span className={GROUP_LABEL}>{label}</span>
-    <div className={GROUP_GRID}>
-      {themes.map((theme) => (
-        <ThemePresetCard
-          key={theme.id}
-          theme={theme}
-          active={theme.id === activeThemeId}
-          favorite={favoriteThemeIds.includes(theme.id)}
-          onToggleFavorite={(id) => useThemeStore.getState().toggleFavoriteTheme(id)}
-          custom={custom}
-          onSelect={(id) => useThemeStore.getState().setActiveTheme(id)}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-      ))}
+}) => {
+  const favorites = new Set(favoriteThemeIds);
+  return (
+    <div className="flex flex-col gap-2.5">
+      <span className={GROUP_LABEL}>{label}</span>
+      <div className={GROUP_GRID}>
+        {themes.map((theme) => (
+          <ThemePresetCard
+            key={theme.id}
+            theme={theme}
+            active={theme.id === activeThemeId}
+            favorite={favorites.has(theme.id)}
+            onToggleFavorite={(id) => useThemeStore.getState().toggleFavoriteTheme(id)}
+            custom={custom}
+            onSelect={(id) => useThemeStore.getState().setActiveTheme(id)}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ThemePresetGallery: React.FC<ThemePresetGalleryProps> = ({ onCustomize, onEditCustom }) => {
   const activeThemeId = useThemeStore((state) => state.activeThemeId);

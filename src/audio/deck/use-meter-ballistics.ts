@@ -3,7 +3,7 @@ import { levelAt } from "@/audio/level-envelope";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { animateFrames } from "@/lib/frame-loop";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
-import { createRef, useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -101,10 +101,15 @@ function freshMeter(): ChannelMeter {
 function useMeterBallistics(segments: number) {
   const envelope = useLevelEnvelope();
   const isPlaying = useAudioStore((state) => state.isPlaying);
-  const needleRefs = useRef([createRef<HTMLDivElement>(), createRef<HTMLDivElement>()]).current;
+  const leftNeedleRef = useRef<HTMLDivElement>(null);
+  const rightNeedleRef = useRef<HTMLDivElement>(null);
+  const needleRefs = [leftNeedleRef, rightNeedleRef];
   const segmentRefs = useRef<(HTMLElement | null)[][]>([[], []]);
   const decibelRef = useRef<HTMLElement>(null);
-  const floors = useRef(Array.from({ length: segments }, (_, segment) => segmentFloorDb(segment, segments))).current;
+  const floors = useMemo(
+    () => Array.from({ length: segments }, (_, segment) => segmentFloorDb(segment, segments)),
+    [segments],
+  );
   const meters = useRef([freshMeter(), freshMeter()]).current;
   const clock = useRef({ last: 0, decibelAt: 0, decibelText: "" }).current;
   const releaseRef = useRef<(() => void) | null>(null);

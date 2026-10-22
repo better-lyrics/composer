@@ -67,8 +67,8 @@ const ResumeProgress: React.FC<{ project: ProjectIndexEntry }> = ({ project }) =
         className="grid grid-flow-col auto-cols-fr gap-[3px] h-2.5"
       >
         {Array.from({ length: ledCount }, (_, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: one LED per line in a fixed, ordered strip
           <i
+            // biome-ignore lint/suspicious/noArrayIndexKey: one LED per line in a fixed, ordered strip
             key={index}
             className={cn(
               "rounded-[2px]",

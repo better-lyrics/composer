@@ -49,7 +49,10 @@ function levelEnvelopeForUrl(url: string): Promise<LevelEnvelope> {
   const cached = envelopeByUrl.get(url);
   if (cached) return cached;
   const run = fetch(url)
-    .then((response) => response.blob())
+    .then((response) => {
+      if (!response.ok) throw new Error(`Audio request failed with status ${response.status}`);
+      return response.blob();
+    })
     .then(analyseLevels);
   envelopeByUrl.set(url, run);
   forgetOnFailure(envelopeByUrl, url, run);
