@@ -72,8 +72,6 @@ const Popover: React.FC<PopoverProps> = ({
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
-    // The entrance scales the layer, and a scale also scales a translate, so position with top and left.
-    transform: false,
     onOpenChange: setIsOpen,
     placement,
     middleware: [offset(offsetPx), flip(), shift({ padding: 8 })],
@@ -120,12 +118,15 @@ const Popover: React.FC<PopoverProps> = ({
           <FloatingFocusManager context={context} modal={false}>
             <div
               ref={refs.setFloating}
-              style={{ ...floatingStyles, ...entranceStyles }}
+              style={floatingStyles}
               {...getFloatingProps()}
               aria-label={ariaLabel}
-              className="layer-floating w-max select-none rounded-[14px] surface-floating"
+              className="layer-floating w-max outline-none"
             >
-              {typeof children === "function" ? children(() => setIsOpen(false), getItemProps) : children}
+              {/* The entrance scales this inner surface: a scale on the positioned layer would also scale its translate. */}
+              <div style={entranceStyles} className="select-none rounded-[14px] surface-floating">
+                {typeof children === "function" ? children(() => setIsOpen(false), getItemProps) : children}
+              </div>
             </div>
           </FloatingFocusManager>
         </FloatingPortal>

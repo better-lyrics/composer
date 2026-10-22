@@ -62,7 +62,7 @@ interface MenuContextValue {
 // -- Constants ----------------------------------------------------------------
 
 const MENU_SURFACE =
-  "layer-floating w-[236px] p-1.5 rounded-xl surface-floating select-none outline-none overflow-y-auto overscroll-none";
+  "w-[236px] max-h-full p-1.5 rounded-xl surface-floating select-none outline-none overflow-y-auto overscroll-none";
 
 const NAVIGATION_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "Enter", " "]);
 
@@ -92,8 +92,6 @@ const Menu: React.FC<MenuProps> = ({
   const isPoint = anchor.kind === "point";
   const { refs, floatingStyles, context } = useFloating({
     open: true,
-    // The entrance scales the layer, and a scale also scales a translate, so position with top and left.
-    transform: false,
     onOpenChange: (open) => {
       if (!open) onClose();
     },
@@ -133,7 +131,7 @@ const Menu: React.FC<MenuProps> = ({
       <FloatingFocusManager context={context} initialFocus={0} returnFocus modal={false}>
         <div
           ref={refs.setFloating}
-          style={{ ...floatingStyles, ...entranceStyles }}
+          style={floatingStyles}
           aria-label={ariaLabel}
           {...getFloatingProps({
             // Keys the menu handles stop here, so window-level editor shortcuts never act on them as well.
@@ -141,11 +139,14 @@ const Menu: React.FC<MenuProps> = ({
               if (NAVIGATION_KEYS.has(event.key)) event.stopPropagation();
             },
           })}
-          className={cn(MENU_SURFACE, className)}
+          className="layer-floating flex outline-none"
         >
-          <MenuContext.Provider value={menu}>
-            <FloatingList elementsRef={listRef}>{children}</FloatingList>
-          </MenuContext.Provider>
+          {/* The entrance scales this inner surface: a scale on the positioned layer would also scale its translate. */}
+          <div style={entranceStyles} className={cn(MENU_SURFACE, className)}>
+            <MenuContext.Provider value={menu}>
+              <FloatingList elementsRef={listRef}>{children}</FloatingList>
+            </MenuContext.Provider>
+          </div>
         </div>
       </FloatingFocusManager>
     </FloatingPortal>
