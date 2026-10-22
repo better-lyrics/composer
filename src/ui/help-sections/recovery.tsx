@@ -15,7 +15,7 @@ const RecoverySection: React.FC = () => (
     <HelpTopic title="The app showed an error">
       <p className={PROSE}>
         Hit <strong>Download my work</strong> on the error screen. You'll get a project file. Reload Composer, head to
-        the Export tab, and click <strong>Import Project</strong> to pick up where you left off.
+        the Export tab, and pick <strong>Import project</strong> from the Project menu to pick up where you left off.
       </p>
     </HelpTopic>
 

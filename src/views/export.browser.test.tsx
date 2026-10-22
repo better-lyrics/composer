@@ -143,7 +143,8 @@ describe("ExportPanel · project file customSnapPoints", () => {
     };
     URL.revokeObjectURL = () => {};
     try {
-      await screen.getByRole("button", { name: "Export Project" }).click();
+      await screen.getByRole("button", { name: "Project", exact: true }).click();
+      await screen.getByRole("menuitem", { name: "Export project" }).click();
       expect(capturedBlob).not.toBeNull();
       const text = await (capturedBlob as unknown as Blob).text();
       expect(JSON.parse(text).customSnapPoints.map((p: { time: number }) => p.time)).toEqual([3, 9]);
@@ -336,7 +337,8 @@ describe("ExportPanel · project file keeps the hand-edited TTML with its projec
     };
     URL.revokeObjectURL = () => {};
     try {
-      await screen.getByRole("button", { name: "Export Project" }).click();
+      await screen.getByRole("button", { name: "Project", exact: true }).click();
+      await screen.getByRole("menuitem", { name: "Export project" }).click();
       await expect.poll(() => blobs.length).toBe(1);
       return await blobs[0].text();
     } finally {

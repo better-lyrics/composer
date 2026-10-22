@@ -59,7 +59,9 @@ describe("TimelinePanel drag ghost snapping", () => {
     const bg = trackRect(1, "bg");
     movePointer(bg.left + 400, bg.top + bg.height / 2);
 
-    await expect.poll(() => ghostBlock()?.getBoundingClientRect().height).toBeCloseTo(bg.height - 2 * wordInsetPx("bg"), 0);
+    await expect
+      .poll(() => ghostBlock()?.getBoundingClientRect().height)
+      .toBeCloseTo(bg.height - 2 * wordInsetPx("bg"), 0);
     expect(ghostBlock()?.getBoundingClientRect().top).toBeCloseTo(bg.top + wordInsetPx("bg"), 0);
 
     releasePointer(bg.left + 400, bg.top + bg.height / 2);

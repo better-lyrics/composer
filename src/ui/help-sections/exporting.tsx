@@ -18,9 +18,9 @@ const ExportSection: React.FC = () => (
         auto-generated version.
       </li>
       <li>
-        <strong>Project files</strong>: Use "Export Project" to save a .json file with all your data (lyrics, timing,
-        agents, metadata). Use "Import Project" to load one back. This is how you share work with collaborators or back
-        things up.
+        <strong>Project files</strong>: Open the "Project" menu and use "Export project" to save a .json file with all
+        your data (lyrics, timing, agents, metadata). Use "Import project" to load one back. This is how you share work
+        with collaborators or back things up.
       </li>
       <li>
         <strong>Clear</strong>: Wipes the current project. This is permanent, so it asks for confirmation.

@@ -37,7 +37,7 @@ const GoHomeButton: React.FC<{ primary: boolean }> = ({ primary }) => (
 type RecoveryStatus = "idle" | "downloading" | "success" | "empty" | "failed";
 
 const RECOVERY_MESSAGES: Partial<Record<RecoveryStatus, string>> = {
-  success: "Saved. Open Composer, head to the Export tab, and click Import Project to keep going.",
+  success: "Saved. Open Composer, head to the Export tab, and pick Import project from the Project menu to keep going.",
   empty: "Nothing saved in this browser yet.",
   failed: "Couldn't reach your save. Try opening /recover in a fresh tab.",
 };

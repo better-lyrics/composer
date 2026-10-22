@@ -94,7 +94,8 @@ const RecoverPanel: React.FC = () => {
           <h1 className="text-2xl font-semibold text-composer-text">Recover your work</h1>
           <p className="text-sm text-composer-text-secondary leading-relaxed">
             Composer saves your work automatically as you go. This page grabs that backup and downloads it as a file.
-            Open Composer, head to the Export tab, and click Import Project to pick up where you left off.
+            Open Composer, head to the Export tab, and pick Import project from the Project menu to pick up where you
+            left off.
           </p>
         </div>
 

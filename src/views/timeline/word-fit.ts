@@ -31,5 +31,4 @@ function wordFit(text: string, width: number, track: WordTrackType): WordFit {
 
 // -- Exports -------------------------------------------------------------------
 
-export type { WordFit };
 export { wordFit };

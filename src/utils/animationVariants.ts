@@ -97,19 +97,6 @@ const snapFlashVariants: Variants = {
   },
 };
 
-// -- Accordion ----------------------------------------------------------------
-
-const accordionTransition: Transition = {
-  type: "spring",
-  stiffness: 500,
-  damping: 40,
-};
-
-const accordionVariants: Variants = {
-  hidden: { height: 0, opacity: 0 },
-  visible: { height: "auto", opacity: 1 },
-};
-
 // -- Stagger Container --------------------------------------------------------
 
 // -- Exports ------------------------------------------------------------------
@@ -125,6 +112,4 @@ export {
   shimmerVariants,
   pinDropInVariants,
   snapFlashVariants,
-  accordionTransition,
-  accordionVariants,
 };

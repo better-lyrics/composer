@@ -13,18 +13,18 @@ interface TtmlConflictNoticeProps {
 const TtmlConflictNotice: React.FC<TtmlConflictNoticeProps> = ({ onRegenerate, onKeepEdits }) => (
   <div
     role="alert"
-    className="mx-6 mt-4 flex items-center justify-between gap-3 rounded-lg border border-composer-warning/20 bg-composer-warning/10 px-2.5 py-2 text-xs text-composer-warning"
+    className="flex shrink-0 items-center gap-2.5 min-h-10 py-1 pr-1 pl-3 rounded-xl text-[13px] text-[color-mix(in_oklab,var(--color-composer-warning)_80%,var(--ink))] bg-composer-warning/10 shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--color-composer-warning)_20%,transparent)]"
   >
-    <span className="flex items-center gap-2 select-text cursor-text">
-      <IconAlertTriangle size={14} className="shrink-0" />
+    <IconAlertTriangle aria-hidden="true" className="size-4 shrink-0 text-composer-warning" />
+    <span className="select-text cursor-text">
       The lyrics changed since you edited the TTML. Exporting now uses your edits, not the new version.
     </span>
-    <span className="flex shrink-0 items-center gap-2">
-      <Button hasIcon size="sm" onClick={onKeepEdits}>
+    <span className="ml-auto flex shrink-0 items-center gap-1">
+      <Button hasIcon size="sm" onClick={onKeepEdits} className="pl-2.5 text-[13px]">
         <IconCheck className="size-4" />
         Keep my edits
       </Button>
-      <Button hasIcon size="sm" onClick={onRegenerate}>
+      <Button hasIcon size="sm" onClick={onRegenerate} className="pl-2.5 text-[13px]">
         <IconRefresh className="size-4" />
         Regenerate
       </Button>

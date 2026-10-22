@@ -71,7 +71,10 @@ describe("trackSnapOffsetY", () => {
   it("aligns to the main track under the pointer", async () => {
     await renderRows();
     const main = trackRect(1, "word");
-    expect(trackSnapOffsetY(main.left + 200, main.top + 5, sourceTop())).toBeCloseTo(main.top + MAIN_INSET - sourceTop(), 5);
+    expect(trackSnapOffsetY(main.left + 200, main.top + 5, sourceTop())).toBeCloseTo(
+      main.top + MAIN_INSET - sourceTop(),
+      5,
+    );
   });
 
   it("returns zero offset over the source track itself", async () => {

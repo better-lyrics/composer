@@ -80,5 +80,4 @@ function paintTimelineLights(
 
 // -- Exports -------------------------------------------------------------------
 
-export type { TimelineLights };
 export { createTimelineLights, paintTimelineLights };

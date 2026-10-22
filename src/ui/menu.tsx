@@ -25,6 +25,7 @@ type MenuAnchor = { kind: "element"; element: Element } | { kind: "point"; x: nu
 
 interface MenuProps {
   anchor: MenuAnchor;
+  align?: "start" | "end";
   onClose: () => void;
   "aria-label": string;
   children: ReactNode;
@@ -76,7 +77,14 @@ function pointReference(x: number, y: number, within: Element) {
 
 // -- Components ---------------------------------------------------------------
 
-const Menu: React.FC<MenuProps> = ({ anchor, onClose, "aria-label": ariaLabel, children, className }) => {
+const Menu: React.FC<MenuProps> = ({
+  anchor,
+  align = "end",
+  onClose,
+  "aria-label": ariaLabel,
+  children,
+  className,
+}) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
   const listRef = useRef<Array<HTMLElement | null>>([]);
   const isPoint = anchor.kind === "point";
@@ -85,9 +93,9 @@ const Menu: React.FC<MenuProps> = ({ anchor, onClose, "aria-label": ariaLabel, c
     onOpenChange: (open) => {
       if (!open) onClose();
     },
-    placement: isPoint ? "bottom-start" : "bottom-end",
+    placement: isPoint || align === "start" ? "bottom-start" : "bottom-end",
     middleware: [
-      offset(isPoint ? 0 : 4),
+      offset(isPoint ? 0 : align === "start" ? 8 : 4),
       flip({ padding: 8 }),
       shift({ padding: 8 }),
       size({

@@ -4,7 +4,6 @@ import { IconButton } from "@/ui/icon-button";
 import { LinkButton } from "@/ui/link-button";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
-import { CoverArt } from "@/views/export/musicbrainz/cover-art";
 import { recordingSearchPageUrl } from "@/views/export/musicbrainz/musicbrainz-links";
 import type { MusicBrainzPanel } from "@/views/export/musicbrainz/use-musicbrainz-panel";
 import {
@@ -13,22 +12,20 @@ import {
   IconLoader2,
   IconRefresh,
   IconSearch,
+  IconSparkles,
   IconSwitchHorizontal,
-  IconX,
 } from "@tabler/icons-react";
 
 // -- Interfaces ---------------------------------------------------------------
 
 interface MusicBrainzHeaderSlotProps {
   panel: MusicBrainzPanel;
-  onReview: () => void;
   onRequest: () => void;
-  onDismiss: () => void;
 }
 
 // -- Constants ----------------------------------------------------------------
 
-const SLOT_TEXT = "text-xs text-composer-text-muted select-none";
+const SLOT_TEXT = "text-xs text-(--muted) select-none";
 const SLOT_BUTTON = "h-6";
 
 // -- Components ---------------------------------------------------------------
@@ -50,7 +47,7 @@ const DidNotAnswer: React.FC<{ retry: () => void }> = ({ retry }) => (
   </>
 );
 
-const SlotContent: React.FC<MusicBrainzHeaderSlotProps> = ({ panel, onReview, onRequest, onDismiss }) => {
+const SlotContent: React.FC<MusicBrainzHeaderSlotProps> = ({ panel, onRequest }) => {
   const title = useProjectStore((state) => state.metadata.title.trim());
   const { match, shown, detailCount } = panel;
 
@@ -89,27 +86,10 @@ const SlotContent: React.FC<MusicBrainzHeaderSlotProps> = ({ panel, onReview, on
 
   if (shown && detailCount > 0) {
     return (
-      <>
-        <CoverArt
-          key={shown.details.coverReleaseGroupId}
-          releaseGroupId={shown.details.coverReleaseGroupId}
-          className="size-4"
-        />
-        <span className="ml-1.5 mr-1 text-xs text-composer-text-secondary select-none">
-          {pluralize(detailCount, "detail")} for <span className="text-composer-text">{shown.details.title}</span> on
-          MusicBrainz
-        </span>
-        <Button variant="ghost" size="sm" className={cn(SLOT_BUTTON, "text-composer-accent-text")} onClick={onReview}>
-          Review
-        </Button>
-        <IconButton
-          label="Dismiss MusicBrainz suggestions"
-          variant="ghost"
-          className="size-6"
-          icon={<IconX className="size-3.5" />}
-          onClick={onDismiss}
-        />
-      </>
+      <span className={cn("flex items-center gap-1.5", SLOT_TEXT)}>
+        <IconSparkles className="size-3.5" />
+        {pluralize(detailCount, "detail")} on MusicBrainz
+      </span>
     );
   }
 
@@ -128,10 +108,7 @@ const SlotContent: React.FC<MusicBrainzHeaderSlotProps> = ({ panel, onReview, on
         variant="ghost"
         className="size-6"
         icon={<IconSwitchHorizontal className="size-3.5" />}
-        onClick={() => {
-          panel.reveal();
-          onReview();
-        }}
+        onClick={panel.reveal}
       />
     </>
   );
@@ -154,7 +131,9 @@ const MusicBrainzHeaderSlot: React.FC<MusicBrainzHeaderSlotProps> = (props) => {
       <span role="status" className="sr-only">
         {slotAnnouncement(props.panel, title)}
       </span>
-      <SlotContent {...props} />
+      <span className="flex min-w-0 items-center gap-1.5">
+        <SlotContent {...props} />
+      </span>
     </>
   );
 };

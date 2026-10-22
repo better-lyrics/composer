@@ -230,7 +230,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         className="timeline-playhead-bar absolute top-0 left-0 w-0.5 rounded-[1px] bg-composer-accent cursor-ew-resize pointer-events-auto expanded-hit-x-sm"
         style={{ height: containerHeight }}
         onMouseDown={drag.onMouseDown}
-      ></div>
+      />
       {capHost && createPortal(<PlayheadCap ref={capRef} onMouseDown={drag.onMouseDown} />, capHost)}
     </div>
   );
