@@ -106,8 +106,9 @@ async function openProject(id: string): Promise<void> {
     markOpenProjectChanged();
     flushPendingSaveQuietly();
     saveResumePositionNow();
+    const currentTab = openProjectIdSnapshot() ? useProjectStore.getState().activeTab : undefined;
     adoptOpenProjectId(id);
-    applyProjectToStores(payload);
+    applyProjectToStores({ ...payload, lastTab: currentTab ?? payload.lastTab });
     await Promise.all([
       setOpenProjectId(id).catch((error: unknown) => {
         if (error instanceof ProjectDeletedError) closeIfOpen(id);

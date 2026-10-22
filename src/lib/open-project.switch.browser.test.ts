@@ -61,11 +61,12 @@ describe("openProject", () => {
     expect((await loadProjectIndexEntry("b"))?.openedAt).toBeGreaterThan(1_758_900_000_000);
   });
 
-  it("restores the tab the project was last on", async () => {
+  it("keeps the current tab when switching from an open project", async () => {
     await seedTwoProjects();
+    useProjectStore.getState().setActiveTab("timeline");
     await setProjectLastTab("b", "sync");
     await openProject("b");
-    expect(useProjectStore.getState().activeTab).toBe("sync");
+    expect(useProjectStore.getState().activeTab).toBe("timeline");
   });
 
   it("an edit waiting to save lands in the project it was made in", async () => {
