@@ -44,6 +44,8 @@ import { Toaster } from "sonner";
 // -- Constants ----------------------------------------------------------------
 
 const TOUR_START_DELAY_MS = 500;
+// Clears the transport deck (80px) with the workspace gap below it.
+const TOAST_OFFSET = { bottom: 96 };
 
 // -- Shell --------------------------------------------------------------------
 
@@ -191,7 +193,7 @@ const App: React.FC = () => {
           <ConfirmModalHost />
           <LyricsImportModalHost />
           <ChoiceModalHost />
-          <Toaster position="bottom-center" />
+          <Toaster position="bottom-center" offset={TOAST_OFFSET} />
         </SettingLinkContext>
       </LazyMotion>
     </QueryClientProvider>
