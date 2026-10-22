@@ -65,7 +65,9 @@ function watchResumePosition(): () => void {
   });
   const unsubscribeTimeline = useTimelineStore.subscribe((state, previous) => {
     const viewChanged =
-      state.zoom !== previous.zoom || state.scrollLeft !== previous.scrollLeft || state.scrollTop !== previous.scrollTop;
+      state.zoom !== previous.zoom ||
+      state.scrollLeft !== previous.scrollLeft ||
+      state.scrollTop !== previous.scrollTop;
     if (viewChanged) rememberResumePosition();
   });
   const onVisibilityChange = () => {

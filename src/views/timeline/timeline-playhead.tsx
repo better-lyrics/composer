@@ -1,22 +1,16 @@
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
 import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GUTTER_WIDTH, timeToX } from "@/views/timeline/coords";
 import { currentFocusScrollRange } from "@/views/timeline/effective-focus";
 import { clampScrollLeft } from "@/views/timeline/group-focus";
 import { createPlayheadDrag } from "@/views/timeline/playhead-drag";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
+import { createFollowInput, fillFollowInput } from "@/views/timeline/follow-input";
 import { createRowLayoutCache } from "@/views/timeline/row-layout-cache";
 import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
-import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
-import {
-  type FollowInput,
-  createFollowMemory,
-  followScrollTop,
-  followStep,
-  resetFollowMemory,
-} from "@/views/timeline/vertical-follow";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { createFollowMemory, followScrollTop, followStep, resetFollowMemory } from "@/views/timeline/vertical-follow";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -31,18 +25,6 @@ interface TimelinePlayheadProps {
 const HIT_BUFFER_PX = 18;
 
 // -- Helpers -------------------------------------------------------------------
-
-function createFollowInput(): FollowInput {
-  return {
-    lines: [],
-    time: 0,
-    selection: null,
-    layout: { lineTops: new Map(), headerTops: new Map() },
-    collapsedInstances: {},
-    viewportHeight: 0,
-    coveredTop: WAVEFORM_HEIGHT,
-  };
-}
 
 // -- Component -----------------------------------------------------------------
 
@@ -81,14 +63,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
       const focusRange = currentFocusScrollRange(container);
       container.scrollLeft = focusRange ? clampScrollLeft(targetScrollLeft, focusRange) : targetScrollLeft;
 
-      const lines = useProjectStore.getState().lines;
-      const timeline = useTimelineStore.getState();
-      followInput.lines = lines;
-      followInput.time = currentTime;
-      followInput.selection = timeline.selectionPlayback !== null ? timeline.selectedWords : null;
-      followInput.layout = rowLayoutFor(lines, timeline);
-      followInput.collapsedInstances = timeline.collapsedInstances;
-      followInput.viewportHeight = container.clientHeight;
+      fillFollowInput(followInput, rowLayoutFor, currentTime, container.clientHeight);
       const rows = followStep(followMemory, followInput);
       if (rows) verticalTargetRef.current = followScrollTop(rows, followInput, container.scrollHeight);
 

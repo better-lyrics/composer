@@ -42,6 +42,7 @@ import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useGroupFocusScroll } from "@/views/timeline/use-group-focus-scroll";
 import { useGroupFocusShortcuts } from "@/views/timeline/use-group-focus-shortcuts";
 import { useMarquee } from "@/views/timeline/use-marquee";
+import { useResumeView } from "@/views/timeline/use-resume-view";
 import { useSharedTimingPing } from "@/views/timeline/use-shared-timing-ping";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
@@ -85,6 +86,7 @@ const TimelinePanel: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
   const zoom = useTimelineStore((s) => s.zoom);
   const setScrollLeft = useTimelineStore((s) => s.setScrollLeft);
+  const setScrollTop = useTimelineStore((s) => s.setScrollTop);
   const previewSidebarOpen = useTimelineStore((s) => s.previewSidebarOpen);
   const pasteMode = useTimelineStore((s) => s.pasteMode);
   const editingWord = useTimelineStore((s) => s.editingWord);
@@ -139,6 +141,7 @@ const TimelinePanel: React.FC = () => {
   useGroupFocusScroll(scrollContainerRef);
   useTimelineWheel(scrollContainerRef, !!source && lines.length > 0);
   useTimelineFrameWake(scrollContainerRef, contentRef, !!source && lines.length > 0);
+  useResumeView(scrollContainerRef, !!source && lines.length > 0 && duration > 0);
 
   useEffect(() => {
     const { selectedWords } = useTimelineStore.getState();
@@ -166,8 +169,9 @@ const TimelinePanel: React.FC = () => {
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
       setScrollLeft(e.currentTarget.scrollLeft);
+      setScrollTop(e.currentTarget.scrollTop);
     },
-    [setScrollLeft],
+    [setScrollLeft, setScrollTop],
   );
 
   const handleMouseDown = useCallback(
