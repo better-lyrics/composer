@@ -17,11 +17,12 @@ import { useEffect } from "react";
 interface VocalSeparationDropdownProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  positionAnchor?: HTMLElement | null;
 }
 
 // -- Component ----------------------------------------------------------------
 
-const VocalSeparationDropdown: React.FC<VocalSeparationDropdownProps> = ({ open, onOpenChange }) => {
+const VocalSeparationDropdown: React.FC<VocalSeparationDropdownProps> = ({ open, onOpenChange, positionAnchor }) => {
   const source = useAudioStore((s) => s.source);
   const status = useSeparationStore((s) => s.status);
   const progress = useSeparationStore((s) => s.progress);
@@ -66,6 +67,7 @@ const VocalSeparationDropdown: React.FC<VocalSeparationDropdownProps> = ({ open,
         onOpenChange={onOpenChange}
         placement="top-end"
         offsetPx={14}
+        positionAnchor={positionAnchor}
         aria-label="Vocal separation"
         trigger={<StemPickLabel name={triggerName} label={triggerLabel} busy={separating || showDetecting} />}
       >

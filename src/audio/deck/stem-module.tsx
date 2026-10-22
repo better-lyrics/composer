@@ -9,6 +9,7 @@ import { useState } from "react";
 
 const StemModule: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [moduleElement, setModuleElement] = useState<HTMLDivElement | null>(null);
   const hasSource = useAudioStore((state) => state.source !== null);
   const hostingConfigured = useSeparationStore((state) => state.hostingConfigured);
   const currentStem = useSeparationStore((state) => state.currentStem);
@@ -18,8 +19,8 @@ const StemModule: React.FC = () => {
   if (!hostingConfigured || !hasSource) return null;
 
   return (
-    <div className="flex items-center gap-2">
-      <VocalSeparationDropdown open={open} onOpenChange={setOpen} />
+    <div ref={setModuleElement} className="flex items-center gap-2">
+      <VocalSeparationDropdown open={open} onOpenChange={setOpen} positionAnchor={moduleElement} />
       <div role="group" aria-label="Playback source" className="flex gap-1">
         {STEMS.map((stem) => {
           const Icon = STEM_ICONS[stem];
