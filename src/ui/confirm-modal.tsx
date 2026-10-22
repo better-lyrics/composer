@@ -73,12 +73,8 @@ const ConfirmModalHost: React.FC = () => {
             <Button
               ref={confirmButtonRef}
               size="sm"
+              variant={variant}
               onClick={handleConfirm}
-              className={cn(
-                variant === "destructive"
-                  ? "bg-red-600 hover:bg-red-500 text-white"
-                  : "bg-composer-accent-dark hover:bg-composer-accent text-white",
-              )}
             >
               {confirmLabel}
             </Button>

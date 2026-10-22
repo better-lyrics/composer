@@ -343,6 +343,32 @@ braccato-lyrics .blyrics-container {
   );
 }
 
+@utility btn-raised {
+  background: var(--raised-face);
+  box-shadow: var(--raised-edge);
+  &:hover:not(:disabled) {
+    background: var(--raised-face-hover);
+  }
+}
+
+@utility btn-lit {
+  color: var(--color-composer-on-accent);
+  background: var(--color-composer-accent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+  &:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-composer-accent) 90%, var(--ink));
+  }
+}
+
+@utility btn-danger {
+  color: #fff;
+  background: color-mix(in oklab, var(--color-composer-error) 82%, var(--color-composer-negative));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+  &:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-composer-error) 70%, var(--color-composer-negative));
+  }
+}
+
 @utility surface-floating {
   background: var(--pop);
   box-shadow: var(--float-shadow);
