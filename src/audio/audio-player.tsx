@@ -52,7 +52,7 @@ const AudioPlayer: React.FC = () => {
       <DeckModule className="min-w-[280px]">
         <OverviewScrub />
       </DeckModule>
-      <DeckModule>
+      <DeckModule className="max-[1279px]:hidden">
         <MeterBridge />
       </DeckModule>
       <DeckModule className="gap-3">

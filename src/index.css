@@ -76,8 +76,8 @@
   --edge-strong: color-mix(in oklab, var(--ink) 16%, transparent);
   --divider: color-mix(in oklab, var(--ink) 5.5%, transparent);
   --highlight: rgb(var(--lift) / var(--lift-top));
-  --muted: color-mix(in oklab, var(--ink) 55%, transparent);
-  --label: color-mix(in oklab, var(--ink) 72%, transparent);
+  --muted: color-mix(in oklab, var(--ink) 55%, var(--color-composer-bg));
+  --label: color-mix(in oklab, var(--ink) 72%, var(--color-composer-bg));
   --well: color-mix(in oklab, var(--color-composer-bg-dark) 55%, var(--color-composer-bg));
   --well-edge: inset 0 1px 2px rgb(var(--shade) / calc(var(--shade-strength) * 0.7)), inset 0 0 0 1px
     color-mix(in oklab, var(--ink) 6%, transparent), 0 1px 0 rgb(var(--lift) / calc(var(--lift-top) * 0.6));

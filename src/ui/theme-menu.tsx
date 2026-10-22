@@ -57,7 +57,7 @@ const ThemeMenu: React.FC = () => {
             background: `linear-gradient(135deg, ${activeColors.bg} 50%, ${activeColors.accent} 50%)`,
           }}
         />
-        {activeTheme.name}
+        <span className="max-[1279px]:sr-only">{activeTheme.name}</span>
       </Button>
       {anchor && (
         <Menu anchor={anchor} onClose={() => setAnchor(null)} aria-label="Favorite themes">

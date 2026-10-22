@@ -78,7 +78,9 @@ const MeterBridge: React.FC = () => {
       {CHANNELS.map((channel, index) => (
         <VuFace key={channel} label={channel} needleRef={needleRefs[index]} />
       ))}
-      <div className={`${FACE_STYLES} grid grid-cols-[1fr_40px] gap-2.5 w-[188px] h-12 py-1.5 pl-2 pr-2.5`}>
+      <div
+        className={`${FACE_STYLES} grid grid-cols-[1fr_40px] gap-2.5 w-[188px] h-12 max-[1439px]:hidden py-1.5 pl-2 pr-2.5`}
+      >
         <div className="grid content-between min-w-0">
           <div className="grid gap-1">
             {CHANNELS.map((channel, channelIndex) => (

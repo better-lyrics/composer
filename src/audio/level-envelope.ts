@@ -40,7 +40,7 @@ function computeLevelEnvelope(channels: readonly Float32Array[], sampleRate: num
   const leftLevels = windowLevels(left, windowSize, windowCount);
   const rightLevels = channels[1] ? windowLevels(channels[1], windowSize, windowCount) : leftLevels;
   return {
-    windowsPerSecond: LEVEL_WINDOWS_PER_SECOND,
+    windowsPerSecond: sampleRate / windowSize,
     peaks: [leftLevels.peaks, rightLevels.peaks],
     rms: [leftLevels.rms, rightLevels.rms],
   };

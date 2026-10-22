@@ -246,7 +246,7 @@ const AgentManager: React.FC = () => {
         <Button
           size="lg"
           hasIcon
-          className="pr-1.5 aria-expanded:bg-(--raised-face-hover) aria-expanded:text-composer-text"
+          className="pr-1.5 aria-expanded:[background:var(--raised-face-hover)] aria-expanded:text-composer-text"
         >
           <IconMicrophone2 className="size-4" />
           Agents

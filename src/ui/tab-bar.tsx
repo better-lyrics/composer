@@ -128,7 +128,12 @@ const TabBar: React.FC = () => {
               )}
             </span>
             {showHints && (
-              <span className={isActive ? "text-composer-accent-text" : "text-composer-text-faint"}>
+              <span
+                className={cn(
+                  "max-[1279px]:hidden",
+                  isActive ? "text-composer-accent-text" : "text-composer-text-faint",
+                )}
+              >
                 <InlineKeyBadge keys={["Mod", String(index + 1)]} />
               </span>
             )}

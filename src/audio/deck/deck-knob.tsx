@@ -133,7 +133,7 @@ const DeckKnob: React.FC<DeckKnobProps> = ({ label, valueText, fraction, onFract
           className="flex items-center gap-2 -mx-1 px-1 rounded-lg cursor-ns-resize select-none touch-none"
         >
           <KnobFace fraction={fraction} />
-          <span className="flex flex-col w-[52px] text-left leading-[1.15]">
+          <span className="flex flex-col w-[52px] text-left leading-[1.15] max-[1279px]:hidden">
             <span className="text-[11.5px] text-(--muted)">{label}</span>
             <span className="font-mono text-[13px] tabular-nums text-composer-text">{valueText}</span>
           </span>

@@ -9,8 +9,14 @@ const MAX_CACHED_URLS = 4;
 
 // -- Module state -------------------------------------------------------------
 
-const envelopeBySource = new WeakMap<Blob, Promise<LevelEnvelope>>();
-const envelopeByUrl = new Map<string, Promise<LevelEnvelope>>();
+interface AnalysisRun {
+  envelope: Promise<LevelEnvelope>;
+  signal: AbortSignal;
+  finished: boolean;
+}
+
+const envelopeBySource = new WeakMap<Blob, AnalysisRun>();
+const envelopeByUrl = new Map<string, AnalysisRun>();
 
 // -- Analysis -----------------------------------------------------------------
 
@@ -27,41 +33,54 @@ async function analyseLevels(source: Blob, signal: AbortSignal): Promise<LevelEn
   return computeLevelEnvelopeOffThread(channels, decoded.sampleRate, signal);
 }
 
-function forgetOnFailure<K>(cache: { get(key: K): unknown; delete(key: K): unknown }, key: K, run: Promise<unknown>) {
-  run.catch(() => {
-    if (cache.get(key) === run) cache.delete(key);
-  });
+// A run started under a signal that has since aborted is never reused: it rejects, and the caller would keep that failure.
+function usableRun(run: AnalysisRun | undefined): Promise<LevelEnvelope> | undefined {
+  return run && (run.finished || !run.signal.aborted) ? run.envelope : undefined;
+}
+
+function remember<K>(
+  cache: { get(key: K): AnalysisRun | undefined; set(key: K, run: AnalysisRun): unknown; delete(key: K): unknown },
+  key: K,
+  run: AnalysisRun,
+) {
+  cache.set(key, run);
+  run.envelope.then(
+    () => {
+      run.finished = true;
+    },
+    () => {
+      if (cache.get(key) === run) cache.delete(key);
+    },
+  );
 }
 
 function levelEnvelopeFor(source: Blob, signal: AbortSignal): Promise<LevelEnvelope> {
-  const cached = envelopeBySource.get(source);
+  const cached = usableRun(envelopeBySource.get(source));
   if (cached) return cached;
-  const run = analyseLevels(source, signal);
-  envelopeBySource.set(source, run);
-  forgetOnFailure(envelopeBySource, source, run);
-  return run;
+  const run = { envelope: analyseLevels(source, signal), signal, finished: false };
+  remember(envelopeBySource, source, run);
+  return run.envelope;
 }
 
 function levelEnvelopeForUrl(url: string, signal: AbortSignal): Promise<LevelEnvelope> {
-  const cached = envelopeByUrl.get(url);
+  const cached = usableRun(envelopeByUrl.get(url));
   if (cached) return cached;
-  const run = fetch(url, { signal })
+  const envelope = fetch(url, { signal })
     .then((response) => {
       if (!response.ok) throw new Error(`Audio request failed with status ${response.status}`);
       return response.blob();
     })
     .then((blob) => analyseLevels(blob, signal));
-  envelopeByUrl.set(url, run);
-  forgetOnFailure(envelopeByUrl, url, run);
+  remember(envelopeByUrl, url, { envelope, signal, finished: false });
   if (envelopeByUrl.size > MAX_CACHED_URLS) {
     const oldest = envelopeByUrl.keys().next().value;
     if (oldest !== undefined) envelopeByUrl.delete(oldest);
   }
-  return run;
+  return envelope;
 }
 
 function hasLevelEnvelope(source: Blob): boolean {
-  return envelopeBySource.has(source);
+  return usableRun(envelopeBySource.get(source)) !== undefined;
 }
 
 // -- Exports ------------------------------------------------------------------

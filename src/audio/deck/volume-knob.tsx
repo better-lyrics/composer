@@ -28,7 +28,7 @@ const VolumeKnob: React.FC = () => {
   const percent = Math.round(shownVolume * 100);
   const VolumeIcon = volumeIcon(volume, isMuted);
   const changeVolume = (next: number) => {
-    if (isMuted) toggleMute();
+    if (useAudioStore.getState().isMuted) toggleMute();
     setVolume(next);
   };
 
