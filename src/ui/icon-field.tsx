@@ -42,11 +42,7 @@ const IconField: React.FC<IconFieldProps> = ({
         if (staysLocal) event.stopPropagation();
         onKeyDown?.(event);
       }}
-      className={cn(
-        INPUT_STYLES,
-        "peer w-full h-8 pl-8 pr-3 rounded-lg select-text",
-        className,
-      )}
+      className={cn(INPUT_STYLES, "peer w-full h-8 pl-8 pr-3 rounded-lg select-text", className)}
     />
     {trailing && (
       <span className="absolute right-2 flex pointer-events-none peer-[:not(:placeholder-shown)]:hidden">

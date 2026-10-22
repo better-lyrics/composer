@@ -37,11 +37,7 @@ function SegmentedControl<T extends string>({
   className,
 }: SegmentedControlProps<T>) {
   return (
-    <div
-      role="group"
-      aria-label={ariaLabel}
-      className={cn("tray select-none", className)}
-    >
+    <div role="group" aria-label={ariaLabel} className={cn("tray select-none", className)}>
       {options.map((option) => {
         const isSelected = option.value === value;
         const OptionIcon = option.icon;

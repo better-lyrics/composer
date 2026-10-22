@@ -118,7 +118,10 @@ const Slider: React.FC<SliderProps> = ({
       aria-valuemax={max}
       aria-valuenow={value}
       aria-label={ariaLabel}
-      className={cn("relative h-1.5 cursor-pointer rounded-full bg-(--well) shadow-(--well-edge) expanded-hit-sm", className)}
+      className={cn(
+        "relative h-1.5 cursor-pointer rounded-full bg-(--well) shadow-(--well-edge) expanded-hit-sm",
+        className,
+      )}
       onMouseDown={handleMouseDown}
       onKeyDown={handleKeyDown}
     >
