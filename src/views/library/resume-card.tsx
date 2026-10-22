@@ -4,6 +4,7 @@ import { hasLyrics, progressDescription, syncedPercent } from "@/domain/project/
 import type { ProjectTab } from "@/domain/project/tab";
 import { Button } from "@/ui/button";
 import { KawarpBackdrop } from "@/ui/kawarp-backdrop";
+import { ProgressBar } from "@/ui/progress-bar";
 import { ProjectArt } from "@/ui/projects/project-art";
 import { cn } from "@/utils/cn";
 import { formatRelativeTimeInline } from "@/utils/format-relative-time";
@@ -51,34 +52,13 @@ const ResumeProgress: React.FC<{ project: ProjectIndexEntry }> = ({ project }) =
   }
   const percent = syncedPercent(project);
   const ledCount = Math.min(project.lineCount, MAX_LEDS);
-  const litCount = Math.round((percent / 100) * ledCount);
   return (
     <div className="flex flex-col gap-2.5 min-w-0">
       <div className="flex justify-between gap-4 text-[13px] text-white/75">
         <span className="truncate">{description}</span>
         <span className="font-mono text-white tabular-nums">{percent}%</span>
       </div>
-      <div
-        role="progressbar"
-        aria-label={description}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={percent}
-        className="grid grid-flow-col auto-cols-fr gap-[3px] h-2.5"
-      >
-        {Array.from({ length: ledCount }, (_, index) => (
-          <i
-            // biome-ignore lint/suspicious/noArrayIndexKey: one LED per line in a fixed, ordered strip
-            key={index}
-            className={cn(
-              "rounded-[2px]",
-              index < litCount
-                ? "bg-[color-mix(in_oklab,var(--color-composer-accent)_85%,white)] shadow-[inset_0_0_0_0.5px_rgb(255_255_255/0.12)]"
-                : "bg-white/14",
-            )}
-          />
-        ))}
-      </div>
+      <ProgressBar percent={percent} label={description} tone="on-media" segments={ledCount} />
     </div>
   );
 };

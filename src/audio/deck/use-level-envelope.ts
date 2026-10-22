@@ -41,10 +41,11 @@ function useLevelEnvelope(): LevelEnvelope | null {
     queryFn: async ({ signal }) => {
       if (!stemUrl && file && !hasLevelEnvelope(file)) await afterLoadSettles(signal);
       try {
-        if (stemUrl) return await levelEnvelopeForUrl(stemUrl);
-        if (file) return await levelEnvelopeFor(file);
+        if (stemUrl) return await levelEnvelopeForUrl(stemUrl, signal);
+        if (file) return await levelEnvelopeFor(file, signal);
         return null;
       } catch (error) {
+        if (signal.aborted) return null;
         console.warn(LOG_PREFIX, "level analysis failed", error);
         return null;
       }

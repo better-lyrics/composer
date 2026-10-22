@@ -45,7 +45,7 @@ import { Toaster } from "sonner";
 
 const TOUR_START_DELAY_MS = 500;
 // Clears the transport deck (80px) with the workspace gap below it.
-const TOAST_OFFSET = { bottom: 96 };
+const TOAST_OFFSET = { bottom: "var(--toast-clearance)" };
 
 // -- Shell --------------------------------------------------------------------
 
@@ -145,7 +145,7 @@ const AppShell: React.FC = () => {
   }, [isEditor, resumeOrStartTour, navigate]);
 
   return (
-    <div className="flex flex-col h-screen bg-composer-bg-dark text-composer-text">
+    <div data-screen={screen} className="flex flex-col h-screen bg-composer-bg-dark text-composer-text">
       <MusicBrainzWarmup />
       <AppHeader
         screen={screen}

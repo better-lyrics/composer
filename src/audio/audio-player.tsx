@@ -39,7 +39,10 @@ const AudioPlayer: React.FC = () => {
   if (!hasSource) return null;
 
   return (
-    <div className="grid grid-cols-[auto_auto_minmax(280px,1fr)_auto_auto_auto] items-center h-20 shrink-0 px-2 select-none">
+    <div
+      data-transport-deck
+      className="grid grid-cols-[auto_auto_minmax(280px,1fr)_auto_auto_auto] items-center h-20 shrink-0 px-2 select-none"
+    >
       <DeckModule>
         <PlayKey />
       </DeckModule>

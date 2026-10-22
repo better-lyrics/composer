@@ -91,6 +91,11 @@ function parseLamePriming(input: ArrayBuffer | Uint8Array): LamePriming {
   return { samples, sampleRate };
 }
 
+function primingStartFrame(priming: LamePriming, decodedSampleRate: number): number {
+  if (priming.samples <= 0 || priming.sampleRate <= 0) return 0;
+  return Math.round((priming.samples * decodedSampleRate) / priming.sampleRate);
+}
+
 function stripLeading<T extends Float32Array>(channels: T[], n: number): T[] {
   if (n <= 0) return channels;
   return channels.map((c) => c.slice(n) as T);
@@ -113,4 +118,4 @@ function cropAudioBufferHead(audio: AudioBuffer, startSample: number, ctx: BaseA
 
 // -- Exports -------------------------------------------------------------------
 
-export { cropAudioBufferHead, findFirstMp3FrameOffset, parseLamePriming, stripLeading };
+export { cropAudioBufferHead, findFirstMp3FrameOffset, parseLamePriming, primingStartFrame, stripLeading };

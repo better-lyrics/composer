@@ -1,4 +1,4 @@
-import { parseLamePriming } from "@/audio/lame-priming";
+import { parseLamePriming, primingStartFrame } from "@/audio/lame-priming";
 import type { LevelEnvelope } from "@/audio/level-envelope";
 import { computeLevelEnvelopeOffThread } from "@/audio/pcm-worker-host";
 
@@ -15,19 +15,16 @@ const envelopeByUrl = new Map<string, Promise<LevelEnvelope>>();
 // -- Analysis -----------------------------------------------------------------
 
 // An offline context decodes without starting the audio device, and the lower rate keeps the transient buffer small.
-async function analyseLevels(source: Blob): Promise<LevelEnvelope> {
+async function analyseLevels(source: Blob, signal: AbortSignal): Promise<LevelEnvelope> {
   const bytes = await source.arrayBuffer();
   const priming = parseLamePriming(bytes);
   const decoded = await new OfflineAudioContext(1, 1, ANALYSIS_SAMPLE_RATE).decodeAudioData(bytes);
-  const startFrame =
-    priming.samples > 0 && priming.sampleRate > 0
-      ? Math.round((priming.samples * decoded.sampleRate) / priming.sampleRate)
-      : 0;
+  const startFrame = primingStartFrame(priming, decoded.sampleRate);
   const channelCount = Math.min(2, decoded.numberOfChannels);
   const channels = Array.from({ length: channelCount }, (_, channel) =>
     decoded.getChannelData(channel).slice(startFrame),
   );
-  return computeLevelEnvelopeOffThread(channels, decoded.sampleRate);
+  return computeLevelEnvelopeOffThread(channels, decoded.sampleRate, signal);
 }
 
 function forgetOnFailure<K>(cache: { get(key: K): unknown; delete(key: K): unknown }, key: K, run: Promise<unknown>) {
@@ -36,24 +33,24 @@ function forgetOnFailure<K>(cache: { get(key: K): unknown; delete(key: K): unkno
   });
 }
 
-function levelEnvelopeFor(source: Blob): Promise<LevelEnvelope> {
+function levelEnvelopeFor(source: Blob, signal: AbortSignal): Promise<LevelEnvelope> {
   const cached = envelopeBySource.get(source);
   if (cached) return cached;
-  const run = analyseLevels(source);
+  const run = analyseLevels(source, signal);
   envelopeBySource.set(source, run);
   forgetOnFailure(envelopeBySource, source, run);
   return run;
 }
 
-function levelEnvelopeForUrl(url: string): Promise<LevelEnvelope> {
+function levelEnvelopeForUrl(url: string, signal: AbortSignal): Promise<LevelEnvelope> {
   const cached = envelopeByUrl.get(url);
   if (cached) return cached;
-  const run = fetch(url)
+  const run = fetch(url, { signal })
     .then((response) => {
       if (!response.ok) throw new Error(`Audio request failed with status ${response.status}`);
       return response.blob();
     })
-    .then(analyseLevels);
+    .then((blob) => analyseLevels(blob, signal));
   envelopeByUrl.set(url, run);
   forgetOnFailure(envelopeByUrl, url, run);
   if (envelopeByUrl.size > MAX_CACHED_URLS) {

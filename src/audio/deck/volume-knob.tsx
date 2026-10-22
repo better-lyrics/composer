@@ -27,14 +27,18 @@ const VolumeKnob: React.FC = () => {
   const shownVolume = isMuted ? 0 : volume;
   const percent = Math.round(shownVolume * 100);
   const VolumeIcon = volumeIcon(volume, isMuted);
+  const changeVolume = (next: number) => {
+    if (isMuted) toggleMute();
+    setVolume(next);
+  };
 
   return (
     <DeckKnob
       label="Volume"
       valueText={isMuted ? "Muted" : `${percent}%`}
       fraction={shownVolume}
-      onFraction={(fraction) => setVolume(Math.round(fraction * 100) / 100)}
-      onStep={(direction) => setVolume(Math.round((volume + direction * KNOB_STEP) * 100) / 100)}
+      onFraction={(fraction) => changeVolume(Math.round(fraction * 100) / 100)}
+      onStep={(direction) => changeVolume(Math.round((shownVolume + direction * KNOB_STEP) * 100) / 100)}
     >
       <div className="p-3 w-40">
         <div className="flex items-center gap-2 mb-2 justify-between pr-2.5">
@@ -52,7 +56,7 @@ const VolumeKnob: React.FC = () => {
           min={0}
           max={1}
           step={VOLUME_STEP}
-          onChange={setVolume}
+          onChange={changeVolume}
           aria-label="Volume"
           className="w-full"
         />

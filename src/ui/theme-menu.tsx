@@ -52,7 +52,7 @@ const ThemeMenu: React.FC = () => {
       >
         <span
           aria-hidden="true"
-          className="size-4 shrink-0 rounded-[5px] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.15)]"
+          className="size-4 shrink-0 rounded-[5px] shadow-[inset_0_0_0_1px_var(--edge-strong)]"
           style={{
             background: `linear-gradient(135deg, ${activeColors.bg} 50%, ${activeColors.accent} 50%)`,
           }}
