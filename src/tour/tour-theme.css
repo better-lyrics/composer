@@ -7,8 +7,8 @@
   border: 1px solid var(--color-composer-border);
   border-radius: 12px;
   color: var(--color-composer-text);
-  font-family: var(--font-family-sans);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  font-family: var(--font-sans);
+  box-shadow: 0 16px 48px rgb(var(--shade) / 0.5), 0 0 0 1px color-mix(in oklab, var(--ink) 5%, transparent);
   max-width: 360px;
 }
 
@@ -21,7 +21,7 @@
 .driver-popover.composer-tour .driver-popover-title {
   font-size: 1rem;
   font-weight: 600;
-  font-family: var(--font-family-sans);
+  font-family: var(--font-sans);
   color: var(--color-composer-text);
 }
 
@@ -33,7 +33,7 @@
 
 .driver-popover.composer-tour .driver-popover-progress-text {
   font-size: 0.75rem;
-  font-family: var(--font-family-mono);
+  font-family: var(--font-mono);
   color: var(--color-composer-text-muted);
 }
 
@@ -51,7 +51,7 @@
   padding: 6px 16px;
   font-size: 0.8125rem;
   font-weight: 500;
-  font-family: var(--font-family-sans);
+  font-family: var(--font-sans);
   cursor: pointer;
 }
 
@@ -68,7 +68,7 @@
   padding: 6px 16px;
   font-size: 0.8125rem;
   font-weight: 500;
-  font-family: var(--font-family-sans);
+  font-family: var(--font-sans);
   cursor: pointer;
 }
 

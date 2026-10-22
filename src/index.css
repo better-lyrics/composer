@@ -53,8 +53,8 @@
   --color-composer-onset: #4fd6c0;
 
   /* Typography */
-  --font-family-sans: "Satoshi", "Avenir", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-family-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-sans: "Satoshi", "Avenir", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
   /* Animation */
   --transition-timing-scroll: cubic-bezier(0.86, 0, 0.07, 1);
@@ -120,7 +120,7 @@ html {
 body {
   background-color: var(--color-composer-bg);
   color: var(--color-composer-text);
-  font-family: var(--font-family-sans);
+  font-family: var(--font-sans);
 }
 
 /* Braccato preview. These must stay on :root: variables.css derives the active
@@ -263,11 +263,12 @@ braccato-lyrics .blyrics-container {
 
 @utility snap-marker-flash {
   width: 2px;
-  background: #fff;
+  background: var(--ink);
+  box-shadow: 0 0 18px color-mix(in oklab, var(--ink) 90%, transparent);
 }
 
 @utility waveform-loading-dots {
-  background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 1px, transparent 1.5px);
+  background-image: radial-gradient(circle at center, color-mix(in oklab, var(--ink) 10%, transparent) 1px, transparent 1.5px);
   background-size: 8px 8px;
   background-position: 4px 4px;
   isolation: isolate;
@@ -501,9 +502,9 @@ input[type="range"].settings-slider::-moz-range-progress {
 }
 
 .os-theme-light {
-  --os-handle-bg: rgba(255, 255, 255, 0.3);
-  --os-handle-bg-hover: rgba(255, 255, 255, 0.4);
-  --os-handle-bg-active: rgba(255, 255, 255, 0.5);
+  --os-handle-bg: color-mix(in oklab, var(--ink) 30%, transparent);
+  --os-handle-bg-hover: color-mix(in oklab, var(--ink) 40%, transparent);
+  --os-handle-bg-active: color-mix(in oklab, var(--ink) 50%, transparent);
 }
 
 /* Ensure Virtuoso wrappers don't break sticky gutters */

@@ -103,10 +103,9 @@ const pinDropInVariants: Variants = {
 };
 
 const snapFlashVariants: Variants = {
-  initial: { opacity: 0, boxShadow: "0 0 0px rgba(255, 255, 255, 0)" },
+  initial: { opacity: 0 },
   animate: {
     opacity: [0.9, 0],
-    boxShadow: ["0 0 18px rgba(255, 255, 255, 0.9)", "0 0 0px rgba(255, 255, 255, 0)"],
     transition: { type: "spring", stiffness: 120, damping: 22, mass: 0.7 },
   },
 };
