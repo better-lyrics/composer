@@ -92,6 +92,8 @@ const Menu: React.FC<MenuProps> = ({
   const isPoint = anchor.kind === "point";
   const { refs, floatingStyles, context } = useFloating({
     open: true,
+    // The entrance scales the layer, and a scale also scales a translate, so position with top and left.
+    transform: false,
     onOpenChange: (open) => {
       if (!open) onClose();
     },

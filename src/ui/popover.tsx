@@ -69,6 +69,8 @@ const Popover: React.FC<PopoverProps> = ({
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
+    // The entrance scales the layer, and a scale also scales a translate, so position with top and left.
+    transform: false,
     onOpenChange: setIsOpen,
     placement,
     middleware: [offset(offsetPx), flip(), shift({ padding: 8 })],
