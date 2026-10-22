@@ -90,9 +90,10 @@ const pinDropInVariants: Variants = {
 };
 
 const snapFlashVariants: Variants = {
-  initial: { opacity: 0 },
+  initial: { opacity: 0, "--flash-glow": "0px" },
   animate: {
     opacity: [0.9, 0],
+    "--flash-glow": ["18px", "0px"],
     transition: { type: "spring", stiffness: 120, damping: 22, mass: 0.7 },
   },
 };

@@ -303,7 +303,7 @@ braccato-lyrics .blyrics-container {
 @utility snap-marker-flash {
   width: 2px;
   background: var(--ink);
-  box-shadow: 0 0 18px color-mix(in oklab, var(--ink) 90%, transparent);
+  box-shadow: 0 0 var(--flash-glow, 0px) color-mix(in oklab, var(--ink) 90%, transparent);
 }
 
 @utility waveform-loading-dots {
