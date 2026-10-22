@@ -1,4 +1,5 @@
 import type { TransliterationSegment } from "@/domain/language/model";
+import { wholeLineSegments } from "@/domain/language/manual-segments";
 import { containsNonLatin, detectNonLatinLanguage } from "@/domain/language/script-detection";
 import { DASHES, normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
 import {
@@ -107,7 +108,7 @@ async function transliterateOne(text: string, sourceLanguage: string, signal?: A
   // The endpoint is undocumented. If a marker does not round-trip, preserve
   // Google's punctuation instead of guessing which dash was literal.
   const joined = restored ?? normalizeTransliterationForEditing(rawJoined);
-  const segments: TransliterationSegment[] = joined ? [{ original: text, transliteration: joined }] : [];
+  const segments = joined ? wholeLineSegments(text, joined) : [];
   const result = {
     text: joined && joined.localeCompare(text, undefined, { sensitivity: "accent" }) !== 0 ? joined : null,
     detectedLanguage,

@@ -1,4 +1,5 @@
 import { mappedTransliteration, withAlignedWords } from "@/domain/language/align";
+import { wholeLineSegments } from "@/domain/language/manual-segments";
 import type { TransliterationAlignmentStatus, TransliterationTrack } from "@/domain/language/model";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
@@ -26,7 +27,7 @@ function trackWithText(
     return {
       ...current,
       text,
-      segments: [{ original: line.text, transliteration: text }],
+      segments: wholeLineSegments(line.text, text),
       origin: "manual",
       alignmentStatus: status,
     };

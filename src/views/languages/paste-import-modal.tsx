@@ -1,4 +1,5 @@
 import { alignTrackToLine, validateTransliterationAlignment } from "@/domain/language/align";
+import { wholeLineSegments } from "@/domain/language/manual-segments";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TranslationTrack, TransliterationTrack } from "@/domain/language/model";
 import { alignPastedLanguageLines } from "@/domain/language/paste-import";
@@ -100,7 +101,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
         const transliteration: TransliterationTrack = {
           language: `${sourceLanguage || "und"}-Latn`,
           text,
-          segments: [{ original: line.text, transliteration: text }],
+          segments: wholeLineSegments(line.text, text),
           origin: "import",
           sourceFingerprint,
         };

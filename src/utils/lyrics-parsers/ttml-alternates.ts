@@ -1,6 +1,6 @@
 import { alignTrackToLine } from "@/domain/language/align";
+import { wholeLineSegments } from "@/domain/language/manual-segments";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { TransliterationSegment } from "@/domain/language/model";
 import { normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -129,11 +129,9 @@ function parseTransliterations(root: Element, lines: LyricLine[], lineIndexByKey
       const mappedBackgroundWords = backgroundText
         ? mappedWordsFromSpans(line.backgroundWords, backgroundText, background ? directTimedSpans(background) : [])
         : null;
-      const segments: TransliterationSegment[] = [{ original: line.text, transliteration: text }];
+      const segments = wholeLineSegments(line.text, text);
       const backgroundSegments =
-        backgroundText && line.backgroundText
-          ? [{ original: line.backgroundText, transliteration: backgroundText }]
-          : undefined;
+        backgroundText && line.backgroundText ? wholeLineSegments(line.backgroundText, backgroundText) : undefined;
       const track = {
         language,
         text,
