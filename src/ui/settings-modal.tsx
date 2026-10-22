@@ -111,7 +111,7 @@ const SettingsModalBody: React.FC = () => {
         </div>
       </ModalNavLayout>
 
-      <div className="px-5 py-3 border-t border-composer-border text-xs text-composer-text-muted text-center shrink-0 select-none">
+      <div className="px-5 py-3 border-t border-(--divider) text-xs text-(--muted) text-center shrink-0 select-none">
         Settings are saved automatically
       </div>
     </>

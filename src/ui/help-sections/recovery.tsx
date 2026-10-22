@@ -1,5 +1,5 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { PROSE } from "@/ui/typography";
+import { PROSE, PROSE_LINK } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { HelpTopic } from "@/ui/help-topic";
 
@@ -26,7 +26,7 @@ const RecoverySection: React.FC = () => (
           href="/recover"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+          className={PROSE_LINK}
         >
           /recover
         </a>{" "}

@@ -14,7 +14,7 @@ import { NoMatches } from "@/ui/no-matches";
 import { revealElement } from "@/ui/reveal-element";
 import { SearchField } from "@/ui/search-field";
 import { SettingLinkContext, type SettingLinkHost } from "@/ui/setting-link-context";
-import { KeyBadge } from "@/ui/shortcut-reference";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { splitSearchTerms } from "@/utils/search-terms";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
@@ -150,12 +150,8 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, ...bodyProps }) 
   >
     <HelpModalBody {...bodyProps} />
 
-    <div className="px-5 py-3 border-t border-composer-border text-xs text-composer-text-muted text-center shrink-0 select-none flex items-center justify-center gap-1.5">
-      Press{" "}
-      {getEffectiveKeysArray("global.help").map((key) => (
-        <KeyBadge key={key} keyName={key} />
-      ))}{" "}
-      to open anytime
+    <div className="px-5 py-3 border-t border-(--divider) text-xs text-(--muted) text-center shrink-0 select-none flex items-center justify-center gap-1.5">
+      Press <InlineKeyBadge keys={getEffectiveKeysArray("global.help")} /> to open anytime
     </div>
   </Modal>
 );

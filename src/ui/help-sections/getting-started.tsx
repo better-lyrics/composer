@@ -2,7 +2,7 @@ import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HelpTopic } from "@/ui/help-topic";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { PROSE } from "@/ui/typography";
+import { PROSE, PROSE_LINK } from "@/ui/typography";
 import { MOD_KEY } from "@/utils/platform";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 
@@ -16,7 +16,7 @@ const GettingStartedSection: React.FC = () => (
         href="https://betterlyrics.org"
         target="_blank"
         rel="noopener noreferrer"
-        className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+        className={PROSE_LINK}
       >
         Better Lyrics
       </a>
@@ -28,7 +28,7 @@ const GettingStartedSection: React.FC = () => (
         href="https://discord.gg/UsHE3d5fWF"
         target="_blank"
         rel="noopener noreferrer"
-        className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+        className={PROSE_LINK}
       >
         Discord
       </a>{" "}
@@ -37,7 +37,7 @@ const GettingStartedSection: React.FC = () => (
         href="https://github.com/better-lyrics/composer/issues/new/choose"
         target="_blank"
         rel="noopener noreferrer"
-        className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+        className={PROSE_LINK}
       >
         GitHub
       </a>

@@ -1,4 +1,4 @@
-import { PROSE } from "@/ui/typography";
+import { PROSE, PROSE_LINK } from "@/ui/typography";
 import { HelpTopic } from "@/ui/help-topic";
 
 // -- Preview ------------------------------------------------------------------
@@ -11,7 +11,7 @@ const PreviewSection: React.FC = () => (
         href="https://betterlyrics.org"
         target="_blank"
         rel="noopener noreferrer"
-        className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+        className={PROSE_LINK}
       >
         Better Lyrics
       </a>

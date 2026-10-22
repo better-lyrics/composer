@@ -3,7 +3,7 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HelpTopic } from "@/ui/help-topic";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SettingLink } from "@/ui/setting-link";
-import { INLINE_CODE, PROSE } from "@/ui/typography";
+import { INLINE_CODE, PROSE, PROSE_LINK } from "@/ui/typography";
 import { providerLabelsProse } from "@/utils/lyrics-search/provider-labels";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { OPEN_PROJECT_LABEL, USE_PROJECT_LYRICS_LABEL } from "@/views/lyrics-import-modal/import-lyrics-source";
@@ -79,7 +79,7 @@ const ImportSection: React.FC = () => (
           href="https://github.com/better-lyrics/composer-bridge"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+          className={PROSE_LINK}
         >
           GitHub
         </a>
