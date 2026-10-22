@@ -14,6 +14,7 @@ import {
 import { IconTrash } from "@tabler/icons-react";
 import { m, useIsPresent, useReducedMotion } from "motion/react";
 import { memo, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/utils/cn";
 import { snapFlashVariants } from "@/utils/animationVariants";
 import { formatTime } from "@/utils/format-time";
@@ -25,6 +26,7 @@ interface SnapMarkerPinProps {
   time: number;
   zoom: number;
   fadeExtent: number;
+  headHost: HTMLElement | null;
   isDragging: boolean;
   isOnOnset: boolean;
   onHeadPointerDown: (id: string, event: React.PointerEvent<HTMLElement>) => void;
@@ -39,6 +41,7 @@ const SnapMarkerPin = memo(function SnapMarkerPin({
   time,
   zoom,
   fadeExtent,
+  headHost,
   isDragging,
   isOnOnset,
   onHeadPointerDown,
@@ -119,19 +122,29 @@ const SnapMarkerPin = memo(function SnapMarkerPin({
           animate={reduceMotion ? "initial" : "animate"}
         />
       )}
-      <button
-        ref={refs.setReference}
-        type="button"
-        data-snap-marker-head
-        aria-label={`Custom snap point at ${formatTime(time)}`}
-        className={cn(
-          "snap-custom-head expanded-hit-sm absolute top-0 left-1/2 pointer-events-auto select-none border-none p-0",
-          isDragging ? "cursor-grabbing ring-4 ring-composer-warning/20" : "cursor-grab",
+      {headHost &&
+        createPortal(
+          <div data-snap-marker-head-anchor className="absolute inset-y-0 w-0" style={{ left: time * zoom }}>
+            <div className="absolute top-[19px] bottom-0 -left-px w-0.5 bg-composer-snap pointer-events-none" />
+            <button
+              ref={refs.setReference}
+              type="button"
+              data-snap-marker-head
+              data-dragging={isDragging || undefined}
+              aria-label={`Custom snap point at ${formatTime(time)}`}
+              className={cn(
+                "snap-custom-head expanded-hit-sm absolute top-[5px] -left-[5px] pointer-events-auto select-none border-none",
+                isDragging ? "cursor-grabbing" : "cursor-grab",
+              )}
+              {...getReferenceProps({
+                onPointerDown: (event: React.PointerEvent<HTMLElement>) => onHeadPointerDown(id, event),
+              })}
+            >
+              <i />
+            </button>
+          </div>,
+          headHost,
         )}
-        {...getReferenceProps({
-          onPointerDown: (event: React.PointerEvent<HTMLElement>) => onHeadPointerDown(id, event),
-        })}
-      />
       {showTooltip && (
         <FloatingPortal>
           <div

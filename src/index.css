@@ -252,17 +252,33 @@ braccato-lyrics .blyrics-container {
 
 @utility snap-custom-line {
   width: 2px;
-  background: var(--color-composer-warning);
-  mask: linear-gradient(rgba(0, 0, 0, 0) 0px, rgb(0, 0, 0) 30%, rgb(0, 0, 0) 70%, rgba(0, 0, 0, 0) 100%);
+  background: var(--color-composer-snap);
+  mask: linear-gradient(#000 45%, transparent);
 }
 
+/* A small solid twin of the playhead cap; the ring in the ruler colour keeps close markers apart. */
 @utility snap-custom-head {
-  width: 14px;
+  display: flex;
+  justify-content: center;
+  width: 10px;
   height: 14px;
-  background: var(--color-composer-warning);
-  border-radius: 50% 50% 50% 0;
-  transform: translateX(-50%) rotate(45deg);
-  box-shadow: 0 2px 9px rgba(0, 0, 0, 0.5);
+  padding: 4px 0 0;
+  border-radius: 4px 4px 5px 5px;
+  background: var(--color-composer-snap);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, white 45%, transparent), 0 0 0 1.5px var(--color-composer-bg);
+  & > i {
+    width: 1.5px;
+    height: 6px;
+    border-radius: 1px;
+    background: color-mix(in oklab, black 45%, var(--color-composer-snap));
+  }
+  &:hover,
+  &[data-dragging] {
+    background: color-mix(in oklab, white 30%, var(--color-composer-snap));
+  }
+  &[data-dragging] {
+    translate: 0 1px;
+  }
 }
 
 @utility snap-marker-flash {

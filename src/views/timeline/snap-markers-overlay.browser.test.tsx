@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -11,9 +11,11 @@ import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timelin
 
 const Harness: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [headHost, setHeadHost] = useState<HTMLDivElement | null>(null);
   return (
     <div ref={scrollContainerRef} style={{ width: 600, height: 200, position: "relative" }}>
-      <SnapMarkersOverlay scrollContainerRef={scrollContainerRef} />
+      <div ref={setHeadHost} />
+      <SnapMarkersOverlay scrollContainerRef={scrollContainerRef} headHost={headHost} />
     </div>
   );
 };
@@ -27,8 +29,12 @@ const customMarkers = (container: HTMLElement): NodeListOf<HTMLElement> =>
 const coveredOnsets = (container: HTMLElement): NodeListOf<HTMLElement> =>
   container.querySelectorAll<HTMLElement>("[data-snap-marker='onset'][data-covered]");
 
+// The head rides in the ruler, so it pairs with its marker by position.
 const headOf = (marker: HTMLElement): HTMLElement => {
-  const head = marker.querySelector<HTMLElement>("[data-snap-marker-head]");
+  const anchor = [...document.querySelectorAll<HTMLElement>("[data-snap-marker-head-anchor]")].find(
+    (candidate) => candidate.style.left === marker.style.left,
+  );
+  const head = anchor?.querySelector<HTMLElement>("[data-snap-marker-head]");
   if (!head) throw new Error("pin head not found");
   return head;
 };
@@ -237,7 +243,7 @@ describe("SnapMarkersOverlay", () => {
       expect(pins).toHaveLength(2);
       expect(pins[0].style.left).toBe("100px");
       expect(pins[1].style.left).toBe("300px");
-      expect(pins[0].querySelector("[data-snap-marker-head]")).not.toBeNull();
+      expect(headOf(pins[0])).not.toBeNull();
     });
 
     it("renders pins above the onset layer", async () => {

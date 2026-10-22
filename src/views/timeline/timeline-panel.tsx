@@ -90,6 +90,7 @@ const TimelinePanel: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState(400);
   const [rulerLane, setRulerLane] = useState<HTMLDivElement | null>(null);
+  const [rulerMarkerHost, setRulerMarkerHost] = useState<HTMLDivElement | null>(null);
   const openImportModal = useImportModal();
 
   const effectiveLines = useMemo(() => getEffectiveLines(lines), [lines]);
@@ -269,7 +270,11 @@ const TimelinePanel: React.FC = () => {
 
           <div className="flex flex-1 overflow-hidden">
             <div className="flex flex-col flex-1 overflow-hidden">
-              <TimelineRuler scrollContainerRef={scrollContainerRef} laneRef={setRulerLane} />
+              <TimelineRuler
+                scrollContainerRef={scrollContainerRef}
+                laneRef={setRulerLane}
+                markerHostRef={setRulerMarkerHost}
+              />
               <div
                 ref={contentRef}
                 data-timeline-scroll-host
@@ -306,7 +311,7 @@ const TimelinePanel: React.FC = () => {
 
                 <SnapGuideline />
 
-                <SnapMarkersOverlay scrollContainerRef={scrollContainerRef} />
+                <SnapMarkersOverlay scrollContainerRef={scrollContainerRef} headHost={rulerMarkerHost} />
 
                 {marqueeRect && <MarqueeSelection rect={marqueeRect} scrollContainerRef={scrollContainerRef} />}
 

@@ -45,9 +45,10 @@ function tickBackground(labelled: number, minor: number, zoom: number): React.CS
 interface TimelineRulerProps {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
   laneRef: React.Ref<HTMLDivElement>;
+  markerHostRef: React.Ref<HTMLDivElement>;
 }
 
-const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneRef }) => {
+const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneRef, markerHostRef }) => {
   const duration = useAudioStore((s) => s.duration);
   const seekTo = useAudioStore((s) => s.seekTo);
   const zoom = useTimelineStore((s) => s.zoom);
@@ -99,6 +100,7 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
               {formatTime(time, 0)}
             </span>
           ))}
+          <div ref={markerHostRef} className="absolute inset-0 pointer-events-none" />
         </div>
       </div>
     </div>
