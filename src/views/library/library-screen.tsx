@@ -15,6 +15,7 @@ import { LibraryToolbar } from "@/views/library/library-toolbar";
 import { NewSongPanel } from "@/views/library/new-song-panel";
 import { type ProjectCollectionProps, ProjectListColumns } from "@/views/library/project-list";
 import { ProjectMenu } from "@/views/library/project-menu";
+import { useLastPresent } from "@/hooks/useLastPresent";
 import { RenameProjectModal } from "@/views/library/rename-project-modal";
 import { ResumeCard } from "@/views/library/resume-card";
 import { useLibraryActions } from "@/views/library/use-library-actions";
@@ -74,9 +75,7 @@ const LibraryScreen: React.FC = () => {
   const [filter, setFilter] = useState<LibraryFilter>("all");
   const [query, setQuery] = useState("");
   const [menu, setMenu] = useState<OpenMenu | null>(null);
-  // The last menu stays rendered while it plays its exit.
-  const [shownMenu, setShownMenu] = useState(menu);
-  if (menu && menu !== shownMenu) setShownMenu(menu);
+  const shownMenu = useLastPresent(menu);
   const [renaming, setRenaming] = useState<ProjectIndexEntry | null>(null);
   const [firstPaint, setFirstPaint] = useState(true);
   const searchRef = useRef<HTMLInputElement>(null);

@@ -1,3 +1,4 @@
+import { useLastPresent } from "@/hooks/useLastPresent";
 import { unscaledReference, useFloatingEntrance } from "@/ui/floating-motion";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { cn } from "@/utils/cn";
@@ -92,9 +93,7 @@ const Menu: React.FC<MenuProps> = ({
 }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
   const listRef = useRef<Array<HTMLElement | null>>([]);
-  const [lastAnchor, setLastAnchor] = useState(anchor);
-  if (anchor && anchor !== lastAnchor) setLastAnchor(anchor);
-  const shownAnchor = anchor ?? lastAnchor;
+  const shownAnchor = useLastPresent(anchor);
   const isPoint = shownAnchor?.kind === "point";
   const { refs, floatingStyles, context } = useFloating({
     open: anchor !== null,
