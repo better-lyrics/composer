@@ -83,6 +83,12 @@
     color-mix(in oklab, var(--ink) 6%, transparent), 0 1px 0 rgb(var(--lift) / calc(var(--lift-top) * 0.6));
   --cap: color-mix(in oklab, var(--ink) 8%, var(--color-composer-bg));
   --raised-edge: inset 0 0 0 1px var(--edge), inset 0 1px 0 var(--highlight);
+  --display: color-mix(in oklab, var(--color-composer-bg-dark) 75%, var(--color-composer-bg));
+  --on-display: color-mix(in oklab, var(--ink) 82%, transparent);
+  --on-display-dim: color-mix(in oklab, var(--ink) 38%, transparent);
+  --lamp-warm: color-mix(in oklab, var(--color-composer-warning) 9%, transparent);
+  --knob-hi: color-mix(in oklab, var(--ink) 18%, var(--color-composer-bg));
+  --knob-lo: var(--color-composer-bg-dark);
   --raised-face: var(--layer-2);
   --raised-face-hover: var(--layer-3);
   --lit-ring: color-mix(in oklab, var(--color-composer-accent) 30%, transparent);
@@ -100,6 +106,10 @@ html[data-scheme="light"] {
   --pop: color-mix(in oklab, var(--color-composer-bg-dark) 30%, white);
   --well: color-mix(in oklab, var(--color-composer-bg-dark) 80%, var(--color-composer-bg));
   --cap: var(--color-composer-bg-elevated);
+  --display: var(--color-composer-bg-dark);
+  --lamp-warm: color-mix(in oklab, var(--color-composer-warning) 7%, transparent);
+  --knob-hi: #fff;
+  --knob-lo: color-mix(in oklab, var(--ink) 8%, var(--color-composer-bg-dark));
   --gutter-bg: color-mix(in oklab, var(--color-composer-bg-dark) 60%, var(--color-composer-bg));
   --raised-edge: inset 0 1px 0 rgb(255 255 255 / 0.95), inset 0 0 0 1px var(--edge), 0 1px 2px rgb(var(--shade) / 0.12);
   --raised-face: linear-gradient(to bottom, #fff, color-mix(in oklab, var(--ink) 3%, white));
@@ -429,6 +439,84 @@ braccato-lyrics .blyrics-container {
 
 /* Timeline panning mode */
 @layer components {
+  /* Extruded key: the base paints the side, the cap is the face. Press sinks the cap into the side. */
+  .key {
+    --face-top: color-mix(in oklab, var(--ink) 14%, var(--color-composer-bg));
+    --face-bottom: color-mix(in oklab, var(--ink) 6%, var(--color-composer-bg));
+    --side: color-mix(in oklab, var(--face-bottom) 60%, var(--color-composer-bg-dark));
+    --key-height: 36px;
+    --key-depth: 3px;
+    --key-radius: 12px;
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    flex-direction: column;
+    height: var(--key-height);
+    padding-bottom: var(--key-depth);
+    border-radius: var(--key-radius);
+    cursor: pointer;
+    &::before {
+      content: "";
+      position: absolute;
+      inset: var(--key-depth) 0 0;
+      z-index: -1;
+      border-radius: inherit;
+      background: var(--side);
+    }
+    & > .key-cap {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: inherit;
+      background: linear-gradient(to bottom, var(--face-top), var(--face-bottom));
+      box-shadow: inset 0 0 0 1px var(--edge), inset 0 1px 0 var(--highlight);
+      transition: translate 160ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    &:hover > .key-cap {
+      background: linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--ink) 4%, var(--face-top)),
+        color-mix(in oklab, var(--ink) 4%, var(--face-bottom))
+      );
+    }
+    &:active > .key-cap,
+    &[data-pressed] > .key-cap {
+      translate: 0 calc(var(--key-depth) - 1px);
+      transition-duration: 40ms;
+      transition-timing-function: cubic-bezier(0.3, 0, 0.6, 1);
+    }
+    &[aria-pressed="true"] {
+      --face-top: color-mix(
+        in oklab,
+        var(--color-composer-accent) 16%,
+        color-mix(in oklab, var(--ink) 14%, var(--color-composer-bg))
+      );
+      --face-bottom: color-mix(
+        in oklab,
+        var(--color-composer-accent) 16%,
+        color-mix(in oklab, var(--ink) 6%, var(--color-composer-bg))
+      );
+      color: var(--color-composer-accent-text);
+    }
+    &[aria-pressed="true"] > .key-cap {
+      box-shadow: inset 0 0 0 1px var(--lit-ring), inset 0 1px 0 var(--highlight);
+    }
+    &:disabled {
+      cursor: not-allowed;
+    }
+    &:disabled > .key-cap > *,
+    &[data-unavailable] > .key-cap > * {
+      opacity: 0.35;
+    }
+  }
+
+  html[data-scheme="light"] .key {
+    --side: color-mix(in oklab, var(--face-bottom) 76%, var(--color-composer-text-faint));
+  }
+
   .is-panning,
   .is-panning * {
     @apply cursor-grabbing!;

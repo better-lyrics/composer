@@ -9,6 +9,10 @@ import { IconPalette } from "@tabler/icons-react";
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
+// -- Constants ----------------------------------------------------------------
+
+const SWATCH_TOKENS = ["bg", "accent", "bg-dark", "text"] as const;
+
 // -- Components ---------------------------------------------------------------
 
 const ThemeSwatch: React.FC<{ theme: Theme }> = ({ theme }) => {
@@ -18,8 +22,8 @@ const ThemeSwatch: React.FC<{ theme: Theme }> = ({ theme }) => {
       aria-hidden="true"
       className="grid grid-cols-2 size-7 shrink-0 overflow-hidden rounded-lg shadow-[inset_0_0_0_1px_rgb(127_127_127/0.3)]"
     >
-      {[resolved.bg, resolved.accent, resolved["bg-dark"], resolved.text].map((color, index) => (
-        <span key={`${color}-${index}`} style={{ backgroundColor: color }} />
+      {SWATCH_TOKENS.map((token) => (
+        <span key={token} style={{ backgroundColor: resolved[token] }} />
       ))}
     </span>
   );
