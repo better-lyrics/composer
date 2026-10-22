@@ -1,3 +1,4 @@
+import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { useAudioStore } from "@/stores/audio";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
@@ -33,6 +34,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const defaultRowHeight = useTimelineStore((s) => s.defaultRowHeight);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const focusedGroup = useTimelineStore((s) => s.focusedGroup);
+  const openProjectId = useOpenProjectId();
 
   const allRows = useMemo(() => getEffectiveRows(lines, focusedGroup), [lines, focusedGroup]);
 
@@ -129,14 +131,14 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
     [visibleRows, rowHeights, defaultRowHeight],
   );
 
-  const totalHeight = useMemo(
-    () => visibleRows.reduce((sum, _, i) => sum + getRowHeight(i), 0),
-    [visibleRows, getRowHeight],
-  );
+  // Virtuoso keeps estimates for rows it has not measured, so a new project remounts it with the exact heights.
+  const heightEstimates = useMemo(() => visibleRows.map((_, i) => getRowHeight(i)), [visibleRows, getRowHeight]);
+  const totalHeight = useMemo(() => heightEstimates.reduce((sum, height) => sum + height, 0), [heightEstimates]);
 
   return (
     <div style={{ width: totalWidth + GUTTER_WIDTH, minWidth: "100%", height: totalHeight }}>
       <Virtuoso
+        key={openProjectId}
         data={visibleRows}
         computeItemKey={(_, row) => (row.kind === "group-header" ? `header:${row.firstLineId}` : row.line.id)}
         itemContent={(_, row) => {
@@ -173,6 +175,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         customScrollParent={scrollContainerRef.current ?? undefined}
         overscan={200}
         defaultItemHeight={emptyBgRowHeight(defaultRowHeight)}
+        heightEstimates={heightEstimates}
         increaseViewportBy={{ top: WAVEFORM_HEIGHT, bottom: 0 }}
       />
     </div>
