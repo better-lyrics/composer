@@ -13,7 +13,16 @@ import {
   useRole,
 } from "@floating-ui/react";
 import type { Placement } from "@floating-ui/react";
-import { type MutableRefObject, type ReactElement, type ReactNode, cloneElement, useRef, useState } from "react";
+import { unscaledReference, useFloatingEntrance } from "@/ui/floating-motion";
+import {
+  type MutableRefObject,
+  type ReactElement,
+  type ReactNode,
+  cloneElement,
+  useCallback,
+  useRef,
+  useState,
+} from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -66,6 +75,16 @@ const Popover: React.FC<PopoverProps> = ({
     whileElementsMounted: autoUpdate,
   });
 
+  const { isMounted, styles: entranceStyles } = useFloatingEntrance(context);
+  const { setReference, setPositionReference } = refs;
+  const setTrigger = useCallback(
+    (element: HTMLElement | null) => {
+      setReference(element);
+      setPositionReference(element ? unscaledReference(element) : null);
+    },
+    [setReference, setPositionReference],
+  );
+
   const click = useClick(context);
   // Dismissing on click, after mousedown moved focus to the body, lets focus return to the trigger.
   const dismiss = useDismiss(context, { outsidePressEvent: "click" });
@@ -85,17 +104,17 @@ const Popover: React.FC<PopoverProps> = ({
   return (
     <>
       {cloneElement(trigger, {
-        ref: refs.setReference,
+        ref: setTrigger,
         ...getReferenceProps(trigger.props as React.HTMLProps<Element>),
         "aria-haspopup": hasPopup,
-      } as React.HTMLAttributes<HTMLElement> & { ref: typeof refs.setReference })}
+      } as React.HTMLAttributes<HTMLElement> & { ref: typeof setTrigger })}
 
-      {isOpen && (
+      {isMounted && (
         <FloatingPortal>
           <FloatingFocusManager context={context} modal={false}>
             <div
               ref={refs.setFloating}
-              style={floatingStyles}
+              style={{ ...floatingStyles, ...entranceStyles }}
               {...getFloatingProps()}
               aria-label={ariaLabel}
               className="layer-floating select-none rounded-[14px] surface-floating"

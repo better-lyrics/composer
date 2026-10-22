@@ -1,3 +1,4 @@
+import { unscaledReference, useFloatingEntrance } from "@/ui/floating-motion";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { cn } from "@/utils/cn";
 import {
@@ -108,9 +109,11 @@ const Menu: React.FC<MenuProps> = ({
     whileElementsMounted: autoUpdate,
     elements: isPoint ? undefined : { reference: anchor.element },
   });
+  const { styles: entranceStyles } = useFloatingEntrance(context);
 
   useLayoutEffect(() => {
     if (anchor.kind === "point") refs.setPositionReference(pointReference(anchor.x, anchor.y, anchor.within));
+    else if (anchor.element instanceof HTMLElement) refs.setPositionReference(unscaledReference(anchor.element));
   }, [anchor, refs]);
   const dismiss = useDismiss(context, {
     ancestorScroll: anchor.kind === "point",
@@ -127,7 +130,7 @@ const Menu: React.FC<MenuProps> = ({
       <FloatingFocusManager context={context} initialFocus={0} returnFocus modal={false}>
         <div
           ref={refs.setFloating}
-          style={floatingStyles}
+          style={{ ...floatingStyles, ...entranceStyles }}
           aria-label={ariaLabel}
           {...getFloatingProps({
             // Keys the menu handles stop here, so window-level editor shortcuts never act on them as well.
