@@ -36,6 +36,62 @@ const ACTION_BUTTON = cn(CORNER_BUTTON, "bg-(--cap) shadow-(--raised-edge) text-
 
 // -- Components ----------------------------------------------------------------
 
+const FavoriteButton: React.FC<{ favorite: boolean; onToggle: () => void }> = ({ favorite, onToggle }) => (
+  <button
+    type="button"
+    aria-pressed={favorite}
+    aria-label={favorite ? "Remove from the theme menu" : "Add to the theme menu"}
+    title="Show in the theme menu"
+    onClick={onToggle}
+    className={cn(
+      CORNER_BUTTON,
+      "absolute top-[39px] right-1.5",
+      favorite
+        ? "text-composer-warning"
+        : "text-(--muted) opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-(--layer-2) hover:text-composer-text",
+    )}
+  >
+    {favorite ? <IconStarFilled className="size-[15px]" /> : <IconStar className="size-[15px]" />}
+  </button>
+);
+
+const CustomThemeActions: React.FC<{
+  theme: Theme;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
+}> = ({ theme, onEdit, onDelete }) => (
+  <span className={ACTION_CLUSTER}>
+    {onEdit && (
+      <button
+        type="button"
+        className={ACTION_BUTTON}
+        aria-label={`Edit ${theme.name}`}
+        title="Edit theme"
+        onClick={(event) => {
+          event.stopPropagation();
+          onEdit(theme.id);
+        }}
+      >
+        <IconPencil size={14} />
+      </button>
+    )}
+    {onDelete && (
+      <button
+        type="button"
+        className={ACTION_BUTTON}
+        aria-label={`Delete ${theme.name}`}
+        title="Delete theme"
+        onClick={(event) => {
+          event.stopPropagation();
+          onDelete(theme.id);
+        }}
+      >
+        <IconTrash size={14} />
+      </button>
+    )}
+  </span>
+);
+
 const ThemePresetCard: React.FC<ThemePresetCardProps> = ({
   theme,
   active,
@@ -95,54 +151,8 @@ const ThemePresetCard: React.FC<ThemePresetCardProps> = ({
         </span>
         <span className="mt-0.5 block text-[11.5px] leading-[1.4] text-(--muted)">{description}</span>
       </button>
-      <button
-        type="button"
-        aria-pressed={favorite}
-        aria-label={favorite ? "Remove from the theme menu" : "Add to the theme menu"}
-        title="Show in the theme menu"
-        onClick={() => onToggleFavorite(theme.id)}
-        className={cn(
-          CORNER_BUTTON,
-          "absolute top-[39px] right-1.5",
-          favorite
-            ? "text-composer-warning"
-            : "text-(--muted) opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-(--layer-2) hover:text-composer-text",
-        )}
-      >
-        {favorite ? <IconStarFilled className="size-[15px]" /> : <IconStar className="size-[15px]" />}
-      </button>
-      {showActions && (
-        <span className={ACTION_CLUSTER}>
-          {onEdit && (
-            <button
-              type="button"
-              className={ACTION_BUTTON}
-              aria-label={`Edit ${theme.name}`}
-              title="Edit theme"
-              onClick={(event) => {
-                event.stopPropagation();
-                onEdit(theme.id);
-              }}
-            >
-              <IconPencil size={14} />
-            </button>
-          )}
-          {onDelete && (
-            <button
-              type="button"
-              className={ACTION_BUTTON}
-              aria-label={`Delete ${theme.name}`}
-              title="Delete theme"
-              onClick={(event) => {
-                event.stopPropagation();
-                onDelete(theme.id);
-              }}
-            >
-              <IconTrash size={14} />
-            </button>
-          )}
-        </span>
-      )}
+      <FavoriteButton favorite={favorite} onToggle={() => onToggleFavorite(theme.id)} />
+      {showActions && <CustomThemeActions theme={theme} onEdit={onEdit} onDelete={onDelete} />}
     </div>
   );
 };

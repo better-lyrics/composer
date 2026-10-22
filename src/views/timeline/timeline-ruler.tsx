@@ -78,6 +78,7 @@ const TimelineRuler: React.FC<{ scrollContainerRef: React.RefObject<HTMLDivEleme
       <div className="relative flex-1 min-w-0 overflow-hidden cursor-pointer" onPointerDown={seekToPointer}>
         <div
           ref={trackRef}
+          // react-doctor-disable-next-line react-doctor/no-permanent-will-change -- moved by the frame loop every frame while playing or scrolling, so it needs its own compositor layer
           className="absolute inset-y-0 left-0 will-change-[translate]"
           style={{ width: duration * zoom, ...tickBackground(labelled, minor, zoom) }}
         >

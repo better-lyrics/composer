@@ -1,5 +1,4 @@
 import { alignTrackToLine } from "@/domain/language/align";
-import type { TransliterationSegment } from "@/domain/language/model";
 import { alignmentNeedsReview } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { Button } from "@/ui/button";
@@ -7,12 +6,6 @@ import { cn } from "@/utils/cn";
 import { LanguageField as Field } from "@/views/languages/language-field";
 import type { AlignmentField } from "@/views/languages/transliteration-alignment-modal";
 import { IconSeparatorVertical } from "@tabler/icons-react";
-
-// -- Helpers ------------------------------------------------------------------
-
-function manualSegments(line: LyricLine, value: string): TransliterationSegment[] {
-  return value.trim() ? [{ original: line.text, transliteration: value.trim() }] : [];
-}
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -140,4 +133,4 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
 
 // -- Exports ------------------------------------------------------------------
 
-export { AlignButton, BackgroundLanguageFields, manualSegments };
+export { AlignButton, BackgroundLanguageFields };

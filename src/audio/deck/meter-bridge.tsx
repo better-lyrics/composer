@@ -56,6 +56,7 @@ const VuFace: React.FC<{ label: string; needleRef: React.Ref<HTMLDivElement> }> 
     </svg>
     <div
       ref={needleRef}
+      // react-doctor-disable-next-line react-doctor/no-permanent-will-change -- moved by the frame loop every frame while playing or scrolling, so it needs its own compositor layer
       className="absolute left-1/2 bottom-[7px] w-0.5 h-[29px] -ml-px origin-bottom rotate-[-40deg] rounded-xs bg-linear-to-b from-(--on-display) to-[color-mix(in_oklab,var(--on-display)_55%,transparent)] will-change-[rotate]"
     />
     <div className="absolute left-1/2 bottom-0.5 size-2.5 -ml-[5px] rounded-full bg-(--cap) shadow-(--raised-edge)" />

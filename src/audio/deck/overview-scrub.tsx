@@ -163,6 +163,7 @@ const OverviewScrub: React.FC = () => {
       <div
         ref={headRef}
         aria-hidden="true"
+        // react-doctor-disable-next-line react-doctor/no-permanent-will-change -- moved by the frame loop every frame while playing or scrolling, so it needs its own compositor layer
         className="absolute left-2 inset-y-1.5 w-0.5 rounded-[1px] bg-composer-accent will-change-[translate] pointer-events-none"
       />
       <SeekOverlay duration={duration} />

@@ -1,6 +1,7 @@
 import { alignTrackToLine } from "@/domain/language/align";
 import { getLanguageAlignmentErrors } from "@/domain/language/alignment-errors";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { manualSegments } from "@/domain/language/manual-segments";
 import type { TranslationTrack } from "@/domain/language/model";
 import { alignmentNeedsReview, getLanguageReviewTracks, languageLineAnchorId } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
@@ -8,7 +9,7 @@ import { useProjectStore } from "@/stores/project";
 import { StatusChip } from "@/ui/status-chip";
 import { lineColumnStyle } from "@/ui/line-column";
 import { cn } from "@/utils/cn";
-import { AlignButton, BackgroundLanguageFields, manualSegments } from "@/views/languages/background-language-fields";
+import { AlignButton, BackgroundLanguageFields } from "@/views/languages/background-language-fields";
 import { LanguageField as Field } from "@/views/languages/language-field";
 import { type AlignmentField, TransliterationAlignmentModal } from "@/views/languages/transliteration-alignment-modal";
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
