@@ -61,6 +61,54 @@
   --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
 }
 
+/* Derived surface layer: mixes of the theme seeds, so every preset and custom theme works. Never part of TOKENS. */
+:root {
+  --ink: var(--color-composer-text);
+  --lift: 255 255 255;
+  --lift-top: 0.07;
+  --shade: 0 0 0;
+  --shade-strength: 0.45;
+  --pop: color-mix(in oklab, var(--ink) 4.5%, var(--color-composer-bg));
+  --layer-1: color-mix(in oklab, var(--ink) 4%, transparent);
+  --layer-2: color-mix(in oklab, var(--ink) 7%, transparent);
+  --layer-3: color-mix(in oklab, var(--ink) 11%, transparent);
+  --edge: color-mix(in oklab, var(--ink) 9%, transparent);
+  --edge-strong: color-mix(in oklab, var(--ink) 16%, transparent);
+  --divider: color-mix(in oklab, var(--ink) 5.5%, transparent);
+  --highlight: rgb(var(--lift) / var(--lift-top));
+  --muted: color-mix(in oklab, var(--ink) 55%, transparent);
+  --label: color-mix(in oklab, var(--ink) 72%, transparent);
+  --well: color-mix(in oklab, var(--color-composer-bg-dark) 55%, var(--color-composer-bg));
+  --well-edge: inset 0 1px 2px rgb(var(--shade) / calc(var(--shade-strength) * 0.7)),
+    inset 0 0 0 1px color-mix(in oklab, var(--ink) 6%, transparent), 0 1px 0 rgb(var(--lift) / calc(var(--lift-top) * 0.6));
+  --cap: color-mix(in oklab, var(--ink) 8%, var(--color-composer-bg));
+  --raised-edge: inset 0 0 0 1px var(--edge), inset 0 1px 0 var(--highlight);
+  --raised-face: var(--layer-2);
+  --raised-face-hover: var(--layer-3);
+  --lit-ring: color-mix(in oklab, var(--color-composer-accent) 30%, transparent);
+  --gutter-bg: color-mix(in oklab, var(--color-composer-bg) 40%, var(--color-composer-bg-dark));
+  --float-shadow: inset 0 0 0 1px var(--edge), inset 0 1px 0 var(--highlight), 0 18px 40px -12px rgb(var(--shade) / 0.55);
+  --radius-card: 16px;
+  --tray-pad: 4px;
+}
+
+html[data-scheme="light"] {
+  --lift-top: 0.95;
+  --shade: 40 40 60;
+  --shade-strength: 0.16;
+  --pop: color-mix(in oklab, var(--color-composer-bg-dark) 30%, white);
+  --well: color-mix(in oklab, var(--color-composer-bg-dark) 80%, var(--color-composer-bg));
+  --cap: var(--color-composer-bg-elevated);
+  --gutter-bg: color-mix(in oklab, var(--color-composer-bg-dark) 60%, var(--color-composer-bg));
+  --raised-edge: inset 0 1px 0 rgb(255 255 255 / 0.95), inset 0 0 0 1px var(--edge), 0 1px 2px rgb(var(--shade) / 0.12);
+  --raised-face: linear-gradient(to bottom, #fff, color-mix(in oklab, var(--ink) 3%, white));
+  --raised-face-hover: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--ink) 2%, white),
+    color-mix(in oklab, var(--ink) 6%, white)
+  );
+}
+
 /* Base styles */
 html {
   font-size: 16px;
