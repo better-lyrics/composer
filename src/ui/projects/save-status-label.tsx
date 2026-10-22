@@ -41,7 +41,7 @@ const SaveStatusGlyph: React.FC = () => {
     return (
       <IconLoader2
         aria-hidden="true"
-        className="size-3.5 text-composer-text-faint animate-spin motion-reduce:animate-none"
+        className="size-3.5 text-composer-text-faint animate-[spin_900ms_linear_infinite] motion-reduce:animate-none"
       />
     );
   }

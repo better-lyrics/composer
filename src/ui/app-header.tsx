@@ -53,21 +53,21 @@ const AppHeader: React.FC<AppHeaderProps> = ({ screen, onSettingsOpen, onHelpOpe
       <ThemeMenu />
       <IconButton
         label="Settings"
-        icon={<IconSettings className="size-5" />}
+        icon={<IconSettings className="size-[18px]" />}
         variant="ghost"
         onClick={onSettingsOpen}
         className={HEADER_ICON_STYLES}
       />
       <IconButton
         label="Product tour"
-        icon={<IconRoute className="size-5" />}
+        icon={<IconRoute className="size-[18px]" />}
         variant="ghost"
         onClick={onTourStart}
         className={HEADER_ICON_STYLES}
       />
       <IconButton
         label="Keyboard shortcuts (?)"
-        icon={<IconHelp className="size-5" />}
+        icon={<IconHelp className="size-[18px]" />}
         variant="ghost"
         onClick={onHelpOpen}
         className={HEADER_ICON_STYLES}

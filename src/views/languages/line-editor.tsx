@@ -66,15 +66,15 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
       )}
     >
       <span
-        className="line-cell pt-3.5 text-center font-mono font-medium text-xs text-(--muted) tabular-nums select-none [box-shadow:inset_-2px_0_0_var(--rail)]"
+        className="line-cell text-center font-mono font-medium text-xs text-(--muted) tabular-nums select-none [box-shadow:inset_-2px_0_0_var(--rail)]"
         style={{ "--agent": getAgentColor(line.agentId) }}
       >
-        {index + 1}
+        <span className="flex h-12 items-center justify-center">{index + 1}</span>
       </span>
-      <div className="flex min-w-0 flex-col items-start gap-1.5 py-3 px-4">
-        <span className="text-sm leading-6 select-text">{line.text}</span>
+      <div className="flex min-w-0 flex-col items-start gap-1.5 py-3.5 px-4">
+        <span className="text-sm leading-5 select-text">{line.text}</span>
         {line.backgroundText && (
-          <span className="text-sm italic text-(--muted) select-text">{line.backgroundText}</span>
+          <span className="text-[13px] italic text-(--muted) select-text">{line.backgroundText}</span>
         )}
         {hasAlignmentError && (
           <StatusChip tone="error" icon={IconAlertCircle}>
@@ -87,7 +87,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
           </StatusChip>
         )}
       </div>
-      <div className="flex min-w-0 flex-col gap-1.5 py-3 pr-4">
+      <div className="flex min-w-0 flex-col gap-1.5 py-2 pr-4">
         <Field
           label="Transliteration"
           mono

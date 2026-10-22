@@ -114,7 +114,7 @@ const NewSongPanel: React.FC<NewSongPanelProps> = ({ className }) => {
         <h2 id={headingId} className="text-[15px] font-bold">
           Start a new song
         </h2>
-        <Button variant="ghost" hasIcon onClick={() => importInputRef.current?.click()}>
+        <Button variant="ghost" size="sm" hasIcon onClick={() => importInputRef.current?.click()}>
           <IconFileImport aria-hidden="true" className="size-4" />
           Import project
         </Button>
@@ -134,7 +134,7 @@ const NewSongPanel: React.FC<NewSongPanelProps> = ({ className }) => {
         className={DROP_STYLES}
       >
         <span className="grid place-items-center size-10 shrink-0 rounded-[10px] btn-raised text-(--label)">
-          <IconUpload aria-hidden="true" className="size-5" />
+          <IconUpload aria-hidden="true" className="size-[18px]" />
         </span>
         <span className="flex flex-col text-left">
           <strong className="text-sm font-medium">Drop an audio or project file</strong>

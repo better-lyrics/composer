@@ -88,7 +88,7 @@ const ResumeCard: React.FC<ResumeCardProps> = ({ project, now, onOpen, className
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-6">
         <ResumeProgress project={project} />
         <Button variant="primary" size="lg" hasIcon onClick={() => onOpen(project.id)}>
-          <IconPlayerPlayFilled aria-hidden="true" className="size-4" />
+          <IconPlayerPlayFilled aria-hidden="true" className="size-3.5" />
           {action}
         </Button>
       </div>

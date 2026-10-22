@@ -27,10 +27,7 @@ const IconField: React.FC<IconFieldProps> = ({
   ...inputProps
 }) => (
   <div className={cn("relative flex items-center", wrapperClassName)}>
-    <FieldIcon
-      aria-hidden="true"
-      className="absolute left-2.5 size-4 text-composer-text opacity-50 pointer-events-none"
-    />
+    <FieldIcon aria-hidden="true" className="absolute left-2.5 size-4 text-(--muted) pointer-events-none" />
     <input
       ref={ref}
       type={type}

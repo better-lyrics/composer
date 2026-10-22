@@ -14,7 +14,14 @@ import { fileExtensionLabel, fileNameWithoutExtension } from "@/utils/file-name"
 import { formatFileSize } from "@/utils/format-file-size";
 import { IMPORT_AREA, ImportZone, OrDivider, SourceCard } from "@/views/import/import-layout";
 import { MissingAudioPanel } from "@/views/import/missing-audio-panel";
-import { IconBrandYoutube, IconClock, IconFile, IconFileUpload, IconLoader2, IconMusic } from "@tabler/icons-react";
+import {
+  IconBrandYoutube,
+  IconClock,
+  IconFileMusic,
+  IconFileUpload,
+  IconLoader2,
+  IconMusic,
+} from "@tabler/icons-react";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -49,14 +56,14 @@ const YouTubeSourceThumb: React.FC<{ videoId: string; loading: boolean }> = ({ v
       <img
         src={persistedThumb}
         alt=""
-        className="size-full object-cover outline outline-1 -outline-offset-1 outline-white/10 rounded-xl"
+        className="size-full object-cover outline outline-1 -outline-offset-1 outline-white/10 rounded-[10px]"
       />
     );
   }
   if (loading || (bridgeEnabled && thumbQuery.isFetching)) {
     return <div className="size-full bg-(--layer-2) animate-pulse" />;
   }
-  return <IconBrandYoutube size={20} />;
+  return <IconBrandYoutube size={24} />;
 };
 
 interface ReplaceControlsProps {
@@ -69,10 +76,10 @@ const ReplaceControls: React.FC<ReplaceControlsProps> = ({ onFileDrop }) => (
       accept="audio/*"
       onFileDrop={onFileDrop}
       onProjectFileDrop={openProjectFile}
-      className="gap-1 p-4 h-30 rounded-xl hover:bg-(--layer-1)"
+      className="gap-1 px-0 py-2"
     >
-      <IconFileUpload className="size-7 mb-2 text-(--muted)" stroke={1.5} />
-      <p className="text-base font-medium text-composer-text">Drop another file to replace</p>
+      <IconFileUpload className="size-8 mb-2 text-composer-text-faint" stroke={1.5} />
+      <p className="text-base font-medium text-(--label)">Drop another file to replace</p>
       <p className="text-[13px] text-(--muted)">
         or a project file to open it, or <span className="text-composer-accent-text">click to browse</span>
       </p>
@@ -91,16 +98,16 @@ interface SourceDurationProps {
 // download or an mp3 decode) it shows the spinner; once ready it shows the
 // clock and resolved duration.
 const SourceDuration: React.FC<SourceDurationProps> = ({ loading, duration }) => (
-  <div className="flex items-center gap-1.5 shrink-0">
+  <div className="flex items-center gap-[5px] shrink-0">
     {loading ? (
       <>
-        <IconLoader2 size={14} className="animate-spin text-composer-accent" />
-        <span className="text-sm font-mono text-composer-text-muted tabular-nums">--:--</span>
+        <IconLoader2 size={14} className="animate-spin text-composer-accent-text" />
+        <span className="text-[13px] font-mono font-medium text-(--muted) tabular-nums">--:--</span>
       </>
     ) : (
       <>
-        <IconClock size={14} className="text-composer-text opacity-50" />
-        <span className="text-sm font-mono text-composer-text tabular-nums select-text">
+        <IconClock size={14} className="text-composer-text opacity-55" />
+        <span className="text-[13px] font-mono font-medium text-composer-text tabular-nums select-text">
           {formatDuration(duration)}
         </span>
       </>
@@ -137,13 +144,13 @@ const ImportPanel: React.FC = () => {
       >
         <ImportZone>
           <SourceCard
-            art={<IconFile size={20} />}
+            art={<IconFileMusic size={24} />}
             title={fileName}
             subtitle={extension}
             trailing={
-              <div className="flex flex-col items-end gap-0.5">
+              <div className="flex flex-col items-end gap-[3px]">
                 <SourceDuration loading={isLoading} duration={duration} />
-                <div className="text-[13px] text-(--muted)">{formatFileSize(file.size)}</div>
+                <div className="text-xs text-(--muted)">{formatFileSize(file.size)}</div>
               </div>
             }
           />
@@ -195,14 +202,14 @@ const ImportPanel: React.FC = () => {
           accept="audio/*"
           onFileDrop={handleFileDrop}
           onProjectFileDrop={openProjectFile}
-          className="gap-1 h-64 rounded-xl hover:bg-(--layer-1)"
+          className="gap-1 px-0 py-2"
         >
-          <IconMusic className="size-10 mb-3 text-(--muted)" stroke={1.5} />
-          <p className="text-base font-medium text-composer-text">Drop an audio or project file here</p>
+          <IconMusic className="size-11 mb-3 text-composer-text-faint" stroke={1.5} />
+          <p className="text-base font-medium text-(--label)">Drop an audio or project file here</p>
           <p className="text-[13px] text-(--muted)">
             or <span className="text-composer-accent-text">click to browse</span>
           </p>
-          <p className="mt-3 text-xs text-(--muted)">{SUPPORTED_FILES_PROSE}</p>
+          <p className="mt-2.5 text-xs text-composer-text-faint">{SUPPORTED_FILES_PROSE}</p>
         </FileDropZone>
 
         <OrDivider />

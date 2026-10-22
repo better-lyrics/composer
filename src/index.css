@@ -551,7 +551,6 @@ braccato-lyrics .blyrics-container {
         var(--color-composer-accent) 16%,
         color-mix(in oklab, var(--ink) 6%, var(--color-composer-bg))
       );
-      color: var(--color-composer-accent-text);
     }
     &[aria-pressed="true"] > .key-cap,
     &[data-lit] > .key-cap {

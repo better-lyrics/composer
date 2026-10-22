@@ -31,7 +31,7 @@ const RELINK_DROP_LABEL = "Drop to link the audio again";
 const REPLACE_MISSING_DROP_LABEL = "Drop to use this audio instead";
 
 const RELINK_DROP_STYLES =
-  "gap-1.5 p-6 text-center rounded-xl hover:bg-composer-warning/6 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-composer-accent";
+  "gap-1 px-0 py-2 text-center rounded-xl has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-composer-accent";
 
 // -- Actions ------------------------------------------------------------------
 
@@ -51,7 +51,7 @@ function openBridgeSettings(): void {
 const WarningSourceRow: React.FC<WarningSourceRowProps> = ({ name, detail, children }) => (
   <SourceCard
     tone="warning"
-    art={<IconAlertTriangle aria-hidden="true" className="size-5" />}
+    art={<IconAlertTriangle aria-hidden="true" className="size-6" />}
     title={name}
     subtitle={detail}
     trailing={children && <div className="flex shrink-0 items-center gap-2">{children}</div>}
@@ -59,7 +59,7 @@ const WarningSourceRow: React.FC<WarningSourceRowProps> = ({ name, detail, child
 );
 
 const FileName: React.FC<{ name: string }> = ({ name }) => (
-  <code className="px-1.5 py-px rounded bg-(--layer-2) font-mono text-[12.5px] font-medium text-composer-text select-text">
+  <code className="px-1.5 py-px rounded-md bg-(--layer-2) font-mono text-[12.5px] font-medium text-composer-text select-text">
     {name}
   </code>
 );
@@ -89,31 +89,33 @@ const MissingAudioPanel: React.FC<MissingAudioPanelProps> = ({ expected }) => {
             }
           >
             {bridgeUnreachable && (
-              <Button variant="ghost" size="sm" onClick={openBridgeSettings}>
+              <Button variant="ghost" size="sm" onClick={openBridgeSettings} className="px-3 text-[13px]">
                 Bridge settings
               </Button>
             )}
-            <Button variant="secondary" size="sm" hasIcon onClick={retryProjectAudio}>
-              <IconRefresh aria-hidden="true" className="size-3.5" />
+            <Button variant="secondary" size="sm" hasIcon onClick={retryProjectAudio} className="pl-2.5 text-[13px]">
+              <IconRefresh aria-hidden="true" className="size-4" />
               Try again
             </Button>
           </WarningSourceRow>
         )}
 
-        <div className="w-full h-40">
+        <div className="w-full">
           <FileDropZone accept="audio/*" onFileDrop={relinkFile} className={RELINK_DROP_STYLES}>
-            <IconFileAlert aria-hidden="true" className="size-7 mb-1.5 text-composer-warning" stroke={1.5} />
+            <IconFileAlert aria-hidden="true" className="size-11 mb-3 text-composer-warning" stroke={1.5} />
             {expected.kind === "file" ? (
               <>
-                <p className="text-sm font-medium text-composer-text">
+                <p className="text-base font-medium text-(--label)">
                   Drop <FileName name={expected.name} /> to link it again
                 </p>
-                <p className="text-xs text-(--muted)">If the file name is different, you confirm before it links.</p>
+                <p className="text-[13px] text-(--muted)">
+                  If the file name is different, you confirm before it links.
+                </p>
               </>
             ) : (
               <>
-                <p className="text-sm font-medium text-composer-text">Drop an audio file to use instead</p>
-                <p className="text-xs text-(--muted)">Your lyrics and timings stay as they are.</p>
+                <p className="text-base font-medium text-(--label)">Drop an audio file to use instead</p>
+                <p className="text-[13px] text-(--muted)">Your lyrics and timings stay as they are.</p>
               </>
             )}
           </FileDropZone>

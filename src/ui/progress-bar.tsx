@@ -15,7 +15,7 @@ interface ProgressBarProps {
 // -- Constants ----------------------------------------------------------------
 
 const TRACK_STYLES: Record<ProgressBarTone, string> = {
-  default: "h-1 bg-composer-button",
+  default: "h-1 bg-(--layer-2)",
   "on-media": "h-1.5 bg-white/16",
 };
 
@@ -70,7 +70,10 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ percent, label, tone = "defau
       className={cn("relative overflow-hidden rounded-full", TRACK_STYLES[tone], className)}
     >
       <span
-        className={cn("absolute inset-y-0 left-0 rounded-full transition-[width] duration-150", FILL_STYLES[tone])}
+        className={cn(
+          "absolute inset-y-0 left-0 rounded-full transition-[width] duration-200 ease-linear",
+          FILL_STYLES[tone],
+        )}
         style={{ width: `${clamped}%` }}
       />
     </div>

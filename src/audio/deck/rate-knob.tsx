@@ -30,7 +30,7 @@ const RateKnob: React.FC = () => {
   return (
     <DeckKnob
       label="Rate"
-      valueText={`${rate.toFixed(2)}x`}
+      valueText={`${rate.toFixed(2)}×`}
       fraction={(rate - RATE_MIN) / (RATE_MAX - RATE_MIN)}
       onFraction={(fraction) => setPlaybackRate(roundedRate(RATE_MIN + fraction * (RATE_MAX - RATE_MIN)))}
       onStep={(direction) => setPlaybackRate(roundedRate(rate + direction * RATE_STEP))}

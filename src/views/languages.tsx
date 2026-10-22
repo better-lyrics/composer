@@ -1,5 +1,6 @@
 import { pastedRows } from "@/domain/language/paste-import";
 import { useProjectStore } from "@/stores/project";
+import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
 import { Select } from "@/ui/select";
@@ -14,6 +15,7 @@ import { requestLanguageGeneration } from "@/views/languages/request-language-ge
 import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
 import { useLanguageTargets } from "@/views/languages/use-language-targets";
 import { pluralWord, pluralize } from "@/utils/pluralize";
+import { IconChevronDown } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -130,6 +132,8 @@ const LanguagesPanel: React.FC = () => {
     void generate([language]);
   };
   const trackCount = targets.length + 1;
+  const sourceLanguageLabel =
+    SOURCE_SELECT_OPTIONS.find((option) => option.value === (metadata.language ?? ""))?.label ?? metadata.language;
   const changeSourceLanguage = (language: string) => {
     const selected = language || "auto";
     setMetadata({ language: language || undefined });
@@ -186,7 +190,17 @@ const LanguagesPanel: React.FC = () => {
             disabled={isGenerating}
             onChange={changeSourceLanguage}
             options={SOURCE_SELECT_OPTIONS}
-            className="h-9 rounded-xl"
+            trigger={
+              <Button
+                size="lg"
+                hasIcon
+                aria-label="Source language"
+                className="pr-[5px] aria-expanded:bg-(--layer-3) aria-expanded:text-composer-text"
+              >
+                {sourceLanguageLabel}
+                <IconChevronDown className="size-3.5 opacity-50 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90" />
+              </Button>
+            }
           />
           <RegenerateLanguageControl
             isGenerating={isGenerating}

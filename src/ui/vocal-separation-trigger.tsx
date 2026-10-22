@@ -28,8 +28,13 @@ const StemPickLabel: React.FC<StemPickLabelProps> = ({ name, label, busy, ...pro
       />
     </span>
     <span className="flex items-center gap-1 w-full text-[13px] tabular-nums whitespace-nowrap text-composer-text">
+      {busy && (
+        <IconLoader2
+          aria-hidden="true"
+          className="size-3.5 text-composer-accent-text animate-spin motion-reduce:animate-none"
+        />
+      )}
       {label}
-      {busy && <IconLoader2 aria-hidden="true" className="size-3.5 animate-spin motion-reduce:animate-none" />}
     </span>
   </button>
 );

@@ -41,6 +41,7 @@ interface MenuItemProps {
   tone?: "default" | "danger";
   trail?: ReactNode;
   shortcut?: string[];
+  className?: string;
 }
 
 interface MenuRadioItemProps {
@@ -96,7 +97,7 @@ const Menu: React.FC<MenuProps> = ({
     },
     placement: isPoint || align === "start" ? "bottom-start" : "bottom-end",
     middleware: [
-      offset(isPoint ? 0 : align === "start" ? 8 : 4),
+      offset(isPoint ? 0 : 8),
       flip({ padding: 8 }),
       shift({ padding: 8 }),
       size({
@@ -178,6 +179,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
   tone = "default",
   trail,
   shortcut,
+  className,
 }) => {
   const end = trail ?? (shortcut && shortcut.length > 0 ? <InlineKeyBadge keys={shortcut} /> : undefined);
   const itemProps = useMenuItem(label, onSelect);
@@ -191,6 +193,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
         tone === "danger"
           ? "text-composer-negative hover:bg-composer-negative/12 data-active:bg-composer-negative/12"
           : "text-(--label) hover:bg-(--layer-2) hover:text-composer-text data-active:bg-(--layer-2) data-active:text-composer-text",
+        className,
       )}
     >
       {ItemIcon && (
@@ -218,7 +221,7 @@ const MenuRadioItem: React.FC<MenuRadioItemProps> = ({ lead, label, description,
       {...itemProps}
       className={cn(
         ITEM_STYLES,
-        "py-2 text-[13.5px] text-composer-text hover:bg-(--layer-2) data-active:bg-(--layer-2)",
+        "py-2 rounded-[9px] text-[13.5px] text-composer-text hover:bg-(--layer-2) data-active:bg-(--layer-2)",
       )}
     >
       {lead}
@@ -228,7 +231,7 @@ const MenuRadioItem: React.FC<MenuRadioItemProps> = ({ lead, label, description,
       </span>
       <IconCheck
         aria-hidden="true"
-        className={cn("ms-auto size-4 shrink-0 text-composer-accent-text", !checked && "invisible")}
+        className={cn("ms-auto size-[18px] shrink-0 text-composer-accent-text", !checked && "invisible")}
       />
     </button>
   );

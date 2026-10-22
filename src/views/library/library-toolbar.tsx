@@ -95,11 +95,14 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({
               size="lg"
               hasIcon
               aria-label={`Sort: ${sortLabel}`}
-              className="shrink-0 whitespace-nowrap pr-2.5"
+              className="shrink-0 whitespace-nowrap pr-[5px] aria-expanded:[background:var(--layer-3)] aria-expanded:text-composer-text"
             >
               <IconArrowsSort aria-hidden="true" className="size-4" />
               {sortLabel}
-              <IconChevronDown aria-hidden="true" className="size-3.5 opacity-60" />
+              <IconChevronDown
+                aria-hidden="true"
+                className="size-3.5 opacity-50 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90"
+              />
             </Button>
           }
         />

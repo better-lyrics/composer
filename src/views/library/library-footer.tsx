@@ -17,7 +17,7 @@ const LibraryFooter: React.FC<LibraryFooterProps> = ({ storedAudioBytes, onManag
       Projects save on this device. <span className="tabular-nums">{formatFileSize(storedAudioBytes)}</span> of audio
       stored.
     </span>
-    <Button variant="ghost" hasIcon onClick={onManageStorage} className="-mr-3">
+    <Button variant="ghost" size="sm" hasIcon onClick={onManageStorage} className="-mr-3">
       <IconDatabase aria-hidden="true" className="size-4" />
       Manage storage
     </Button>

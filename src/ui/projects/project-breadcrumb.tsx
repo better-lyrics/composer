@@ -30,11 +30,11 @@ const ProjectBreadcrumb: React.FC = () => {
 
   return (
     <div className="flex items-center min-w-0 select-none">
-      <nav aria-label="Project" className="flex items-center gap-2 min-w-0">
-        <LinkButton to={LIBRARY_PATH} variant="ghost" className="-ml-1 px-2 text-[13.5px]">
+      <nav aria-label="Project" className="flex items-center gap-3 min-w-0">
+        <LinkButton to={LIBRARY_PATH} variant="ghost" className="-ml-1 px-2 text-[13.5px] hover:text-composer-text">
           Projects
         </LinkButton>
-        <IconChevronRight aria-hidden="true" className="-mx-2 size-3.5 shrink-0 text-composer-text-faint" />
+        <IconChevronRight aria-hidden="true" className="-ml-1.5 -mr-2 size-3.5 shrink-0 text-composer-text-faint" />
         <Popover
           open={isOpen}
           onOpenChange={setOpen}

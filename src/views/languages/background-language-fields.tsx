@@ -33,7 +33,10 @@ const AlignButton: React.FC<{ onClick: () => void; ariaLabel?: string; needsRevi
     size="sm"
     hasIcon
     aria-label={ariaLabel}
-    className={cn(needsReview && "text-composer-accent-text hover:text-composer-accent-text")}
+    className={cn(
+      "text-[13px] pr-2.5 hover:bg-(--layer-2) hover:text-composer-text",
+      needsReview && "text-composer-accent-text hover:text-composer-accent-text",
+    )}
     onClick={onClick}
   >
     <IconSeparatorVertical className="size-4" />
@@ -52,7 +55,7 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
   clearTransliteration,
   onAlign,
 }) => (
-  <div className="mt-1 flex flex-col gap-1.5 pt-2 border-t border-dashed border-(--edge)">
+  <div className="mt-1 flex flex-col gap-1.5 pt-2 border-t border-dashed border-(--divider)">
     <p className="text-xs text-composer-text-faint select-none">Background</p>
     <Field
       label="Transliteration"

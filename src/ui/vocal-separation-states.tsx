@@ -34,7 +34,7 @@ const ProgressState: React.FC<{ title: string; detail: string; pct: number; onCa
     <PopText className="tabular-nums">{detail}</PopText>
     <ProgressBar percent={pct} label={title} className="h-1.5 w-full mt-3 bg-(--well) shadow-(--well-edge)" />
     <PopActions>
-      <Button size="sm" variant="ghost" onClick={onCancel}>
+      <Button size="sm" variant="secondary" onClick={onCancel}>
         Cancel
       </Button>
     </PopActions>
@@ -92,7 +92,7 @@ const IdleReadyState: React.FC<{
                   : "cursor-not-allowed opacity-55",
               )}
             >
-              <Icon className={cn("size-4 shrink-0", selected ? "text-composer-accent-text" : "text-(--muted)")} />
+              <Icon className="size-4 shrink-0 text-(--muted)" />
               <span className="flex-1">{STEM_LABELS[stem]}</span>
               <IconCheck
                 aria-hidden={!selected}

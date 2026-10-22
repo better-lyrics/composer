@@ -19,7 +19,8 @@ const BASE_STYLES =
 
 const VARIANT_STYLES: Record<ButtonVariant, string> = {
   primary: "btn-lit",
-  secondary: "btn-raised text-[var(--label)] hover:text-composer-text",
+  secondary:
+    "btn-raised text-[var(--label)] hover:text-composer-text disabled:opacity-100 disabled:[background:var(--layer-1)] disabled:text-[color-mix(in_oklab,var(--label)_50%,transparent)] disabled:hover:text-[color-mix(in_oklab,var(--label)_50%,transparent)]",
   ghost: "text-[var(--muted)] hover:text-[var(--label)] hover:bg-[var(--layer-1)]",
   latch: "latch-on [&_svg]:text-composer-accent-text [&_[data-inline-key-badge]]:text-composer-accent-text",
   quiet:
@@ -29,14 +30,14 @@ const VARIANT_STYLES: Record<ButtonVariant, string> = {
 };
 
 const SIZE_STYLES: Record<ButtonSize, string> = {
-  sm: "h-7 px-2.5 text-xs",
+  sm: "h-7 px-3 text-[13px]",
   md: "h-8 px-3 text-[13px]",
   lg: "h-9 px-3.5 text-[13px] rounded-xl",
   icon: "size-8 p-0",
 };
 
 const SIZE_STYLES_WITH_ICON: Record<ButtonSize, string> = {
-  sm: "h-7 pl-2 pr-3 text-xs",
+  sm: "h-7 pl-2.5 pr-3 text-[13px]",
   md: "h-8 pl-2.5 pr-3 text-[13px]",
   lg: "h-9 pl-2.5 pr-3 text-[13px] rounded-xl",
   icon: "size-8 p-0",
