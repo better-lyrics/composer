@@ -37,7 +37,7 @@ const FACE_STYLES =
 
 const VuFace: React.FC<{ label: string; needleRef: React.Ref<HTMLDivElement> }> = ({ label, needleRef }) => (
   <div
-    className={`${FACE_STYLES} w-[82px] h-12 bg-[radial-gradient(110%_120%_at_50%_100%,var(--lamp-warm),transparent_72%),var(--display)]`}
+    className={`${FACE_STYLES} w-[82px] h-12 bg-[radial-gradient(110%_120%_at_50%_100%,var(--lamp-warm),transparent_72%)]`}
   >
     <svg viewBox="0 0 96 56" aria-hidden="true" className="absolute inset-0">
       {VU_TICKS.map((tick) => (
