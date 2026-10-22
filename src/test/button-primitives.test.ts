@@ -14,8 +14,7 @@ interface PrimitiveRule {
   offendingExamples: string[];
 }
 
-// Not a toggle: the sync header text toggle has no inactive dimming.
-const TOGGLE_RECIPE_EXCEPTIONS = new Set(["views/sync/sync-header.tsx"]);
+const TOGGLE_RECIPE_EXCEPTIONS = new Set<string>();
 
 const RULES: PrimitiveRule[] = [
   {
