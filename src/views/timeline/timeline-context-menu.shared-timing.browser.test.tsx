@@ -36,7 +36,7 @@ const lineById = (id: string) => store().lines.find((line) => line.id === id);
 
 async function addInstanceAtPlayhead() {
   const screen = await render(<TimelineContextMenu />);
-  await screen.getByRole("button", { name: "Add instance at playhead" }).click();
+  await screen.getByRole("menuitem", { name: "Add instance at playhead" }).click();
   await expect.poll(() => lineById("e")?.instanceIdx).toBe(1);
 }
 
@@ -108,7 +108,7 @@ describe("TimelineContextMenu · group this line", () => {
   it("shares timing in the new group when the setting is on", async () => {
     useSettingsStore.setState({ shareTimingInNewGroups: true });
     const screen = await render(<TimelineContextMenu />);
-    await screen.getByRole("button", { name: "Group this line" }).click();
+    await screen.getByRole("menuitem", { name: "Group this line" }).click();
 
     await expect.poll(() => store().groups[0]?.sharesTiming).toBe(true);
   });
@@ -116,7 +116,7 @@ describe("TimelineContextMenu · group this line", () => {
   it("creates an old group when the setting is off", async () => {
     useSettingsStore.setState({ shareTimingInNewGroups: false });
     const screen = await render(<TimelineContextMenu />);
-    await screen.getByRole("button", { name: "Group this line" }).click();
+    await screen.getByRole("menuitem", { name: "Group this line" }).click();
 
     await expect.poll(() => store().groups.length).toBe(1);
     expect(store().groups[0].sharesTiming).toBeUndefined();
@@ -129,7 +129,7 @@ describe("TimelineContextMenu · open group", () => {
   it("opens the group on the banner's instance and closes the menu", async () => {
     const screen = await render(<TimelineContextMenu />);
 
-    await screen.getByRole("button", { name: /^Open group/ }).click();
+    await screen.getByRole("menuitem", { name: /^Open group/ }).click();
 
     expect(useTimelineStore.getState().focusedGroup).toEqual({ groupId: "g1", hearInstanceIdx: 0 });
     expect(useTimelineStore.getState().contextMenu).toBeNull();
@@ -138,7 +138,7 @@ describe("TimelineContextMenu · open group", () => {
   it("shows the open group shortcut", async () => {
     const screen = await render(<TimelineContextMenu />);
 
-    await expect.element(screen.getByRole("button", { name: /^Open group/ })).toHaveTextContent("↵");
+    await expect.element(screen.getByRole("menuitem", { name: /^Open group/ })).toHaveTextContent("↵");
   });
 });
 
@@ -171,7 +171,7 @@ describe("TimelineContextMenu · add word here in a group that shares timing", (
       contextMenu: { x: 100, y: 100, target: { kind: "track", lineId: "c0", lineIndex: 0, time, type } },
     });
     const screen = await render(<TimelineContextMenu />);
-    await screen.getByRole("button", { name: "Add word here" }).click();
+    await screen.getByRole("menuitem", { name: "Add word here" }).click();
   }
 
   it("keeps the new word inside the range where the latest instance reaches the song end", async () => {

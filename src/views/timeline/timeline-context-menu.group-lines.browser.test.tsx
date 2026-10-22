@@ -21,7 +21,7 @@ async function groupTwoLines() {
       <Toaster />
     </>,
   );
-  await screen.getByRole("button", { name: "Group 2 lines" }).click();
+  await screen.getByRole("menuitem", { name: "Group 2 lines" }).click();
   await expect.element(screen.getByText("Grouped 2 lines")).toBeVisible();
   return screen;
 }

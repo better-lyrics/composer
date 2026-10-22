@@ -45,9 +45,10 @@ describe("TimelineContextMenu", () => {
     openWordContextMenu(line.id);
     await render(<TimelineContextMenu />);
     expect(useTimelineStore.getState().contextMenu).not.toBeNull();
-    document.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
     expect(useTimelineStore.getState().contextMenu).toBeNull();
   });
+
 
   it("toggles word explicit flag when the 'Mark explicit' action is invoked", async () => {
     const line = createLine({

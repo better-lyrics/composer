@@ -1,3 +1,4 @@
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { cn } from "@/utils/cn";
 import {
   FloatingFocusManager,
@@ -7,6 +8,7 @@ import {
   flip,
   offset,
   shift,
+  size,
   useDismiss,
   useFloating,
   useInteractions,
@@ -26,22 +28,26 @@ interface MenuProps {
   onClose: () => void;
   "aria-label": string;
   children: ReactNode;
+  className?: string;
 }
 
 interface MenuItemProps {
-  icon: Icon;
+  icon?: Icon;
+  lead?: ReactNode;
   label: string;
   onSelect: () => void;
   tone?: "default" | "danger";
   trail?: ReactNode;
+  shortcut?: string[];
 }
 
 interface MenuRadioItemProps {
-  lead: ReactNode;
+  lead?: ReactNode;
   label: string;
   description?: string;
   checked: boolean;
   onSelect: () => void;
+  hideLabel?: boolean;
 }
 
 interface MenuContextValue {
@@ -52,7 +58,10 @@ interface MenuContextValue {
 
 // -- Constants ----------------------------------------------------------------
 
-const MENU_SURFACE = "layer-floating w-[236px] p-1.5 rounded-xl surface-floating select-none outline-none";
+const MENU_SURFACE =
+  "layer-floating w-[236px] p-1.5 rounded-xl surface-floating select-none outline-none overflow-y-auto overscroll-contain";
+
+const NAVIGATION_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "Enter", " "]);
 
 const MenuContext = createContext<MenuContextValue | null>(null);
 
@@ -67,7 +76,7 @@ function pointReference(x: number, y: number, within: Element) {
 
 // -- Components ---------------------------------------------------------------
 
-const Menu: React.FC<MenuProps> = ({ anchor, onClose, "aria-label": ariaLabel, children }) => {
+const Menu: React.FC<MenuProps> = ({ anchor, onClose, "aria-label": ariaLabel, children, className }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
   const listRef = useRef<Array<HTMLElement | null>>([]);
   const isPoint = anchor.kind === "point";
@@ -77,7 +86,17 @@ const Menu: React.FC<MenuProps> = ({ anchor, onClose, "aria-label": ariaLabel, c
       if (!open) onClose();
     },
     placement: isPoint ? "bottom-start" : "bottom-end",
-    middleware: [offset(isPoint ? 0 : 4), flip({ padding: 8 }), shift({ padding: 8 })],
+    middleware: [
+      offset(isPoint ? 0 : 4),
+      flip({ padding: 8 }),
+      shift({ padding: 8 }),
+      size({
+        padding: 8,
+        apply: ({ availableHeight, elements }) => {
+          elements.floating.style.maxHeight = `${availableHeight}px`;
+        },
+      }),
+    ],
     whileElementsMounted: autoUpdate,
     elements: isPoint ? undefined : { reference: anchor.element },
   });
@@ -102,8 +121,13 @@ const Menu: React.FC<MenuProps> = ({ anchor, onClose, "aria-label": ariaLabel, c
           ref={refs.setFloating}
           style={floatingStyles}
           aria-label={ariaLabel}
-          {...getFloatingProps()}
-          className={MENU_SURFACE}
+          {...getFloatingProps({
+            // Keys the menu handles stop here, so window-level editor shortcuts never act on them as well.
+            onKeyDown: (event) => {
+              if (NAVIGATION_KEYS.has(event.key)) event.stopPropagation();
+            },
+          })}
+          className={cn(MENU_SURFACE, className)}
         >
           <MenuContext.Provider value={menu}>
             <FloatingList elementsRef={listRef}>{children}</FloatingList>
@@ -135,7 +159,16 @@ function useMenuItem(label: string, onSelect: () => void) {
   };
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ icon: ItemIcon, label, onSelect, tone = "default", trail }) => {
+const MenuItem: React.FC<MenuItemProps> = ({
+  icon: ItemIcon,
+  lead,
+  label,
+  onSelect,
+  tone = "default",
+  trail,
+  shortcut,
+}) => {
+  const end = trail ?? (shortcut && shortcut.length > 0 ? <InlineKeyBadge keys={shortcut} /> : undefined);
   const itemProps = useMenuItem(label, onSelect);
   return (
     <button
@@ -149,20 +182,26 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon: ItemIcon, label, onSelect, to
           : "text-(--label) hover:bg-(--layer-2) hover:text-composer-text data-active:bg-(--layer-2) data-active:text-composer-text",
       )}
     >
-      <ItemIcon aria-hidden="true" className={cn("size-4 shrink-0", tone === "default" && "opacity-70")} />
+      {ItemIcon && <ItemIcon aria-hidden="true" className={cn("size-4 shrink-0", tone === "default" && "opacity-70")} />}
+      {lead}
       <span className="truncate">{label}</span>
-      {trail && <span className="ms-auto flex gap-[3px] text-(--muted)">{trail}</span>}
+      {end && (
+        <span aria-hidden="true" className="ms-auto ps-4 flex gap-[3px] text-(--muted)">
+          {end}
+        </span>
+      )}
     </button>
   );
 };
 
-const MenuRadioItem: React.FC<MenuRadioItemProps> = ({ lead, label, description, checked, onSelect }) => {
+const MenuRadioItem: React.FC<MenuRadioItemProps> = ({ lead, label, description, checked, onSelect, hideLabel }) => {
   const itemProps = useMenuItem(label, onSelect);
   return (
     <button
       type="button"
       role="menuitemradio"
       aria-checked={checked}
+      aria-label={hideLabel ? label : undefined}
       {...itemProps}
       className={cn(
         ITEM_STYLES,
@@ -170,8 +209,8 @@ const MenuRadioItem: React.FC<MenuRadioItemProps> = ({ lead, label, description,
       )}
     >
       {lead}
-      <span className="min-w-0">
-        <span className="block truncate">{label}</span>
+      <span className={cn("min-w-0", hideLabel && !description && "sr-only")}>
+        {!hideLabel && <span className="block truncate">{label}</span>}
         {description && <span className="block text-xs text-(--muted)">{description}</span>}
       </span>
       <IconCheck
@@ -184,7 +223,11 @@ const MenuRadioItem: React.FC<MenuRadioItemProps> = ({ lead, label, description,
 
 const MenuSeparator: React.FC = () => <hr className="h-px mx-1.5 my-1 border-0 bg-(--divider)" />;
 
+const MenuLabel: React.FC<{ children: ReactNode }> = ({ children }) => (
+  <p className="px-2.5 pt-1.5 pb-1 text-xs text-(--muted)">{children}</p>
+);
+
 // -- Exports ------------------------------------------------------------------
 
-export { Menu, MenuItem, MenuRadioItem, MenuSeparator };
+export { Menu, MenuItem, MenuLabel, MenuRadioItem, MenuSeparator };
 export type { MenuAnchor };

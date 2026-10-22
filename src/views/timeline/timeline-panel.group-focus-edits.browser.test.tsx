@@ -40,7 +40,7 @@ describe("TimelinePanel · editing lines in an open group", () => {
         target: { kind: "gutter", lineId: "c1", lineIndex: 2 },
       });
 
-      await screen.getByRole("button", { name: "Add line above" }).click();
+      await screen.getByRole("menuitem", { name: "Add line above" }).click();
 
       await expect.poll(() => store().lines).toHaveLength(5);
       expect(lineIds().indexOf("c1")).toBe(3);

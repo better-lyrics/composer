@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
@@ -98,15 +99,15 @@ describe("TimelineContextMenu conform to group", () => {
     openGutterMenu(["l3", "l4"]);
     const screen = await renderMenu();
 
-    await expect.element(screen.getByRole("button", { name: 'Conform to "Chorus"' })).toBeInTheDocument();
+    await expect.element(screen.getByRole("menuitem", { name: 'Conform to "Chorus"' })).toBeInTheDocument();
   });
 
   it("hides the action when the selection length differs from the template", async () => {
     openGutterMenu(["l3"]);
     const screen = await renderMenu();
 
-    await expect.element(screen.getByRole("button", { name: "Add line above" })).toBeInTheDocument();
-    await expect.element(screen.getByRole("button", { name: /Conform/ })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("menuitem", { name: "Add line above" })).toBeInTheDocument();
+    await expect.element(screen.getByRole("menuitem", { name: /Conform/ })).not.toBeInTheDocument();
   });
 
   it("hides the action when a selected line already belongs to a group", async () => {
@@ -119,8 +120,8 @@ describe("TimelineContextMenu conform to group", () => {
     });
     const screen = await renderMenu();
 
-    await expect.element(screen.getByRole("button", { name: "Add line above" })).toBeInTheDocument();
-    await expect.element(screen.getByRole("button", { name: /Conform/ })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("menuitem", { name: "Add line above" })).toBeInTheDocument();
+    await expect.element(screen.getByRole("menuitem", { name: /Conform/ })).not.toBeInTheDocument();
   });
 
   it("lists every matching group when more than one qualifies", async () => {
@@ -128,8 +129,8 @@ describe("TimelineContextMenu conform to group", () => {
     openGutterMenu(["l3", "l4"]);
     const screen = await renderMenu();
 
-    await expect.element(screen.getByRole("button", { name: "Chorus", exact: true })).toBeInTheDocument();
-    await expect.element(screen.getByRole("button", { name: "Bridge", exact: true })).toBeInTheDocument();
+    await expect.element(screen.getByRole("menuitem", { name: "Chorus", exact: true })).toBeInTheDocument();
+    await expect.element(screen.getByRole("menuitem", { name: "Bridge", exact: true })).toBeInTheDocument();
   });
 
   it("conforms to the group picked from the list, not the first one", async () => {
@@ -137,7 +138,7 @@ describe("TimelineContextMenu conform to group", () => {
     openGutterMenu(["l3", "l4"]);
     const screen = await renderMenu();
 
-    await screen.getByRole("button", { name: "Bridge", exact: true }).click();
+    await screen.getByRole("menuitem", { name: "Bridge", exact: true }).click();
     await screen.getByRole("button", { name: "Conform", exact: true }).click();
 
     await expect.poll(() => useProjectStore.getState().lines[2].groupId).toBe("g2");
@@ -152,7 +153,7 @@ describe("TimelineContextMenu conform to group", () => {
     openGutterMenu(["l3", "l4"]);
     const screen = await renderMenu();
 
-    await screen.getByRole("button", { name: 'Conform to "Chorus"' }).click();
+    await screen.getByRole("menuitem", { name: 'Conform to "Chorus"' }).click();
     await screen.getByRole("button", { name: "Conform", exact: true }).click();
 
     await expect.poll(() => useProjectStore.getState().lines[2].groupId).toBe("g1");
@@ -171,7 +172,7 @@ describe("TimelineContextMenu conform to group", () => {
     openGutterMenu(["l3", "l4"]);
     const screen = await renderMenu();
 
-    await screen.getByRole("button", { name: 'Conform to "Chorus"' }).click();
+    await screen.getByRole("menuitem", { name: 'Conform to "Chorus"' }).click();
     await screen.getByRole("button", { name: "Conform", exact: true }).click();
     await expect.poll(() => useProjectStore.getState().lines[2].groupId).toBe("g1");
 
@@ -189,7 +190,7 @@ describe("TimelineContextMenu conform to group", () => {
     openGutterMenu(["l3", "l4"]);
     const screen = await renderMenu();
 
-    await screen.getByRole("button", { name: 'Conform to "Chorus"' }).click();
+    await screen.getByRole("menuitem", { name: 'Conform to "Chorus"' }).click();
 
     await expect.poll(() => useProjectStore.getState().lines[2].groupId).toBe("g1");
     expect(document.querySelector("dialog")).toBeNull();
@@ -200,7 +201,7 @@ describe("TimelineContextMenu conform to group", () => {
     const before = useProjectStore.getState().lines;
     const screen = await renderMenu();
 
-    await screen.getByRole("button", { name: 'Conform to "Chorus"' }).click();
+    await screen.getByRole("menuitem", { name: 'Conform to "Chorus"' }).click();
     await screen.getByRole("button", { name: "Cancel" }).click();
 
     await expect.poll(() => document.querySelector("dialog")).toBeNull();
@@ -210,9 +211,10 @@ describe("TimelineContextMenu conform to group", () => {
   it("dismisses the menu on Escape without conforming", async () => {
     openGutterMenu(["l3", "l4"]);
     const before = useProjectStore.getState().lines;
-    await renderMenu();
+    const screen = await renderMenu();
+    await expect.poll(() => screen.getByRole("menu").element().contains(document.activeElement)).toBe(true);
 
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    await userEvent.keyboard("{Escape}");
 
     await expect.poll(() => useTimelineStore.getState().contextMenu).toBeNull();
     expect(useProjectStore.getState().lines).toBe(before);
@@ -254,7 +256,7 @@ describe("TimelineContextMenu conform to a group that shares timing", () => {
   async function conformToChorus() {
     openGutterMenu(["l3", "l4"]);
     const screen = await renderMenu();
-    await screen.getByRole("button", { name: 'Conform to "Chorus"' }).click();
+    await screen.getByRole("menuitem", { name: 'Conform to "Chorus"' }).click();
     await screen.getByRole("button", { name: "Conform", exact: true }).click();
     await expect.poll(() => useProjectStore.getState().lines[2].groupId).toBe("g1");
   }

@@ -22,7 +22,7 @@ function seed(lines: LyricLine[], lineId: string, wordIndex: number, type: "word
 
 async function clickDelete(label = "Delete word") {
   const screen = await render(<TimelineContextMenu />);
-  await screen.getByRole("button", { name: label }).click();
+  await screen.getByRole("menuitem", { name: label }).click();
   await expect.poll(() => useTimelineStore.getState().contextMenu).toBeNull();
 }
 
