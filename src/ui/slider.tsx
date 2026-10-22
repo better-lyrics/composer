@@ -12,6 +12,8 @@ interface SliderProps {
   "aria-label"?: string;
   className?: string;
   children?: React.ReactNode;
+  // "overlay" draws nothing: the slider becomes an invisible control over a custom surface.
+  appearance?: "track" | "overlay";
 }
 
 // -- Component ----------------------------------------------------------------
@@ -25,6 +27,7 @@ const Slider: React.FC<SliderProps> = ({
   "aria-label": ariaLabel,
   className = "",
   children,
+  appearance = "track",
 }) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
@@ -119,20 +122,28 @@ const Slider: React.FC<SliderProps> = ({
       aria-valuenow={value}
       aria-label={ariaLabel}
       className={cn(
-        "relative h-1.5 cursor-pointer rounded-full bg-(--well) shadow-(--well-edge) expanded-hit-sm",
+        appearance === "track"
+          ? "relative h-1.5 cursor-pointer rounded-full bg-(--well) shadow-(--well-edge) expanded-hit-sm"
+          : "relative cursor-pointer",
         className,
       )}
       onMouseDown={handleMouseDown}
       onKeyDown={handleKeyDown}
     >
       {children}
-      <div className="absolute inset-y-0 left-0 rounded-full bg-composer-accent" style={{ width: `${percent}%` }} />
-      <div
-        className="absolute top-1/2 size-[18px] -translate-y-1/2 rounded-full bg-linear-to-b from-white to-[color-mix(in_oklab,white_88%,var(--color-composer-bg))] shadow-[0_1px_3px_rgb(0_0_0/0.4),inset_0_0_0_1px_rgb(0_0_0/0.08)]"
-        style={{ left: `calc(${percent}% - 9px)` }}
-      />
+      {appearance === "track" && <SliderFill percent={percent} />}
     </div>
   );
 };
+
+const SliderFill: React.FC<{ percent: number }> = ({ percent }) => (
+  <>
+    <div className="absolute inset-y-0 left-0 rounded-full bg-composer-accent" style={{ width: `${percent}%` }} />
+    <div
+      className="absolute top-1/2 size-[18px] -translate-y-1/2 rounded-full bg-linear-to-b from-white to-[color-mix(in_oklab,white_88%,var(--color-composer-bg))] shadow-[0_1px_3px_rgb(0_0_0/0.4),inset_0_0_0_1px_rgb(0_0_0/0.08)]"
+      style={{ left: `calc(${percent}% - 9px)` }}
+    />
+  </>
+);
 
 export { Slider };

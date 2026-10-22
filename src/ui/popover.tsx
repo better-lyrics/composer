@@ -86,7 +86,7 @@ const Popover: React.FC<PopoverProps> = ({
     <>
       {cloneElement(trigger, {
         ref: refs.setReference,
-        ...getReferenceProps(),
+        ...getReferenceProps(trigger.props as React.HTMLProps<Element>),
         "aria-haspopup": hasPopup,
       } as React.HTMLAttributes<HTMLElement> & { ref: typeof refs.setReference })}
 
