@@ -1,3 +1,4 @@
+import type { LevelEnvelope } from "@/audio/level-envelope";
 import type { PcmJob, PcmJobResult } from "@/audio/pcm-worker";
 
 // -- Helpers ------------------------------------------------------------------
@@ -56,6 +57,17 @@ async function encodeWavOffThread(channels: Float32Array[], sampleRate: number):
   return new Blob([result.bytes], { type: "audio/wav" });
 }
 
+async function computeLevelEnvelopeOffThread(
+  channels: Float32Array[],
+  sampleRate: number,
+  signal?: AbortSignal,
+): Promise<LevelEnvelope> {
+  const result = await runPcmJob({ type: "level-envelope", channels, sampleRate }, channelBuffers(channels), signal);
+  if (result.type === "error") throw new Error(result.message);
+  if (result.type !== "levels") throw new Error(`Unexpected audio worker result: ${result.type}`);
+  return result.envelope;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { detectOnsetsOffThread, encodeWavOffThread };
+export { computeLevelEnvelopeOffThread, detectOnsetsOffThread, encodeWavOffThread };

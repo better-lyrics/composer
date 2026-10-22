@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 // biome-ignore organizeImports: the webworker triple-slash reference must stay before imports.
+import { type LevelEnvelope, computeLevelEnvelope } from "@/audio/level-envelope";
 import { detectVocalOnsets, mixToMono } from "@/audio/onset-detection";
 import { encodeWav } from "@/audio/wav-encode";
 
@@ -9,11 +10,13 @@ declare const self: DedicatedWorkerGlobalScope;
 
 type PcmJob =
   | { type: "detect-onsets"; channels: Float32Array[]; sampleRate: number }
-  | { type: "encode-wav"; channels: Float32Array[]; sampleRate: number };
+  | { type: "encode-wav"; channels: Float32Array[]; sampleRate: number }
+  | { type: "level-envelope"; channels: Float32Array[]; sampleRate: number };
 
 type PcmJobResult =
   | { type: "onsets"; onsets: number[] }
   | { type: "wav"; bytes: ArrayBuffer }
+  | { type: "levels"; envelope: LevelEnvelope }
   | { type: "error"; message: string };
 
 // -- Jobs ---------------------------------------------------------------------
@@ -22,6 +25,11 @@ function runJob(job: PcmJob): { result: PcmJobResult; transfer: Transferable[] }
   if (job.type === "encode-wav") {
     const bytes = encodeWav(job.channels, job.sampleRate);
     return { result: { type: "wav", bytes }, transfer: [bytes] };
+  }
+  if (job.type === "level-envelope") {
+    const envelope = computeLevelEnvelope(job.channels, job.sampleRate);
+    const transfer = [...new Set([...envelope.peaks, ...envelope.rms].map((levels) => levels.buffer))];
+    return { result: { type: "levels", envelope }, transfer };
   }
   const onsets = detectVocalOnsets(mixToMono(job.channels), { sampleRate: job.sampleRate });
   return { result: { type: "onsets", onsets }, transfer: [] };
