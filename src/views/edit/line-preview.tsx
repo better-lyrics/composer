@@ -163,7 +163,9 @@ const LinePreview: React.FC<LinePreviewProps> = ({
       }}
       title={groupTooltip}
     >
+      {/* react-doctor-disable-next-line react-doctor/html-no-nested-interactive -- the gutter is its own click and drag-select target inside the row; splitting them breaks gutter drag-select */}
       <span
+        // react-doctor-disable-next-line react-doctor/prefer-tag-over-role, react-doctor/role-button-requires-complete-keyboard-activation -- never in tab order; a <button> would nest in the row's button role, and Space must stay play/pause after a click focuses the row
         role="button"
         tabIndex={-1}
         className={cn(
@@ -254,6 +256,7 @@ const LinePreview: React.FC<LinePreviewProps> = ({
                 <div className="flex flex-col gap-2 w-56 p-2">
                   <p className="text-xs text-(--muted)">Background vocals</p>
                   {classifyLine(line.text).kind === "inline" && (
+                    // react-doctor-disable-next-line react-doctor/html-no-nested-interactive -- lives in a portalled popover, so it is not nested in the row in the DOM
                     <button
                       type="button"
                       onClick={() => {
