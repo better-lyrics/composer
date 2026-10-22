@@ -73,7 +73,7 @@ const SuggestedField: React.FC<SuggestedFieldProps> = ({
   const filling = suggestion?.kind === "fill";
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={inputId} className="text-xs font-medium text-composer-text-secondary select-none">
+      <label htmlFor={inputId} className="text-[13px] text-(--label) select-none">
         {fieldName}
       </label>
       <span className="relative flex">

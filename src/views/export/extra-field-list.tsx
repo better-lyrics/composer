@@ -41,7 +41,7 @@ const ExtraFieldList: React.FC<ExtraFieldListProps> = ({ values, onChange }) => 
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-composer-text-secondary select-none">Extra fields</span>
+      <span className="text-[13px] text-(--label) select-none">Extra fields</span>
       {pairs.map((pair, index) => (
         <div key={pair.id} className="flex flex-col gap-1">
           <div className="flex items-center gap-2">

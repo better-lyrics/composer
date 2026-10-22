@@ -16,7 +16,7 @@ interface MusicBrainzFooterProps {
 // -- Component ----------------------------------------------------------------
 
 const MusicBrainzFooter: React.FC<MusicBrainzFooterProps> = ({ recordingId, fillCount, onDismiss, onFill }) => (
-  <div className="flex shrink-0 items-center gap-2 border-t border-composer-border bg-composer-bg px-6 py-3">
+  <div className="flex shrink-0 items-center gap-2 border-t border-(--divider) px-5 py-3">
     <LinkButton href={recordingPageUrl(recordingId)} external variant="ghost" size="sm" className="-ml-2.5 gap-1">
       Data from MusicBrainz
       <IconExternalLink className="size-3.5" />

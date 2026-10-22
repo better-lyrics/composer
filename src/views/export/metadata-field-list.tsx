@@ -48,7 +48,7 @@ const MetadataFieldList: React.FC<MetadataFieldListProps> = ({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-composer-text-secondary select-none">{label}</span>
+      <span className="text-[13px] text-(--label) select-none">{label}</span>
       {rows.map((row, index) => (
         <div key={row.id} className="flex items-center gap-2">
           <input

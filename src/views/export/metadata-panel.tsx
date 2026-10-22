@@ -55,14 +55,14 @@ const MetadataPanel: React.FC = () => {
   const { shown, suggestions } = musicBrainz;
 
   return (
-    <div className="flex flex-col min-h-0 max-h-[60%] border-b border-composer-border">
-      <div className="flex h-8 shrink-0 items-center gap-1 pr-2">
+    <div className="flex flex-col min-h-0 max-h-[60%] shrink-0 border-b border-(--divider)">
+      <div className="flex h-11 shrink-0 items-center gap-1 pr-2">
         <Button
           ref={toggleRef}
           hasIcon
           variant="ghost"
           size="md"
-          className="h-8 min-w-0 flex-1 justify-start rounded-none px-6 text-composer-text-secondary"
+          className="h-11 min-w-0 flex-1 justify-start rounded-none pl-4 pr-5 text-[13px] font-semibold text-composer-text active:scale-100"
           aria-expanded={open}
           onClick={() => setOpen((prev) => !prev)}
         >
@@ -89,7 +89,7 @@ const MetadataPanel: React.FC = () => {
             className="flex flex-col min-h-0 overflow-hidden"
           >
             <Scroll className="flex-1 min-h-0">
-              <div className="flex flex-col gap-4 px-6 pt-4 pb-4">
+              <div className="flex flex-col gap-4 px-5 pt-2 pb-4 max-w-3xl">
                 {shown && (
                   <MatchStrip
                     matches={shown.match.matches}
@@ -100,7 +100,7 @@ const MetadataPanel: React.FC = () => {
                 )}
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-composer-text-secondary select-none">Title</span>
+                  <span className="text-[13px] text-(--label) select-none">Title</span>
                   <input
                     type="text"
                     aria-label="Title"
@@ -137,7 +137,7 @@ const MetadataPanel: React.FC = () => {
                 </SuggestedField>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-composer-text-secondary select-none">Language</span>
+                  <span className="text-[13px] text-(--label) select-none">Language</span>
                   <input
                     type="text"
                     aria-label="Language"
@@ -153,7 +153,7 @@ const MetadataPanel: React.FC = () => {
                       Invalid language ・ expected a BCP-47 tag like en or pt-BR
                     </span>
                   )}
-                  <span id={languageHintId} className="text-xs text-composer-text-muted select-none">
+                  <span id={languageHintId} className="text-xs text-(--muted) select-none">
                     BCP-47 tag ・ leave blank to let players detect it
                   </span>
                 </label>

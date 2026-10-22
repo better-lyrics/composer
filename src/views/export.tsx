@@ -205,15 +205,13 @@ const ExportPanel: React.FC = () => {
   return (
     <div data-tour="export-panel" className="flex flex-col flex-1 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border">
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-lg font-medium">Export</h2>
-          <span className="text-sm text-composer-text-muted">
-            {syncedLineCount}/{lineCount} lines synced
-            {editedContent !== null && " · edited"}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-4 h-13 shrink-0 pl-5 pr-2 border-b border-(--divider)">
+        <h2 className="sr-only">Export</h2>
+        <span className="text-[13px] text-(--muted) tabular-nums select-none">
+          <b className="font-mono text-[15px] font-bold text-composer-text">{syncedLineCount}</b> / {lineCount} lines
+          synced{editedContent !== null && " ・ edited"}
+        </span>
+        <div className="flex items-center gap-3">
           <SegmentedControl
             aria-label="Export timing"
             value={exportTiming}
@@ -221,13 +219,14 @@ const ExportPanel: React.FC = () => {
             onChange={setExportTiming}
           />
           {editedContent !== null && (
-            <Button hasIcon onClick={handleRegenerate}>
+            <Button hasIcon size="lg" onClick={handleRegenerate}>
               <IconRefresh className="size-4" />
               Regenerate
             </Button>
           )}
           <Button
             hasIcon
+            size="lg"
             variant={isEditing ? "primary" : "secondary"}
             disabled={exportTiming === "line"}
             onClick={handleEdit}
@@ -235,11 +234,11 @@ const ExportPanel: React.FC = () => {
             <IconEdit className="size-4" />
             {isEditing ? "Done" : "Edit"}
           </Button>
-          <Button hasIcon onClick={handleCopy}>
+          <Button hasIcon size="lg" onClick={handleCopy}>
             {copied ? <IconCheck className="size-4" /> : <IconCopy className="size-4" />}
             {copied ? "Copied" : "Copy"}
           </Button>
-          <Button hasIcon variant="primary" onClick={handleDownload}>
+          <Button hasIcon size="lg" variant="primary" onClick={handleDownload}>
             <IconDownload className="size-4" />
             Download TTML
           </Button>
@@ -247,8 +246,8 @@ const ExportPanel: React.FC = () => {
       </div>
 
       {/* Project management */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-composer-border bg-composer-bg-elevated/50">
-        <span className="text-sm text-composer-text-muted">Project</span>
+      <div className="flex items-center justify-between h-11 shrink-0 pl-5 pr-2 border-b border-(--divider)">
+        <span className="text-[13px] text-(--muted) select-none">Project</span>
         <div className="flex items-center gap-2">
           {projectFileInput}
           <Button hasIcon variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
@@ -274,11 +273,11 @@ const ExportPanel: React.FC = () => {
       {isEditing ? (
         <TtmlEditor value={exportContent} generatedTtml={generatedTtml} onChange={handleEditContent} />
       ) : (
-        <Scroll className="flex-1 p-6">
+        <Scroll className="flex-1 min-h-0 p-4">
           <LyricsCode
             code={exportContent}
             format="ttml"
-            className="p-4 font-mono text-xs whitespace-pre-wrap break-all select-text"
+            className="p-4 font-mono text-xs leading-5 whitespace-pre-wrap break-all select-text rounded-xl"
           />
         </Scroll>
       )}

@@ -41,7 +41,7 @@ const LengthStatus: React.FC<{ match: RankedMatch }> = ({ match }) => {
 const MatchStrip: React.FC<MatchStripProps> = ({ matches, chosen, details, onChoose }) => {
   const subtitle = [details.artists.join(", "), details.releaseTitle, details.releaseYear].filter(Boolean).join(" ・ ");
   return (
-    <div className="flex items-center gap-3 rounded-[10px] border border-composer-border bg-composer-input p-2 pr-2.5">
+    <div className="flex items-center gap-3 rounded-xl bg-(--layer-1) shadow-(--raised-edge) p-2 pr-2.5">
       <CoverArt
         key={details.coverReleaseGroupId}
         releaseGroupId={details.coverReleaseGroupId}

@@ -797,8 +797,8 @@ input[type="range"].settings-slider::-moz-range-progress {
   border-width: 1px;
   border-style: solid;
   border-color: var(--color-composer-border);
-  border-radius: var(--radius-lg);
-  background-color: color-mix(in srgb, var(--color-composer-bg-dark) 60%, transparent);
+  border-radius: 12px;
+  background-color: color-mix(in srgb, var(--color-composer-bg-dark) 55%, var(--color-composer-bg));
 }
 
 @utility lyrics-code-frame {
