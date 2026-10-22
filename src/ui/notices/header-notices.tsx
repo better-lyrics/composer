@@ -1,5 +1,6 @@
 import { useEscapeLayer } from "@/hooks/useEscapeLayer";
 import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { NoticeList } from "@/ui/notices/notice-list";
 import { type NoticeKind, type NoticeKindId, noticeItemCount, orderedKinds } from "@/ui/notices/notice-model";
 import { NoticeReviewModal } from "@/ui/notices/notice-review-modal";
@@ -8,7 +9,8 @@ import { useFitsWidth } from "@/ui/notices/use-fits-width";
 import { useNoticeUndo } from "@/ui/notices/use-notice-undo";
 import { Popover } from "@/ui/popover";
 import { cn } from "@/utils/cn";
-import { IconCheck, IconChevronDown } from "@tabler/icons-react";
+import { pluralize } from "@/utils/pluralize";
+import { IconBulbOff, IconCheck, IconChevronDown } from "@tabler/icons-react";
 import { useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -126,7 +128,18 @@ const HeaderNotices: React.FC<HeaderNoticesProps> = ({ kinds: kindInputs, noun =
   const reviewKind = kinds.find((kind) => kind.id === reviewKindId) ?? null;
   if (reviewKindId && !reviewKind) setReviewKindId(null);
 
-  if (kinds.length === 0 && !notices.pendingUndo) return null;
+  if (kinds.length === 0 && !notices.pendingUndo) {
+    if (notices.dismissedCount === 0) return null;
+    return (
+      <IconButton
+        label={`Show ${pluralize(notices.dismissedCount, "dismissed suggestion")}`}
+        icon={<IconBulbOff className="size-4" />}
+        variant="ghost"
+        onClick={notices.showDismissed}
+        className="size-9 opacity-60 hover:opacity-100"
+      />
+    );
+  }
 
   return (
     <div ref={wrapperRef} className="flex flex-1 w-full min-w-0 justify-end">

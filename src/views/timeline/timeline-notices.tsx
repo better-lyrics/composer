@@ -1,3 +1,4 @@
+import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { HeaderNotices } from "@/ui/notices/header-notices";
 import { useGroupingNotice } from "@/views/grouping/use-grouping-notice";
 import { useExplicitNotice } from "@/views/timeline/use-explicit-notice";
@@ -9,7 +10,8 @@ const TimelineNotices: React.FC = () => {
   const grouping = useGroupingNotice();
   const sharing = useSharedTimingNotice();
   const explicit = useExplicitNotice();
-  return <HeaderNotices kinds={[grouping, sharing, explicit]} />;
+  const projectId = useOpenProjectId();
+  return <HeaderNotices key={projectId} kinds={[grouping, sharing, explicit]} />;
 };
 
 // -- Exports ------------------------------------------------------------------

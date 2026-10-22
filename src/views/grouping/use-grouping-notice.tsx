@@ -15,11 +15,11 @@ import { useMemo } from "react";
 const MODAL_LINE_MAX = 80;
 const MODAL_LINE_LIMIT = 6;
 
-function useGroupingNotice(): NoticeKind | null {
+function useGroupingNotice(enabled = true): NoticeKind | null {
   const lines = useProjectStore((s) => s.lines);
   const dismissed = useProjectStore((s) => s.dismissedSuggestions);
 
-  const suggestions = useMemo(() => findRepeatingStandaloneSections(lines), [lines]);
+  const suggestions = useMemo(() => (enabled ? findRepeatingStandaloneSections(lines) : []), [enabled, lines]);
   const { visible, dismissedFingerprints } = useMemo(
     () => hiddenByDismissal(suggestions, dismissed),
     [suggestions, dismissed],
