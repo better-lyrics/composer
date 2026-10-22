@@ -37,7 +37,7 @@ const RenameProjectModal: React.FC<RenameProjectModalProps> = ({ title, onRename
           onKeyDown={(event) => {
             if (event.key !== "Escape") event.stopPropagation();
           }}
-          className={cn(INPUT_STYLES, "w-full select-text")}
+          className={cn(INPUT_STYLES, "w-full h-9 px-3 rounded-[10px] select-text")}
         />
         <div className="flex justify-end gap-2 select-none">
           <Button variant="secondary" size="sm" onClick={onClose}>
