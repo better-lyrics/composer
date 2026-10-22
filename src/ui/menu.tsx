@@ -14,7 +14,7 @@ import {
   useListNavigation,
   useRole,
 } from "@floating-ui/react";
-import type { Icon } from "@tabler/icons-react";
+import { type Icon, IconCheck } from "@tabler/icons-react";
 import { type ReactNode, createContext, useContext, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -36,6 +36,14 @@ interface MenuItemProps {
   trail?: ReactNode;
 }
 
+interface MenuRadioItemProps {
+  lead: ReactNode;
+  label: string;
+  description?: string;
+  checked: boolean;
+  onSelect: () => void;
+}
+
 interface MenuContextValue {
   activeIndex: number | null;
   getItemProps: ReturnType<typeof useInteractions>["getItemProps"];
@@ -44,7 +52,7 @@ interface MenuContextValue {
 
 // -- Constants ----------------------------------------------------------------
 
-const MENU_SURFACE = "layer-floating w-[236px] p-1 rounded-xl surface-floating select-none outline-none";
+const MENU_SURFACE = "layer-floating w-[236px] p-1.5 rounded-xl surface-floating select-none outline-none";
 
 const MenuContext = createContext<MenuContextValue | null>(null);
 
@@ -106,47 +114,77 @@ const Menu: React.FC<MenuProps> = ({ anchor, onClose, "aria-label": ariaLabel, c
   );
 };
 
-const MenuItem: React.FC<MenuItemProps> = ({ icon: ItemIcon, label, onSelect, tone = "default", trail }) => {
+const ITEM_STYLES =
+  "flex items-center gap-2.5 w-full min-h-8 px-2.5 py-1.5 rounded-lg text-[13px] text-left cursor-pointer outline-none transition-colors";
+
+function useMenuItem(label: string, onSelect: () => void) {
   const menu = useContext(MenuContext);
   const { ref, index } = useListItem({ label });
-  if (!menu) throw new Error("MenuItem must be rendered inside a Menu");
+  if (!menu) throw new Error("Menu items must be rendered inside a Menu");
   const isActive = menu.activeIndex === index;
+  return {
+    ref,
+    tabIndex: isActive ? 0 : -1,
+    "data-active": isActive || undefined,
+    ...menu.getItemProps({
+      onClick: () => {
+        menu.close();
+        onSelect();
+      },
+    }),
+  };
+}
 
+const MenuItem: React.FC<MenuItemProps> = ({ icon: ItemIcon, label, onSelect, tone = "default", trail }) => {
+  const itemProps = useMenuItem(label, onSelect);
   return (
     <button
-      ref={ref}
       type="button"
       role="menuitem"
-      tabIndex={isActive ? 0 : -1}
-      data-active={isActive || undefined}
-      {...menu.getItemProps({
-        onClick: () => {
-          menu.close();
-          onSelect();
-        },
-      })}
+      {...itemProps}
       className={cn(
-        "flex items-center gap-2.5 w-full min-h-8 px-2 py-1.5 rounded-lg text-sm text-left cursor-pointer outline-none",
-        "hover:bg-composer-button data-active:bg-composer-button",
-        tone === "danger" ? "text-composer-negative" : "text-composer-text",
+        ITEM_STYLES,
+        tone === "danger"
+          ? "text-composer-negative hover:bg-composer-negative/12 data-active:bg-composer-negative/12"
+          : "text-(--label) hover:bg-(--layer-2) hover:text-composer-text data-active:bg-(--layer-2) data-active:text-composer-text",
       )}
     >
-      <ItemIcon
-        aria-hidden="true"
-        className={cn(
-          "size-4 shrink-0",
-          tone === "danger" ? "text-composer-negative" : "text-composer-text opacity-50",
-        )}
-      />
+      <ItemIcon aria-hidden="true" className={cn("size-4 shrink-0", tone === "default" && "opacity-70")} />
       <span className="truncate">{label}</span>
-      {trail && <span className="ms-auto flex gap-[3px]">{trail}</span>}
+      {trail && <span className="ms-auto flex gap-[3px] text-(--muted)">{trail}</span>}
     </button>
   );
 };
 
-const MenuSeparator: React.FC = () => <hr className="h-px my-1 border-0 bg-composer-border" />;
+const MenuRadioItem: React.FC<MenuRadioItemProps> = ({ lead, label, description, checked, onSelect }) => {
+  const itemProps = useMenuItem(label, onSelect);
+  return (
+    <button
+      type="button"
+      role="menuitemradio"
+      aria-checked={checked}
+      {...itemProps}
+      className={cn(
+        ITEM_STYLES,
+        "py-2 text-[13.5px] text-composer-text hover:bg-(--layer-2) data-active:bg-(--layer-2)",
+      )}
+    >
+      {lead}
+      <span className="min-w-0">
+        <span className="block truncate">{label}</span>
+        {description && <span className="block text-xs text-(--muted)">{description}</span>}
+      </span>
+      <IconCheck
+        aria-hidden="true"
+        className={cn("ms-auto size-4 shrink-0 text-composer-accent-text", !checked && "invisible")}
+      />
+    </button>
+  );
+};
+
+const MenuSeparator: React.FC = () => <hr className="h-px mx-1.5 my-1 border-0 bg-(--divider)" />;
 
 // -- Exports ------------------------------------------------------------------
 
-export { Menu, MenuItem, MenuSeparator };
+export { Menu, MenuItem, MenuRadioItem, MenuSeparator };
 export type { MenuAnchor };

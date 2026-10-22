@@ -15,7 +15,7 @@ interface ProjectArtProps {
 
 const FRAME_SIZES: Record<ProjectArtSize, string> = {
   xs: "size-7 rounded-md",
-  sm: "size-[22px] rounded-[5px]",
+  sm: "size-[30px] rounded-[7px]",
   md: "size-9 rounded-md",
   row: "size-10 rounded-md",
   dialog: "size-12 rounded-md",
@@ -27,7 +27,7 @@ const LIGHT_STROKE_SIZES: ReadonlySet<ProjectArtSize> = new Set(["hero", "card"]
 
 const ICON_SIZES: Record<ProjectArtSize, string> = {
   xs: "size-3",
-  sm: "size-2.5",
+  sm: "size-3.5",
   md: "size-4",
   row: "size-[18px]",
   dialog: "size-[22px]",
