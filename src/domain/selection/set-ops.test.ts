@@ -1,6 +1,6 @@
 import type { WordSelection } from "@/domain/selection/model";
+import { mergeWordSelections, selectionsAfterWordInsert, toggleWordSelection } from "@/domain/selection/set-ops";
 import { describe, expect, it } from "vitest";
-import { mergeWordSelections, toggleWordSelection } from "@/domain/selection/set-ops";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -61,5 +61,22 @@ describe("mergeWordSelections", () => {
       sel({ wordIndex: 0 }),
       sel({ wordIndex: 1 }),
     ]);
+  });
+});
+
+// -- selectionsAfterWordInsert ------------------------------------------------
+
+describe("selectionsAfterWordInsert", () => {
+  it("regression: a word inserted before the selection keeps the selection on the same words", () => {
+    const selections = [sel({ wordIndex: 1 }), sel({ wordIndex: 2 })];
+    expect(selectionsAfterWordInsert(selections, "l1", "word", 1)).toEqual([
+      sel({ wordIndex: 2 }),
+      sel({ wordIndex: 3 }),
+    ]);
+  });
+
+  it("leaves selections before the insert, on other tracks and on other lines alone", () => {
+    const selections = [sel({ wordIndex: 0 }), sel({ wordIndex: 2, type: "bg" }), sel({ lineId: "l2", wordIndex: 2 })];
+    expect(selectionsAfterWordInsert(selections, "l1", "word", 1)).toEqual(selections);
   });
 });

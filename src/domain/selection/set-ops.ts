@@ -20,6 +20,17 @@ function mergeWordSelections(existing: WordSelection[], incoming: WordSelection[
   return merged;
 }
 
+function selectionsAfterWordInsert(
+  selections: WordSelection[],
+  lineId: string,
+  type: WordSelection["type"],
+  insertedIndex: number,
+): WordSelection[] {
+  return selections.map((w) =>
+    w.lineId === lineId && w.type === type && w.wordIndex >= insertedIndex ? { ...w, wordIndex: w.wordIndex + 1 } : w,
+  );
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { mergeWordSelections, toggleWordSelection };
+export { mergeWordSelections, selectionsAfterWordInsert, toggleWordSelection };

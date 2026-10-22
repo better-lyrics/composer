@@ -1,5 +1,6 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { trackWords } from "@/domain/line/tracks";
+import { selectionsAfterWordInsert } from "@/domain/selection/set-ops";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
@@ -101,7 +102,9 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     } else {
       updateLineWithHistory(lineId, manualBackgroundWordEdit(words));
     }
-    useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type });
+    const timeline = useTimelineStore.getState();
+    timeline.setSelectedWords(selectionsAfterWordInsert(timeline.selectedWords, lineId, type, newIndex));
+    timeline.setEditingWord({ lineId, wordIndex: newIndex, type });
     clearContextMenu();
   }, [contextMenu, lines, duration, updateLineWithHistory, clearContextMenu]);
 
