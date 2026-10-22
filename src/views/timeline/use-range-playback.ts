@@ -31,6 +31,14 @@ function useRangePlayback(): void {
     if (!active || !audio) return;
     let endTimer: ReturnType<typeof setTimeout> | undefined;
     let seekPending = false;
+    let ownSeeksAhead = 0;
+    let lastSeekWasOwn = false;
+
+    // A lag spike can land seeked after playback has already left a short range, so a seek of our own never reads as seeking away.
+    const seekInsideRange = (time: number) => {
+      ownSeeksAhead++;
+      useAudioStore.getState().seekTo(time);
+    };
 
     const scheduleEnd = () => {
       clearTimeout(endTimer);
@@ -53,26 +61,29 @@ function useRangePlayback(): void {
         store.setIsPlaying(false);
         if (isPlayingSelection()) stopSelectionPlayback({ pause: false });
       }
-      store.seekTo(step.seekTo);
+      seekInsideRange(step.seekTo);
     };
 
     const handlePlay = () => {
       const range = currentPlaybackRange();
       const start = range ? soloPlayStart(audio.currentTime, range) : null;
-      if (start !== null) useAudioStore.getState().seekTo(start);
+      if (start !== null) seekInsideRange(start);
       scheduleEnd();
     };
 
     // Chrome fires a timeupdate at the seek target before seeked, with audio.seeking already false.
     const handleSeeking = () => {
       seekPending = true;
+      lastSeekWasOwn = ownSeeksAhead > 0;
+      if (lastSeekWasOwn) ownSeeksAhead--;
       clearTimeout(endTimer);
     };
 
     const handleSeeked = () => {
       seekPending = false;
+      ownSeeksAhead = 0;
       const range = currentPlaybackRange();
-      if (isPlayingSelection() && range && isOutsideRange(audio.currentTime, range)) {
+      if (!lastSeekWasOwn && isPlayingSelection() && range && isOutsideRange(audio.currentTime, range)) {
         stopSelectionPlayback({ pause: false });
         return;
       }
@@ -84,7 +95,7 @@ function useRangePlayback(): void {
       const range = currentPlaybackRange();
       if (!range) return;
       const store = useAudioStore.getState();
-      store.seekTo(range.begin);
+      seekInsideRange(range.begin);
       if (currentlyLoops()) store.setIsPlaying(true);
       else if (isPlayingSelection()) stopSelectionPlayback({ pause: true });
     };
