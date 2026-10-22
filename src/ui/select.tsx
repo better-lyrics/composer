@@ -61,7 +61,7 @@ const Select: React.FC<SelectProps> = ({
       aria-label={ariaLabel}
       disabled={disabled}
       className={cn(
-        "inline-flex items-center justify-between gap-1.5 h-7 pl-3 pr-2 text-sm rounded-lg cursor-pointer transition-colors bg-composer-input text-composer-text border border-composer-border hover:border-composer-accent focus:outline-none focus:border-composer-accent disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-composer-border",
+        "inline-flex items-center justify-between gap-1.5 h-7 pl-2.5 pr-2 text-[13px] rounded-lg cursor-pointer transition-colors bg-(--well) text-composer-text border border-(--edge) hover:border-(--edge-strong) focus:outline-none focus:border-(--lit-ring) disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-(--edge)",
         className,
       )}
     >
@@ -109,14 +109,16 @@ const Select: React.FC<SelectProps> = ({
                     },
                   })}
                   className={cn(
-                    "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm text-left text-composer-text transition-colors data-active:bg-composer-button-hover",
-                    isSelected ? "bg-composer-button font-medium" : "cursor-pointer hover:bg-composer-button",
+                    "flex items-center gap-2.5 w-full h-8.5 px-2 rounded-lg text-[13px] text-left transition-colors data-active:bg-(--layer-1) data-active:text-composer-text",
+                    isSelected
+                      ? "bg-(--layer-2) text-composer-text"
+                      : "cursor-pointer text-(--label) hover:bg-(--layer-1) hover:text-composer-text",
                   )}
                 >
                   <span className="flex-1">{option.label}</span>
                   <IconCheck
                     aria-hidden={!isSelected}
-                    className={cn("size-3.5 text-composer-accent shrink-0", !isSelected && "invisible")}
+                    className={cn("size-[15px] text-composer-accent-text shrink-0", !isSelected && "invisible")}
                   />
                 </button>
               );

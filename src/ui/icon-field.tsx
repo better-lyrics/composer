@@ -44,7 +44,7 @@ const IconField: React.FC<IconFieldProps> = ({
       }}
       className={cn(
         INPUT_STYLES,
-        "peer w-full h-8 pl-8 pr-3 rounded-lg hover:border-composer-border-hover placeholder:text-composer-text-muted select-text",
+        "peer w-full h-8 pl-8 pr-3 rounded-lg select-text",
         className,
       )}
     />
