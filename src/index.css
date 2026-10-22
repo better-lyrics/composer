@@ -423,6 +423,7 @@ braccato-lyrics .blyrics-container {
 
 @utility workspace-card {
   position: relative;
+  isolation: isolate;
   margin-inline: 8px;
   overflow: hidden;
   border-radius: var(--radius-card);
