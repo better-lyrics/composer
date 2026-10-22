@@ -1,14 +1,10 @@
 import { getAgentColor } from "@/domain/agent/colors";
-import { INPUT_STYLES } from "@/ui/input-styles";
-import { Popover } from "@/ui/popover";
-import { Select } from "@/ui/select";
-import { SingerTag } from "@/ui/singer-tag";
-import { classifyLine } from "@/utils/background-vocal-extraction";
 import { cn } from "@/utils/cn";
 import { stripSplitCharacter } from "@/utils/split-character";
+import { LinePreviewActions } from "@/views/edit/line-preview-actions";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
-import { IconAlertTriangle, IconArrowBackUp, IconChevronDown, IconLink, IconMicrophone } from "@tabler/icons-react";
-import { useCallback, useState } from "react";
+import { IconLink } from "@tabler/icons-react";
+import { useCallback } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -34,38 +30,15 @@ interface LinePreviewProps {
 const LINE_COLUMN = "line-cell flex justify-center w-11 shrink-0 font-mono font-medium";
 const ROW_BODY = "flex flex-1 min-w-0 items-center gap-2 pl-3 pr-2 border-b border-(--divider) bg-clip-padding";
 
+// -- Helpers ------------------------------------------------------------------
+
+function rowBodyTone(isSelected: boolean, hasBrackets: boolean, inGroup: boolean): string {
+  if (isSelected) return "bg-composer-accent/15";
+  if (hasBrackets) return "bg-composer-error/8";
+  return inGroup ? "bg-[color-mix(in_oklab,var(--group)_4%,transparent)]" : "group-hover:bg-(--layer-1)";
+}
+
 // -- Components ---------------------------------------------------------------
-
-const BackgroundTextInput: React.FC<{
-  initialText: string;
-  onCommit: (text: string) => void;
-  onClose: () => void;
-}> = ({ initialText, onCommit, onClose }) => {
-  const [text, setText] = useState(initialText);
-  const commitIfEdited = () => {
-    if (text !== initialText) onCommit(text);
-  };
-
-  return (
-    <input
-      type="text"
-      aria-label="Background vocals text"
-      value={text}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={commitIfEdited}
-      onKeyDown={(e) => {
-        e.stopPropagation();
-        if (e.key === "Enter") {
-          e.preventDefault();
-          commitIfEdited();
-          onClose();
-        }
-      }}
-      placeholder="ooh, ah, etc."
-      className={cn(INPUT_STYLES, "w-full h-8 py-0")}
-    />
-  );
-};
 
 const PreviewGroupHeader: React.FC<{ label: string; ordinal: number; total: number; color: string }> = ({
   label,
@@ -88,6 +61,23 @@ const PreviewGroupHeader: React.FC<{ label: string; ordinal: number; total: numb
         ・ {ordinal} of {total}
       </span>
     </span>
+  </div>
+);
+
+const EmptyLinePreview: React.FC<{
+  lineNumber: number;
+  columnStyle: React.CSSProperties;
+  onGutterMouseEnter: LinePreviewProps["onGutterMouseEnter"];
+}> = ({ lineNumber, columnStyle, onGutterMouseEnter }) => (
+  <div className="flex items-stretch min-h-7 opacity-60">
+    <span
+      className={cn(LINE_COLUMN, "items-center text-[11px] tabular-nums text-(--muted) select-none")}
+      style={columnStyle}
+      onMouseEnter={(e) => onGutterMouseEnter(lineNumber, e)}
+    >
+      {lineNumber}
+    </span>
+    <span className={cn(ROW_BODY, "text-[13px] italic text-(--muted)")}>(empty line)</span>
   </div>
 );
 
@@ -137,16 +127,11 @@ const LinePreview: React.FC<LinePreviewProps> = ({
 
   if (line.isEmpty) {
     return (
-      <div className="flex items-stretch min-h-7 opacity-60">
-        <span
-          className={cn(LINE_COLUMN, "items-center text-[11px] tabular-nums text-(--muted) select-none")}
-          style={columnStyle}
-          onMouseEnter={(e) => onGutterMouseEnter(line.lineNumber, e)}
-        >
-          {line.lineNumber}
-        </span>
-        <span className={cn(ROW_BODY, "text-[13px] italic text-(--muted)")}>(empty line)</span>
-      </div>
+      <EmptyLinePreview
+        lineNumber={line.lineNumber}
+        columnStyle={columnStyle}
+        onGutterMouseEnter={onGutterMouseEnter}
+      />
     );
   }
 
@@ -184,18 +169,7 @@ const LinePreview: React.FC<LinePreviewProps> = ({
         {line.lineNumber}
       </span>
 
-      <div
-        className={cn(
-          ROW_BODY,
-          isSelected
-            ? "bg-composer-accent/15"
-            : line.hasBrackets
-              ? "bg-composer-error/8"
-              : groupColor
-                ? "bg-[color-mix(in_oklab,var(--group)_4%,transparent)]"
-                : "group-hover:bg-(--layer-1)",
-        )}
-      >
+      <div className={cn(ROW_BODY, rowBodyTone(isSelected, line.hasBrackets, groupColor !== undefined))}>
         <span
           data-testid="line-preview-text"
           className={cn(
@@ -214,77 +188,16 @@ const LinePreview: React.FC<LinePreviewProps> = ({
           </span>
         )}
 
-        <div className="flex items-center gap-1.5 ml-auto transition-opacity opacity-0 group-hover:opacity-100">
-          {agents.length > 1 && line.lineId && (
-            <Select
-              aria-label="Line agent"
-              value={line.agentId}
-              onChange={(next) => {
-                if (isSelected && hasMultipleSelected) {
-                  onBulkAgentChange(next);
-                } else {
-                  onAgentChange(line.lineId, next);
-                }
-              }}
-              options={agents.map((agent) => ({ value: agent.id, label: agent.name || agent.id }))}
-              renderOption={(option) => <SingerTag color={getAgentColor(option.value)}>{option.label}</SingerTag>}
-              trigger={
-                <button
-                  type="button"
-                  aria-label="Line agent"
-                  className="singer-tag cursor-pointer hover:bg-[color-mix(in_oklab,var(--agent)_24%,transparent)]"
-                  style={{ "--agent": agentColor }}
-                >
-                  {agents.find((agent) => agent.id === line.agentId)?.name || line.agentId}
-                  <IconChevronDown className="size-[13px] -mt-0.5 -mr-[3px] opacity-60 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90" />
-                </button>
-              }
-            />
-          )}
-
-          {line.lineId && (
-            <Popover
-              placement="bottom-start"
-              trigger={
-                <button
-                  type="button"
-                  className="flex items-center gap-1 h-[22px] pl-[5px] pr-[7px] rounded-[7px] text-[11.5px] cursor-pointer bg-(--layer-2) hover:bg-(--layer-3) text-(--muted) hover:text-composer-text"
-                >
-                  <IconMicrophone className="size-[13px]" />
-                  BG
-                </button>
-              }
-            >
-              {(close) => (
-                <div className="flex flex-col gap-2 w-[220px] p-3">
-                  <p className="text-[13.5px] font-bold text-composer-text">Background vocals</p>
-                  {classifyLine(line.text).kind === "inline" && (
-                    // react-doctor-disable-next-line react-doctor/html-no-nested-interactive -- lives in a portalled popover, so it is not nested in the row in the DOM
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (line.lineId) onExtractLine(line.lineId);
-                        close();
-                      }}
-                      className="flex w-full items-center gap-1 px-0.5 text-xs cursor-pointer text-composer-accent-text hover:text-composer-text"
-                    >
-                      <IconArrowBackUp className="size-[13px]" />
-                      Pull from ( )
-                    </button>
-                  )}
-                  <BackgroundTextInput
-                    initialText={line.backgroundText ?? ""}
-                    onCommit={(text) => onBackgroundChange(line.lineId, text)}
-                    onClose={close}
-                  />
-                </div>
-              )}
-            </Popover>
-          )}
-
-          {line.hasTiming && <span className="text-[11.5px] text-composer-accent-text">synced</span>}
-          {line.hasBrackets && <IconAlertTriangle className="size-[15px] text-composer-error" />}
-        </div>
+        <LinePreviewActions
+          line={line}
+          agents={agents}
+          agentColor={agentColor}
+          editsSelection={isSelected && hasMultipleSelected}
+          onAgentChange={onAgentChange}
+          onBulkAgentChange={onBulkAgentChange}
+          onBackgroundChange={onBackgroundChange}
+          onExtractLine={onExtractLine}
+        />
       </div>
     </div>
   );

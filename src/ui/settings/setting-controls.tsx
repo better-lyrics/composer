@@ -98,7 +98,7 @@ const SelectSetting: React.FC<{ id: SettingId; options: SelectOption[] }> = ({ i
         value={value}
         onChange={(next) => set(settingKey, next)}
         options={options}
-        className="h-9 pl-3 pr-[5px] rounded-xl border-transparent hover:border-transparent btn-raised [&>svg]:size-3.5 [&>svg]:duration-150"
+        className="h-9 pl-3 pr-[5px] rounded-xl border-transparent hover:border-transparent btn-raised [&>svg]:size-3.5"
       />
     </SettingRowLayout>
   );
