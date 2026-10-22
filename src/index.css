@@ -733,6 +733,7 @@ input[type="range"].settings-slider::-moz-range-progress {
 /* Timeline word: an elevated face tinted with the singer colour (--agent). The lane, fit and lit states are data attributes. */
 @layer components {
   .word-face {
+    --selection-ring: color-mix(in oklab, var(--agent) 80%, var(--ink));
     padding: 0 8px;
     border-radius: 10px;
     overflow: hidden;
@@ -742,7 +743,8 @@ input[type="range"].settings-slider::-moz-range-progress {
     text-align: center;
     color: color-mix(in oklab, var(--ink) 94%, transparent);
     background-color: color-mix(in oklab, var(--agent) 30%, var(--word-face));
-    background-image: linear-gradient(to bottom, color-mix(in oklab, var(--ink) 6%, transparent), transparent 60%);
+    background-image: var(--hatch, none),
+      linear-gradient(to bottom, color-mix(in oklab, var(--ink) 6%, transparent), transparent 60%);
     box-shadow: var(--word-elev);
     /* Only playback's light fades out; selection, hover and drag feedback land on the spot. */
     transition-property: background-color;
@@ -785,7 +787,8 @@ input[type="range"].settings-slider::-moz-range-progress {
       color: var(--ink);
       opacity: 1;
       background-color: color-mix(in oklab, var(--agent) 58%, var(--word-face));
-      background-image: linear-gradient(to bottom, color-mix(in oklab, white 14%, transparent), transparent 70%);
+      background-image: var(--hatch, none),
+        linear-gradient(to bottom, color-mix(in oklab, white 14%, transparent), transparent 70%);
       box-shadow:
         inset 0 1px 0 color-mix(in oklab, white 30%, transparent),
         inset 0 0 0 1px color-mix(in oklab, var(--ink) 6%, transparent), 0 1px 1px var(--word-shadow),
@@ -794,23 +797,42 @@ input[type="range"].settings-slider::-moz-range-progress {
     }
     &[data-selected] {
       color: var(--ink);
-      box-shadow: inset 0 0 0 2px var(--ink), inset 0 1px 0 var(--highlight);
+      opacity: 1;
+      background-color: color-mix(in oklab, var(--agent) 40%, var(--word-face));
+      box-shadow:
+        inset 0 0 0 2px var(--selection-ring), inset 0 3px 0 -1px color-mix(in oklab, white 9%, transparent),
+        0 1px 1px var(--word-shadow),
+        0 3px 8px -4px var(--word-shadow);
+    }
+    &[data-selected][data-lit] {
+      background-color: color-mix(in oklab, var(--agent) 58%, var(--word-face));
     }
   }
   html[data-scheme="light"] .word-face {
-    background-image: linear-gradient(
-      to bottom,
-      color-mix(in oklab, var(--agent) 6%, white),
-      color-mix(in oklab, var(--agent) 14%, color-mix(in oklab, white 70%, var(--color-composer-bg-dark)))
-    );
+    background-image: var(--hatch, none),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--agent) 6%, white),
+        color-mix(in oklab, var(--agent) 14%, color-mix(in oklab, white 70%, var(--color-composer-bg-dark)))
+      );
     box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--agent) 30%, var(--edge)), 0 1px 2px rgb(var(--shade) / 0.14);
     &[data-lit] {
       color: #fff;
-      background-image: none;
+      background-image: var(--hatch, none);
       background-color: color-mix(in oklab, var(--agent) 80%, black);
     }
     &[data-selected] {
-      box-shadow: inset 0 0 0 2px var(--ink), inset 0 1px 0 var(--highlight);
+      background-image: var(--hatch, none),
+        linear-gradient(
+          to bottom,
+          color-mix(in oklab, var(--agent) 10%, white),
+          color-mix(in oklab, var(--agent) 24%, color-mix(in oklab, white 70%, var(--color-composer-bg-dark)))
+        );
+      box-shadow: inset 0 0 0 2px var(--selection-ring), 0 1px 2px rgb(var(--shade) / 0.14);
+    }
+    &[data-selected][data-lit] {
+      background-image: var(--hatch, none);
+      box-shadow: inset 0 0 0 2px var(--ink), 0 1px 2px rgb(var(--shade) / 0.14);
     }
   }
 }
@@ -852,7 +874,7 @@ input[type="range"].settings-slider::-moz-range-progress {
 }
 
 .is-explicit-word {
-  background-image: repeating-linear-gradient(
+  --hatch: repeating-linear-gradient(
     45deg,
     color-mix(in oklab, var(--color-composer-explicit) 18%, transparent) 0 3px,
     transparent 3px 8px
