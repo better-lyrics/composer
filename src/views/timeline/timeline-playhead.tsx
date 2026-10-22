@@ -11,6 +11,7 @@ import { createFollowInput, fillFollowInput } from "@/views/timeline/follow-inpu
 import { createRowLayoutCache } from "@/views/timeline/row-layout-cache";
 import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
 import { createTimelineLights, paintTimelineLights } from "@/views/timeline/timeline-lights";
+import { pinCutWordLabels } from "@/views/timeline/word-label-pin";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createFollowMemory, followScrollTop, followStep, resetFollowMemory } from "@/views/timeline/vertical-follow";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -65,6 +66,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
   const [followInput] = useState(createFollowInput);
   const [rowLayoutFor] = useState(createRowLayoutCache);
   const [lights] = useState(createTimelineLights);
+  const [pinnedLabels] = useState(() => new Set<HTMLElement>());
   const verticalTargetRef = useRef<number | null>(null);
   const lastMaskRef = useRef<string>("");
   const playheadCenterXLocalRef = useRef<number>(0);
@@ -118,6 +120,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
     if (container) {
       playheadRef.current.style.height = `${container.scrollHeight}px`;
       paintTimelineLights(lights, container, useProjectStore.getState().lines, displayTime);
+      pinCutWordLabels(container, container.scrollLeft, pinnedLabels);
     }
 
     const containerRect = containerRef.current?.getBoundingClientRect();
