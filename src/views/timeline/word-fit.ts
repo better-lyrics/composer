@@ -15,8 +15,8 @@ interface WordLabelFit {
 const TICK_WIDTH_PX = 20;
 const LABEL_PADDING_PX: Record<WordTrackType, number> = { word: 18, bg: 14 };
 const NARROW_LABEL_PADDING_PX: Record<WordTrackType, number> = { word: 6, bg: 4 };
-const LABEL_FONT: Record<WordTrackType, string> = { word: "500 13px", bg: "italic 500 11.5px" };
-const NARROW_LABEL_FONT: Record<WordTrackType, string> = { word: "500 11px", bg: "italic 500 11.5px" };
+const LABEL_FONT: Record<WordTrackType, string> = { word: "500 13px", bg: "500 11.5px" };
+const NARROW_LABEL_FONT: Record<WordTrackType, string> = { word: "500 11px", bg: "500 11.5px" };
 
 let measureContext: CanvasRenderingContext2D | null | undefined;
 let fontFamily: string | undefined;

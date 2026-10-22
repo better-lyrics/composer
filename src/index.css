@@ -780,7 +780,6 @@ input[type="range"].settings-slider::-moz-range-progress {
       padding: 0 6px;
       border-radius: 7px;
       font-size: 11.5px;
-      font-style: italic;
       opacity: 0.78;
       &[data-fit="narrow"] {
         padding: 0 2px;
