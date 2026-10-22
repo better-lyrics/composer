@@ -14,7 +14,6 @@ import { useSettingsStore } from "@/stores/settings";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { Button } from "@/ui/button";
 import { Scroll } from "@/ui/scroll";
-import { Select } from "@/ui/select";
 import { extractBackgroundVocals, extractInlineFromLine } from "@/utils/background-vocal-extraction";
 import { pluralWord, pluralize } from "@/utils/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
@@ -27,6 +26,7 @@ import { LinePreview, PreviewGroupHeader } from "@/views/edit/line-preview";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import { useSmartPaste } from "@/views/edit/use-smart-paste";
+import { PreviewSelectionBar } from "@/views/edit/preview-selection-bar";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
@@ -388,14 +388,20 @@ const EditPanel: React.FC = () => {
       <div className="flex items-center justify-between gap-4 h-13 shrink-0 pl-5 pr-2 border-b border-(--divider) select-none">
         <div className="flex items-center gap-3">
           <h2 className="sr-only">Lyrics Editor</h2>
-          <span className="text-[13px] text-(--muted) tabular-nums">
+          <span className="flex items-baseline gap-1.5 text-[13px] text-(--muted) tabular-nums">
             <b className="font-mono text-[15px] font-bold text-composer-text">{nonEmptyCount}</b>{" "}
             {pluralWord(nonEmptyCount, "line", "lines")}
           </span>
           <AgentManager />
         </div>
         <div className="flex items-center gap-3">
-          <Button hasIcon size="lg" onClick={handleExtractBackgroundVocals} disabled={!canExtractBackgroundVocals}>
+          <Button
+            hasIcon
+            size="lg"
+            onClick={handleExtractBackgroundVocals}
+            disabled={!canExtractBackgroundVocals}
+            title={canExtractBackgroundVocals ? undefined : "No parentheses to extract"}
+          >
             <IconMicrophone className="size-4" />
             Extract background vocals
           </Button>
@@ -453,31 +459,11 @@ const EditPanel: React.FC = () => {
 
           {/* Preview */}
           <div className="flex flex-col flex-1 min-w-0">
-            <div className="flex items-center justify-between h-7 mb-2">
-              <span className="text-[13px] font-medium select-none text-(--label)">Preview</span>
-              <div
-                className={`flex items-center gap-2 transition-opacity ${selectedLines.size > 0 ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-              >
-                <span className="text-xs text-(--muted)">{pluralize(selectedLines.size, "line")} selected</span>
-                {agents.length > 1 && (
-                  <Select
-                    aria-label="Assign agent"
-                    placeholder="Assign agent"
-                    value=""
-                    onChange={handleBulkAgentChange}
-                    options={agents.map((agent) => ({ value: agent.id, label: agent.name || agent.id }))}
-                    className="h-6 text-xs"
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={handleClearSelection}
-                  className="h-6 px-1.5 rounded-md text-xs cursor-pointer text-(--muted) hover:text-composer-text hover:bg-(--layer-2)"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
+            <PreviewSelectionBar
+              selectedCount={selectedLines.size}
+              onAssignAgent={handleBulkAgentChange}
+              onClear={handleClearSelection}
+            />
             <Scroll className="flex-1 border rounded-xl border-(--edge) bg-(--well)">
               {parsed.length === 0 || (parsed.length === 1 && parsed[0].isEmpty) ? (
                 <div className="flex items-center justify-center h-full text-sm text-(--muted)">

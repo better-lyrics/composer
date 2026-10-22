@@ -13,12 +13,9 @@ interface SyncGestureControlsProps {
 }
 
 const GESTURE_KEY =
-  "w-[52px] [--key-height:56px] [--key-depth:4px] [--key-radius:999px] touch-none tap-highlight-none text-[11px] font-semibold text-(--muted)";
+  "w-[52px] [--key-height:56px] [--key-depth:4px] [--key-radius:999px] touch-none tap-highlight-none text-[11px] font-semibold text-(--muted) data-pressed:text-composer-accent-text";
 
-const shortcutLabel = (id: string) =>
-  getEffectiveKeysArray(id)
-    .map((key) => key.toUpperCase())
-    .join(" ");
+const shortcutLabel = (id: string) => getEffectiveKeysArray(id).join(" ");
 
 const SyncGestureControls: React.FC<SyncGestureControlsProps> = ({
   currentWord,

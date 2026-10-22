@@ -7,7 +7,7 @@ import { alignmentNeedsReview, getLanguageReviewTracks, languageLineAnchorId } f
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { StatusChip } from "@/ui/status-chip";
-import { lineColumnStyle } from "@/ui/line-column";
+import { getAgentColor } from "@/domain/agent/colors";
 import { cn } from "@/utils/cn";
 import { AlignButton, BackgroundLanguageFields } from "@/views/languages/background-language-fields";
 import { LanguageField as Field } from "@/views/languages/language-field";
@@ -66,8 +66,8 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
       )}
     >
       <span
-        className="pt-3.5 text-center text-xs text-(--muted) tabular-nums select-none border-r-2"
-        style={lineColumnStyle(line.agentId)}
+        className="line-cell pt-3.5 text-center font-mono font-medium text-xs text-(--muted) tabular-nums select-none [box-shadow:inset_-2px_0_0_var(--rail)]"
+        style={{ "--agent": getAgentColor(line.agentId) }}
       >
         {index + 1}
       </span>

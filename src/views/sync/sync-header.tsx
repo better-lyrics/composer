@@ -44,7 +44,7 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
   return (
     <div className="flex items-center justify-between gap-4 h-13 shrink-0 pl-5 pr-2 border-b border-(--divider)">
       <h2 className="sr-only">Sync</h2>
-      <span className="text-[13px] text-(--muted) tabular-nums select-none">
+      <span className="flex items-baseline gap-1.5 text-[13px] text-(--muted) tabular-nums select-none">
         <b className="font-mono text-[15px] font-bold text-composer-text">{progress.done}</b> / {progress.total}{" "}
         {granularity === "word" ? "words" : "lines"} synced
       </span>
@@ -86,7 +86,7 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
         )}
         {!isActive && !editMode && (
           <Button hasIcon size="lg" variant="primary" onClick={handleStartSync}>
-            <IconPlayerPlayFilled className="size-4" />
+            <IconPlayerPlayFilled className="size-3.5" />
             Start
           </Button>
         )}

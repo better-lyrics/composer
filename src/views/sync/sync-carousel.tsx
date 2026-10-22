@@ -16,9 +16,9 @@ function useCarouselColors(): { accentColor: string; secondaryColor: string; dis
   // biome-ignore lint/correctness/useExhaustiveDependencies: activeThemeId re-reads the DOM-resolved colors when the theme changes
   return useMemo(
     () => ({
-      accentColor: readToken("accent"),
+      accentColor: readToken("accent-text"),
       secondaryColor: readToken("text-secondary"),
-      disabledColor: readToken("text-disabled"),
+      disabledColor: readToken("text-faint"),
     }),
     // react-doctor-disable-next-line react-doctor/exhaustive-deps -- activeThemeId is the intended cache key: readToken reads DOM CSS vars non-reactively, so the memo must recompute when the theme changes
     [activeThemeId],
@@ -180,7 +180,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
                 )}
                 <SharedTagSlot tag={line.sharedTag?.placement === "above" ? line.sharedTag : undefined} />
               </span>
-              <div className="flex flex-wrap items-center justify-center text-4xl font-medium gap-x-4 gap-y-3">
+              <div className="flex flex-wrap items-center justify-center text-4xl font-semibold tracking-[-0.012em] leading-[1.1] gap-x-4 gap-y-1.5">
                 {granularity === "line" ? (
                   <m.span
                     initial={false}

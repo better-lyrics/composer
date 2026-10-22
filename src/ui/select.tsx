@@ -3,7 +3,7 @@ import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
 import { cn } from "@/utils/cn";
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
-import { type ReactElement, cloneElement, useRef, useState } from "react";
+import { type ReactElement, type ReactNode, cloneElement, useRef, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -23,7 +23,24 @@ interface SelectProps {
   className?: string;
   disabled?: boolean;
   trigger?: ReactElement<{ disabled?: boolean }>;
+  appearance?: SelectAppearance;
+  renderOption?: (option: SelectOption) => ReactNode;
 }
+
+type SelectAppearance = "field" | "pick";
+
+// -- Constants ----------------------------------------------------------------
+
+const TRIGGER_STYLES: Record<SelectAppearance, string> = {
+  field:
+    "h-7 pl-2.5 pr-2 text-[13px] rounded-lg bg-(--well) text-composer-text border border-(--edge) hover:border-(--edge-strong) focus:outline-none focus:border-(--lit-ring) disabled:hover:border-(--edge)",
+  pick: "h-6 pl-2 pr-1.5 text-xs rounded-[7px] bg-(--layer-2) text-(--label) shadow-[inset_0_0_0_1px_var(--divider)] hover:shadow-[inset_0_0_0_1px_var(--lit-ring)] aria-expanded:shadow-[inset_0_0_0_1px_var(--lit-ring)] focus:outline-none",
+};
+
+const CHEVRON_STYLES: Record<SelectAppearance, string> = {
+  field: "size-4 text-composer-text",
+  pick: "size-[13px]",
+};
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -46,6 +63,8 @@ const Select: React.FC<SelectProps> = ({
   className,
   disabled = false,
   trigger,
+  appearance = "field",
+  renderOption,
 }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const listRef = useRef<Array<HTMLElement | null>>([]);
@@ -61,15 +80,23 @@ const Select: React.FC<SelectProps> = ({
       aria-label={ariaLabel}
       disabled={disabled}
       className={cn(
-        "inline-flex items-center justify-between gap-1.5 h-7 pl-2.5 pr-2 text-[13px] rounded-lg cursor-pointer transition-colors bg-(--well) text-composer-text border border-(--edge) hover:border-(--edge-strong) focus:outline-none focus:border-(--lit-ring) disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-(--edge)",
+        "inline-flex items-center justify-between gap-1.5 cursor-pointer transition-[color,background-color,border-color,box-shadow] disabled:cursor-not-allowed disabled:opacity-50",
+        TRIGGER_STYLES[appearance],
         className,
       )}
     >
       <span className="flex items-center gap-1.5 truncate">
         {leadingColor && <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: leadingColor }} />}
-        <span className={cn("truncate", showPlaceholder && "text-composer-text-muted")}>{triggerLabel}</span>
+        <span className={cn("truncate", showPlaceholder && appearance === "field" && "text-(--muted)")}>
+          {triggerLabel}
+        </span>
       </span>
-      <IconChevronDown className="size-4 text-composer-text opacity-50 shrink-0" />
+      <IconChevronDown
+        className={cn(
+          "shrink-0 opacity-50 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90",
+          CHEVRON_STYLES[appearance],
+        )}
+      />
     </button>
   );
 
@@ -88,7 +115,7 @@ const Select: React.FC<SelectProps> = ({
       {(close, getItemProps) => (
         <Scroll className="max-h-80" onInitialized={focusTabStopOption}>
           {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role -- styled single-select popover; datalist is input autocomplete, not a listbox, and would reintroduce native chrome */}
-          <div role="listbox" aria-label={ariaLabel} className="flex flex-col gap-0.5 p-1 w-max min-w-36">
+          <div role="listbox" aria-label={ariaLabel} className="flex flex-col p-1.5 w-max min-w-50">
             {options.map((option, index) => {
               const isSelected = option.value === value;
               return (
@@ -109,13 +136,13 @@ const Select: React.FC<SelectProps> = ({
                     },
                   })}
                   className={cn(
-                    "flex items-center gap-2.5 w-full h-8.5 px-2 rounded-lg text-[13px] text-left transition-colors data-active:bg-(--layer-1) data-active:text-composer-text",
+                    "flex items-center gap-2 w-full h-8.5 px-2 rounded-lg text-[13px] text-left transition-colors data-active:bg-(--layer-1) data-active:text-composer-text",
                     isSelected
                       ? "bg-(--layer-2) text-composer-text"
                       : "cursor-pointer text-(--label) hover:bg-(--layer-1) hover:text-composer-text",
                   )}
                 >
-                  <span className="flex-1">{option.label}</span>
+                  <span className="flex flex-1">{renderOption ? renderOption(option) : option.label}</span>
                   <IconCheck
                     aria-hidden={!isSelected}
                     className={cn("size-[15px] text-composer-accent-text shrink-0", !isSelected && "invisible")}

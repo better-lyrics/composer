@@ -526,7 +526,7 @@ const SyncPanel: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center flex-1 px-8 py-12">
+        <div className="flex flex-col items-center justify-center flex-1 px-12 py-12">
           {isComplete ? (
             syncComplete ? (
               <div className="text-center">

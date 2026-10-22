@@ -8,7 +8,6 @@ import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
 import { type WordHandlers, WordRenderer } from "@/views/sync/word-renderer";
 import { IconLink } from "@tabler/icons-react";
 import { memo, useEffect, useMemo, useRef } from "react";
-import { lineColumnRail, lineColumnTint } from "@/ui/line-column";
 import { cn } from "@/utils/cn";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -121,7 +120,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
     if (editMode && lineBegin !== undefined && lineEnd !== undefined) {
       return (
         <span className="relative inline-block">
-          <span className="text-composer-text-muted">{renderedText}</span>
+          <span className="text-(--muted)">{renderedText}</span>
           <span
             className="absolute inset-0 overflow-hidden text-composer-accent-text"
             data-word-begin={lineBegin}
@@ -133,11 +132,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
         </span>
       );
     }
-    return (
-      <span className={lineBegin !== undefined ? "text-composer-text-muted" : "text-composer-text"}>
-        {renderedText}
-      </span>
-    );
+    return <span className={lineBegin !== undefined ? "text-(--muted)" : "text-composer-text"}>{renderedText}</span>;
   };
 
   const showSyllableIndicators = useSettingsStore((s) => s.showSyllableIndicators);
@@ -277,16 +272,13 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
       className={cn("group/row flex w-full text-left cursor-pointer", isCurrent && "bg-composer-accent/7")}
     >
       <span
-        className="flex justify-center w-12 shrink-0 h-auto border-r-2 shadow-[inset_0_-1px_0_var(--divider)]"
-        style={{
-          background: lineColumnTint(getAgentColor(agentId ?? "")),
-          borderRightColor: lineColumnRail(getAgentColor(agentId ?? ""), isCurrent),
-        }}
+        className="line-cell flex justify-center w-12 shrink-0 h-auto"
+        style={{ "--agent": getAgentColor(agentId ?? "") }}
         title={agentId}
       >
         <span
           className={cn(
-            "grid place-items-center h-10 text-xs tabular-nums",
+            "grid place-items-center h-10 font-mono font-medium text-xs tabular-nums",
             isCurrent ? "font-semibold text-composer-text" : "text-(--muted)",
           )}
         >
@@ -296,7 +288,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
       <span className="flex flex-1 min-w-0 items-start gap-4 pt-2.5 pb-3 px-5 border-b border-(--divider) transition-colors group-hover/row:bg-(--layer-1)">
         <div className="flex flex-col flex-1 min-w-0 gap-2 text-[17px] font-medium leading-6">
           {granularity === "line" || lineSynced ? (
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center justify-between gap-3">
               {renderLineContent()}
               {lineBegin !== undefined && onNudgeLine && onSetLineTime && (
                 <TimeNudgeInput

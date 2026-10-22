@@ -51,7 +51,7 @@ function SegmentedControl<T extends string>({
             disabled={option.disabled}
             onClick={() => onChange(option.value)}
             className={cn(
-              "inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-[13px] font-medium rounded-lg whitespace-nowrap transition-[color,background-color,box-shadow] cursor-pointer",
+              "inline-flex items-center justify-center gap-1.5 h-7 px-3 text-[13px] font-medium rounded-lg whitespace-nowrap transition-[color,background-color,box-shadow] cursor-pointer",
               option.iconOnly && "w-7 px-0",
               "disabled:cursor-not-allowed disabled:text-composer-text-faint disabled:line-through",
               isSelected

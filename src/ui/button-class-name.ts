@@ -38,7 +38,7 @@ const SIZE_STYLES: Record<ButtonSize, string> = {
 const SIZE_STYLES_WITH_ICON: Record<ButtonSize, string> = {
   sm: "h-7 pl-2 pr-3 text-xs",
   md: "h-8 pl-2.5 pr-3 text-[13px]",
-  lg: "h-9 pl-2.5 pr-3.5 text-[13px] rounded-xl",
+  lg: "h-9 pl-2.5 pr-3 text-[13px] rounded-xl",
   icon: "size-8 p-0",
 };
 

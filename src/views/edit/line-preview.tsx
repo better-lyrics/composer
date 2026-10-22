@@ -1,13 +1,13 @@
 import { getAgentColor } from "@/domain/agent/colors";
 import { INPUT_STYLES } from "@/ui/input-styles";
-import { lineColumnRail, lineColumnTint } from "@/ui/line-column";
 import { Popover } from "@/ui/popover";
 import { Select } from "@/ui/select";
+import { SingerTag } from "@/ui/singer-tag";
 import { classifyLine } from "@/utils/background-vocal-extraction";
 import { cn } from "@/utils/cn";
 import { stripSplitCharacter } from "@/utils/split-character";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
-import { IconAlertTriangle, IconChevronDown, IconLink, IconMicrophone } from "@tabler/icons-react";
+import { IconAlertTriangle, IconArrowBackUp, IconChevronDown, IconLink, IconMicrophone } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -31,7 +31,7 @@ interface LinePreviewProps {
 
 // -- Constants ----------------------------------------------------------------
 
-const LINE_COLUMN = "flex justify-center w-11 shrink-0 border-r-2 shadow-[inset_0_-1px_0_var(--divider)]";
+const LINE_COLUMN = "line-cell flex justify-center w-11 shrink-0 font-mono font-medium";
 const ROW_BODY = "flex flex-1 min-w-0 items-center gap-2 pl-3 pr-2 border-b border-(--divider) bg-clip-padding";
 
 // -- Components ---------------------------------------------------------------
@@ -62,7 +62,7 @@ const BackgroundTextInput: React.FC<{
         }
       }}
       placeholder="ooh, ah, etc."
-      className={cn(INPUT_STYLES, "w-full")}
+      className={cn(INPUT_STYLES, "w-full h-8 py-0")}
     />
   );
 };
@@ -74,7 +74,7 @@ const PreviewGroupHeader: React.FC<{ label: string; ordinal: number; total: numb
   color,
 }) => (
   <div className="flex h-[26px] select-none" style={{ "--group": color }} aria-hidden>
-    <span className="grid place-items-center w-11 shrink-0 border-r-2 border-[color-mix(in_oklab,var(--group)_45%,var(--gutter-bg))] bg-[color-mix(in_oklab,var(--group)_10%,var(--gutter-bg))] shadow-[inset_0_-1px_0_var(--divider)]">
+    <span className="grid place-items-center w-11 shrink-0 bg-[color-mix(in_oklab,var(--group)_10%,var(--gutter-bg))] shadow-[inset_-2px_0_0_color-mix(in_oklab,var(--group)_45%,var(--gutter-bg)),inset_0_-1px_0_var(--divider)]">
       <IconLink className="size-[13px] text-(--group)" />
     </span>
     <span
@@ -85,7 +85,7 @@ const PreviewGroupHeader: React.FC<{ label: string; ordinal: number; total: numb
     >
       <b className="font-semibold text-(--group)">{label}</b>
       <span className="tabular-nums">
-        · {ordinal} of {total}
+        ・ {ordinal} of {total}
       </span>
     </span>
   </div>
@@ -108,7 +108,7 @@ const LinePreview: React.FC<LinePreviewProps> = ({
   didDragRef,
 }) => {
   const agentColor = getAgentColor(line.agentId);
-  const columnStyle = { background: lineColumnTint(agentColor), borderRightColor: lineColumnRail(agentColor, false) };
+  const columnStyle = { "--agent": agentColor };
 
   const selectLineForBulkEdit = useCallback(
     (e: React.MouseEvent) => {
@@ -191,7 +191,9 @@ const LinePreview: React.FC<LinePreviewProps> = ({
             ? "bg-composer-accent/15"
             : line.hasBrackets
               ? "bg-composer-error/8"
-              : cn(groupColor && "bg-[color-mix(in_oklab,var(--group)_4%,transparent)]", "group-hover:bg-(--layer-1)"),
+              : groupColor
+                ? "bg-[color-mix(in_oklab,var(--group)_4%,transparent)]"
+                : "group-hover:bg-(--layer-1)",
         )}
       >
         <span
@@ -225,15 +227,16 @@ const LinePreview: React.FC<LinePreviewProps> = ({
                 }
               }}
               options={agents.map((agent) => ({ value: agent.id, label: agent.name || agent.id }))}
+              renderOption={(option) => <SingerTag color={getAgentColor(option.value)}>{option.label}</SingerTag>}
               trigger={
                 <button
                   type="button"
                   aria-label="Line agent"
-                  className="singer-tag cursor-pointer"
+                  className="singer-tag cursor-pointer hover:bg-[color-mix(in_oklab,var(--agent)_24%,transparent)]"
                   style={{ "--agent": agentColor }}
                 >
                   {agents.find((agent) => agent.id === line.agentId)?.name || line.agentId}
-                  <IconChevronDown className="size-3.5 -mt-0.5 -mr-1 opacity-60" />
+                  <IconChevronDown className="size-[13px] -mt-0.5 -mr-[3px] opacity-60 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90" />
                 </button>
               }
             />
@@ -253,8 +256,8 @@ const LinePreview: React.FC<LinePreviewProps> = ({
               }
             >
               {(close) => (
-                <div className="flex flex-col gap-2 w-56 p-2">
-                  <p className="text-xs text-(--muted)">Background vocals</p>
+                <div className="flex flex-col gap-2 w-[220px] p-3">
+                  <p className="text-[13.5px] font-bold text-composer-text">Background vocals</p>
                   {classifyLine(line.text).kind === "inline" && (
                     // react-doctor-disable-next-line react-doctor/html-no-nested-interactive -- lives in a portalled popover, so it is not nested in the row in the DOM
                     <button
@@ -263,8 +266,9 @@ const LinePreview: React.FC<LinePreviewProps> = ({
                         if (line.lineId) onExtractLine(line.lineId);
                         close();
                       }}
-                      className="flex w-full items-center gap-1 text-xs cursor-pointer text-composer-accent-text hover:text-composer-text"
+                      className="flex w-full items-center gap-1 px-0.5 text-xs cursor-pointer text-composer-accent-text hover:text-composer-text"
                     >
+                      <IconArrowBackUp className="size-[13px]" />
                       Pull from ( )
                     </button>
                   )}

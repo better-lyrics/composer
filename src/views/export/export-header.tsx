@@ -50,7 +50,7 @@ const ExportHeader: React.FC<ExportHeaderProps> = ({
     <h2 className="sr-only">Export</h2>
     <div className="flex items-center gap-3">
       <span className="flex items-baseline gap-1.5 text-[13px] text-(--muted) tabular-nums select-none">
-        <b className="font-mono text-[15px] font-bold text-composer-text">{syncedLineCount}</b>/ {lineCount} lines
+        <b className="font-mono text-[15px] font-bold text-composer-text">{syncedLineCount}</b> / {lineCount} lines
         synced{isEdited && " ・ edited"}
       </span>
       <ProjectMenuButton />
@@ -61,10 +61,9 @@ const ExportHeader: React.FC<ExportHeaderProps> = ({
         value={exportTiming}
         options={exportTimingOptions(lineTimingLocked)}
         onChange={onExportTimingChange}
-        className="[&>button]:px-3"
       />
       {isEdited && (
-        <Button hasIcon size="lg" onClick={onRegenerate} className="pr-3">
+        <Button hasIcon size="lg" onClick={onRegenerate}>
           <IconRefresh className="size-4" />
           Regenerate
         </Button>
@@ -75,16 +74,15 @@ const ExportHeader: React.FC<ExportHeaderProps> = ({
         variant={isEditing ? "primary" : "secondary"}
         disabled={exportTiming === "line"}
         onClick={onEdit}
-        className="pr-3"
       >
         <IconEdit className="size-4" />
         {isEditing ? "Done" : "Edit"}
       </Button>
-      <Button hasIcon size="lg" onClick={onCopy} className="pr-3">
+      <Button hasIcon size="lg" onClick={onCopy}>
         {copied ? <IconCheck className="size-4" /> : <IconCopy className="size-4" />}
         {copied ? "Copied" : "Copy"}
       </Button>
-      <Button hasIcon size="lg" variant="primary" onClick={onDownload} className="pr-3">
+      <Button hasIcon size="lg" variant="primary" onClick={onDownload}>
         <IconDownload className="size-4" />
         Download TTML
       </Button>

@@ -93,7 +93,8 @@ const EditAgentForm: React.FC<{
         onChange={(next) => setType(next as AgentType)}
         options={AGENT_TYPE_OPTIONS}
         placement="bottom-start"
-        className="w-full h-8"
+        appearance="pick"
+        className="w-full h-8 pl-2.5 pr-2 rounded-lg text-[13px]"
       />
       <div className="flex gap-2 mt-0.5">
         <Button variant="primary" onClick={handleSave} className="flex-1 h-[30px]">
@@ -163,7 +164,8 @@ const AddAgentForm: React.FC<{ onDone: () => void; onBack: () => void }> = ({ on
         onChange={(next) => setCustomType(next as AgentType)}
         options={AGENT_TYPE_OPTIONS}
         placement="bottom-start"
-        className="w-full h-8"
+        appearance="pick"
+        className="w-full h-8 pl-2.5 pr-2 rounded-lg text-[13px]"
       />
       <Button variant="primary" onClick={handleAddCustom} disabled={!customName.trim()} className="h-[30px] mt-0.5">
         Add Custom Agent
@@ -177,7 +179,7 @@ const AgentList: React.FC<{ onEdit: (agent: Agent) => void; onAdd: () => void }>
   const lines = useProjectStore((s) => s.lines);
   return (
     <div>
-      <p className="px-2 pt-2 pb-1.5 text-xs text-(--muted)">Agents</p>
+      <p className="px-2 pt-2 pb-1.5 text-[13.5px] font-bold text-composer-text">Agents</p>
       <div className="grid grid-cols-[max-content_1fr_auto] max-h-74 overflow-y-auto">
         {agents.map((agent) => {
           const lineCount = lines.filter((line) => line.agentId === agent.id).length;
@@ -204,7 +206,7 @@ const AgentList: React.FC<{ onEdit: (agent: Agent) => void; onAdd: () => void }>
           onClick={onAdd}
           className="flex items-center gap-1.5 w-full h-[34px] px-2 rounded-lg text-[13px] cursor-pointer text-(--label) hover:bg-(--layer-1) hover:text-composer-text"
         >
-          <IconPlus className="size-4" />
+          <IconPlus className="size-[18px]" />
           Add agent
         </button>
       </div>
@@ -246,7 +248,7 @@ const AgentManager: React.FC = () => {
         <Button
           size="lg"
           hasIcon
-          className="pr-1.5 aria-expanded:[background:var(--raised-face-hover)] aria-expanded:text-composer-text"
+          className="pr-[5px] aria-expanded:[background:var(--raised-face-hover)] aria-expanded:text-composer-text"
         >
           <IconMicrophone2 className="size-4" />
           Agents
