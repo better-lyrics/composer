@@ -113,8 +113,8 @@ const OverviewScrub: React.FC = () => {
     if (headRef.current) headRef.current.style.translate = `${headX - 1}px 0`;
     const headBar = Math.floor(headX / BAR_PITCH);
     if (headBar === painter.headBar) return;
-    const previous = painter.headBar < 0 ? painter.bars.length : painter.headBar;
-    paintBars(painter, Math.min(previous, headBar) - 1, Math.max(previous, headBar) + 1, headX);
+    if (painter.headBar < 0) paintBars(painter, 0, painter.bars.length - 1, headX);
+    else paintBars(painter, Math.min(painter.headBar, headBar) - 1, Math.max(painter.headBar, headBar) + 1, headX);
     painter.headBar = headBar;
   };
 
