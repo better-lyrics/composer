@@ -29,7 +29,7 @@ const LanguageTrackBar: React.FC<LanguageTrackBarProps> = ({
   onAdd,
   onRemove,
 }) => (
-  <div className="tray min-w-0 overflow-x-auto select-none">
+  <div className="tray min-w-0 overflow-x-auto overscroll-none select-none">
     <span className={CHIP}>
       <IconAbc aria-hidden="true" className="size-3.5 text-(--muted)" />
       Transliteration

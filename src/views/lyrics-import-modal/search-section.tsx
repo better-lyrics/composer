@@ -224,7 +224,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
         </div>
       )}
 
-      <div className="flex flex-col gap-1.5 p-1.5 bg-(--layer-1) border border-(--edge) rounded-xl min-h-[192px] max-h-[256px] overflow-y-auto">
+      <div className="flex flex-col gap-1.5 p-1.5 bg-(--layer-1) border border-(--edge) rounded-xl min-h-[192px] max-h-[256px] overflow-y-auto overscroll-none">
         <SearchResults
           results={results}
           isFetching={isFetching}

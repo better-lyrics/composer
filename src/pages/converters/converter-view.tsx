@@ -35,7 +35,8 @@ interface ConverterViewProps {
   outputFormat: OutputFormat;
 }
 
-const OUTPUT_PANE_CLASS = "flex-1 min-h-[280px] md:min-h-[420px] overflow-auto font-mono text-xs p-3 select-text";
+const OUTPUT_PANE_CLASS =
+  "flex-1 min-h-[280px] md:min-h-[420px] overflow-auto overscroll-none font-mono text-xs p-3 select-text";
 
 const ConverterView: React.FC<ConverterViewProps> = ({
   title,

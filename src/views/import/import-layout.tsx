@@ -28,7 +28,7 @@ const OrDivider: React.FC = () => (
 const ImportZone: React.FC<{ tone?: "warning"; children: React.ReactNode }> = ({ tone, children }) => (
   <div
     className={cn(
-      "flex flex-1 min-h-0 overflow-y-auto rounded-[calc(var(--radius-card)-6px)] border-[1.5px] border-dashed transition-colors",
+      "flex flex-1 min-h-0 overflow-y-auto overscroll-none rounded-[calc(var(--radius-card)-6px)] border-[1.5px] border-dashed transition-colors",
       tone === "warning"
         ? "border-composer-warning/40 bg-[color-mix(in_oklab,var(--color-composer-warning)_3%,var(--well))]"
         : "border-composer-text/13 hover:border-composer-text/22 bg-(--well)",

@@ -10,7 +10,8 @@ interface GuideCodeProps {
 
 // -- Constants ----------------------------------------------------------------
 
-const GUIDE_CODE_CLASS = "bg-composer-bg-dark p-4 overflow-x-auto text-xs font-mono text-composer-text";
+const GUIDE_CODE_CLASS =
+  "bg-composer-bg-dark p-4 overflow-x-auto overscroll-x-none text-xs font-mono text-composer-text";
 
 // -- Components ---------------------------------------------------------------
 

@@ -175,7 +175,7 @@ const LibraryScreen: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 min-h-0 mb-2 workspace-card">
-      <main ref={mainRef} className="flex flex-1 min-h-0 overflow-y-auto">
+      <main ref={mainRef} className="flex flex-1 min-h-0 overflow-y-auto overscroll-none">
         <div
           data-first-paint={firstPaint}
           className="group/lib flex flex-col gap-10 flex-1 min-w-0 max-w-[1264px] mx-auto px-16 pt-8 max-[720px]:px-5"

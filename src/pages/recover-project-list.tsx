@@ -71,7 +71,7 @@ const RecoverProjectList: React.FC = () => {
           Download all
         </Button>
       </div>
-      <ul className="flex flex-col max-h-72 overflow-y-auto rounded-lg border border-(--edge) divide-y divide-(--divider)">
+      <ul className="flex flex-col max-h-72 overflow-y-auto overscroll-none rounded-lg border border-(--edge) divide-y divide-(--divider)">
         {projects.map((project) => (
           <li key={project.key} className="flex items-center gap-3 px-3 py-2">
             <div className="flex-1 min-w-0">

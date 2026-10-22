@@ -136,7 +136,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
       bodyClassName="p-0"
       initialFocusRef={textareaRef}
     >
-      <div className="grid h-[min(78vh,48rem)] min-h-0 overflow-y-auto lg:overflow-hidden lg:grid-cols-[minmax(20rem,0.8fr)_minmax(32rem,1.4fr)]">
+      <div className="grid h-[min(78vh,48rem)] min-h-0 overflow-y-auto overscroll-none lg:overflow-hidden lg:grid-cols-[minmax(20rem,0.8fr)_minmax(32rem,1.4fr)]">
         <div className="flex min-h-0 flex-col gap-4 p-5 border-b lg:border-b-0 lg:border-r border-(--divider)">
           <div className="flex items-center justify-between gap-3">
             <SegmentedControl aria-label="Import as" value={kind} options={KIND_OPTIONS} onChange={setKind} />
@@ -189,7 +189,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
                 : alignment.warning}
             </div>
           )}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-none">
             {lines.map((line, index) => (
               <div
                 key={line.id}

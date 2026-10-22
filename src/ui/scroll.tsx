@@ -44,7 +44,7 @@ const Scroll: React.FC<ScrollProps> = ({
     <OverlayScrollbarsComponent
       ref={componentRef}
       defer
-      className={cn("overflow-auto", className)}
+      className={cn("overflow-auto overscroll-none", className)}
       options={{
         scrollbars: { theme: "os-theme-light", autoHide, autoHideDelay },
       }}

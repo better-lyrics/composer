@@ -144,7 +144,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
       className="max-h-[calc(100vh-2rem)] max-w-3xl flex flex-col"
       bodyClassName="p-0 min-h-0 flex flex-1 flex-col"
     >
-      <div data-transliteration-alignment-scroll-region className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div data-transliteration-alignment-scroll-region className="min-h-0 flex-1 overflow-y-auto overscroll-none">
         <div className="flex flex-col gap-5 p-5">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-composer-text-secondary text-pretty select-none">

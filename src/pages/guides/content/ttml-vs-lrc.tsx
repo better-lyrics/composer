@@ -8,7 +8,7 @@ const TtmlVsLrcContent: React.FC = () => (
     </p>
 
     <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Quick comparison</h2>
-    <div className="overflow-x-auto my-6">
+    <div className="overflow-x-auto overscroll-x-none my-6">
       <table className="w-full text-sm border border-(--divider) rounded-lg">
         <thead className="bg-(--layer-1)">
           <tr>

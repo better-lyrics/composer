@@ -62,7 +62,7 @@ interface MenuContextValue {
 // -- Constants ----------------------------------------------------------------
 
 const MENU_SURFACE =
-  "layer-floating w-[236px] p-1.5 rounded-xl surface-floating select-none outline-none overflow-y-auto overscroll-contain";
+  "layer-floating w-[236px] p-1.5 rounded-xl surface-floating select-none outline-none overflow-y-auto overscroll-none";
 
 const NAVIGATION_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "Enter", " "]);
 

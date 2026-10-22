@@ -216,6 +216,12 @@ braccato-lyrics .blyrics-container {
   .font-mono {
     font-weight: 500;
   }
+
+  /* Panes stop at their edges: no rubber band past the content, and no scroll chaining to the page. */
+  [data-overlayscrollbars-viewport],
+  textarea {
+    overscroll-behavior: none;
+  }
 }
 
 /* Every portalled layer (modal, popover, menu, tooltip) shares one z-index so open order decides what is on top. */
