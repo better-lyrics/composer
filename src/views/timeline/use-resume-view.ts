@@ -28,11 +28,15 @@ function useResumeView(scrollContainerRef: RefObject<HTMLDivElement | null>, rea
     const container = scrollContainerRef.current;
     if (!ready || !container) return;
     const apply = () => {
-      const { pendingResumeView, setPendingResumeView } = useTimelineStore.getState();
-      if (!pendingResumeView || container.clientWidth === 0) return;
-      setPendingResumeView(null);
-      resumeScroll(container, pendingResumeView);
-      // A scroll the container already had fires no scroll event, so record the applied view directly.
+      if (container.clientWidth === 0) return;
+      const { pendingResumeView, setPendingResumeView, scrollTop } = useTimelineStore.getState();
+      if (pendingResumeView) {
+        setPendingResumeView(null);
+        resumeScroll(container, pendingResumeView);
+      } else if (scrollTop !== null) {
+        return;
+      }
+      // A view that never scrolls fires no scroll event, so record it once it is on screen.
       const { setScrollLeft, setScrollTop } = useTimelineStore.getState();
       setScrollLeft(container.scrollLeft);
       setScrollTop(container.scrollTop);

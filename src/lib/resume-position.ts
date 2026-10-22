@@ -48,6 +48,7 @@ function rememberResumePosition(): void {
   if (useTimelineStore.getState().focusedGroup) return;
   const id = openProjectIdSnapshot();
   if (!id) return;
+  if (pending && pending.id !== id) void flushResumePosition();
   pending = { id, position: captureResumePosition() };
   if (timer !== null) window.clearTimeout(timer);
   timer = window.setTimeout(() => {
@@ -66,6 +67,12 @@ async function flushResumePosition(): Promise<void> {
   } catch (err) {
     console.error(`${LOG_PREFIX} could not remember the Timeline position:`, err);
   }
+}
+
+// Playback may still be running, so no pause has captured the position being left.
+function saveResumePositionNow(): void {
+  rememberResumePosition();
+  void flushResumePosition();
 }
 
 // -- Watching -----------------------------------------------------------------
@@ -99,4 +106,4 @@ function watchResumePosition(): () => void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { flushResumePosition, watchResumePosition };
+export { flushResumePosition, saveResumePositionNow, watchResumePosition };

@@ -28,6 +28,7 @@ import {
 import { buildSaveInput, storedAudioFile } from "@/lib/project-snapshot";
 import { clearAllProjects } from "@/lib/project-storage";
 import { ProjectDeletedError, isProjectDeleted } from "@/lib/project-tombstones";
+import { saveResumePositionNow } from "@/lib/resume-position";
 import { awaitInFlightSaves, trackSave } from "@/lib/save-status";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -104,6 +105,7 @@ async function openProject(id: string): Promise<void> {
     if (id === openProjectIdSnapshot()) return;
     markOpenProjectChanged();
     flushPendingSaveQuietly();
+    saveResumePositionNow();
     adoptOpenProjectId(id);
     applyProjectToStores(payload);
     await Promise.all([
@@ -122,6 +124,7 @@ function createProject(): string {
   claimRequest();
   markOpenProjectChanged();
   flushPendingSaveQuietly();
+  saveResumePositionNow();
   const id = createProjectId();
   adoptOpenProjectId(id);
   applyProjectToStores(EMPTY_RESTORE);

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { usePersistence } from "@/hooks/usePersistence";
+import { openProject } from "@/lib/open-project";
 import { findOpenProjectId } from "@/lib/open-project-session";
 import { cancelPendingSave, flushPendingSave } from "@/lib/persistence-debounce";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
@@ -9,6 +10,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
+import { seedStoredProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -84,6 +86,18 @@ describe("usePersistence: resume position", () => {
       await flushResumePosition();
       expect((await openProjectEntry())?.resumePosition).toEqual({ time: 70, zoom: 220 });
       expect(useTimelineStore.getState().pendingResumeView).toEqual({ time: 70, zoom: 220 });
+    });
+
+    it("regression: switching projects during playback saves the position being left", async () => {
+      await startSavedProject();
+      const leftId = await findOpenProjectId();
+      await seedStoredProject("other");
+      useAudioStore.getState().setIsPlaying(true);
+      useAudioStore.getState().setCurrentTime(33);
+      await openProject("other");
+      await flushResumePosition();
+      if (!leftId) throw new Error("project was not saved");
+      expect((await loadProjectIndexEntry(leftId))?.resumePosition?.time).toBe(33);
     });
 
     it("regression: an open group does not save its fitted zoom", async () => {
