@@ -45,7 +45,7 @@ const ThemeSettings: React.FC = () => {
   }
 
   return (
-    <div className="divide-y divide-composer-border">
+    <div className="divide-y divide-(--divider)">
       <div className="pt-3 pb-4">
         <ThemePresetGallery onCustomize={handleCustomize} onEditCustom={handleEditCustom} />
       </div>
@@ -64,7 +64,7 @@ const ThemeSettings: React.FC = () => {
             placeholder="ctm1:dark:..."
             aria-label="Theme code"
             spellCheck={false}
-            className="min-w-0 flex-1 rounded-lg border border-composer-border bg-composer-input px-3 py-1.5 font-mono text-xs text-composer-text outline-none cursor-text select-text focus:border-composer-border-hover"
+            className="min-w-0 flex-1 rounded-lg border border-(--edge) bg-(--well) px-3 py-1.5 font-mono text-xs text-composer-text outline-none cursor-text select-text focus:border-(--edge-strong)"
           />
           <Button size="sm" variant="secondary" hasIcon onClick={handleImport} disabled={importValue.trim() === ""}>
             <IconDownload size={14} />

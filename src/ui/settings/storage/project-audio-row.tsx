@@ -26,7 +26,7 @@ const ProjectAudioRowView: React.FC<ProjectAudioRowProps> = ({ entry, isOpen, no
   const KindIcon = isYouTube ? IconBrandYoutube : IconFileMusic;
 
   return (
-    <li className="group grid h-11 grid-cols-[28px_minmax(0,1fr)_120px_72px_28px] items-center gap-3 rounded-lg px-2 hover:bg-composer-input">
+    <li className="group grid h-11 grid-cols-[28px_minmax(0,1fr)_120px_72px_28px] items-center gap-3 rounded-lg px-2 hover:bg-(--layer-1)">
       <ProjectArt src={entry.thumbnailDataUrl} size="xs" />
       <span className="min-w-0">
         <span data-audio-title className="block truncate text-[13px] font-medium text-composer-text select-text">

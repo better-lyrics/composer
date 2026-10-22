@@ -38,7 +38,7 @@ const SettingsSectionRows: React.FC<{ section: SettingsSectionId }> = ({ section
   const visibleIds = useSettingsStore(useShallow((state) => visibleSettingIds(ids, state)));
 
   return (
-    <div className="divide-y divide-composer-border">
+    <div className="divide-y divide-(--divider)">
       {runsOf(visibleIds).map((run) =>
         run.group ? (
           <SettingsGroup key={run.ids[0]} title={run.group}>

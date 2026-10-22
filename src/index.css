@@ -604,17 +604,20 @@ input[type="range"].settings-slider {
   height: 6px;
   border-radius: 3px;
   outline: none;
+  background-color: var(--well);
+  box-shadow: var(--well-edge);
 }
 
 input[type="range"].settings-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: var(--color-composer-text);
+  background: linear-gradient(to bottom, #fff, color-mix(in oklab, white 88%, var(--color-composer-bg)));
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
   cursor: pointer;
-  margin-top: -5px;
+  margin-top: -6px;
   border: none;
 }
 
@@ -624,10 +627,11 @@ input[type="range"].settings-slider::-webkit-slider-runnable-track {
 }
 
 input[type="range"].settings-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: var(--color-composer-text);
+  background: linear-gradient(to bottom, #fff, color-mix(in oklab, white 88%, var(--color-composer-bg)));
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
   cursor: pointer;
   border: none;
 }
@@ -635,7 +639,7 @@ input[type="range"].settings-slider::-moz-range-thumb {
 input[type="range"].settings-slider::-moz-range-track {
   height: 6px;
   border-radius: 3px;
-  background: var(--color-composer-button);
+  background: transparent;
 }
 
 input[type="range"].settings-slider::-moz-range-progress {
@@ -833,25 +837,6 @@ input[type="range"].settings-slider::-moz-range-progress {
   }
   .snap-onset-enter {
     animation-delay: 0ms !important;
-  }
-}
-
-@utility theme-swatch-input {
-  appearance: none;
-  -webkit-appearance: none;
-  padding: 0;
-  background: none;
-
-  &::-webkit-color-swatch-wrapper {
-    padding: 0;
-  }
-  &::-webkit-color-swatch {
-    border: none;
-    border-radius: 6px;
-  }
-  &::-moz-color-swatch {
-    border: none;
-    border-radius: 6px;
   }
 }
 

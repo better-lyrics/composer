@@ -1,5 +1,6 @@
 import { isHexColor } from "@/domain/theme/color";
 import type { TokenKey } from "@/domain/theme/model";
+import { INPUT_STYLES } from "@/ui/input-styles";
 import { cn } from "@/utils/cn";
 import { useState } from "react";
 
@@ -46,19 +47,22 @@ const ThemeTokenInput: React.FC<ThemeTokenInputProps> = ({ tokenKey, label, valu
   return (
     <label className="flex items-center gap-3 select-none" data-token-key={tokenKey}>
       <span className="flex-1 min-w-0 text-sm text-composer-text">{label}</span>
-      <span className="flex items-center gap-2">
-        <input
-          type="color"
-          className="theme-swatch-input size-6.5 cursor-pointer rounded-md border border-composer-border"
-          value={toColorInputValue(value)}
-          onChange={(event) => onChange(event.target.value)}
-          aria-label={`${label} color`}
-        />
+      <span className="flex items-center gap-2.5">
+        <span
+          className="relative size-7.5 shrink-0 rounded-lg shadow-[inset_0_0_0_1px_var(--edge)]"
+          style={{ backgroundColor: value }}
+        >
+          <input
+            type="color"
+            className="absolute inset-0 size-full opacity-0 cursor-pointer"
+            value={toColorInputValue(value)}
+            onChange={(event) => onChange(event.target.value)}
+            aria-label={`${label} color`}
+          />
+        </span>
         <input
           type="text"
-          className={cn(
-            "w-20 bg-transparent text-xs font-mono text-composer-text-muted outline-none cursor-text select-text",
-          )}
+          className={cn(INPUT_STYLES, "w-46 h-8 px-2 font-mono text-xs select-text")}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onBlur={(event) => commitHex(event.target.value)}

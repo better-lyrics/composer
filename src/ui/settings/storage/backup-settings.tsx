@@ -26,8 +26,8 @@ function backUp(): void {
 const BackUpAllProjectsRow: React.FC<{ projectCount: number }> = ({ projectCount }) => (
   <SettingRowLayout>
     <SettingText id="backUpAllProjects" />
-    <Button variant="secondary" size="sm" hasIcon onClick={backUp} disabled={projectCount === 0}>
-      <IconDownload aria-hidden="true" className="size-3.5" />
+    <Button variant="secondary" size="lg" hasIcon onClick={backUp} disabled={projectCount === 0}>
+      <IconDownload aria-hidden="true" className="size-4" />
       Export all
     </Button>
   </SettingRowLayout>
@@ -58,13 +58,13 @@ const DeleteAllProjectsRow: React.FC<{ projectCount: number }> = ({ projectCount
       <SettingText id="deleteAllProjects" />
       <Button
         variant="danger"
-        size="sm"
+        size="lg"
         hasIcon
         onClick={deleteAll}
         disabled={projectCount === 0}
         className="bg-composer-negative/10"
       >
-        <IconTrash aria-hidden="true" className="size-3.5" />
+        <IconTrash aria-hidden="true" className="size-4" />
         Delete all
       </Button>
     </SettingRowLayout>

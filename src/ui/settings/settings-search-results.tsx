@@ -60,7 +60,7 @@ const SettingsSearchResults: React.FC<{ results: SettingsSearchResult }> = ({ re
         label={group.label}
         onOpenSection={() => setSettingsSection(group.section)}
       />
-      <div className="divide-y divide-composer-border">
+      <div className="divide-y divide-(--divider)">
         {group.settings.map((id) => (
           <SettingRow key={id} id={id} />
         ))}

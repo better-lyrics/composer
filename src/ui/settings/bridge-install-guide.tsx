@@ -33,7 +33,7 @@ const InstallCommand: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-composer-bg-dark border border-composer-border">
+    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-composer-bg-dark border border-(--edge)">
       <Scroll className="flex-1 min-w-0" autoHide="leave">
         <code className="block font-mono text-[11px] text-composer-text-secondary select-text whitespace-nowrap">
           {INSTALL_CMD}

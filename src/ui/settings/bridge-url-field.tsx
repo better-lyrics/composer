@@ -28,7 +28,7 @@ const BridgeUrlField: React.FC<BridgeUrlFieldProps> = ({ initialUrl, onCommit, o
             if (e.key === "Enter") e.currentTarget.blur();
           }}
           spellCheck={false}
-          className="flex-1 h-7 px-2 text-xs font-mono rounded bg-composer-bg text-composer-text border border-composer-border focus:outline-none focus:border-composer-accent select-text"
+          className="flex-1 h-7 px-2 text-xs font-mono rounded bg-composer-bg text-composer-text border border-(--edge) focus:outline-none focus:border-composer-accent select-text"
           placeholder={DEFAULT_BRIDGE_URL}
         />
         {canReset && (

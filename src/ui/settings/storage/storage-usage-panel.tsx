@@ -62,7 +62,7 @@ const StorageUsagePanel: React.FC<StorageUsagePanelProps> = ({ usage, freeBytes,
       <div
         role="img"
         aria-label={barLabel}
-        className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-composer-button"
+        className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-(--layer-2)"
       >
         {USAGE_CATEGORIES.filter((category) => usage[category.key] > 0).map((category) => (
           <span

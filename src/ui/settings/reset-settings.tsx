@@ -19,7 +19,7 @@ function restartTour(): void {
 const ResetTourSetting: React.FC = () => (
   <SettingRowLayout>
     <SettingText id="resetTour" />
-    <Button size="sm" variant="secondary" hasIcon onClick={restartTour}>
+    <Button size="lg" variant="secondary" hasIcon onClick={restartTour}>
       <IconRoute size={14} />
       Reset tour
     </Button>
@@ -44,7 +44,7 @@ const ResetAllSettingsSetting: React.FC = () => {
   return (
     <SettingRowLayout>
       <SettingText id="resetAllSettings" />
-      <Button size="sm" variant="secondary" hasIcon onClick={handleResetSettings}>
+      <Button size="lg" variant="secondary" hasIcon onClick={handleResetSettings}>
         <IconRefresh size={14} />
         Reset all
       </Button>

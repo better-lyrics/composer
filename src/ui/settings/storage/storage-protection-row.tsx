@@ -98,7 +98,7 @@ const StorageProtectionRow: React.FC<StorageProtectionRowProps> = ({
         description={descriptionFor(status, browser)}
       />
       {status === "unprotected" && (
-        <Button ref={buttonRef} variant="secondary" size="sm" disabled={isProtecting} onClick={protect}>
+        <Button ref={buttonRef} variant="secondary" size="lg" disabled={isProtecting} onClick={protect}>
           Protect storage
         </Button>
       )}

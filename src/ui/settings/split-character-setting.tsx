@@ -88,7 +88,7 @@ const SplitCharacterSetting: React.FC = () => {
           <button
             type="button"
             onClick={() => setCaptureState({ status: "listening" })}
-            className="flex items-center justify-center min-w-8 h-7 px-2 rounded-lg bg-composer-input border border-composer-border cursor-pointer transition-colors hover:border-composer-accent"
+            className="flex items-center justify-center min-w-8 h-7 px-2 rounded-lg bg-(--well) border border-(--edge) cursor-pointer transition-colors hover:border-composer-accent"
           >
             <span className="text-sm font-mono text-composer-text">{splitCharacter}</span>
           </button>
@@ -103,7 +103,7 @@ const SplitCharacterSetting: React.FC = () => {
             </p>
             <p className="text-xs text-composer-text-muted">Press Escape to cancel</p>
           </div>
-          <p className="text-xs text-composer-text-muted bg-composer-button/50 rounded-lg px-3 py-2 text-left">
+          <p className="text-xs text-composer-text-muted bg-(--layer-2)/50 rounded-lg px-3 py-2 text-left">
             Pick a symbol you won't use in lyrics. Characters like commas, apostrophes, and hyphens appear in lyrics and
             will cause unintended splits.
           </p>
@@ -117,7 +117,7 @@ const SplitCharacterSetting: React.FC = () => {
         <Modal isOpen onClose={cancelCapture} title="Character warning">
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-sm text-composer-text">
-              <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-md bg-composer-button border border-composer-border font-mono">
+              <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-md bg-(--layer-2) border border-(--edge) font-mono">
                 {captureState.char}
               </span>
               <span className="text-composer-text-secondary">commonly appears in lyrics.</span>

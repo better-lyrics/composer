@@ -1,6 +1,7 @@
 import { deriveTheme } from "@/domain/theme/derive";
 import { QUICK_TOKENS, type Theme, type TokenKey } from "@/domain/theme/model";
 import { ThemeTokenInput } from "@/ui/settings/theme/theme-token-input";
+import { IconInfoCircle } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -21,10 +22,11 @@ const ThemeEditorQuick: React.FC<ThemeEditorQuickProps> = ({ draft, onTokenChang
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="rounded-lg border border-composer-accent/20 bg-composer-accent/10 px-2.5 py-2 text-xs text-composer-text-muted select-none">
+      <p className="flex gap-2.5 rounded-[10px] px-3 py-2.5 text-[12.5px] leading-[1.45] text-(--label) bg-composer-accent/8 shadow-[inset_0_0_0_1px_var(--lit-ring)] select-none">
+        <IconInfoCircle aria-hidden="true" className="size-4 shrink-0 mt-px text-composer-accent-text" />
         {HINT}
       </p>
-      <div className="divide-y divide-composer-border">
+      <div className="divide-y divide-(--divider)">
         {QUICK_TOKENS.map((token) => (
           <div key={token.key} className="py-2">
             <ThemeTokenInput

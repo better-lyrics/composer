@@ -135,7 +135,7 @@ const BridgeSection: React.FC = () => {
       </div>
 
       {enabled && (
-        <div className="flex flex-col gap-2 px-3 py-3 rounded-md bg-composer-input border border-composer-border">
+        <div className="flex flex-col gap-2 px-3 py-3 rounded-md bg-(--well) border border-(--edge)">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-composer-text">Bridge status</span>
             <StatusBadge state={state} data={health.data} errorMessage={errorMessage} />

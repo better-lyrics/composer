@@ -37,7 +37,7 @@ const ThemeEditorAdvanced: React.FC<ThemeEditorAdvancedProps> = ({ draft, onToke
       {GROUP_ORDER.map((group) => (
         <div key={group} className="flex flex-col gap-1">
           <span className={GROUP_LABEL}>{group}</span>
-          <div className="divide-y divide-composer-border">
+          <div className="divide-y divide-(--divider)">
             {(TOKENS_BY_GROUP.get(group) ?? []).map((token) => {
               if (token.type === "alpha" || token.type === "contrast") {
                 return (

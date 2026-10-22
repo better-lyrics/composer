@@ -41,7 +41,7 @@ const ThemeShareBox: React.FC<ThemeShareBoxProps> = ({ draft }) => {
         value={code}
         aria-label="Theme share code"
         spellCheck={false}
-        className="w-full min-h-16 resize-y rounded-lg border border-composer-border bg-composer-bg-dark px-3 py-2.5 font-mono text-xs leading-relaxed text-composer-text outline-none break-all cursor-text select-text"
+        className="w-full min-h-16 resize-y rounded-lg border border-(--edge) bg-composer-bg-dark px-3 py-2.5 font-mono text-xs leading-relaxed text-composer-text outline-none break-all cursor-text select-text"
       />
       <div className="flex items-center gap-2">
         <Button size="sm" variant="secondary" hasIcon onClick={handleCopy}>
