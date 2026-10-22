@@ -191,17 +191,7 @@ const App: React.FC = () => {
           <ConfirmModalHost />
           <LyricsImportModalHost />
           <ChoiceModalHost />
-          <Toaster
-            theme="dark"
-            position="bottom-center"
-            toastOptions={{
-              style: {
-                background: "var(--color-composer-bg-elevated)",
-                border: "1px solid var(--color-composer-border)",
-                color: "var(--color-composer-text)",
-              },
-            }}
-          />
+          <Toaster position="bottom-center" />
         </SettingLinkContext>
       </LazyMotion>
     </QueryClientProvider>

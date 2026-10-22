@@ -711,3 +711,104 @@ input[type="range"].settings-slider::-moz-range-progress {
     border-radius: 6px;
   }
 }
+
+/* Toasts: content width up to a cap, on the floating surface. Sonner sets --width inline, so the override needs !important. */
+@media (min-width: 601px) {
+  [data-sonner-toaster][data-x-position="center"] {
+    --width: 0px !important;
+  }
+
+  [data-sonner-toaster][data-x-position="center"] [data-sonner-toast] {
+    left: 50%;
+    translate: -50% 0;
+  }
+
+  [data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+    width: max-content;
+    max-width: min(560px, calc(100vw - 32px));
+  }
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+  gap: 12px;
+  padding: 12px 16px 12px 14px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--pop);
+  border: 0;
+  border-radius: 14px;
+  box-shadow: var(--float-shadow);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"]:has([data-button], [data-close-button]) {
+  padding-right: 10px;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-title] {
+  font-weight: 500;
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-description] {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-icon] {
+  color: var(--muted);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="success"] [data-icon] {
+  color: var(--color-composer-positive);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] [data-icon] {
+  color: var(--color-composer-negative);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] [data-icon] {
+  color: var(--color-composer-warning);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] :is([data-button], [data-cancel]) {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label);
+  background: var(--raised-face);
+  box-shadow: var(--raised-edge);
+  transition: background-color 150ms, color 150ms, scale 150ms;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] :is([data-button], [data-cancel]):hover {
+  color: var(--ink);
+  background: var(--raised-face-hover);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] :is([data-button], [data-cancel]):active {
+  scale: 0.96;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button] {
+  position: static;
+  order: 99;
+  width: 24px;
+  height: 24px;
+  margin-left: -8px;
+  transform: none;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"]:hover [data-close-button]:hover {
+  color: var(--ink);
+  background: var(--layer-2);
+  border: 0;
+}
