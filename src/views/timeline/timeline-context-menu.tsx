@@ -448,7 +448,7 @@ const TimelineContextMenu: React.FC = () => {
   const section = { targets, clearContextMenu };
 
   return (
-    <Menu anchor={anchor} onClose={clearContextMenu} aria-label="Timeline actions" className="w-auto min-w-[232px]">
+    <Menu anchor={anchor} onClose={clearContextMenu} aria-label="Timeline actions" className="w-max min-w-[232px]">
       {target.kind === "word" && <WordMenuSection {...section} target={target} />}
       {target.kind === "track" && <TrackMenuSection {...section} />}
       {target.kind === "gutter" && <GutterMenuSection {...section} target={target} />}

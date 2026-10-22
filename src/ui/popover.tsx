@@ -45,6 +45,8 @@ interface PopoverProps {
   onOpenChange?: (open: boolean) => void;
   "aria-label"?: string;
   listNavigation?: PopoverListNavigation;
+  // Positions against this element instead of the trigger, such as the whole control group the trigger sits in.
+  positionAnchor?: HTMLElement | null;
 }
 
 // -- Component ----------------------------------------------------------------
@@ -59,6 +61,7 @@ const Popover: React.FC<PopoverProps> = ({
   onOpenChange,
   "aria-label": ariaLabel,
   listNavigation,
+  positionAnchor,
 }) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isOpen = open ?? uncontrolledOpen;
@@ -82,9 +85,10 @@ const Popover: React.FC<PopoverProps> = ({
   const setTrigger = useCallback(
     (element: HTMLElement | null) => {
       setReference(element);
-      setPositionReference(element ? unscaledReference(element) : null);
+      const anchor = positionAnchor ?? element;
+      setPositionReference(anchor ? unscaledReference(anchor) : null);
     },
-    [setReference, setPositionReference],
+    [setReference, setPositionReference, positionAnchor],
   );
 
   const click = useClick(context);
@@ -119,7 +123,7 @@ const Popover: React.FC<PopoverProps> = ({
               style={{ ...floatingStyles, ...entranceStyles }}
               {...getFloatingProps()}
               aria-label={ariaLabel}
-              className="layer-floating select-none rounded-[14px] surface-floating"
+              className="layer-floating w-max select-none rounded-[14px] surface-floating"
             >
               {typeof children === "function" ? children(() => setIsOpen(false), getItemProps) : children}
             </div>
