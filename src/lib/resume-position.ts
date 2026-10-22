@@ -68,7 +68,8 @@ function watchResumePosition(): () => void {
       state.zoom !== previous.zoom ||
       state.scrollLeft !== previous.scrollLeft ||
       state.scrollTop !== previous.scrollTop;
-    if (viewChanged) rememberResumePosition();
+    // Follow mode scrolls every frame during playback; the pause captures the final view.
+    if (viewChanged && !useAudioStore.getState().isPlaying) rememberResumePosition();
   });
   const onVisibilityChange = () => {
     if (document.visibilityState !== "hidden") return;
