@@ -40,7 +40,7 @@ function SegmentedControl<T extends string>({
     <div
       role="group"
       aria-label={ariaLabel}
-      className={cn("flex h-8 rounded-lg bg-composer-bg-elevated p-0.5 select-none", className)}
+      className={cn("tray select-none", className)}
     >
       {options.map((option) => {
         const isSelected = option.value === value;
@@ -55,12 +55,12 @@ function SegmentedControl<T extends string>({
             disabled={option.disabled}
             onClick={() => onChange(option.value)}
             className={cn(
-              "inline-flex items-center justify-center gap-1.5 px-3 text-sm rounded-md whitespace-nowrap transition-colors cursor-pointer",
-              option.iconOnly && "w-8 px-0",
+              "inline-flex items-center justify-center gap-1.5 h-7 px-2.5 text-[13px] font-medium rounded-lg whitespace-nowrap transition-[color,background-color,box-shadow] cursor-pointer",
+              option.iconOnly && "w-7 px-0",
               "disabled:cursor-not-allowed disabled:text-composer-text-faint disabled:line-through",
               isSelected
-                ? "bg-composer-button text-composer-text"
-                : "text-composer-text-muted hover:text-composer-text",
+                ? "latch-on [&_svg]:text-composer-accent-text"
+                : "text-[var(--muted)] hover:text-[var(--label)] hover:bg-[var(--layer-1)]",
             )}
           >
             {OptionIcon && <OptionIcon aria-hidden="true" className="size-4 shrink-0" />}
@@ -69,7 +69,7 @@ function SegmentedControl<T extends string>({
               <span
                 className={cn(
                   "text-xs tabular-nums",
-                  isSelected ? "text-composer-text-secondary" : "text-composer-text-muted",
+                  isSelected ? "text-composer-accent-text" : "text-composer-text-faint",
                 )}
               >
                 {option.count}

@@ -2,7 +2,7 @@ import { cn } from "@/utils/cn";
 
 // -- Types --------------------------------------------------------------------
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "quiet" | "danger" | "destructive";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "latch" | "quiet" | "danger" | "destructive";
 type ButtonSize = "sm" | "md" | "lg" | "icon";
 
 interface ButtonStyleOptions {
@@ -21,6 +21,7 @@ const VARIANT_STYLES: Record<ButtonVariant, string> = {
   primary: "btn-lit",
   secondary: "btn-raised text-[var(--label)] hover:text-composer-text",
   ghost: "text-[var(--muted)] hover:text-[var(--label)] hover:bg-[var(--layer-1)]",
+  latch: "latch-on [&_svg]:text-composer-accent-text",
   quiet:
     "text-composer-text/60 hover:text-composer-text hover:bg-[var(--layer-1)] [&_svg]:text-composer-text [&_svg]:opacity-60 [&_svg]:transition-opacity hover:[&_svg]:opacity-100",
   danger: "text-composer-negative hover:bg-composer-negative/14",

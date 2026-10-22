@@ -369,6 +369,23 @@ braccato-lyrics .blyrics-container {
   }
 }
 
+@utility tray {
+  display: flex;
+  align-items: center;
+  gap: var(--tray-pad);
+  height: 36px;
+  padding: var(--tray-pad);
+  border-radius: calc(8px + var(--tray-pad));
+  background: var(--well);
+  box-shadow: var(--well-edge);
+}
+
+@utility latch-on {
+  color: var(--ink);
+  background: color-mix(in oklab, var(--color-composer-accent) 12%, var(--cap));
+  box-shadow: inset 0 0 0 1px var(--lit-ring);
+}
+
 @utility surface-floating {
   background: var(--pop);
   box-shadow: var(--float-shadow);
