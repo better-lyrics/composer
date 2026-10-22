@@ -3,7 +3,7 @@ import { type SettingId, settingEntry, settingKeyOf } from "@/stores/settings-ca
 import { Select } from "@/ui/select";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
-import { cn } from "@/utils/cn";
+import { Switch } from "@/ui/switch";
 import { useId } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -80,24 +80,7 @@ const ToggleSetting: React.FC<{ id: SettingId }> = ({ id }) => {
   return (
     <SettingRowLayout>
       <SettingText id={id} />
-      <button
-        type="button"
-        role="switch"
-        aria-checked={isOn}
-        aria-label={settingEntry(id).label}
-        onClick={() => set(settingKey, !isOn)}
-        className={cn(
-          "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors",
-          isOn ? "bg-composer-accent" : "bg-composer-button",
-        )}
-      >
-        <span
-          className={cn(
-            "pointer-events-none inline-block size-4 rounded-full bg-white shadow transform transition-transform mt-0.5",
-            isOn ? "translate-x-4.5" : "translate-x-0.5",
-          )}
-        />
-      </button>
+      <Switch checked={isOn} label={settingEntry(id).label} onCheckedChange={(checked) => set(settingKey, checked)} />
     </SettingRowLayout>
   );
 };

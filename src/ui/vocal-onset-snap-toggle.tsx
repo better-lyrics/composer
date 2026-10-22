@@ -1,4 +1,5 @@
 import { useSettingsStore } from "@/stores/settings";
+import { Switch } from "@/ui/switch";
 import { DETECTING_VOCAL_ONSETS } from "@/ui/vocal-onset-status-copy";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
@@ -37,24 +38,11 @@ const VocalOnsetSnapToggle: React.FC = () => {
         <span className="text-sm text-composer-text">Snap to vocal onsets</span>
         <span className="text-xs text-composer-text-muted select-text truncate">{hint}</span>
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={enabled}
-        aria-label="Snap to vocal onsets"
-        onClick={() => useSettingsStore.getState().set("vocalOnsetSnap", !enabled)}
-        className={cn(
-          "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors",
-          enabled ? "bg-composer-accent" : "bg-composer-button",
-        )}
-      >
-        <span
-          className={cn(
-            "pointer-events-none inline-block size-4 rounded-full bg-white shadow transform transition-transform mt-0.5",
-            enabled ? "translate-x-4.5" : "translate-x-0.5",
-          )}
-        />
-      </button>
+      <Switch
+        checked={enabled}
+        label="Snap to vocal onsets"
+        onCheckedChange={(checked) => useSettingsStore.getState().set("vocalOnsetSnap", checked)}
+      />
     </div>
   );
 };

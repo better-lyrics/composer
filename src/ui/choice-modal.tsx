@@ -1,5 +1,6 @@
 import { useChoiceStore } from "@/stores/choice-store";
 import { Button } from "@/ui/button";
+import { Checkbox } from "@/ui/checkbox";
 import { Modal } from "@/ui/modal";
 import { useRef } from "react";
 
@@ -38,15 +39,9 @@ const ChoiceModalHost: React.FC = () => {
         )}
         <div className="flex items-center justify-end gap-2 pt-1 select-none">
           {request.checkbox && (
-            <label className="flex items-center gap-2 mr-auto text-xs text-composer-text-muted cursor-pointer">
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={(event) => setChecked(event.target.checked)}
-                className="size-3.5 rounded accent-composer-accent cursor-pointer"
-              />
+            <Checkbox checked={checked} onCheckedChange={setChecked} className="mr-auto">
               {request.checkbox.label}
-            </label>
+            </Checkbox>
           )}
           <Button ref={cancelRef} variant="ghost" onClick={() => answer("cancel")}>
             Cancel

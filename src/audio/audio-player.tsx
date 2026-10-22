@@ -6,8 +6,8 @@ import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { Popover } from "@/ui/popover";
 import { Slider } from "@/ui/slider";
+import { Switch } from "@/ui/switch";
 import { VocalSeparationDropdown } from "@/ui/vocal-separation-dropdown";
-import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
 import { SeekBarFocusBand } from "@/views/timeline/seek-bar-focus-band";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled, IconVolume, IconVolume2, IconVolume3 } from "@tabler/icons-react";
@@ -88,24 +88,7 @@ const PlaybackRateControl: React.FC<{
             <span className="text-sm text-composer-text">Preserve pitch</span>
             <span className="text-xs text-composer-text-muted">Keeps pitch steady when speed changes.</span>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={preservePitch}
-            aria-label="Preserve pitch"
-            onClick={() => onChangePreservePitch(!preservePitch)}
-            className={cn(
-              "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors",
-              preservePitch ? "bg-composer-accent" : "bg-composer-button",
-            )}
-          >
-            <span
-              className={cn(
-                "pointer-events-none inline-block size-4 rounded-full bg-white shadow transform transition-transform mt-0.5",
-                preservePitch ? "translate-x-4.5" : "translate-x-0.5",
-              )}
-            />
-          </button>
+          <Switch checked={preservePitch} label="Preserve pitch" onCheckedChange={onChangePreservePitch} />
         </div>
       </div>
     </Popover>
