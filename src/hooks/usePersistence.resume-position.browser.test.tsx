@@ -59,6 +59,44 @@ describe("usePersistence: resume position", () => {
     expect((await openProjectEntry())?.resumePosition?.scroll).toEqual({ left: 500, top: 80 });
   });
 
+  describe("regressions", () => {
+    const restoredView = { time: 42, zoom: 220, scroll: { left: 900, top: 60 } };
+
+    function restoreViewNotYetShown(): void {
+      useTimelineStore.getState().setZoom(restoredView.zoom);
+      useAudioStore.getState().setCurrentTime(restoredView.time);
+      useTimelineStore.getState().setPendingResumeView(restoredView);
+    }
+
+    it("regression: a pause before the Timeline is shown keeps the saved scroll", async () => {
+      await startSavedProject();
+      restoreViewNotYetShown();
+      useAudioStore.getState().setIsPlaying(true);
+      useAudioStore.getState().setIsPlaying(false);
+      await flushResumePosition();
+      expect((await openProjectEntry())?.resumePosition).toEqual(restoredView);
+    });
+
+    it("regression: moving the playhead before the Timeline is shown frames the new playhead instead", async () => {
+      await startSavedProject();
+      restoreViewNotYetShown();
+      useAudioStore.getState().seekTo(70);
+      await flushResumePosition();
+      expect((await openProjectEntry())?.resumePosition).toEqual({ time: 70, zoom: 220 });
+      expect(useTimelineStore.getState().pendingResumeView).toEqual({ time: 70, zoom: 220 });
+    });
+
+    it("regression: an open group does not save its fitted zoom", async () => {
+      await startSavedProject();
+      useTimelineStore.getState().setZoom(150);
+      await flushResumePosition();
+      useTimelineStore.getState().openGroup("g1", 0);
+      useTimelineStore.getState().setZoom(600);
+      await flushResumePosition();
+      expect((await openProjectEntry())?.resumePosition?.zoom).toBe(150);
+    });
+  });
+
   describe("invariants", () => {
     it("does not move the project's last edited time", async () => {
       await startSavedProject();

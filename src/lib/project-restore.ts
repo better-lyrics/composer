@@ -9,6 +9,7 @@ import { type SavedProject, upgradeSavedProject } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
+import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types --------------------------------------------------------------------
@@ -103,6 +104,7 @@ function applyProjectToStores(payload: RestorePayload): void {
     else if (payload.audio) useAudioStore.getState().setSource({ type: "file", file: payload.audio });
     if (payload.lastTab) useProjectStore.getState().setActiveTab(payload.lastTab);
     if (payload.resumePosition) resumeTimeline(payload.resumePosition);
+    else useTimelineStore.getState().setZoom(useSettingsStore.getState().defaultZoom);
     useProjectStore.getState().markClean();
   } finally {
     restoring = false;

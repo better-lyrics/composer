@@ -16,6 +16,7 @@ interface PendingResumePosition {
 
 const LOG_PREFIX = "[ResumePosition]";
 const WRITE_DELAY_MS = 500;
+const SAME_TIME_TOLERANCE_S = 0.05;
 
 // -- Module state -------------------------------------------------------------
 
@@ -24,8 +25,18 @@ let timer: number | null = null;
 
 // -- Capture ------------------------------------------------------------------
 
-function currentResumePosition(): ResumePosition {
-  const { zoom, scrollLeft, scrollTop } = useTimelineStore.getState();
+// A restored view the Timeline has not shown yet is still the truth, until the playhead or zoom moves away from it.
+function capturePendingView(view: ResumePosition, zoom: number): ResumePosition {
+  const time = useAudioStore.getState().currentTime;
+  if (Math.abs(time - view.time) < SAME_TIME_TOLERANCE_S && zoom === view.zoom) return view;
+  const moved = { time, zoom };
+  useTimelineStore.getState().setPendingResumeView(moved);
+  return moved;
+}
+
+function captureResumePosition(): ResumePosition {
+  const { zoom, scrollLeft, scrollTop, pendingResumeView } = useTimelineStore.getState();
+  if (pendingResumeView) return capturePendingView(pendingResumeView, zoom);
   const position: ResumePosition = { time: livePlaybackTime(), zoom };
   if (scrollTop !== null) position.scroll = { left: scrollLeft, top: scrollTop };
   return position;
@@ -33,9 +44,11 @@ function currentResumePosition(): ResumePosition {
 
 function rememberResumePosition(): void {
   if (isRestoringProject()) return;
+  // Restore cannot reopen a group, so the view from before the group opened is the one worth keeping.
+  if (useTimelineStore.getState().focusedGroup) return;
   const id = openProjectIdSnapshot();
   if (!id) return;
-  pending = { id, position: currentResumePosition() };
+  pending = { id, position: captureResumePosition() };
   if (timer !== null) window.clearTimeout(timer);
   timer = window.setTimeout(() => {
     void flushResumePosition();

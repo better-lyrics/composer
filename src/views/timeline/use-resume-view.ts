@@ -18,7 +18,7 @@ function resumeScroll(container: HTMLElement, view: ResumePosition): void {
   container.scrollLeft = centerTimeScrollLeft(view.time, view.zoom, container.clientWidth);
   const input = fillFollowInput(createFollowInput(), createRowLayoutCache(), view.time, container.clientHeight);
   const rows = followStep(createFollowMemory(), input);
-  if (rows) container.scrollTop = followScrollTop(rows, input, container.scrollHeight);
+  container.scrollTop = rows ? followScrollTop(rows, input, container.scrollHeight) : 0;
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -32,6 +32,10 @@ function useResumeView(scrollContainerRef: RefObject<HTMLDivElement | null>, rea
       if (!pendingResumeView || container.clientWidth === 0) return;
       setPendingResumeView(null);
       resumeScroll(container, pendingResumeView);
+      // A scroll the container already had fires no scroll event, so record the applied view directly.
+      const { setScrollLeft, setScrollTop } = useTimelineStore.getState();
+      setScrollLeft(container.scrollLeft);
+      setScrollTop(container.scrollTop);
     };
     apply();
     const observer = new ResizeObserver(apply);
