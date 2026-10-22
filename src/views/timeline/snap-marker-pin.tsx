@@ -16,7 +16,7 @@ import { m, useIsPresent, useReducedMotion } from "motion/react";
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/utils/cn";
-import { snapFlashVariants } from "@/utils/animationVariants";
+import { pinDropInVariants, snapFlashVariants } from "@/utils/animationVariants";
 import { formatTime } from "@/utils/format-time";
 
 // -- Types ---------------------------------------------------------------------
@@ -104,6 +104,10 @@ const SnapMarkerPin = memo(function SnapMarkerPin({
       data-snap-marker-drop-in
       className="absolute top-0"
       style={{ left: time * zoom }}
+      variants={pinDropInVariants}
+      initial={reduceMotion ? false : "initial"}
+      animate="animate"
+      exit={reduceMotion ? undefined : "exit"}
     >
       <div
         data-snap-marker-line
@@ -124,7 +128,15 @@ const SnapMarkerPin = memo(function SnapMarkerPin({
       )}
       {headHost &&
         createPortal(
-          <div data-snap-marker-head-anchor className="absolute inset-y-0 w-0" style={{ left: time * zoom }}>
+          <m.div
+            data-snap-marker-head-anchor
+            className="absolute inset-y-0 w-0"
+            style={{ left: time * zoom }}
+            variants={pinDropInVariants}
+            initial={reduceMotion ? false : "initial"}
+            animate="animate"
+            exit={reduceMotion ? undefined : "exit"}
+          >
             <div className="absolute top-[19px] bottom-0 -left-px w-0.5 bg-composer-snap pointer-events-none" />
             <button
               ref={refs.setReference}
@@ -142,7 +154,7 @@ const SnapMarkerPin = memo(function SnapMarkerPin({
             >
               <i />
             </button>
-          </div>,
+          </m.div>,
           headHost,
         )}
       {showTooltip && (
