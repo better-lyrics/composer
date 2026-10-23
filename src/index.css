@@ -153,6 +153,13 @@ body {
   --blyrics-inactive-opacity: 0.2;
   --blyrics-font-family: "Satoshi", sans-serif;
   --blyrics-font-size: 2.5rem;
+  --blyrics-translated-color: color-mix(in oklab, var(--color-composer-text) 60%, transparent);
+}
+
+/* lyrics.css paints the romanization pill in fixed white, which vanishes on light themes. */
+braccato-lyrics .blyrics--romanized {
+  background: color-mix(in oklab, var(--color-composer-text) 5%, transparent);
+  border-color: color-mix(in oklab, var(--color-composer-text) 10%, transparent);
 }
 
 /* The element is the scroller braccato autoscrolls, which is what centres the
