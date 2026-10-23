@@ -62,7 +62,7 @@ const DurationDisplay: React.FC<DurationDisplayProps> = ({ actualSec, expectedSe
     return (
       <span
         title="Matches your duration"
-        className="inline-flex items-baseline gap-1 px-1.5 py-0.5 rounded-md bg-composer-accent/22 text-white font-mono text-[11px] font-medium tabular-nums select-text"
+        className="inline-flex items-baseline gap-1 px-1.5 py-0.5 rounded-md bg-composer-accent/22 text-composer-accent-text font-mono text-[11px] font-medium tabular-nums select-text"
       >
         {text}
       </span>
