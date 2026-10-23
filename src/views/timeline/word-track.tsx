@@ -137,7 +137,6 @@ const WordTrack: React.FC<WordTrackProps> = ({
       dragStateRef.current = initialState;
       setDragState(initialState);
 
-      const rollingEdit = useTimelineStore.getState().rollingEditMode;
       const syllablesFollowRollingAtStart = useSettingsStore.getState().syllablesFollowRolling;
       const minWordDuration = useSettingsStore.getState().minWordDuration;
       const boundaryEdge: BoundaryEdge = edge === "left" ? "begin" : "end";
@@ -173,7 +172,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
           words,
           wordIndex,
           edge: boundaryEdge,
-          rollingEdit,
+          rollingEdit: useTimelineStore.getState().rollingEditMode,
           syllablesFollowRolling: syllablesFollowRollingAtStart,
           syllablePositions,
           altHeld: e.altKey,
