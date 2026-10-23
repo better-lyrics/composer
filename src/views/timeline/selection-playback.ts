@@ -41,9 +41,9 @@ function loopsRange(
   return loopRegion ? loopRegion.loops : loopOpenGroup;
 }
 
+// A paused region only arms the next play; until it plays, the open group keeps its own loop setting.
 function currentlyLoops(): boolean {
-  const { selectionPlayback, loopRegion } = useTimelineStore.getState();
-  return loopsRange(selectionPlayback, useSettingsStore.getState().loopOpenGroup, loopRegion);
+  return loopsRange(useTimelineStore.getState().selectionPlayback, useSettingsStore.getState().loopOpenGroup, null);
 }
 
 // -- Actions ------------------------------------------------------------------

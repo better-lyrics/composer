@@ -1,3 +1,4 @@
+import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect, useRef } from "react";
 
@@ -21,7 +22,7 @@ function useSnapBypass({ active, getLastPointer }: UseSnapBypassArgs) {
     }
 
     const handleKey = (e: KeyboardEvent) => {
-      const next = e.metaKey || e.ctrlKey;
+      const next = holdsSnapBypass(e);
       if (next === bypassRef.current) return;
       bypassRef.current = next;
       useTimelineStore.getState().setIsBypassing(next);

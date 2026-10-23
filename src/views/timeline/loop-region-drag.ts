@@ -6,6 +6,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
+import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { commitDrawnLoopRegion } from "@/views/timeline/selection-playback";
 import { GUTTER_WIDTH, type LoopRegionDrag, useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -44,10 +45,10 @@ function startLoopRegionDrag(
       ? edge === "begin"
         ? region.end
         : region.begin
-      : snapPlayheadTime(timeAt(event.clientX), event.metaKey);
+      : snapPlayheadTime(timeAt(event.clientX), holdsSnapBypass(event));
   const startX = event.clientX;
   let pointerX = event.clientX;
-  let metaHeld = event.metaKey;
+  let bypassHeld = holdsSnapBypass(event);
   let moving = false;
   let releaseFrames: (() => void) | null = null;
   let unsubscribeEdgeScroll: (() => void) | null = null;
@@ -55,7 +56,7 @@ function startLoopRegionDrag(
 
   const update = (): void => {
     const raw = timeAt(pointerX);
-    const time = snapPlayheadTime(raw, metaHeld);
+    const time = snapPlayheadTime(raw, bypassHeld);
     const bounds = loopRegionBetween(anchor, time, duration);
     const timeline = useTimelineStore.getState();
     const current = timeline.loopRegion;
@@ -87,7 +88,7 @@ function startLoopRegionDrag(
 
   const handleMove = (e: MouseEvent): void => {
     pointerX = e.clientX;
-    metaHeld = e.metaKey;
+    bypassHeld = holdsSnapBypass(e);
     if (!moving) {
       if (Math.abs(pointerX - startX) < DRAW_THRESHOLD_PX) return;
       startMoving();
