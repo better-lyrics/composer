@@ -1,4 +1,5 @@
 import type { ResumePosition } from "@/domain/project/resume-position";
+import type { LoopRegion } from "@/domain/selection/loop-region";
 import type { WordSelection } from "@/domain/selection/model";
 import { toggleWordSelection } from "@/domain/selection/set-ops";
 import { useSettingsStore } from "@/stores/settings";
@@ -33,6 +34,11 @@ interface EditingWord {
 
 type SelectionPlaybackMode = "once" | "loop";
 
+interface LoopRegionDrag {
+  edge: "begin" | "end";
+  snappedTo: "pin" | "onset" | null;
+}
+
 interface TimelineState {
   zoom: number;
   followEnabled: boolean;
@@ -40,6 +46,8 @@ interface TimelineState {
   textVariant: "original" | "transliteration";
   selectedWords: WordSelection[];
   selectionPlayback: SelectionPlaybackMode | null;
+  loopRegion: LoopRegion | null;
+  loopRegionDrag: LoopRegionDrag | null;
 
   clipboard: ClipboardData | null;
   pasteMode: PasteMode;
@@ -79,6 +87,8 @@ interface TimelineActions {
   toggleTextVariant: () => void;
   setSelectedWords: (selections: WordSelection[]) => void;
   setSelectionPlayback: (mode: SelectionPlaybackMode | null) => void;
+  setLoopRegion: (region: LoopRegion | null) => void;
+  setLoopRegionDrag: (drag: LoopRegionDrag | null) => void;
 
   toggleSelection: (selection: WordSelection) => void;
   clearSelection: () => void;
@@ -134,6 +144,8 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     textVariant: "original",
     selectedWords: [],
     selectionPlayback: null,
+    loopRegion: null,
+    loopRegionDrag: null,
 
     clipboard: null,
     pasteMode: { status: "idle" },
@@ -170,10 +182,14 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     togglePreviewSidebar: () => set((s) => ({ previewSidebarOpen: !s.previewSidebarOpen })),
     toggleTextVariant: () =>
       set((s) => ({ textVariant: s.textVariant === "original" ? "transliteration" : "original" })),
-    setSelectedWords: (selectedWords) => set({ selectedWords }),
+    setSelectedWords: (selectedWords) =>
+      set(selectedWords.length > 0 ? { selectedWords, loopRegion: null } : { selectedWords }),
     setSelectionPlayback: (selectionPlayback) => set({ selectionPlayback }),
+    setLoopRegion: (loopRegion) => set(loopRegion ? { loopRegion, selectedWords: [] } : { loopRegion }),
+    setLoopRegionDrag: (loopRegionDrag) => set({ loopRegionDrag }),
 
-    toggleSelection: (selection) => set((s) => ({ selectedWords: toggleWordSelection(s.selectedWords, selection) })),
+    toggleSelection: (selection) =>
+      set((s) => ({ selectedWords: toggleWordSelection(s.selectedWords, selection), loopRegion: null })),
     clearSelection: () => set({ selectedWords: [] }),
     setClipboard: (clipboard) => set({ clipboard }),
     setPasteMode: (pasteMode) => set({ pasteMode }),
@@ -197,6 +213,8 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
       set({
         selectedWords: [],
         selectionPlayback: null,
+        loopRegion: null,
+        loopRegionDrag: null,
         contextMenu: null,
         editingWord: null,
         pasteMode: { status: "idle" },
@@ -240,4 +258,4 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
 // -- Exports -------------------------------------------------------------------
 
 export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP };
-export type { ContextMenuTarget, SelectionPlaybackMode, TrackHit };
+export type { ContextMenuTarget, LoopRegionDrag, SelectionPlaybackMode, TrackHit };
