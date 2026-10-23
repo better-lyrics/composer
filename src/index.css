@@ -378,6 +378,18 @@ braccato-lyrics .blyrics-container {
 }
 
 /* Marker mode arms the ruler and the waveform as one drop zone. */
+@utility display-scanlines {
+  position: relative;
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgb(var(--lift) / 0.025) 0 1px, transparent 1px 3px);
+  }
+}
+
 @utility marker-zone-armed {
   height: calc(var(--spacing) * 7 + 80px);
   box-shadow: inset 0 0 20px -2px color-mix(in srgb, var(--color-composer-snap) 22%, transparent);
