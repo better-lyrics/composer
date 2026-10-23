@@ -84,7 +84,7 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
             style={{ "--agent": agentColor }}
           >
             <span className="truncate">{agents.find((agent) => agent.id === line.agentId)?.name || line.agentId}</span>
-            <IconChevronDown className="size-[13px] -mt-0.5 -mr-[3px] opacity-60 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90" />
+            <IconChevronDown className="size-[13px] -mr-[3px] opacity-60 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90" />
           </button>
         }
       />
