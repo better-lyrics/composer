@@ -5,7 +5,6 @@ import { linesOfInstance } from "@/domain/instance/enumerate";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast } from "@/utils/group-toast";
-import { MOD_KEY } from "@/utils/platform";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
@@ -62,7 +61,6 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
       toast.success("Linked instance added at playhead");
     } else {
       copyInstanceToClipboardAndPreview(projectLines, groupId, instanceIdx);
-      toast(`No room at the playhead. ${MOD_KEY}+V to paste somewhere clear.`);
     }
     clearContextMenu();
   }, [contextMenu, clearContextMenu]);

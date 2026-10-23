@@ -18,7 +18,7 @@ import { selectionGripEdges } from "@/views/timeline/stretch-grips";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
-import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
+import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { WordBlock } from "@/views/timeline/word-block";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -99,7 +99,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   const snap = useTimelineSnap();
   const getLastPointer = useCallback(() => lastPointerRef.current, []);
-  useSnapBypass({ active: resizing, getLastPointer });
+  useGestureInputReplay({ active: resizing, getLastPointer });
 
   // Multi-block selections: dragging the selection's boundary edge becomes a
   // proportional stretch (anchored at the opposite side) instead of a resize.
@@ -137,7 +137,6 @@ const WordTrack: React.FC<WordTrackProps> = ({
       dragStateRef.current = initialState;
       setDragState(initialState);
 
-      const rollingEdit = useTimelineStore.getState().rollingEditMode;
       const syllablesFollowRollingAtStart = useSettingsStore.getState().syllablesFollowRolling;
       const minWordDuration = useSettingsStore.getState().minWordDuration;
       const boundaryEdge: BoundaryEdge = edge === "left" ? "begin" : "end";
@@ -173,7 +172,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
           words,
           wordIndex,
           edge: boundaryEdge,
-          rollingEdit,
+          rollingEdit: useTimelineStore.getState().rollingEditMode,
           syllablesFollowRolling: syllablesFollowRollingAtStart,
           syllablePositions,
           altHeld: e.altKey,

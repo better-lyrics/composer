@@ -20,7 +20,6 @@ import { useSettingsStore } from "@/stores/settings";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { showGroupActionToast, showGroupedToast, showSharedSongEdgeToast } from "@/utils/group-toast";
 import { historyShortcutAction } from "@/utils/history-shortcut";
-import { MOD_KEY } from "@/utils/platform";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
@@ -195,24 +194,6 @@ function useTimelineKeyboard(
       }
 
       if (!claimedByUser) {
-        if (e.code === "KeyC" && (e.metaKey || e.ctrlKey) && !e.repeat) {
-          e.preventDefault();
-          handleCopy();
-          return;
-        }
-
-        if (e.code === "KeyX" && (e.metaKey || e.ctrlKey) && !e.repeat) {
-          e.preventDefault();
-          handleCut();
-          return;
-        }
-
-        if (e.code === "KeyV" && (e.metaKey || e.ctrlKey) && !e.repeat) {
-          e.preventDefault();
-          handlePaste();
-          return;
-        }
-
         if (e.code === "KeyA" && (e.metaKey || e.ctrlKey) && !e.repeat) {
           e.preventDefault();
           const allSelections: WordSelection[] = [];
@@ -338,6 +319,18 @@ function useTimelineKeyboard(
           break;
         case "timeline.togglePreview":
           useTimelineStore.getState().togglePreviewSidebar();
+          break;
+        case "timeline.copy":
+          e.preventDefault();
+          handleCopy();
+          break;
+        case "timeline.cut":
+          e.preventDefault();
+          handleCut();
+          break;
+        case "timeline.paste":
+          e.preventDefault();
+          handlePaste();
           break;
         case "timeline.toggleSnap": {
           const s = useSettingsStore.getState();
@@ -535,7 +528,6 @@ function useTimelineKeyboard(
             toast.success("Linked instance added at playhead");
           } else {
             copyInstanceToClipboardAndPreview(projectState.lines, groupId, sourceInstanceIdx);
-            toast(`No room at the playhead. ${MOD_KEY}+V to paste somewhere clear.`);
           }
           break;
         }
