@@ -41,15 +41,15 @@ const VolumeKnob: React.FC = () => {
       onStep={(direction) => changeVolume(Math.round((shownVolume + direction * KNOB_STEP) * 100) / 100)}
     >
       <div className="p-3 w-40">
-        <div className="flex items-center gap-2 mb-2 justify-between pr-2.5">
+        <div className="flex items-center justify-between gap-2 mb-2">
           <IconButton
             label={isMuted ? "Unmute" : "Mute"}
-            icon={<VolumeIcon className="size-4" />}
+            icon={<VolumeIcon className="size-3.5" />}
             variant="ghost"
-            className="size-7 shrink-0"
+            className="size-7 shrink-0 -my-1.5 -ml-1.5"
             onClick={toggleMute}
           />
-          <span className="text-xs text-composer-text-muted tabular-nums w-8 text-right">{percent}%</span>
+          <span className="text-xs leading-none text-composer-text-muted tabular-nums">{percent}%</span>
         </div>
         <Slider
           value={shownVolume}

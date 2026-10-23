@@ -647,56 +647,6 @@ braccato-lyrics .blyrics-container {
 }
 
 /* Range input styling */
-input[type="range"].settings-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 3px;
-  outline: none;
-  background-color: var(--well);
-  box-shadow: var(--well-edge);
-}
-
-input[type="range"].settings-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: linear-gradient(to bottom, #fff, color-mix(in oklab, white 88%, var(--color-composer-bg)));
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(0 0 0 / 0.08);
-  cursor: grab;
-  margin-top: -6px;
-  border: none;
-}
-
-input[type="range"].settings-slider::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 3px;
-}
-
-input[type="range"].settings-slider::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: linear-gradient(to bottom, #fff, color-mix(in oklab, white 88%, var(--color-composer-bg)));
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(0 0 0 / 0.08);
-  cursor: grab;
-  border: none;
-}
-
-input[type="range"].settings-slider::-moz-range-track {
-  height: 6px;
-  border-radius: 3px;
-  background: transparent;
-}
-
-input[type="range"].settings-slider::-moz-range-progress {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--color-composer-accent);
-}
-
 /* Help search matches, painted with the Custom Highlight API; mirrors HighlightMatches */
 ::highlight(help-match) {
   color: var(--color-composer-accent-text);

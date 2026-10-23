@@ -1,3 +1,4 @@
+import { Slider } from "@/ui/slider";
 import { useSettingsStore } from "@/stores/settings";
 import { type SettingId, settingEntry, settingKeyOf } from "@/stores/settings-catalog";
 import { Select } from "@/ui/select";
@@ -34,7 +35,6 @@ const SliderSetting: React.FC<SliderSettingProps> = ({ id, min, max, step, forma
   const stored = useSettingsStore((s) => s[settingKey]);
   const set = useSettingsStore((s) => s.set);
   const value = typeof stored === "number" ? stored : min;
-  const percent = ((value - min) / (max - min)) * 100;
 
   return (
     <div className="flex flex-col gap-3 py-3.5">
@@ -55,18 +55,14 @@ const SliderSetting: React.FC<SliderSettingProps> = ({ id, min, max, step, forma
           </span>
         </div>
       </SettingRowLayout>
-      <input
-        type="range"
+      <Slider
         aria-label={settingEntry(id).label}
         min={min}
         max={max}
         step={step}
         value={value}
-        onChange={(e) => set(settingKey, Number(e.target.value))}
-        className="settings-slider w-full cursor-pointer"
-        style={{
-          backgroundImage: `linear-gradient(to right, var(--color-composer-accent) ${percent}%, transparent ${percent}%)`,
-        }}
+        onChange={(next) => set(settingKey, next)}
+        className="w-full"
       />
     </div>
   );

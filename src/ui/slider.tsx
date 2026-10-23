@@ -16,6 +16,26 @@ interface SliderProps {
   appearance?: "track" | "overlay";
 }
 
+// -- Constants ----------------------------------------------------------------
+
+// The fader cap stays inside the track, so its centre travels between half its width from each end.
+const CAP_WIDTH_PX = 12;
+
+// -- Helpers ------------------------------------------------------------------
+
+function stepDecimals(step: number): number {
+  const [, fraction = ""] = String(step).split(".");
+  return fraction.length;
+}
+
+// Snaps to the step grid from min and clamps; rounding to the step's decimals drops float noise such as 0.30000000000000004.
+function snapToStep(raw: number, min: number, max: number, step: number | undefined): number {
+  const clamped = Math.max(min, Math.min(max, raw));
+  if (!step) return clamped;
+  const stepped = min + Math.round((clamped - min) / step) * step;
+  return Math.max(min, Math.min(max, Number(stepped.toFixed(stepDecimals(step)))));
+}
+
 // -- Component ----------------------------------------------------------------
 
 const Slider: React.FC<SliderProps> = ({
@@ -40,16 +60,12 @@ const Slider: React.FC<SliderProps> = ({
       if (!track) return value;
 
       const rect = track.getBoundingClientRect();
-      const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-      const rawValue = min + (x / rect.width) * (max - min);
-
-      if (step) {
-        const stepped = Math.round(rawValue / step) * step;
-        return Math.max(min, Math.min(max, stepped));
-      }
-      return Math.max(min, Math.min(max, rawValue));
+      const inset = appearance === "track" ? CAP_WIDTH_PX / 2 : 0;
+      const travel = Math.max(1, rect.width - 2 * inset);
+      const x = Math.max(0, Math.min(clientX - rect.left - inset, travel));
+      return snapToStep(min + (x / travel) * (max - min), min, max, step);
     },
-    [min, max, step, value],
+    [min, max, step, value, appearance],
   );
 
   const handleMouseDown = useCallback(
@@ -84,20 +100,20 @@ const Slider: React.FC<SliderProps> = ({
         case "ArrowLeft":
         case "ArrowDown":
           e.preventDefault();
-          onChange(Math.max(min, value - smallStep));
+          onChange(snapToStep(value - smallStep, min, max, step));
           break;
         case "ArrowRight":
         case "ArrowUp":
           e.preventDefault();
-          onChange(Math.min(max, value + smallStep));
+          onChange(snapToStep(value + smallStep, min, max, step));
           break;
         case "PageDown":
           e.preventDefault();
-          onChange(Math.max(min, value - largeStep));
+          onChange(snapToStep(value - largeStep, min, max, step));
           break;
         case "PageUp":
           e.preventDefault();
-          onChange(Math.min(max, value + largeStep));
+          onChange(snapToStep(value + largeStep, min, max, step));
           break;
         case "Home":
           e.preventDefault();
@@ -123,7 +139,7 @@ const Slider: React.FC<SliderProps> = ({
       aria-label={ariaLabel}
       className={cn(
         appearance === "track"
-          ? "relative h-1.5 cursor-pointer rounded-full bg-(--well) shadow-(--well-edge) expanded-hit-sm"
+          ? "relative flex items-center h-[18px] cursor-pointer rounded-[5px] outline-none focus-visible:ring-2 focus-visible:ring-(--lit-ring)"
           : "relative cursor-pointer",
         className,
       )}
@@ -131,19 +147,31 @@ const Slider: React.FC<SliderProps> = ({
       onKeyDown={handleKeyDown}
     >
       {children}
-      {appearance === "track" && <SliderFill percent={percent} />}
+      {appearance === "track" && <SliderTrack percent={percent} />}
     </div>
   );
 };
 
-const SliderFill: React.FC<{ percent: number }> = ({ percent }) => (
-  <>
-    <div className="absolute inset-y-0 left-0 rounded-full bg-composer-accent" style={{ width: `${percent}%` }} />
-    <div
-      className="absolute top-1/2 size-[18px] -translate-y-1/2 rounded-full bg-linear-to-b from-white to-[color-mix(in_oklab,white_88%,var(--color-composer-bg))] shadow-[0_1px_3px_rgb(0_0_0/0.4),inset_0_0_0_1px_rgb(0_0_0/0.08)]"
-      style={{ left: `calc(${percent}% - 9px)` }}
-    />
-  </>
-);
+// The cap is a small twin of the timeline playhead cap, turned into a fader.
+const SliderTrack: React.FC<{ percent: number }> = ({ percent }) => {
+  const capLeft = `calc((100% - ${CAP_WIDTH_PX}px) * ${percent / 100})`;
+  return (
+    <>
+      <div className="relative w-full h-1.5 rounded-full bg-(--well) shadow-(--well-edge)">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-composer-accent"
+          style={{ width: `calc(${capLeft} + ${CAP_WIDTH_PX / 2}px)` }}
+        />
+      </div>
+      <div
+        className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center gap-0.5 w-3 h-[18px] rounded-[4px] bg-linear-to-b from-white to-[color-mix(in_oklab,white_86%,var(--color-composer-bg))] shadow-[0_1px_2px_rgb(0_0_0/0.4),inset_0_0_0_0.5px_rgb(0_0_0/0.12)]"
+        style={{ left: capLeft }}
+      >
+        <i className="block w-px h-2 rounded-[1px] bg-[color-mix(in_oklab,black_38%,transparent)]" />
+        <i className="block w-px h-2 rounded-[1px] bg-[color-mix(in_oklab,black_38%,transparent)]" />
+      </div>
+    </>
+  );
+};
 
 export { Slider };
