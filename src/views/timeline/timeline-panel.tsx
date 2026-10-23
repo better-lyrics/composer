@@ -309,8 +309,8 @@ const TimelinePanel: React.FC = () => {
 
                 <SnapGuideline />
 
-                <LoopRegionGuides scrollContainerRef={scrollContainerRef} />
-                <LoopRegionReadout host={rulerMarkerHost} />
+                <LoopRegionGuides />
+                <LoopRegionReadout host={rulerLane} />
 
                 <SnapMarkersOverlay scrollContainerRef={scrollContainerRef} headHost={rulerMarkerHost} />
 
