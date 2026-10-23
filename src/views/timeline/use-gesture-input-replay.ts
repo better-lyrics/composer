@@ -24,7 +24,7 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
     const replayLastPointer = () => {
       const last = getLastPointer();
       if (!last) return;
-      window.dispatchEvent(
+      document.dispatchEvent(
         new PointerEvent("pointermove", {
           clientX: last.clientX,
           clientY: last.clientY,
