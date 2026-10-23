@@ -1,5 +1,6 @@
 import { DesignSection } from "@/pages/design/design-section";
 import { PrimitiveBlock, StateCell, StateGrid } from "@/pages/design/state-cell";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
@@ -22,7 +23,7 @@ const KeyBadgeBlock: React.FC = () => (
       <StateCell label="Keys">
         <span className="inline-flex items-center text-[13px] text-(--label) select-none">
           Save
-          <InlineKeyBadge keys={["Mod", "S"]} />
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.saveNow")} />
         </span>
       </StateCell>
       <StateCell label="Text">
