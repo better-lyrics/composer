@@ -781,6 +781,12 @@ braccato-lyrics .blyrics-container {
 }
 
 /* Registered so the lit fade runs on the main thread: Chrome's composited background-color fade can repaint one stale lit frame as it ends. */
+@property --row-tint {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+
 @property --word-fill {
   syntax: "<color>";
   inherits: false;
@@ -915,8 +921,12 @@ braccato-lyrics .blyrics-container {
       animation: line-cell-hit 260ms cubic-bezier(0.22, 1, 0.36, 1);
     }
   }
+  [data-timeline-row] {
+    background-color: var(--row-tint);
+    transition: --row-tint 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
   [data-timeline-row][data-current] {
-    background: color-mix(in oklab, var(--color-composer-accent) 7%, transparent);
+    --row-tint: color-mix(in oklab, var(--color-composer-accent) 7%, transparent);
   }
 }
 
