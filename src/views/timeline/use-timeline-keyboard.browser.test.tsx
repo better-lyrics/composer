@@ -115,13 +115,32 @@ describe("useTimelineKeyboard", () => {
   });
 
   it("toggles original and transliteration labels when L is pressed", async () => {
-    useProjectStore.setState({ activeTab: "timeline" });
+    const line = {
+      ...createLine({ text: "일단은" }),
+      transliteration: {
+        language: "ko-Latn",
+        text: "ildan eun",
+        segments: [{ original: "일단은", transliteration: "ildan eun" }],
+        origin: "google" as const,
+        sourceFingerprint: "source",
+      },
+    };
+    useProjectStore.setState({ activeTab: "timeline", lines: [line] });
     useTimelineStore.setState({ textVariant: "original" });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "l", bubbles: true }));
     expect(useTimelineStore.getState().textVariant).toBe("transliteration");
     useTimelineStore.setState({ textVariant: "original" });
+  });
+
+  it("regression: L leaves the labels alone when no line has a transliteration", async () => {
+    useProjectStore.setState({ activeTab: "timeline", lines: [createLine({ text: "every day" })] });
+    useTimelineStore.setState({ textVariant: "original" });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "l", bubbles: true }));
+    expect(useTimelineStore.getState().textVariant).toBe("original");
   });
 
   it("merges two space-separated words into one when the merge shortcut is pressed", async () => {

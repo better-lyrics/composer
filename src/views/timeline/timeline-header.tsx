@@ -1,4 +1,5 @@
 import { isLinked } from "@/domain/instance/predicates";
+import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
@@ -53,10 +54,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   const setInstanceCollapsed = useTimelineStore((s) => s.setInstanceCollapsed);
   const textVariant = useTimelineStore((s) => s.textVariant);
   const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
-  const hasTransliteration = useMemo(
-    () => lines.some((line) => !!(line.transliteration?.text || line.transliteration?.backgroundText)),
-    [lines],
-  );
+  const linesHaveTransliteration = useMemo(() => hasTransliteration(lines), [lines]);
   const hasUnexpandedLines = useMemo(() => lines.some((l) => !l.words?.length && l.text.trim().length > 0), [lines]);
 
   const instanceKeys = useMemo(() => {
@@ -143,7 +141,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
             stateInLabel
             shortcut="timeline.toggleTextVariant"
             onClick={toggleTextVariant}
-            disabled={!hasTransliteration}
+            disabled={!linesHaveTransliteration}
             title="Toggle original / transliteration labels"
           >
             <IconLanguage />

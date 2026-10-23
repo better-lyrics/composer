@@ -1,4 +1,5 @@
 import { withNewInstance } from "@/domain/group/own-timing";
+import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
@@ -357,7 +358,7 @@ function useTimelineKeyboard(
           break;
         }
         case "timeline.toggleTextVariant":
-          useTimelineStore.getState().toggleTextVariant();
+          if (hasTransliteration(useProjectStore.getState().lines)) useTimelineStore.getState().toggleTextVariant();
           break;
         case "timeline.setWordBegin":
           e.preventDefault();

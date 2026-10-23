@@ -1,4 +1,5 @@
 import { instancePositionsByLineId } from "@/domain/instance/enumerate";
+import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { isLinked } from "@/domain/instance/predicates";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
@@ -52,10 +53,7 @@ const SyncPanel: React.FC = () => {
   const seekTo = useAudioStore((s) => s.seekTo);
   const textVariant = useTimelineStore((s) => s.textVariant);
   const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
-  const hasTransliteration = useMemo(
-    () => lines.some((line) => !!(line.transliteration?.text || line.transliteration?.backgroundText)),
-    [lines],
-  );
+  const linesHaveTransliteration = useMemo(() => hasTransliteration(lines), [lines]);
   const displayLines = useMemo(
     () => lines.map((line) => ({ ...line, ...getLanguageDisplayLine(line, textVariant) })),
     [lines, textVariant],
@@ -393,7 +391,7 @@ const SyncPanel: React.FC = () => {
           break;
         case "sync.toggleTextVariant":
           e.preventDefault();
-          if (hasTransliteration) toggleTextVariant();
+          if (linesHaveTransliteration) toggleTextVariant();
           break;
       }
     };
@@ -424,7 +422,7 @@ const SyncPanel: React.FC = () => {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [activeTab, undo, redo, handleNudgeLastSynced, editMode, isHolding, hasTransliteration, toggleTextVariant]);
+  }, [activeTab, undo, redo, handleNudgeLastSynced, editMode, isHolding, linesHaveTransliteration, toggleTextVariant]);
 
   const showScrollableView = (!isPlaying && !countIn.countingIn) || editMode;
 
@@ -453,7 +451,7 @@ const SyncPanel: React.FC = () => {
       <SyncHeader
         progress={progress}
         textVariant={textVariant}
-        hasTransliteration={hasTransliteration}
+        hasTransliteration={linesHaveTransliteration}
         toggleTextVariant={toggleTextVariant}
         granularity={granularity}
         handleGranularityChange={handleGranularityChange}
