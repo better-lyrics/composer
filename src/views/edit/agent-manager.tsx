@@ -56,7 +56,7 @@ const FormHeader: React.FC<{ title: string; id?: string; onBack: () => void }> =
       <IconChevronLeft className="size-[15px] text-(--muted)" />
       {title}
     </button>
-    {id && <span className="font-mono text-[11px] font-medium text-composer-text-faint">{id}</span>}
+    {id && <span className="font-mono text-[11px] font-medium text-composer-text-muted">{id}</span>}
   </div>
 );
 
@@ -194,7 +194,7 @@ const AgentList: React.FC<{ onEdit: (agent: Agent) => void; onAdd: () => void }>
               <SingerTag color={getAgentColor(agent.id)} className="justify-self-start">
                 {agent.name || agent.id}
               </SingerTag>
-              <span className="font-mono text-[11px] text-composer-text-faint">{agent.id}</span>
+              <span className="font-mono text-[11px] text-composer-text-muted">{agent.id}</span>
               <span className="text-xs text-right tabular-nums text-(--muted)">{pluralize(lineCount, "line")}</span>
             </button>
           );

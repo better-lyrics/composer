@@ -139,7 +139,7 @@ const SplitPickerLegend: React.FC<{ kinds: readonly SeparatorKind[] }> = ({ kind
           </button>
         </Tooltip>
       ))}
-      <span className="text-composer-text-faint">{LEGEND_SUMMARY[kinds.length]}</span>
+      <span className="text-composer-text-muted">{LEGEND_SUMMARY[kinds.length]}</span>
     </div>
   );
 };

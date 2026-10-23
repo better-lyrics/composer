@@ -56,7 +56,7 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
   onAlign,
 }) => (
   <div className="mt-1 flex flex-col gap-1.5 pt-2 border-t border-dashed border-(--divider)">
-    <p className="text-xs text-composer-text-faint select-none">Background</p>
+    <p className="text-xs text-composer-text-muted select-none">Background</p>
     <Field
       label="Transliteration"
       ariaLabel="Background transliteration"
