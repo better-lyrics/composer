@@ -52,6 +52,18 @@ describe("useEscapeLayer", () => {
     expect(openModalCount(useEscapeLayerStackStore.getState())).toBe(0);
   });
 
+  it("regression: marks the Escape it handles so the timeline does not also act on it", async () => {
+    let handledBelow: boolean | null = null;
+    const listener = (event: KeyboardEvent) => {
+      handledBelow = event.defaultPrevented;
+    };
+    window.addEventListener("keydown", listener);
+    await render(<Layer active onEscape={() => {}} />);
+    await userEvent.keyboard("{Escape}");
+    window.removeEventListener("keydown", listener);
+    expect(handledBelow).toBe(true);
+  });
+
   it("ignores other keys", async () => {
     let escapes = 0;
     await render(<Layer active onEscape={() => escapes++} />);

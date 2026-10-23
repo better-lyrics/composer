@@ -230,6 +230,8 @@ function useTimelineKeyboard(
         }
 
         if (e.key === "Escape") {
+          // A modal or panel that closed on this Escape already used it.
+          if (e.defaultPrevented) return;
           const { pasteMode } = useTimelineStore.getState();
           if (pasteMode.status === "preview") {
             useTimelineStore.getState().setPasteMode({ status: "idle" });
