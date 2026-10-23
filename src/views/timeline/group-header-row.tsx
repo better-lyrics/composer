@@ -66,17 +66,32 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
   const isCollapsed = collapsedInstances[`${group.id}:${instanceIdx}`] ?? false;
   const renaming = renamingGroupId === group.id && renamingInstanceIdx === instanceIdx;
 
-  const openGroupMenu = useCallback(
+  const openGroupMenuAt = useCallback(
+    (x: number, y: number) => {
+      setContextMenu({ x, y, target: { kind: "group-banner", groupId: group.id, instanceIdx, source: "gutter" } });
+    },
+    [group.id, instanceIdx, setContextMenu],
+  );
+
+  // The menu opens beside the label, so the second click of a double-click reaches the label and renames.
+  const openGroupMenuBeside = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.detail > 1) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      openGroupMenuAt(rect.right, rect.top);
+    },
+    [openGroupMenuAt],
+  );
+
+  const openGroupMenuAtPointer = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      setContextMenu({
-        x: e.clientX,
-        y: e.clientY,
-        target: { kind: "group-banner", groupId: group.id, instanceIdx, source: "gutter" },
-      });
+      openGroupMenuAt(e.clientX, e.clientY);
     },
-    [group.id, instanceIdx, setContextMenu],
+    [openGroupMenuAt],
   );
 
   const startRename = useCallback(
@@ -125,8 +140,8 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
         ) : (
           <button
             type="button"
-            onClick={openGroupMenu}
-            onContextMenu={openGroupMenu}
+            onClick={openGroupMenuBeside}
+            onContextMenu={openGroupMenuAtPointer}
             className="w-full h-full flex items-center justify-center cursor-pointer hover:brightness-110"
             title={`${group.label} · ${ordinal} of ${totalInstances}`}
           >
