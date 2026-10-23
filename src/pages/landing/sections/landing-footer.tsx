@@ -88,6 +88,11 @@ const LandingFooter: React.FC = () => {
               </Link>
             </li>
             <li>
+              <Link to="/design" className="hover:text-composer-text">
+                Design system
+              </Link>
+            </li>
+            <li>
               <a
                 href="https://better-lyrics.boidu.dev"
                 target="_blank"

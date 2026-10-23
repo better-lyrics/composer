@@ -88,4 +88,4 @@ const ThemeMenu: React.FC = () => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { ThemeMenu };
+export { ThemeMenu, ThemeSwatch };
