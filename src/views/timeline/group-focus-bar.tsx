@@ -111,7 +111,7 @@ const OwnTimingStatus: React.FC<Omit<OpenInstanceProps, "lines">> = ({ group, he
 };
 
 const InstanceStatus: React.FC<OpenInstanceProps> = (props) => (
-  <span className="flex items-center gap-2 pl-1 tabular-nums text-composer-text-muted">
+  <span className="flex min-w-0 items-center gap-2 pl-1 whitespace-nowrap tabular-nums text-composer-text-muted">
     {sharesTiming(props.group, props.hearInstanceIdx) ? <SharedSpan {...props} /> : <OwnTimingStatus {...props} />}
     {otherInstanceNotes(props.lines, props.group, props.hearInstanceIdx).map((note) => (
       <span key={note}>{`· ${note}`}</span>
@@ -133,7 +133,7 @@ const FocusedGroupBar: React.FC<Omit<OpenInstanceProps, "lines">> = ({ group, he
       <InstanceStatus {...instance} />
       <span className="flex-1" />
       <LoopToggle />
-      <Button size="lg" className="pr-2" onClick={closeGroup}>
+      <Button size="lg" className="shrink-0 pr-2" onClick={closeGroup}>
         Done
         <InlineKeyBadge keys={getEffectiveKeysArray("timeline.closeGroup")} />
       </Button>

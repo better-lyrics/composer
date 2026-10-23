@@ -1,9 +1,9 @@
 // -- Constants -----------------------------------------------------------------
 
 const STRIP_BAR = "flex h-12 shrink-0 select-none items-center gap-2.5 border-b border-(--divider) px-2 text-xs";
-const STRIP_TRAY = "tray";
+const STRIP_TRAY = "tray shrink-0";
 const STRIP_CONTROL = "h-7 rounded-lg";
-const STRIP_TAG = "h-9! gap-1.5! rounded-xl! px-3! text-[13px]!";
+const STRIP_TAG = "h-9! max-w-64! gap-1.5! rounded-xl! px-3! text-[13px]!";
 
 // -- Functions -----------------------------------------------------------------
 

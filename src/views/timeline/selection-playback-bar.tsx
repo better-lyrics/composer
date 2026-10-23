@@ -41,7 +41,7 @@ const SelectionPlaybackBar: React.FC = () => {
       </span>
       <span className="flex-1" />
       <LoopToggle />
-      <Button size="lg" onClick={() => stopSelectionPlayback({ pause: true })}>
+      <Button size="lg" className="shrink-0" onClick={() => stopSelectionPlayback({ pause: true })}>
         Stop
       </Button>
     </div>
