@@ -37,6 +37,22 @@ const centeredFadeVariants: Variants = {
   exit: { opacity: 0, x: "-50%" },
 };
 
+// A tab's inline status icon grows in from nothing, so the label beside it slides instead of jumping.
+// The -6px margin cancels the parent's gap while the icon has no width.
+const inlineIconTransition: Transition = { type: "spring", duration: 0.3, bounce: 0 };
+
+const inlineIconVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.25, filter: "blur(4px)", width: 0, marginLeft: -6 },
+  visible: { opacity: 1, scale: 1, filter: "blur(0px)", width: "auto", marginLeft: -2 },
+  exit: { opacity: 0, scale: 0.25, filter: "blur(4px)", width: 0, marginLeft: -6 },
+};
+
+const inlineIconReducedVariants: Variants = {
+  hidden: { opacity: 0, width: 0, marginLeft: -6 },
+  visible: { opacity: 1, width: "auto", marginLeft: -2 },
+  exit: { opacity: 0, width: 0, marginLeft: -6 },
+};
+
 // -- Sync Carousel (vertical, direction-aware, instant) ----------------------
 
 const syncCarouselTransition: Transition = {
@@ -124,4 +140,7 @@ export {
   pinDropInVariants,
   snapFlashVariants,
   floatingEntrance,
+  inlineIconTransition,
+  inlineIconVariants,
+  inlineIconReducedVariants,
 };

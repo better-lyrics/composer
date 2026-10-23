@@ -5,11 +5,13 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { StatusChip } from "@/ui/status-chip";
+import { inlineIconReducedVariants, inlineIconTransition, inlineIconVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import { useEffectiveFocus } from "@/views/timeline/effective-focus";
 import { rangePlaybackIndicator } from "@/views/timeline/selection-playback-icon";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useId, useLayoutEffect, useRef } from "react";
 
 const TAB_LABELS: Record<ProjectTab, string> = {
@@ -40,13 +42,48 @@ function useSlidingCap(activeTab: ProjectTab) {
     };
     place();
     cap.dataset.placed = "";
-    const observer = new ResizeObserver(place);
+    // Only a tab change glides; a tab that resizes in place (a status icon growing in) carries the cap with it.
+    let observedOnce = false;
+    const follow = () => {
+      if (!observedOnce) {
+        observedOnce = true;
+        return;
+      }
+      delete cap.dataset.placed;
+      place();
+      void cap.offsetWidth;
+      cap.dataset.placed = "";
+    };
+    const observer = new ResizeObserver(follow);
     observer.observe(nav);
     return () => observer.disconnect();
   }, [activeTab]);
 
   return { navRef, capRef };
 }
+
+const RangeIndicatorIcon: React.FC<{ indicator: ReturnType<typeof rangePlaybackIndicator> }> = ({ indicator }) => {
+  const reducedMotion = useReducedMotion();
+  return (
+    <AnimatePresence initial={false}>
+      {indicator && (
+        <m.span
+          key={indicator.label}
+          aria-hidden="true"
+          title={indicator.label}
+          variants={reducedMotion ? inlineIconReducedVariants : inlineIconVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          transition={inlineIconTransition}
+          className="inline-flex overflow-hidden text-composer-accent-text"
+        >
+          <indicator.icon className="size-3.5 shrink-0" />
+        </m.span>
+      )}
+    </AnimatePresence>
+  );
+};
 
 const TabBar: React.FC = () => {
   const activeTab = useProjectStore((s) => s.activeTab);
@@ -93,13 +130,7 @@ const TabBar: React.FC = () => {
           >
             <span className="inline-flex items-center gap-1.5">
               {tab.label}
-              {tab.id === "timeline" && rangeIndicator && (
-                <rangeIndicator.icon
-                  aria-hidden="true"
-                  title={rangeIndicator.label}
-                  className="-ml-0.5 size-3.5 text-composer-accent-text"
-                />
-              )}
+              {tab.id === "timeline" && <RangeIndicatorIcon indicator={rangeIndicator} />}
               {showLanguageError && (
                 <StatusChip
                   tone="error"
