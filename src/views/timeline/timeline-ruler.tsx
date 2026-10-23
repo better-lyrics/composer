@@ -1,5 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
+import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
+import { placeSnapPoint } from "@/views/timeline/place-snap-point";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconClock } from "@tabler/icons-react";
 import { useEffect, useRef } from "react";
@@ -52,6 +54,7 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
   const duration = useAudioStore((s) => s.duration);
   const seekTo = useAudioStore((s) => s.seekTo);
   const zoom = useTimelineStore((s) => s.zoom);
+  const markerMode = useTimelineStore((s) => s.markerMode);
   const trackRef = useRef<HTMLDivElement>(null);
   const [labelled, minor] = rulerStep(zoom);
   const labels = Array.from({ length: Math.floor(duration / labelled) + 1 }, (_, index) => index * labelled);
@@ -72,7 +75,9 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
     const container = scrollContainerRef.current;
     if (!container || duration <= 0) return;
     const x = event.clientX - event.currentTarget.getBoundingClientRect().left + container.scrollLeft;
-    seekTo(Math.min(duration, Math.max(0, x / zoom)));
+    const time = Math.min(duration, Math.max(0, x / zoom));
+    if (useTimelineStore.getState().markerMode || event.altKey) placeSnapPoint(time);
+    else seekTo(time);
   };
 
   return (
@@ -85,7 +90,7 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
       </div>
       <div
         ref={laneRef}
-        className="relative flex-1 min-w-0 overflow-hidden cursor-pointer"
+        className={cn("relative flex-1 min-w-0 overflow-hidden", markerMode ? "cursor-crosshair" : "cursor-pointer")}
         onPointerDown={seekToPointer}
       >
         <div

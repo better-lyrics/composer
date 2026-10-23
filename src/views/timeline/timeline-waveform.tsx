@@ -1,12 +1,10 @@
 import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
 import { isAbortError } from "@/utils/abort-error";
 import { cn } from "@/utils/cn";
 import { readToken } from "@/utils/theme/read-token";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
-import { snapTimeToOnset } from "@/views/timeline/snap-marker-math";
+import { placeSnapPoint } from "@/views/timeline/place-snap-point";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import { WaveformFocusShade } from "@/views/timeline/waveform-focus-shade";
 import WavesurferPlayer from "@wavesurfer/react";
@@ -87,29 +85,22 @@ const TimelineWaveform: React.FC = () => {
     [duration, totalWidth],
   );
 
-  const addSnappedPoint = useCallback((time: number) => {
-    const { zoom: currentZoom, vocalOnsetSnapPoints } = useTimelineStore.getState();
-    const { vocalOnsetSnap, timelineSnapThreshold } = useSettingsStore.getState();
-    const onsets = vocalOnsetSnap ? vocalOnsetSnapPoints : [];
-    useProjectStore.getState().addCustomSnapPoint(snapTimeToOnset(time, onsets, currentZoom, timelineSnapThreshold));
-  }, []);
-
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       e.stopPropagation();
       if (!duration || totalWidth <= 0) return;
       const time = timeFromClick(e);
       if (useTimelineStore.getState().markerMode) {
-        if (e.detail <= 1) addSnappedPoint(time);
+        if (e.detail <= 1) placeSnapPoint(time);
         return;
       }
       if (e.altKey) {
-        addSnappedPoint(time);
+        placeSnapPoint(time);
         return;
       }
       seekTo(snapPlayheadTime(time, e.metaKey));
     },
-    [duration, totalWidth, timeFromClick, addSnappedPoint, seekTo],
+    [duration, totalWidth, timeFromClick, seekTo],
   );
 
   const onDestroy = useCallback(() => {
