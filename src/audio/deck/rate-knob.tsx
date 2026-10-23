@@ -36,8 +36,8 @@ const RateKnob: React.FC = () => {
       onStep={(direction) => setPlaybackRate(roundedRate(rate + direction * RATE_STEP))}
       onReset={() => setPlaybackRate(NORMAL_PLAYBACK_RATE)}
       rememberValue={() => {
-        const before = useAudioStore.getState().playbackRate;
-        return () => setPlaybackRate(before);
+        const { playbackRate, otherPlaybackRate, restorePlaybackRates } = useAudioStore.getState();
+        return () => restorePlaybackRates({ playbackRate, otherPlaybackRate });
       }}
     >
       <div className="p-3">

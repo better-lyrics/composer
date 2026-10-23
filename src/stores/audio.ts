@@ -35,6 +35,7 @@ interface AudioActions {
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
   setPlaybackRate: (rate: number) => void;
+  restorePlaybackRates: (rates: { playbackRate: number; otherPlaybackRate: number }) => void;
   setVolume: (volume: number) => void;
   toggleMute: () => void;
   setIsLoading: (isLoading: boolean) => void;
@@ -157,6 +158,10 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
     const settings = useSettingsStore.getState();
     if (settings.rememberPlaybackRate) settings.set("lastPlaybackRate", playbackRate);
     set(playbackRate === NORMAL_PLAYBACK_RATE ? { playbackRate } : { playbackRate, otherPlaybackRate: playbackRate });
+  },
+  restorePlaybackRates: ({ playbackRate, otherPlaybackRate }) => {
+    useAudioStore.getState().setPlaybackRate(playbackRate);
+    set({ otherPlaybackRate });
   },
   setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
   toggleMute: () => set((s) => ({ isMuted: !s.isMuted })),

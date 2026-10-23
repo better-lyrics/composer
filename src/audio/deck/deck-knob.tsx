@@ -1,5 +1,5 @@
 import { Popover } from "@/ui/popover";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -91,6 +91,8 @@ const DeckKnob: React.FC<DeckKnobProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const dragged = useRef(false);
+  const endDrag = useRef<(() => void) | null>(null);
+  useEffect(() => () => endDrag.current?.(), []);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (event.button !== 0) return;
@@ -111,7 +113,9 @@ const DeckKnob: React.FC<DeckKnobProps> = ({
       knob.removeEventListener("pointermove", handleMove);
       knob.removeEventListener("pointerup", handleUp);
       knob.removeEventListener("pointercancel", handleUp);
+      knob.removeEventListener("lostpointercapture", handleUp);
       window.removeEventListener("keydown", handleEscape, true);
+      endDrag.current = null;
     };
     const handleEscape = (key: KeyboardEvent) => {
       if (key.key !== "Escape") return;
@@ -123,13 +127,16 @@ const DeckKnob: React.FC<DeckKnobProps> = ({
     knob.addEventListener("pointermove", handleMove);
     knob.addEventListener("pointerup", handleUp);
     knob.addEventListener("pointercancel", handleUp);
+    knob.addEventListener("lostpointercapture", handleUp);
     window.addEventListener("keydown", handleEscape, true);
+    endDrag.current = handleUp;
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     const direction = KEY_DIRECTIONS[event.key];
     if (direction === undefined) return;
     event.preventDefault();
+    event.stopPropagation();
     onStep(direction);
   };
 
