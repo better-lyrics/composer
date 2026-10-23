@@ -25,10 +25,7 @@ function nextAnnouncement(status: SaveStatus, previous: string): string {
 
 // -- Components ---------------------------------------------------------------
 
-const SaveStatusGlyph: React.FC = () => {
-  const status = useSaveStatus();
-  const openId = useOpenProjectId();
-  if (!openId) return null;
+const SaveStatusIcon: React.FC<{ status: SaveStatus }> = ({ status }) => {
   if (status === "failed") {
     return (
       <span className="inline-flex items-center gap-[3px] text-[11.5px] font-medium text-composer-warning">
@@ -52,6 +49,13 @@ const SaveStatusGlyph: React.FC = () => {
   );
 };
 
+const SaveStatusGlyph: React.FC = () => {
+  const status = useSaveStatus();
+  const openId = useOpenProjectId();
+  if (!openId) return null;
+  return <SaveStatusIcon status={status} />;
+};
+
 const SaveStatusAnnouncer: React.FC = () => {
   const status = useSaveStatus();
   const [announcement, setAnnouncement] = useState("");
@@ -66,4 +70,4 @@ const SaveStatusAnnouncer: React.FC = () => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { SaveStatusAnnouncer, SaveStatusGlyph };
+export { SaveStatusAnnouncer, SaveStatusGlyph, SaveStatusIcon };
