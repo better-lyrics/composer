@@ -10,21 +10,22 @@ import { IconRepeat } from "@tabler/icons-react";
 
 // -- Components ----------------------------------------------------------------
 
+const LoopToggleButton: React.FC<{ pressed: boolean; onClick: () => void }> = ({ pressed, onClick }) => (
+  <div className={STRIP_TRAY}>
+    <ToggleButton pressed={pressed} size="sm" hasIcon className={cn(STRIP_CONTROL, "pr-1.5")} onClick={onClick}>
+      <IconRepeat aria-hidden="true" className="size-3.5" />
+      Loop
+      <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleLoop")} />
+    </ToggleButton>
+  </div>
+);
+
 const LoopToggle: React.FC = () => {
   const selectionPlayback = useTimelineStore((s) => s.selectionPlayback);
   const loopOpenGroup = useSettingsStore((s) => s.loopOpenGroup);
-  const loop = loopsRange(selectionPlayback, loopOpenGroup);
-  return (
-    <div className={STRIP_TRAY}>
-      <ToggleButton pressed={loop} size="sm" hasIcon className={cn(STRIP_CONTROL, "pr-1.5")} onClick={toggleLoop}>
-        <IconRepeat aria-hidden="true" className="size-3.5" />
-        Loop
-        <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleLoop")} />
-      </ToggleButton>
-    </div>
-  );
+  return <LoopToggleButton pressed={loopsRange(selectionPlayback, loopOpenGroup)} onClick={toggleLoop} />;
 };
 
 // -- Exports -------------------------------------------------------------------
 
-export { LoopToggle };
+export { LoopToggle, LoopToggleButton };

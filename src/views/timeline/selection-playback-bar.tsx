@@ -6,8 +6,19 @@ import { LoopToggle } from "@/views/timeline/loop-toggle";
 import { stopSelectionPlayback } from "@/views/timeline/selection-playback";
 import { selectionPlaybackIcon } from "@/views/timeline/selection-playback-icon";
 import { STRIP_BAR, STRIP_TAG, stripTint } from "@/views/timeline/strip-control";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { type SelectionPlaybackMode, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useSelectionPlaybackRange } from "@/views/timeline/use-selection-playback-range";
+
+// -- Interfaces ----------------------------------------------------------------
+
+interface SelectionPlaybackStripProps {
+  mode: SelectionPlaybackMode;
+  wordCount: number;
+  begin: number;
+  end: number;
+  loop: React.ReactNode;
+  onStop: () => void;
+}
 
 // -- Constants -----------------------------------------------------------------
 
@@ -15,11 +26,7 @@ const ACCENT = "var(--color-composer-accent)";
 
 // -- Components ----------------------------------------------------------------
 
-const SelectionPlaybackBar: React.FC = () => {
-  const playback = useSelectionPlaybackRange();
-  const wordCount = useTimelineStore((s) => s.selectedWords.length);
-  const mode = useTimelineStore((s) => s.selectionPlayback);
-  if (!playback || !mode) return null;
+const SelectionPlaybackStrip: React.FC<SelectionPlaybackStripProps> = ({ mode, wordCount, begin, end, loop, onStop }) => {
   const ModeIcon = selectionPlaybackIcon(mode);
 
   return (
@@ -37,17 +44,34 @@ const SelectionPlaybackBar: React.FC = () => {
         </span>
       </SingerTag>
       <span className="select-text cursor-text pl-1 tabular-nums text-composer-text-muted">
-        {`${formatTime(playback.selection.begin, 2)} to ${formatTime(playback.selection.end, 2)}`}
+        {`${formatTime(begin, 2)} to ${formatTime(end, 2)}`}
       </span>
       <span className="flex-1" />
-      <LoopToggle />
-      <Button size="lg" className="shrink-0" onClick={() => stopSelectionPlayback({ pause: true })}>
+      {loop}
+      <Button size="lg" className="shrink-0" onClick={onStop}>
         Stop
       </Button>
     </div>
   );
 };
 
+const SelectionPlaybackBar: React.FC = () => {
+  const playback = useSelectionPlaybackRange();
+  const wordCount = useTimelineStore((s) => s.selectedWords.length);
+  const mode = useTimelineStore((s) => s.selectionPlayback);
+  if (!playback || !mode) return null;
+  return (
+    <SelectionPlaybackStrip
+      mode={mode}
+      wordCount={wordCount}
+      begin={playback.selection.begin}
+      end={playback.selection.end}
+      loop={<LoopToggle />}
+      onStop={() => stopSelectionPlayback({ pause: true })}
+    />
+  );
+};
+
 // -- Exports -------------------------------------------------------------------
 
-export { SelectionPlaybackBar };
+export { SelectionPlaybackBar, SelectionPlaybackStrip };
