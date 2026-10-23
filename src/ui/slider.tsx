@@ -68,28 +68,26 @@ const Slider: React.FC<SliderProps> = ({
     [min, max, step, value, appearance],
   );
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return;
+      e.currentTarget.setPointerCapture(e.pointerId);
       isDraggingRef.current = true;
       onChange(calculateValue(e.clientX));
-
-      const handleMouseMove = (e: MouseEvent) => {
-        if (isDraggingRef.current) {
-          onChange(calculateValue(e.clientX));
-        }
-      };
-
-      const handleMouseUp = () => {
-        isDraggingRef.current = false;
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
     },
     [calculateValue, onChange],
   );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (isDraggingRef.current) onChange(calculateValue(e.clientX));
+    },
+    [calculateValue, onChange],
+  );
+
+  const endDrag = useCallback(() => {
+    isDraggingRef.current = false;
+  }, []);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -139,11 +137,14 @@ const Slider: React.FC<SliderProps> = ({
       aria-label={ariaLabel}
       className={cn(
         appearance === "track"
-          ? "group relative flex items-center h-[18px] cursor-pointer rounded-[5px] outline-none focus-visible:ring-2 focus-visible:ring-(--lit-ring)"
-          : "relative cursor-pointer",
+          ? "group relative flex items-center h-[18px] touch-none cursor-pointer rounded-[5px] outline-none focus-visible:ring-2 focus-visible:ring-(--lit-ring)"
+          : "relative touch-none cursor-pointer",
         className,
       )}
-      onMouseDown={handleMouseDown}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
       onKeyDown={handleKeyDown}
     >
       {children}
