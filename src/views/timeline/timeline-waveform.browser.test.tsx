@@ -1,6 +1,7 @@
 import { TOKEN_VAR } from "@/domain/theme/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { bufferToBlobUrl, createAudioFile, makeSineBuffer } from "@/test/audio-fixtures";
 import {
   WAVEFORM_SWEEP_ANIMATION,
@@ -505,5 +506,51 @@ describe("TimelineWaveform · stacking", () => {
 
     expect(Number(getComputedStyle(shade).zIndex)).toBeGreaterThan(WAVESURFER_PROGRESS_Z_INDEX);
     utilities.remove();
+  });
+});
+
+describe("TimelineWaveform loop region", () => {
+  let utilities: HTMLStyleElement | null = null;
+
+  afterEach(() => {
+    utilities?.remove();
+    utilities = null;
+  });
+
+  async function renderInScrollContainer() {
+    setupWaveformAudio(30);
+    useSettingsStore.setState({ snapPlayheadToPoints: false });
+    useTimelineStore.setState({ zoom: 50, loopRegion: null, selectedWords: [] });
+    const screen = await render(
+      <div data-scroll-container style={{ width: 800, overflow: "auto" }}>
+        <TimelineWaveform />
+      </div>,
+    );
+    utilities = await installUtilitiesUsedIn(screen.container);
+    return screen.container.querySelector(".cursor-pointer") as HTMLElement;
+  }
+
+  function mouse(type: string, target: EventTarget, clientX: number) {
+    target.dispatchEvent(new MouseEvent(type, { clientX, clientY: 40, button: 0, bubbles: true }));
+  }
+
+  it("dragging across the waveform draws a region with Loop on", async () => {
+    const layer = await renderInScrollContainer();
+    const left = layer.getBoundingClientRect().left;
+    mouse("mousedown", layer, left + 100);
+    mouse("mousemove", document, left + 200);
+    mouse("mouseup", document, left + 200);
+    const region = useTimelineStore.getState().loopRegion;
+    expect(region?.begin).toBeCloseTo(2, 1);
+    expect(region?.end).toBeCloseTo(4, 1);
+    expect(region?.loops).toBe(true);
+  });
+
+  it("a click without a drag draws nothing", async () => {
+    const layer = await renderInScrollContainer();
+    const left = layer.getBoundingClientRect().left;
+    mouse("mousedown", layer, left + 100);
+    mouse("mouseup", document, left + 100);
+    expect(useTimelineStore.getState().loopRegion).toBeNull();
   });
 });
