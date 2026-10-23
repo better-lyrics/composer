@@ -5,7 +5,6 @@ import { type LoopRegionDrag, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/
 
 const EDGE_HIT_PX = 10;
 const EDGE = "absolute top-0 z-20 cursor-ew-resize";
-const EDGE_LABEL: Record<LoopRegionDrag["edge"], string> = { begin: "Loop region start", end: "Loop region end" };
 
 // -- Functions -----------------------------------------------------------------
 
@@ -28,7 +27,7 @@ const LoopRegionEdges: React.FC = () => {
       data-loop-region-edge={edge}
       role="separator"
       aria-orientation="vertical"
-      aria-label={EDGE_LABEL[edge]}
+      aria-hidden="true"
       className={EDGE}
       style={{ left: region[edge] * zoom - EDGE_HIT_PX / 2, width: EDGE_HIT_PX, height: WAVEFORM_HEIGHT - 1 }}
       onMouseDown={grabEdge(edge)}
