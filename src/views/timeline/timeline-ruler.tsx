@@ -76,8 +76,11 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
   };
 
   return (
-    <div aria-hidden="true" className="flex shrink-0 h-7 select-none">
-      <div className="grid place-items-center w-12 shrink-0 bg-(--gutter-bg) shadow-[inset_-2px_0_0_var(--divider),inset_0_-1px_0_var(--divider)] text-composer-text-faint">
+    <div className="flex shrink-0 h-7 select-none">
+      <div
+        aria-hidden="true"
+        className="grid place-items-center w-12 shrink-0 bg-(--gutter-bg) shadow-[inset_-2px_0_0_var(--divider),inset_0_-1px_0_var(--divider)] text-composer-text-faint"
+      >
         <IconClock className="size-[13px] opacity-60" />
       </div>
       <div
@@ -94,6 +97,7 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
           {labels.map((time) => (
             <span
               key={time}
+              aria-hidden="true"
               className="absolute top-[7px] pl-[5px] font-mono text-[10.5px] font-medium leading-none text-composer-text-tertiary"
               style={{ left: time * zoom }}
             >

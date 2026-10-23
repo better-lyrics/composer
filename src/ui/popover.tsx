@@ -123,7 +123,7 @@ const Popover: React.FC<PopoverProps> = ({
               style={floatingStyles}
               {...getFloatingProps()}
               aria-label={ariaLabel}
-              className="layer-floating w-max outline-none"
+              className="layer-floating w-max max-w-[calc(100vw-16px)] outline-none"
             >
               {/* The entrance scales this inner surface: a scale on the positioned layer would also scale its translate. */}
               <div style={entranceStyles} className="select-none rounded-[14px] surface-floating">
