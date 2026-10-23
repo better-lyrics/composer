@@ -56,8 +56,8 @@ const PreviewGroupHeader: React.FC<{ label: string; ordinal: number; total: numb
         "gap-1.5 text-[11.5px] text-(--muted) bg-[color-mix(in_oklab,var(--group)_9%,transparent)]",
       )}
     >
-      <b className="font-semibold text-(--group)">{label}</b>
-      <span className="tabular-nums">
+      <b className="min-w-0 truncate font-semibold text-(--group)">{label}</b>
+      <span className="shrink-0 tabular-nums">
         ・ {ordinal} of {total}
       </span>
     </span>
@@ -183,7 +183,7 @@ const LinePreview: React.FC<LinePreviewProps> = ({
         </span>
 
         {line.backgroundText && (
-          <span data-testid="line-preview-background" className="text-[12.5px] italic whitespace-nowrap text-(--muted)">
+          <span data-testid="line-preview-background" className="min-w-0 truncate text-[12.5px] italic text-(--muted)">
             {line.backgroundText}
           </span>
         )}

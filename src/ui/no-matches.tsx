@@ -1,10 +1,10 @@
-import { IconZoomQuestion } from "@tabler/icons-react";
 import { cn } from "@/utils/cn";
+import { IconZoomQuestion } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
 interface NoMatchesProps {
-  message: string;
+  message: React.ReactNode;
   hint?: string;
   action?: React.ReactNode;
   size?: "default" | "large";
@@ -22,7 +22,7 @@ const SIZES = {
 const NoMatches: React.FC<NoMatchesProps> = ({ message, hint, action, size = "default" }) => {
   const styles = SIZES[size];
   return (
-    <output className="m-auto flex flex-col items-center px-4 text-center">
+    <output className="m-auto flex flex-col items-center max-w-full px-4 text-center">
       <IconZoomQuestion
         size={styles.icon}
         className={cn("text-composer-text opacity-25", styles.iconGap)}

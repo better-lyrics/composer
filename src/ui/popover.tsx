@@ -1,3 +1,4 @@
+import { unscaledReference, useFloatingEntrance } from "@/ui/floating-motion";
 import {
   FloatingFocusManager,
   FloatingPortal,
@@ -5,6 +6,7 @@ import {
   flip,
   offset,
   shift,
+  size,
   useClick,
   useDismiss,
   useFloating,
@@ -13,7 +15,6 @@ import {
   useRole,
 } from "@floating-ui/react";
 import type { Placement } from "@floating-ui/react";
-import { unscaledReference, useFloatingEntrance } from "@/ui/floating-motion";
 import {
   type MutableRefObject,
   type ReactElement,
@@ -76,7 +77,17 @@ const Popover: React.FC<PopoverProps> = ({
     open: isOpen,
     onOpenChange: setIsOpen,
     placement,
-    middleware: [offset(offsetPx), flip(), shift({ padding: 8 })],
+    middleware: [
+      offset(offsetPx),
+      flip(),
+      shift({ padding: 8 }),
+      size({
+        padding: 8,
+        apply: ({ availableHeight, elements }) => {
+          elements.floating.style.maxHeight = `${availableHeight}px`;
+        },
+      }),
+    ],
     whileElementsMounted: autoUpdate,
   });
 
@@ -126,7 +137,10 @@ const Popover: React.FC<PopoverProps> = ({
               className="layer-floating w-max max-w-[calc(100vw-16px)] outline-none"
             >
               {/* The entrance scales this inner surface: a scale on the positioned layer would also scale its translate. */}
-              <div style={entranceStyles} className="select-none rounded-[14px] surface-floating">
+              <div
+                style={entranceStyles}
+                className="flex flex-col max-h-[inherit] select-none rounded-[14px] surface-floating"
+              >
                 {typeof children === "function" ? children(() => setIsOpen(false), getItemProps) : children}
               </div>
             </div>

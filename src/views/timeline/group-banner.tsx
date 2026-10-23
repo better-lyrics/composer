@@ -216,7 +216,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
         onDoubleClick={(e) => e.stopPropagation()}
         className="shrink-0 w-auto h-auto p-0.5 opacity-70 hover:opacity-100 hover:bg-transparent text-current relative before:content-[''] before:absolute before:-inset-2"
       />
-      <span className="whitespace-nowrap">{group.label}</span>
+      <span className="min-w-0 truncate">{group.label}</span>
       {hasOwnTiming && (
         <span className="flex min-w-0 items-center gap-0.5 overflow-hidden rounded-full border border-dashed border-composer-text-faint py-px pl-1 pr-1.5 text-composer-text-tertiary whitespace-nowrap">
           <IconClock className="size-2.5 shrink-0" />

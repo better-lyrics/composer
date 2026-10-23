@@ -493,6 +493,8 @@ braccato-lyrics .blyrics-container {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  max-width: 100%;
+  min-width: 0;
   height: 22px;
   padding: 2px 8px 0;
   border-radius: 7px;
@@ -1023,12 +1025,14 @@ braccato-lyrics .blyrics-container {
   font-weight: 500;
   line-height: 1.35;
   text-wrap: pretty;
+  overflow-wrap: anywhere;
 }
 
 [data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-description] {
   font-size: 12.5px;
   line-height: 1.4;
   color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 [data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-icon] {

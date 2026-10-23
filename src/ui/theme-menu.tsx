@@ -57,7 +57,7 @@ const ThemeMenu: React.FC = () => {
             background: `linear-gradient(135deg, ${activeColors.bg} 50%, ${activeColors.accent} 50%)`,
           }}
         />
-        <span className="max-[1279px]:sr-only">{activeTheme.name}</span>
+        <span className="max-w-40 truncate max-[1279px]:sr-only">{activeTheme.name}</span>
       </Button>
       <Menu
         anchor={anchor}

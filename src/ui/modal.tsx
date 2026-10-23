@@ -80,7 +80,7 @@ const Modal: React.FC<ModalProps> = ({
           >
             {title && (
               <div className="flex items-center gap-3 h-14 pl-5 pr-2.5 border-b border-(--divider) bg-(--pop) sticky top-0 z-10">
-                <h2 id={titleId} className="text-base font-bold text-balance">
+                <h2 id={titleId} title={title} className="min-w-0 truncate text-base font-bold">
                   {title}
                 </h2>
                 {headerAccessory}

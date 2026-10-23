@@ -140,7 +140,9 @@ const ThemePresetCard: React.FC<ThemePresetCardProps> = ({
           ))}
         </span>
         <span className="flex items-center gap-1.5 text-[13px] font-bold text-composer-text">
-          {theme.name}
+          <span className="min-w-0 truncate" title={theme.name}>
+            {theme.name}
+          </span>
           <span
             className="px-1 py-0.5 opacity-60"
             aria-label={isLight ? "Light theme" : "Dark theme"}
@@ -149,7 +151,7 @@ const ThemePresetCard: React.FC<ThemePresetCardProps> = ({
             {isLight ? <IconSun size={13} /> : <IconMoonStars size={13} />}
           </span>
         </span>
-        <span className="mt-0.5 block text-[11.5px] leading-[1.4] text-(--muted)">{description}</span>
+        <span className="mt-0.5 block text-[11.5px] leading-[1.4] text-(--muted) wrap-break-word">{description}</span>
       </button>
       <FavoriteButton favorite={favorite} onToggle={() => onToggleFavorite(theme.id)} />
       {showActions && <CustomThemeActions theme={theme} onEdit={onEdit} onDelete={onDelete} />}

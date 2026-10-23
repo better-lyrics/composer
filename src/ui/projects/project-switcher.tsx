@@ -8,6 +8,7 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { buttonClassName } from "@/ui/button-class-name";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { NoMatchMessage } from "@/ui/no-match-message";
 import { ProjectArt } from "@/ui/projects/project-art";
 import { ProjectProgress } from "@/ui/projects/project-progress";
 import { Scroll } from "@/ui/scroll";
@@ -129,7 +130,7 @@ const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({ onClose }) => {
     }
   };
 
-  const emptyMessage = query.trim() ? `No projects match “${query.trim()}”` : "No other projects yet";
+  const emptyMessage = query.trim() ? <NoMatchMessage noun="projects" query={query} /> : "No other projects yet";
 
   return (
     <div className="w-[440px]">

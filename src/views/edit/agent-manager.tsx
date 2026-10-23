@@ -180,7 +180,7 @@ const AgentList: React.FC<{ onEdit: (agent: Agent) => void; onAdd: () => void }>
   return (
     <div>
       <p className="px-2 pt-2 pb-1.5 text-[13.5px] font-bold text-composer-text">Agents</p>
-      <div className="grid grid-cols-[max-content_1fr_auto] max-h-74 overflow-y-auto overscroll-none">
+      <div className="grid grid-cols-[minmax(0,max-content)_1fr_auto] max-h-74 overflow-x-hidden overflow-y-auto overscroll-none">
         {agents.map((agent) => {
           const lineCount = lines.filter((line) => line.agentId === agent.id).length;
           return (

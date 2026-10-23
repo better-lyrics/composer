@@ -25,7 +25,7 @@ interface ThemeGroupProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const GROUP_GRID = "grid grid-cols-3 gap-2.5";
+const GROUP_GRID = "grid grid-cols-[repeat(3,minmax(0,1fr))] gap-2.5";
 
 const GROUP_LABEL = "text-xs font-semibold text-(--muted) select-none";
 

@@ -7,14 +7,15 @@ import { Button } from "@/ui/button";
 import { HELP_SECTIONS } from "@/ui/help-nav";
 import { HelpSearchResults } from "@/ui/help-search/help-search-results";
 import { HelpSectionContent } from "@/ui/help-sections";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { Modal } from "@/ui/modal";
 import { ModalNavLayout } from "@/ui/modal-nav-layout";
 import { withMatchCounts } from "@/ui/nav-match-counts";
+import { NoMatchMessage } from "@/ui/no-match-message";
 import { NoMatches } from "@/ui/no-matches";
 import { revealElement } from "@/ui/reveal-element";
 import { SearchField } from "@/ui/search-field";
 import { SettingLinkContext, type SettingLinkHost } from "@/ui/setting-link-context";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { splitSearchTerms } from "@/utils/search-terms";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
@@ -119,7 +120,7 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
             <div className="flex py-12">
               <NoMatches
                 size="large"
-                message={`No help topics match "${query.trim()}"`}
+                message={<NoMatchMessage noun="help topics" query={query} />}
                 action={
                   <Button size="sm" variant="secondary" onClick={() => setQuery("")}>
                     Clear search

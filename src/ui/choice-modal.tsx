@@ -33,7 +33,9 @@ const ChoiceModalHost: React.FC = () => {
     >
       <div className="flex flex-col gap-3">
         {typeof request.body === "string" ? (
-          <p className="m-0 text-sm leading-normal text-(--label) text-pretty select-text">{request.body}</p>
+          <p className="m-0 text-sm leading-normal text-(--label) text-pretty wrap-break-word select-text">
+            {request.body}
+          </p>
         ) : (
           request.body
         )}

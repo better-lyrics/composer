@@ -128,7 +128,7 @@ const SharedTagSlot: React.FC<{ tag: SharedSyncTag | undefined }> = ({ tag }) =>
         style={{ color: tag.color, background: `color-mix(in srgb, ${tag.color} 16%, transparent)` }}
       >
         <IconLink className="size-2.5" />
-        {tag.label}
+        <span className="max-w-32 truncate">{tag.label}</span>
       </span>
     )}
   </span>

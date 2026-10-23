@@ -79,10 +79,13 @@ const ResumeCard: React.FC<ResumeCardProps> = ({ project, now, onOpen, className
         <ProjectArt src={project.thumbnailDataUrl} size="hero" className="bg-white/10 [&_svg]:text-white" />
         <div className="flex-1 min-w-0">
           <p className="mb-1.5 text-[13px] text-white/70">Edited {formatRelativeTimeInline(project.updatedAt, now)}</p>
-          <h2 id={titleId} className="text-[32px] font-bold leading-[1.1] tracking-[-0.015em] text-balance select-text">
+          <h2
+            id={titleId}
+            className="text-[32px] font-bold leading-[1.1] tracking-[-0.015em] text-balance wrap-break-word line-clamp-2 select-text"
+          >
             {displayTitle(project.title)}
           </h2>
-          <p className="mt-1.5 text-[15px] text-white/75 select-text">{displayArtists(project.artists)}</p>
+          <p className="mt-1.5 text-[15px] text-white/75 truncate select-text">{displayArtists(project.artists)}</p>
         </div>
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-6">

@@ -2,6 +2,7 @@ import { SETTINGS_SECTIONS, type SettingId, type SettingsSectionId, settingEntry
 import type { ShortcutDefinition } from "@/stores/shortcut-registry";
 import { useUIStore } from "@/stores/ui";
 import { Button } from "@/ui/button";
+import { NoMatchMessage } from "@/ui/no-match-message";
 import { NoMatches } from "@/ui/no-matches";
 import { SearchResultGroupHeader } from "@/ui/search-result-group-header";
 import type { SettingsSearchResult } from "@/ui/settings/search-settings";
@@ -42,7 +43,7 @@ const SettingsSearchResults: React.FC<{ results: SettingsSearchResult }> = ({ re
       <div className="flex py-12">
         <NoMatches
           size="large"
-          message={`No settings match "${query.trim()}"`}
+          message={<NoMatchMessage noun="settings" query={query} />}
           action={
             <Button size="sm" variant="secondary" onClick={() => setSettingsQuery("")}>
               Clear search

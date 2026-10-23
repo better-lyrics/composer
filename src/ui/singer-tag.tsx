@@ -11,8 +11,12 @@ interface SingerTagProps {
 // -- Components ----------------------------------------------------------------
 
 const SingerTag: React.FC<SingerTagProps> = ({ color, children, className }) => (
-  <span className={cn("singer-tag", className)} style={{ "--agent": color }}>
-    {children}
+  <span
+    className={cn("singer-tag", className)}
+    style={{ "--agent": color }}
+    title={typeof children === "string" ? children : undefined}
+  >
+    <span className="truncate">{children}</span>
   </span>
 );
 

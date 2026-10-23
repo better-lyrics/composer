@@ -1,7 +1,7 @@
-import type { Placement } from "@floating-ui/react";
 import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
 import { cn } from "@/utils/cn";
+import type { Placement } from "@floating-ui/react";
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
 import { type ReactElement, type ReactNode, cloneElement, useRef, useState } from "react";
 
@@ -115,7 +115,7 @@ const Select: React.FC<SelectProps> = ({
       {(close, getItemProps) => (
         <Scroll className="max-h-80" onInitialized={focusTabStopOption}>
           {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role -- styled single-select popover; datalist is input autocomplete, not a listbox, and would reintroduce native chrome */}
-          <div role="listbox" aria-label={ariaLabel} className="flex flex-col p-1.5 w-max min-w-50">
+          <div role="listbox" aria-label={ariaLabel} className="flex flex-col p-1.5 w-max min-w-50 max-w-80">
             {options.map((option, index) => {
               const isSelected = option.value === value;
               return (
@@ -142,7 +142,9 @@ const Select: React.FC<SelectProps> = ({
                       : "cursor-pointer text-(--label) hover:bg-(--layer-1) hover:text-composer-text",
                   )}
                 >
-                  <span className="flex flex-1">{renderOption ? renderOption(option) : option.label}</span>
+                  <span className="flex flex-1 min-w-0">
+                    {renderOption ? renderOption(option) : <span className="truncate">{option.label}</span>}
+                  </span>
                   <IconCheck
                     aria-hidden={!isSelected}
                     className={cn("size-[15px] text-composer-accent-text shrink-0", !isSelected && "invisible")}

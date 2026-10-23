@@ -81,7 +81,7 @@ const MatchList: React.FC<MatchListProps> = ({ matches, chosenId, title, onChoos
   const heading = artist ? `Recordings of ${title} by ${artist}` : `Recordings of ${title}`;
   return (
     <div className="flex w-100 flex-col p-1">
-      <p className="px-2.5 pt-1.5 pb-1 text-xs text-composer-text-muted select-none">{heading}</p>
+      <p className="px-2.5 pt-1.5 pb-1 text-xs text-composer-text-muted wrap-break-word select-none">{heading}</p>
       <div role="group" aria-label={heading} className="flex flex-col">
         {matches.slice(0, MAX_MATCHES).map((match) => (
           <MatchRow

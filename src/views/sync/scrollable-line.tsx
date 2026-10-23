@@ -319,7 +319,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
             style={{ background: `color-mix(in oklab, ${linkInfo.color} 18%, transparent)`, color: linkInfo.color }}
           >
             <IconLink className="size-3" />
-            {linkInfo.label}
+            <span className="max-w-32 truncate">{linkInfo.label}</span>
             <span className="font-medium opacity-75">
               {linkInfo.shared ? "Shared" : `${linkInfo.ordinal}/${linkInfo.totalInstances}`}
             </span>

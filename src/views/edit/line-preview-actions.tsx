@@ -80,10 +80,10 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
           <button
             type="button"
             aria-label="Line agent"
-            className="singer-tag cursor-pointer hover:bg-[color-mix(in_oklab,var(--agent)_24%,transparent)]"
+            className="singer-tag max-w-40! cursor-pointer hover:bg-[color-mix(in_oklab,var(--agent)_24%,transparent)]"
             style={{ "--agent": agentColor }}
           >
-            {agents.find((agent) => agent.id === line.agentId)?.name || line.agentId}
+            <span className="truncate">{agents.find((agent) => agent.id === line.agentId)?.name || line.agentId}</span>
             <IconChevronDown className="size-[13px] -mt-0.5 -mr-[3px] opacity-60 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90" />
           </button>
         }

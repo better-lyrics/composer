@@ -1,8 +1,9 @@
-import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
+import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { Popover } from "@/ui/popover";
+import { Scroll } from "@/ui/scroll";
 import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -83,27 +84,29 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
       }
     >
       {(close) => (
-        <div className="w-56 p-1.5">
+        <div className="flex flex-col w-56 min-h-0 p-1.5">
           <p className="px-2 pt-1.5 pb-1 text-xs text-(--muted)">Assign agent</p>
-          <div className="flex flex-col gap-px">
-            {agents.map((agent) => {
-              const isActive = agent.id === agentId;
-              return (
-                <button
-                  key={agent.id}
-                  type="button"
-                  onClick={() => handleAssign(agent.id, close)}
-                  className={cn(
-                    "flex items-center justify-between gap-2 h-9 px-2 rounded-lg cursor-pointer hover:bg-(--layer-2)",
-                    isActive && "bg-(--layer-1)",
-                  )}
-                >
-                  <SingerTag color={getAgentColor(agent.id)}>{agent.name || agent.id}</SingerTag>
-                  {isActive && <IconCheck aria-hidden="true" className="size-4 text-composer-accent-text" />}
-                </button>
-              );
-            })}
-          </div>
+          <Scroll className="min-h-0 max-h-74">
+            <div className="flex flex-col gap-px">
+              {agents.map((agent) => {
+                const isActive = agent.id === agentId;
+                return (
+                  <button
+                    key={agent.id}
+                    type="button"
+                    onClick={() => handleAssign(agent.id, close)}
+                    className={cn(
+                      "flex items-center justify-between gap-2 h-9 px-2 rounded-lg cursor-pointer hover:bg-(--layer-2)",
+                      isActive && "bg-(--layer-1)",
+                    )}
+                  >
+                    <SingerTag color={getAgentColor(agent.id)}>{agent.name || agent.id}</SingerTag>
+                    {isActive && <IconCheck aria-hidden="true" className="size-4 shrink-0 text-composer-accent-text" />}
+                  </button>
+                );
+              })}
+            </div>
+          </Scroll>
           <div className="flex gap-1 mt-1.5 pt-1.5 border-t border-(--divider)">
             <input
               type="text"

@@ -59,7 +59,7 @@ const WarningSourceRow: React.FC<WarningSourceRowProps> = ({ name, detail, child
 );
 
 const FileName: React.FC<{ name: string }> = ({ name }) => (
-  <code className="px-1.5 py-px rounded-md bg-(--layer-2) font-mono text-[12.5px] font-medium text-composer-text select-text">
+  <code className="px-1.5 py-px rounded-md bg-(--layer-2) font-mono text-[12.5px] font-medium text-composer-text break-all select-text">
     {name}
   </code>
 );

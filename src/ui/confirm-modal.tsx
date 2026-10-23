@@ -50,7 +50,9 @@ const ConfirmModalHost: React.FC = () => {
     >
       <div className="flex flex-col gap-3">
         {description && (
-          <div className="text-sm text-(--label) leading-normal text-pretty select-text">{description}</div>
+          <div className="text-sm text-(--label) leading-normal text-pretty wrap-break-word select-text">
+            {description}
+          </div>
         )}
         {recoverable && <UndoHint />}
 

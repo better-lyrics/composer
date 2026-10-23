@@ -1,3 +1,4 @@
+import { getAgentColor } from "@/domain/agent/colors";
 import { alignTrackToLine } from "@/domain/language/align";
 import { getLanguageAlignmentErrors } from "@/domain/language/alignment-errors";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
@@ -7,7 +8,6 @@ import { alignmentNeedsReview, getLanguageReviewTracks, languageLineAnchorId } f
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { StatusChip } from "@/ui/status-chip";
-import { getAgentColor } from "@/domain/agent/colors";
 import { cn } from "@/utils/cn";
 import { AlignButton, BackgroundLanguageFields } from "@/views/languages/background-language-fields";
 import { LanguageField as Field } from "@/views/languages/language-field";
@@ -72,9 +72,11 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
         <span className="flex h-12 items-center justify-center">{index + 1}</span>
       </span>
       <div className="flex min-w-0 flex-col items-start gap-1.5 py-3.5 px-4">
-        <span className="text-sm leading-5 select-text">{line.text}</span>
+        <span className="max-w-full text-sm leading-5 wrap-anywhere select-text">{line.text}</span>
         {line.backgroundText && (
-          <span className="text-[13px] italic text-(--muted) select-text">{line.backgroundText}</span>
+          <span className="max-w-full text-[13px] italic text-(--muted) wrap-anywhere select-text">
+            {line.backgroundText}
+          </span>
         )}
         {hasAlignmentError && (
           <StatusChip tone="error" icon={IconAlertCircle}>
