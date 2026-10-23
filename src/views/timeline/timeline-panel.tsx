@@ -17,6 +17,7 @@ import { EmptyTimelineImport } from "@/views/timeline/empty-timeline-import";
 import { GroupFocusBar } from "@/views/timeline/group-focus-bar";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
+import { LoopRegionBar } from "@/views/timeline/loop-region-bar";
 import { SelectionPlaybackBar } from "@/views/timeline/selection-playback-bar";
 import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
@@ -261,6 +262,7 @@ const TimelinePanel: React.FC = () => {
           <TimelineHeader onImportLyrics={openLyricsModal} scrollContainerRef={scrollContainerRef} />
           <GroupFocusBar />
           <SelectionPlaybackBar />
+          <LoopRegionBar />
 
           <div className="flex flex-1 overflow-hidden">
             <div className="flex flex-col flex-1 overflow-hidden">
