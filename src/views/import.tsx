@@ -209,7 +209,7 @@ const ImportPanel: React.FC = () => {
           <p className="text-[13px] text-(--muted)">
             or <span className="text-composer-accent-text">click to browse</span>
           </p>
-          <p className="mt-2.5 text-xs text-composer-text-faint">{SUPPORTED_FILES_PROSE}</p>
+          <p className="mt-2.5 text-xs text-composer-text-muted">{SUPPORTED_FILES_PROSE}</p>
         </FileDropZone>
 
         <OrDivider />

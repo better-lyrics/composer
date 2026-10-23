@@ -42,7 +42,7 @@ const TimeReadout: React.FC = () => {
           className="text-base text-[color-mix(in_oklab,var(--color-composer-accent-text)_55%,transparent)]"
         />
       </div>
-      <div className="flex justify-between gap-3 text-[11px] tabular-nums text-composer-text-faint">
+      <div className="flex justify-between gap-3 text-[11px] tabular-nums text-composer-text-muted">
         <span className="font-mono select-text cursor-text">{formatTime(duration, 2)}</span>
         {lines.length > 0 && <span ref={lineRef} />}
       </div>

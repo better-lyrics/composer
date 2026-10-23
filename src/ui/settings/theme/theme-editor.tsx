@@ -124,7 +124,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ target, onClose }) => {
             onChange={(scheme) => setDraft((current) => ({ ...current, scheme }))}
             className="[&_svg]:size-[15px]"
           />
-          <span className="text-xs text-composer-text-faint select-none">flips contrast and color-scheme</span>
+          <span className="text-xs text-composer-text-muted select-none">flips contrast and color-scheme</span>
         </div>
 
         <SegmentedControl

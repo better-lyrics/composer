@@ -84,7 +84,7 @@ const NewSongLink: React.FC<{ onCreate: (videoId: string) => void }> = ({ onCrea
       <p
         id={hintId}
         aria-live="polite"
-        className={cn("mt-2 text-xs", error ? "text-composer-negative select-text" : "text-composer-text-faint")}
+        className={cn("mt-2 text-xs", error ? "text-composer-negative select-text" : "text-composer-text-muted")}
       >
         {error ?? "Each song gets its own project."}
       </p>
