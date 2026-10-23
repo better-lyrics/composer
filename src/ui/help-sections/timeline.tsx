@@ -87,6 +87,16 @@ const TimelineSection: React.FC = () => (
       </p>
     </HelpTopic>
 
+    <HelpTopic title="Loop a region">
+      <p className={PROSE}>
+        Drag across the waveform to mark a region. Loop turns on and the playhead moves to the start of the region, so{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("global.playPause")} /> loops it. If the song is already playing, it
+        jumps into the region and loops right away. The edges snap to pins and vocal onsets like the playhead; hold{" "}
+        {MOD_KEY} to place them freely. Drag an edge to change the region, or turn <strong>Loop</strong> off in the strip
+        to play it once. Click the waveform, press Esc, click <strong>Clear</strong>, or select words to remove it.
+      </p>
+    </HelpTopic>
+
     <HelpTopic title="Selecting words">
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>Click a word block to select it. {MOD_KEY} + Click to add or remove from selection.</li>

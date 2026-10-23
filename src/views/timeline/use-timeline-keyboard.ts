@@ -41,7 +41,7 @@ import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { pingGroup } from "@/views/timeline/ping-group";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
-import { playSelection } from "@/views/timeline/selection-playback";
+import { clearLoopRegion, playSelection } from "@/views/timeline/selection-playback";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
 import { GUTTER_WIDTH, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
@@ -234,6 +234,7 @@ function useTimelineKeyboard(
           if (pasteMode.status === "preview") {
             useTimelineStore.getState().setPasteMode({ status: "idle" });
           } else {
+            clearLoopRegion();
             useTimelineStore.getState().clearSelection();
           }
           return;
