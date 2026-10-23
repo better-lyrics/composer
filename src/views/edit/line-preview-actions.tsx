@@ -65,7 +65,7 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
   onBackgroundChange,
   onExtractLine,
 }) => (
-  <div className="flex items-center gap-1.5 ml-auto transition-opacity opacity-0 group-hover:opacity-100">
+  <div className="flex items-center gap-1.5 ml-auto transition-opacity opacity-0 group-hover:opacity-100 focus-within:opacity-100 has-[[aria-expanded=true]]:opacity-100">
     {agents.length > 1 && line.lineId && (
       <Select
         aria-label="Line agent"
@@ -80,7 +80,7 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
           <button
             type="button"
             aria-label="Line agent"
-            className="singer-tag max-w-40! cursor-pointer hover:bg-[color-mix(in_oklab,var(--agent)_24%,transparent)]"
+            className="singer-tag max-w-40! cursor-pointer hover:bg-[color-mix(in_oklab,var(--agent)_24%,transparent)] focus-visible:bg-[color-mix(in_oklab,var(--agent)_24%,transparent)]"
             style={{ "--agent": agentColor }}
           >
             <span className="truncate">{agents.find((agent) => agent.id === line.agentId)?.name || line.agentId}</span>

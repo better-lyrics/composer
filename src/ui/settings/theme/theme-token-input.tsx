@@ -47,7 +47,7 @@ const ThemeTokenInput: React.FC<ThemeTokenInputProps> = ({ tokenKey, label, valu
       <span className="flex-1 min-w-0 text-[13.5px] font-medium text-composer-text">{label}</span>
       <span className="flex items-center gap-2.5">
         <span
-          className="relative size-7.5 shrink-0 rounded-lg shadow-[inset_0_0_0_1px_var(--edge-strong)]"
+          className="relative size-7.5 shrink-0 rounded-lg shadow-[inset_0_0_0_1px_var(--edge-strong)] has-[:focus-visible]:shadow-[inset_0_0_0_1px_var(--edge-strong),0_0_0_2px_var(--pop),0_0_0_3.5px_var(--ink)]"
           style={{ backgroundColor: value }}
         >
           <input

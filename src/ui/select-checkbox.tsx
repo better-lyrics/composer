@@ -15,6 +15,7 @@ const CHECKBOX_STYLES = cn(
   "relative appearance-none grid place-items-center size-[18px] rounded-[5px] cursor-pointer",
   "bg-black/35 shadow-[inset_0_0_0_1.5px_#fff] transition-[opacity,background-color,box-shadow] duration-100",
   "checked:bg-composer-accent-dark checked:shadow-[inset_0_0_0_1px_rgb(255_255_255/0.25)]",
+  "focus-visible:outline-none focus-visible:bg-white/30 checked:focus-visible:bg-composer-accent",
   "before:content-[''] before:w-[9px] before:h-[5px] before:-mt-0.5 before:border-white before:border-b-2 before:border-l-2",
   "before:-rotate-45 before:scale-0 before:transition-[scale] before:duration-[120ms] checked:before:scale-100",
   "before:ease-emphasized",

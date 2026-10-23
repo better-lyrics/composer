@@ -102,7 +102,7 @@ const WordRenderer: React.FC<WordRendererProps> = ({
           </Tooltip>
         )}
         {isSynced && timing && !isBackground && (
-          <span className="transition-opacity opacity-0 group-hover/word:opacity-100">
+          <span className="transition-opacity opacity-0 group-hover/word:opacity-100 focus-within:opacity-100 has-[[aria-expanded=true]]:opacity-100">
             <SyllableSplitter
               lineId={lineId}
               type={isBackground ? "bg" : "word"}

@@ -112,7 +112,8 @@ html[data-scheme="light"] .driver-overlay path {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
 }
 
-.driver-popover.composer-tour .driver-popover-next-btn:hover {
+.driver-popover.composer-tour .driver-popover-next-btn:hover,
+.driver-popover.composer-tour .driver-popover-next-btn:focus-visible {
   background: color-mix(in oklab, var(--color-composer-accent) 90%, var(--ink));
 }
 
@@ -123,7 +124,9 @@ html[data-scheme="light"] .driver-overlay path {
 }
 
 .driver-popover.composer-tour .driver-popover-prev-btn:hover,
-.driver-popover.composer-tour .composer-tour-video-btn:hover {
+.driver-popover.composer-tour .driver-popover-prev-btn:focus-visible,
+.driver-popover.composer-tour .composer-tour-video-btn:hover,
+.driver-popover.composer-tour .composer-tour-video-btn:focus-visible {
   background: var(--layer-1);
   color: var(--label);
 }
@@ -138,7 +141,8 @@ html[data-scheme="light"] .driver-overlay path {
   color: var(--muted);
 }
 
-.driver-popover.composer-tour .driver-popover-close-btn:hover {
+.driver-popover.composer-tour .driver-popover-close-btn:hover,
+.driver-popover.composer-tour .driver-popover-close-btn:focus-visible {
   background: var(--layer-2);
   color: var(--ink);
 }

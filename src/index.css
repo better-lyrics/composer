@@ -612,6 +612,10 @@ braccato-lyrics .blyrics-container {
         color-mix(in oklab, var(--ink) 4%, var(--face-bottom))
       );
     }
+    &:focus-visible > .key-cap {
+      background: linear-gradient(var(--focus-tint), var(--focus-tint)),
+        linear-gradient(to bottom, var(--face-top), var(--face-bottom));
+    }
     &:active > .key-cap,
     &[data-pressed] > .key-cap {
       translate: 0 calc(var(--key-depth) - 1px);
@@ -1121,7 +1125,9 @@ braccato-lyrics .blyrics-container {
   transition: background-color 150ms, color 150ms, scale 150ms;
 }
 
-[data-sonner-toaster] [data-sonner-toast][data-styled="true"] :is([data-button], [data-cancel]):hover {
+[data-sonner-toaster]
+  [data-sonner-toast][data-styled="true"]
+  :is([data-button], [data-cancel]):is(:hover, :focus-visible) {
   color: var(--ink);
   background: var(--raised-face-hover);
 }
@@ -1143,7 +1149,8 @@ braccato-lyrics .blyrics-container {
   border-radius: 7px;
 }
 
-[data-sonner-toaster] [data-sonner-toast][data-styled="true"]:hover [data-close-button]:hover {
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"]:hover [data-close-button]:hover,
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button]:focus-visible {
   color: var(--ink);
   background: var(--layer-2);
   border: 0;

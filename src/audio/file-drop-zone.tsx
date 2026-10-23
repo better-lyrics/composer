@@ -35,7 +35,7 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, onProje
       htmlFor={inputId}
       {...handlers}
       className={cn(
-        "size-full flex cursor-pointer flex-col items-center justify-center p-8 transition-colors",
+        "size-full flex cursor-pointer flex-col items-center justify-center p-8 rounded-xl transition-colors has-[:focus-visible]:bg-(--focus-tint)",
         "border-composer-border hover:border-composer-border-hover",
         className,
         isDragging && "border-composer-accent bg-composer-accent/10",
