@@ -34,15 +34,15 @@ const TimeReadout: React.FC = () => {
   useFrameLoop(paint, "deck-time-readout");
 
   return (
-    <div className="grid content-start gap-1 h-14 min-w-[156px] pt-1.5 px-[9px] rounded-xl bg-(--display) shadow-(--well-edge)">
-      <div className="flex items-baseline font-mono font-semibold tabular-nums text-2xl leading-none tracking-[-0.02em] text-composer-accent-text select-text cursor-text">
+    <div className="grid content-center gap-[3px] h-14 min-w-[156px] px-3 rounded-xl bg-(--display) shadow-(--well-edge)">
+      <div className="font-mono font-semibold tabular-nums text-2xl leading-none tracking-[-0.02em] text-composer-accent-text select-text cursor-text">
         <span ref={wholeRef} />
         <span
           ref={fractionRef}
           className="text-base text-[color-mix(in_oklab,var(--color-composer-accent-text)_55%,transparent)]"
         />
       </div>
-      <div className="flex justify-between gap-3 text-[11px] leading-none tabular-nums text-composer-text-faint">
+      <div className="flex justify-between gap-3 text-[11px] tabular-nums text-composer-text-faint">
         <span className="font-mono select-text cursor-text">{formatTime(duration, 2)}</span>
         {lines.length > 0 && <span ref={lineRef} />}
       </div>
