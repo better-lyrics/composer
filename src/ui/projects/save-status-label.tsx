@@ -5,7 +5,7 @@ import { useState, useSyncExternalStore } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
-const STATUS_COPY: Record<SaveStatus, string> = {
+const SAVE_STATUS_COPY: Record<SaveStatus, string> = {
   saved: "Saved",
   saving: "Saving",
   failed: "Not saved",
@@ -18,8 +18,8 @@ function useSaveStatus(): SaveStatus {
 }
 
 function nextAnnouncement(status: SaveStatus, previous: string): string {
-  if (status === "failed") return STATUS_COPY.failed;
-  if (status === "saved" && previous === STATUS_COPY.failed) return STATUS_COPY.saved;
+  if (status === "failed") return SAVE_STATUS_COPY.failed;
+  if (status === "saved" && previous === SAVE_STATUS_COPY.failed) return SAVE_STATUS_COPY.saved;
   return previous;
 }
 
@@ -30,7 +30,7 @@ const SaveStatusIcon: React.FC<{ status: SaveStatus }> = ({ status }) => {
     return (
       <span className="inline-flex items-center gap-[3px] text-[11.5px] font-medium text-composer-warning">
         <IconAlertTriangle aria-hidden="true" className="size-3.5" />
-        {STATUS_COPY.failed}
+        {SAVE_STATUS_COPY.failed}
       </span>
     );
   }
@@ -43,7 +43,7 @@ const SaveStatusIcon: React.FC<{ status: SaveStatus }> = ({ status }) => {
     );
   }
   return (
-    <span title={STATUS_COPY.saved} className="inline-flex">
+    <span title={SAVE_STATUS_COPY.saved} className="inline-flex">
       <IconCheck aria-hidden="true" className="size-3.5 text-composer-text-faint" />
     </span>
   );
@@ -70,4 +70,4 @@ const SaveStatusAnnouncer: React.FC = () => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { SaveStatusAnnouncer, SaveStatusGlyph, SaveStatusIcon };
+export { SAVE_STATUS_COPY, SaveStatusAnnouncer, SaveStatusGlyph, SaveStatusIcon };

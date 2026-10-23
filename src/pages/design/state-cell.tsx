@@ -1,3 +1,5 @@
+import { cn } from "@/utils/cn";
+
 // -- Interfaces ----------------------------------------------------------------
 
 interface StateCellProps {
@@ -16,8 +18,15 @@ const StateCell: React.FC<StateCellProps> = ({ label, children }) => (
   </figure>
 );
 
-const StateGrid: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3">{children}</div>
+const StateGrid: React.FC<{ wide?: boolean; children: React.ReactNode }> = ({ wide = false, children }) => (
+  <div
+    className={cn(
+      "grid gap-3",
+      wide ? "grid-cols-[repeat(auto-fill,minmax(260px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(160px,1fr))]",
+    )}
+  >
+    {children}
+  </div>
 );
 
 const PrimitiveBlock: React.FC<{ name: string; note: string; children: React.ReactNode }> = ({

@@ -11,13 +11,16 @@ import { Popover } from "@/ui/popover";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
 import { IconBulbOff, IconCheck, IconChevronDown } from "@tabler/icons-react";
-import { useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
+
+type HeaderNoticesState = "closed" | "open" | "undo" | "review";
 
 interface HeaderNoticesProps {
   kinds: readonly (NoticeKind | null)[];
   noun?: string;
+  onStateChange?: (state: HeaderNoticesState) => void;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -114,7 +117,7 @@ const UndoPill: React.FC<{ label: string; onUndo: () => void }> = ({ label, onUn
   </div>
 );
 
-const HeaderNotices: React.FC<HeaderNoticesProps> = ({ kinds: kindInputs, noun = "suggestions" }) => {
+const HeaderNotices: React.FC<HeaderNoticesProps> = ({ kinds: kindInputs, noun = "suggestions", onStateChange }) => {
   const allKinds = kindInputs.filter((kind): kind is NoticeKind => kind !== null);
   const kinds = orderedKinds(allKinds);
   const [open, setOpen] = useState(false);
@@ -127,6 +130,11 @@ const HeaderNotices: React.FC<HeaderNoticesProps> = ({ kinds: kindInputs, noun =
   if (open && kinds.length === 0 && !notices.pendingUndo) setOpen(false);
   const reviewKind = kinds.find((kind) => kind.id === reviewKindId) ?? null;
   if (reviewKindId && !reviewKind) setReviewKindId(null);
+  const state: HeaderNoticesState = reviewKind ? "review" : notices.pendingUndo ? "undo" : open ? "open" : "closed";
+  const notifyStateChange = useEffectEvent((next: HeaderNoticesState) => onStateChange?.(next));
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
+  useEffect(() => notifyStateChange(state), [state]);
 
   if (kinds.length === 0 && !notices.pendingUndo) {
     if (notices.dismissedCount === 0) return null;
@@ -186,3 +194,4 @@ const HeaderNotices: React.FC<HeaderNoticesProps> = ({ kinds: kindInputs, noun =
 // -- Exports ------------------------------------------------------------------
 
 export { HeaderNotices };
+export type { HeaderNoticesState };

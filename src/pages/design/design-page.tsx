@@ -1,4 +1,7 @@
 import { DesignNav } from "@/pages/design/design-nav";
+import { FoundationsSections } from "@/pages/design/foundations/foundations-sections";
+import { PrimitivesSections } from "@/pages/design/primitives/primitives-sections";
+import { StateMachineSections } from "@/pages/design/states/state-machine-sections";
 import { LandingLayout } from "@/pages/landing/landing-layout";
 import { PageHead } from "@/seo/page-head";
 import { breadcrumbListSchema, organizationSchema } from "@/seo/schemas";
@@ -38,7 +41,11 @@ const DesignPage: React.FC = () => (
         </header>
         <div className="lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-12">
           <DesignNav />
-          <div className="flex flex-col gap-20 mt-8 lg:mt-0" />
+          <div className="flex flex-col gap-20 mt-8 lg:mt-0">
+            <FoundationsSections />
+            <PrimitivesSections />
+            <StateMachineSections />
+          </div>
         </div>
       </div>
       <OverlayHosts />
