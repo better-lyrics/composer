@@ -131,14 +131,20 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
     [visibleRows, rowHeights, defaultRowHeight],
   );
 
-  // Virtuoso keeps estimates for rows it has not measured, so a new project remounts it with the exact heights.
   const heightEstimates = useMemo(() => visibleRows.map((_, i) => getRowHeight(i)), [visibleRows, getRowHeight]);
   const totalHeight = useMemo(() => heightEstimates.reduce((sum, height) => sum + height, 0), [heightEstimates]);
+  // Virtuoso reads the estimates only when it mounts and treats every row it never rendered as the default height,
+  // so it remounts when rows change height off screen. A row resize happens on screen, where Virtuoso measures it.
+  const offscreenLayoutKey = useMemo(
+    () =>
+      visibleRows.map((row) => (row.kind === "group-header" ? "h" : lineRowHeight(row.line, defaultRowHeight))).join(),
+    [visibleRows, defaultRowHeight],
+  );
 
   return (
     <div style={{ width: totalWidth + GUTTER_WIDTH, minWidth: "100%", height: totalHeight }}>
       <Virtuoso
-        key={openProjectId}
+        key={`${openProjectId}:${offscreenLayoutKey}`}
         data={visibleRows}
         computeItemKey={(_, row) => (row.kind === "group-header" ? `header:${row.firstLineId}` : row.line.id)}
         itemContent={(_, row) => {
@@ -174,7 +180,6 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         style={{ height: "100%", width: "100%" }}
         customScrollParent={scrollContainerRef.current ?? undefined}
         overscan={200}
-        defaultItemHeight={emptyBgRowHeight(defaultRowHeight)}
         heightEstimates={heightEstimates}
         increaseViewportBy={{ top: WAVEFORM_HEIGHT, bottom: 0 }}
       />
