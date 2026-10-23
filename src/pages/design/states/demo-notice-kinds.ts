@@ -117,11 +117,15 @@ function useDemoNoticeKinds() {
 
   const actions: DemoNoticeActions = {
     dismiss: (fingerprints) => setDismissed((previous) => [...previous, ...fingerprints]),
-    restore: (fingerprints) => setDismissed((previous) => previous.filter((print) => !fingerprints.includes(print))),
+    restore: (fingerprints) => {
+      const restored = new Set(fingerprints);
+      setDismissed((previous) => previous.filter((print) => !restored.has(print)));
+    },
     resolve: (fingerprints) => setResolved((previous) => [...previous, ...fingerprints]),
   };
+  const resolvedSet = new Set(resolved);
   const open = <T extends { fingerprint: string }>(seeds: readonly T[]) =>
-    seeds.filter((seed) => !resolved.includes(seed.fingerprint));
+    seeds.filter((seed) => !resolvedSet.has(seed.fingerprint));
   const kinds = cleared
     ? []
     : [groupingKind(open(GROUPING_SEEDS), dismissed, actions), explicitKind(open(EXPLICIT_SEEDS), dismissed, actions)];
