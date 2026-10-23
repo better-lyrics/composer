@@ -30,8 +30,7 @@ const LOG_PREFIX = "[MissingAudio]";
 const RELINK_DROP_LABEL = "Drop to link the audio again";
 const REPLACE_MISSING_DROP_LABEL = "Drop to use this audio instead";
 
-const RELINK_DROP_STYLES =
-  "gap-1 px-0 py-2 text-center rounded-xl has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-composer-accent";
+const RELINK_DROP_STYLES = "gap-1 px-0 py-2 text-center rounded-xl has-[:focus-visible]:bg-(--focus-tint)";
 
 // -- Actions ------------------------------------------------------------------
 

@@ -33,7 +33,7 @@ type SelectAppearance = "field" | "pick";
 
 const TRIGGER_STYLES: Record<SelectAppearance, string> = {
   field:
-    "h-7 pl-2.5 pr-2 text-[13px] rounded-lg bg-(--well) text-composer-text border border-(--edge) hover:border-(--edge-strong) focus:outline-none focus:border-(--lit-ring) disabled:hover:border-(--edge)",
+    "h-7 pl-2.5 pr-2 text-[13px] rounded-lg bg-(--well) text-composer-text border border-(--edge) hover:border-(--edge-strong) focus:outline-none disabled:hover:border-(--edge)",
   pick: "h-6 pl-2 pr-1.5 text-xs rounded-[7px] bg-(--layer-2) text-(--label) shadow-[inset_0_0_0_1px_var(--divider)] hover:shadow-[inset_0_0_0_1px_var(--lit-ring)] aria-expanded:shadow-[inset_0_0_0_1px_var(--lit-ring)] focus:outline-none",
 };
 

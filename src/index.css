@@ -107,6 +107,7 @@
     inset 0 1px 0 color-mix(in oklab, white 9%, transparent),
     inset 0 0 0 1px color-mix(in oklab, var(--ink) 6%, transparent), 0 1px 1px var(--word-shadow),
     0 3px 8px -4px var(--word-shadow);
+  --focus-tint: color-mix(in oklab, var(--ink) 10%, transparent);
   --radius-card: 16px;
   --tray-pad: 4px;
 }
@@ -222,6 +223,28 @@ braccato-lyrics .blyrics-container {
 /* Focus visible indicators - minimal for utility app */
 :focus-visible {
   outline: none;
+}
+
+/* Keyboard focus tints the control the way hover does, layered over whatever fill it already has. */
+@layer base {
+  :where(
+      a[href],
+      button,
+      summary,
+      [role="button"],
+      [role="tab"],
+      [role="option"],
+      [role="menuitem"],
+      [role="menuitemradio"],
+      [role="menuitemcheckbox"],
+      [role="switch"],
+      [role="slider"],
+      [role="radio"],
+      [role="checkbox"],
+      [tabindex="0"]
+    ):focus-visible {
+    background-image: linear-gradient(var(--focus-tint), var(--focus-tint));
+  }
 }
 
 /* Geist Mono base weight */
@@ -407,7 +430,8 @@ braccato-lyrics .blyrics-container {
 @utility btn-raised {
   background: var(--raised-face);
   box-shadow: var(--raised-edge);
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled),
+  &:focus-visible {
     background: var(--raised-face-hover);
   }
 }
@@ -416,7 +440,8 @@ braccato-lyrics .blyrics-container {
   color: var(--color-composer-on-accent);
   background: var(--color-composer-accent);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled),
+  &:focus-visible {
     background: color-mix(in oklab, var(--color-composer-accent) 90%, var(--ink));
   }
 }
@@ -425,7 +450,8 @@ braccato-lyrics .blyrics-container {
   color: #fff;
   background: color-mix(in oklab, var(--color-composer-error) 82%, var(--color-composer-negative));
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled),
+  &:focus-visible {
     background: color-mix(in oklab, var(--color-composer-error) 70%, var(--color-composer-negative));
   }
 }
@@ -445,6 +471,9 @@ braccato-lyrics .blyrics-container {
   color: var(--ink);
   background: color-mix(in oklab, var(--color-composer-accent) 12%, var(--cap));
   box-shadow: inset 0 0 0 1px var(--lit-ring);
+  &:focus-visible {
+    background: color-mix(in oklab, var(--color-composer-accent) 20%, var(--cap));
+  }
 }
 
 @utility surface-modal {

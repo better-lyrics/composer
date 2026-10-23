@@ -137,7 +137,7 @@ const Slider: React.FC<SliderProps> = ({
       aria-label={ariaLabel}
       className={cn(
         appearance === "track"
-          ? "group relative flex items-center h-[18px] touch-none cursor-pointer rounded-[5px] outline-none focus-visible:ring-2 focus-visible:ring-(--lit-ring)"
+          ? "group relative flex items-center h-[18px] touch-none cursor-pointer rounded-[5px] outline-none"
           : "relative touch-none cursor-pointer",
         className,
       )}

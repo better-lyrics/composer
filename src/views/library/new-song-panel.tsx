@@ -29,7 +29,7 @@ const DROP_STYLES = cn(
   "size-auto w-full flex-row justify-start gap-3.5 p-3.5 rounded-[10px] border-[1.5px] border-dashed transition-colors",
   FIELD_TINT,
   "border-[color-mix(in_oklab,var(--ink)_13%,transparent)] hover:border-[color-mix(in_oklab,var(--ink)_22%,transparent)]",
-  "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-composer-accent",
+  "has-[:focus-visible]:bg-(--focus-tint)",
 );
 
 // -- Sub-components -------------------------------------------------------------
