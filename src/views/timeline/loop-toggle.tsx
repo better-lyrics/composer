@@ -12,8 +12,9 @@ import { IconRepeat } from "@tabler/icons-react";
 
 const LoopToggle: React.FC = () => {
   const selectionPlayback = useTimelineStore((s) => s.selectionPlayback);
+  const loopRegion = useTimelineStore((s) => s.loopRegion);
   const loopOpenGroup = useSettingsStore((s) => s.loopOpenGroup);
-  const loop = loopsRange(selectionPlayback, loopOpenGroup);
+  const loop = loopsRange(selectionPlayback, loopOpenGroup, loopRegion);
   return (
     <div className={STRIP_TRAY}>
       <ToggleButton pressed={loop} size="sm" hasIcon className={cn(STRIP_CONTROL, "pr-1.5")} onClick={toggleLoop}>
