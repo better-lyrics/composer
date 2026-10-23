@@ -5,7 +5,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
-import { loopSelection, playSelection } from "@/views/timeline/selection-playback";
+import { clearLoopRegion, loopSelection, playSelection } from "@/views/timeline/selection-playback";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRangePlayback } from "@/views/timeline/use-range-playback";
 import { describe, expect, it } from "vitest";
@@ -151,6 +151,14 @@ describe("useRangePlayback", () => {
     useAudioStore.getState().seekTo(1.6);
     await expect.poll(() => useTimelineStore.getState().selectionPlayback).toBeNull();
     expect(useTimelineStore.getState().loopRegion).toEqual(REGION);
+    expect(audio.paused).toBe(false);
+  });
+
+  it("regression: clearing a looping region keeps the song playing", async () => {
+    const audio = await playRegionOnTimeline();
+    clearLoopRegion();
+    expect(useTimelineStore.getState().selectionPlayback).toBeNull();
+    expect(useAudioStore.getState().isPlaying).toBe(true);
     expect(audio.paused).toBe(false);
   });
 });

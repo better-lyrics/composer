@@ -1,4 +1,4 @@
-import { GUTTER_WIDTH, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, WAVEFORM_HEIGHT, shownLoopRegion, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useFollowHorizontalScroll } from "@/views/timeline/use-follow-horizontal-scroll";
 import { useRef } from "react";
 
@@ -17,7 +17,7 @@ const GUIDE =
 
 // Each guide sits on the outer side of its edge, matching the shade borders above it.
 const LoopRegionGuides: React.FC<LoopRegionGuidesProps> = ({ scrollContainerRef }) => {
-  const region = useTimelineStore((s) => s.loopRegion);
+  const region = useTimelineStore(shownLoopRegion);
   const zoom = useTimelineStore((s) => s.zoom);
   const trackRef = useRef<HTMLDivElement>(null);
   useFollowHorizontalScroll(scrollContainerRef, trackRef, region !== null);

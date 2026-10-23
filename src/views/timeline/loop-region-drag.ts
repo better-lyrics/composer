@@ -32,7 +32,6 @@ function startLoopRegionDrag(
   const duration = useAudioStore.getState().duration;
   if (event.button !== 0 || duration <= 0) return;
   event.stopPropagation();
-  event.preventDefault();
 
   const timeAt = (clientX: number): number => {
     const x = clientX - scrollContainer.getBoundingClientRect().left - GUTTER_WIDTH + scrollContainer.scrollLeft;
@@ -50,7 +49,6 @@ function startLoopRegionDrag(
   let pointerX = event.clientX;
   let metaHeld = event.metaKey;
   let moving = false;
-  let drewRegion = false;
   let releaseFrames: (() => void) | null = null;
   let unsubscribeEdgeScroll: (() => void) | null = null;
   const controller = new AbortController();
@@ -59,11 +57,11 @@ function startLoopRegionDrag(
     const raw = timeAt(pointerX);
     const time = snapPlayheadTime(raw, metaHeld);
     const bounds = loopRegionBetween(anchor, time, duration);
-    if (!bounds) return;
     const timeline = useTimelineStore.getState();
-    timeline.setLoopRegion({ ...bounds, loops: edge ? (timeline.loopRegion?.loops ?? true) : true });
-    timeline.setLoopRegionDrag({ edge: time < anchor ? "begin" : "end", snappedTo: snappedTo(raw, time) });
-    if (!edge) drewRegion = true;
+    const current = timeline.loopRegion;
+    if (edge && bounds && current) timeline.setLoopRegion({ ...bounds, loops: current.loops });
+    const draft = edge ? null : bounds;
+    timeline.setLoopRegionDrag({ edge: time < anchor ? "begin" : "end", snappedTo: snappedTo(raw, time), draft });
   };
 
   const tickEdgeScroll = (): void => {
@@ -82,7 +80,7 @@ function startLoopRegionDrag(
 
   const startMoving = (): void => {
     moving = true;
-    useTimelineStore.getState().setLoopRegionDrag({ edge: edge ?? "end", snappedTo: null });
+    useTimelineStore.getState().setLoopRegionDrag({ edge: edge ?? "end", snappedTo: null, draft: null });
     releaseFrames = holdFrames(EDGE_SCROLL_LABEL);
     unsubscribeEdgeScroll = subscribeFrame(tickEdgeScroll, EDGE_SCROLL_LABEL);
   };
@@ -97,19 +95,35 @@ function startLoopRegionDrag(
     update();
   };
 
-  const handleUp = (e: MouseEvent): void => {
+  const stop = (): void => {
     controller.abort();
+    unsubscribeStore();
     unsubscribeEdgeScroll?.();
     releaseFrames?.();
+  };
+
+  const handleUp = (e: MouseEvent): void => {
+    stop();
     const timeline = useTimelineStore.getState();
+    const draft = timeline.loopRegionDrag?.draft ?? null;
     timeline.setLoopRegionDrag(null);
     if (!moving) {
       if (!edge && !e.shiftKey) timeline.clearSelection();
       return;
     }
+    // A draw that ended without a region falls through to the click, which seeks.
+    if (!edge && !draft) return;
     swallowTrailingClick();
-    if (drewRegion && timeline.loopRegion) commitDrawnLoopRegion(timeline.loopRegion);
+    if (draft) commitDrawnLoopRegion(draft);
   };
+
+  // Esc, Clear or a project switch mid-drag cancel it.
+  const unsubscribeStore = useTimelineStore.subscribe((state) => {
+    const cancelled = moving && state.loopRegionDrag === null;
+    if (!cancelled && !(edge && state.loopRegion === null)) return;
+    stop();
+    useTimelineStore.getState().setLoopRegionDrag(null);
+  });
 
   if (edge) startMoving();
   document.addEventListener("mousemove", handleMove, { signal: controller.signal });

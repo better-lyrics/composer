@@ -539,6 +539,9 @@ describe("TimelineWaveform loop region", () => {
     const left = layer.getBoundingClientRect().left;
     mouse("mousedown", layer, left + 100);
     mouse("mousemove", document, left + 200);
+    // The draft only replaces the region on release, so playback never loops a half-drawn one.
+    expect(useTimelineStore.getState().loopRegion).toBeNull();
+    expect(useTimelineStore.getState().loopRegionDrag?.draft?.end).toBeCloseTo(4, 1);
     mouse("mouseup", document, left + 200);
     const region = useTimelineStore.getState().loopRegion;
     expect(region?.begin).toBeCloseTo(2, 1);

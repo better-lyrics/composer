@@ -21,6 +21,13 @@ const LoopRegionEdges: React.FC = () => {
   const region = useTimelineStore((s) => s.loopRegion);
   const zoom = useTimelineStore((s) => s.zoom);
   if (!region) return null;
+  const outer = EDGE_HIT_PX / 2;
+  // On a narrow region each edge reaches only to the middle, so both stay grabbable.
+  const inner = Math.min(outer, ((region.end - region.begin) * zoom) / 2);
+  const zones = {
+    begin: { left: region.begin * zoom - outer, width: outer + inner },
+    end: { left: region.end * zoom - inner, width: inner + outer },
+  };
   return (["begin", "end"] as const).map((edge) => (
     <div
       key={edge}
@@ -29,7 +36,7 @@ const LoopRegionEdges: React.FC = () => {
       aria-orientation="vertical"
       aria-hidden="true"
       className={EDGE}
-      style={{ left: region[edge] * zoom - EDGE_HIT_PX / 2, width: EDGE_HIT_PX, height: WAVEFORM_HEIGHT - 1 }}
+      style={{ ...zones[edge], height: WAVEFORM_HEIGHT - 1 }}
       onMouseDown={grabEdge(edge)}
     />
   ));

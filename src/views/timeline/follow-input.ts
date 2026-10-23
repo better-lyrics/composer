@@ -32,7 +32,8 @@ function fillFollowInput(
   const timeline = useTimelineStore.getState();
   input.lines = lines;
   input.time = time;
-  input.selection = timeline.selectionPlayback !== null ? timeline.selectedWords : null;
+  const followsSelection = timeline.selectionPlayback !== null && timeline.selectedWords.length > 0;
+  input.selection = followsSelection ? timeline.selectedWords : null;
   input.layout = rowLayoutFor(lines, timeline);
   input.collapsedInstances = timeline.collapsedInstances;
   input.viewportHeight = viewportHeight;

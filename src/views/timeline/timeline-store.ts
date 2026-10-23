@@ -1,5 +1,6 @@
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { LoopRegion } from "@/domain/selection/loop-region";
+import type { Bounds } from "@/domain/word/bounds";
 import type { WordSelection } from "@/domain/selection/model";
 import { toggleWordSelection } from "@/domain/selection/set-ops";
 import { useSettingsStore } from "@/stores/settings";
@@ -37,6 +38,7 @@ type SelectionPlaybackMode = "once" | "loop";
 interface LoopRegionDrag {
   edge: "begin" | "end";
   snappedTo: "pin" | "onset" | null;
+  draft: Bounds | null;
 }
 
 interface TimelineState {
@@ -185,7 +187,8 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setSelectedWords: (selectedWords) =>
       set(selectedWords.length > 0 ? { selectedWords, loopRegion: null } : { selectedWords }),
     setSelectionPlayback: (selectionPlayback) => set({ selectionPlayback }),
-    setLoopRegion: (loopRegion) => set(loopRegion ? { loopRegion, selectedWords: [] } : { loopRegion }),
+    setLoopRegion: (loopRegion) =>
+      set((s) => (loopRegion && s.selectedWords.length > 0 ? { loopRegion, selectedWords: [] } : { loopRegion })),
     setLoopRegionDrag: (loopRegionDrag) => set({ loopRegionDrag }),
 
     toggleSelection: (selection) =>
@@ -255,7 +258,14 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
   };
 });
 
+// -- Functions -----------------------------------------------------------------
+
+// A region being drawn shows before it replaces the current one on release.
+function shownLoopRegion(state: TimelineState): Bounds | null {
+  return state.loopRegionDrag?.draft ?? state.loopRegion;
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP };
+export { shownLoopRegion, useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP };
 export type { ContextMenuTarget, LoopRegionDrag, SelectionPlaybackMode, TrackHit };

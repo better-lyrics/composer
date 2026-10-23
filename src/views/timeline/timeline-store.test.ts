@@ -155,7 +155,7 @@ describe("loopRegion", () => {
 
   it("is project scoped", () => {
     useTimelineStore.getState().setLoopRegion(region);
-    useTimelineStore.getState().setLoopRegionDrag({ edge: "end", snappedTo: null });
+    useTimelineStore.getState().setLoopRegionDrag({ edge: "end", snappedTo: null, draft: null });
     useTimelineStore.getState().resetProjectScope();
     expect(useTimelineStore.getState().loopRegion).toBeNull();
     expect(useTimelineStore.getState().loopRegionDrag).toBeNull();

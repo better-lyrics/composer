@@ -2,7 +2,7 @@ import type { Bounds } from "@/domain/word/bounds";
 import { useAudioStore } from "@/stores/audio";
 import { cn } from "@/utils/cn";
 import { useEffectiveFocusGroup } from "@/views/timeline/effective-focus";
-import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
+import { WAVEFORM_HEIGHT, shownLoopRegion, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useFocusRange } from "@/views/timeline/use-focus-range";
 import { useSelectionPlaybackRange } from "@/views/timeline/use-selection-playback-range";
 
@@ -66,7 +66,7 @@ const RangeShade: React.FC<RangeShadeProps> = ({ range, color, inner }) => {
 };
 
 const WaveformFocusShade: React.FC = () => {
-  const loopRegion = useTimelineStore((s) => s.loopRegion);
+  const loopRegion = useTimelineStore(shownLoopRegion);
   const selectionPlayback = useSelectionPlaybackRange();
   const focusRange = useFocusRange();
   const group = useEffectiveFocusGroup();

@@ -97,10 +97,12 @@ function commitDrawnLoopRegion(bounds: Bounds): void {
 }
 
 function clearLoopRegion(): void {
-  const { loopRegion, setLoopRegion } = useTimelineStore.getState();
+  const { loopRegion, loopRegionDrag, selectionPlayback, setLoopRegion, setLoopRegionDrag } =
+    useTimelineStore.getState();
+  if (loopRegionDrag) setLoopRegionDrag(null);
   if (!loopRegion) return;
+  if (selectionPlayback !== null) stopSelectionPlayback({ pause: false });
   setLoopRegion(null);
-  if (useTimelineStore.getState().selectionPlayback !== null) stopSelectionPlayback({ pause: false });
 }
 
 function toggleLoop(): void {

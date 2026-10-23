@@ -1,5 +1,5 @@
 import { loopRegionLengthLabel, loopRegionRangeLabel } from "@/views/timeline/loop-region-copy";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { shownLoopRegion, useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconMagnet } from "@tabler/icons-react";
 import { createPortal } from "react-dom";
 
@@ -12,7 +12,7 @@ interface LoopRegionReadoutProps {
 // -- Components ----------------------------------------------------------------
 
 const LoopRegionReadout: React.FC<LoopRegionReadoutProps> = ({ host }) => {
-  const region = useTimelineStore((s) => s.loopRegion);
+  const region = useTimelineStore(shownLoopRegion);
   const drag = useTimelineStore((s) => s.loopRegionDrag);
   const zoom = useTimelineStore((s) => s.zoom);
   if (!host || !region || !drag) return null;
