@@ -82,6 +82,7 @@ function startLoopRegionDrag(
 
   const startMoving = (): void => {
     moving = true;
+    useTimelineStore.getState().setLoopRegionDrag({ edge: edge ?? "end", snappedTo: null });
     releaseFrames = holdFrames(EDGE_SCROLL_LABEL);
     unsubscribeEdgeScroll = subscribeFrame(tickEdgeScroll, EDGE_SCROLL_LABEL);
   };
