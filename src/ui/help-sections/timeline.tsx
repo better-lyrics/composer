@@ -139,8 +139,10 @@ const TimelineSection: React.FC = () => (
     <HelpTopic title="Copy, cut, paste">
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
-          {MOD_KEY} + C / X / V work as expected. When you paste, a ghost preview appears. Click to place the pasted
-          words.
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.copy")} />,{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.cut")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.paste")} /> copy, cut and paste words. When you paste, a
+          ghost preview appears. Click to place the pasted words.
         </li>
         <li>{ALT_KEY} + drag selected words to duplicate them.</li>
         <li>

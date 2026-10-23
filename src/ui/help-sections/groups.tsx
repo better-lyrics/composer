@@ -4,7 +4,6 @@ import { HelpTopic } from "@/ui/help-topic";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SettingLink } from "@/ui/setting-link";
 import { PROSE } from "@/ui/typography";
-import { MOD_KEY } from "@/utils/platform";
 
 // -- Linked Groups ------------------------------------------------------------
 
@@ -58,13 +57,15 @@ const GroupsSection: React.FC = () => (
         <li>
           <strong>Copies the instance to the clipboard and opens the paste-preview ghost</strong> if the playhead is
           inside a playing line, the gap is too small, or you've already passed the last lyric. Toast says where to go
-          next: "No room at the playhead. {MOD_KEY} + V to paste somewhere clear." Move the cursor to a row you like and
-          click to drop it.
+          next: "No room at the playhead." Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.paste")} /> to
+          paste somewhere clear. Move the cursor to a row you like and click to drop it.
         </li>
       </ul>
       <p className={`${PROSE} mt-2`}>
-        You can also use the regular clipboard: select every word of an instance ({MOD_KEY} + C with the banner
-        selected), then paste ({MOD_KEY} + V) somewhere else. Same fill/insert behavior at the destination.
+        You can also use the regular clipboard: select every word of an instance (
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.copy")} /> with the banner selected), then paste (
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.paste")} />) somewhere else. Same fill/insert behavior at
+        the destination.
       </p>
       <p className={`${PROSE} mt-2`}>
         A third route is <strong>Conform</strong>: select contiguous ungrouped lines, right-click, and pick "Conform to
@@ -79,7 +80,7 @@ const GroupsSection: React.FC = () => (
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           <strong>Click anywhere on it</strong>: selects every word in the instance. Use this before arrow-key nudge,
-          {MOD_KEY} + C, or any of the keyboard shortcuts below.
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.copy")} />, or any of the keyboard shortcuts below.
         </li>
         <li>
           <strong>Drag horizontally</strong>: shifts the entire instance in time. Sibling instances stay put. The lines
