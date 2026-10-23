@@ -17,9 +17,11 @@ function selectionPlaybackIcon(mode: SelectionPlaybackMode): Icon {
 function rangePlaybackIndicator(
   selectionPlayback: SelectionPlaybackMode | null,
   groupLoops: boolean,
+  playsRegion: boolean,
 ): RangePlaybackIndicator | null {
   if (selectionPlayback !== null) {
-    const label = selectionPlayback === "loop" ? "Looping a selection" : "Playing a selection";
+    const what = playsRegion ? "the region" : "a selection";
+    const label = selectionPlayback === "loop" ? `Looping ${what}` : `Playing ${what}`;
     return { icon: selectionPlaybackIcon(selectionPlayback), label };
   }
   return groupLoops ? { icon: IconRepeat, label: "Looping the open group" } : null;

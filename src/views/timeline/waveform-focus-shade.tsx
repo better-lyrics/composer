@@ -16,6 +16,7 @@ interface RangeShadeProps {
 
 // -- Constants -----------------------------------------------------------------
 
+const ACCENT = "var(--color-composer-accent)";
 const SHADE = "pointer-events-none absolute top-0 z-3 bg-composer-bg-dark/70";
 const LEAD_IN = "range-lead-in pointer-events-none absolute top-0 z-3";
 const SHADE_HEIGHT = WAVEFORM_HEIGHT - 1;
@@ -65,18 +66,14 @@ const RangeShade: React.FC<RangeShadeProps> = ({ range, color, inner }) => {
 };
 
 const WaveformFocusShade: React.FC = () => {
+  const loopRegion = useTimelineStore((s) => s.loopRegion);
   const selectionPlayback = useSelectionPlaybackRange();
   const focusRange = useFocusRange();
   const group = useEffectiveFocusGroup();
 
+  if (loopRegion) return <RangeShade range={loopRegion} color={ACCENT} />;
   if (selectionPlayback) {
-    return (
-      <RangeShade
-        range={selectionPlayback.range}
-        inner={selectionPlayback.selection}
-        color="var(--color-composer-accent)"
-      />
-    );
+    return <RangeShade range={selectionPlayback.range} inner={selectionPlayback.selection} color={ACCENT} />;
   }
   if (focusRange && group) return <RangeShade range={focusRange} color={group.color} />;
   return null;
