@@ -1,5 +1,5 @@
 import { DeckKnob } from "@/audio/deck/deck-knob";
-import { useAudioStore } from "@/stores/audio";
+import { NORMAL_PLAYBACK_RATE, useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { Slider } from "@/ui/slider";
@@ -34,6 +34,11 @@ const RateKnob: React.FC = () => {
       fraction={(rate - RATE_MIN) / (RATE_MAX - RATE_MIN)}
       onFraction={(fraction) => setPlaybackRate(roundedRate(RATE_MIN + fraction * (RATE_MAX - RATE_MIN)))}
       onStep={(direction) => setPlaybackRate(roundedRate(rate + direction * RATE_STEP))}
+      onReset={() => setPlaybackRate(NORMAL_PLAYBACK_RATE)}
+      rememberValue={() => {
+        const { playbackRate, otherPlaybackRate, restorePlaybackRates } = useAudioStore.getState();
+        return () => restorePlaybackRates({ playbackRate, otherPlaybackRate });
+      }}
     >
       <div className="p-3">
         <div className="flex gap-1 mb-3">

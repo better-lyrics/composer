@@ -1,5 +1,5 @@
 import { DeckKnob } from "@/audio/deck/deck-knob";
-import { useAudioStore } from "@/stores/audio";
+import { FULL_VOLUME, useAudioStore } from "@/stores/audio";
 import { IconButton } from "@/ui/icon-button";
 import { Slider } from "@/ui/slider";
 import { IconVolume, IconVolume2, IconVolume3 } from "@tabler/icons-react";
@@ -39,6 +39,14 @@ const VolumeKnob: React.FC = () => {
       fraction={shownVolume}
       onFraction={(fraction) => changeVolume(Math.round(fraction * 100) / 100)}
       onStep={(direction) => changeVolume(Math.round((shownVolume + direction * KNOB_STEP) * 100) / 100)}
+      onReset={() => changeVolume(FULL_VOLUME)}
+      rememberValue={() => {
+        const before = useAudioStore.getState();
+        return () => {
+          setVolume(before.volume);
+          if (useAudioStore.getState().isMuted !== before.isMuted) toggleMute();
+        };
+      }}
     >
       <div className="p-3 w-40">
         <div className="flex items-center justify-between gap-2 mb-2">
