@@ -375,7 +375,12 @@ braccato-lyrics .blyrics-container {
 
 @utility waveform-armed {
   cursor: crosshair;
-  box-shadow: inset 0 0 20px -2px color-mix(in srgb, var(--color-composer-warning) 18%, transparent);
+}
+
+/* Marker mode arms the ruler and the waveform as one drop zone. */
+@utility marker-zone-armed {
+  height: calc(var(--spacing) * 7 + 80px);
+  box-shadow: inset 0 0 20px -2px color-mix(in srgb, var(--color-composer-snap) 22%, transparent);
 }
 
 @utility range-lead-in {

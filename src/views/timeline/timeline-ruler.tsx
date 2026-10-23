@@ -81,7 +81,7 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
   };
 
   return (
-    <div className="flex shrink-0 h-7 select-none">
+    <div className="relative flex shrink-0 h-7 select-none">
       <div
         aria-hidden="true"
         className="grid place-items-center w-12 shrink-0 bg-(--gutter-bg) shadow-[inset_-2px_0_0_var(--divider),inset_0_-1px_0_var(--divider)] text-composer-text-faint"
@@ -112,6 +112,9 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
           <div ref={markerHostRef} className="absolute inset-0 pointer-events-none" />
         </div>
       </div>
+      {markerMode && (
+        <div aria-hidden="true" className="marker-zone-armed absolute top-0 left-12 right-0 z-10 pointer-events-none" />
+      )}
     </div>
   );
 };
