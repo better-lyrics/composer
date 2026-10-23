@@ -73,7 +73,7 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
 
   const seekToPointer = (event: React.PointerEvent<HTMLDivElement>) => {
     const container = scrollContainerRef.current;
-    if (!container || duration <= 0) return;
+    if (!container || duration <= 0 || event.button !== 0) return;
     const x = event.clientX - event.currentTarget.getBoundingClientRect().left + container.scrollLeft;
     const time = Math.min(duration, Math.max(0, x / zoom));
     if (useTimelineStore.getState().markerMode || event.altKey) placeSnapPoint(time);
