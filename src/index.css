@@ -780,6 +780,13 @@ braccato-lyrics .blyrics-container {
   transition: opacity 0.15s ease;
 }
 
+/* Registered so the lit fade runs on the main thread: Chrome's composited background-color fade can repaint one stale lit frame as it ends. */
+@property --word-fill {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+
 /* Timeline word: an elevated face tinted with the singer colour (--agent). The lane, fit and lit states are data attributes. */
 @layer components {
   .word-face {
@@ -791,12 +798,13 @@ braccato-lyrics .blyrics-container {
     font-weight: 500;
     text-align: center;
     color: color-mix(in oklab, var(--ink) 94%, transparent);
-    background-color: color-mix(in oklab, var(--agent) 30%, var(--word-face));
+    --word-fill: color-mix(in oklab, var(--agent) 30%, var(--word-face));
+    background-color: var(--word-fill);
     background-image: var(--hatch, none),
       linear-gradient(to bottom, color-mix(in oklab, var(--ink) 6%, transparent), transparent 60%);
     box-shadow: var(--word-elev);
     /* Only playback's light fades out; selection, hover and drag feedback land on the spot. */
-    transition-property: background-color;
+    transition-property: --word-fill;
     transition-duration: 250ms;
     transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
     &:hover {
@@ -831,7 +839,7 @@ braccato-lyrics .blyrics-container {
     &[data-lit] {
       color: var(--ink);
       opacity: 1;
-      background-color: color-mix(in oklab, var(--agent) 58%, var(--word-face));
+      --word-fill: color-mix(in oklab, var(--agent) 58%, var(--word-face));
       background-image: var(--hatch, none),
         linear-gradient(to bottom, color-mix(in oklab, white 14%, transparent), transparent 70%);
       box-shadow:
@@ -843,14 +851,14 @@ braccato-lyrics .blyrics-container {
     &[data-selected] {
       color: var(--ink);
       opacity: 1;
-      background-color: color-mix(in oklab, var(--agent) 40%, var(--word-face));
+      --word-fill: color-mix(in oklab, var(--agent) 40%, var(--word-face));
       box-shadow:
         inset 0 0 0 2px var(--selection-ring), inset 0 3px 0 -1px color-mix(in oklab, white 9%, transparent),
         0 1px 1px var(--word-shadow),
         0 3px 8px -4px var(--word-shadow);
     }
     &[data-selected][data-lit] {
-      background-color: color-mix(in oklab, var(--agent) 58%, var(--word-face));
+      --word-fill: color-mix(in oklab, var(--agent) 58%, var(--word-face));
     }
   }
   html[data-scheme="light"] .word-face {
@@ -864,7 +872,7 @@ braccato-lyrics .blyrics-container {
     &[data-lit] {
       color: #fff;
       background-image: var(--hatch, none);
-      background-color: color-mix(in oklab, var(--agent) 80%, black);
+      --word-fill: color-mix(in oklab, var(--agent) 80%, black);
     }
     &[data-selected] {
       background-image: var(--hatch, none),
