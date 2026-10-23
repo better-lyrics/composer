@@ -549,6 +549,18 @@ describe("TimelineWaveform loop region", () => {
     expect(region?.loops).toBe(true);
   });
 
+  it("regression: losing window focus mid-draw cancels it", async () => {
+    const layer = await renderInScrollContainer();
+    const left = layer.getBoundingClientRect().left;
+    mouse("mousedown", layer, left + 100);
+    mouse("mousemove", document, left + 200);
+    window.dispatchEvent(new Event("blur"));
+    mouse("mousemove", document, left + 300);
+    mouse("mouseup", document, left + 300);
+    expect(useTimelineStore.getState().loopRegionDrag).toBeNull();
+    expect(useTimelineStore.getState().loopRegion).toBeNull();
+  });
+
   it("a click without a drag draws nothing", async () => {
     const layer = await renderInScrollContainer();
     const left = layer.getBoundingClientRect().left;

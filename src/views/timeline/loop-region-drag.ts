@@ -6,8 +6,8 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
-import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { commitDrawnLoopRegion } from "@/views/timeline/selection-playback";
+import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { GUTTER_WIDTH, type LoopRegionDrag, useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Constants -----------------------------------------------------------------
@@ -118,17 +118,22 @@ function startLoopRegionDrag(
     if (draft) commitDrawnLoopRegion(draft);
   };
 
+  const cancel = (): void => {
+    stop();
+    useTimelineStore.getState().setLoopRegionDrag(null);
+  };
+
   // Esc, Clear or a project switch mid-drag cancel it.
   const unsubscribeStore = useTimelineStore.subscribe((state) => {
     const cancelled = moving && state.loopRegionDrag === null;
-    if (!cancelled && !(edge && state.loopRegion === null)) return;
-    stop();
-    useTimelineStore.getState().setLoopRegionDrag(null);
+    if (cancelled || (edge && state.loopRegion === null)) cancel();
   });
 
   if (edge) startMoving();
   document.addEventListener("mousemove", handleMove, { signal: controller.signal });
   document.addEventListener("mouseup", handleUp, { signal: controller.signal });
+  // A release outside the window never reaches the document.
+  window.addEventListener("blur", cancel, { signal: controller.signal });
   scrollContainer.addEventListener("scroll", () => moving && update(), { signal: controller.signal, passive: true });
 }
 
