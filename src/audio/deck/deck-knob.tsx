@@ -10,6 +10,9 @@ interface DeckKnobProps {
   fraction: number;
   onFraction: (fraction: number) => void;
   onStep: (direction: 1 | -1) => void;
+  onReset: () => void;
+  // Snapshots the current value and returns how to put it back, so Escape can cancel a drag exactly.
+  rememberValue: () => () => void;
   children: React.ReactNode;
 }
 
@@ -17,6 +20,7 @@ interface DeckKnobProps {
 
 const DRAG_PIXELS_FOR_FULL_TURN = 160;
 const DRAG_THRESHOLD = 3;
+const KEY_DIRECTIONS: Record<string, 1 | -1> = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 };
 const RADIUS = 17;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const ARC = CIRCUMFERENCE * 0.75;
@@ -75,19 +79,30 @@ const KnobFace: React.FC<{ fraction: number }> = ({ fraction }) => {
   );
 };
 
-const DeckKnob: React.FC<DeckKnobProps> = ({ label, valueText, fraction, onFraction, onStep, children }) => {
+const DeckKnob: React.FC<DeckKnobProps> = ({
+  label,
+  valueText,
+  fraction,
+  onFraction,
+  onStep,
+  onReset,
+  rememberValue,
+  children,
+}) => {
   const [open, setOpen] = useState(false);
   const dragged = useRef(false);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (event.button !== 0) return;
+    const startX = event.clientX;
     const startY = event.clientY;
     const startFraction = fraction;
+    const restore = rememberValue();
     const knob = event.currentTarget;
     dragged.current = false;
     knob.setPointerCapture(event.pointerId);
     const handleMove = (move: PointerEvent) => {
-      const travel = startY - move.clientY;
+      const travel = move.clientX - startX + (startY - move.clientY);
       if (!dragged.current && Math.abs(travel) < DRAG_THRESHOLD) return;
       dragged.current = true;
       onFraction(Math.min(1, Math.max(0, startFraction + travel / DRAG_PIXELS_FOR_FULL_TURN)));
@@ -96,16 +111,26 @@ const DeckKnob: React.FC<DeckKnobProps> = ({ label, valueText, fraction, onFract
       knob.removeEventListener("pointermove", handleMove);
       knob.removeEventListener("pointerup", handleUp);
       knob.removeEventListener("pointercancel", handleUp);
+      window.removeEventListener("keydown", handleEscape, true);
+    };
+    const handleEscape = (key: KeyboardEvent) => {
+      if (key.key !== "Escape") return;
+      key.preventDefault();
+      key.stopPropagation();
+      if (dragged.current) restore();
+      handleUp();
     };
     knob.addEventListener("pointermove", handleMove);
     knob.addEventListener("pointerup", handleUp);
     knob.addEventListener("pointercancel", handleUp);
+    window.addEventListener("keydown", handleEscape, true);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    const direction = KEY_DIRECTIONS[event.key];
+    if (direction === undefined) return;
     event.preventDefault();
-    onStep(event.key === "ArrowUp" ? 1 : -1);
+    onStep(direction);
   };
 
   // A drag ends in a click; that click must not toggle the popover.
@@ -127,10 +152,14 @@ const DeckKnob: React.FC<DeckKnobProps> = ({ label, valueText, fraction, onFract
         <button
           type="button"
           aria-label={`${label}, ${valueText}`}
-          title="Drag up or down"
+          title="Drag to adjust, double-click to reset"
           onPointerDown={handlePointerDown}
           onKeyDown={handleKeyDown}
-          className="flex items-center gap-2 -mx-1 px-1 rounded-lg cursor-ns-resize select-none touch-none"
+          onDoubleClick={() => {
+            onReset();
+            setOpen(false);
+          }}
+          className="flex items-center gap-2 -mx-1 px-1 rounded-lg cursor-grab active:cursor-grabbing select-none touch-none"
         >
           <KnobFace fraction={fraction} />
           <span className="flex flex-col w-[52px] text-left leading-[1.15] max-[1279px]:hidden">

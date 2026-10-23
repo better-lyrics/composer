@@ -47,6 +47,7 @@ interface AudioActions {
 // -- Constants ----------------------------------------------------------------
 
 const NORMAL_PLAYBACK_RATE = 1;
+const FULL_VOLUME = 1;
 const FIRST_OTHER_PLAYBACK_RATE = 0.75;
 
 function createInitialState(): AudioState {
@@ -59,7 +60,7 @@ function createInitialState(): AudioState {
     duration: 0,
     playbackRate: startRate,
     otherPlaybackRate: startRate === NORMAL_PLAYBACK_RATE ? FIRST_OTHER_PLAYBACK_RATE : startRate,
-    volume: settings.rememberVolume ? settings.lastVolume : 1,
+    volume: settings.rememberVolume ? settings.lastVolume : FULL_VOLUME,
     isMuted: false,
     isLoading: false,
     audioElement: null,
@@ -187,5 +188,5 @@ function livePlaybackTime(): number {
 
 // -- Exports ------------------------------------------------------------------
 
-export { livePlaybackTime, toggledPlaybackRate, useAudioStore };
+export { FULL_VOLUME, NORMAL_PLAYBACK_RATE, livePlaybackTime, toggledPlaybackRate, useAudioStore };
 export type { AudioSource };
