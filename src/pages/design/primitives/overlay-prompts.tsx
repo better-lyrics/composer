@@ -70,7 +70,7 @@ const ConfirmBlock: React.FC = () => {
   return (
     <PrimitiveBlock
       name="Confirm"
-      note="Use it for a yes or no before an action; a destructive one focuses Cancel, so Enter never deletes."
+      note="Use it for a yes or no before an action. A destructive one focuses Cancel, so Enter never deletes."
     >
       <StateGrid>
         <StateCell label="Primary">

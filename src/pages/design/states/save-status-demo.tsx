@@ -38,7 +38,7 @@ const SaveStatusDemo: React.FC = () => {
   return (
     <DesignSection
       id="save-status"
-      note="A quiet mark beside the project title. A check when the project is saved, a spinner while it saves, and a warning with words when a save fails, because that one needs to be seen."
+      note="Sits beside the project title. A check means saved and a spinner means saving. A failed save shows a warning in words, since you need to notice it."
     >
       <StateChips label="Save states" states={states} current={status} />
       <StateCell label="Beside the project title">

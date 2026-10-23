@@ -82,7 +82,10 @@ const DemoSelect: React.FC<{ disabled: boolean }> = ({ disabled }) => {
 };
 
 const FieldsSection: React.FC = () => (
-  <DesignSection id="fields" note="Fields take typed or picked values, and every one carries a name you can hear.">
+  <DesignSection
+    id="fields"
+    note="Fields hold what you type or pick. Each one has a label that screen readers announce."
+  >
     <PrimitiveBlock name="Text input" note="Use INPUT_STYLES on any plain input, so every field shares one surface.">
       <StateGrid wide>
         <StateCell label="Empty, click or Tab to type">

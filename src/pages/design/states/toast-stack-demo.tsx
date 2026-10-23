@@ -56,7 +56,7 @@ const ToastStackDemo: React.FC = () => {
   return (
     <DesignSection
       id="toasts"
-      note="Toasts confirm what just happened at the bottom of the screen. They stack newest in front and fan out on hover. One with an action, like Undo, keeps a close button so it can be read and dismissed on purpose."
+      note="Toasts confirm what just happened, at the bottom of the screen. The newest sits in front, and the stack fans out on hover. A toast with an action, such as Undo, gets a close button so you can dismiss it yourself."
     >
       <StateChips label="Toast stack states" states={STATES} current={stackState(toasts.length)} />
       <StateCell label="Toasts appear at the bottom of the page">

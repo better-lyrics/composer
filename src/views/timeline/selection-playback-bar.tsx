@@ -26,7 +26,14 @@ const ACCENT = "var(--color-composer-accent)";
 
 // -- Components ----------------------------------------------------------------
 
-const SelectionPlaybackStrip: React.FC<SelectionPlaybackStripProps> = ({ mode, wordCount, begin, end, loop, onStop }) => {
+const SelectionPlaybackStrip: React.FC<SelectionPlaybackStripProps> = ({
+  mode,
+  wordCount,
+  begin,
+  end,
+  loop,
+  onStop,
+}) => {
   const ModeIcon = selectionPlaybackIcon(mode);
 
   return (

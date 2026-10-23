@@ -14,7 +14,7 @@ const FoundationsSections: React.FC = () => (
     >
       <ColorTokens />
     </DesignSection>
-    <DesignSection id="surfaces" note="Five surfaces give the app its depth. Each one has a single job.">
+    <DesignSection id="surfaces" note="Composer gets its depth from five surfaces, and each has one use.">
       <Surfaces />
     </DesignSection>
     <DesignSection id="shape" note="A short list of shadows and corner sizes, and where each one is used.">

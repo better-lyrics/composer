@@ -1,4 +1,4 @@
-import { Button } from "@/ui/button";
+import { ToggleButton } from "@/ui/toggle-button";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -24,17 +24,16 @@ function StateChips<T extends string>({ label, states, current }: StateChipsProp
     <div className="flex flex-col gap-2 select-none">
       <div role="group" aria-label={label} className="flex flex-wrap gap-1.5">
         {states.map((state) => (
-          <Button
+          <ToggleButton
             key={state.id}
             size="sm"
-            variant={state.id === current ? "latch" : "ghost"}
-            aria-current={state.id === current ? "true" : undefined}
+            pressed={state.id === current}
             disabled={!state.enter && state.id !== current}
             title={state.enter ? undefined : state.hint}
             onClick={state.enter}
           >
             {state.label}
-          </Button>
+          </ToggleButton>
         ))}
       </div>
       <p role="status" className="text-xs text-(--muted)">

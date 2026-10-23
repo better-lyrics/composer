@@ -36,7 +36,7 @@ const EscapeLayersDemo: React.FC = () => {
   return (
     <DesignSection
       id="escape-layers"
-      note="Panels and modals join one stack as they open. Escape closes only the top layer, so a modal opened over a panel closes first and the panel stays open. Here the list is a panel, and its review list replaces it with a modal."
+      note="Panels and modals join one stack as they open, and Escape closes only the top layer. Here the suggestions list is a panel. Its review list closes the panel and opens a modal in its place."
     >
       <StateChips label="Escape layer states" states={STATES} current={kinds.at(-1) ?? "none"} />
       <StateCell label="A header with suggestions">

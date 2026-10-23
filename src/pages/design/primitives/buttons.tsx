@@ -119,7 +119,10 @@ const HasIconBlock: React.FC = () => (
 );
 
 const IconButtonBlock: React.FC = () => (
-  <PrimitiveBlock name="IconButton" note="Use it for an icon on its own; the label it requires names it for everyone.">
+  <PrimitiveBlock
+    name="IconButton"
+    note="Use it for an icon with no text. Its required label names it for screen readers."
+  >
     <StateGrid>
       <InteractionCells
         render={(disabled) => (
@@ -168,10 +171,7 @@ const ToggleButtonBlock: React.FC = () => (
 );
 
 const ButtonsSection: React.FC = () => (
-  <DesignSection
-    id="buttons"
-    note="Every action in Composer goes through these buttons, so they look and behave the same."
-  >
+  <DesignSection id="buttons" note="Every action in Composer uses these buttons.">
     {VARIANTS.map((entry) => (
       <VariantBlock key={entry.variant} {...entry} />
     ))}
