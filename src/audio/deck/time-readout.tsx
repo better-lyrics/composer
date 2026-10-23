@@ -26,7 +26,7 @@ const TimeReadout: React.FC = () => {
     const [whole, fraction] = formatTime(time, 2).split(".");
     writeText(wholeRef.current, whole);
     writeText(fractionRef.current, `.${fraction}`);
-    writeText(lineRef.current, `${startedLineIndex(starts, time) + 1}`);
+    writeText(lineRef.current, `Line ${startedLineIndex(starts, time) + 1} of ${starts.length}`);
   };
 
   // The spans have no React children: the frame loop owns their text, and this paints them once before it wakes.
@@ -34,26 +34,17 @@ const TimeReadout: React.FC = () => {
   useFrameLoop(paint, "deck-time-readout");
 
   return (
-    <div className="display-scanlines grid content-center gap-1 h-14 min-w-[196px] px-3.5 rounded-xl bg-(--display) shadow-(--well-edge) font-mono tabular-nums">
-      <div className="flex items-baseline font-semibold text-2xl leading-none tracking-[-0.02em] text-composer-accent-text select-text cursor-text">
+    <div className="grid content-start gap-1 h-14 min-w-[156px] pt-1.5 px-[9px] rounded-xl bg-(--display) shadow-(--well-edge)">
+      <div className="flex items-baseline font-mono font-semibold tabular-nums text-2xl leading-none tracking-[-0.02em] text-composer-accent-text select-text cursor-text">
         <span ref={wholeRef} />
         <span
           ref={fractionRef}
           className="text-base text-[color-mix(in_oklab,var(--color-composer-accent-text)_55%,transparent)]"
         />
       </div>
-      <div className="flex items-baseline justify-between gap-3 text-[11px] leading-none text-composer-text-faint">
-        {lines.length > 0 && (
-          <span>
-            Line{" "}
-            <span
-              ref={lineRef}
-              className="text-[color-mix(in_oklab,var(--color-composer-accent-text)_70%,transparent)]"
-            />{" "}
-            of {starts.length}
-          </span>
-        )}
-        <span className="ml-auto select-text cursor-text">/ {formatTime(duration, 2)}</span>
+      <div className="flex justify-between gap-3 text-[11px] leading-none tabular-nums text-composer-text-faint">
+        <span className="font-mono select-text cursor-text">{formatTime(duration, 2)}</span>
+        {lines.length > 0 && <span ref={lineRef} />}
       </div>
     </div>
   );
