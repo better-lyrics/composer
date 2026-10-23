@@ -39,7 +39,7 @@ const PlayheadCap: React.FC<{ ref: React.Ref<HTMLDivElement>; onMouseDown: React
   onMouseDown,
 }) => (
   // react-doctor-disable-next-line react-doctor/no-permanent-will-change -- moved by the frame loop every frame while playing or scrolling, so it needs its own compositor layer
-  <div ref={ref} aria-hidden="true" className="absolute inset-y-0 left-0 w-0 will-change-transform pointer-events-none">
+  <div ref={ref} aria-hidden="true" className="timeline-playhead-cap absolute inset-y-0 left-0 w-0 pointer-events-none">
     <div className="absolute top-[18px] bottom-0 -left-px w-0.5 rounded-[1px] bg-composer-accent" />
     {/* react-doctor-disable-next-line react-doctor/no-static-element-interactions -- a pointer-only grip; keyboard and assistive tech use the Playhead separator */}
     <div

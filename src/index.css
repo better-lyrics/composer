@@ -636,9 +636,13 @@ braccato-lyrics .blyrics-container {
     pointer-events: none !important;
   }
 
-  .timeline-playhead-bar {
+  .timeline-playhead-bar,
+  .timeline-playhead-cap {
     will-change: transform;
     transition: transform 32ms linear;
+  }
+
+  .timeline-playhead-bar {
     mask-position: -16px 0;
     -webkit-mask-position: -16px 0;
     mask-size: calc(100% + 32px) 100%;
