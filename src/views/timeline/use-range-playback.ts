@@ -2,6 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useEffectiveFocus } from "@/views/timeline/effective-focus";
 import {
+  adoptLoopRegionForPlay,
   currentPlaybackRange,
   currentSelectionBounds,
   currentlyLoops,
@@ -19,12 +20,13 @@ function isPlayingSelection(): boolean {
 
 // -- Hook ---------------------------------------------------------------------
 
-// Keeps playback inside the active range (a played selection, else the open group) on every tab: its end stops or loops.
+// Keeps playback inside the active range (a played selection or region, else the open group) on every tab: its end stops or loops.
 function useRangePlayback(): void {
   const groupOpen = useEffectiveFocus() !== null;
   const selectionPlayback = useTimelineStore((s) => s.selectionPlayback !== null);
+  const regionSet = useTimelineStore((s) => s.loopRegion !== null);
   const audio = useAudioStore((s) => s.audioElement);
-  const active = groupOpen || selectionPlayback;
+  const active = groupOpen || selectionPlayback || regionSet;
 
   // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- endTimer is set from nested handlers and cleared in the returned cleanup
   useEffect(() => {
@@ -65,6 +67,7 @@ function useRangePlayback(): void {
     };
 
     const handlePlay = () => {
+      adoptLoopRegionForPlay();
       const range = currentPlaybackRange();
       const start = range ? soloPlayStart(audio.currentTime, range) : null;
       if (start !== null) seekInsideRange(start);
@@ -102,11 +105,11 @@ function useRangePlayback(): void {
 
     const followSelection = () => {
       if (!isPlayingSelection()) return;
-      if (currentSelectionBounds()) scheduleEnd();
+      if (useTimelineStore.getState().loopRegion || currentSelectionBounds()) scheduleEnd();
       else stopSelectionPlayback({ pause: true });
     };
     const unsubscribeSelection = useTimelineStore.subscribe((state, previous) => {
-      if (state.selectedWords !== previous.selectedWords) followSelection();
+      if (state.selectedWords !== previous.selectedWords || state.loopRegion !== previous.loopRegion) followSelection();
     });
     const unsubscribeLines = useProjectStore.subscribe((state, previous) => {
       if (state.lines !== previous.lines) followSelection();
