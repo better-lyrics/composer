@@ -139,7 +139,7 @@ const Slider: React.FC<SliderProps> = ({
       aria-label={ariaLabel}
       className={cn(
         appearance === "track"
-          ? "relative flex items-center h-[18px] cursor-pointer rounded-[5px] outline-none focus-visible:ring-2 focus-visible:ring-(--lit-ring)"
+          ? "group relative flex items-center h-[18px] cursor-pointer rounded-[5px] outline-none focus-visible:ring-2 focus-visible:ring-(--lit-ring)"
           : "relative cursor-pointer",
         className,
       )}
@@ -164,7 +164,7 @@ const SliderTrack: React.FC<{ percent: number }> = ({ percent }) => {
         />
       </div>
       <div
-        className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center gap-0.5 w-3 h-[18px] rounded-[4px] bg-linear-to-b from-white to-[color-mix(in_oklab,white_86%,var(--color-composer-bg))] shadow-[0_1px_2px_rgb(0_0_0/0.4),inset_0_0_0_0.5px_rgb(0_0_0/0.12)]"
+        className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center gap-0.5 w-3 h-[18px] rounded-[4px] bg-linear-to-b from-white to-[color-mix(in_oklab,white_86%,var(--color-composer-bg))] shadow-[0_1px_2px_rgb(0_0_0/0.4),inset_0_0_0_0.5px_rgb(0_0_0/0.12)] transition-[scale] duration-120 ease-[cubic-bezier(0.34,1.45,0.64,1)] group-active:scale-[0.88]"
         style={{ left: capLeft }}
       >
         <i className="block w-px h-2 rounded-[1px] bg-[color-mix(in_oklab,black_38%,transparent)]" />
