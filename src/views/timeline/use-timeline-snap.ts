@@ -2,7 +2,7 @@ import { snapPointTimes } from "@/domain/snap-point/model";
 import { livePlaybackTime } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { type SnapAnchor, collectSnapAnchors, findSnapShift } from "@/views/timeline/snap";
+import { type SnapAnchor, activeSnapAnchors, collectSnapAnchors, findSnapShift } from "@/views/timeline/snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { Modifier } from "@dnd-kit/core";
 import { useCallback, useMemo, useRef } from "react";
@@ -16,7 +16,9 @@ interface BeginGestureArgs {
 }
 
 interface SnapCtx {
-  anchors: SnapAnchor[];
+  allAnchors: SnapAnchor[];
+  activeAnchors: SnapAnchor[];
+  activeSourcesKey: number;
   selfIds: Set<string>;
   leaderKey: string;
   overlapCheck: ((shift: number) => boolean) | null;
@@ -62,7 +64,9 @@ function useTimelineSnap(): UseTimelineSnap {
   // times a second. The gesture reads it via getState() in beginGesture.
 
   const ctxRef = useRef<SnapCtx>({
-    anchors: [],
+    allAnchors: [],
+    activeAnchors: [],
+    activeSourcesKey: -1,
     selfIds: new Set(),
     leaderKey: "",
     overlapCheck: null,
@@ -72,25 +76,25 @@ function useTimelineSnap(): UseTimelineSnap {
   const beginGesture = useCallback((args: BeginGestureArgs) => {
     const lines = useProjectStore.getState().lines;
     const projectSnapPoints = useProjectStore.getState().customSnapPoints;
-    const settings = useSettingsStore.getState();
     const timeline = useTimelineStore.getState();
     const playhead = livePlaybackTime();
-    const vocalOnsets = settings.vocalOnsetSnap ? timeline.vocalOnsetSnapPoints : [];
-    ctxRef.current.anchors = collectSnapAnchors(
+    ctxRef.current.allAnchors = collectSnapAnchors(
       lines,
       args.selfIds,
       playhead,
-      vocalOnsets,
-      settings.timelineSnap,
+      timeline.vocalOnsetSnapPoints,
       snapPointTimes(projectSnapPoints),
     );
+    ctxRef.current.activeSourcesKey = -1;
     ctxRef.current.selfIds = args.selfIds;
     ctxRef.current.leaderKey = args.leaderKey;
     ctxRef.current.overlapCheck = args.overlapCheck;
   }, []);
 
   const endGesture = useCallback(() => {
-    ctxRef.current.anchors = [];
+    ctxRef.current.allAnchors = [];
+    ctxRef.current.activeAnchors = [];
+    ctxRef.current.activeSourcesKey = -1;
     ctxRef.current.selfIds = new Set();
     ctxRef.current.leaderKey = "";
     ctxRef.current.overlapCheck = null;
@@ -100,22 +104,20 @@ function useTimelineSnap(): UseTimelineSnap {
 
   const resolveSnap = useCallback((proposedDeltaPx: number, edgesAtStart: number[]): SnapResolution => {
     const ctx = ctxRef.current;
-    const settings = useSettingsStore.getState();
-    const timeline = useTimelineStore.getState();
-    const enabled =
-      settings.timelineSnap ||
-      (settings.vocalOnsetSnap && timeline.vocalOnsetSnapPoints.length > 0) ||
-      useProjectStore.getState().customSnapPoints.length > 0;
-    const threshold = useSettingsStore.getState().timelineSnapThreshold;
-    const bypassing = useTimelineStore.getState().isBypassing;
-    const zoom = timeline.zoom;
-    if (!enabled || bypassing || ctx.anchors.length === 0) return { shiftPx: 0, anchorTime: null };
+    const { timelineSnap, vocalOnsetSnap, timelineSnapThreshold: threshold } = useSettingsStore.getState();
+    const sourcesKey = Number(timelineSnap) * 2 + Number(vocalOnsetSnap);
+    if (ctx.activeSourcesKey !== sourcesKey) {
+      ctx.activeAnchors = activeSnapAnchors(ctx.allAnchors, { timelineSnap, vocalOnsetSnap });
+      ctx.activeSourcesKey = sourcesKey;
+    }
+    const { zoom, isBypassing } = useTimelineStore.getState();
+    if (isBypassing || ctx.activeAnchors.length === 0) return { shiftPx: 0, anchorTime: null };
     const deltaT = proposedDeltaPx / zoom;
     const proposedEdges = edgesAtStart.map((edge) => edge + deltaT);
     const overlapCheck = ctx.overlapCheck;
     const result = findSnapShift({
       edges: proposedEdges,
-      anchors: ctx.anchors,
+      anchors: ctx.activeAnchors,
       zoom,
       threshold,
       overlapCheck: overlapCheck ? (shift) => overlapCheck(shift) : undefined,

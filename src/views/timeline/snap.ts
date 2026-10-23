@@ -16,6 +16,11 @@ interface SnapAnchor {
 
 type SelfKey = string;
 
+interface ActiveSnapSources {
+  timelineSnap: boolean;
+  vocalOnsetSnap: boolean;
+}
+
 interface FindSnapShiftArgs {
   edges: number[];
   anchors: SnapAnchor[];
@@ -49,76 +54,73 @@ function collectSnapAnchors(
   selfIds: Set<SelfKey>,
   playheadTime: number | null,
   vocalOnsetTimes: number[] = [],
-  includeTimelineAnchors = true,
   customSnapTimes: number[] = [],
 ): SnapAnchor[] {
   const anchors: SnapAnchor[] = [];
 
-  if (includeTimelineAnchors) {
-    for (const line of lines) {
-      const words = line.words;
-      const wordCount = words?.length ?? 0;
-      const wordTimed = wordCount > 0;
+  for (const line of lines) {
+    const words = line.words;
+    const wordCount = words?.length ?? 0;
+    const wordTimed = wordCount > 0;
 
-      if (words && wordCount > 0) {
-        for (let i = 0; i < wordCount; i++) {
-          const word = words[i];
-          if (!selfIds.has(selfKey(line.id, i, "word"))) {
-            anchors.push({
-              t: word.begin,
-              kind: "word-begin",
-              label: word.text,
-              lineId: line.id,
-              wordIndex: i,
-              track: "word",
-            });
-            anchors.push({
-              t: word.end,
-              kind: "word-end",
-              label: word.text,
-              lineId: line.id,
-              wordIndex: i,
-              track: "word",
-            });
-          }
+    if (words && wordCount > 0) {
+      for (let i = 0; i < wordCount; i++) {
+        const word = words[i];
+        if (!selfIds.has(selfKey(line.id, i, "word"))) {
+          anchors.push({
+            t: word.begin,
+            kind: "word-begin",
+            label: word.text,
+            lineId: line.id,
+            wordIndex: i,
+            track: "word",
+          });
+          anchors.push({
+            t: word.end,
+            kind: "word-end",
+            label: word.text,
+            lineId: line.id,
+            wordIndex: i,
+            track: "word",
+          });
         }
-      }
-
-      const bgWords = line.backgroundWords;
-      const bgCount = bgWords?.length ?? 0;
-      if (bgWords && bgCount > 0) {
-        for (let i = 0; i < bgCount; i++) {
-          const word = bgWords[i];
-          if (!selfIds.has(selfKey(line.id, i, "bg"))) {
-            anchors.push({
-              t: word.begin,
-              kind: "word-begin",
-              label: word.text,
-              lineId: line.id,
-              wordIndex: i,
-              track: "bg",
-            });
-            anchors.push({
-              t: word.end,
-              kind: "word-end",
-              label: word.text,
-              lineId: line.id,
-              wordIndex: i,
-              track: "bg",
-            });
-          }
-        }
-      }
-
-      if (!wordTimed && isLineSynced(line)) {
-        anchors.push({ t: line.begin, kind: "line-begin", label: line.text, lineId: line.id });
-        anchors.push({ t: line.end, kind: "line-end", label: line.text, lineId: line.id });
       }
     }
 
-    if (playheadTime !== null) {
-      anchors.push({ t: playheadTime, kind: "playhead", label: "playhead" });
+    const bgWords = line.backgroundWords;
+    const bgCount = bgWords?.length ?? 0;
+    if (bgWords && bgCount > 0) {
+      for (let i = 0; i < bgCount; i++) {
+        const word = bgWords[i];
+        if (!selfIds.has(selfKey(line.id, i, "bg"))) {
+          anchors.push({
+            t: word.begin,
+            kind: "word-begin",
+            label: word.text,
+            lineId: line.id,
+            wordIndex: i,
+            track: "bg",
+          });
+          anchors.push({
+            t: word.end,
+            kind: "word-end",
+            label: word.text,
+            lineId: line.id,
+            wordIndex: i,
+            track: "bg",
+          });
+        }
+      }
     }
+
+    if (!wordTimed && isLineSynced(line)) {
+      anchors.push({ t: line.begin, kind: "line-begin", label: line.text, lineId: line.id });
+      anchors.push({ t: line.end, kind: "line-end", label: line.text, lineId: line.id });
+    }
+  }
+
+  if (playheadTime !== null) {
+    anchors.push({ t: playheadTime, kind: "playhead", label: "playhead" });
   }
 
   for (const t of vocalOnsetTimes) {
@@ -131,6 +133,15 @@ function collectSnapAnchors(
 
   anchors.sort((a, b) => a.t - b.t);
   return anchors;
+}
+
+function activeSnapAnchors(anchors: SnapAnchor[], sources: ActiveSnapSources): SnapAnchor[] {
+  if (sources.timelineSnap && sources.vocalOnsetSnap) return anchors;
+  return anchors.filter((anchor) => {
+    if (anchor.kind === "custom") return true;
+    if (anchor.kind === "vocal-onset") return sources.vocalOnsetSnap;
+    return sources.timelineSnap;
+  });
 }
 
 // -- Snap resolution -----------------------------------------------------------
@@ -170,5 +181,5 @@ function findSnapShift(args: FindSnapShiftArgs): SnapResult {
 
 // -- Exports -------------------------------------------------------------------
 
-export { collectSnapAnchors, findSnapShift, selfKey };
+export { activeSnapAnchors, collectSnapAnchors, findSnapShift, selfKey };
 export type { SnapAnchor };
