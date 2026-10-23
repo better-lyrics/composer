@@ -92,8 +92,9 @@ const TimelineSection: React.FC = () => (
         Drag across the waveform to mark a region. Loop turns on and the playhead moves to the start of the region, so{" "}
         <InlineKeyBadge keys={getEffectiveKeysArray("global.playPause")} /> loops it. If the song is already playing, it
         jumps into the region and loops right away. The edges snap to pins and vocal onsets like the playhead; hold{" "}
-        {MOD_KEY} to place them freely. Drag an edge to change the region, or turn <strong>Loop</strong> off in the strip
-        to play it once. Click the waveform, press Esc, click <strong>Clear</strong>, or select words to remove it.
+        {MOD_KEY} to place them freely. Drag an edge to change the region, or turn <strong>Loop</strong> off in the
+        strip to play it once. Click the waveform, press Esc, click <strong>Clear</strong>, or select words to remove
+        it.
       </p>
     </HelpTopic>
 

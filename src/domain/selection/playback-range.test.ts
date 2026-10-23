@@ -6,7 +6,10 @@ const focus = { begin: 5, end: 20 };
 
 describe("playbackRange", () => {
   it("pads the selection with the lead-in on both sides", () => {
-    expect(playbackRange({ region: null, selection, focus: null, leadIn: 0.3, duration: 60 })).toEqual({ begin: 9.7, end: 11.3 });
+    expect(playbackRange({ region: null, selection, focus: null, leadIn: 0.3, duration: 60 })).toEqual({
+      begin: 9.7,
+      end: 11.3,
+    });
   });
 
   it("prefers the selection over an open group", () => {
