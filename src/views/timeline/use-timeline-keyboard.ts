@@ -195,24 +195,6 @@ function useTimelineKeyboard(
       }
 
       if (!claimedByUser) {
-        if (e.code === "KeyC" && (e.metaKey || e.ctrlKey) && !e.repeat) {
-          e.preventDefault();
-          handleCopy();
-          return;
-        }
-
-        if (e.code === "KeyX" && (e.metaKey || e.ctrlKey) && !e.repeat) {
-          e.preventDefault();
-          handleCut();
-          return;
-        }
-
-        if (e.code === "KeyV" && (e.metaKey || e.ctrlKey) && !e.repeat) {
-          e.preventDefault();
-          handlePaste();
-          return;
-        }
-
         if (e.code === "KeyA" && (e.metaKey || e.ctrlKey) && !e.repeat) {
           e.preventDefault();
           const allSelections: WordSelection[] = [];
@@ -338,6 +320,18 @@ function useTimelineKeyboard(
           break;
         case "timeline.togglePreview":
           useTimelineStore.getState().togglePreviewSidebar();
+          break;
+        case "timeline.copy":
+          e.preventDefault();
+          handleCopy();
+          break;
+        case "timeline.cut":
+          e.preventDefault();
+          handleCut();
+          break;
+        case "timeline.paste":
+          e.preventDefault();
+          handlePaste();
           break;
         case "timeline.toggleSnap": {
           const s = useSettingsStore.getState();

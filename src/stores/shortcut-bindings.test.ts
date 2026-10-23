@@ -81,6 +81,14 @@ describe("migrateShortcutBindings", () => {
     });
   });
 
+  it("unbinds a timeline clipboard shortcut when a saved timeline or global binding already uses its keys", () => {
+    const saved = { overrides: { "timeline.mergeWords": { key: "c", mod: true } } };
+
+    expect(migrateShortcutBindings(saved, 3)).toEqual({
+      overrides: { ...saved.overrides, "timeline.copy": { key: "" } },
+    });
+  });
+
   describe("edge cases", () => {
     it("keeps the timeline delete keys when only another scope uses them", () => {
       const saved = { overrides: { "sync.tap": { key: "Backspace" } } };
