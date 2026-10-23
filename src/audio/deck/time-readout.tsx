@@ -34,7 +34,7 @@ const TimeReadout: React.FC = () => {
   useFrameLoop(paint, "deck-time-readout");
 
   return (
-    <div className="grid content-center gap-px h-14 min-w-[156px] px-3 rounded-xl bg-(--display) shadow-(--well-edge)">
+    <div className="grid content-center gap-px h-14 min-w-[156px] px-3 pt-0.5 rounded-xl bg-(--display) shadow-(--well-edge)">
       <div className="font-mono font-semibold tabular-nums text-2xl leading-none tracking-[-0.02em] text-composer-accent-text select-text cursor-text">
         <span ref={wholeRef} />
         <span

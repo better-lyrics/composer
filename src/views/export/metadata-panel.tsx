@@ -48,7 +48,7 @@ const MetadataPanel: React.FC = () => {
   const { shown, suggestions } = musicBrainz;
 
   return (
-    <aside aria-label="Song details" className="flex flex-col min-h-0 shadow-[inset_1px_0_0_var(--divider)]">
+    <aside aria-label="Song details" className="flex flex-col min-h-0 border-l border-(--divider)">
       <div className="flex h-14 shrink-0 items-center justify-between gap-2 pl-4 pr-3 shadow-[inset_0_-1px_0_var(--divider)]">
         <h3 ref={titleRef} tabIndex={-1} className="text-sm font-bold text-composer-text outline-none select-none">
           Song details
