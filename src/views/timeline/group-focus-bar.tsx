@@ -102,7 +102,11 @@ const OwnTimingStatus: React.FC<Omit<OpenInstanceProps, "lines">> = ({ group, he
     <>
       <span>Own timing</span>
       {sharingAction && (
-        <Button size="lg" onClick={() => applySharingMenuAction(sharingAction, group, hearInstanceIdx)}>
+        <Button
+          size="lg"
+          className="shrink-0"
+          onClick={() => applySharingMenuAction(sharingAction, group, hearInstanceIdx)}
+        >
           {SHARING_MENU_LABELS[sharingAction]}
         </Button>
       )}
