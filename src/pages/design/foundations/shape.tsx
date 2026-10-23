@@ -19,19 +19,16 @@ const SHADOWS: readonly ShapeSample[] = [
     name: "--float-shadow",
     use: "Menus, popovers and tooltips, through surface-floating.",
     sample: "rounded-xl bg-(--pop) shadow-(--float-shadow)",
-    token: "--float-shadow",
   },
   {
     name: "--raised-edge",
     use: "Raised buttons, tab caps and the workspace card.",
     sample: "rounded-xl bg-(--cap) shadow-(--raised-edge)",
-    token: "--raised-edge",
   },
   {
     name: "--well-edge",
     use: "Wells, trays and displays.",
     sample: "rounded-xl bg-(--well) shadow-(--well-edge)",
-    token: "--well-edge",
   },
 ];
 
@@ -58,7 +55,7 @@ const RADII: readonly ShapeSample[] = [
   },
 ];
 
-const SHAPE_TOKEN_NAMES = [...SHADOWS, ...RADII].flatMap((sample) => (sample.token ? [sample.token] : []));
+const RADIUS_TOKEN_NAMES = RADII.flatMap((sample) => (sample.token ? [sample.token] : []));
 
 // -- Components ----------------------------------------------------------------
 
@@ -84,7 +81,7 @@ const ShapeGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ ti
 );
 
 const Shape: React.FC = () => {
-  const values = useResolvedTokens(SHAPE_TOKEN_NAMES);
+  const values = useResolvedTokens(RADIUS_TOKEN_NAMES);
   const displayValue = (sample: ShapeSample) => (sample.token ? values[sample.token] : sample.fixedValue);
   return (
     <div className="flex flex-col gap-8">
