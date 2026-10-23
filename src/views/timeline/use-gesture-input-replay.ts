@@ -1,14 +1,15 @@
+import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect, useRef } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
-interface UseSnapBypassArgs {
+interface UseGestureInputReplayArgs {
   active: boolean;
   getLastPointer: () => { clientX: number; clientY: number } | null;
 }
 
 // -- Hook ----------------------------------------------------------------------
-function useSnapBypass({ active, getLastPointer }: UseSnapBypassArgs) {
+function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplayArgs) {
   const bypassRef = useRef(false);
 
   useEffect(() => {
@@ -20,29 +21,43 @@ function useSnapBypass({ active, getLastPointer }: UseSnapBypassArgs) {
       return;
     }
 
+    const replayLastPointer = () => {
+      const last = getLastPointer();
+      if (!last) return;
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          clientX: last.clientX,
+          clientY: last.clientY,
+          bubbles: true,
+          pointerType: "mouse",
+        }),
+      );
+    };
+
     const handleKey = (e: KeyboardEvent) => {
       const next = e.metaKey || e.ctrlKey;
       if (next === bypassRef.current) return;
       bypassRef.current = next;
       useTimelineStore.getState().setIsBypassing(next);
-      const last = getLastPointer();
-      if (last) {
-        window.dispatchEvent(
-          new PointerEvent("pointermove", {
-            clientX: last.clientX,
-            clientY: last.clientY,
-            bubbles: true,
-            pointerType: "mouse",
-          }),
-        );
-      }
+      replayLastPointer();
     };
+
+    const unsubscribeSettings = useSettingsStore.subscribe((state, prev) => {
+      if (state.timelineSnap !== prev.timelineSnap || state.vocalOnsetSnap !== prev.vocalOnsetSnap) {
+        replayLastPointer();
+      }
+    });
+    const unsubscribeTimeline = useTimelineStore.subscribe((state, prev) => {
+      if (state.rollingEditMode !== prev.rollingEditMode) replayLastPointer();
+    });
 
     window.addEventListener("keydown", handleKey);
     window.addEventListener("keyup", handleKey);
     return () => {
       window.removeEventListener("keydown", handleKey);
       window.removeEventListener("keyup", handleKey);
+      unsubscribeSettings();
+      unsubscribeTimeline();
     };
   }, [active, getLastPointer]);
 
@@ -50,4 +65,4 @@ function useSnapBypass({ active, getLastPointer }: UseSnapBypassArgs) {
 }
 
 // -- Exports -------------------------------------------------------------------
-export { useSnapBypass };
+export { useGestureInputReplay };
