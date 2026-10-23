@@ -9,6 +9,7 @@ import { Menu, type MenuAnchor, MenuItem, MenuLabel, MenuRadioItem, MenuSeparato
 import { SingerTag } from "@/ui/singer-tag";
 import { GROUP_COLORS } from "@/utils/group-colors";
 import { pluralize } from "@/utils/pluralize";
+import { CopyCutMenuItems, PasteHereMenuItem } from "@/views/timeline/clipboard-menu-items";
 import {
   loopSelection,
   playSelection,
@@ -234,6 +235,8 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
         </>
       )}
       <MenuSeparator />
+      <CopyCutMenuItems lines={targets.lines} word={word} noun={noun} />
+      <MenuSeparator />
       <MenuItem
         label={deleteWordLabel(clickedSelectionCount, groupedWordInfo !== null)}
         shortcut={clickedSelectionCount === null ? undefined : getEffectiveKeysArray("timeline.deleteSelection")}
@@ -244,7 +247,9 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
   );
 }
 
-function TrackMenuSection({ targets, clearContextMenu }: SectionProps) {
+type TrackTarget = Extract<ContextMenuTarget, { kind: "track" }>;
+
+function TrackMenuSection({ targets, clearContextMenu, target }: SectionProps & { target: TrackTarget }) {
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const { handleAddWordHere } = useWordMenuActions(targets, clearContextMenu);
   const { handlePlaceLineHere, handlePlaceAtPlayhead } = useLineMenuActions(targets, clearContextMenu);
@@ -258,6 +263,7 @@ function TrackMenuSection({ targets, clearContextMenu }: SectionProps) {
         clearContextMenu={clearContextMenu}
       />
       <MenuItem label="Add word here" shortcut={["Double Click"]} onSelect={handleAddWordHere} />
+      <PasteHereMenuItem time={target.time} lineIndex={target.lineIndex} />
       {targets.placeLineHereInfo && <MenuItem label="Place line here" onSelect={handlePlaceLineHere} />}
       {targets.placeAtPlayheadInfo && <MenuItem label="Place at playhead" onSelect={handlePlaceAtPlayhead} />}
       <SelectionGrouping targets={targets} clearContextMenu={clearContextMenu} />
@@ -456,7 +462,7 @@ const TimelineContextMenu: React.FC = () => {
       className="w-max min-w-[232px]"
     >
       {target.kind === "word" && <WordMenuSection {...section} target={target} />}
-      {target.kind === "track" && <TrackMenuSection {...section} />}
+      {target.kind === "track" && <TrackMenuSection {...section} target={target} />}
       {target.kind === "gutter" && <GutterMenuSection {...section} target={target} />}
       {target.kind === "group-banner" && <GroupBannerMenuSection {...section} target={target} />}
     </Menu>
