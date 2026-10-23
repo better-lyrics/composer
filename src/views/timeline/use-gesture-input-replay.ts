@@ -8,6 +8,16 @@ interface UseGestureInputReplayArgs {
   getLastPointer: () => { clientX: number; clientY: number } | null;
 }
 
+interface HeldModifiers {
+  altKey: boolean;
+  shiftKey: boolean;
+  metaKey: boolean;
+  ctrlKey: boolean;
+}
+
+// -- Constants -----------------------------------------------------------------
+const NO_MODIFIERS: HeldModifiers = { altKey: false, shiftKey: false, metaKey: false, ctrlKey: false };
+
 // -- Hook ----------------------------------------------------------------------
 function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplayArgs) {
   const bypassRef = useRef(false);
@@ -21,20 +31,34 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
       return;
     }
 
+    const held: HeldModifiers = { ...NO_MODIFIERS };
+    let replaying = false;
+    const trackModifiers = (e: KeyboardEvent | PointerEvent) => {
+      if (replaying) return;
+      held.altKey = e.altKey;
+      held.shiftKey = e.shiftKey;
+      held.metaKey = e.metaKey;
+      held.ctrlKey = e.ctrlKey;
+    };
+
     const replayLastPointer = () => {
       const last = getLastPointer();
       if (!last) return;
+      replaying = true;
       document.dispatchEvent(
         new PointerEvent("pointermove", {
           clientX: last.clientX,
           clientY: last.clientY,
           bubbles: true,
           pointerType: "mouse",
+          ...held,
         }),
       );
+      replaying = false;
     };
 
     const handleKey = (e: KeyboardEvent) => {
+      trackModifiers(e);
       const next = e.metaKey || e.ctrlKey;
       if (next === bypassRef.current) return;
       bypassRef.current = next;
@@ -48,12 +72,16 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
       }
     });
     const unsubscribeTimeline = useTimelineStore.subscribe((state, prev) => {
-      if (state.rollingEditMode !== prev.rollingEditMode) replayLastPointer();
+      if (state.rollingEditMode !== prev.rollingEditMode || state.vocalOnsetSnapPoints !== prev.vocalOnsetSnapPoints) {
+        replayLastPointer();
+      }
     });
 
+    document.addEventListener("pointermove", trackModifiers, true);
     window.addEventListener("keydown", handleKey);
     window.addEventListener("keyup", handleKey);
     return () => {
+      document.removeEventListener("pointermove", trackModifiers, true);
       window.removeEventListener("keydown", handleKey);
       window.removeEventListener("keyup", handleKey);
       unsubscribeSettings();

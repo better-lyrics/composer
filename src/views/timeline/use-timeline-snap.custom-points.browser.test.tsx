@@ -138,4 +138,14 @@ describe("useTimelineSnap · custom snap points", () => {
     expect(result.current.computeShiftPx(0, [0.95])).toBe(0);
     expect(result.current.computeShiftPx(0, [4.95])).toBeCloseTo((5 - 4.95) * ZOOM, 4);
   });
+
+  it("regression: onset points that load mid-drag snap once vocal onset snap is on", async () => {
+    const { result } = await renderHook(() => useTimelineSnap());
+    beginAt(result);
+
+    useSettingsStore.setState({ vocalOnsetSnap: true });
+    useTimelineStore.setState({ vocalOnsetSnapPoints: [2] });
+
+    expect(result.current.computeShiftPx(0, [2.05])).toBeCloseTo((2 - 2.05) * ZOOM, 4);
+  });
 });

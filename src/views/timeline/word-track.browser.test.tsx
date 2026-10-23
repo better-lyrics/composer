@@ -458,6 +458,22 @@ describe("WordTrack", () => {
     expect(calls[0].adjacentUpdates?.begin).toBeCloseTo(1.8, 4);
   });
 
+  it("regression: a replayed move keeps Alt held, so the neighbour stays put", async () => {
+    useTimelineStore.setState({ rollingEditMode: true, zoom: 100 });
+    const calls: Array<{ adjacentIndex?: number }> = [];
+    const words = [createWord({ text: "a ", begin: 1, end: 1.5 }), createWord({ text: "b", begin: 1.5, end: 2 })];
+    const { screen } = await renderTrack(words, (_index, _updates, adjacentIndex) => calls.push({ adjacentIndex }));
+    const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+    edgeOf(blocks[0], "right").dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 200 }));
+    document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 230, altKey: true }));
+    await stepFrames(2);
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Meta", metaKey: true, altKey: true }));
+    document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+
+    expect(calls).toEqual([]);
+  });
+
   it("resizes one word independently when Alt is held in rolling edit mode", async () => {
     useTimelineStore.setState({ rollingEditMode: true, zoom: 100 });
     const calls: Array<{ index: number; adjacentIndex?: number }> = [];

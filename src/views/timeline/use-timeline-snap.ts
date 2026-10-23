@@ -2,7 +2,13 @@ import { snapPointTimes } from "@/domain/snap-point/model";
 import { livePlaybackTime } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { type SnapAnchor, activeSnapAnchors, collectSnapAnchors, findSnapShift } from "@/views/timeline/snap";
+import {
+  type SnapAnchor,
+  activeSnapAnchors,
+  collectSnapAnchors,
+  findSnapShift,
+  vocalOnsetAnchors,
+} from "@/views/timeline/snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { Modifier } from "@dnd-kit/core";
 import { useCallback, useMemo, useRef } from "react";
@@ -19,6 +25,7 @@ interface SnapCtx {
   allAnchors: SnapAnchor[];
   activeAnchors: SnapAnchor[];
   activeSourcesKey: number;
+  activeOnsetTimes: readonly number[] | null;
   selfIds: Set<string>;
   leaderKey: string;
   overlapCheck: ((shift: number) => boolean) | null;
@@ -67,6 +74,7 @@ function useTimelineSnap(): UseTimelineSnap {
     allAnchors: [],
     activeAnchors: [],
     activeSourcesKey: -1,
+    activeOnsetTimes: null,
     selfIds: new Set(),
     leaderKey: "",
     overlapCheck: null,
@@ -76,16 +84,16 @@ function useTimelineSnap(): UseTimelineSnap {
   const beginGesture = useCallback((args: BeginGestureArgs) => {
     const lines = useProjectStore.getState().lines;
     const projectSnapPoints = useProjectStore.getState().customSnapPoints;
-    const timeline = useTimelineStore.getState();
     const playhead = livePlaybackTime();
     ctxRef.current.allAnchors = collectSnapAnchors(
       lines,
       args.selfIds,
       playhead,
-      timeline.vocalOnsetSnapPoints,
+      [],
       snapPointTimes(projectSnapPoints),
     );
     ctxRef.current.activeSourcesKey = -1;
+    ctxRef.current.activeOnsetTimes = null;
     ctxRef.current.selfIds = args.selfIds;
     ctxRef.current.leaderKey = args.leaderKey;
     ctxRef.current.overlapCheck = args.overlapCheck;
@@ -95,6 +103,7 @@ function useTimelineSnap(): UseTimelineSnap {
     ctxRef.current.allAnchors = [];
     ctxRef.current.activeAnchors = [];
     ctxRef.current.activeSourcesKey = -1;
+    ctxRef.current.activeOnsetTimes = null;
     ctxRef.current.selfIds = new Set();
     ctxRef.current.leaderKey = "";
     ctxRef.current.overlapCheck = null;
@@ -106,11 +115,15 @@ function useTimelineSnap(): UseTimelineSnap {
     const ctx = ctxRef.current;
     const { timelineSnap, vocalOnsetSnap, timelineSnapThreshold: threshold } = useSettingsStore.getState();
     const sourcesKey = Number(timelineSnap) * 2 + Number(vocalOnsetSnap);
-    if (ctx.activeSourcesKey !== sourcesKey) {
-      ctx.activeAnchors = activeSnapAnchors(ctx.allAnchors, { timelineSnap, vocalOnsetSnap });
+    const { zoom, isBypassing, vocalOnsetSnapPoints } = useTimelineStore.getState();
+    if (ctx.activeSourcesKey !== sourcesKey || ctx.activeOnsetTimes !== vocalOnsetSnapPoints) {
+      const withOnsets = vocalOnsetSnap
+        ? ctx.allAnchors.concat(vocalOnsetAnchors(vocalOnsetSnapPoints))
+        : ctx.allAnchors;
+      ctx.activeAnchors = activeSnapAnchors(withOnsets, { timelineSnap, vocalOnsetSnap });
       ctx.activeSourcesKey = sourcesKey;
+      ctx.activeOnsetTimes = vocalOnsetSnapPoints;
     }
-    const { zoom, isBypassing } = useTimelineStore.getState();
     if (isBypassing || ctx.activeAnchors.length === 0) return { shiftPx: 0, anchorTime: null };
     const deltaT = proposedDeltaPx / zoom;
     const proposedEdges = edgesAtStart.map((edge) => edge + deltaT);

@@ -123,15 +123,21 @@ function collectSnapAnchors(
     anchors.push({ t: playheadTime, kind: "playhead", label: "playhead" });
   }
 
-  for (const t of vocalOnsetTimes) {
-    if (Number.isFinite(t) && t >= 0) anchors.push({ t, kind: "vocal-onset", label: "vocal onset" });
-  }
+  anchors.push(...vocalOnsetAnchors(vocalOnsetTimes));
 
   for (const t of customSnapTimes) {
     if (Number.isFinite(t) && t >= 0) anchors.push({ t, kind: "custom", label: "custom" });
   }
 
   anchors.sort((a, b) => a.t - b.t);
+  return anchors;
+}
+
+function vocalOnsetAnchors(times: readonly number[]): SnapAnchor[] {
+  const anchors: SnapAnchor[] = [];
+  for (const t of times) {
+    if (Number.isFinite(t) && t >= 0) anchors.push({ t, kind: "vocal-onset", label: "vocal onset" });
+  }
   return anchors;
 }
 
@@ -181,5 +187,5 @@ function findSnapShift(args: FindSnapShiftArgs): SnapResult {
 
 // -- Exports -------------------------------------------------------------------
 
-export { activeSnapAnchors, collectSnapAnchors, findSnapShift, selfKey };
+export { activeSnapAnchors, collectSnapAnchors, findSnapShift, selfKey, vocalOnsetAnchors };
 export type { SnapAnchor };
