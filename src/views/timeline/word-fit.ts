@@ -1,5 +1,3 @@
-import type { WordTrackType } from "@/views/timeline/row-geometry";
-
 // -- Types ---------------------------------------------------------------------
 
 type WordFit = "full" | "narrow" | "tick";
@@ -13,10 +11,10 @@ interface WordLabelFit {
 // -- Constants -----------------------------------------------------------------
 
 const TICK_WIDTH_PX = 20;
-const LABEL_PADDING_PX: Record<WordTrackType, number> = { word: 18, bg: 14 };
-const NARROW_LABEL_PADDING_PX: Record<WordTrackType, number> = { word: 6, bg: 4 };
-const LABEL_FONT: Record<WordTrackType, string> = { word: "500 13px", bg: "500 11.5px" };
-const NARROW_LABEL_FONT: Record<WordTrackType, string> = { word: "500 11px", bg: "500 11.5px" };
+const LABEL_PADDING_PX = 18;
+const NARROW_LABEL_PADDING_PX = 6;
+const LABEL_FONT = "500 13px";
+const NARROW_LABEL_FONT = "500 11px";
 
 let measureContext: CanvasRenderingContext2D | null | undefined;
 let fontFamily: string | undefined;
@@ -32,10 +30,10 @@ function labelWidth(text: string, font: string): number {
 }
 
 // A label that does not fit drops to a smaller face; a block too thin for any text shows none.
-function wordFit(text: string, width: number, track: WordTrackType): WordLabelFit {
-  if (labelWidth(text, LABEL_FONT[track]) + LABEL_PADDING_PX[track] <= width) return { fit: "full", cut: false };
+function wordFit(text: string, width: number): WordLabelFit {
+  if (labelWidth(text, LABEL_FONT) + LABEL_PADDING_PX <= width) return { fit: "full", cut: false };
   if (width < TICK_WIDTH_PX) return { fit: "tick", cut: false };
-  return { fit: "narrow", cut: labelWidth(text, NARROW_LABEL_FONT[track]) + NARROW_LABEL_PADDING_PX[track] > width };
+  return { fit: "narrow", cut: labelWidth(text, NARROW_LABEL_FONT) + NARROW_LABEL_PADDING_PX > width };
 }
 
 // -- Exports -------------------------------------------------------------------

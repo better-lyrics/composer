@@ -82,7 +82,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
 }) => {
   const left = begin * zoom;
   const width = wordBlockWidth(begin, end, zoom);
-  const { fit, cut } = useMemo(() => wordFit(text, width, trackType), [text, width, trackType]);
+  const { fit, cut } = useMemo(() => wordFit(text, width), [text, width]);
 
   const myKey = selfKey(lineId, wordIndex, trackType);
   const isSnapped = useTimelineStore((s) => s.snappedBlockId === myKey);
@@ -115,7 +115,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
       data-selected={isSelected || undefined}
       className={cn(
         "word-face absolute flex items-center justify-center whitespace-nowrap select-none cursor-grab",
-        trackType === "bg" ? "inset-y-[3px]" : "inset-y-[5px]",
+        "inset-y-[5px]",
         syllableRadius(syllablePosition, gapBefore, gapAfter),
         isDimmed && "opacity-30",
         isDragging && "opacity-50 cursor-grabbing z-50",

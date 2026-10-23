@@ -1,6 +1,6 @@
 // -- Constants -----------------------------------------------------------------
 
-const LABEL_PADDING_PX = { word: 8, bg: 6, narrow: 3 } as const;
+const LABEL_PADDING_PX = { full: 8, narrow: 3 } as const;
 // Roughly two letters; a sliver narrower than this shows no label at all.
 const MIN_LABEL_WIDTH_PX = 16;
 // Reused every frame; the pass is synchronous, so one scratch set serves every caller.
@@ -9,8 +9,7 @@ const stillPinned = new Set<HTMLElement>();
 // -- Functions -----------------------------------------------------------------
 
 function labelPadding(block: HTMLElement): number {
-  if (block.dataset.fit === "narrow") return LABEL_PADDING_PX.narrow;
-  return block.dataset.lane === "bg" ? LABEL_PADDING_PX.bg : LABEL_PADDING_PX.word;
+  return block.dataset.fit === "narrow" ? LABEL_PADDING_PX.narrow : LABEL_PADDING_PX.full;
 }
 
 function unpin(label: HTMLElement): void {
