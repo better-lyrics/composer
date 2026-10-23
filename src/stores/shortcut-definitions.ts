@@ -462,6 +462,24 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "ArrowRight", shift: true, alt: true },
     repeatable: true,
   },
+  {
+    id: "timeline.copy",
+    scope: "timeline",
+    description: "Copy selected words",
+    defaultBinding: { key: "c", mod: true },
+  },
+  {
+    id: "timeline.cut",
+    scope: "timeline",
+    description: "Cut selected words",
+    defaultBinding: { key: "x", mod: true },
+  },
+  {
+    id: "timeline.paste",
+    scope: "timeline",
+    description: "Paste copied words",
+    defaultBinding: { key: "v", mod: true },
+  },
 ];
 
 // -- Exports ------------------------------------------------------------------

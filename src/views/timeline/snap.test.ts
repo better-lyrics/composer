@@ -3,7 +3,7 @@
  */
 import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
-import { type SnapAnchor, collectSnapAnchors, findSnapShift, selfKey } from "./snap";
+import { type SnapAnchor, activeSnapAnchors, collectSnapAnchors, findSnapShift, selfKey } from "./snap";
 
 // -- Fixtures ------------------------------------------------------------------
 
@@ -112,46 +112,52 @@ describe("collectSnapAnchors", () => {
     expect(onsets.every((a) => a.label === "vocal onset")).toBe(true);
   });
 
-  it("can collect vocal onset snap points without timeline anchors", () => {
-    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), 0.42, [0.12, 0.72], false);
+  it("can keep vocal onset snap points without timeline anchors", () => {
+    const anchors = activeSnapAnchors(collectSnapAnchors([wordTimedLine()], new Set(), 0.42, [0.12, 0.72]), {
+      timelineSnap: false,
+      vocalOnsetSnap: true,
+    });
     expect(anchors.map((a) => a.kind)).toEqual(["vocal-onset", "vocal-onset"]);
     expect(anchors.map((a) => a.t)).toEqual([0.12, 0.72]);
   });
 
   it("emits one custom anchor per finite, non-negative custom time", () => {
-    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [], true, [0.25, 0.85]);
+    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [], [0.25, 0.85]);
     const customs = anchors.filter((a) => a.kind === "custom");
     expect(customs.map((a) => a.t)).toEqual([0.25, 0.85]);
     expect(customs.every((a) => a.label === "custom")).toBe(true);
   });
 
   it("filters out non-finite and negative custom times", () => {
-    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [], true, [
-      -1,
-      0,
-      Number.NaN,
-      Number.POSITIVE_INFINITY,
-      0.5,
-    ]);
+    const anchors = collectSnapAnchors(
+      [wordTimedLine()],
+      new Set(),
+      null,
+      [],
+      [-1, 0, Number.NaN, Number.POSITIVE_INFINITY, 0.5],
+    );
     const customTimes = anchors.filter((a) => a.kind === "custom").map((a) => a.t);
     expect(customTimes).toEqual([0, 0.5]);
   });
 
   it("emits no custom anchors for an empty custom-times array", () => {
-    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [0.1], true, []);
+    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [0.1], []);
     expect(anchors.some((a) => a.kind === "custom")).toBe(false);
   });
 
   it("coexists with vocal-onset anchors when both arrays are provided", () => {
-    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [0.12], true, [0.9]);
+    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [0.12], [0.9]);
     const onsets = anchors.filter((a) => a.kind === "vocal-onset");
     const customs = anchors.filter((a) => a.kind === "custom");
     expect(onsets.map((a) => a.t)).toEqual([0.12]);
     expect(customs.map((a) => a.t)).toEqual([0.9]);
   });
 
-  it("can collect custom snap points without timeline anchors", () => {
-    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), 0.42, [], false, [0.3, 0.7]);
+  it("can keep custom snap points without timeline anchors", () => {
+    const anchors = activeSnapAnchors(collectSnapAnchors([wordTimedLine()], new Set(), 0.42, [], [0.3, 0.7]), {
+      timelineSnap: false,
+      vocalOnsetSnap: true,
+    });
     expect(anchors.map((a) => a.kind)).toEqual(["custom", "custom"]);
     expect(anchors.map((a) => a.t)).toEqual([0.3, 0.7]);
   });
@@ -159,8 +165,8 @@ describe("collectSnapAnchors", () => {
   it("backward-compat: calling without the custom-times arg is unchanged", () => {
     const lines = [wordTimedLine(), lineSyncedLine()];
     const onsets = [0.12, 0.72];
-    const withoutArg = collectSnapAnchors(lines, new Set(), 1.5, onsets, true);
-    const withEmptyArg = collectSnapAnchors(lines, new Set(), 1.5, onsets, true, []);
+    const withoutArg = collectSnapAnchors(lines, new Set(), 1.5, onsets);
+    const withEmptyArg = collectSnapAnchors(lines, new Set(), 1.5, onsets, []);
     expect(withoutArg).toEqual(withEmptyArg);
     expect(withoutArg.some((a) => a.kind === "custom")).toBe(false);
   });
@@ -181,6 +187,25 @@ describe("collectSnapAnchors", () => {
     const empty: LyricLine = { id: "lx", text: "no timing", agentId: "v1" };
     const anchors = collectSnapAnchors([empty], new Set(), null);
     expect(anchors).toEqual([]);
+  });
+});
+
+// -- activeSnapAnchors ---------------------------------------------------------
+
+describe("activeSnapAnchors", () => {
+  const all = collectSnapAnchors([wordTimedLine()], new Set(), 0.42, [0.12], [0.9]);
+  const kinds = (sources: { timelineSnap: boolean; vocalOnsetSnap: boolean }) =>
+    new Set(activeSnapAnchors(all, sources).map((a) => a.kind));
+
+  it("keeps only the sources whose setting is on, and custom markers always", () => {
+    expect(kinds({ timelineSnap: false, vocalOnsetSnap: false })).toEqual(new Set(["custom"]));
+    expect(kinds({ timelineSnap: false, vocalOnsetSnap: true })).toEqual(new Set(["custom", "vocal-onset"]));
+    expect(kinds({ timelineSnap: true, vocalOnsetSnap: false })).toEqual(
+      new Set(["custom", "word-begin", "word-end", "playhead"]),
+    );
+    expect(kinds({ timelineSnap: true, vocalOnsetSnap: true })).toEqual(
+      new Set(["custom", "vocal-onset", "word-begin", "word-end", "playhead"]),
+    );
   });
 });
 

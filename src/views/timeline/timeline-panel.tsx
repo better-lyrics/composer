@@ -39,7 +39,7 @@ import { useGroupFocusShortcuts } from "@/views/timeline/use-group-focus-shortcu
 import { useMarquee } from "@/views/timeline/use-marquee";
 import { useResumeView } from "@/views/timeline/use-resume-view";
 import { useSharedTimingPing } from "@/views/timeline/use-shared-timing-ping";
-import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
+import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineFrameWake } from "@/views/timeline/use-timeline-frame-wake";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
@@ -118,7 +118,7 @@ const TimelinePanel: React.FC = () => {
   const { dragSnapModifier, beginGesture, endGesture, syncDragSnap } = useTimelineSnap();
   const lastDragPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const getLastDragPointer = useCallback(() => lastDragPointerRef.current, []);
-  useSnapBypass({ active: activeDrag !== null, getLastPointer: getLastDragPointer });
+  useGestureInputReplay({ active: activeDrag !== null, getLastPointer: getLastDragPointer });
   useSharedTimingPing();
 
   useEffect(() => {

@@ -18,11 +18,12 @@ interface ShortcutBindingsState {
 
 // -- Migration ----------------------------------------------------------------
 
-const SHORTCUT_BINDINGS_PERSIST_VERSION = 3;
+const SHORTCUT_BINDINGS_PERSIST_VERSION = 4;
 const UNBOUND: ShortcutBinding = { key: "" };
 
 const ALTERNATE_REDO_ID = "global.redoAlternate";
 const DELETE_SELECTION_IDS = ["timeline.deleteSelection", "timeline.deleteSelectionAlternate"];
+const CLIPBOARD_IDS = ["timeline.copy", "timeline.cut", "timeline.paste"];
 
 function unbindIfKeysTaken(
   overrides: Record<string, ShortcutBinding>,
@@ -42,12 +43,17 @@ function unbindIfKeysTaken(
   return keysTaken ? { ...overrides, [addedId]: UNBOUND } : overrides;
 }
 
-function unbindTakenDeleteKeys(state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> {
-  const { overrides } = state;
-  if (!overrides || typeof overrides !== "object") return state;
-  const migrated = DELETE_SELECTION_IDS.reduce(unbindIfKeysTaken, overrides);
-  return migrated === overrides ? state : { ...state, overrides: migrated };
+function unbindTakenKeys(addedIds: string[]) {
+  return (state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> => {
+    const { overrides } = state;
+    if (!overrides || typeof overrides !== "object") return state;
+    const migrated = addedIds.reduce(unbindIfKeysTaken, overrides);
+    return migrated === overrides ? state : { ...state, overrides: migrated };
+  };
 }
+
+const unbindTakenDeleteKeys = unbindTakenKeys(DELETE_SELECTION_IDS);
+const unbindTakenClipboardKeys = unbindTakenKeys(CLIPBOARD_IDS);
 
 const RENAMED_SHORTCUT_IDS: Record<string, string> = { "timeline.toggleGroupLoop": "global.toggleLoop" };
 
@@ -109,7 +115,8 @@ function migrateShortcutBindings(persistedState: unknown, version: number): unkn
   const state = persistedState as Partial<ShortcutBindingsState>;
   const withRedo = version < 1 ? unbindTakenAlternateRedo(state) : state;
   const renamed = version < 2 ? renameShortcutIds(withRedo) : withRedo;
-  return version < 3 ? unbindTakenDeleteKeys(renamed) : renamed;
+  const withDeleteKeys = version < 3 ? unbindTakenDeleteKeys(renamed) : renamed;
+  return version < 4 ? unbindTakenClipboardKeys(withDeleteKeys) : withDeleteKeys;
 }
 
 // -- Store --------------------------------------------------------------------

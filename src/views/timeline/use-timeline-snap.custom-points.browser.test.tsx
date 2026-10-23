@@ -1,7 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { snapPoints } from "@/test/factories";
+import { createLine, createWord, snapPoints } from "@/test/factories";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -111,5 +111,41 @@ describe("useTimelineSnap · custom snap points", () => {
     const nearCustom = result.current.computeShiftPx(0, [0.95]);
     expect(nearCustom).toBeCloseTo((1 - 0.95) * ZOOM, 4);
     expect(useTimelineStore.getState().snappedAnchorTime).toBeCloseTo(1, 4);
+  });
+
+  it("regression: snap turned on mid-drag snaps to word edges", async () => {
+    useProjectStore.setState({ lines: [createLine({ words: [createWord({ text: "a", begin: 1, end: 2 })] })] });
+    const { result } = await renderHook(() => useTimelineSnap());
+
+    beginAt(result);
+    expect(result.current.computeShiftPx(0, [0.95])).toBe(0);
+
+    useSettingsStore.setState({ timelineSnap: true });
+    expect(result.current.computeShiftPx(0, [0.95])).toBeCloseTo((1 - 0.95) * ZOOM, 4);
+  });
+
+  it("regression: snap turned off mid-drag ignores word edges when custom markers exist", async () => {
+    useSettingsStore.setState({ timelineSnap: true });
+    useProjectStore.setState({
+      lines: [createLine({ words: [createWord({ text: "a", begin: 1, end: 2 })] })],
+      customSnapPoints: snapPoints([5]),
+    });
+    const { result } = await renderHook(() => useTimelineSnap());
+
+    beginAt(result);
+    useSettingsStore.setState({ timelineSnap: false });
+
+    expect(result.current.computeShiftPx(0, [0.95])).toBe(0);
+    expect(result.current.computeShiftPx(0, [4.95])).toBeCloseTo((5 - 4.95) * ZOOM, 4);
+  });
+
+  it("regression: onset points that load mid-drag snap once vocal onset snap is on", async () => {
+    const { result } = await renderHook(() => useTimelineSnap());
+    beginAt(result);
+
+    useSettingsStore.setState({ vocalOnsetSnap: true });
+    useTimelineStore.setState({ vocalOnsetSnapPoints: [2] });
+
+    expect(result.current.computeShiftPx(0, [2.05])).toBeCloseTo((2 - 2.05) * ZOOM, 4);
   });
 });

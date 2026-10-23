@@ -10,7 +10,7 @@ import { planStretchDrag } from "@/views/timeline/stretch-drag";
 import { mapStretchTargets, stretchSelections } from "@/views/timeline/stretch-selection";
 import { STRETCH_EPS } from "@/views/timeline/stretch-targets";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
+import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -88,7 +88,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
   const snap = useTimelineSnap();
   const { beginGesture, computeShiftPx, endGesture } = snap;
   const getLastPointer = useCallback(() => lastPointerRef.current, []);
-  useSnapBypass({ active: isStretching, getLastPointer });
+  useGestureInputReplay({ active: isStretching, getLastPointer });
 
   // A drag cut short by unmount (undo rewrote lines, project cleared, tab
   // switched) must restore the snapshotted lines — otherwise the transient

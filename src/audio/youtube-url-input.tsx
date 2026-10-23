@@ -77,7 +77,7 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
           spellCheck={false}
           autoCapitalize="off"
           autoComplete="off"
-          className={cn(INPUT_STYLES, "flex-1 h-9 rounded-lg disabled:opacity-50 select-text")}
+          className={cn(INPUT_STYLES, "flex-1 h-9 rounded-lg select-text")}
         />
         <Button variant="primary" size="lg" hasIcon onClick={handleSubmit} disabled={isLoading || trimmed.length === 0}>
           {isLoading ? <IconLoader2 size={16} className="animate-spin" /> : <IconBrandYoutube size={16} />}
