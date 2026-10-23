@@ -3,8 +3,9 @@ import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
 import { placeSnapPoint } from "@/views/timeline/place-snap-point";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useFollowHorizontalScroll } from "@/views/timeline/use-follow-horizontal-scroll";
 import { IconClock } from "@tabler/icons-react";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -59,17 +60,7 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
   const [labelled, minor] = rulerStep(zoom);
   const labels = Array.from({ length: Math.floor(duration / labelled) + 1 }, (_, index) => index * labelled);
 
-  // A passive effect: the scroll container mounts after this sibling, so its ref is set only once layout effects ran.
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    const follow = () => {
-      if (trackRef.current) trackRef.current.style.translate = `${-container.scrollLeft}px 0`;
-    };
-    follow();
-    container.addEventListener("scroll", follow, { passive: true });
-    return () => container.removeEventListener("scroll", follow);
-  }, [scrollContainerRef]);
+  useFollowHorizontalScroll(scrollContainerRef, trackRef);
 
   const seekToPointer = (event: React.PointerEvent<HTMLDivElement>) => {
     const container = scrollContainerRef.current;

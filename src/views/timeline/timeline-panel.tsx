@@ -18,6 +18,8 @@ import { GroupFocusBar } from "@/views/timeline/group-focus-bar";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
 import { LoopRegionBar } from "@/views/timeline/loop-region-bar";
+import { LoopRegionGuides } from "@/views/timeline/loop-region-guides";
+import { LoopRegionReadout } from "@/views/timeline/loop-region-readout";
 import { SelectionPlaybackBar } from "@/views/timeline/selection-playback-bar";
 import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
@@ -306,6 +308,9 @@ const TimelinePanel: React.FC = () => {
                 />
 
                 <SnapGuideline />
+
+                <LoopRegionGuides scrollContainerRef={scrollContainerRef} />
+                <LoopRegionReadout host={rulerMarkerHost} />
 
                 <SnapMarkersOverlay scrollContainerRef={scrollContainerRef} headHost={rulerMarkerHost} />
 
