@@ -8,7 +8,7 @@ type WordTrackType = "word" | "bg";
 
 const BG_DROP_ZONE_HEIGHT = 24;
 const ROW_BORDER = 1;
-const WORD_INSET_PX: Record<WordTrackType, number> = { word: 5, bg: 3 };
+const WORD_INSET_PX: Record<WordTrackType, number> = { word: 5, bg: 5 };
 
 // -- Functions -----------------------------------------------------------------
 
