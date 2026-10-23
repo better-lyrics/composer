@@ -129,4 +129,3 @@ async function commitPasteAt(target: PasteTarget): Promise<PasteOutcome> {
 // -- Exports -------------------------------------------------------------------
 
 export { commitPasteAt };
-export type { PasteOutcome };
