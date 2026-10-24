@@ -14,10 +14,21 @@ import { RegenerateLanguageControl } from "@/views/languages/regenerate-language
 import { requestLanguageGeneration } from "@/views/languages/request-language-generation";
 import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
 import { useLanguageTargets } from "@/views/languages/use-language-targets";
+import { useLanguagesHistoryShortcuts } from "@/views/languages/use-languages-history-shortcuts";
 import { pluralWord, pluralize } from "@/utils/pluralize";
 import { IconChevronDown } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+
+// -- Interfaces ---------------------------------------------------------------
+
+interface GenerationOptions {
+  force?: boolean;
+  source?: string;
+  transliteration?: boolean;
+  // Filling tracks on entry follows the lyrics, so it joins the step that changed them instead of clearing redo.
+  joinCurrentStep?: boolean;
+}
 
 // -- Constants ----------------------------------------------------------------
 
@@ -43,12 +54,13 @@ const LanguagesPanel: React.FC = () => {
   const abortRef = useRef<AbortController | null>(null);
   const sourceLanguage = metadata.language || "auto";
   const generate = useCallback(
-    async (
-      requestedTargets: string[],
-      force = false,
-      requestedSource = sourceLanguage,
-      includeTransliteration = true,
-    ) => {
+    async (requestedTargets: string[], options: GenerationOptions = {}) => {
+      const {
+        force = false,
+        source: requestedSource = sourceLanguage,
+        transliteration: includeTransliteration = true,
+        joinCurrentStep = false,
+      } = options;
       const startingState = useProjectStore.getState();
       if (startingState.lines.length === 0 || abortRef.current) return;
       const startingLines = new Map(startingState.lines.map((line) => [line.id, line]));
@@ -81,7 +93,8 @@ const LanguagesPanel: React.FC = () => {
           { force, transliteration: generation.transliteration, translations: generation.translations },
           edits,
         );
-        if (updates.length > 0) updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+        if (updates.length > 0 && joinCurrentStep) currentState.applyLineUpdatesToCurrentStep(updates);
+        else if (updates.length > 0) updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
         const detected = generation.detectedLanguage;
         if (updates.length > 0 && !currentState.metadata.language && detected && detected !== "auto") {
           setMetadata({ language: detected });
@@ -112,8 +125,9 @@ const LanguagesPanel: React.FC = () => {
   useEffect(() => {
     if (activeTab !== "languages" || generatedOnEntry.current || lines.length === 0) return;
     generatedOnEntry.current = true;
-    void generate(targets);
+    void generate(targets, { joinCurrentStep: true });
   }, [activeTab, generate, lines.length, targets]);
+  useLanguagesHistoryShortcuts(activeTab === "languages");
   const languageName = useMemo(() => new Map<string, string>(LANGUAGE_OPTIONS), []);
   const availableLanguages = LANGUAGE_OPTIONS.filter(([code]) => !targets.includes(code));
   const removeTarget = (language: string) => {
@@ -142,7 +156,7 @@ const LanguagesPanel: React.FC = () => {
       requestedTargets = [...targets, "en"];
       setTargets(requestedTargets);
     }
-    void generate(requestedTargets, false, selected);
+    void generate(requestedTargets, { source: selected });
   };
 
   if (lines.length === 0) {
@@ -206,9 +220,9 @@ const LanguagesPanel: React.FC = () => {
             isGenerating={isGenerating}
             translations={targets}
             languageNames={languageName}
-            onRegenerateAll={() => void generate(targets, true)}
+            onRegenerateAll={() => void generate(targets, { force: true })}
             onRegenerateSelection={(selection) =>
-              void generate(selection.translations, true, sourceLanguage, selection.transliteration)
+              void generate(selection.translations, { force: true, transliteration: selection.transliteration })
             }
           />
         </div>
