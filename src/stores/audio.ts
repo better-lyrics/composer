@@ -191,7 +191,13 @@ function livePlaybackTime(): number {
   return audioElement?.currentTime ?? currentTime;
 }
 
+function seekBy(seconds: number): void {
+  const { duration, seekTo } = useAudioStore.getState();
+  const target = Math.max(0, livePlaybackTime() + seconds);
+  seekTo(duration > 0 ? Math.min(duration, target) : target);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { FULL_VOLUME, NORMAL_PLAYBACK_RATE, livePlaybackTime, toggledPlaybackRate, useAudioStore };
+export { FULL_VOLUME, NORMAL_PLAYBACK_RATE, livePlaybackTime, seekBy, toggledPlaybackRate, useAudioStore };
 export type { AudioSource };
