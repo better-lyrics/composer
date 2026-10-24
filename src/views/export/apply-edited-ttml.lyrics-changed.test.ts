@@ -111,5 +111,18 @@ describe("applyEditedTtml · edits and the lyrics they were written against", ()
       expect(applyEditedTtml(edited, 180)).toMatchObject({ status: "applied" });
       expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello again"]);
     });
+
+    it("regression: a fully applied edit to a YouTube export is not kept in the export", () => {
+      useProjectStore.setState({ lines: [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })] });
+      const generated = generateProjectTtml(useProjectStore.getState(), 200, undefined, "dQw4w9WgXcQ");
+      const edited = generated.replace(">Hello<", ">Hello there<");
+      useProjectStore.setState({ ttmlEditState: typedTtmlEdit(null, generated, edited, false) });
+      expect(applyEditedTtml(edited, 200, "dQw4w9WgXcQ")).toEqual({
+        status: "applied",
+        skipped: 0,
+        keptInExport: false,
+      });
+      expect(useProjectStore.getState().ttmlEditState).toBeNull();
+    });
   });
 });

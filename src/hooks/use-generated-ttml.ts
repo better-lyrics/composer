@@ -23,7 +23,14 @@ function useGeneratedTtml(timing: TimingGranularity) {
     [metadata, agents, lines, groups, duration, timing, youtubeVideoId],
   );
 
-  return { content, duration, lineCount: progress.total, syncedLineCount: progress.done, title: metadata.title };
+  return {
+    content,
+    duration,
+    youtubeVideoId,
+    lineCount: progress.total,
+    syncedLineCount: progress.done,
+    title: metadata.title,
+  };
 }
 
 export { useGeneratedTtml };

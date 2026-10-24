@@ -22,8 +22,8 @@ const NOT_SYNCED_MESSAGE =
 // -- Functions ----------------------------------------------------------------
 
 // Done in the TTML editor: apply the edits to the lyrics when the project can hold them, and say what happened.
-function applyEditsToProject(content: string, duration: number): void {
-  const result = applyEditedTtml(content, duration);
+function applyEditsToProject(content: string, duration: number, youtubeVideoId?: string): void {
+  const result = applyEditedTtml(content, duration, youtubeVideoId);
   if (result.status === "export-only") {
     if (result.reason === "not-held") {
       toast(NOT_HELD_MESSAGES[result.part]);

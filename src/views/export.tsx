@@ -37,6 +37,7 @@ const ExportPanel: React.FC = () => {
     setExportTiming,
     syncedLineCount,
     title,
+    youtubeVideoId,
   } = useExportTtml();
 
   const projectSession = useProjectStore((state) => state.projectSession);
@@ -79,9 +80,9 @@ const ExportPanel: React.FC = () => {
       return;
     }
     const changedThisSession = editedContent !== null && editedContent !== session.startContent;
-    if (changedThisSession && !hasConflict) applyEditsToProject(editedContent, duration);
+    if (changedThisSession && !hasConflict) applyEditsToProject(editedContent, duration, youtubeVideoId);
     setEditingSession(null);
-  }, [session, projectSession, exportContent, editedContent, hasConflict, duration]);
+  }, [session, projectSession, exportContent, editedContent, hasConflict, duration, youtubeVideoId]);
 
   const handleRegenerate = useCallback(() => {
     setEditState(null);

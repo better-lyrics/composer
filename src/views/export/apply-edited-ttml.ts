@@ -29,8 +29,9 @@ function editedLyricsFrom(parsed: ParseResult, lines: EditedLyrics["lines"]): Ed
   return { lines, groups: parsed.groups ?? [], agents: parsed.agents, metadata: parsed.metadata };
 }
 
-function partNotHeld(project: ProjectStore, audioDuration: number): ProjectPart | undefined {
-  const own = readTtmlLyrics(generateProjectTtml(project, audioDuration), OWN_EXPORT, audioDuration);
+function partNotHeld(project: ProjectStore, audioDuration: number, youtubeVideoId?: string): ProjectPart | undefined {
+  const ownExport = generateProjectTtml(project, audioDuration, undefined, youtubeVideoId);
+  const own = readTtmlLyrics(ownExport, OWN_EXPORT, audioDuration);
   if (own.status === "unreadable" || !holdsEveryLine(project.lines, own.parsed.lines)) return "lines";
   const roundTrip = editedLyricsFrom(own.parsed, mergeEditedTtmlLines(project.lines, own.parsed));
   return changedParts(project, editedLyricsWrite(project, roundTrip))[0];
@@ -38,7 +39,7 @@ function partNotHeld(project: ProjectStore, audioDuration: number): ProjectPart 
 
 // -- Apply --------------------------------------------------------------------
 
-function applyEditedTtml(content: string, audioDuration: number): EditedTtmlApply {
+function applyEditedTtml(content: string, audioDuration: number, youtubeVideoId?: string): EditedTtmlApply {
   const project = useProjectStore.getState();
   const read = readTtmlLyrics(content, EDITED_TTML, audioDuration);
   if (!isProjectFullySynced(project.lines)) {
@@ -48,14 +49,14 @@ function applyEditedTtml(content: string, audioDuration: number): EditedTtmlAppl
   }
   if (read.status === "unreadable") return read;
   const edit = project.ttmlEditState;
-  if (edit && crossedProjectChange(edit, generateProjectTtml(project, audioDuration))) {
+  if (edit && crossedProjectChange(edit, generateProjectTtml(project, audioDuration, undefined, youtubeVideoId))) {
     return { status: "export-only", reason: "lyrics-changed" };
   }
-  const notHeld = partNotHeld(project, audioDuration);
+  const notHeld = partNotHeld(project, audioDuration, youtubeVideoId);
   if (notHeld) return { status: "export-only", reason: "not-held", part: notHeld };
   project.applyEditedLyricsWithHistory(editedLyricsFrom(read.parsed, mergeEditedTtmlLines(project.lines, read.parsed)));
   const applied = useProjectStore.getState();
-  const regenerated = generateProjectTtml(applied, audioDuration);
+  const regenerated = generateProjectTtml(applied, audioDuration, undefined, youtubeVideoId);
   const keptInExport = canonicalLineKeys(regenerated) !== canonicalLineKeys(content);
   const keptContent = renumberLineKeys(
     content,
