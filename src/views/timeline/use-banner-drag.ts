@@ -68,9 +68,7 @@ function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd, zoom 
         }
       };
 
-      const handleUp = (upEvent: PointerEvent) => {
-        const wasDrag = dragStateRef.current?.moved ?? false;
-        const offsetPx = wasDrag ? snappedDx(upEvent.clientX - startX) : 0;
+      const finishDrag = () => {
         dragStateRef.current?.cleanup();
         dragStateRef.current = null;
         lastPointerRef.current = null;
@@ -78,6 +76,12 @@ function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd, zoom 
         setIsDragging(false);
         setDragOffsetPx(0);
         setDraggedGroupShift(null);
+      };
+
+      const handleUp = (upEvent: PointerEvent) => {
+        const wasDrag = dragStateRef.current?.moved ?? false;
+        const offsetPx = wasDrag ? snappedDx(upEvent.clientX - startX) : 0;
+        finishDrag();
 
         if (wasDrag && useProjectStore.getState().groups.find((g) => g.id === groupId)) {
           const deltaSeconds = offsetPx / zoom;
@@ -95,11 +99,13 @@ function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd, zoom 
       const cleanup = () => {
         document.removeEventListener("pointermove", handleMove);
         document.removeEventListener("pointerup", handleUp);
+        document.removeEventListener("pointercancel", finishDrag);
       };
 
       dragStateRef.current = { startX, moved: false, cleanup };
       document.addEventListener("pointermove", handleMove);
       document.addEventListener("pointerup", handleUp);
+      document.addEventListener("pointercancel", finishDrag);
     },
     [
       groupId,
