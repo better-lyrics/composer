@@ -153,7 +153,7 @@ const DEFAULTS: SettingsState = {
   selectionLeadIn: 0.3,
   syncCountIn: 3,
   seekStep: 0.5,
-  fineSeekStep: 0.1,
+  fineSeekStep: 0.05,
   defaultGranularity: "word",
 
   autoSaveDelay: 2000,
