@@ -76,8 +76,7 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
       if (
         state.rollingEditMode !== prev.rollingEditMode ||
         state.vocalOnsetSnapPoints !== prev.vocalOnsetSnapPoints ||
-        state.scrollLeft !== prev.scrollLeft ||
-        state.zoom !== prev.zoom
+        state.scrollLeft !== prev.scrollLeft
       ) {
         replayLastPointer();
       }

@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { scrollTrackHost } from "@/test/timeline-scroll";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 
@@ -67,10 +68,11 @@ describe("WordTrack boundary drag inputs", () => {
       useTimelineStore.setState({ scrollLeft: 0 });
       const { blocks, calls } = await renderResizableTrack(GAPPED_PAIR, { rolling: false, duration: 5 });
       const handle = blocks[1].querySelector<HTMLElement>('[data-edge="right"]');
-      if (!handle) throw new Error("word block has no right edge handle");
+      const track = blocks[1].parentElement;
+      if (!handle || !track) throw new Error("word block has no right edge handle or track");
 
       handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: GESTURE_START_X }));
-      useTimelineStore.setState({ scrollLeft: 50 });
+      scrollTrackHost(track, 50);
       document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: GESTURE_START_X + 10 }));
       document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
 
@@ -88,7 +90,8 @@ describe("WordTrack boundary drag inputs", () => {
       const pointerOffsetPx = GESTURE_START_X - track.getBoundingClientRect().left;
 
       handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: GESTURE_START_X }));
-      useTimelineStore.setState({ zoom: 200, scrollLeft: pointerOffsetPx });
+      useTimelineStore.setState({ zoom: 200 });
+      scrollTrackHost(track, pointerOffsetPx);
       document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: GESTURE_START_X + 10 }));
       document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
 
@@ -101,12 +104,14 @@ describe("WordTrack boundary drag inputs", () => {
       useTimelineStore.setState({ scrollLeft: 0 });
       const { blocks, calls } = await renderResizableTrack(GAPPED_PAIR, { rolling: false, duration: 5 });
       const handle = blocks[1].querySelector<HTMLElement>('[data-edge="right"]');
-      if (!handle) throw new Error("word block has no right edge handle");
+      const track = blocks[1].parentElement;
+      if (!handle || !track) throw new Error("word block has no right edge handle or track");
 
       const restingWidth = blocks[1].getBoundingClientRect().width;
       handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: GESTURE_START_X }));
       document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: GESTURE_START_X + 10 }));
       await expect.poll(() => blocks[1].getBoundingClientRect().width).toBeCloseTo(restingWidth + 10, 0);
+      scrollTrackHost(track, 50);
       useTimelineStore.setState({ scrollLeft: 50 });
       await expect.poll(() => blocks[1].getBoundingClientRect().width).toBeCloseTo(restingWidth + 60, 0);
       document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));

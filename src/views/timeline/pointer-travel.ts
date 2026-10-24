@@ -1,16 +1,12 @@
+import { elementXToTime } from "@/views/timeline/coords";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Functions -----------------------------------------------------------------
 
-// Measured in timeline time, not pixels, so a scroll or zoom mid-gesture keeps the edge under the pointer.
+// Reads the track's live position, not the store's scrollLeft, which lags a scroll until its event fires.
 function pointerTravelSeconds(track: Element, startClientX: number): (clientX: number) => number {
-  const contentOriginX = track.getBoundingClientRect().left + useTimelineStore.getState().scrollLeft;
-  const pointerTime = (clientX: number) => {
-    const { scrollLeft, zoom } = useTimelineStore.getState();
-    return (clientX - contentOriginX + scrollLeft) / zoom;
-  };
-  const startTime = pointerTime(startClientX);
-  return (clientX) => pointerTime(clientX) - startTime;
+  const startTime = elementXToTime(startClientX, track, useTimelineStore.getState().zoom);
+  return (clientX) => elementXToTime(clientX, track, useTimelineStore.getState().zoom) - startTime;
 }
 
 // -- Exports -------------------------------------------------------------------
