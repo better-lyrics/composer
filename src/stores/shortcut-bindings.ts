@@ -5,6 +5,7 @@ import {
   type ShortcutScope,
   getShortcutById,
 } from "@/stores/shortcut-registry";
+import { isMac } from "@/utils/platform";
 import { shiftedUsPunctuation } from "@/utils/us-punctuation";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -162,10 +163,11 @@ function getEffectiveBinding(id: string): ShortcutBinding {
 
 // -- Conflict Detection -------------------------------------------------------
 
-// macOS drops Shift from Cmd+Shift+punctuation, so a saved "." with Shift is the same press as ">".
+// Chrome and Safari on macOS drop Shift from Cmd+Shift+punctuation, so "." there is the ">" press.
 function comparableKey(binding: ShortcutBinding): string {
   const key = binding.key.length === 1 ? binding.key.toLowerCase() : binding.key;
-  return (binding.shift && shiftedUsPunctuation(key)) || key;
+  const droppedShift = isMac && binding.shift && (binding.mod || binding.meta);
+  return (droppedShift && shiftedUsPunctuation(key)) || key;
 }
 
 function bindingsEqual(a: ShortcutBinding, b: ShortcutBinding): boolean {

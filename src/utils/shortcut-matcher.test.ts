@@ -272,10 +272,10 @@ describe("keyboard layouts", () => {
       expect(bindingFromKeyboardEvent(event)).toMatchObject({ key: "<", shift: true, mod: true });
     });
 
-    it("regression: still matches a Mod+Shift binding saved with the unshifted character", () => {
+    it("regression: on macOS still matches a Mod+Shift binding saved with the unshifted character", () => {
       useShortcutBindingsStore.setState({ overrides: { "global.settings": { key: ".", shift: true, mod: true } } });
       const press = keydown({ key: ".", code: "Period", shiftKey: true, ...MOD });
-      expect(matchesShortcutBinding(press, "global.settings")).toBe(true);
+      expect(matchesShortcutBinding(press, "global.settings")).toBe(isMac);
     });
 
     it("keeps named keys on any layout", () => {

@@ -11,11 +11,18 @@ import { isMac } from "@/utils/platform";
 import { describe, expect, it } from "vitest";
 
 describe("detectConflicts · saved punctuation", () => {
-  it("regression: treats a Mod+Shift binding saved with the unshifted character as the same keys", () => {
+  it("regression: on macOS treats a Mod+Shift binding saved with the unshifted character as the same keys", () => {
     useShortcutBindingsStore.setState({ overrides: { "global.settings": { key: ".", shift: true, mod: true } } });
 
     const conflicts = detectConflicts("global.goToEdit", { key: ">", shift: true, mod: true });
-    expect(conflicts.map(({ id }) => id)).toContain("global.settings");
+    expect(conflicts.some(({ id }) => id === "global.settings")).toBe(isMac);
+  });
+
+  it("regression: keeps two layout keys apart, such as German Shift+7 for / and Shift+ß for ?", () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.settings": { key: "/", shift: true } } });
+
+    const conflicts = detectConflicts("global.goToEdit", { key: "?", shift: true });
+    expect(conflicts.map(({ id }) => id)).not.toContain("global.settings");
   });
 });
 
@@ -114,12 +121,12 @@ describe("migrateShortcutBindings", () => {
     });
   });
 
-  it("leaves a typing seek shortcut unbound when a saved Mod+Shift binding was stored unshifted", () => {
+  it("on macOS leaves a typing seek shortcut unbound when a saved Mod+Shift binding was stored unshifted", () => {
     const saved = { overrides: { "global.settings": { key: ".", shift: true, mod: true } } };
 
-    expect(migrateShortcutBindings(saved, 5)).toEqual({
-      overrides: { ...saved.overrides, "global.seekForwardWhileTyping": { key: "" } },
-    });
+    expect(migrateShortcutBindings(saved, 5)).toEqual(
+      isMac ? { overrides: { ...saved.overrides, "global.seekForwardWhileTyping": { key: "" } } } : saved,
+    );
   });
 
   it("regression: keeps a Shift binding from another layout, such as German Shift+7 for /", () => {

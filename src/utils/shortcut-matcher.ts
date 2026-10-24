@@ -84,7 +84,8 @@ function bindingFromKeyboardEvent(event: KeyboardEvent): ShortcutBinding | null 
 function matchesBinding(event: KeyboardEvent, binding: ShortcutBinding): boolean {
   if (binding.key === "") return false;
   if (event.getModifierState("AltGraph")) return false;
-  if (comparableKey({ key: getEventKey(event), shift: event.shiftKey }) !== comparableKey(binding)) return false;
+  if (comparableKey({ key: getEventKey(event), shift: event.shiftKey, meta: event.metaKey }) !== comparableKey(binding))
+    return false;
   if (!!binding.shift !== event.shiftKey) return false;
   if (!!binding.alt !== event.altKey) return false;
 
