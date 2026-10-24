@@ -35,7 +35,7 @@ describe("recovery · every project", () => {
     const result = await downloadRecoverableProject("a");
     downloads.stop();
     expect(result.title).toBe("Alpha");
-    expect(downloads.names()[0]).toMatch(/^Alpha-\d{4}-\d{2}-\d{2}\.ttml-project\.json$/);
+    expect(downloads.names()[0]).toMatch(/^Alpha-\d{4}-\d{2}-\d{2}\.composer$/);
   });
 
   it("downloads every project as one bundle", async () => {
@@ -45,7 +45,7 @@ describe("recovery · every project", () => {
     expect(await downloadAllRecoverableProjects()).toBe(2);
     downloads.stop();
     expect(downloads.names()).toHaveLength(1);
-    expect(downloads.names()[0]).toMatch(/^composer-backup-\d{4}-\d{2}-\d{2}\.ttml-projects\.json$/);
+    expect(downloads.names()[0]).toMatch(/^composer-backup-\d{4}-\d{2}-\d{2}\.composer$/);
   });
 
   it("includes a legacy project that was never moved", async () => {

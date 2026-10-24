@@ -139,7 +139,7 @@ describe("backUpAllProjects", () => {
     const bundle = await backUpAllProjects();
     await expect.poll(() => downloads.names().length).toBe(1);
     downloads.stop();
-    expect(downloads.names()[0]).toMatch(/^composer-backup-\d{4}-\d{2}-\d{2}\.ttml-projects\.json$/);
+    expect(downloads.names()[0]).toMatch(/^composer-backup-\d{4}-\d{2}-\d{2}\.composer$/);
     expect(bundle?.projects.map((project) => project.metadata.title).toSorted()).toEqual(["Alpha", "Bravo"]);
   });
 

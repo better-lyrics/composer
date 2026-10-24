@@ -261,13 +261,13 @@ describe("savedProjectFromFile", () => {
 describe("projectFileName", () => {
   it("names the file after the title and the date", () => {
     expect(projectFileName("Midnight City", new Date("2026-09-27T10:00:00Z"))).toBe(
-      "Midnight City-2026-09-27.ttml-project.json",
+      "Midnight City-2026-09-27.composer",
     );
   });
 
   describe("edge cases", () => {
     it("falls back to project for an empty title", () => {
-      expect(projectFileName("", new Date("2026-09-27T10:00:00Z"))).toBe("project-2026-09-27.ttml-project.json");
+      expect(projectFileName("", new Date("2026-09-27T10:00:00Z"))).toBe("project-2026-09-27.composer");
     });
   });
 });

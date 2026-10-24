@@ -31,14 +31,14 @@ describe("buildRecoveryResult", () => {
     expect(buildRecoveryResult(project({ metadata: { title: "   " } })).title).toBe("Untitled");
   });
 
-  it("constructs filename as title-YYYY-MM-DD.ttml-project.json", () => {
+  it("constructs filename as title-YYYY-MM-DD.composer", () => {
     const result = buildRecoveryResult(project({ metadata: { title: "Track" } }));
-    expect(result.filename).toBe(`Track-${TODAY}.ttml-project.json`);
+    expect(result.filename).toBe(`Track-${TODAY}.composer`);
   });
 
   it("uses the fallback title in the filename when title is missing", () => {
     const result = buildRecoveryResult(project({ metadata: undefined }));
-    expect(result.filename).toBe(`Untitled-${TODAY}.ttml-project.json`);
+    expect(result.filename).toBe(`Untitled-${TODAY}.composer`);
   });
 
   it("counts lines from the project array", () => {
