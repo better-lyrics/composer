@@ -16,7 +16,7 @@ const DESCRIPTION = "Grab the backup Composer saved in this browser and pick up 
 // -- Helpers ------------------------------------------------------------------
 
 // Middle-ellipsis truncation so the extension stays visible. End-truncation
-// (CSS text-overflow) would hide ".ttml-project.json" which is the most
+// (CSS text-overflow) would hide ".composer" which is the most
 // useful part for the user to recognise.
 function truncateMiddle(text: string, max: number): string {
   if (text.length <= max) return text;

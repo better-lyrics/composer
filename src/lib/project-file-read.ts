@@ -12,7 +12,7 @@ type ProjectFileContents =
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[ProjectFileRead]";
-const PROJECT_FILE_EXTENSIONS: readonly string[] = [".json", ".ttml-project.json"];
+const PROJECT_FILE_EXTENSIONS: readonly string[] = [".composer", ".json", ".ttml-project.json"];
 const PROJECT_FILE_ACCEPT = PROJECT_FILE_EXTENSIONS.join(",");
 const PROJECT_FILE_EXTENSIONS_LABEL = PROJECT_FILE_EXTENSIONS.filter(
   (extension) => !PROJECT_FILE_EXTENSIONS.some((other) => other !== extension && extension.endsWith(other)),

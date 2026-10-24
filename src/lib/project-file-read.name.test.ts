@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 describe("isProjectFileName", () => {
   it("recognizes a saved project and a plain JSON file", () => {
+    expect(isProjectFileName("Midnight City.composer")).toBe(true);
     expect(isProjectFileName("Midnight City.ttml-project.json")).toBe(true);
     expect(isProjectFileName("backup.json")).toBe(true);
   });
@@ -27,8 +28,8 @@ describe("isProjectFileName", () => {
 });
 
 describe("PROJECT_FILE_EXTENSIONS_LABEL", () => {
-  it("names the extension that covers every project file", () => {
-    expect(PROJECT_FILE_EXTENSIONS_LABEL).toBe(".json");
+  it("names the extensions that cover every project file", () => {
+    expect(PROJECT_FILE_EXTENSIONS_LABEL).toBe(".composer .json");
   });
 
   describe("invariants", () => {

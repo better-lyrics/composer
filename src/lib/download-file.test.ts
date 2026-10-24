@@ -159,11 +159,11 @@ describe("backup filenames use the local date", () => {
   });
 
   it("recovery filename carries the local date", () => {
-    expect(buildRecoveryResult({ metadata: { title: "Song" } }).filename).toBe("Song-2026-09-27.ttml-project.json");
+    expect(buildRecoveryResult({ metadata: { title: "Song" } }).filename).toBe("Song-2026-09-27.composer");
   });
 
   it("project export filename carries the local date", () => {
-    expect(exportProject("Song")).toBe("Song-2026-09-27.ttml-project.json");
+    expect(exportProject("Song")).toBe("Song-2026-09-27.composer");
   });
 });
 

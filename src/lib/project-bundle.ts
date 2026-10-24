@@ -6,7 +6,7 @@ import type { SavedProject } from "@/lib/saved-project";
 
 const PROJECT_BUNDLE_FORMAT = "composer-project-bundle";
 const PROJECT_BUNDLE_VERSION = 1;
-const PROJECT_BUNDLE_SUFFIX = ".ttml-projects.json";
+const PROJECT_BUNDLE_SUFFIX = ".composer";
 
 // -- Types --------------------------------------------------------------------
 
