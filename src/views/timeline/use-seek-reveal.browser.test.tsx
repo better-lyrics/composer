@@ -1,0 +1,63 @@
+import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
+import { createAudioFile } from "@/test/audio-fixtures";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useSeekReveal } from "@/views/timeline/use-seek-reveal";
+import { createRef } from "react";
+import { describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
+
+function buildScrollContainer(width: number, contentWidth: number): HTMLDivElement {
+  const container = document.createElement("div");
+  container.style.width = `${width}px`;
+  container.style.overflow = "auto";
+  const spacer = document.createElement("div");
+  spacer.style.width = `${contentWidth}px`;
+  spacer.style.height = "10px";
+  container.appendChild(spacer);
+  document.body.appendChild(container);
+  return container;
+}
+
+async function loadedAudio(seconds: number): Promise<HTMLAudioElement> {
+  const audio = new Audio(URL.createObjectURL(createAudioFile("song.wav", seconds)));
+  await new Promise((resolve) => audio.addEventListener("loadedmetadata", resolve, { once: true }));
+  return audio;
+}
+
+async function revealSetup(width: number) {
+  const container = buildScrollContainer(width, 8000);
+  const ref = createRef<HTMLDivElement | null>();
+  ref.current = container;
+  const audio = await loadedAudio(80);
+  useAudioStore.setState({ audioElement: audio, duration: 80, currentTime: 0 });
+  useProjectStore.setState({ activeTab: "timeline" });
+  useTimelineStore.setState({ zoom: 100, followEnabled: false });
+  await renderHook(() => useSeekReveal(ref, true));
+  return container;
+}
+
+describe("useSeekReveal", () => {
+  it("scrolls an off-screen seek target back into view", async () => {
+    const container = await revealSetup(300);
+
+    useAudioStore.getState().seekTo(50);
+
+    await expect.poll(() => container.scrollLeft).toBeGreaterThan(0);
+    container.remove();
+  });
+
+  it("leaves the scroll position alone when the seek target is already visible", async () => {
+    const container = await revealSetup(600);
+    let seeked = false;
+    useAudioStore.getState().audioElement?.addEventListener("seeked", () => {
+      seeked = true;
+    });
+
+    useAudioStore.getState().seekTo(2);
+
+    await expect.poll(() => seeked).toBe(true);
+    expect(container.scrollLeft).toBe(0);
+    container.remove();
+  });
+});

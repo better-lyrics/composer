@@ -162,6 +162,11 @@ describe("seekStep", () => {
     expect(useSettingsStore.getState().seekStep).toBe(2);
   });
 
+  it("brings a step past the new 5 s maximum back into range", async () => {
+    await rehydrateAt(9, legacyBlob({ seekStep: 8 }));
+    expect(useSettingsStore.getState().seekStep).toBe(5);
+  });
+
   it("keeps 5 s chosen at the current version", async () => {
     await rehydrateAt(10, legacyBlob({ seekStep: 5 }));
     expect(useSettingsStore.getState().seekStep).toBe(5);

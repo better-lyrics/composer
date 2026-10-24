@@ -36,7 +36,7 @@ const TimelineSection: React.FC = () => (
         </li>
         <li>
           Scroll the wheel while the cursor is over the waveform strip to scrub the playhead through time, and the view
-          follows it. This works whichever way <SettingLink setting="timelineHorizontalScroll" /> is set.
+          follows it. This works with either wheel setting.
         </li>
         <li>
           {MOD_KEY} + scroll wheel to zoom in and out. Zoom anchors under the cursor. The header zoom buttons (and the

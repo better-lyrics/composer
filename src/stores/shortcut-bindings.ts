@@ -74,12 +74,24 @@ const unbindTakenSeekKeys = unbindTakenKeys(
   samePressOnMac,
 );
 
-const unbindTakenFineSeekKeys = unbindTakenKeys([
-  "global.seekBackwardFine",
-  "global.seekForwardFine",
-  "global.seekBackwardFineWhileTyping",
-  "global.seekForwardFineWhileTyping",
-]);
+// Before 7, macOS saved Option+Shift+, and . as the glyphs they type.
+const MAC_OPTION_SHIFT_GLYPHS: Record<string, string> = { "\u00af": "<", "\u02d8": ">" };
+function sameOptionPressOnMac(saved: ShortcutBinding, added: ShortcutBinding): boolean {
+  const physicalKey = isMac && saved.alt && saved.shift ? MAC_OPTION_SHIFT_GLYPHS[saved.key] : undefined;
+  return (
+    bindingsEqual(saved, added) || (physicalKey !== undefined && bindingsEqual({ ...saved, key: physicalKey }, added))
+  );
+}
+
+const unbindTakenFineSeekKeys = unbindTakenKeys(
+  [
+    "global.seekBackwardFine",
+    "global.seekForwardFine",
+    "global.seekBackwardFineWhileTyping",
+    "global.seekForwardFineWhileTyping",
+  ],
+  sameOptionPressOnMac,
+);
 
 const RENAMED_SHORTCUT_IDS: Record<string, string> = { "timeline.toggleGroupLoop": "global.toggleLoop" };
 

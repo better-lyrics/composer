@@ -136,10 +136,11 @@ const TimelinePanel: React.FC = () => {
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
   useGroupFocusShortcuts();
   useGroupFocusScroll(scrollContainerRef);
-  useTimelineWheel(scrollContainerRef, !!source && lines.length > 0);
-  useSeekReveal(scrollContainerRef, !!source && lines.length > 0);
-  useTimelineFrameWake(scrollContainerRef, contentRef, !!source && lines.length > 0);
-  useResumeView(scrollContainerRef, !!source && lines.length > 0 && duration > 0);
+  const timelineShown = !!source && lines.length > 0;
+  useTimelineWheel(scrollContainerRef, timelineShown);
+  useSeekReveal(scrollContainerRef, timelineShown);
+  useTimelineFrameWake(scrollContainerRef, contentRef, timelineShown);
+  useResumeView(scrollContainerRef, timelineShown && duration > 0);
 
   useEffect(() => {
     const { selectedWords } = useTimelineStore.getState();

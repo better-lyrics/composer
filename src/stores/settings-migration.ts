@@ -39,6 +39,7 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   }
   // 5 was the default before 10, so a saved 5 is the old default, not a choice.
   if (version < 10 && next.seekStep === 5) next.seekStep = 0.5;
+  if (version < 10 && typeof next.seekStep === "number" && next.seekStep > 5) next.seekStep = 5;
   const { librarySort, libraryView, launchScreen, keepYouTubeAudio, smartCleanup, storageLimit, ...rest } = next;
   return {
     ...rest,

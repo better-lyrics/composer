@@ -143,6 +143,14 @@ describe("migrateShortcutBindings", () => {
     });
   });
 
+  it("regression: on macOS leaves fine seek unbound when a saved Option binding was stored as its glyph", () => {
+    const saved = { overrides: { "global.togglePlaybackSpeed": { key: "\u00af", shift: true, alt: true } } };
+
+    expect(migrateShortcutBindings(saved, 6)).toEqual(
+      isMac ? { overrides: { ...saved.overrides, "global.seekBackwardFine": { key: "" } } } : saved,
+    );
+  });
+
   it("regression: keeps a Shift binding from another layout, such as German Shift+7 for /", () => {
     const saved = { overrides: { "global.settings": { key: "/", shift: true } } };
 
