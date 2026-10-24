@@ -1,4 +1,4 @@
-import { bindingsEqual, getEffectiveBinding } from "@/stores/shortcut-bindings";
+import { bindingsEqual, comparableKey, getEffectiveBinding } from "@/stores/shortcut-bindings";
 import { type ShortcutBinding, type ShortcutScope, getShortcutsByScope } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
 import { US_PUNCTUATION_BY_CODE } from "@/utils/us-punctuation";
@@ -84,10 +84,7 @@ function bindingFromKeyboardEvent(event: KeyboardEvent): ShortcutBinding | null 
 function matchesBinding(event: KeyboardEvent, binding: ShortcutBinding): boolean {
   if (binding.key === "") return false;
   if (event.getModifierState("AltGraph")) return false;
-  const bindingKey = binding.key.length === 1 ? binding.key.toLowerCase() : binding.key;
-  const reportedKey = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-
-  if (getEventKey(event) !== bindingKey && reportedKey !== bindingKey) return false;
+  if (comparableKey({ key: getEventKey(event), shift: event.shiftKey }) !== comparableKey(binding)) return false;
   if (!!binding.shift !== event.shiftKey) return false;
   if (!!binding.alt !== event.altKey) return false;
 

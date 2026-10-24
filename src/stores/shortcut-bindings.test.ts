@@ -10,6 +10,15 @@ import { SHORTCUT_REGISTRY } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
 import { describe, expect, it } from "vitest";
 
+describe("detectConflicts · saved punctuation", () => {
+  it("regression: treats a Mod+Shift binding saved with the unshifted character as the same keys", () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.settings": { key: ".", shift: true, mod: true } } });
+
+    const conflicts = detectConflicts("global.goToEdit", { key: ">", shift: true, mod: true });
+    expect(conflicts.map(({ id }) => id)).toContain("global.settings");
+  });
+});
+
 describe("assignBinding", () => {
   it("sets the binding", () => {
     assignBinding("timeline.toggleFollow", { key: "q" });
