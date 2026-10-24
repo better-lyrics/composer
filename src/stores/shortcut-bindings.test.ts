@@ -10,18 +10,11 @@ import { SHORTCUT_REGISTRY } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
 import { describe, expect, it } from "vitest";
 
-describe("detectConflicts · saved punctuation", () => {
-  it("regression: on macOS treats a Mod+Shift binding saved with the unshifted character as the same keys", () => {
-    useShortcutBindingsStore.setState({ overrides: { "global.settings": { key: ".", shift: true, mod: true } } });
+describe("detectConflicts · layout keys", () => {
+  it("regression: keeps two layout keys apart, such as German Cmd+Shift+7 for / and Cmd+Shift+ß for ?", () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.settings": { key: "/", shift: true, mod: true } } });
 
-    const conflicts = detectConflicts("global.goToEdit", { key: ">", shift: true, mod: true });
-    expect(conflicts.some(({ id }) => id === "global.settings")).toBe(isMac);
-  });
-
-  it("regression: keeps two layout keys apart, such as German Shift+7 for / and Shift+ß for ?", () => {
-    useShortcutBindingsStore.setState({ overrides: { "global.settings": { key: "/", shift: true } } });
-
-    const conflicts = detectConflicts("global.goToEdit", { key: "?", shift: true });
+    const conflicts = detectConflicts("global.goToEdit", { key: "?", shift: true, mod: true });
     expect(conflicts.map(({ id }) => id)).not.toContain("global.settings");
   });
 });
