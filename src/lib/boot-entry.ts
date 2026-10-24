@@ -1,5 +1,5 @@
 import { useSettingsStore } from "@/stores/settings";
-import { EDITOR_PATH, LIBRARY_PATH } from "@/utils/app-routes";
+import { EDITOR_PATH, LIBRARY_LAUNCH_PARAM, LIBRARY_PATH } from "@/utils/app-routes";
 import { hasIncomingLink } from "@/utils/incoming-link";
 
 // -- Types --------------------------------------------------------------------
@@ -14,6 +14,7 @@ interface BootLocation {
 
 function bootEntryPath(location: BootLocation, reopenLastProject: boolean): string | null {
   if (location.pathname !== LIBRARY_PATH) return null;
+  if (new URLSearchParams(location.search).has(LIBRARY_LAUNCH_PARAM)) return LIBRARY_PATH;
   if (!reopenLastProject && !hasIncomingLink(location)) return null;
   return `${EDITOR_PATH}${location.search}${location.hash}`;
 }

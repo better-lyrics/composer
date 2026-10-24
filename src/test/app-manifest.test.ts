@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { ACCEPTED_AUDIO_EXTENSIONS } from "@/domain/audio-file/supported-formats";
 import { SUPPORTED_LYRICS_FORMATS } from "@/domain/lyrics-file/supported-formats";
 import { PROJECT_FILE_EXTENSIONS } from "@/lib/project-file-read";
+import { LIBRARY_LAUNCH_PARAM, LIBRARY_PATH } from "@/utils/app-routes";
 import { describe, expect, it } from "vitest";
 
 // CI guard: the manifest is static, so a format added to an owner must also be registered with the OS.
@@ -21,6 +22,7 @@ interface FileHandler {
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const MANIFEST = JSON.parse(readFileSync(resolve(ROOT, "public/manifest.webmanifest"), "utf8")) as {
   file_handlers: FileHandler[];
+  shortcuts: { name: string; url: string }[];
 };
 
 // .txt would offer Composer for every text file on the machine.
@@ -59,5 +61,12 @@ describe("app manifest file handlers", () => {
   it("keeps every extension within the length the spec allows", () => {
     const all = MANIFEST.file_handlers.flatMap((handler) => Object.values(handler.accept).flat());
     expect(all.filter((extension) => extension.length > MAX_EXTENSION_LENGTH)).toEqual([]);
+  });
+});
+
+describe("app manifest shortcuts", () => {
+  it("regression: the Library shortcut carries the marker boot honors over the launch setting", () => {
+    const library = MANIFEST.shortcuts.find((shortcut) => shortcut.name === "Library");
+    expect(library?.url).toBe(`${LIBRARY_PATH}?${LIBRARY_LAUNCH_PARAM}`);
   });
 });

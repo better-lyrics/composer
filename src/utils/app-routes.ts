@@ -9,6 +9,7 @@ type AppScreen = "library" | "editor";
 const LIBRARY_PATH = "/";
 const EDITOR_SEGMENT = "editor";
 const EDITOR_PATH = `/${EDITOR_SEGMENT}`;
+const LIBRARY_LAUNCH_PARAM = "library";
 
 // -- Routing ------------------------------------------------------------------
 
@@ -18,5 +19,5 @@ function screenForPath(pathname: string): AppScreen {
 
 // -- Exports ------------------------------------------------------------------
 
-export { LIBRARY_PATH, EDITOR_SEGMENT, EDITOR_PATH, screenForPath };
+export { LIBRARY_PATH, LIBRARY_LAUNCH_PARAM, EDITOR_SEGMENT, EDITOR_PATH, screenForPath };
 export type { AppScreen };

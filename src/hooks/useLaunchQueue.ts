@@ -4,6 +4,7 @@ import { bootLocationHref } from "@/lib/boot-entry";
 import { firstLaunchedFile, isWindowOpeningLaunch, launchTargetAction } from "@/lib/launched-file";
 import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { flushPendingSave } from "@/lib/persistence-debounce";
+import { getSaveStatus } from "@/lib/save-status";
 import { importProjectFile } from "@/lib/project-import";
 import { EDITOR_PATH } from "@/utils/app-routes";
 import { useEffect, useEffectEvent } from "react";
@@ -22,11 +23,15 @@ interface LaunchHandlers {
 const LOG_PREFIX = "[Launch]";
 const UNSUPPORTED_LAUNCH_MESSAGE = "Composer can't open that file";
 const UNREADABLE_LAUNCH_MESSAGE = "Couldn't read that file";
+const UNSAVED_LINK_MESSAGE =
+  "Couldn't save your project, so the link stays closed. Free up space or export a backup, then try again.";
 
 // -- State --------------------------------------------------------------------
 
 // Per document, not per mount: a remount or a reload must not mistake a later launch for the opening one.
 let anyLaunchSeen = false;
+// Launches run one at a time so a slow earlier file never replaces a newer one.
+let launchQueueTail: Promise<void> = Promise.resolve();
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -65,8 +70,16 @@ async function reloadInto(targetURL: string): Promise<void> {
   } catch (error) {
     console.error(LOG_PREFIX, "could not save before opening the link", error);
   }
+  if (getSaveStatus() !== "saved") {
+    toast.error(UNSAVED_LINK_MESSAGE);
+    return;
+  }
   window.history.replaceState(null, "", targetURL);
   window.location.reload();
+}
+
+function enqueueLaunch(run: () => Promise<void>): void {
+  launchQueueTail = launchQueueTail.then(run, run);
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -80,13 +93,13 @@ function useLaunchQueue(): void {
     const opening = target !== null && isWindowOpeningLaunch(target, bootLocationHref(), anyLaunchSeen);
     anyLaunchSeen = true;
     if (params.files.length > 0) {
-      void openLaunchedFiles(params.files, { navigate, startWithFile });
+      enqueueLaunch(() => openLaunchedFiles(params.files, { navigate, startWithFile }));
       return;
     }
     if (!target) return;
     const action = launchTargetAction(target, opening);
-    if (action.kind === "navigate") navigate(action.path);
-    if (action.kind === "reload") void reloadInto(target.href);
+    if (action.kind === "navigate") enqueueLaunch(async () => navigate(action.path));
+    if (action.kind === "reload") enqueueLaunch(() => reloadInto(target.href));
   });
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
