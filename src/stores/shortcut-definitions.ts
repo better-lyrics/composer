@@ -31,6 +31,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "Enter" },
   },
   {
+    id: "global.playPauseWhileTyping",
+    scope: "global",
+    description: "Play / Pause (works while typing)",
+    defaultBinding: { key: "Enter", mod: true },
+  },
+  {
     id: "global.togglePlaybackSpeed",
     scope: "global",
     description: "Switch between normal speed and the last speed you used (0.75x at first)",

@@ -5,6 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
+import { isMac } from "@/utils/platform";
 import { EditPanel } from "@/views/edit";
 
 // -- Helpers ------------------------------------------------------------------
@@ -399,5 +400,26 @@ describe("regressions: typing does not reshuffle duplicate lines", () => {
     expect(chorus1.words?.map((w) => w.begin)).toEqual([49, 50, 51]);
     expect(chorus2.id).toBe("chorus-2");
     expect(chorus2.begin).toBe(116);
+  });
+});
+
+describe("Go to Edit while on Edit", () => {
+  it("focuses the lyrics box with the caret at the end", async () => {
+    useProjectStore.setState({
+      activeTab: "edit",
+      lines: [createLine({ text: "First" }), createLine({ text: "Second" })],
+    });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea");
+    if (!textarea) throw new Error("lyrics box missing");
+    expect(document.activeElement).not.toBe(textarea);
+
+    document.body.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "2", metaKey: isMac, ctrlKey: !isMac, bubbles: true, cancelable: true }),
+    );
+
+    await expect.poll(() => document.activeElement).toBe(textarea);
+    expect(textarea.selectionStart).toBe(textarea.value.length);
+    expect(textarea.selectionEnd).toBe(textarea.value.length);
   });
 });

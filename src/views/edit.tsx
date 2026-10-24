@@ -25,6 +25,7 @@ import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { LinePreview, PreviewGroupHeader } from "@/views/edit/line-preview";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
+import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
 import { useSmartPaste } from "@/views/edit/use-smart-paste";
 import { PreviewSelectionBar } from "@/views/edit/preview-selection-bar";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
@@ -62,6 +63,7 @@ const EditPanel: React.FC = () => {
   const rawTextRef = useRef(rawText);
   rawTextRef.current = rawText;
   const { textareaRef, showEditText } = useEditTextCaret(rawText, setRawText);
+  useFocusLyricsShortcut(textareaRef, activeTab === "edit");
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const modalPendingRef = useRef(false);
   const pastedRef = useRef(false);

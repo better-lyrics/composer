@@ -38,6 +38,7 @@ function useGlobalShortcuts(actions: GlobalShortcutActions): void {
           "global.goToPreview": () => setActiveTab("preview"),
           "global.goToExport": () => setActiveTab("export"),
           "global.playPause": togglePlayback,
+          "global.playPauseWhileTyping": togglePlayback,
           "global.togglePlaybackSpeed": togglePlaybackSpeed,
           "global.toggleStem": toggleStem,
           "global.toggleLoop": toggleLoopShortcut,
