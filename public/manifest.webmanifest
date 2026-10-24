@@ -1,0 +1,53 @@
+{
+  "id": "/",
+  "name": "Composer",
+  "short_name": "Composer",
+  "description": "Composer by Better Lyrics is a free browser-based TTML creator for Apple Music and Spotify synced lyrics. Tap to sync words, edit timing in a visual timeline, and export standard TTML files with word-level precision.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#28292c",
+  "background_color": "#28292c",
+  "icons": [
+    { "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "launch_handler": { "client_mode": "focus-existing" },
+  "shortcuts": [
+    { "name": "Library", "url": "/", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Last project", "url": "/editor", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ],
+  "file_handlers": [
+    {
+      "action": "/",
+      "name": "Lyrics",
+      "accept": {
+        "application/ttml+xml": [".ttml"],
+        "application/x-lrc": [".lrc"],
+        "application/x-subrip": [".srt"],
+        "application/x-qrc": [".qrc"]
+      }
+    },
+    {
+      "action": "/",
+      "name": "Composer project",
+      "accept": {
+        "application/x-composer-project+json": [".composer"],
+        "application/json": [".json"]
+      }
+    },
+    {
+      "action": "/",
+      "name": "Audio",
+      "accept": {
+        "audio/mpeg": [".mp3"],
+        "audio/wav": [".wav"],
+        "audio/mp4": [".m4a"],
+        "audio/ogg": [".ogg"],
+        "audio/flac": [".flac"]
+      }
+    }
+  ]
+}

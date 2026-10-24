@@ -84,6 +84,7 @@ function savedProjectFromFile(file: ProjectFile, savedAt: number): SavedProject 
 
 export {
   PROJECT_FILE_ACCEPT,
+  PROJECT_FILE_EXTENSIONS,
   PROJECT_FILE_EXTENSIONS_LABEL,
   isProjectFileName,
   parseProjectFileContents,
