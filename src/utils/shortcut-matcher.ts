@@ -84,10 +84,10 @@ function bindingFromKeyboardEvent(event: KeyboardEvent): ShortcutBinding | null 
 function matchesBinding(event: KeyboardEvent, binding: ShortcutBinding): boolean {
   if (binding.key === "") return false;
   if (event.getModifierState("AltGraph")) return false;
-  const eventKey = getEventKey(event);
   const bindingKey = binding.key.length === 1 ? binding.key.toLowerCase() : binding.key;
+  const reportedKey = event.key.length === 1 ? event.key.toLowerCase() : event.key;
 
-  if (eventKey !== bindingKey) return false;
+  if (getEventKey(event) !== bindingKey && reportedKey !== bindingKey) return false;
   if (!!binding.shift !== event.shiftKey) return false;
   if (!!binding.alt !== event.altKey) return false;
 

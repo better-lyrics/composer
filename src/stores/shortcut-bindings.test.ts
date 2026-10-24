@@ -105,19 +105,12 @@ describe("migrateShortcutBindings", () => {
     });
   });
 
-  it("reads a saved Mod+Shift binding on unshifted punctuation as the shifted character on macOS", () => {
+  it("leaves a typing seek shortcut unbound when a saved Mod+Shift binding was stored unshifted", () => {
     const saved = { overrides: { "global.settings": { key: ".", shift: true, mod: true } } };
 
-    expect(migrateShortcutBindings(saved, 5)).toEqual(
-      isMac
-        ? {
-            overrides: {
-              "global.settings": { key: ">", shift: true, mod: true },
-              "global.seekForwardWhileTyping": { key: "" },
-            },
-          }
-        : saved,
-    );
+    expect(migrateShortcutBindings(saved, 5)).toEqual({
+      overrides: { ...saved.overrides, "global.seekForwardWhileTyping": { key: "" } },
+    });
   });
 
   it("regression: keeps a Shift binding from another layout, such as German Shift+7 for /", () => {

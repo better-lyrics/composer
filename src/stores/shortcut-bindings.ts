@@ -5,7 +5,6 @@ import {
   type ShortcutScope,
   getShortcutById,
 } from "@/stores/shortcut-registry";
-import { isMac } from "@/utils/platform";
 import { shiftedUsPunctuation } from "@/utils/us-punctuation";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -27,9 +26,12 @@ const ALTERNATE_REDO_ID = "global.redoAlternate";
 const DELETE_SELECTION_IDS = ["timeline.deleteSelection", "timeline.deleteSelectionAlternate"];
 const CLIPBOARD_IDS = ["timeline.copy", "timeline.cut", "timeline.paste"];
 
+type SameKeys = (saved: ShortcutBinding, added: ShortcutBinding) => boolean;
+
 function unbindIfKeysTaken(
   overrides: Record<string, ShortcutBinding>,
   addedId: string,
+  sameKeys: SameKeys,
 ): Record<string, ShortcutBinding> {
   const added = getShortcutById(addedId);
   if (!added || overrides[addedId]) return overrides;
@@ -39,17 +41,17 @@ function unbindIfKeysTaken(
       owner !== undefined &&
       scopesConflict(added.scope, owner.scope) &&
       typeof binding?.key === "string" &&
-      bindingsEqual(binding, added.defaultBinding)
+      sameKeys(binding, added.defaultBinding)
     );
   });
   return keysTaken ? { ...overrides, [addedId]: UNBOUND } : overrides;
 }
 
-function unbindTakenKeys(addedIds: string[]) {
+function unbindTakenKeys(addedIds: string[], sameKeys: SameKeys = bindingsEqual) {
   return (state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> => {
     const { overrides } = state;
     if (!overrides || typeof overrides !== "object") return state;
-    const migrated = addedIds.reduce(unbindIfKeysTaken, overrides);
+    const migrated = addedIds.reduce((current, addedId) => unbindIfKeysTaken(current, addedId, sameKeys), overrides);
     return migrated === overrides ? state : { ...state, overrides: migrated };
   };
 }
@@ -57,26 +59,18 @@ function unbindTakenKeys(addedIds: string[]) {
 const unbindTakenDeleteKeys = unbindTakenKeys(DELETE_SELECTION_IDS);
 const unbindTakenClipboardKeys = unbindTakenKeys(CLIPBOARD_IDS);
 const unbindTakenTypingPlayKeys = unbindTakenKeys(["global.playPauseWhileTyping"]);
-const unbindTakenSeekKeys = unbindTakenKeys([
-  "global.seekBackward",
-  "global.seekForward",
-  "global.seekBackwardWhileTyping",
-  "global.seekForwardWhileTyping",
-]);
-
-// Chrome and Safari on macOS saved Cmd+Shift+. as "."; elsewhere a shifted key is the layout's real glyph.
-function shiftSavedPunctuation(state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> {
-  const { overrides } = state;
-  if (!isMac || !overrides || typeof overrides !== "object") return state;
-  const shifted = Object.fromEntries(
-    Object.entries(overrides).map(([id, binding]) => {
-      const shiftedKey =
-        binding?.shift && typeof binding.key === "string" ? shiftedUsPunctuation(binding.key) : undefined;
-      return [id, shiftedKey ? { ...binding, key: shiftedKey } : binding];
-    }),
+// A saved Cmd+Shift+. may be stored as "." (macOS drops Shift there), and still matches the ">" press.
+function sameKeysAsPressed(saved: ShortcutBinding, added: ShortcutBinding): boolean {
+  const shiftedKey = saved.shift ? shiftedUsPunctuation(saved.key) : undefined;
+  return (
+    bindingsEqual(saved, added) || (shiftedKey !== undefined && bindingsEqual({ ...saved, key: shiftedKey }, added))
   );
-  return { ...state, overrides: shifted };
 }
+
+const unbindTakenSeekKeys = unbindTakenKeys(
+  ["global.seekBackward", "global.seekForward", "global.seekBackwardWhileTyping", "global.seekForwardWhileTyping"],
+  sameKeysAsPressed,
+);
 
 const RENAMED_SHORTCUT_IDS: Record<string, string> = { "timeline.toggleGroupLoop": "global.toggleLoop" };
 
@@ -141,7 +135,7 @@ function migrateShortcutBindings(persistedState: unknown, version: number): unkn
   const withDeleteKeys = version < 3 ? unbindTakenDeleteKeys(renamed) : renamed;
   const withClipboardKeys = version < 4 ? unbindTakenClipboardKeys(withDeleteKeys) : withDeleteKeys;
   const withTypingPlayKeys = version < 5 ? unbindTakenTypingPlayKeys(withClipboardKeys) : withClipboardKeys;
-  return version < 6 ? unbindTakenSeekKeys(shiftSavedPunctuation(withTypingPlayKeys)) : withTypingPlayKeys;
+  return version < 6 ? unbindTakenSeekKeys(withTypingPlayKeys) : withTypingPlayKeys;
 }
 
 // -- Store --------------------------------------------------------------------
