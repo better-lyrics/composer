@@ -1,6 +1,7 @@
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
-import { historyShortcutAction } from "@/utils/history-shortcut";
+import { runHistoryShortcut } from "@/utils/history-shortcut";
+import { isTypingTarget } from "@/utils/typing-target";
 import { useEffect } from "react";
 
 // -- Hook ---------------------------------------------------------------------
@@ -9,11 +10,8 @@ function useLanguagesHistoryShortcuts(active: boolean): void {
   useEffect(() => {
     if (!active) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (isAnyModalOpen()) return;
-      const historyAction = historyShortcutAction(event);
-      if (!historyAction) return;
-      event.preventDefault();
-      useProjectStore.getState()[historyAction]();
+      if (isAnyModalOpen() || isTypingTarget(event.target)) return;
+      runHistoryShortcut(event, (action) => useProjectStore.getState()[action]());
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);

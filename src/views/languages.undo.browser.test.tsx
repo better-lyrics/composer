@@ -72,4 +72,16 @@ describe("Languages undo history", () => {
     press(window, { key: "z", code: "KeyZ", ...MOD });
     await expect.poll(lineText).toBe(FIRST_TEXT);
   });
+
+  it("leaves held repeats and typing in a field to one step and the field", async () => {
+    const screen = await render(<LanguagesPanel />);
+    await expect.poll(englishTranslation).toBe(`english ${FIRST_TEXT}`);
+
+    press(window, { key: "z", code: "KeyZ", shiftKey: true, repeat: true, ...MOD });
+    const field = screen.getByRole("textbox", { name: "English", exact: true }).element();
+    press(field, { key: "z", code: "KeyZ", shiftKey: true, ...MOD });
+
+    expect(lineText()).toBe(FIRST_TEXT);
+    expect(useProjectStore.getState().canRedo()).toBe(true);
+  });
 });

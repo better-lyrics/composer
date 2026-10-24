@@ -16,7 +16,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { setSyncEditMode, useSyncEditModeStore } from "@/stores/sync-edit-mode";
 import { EmptyState } from "@/ui/empty-state";
 import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
-import { historyShortcutAction } from "@/utils/history-shortcut";
+import { runHistoryShortcut } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { type SyncState, getNudgeAmount, withSeededBackgroundWords } from "@/utils/sync-helpers";
 import { readToken } from "@/utils/theme/read-token";
@@ -358,14 +358,7 @@ const SyncPanel: React.FC = () => {
       if (activeTab !== "sync") return;
       if (isAnyModalOpen()) return;
 
-      const historyAction = historyShortcutAction(e, { scope: "sync" });
-      if (historyAction) {
-        e.preventDefault();
-        if (e.repeat) return;
-        if (historyAction === "undo") undo();
-        else redo();
-        return;
-      }
+      if (runHistoryShortcut(e, (action) => (action === "undo" ? undo() : redo()), { scope: "sync" })) return;
 
       const matched = findMatchingShortcut(e, "sync");
       if (!matched) return;
