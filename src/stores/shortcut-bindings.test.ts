@@ -105,6 +105,17 @@ describe("migrateShortcutBindings", () => {
     });
   });
 
+  it("reads a saved Shift binding on unshifted punctuation as the shifted character", () => {
+    const saved = { overrides: { "global.settings": { key: ".", shift: true, mod: true } } };
+
+    expect(migrateShortcutBindings(saved, 5)).toEqual({
+      overrides: {
+        "global.settings": { key: ">", shift: true, mod: true },
+        "global.seekForwardWhileTyping": { key: "" },
+      },
+    });
+  });
+
   describe("edge cases", () => {
     it("keeps the timeline delete keys when only another scope uses them", () => {
       const saved = { overrides: { "sync.tap": { key: "Backspace" } } };

@@ -1,22 +1,9 @@
 import { bindingsEqual, getEffectiveBinding } from "@/stores/shortcut-bindings";
 import { type ShortcutBinding, type ShortcutScope, getShortcutsByScope } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
+import { US_PUNCTUATION_BY_CODE } from "@/utils/us-punctuation";
 
 // -- Matching -----------------------------------------------------------------
-
-const US_PUNCTUATION_BY_CODE: Record<string, [base: string, shifted: string]> = {
-  Backquote: ["`", "~"],
-  Minus: ["-", "_"],
-  Equal: ["=", "+"],
-  BracketLeft: ["[", "{"],
-  BracketRight: ["]", "}"],
-  Backslash: ["\\", "|"],
-  Semicolon: [";", ":"],
-  Quote: ["'", '"'],
-  Comma: [",", "<"],
-  Period: [".", ">"],
-  Slash: ["/", "?"],
-};
 
 function physicalKey(event: KeyboardEvent): string | null {
   const { code, shiftKey } = event;

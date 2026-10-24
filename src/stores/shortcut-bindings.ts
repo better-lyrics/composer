@@ -5,6 +5,7 @@ import {
   type ShortcutScope,
   getShortcutById,
 } from "@/stores/shortcut-registry";
+import { shiftedUsPunctuation } from "@/utils/us-punctuation";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -61,6 +62,20 @@ const unbindTakenSeekKeys = unbindTakenKeys([
   "global.seekBackwardWhileTyping",
   "global.seekForwardWhileTyping",
 ]);
+
+// Chrome and Safari on macOS recorded Cmd+Shift+. as "." before matching read the shifted character.
+function shiftSavedPunctuation(state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> {
+  const { overrides } = state;
+  if (!overrides || typeof overrides !== "object") return state;
+  const shifted = Object.fromEntries(
+    Object.entries(overrides).map(([id, binding]) => {
+      const shiftedKey =
+        binding?.shift && typeof binding.key === "string" ? shiftedUsPunctuation(binding.key) : undefined;
+      return [id, shiftedKey ? { ...binding, key: shiftedKey } : binding];
+    }),
+  );
+  return { ...state, overrides: shifted };
+}
 
 const RENAMED_SHORTCUT_IDS: Record<string, string> = { "timeline.toggleGroupLoop": "global.toggleLoop" };
 
@@ -125,7 +140,7 @@ function migrateShortcutBindings(persistedState: unknown, version: number): unkn
   const withDeleteKeys = version < 3 ? unbindTakenDeleteKeys(renamed) : renamed;
   const withClipboardKeys = version < 4 ? unbindTakenClipboardKeys(withDeleteKeys) : withDeleteKeys;
   const withTypingPlayKeys = version < 5 ? unbindTakenTypingPlayKeys(withClipboardKeys) : withClipboardKeys;
-  return version < 6 ? unbindTakenSeekKeys(withTypingPlayKeys) : withTypingPlayKeys;
+  return version < 6 ? unbindTakenSeekKeys(shiftSavedPunctuation(withTypingPlayKeys)) : withTypingPlayKeys;
 }
 
 // -- Store --------------------------------------------------------------------
