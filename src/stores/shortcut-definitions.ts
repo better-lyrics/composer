@@ -19,6 +19,7 @@ interface ShortcutDefinition {
   description: string;
   defaultBinding: ShortcutBinding;
   repeatable?: true;
+  needsCommandKey?: true;
 }
 
 // -- Registry -----------------------------------------------------------------
@@ -35,6 +36,7 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     scope: "global",
     description: "Play / Pause (works while typing)",
     defaultBinding: { key: "Enter", mod: true },
+    needsCommandKey: true,
   },
   {
     id: "global.togglePlaybackSpeed",

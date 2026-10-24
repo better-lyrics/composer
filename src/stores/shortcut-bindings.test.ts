@@ -89,6 +89,14 @@ describe("migrateShortcutBindings", () => {
     });
   });
 
+  it("leaves play/pause while typing unbound when a saved binding already uses Mod+Enter", () => {
+    const saved = { overrides: { "global.goToTimeline": { key: "Enter", mod: true } } };
+
+    expect(migrateShortcutBindings(saved, 4)).toEqual({
+      overrides: { ...saved.overrides, "global.playPauseWhileTyping": { key: "" } },
+    });
+  });
+
   describe("edge cases", () => {
     it("keeps the timeline delete keys when only another scope uses them", () => {
       const saved = { overrides: { "sync.tap": { key: "Backspace" } } };

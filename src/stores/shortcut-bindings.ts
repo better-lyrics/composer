@@ -18,7 +18,7 @@ interface ShortcutBindingsState {
 
 // -- Migration ----------------------------------------------------------------
 
-const SHORTCUT_BINDINGS_PERSIST_VERSION = 4;
+const SHORTCUT_BINDINGS_PERSIST_VERSION = 5;
 const UNBOUND: ShortcutBinding = { key: "" };
 
 const ALTERNATE_REDO_ID = "global.redoAlternate";
@@ -54,6 +54,7 @@ function unbindTakenKeys(addedIds: string[]) {
 
 const unbindTakenDeleteKeys = unbindTakenKeys(DELETE_SELECTION_IDS);
 const unbindTakenClipboardKeys = unbindTakenKeys(CLIPBOARD_IDS);
+const unbindTakenTypingPlayKeys = unbindTakenKeys(["global.playPauseWhileTyping"]);
 
 const RENAMED_SHORTCUT_IDS: Record<string, string> = { "timeline.toggleGroupLoop": "global.toggleLoop" };
 
@@ -116,7 +117,8 @@ function migrateShortcutBindings(persistedState: unknown, version: number): unkn
   const withRedo = version < 1 ? unbindTakenAlternateRedo(state) : state;
   const renamed = version < 2 ? renameShortcutIds(withRedo) : withRedo;
   const withDeleteKeys = version < 3 ? unbindTakenDeleteKeys(renamed) : renamed;
-  return version < 4 ? unbindTakenClipboardKeys(withDeleteKeys) : withDeleteKeys;
+  const withClipboardKeys = version < 4 ? unbindTakenClipboardKeys(withDeleteKeys) : withDeleteKeys;
+  return version < 5 ? unbindTakenTypingPlayKeys(withClipboardKeys) : withClipboardKeys;
 }
 
 // -- Store --------------------------------------------------------------------
