@@ -1,6 +1,7 @@
 import { type ProjectIndexEntry, buildIndexEntry } from "@/domain/project/index-entry";
 import { byMostRecentlyEdited } from "@/domain/project/library-order";
-import { createProject, openProject, reloadOpenProject } from "@/lib/open-project";
+import { openLyricsAsNewProject } from "@/lib/open-lyrics-as-project";
+import { openProject, reloadOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { hiddenProjectIdsSnapshot } from "@/lib/pending-deletions";
 import { flushPendingSave } from "@/lib/persistence-debounce";
@@ -15,12 +16,9 @@ import {
 } from "@/lib/project-repository";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { reportStorageWriteError } from "@/lib/storage-signals";
-import { useProjectStore } from "@/stores/project";
 import { askImportConflict } from "@/ui/projects/import-conflict-choice";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
-import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { formatProjectCount } from "@/utils/project-count";
-import { readTtmlLyrics, replaceWithTtmlLyrics } from "@/views/lyrics-import-modal/import-lyrics";
 import type { ChangeEvent } from "react";
 import { toast } from "sonner";
 
@@ -182,20 +180,6 @@ function showBundleRestoreToast(result: BundleRestore): void {
 
 // -- Flow ---------------------------------------------------------------------
 
-function openTtmlAsNewProject(content: string, fileName: string): string | null {
-  const read = readTtmlLyrics(content, fileName, 0);
-  if (read.status === "unreadable") {
-    toast.error(read.message);
-    return null;
-  }
-  const id = createProject();
-  const skipped = replaceWithTtmlLyrics(read.parsed);
-  useProjectStore.getState().clearHistory();
-  toast(`Opened ${fileName} as a new project from its TTML`);
-  if (skipped > 0) toast.warning(skippedLinesMessage(skipped));
-  return id;
-}
-
 function reportUnreadableProjectFile(error: unknown): null {
   console.error(LOG_PREFIX, "could not read the project file", error);
   toast.error("Couldn't read that project file");
@@ -214,7 +198,7 @@ async function importProjectFile(file: File): Promise<string | null> {
     contents = parseProjectFileContents(text);
   } catch (error) {
     if (error instanceof SyntaxError && detectFileType("", text) === "ttml")
-      return openTtmlAsNewProject(text, file.name);
+      return openLyricsAsNewProject(text, file.name);
     return reportUnreadableProjectFile(error);
   }
   return importProjectContents(contents);

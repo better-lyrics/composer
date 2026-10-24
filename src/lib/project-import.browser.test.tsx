@@ -4,6 +4,7 @@ import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { schedulePendingDeletion } from "@/lib/pending-deletions";
 import { debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import { type ProjectFile, projectFileFrom } from "@/lib/project-file";
+import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { importProjectFile, replaceProjectFromFile } from "@/lib/project-import";
 import { listProjectIndex, removeProjectData } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
@@ -220,5 +221,30 @@ describe("replaceProjectFromFile", () => {
       expect(getSaveStatus()).toBe("failed");
       expect(await loadProjectRecord("a")).toBeUndefined();
     });
+  });
+});
+
+describe("openLyricsFileAsNewProject", () => {
+  const LRC_DOCUMENT = "[00:12.00]Climb up the H of the Hollywood sign\n[00:15.00]In these stolen moments\n";
+
+  it("opens an LRC file as a new project and leaves the open one alone", async () => {
+    await seedStoredProject("a", { open: true, project: songTitled("Alpha") });
+    await restoreOpenProject();
+    const id = await openLyricsFileAsNewProject(new File([LRC_DOCUMENT], "Lust for Life.lrc"));
+    expect(id).not.toBeNull();
+    expect(id).not.toBe("a");
+    expect(openProjectIdSnapshot()).toBe(id);
+    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual([
+      "Climb up the H of the Hollywood sign",
+      "In these stolen moments",
+    ]);
+    expect(useProjectStore.getState().canUndo()).toBe(false);
+    expect((await listProjectIndex()).map((entry) => entry.id)).toContain("a");
+  });
+
+  it("creates no project for a lyrics file with no lyrics", async () => {
+    const id = await openLyricsFileAsNewProject(new File([""], "empty.lrc"));
+    expect(id).toBeNull();
+    expect(await listProjectIndex()).toEqual([]);
   });
 });
