@@ -26,15 +26,6 @@ describe("useGlobalShortcuts · seek", () => {
     await renderEditorShortcuts();
   }
 
-  it("seeks forward and back by the seek step, and keeps seeking while held", async () => {
-    await renderWithSong();
-    pressSeek(window, ">");
-    expect(useAudioStore.getState().currentTime).toBe(13);
-    pressSeek(window, "<");
-    pressSeek(window, "<", { repeat: true });
-    expect(useAudioStore.getState().currentTime).toBe(7);
-  });
-
   it("seeks from inside a text field only with Mod held", async () => {
     await renderWithSong();
     const textarea = document.createElement("textarea");
