@@ -4,16 +4,21 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect, useRef } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
-interface UseGestureInputReplayArgs {
-  active: boolean;
-  getLastPointer: () => { clientX: number; clientY: number } | null;
-}
-
 interface HeldModifiers {
   altKey: boolean;
   shiftKey: boolean;
   metaKey: boolean;
   ctrlKey: boolean;
+}
+
+interface LastPointer extends Partial<HeldModifiers> {
+  clientX: number;
+  clientY: number;
+}
+
+interface UseGestureInputReplayArgs {
+  active: boolean;
+  getLastPointer: () => LastPointer | null;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -32,7 +37,14 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
       return;
     }
 
-    const held: HeldModifiers = { ...NO_MODIFIERS };
+    bypassRef.current = useTimelineStore.getState().isBypassing;
+    const lastPointer = getLastPointer();
+    const held: HeldModifiers = {
+      altKey: lastPointer?.altKey ?? NO_MODIFIERS.altKey,
+      shiftKey: lastPointer?.shiftKey ?? NO_MODIFIERS.shiftKey,
+      metaKey: lastPointer?.metaKey ?? NO_MODIFIERS.metaKey,
+      ctrlKey: lastPointer?.ctrlKey ?? NO_MODIFIERS.ctrlKey,
+    };
     let replaying = false;
     const trackModifiers = (e: KeyboardEvent | PointerEvent) => {
       if (replaying) return;
@@ -108,4 +120,4 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
 }
 
 // -- Exports -------------------------------------------------------------------
-export { useGestureInputReplay };
+export { type LastPointer, useGestureInputReplay };
