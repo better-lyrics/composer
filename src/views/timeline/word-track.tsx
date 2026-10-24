@@ -168,7 +168,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
         lastPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
         if (!draggedRef.current) return;
         const originalWord = words[wordIndex];
-        const rawDeltaPx = e.clientX - startX;
+        const rawDeltaPx = e.clientX - startX + snap.scrolledSinceStartPx();
         const conjoined = shouldRollNeighbour({
           words,
           wordIndex,

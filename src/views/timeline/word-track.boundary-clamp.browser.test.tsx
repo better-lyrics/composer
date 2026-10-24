@@ -62,6 +62,22 @@ function dragEdgeBy(block: HTMLElement, edge: "left" | "right", offsetPx: number
 // the inputs only the drag gesture can supply.
 describe("WordTrack boundary drag inputs", () => {
   describe("regressions", () => {
+    it("regression: keeps the dragged edge under the pointer when the timeline scrolls mid-drag", async () => {
+      useSettingsStore.setState({ timelineSnap: false, vocalOnsetSnap: false });
+      useTimelineStore.setState({ scrollLeft: 0 });
+      const { blocks, calls } = await renderResizableTrack(GAPPED_PAIR, { rolling: false, duration: 5 });
+      const handle = blocks[1].querySelector<HTMLElement>('[data-edge="right"]');
+      if (!handle) throw new Error("word block has no right edge handle");
+
+      handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: GESTURE_START_X }));
+      useTimelineStore.setState({ scrollLeft: 50 });
+      document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: GESTURE_START_X + 10 }));
+      document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+
+      await expect.poll(() => calls.length).toBe(1);
+      expect(calls[0].updates.end).toBeCloseTo(2.5 + 60 / 100, 4);
+    });
+
     it("regression: does not invert either word when dragging the left edge of a tight flush pair", async () => {
       const { blocks, calls } = await renderResizableTrack(TIGHT_PAIR);
 

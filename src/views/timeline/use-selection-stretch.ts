@@ -86,7 +86,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
   }, [onDragEnd]);
 
   const snap = useTimelineSnap();
-  const { beginGesture, computeShiftPx, endGesture } = snap;
+  const { beginGesture, computeShiftPx, endGesture, scrolledSinceStartPx } = snap;
   const getLastPointer = useCallback(() => lastPointerRef.current, []);
   useGestureInputReplay({ active: isStretching, getLastPointer });
 
@@ -169,7 +169,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
         lastPointerRef.current = { clientX: ev.clientX, clientY: ev.clientY };
         if (Math.abs(ev.clientX - startX) >= DRAG_THRESHOLD_PX) dragged = true;
         if (!dragged) return;
-        const rawDeltaPx = ev.clientX - startX;
+        const rawDeltaPx = ev.clientX - startX + scrolledSinceStartPx();
         const snapShiftPx = computeShiftPx(rawDeltaPx, [edgeTime]);
         const proposedEdge = edgeTime + (rawDeltaPx + snapShiftPx) / zoom;
         const k = Math.min(Math.max(factorForEdgeTime(proposedEdge), minFactor), maxFactor);
@@ -230,7 +230,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
       cleanupRef.current = () => finish(false);
       return true;
     },
-    [beginGesture, computeShiftPx, endGesture],
+    [beginGesture, computeShiftPx, endGesture, scrolledSinceStartPx],
   );
 
   return { isStretching, tryStart };

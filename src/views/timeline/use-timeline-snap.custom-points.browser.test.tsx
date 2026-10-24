@@ -4,6 +4,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord, snapPoints } from "@/test/factories";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
+import type { Modifier } from "@dnd-kit/core";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 
@@ -13,6 +14,26 @@ const ZOOM = 100;
 const THRESHOLD = 12;
 const SELF_IDS = new Set<string>();
 const ALLOW_SHIFT = () => true;
+
+function dragModifierArgs(edgesAtStart: number[]): Parameters<Modifier>[0] {
+  return {
+    activatorEvent: null,
+    active: {
+      id: "leader",
+      data: { current: { snap: { edgesAtStart } } },
+      rect: { current: { initial: null, translated: null } },
+    },
+    activeNodeRect: null,
+    draggingNodeRect: null,
+    containerNodeRect: null,
+    over: null,
+    overlayNodeRect: null,
+    scrollableAncestors: [],
+    scrollableAncestorRects: [],
+    transform: { x: 0, y: 0, scaleX: 1, scaleY: 1 },
+    windowRect: null,
+  };
+}
 
 function beginAt(result: { current: ReturnType<typeof useTimelineSnap> }): void {
   result.current.beginGesture({ selfIds: SELF_IDS, leaderKey: "leader", overlapCheck: ALLOW_SHIFT });
@@ -30,6 +51,7 @@ describe("useTimelineSnap · custom snap points", () => {
       vocalOnsetSnapPoints: [],
       snappedBlockId: null,
       snappedAnchorTime: null,
+      scrollLeft: 0,
     });
     useSettingsStore.setState({
       timelineSnap: false,
@@ -147,5 +169,18 @@ describe("useTimelineSnap · custom snap points", () => {
     useTimelineStore.setState({ vocalOnsetSnapPoints: [2] });
 
     expect(result.current.computeShiftPx(0, [2.05])).toBeCloseTo((2 - 2.05) * ZOOM, 4);
+  });
+
+  it("regression: drag snap measures edges after the timeline scrolls mid-drag", async () => {
+    useProjectStore.setState({ customSnapPoints: snapPoints([4]) });
+    const { result } = await renderHook(() => useTimelineSnap());
+
+    beginAt(result);
+    useTimelineStore.setState({ scrollLeft: 300 });
+    const transform = result.current.dragSnapModifier(dragModifierArgs([0.95]));
+    result.current.syncDragSnap();
+
+    expect(transform.x).toBeCloseTo((4 - 3.95) * ZOOM, 4);
+    expect(useTimelineStore.getState().snappedAnchorTime).toBeCloseTo(4, 4);
   });
 });
