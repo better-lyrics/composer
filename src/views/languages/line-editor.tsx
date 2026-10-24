@@ -94,7 +94,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
           label="Transliteration"
           mono
           value={line.transliteration?.text ?? ""}
-          placeholder="Type one, or regenerate"
+          placeholder="Type one, or generate"
           status={transliterationStale ? "review" : undefined}
           error={transliterationError}
           pasteKind="transliteration"
