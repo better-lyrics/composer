@@ -1,4 +1,5 @@
 import { useSettingsStore } from "@/stores/settings";
+import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect, useRef } from "react";
 
@@ -59,7 +60,7 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
 
     const handleKey = (e: KeyboardEvent) => {
       trackModifiers(e);
-      const next = e.metaKey || e.ctrlKey;
+      const next = holdsSnapBypass(e);
       if (next === bypassRef.current) return;
       bypassRef.current = next;
       useTimelineStore.getState().setIsBypassing(next);

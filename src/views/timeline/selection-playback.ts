@@ -1,14 +1,16 @@
 import { selectionBounds } from "@/domain/selection/bounds";
 import { isWordSelected } from "@/domain/selection/identity";
 import { lineWordSelections } from "@/domain/selection/line-selections";
+import type { LoopRegion } from "@/domain/selection/loop-region";
 import type { WordSelection } from "@/domain/selection/model";
 import { playbackRange } from "@/domain/selection/playback-range";
 import type { Bounds } from "@/domain/word/bounds";
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { focusBounds } from "@/views/timeline/group-focus";
+import { soloPlayStart } from "@/views/timeline/solo-playback";
 import { type SelectionPlaybackMode, useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Reads --------------------------------------------------------------------
@@ -19,20 +21,29 @@ function currentSelectionBounds(): Bounds | null {
 
 function currentPlaybackRange(): Bounds | null {
   const focus = currentEffectiveFocus();
+  const { selectionPlayback, loopRegion } = useTimelineStore.getState();
+  const playing = selectionPlayback !== null;
   return playbackRange({
-    selection: useTimelineStore.getState().selectionPlayback !== null ? currentSelectionBounds() : null,
+    region: playing ? loopRegion : null,
+    selection: playing ? currentSelectionBounds() : null,
     focus: focus ? focusBounds(useProjectStore.getState().lines, focus) : null,
     leadIn: useSettingsStore.getState().selectionLeadIn,
     duration: useAudioStore.getState().duration,
   });
 }
 
-function loopsRange(selectionPlayback: SelectionPlaybackMode | null, loopOpenGroup: boolean): boolean {
-  return selectionPlayback === null ? loopOpenGroup : selectionPlayback === "loop";
+function loopsRange(
+  selectionPlayback: SelectionPlaybackMode | null,
+  loopOpenGroup: boolean,
+  loopRegion: LoopRegion | null,
+): boolean {
+  if (selectionPlayback !== null) return selectionPlayback === "loop";
+  return loopRegion ? loopRegion.loops : loopOpenGroup;
 }
 
+// A paused region only arms the next play; until it plays, the open group keeps its own loop setting.
 function currentlyLoops(): boolean {
-  return loopsRange(useTimelineStore.getState().selectionPlayback, useSettingsStore.getState().loopOpenGroup);
+  return loopsRange(useTimelineStore.getState().selectionPlayback, useSettingsStore.getState().loopOpenGroup, null);
 }
 
 // -- Actions ------------------------------------------------------------------
@@ -57,10 +68,53 @@ function stopSelectionPlayback({ pause }: { pause: boolean }): void {
   if (pause) useAudioStore.getState().setIsPlaying(false);
 }
 
+function playLoopRegion(mode: SelectionPlaybackMode): boolean {
+  const { loopRegion, setLoopRegion, setSelectionPlayback } = useTimelineStore.getState();
+  if (!loopRegion) return false;
+  setLoopRegion({ ...loopRegion, loops: mode === "loop" });
+  setSelectionPlayback(mode);
+  const audio = useAudioStore.getState();
+  const start = soloPlayStart(livePlaybackTime(), loopRegion);
+  if (start !== null) audio.seekTo(start);
+  audio.setIsPlaying(true);
+  return true;
+}
+
+// Transport Play on the Timeline plays a drawn region, looped or once as its Loop toggle says.
+function adoptLoopRegionForPlay(): void {
+  const { loopRegion, selectionPlayback, setSelectionPlayback } = useTimelineStore.getState();
+  if (!loopRegion || selectionPlayback !== null || useProjectStore.getState().activeTab !== "timeline") return;
+  setSelectionPlayback(loopRegion.loops ? "loop" : "once");
+}
+
+// Drawing prepares the loop: Loop on, playhead at the start; audio already playing jumps in.
+function commitDrawnLoopRegion(bounds: Bounds): void {
+  const timeline = useTimelineStore.getState();
+  const audio = useAudioStore.getState();
+  timeline.setLoopRegion({ begin: bounds.begin, end: bounds.end, loops: true });
+  timeline.setSelectionPlayback(audio.isPlaying ? "loop" : null);
+  audio.seekTo(bounds.begin);
+}
+
+function clearLoopRegion(): void {
+  const { loopRegion, loopRegionDrag, selectionPlayback, setLoopRegion, setLoopRegionDrag } =
+    useTimelineStore.getState();
+  if (loopRegionDrag) setLoopRegionDrag(null);
+  if (!loopRegion) return;
+  if (selectionPlayback !== null) stopSelectionPlayback({ pause: false });
+  setLoopRegion(null);
+}
+
 function toggleLoop(): void {
-  const { selectionPlayback, setSelectionPlayback } = useTimelineStore.getState();
+  const { selectionPlayback, setSelectionPlayback, loopRegion, setLoopRegion } = useTimelineStore.getState();
   if (selectionPlayback !== null) {
-    setSelectionPlayback(selectionPlayback === "loop" ? "once" : "loop");
+    const next = selectionPlayback === "loop" ? "once" : "loop";
+    setSelectionPlayback(next);
+    if (loopRegion) setLoopRegion({ ...loopRegion, loops: next === "loop" });
+    return;
+  }
+  if (loopRegion) {
+    setLoopRegion({ ...loopRegion, loops: !loopRegion.loops });
     return;
   }
   const settings = useSettingsStore.getState();
@@ -78,12 +132,13 @@ function toggleLoopShortcut(): void {
   else toggleActiveRangeLoop();
 }
 
-// Same order as Play: a playing selection, then a timed selection, then the open group.
+// Same order as Play: a playing range, then a drawn region, then a timed selection, then the open group.
 function toggleRangeLoop(): boolean {
   if (useTimelineStore.getState().selectionPlayback !== null) {
     toggleLoop();
     return true;
   }
+  if (playLoopRegion("loop")) return true;
   if (loopSelection()) return true;
   if (currentEffectiveFocus() === null) return false;
   toggleLoop();
@@ -103,11 +158,15 @@ function selectLine(lineId: string, lineIndex: number): void {
 // -- Exports ------------------------------------------------------------------
 
 export {
+  adoptLoopRegionForPlay,
+  clearLoopRegion,
+  commitDrawnLoopRegion,
   currentPlaybackRange,
   currentSelectionBounds,
   currentlyLoops,
   loopsRange,
   loopSelection,
+  playLoopRegion,
   playSelection,
   selectLine,
   selectWordUnlessSelected,

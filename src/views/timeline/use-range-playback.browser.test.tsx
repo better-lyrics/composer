@@ -5,7 +5,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
-import { loopSelection, playSelection } from "@/views/timeline/selection-playback";
+import { clearLoopRegion, loopSelection, playSelection } from "@/views/timeline/selection-playback";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRangePlayback } from "@/views/timeline/use-range-playback";
 import { describe, expect, it } from "vitest";
@@ -21,18 +21,36 @@ const RangePlaybackHost: React.FC = () => {
   return <AudioEngine />;
 };
 
-async function selectLastWordOfSong(): Promise<HTMLAudioElement> {
+async function loadSong(): Promise<HTMLAudioElement> {
   await render(<RangePlaybackHost />);
   useAudioStore.setState({ source: { type: "file", file: createAudioFile("silence.wav", SONG_SECONDS) } });
   await expect.poll(() => useAudioStore.getState().audioElement).not.toBeNull();
   const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
   await expect.poll(() => useAudioStore.getState().duration).toBeGreaterThan(0);
   audio.muted = true;
+  return audio;
+}
+
+async function selectLastWordOfSong(): Promise<HTMLAudioElement> {
+  const audio = await loadSong();
   useSettingsStore.setState({ selectionLeadIn: LEAD_IN });
   useProjectStore.setState({
     lines: [createLine({ id: "a", text: "end", words: [{ text: "end", begin: WORD_BEGIN, end: SONG_SECONDS }] })],
   });
   useTimelineStore.getState().setSelectedWords([{ lineId: "a", lineIndex: 0, wordIndex: 0, type: "word" }]);
+  return audio;
+}
+
+const REGION = { begin: 0.2, end: 1.2, loops: true };
+
+async function playRegionOnTimeline(): Promise<HTMLAudioElement> {
+  const audio = await loadSong();
+  useProjectStore.setState({ activeTab: "timeline" });
+  useTimelineStore.getState().setLoopRegion(REGION);
+  // Play seeks into the region from the song start; wait until that seek lands so a test seek is not merged into it.
+  const seekedIntoRegion = new Promise((resolve) => audio.addEventListener("seeked", resolve, { once: true }));
+  useAudioStore.getState().setIsPlaying(true);
+  await seekedIntoRegion;
   return audio;
 }
 
@@ -111,5 +129,36 @@ describe("useRangePlayback", () => {
 
     await expect.poll(() => useTimelineStore.getState().selectionPlayback).toBeNull();
     expect(audio.paused).toBe(true);
+  });
+
+  it("transport Play loops a drawn region from its start", async () => {
+    const audio = await playRegionOnTimeline();
+    expect(useTimelineStore.getState().selectionPlayback).toBe("loop");
+    let reachedEnd = false;
+    let wrapped = false;
+    audio.addEventListener("timeupdate", () => {
+      if (audio.currentTime >= 1.0) reachedEnd = true;
+      else if (reachedEnd) wrapped = true;
+    });
+    await expect.poll(() => wrapped, { timeout: 5000 }).toBe(true);
+    expect(audio.paused).toBe(false);
+    expect(audio.currentTime).toBeGreaterThanOrEqual(REGION.begin - 0.005);
+  });
+
+  it("a seek outside a playing region ends its playback and keeps the region", async () => {
+    const audio = await playRegionOnTimeline();
+    expect(useTimelineStore.getState().selectionPlayback).toBe("loop");
+    useAudioStore.getState().seekTo(1.6);
+    await expect.poll(() => useTimelineStore.getState().selectionPlayback).toBeNull();
+    expect(useTimelineStore.getState().loopRegion).toEqual(REGION);
+    expect(audio.paused).toBe(false);
+  });
+
+  it("regression: clearing a looping region keeps the song playing", async () => {
+    const audio = await playRegionOnTimeline();
+    clearLoopRegion();
+    expect(useTimelineStore.getState().selectionPlayback).toBeNull();
+    expect(useAudioStore.getState().isPlaying).toBe(true);
+    expect(audio.paused).toBe(false);
   });
 });

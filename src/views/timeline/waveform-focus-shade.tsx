@@ -2,7 +2,7 @@ import type { Bounds } from "@/domain/word/bounds";
 import { useAudioStore } from "@/stores/audio";
 import { cn } from "@/utils/cn";
 import { useEffectiveFocusGroup } from "@/views/timeline/effective-focus";
-import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
+import { WAVEFORM_HEIGHT, shownLoopRegion, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useFocusRange } from "@/views/timeline/use-focus-range";
 import { useSelectionPlaybackRange } from "@/views/timeline/use-selection-playback-range";
 
@@ -16,6 +16,7 @@ interface RangeShadeProps {
 
 // -- Constants -----------------------------------------------------------------
 
+const ACCENT = "var(--color-composer-accent)";
 const SHADE = "pointer-events-none absolute top-0 z-3 bg-composer-bg-dark/70";
 const LEAD_IN = "range-lead-in pointer-events-none absolute top-0 z-3";
 const SHADE_HEIGHT = WAVEFORM_HEIGHT - 1;
@@ -65,18 +66,14 @@ const RangeShade: React.FC<RangeShadeProps> = ({ range, color, inner }) => {
 };
 
 const WaveformFocusShade: React.FC = () => {
+  const loopRegion = useTimelineStore(shownLoopRegion);
   const selectionPlayback = useSelectionPlaybackRange();
   const focusRange = useFocusRange();
   const group = useEffectiveFocusGroup();
 
+  if (loopRegion) return <RangeShade range={loopRegion} color={ACCENT} />;
   if (selectionPlayback) {
-    return (
-      <RangeShade
-        range={selectionPlayback.range}
-        inner={selectionPlayback.selection}
-        color="var(--color-composer-accent)"
-      />
-    );
+    return <RangeShade range={selectionPlayback.range} inner={selectionPlayback.selection} color={ACCENT} />;
   }
   if (focusRange && group) return <RangeShade range={focusRange} color={group.color} />;
   return null;

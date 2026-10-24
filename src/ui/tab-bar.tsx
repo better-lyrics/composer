@@ -60,7 +60,8 @@ const TabBar: React.FC = () => {
   const selectionPlayback = useTimelineStore((s) => s.selectionPlayback);
   const loopOpenGroup = useSettingsStore((s) => s.loopOpenGroup);
   const groupOpen = useEffectiveFocus() !== null;
-  const rangeIndicator = rangePlaybackIndicator(selectionPlayback, groupOpen && loopOpenGroup);
+  const regionSet = useTimelineStore((s) => s.loopRegion !== null);
+  const rangeIndicator = rangePlaybackIndicator(selectionPlayback, groupOpen && loopOpenGroup, regionSet);
   const rangeStateId = useId();
   return (
     <TabStrip

@@ -119,3 +119,45 @@ describe("group focus", () => {
     });
   });
 });
+
+describe("loopRegion", () => {
+  const word = { lineId: "a", lineIndex: 0, wordIndex: 0, type: "word" as const };
+  const region = { begin: 1, end: 2, loops: true };
+
+  beforeEach(() => {
+    useTimelineStore.setState({ loopRegion: null, selectedWords: [] });
+  });
+
+  it("drawing a region clears the word selection", () => {
+    useTimelineStore.getState().setSelectedWords([word]);
+    useTimelineStore.getState().setLoopRegion(region);
+    expect(useTimelineStore.getState().selectedWords).toEqual([]);
+    expect(useTimelineStore.getState().loopRegion).toEqual(region);
+  });
+
+  it("selecting words clears the region", () => {
+    useTimelineStore.getState().setLoopRegion(region);
+    useTimelineStore.getState().setSelectedWords([word]);
+    expect(useTimelineStore.getState().loopRegion).toBeNull();
+  });
+
+  it("toggling a word into the selection clears the region", () => {
+    useTimelineStore.getState().setLoopRegion(region);
+    useTimelineStore.getState().toggleSelection(word);
+    expect(useTimelineStore.getState().loopRegion).toBeNull();
+  });
+
+  it("an empty selection keeps the region", () => {
+    useTimelineStore.getState().setLoopRegion(region);
+    useTimelineStore.getState().setSelectedWords([]);
+    expect(useTimelineStore.getState().loopRegion).toEqual(region);
+  });
+
+  it("is project scoped", () => {
+    useTimelineStore.getState().setLoopRegion(region);
+    useTimelineStore.getState().setLoopRegionDrag({ edge: "end", snappedTo: null, draft: null });
+    useTimelineStore.getState().resetProjectScope();
+    expect(useTimelineStore.getState().loopRegion).toBeNull();
+    expect(useTimelineStore.getState().loopRegionDrag).toBeNull();
+  });
+});

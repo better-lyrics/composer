@@ -79,11 +79,13 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
     // Read directly from audio element for smooth updates
     const isPlaying = useAudioStore.getState().isPlaying;
     const currentTime = livePlaybackTime();
-    const { zoom, scrollLeft, isDraggingPlayhead, dragTime, followEnabled } = useTimelineStore.getState();
+    const { zoom, scrollLeft, isDraggingPlayhead, dragTime, followEnabled, loopRegionDrag } =
+      useTimelineStore.getState();
 
     // Auto-scroll to keep playhead centered when follow is enabled
     const container = scrollContainerRef.current;
-    if (followEnabled && isPlaying && container && !isDraggingPlayhead) {
+    // Follow would scroll the lanes under a region drag and stretch the region.
+    if (followEnabled && isPlaying && container && !isDraggingPlayhead && !loopRegionDrag) {
       const viewportWidth = container.clientWidth;
       const centerOffset = viewportWidth / 2 - GUTTER_WIDTH;
       const targetScrollLeft = Math.max(0, currentTime * zoom - centerOffset);

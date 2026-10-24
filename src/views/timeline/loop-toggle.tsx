@@ -22,8 +22,9 @@ const LoopToggleButton: React.FC<{ pressed: boolean; onClick: () => void }> = ({
 
 const LoopToggle: React.FC = () => {
   const selectionPlayback = useTimelineStore((s) => s.selectionPlayback);
+  const loopRegion = useTimelineStore((s) => s.loopRegion);
   const loopOpenGroup = useSettingsStore((s) => s.loopOpenGroup);
-  return <LoopToggleButton pressed={loopsRange(selectionPlayback, loopOpenGroup)} onClick={toggleLoop} />;
+  return <LoopToggleButton pressed={loopsRange(selectionPlayback, loopOpenGroup, loopRegion)} onClick={toggleLoop} />;
 };
 
 // -- Exports -------------------------------------------------------------------

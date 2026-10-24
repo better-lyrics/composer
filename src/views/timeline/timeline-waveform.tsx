@@ -3,8 +3,11 @@ import { useThemeStore } from "@/stores/theme";
 import { isAbortError } from "@/utils/abort-error";
 import { cn } from "@/utils/cn";
 import { readToken } from "@/utils/theme/read-token";
-import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
+import { startLoopRegionDrag } from "@/views/timeline/loop-region-drag";
+import { LoopRegionEdges } from "@/views/timeline/loop-region-edges";
 import { placeSnapPoint } from "@/views/timeline/place-snap-point";
+import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
+import { clearLoopRegion } from "@/views/timeline/selection-playback";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import { WaveformFocusShade } from "@/views/timeline/waveform-focus-shade";
 import WavesurferPlayer from "@wavesurfer/react";
@@ -98,6 +101,7 @@ const TimelineWaveform: React.FC = () => {
         placeSnapPoint(time);
         return;
       }
+      clearLoopRegion();
       seekTo(snapPlayheadTime(time, e.metaKey));
     },
     [duration, totalWidth, timeFromClick, seekTo],
@@ -172,10 +176,16 @@ const TimelineWaveform: React.FC = () => {
           width: totalWidth,
           height: WAVEFORM_HEIGHT - 1,
         }}
+        onMouseDown={(e) => {
+          if (useTimelineStore.getState().pasteMode.status === "preview") return;
+          const container = e.currentTarget.closest<HTMLElement>("[data-scroll-container]");
+          if (container) startLoopRegionDrag(e, container, null);
+        }}
         onClick={handleClick}
         onPointerMove={(e) => setAltHeld(e.altKey)}
         onKeyDown={() => {}}
       />
+      <LoopRegionEdges />
     </div>
   );
 };

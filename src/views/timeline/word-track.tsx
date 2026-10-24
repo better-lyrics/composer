@@ -1,6 +1,7 @@
 import { timedTransliterationSlice } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { isWordSelected } from "@/domain/selection/identity";
+import { overlapsLoopRegion } from "@/domain/selection/loop-region";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
@@ -263,6 +264,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     });
 
   const hasSelection = selectedWords.length > 0;
+  const playingRegion = useTimelineStore((s) => (s.selectionPlayback !== null ? s.loopRegion : null));
 
   // The two outer edges of a multi-block selection advertise the proportional
   // stretch. Read lines non-reactively: the grip block identity is stable while
@@ -427,7 +429,10 @@ const WordTrack: React.FC<WordTrackProps> = ({
             end={display.end}
             color={color}
             zoom={zoom}
-            isDimmed={hasSelection && !isWordSelected(selectedWords, lineId, wordIndex, trackType)}
+            isDimmed={
+              (hasSelection && !isWordSelected(selectedWords, lineId, wordIndex, trackType)) ||
+              (playingRegion !== null && !overlapsLoopRegion(display, playingRegion))
+            }
             isSelected={isWordSelected(selectedWords, lineId, wordIndex, trackType)}
             isExplicit={word.explicit === true}
             syllablePosition={syllablePosition}
