@@ -58,6 +58,13 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
       replaying = false;
     };
 
+    let disposed = false;
+    // The wheel handler sets zoom before it re-anchors the scroll, so replay once both are in place.
+    const replayAfterZoom = () =>
+      queueMicrotask(() => {
+        if (!disposed) replayLastPointer();
+      });
+
     const handleKey = (e: KeyboardEvent) => {
       trackModifiers(e);
       const next = holdsSnapBypass(e);
@@ -79,6 +86,8 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
         state.scrollLeft !== prev.scrollLeft
       ) {
         replayLastPointer();
+      } else if (state.zoom !== prev.zoom) {
+        replayAfterZoom();
       }
     });
 
@@ -86,6 +95,7 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
     window.addEventListener("keydown", handleKey);
     window.addEventListener("keyup", handleKey);
     return () => {
+      disposed = true;
       document.removeEventListener("pointermove", trackModifiers, true);
       window.removeEventListener("keydown", handleKey);
       window.removeEventListener("keyup", handleKey);
