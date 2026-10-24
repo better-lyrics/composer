@@ -22,6 +22,7 @@ function googleLanguageCode(language: string): string {
   if (language === "zh-Hant") return "zh-TW";
   return language;
 }
+const NOTHING_TO_ROMANIZE = { text: null, detectedLanguage: "", segments: [], usedLanguage: "" };
 const translationCache = new Map<string, { text: string | null; detectedLanguage: string }>();
 const transliterationCache = new Map<
   string,
@@ -158,19 +159,26 @@ const googleLanguageProvider: LanguageProvider = {
   async translate(lines, targetLanguage, sourceLanguage, signal): Promise<TranslationBatchResult> {
     const source = googleLanguageCode(sourceLanguage || "auto");
     const target = googleLanguageCode(targetLanguage);
+    if (source === target)
+      return { detectedLanguage: source, lines: lines.map((line) => ({ id: line.id, text: null })) };
     const results = await settleWithLimit(lines, (line) => translateOne(line.text, target, source, signal));
     return {
       detectedLanguage: results.find((result) => result?.detectedLanguage)?.detectedLanguage ?? "",
       lines: lines.map((line, index) => ({
         id: line.id,
-        text: results[index]?.text ?? null,
+        // A line already in the target language only comes back reworded, never translated.
+        text: results[index]?.detectedLanguage === target ? null : (results[index]?.text ?? null),
         ...(results[index] === null ? { failed: true } : {}),
       })),
     };
   },
   async transliterate(lines, sourceLanguage, signal): Promise<TransliterationBatchResult> {
     const source = googleLanguageCode(sourceLanguage || "auto");
-    const results = await settleWithLimit(lines, (line) => transliterateWithFallback(line.text, source, signal));
+    const results = await settleWithLimit(lines, (line) =>
+      containsNonLatin(line.text)
+        ? transliterateWithFallback(line.text, source, signal)
+        : Promise.resolve(NOTHING_TO_ROMANIZE),
+    );
     const languageCounts = new Map<string, number>();
     for (const result of results) {
       if (!result?.usedLanguage || result.usedLanguage === "auto") continue;

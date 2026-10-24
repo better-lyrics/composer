@@ -1,4 +1,5 @@
 import { googleLanguageProvider, normalizeGoogleTransliteration } from "@/services/google-language-provider";
+import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { generatedLanguageUpdates } from "@/views/languages/generated-language-updates";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -101,17 +102,53 @@ describe("Google translation source language", () => {
   });
 });
 
+describe("Google requests with nothing to produce", () => {
+  it("never requests a translation into the source language", async () => {
+    const requests = stubGoogleLanguageFetch({ detectedLanguage: "en", romanizations: {}, translations: {} });
+
+    const result = await googleLanguageProvider.translate([{ id: "same", text: "I'ma set it" }], "en", "en");
+
+    expect(requests).toEqual([]);
+    expect(result.lines).toEqual([{ id: "same", text: null }]);
+  });
+
+  it("regression: drops a translation of a line Google reads as the target language", async () => {
+    stubGoogleLanguageFetch({
+      detectedLanguage: "en",
+      romanizations: {},
+      translations: { "they erased 'em": "they erased them" },
+    });
+
+    const result = await googleLanguageProvider.translate([{ id: "auto", text: "they erased 'em" }], "en", "auto");
+
+    expect(result.lines[0].text).toBeNull();
+  });
+
+  it("skips romanizing a line without non-Latin characters", async () => {
+    const requests = stubGoogleLanguageFetch({
+      detectedLanguage: "sq",
+      romanizations: { Rrah: "beat" },
+      translations: {},
+    });
+
+    const result = await googleLanguageProvider.transliterate([{ id: "adlib", text: "Rrah" }], "auto");
+
+    expect(requests).toEqual([]);
+    expect(result.lines).toEqual([{ id: "adlib", text: null, segments: [] }]);
+  });
+});
+
 describe("Google partial request failures", () => {
   it.each(["translate", "transliterate"] as const)(
     "does not cache malformed successful HTTP %s responses or replace existing tracks",
     async (operation) => {
       vi.spyOn(console, "warn").mockImplementation(() => {});
-      const source = `malformed response ${operation}`;
+      const source = `malformed response ${operation} 歌`;
       const fetchMock = vi.fn(async () => new Response(JSON.stringify({ error: "invalid response" })));
       vi.stubGlobal("fetch", fetchMock);
       const run = () =>
         operation === "translate"
-          ? googleLanguageProvider.translate([{ id: "line", text: source }], "en", "en")
+          ? googleLanguageProvider.translate([{ id: "line", text: source }], "es", "en")
           : googleLanguageProvider.transliterate([{ id: "line", text: source }], "en");
       const result = await run();
       expect(result.lines[0]).toMatchObject({ id: "line", text: null, failed: true });
@@ -157,8 +194,8 @@ describe("Google partial request failures", () => {
     "distinguishes failed %s requests from successful empty results and retries failures",
     async (operation) => {
       vi.spyOn(console, "warn").mockImplementation(() => {});
-      const failingText = `request failure ${operation}`;
-      const unchangedText = `unchanged ${operation}`;
+      const failingText = `request failure ${operation} 歌`;
+      const unchangedText = `unchanged ${operation} 歌`;
       const fetchMock = vi.fn(async (input: string | URL | Request) => {
         const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
         const text = url.searchParams.get("q");
@@ -172,7 +209,7 @@ describe("Google partial request failures", () => {
       ];
       const run = () =>
         operation === "translate"
-          ? googleLanguageProvider.translate(inputs, "en", "en")
+          ? googleLanguageProvider.translate(inputs, "es", "en")
           : googleLanguageProvider.transliterate(inputs, "en");
 
       const result = await run();
@@ -195,7 +232,7 @@ describe("Google partial request failures", () => {
       throw new DOMException("Aborted", "AbortError");
     });
     await expect(
-      googleLanguageProvider.transliterate([{ id: "aborted", text: "aborted request" }], "en"),
+      googleLanguageProvider.transliterate([{ id: "aborted", text: "aborted request 歌" }], "en"),
     ).rejects.toMatchObject({ name: "AbortError" });
   });
 });
