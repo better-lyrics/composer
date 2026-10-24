@@ -19,7 +19,6 @@ function useKeyboardShortcuts(actions: ShortcutActions, options: ShortcutOptions
 
   const handleKeyDown = useEffectEvent((event: KeyboardEvent) => {
     if (!enabled) return;
-    if (event.repeat) return;
     if (isAnyModalOpen()) return;
 
     const id = findMatchingShortcut(event, "global");

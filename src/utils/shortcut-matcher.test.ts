@@ -70,7 +70,7 @@ describe("findMatchingShortcut", () => {
     it("only nudges and jumps opt into auto-repeat", () => {
       const repeatable = SHORTCUT_DEFINITIONS.filter((definition) => definition.repeatable).map(({ id }) => id);
       for (const id of repeatable) {
-        expect(id).toMatch(/\.(nudge|jump)/);
+        expect(id).toMatch(/\.(nudge|jump|seek)/);
       }
       expect(repeatable).toContain("timeline.nudgeLeft");
       expect(repeatable).toContain("timeline.nudgeRight");
@@ -264,6 +264,12 @@ describe("keyboard layouts", () => {
 
     it("keeps a non-ASCII glyph when the physical key has no US mapping", () => {
       expect(bindingFromKeyboardEvent(keydown({ key: "ß", code: "IntlBackslash" }))).toEqual({ key: "ß" });
+    });
+
+    it("reads the shifted character when the browser reports the unshifted one with Mod+Shift held", () => {
+      const event = keydown({ key: ",", code: "Comma", shiftKey: true, ...MOD });
+      expect(findMatchingShortcut(event, "global")).toBe("global.seekBackwardWhileTyping");
+      expect(bindingFromKeyboardEvent(event)).toMatchObject({ key: "<", shift: true, mod: true });
     });
 
     it("keeps named keys on any layout", () => {

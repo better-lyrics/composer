@@ -97,6 +97,14 @@ describe("migrateShortcutBindings", () => {
     });
   });
 
+  it("leaves a seek shortcut unbound when a saved binding already uses its keys", () => {
+    const saved = { overrides: { "timeline.toggleFollow": { key: "<", shift: true } } };
+
+    expect(migrateShortcutBindings(saved, 5)).toEqual({
+      overrides: { ...saved.overrides, "global.seekBackward": { key: "" } },
+    });
+  });
+
   describe("edge cases", () => {
     it("keeps the timeline delete keys when only another scope uses them", () => {
       const saved = { overrides: { "sync.tap": { key: "Backspace" } } };
