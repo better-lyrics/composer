@@ -43,4 +43,3 @@ function launchTargetAction(target: URL, isWindowOpeningLaunch: boolean): Launch
 // -- Exports ------------------------------------------------------------------
 
 export { firstLaunchedFile, launchTargetAction, launchedFileKind };
-export type { LaunchedFile, LaunchedFileKind, LaunchTargetAction };

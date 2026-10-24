@@ -16,8 +16,16 @@
   ],
   "launch_handler": { "client_mode": "focus-existing" },
   "shortcuts": [
-    { "name": "Library", "url": "/", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "Last project", "url": "/editor", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+    {
+      "name": "Library",
+      "url": "/",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Last project",
+      "url": "/editor",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
   ],
   "file_handlers": [
     {

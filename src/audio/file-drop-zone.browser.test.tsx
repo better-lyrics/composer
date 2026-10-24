@@ -296,7 +296,9 @@ describe("FileDropZone ids", () => {
       const label = screen.container.querySelector("label") as HTMLLabelElement;
       dragFile(label, "drop", new File(["plain text"], "lyrics.txt", { type: "text/plain" }));
       await expect
-        .element(screen.getByText("Unsupported file type. Use .mp3 .wav .m4a .ogg .flac or a project file (.composer .json)"))
+        .element(
+          screen.getByText("Unsupported file type. Use .mp3 .wav .m4a .ogg .flac or a project file (.composer .json)"),
+        )
         .toBeInTheDocument();
     });
 

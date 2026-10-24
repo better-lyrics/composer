@@ -206,12 +206,5 @@ function useImportContext(sourceLabel: string): ImportContext {
 
 // -- Exports ------------------------------------------------------------------
 
-export {
-  importLyrics,
-  importProjectLyrics,
-  readLyricsFile,
-  readTtmlLyrics,
-  replaceWithParsedLyrics,
-  useImportContext,
-};
+export { importLyrics, importProjectLyrics, readLyricsFile, readTtmlLyrics, replaceWithParsedLyrics, useImportContext };
 export type { ImportContext, ImportSourceInfo };
