@@ -6,7 +6,7 @@ import { isWordSynced } from "@/domain/line/predicates";
 import { syncProgress } from "@/domain/line/sync-progress";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import { toComposerMeta } from "@/domain/project/metadata-ttml";
+import { YOUTUBE_VIDEO_ID_KEY, toComposerMeta } from "@/domain/project/metadata-ttml";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { type TimingGranularity, timingGranularityOf } from "@/domain/project/timing-granularity";
 import { formatTime } from "@/utils/format-time";
@@ -36,9 +36,19 @@ interface TTMLOptions {
   minify?: boolean;
   duration?: number;
   timing?: TimingGranularity;
+  youtubeVideoId?: string;
 }
 
-function generateTTML({ metadata, agents, lines, groups, minify = false, duration, timing }: TTMLOptions): string {
+function generateTTML({
+  metadata,
+  agents,
+  lines,
+  groups,
+  minify = false,
+  duration,
+  timing,
+  youtubeVideoId,
+}: TTMLOptions): string {
   const nl = minify ? "" : "\n";
   const ind = (n: number) => (minify ? "" : "  ".repeat(n));
 
@@ -66,6 +76,9 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
   }
   for (const { key, value } of toComposerMeta(metadata)) {
     parts.push(`${ind(3)}<composer:meta key="${escapeXmlAttribute(key)}" value="${escapeXmlAttribute(value)}"/>`);
+  }
+  if (youtubeVideoId) {
+    parts.push(`${ind(3)}<composer:meta key="${YOUTUBE_VIDEO_ID_KEY}" value="${escapeXmlAttribute(youtubeVideoId)}"/>`);
   }
   for (const agent of agents) {
     if (agent.name) {
@@ -200,16 +213,19 @@ function generateProjectTtml(
   { metadata, agents, lines, groups }: ProjectTtmlSource,
   duration: number,
   timing?: TimingGranularity,
+  youtubeVideoId?: string,
 ): string {
   return syncProgress(lines, "line").done > 0
-    ? generateTTML({ metadata, agents, lines, groups, duration, timing })
+    ? generateTTML({ metadata, agents, lines, groups, duration, timing, youtubeVideoId })
     : "";
 }
 
 const BODY_DURATION = /<body dur="[^"]*">/;
+const YOUTUBE_VIDEO_ID_META = new RegExp(`\\s*<composer:meta key="${YOUTUBE_VIDEO_ID_KEY}" value="[^"]*"/>`);
 
-function withoutAudioDuration(ttml: string): string {
-  return ttml.replace(BODY_DURATION, "<body>");
+// Duration and video ID describe the loaded audio, so swapping audio never reads as an edit.
+function withoutAudioIdentity(ttml: string): string {
+  return ttml.replace(BODY_DURATION, "<body>").replace(YOUTUBE_VIDEO_ID_META, "");
 }
 
 function generateLineTtml(line: LyricLine): string {
@@ -218,4 +234,4 @@ function generateLineTtml(line: LyricLine): string {
 
 // -- Exports ------------------------------------------------------------------
 
-export { generateLineTtml, generateProjectTtml, generateTTML, withoutAudioDuration };
+export { generateLineTtml, generateProjectTtml, generateTTML, withoutAudioIdentity };

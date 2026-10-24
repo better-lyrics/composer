@@ -15,6 +15,14 @@ function toSavedAudioSource(source: AudioSource): SavedAudioSource | undefined {
   return undefined;
 }
 
+// The open project's audio, falling back to the audio it expects while that is not loaded.
+function projectAudioSource(state: {
+  source: AudioSource;
+  expectedAudio: SavedAudioSource | null;
+}): SavedAudioSource | undefined {
+  return toSavedAudioSource(state.source) ?? state.expectedAudio ?? undefined;
+}
+
 function playableFile(source: AudioSource): File | null {
   if (!source) return null;
   if (source.type === "file") return source.file;
@@ -49,7 +57,7 @@ function currentSaveInput(): ProjectSaveInput {
     granularity: projectState.granularity,
     exportTiming: projectState.exportTiming,
     syllableSplitDefaults: projectState.syllableSplitDefaults,
-    audioSource: toSavedAudioSource(audioState.source) ?? audioState.expectedAudio ?? undefined,
+    audioSource: projectAudioSource(audioState),
     dismissedSuggestions: projectState.dismissedSuggestions,
     dismissedExplicitSuggestions: projectState.dismissedExplicitSuggestions,
     dismissedMetadataMatches: projectState.dismissedMetadataMatches,
@@ -73,4 +81,4 @@ function buildSaveInput(): ProjectSaveInput | null {
 
 // -- Exports ------------------------------------------------------------------
 
-export { storedAudioFile, hadStoredAudio, buildSaveInput, currentSaveInput };
+export { storedAudioFile, hadStoredAudio, buildSaveInput, currentSaveInput, projectAudioSource };
