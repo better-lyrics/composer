@@ -151,6 +151,23 @@ describe("lastPlaybackRate", () => {
   });
 });
 
+describe("seekStep", () => {
+  it("moves the first shipped default of 5 s to the finer default", async () => {
+    await rehydrateAt(9, legacyBlob({ seekStep: 5 }));
+    expect(useSettingsStore.getState().seekStep).toBe(0.5);
+  });
+
+  it("keeps a step the user chose", async () => {
+    await rehydrateAt(9, legacyBlob({ seekStep: 2 }));
+    expect(useSettingsStore.getState().seekStep).toBe(2);
+  });
+
+  it("keeps 5 s chosen at the current version", async () => {
+    await rehydrateAt(10, legacyBlob({ seekStep: 5 }));
+    expect(useSettingsStore.getState().seekStep).toBe(5);
+  });
+});
+
 describe("selectionLeadIn migration", () => {
   it("defaults selectionLeadIn to 0.3", () => {
     const { selectionLeadIn: _drop, ...blob } = legacyBlob();

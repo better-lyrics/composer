@@ -151,7 +151,7 @@ const DEFAULTS: SettingsState = {
   redoPreroll: 1.5,
   selectionLeadIn: 0.3,
   syncCountIn: 3,
-  seekStep: 5,
+  seekStep: 0.5,
   defaultGranularity: "word",
 
   autoSaveDelay: 2000,

@@ -26,7 +26,7 @@ import { setWordBoundary } from "@/utils/timing/word-timing";
 import { isTypingTarget } from "@/utils/typing-target";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { mergeWordText } from "@/utils/word-merge";
-import { centerTimeScrollLeft, revealTimeScrollLeft } from "@/views/timeline/coords";
+import { centerTimeScrollLeft } from "@/views/timeline/coords";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
@@ -713,16 +713,6 @@ function useTimelineKeyboard(
             break;
           }
           useAudioStore.getState().seekTo(target);
-          const jumpScrollContainer = scrollContainerRef.current;
-          if (jumpScrollContainer) {
-            const nextScrollLeft = revealTimeScrollLeft(
-              target,
-              useTimelineStore.getState().zoom,
-              jumpScrollContainer.scrollLeft,
-              jumpScrollContainer.clientWidth,
-            );
-            if (nextScrollLeft !== null) jumpScrollContainer.scrollLeft = nextScrollLeft;
-          }
           break;
         }
       }

@@ -17,6 +17,7 @@ import { EmptyTimelineImport } from "@/views/timeline/empty-timeline-import";
 import { GroupFocusBar } from "@/views/timeline/group-focus-bar";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
+import { useSeekReveal } from "@/views/timeline/use-seek-reveal";
 import { LoopRegionBar } from "@/views/timeline/loop-region-bar";
 import { LoopRegionGuides } from "@/views/timeline/loop-region-guides";
 import { LoopRegionReadout } from "@/views/timeline/loop-region-readout";
@@ -136,6 +137,7 @@ const TimelinePanel: React.FC = () => {
   useGroupFocusShortcuts();
   useGroupFocusScroll(scrollContainerRef);
   useTimelineWheel(scrollContainerRef, !!source && lines.length > 0);
+  useSeekReveal(scrollContainerRef, !!source && lines.length > 0);
   useTimelineFrameWake(scrollContainerRef, contentRef, !!source && lines.length > 0);
   useResumeView(scrollContainerRef, !!source && lines.length > 0 && duration > 0);
 
