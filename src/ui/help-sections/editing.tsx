@@ -1,4 +1,6 @@
 import { useSettingsStore } from "@/stores/settings";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { PROSE } from "@/ui/typography";
 import { SettingLink } from "@/ui/setting-link";
 import { HelpTopic } from "@/ui/help-topic";
@@ -14,6 +16,19 @@ const EditSection: React.FC = () => {
         Each row is one line of lyrics. Type normally, press Enter for a new line. To reorder lines, drag them using the
         handle on the left side.
       </p>
+
+      <HelpTopic title="Typing along with the song">
+        <p className={PROSE}>
+          You can control playback without leaving the lyrics box. Press{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.playPauseWhileTyping")} /> to play or pause, and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekBackwardWhileTyping")} /> or{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekForwardWhileTyping")} /> to seek back or forward by
+          the <SettingLink setting="seekStep" />. Outside a text field,{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekBackward")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekForward")} /> seek from any tab. If you click away,
+          press <InlineKeyBadge keys={getEffectiveKeysArray("global.goToEdit")} /> to jump back into the lyrics box.
+        </p>
+      </HelpTopic>
 
       <HelpTopic title="Agents (singers)">
         <p className={PROSE}>

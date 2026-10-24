@@ -30,6 +30,18 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
         description: "Play / Pause audio, even while typing",
         shortcutId: "global.playPauseWhileTyping",
       },
+      { keys: ["Shift", "<"], description: "Seek back", shortcutId: "global.seekBackward" },
+      { keys: ["Shift", ">"], description: "Seek forward", shortcutId: "global.seekForward" },
+      {
+        keys: ["Mod", "Shift", "<"],
+        description: "Seek back, even while typing",
+        shortcutId: "global.seekBackwardWhileTyping",
+      },
+      {
+        keys: ["Mod", "Shift", ">"],
+        description: "Seek forward, even while typing",
+        shortcutId: "global.seekForwardWhileTyping",
+      },
       {
         keys: ["Shift", "R"],
         description: "Switch between normal speed and the last speed you used (0.75x at first)",
