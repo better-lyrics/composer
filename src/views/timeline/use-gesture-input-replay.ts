@@ -32,6 +32,7 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
       return;
     }
 
+    bypassRef.current = useTimelineStore.getState().isBypassing;
     const held: HeldModifiers = { ...NO_MODIFIERS };
     let replaying = false;
     const trackModifiers = (e: KeyboardEvent | PointerEvent) => {

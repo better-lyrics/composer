@@ -10,6 +10,7 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 // -- Fixtures -----------------------------------------------------------------
 
 const ZOOM = 50;
+const START_X = 100;
 
 const chorus = createLine({
   id: "c0",
@@ -20,7 +21,7 @@ const chorus = createLine({
   templateLineIdx: 0,
 });
 
-async function dragBanner(dxPx: number): Promise<void> {
+async function renderBanner(): Promise<Element> {
   const group = createGroup({ id: "g1", label: "Chorus" });
   useTimelineStore.setState({ zoom: ZOOM });
   useProjectStore.setState({ groups: [group], lines: [chorus], customSnapPoints: [createSnapPoint(12.1)] });
@@ -38,10 +39,21 @@ async function dragBanner(dxPx: number): Promise<void> {
   );
   const banner = screen.container.querySelector("[data-instance-key]");
   if (!banner) throw new Error("banner not rendered");
-  const startX = 100;
-  banner.dispatchEvent(new PointerEvent("pointerdown", { clientX: startX, button: 0, bubbles: true }));
-  document.dispatchEvent(new PointerEvent("pointermove", { clientX: startX + dxPx, bubbles: true }));
-  document.dispatchEvent(new PointerEvent("pointerup", { clientX: startX + dxPx, bubbles: true }));
+  return banner;
+}
+
+function pressAndMove(banner: Element, dxPx: number, modifiers: PointerEventInit = {}): void {
+  banner.dispatchEvent(new PointerEvent("pointerdown", { clientX: START_X, button: 0, bubbles: true, ...modifiers }));
+  document.dispatchEvent(new PointerEvent("pointermove", { clientX: START_X + dxPx, bubbles: true, ...modifiers }));
+}
+
+function release(dxPx: number, modifiers: PointerEventInit = {}): void {
+  document.dispatchEvent(new PointerEvent("pointerup", { clientX: START_X + dxPx, bubbles: true, ...modifiers }));
+}
+
+async function dragBanner(dxPx: number, modifiers: PointerEventInit = {}): Promise<void> {
+  pressAndMove(await renderBanner(), dxPx, modifiers);
+  release(dxPx, modifiers);
 }
 
 const firstWordBegin = () => useProjectStore.getState().lines[0].words?.[0].begin;
@@ -55,5 +67,25 @@ describe("GroupBanner · snap", () => {
     await dragBanner(2 * ZOOM);
 
     expect(firstWordBegin()).toBeCloseTo(12.1, 6);
+  });
+
+  it("regression: skips the snap while the bypass key is held from the start", async () => {
+    useSettingsStore.setState({ timelineSnap: true });
+
+    await dragBanner(2 * ZOOM, { metaKey: true, ctrlKey: true });
+
+    expect(firstWordBegin()).toBeCloseTo(12, 6);
+  });
+
+  it("regression: snaps again when the bypass key is released mid-drag", async () => {
+    useSettingsStore.setState({ timelineSnap: true });
+    const banner = await renderBanner();
+
+    pressAndMove(banner, 2 * ZOOM, { metaKey: true, ctrlKey: true });
+    await expect.poll(() => banner.className).toContain("cursor-grabbing");
+    window.dispatchEvent(new KeyboardEvent("keyup", { key: "Meta" }));
+
+    expect(useTimelineStore.getState().isBypassing).toBe(false);
+    release(2 * ZOOM);
   });
 });
