@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "@/test/render";
 
 const source = "こんにちは";
+const GENERATE_ALL = /^(Generate|Regenerate) all$/;
 
 function translatedLine(language: string, text: string, id = "line"): LyricLine {
   return {
@@ -88,29 +89,30 @@ describe("language generation lifecycle", () => {
   }
 
   function regenerateAll(screen: Awaited<ReturnType<typeof render>>) {
-    return screen.getByRole("button", { name: "Regenerate all", exact: true }).click();
+    return screen.getByRole("button", { name: GENERATE_ALL }).click();
   }
 
   it("regression: opening the tab never asks Google or writes the project", async () => {
     const history = useProjectStore.getState().history;
     const screen = await render(<ActivityPanel />);
-    await expect.element(screen.getByRole("button", { name: "Add language", exact: true })).toBeInTheDocument();
+    const english = screen.getByRole("textbox", { name: "English", exact: true });
+    await expect.element(english).toHaveValue("");
     useProjectStore.getState().setActiveTab("edit");
     useProjectStore.getState().setActiveTab("languages");
-    await expect.element(screen.getByRole("button", { name: "Add language", exact: true })).toBeInTheDocument();
+    await expect.element(english).toHaveValue("");
 
     expect(transliterationRequests).toBe(0);
     expect(requestedTargets).toEqual([]);
     expect(useProjectStore.getState().lines[0].translations).toBeUndefined();
     expect(useProjectStore.getState().history).toBe(history);
-    await expect.element(screen.getByRole("textbox", { name: "English", exact: true })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Generate all", exact: true })).toBeInTheDocument();
   });
 
   it("keeps translation and transliteration edits made during forced regeneration", async () => {
     const screen = await render(<LanguagesPanel />);
-    await addLanguage(screen, "English");
     const english = screen.getByRole("textbox", { name: "English", exact: true });
     const roman = screen.getByRole("textbox", { name: "Transliteration", exact: true });
+    await regenerateAll(screen);
     await expect.element(english).toHaveValue("Generated translation");
     defer = true;
     await regenerateAll(screen);
@@ -118,7 +120,7 @@ describe("language generation lifecycle", () => {
     await english.fill("New manual translation");
     await roman.fill("New manual romanization");
     await releaseRequests();
-    await expect.element(screen.getByRole("button", { name: "Regenerate all", exact: true })).toBeEnabled();
+    await expect.element(screen.getByRole("button", { name: GENERATE_ALL })).toBeEnabled();
     await expect.element(english).toHaveValue("New manual translation");
     await expect.element(roman).toHaveValue("New manual romanization");
   });
@@ -126,36 +128,40 @@ describe("language generation lifecycle", () => {
   it("does not recreate a target removed while generation is pending", async () => {
     defer = true;
     const screen = await render(<LanguagesPanel />);
-    await addLanguage(screen, "English");
-    await expect.poll(() => pending.length).toBe(1);
+    await regenerateAll(screen);
+    await expect.poll(() => pending.length).toBe(2);
     await screen.getByRole("button", { name: "Remove English", exact: true }).click();
     await releaseRequests();
-    await expect.element(screen.getByRole("button", { name: "Regenerate all", exact: true })).toBeEnabled();
+    await expect.element(screen.getByRole("button", { name: GENERATE_ALL })).toBeEnabled();
     expect(useProjectStore.getState().lines[0].translations?.en).toBeUndefined();
     await expect.element(screen.getByRole("button", { name: "Remove English", exact: true })).not.toBeInTheDocument();
   });
 
-  it("regression: adding a language through Add language requests only that translation", async () => {
+  it("regression: adding a language through Add language requests generation only for that target", async () => {
     const screen = await render(<LanguagesPanel />);
     await addLanguage(screen, "Spanish");
     await expect
       .element(screen.getByRole("textbox", { name: "Spanish", exact: true }))
       .toHaveValue("Generated translation");
     expect(requestedTargets).toEqual(["es"]);
-    expect(transliterationRequests).toBe(0);
   });
 
   it("preserves text typed and then cleared while generation is pending", async () => {
     defer = true;
     const screen = await render(<LanguagesPanel />);
     await regenerateAll(screen);
-    await expect.poll(() => pending.length).toBe(1);
+    await expect.poll(() => pending.length).toBe(2);
+    const english = screen.getByRole("textbox", { name: "English", exact: true });
     const roman = screen.getByRole("textbox", { name: "Transliteration", exact: true });
+    await english.fill("Temporary translation");
+    await english.fill("");
     await roman.fill("Temporary romanization");
     await roman.fill("");
     await releaseRequests();
-    await expect.element(screen.getByRole("button", { name: "Regenerate all", exact: true })).toBeEnabled();
+    await expect.element(screen.getByRole("button", { name: GENERATE_ALL })).toBeEnabled();
+    await expect.element(english).toHaveValue("");
     await expect.element(roman).toHaveValue("");
+    expect(useProjectStore.getState().lines[0].translations?.en).toBeUndefined();
     expect(useProjectStore.getState().lines[0].transliteration).toBeUndefined();
   });
 
@@ -164,10 +170,11 @@ describe("language generation lifecycle", () => {
     defer = true;
     const screen = await render(<LanguagesPanel />);
     await regenerateAll(screen);
-    await expect.poll(() => pending.length).toBe(1);
+    await expect.poll(() => pending.length).toBe(2);
     useProjectStore.getState().updateLine("line", { text: "別の歌詞" });
     await releaseRequests();
-    await expect.element(screen.getByRole("button", { name: "Regenerate all", exact: true })).toBeEnabled();
+    await expect.element(screen.getByRole("button", { name: GENERATE_ALL })).toBeEnabled();
+    expect(useProjectStore.getState().lines[0].translations).toBeUndefined();
     expect(useProjectStore.getState().lines[0].transliteration).toBeUndefined();
     expect(useProjectStore.getState().metadata.language).toBeUndefined();
   });
@@ -176,14 +183,14 @@ describe("language generation lifecycle", () => {
     defer = true;
     const screen = await render(<LanguagesPanel />);
     await regenerateAll(screen);
-    await expect.poll(() => pending.length).toBe(1);
+    await expect.poll(() => pending.length).toBe(2);
     useProjectStore.getState().setLines([translatedLine("es", "Hola", "replacement")]);
     await expect.element(screen.getByRole("textbox", { name: "Spanish", exact: true })).toHaveValue("Hola");
     await releaseRequests();
-    await expect.element(screen.getByRole("button", { name: "Regenerate all", exact: true })).toBeEnabled();
+    await expect.element(screen.getByRole("button", { name: GENERATE_ALL })).toBeEnabled();
     expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["replacement"]);
-    expect(useProjectStore.getState().lines[0].transliteration).toBeUndefined();
     await expect.element(screen.getByRole("textbox", { name: "Spanish", exact: true })).toHaveValue("Hola");
+    await expect.element(screen.getByRole("textbox", { name: "English", exact: true })).toHaveValue("");
   });
 
   it("resynchronizes imported target languages while Activity is hidden, including reused line IDs", async () => {
@@ -202,8 +209,8 @@ describe("language generation lifecycle", () => {
 
   it("keeps a translation target editable after its last stored translation is cleared", async () => {
     const screen = await render(<LanguagesPanel />);
-    await addLanguage(screen, "English");
     const english = screen.getByRole("textbox", { name: "English", exact: true });
+    await regenerateAll(screen);
     await expect.element(english).toHaveValue("Generated translation");
     await english.fill("");
     await expect.element(english).toHaveValue("");
@@ -214,9 +221,10 @@ describe("language generation lifecycle", () => {
 
   it("resets empty target choices when a session reloads the same line IDs and track languages", async () => {
     const screen = await render(<ActivityPanel />);
+    await screen.getByRole("button", { name: "Remove English", exact: true }).click();
     defer = true;
     await addLanguage(screen, "Spanish");
-    await expect.poll(() => pending.length).toBe(1);
+    await expect.poll(() => pending.length).toBe(2);
     useProjectStore.getState().setActiveTab("edit");
     await expect.element(screen.getByRole("button", { name: "Remove Spanish", exact: true })).not.toBeInTheDocument();
     useProjectStore.getState().startProjectSession();
@@ -224,22 +232,24 @@ describe("language generation lifecycle", () => {
     await releaseRequests();
     requestedTargets = [];
     useProjectStore.getState().setActiveTab("languages");
-    await expect.element(screen.getByRole("button", { name: "Add language", exact: true })).toBeInTheDocument();
+    await expect.element(screen.getByRole("textbox", { name: "English", exact: true })).toHaveValue("");
     await expect.element(screen.getByRole("button", { name: "Remove Spanish", exact: true })).not.toBeInTheDocument();
     expect(requestedTargets).toEqual([]);
   });
 
-  it("keeps an empty selected target across Activity re-entry without generating it", async () => {
+  it("retains a removed default target and an empty selected target across Activity re-entry", async () => {
     const screen = await render(<ActivityPanel />);
+    await screen.getByRole("button", { name: "Remove English", exact: true }).click();
     defer = true;
     await addLanguage(screen, "Spanish");
-    await expect.poll(() => pending.length).toBe(1);
+    await expect.poll(() => pending.length).toBe(2);
     useProjectStore.getState().setActiveTab("edit");
     await expect.element(screen.getByRole("button", { name: "Remove Spanish", exact: true })).not.toBeInTheDocument();
     await releaseRequests();
     requestedTargets = [];
     useProjectStore.getState().setActiveTab("languages");
     await expect.element(screen.getByRole("textbox", { name: "Spanish", exact: true })).toHaveValue("");
+    await expect.element(screen.getByRole("textbox", { name: "English", exact: true })).not.toBeInTheDocument();
     expect(requestedTargets).toEqual([]);
     expect(useProjectStore.getState().lines[0].translations).toBeUndefined();
   });

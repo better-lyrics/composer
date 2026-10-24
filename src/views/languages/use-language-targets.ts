@@ -1,14 +1,15 @@
 import type { LyricLine } from "@/domain/line/model";
+import type { ProjectMetadata } from "@/domain/project/metadata";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
-function useLanguageTargets(lines: LyricLine[], projectSession: number) {
+function useLanguageTargets(lines: LyricLine[], metadata: ProjectMetadata, projectSession: number) {
   const persisted = [...new Set(lines.flatMap((line) => Object.keys(line.translations ?? {})))];
   const [context, setContext] = useState(() => ({
     session: projectSession,
     lineIds: new Set(lines.map((line) => line.id)),
     persisted,
-    targets: persisted,
+    targets: [...new Set([...persisted, ...(metadata.language !== "en" ? ["en"] : [])])],
     project: {},
   }));
   const replaced =
@@ -22,7 +23,9 @@ function useLanguageTargets(lines: LyricLine[], projectSession: number) {
       persisted,
       // Persisted tracks can change through imports or undo while this panel is
       // hidden. Keep empty user-selected targets only within the same project.
-      targets: replaced ? persisted : [...new Set([...context.targets, ...persisted])],
+      targets: replaced
+        ? [...new Set([...persisted, ...(metadata.language !== "en" ? ["en"] : [])])]
+        : [...new Set([...context.targets, ...persisted])],
       project: replaced ? {} : context.project,
     };
     setContext(current);

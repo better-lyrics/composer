@@ -43,7 +43,7 @@ const LanguagesPanel: React.FC = () => {
   const activeTab = useProjectStore((state) => state.activeTab);
   const updateLinesWithHistory = useProjectStore((state) => state.updateLinesWithHistory);
   const setMetadata = useProjectStore((state) => state.setMetadata);
-  const { targets, targetsRef, setTargets, project } = useLanguageTargets(lines, projectSession);
+  const { targets, targetsRef, setTargets, project } = useLanguageTargets(lines, metadata, projectSession);
   const [isGenerating, setIsGenerating] = useState(false);
   const [pasteImport, setPasteImport] = useState<{
     text: string;
@@ -92,6 +92,10 @@ const LanguagesPanel: React.FC = () => {
           edits,
         );
         if (updates.length > 0) updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+        const detected = generation.detectedLanguage;
+        if (updates.length > 0 && !currentState.metadata.language && detected && detected !== "auto") {
+          setMetadata({ language: detected });
+        }
       } catch (error) {
         if ((error as Error).name === "AbortError") return;
         console.warn(LOG_PREFIX, "generation failed", error);
@@ -104,7 +108,7 @@ const LanguagesPanel: React.FC = () => {
         }
       }
     },
-    [sourceLanguage, targetsRef, updateLinesWithHistory],
+    [setMetadata, sourceLanguage, targetsRef, updateLinesWithHistory],
   );
   // Activity tears down effects on hide, even without a render of the new tab.
   // biome-ignore lint/correctness/useExhaustiveDependencies: Tab and project changes must cancel the previous generation lifecycle.
@@ -132,16 +136,23 @@ const LanguagesPanel: React.FC = () => {
   const addTarget = (language: string) => {
     if (targets.includes(language)) return;
     setTargets([...targets, language]);
-    void generate([language], { transliteration: false });
+    void generate([language]);
   };
   const trackCount = targets.length + 1;
+  const hasLanguageContent = lines.some(
+    (line) => line.transliteration !== undefined || Object.keys(line.translations ?? {}).length > 0,
+  );
   const sourceLanguageLabel =
     SOURCE_SELECT_OPTIONS.find((option) => option.value === (metadata.language ?? ""))?.label ?? metadata.language;
   const changeSourceLanguage = (language: string) => {
     const selected = language || "auto";
     setMetadata({ language: language || undefined });
-    const transliteration = lines.some((line) => line.transliteration?.origin === "google");
-    if (targets.length > 0 || transliteration) void generate(targets, { source: selected, transliteration });
+    let requestedTargets = targets;
+    if (selected !== "en" && !targets.includes("en")) {
+      requestedTargets = [...targets, "en"];
+      setTargets(requestedTargets);
+    }
+    void generate(requestedTargets, { source: selected });
   };
 
   if (lines.length === 0) {
@@ -203,6 +214,7 @@ const LanguagesPanel: React.FC = () => {
           />
           <RegenerateLanguageControl
             isGenerating={isGenerating}
+            hasGenerated={hasLanguageContent}
             translations={targets}
             languageNames={languageName}
             onRegenerateAll={() => void generate(targets, { force: true })}

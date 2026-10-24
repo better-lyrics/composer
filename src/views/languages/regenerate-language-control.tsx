@@ -15,6 +15,7 @@ interface LanguageGenerationSelection {
 
 interface RegenerateLanguageControlProps {
   isGenerating: boolean;
+  hasGenerated: boolean;
   translations: string[];
   languageNames: ReadonlyMap<string, string>;
   onRegenerateAll: () => void;
@@ -100,6 +101,7 @@ const RegenerateSelectionMenu: React.FC<RegenerateSelectionMenuProps> = ({
 
 const RegenerateLanguageControl: React.FC<RegenerateLanguageControlProps> = ({
   isGenerating,
+  hasGenerated,
   translations,
   languageNames,
   onRegenerateAll,
@@ -115,7 +117,7 @@ const RegenerateLanguageControl: React.FC<RegenerateLanguageControlProps> = ({
       className="rounded-r-none"
     >
       <IconRefresh className={cn("size-4", isGenerating && "animate-spin")} />
-      {isGenerating ? "Generating…" : "Regenerate all"}
+      {isGenerating ? "Generating…" : hasGenerated ? "Regenerate all" : "Generate all"}
     </Button>
     <Popover
       placement="bottom-end"
