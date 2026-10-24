@@ -55,10 +55,10 @@ describe("withoutAudioIdentity", () => {
 
 describe("YouTube video ID export", () => {
   it("writes the video ID as a meta pair for a YouTube source", () => {
-    expect(exported(180, "dQw4w9WgXcQ")).toContain('<composer:meta key="youtubeVideoId" value="dQw4w9WgXcQ"/>');
+    expect(exported(180, "dQw4w9WgXcQ")).toContain('<composer:meta key="ytVideoId" value="dQw4w9WgXcQ"/>');
   });
 
   it("writes no video ID for other sources", () => {
-    expect(exported(180)).not.toContain("youtubeVideoId");
+    expect(exported(180)).not.toContain("ytVideoId");
   });
 });

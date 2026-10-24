@@ -10,7 +10,7 @@ interface MetaPair {
 // -- Reserved keys ------------------------------------------------------------
 
 // Written from the loaded audio on export, never read back into song details.
-const YOUTUBE_VIDEO_ID_KEY = "youtubeVideoId";
+const YOUTUBE_VIDEO_ID_KEY = "ytVideoId";
 
 const RESERVED_META_KEYS: ReadonlySet<string> = new Set([
   "artists",
