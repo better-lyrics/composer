@@ -5,6 +5,7 @@ import {
   type ShortcutScope,
   getShortcutById,
 } from "@/stores/shortcut-registry";
+import { isMac } from "@/utils/platform";
 import { shiftedUsPunctuation } from "@/utils/us-punctuation";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -63,10 +64,10 @@ const unbindTakenSeekKeys = unbindTakenKeys([
   "global.seekForwardWhileTyping",
 ]);
 
-// Chrome and Safari on macOS recorded Cmd+Shift+. as "." before matching read the shifted character.
+// Chrome and Safari on macOS saved Cmd+Shift+. as "."; elsewhere a shifted key is the layout's real glyph.
 function shiftSavedPunctuation(state: Partial<ShortcutBindingsState>): Partial<ShortcutBindingsState> {
   const { overrides } = state;
-  if (!overrides || typeof overrides !== "object") return state;
+  if (!isMac || !overrides || typeof overrides !== "object") return state;
   const shifted = Object.fromEntries(
     Object.entries(overrides).map(([id, binding]) => {
       const shiftedKey =
