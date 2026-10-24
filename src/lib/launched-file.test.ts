@@ -1,4 +1,4 @@
-import { firstLaunchedFile, launchTargetAction, launchedFileKind } from "@/lib/launched-file";
+import { firstLaunchedFile, isWindowOpeningLaunch, launchTargetAction, launchedFileKind } from "@/lib/launched-file";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
@@ -55,5 +55,23 @@ describe("launchTargetAction", () => {
 
   it("navigates in place for a later plain launch such as a dock shortcut", () => {
     expect(launchTargetAction(url("/editor"), false)).toEqual({ kind: "navigate", path: "/editor" });
+  });
+});
+
+describe("isWindowOpeningLaunch", () => {
+  const BOOT_HREF = "https://composer.boidu.dev/?v=dQw4w9WgXcQ";
+
+  it("matches the first launch when it targets the URL the window booted at", () => {
+    expect(isWindowOpeningLaunch(new URL(BOOT_HREF), BOOT_HREF, false)).toBe(true);
+  });
+
+  describe("regressions", () => {
+    it("regression: a song link arriving first after a reload is a later launch, not the opening one", () => {
+      expect(isWindowOpeningLaunch(url("/?v=9bZkp7q19f0"), "https://composer.boidu.dev/", false)).toBe(false);
+    });
+
+    it("regression: a shortcut after the consumer remounts is a later launch", () => {
+      expect(isWindowOpeningLaunch(url("/editor"), "https://composer.boidu.dev/editor", true)).toBe(false);
+    });
   });
 });

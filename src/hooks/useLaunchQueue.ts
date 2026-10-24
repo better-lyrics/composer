@@ -1,11 +1,12 @@
 import { ONE_SONG_AT_A_TIME_MESSAGE } from "@/audio/use-file-drop";
 import { useStartNewSong } from "@/hooks/useStartNewSong";
-import { firstLaunchedFile, launchTargetAction } from "@/lib/launched-file";
+import { bootLocationHref } from "@/lib/boot-entry";
+import { firstLaunchedFile, isWindowOpeningLaunch, launchTargetAction } from "@/lib/launched-file";
 import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { flushPendingSave } from "@/lib/persistence-debounce";
 import { importProjectFile } from "@/lib/project-import";
 import { EDITOR_PATH } from "@/utils/app-routes";
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -21,6 +22,11 @@ interface LaunchHandlers {
 const LOG_PREFIX = "[Launch]";
 const UNSUPPORTED_LAUNCH_MESSAGE = "Composer can't open that file";
 const UNREADABLE_LAUNCH_MESSAGE = "Couldn't read that file";
+
+// -- State --------------------------------------------------------------------
+
+// Per document, not per mount: a remount or a reload must not mistake a later launch for the opening one.
+let anyLaunchSeen = false;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -52,14 +58,15 @@ async function openLaunchedFiles(handles: readonly FileSystemFileHandle[], handl
   if (opened) handlers.navigate(EDITOR_PATH);
 }
 
-// The pending save must land before the reload; if it fails, the beforeunload prompt still guards it.
+// Reload, not assign: a hash-only target would otherwise stay in the same document and never reach boot.
 async function reloadInto(targetURL: string): Promise<void> {
   try {
     await flushPendingSave();
   } catch (error) {
     console.error(LOG_PREFIX, "could not save before opening the link", error);
   }
-  window.location.assign(targetURL);
+  window.history.replaceState(null, "", targetURL);
+  window.location.reload();
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -67,25 +74,24 @@ async function reloadInto(targetURL: string): Promise<void> {
 function useLaunchQueue(): void {
   const navigate = useNavigate();
   const { startWithFile } = useStartNewSong();
-  const handlersRef = useRef<LaunchHandlers>({ navigate, startWithFile });
-  handlersRef.current = { navigate, startWithFile };
 
+  const consumeLaunch = useEffectEvent((params: LaunchParams) => {
+    const target = params.targetURL ? URL.parse(params.targetURL) : null;
+    const opening = target !== null && isWindowOpeningLaunch(target, bootLocationHref(), anyLaunchSeen);
+    anyLaunchSeen = true;
+    if (params.files.length > 0) {
+      void openLaunchedFiles(params.files, { navigate, startWithFile });
+      return;
+    }
+    if (!target) return;
+    const action = launchTargetAction(target, opening);
+    if (action.kind === "navigate") navigate(action.path);
+    if (action.kind === "reload") void reloadInto(target.href);
+  });
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
   useEffect(() => {
-    const queue = window.launchQueue;
-    if (!queue) return;
-    let isWindowOpeningLaunch = true;
-    queue.setConsumer((params) => {
-      const opening = isWindowOpeningLaunch;
-      isWindowOpeningLaunch = false;
-      if (params.files.length > 0) {
-        void openLaunchedFiles(params.files, handlersRef.current);
-        return;
-      }
-      if (!params.targetURL) return;
-      const action = launchTargetAction(new URL(params.targetURL), opening);
-      if (action.kind === "navigate") handlersRef.current.navigate(action.path);
-      if (action.kind === "reload") void reloadInto(params.targetURL);
-    });
+    window.launchQueue?.setConsumer((params) => consumeLaunch(params));
   }, []);
 }
 

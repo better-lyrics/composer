@@ -18,12 +18,19 @@ function bootEntryPath(location: BootLocation, reopenLastProject: boolean): stri
   return `${EDITOR_PATH}${location.search}${location.hash}`;
 }
 
+let bootHref: string | null = null;
+
 function redirectBootEntry(): void {
+  bootHref = window.location.href;
   const reopenLastProject = useSettingsStore.getState().launchScreen === "last-project";
   const entry = bootEntryPath(window.location, reopenLastProject);
   if (entry) window.history.replaceState(window.history.state, "", entry);
 }
 
+function bootLocationHref(): string | null {
+  return bootHref;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { bootEntryPath, redirectBootEntry };
+export { bootEntryPath, bootLocationHref, redirectBootEntry };

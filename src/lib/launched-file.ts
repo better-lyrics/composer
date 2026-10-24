@@ -34,6 +34,10 @@ function firstLaunchedFile(files: readonly File[]): LaunchedFile | null {
 
 // -- Targets ------------------------------------------------------------------
 
+function isWindowOpeningLaunch(target: URL, bootHref: string | null, anyLaunchSeen: boolean): boolean {
+  return !anyLaunchSeen && target.href === bootHref;
+}
+
 function launchTargetAction(target: URL, isWindowOpeningLaunch: boolean): LaunchTargetAction {
   if (isWindowOpeningLaunch) return { kind: "ignore" };
   if (hasIncomingLink(target)) return { kind: "reload" };
@@ -42,4 +46,4 @@ function launchTargetAction(target: URL, isWindowOpeningLaunch: boolean): Launch
 
 // -- Exports ------------------------------------------------------------------
 
-export { firstLaunchedFile, launchTargetAction, launchedFileKind };
+export { firstLaunchedFile, isWindowOpeningLaunch, launchTargetAction, launchedFileKind };
