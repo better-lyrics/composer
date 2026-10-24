@@ -19,6 +19,19 @@ describe("detectConflicts · layout keys", () => {
   });
 });
 
+describe("assignBinding · key press read two ways", () => {
+  it("regression: unbinds a binding saved with the key as the browser reported it", () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.settings": { key: ".", shift: true, mod: true } } });
+    const pressedAs = { key: ".", shift: true, mod: true };
+
+    expect(
+      detectConflicts("global.goToEdit", { key: ">", shift: true, mod: true }, pressedAs).map(({ id }) => id),
+    ).toContain("global.settings");
+    assignBinding("global.goToEdit", { key: ">", shift: true, mod: true }, pressedAs);
+    expect(getEffectiveBinding("global.settings")).toEqual({ key: "" });
+  });
+});
+
 describe("assignBinding", () => {
   it("sets the binding", () => {
     assignBinding("timeline.toggleFollow", { key: "q" });

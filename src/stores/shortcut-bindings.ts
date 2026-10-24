@@ -193,7 +193,8 @@ function scopesConflict(a: ShortcutScope, b: ShortcutScope): boolean {
   return a === b;
 }
 
-function detectConflicts(id: string, newBinding: ShortcutBinding): ShortcutDefinition[] {
+// `pressedAs` is the same key press as the browser reported it, when that differs from the recorded binding.
+function detectConflicts(id: string, newBinding: ShortcutBinding, pressedAs?: ShortcutBinding): ShortcutDefinition[] {
   const source = SHORTCUT_REGISTRY.find((d) => d.id === id);
   if (!source) return [];
 
@@ -201,12 +202,13 @@ function detectConflicts(id: string, newBinding: ShortcutBinding): ShortcutDefin
     if (def.id === id) return false;
     if (!scopesConflict(source.scope, def.scope)) return false;
     const effective = getEffectiveBinding(def.id);
-    return bindingsEqual(effective, newBinding);
+    return bindingsEqual(effective, newBinding) || (pressedAs !== undefined && bindingsEqual(effective, pressedAs));
   });
 }
 
-function assignBinding(id: string, binding: ShortcutBinding): void {
-  const unbound = Object.fromEntries(detectConflicts(id, binding).map((conflict) => [conflict.id, UNBOUND]));
+function assignBinding(id: string, binding: ShortcutBinding, pressedAs?: ShortcutBinding): void {
+  const conflicts = detectConflicts(id, binding, pressedAs);
+  const unbound = Object.fromEntries(conflicts.map((conflict) => [conflict.id, UNBOUND]));
   useShortcutBindingsStore.setState((state) => ({ overrides: { ...state.overrides, ...unbound, [id]: binding } }));
 }
 

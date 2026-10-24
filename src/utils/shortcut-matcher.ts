@@ -81,6 +81,11 @@ function bindingFromKeyboardEvent(event: KeyboardEvent): ShortcutBinding | null 
   };
 }
 
+function reportedBinding(event: KeyboardEvent, binding: ShortcutBinding): ShortcutBinding | undefined {
+  const reportedKey = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  return reportedKey === binding.key ? undefined : { ...binding, key: reportedKey };
+}
+
 function matchesBinding(event: KeyboardEvent, binding: ShortcutBinding): boolean {
   if (binding.key === "") return false;
   if (event.getModifierState("AltGraph")) return false;
@@ -179,6 +184,7 @@ function isReservedBrowserShortcut(binding: ShortcutBinding): boolean {
 // -- Exports ------------------------------------------------------------------
 
 export {
+  reportedBinding,
   bindingFromKeyboardEvent,
   findMatchingShortcut,
   isCommandBinding,
