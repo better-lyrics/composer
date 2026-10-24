@@ -16,7 +16,8 @@ const SingerTag: React.FC<SingerTagProps> = ({ color, children, className }) => 
     style={{ "--agent": color }}
     title={typeof children === "string" ? children : undefined}
   >
-    <span className="truncate">{children}</span>
+    {/* Line-height 1 keeps the text centred on the icon; the padding lets truncate show descenders. */}
+    <span className="-my-0.5 truncate py-0.5">{children}</span>
   </span>
 );
 
