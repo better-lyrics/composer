@@ -32,6 +32,8 @@ interface GenerationOptions {
 
 // -- Constants ----------------------------------------------------------------
 
+const LOG_PREFIX = "[Languages]";
+
 const SOURCE_SELECT_OPTIONS = SOURCE_LANGUAGE_OPTIONS.map(([value, label]) => ({ value, label }));
 
 // -- Component ----------------------------------------------------------------
@@ -100,7 +102,9 @@ const LanguagesPanel: React.FC = () => {
           setMetadata({ language: detected });
         }
       } catch (error) {
-        if ((error as Error).name !== "AbortError") toast.error("Couldn't generate some lines. Try Regenerate.");
+        if ((error as Error).name === "AbortError") return;
+        console.warn(LOG_PREFIX, "generation failed", error);
+        toast.error("Couldn't generate some lines. Try Regenerate.");
       } finally {
         stop();
         if (abortRef.current === controller) {

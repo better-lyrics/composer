@@ -46,7 +46,7 @@ function groupBoundaryPoints(words: WordTiming[]): number[] {
 // -- Component ----------------------------------------------------------------
 
 const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps> = ({ line, field, onClose }) => {
-  const updateLine = useProjectStore((state) => state.updateLine);
+  const updateLinesWithHistory = useProjectStore((state) => state.updateLinesWithHistory);
   const track = line.transliteration;
   const canonicalText = field === "words" ? track?.text : track?.backgroundText;
   const sourceWords = line[field];
@@ -118,18 +118,22 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
         };
       }
     }
-    updateLine(
-      line.id,
-      {
-        [field]: nextWords,
-        transliteration: {
-          ...track,
-          ...(field === "words"
-            ? { alignmentStatus: "confirmed" as const }
-            : { backgroundAlignmentStatus: "confirmed" as const }),
+    updateLinesWithHistory(
+      [
+        {
+          id: line.id,
+          updates: {
+            [field]: nextWords,
+            transliteration: {
+              ...track,
+              ...(field === "words"
+                ? { alignmentStatus: "confirmed" as const }
+                : { backgroundAlignmentStatus: "confirmed" as const }),
+            },
+          },
         },
-      },
-      { deriveText: false },
+      ],
+      { deriveText: false, propagateToSiblings: false },
     );
     onClose();
   };

@@ -68,6 +68,17 @@ describe("TransliterationAlignmentModal", () => {
       expect(saved.words?.[1].transliteration).toBe("na");
       expect(saved.transliteration?.alignmentStatus).toBe("confirmed");
     });
+
+    it("regression: saves as one undo step", async () => {
+      const line = setupLine();
+      useProjectStore.getState().clearHistory();
+      const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
+      await screen.getByRole("button", { name: "Save", exact: true }).click();
+
+      expect(useProjectStore.getState().isDirtySinceHistory).toBe(false);
+      useProjectStore.getState().undo();
+      expect(useProjectStore.getState().lines[0].words?.[0].transliteration).toBeUndefined();
+    });
   });
 
   describe("edge cases", () => {
