@@ -43,7 +43,6 @@ interface UseTimelineSnap {
   beginGesture: (args: BeginGestureArgs) => void;
   endGesture: () => void;
   computeShiftPx: (proposedDeltaPx: number, edgesAtStart: number[]) => number;
-  scrolledSinceStartPx: () => number;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -176,7 +175,7 @@ function useTimelineSnap(): UseTimelineSnap {
     [resolveSnap, scrolledSinceStartPx],
   );
 
-  return { dragSnapModifier, beginGesture, endGesture, computeShiftPx, syncDragSnap, scrolledSinceStartPx };
+  return { dragSnapModifier, beginGesture, endGesture, computeShiftPx, syncDragSnap };
 }
 
 // -- Exports ------------------------------------------------------------------

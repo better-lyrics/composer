@@ -73,7 +73,12 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
       }
     });
     const unsubscribeTimeline = useTimelineStore.subscribe((state, prev) => {
-      if (state.rollingEditMode !== prev.rollingEditMode || state.vocalOnsetSnapPoints !== prev.vocalOnsetSnapPoints) {
+      if (
+        state.rollingEditMode !== prev.rollingEditMode ||
+        state.vocalOnsetSnapPoints !== prev.vocalOnsetSnapPoints ||
+        state.scrollLeft !== prev.scrollLeft ||
+        state.zoom !== prev.zoom
+      ) {
         replayLastPointer();
       }
     });
