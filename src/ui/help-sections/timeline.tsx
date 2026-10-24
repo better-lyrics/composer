@@ -11,10 +11,9 @@ import { ALT_KEY, MOD_KEY } from "@/utils/platform";
 const TimelineSection: React.FC = () => (
   <div className="space-y-[22px] max-w-[68ch]">
     <p className={PROSE}>
-      The Timeline is where you do the detailed work. While the Sync tab is great for tapping out rough timing, Timeline
-      gives you full control over every word. You can drag words to reposition them, resize their boundaries, split
-      words and syllables, merge blocks, mark explicit words, copy and paste across lines, and more. If you've used a
-      DAW or video editor before, this will feel familiar.
+      The Timeline is where you do the detailed work. Sync is for tapping out rough timing; here you edit every word.
+      Drag words to move them, resize their boundaries, split words and syllables, merge blocks, mark explicit words,
+      and copy and paste across lines. If you've used a DAW or video editor before, this will feel familiar.
     </p>
 
     <HelpTopic title="Layout">
@@ -58,15 +57,14 @@ const TimelineSection: React.FC = () => (
     <HelpTopic title="Audio scrub preview">
       <p className={PROSE}>
         When you scrub the playhead (drag it, or scroll the wheel over the waveform), Composer plays a short bit of
-        audio at the playhead position, at normal pitch. It helps you find a specific word by ear without having to
-        press play. Faster scrubs play more snippets, slower scrubs play fewer. The preview matches your main volume and
-        stays silent when the audio is muted. If it gets in the way, turn off{" "}
-        <SettingLink setting="audioScrubPreview" />.
+        audio at the playhead position, at normal pitch. Use it to find a word by ear without pressing play. Faster
+        scrubs play more snippets, slower scrubs play fewer. The preview matches your main volume and stays silent when
+        the audio is muted. If it gets in the way, turn off <SettingLink setting="audioScrubPreview" />.
       </p>
       <p className={`${PROSE} mt-2`}>
         If you've separated the song into stems, scrubbing follows the stem you have selected: pick "Vocals" from the
-        stem dropdown and the scrub previews vocals only, which makes it much easier to pin down a syllable boundary.
-        The full track plays back as normal regardless of the stem choice.
+        stem dropdown and the scrub previews vocals only, so syllable boundaries are easier to hear. The full track
+        plays back as normal regardless of the stem choice.
       </p>
     </HelpTopic>
 
@@ -194,13 +192,12 @@ const TimelineSection: React.FC = () => (
           Hold <strong>{ALT_KEY}</strong> while dragging to flip the current mode: flush syllables open a gap, gapped
           syllables snap back together, and separate words move as one.
         </li>
-        <li>You can toggle {ALT_KEY} mid-drag to switch modes on the fly.</li>
+        <li>Press or release {ALT_KEY} mid-drag to switch modes.</li>
         <li>
           Turn on <strong>Rolling</strong> in the toolbar (or press{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleRollingEdit")} />) for rolling edits. When it's
           on, dragging a flush boundary between two words moves both words together: the shared boundary shifts, the
-          outer edges stay put, and the combined duration is preserved. {ALT_KEY} still inverts conjoin for that one
-          drag.
+          outer edges stay put, and the combined duration is preserved. {ALT_KEY} still flips conjoin for that one drag.
         </li>
       </ul>
     </HelpTopic>

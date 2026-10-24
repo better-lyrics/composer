@@ -21,8 +21,8 @@ const PreviewSection: React.FC = () => (
       <li>Playback controls (play/pause, seek) work the same as everywhere else.</li>
       <li>
         Instrumental sections appear automatically wherever there's a gap longer than 5 seconds between sung lines.
-        Better Lyrics handles this at render time. You can't add them manually or preview them here, just trust that
-        they'll show up in the final output.
+        Better Lyrics handles this at render time. You can't add them manually or preview them here, but they will show
+        up in the final output.
       </li>
     </ul>
   </HelpTopic>

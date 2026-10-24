@@ -55,8 +55,8 @@ const EditSection: React.FC = () => {
         <p className={PROSE}>
           Use the <span className="font-mono text-composer-text">{splitCharacter}</span> character to mark where you
           want words split. For example, typing beau{splitCharacter}ti{splitCharacter}ful creates three separate timed
-          blocks instead of one. This is useful when a word stretches across several beats. You can change this
-          character in <SettingLink setting="splitCharacter" />.
+          blocks instead of one. Handy when one word stretches across several beats. You can change this character in{" "}
+          <SettingLink setting="splitCharacter" />.
         </p>
       </HelpTopic>
 
@@ -75,12 +75,12 @@ const EditSection: React.FC = () => {
         </p>
         <p className={`${PROSE} mt-2`}>
           Edits you make to a grouped line's text, agent, or background vocals fan out to every other instance of the
-          same template line. Word-level timings survive when the new text has the same word count: existing word slots
-          keep their begin/end and just swap text. If the word count changes, sibling timings clear so you can re-sync
+          same template line. Word-level timings survive when the new text has the same word count: each word keeps its
+          begin and end, and only its text changes. If the word count changes, sibling timings clear so you can re-sync
           them in the Sync view.
         </p>
         <p className={`${PROSE} mt-2`}>
-          Adding or removing rows inside a grouped instance pops a confirmation: that one instance detaches from the
+          Adding or removing rows inside a grouped instance asks you to confirm: that one instance detaches from the
           group so the structural change can land, while every sibling instance stays linked. Decline to revert. Edits
           to non-grouped lines never prompt.
         </p>

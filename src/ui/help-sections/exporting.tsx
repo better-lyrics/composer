@@ -14,7 +14,7 @@ const ExportSection: React.FC = () => (
         <strong>Copy</strong>: Copies the minified TTML to your clipboard.
       </li>
       <li>
-        <strong>Edit</strong>: Lets you manually tweak the XML before downloading. Click "Regenerate" to go back to the
+        <strong>Edit</strong>: Tweak the XML by hand before downloading. Click "Regenerate" to go back to the
         auto-generated version.
       </li>
       <li>

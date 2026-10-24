@@ -16,12 +16,12 @@ const GettingStartedSection: React.FC = () => (
         <a href="https://betterlyrics.org" target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
           Better Lyrics
         </a>
-        . It guides you through four steps to create synced lyrics. Follow the tabs left-to-right for a guided
-        experience, or jump straight to the Timeline for a DAW-like workflow.
+        . It guides you through four steps to create synced lyrics. Work through the tabs from left to right, or go
+        straight to the Timeline if you prefer a DAW-style workflow.
       </p>
       <p className={PROSE}>
-        As of now, Composer is still in early access, so expect some rough edges. If you run into any issues or have
-        feedback, please reach out on{" "}
+        Composer is still in early access, so expect some rough edges. If something breaks or you have feedback, reach
+        out on{" "}
         <a href="https://discord.gg/UsHE3d5fWF" target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
           Discord
         </a>{" "}
@@ -56,8 +56,8 @@ const GettingStartedSection: React.FC = () => (
       </HelpTopic>
       <HelpTopic title="3. Sync the timing">
         <p className={PROSE}>
-          The Sync tab lets you sync words to the music using two keys: tap Space to mark gapless word boundaries, or
-          hold F to capture a word's full duration. You can also tap Space while holding F to create gapless syllable
+          In the Sync tab you sync words to the music with two keys: tap Space to mark gapless word boundaries, or hold
+          F to capture a word's full duration. You can also tap Space while holding F to create gapless syllable
           boundaries. If you miss one, use the arrow keys to nudge the timing. For finer control, switch to Timeline and
           drag word blocks directly on the waveform.
         </p>
@@ -72,7 +72,7 @@ const GettingStartedSection: React.FC = () => (
 
     <p className={PROSE}>
       The tabs are meant to be followed left-to-right, but you can jump between them anytime using {MOD_KEY} + 1 through
-      6.
+      7.
     </p>
 
     <div className="aspect-video w-full rounded-lg overflow-hidden border border-composer-border">

@@ -44,7 +44,7 @@ const TtmlStandardsSection: React.FC = () => (
         </a>{" "}
         of the spec. The spec explicitly permits "arbitrary namespace qualified elements that reside in any namespace
         other than those namespaces defined for use with this specification" and the same for attributes on TTML-defined
-        vocabulary. That's the W3C-sanctioned way to add application-specific data without breaking other TTML tooling.
+        vocabulary. This is how the spec expects applications to add their own data without breaking other TTML tools.
       </p>
       <p className={PROSE}>
         Composer's namespace URI is <span className={INLINE_CODE}>https://composer.betterlyrics.org/ttml</span>. Custom
@@ -58,7 +58,7 @@ const TtmlStandardsSection: React.FC = () => (
       </p>
     </HelpTopic>
 
-    <HelpTopic title="Why this matters">
+    <HelpTopic title="Compatibility">
       <p className={PROSE}>
         Most TTML 1 tooling can read a Composer file. Tools that don't recognize the{" "}
         <span className={INLINE_CODE}>composer:</span> namespace can safely skip the extensions: foreign attributes get
@@ -71,9 +71,8 @@ const TtmlStandardsSection: React.FC = () => (
         >
           §4 Document Types
         </a>
-        ) so the document stays valid, and the rest of the file renders normally. The extensions are additive and scoped
-        to a clearly identified namespace, so there's no chance of attribute collision with other tools that extend TTML
-        for their own purposes.
+        ) so the document stays valid, and the rest of the file renders normally. The extensions only add data, and they
+        live in their own namespace, so they can't collide with attributes that other tools add to TTML.
       </p>
     </HelpTopic>
 

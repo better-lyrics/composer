@@ -18,13 +18,13 @@ const ImportSection: React.FC = () => (
         <li>Use the Import tab's drop zone, or drop a file directly onto the Timeline empty state.</li>
         <li>Once loaded, the waveform renders across the top of Timeline.</li>
         <li>The file name auto-fills the project title in metadata.</li>
-        <li>To replace audio, just drop a new file on the Import tab.</li>
+        <li>To replace audio, drop a new file on the Import tab.</li>
       </ul>
     </HelpTopic>
 
     <HelpTopic title="YouTube URLs">
       <p className={PROSE}>
-        Paste any YouTube link (full URL, share link, or just the video ID) into the Import tab. Composer downloads the
+        Paste any YouTube link (full URL, share link, or the bare video ID) into the Import tab. Composer downloads the
         audio once and keeps it in memory, so seeking and waveform rendering stay instant after that.
       </p>
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) mt-1.5 space-y-1`}>
@@ -46,9 +46,8 @@ const ImportSection: React.FC = () => (
       <p className={`${PROSE} mt-2`}>
         <strong>Cobalt</strong> is the default. Composer ships with a public instance that handles verification
         automatically, but YouTube is currently blocking it. To get unblocked, add a working instance from
-        cobalt.directory in <SettingLink setting="cobaltInstances" />, or self-host. Each custom instance shows a small
-        status icon next to its name reflecting the last attempt, with the actual error in the tooltip if anything went
-        wrong.
+        cobalt.directory in <SettingLink setting="cobaltInstances" />, or self-host. Each custom instance has a small
+        status icon for its last attempt. If that attempt failed, the tooltip shows the error.
       </p>
       <p className={`${PROSE} mt-3`}>
         <strong>Composer Bridge</strong>

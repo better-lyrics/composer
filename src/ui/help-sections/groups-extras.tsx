@@ -82,10 +82,10 @@ const GroupsExtras: React.FC = () => (
     <HelpTopic title="The split-or-merge prompt">
       <p className={PROSE}>
         When a split or merge on a linked line would actually shift sibling word timings (sibling rhythms differ from
-        the source), Composer pops a three-button modal: <strong>Apply to all</strong> (propagate with timing
-        preservation), <strong>Detach</strong> (keep the change on this line only, unlink it from the group), or{" "}
-        <strong>Cancel</strong>. The modal stays out of the way when sibling rhythms already match the source, since
-        propagation is a no-op for the unchanged words anyway.
+        the source), Composer pops a three-button modal: <strong>Apply to all</strong> (propagate and keep the timing),{" "}
+        <strong>Detach</strong> (keep the change on this line only, unlink it from the group), or{" "}
+        <strong>Cancel</strong>. The modal is skipped when sibling rhythms already match the source, because propagating
+        changes nothing for the unchanged words.
       </p>
       <p className={`${PROSE} mt-2`}>
         Tick "Don't ask again" in the modal to default to your choice next time. Reset the preference from{" "}
