@@ -2,6 +2,7 @@ import { wholeSongRange } from "@/domain/group/shared-timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
+import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { selfKey } from "@/views/timeline/snap";
 import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -17,7 +18,6 @@ interface UseBannerDragArgs {
   instanceIdx: number;
   instanceStart: number;
   instanceEnd: number;
-  zoom: number;
 }
 
 interface DragState {
@@ -39,7 +39,7 @@ function syncSnapBypass(event: { metaKey: boolean; ctrlKey: boolean }): void {
 
 // -- Hook ----------------------------------------------------------------------
 
-function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd, zoom }: UseBannerDragArgs) {
+function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd }: UseBannerDragArgs) {
   const setDraggedGroupShift = useTimelineStore((s) => s.setDraggedGroupShift);
   const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
   const { beginGesture, computeShiftPx, endGesture } = useTimelineSnap();
@@ -55,14 +55,18 @@ function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd, zoom 
     (e: React.PointerEvent) => {
       if (e.button !== 0) return;
       e.stopPropagation();
+      const row = e.currentTarget.parentElement;
+      if (!row) return;
       const startX = e.clientX;
+      const travelSeconds = pointerTravelSeconds(row, startX);
+      const travelPx = (clientX: number) => travelSeconds(clientX) * useTimelineStore.getState().zoom;
       const instanceWords = getWordsInInstance(useProjectStore.getState().lines, groupId, instanceIdx);
       const edgesAtStart = [instanceStart, instanceEnd];
       const songRange = wholeSongRange(useAudioStore.getState().duration);
       let proposedDeltaSeconds = 0;
       const snappedDx = (dx: number, event: PointerEvent) => {
         syncSnapBypass(event);
-        proposedDeltaSeconds = dx / zoom;
+        proposedDeltaSeconds = dx / useTimelineStore.getState().zoom;
         return dx + computeShiftPx(dx, edgesAtStart);
       };
       syncSnapBypass(e);
@@ -85,7 +89,7 @@ function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd, zoom 
           metaKey: moveEvent.metaKey,
           ctrlKey: moveEvent.ctrlKey,
         };
-        const dx = moveEvent.clientX - startX;
+        const dx = travelPx(moveEvent.clientX);
         if (!dragState.moved && Math.abs(dx) >= DRAG_THRESHOLD_PX) {
           dragState.moved = true;
           setIsDragging(true);
@@ -110,11 +114,11 @@ function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd, zoom 
 
       const handleUp = (upEvent: PointerEvent) => {
         const wasDrag = dragStateRef.current?.moved ?? false;
-        const offsetPx = wasDrag ? snappedDx(upEvent.clientX - startX, upEvent) : 0;
+        const offsetPx = wasDrag ? snappedDx(travelPx(upEvent.clientX), upEvent) : 0;
         finishDrag();
 
         if (wasDrag && useProjectStore.getState().groups.find((g) => g.id === groupId)) {
-          const deltaSeconds = offsetPx / zoom;
+          const deltaSeconds = offsetPx / useTimelineStore.getState().zoom;
           if (Math.abs(deltaSeconds) > 0.001) {
             useProjectStore
               .getState()
@@ -142,7 +146,6 @@ function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd, zoom 
       instanceIdx,
       instanceStart,
       instanceEnd,
-      zoom,
       beginGesture,
       computeShiftPx,
       endGesture,

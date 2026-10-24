@@ -48,7 +48,6 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
     instanceIdx,
     instanceStart,
     instanceEnd,
-    zoom,
   });
   const bannerRef = useRef<HTMLDivElement | null>(null);
 

@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { scrollTrackHost } from "@/test/timeline-scroll";
 import { GroupBanner } from "@/views/timeline/group-banner";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -26,16 +27,18 @@ async function renderBanner(): Promise<Element> {
   useTimelineStore.setState({ zoom: ZOOM });
   useProjectStore.setState({ groups: [group], lines: [chorus], customSnapPoints: [createSnapPoint(12.1)] });
   const screen = await render(
-    <GroupBanner
-      group={group}
-      instanceIdx={0}
-      ordinal={1}
-      totalInstances={1}
-      instanceStart={10}
-      instanceEnd={12}
-      isCollapsed={false}
-      zoom={ZOOM}
-    />,
+    <div className="relative" style={{ width: 60 * ZOOM }}>
+      <GroupBanner
+        group={group}
+        instanceIdx={0}
+        ordinal={1}
+        totalInstances={1}
+        instanceStart={10}
+        instanceEnd={12}
+        isCollapsed={false}
+        zoom={ZOOM}
+      />
+    </div>,
   );
   const banner = screen.container.querySelector("[data-instance-key]");
   if (!banner) throw new Error("banner not rendered");
@@ -99,5 +102,19 @@ describe("GroupBanner · snap", () => {
 
     expect(useTimelineStore.getState().isBypassing).toBe(true);
     release(2 * ZOOM, { metaKey: true, ctrlKey: true });
+  });
+
+  it("regression: keeps the banner under the pointer when the timeline scrolls mid-drag", async () => {
+    useSettingsStore.setState({ timelineSnap: true });
+    const banner = await renderBanner();
+    const row = banner.parentElement;
+    if (!row) throw new Error("banner has no row");
+
+    banner.dispatchEvent(new PointerEvent("pointerdown", { clientX: START_X, button: 0, bubbles: true }));
+    scrollTrackHost(row, 4 * ZOOM);
+    document.dispatchEvent(new PointerEvent("pointermove", { clientX: START_X + 10, bubbles: true }));
+    release(10);
+
+    expect(firstWordBegin()).toBeCloseTo(10 + 4 + 10 / ZOOM, 6);
   });
 });
