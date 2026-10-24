@@ -99,7 +99,7 @@ describe("LyricsImportModal with project files", () => {
     const screen = await render(host());
     useImportModalStore.getState().open({ section: "upload" });
     await expect.element(screen.getByText("Drop lyrics file to import")).toBeInTheDocument();
-    expect(document.body.textContent).toContain(".qrc .json");
+    expect(document.body.textContent).toContain(".qrc .composer .json");
   });
 
   describe("paste", () => {

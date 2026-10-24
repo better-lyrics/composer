@@ -3,8 +3,8 @@ import { useStartNewSong } from "@/hooks/useStartNewSong";
 import { bootLocationHref } from "@/lib/boot-entry";
 import { firstLaunchedFile, isWindowOpeningLaunch, launchTargetAction } from "@/lib/launched-file";
 import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
-import { flushPendingSave } from "@/lib/persistence-debounce";
-import { getSaveStatus } from "@/lib/save-status";
+import { flushPendingSave, saveNow } from "@/lib/persistence-debounce";
+import { canSaveOpenProject } from "@/lib/save-open-project";
 import { importProjectFile } from "@/lib/project-import";
 import { EDITOR_PATH } from "@/utils/app-routes";
 import { useEffect, useEffectEvent } from "react";
@@ -15,7 +15,7 @@ import { toast } from "sonner";
 
 interface LaunchHandlers {
   navigate: (path: string) => void;
-  startWithFile: (file: File) => void;
+  startWithFile: (file: File) => Promise<void>;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -55,7 +55,7 @@ async function openLaunchedFiles(handles: readonly FileSystemFileHandle[], handl
   }
   if (picked.skipped > 0) toast(ONE_SONG_AT_A_TIME_MESSAGE);
   if (picked.kind === "audio") {
-    handlers.startWithFile(picked.file);
+    await handlers.startWithFile(picked.file);
     return;
   }
   const opened =
@@ -66,11 +66,9 @@ async function openLaunchedFiles(handles: readonly FileSystemFileHandle[], handl
 // Reload, not assign: a hash-only target would otherwise stay in the same document and never reach boot.
 async function reloadInto(targetURL: string): Promise<void> {
   try {
-    await flushPendingSave();
+    await (canSaveOpenProject() ? saveNow() : flushPendingSave());
   } catch (error) {
     console.error(LOG_PREFIX, "could not save before opening the link", error);
-  }
-  if (getSaveStatus() !== "saved") {
     toast.error(UNSAVED_LINK_MESSAGE);
     return;
   }
@@ -79,7 +77,9 @@ async function reloadInto(targetURL: string): Promise<void> {
 }
 
 function enqueueLaunch(run: () => Promise<void>): void {
-  launchQueueTail = launchQueueTail.then(run, run);
+  launchQueueTail = launchQueueTail
+    .then(run)
+    .catch((error: unknown) => console.error(LOG_PREFIX, "could not finish the launch", error));
 }
 
 // -- Hook ---------------------------------------------------------------------
