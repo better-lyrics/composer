@@ -4,6 +4,7 @@ import { bootLocationHref } from "@/lib/boot-entry";
 import { firstLaunchedFile, isWindowOpeningLaunch, launchTargetAction } from "@/lib/launched-file";
 import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { flushPendingSave, saveNow } from "@/lib/persistence-debounce";
+import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { canSaveOpenProject } from "@/lib/save-open-project";
 import { importProjectFile } from "@/lib/project-import";
 import { EDITOR_PATH } from "@/utils/app-routes";
@@ -65,6 +66,7 @@ async function openLaunchedFiles(handles: readonly FileSystemFileHandle[], handl
 
 // Reload, not assign: a hash-only target would otherwise stay in the same document and never reach boot.
 async function reloadInto(targetURL: string): Promise<void> {
+  await getPersistenceSettled();
   try {
     await (canSaveOpenProject() ? saveNow() : flushPendingSave());
   } catch (error) {
