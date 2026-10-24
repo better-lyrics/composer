@@ -29,6 +29,7 @@ interface SnapCtx {
   selfIds: Set<string>;
   leaderKey: string;
   overlapCheck: ((shift: number) => boolean) | null;
+  scrollLeftAtStart: number;
 }
 
 interface SnapResolution {
@@ -78,6 +79,7 @@ function useTimelineSnap(): UseTimelineSnap {
     selfIds: new Set(),
     leaderKey: "",
     overlapCheck: null,
+    scrollLeftAtStart: 0,
   });
   const pendingDragAnchorRef = useRef<number | null>(null);
 
@@ -97,6 +99,7 @@ function useTimelineSnap(): UseTimelineSnap {
     ctxRef.current.selfIds = args.selfIds;
     ctxRef.current.leaderKey = args.leaderKey;
     ctxRef.current.overlapCheck = args.overlapCheck;
+    ctxRef.current.scrollLeftAtStart = useTimelineStore.getState().scrollLeft;
   }, []);
 
   const endGesture = useCallback(() => {
@@ -107,9 +110,15 @@ function useTimelineSnap(): UseTimelineSnap {
     ctxRef.current.selfIds = new Set();
     ctxRef.current.leaderKey = "";
     ctxRef.current.overlapCheck = null;
+    ctxRef.current.scrollLeftAtStart = 0;
     pendingDragAnchorRef.current = null;
     writeSnappedLeader("", null);
   }, []);
+
+  const scrolledSinceStartPx = useCallback(
+    () => useTimelineStore.getState().scrollLeft - ctxRef.current.scrollLeftAtStart,
+    [],
+  );
 
   const resolveSnap = useCallback((proposedDeltaPx: number, edgesAtStart: number[]): SnapResolution => {
     const ctx = ctxRef.current;
@@ -152,17 +161,18 @@ function useTimelineSnap(): UseTimelineSnap {
     writeSnappedLeader(ctxRef.current.leaderKey, pendingDragAnchorRef.current);
   }, []);
 
+  // dnd-kit hands modifiers the pointer translate before it adds the scroll delta, but drops with both.
   const dragSnapModifier = useMemo<Modifier>(
     () =>
       ({ transform, active }) => {
         const data = active?.data.current as { snap?: { edgesAtStart: number[] } } | undefined;
         if (!data?.snap) return transform;
-        const { shiftPx, anchorTime } = resolveSnap(transform.x, data.snap.edgesAtStart);
+        const { shiftPx, anchorTime } = resolveSnap(transform.x + scrolledSinceStartPx(), data.snap.edgesAtStart);
         pendingDragAnchorRef.current = anchorTime;
         if (shiftPx === 0) return transform;
         return { ...transform, x: transform.x + shiftPx };
       },
-    [resolveSnap],
+    [resolveSnap, scrolledSinceStartPx],
   );
 
   return { dragSnapModifier, beginGesture, endGesture, computeShiftPx, syncDragSnap };

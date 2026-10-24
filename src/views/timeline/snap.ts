@@ -113,7 +113,7 @@ function collectSnapAnchors(
       }
     }
 
-    if (!wordTimed && isLineSynced(line)) {
+    if (!wordTimed && isLineSynced(line) && !selfIds.has(selfKey(line.id, 0, "word"))) {
       anchors.push({ t: line.begin, kind: "line-begin", label: line.text, lineId: line.id });
       anchors.push({ t: line.end, kind: "line-end", label: line.text, lineId: line.id });
     }

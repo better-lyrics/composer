@@ -4,16 +4,21 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect, useRef } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
-interface UseGestureInputReplayArgs {
-  active: boolean;
-  getLastPointer: () => { clientX: number; clientY: number } | null;
-}
-
 interface HeldModifiers {
   altKey: boolean;
   shiftKey: boolean;
   metaKey: boolean;
   ctrlKey: boolean;
+}
+
+interface LastPointer extends Partial<HeldModifiers> {
+  clientX: number;
+  clientY: number;
+}
+
+interface UseGestureInputReplayArgs {
+  active: boolean;
+  getLastPointer: () => LastPointer | null;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -32,7 +37,14 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
       return;
     }
 
-    const held: HeldModifiers = { ...NO_MODIFIERS };
+    bypassRef.current = useTimelineStore.getState().isBypassing;
+    const lastPointer = getLastPointer();
+    const held: HeldModifiers = {
+      altKey: lastPointer?.altKey ?? NO_MODIFIERS.altKey,
+      shiftKey: lastPointer?.shiftKey ?? NO_MODIFIERS.shiftKey,
+      metaKey: lastPointer?.metaKey ?? NO_MODIFIERS.metaKey,
+      ctrlKey: lastPointer?.ctrlKey ?? NO_MODIFIERS.ctrlKey,
+    };
     let replaying = false;
     const trackModifiers = (e: KeyboardEvent | PointerEvent) => {
       if (replaying) return;
@@ -58,6 +70,13 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
       replaying = false;
     };
 
+    let disposed = false;
+    // The wheel handler sets zoom before it re-anchors the scroll, so replay once both are in place.
+    const replayAfterZoom = () =>
+      queueMicrotask(() => {
+        if (!disposed) replayLastPointer();
+      });
+
     const handleKey = (e: KeyboardEvent) => {
       trackModifiers(e);
       const next = holdsSnapBypass(e);
@@ -73,8 +92,14 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
       }
     });
     const unsubscribeTimeline = useTimelineStore.subscribe((state, prev) => {
-      if (state.rollingEditMode !== prev.rollingEditMode || state.vocalOnsetSnapPoints !== prev.vocalOnsetSnapPoints) {
+      if (
+        state.rollingEditMode !== prev.rollingEditMode ||
+        state.vocalOnsetSnapPoints !== prev.vocalOnsetSnapPoints ||
+        state.scrollLeft !== prev.scrollLeft
+      ) {
         replayLastPointer();
+      } else if (state.zoom !== prev.zoom) {
+        replayAfterZoom();
       }
     });
 
@@ -82,6 +107,7 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
     window.addEventListener("keydown", handleKey);
     window.addEventListener("keyup", handleKey);
     return () => {
+      disposed = true;
       document.removeEventListener("pointermove", trackModifiers, true);
       window.removeEventListener("keydown", handleKey);
       window.removeEventListener("keyup", handleKey);
@@ -94,4 +120,4 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
 }
 
 // -- Exports -------------------------------------------------------------------
-export { useGestureInputReplay };
+export { type LastPointer, useGestureInputReplay };

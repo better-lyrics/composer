@@ -73,6 +73,11 @@ describe("collectSnapAnchors", () => {
     expect(anchors.filter((a) => a.kind === "word-begin" || a.kind === "word-end")).toEqual([]);
   });
 
+  it("excludes a line-synced line's own edges when its block is a self word", () => {
+    const anchors = collectSnapAnchors([lineSyncedLine()], new Set([selfKey("l2", 0, "word")]), null);
+    expect(anchors.filter((a) => a.lineId === "l2")).toEqual([]);
+  });
+
   it("excludes self words by composite selfKey(lineId, wordIndex, track)", () => {
     const selfIds = new Set([selfKey("l1", 1, "word")]);
     const anchors = collectSnapAnchors([wordTimedLine()], selfIds, null);

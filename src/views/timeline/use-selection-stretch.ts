@@ -10,6 +10,7 @@ import { planStretchDrag } from "@/views/timeline/stretch-drag";
 import { mapStretchTargets, stretchSelections } from "@/views/timeline/stretch-selection";
 import { STRETCH_EPS } from "@/views/timeline/stretch-targets";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -22,6 +23,7 @@ interface StretchDragArgs {
   wordIndex: number;
   edge: "left" | "right";
   startX: number;
+  track: Element;
 }
 
 interface UseSelectionStretchOptions {
@@ -104,7 +106,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
   }, [endGesture]);
 
   const tryStart = useCallback(
-    ({ lineId, type, wordIndex, edge, startX }: StretchDragArgs): boolean => {
+    ({ lineId, type, wordIndex, edge, startX, track }: StretchDragArgs): boolean => {
       // A second pointerdown before the first gesture finished (multi-touch,
       // stuck pointer) tears the first gesture down first, so the snapshot below
       // captures committed state, not the prior gesture's transient preview.
@@ -120,7 +122,6 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
       const plan = planStretchDrag(snapshotLines, selection, { lineId, type, wordIndex, edge }, options);
       if (!plan) return false;
 
-      const zoom = useTimelineStore.getState().zoom;
       const { anchor, anchorTime, edgeTime, minFactor, maxFactor, targets } = plan;
       const selfIds = new Set(selection.map((s) => selfKey(s.lineId, s.wordIndex, s.type)));
 
@@ -130,6 +131,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
 
       setIsStretching(true);
       lastPointerRef.current = { clientX: startX, clientY: 0 };
+      const travelSeconds = pointerTravelSeconds(track, startX);
 
       beginGesture({
         selfIds,
@@ -167,9 +169,10 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
 
       function handleMove(ev: PointerEvent): void {
         lastPointerRef.current = { clientX: ev.clientX, clientY: ev.clientY };
-        if (Math.abs(ev.clientX - startX) >= DRAG_THRESHOLD_PX) dragged = true;
+        const zoom = useTimelineStore.getState().zoom;
+        const rawDeltaPx = travelSeconds(ev.clientX) * zoom;
+        if (Math.abs(rawDeltaPx) >= DRAG_THRESHOLD_PX) dragged = true;
         if (!dragged) return;
-        const rawDeltaPx = ev.clientX - startX;
         const snapShiftPx = computeShiftPx(rawDeltaPx, [edgeTime]);
         const proposedEdge = edgeTime + (rawDeltaPx + snapShiftPx) / zoom;
         const k = Math.min(Math.max(factorForEdgeTime(proposedEdge), minFactor), maxFactor);

@@ -1,17 +1,15 @@
 import { keepsOwnTiming, sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
-import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";
 import { buildGroupPingVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import { registerBanner } from "@/views/timeline/banner-progress-registry";
-import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { getWordsInInstance } from "@/views/timeline/utils";
+import { useBannerDrag } from "@/views/timeline/use-banner-drag";
 import { IconChevronDown, IconClock, IconLink } from "@tabler/icons-react";
 import { m } from "motion/react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -45,12 +43,12 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
   const pingingGroupId = useTimelineStore((s) => s.pingingGroupId);
   const isPinging = pingingGroupId === group.id;
   const pingVariants = useMemo(() => buildGroupPingVariants(group.color), [group.color]);
-  const setDraggedGroupShift = useTimelineStore((s) => s.setDraggedGroupShift);
-  const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
-
-  const [dragOffsetPx, setDragOffsetPx] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStateRef = useRef<{ startX: number; moved: boolean; cleanup: () => void } | null>(null);
+  const { dragOffsetPx, isDragging, handlePointerDown } = useBannerDrag({
+    groupId: group.id,
+    instanceIdx,
+    instanceStart,
+    instanceEnd,
+  });
   const bannerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -58,61 +56,6 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
     if (!node) return;
     return registerBanner(node);
   }, []);
-
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      if (e.button !== 0) return;
-      e.stopPropagation();
-      const startX = e.clientX;
-
-      const handleMove = (moveEvent: PointerEvent) => {
-        const dx = moveEvent.clientX - startX;
-        if (!dragStateRef.current) return;
-        if (!dragStateRef.current.moved && Math.abs(dx) >= DRAG_THRESHOLD_PX) {
-          dragStateRef.current.moved = true;
-          setIsDragging(true);
-        }
-        if (dragStateRef.current.moved) {
-          setDragOffsetPx(dx);
-          setDraggedGroupShift({ groupId: group.id, instanceIdx, offsetPx: dx });
-        }
-      };
-
-      const handleUp = (upEvent: PointerEvent) => {
-        const wasDrag = dragStateRef.current?.moved ?? false;
-        const dx = upEvent.clientX - startX;
-        const cleanup = dragStateRef.current?.cleanup;
-        dragStateRef.current = null;
-        cleanup?.();
-        setIsDragging(false);
-        setDragOffsetPx(0);
-        setDraggedGroupShift(null);
-
-        if (wasDrag && useProjectStore.getState().groups.find((g) => g.id === group.id)) {
-          const deltaSeconds = dx / zoom;
-          if (Math.abs(deltaSeconds) > 0.001) {
-            useProjectStore
-              .getState()
-              .shiftInstance(group.id, instanceIdx, deltaSeconds, useAudioStore.getState().duration);
-          }
-        } else {
-          // treat as click: select all words in this instance (so nudge works on it)
-          const lines = useProjectStore.getState().lines;
-          setSelectedWords(getWordsInInstance(lines, group.id, instanceIdx));
-        }
-      };
-
-      const cleanup = () => {
-        document.removeEventListener("pointermove", handleMove);
-        document.removeEventListener("pointerup", handleUp);
-      };
-
-      dragStateRef.current = { startX, moved: false, cleanup };
-      document.addEventListener("pointermove", handleMove);
-      document.addEventListener("pointerup", handleUp);
-    },
-    [group.id, instanceIdx, setSelectedWords, setDraggedGroupShift, zoom],
-  );
 
   const setPingingGroupId = useTimelineStore((s) => s.setPingingGroupId);
   const handleBadgeMouseEnter = useCallback(() => setPingingGroupId(group.id), [group.id, setPingingGroupId]);

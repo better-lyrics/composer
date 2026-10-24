@@ -13,6 +13,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
+import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
 import { selectionGripEdges } from "@/views/timeline/stretch-grips";
@@ -89,6 +90,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const [altPressed, setAltPressed] = useState(false);
   // react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [resizing, setResizing] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<DragState | null>(null);
   const draggedRef = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
@@ -132,7 +134,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   const handleResizeStart = useCallback(
     (wordIndex: number, edge: "left" | "right", startX: number) => {
-      if (tryStartStretch({ lineId, type: trackType, wordIndex, edge, startX })) return;
+      const track = trackRef.current;
+      if (!track) return;
+      if (tryStartStretch({ lineId, type: trackType, wordIndex, edge, startX, track })) return;
       const word = words[wordIndex];
       const initialState: DragState = { wordIndex, edge, begin: word.begin, end: word.end };
       dragStateRef.current = initialState;
@@ -163,12 +167,15 @@ const WordTrack: React.FC<WordTrackProps> = ({
         },
       });
 
+      const travelSeconds = pointerTravelSeconds(track, startX);
+
       const handleMouseMove = (e: PointerEvent) => {
-        if (Math.abs(e.clientX - startX) >= DRAG_THRESHOLD_PX) draggedRef.current = true;
+        const zoom = useTimelineStore.getState().zoom;
+        const rawDeltaPx = travelSeconds(e.clientX) * zoom;
+        if (Math.abs(rawDeltaPx) >= DRAG_THRESHOLD_PX) draggedRef.current = true;
         lastPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
         if (!draggedRef.current) return;
         const originalWord = words[wordIndex];
-        const rawDeltaPx = e.clientX - startX;
         const conjoined = shouldRollNeighbour({
           words,
           wordIndex,
@@ -249,7 +256,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       document.addEventListener("pointermove", handleMouseMove);
       document.addEventListener("pointerup", handleMouseUp);
     },
-    [words, zoom, duration, onUpdateWord, syllablePositions, snap, lineId, trackType, tryStartStretch],
+    [words, duration, onUpdateWord, syllablePositions, snap, lineId, trackType, tryStartStretch],
   );
 
   const isBoundaryConjoined = (boundaryIndex: number): boolean =>
@@ -394,6 +401,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   return (
     <div
+      ref={trackRef}
       role="presentation"
       className="relative"
       style={{ height, width: duration * zoom }}
