@@ -46,7 +46,8 @@ function groupBoundaryPoints(words: WordTiming[]): number[] {
 // -- Component ----------------------------------------------------------------
 
 const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps> = ({ line, field, onClose }) => {
-  const updateLinesWithHistory = useProjectStore((state) => state.updateLinesWithHistory);
+  const updateLine = useProjectStore((state) => state.updateLine);
+  const commitPendingLineEdit = useProjectStore((state) => state.commitPendingLineEdit);
   const track = line.transliteration;
   const canonicalText = field === "words" ? track?.text : track?.backgroundText;
   const sourceWords = line[field];
@@ -118,23 +119,22 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
         };
       }
     }
-    updateLinesWithHistory(
-      [
-        {
-          id: line.id,
-          updates: {
-            [field]: nextWords,
-            transliteration: {
-              ...track,
-              ...(field === "words"
-                ? { alignmentStatus: "confirmed" as const }
-                : { backgroundAlignmentStatus: "confirmed" as const }),
-            },
-          },
+    // A language-only edit, so it must not reach the shared timing copy that history writes run.
+    const { lines: baseline, isDirtySinceHistory: baselineWasDirty } = useProjectStore.getState();
+    updateLine(
+      line.id,
+      {
+        [field]: nextWords,
+        transliteration: {
+          ...track,
+          ...(field === "words"
+            ? { alignmentStatus: "confirmed" as const }
+            : { backgroundAlignmentStatus: "confirmed" as const }),
         },
-      ],
-      { deriveText: false, propagateToSiblings: false },
+      },
+      { deriveText: false },
     );
+    commitPendingLineEdit(baseline, baselineWasDirty);
     onClose();
   };
 

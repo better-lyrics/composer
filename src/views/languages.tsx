@@ -1,4 +1,5 @@
 import { pastedRows } from "@/domain/language/paste-import";
+import { useLanguagesHistoryShortcuts } from "@/hooks/useLanguagesHistoryShortcuts";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
@@ -14,7 +15,6 @@ import { RegenerateLanguageControl } from "@/views/languages/regenerate-language
 import { requestLanguageGeneration } from "@/views/languages/request-language-generation";
 import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
 import { useLanguageTargets } from "@/views/languages/use-language-targets";
-import { useLanguagesHistoryShortcuts } from "@/views/languages/use-languages-history-shortcuts";
 import { pluralWord, pluralize } from "@/utils/pluralize";
 import { IconChevronDown } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

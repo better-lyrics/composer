@@ -13,7 +13,6 @@ function useLanguagesHistoryShortcuts(active: boolean): void {
       const historyAction = historyShortcutAction(event);
       if (!historyAction) return;
       event.preventDefault();
-      if (event.repeat) return;
       useProjectStore.getState()[historyAction]();
     };
     window.addEventListener("keydown", handleKeyDown);
