@@ -46,7 +46,7 @@ function songwritersOf(recording: MbRecording): string[] {
     for (const workRelation of relation.work?.relations ?? []) {
       const { artist } = workRelation;
       if (workRelation["target-type"] !== "artist" || !SONGWRITER_TYPES.has(workRelation.type) || !artist) continue;
-      if (!namesByArtistId.has(artist.id)) namesByArtistId.set(artist.id, artist.name);
+      if (!namesByArtistId.has(artist.id)) namesByArtistId.set(artist.id, workRelation["target-credit"] || artist.name);
     }
   }
   return [...namesByArtistId.values()];
