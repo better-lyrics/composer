@@ -183,7 +183,10 @@ const LinePreview: React.FC<LinePreviewProps> = ({
         </span>
 
         {line.backgroundText && (
-          <span data-testid="line-preview-background" className="min-w-0 truncate text-[12.5px] italic text-(--muted)">
+          <span
+            data-testid="line-preview-background"
+            className="min-w-0 truncate pr-0.5 text-[12.5px] italic text-(--muted)"
+          >
             {line.backgroundText}
           </span>
         )}
