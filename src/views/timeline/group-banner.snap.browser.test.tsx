@@ -88,4 +88,16 @@ describe("GroupBanner · snap", () => {
     expect(useTimelineStore.getState().isBypassing).toBe(false);
     release(2 * ZOOM);
   });
+
+  it("regression: keeps the bypass when vocal onsets arrive mid-drag", async () => {
+    useSettingsStore.setState({ timelineSnap: true });
+    const banner = await renderBanner();
+
+    pressAndMove(banner, 2 * ZOOM, { metaKey: true, ctrlKey: true });
+    await expect.poll(() => banner.className).toContain("cursor-grabbing");
+    useTimelineStore.setState({ vocalOnsetSnapPoints: [30] });
+
+    expect(useTimelineStore.getState().isBypassing).toBe(true);
+    release(2 * ZOOM, { metaKey: true, ctrlKey: true });
+  });
 });

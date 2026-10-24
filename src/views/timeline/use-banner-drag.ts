@@ -5,7 +5,7 @@ import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { selfKey } from "@/views/timeline/snap";
 import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
+import { type LastPointer, useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { getWordsInInstance } from "@/views/timeline/utils";
 import { useCallback, useRef, useState } from "react";
@@ -47,7 +47,7 @@ function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd, zoom 
   const [dragOffsetPx, setDragOffsetPx] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStateRef = useRef<DragState | null>(null);
-  const lastPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
+  const lastPointerRef = useRef<LastPointer | null>(null);
   const getLastPointer = useCallback(() => lastPointerRef.current, []);
   useGestureInputReplay({ active: isDragging, getLastPointer });
 
@@ -77,7 +77,14 @@ function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd, zoom 
       const handleMove = (moveEvent: PointerEvent) => {
         const dragState = dragStateRef.current;
         if (!dragState) return;
-        lastPointerRef.current = { clientX: moveEvent.clientX, clientY: moveEvent.clientY };
+        lastPointerRef.current = {
+          clientX: moveEvent.clientX,
+          clientY: moveEvent.clientY,
+          altKey: moveEvent.altKey,
+          shiftKey: moveEvent.shiftKey,
+          metaKey: moveEvent.metaKey,
+          ctrlKey: moveEvent.ctrlKey,
+        };
         const dx = moveEvent.clientX - startX;
         if (!dragState.moved && Math.abs(dx) >= DRAG_THRESHOLD_PX) {
           dragState.moved = true;
