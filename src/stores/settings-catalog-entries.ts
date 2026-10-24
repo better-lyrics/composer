@@ -81,6 +81,13 @@ const SETTINGS_CATALOG = {
     keywords: ["skip", "rewind", "forward", "jump"],
     settingKey: "seekStep",
   },
+  fineSeekStep: {
+    section: "playback",
+    label: "Fine seek step",
+    description: "How far the fine seek shortcuts move the playhead. Keep it small to land right before a word.",
+    keywords: ["skip", "rewind", "forward", "jump", "frame", "nudge"],
+    settingKey: "fineSeekStep",
+  },
   autoSeparateOnImport: {
     section: "playback",
     label: "Auto-separate vocals on import",

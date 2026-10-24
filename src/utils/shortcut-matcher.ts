@@ -23,9 +23,10 @@ function getEventKey(event: KeyboardEvent): string {
     if (event.code.startsWith("Key") && event.code.length === 4) return event.code.slice(3).toLowerCase();
     if (event.code.startsWith("Digit") && event.code.length === 6) return event.code.slice(5);
   }
+  const punctuation = US_PUNCTUATION_BY_CODE[event.code];
+  if (event.altKey && punctuation) return punctuation[event.shiftKey ? 1 : 0];
   if (isNonLatinLetter(event.key)) return physicalKey(event) ?? event.key;
   // Chrome and Safari on macOS can drop Shift from event.key while Cmd is held (Cmd+Shift+, reads ",").
-  const punctuation = US_PUNCTUATION_BY_CODE[event.code];
   if (event.shiftKey && punctuation && event.key === punctuation[0]) return punctuation[1];
   return event.key.length === 1 ? event.key.toLowerCase() : event.key;
 }

@@ -66,6 +66,7 @@ interface SettingsState {
   selectionLeadIn: number;
   syncCountIn: number;
   seekStep: number;
+  fineSeekStep: number;
   defaultGranularity: GranularityDefault;
 
   autoSaveDelay: number;
@@ -152,6 +153,7 @@ const DEFAULTS: SettingsState = {
   selectionLeadIn: 0.3,
   syncCountIn: 3,
   seekStep: 0.5,
+  fineSeekStep: 0.1,
   defaultGranularity: "word",
 
   autoSaveDelay: 2000,

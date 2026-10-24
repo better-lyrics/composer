@@ -28,6 +28,13 @@ const EditSection: React.FC = () => {
           <InlineKeyBadge keys={getEffectiveKeysArray("global.seekForward")} /> seek from any tab. If you click away,
           press <InlineKeyBadge keys={getEffectiveKeysArray("global.goToEdit")} /> to jump back into the lyrics box.
         </p>
+        <p className={PROSE}>
+          Need to land right before a word? Add Alt to move by the smaller <SettingLink setting="fineSeekStep" />:{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekBackwardFine")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekForwardFine")} />, or{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekBackwardFineWhileTyping")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekForwardFineWhileTyping")} /> while typing.
+        </p>
       </HelpTopic>
 
       <HelpTopic title="Agents (singers)">

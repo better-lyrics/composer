@@ -25,6 +25,14 @@ function seekForward(): void {
   seekBy(useSettingsStore.getState().seekStep);
 }
 
+function fineSeekBackward(): void {
+  seekBy(-useSettingsStore.getState().fineSeekStep);
+}
+
+function fineSeekForward(): void {
+  seekBy(useSettingsStore.getState().fineSeekStep);
+}
+
 function toggleStem(): void {
   useSeparationStore.getState().selectStem(toggledStem());
 }
@@ -52,6 +60,10 @@ function useGlobalShortcuts(actions: GlobalShortcutActions): void {
           "global.seekForward": seekForward,
           "global.seekBackwardWhileTyping": seekBackward,
           "global.seekForwardWhileTyping": seekForward,
+          "global.seekBackwardFine": fineSeekBackward,
+          "global.seekForwardFine": fineSeekForward,
+          "global.seekBackwardFineWhileTyping": fineSeekBackward,
+          "global.seekForwardFineWhileTyping": fineSeekForward,
           "global.togglePlaybackSpeed": togglePlaybackSpeed,
           "global.toggleStem": toggleStem,
           "global.toggleLoop": toggleLoopShortcut,

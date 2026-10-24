@@ -42,6 +42,18 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
         description: "Seek forward, even while typing",
         shortcutId: "global.seekForwardWhileTyping",
       },
+      { keys: ["Alt", "Shift", "<"], description: "Fine seek back", shortcutId: "global.seekBackwardFine" },
+      { keys: ["Alt", "Shift", ">"], description: "Fine seek forward", shortcutId: "global.seekForwardFine" },
+      {
+        keys: ["Mod", "Alt", "Shift", "<"],
+        description: "Fine seek back, even while typing",
+        shortcutId: "global.seekBackwardFineWhileTyping",
+      },
+      {
+        keys: ["Mod", "Alt", "Shift", ">"],
+        description: "Fine seek forward, even while typing",
+        shortcutId: "global.seekForwardFineWhileTyping",
+      },
       {
         keys: ["Shift", "R"],
         description: "Switch between normal speed and the last speed you used (0.75x at first)",

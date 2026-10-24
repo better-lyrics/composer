@@ -20,7 +20,7 @@ interface ShortcutBindingsState {
 
 // -- Migration ----------------------------------------------------------------
 
-const SHORTCUT_BINDINGS_PERSIST_VERSION = 6;
+const SHORTCUT_BINDINGS_PERSIST_VERSION = 7;
 const UNBOUND: ShortcutBinding = { key: "" };
 
 const ALTERNATE_REDO_ID = "global.redoAlternate";
@@ -73,6 +73,13 @@ const unbindTakenSeekKeys = unbindTakenKeys(
   ["global.seekBackward", "global.seekForward", "global.seekBackwardWhileTyping", "global.seekForwardWhileTyping"],
   samePressOnMac,
 );
+
+const unbindTakenFineSeekKeys = unbindTakenKeys([
+  "global.seekBackwardFine",
+  "global.seekForwardFine",
+  "global.seekBackwardFineWhileTyping",
+  "global.seekForwardFineWhileTyping",
+]);
 
 const RENAMED_SHORTCUT_IDS: Record<string, string> = { "timeline.toggleGroupLoop": "global.toggleLoop" };
 
@@ -137,7 +144,8 @@ function migrateShortcutBindings(persistedState: unknown, version: number): unkn
   const withDeleteKeys = version < 3 ? unbindTakenDeleteKeys(renamed) : renamed;
   const withClipboardKeys = version < 4 ? unbindTakenClipboardKeys(withDeleteKeys) : withDeleteKeys;
   const withTypingPlayKeys = version < 5 ? unbindTakenTypingPlayKeys(withClipboardKeys) : withClipboardKeys;
-  return version < 6 ? unbindTakenSeekKeys(withTypingPlayKeys) : withTypingPlayKeys;
+  const withSeekKeys = version < 6 ? unbindTakenSeekKeys(withTypingPlayKeys) : withTypingPlayKeys;
+  return version < 7 ? unbindTakenFineSeekKeys(withSeekKeys) : withSeekKeys;
 }
 
 // -- Store --------------------------------------------------------------------

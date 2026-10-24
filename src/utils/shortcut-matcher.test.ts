@@ -174,6 +174,17 @@ describe("bindingFromKeyboardEvent", () => {
       });
     });
 
+    it("regression: macOS Alt+Shift+, records and matches the physical key, not the glyph", () => {
+      const event = keydown({ key: "\u00af", code: "Comma", altKey: true, shiftKey: true });
+      expect(bindingFromKeyboardEvent(event)).toEqual({ key: "<", shift: true, alt: true });
+      expect(findMatchingShortcut(event, "global")).toBe("global.seekBackwardFine");
+    });
+
+    it("regression: macOS Cmd+Alt+Shift+. matches the fine typing seek", () => {
+      const event = keydown({ key: "\u02d8", code: "Period", altKey: true, shiftKey: true, ...MOD });
+      expect(findMatchingShortcut(event, "global")).toBe("global.seekForwardFineWhileTyping");
+    });
+
     it("regression: a recorded macOS Alt binding matches the same key press", () => {
       const event = keydown({ key: "\u00b4", code: "KeyE", altKey: true });
       const binding = bindingFromKeyboardEvent(event);
