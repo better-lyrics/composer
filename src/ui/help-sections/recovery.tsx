@@ -56,8 +56,8 @@ const RecoverySection: React.FC = () => (
       <p className={PROSE}>
         Sometimes the saved data itself is the issue. After downloading the backup, the same screen (error page or
         /recover) shows a <strong>Clear saved data</strong> button. It wipes the autosave so Composer opens fresh next
-        time. Import the file back whenever you're ready. If you can still get into the app, the Export tab's{" "}
-        <strong>Clear</strong> button does the same thing.
+        time. Import the file back whenever you're ready. If you can still get into the app,{" "}
+        <strong>Clear project</strong> in the Export tab's Project menu does the same thing.
       </p>
     </HelpTopic>
   </div>

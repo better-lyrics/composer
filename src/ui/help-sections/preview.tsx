@@ -1,5 +1,6 @@
 import { PROSE, PROSE_LINK } from "@/ui/typography";
 import { HelpTopic } from "@/ui/help-topic";
+import { SettingLink } from "@/ui/setting-link";
 
 // -- Preview ------------------------------------------------------------------
 
@@ -10,7 +11,8 @@ const PreviewSection: React.FC = () => (
       <a href="https://betterlyrics.org" target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
         Better Lyrics
       </a>
-      ' rendering engine. Words fill in progressively as they're sung, matching the timing you set.
+      ' rendering engine (Braccato by default, changeable in <SettingLink setting="previewRenderer" />
+      ). Words fill in progressively as they're sung, matching the timing you set.
     </p>
     <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
       <li>Agent lines are positioned based on their inferred location (left, right, center).</li>

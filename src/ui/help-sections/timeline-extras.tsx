@@ -69,10 +69,17 @@ const TimelineExtras: React.FC = () => (
           they apply, and Delete word is always there. Right-click inside a selection of several words and it deletes
           them all.
         </li>
-        <li>Right-click empty track space: Add word here.</li>
-        <li>Right-click the gutter: Add line above/below, Assign agent, Delete line.</li>
         <li>
-          Right-click a group banner: Add instance, Shift to playhead, Rename, Recolor, Detach instance, Delete group.
+          Right-click empty track space: Add word here, plus Place line here or Place at playhead when they apply.
+        </li>
+        <li>
+          Right-click the gutter: Add line above/below, Assign agent, Delete line. Place at playhead and Detach this
+          line appear on grouped lines when they apply.
+        </li>
+        <li>
+          Right-click a group banner: Open group, Collapse or Expand instance, Jump to start, Ping siblings, Add
+          instance at playhead, Shift instance to playhead, Jump to previous or next instance, Use own timing or Share
+          timing, Rename, Recolor, Detach instance, Delete group.
         </li>
       </ul>
     </HelpTopic>
@@ -118,7 +125,7 @@ const TimelineExtras: React.FC = () => (
         </li>
       </ul>
       <p className={`${PROSE} mt-3`}>
-        Follow, Rolling, Preview, and Snap remember their state across reloads. Override the per-session default in{" "}
+        Snap remembers its state across reloads. Follow, Rolling and Preview start each session from their defaults in{" "}
         <SettingLink section="timeline" />.
       </p>
     </HelpTopic>

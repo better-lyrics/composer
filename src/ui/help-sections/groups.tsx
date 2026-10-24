@@ -79,7 +79,9 @@ const GroupsSection: React.FC = () => (
     <HelpTopic title="The banner">
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
-          <strong>Click anywhere on it</strong>: selects every word in the instance. Use this before arrow-key nudge,
+          <strong>Click anywhere on it</strong>: selects every word in the instance. Use this before nudging with{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeLeft")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeRight")} />,{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.copy")} />, or any of the keyboard shortcuts below.
         </li>
         <li>
@@ -91,8 +93,9 @@ const GroupsSection: React.FC = () => (
           strip during playback so you can still tell where you are in the section.
         </li>
         <li>
-          <strong>Right-click</strong>: opens the group menu (rename, recolor, add instance, shift to playhead, detach
-          instance, delete group).
+          <strong>Right-click</strong>: opens the group menu. From there you can open the group, collapse the instance,
+          jump between instances, ping siblings, add or shift an instance at the playhead, switch between own and shared
+          timing, rename, recolor, detach the instance, or delete the group.
         </li>
         <li>
           <strong>Double-click the group name</strong>: drops the gutter label into an inline input so you can rename

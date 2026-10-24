@@ -36,7 +36,7 @@ const TimelineSection: React.FC = () => (
         </li>
         <li>
           Scroll the wheel while the cursor is over the waveform strip to scrub the playhead through time, and the view
-          follows it. This works whichever way the "Scroll wheel scrolls timeline" setting is set.
+          follows it. This works whichever way <SettingLink setting="timelineHorizontalScroll" /> is set.
         </li>
         <li>
           {MOD_KEY} + scroll wheel to zoom in and out. Zoom anchors under the cursor. The header zoom buttons (and the
@@ -63,8 +63,9 @@ const TimelineSection: React.FC = () => (
       </p>
       <p className={`${PROSE} mt-2`}>
         If you've separated the song into stems, scrubbing follows the stem you have selected: pick "Vocals" from the
-        stem dropdown and the scrub previews vocals only, so syllable boundaries are easier to hear. The full track
-        plays back as normal regardless of the stem choice.
+        stem dropdown and the scrub previews vocals only, so syllable boundaries are easier to hear. Playback follows
+        the same stem, and <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleStem")} /> switches between the
+        original and the last stem you used.
       </p>
     </HelpTopic>
 
@@ -205,8 +206,8 @@ const TimelineSection: React.FC = () => (
     <HelpTopic title="Snap (magnet)">
       <p className={PROSE}>
         Drag or resize a word and its edges lock onto nearby anchors: the begin and end of any other word (main or
-        background track), line edges for line-synced lines, and the playhead. A yellow halo appears on the moving block
-        while snapped, and a thin dashed line marks the anchor on the timeline.
+        background track), line edges for line-synced lines, and the playhead. A halo appears on the moving block while
+        snapped, and a thin dashed line marks the anchor on the timeline.
       </p>
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
@@ -218,8 +219,7 @@ const TimelineSection: React.FC = () => (
           Release the key and snap re-engages.
         </li>
         <li>
-          Adjust the snap distance with <SettingLink setting="timelineSnapThreshold" />. Range is 4 to 24 pixels,
-          default 12.
+          Adjust the snap distance with <SettingLink setting="timelineSnapThreshold" />.
         </li>
         <li>
           Snap won't push a block into a neighbor. If the closest anchor would cause overlap, it falls through to the
@@ -232,8 +232,9 @@ const TimelineSection: React.FC = () => (
       <p className={PROSE}>
         Two kinds of snap marker can sit over the waveform. Dashed guide lines are vocal onsets, which Composer detects
         from the separated vocal stem, so they only show up once you have split out vocals and turned on "Snap to vocal
-        onsets" in the stem dropdown. Solid pins are custom snap points you place yourself. Both pull word edges in the
-        way the magnet does, and custom points keep snapping even when Snap and onset snapping are both off.
+        onsets" in the stem dropdown (or <SettingLink setting="vocalOnsetSnap" />
+        ). Solid pins are custom snap points you place yourself. Both pull word edges in the way the magnet does, and
+        custom points keep snapping even when Snap and onset snapping are both off.
       </p>
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>

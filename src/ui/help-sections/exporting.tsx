@@ -23,7 +23,8 @@ const ExportSection: React.FC = () => (
         with collaborators or back things up.
       </li>
       <li>
-        <strong>Clear</strong>: Wipes the current project. This is permanent, so it asks for confirmation.
+        <strong>Clear project</strong>: In the same Project menu, wipes the current project. This is permanent, so it
+        asks for confirmation.
       </li>
     </ul>
     <p className={PROSE}>

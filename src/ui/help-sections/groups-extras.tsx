@@ -24,7 +24,10 @@ const GroupsExtras: React.FC = () => (
       <p className={`${PROSE} mt-2`}>Stays local to one instance:</p>
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>Absolute begin and end times, except in a group that shares timing (below).</li>
-        <li>Banner shifts and arrow-key nudge.</li>
+        <li>
+          Banner shifts and nudges with <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeLeft")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeRight")} />.
+        </li>
         <li>Anything you do on a line that's been detached.</li>
       </ul>
     </HelpTopic>
@@ -138,9 +141,9 @@ const GroupsExtras: React.FC = () => (
     <HelpTopic title="How groups look outside the Timeline">
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
-          <strong>Edit view</strong>: a colored divider with the group name and instance count appears before each
-          instance, plus a thin closing line at the end. Each grouped line also gets a left-edge stripe in the group
-          color and a hover tooltip showing the link count.
+          <strong>Edit view</strong>: a header row with the group name and the instance number (such as 2 of 3) appears
+          before each instance. Grouped lines get a light tint in the group color and a hover tooltip showing the link
+          count.
         </li>
         <li>
           <strong>Sync view</strong>: the gutter cell shows a chain icon and an instance counter so you know which

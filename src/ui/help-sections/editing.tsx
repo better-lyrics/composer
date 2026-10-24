@@ -70,8 +70,9 @@ const EditSection: React.FC = () => {
 
       <HelpTopic title="Editing grouped lines">
         <p className={PROSE}>
-          Lines that belong to a linked group show a thin colored stripe on their left edge, matching the group color.
-          Hover one to see which group it belongs to and how many other instances are linked.
+          Each instance of a linked group starts with a header row showing the group name and which instance it is, and
+          its lines get a light tint in the group color. Hover one to see which group it belongs to and how many other
+          instances are linked.
         </p>
         <p className={`${PROSE} mt-2`}>
           Edits you make to a grouped line's text, agent, or background vocals fan out to every other instance of the
