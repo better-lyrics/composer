@@ -65,6 +65,7 @@ interface SettingsState {
   redoPreroll: number;
   selectionLeadIn: number;
   syncCountIn: number;
+  seekStep: number;
   defaultGranularity: GranularityDefault;
 
   autoSaveDelay: number;
@@ -150,6 +151,7 @@ const DEFAULTS: SettingsState = {
   redoPreroll: 1.5,
   selectionLeadIn: 0.3,
   syncCountIn: 3,
+  seekStep: 5,
   defaultGranularity: "word",
 
   autoSaveDelay: 2000,
