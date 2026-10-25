@@ -88,6 +88,7 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
   let mono: MonoAudio | null = null;
   let writer: SpectrumChunkWriter | null = null;
   let focusChunk = 0;
+  let cacheRead = false;
   const rawQueue = new Set<number>();
   let release: (() => void) | null = holdFrames("spectrum analysis");
   const finish = () => {
@@ -149,6 +150,7 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
     writer = target.jobKey
       ? createSpectrumChunkWriter(target.jobKey, target.source, audio.sampleRate, target.fftSize)
       : null;
+    cacheRead = true;
     if (cached.size === total && rawQueue.size === 0) return finish();
     startAnalysis(
       audio,
@@ -166,7 +168,7 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
       if (analysis) analysis.requestRawPhase(chunks);
       else {
         for (const chunk of chunks) rawQueue.add(chunk);
-        if (mono && spectrumSession.chunkReady) {
+        if (cacheRead && mono && spectrumSession.chunkReady) {
           const ready = spectrumSession.chunkReady;
           startAnalysis(
             mono,
