@@ -15,12 +15,24 @@ interface PointSnapSources {
 
 // -- Functions -----------------------------------------------------------------
 
-function snappableBeatPoints(): GridPoint[] {
-  const { timelineSnap, beatSnap, beatGridVisible, beatGridLines } = useSettingsStore.getState();
+let cachedPoints: { key: readonly unknown[]; points: GridPoint[] } | null = null;
+
+function visibleBeatPoints(): GridPoint[] {
+  const { beatGridVisible, beatGridLines } = useSettingsStore.getState();
   const grid = useProjectStore.getState().beatGrid;
-  if (!timelineSnap || !beatSnap || !beatGridVisible || !grid) return [];
+  if (!beatGridVisible || !grid) return [];
   const duration = useAudioStore.getState().duration;
-  return gridPoints(grid, 0, duration, useTimelineStore.getState().zoom, beatGridLines);
+  const zoom = useTimelineStore.getState().zoom;
+  const key = [grid, duration, zoom, beatGridLines];
+  if (cachedPoints?.key.every((part, i) => part === key[i])) return cachedPoints.points;
+  const points = gridPoints(grid, 0, duration, zoom, beatGridLines).filter((point) => point.t >= 0);
+  cachedPoints = { key, points };
+  return points;
+}
+
+function snappableBeatPoints(): GridPoint[] {
+  const { timelineSnap, beatSnap } = useSettingsStore.getState();
+  return timelineSnap && beatSnap ? visibleBeatPoints() : [];
 }
 
 function pointSnapTimes({ includeMarkers, includeOnsets, includeBeats }: PointSnapSources): number[] {
@@ -35,4 +47,4 @@ function pointSnapTimes({ includeMarkers, includeOnsets, includeBeats }: PointSn
 
 // -- Exports -------------------------------------------------------------------
 
-export { pointSnapTimes, snappableBeatPoints };
+export { pointSnapTimes, snappableBeatPoints, visibleBeatPoints };
