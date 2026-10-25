@@ -8,6 +8,7 @@ import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { notifySharedTimingCopied } from "@/lib/shared-timing-signals";
 import type { HistoryEntry, ProjectState } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
+import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -81,6 +82,40 @@ function commitHistory(
     isDirtySinceHistory: false,
     history: newHistory,
     historyIndex: newHistory.length - 1,
+  };
+}
+
+function sameGridApartFromOffset(a: BeatGrid | null, b: BeatGrid | null): boolean {
+  return a !== null && b !== null && isStructurallyEqual({ ...a, offsetMs: 0 }, { ...b, offsetMs: 0 });
+}
+
+function isOffsetOnlyStep(before: HistoryEntry, after: HistoryEntry): boolean {
+  const { beatGrid: beforeGrid, timestamp: _beforeTime, ...beforeRest } = before;
+  const { beatGrid: afterGrid, timestamp: _afterTime, ...afterRest } = after;
+  return (
+    beforeGrid?.offsetMs !== afterGrid?.offsetMs &&
+    sameGridApartFromOffset(beforeGrid, afterGrid) &&
+    isStructurallyEqual(beforeRest, afterRest)
+  );
+}
+
+// Nudges in a row join one step, so a single undo returns to the offset before nudging.
+function commitBeatGridOffset(state: ProjectState, grid: BeatGrid) {
+  const index = state.historyIndex;
+  const current = state.history[index];
+  const previous = state.history[index - 1];
+  const joinsStep =
+    !state.isDirtySinceHistory &&
+    index === state.history.length - 1 &&
+    current !== undefined &&
+    previous !== undefined &&
+    isOffsetOnlyStep(previous, current) &&
+    sameGridApartFromOffset(state.beatGrid, grid);
+  if (!joinsStep) return commitHistory(state, { beatGrid: grid });
+  return {
+    beatGrid: grid,
+    isDirty: true,
+    history: state.history.with(index, snapshotEntry({ ...state, beatGrid: grid })),
   };
 }
 
@@ -183,6 +218,7 @@ function canUndoFrom(state: ProjectState): boolean {
 export {
   amendCurrentStep,
   canUndoFrom,
+  commitBeatGridOffset,
   commitHistory,
   commitPendingEdit,
   commitSharedTimingHistory,

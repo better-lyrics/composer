@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
-import { withOffset } from "@/domain/tempo/grid-edits";
+import { withBarOneAt, withOffset } from "@/domain/tempo/grid-edits";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 
@@ -56,6 +56,56 @@ describe("project history snapshots the beat grid", () => {
     const entry = useProjectStore.getState().history.at(-1);
     expect(entry?.beatGrid).toEqual(grid);
     expect(entry?.beatGrid).not.toBe(useProjectStore.getState().beatGrid);
+  });
+
+  it("nudging the offset again and again is one undo step", () => {
+    const store = useProjectStore.getState;
+    store().applyBeatGridWithHistory(grid);
+    for (const offset of [10, 20, 30]) store().nudgeBeatGridOffsetWithHistory(withOffset(grid, offset));
+
+    store().undo();
+    expect(store().beatGrid).toEqual(grid);
+    store().redo();
+    expect(store().beatGrid?.offsetMs).toBe(30);
+  });
+
+  it("a nudge after another edit starts its own step", () => {
+    const store = useProjectStore.getState;
+    const moved = withBarOneAt(grid, 1);
+    store().applyBeatGridWithHistory(grid);
+    store().applyBeatGridWithHistory(moved);
+    store().nudgeBeatGridOffsetWithHistory(withOffset(moved, 10));
+    store().nudgeBeatGridOffsetWithHistory(withOffset(moved, 20));
+
+    store().undo();
+    expect(store().beatGrid).toEqual(moved);
+    store().undo();
+    expect(store().beatGrid).toEqual(grid);
+  });
+
+  it("a nudge after a lyrics edit starts its own step", () => {
+    const store = useProjectStore.getState;
+    store().applyBeatGridWithHistory(grid);
+    store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 10));
+    store().setLinesWithHistory([createLine({ text: "b" })]);
+    store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 20));
+
+    store().undo();
+    expect(store().beatGrid?.offsetMs).toBe(10);
+    expect(store().lines[0].text).toBe("b");
+  });
+
+  it("a nudge after an undo starts its own step", () => {
+    const store = useProjectStore.getState;
+    store().applyBeatGridWithHistory(grid);
+    store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 10));
+    store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 20));
+    store().undo();
+    store().nudgeBeatGridOffsetWithHistory(withOffset(grid, -10));
+
+    store().undo();
+    expect(store().beatGrid).toEqual(grid);
+    expect(store().canRedo()).toBe(true);
   });
 
   it("clearing the grid marks the project dirty", () => {

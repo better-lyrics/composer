@@ -20,7 +20,7 @@ function formatOffset(offsetMs: number): string {
 const OffsetStepper: React.FC<{ grid: BeatGrid }> = ({ grid }) => {
   const earlier = withOffset(grid, grid.offsetMs - OFFSET_STEP_MS);
   const later = withOffset(grid, grid.offsetMs + OFFSET_STEP_MS);
-  const apply = useProjectStore((s) => s.applyBeatGridWithHistory);
+  const apply = useProjectStore((s) => s.nudgeBeatGridOffsetWithHistory);
 
   return (
     <div className="tray tray-compact">

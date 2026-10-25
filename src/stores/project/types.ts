@@ -153,6 +153,7 @@ interface SnapPointActions {
 interface BeatGridActions {
   setBeatGrid: (grid: BeatGrid | null) => void;
   applyBeatGridWithHistory: (grid: BeatGrid | null) => void;
+  nudgeBeatGridOffsetWithHistory: (grid: BeatGrid) => void;
   clearBeatGrid: () => void;
 }
 

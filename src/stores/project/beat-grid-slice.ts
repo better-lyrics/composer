@@ -1,4 +1,4 @@
-import { commitHistory } from "@/stores/project/history-helpers";
+import { commitBeatGridOffset, commitHistory } from "@/stores/project/history-helpers";
 import type { BeatGridActions, BeatGridState, ProjectStore } from "@/stores/project/types";
 import type { StateCreator } from "zustand";
 
@@ -15,6 +15,7 @@ const createBeatGridSlice: StateCreator<ProjectStore, [], [], BeatGridState & Be
 
   setBeatGrid: (grid) => set({ beatGrid: grid, isDirtySinceHistory: true }),
   applyBeatGridWithHistory: (grid) => set((state) => commitHistory(state, { beatGrid: grid })),
+  nudgeBeatGridOffsetWithHistory: (grid) => set((state) => commitBeatGridOffset(state, grid)),
   clearBeatGrid: () =>
     set((state) => (state.beatGrid === null ? state : { beatGrid: null, isDirty: true, isDirtySinceHistory: true })),
 });
