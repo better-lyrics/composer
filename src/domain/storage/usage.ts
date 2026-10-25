@@ -3,7 +3,7 @@ import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 
 // -- Types --------------------------------------------------------------------
 
-type UsageEntry = Pick<ProjectIndexEntry, "audioKind" | "storedAudioBytes" | "recordBytes">;
+type UsageEntry = Pick<ProjectIndexEntry, "audioKind" | "storedAudioBytes" | "storedStemBytes" | "recordBytes">;
 
 interface StemJobUsage {
   jobKey: string;
@@ -32,6 +32,7 @@ function storageUsage(
   for (const entry of entries) {
     if (entry.audioKind === "youtube") youtubeAudioBytes += entry.storedAudioBytes;
     else localAudioBytes += entry.storedAudioBytes;
+    localAudioBytes += entry.storedStemBytes ?? 0;
     lyricsBytes += entry.recordBytes ?? 0;
   }
   let stemBytes = 0;

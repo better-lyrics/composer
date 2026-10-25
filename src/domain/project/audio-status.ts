@@ -30,9 +30,11 @@ function projectAudioStatus(entry: AudioStatusFields): ProjectAudioStatus {
   };
 }
 
-function storedAudioBytesTotal(entries: readonly Pick<ProjectIndexEntry, "storedAudioBytes">[]): number {
+function storedAudioBytesTotal(
+  entries: readonly Pick<ProjectIndexEntry, "storedAudioBytes" | "storedStemBytes">[],
+): number {
   let total = 0;
-  for (const entry of entries) total += entry.storedAudioBytes;
+  for (const entry of entries) total += entry.storedAudioBytes + (entry.storedStemBytes ?? 0);
   return total;
 }
 

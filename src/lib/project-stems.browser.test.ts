@@ -1,3 +1,4 @@
+import { duplicateProject } from "@/lib/project-library-actions";
 import { loadProjectIndexEntry, removeProjectData } from "@/lib/project-repository";
 import { deleteProjectStem, loadProjectStems, saveProjectStem } from "@/lib/project-stems";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
@@ -64,5 +65,16 @@ describe("project stems", () => {
     await removeProjectData("stems-gone");
     expect(await loadProjectStems("stems-gone")).toBeUndefined();
     await expect(saveProjectStem("stems-gone", "h", importedVocals())).rejects.toBeInstanceOf(ProjectDeletedError);
+  });
+
+  it("is copied to a duplicate of its project", async () => {
+    await seedStoredProject("stems-original");
+    const write = importedVocals();
+    await saveProjectStem("stems-original", "h", write);
+    const copyId = await duplicateProject("stems-original");
+    const copy = await loadProjectStems(copyId);
+    expect(copy?.slots.vocals).toMatchObject({ origin: "imported", name: "acapella.wav" });
+    expect(copy?.slots.vocals?.data.byteLength).toBe(write.file.size);
+    expect((await loadProjectIndexEntry(copyId))?.storedStemBytes).toBe(write.file.size);
   });
 });

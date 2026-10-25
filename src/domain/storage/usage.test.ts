@@ -25,6 +25,12 @@ describe("storageUsage", () => {
     });
   });
 
+  it("counts a project's own stems as local audio, never as clearable stems", () => {
+    const withStems = [indexEntry("stems", { audioKind: "youtube", storedAudioBytes: 100, storedStemBytes: 40 })];
+    expect(storageUsage(withStems, [])).toMatchObject({ localAudioBytes: 40, youtubeAudioBytes: 100, stemBytes: 0 });
+    expect(storedAudioBytesTotal(withStems)).toBe(140);
+  });
+
   it("counts audio with no index entry as local audio", () => {
     expect(storageUsage(ENTRIES, STEMS, 25).localAudioBytes).toBe(425);
   });
