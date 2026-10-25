@@ -200,11 +200,12 @@ describe("createLanguageAutoRefresh", () => {
       const refresher = createRefresher();
 
       await refresher.refreshNow();
-      const marked = lineById("a");
+      const settled = lineById("a");
       await refresher.refreshNow();
 
-      expect(marked.translations?.en).toMatchObject({ text: "Old translation", stale: true });
-      expect(lineById("a")).toBe(marked);
+      // Untranslatable text has no translation, so the old one is removed (#309).
+      expect(settled.translations?.en).toBeUndefined();
+      expect(lineById("a")).toBe(settled);
     });
 
     it("regression: never brings back a track the user removed from a line", async () => {

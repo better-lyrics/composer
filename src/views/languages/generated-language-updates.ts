@@ -96,6 +96,10 @@ function generatedLanguageUpdates(
           origin: "google",
           sourceFingerprint: fingerprint,
         };
+      } else if (mayReplace && current?.origin === "google") {
+        // The provider returns null for untranslatable or unchanged text; an
+        // old Google translation of different source text is no longer valid.
+        delete translations[generated.language];
       } else if (current && current.sourceFingerprint !== fingerprint) {
         if (!current.stale) translations[generated.language] = { ...current, stale: true };
       } else if (current?.stale) {

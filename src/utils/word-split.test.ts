@@ -13,6 +13,11 @@ describe("splitWordIntoWords", () => {
     expect(out[1].syllableGroupId).toBeUndefined();
   });
 
+  it("does not copy the whole word's transliteration onto each piece", () => {
+    const out = splitWordIntoWords({ ...source, transliteration: "evuridei", transliterationJoinerAfter: "  " }, [5]);
+    expect(out.every((w) => w.transliteration === undefined && w.transliterationJoinerAfter === undefined)).toBe(true);
+  });
+
   it("preserves the source trailing space on the final word", () => {
     const out = splitWordIntoWords({ ...source, text: "everyday " }, [5]);
     expect(out.map((w) => w.text)).toEqual(["every ", "day "]);
