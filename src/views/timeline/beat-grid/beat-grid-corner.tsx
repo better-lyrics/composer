@@ -22,19 +22,14 @@ import { useRef, useState } from "react";
 // -- Constants -----------------------------------------------------------------
 
 const FLASH_MS = 110;
-const CORNER_TEMPO_HEIGHT = 26;
+const CORNER_TEMPO_HEIGHT = 40;
 const CORNER_BORDER = 1;
 const TEMPO_NUMBER_CLASS =
   "font-mono text-xs font-semibold leading-none tabular-nums text-(--label) transition-colors duration-160 ease-[cubic-bezier(0.22,1,0.36,1)] group-aria-expanded:text-composer-text data-beat:text-composer-accent-text data-beat:duration-0";
 
 // -- Components ----------------------------------------------------------------
 
-const CornerTempo: React.FC<{ grid: BeatGrid; songBpm: number; dimmed: boolean; compact: boolean }> = ({
-  grid,
-  songBpm,
-  dimmed,
-  compact,
-}) => {
+const CornerTempo: React.FC<{ grid: BeatGrid; songBpm: number; dimmed: boolean }> = ({ grid, songBpm, dimmed }) => {
   const bpm = usePlayheadTempo(grid, "beat-grid-corner-tempo", songBpm);
   const numberRef = useRef<HTMLElement>(null);
   const flashedAt = useRef<number | null>(null);
@@ -54,15 +49,11 @@ const CornerTempo: React.FC<{ grid: BeatGrid; songBpm: number; dimmed: boolean; 
   });
 
   return (
-    <span className={cn("grid justify-items-center", compact ? "gap-px" : "gap-0.5", dimmed && "opacity-50")}>
+    <span className={cn("grid justify-items-center gap-1", dimmed && "opacity-50")}>
       <b ref={numberRef} className={TEMPO_NUMBER_CLASS}>
         {bpm}
       </b>
-      <span
-        className={cn("font-medium leading-none text-composer-text-faint", compact ? "text-[8.5px]" : "text-[9.5px]")}
-      >
-        BPM
-      </span>
+      <span className="text-[9.5px] font-medium leading-none text-composer-text-faint">BPM</span>
     </span>
   );
 };
@@ -98,7 +89,7 @@ const CornerFace: React.FC<{ compact: boolean }> = ({ compact }) => {
   return (
     <>
       {!(compact && stats) && <IconWaveSine aria-hidden="true" className="size-4" />}
-      {grid && stats && <CornerTempo grid={grid} songBpm={stats.bpm} dimmed={!visible} compact={compact} />}
+      {grid && stats && <CornerTempo grid={grid} songBpm={stats.bpm} dimmed={!visible} />}
     </>
   );
 };
