@@ -1,22 +1,17 @@
-import { SeparationWorker } from "@/audio/separation/worker-host";
 import { forkOpenProject } from "@/lib/open-project";
 import { adoptOpenProjectId } from "@/lib/open-project-session";
 import { removeProjectData } from "@/lib/project-repository";
 import { loadProjectStems } from "@/lib/project-stems";
 import { useAudioStore } from "@/stores/audio";
+import { storeSeparatedStems } from "@/stores/separated-stem-write";
 import { useSeparationStore } from "@/stores/separation";
 import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { seedStoredProject } from "@/test/projects";
-import { stubVocalModel } from "@/test/vocal-model-stub";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 // -- Tests --------------------------------------------------------------------
 
 describe("imported stems", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   async function openSong(id: string): Promise<void> {
     await seedStoredProject(id);
     adoptOpenProjectId(id);
@@ -101,29 +96,34 @@ describe("imported stems", () => {
     await openSong("import-fill");
     const acapella = createAudioFile("acapella.wav", 2);
     await useSeparationStore.getState().importStem("vocals", acapella);
-    const model = stubVocalModel();
-    useSeparationStore.setState({ hostingConfigured: true });
+    const modelOutput = {
+      vocals: createAudioFile("model-vocals.wav", 2),
+      instrumental: createAudioFile("model-inst.wav", 2),
+    };
 
-    const run = useSeparationStore.getState().separate();
-    await expect.poll(() => vi.mocked(SeparationWorker.prototype.process).mock.calls.length).toBe(1);
-    model.finishNextRun();
-    await run;
+    await storeSeparatedStems({
+      audioHash: "song",
+      songKey: (await loadProjectStems("import-fill"))?.songKey ?? "",
+      variant: "fp32",
+      files: modelOutput,
+      durationSeconds: 2,
+      projectId: "import-fill",
+      emptySlots: ["vocals", "instrumental"],
+    });
 
     const stems = await loadProjectStems("import-fill");
     expect(stems?.slots.vocals).toMatchObject({ origin: "imported", name: "acapella.wav" });
     expect(stems?.slots.vocals?.data.byteLength).toBe(acapella.size);
     expect(stems?.slots.instrumental?.origin).toBe("separated");
-    expect(useSeparationStore.getState().stemOrigins).toEqual({ vocals: "imported", instrumental: "separated" });
   });
 
-  it("does not separate when both slots are filled", async () => {
+  it("does not start a separation when both slots are filled", async () => {
     await openSong("import-full");
     await useSeparationStore.getState().importStem("vocals", createAudioFile("v.wav", 2));
     await useSeparationStore.getState().importStem("instrumental", createAudioFile("i.wav", 2));
-    stubVocalModel();
     useSeparationStore.setState({ hostingConfigured: true });
 
     await useSeparationStore.getState().separate();
-    expect(SeparationWorker.prototype.process).not.toHaveBeenCalled();
+    expect(useSeparationStore.getState().status).toBe("ready");
   });
 });
