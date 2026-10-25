@@ -80,16 +80,15 @@ describe("TimelinePanel drag ghost snapping", () => {
     await renderPanelAndGrab();
     expect(trackRect(1, "word").height).toBe(80);
 
-    // Rows can still settle after the grab, so each retry aims at where the track is now.
+    // Near the track top stays clear of the bottom auto-scroll zone; one read keeps ghost and track in step.
     await expect
       .poll(() => {
         const track = trackRect(1, "word");
-        movePointer(track.left + 400, track.top + 60);
-        return ghostBlock()?.getBoundingClientRect().height;
+        movePointer(track.left + 400, track.top + 10);
+        const ghost = ghostBlock()?.getBoundingClientRect();
+        return ghost && { height: Math.round(ghost.height), offset: Math.round(ghost.top - track.top) };
       })
-      .toBeCloseTo(80 - 2 * wordInsetPx("word"), 0);
-    const main = trackRect(1, "word");
-    expect(ghostBlock()?.getBoundingClientRect().top).toBeCloseTo(main.top + wordInsetPx("word"), 0);
+      .toEqual({ height: 80 - 2 * wordInsetPx("word"), offset: wordInsetPx("word") });
   });
 
   it("keeps the ghost unsnapped at its source height when no track is under the pointer", async () => {
