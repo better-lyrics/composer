@@ -39,4 +39,3 @@ function clearPitchSession(): void {
 // -- Exports ------------------------------------------------------------------
 
 export { clearPitchSession, pitchSession, setPitchSessionTrack };
-export type { PitchSession };

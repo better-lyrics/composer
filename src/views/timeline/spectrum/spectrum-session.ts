@@ -171,7 +171,6 @@ function useSpectrumStatus(): SpectrumStatusView {
 
 export {
   beginSpectrumSession,
-  chunkTotal,
   clearSpectrumSession,
   setSpectrumStatus,
   spectrumSession,
@@ -179,4 +178,4 @@ export {
   storeWorkerChunk,
   useSpectrumStatus,
 };
-export type { SpectrumSessionState, SpectrumStatus, SpectrumStatusView };
+export type { SpectrumSessionState, SpectrumStatusView };

@@ -42,5 +42,5 @@ function semitonesOf(hz: number): number {
 
 // -- Exports ------------------------------------------------------------------
 
-export { VOICED_CONFIDENCE_PERCENT, VOICED_LOUDNESS_DB, frameAt, frameTime, isVoicedFrame, semitonesOf };
+export { frameAt, frameTime, isVoicedFrame, semitonesOf };
 export type { PitchPoint, PitchTrack };

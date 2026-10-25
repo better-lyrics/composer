@@ -41,4 +41,3 @@ function createLatestRequest(): LatestRequest {
 // -- Exports ------------------------------------------------------------------
 
 export { createLatestRequest };
-export type { LatestRequest, RequestTicket };

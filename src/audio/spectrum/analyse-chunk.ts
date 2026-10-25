@@ -72,4 +72,3 @@ function analyseChunk(
 // -- Exports ------------------------------------------------------------------
 
 export { analyseChunk };
-export type { AnalysedChunk };

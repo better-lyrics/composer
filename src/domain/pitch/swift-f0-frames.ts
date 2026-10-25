@@ -85,4 +85,3 @@ export {
   silenceMask,
   swiftF0FrameCount,
 };
-export type { InferenceWindow };

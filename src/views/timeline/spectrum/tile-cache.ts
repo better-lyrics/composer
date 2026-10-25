@@ -146,4 +146,4 @@ function drawTiles(
 // -- Exports -------------------------------------------------------------------
 
 export { drawTiles };
-export type { TileBlit, TileView };
+export type { TileView };

@@ -23,4 +23,4 @@ function useOverviewBandHeight(): number {
 
 // -- Exports ------------------------------------------------------------------
 
-export { currentOverviewBandHeight, overviewBandHeight, useOverviewBandHeight };
+export { currentOverviewBandHeight, useOverviewBandHeight };

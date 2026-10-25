@@ -15,5 +15,5 @@ function isPitchLineMode(value: unknown): value is PitchLineMode {
 
 // -- Exports ------------------------------------------------------------------
 
-export { DEFAULT_PITCH_LINE_MODE, PITCH_LINE_MODES, isPitchLineMode };
+export { DEFAULT_PITCH_LINE_MODE, isPitchLineMode };
 export type { PitchLineMode };

@@ -24,4 +24,3 @@ function noteOfFrequency(hz: number): NoteReading | null {
 // -- Exports ---------------------------------------------------------------
 
 export { noteOfFrequency };
-export type { NoteReading };

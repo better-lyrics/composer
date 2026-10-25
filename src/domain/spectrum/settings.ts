@@ -109,7 +109,6 @@ export {
   SPECTRUM_CONTRAST,
   SPECTRUM_SETTING_DEFAULTS,
   clampSpectrumBandHeight,
-  clampSpectrumContrast,
   isDefaultSpectrumLook,
   sanitizeSpectrumSettings,
   spectrumLookDefaults,

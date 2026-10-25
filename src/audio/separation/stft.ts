@@ -260,4 +260,4 @@ function istft(spec: Spectrogram, outputLength: number, opts: IstftOptions = {})
 }
 
 export { N_FFT, HOP_LENGTH, reflectPad, stft, stftFrameCount, forEachStftFrame, istft };
-export type { Spectrogram, StftFraming };
+export type { Spectrogram };

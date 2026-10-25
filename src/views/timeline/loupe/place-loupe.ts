@@ -56,4 +56,3 @@ function placeLoupe(input: LoupePlacementInput): LoupePlacement {
 // -- Exports ------------------------------------------------------------------
 
 export { placeLoupe };
-export type { LoupePlacement, PlainRect };

@@ -64,4 +64,3 @@ function resolveSpectrumPalette(palette: SpectrumPalette): ResolvedPalette {
 // -- Exports -------------------------------------------------------------------
 
 export { resolveSpectrumPalette };
-export type { ResolvedPalette };

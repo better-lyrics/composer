@@ -132,4 +132,3 @@ function renderTile(inputs: TileRenderInputs): RenderedTile {
 // -- Exports -------------------------------------------------------------------
 
 export { renderTile };
-export type { RenderedTile, TileRenderInputs };

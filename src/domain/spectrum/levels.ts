@@ -19,4 +19,4 @@ function brightness(db: number, floorDb: number): number {
 
 // -- Exports ---------------------------------------------------------------
 
-export { CEILING_DB, DB_RANGE, brightness, decodeDb, encodeDb };
+export { brightness, decodeDb, encodeDb };

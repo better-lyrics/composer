@@ -81,4 +81,4 @@ function showLoupeAfterKeyEdit(word: WordIdentity, edge: LoupeEdge, startTime: n
 // -- Exports ------------------------------------------------------------------
 
 export { settleLoupe, showLoupeAfterKeyEdit, showLoupeEdit, storedEdgeTime };
-export type { LoupeEdge, LoupeTarget };
+export type { LoupeTarget };

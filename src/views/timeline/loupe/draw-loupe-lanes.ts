@@ -118,4 +118,3 @@ function drawLoupeLanes(frame: LoupeFrame, lanes: LoupeLaneWords): void {
 // -- Exports ------------------------------------------------------------------
 
 export { drawLoupeLanes };
-export type { LoupeLaneWords };

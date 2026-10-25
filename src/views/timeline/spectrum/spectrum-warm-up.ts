@@ -84,4 +84,3 @@ function blitWarming(
 // -- Exports -------------------------------------------------------------------
 
 export { beginWarmUp, blitWarming, createWarmUp, noteDrawnTiles };
-export type { WarmUp };

@@ -175,4 +175,4 @@ const BeatGridCorner: React.FC = () => {
 
 // -- Exports -------------------------------------------------------------------
 
-export { BeatGridCorner, CORNER_TEMPO_HEIGHT };
+export { BeatGridCorner };

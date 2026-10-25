@@ -78,5 +78,5 @@ function createSpectrumChunkWriter(jobKey: string, source: SpectrumSource, fftSi
 
 // -- Exports ------------------------------------------------------------------
 
-export { createSpectrumChunkWriter, readSpectrumChunks, spectrumChunkKey };
-export type { CachedSpectrumChunk, SpectrumChunkWriter };
+export { createSpectrumChunkWriter, readSpectrumChunks };
+export type { CachedSpectrumChunk };
