@@ -5,7 +5,14 @@ import type { LyricLine } from "@/domain/line/model";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { gridPoints } from "@/domain/tempo/grid-points";
 import { describe, expect, it } from "vitest";
-import { type SnapAnchor, activeSnapAnchors, beatAnchors, collectSnapAnchors, findSnapShift, selfKey } from "./snap";
+import {
+  type SnapAnchor,
+  activeSnapAnchors,
+  beatAnchors,
+  collectSnapAnchors,
+  findSnapShift,
+  selfKey,
+} from "@/views/timeline/snap";
 
 const ALL_SOURCES = {
   timelineSnap: true,

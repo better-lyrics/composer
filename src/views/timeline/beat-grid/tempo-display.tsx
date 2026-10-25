@@ -79,8 +79,8 @@ const BeatLeds: React.FC<{ grid: BeatGrid }> = ({ grid }) => {
 const TempoChangesFact: React.FC<{ fact: string; changes: string[] }> = ({ fact, changes }) => (
   <Tooltip
     placement="bottom"
-    content={changes.map((change) => (
-      <span key={change} className="block">
+    content={changes.map((change, i) => (
+      <span key={`${i}-${change}`} className="block">
         {change}
       </span>
     ))}
@@ -110,7 +110,7 @@ const TempoDisplay: React.FC<{ grid: BeatGrid; stats: TempoStats }> = ({ grid, s
       <span className="flex flex-wrap gap-x-5 gap-y-1 overflow-x-clip text-[12.5px] leading-[1.3] text-(--muted)">
         <b className="font-medium tabular-nums text-(--label) whitespace-nowrap">{meter}</b>
         {rest.map((fact, i) => (
-          <span key={fact} className="-ml-5 whitespace-nowrap">
+          <span key={`${i}-${fact}`} className="-ml-5 whitespace-nowrap">
             <span aria-hidden="true" className="inline-block w-5 text-center">
               ・
             </span>

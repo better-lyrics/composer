@@ -53,6 +53,10 @@ interface PopoverProps {
   instant?: boolean;
 }
 
+// -- Constants ----------------------------------------------------------------
+
+const PRESSABLE_CONTROL = "button, input, [role='slider']";
+
 // -- Component ----------------------------------------------------------------
 
 const Popover: React.FC<PopoverProps> = ({
@@ -115,7 +119,8 @@ const Popover: React.FC<PopoverProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     const keepFocusInside = (event: MouseEvent) => {
-      if (keepsPopoversOpen(event.target) && floatingElement.current?.contains(document.activeElement)) {
+      const onControl = event.target instanceof Element && event.target.closest(PRESSABLE_CONTROL) !== null;
+      if (onControl && keepsPopoversOpen(event.target) && floatingElement.current?.contains(document.activeElement)) {
         event.preventDefault();
       }
     };

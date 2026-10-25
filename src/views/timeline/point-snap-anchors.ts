@@ -42,7 +42,7 @@ function pointSnapTimes({ includeMarkers, includeOnsets, includeBeats }: PointSn
   if (includeMarkers && snapMarkers) times.push(...snapPointTimes(useProjectStore.getState().customSnapPoints));
   if (includeOnsets && vocalOnsetSnap) times.push(...useTimelineStore.getState().vocalOnsetSnapPoints);
   if (includeBeats) for (const point of snappableBeatPoints()) times.push(point.t);
-  return times.sort((a, b) => a - b);
+  return times.toSorted((a, b) => a - b);
 }
 
 // -- Exports -------------------------------------------------------------------
