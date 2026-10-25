@@ -17,6 +17,8 @@ const SWIFT_F0_MAX_HZ = 2093.75;
 const LOOKAHEAD_FRAMES = 10;
 const LEFT_FRAMES = 11;
 const WINDOW_FRAMES = 1875;
+// 10 s windows let the visible part of a song arrive first; the context frames keep the stitched result unchanged.
+const STREAM_WINDOW_FRAMES = 625;
 const SILENCE_PEAK = 1e-3;
 const LOUDNESS_FLOOR = 1e-7;
 
@@ -27,11 +29,11 @@ function swiftF0FrameCount(sampleCount: number): number {
 }
 
 // Each window carries enough context on both sides that stitched windows match one long run.
-function inferenceWindows(sampleCount: number): InferenceWindow[] {
+function inferenceWindows(sampleCount: number, windowFrames: number = WINDOW_FRAMES): InferenceWindow[] {
   const frames = swiftF0FrameCount(sampleCount);
   const windows: InferenceWindow[] = [];
-  for (let start = 0; start < frames; start += WINDOW_FRAMES) {
-    const end = Math.min(start + WINDOW_FRAMES, frames);
+  for (let start = 0; start < frames; start += windowFrames) {
+    const end = Math.min(start + windowFrames, frames);
     const left = Math.max(0, start - LEFT_FRAMES);
     windows.push({
       sampleStart: left * SWIFT_F0_HOP,
@@ -76,6 +78,7 @@ function silenceMask(audio: Float32Array, frameCount: number): Uint8Array {
 // -- Exports ------------------------------------------------------------------
 
 export {
+  STREAM_WINDOW_FRAMES,
   SWIFT_F0_HOP,
   SWIFT_F0_MAX_HZ,
   SWIFT_F0_MIN_HZ,
@@ -85,3 +88,4 @@ export {
   silenceMask,
   swiftF0FrameCount,
 };
+export type { InferenceWindow };

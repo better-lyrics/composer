@@ -15,6 +15,8 @@ import { type RefObject, createContext, useContext, useEffect, useMemo, useRef }
 
 interface PitchRows {
   track: PitchTrack;
+  // Bumps as detection fills the track in place, so lanes redraw with the new windows.
+  generation: number;
   coverage: readonly Bounds[];
   themeId: string;
   customThemes: readonly unknown[];
@@ -37,6 +39,7 @@ const PitchRowsScope: React.FC<PitchRowsScopeProps> = ({ style, viewportRef, chi
   const mode: PitchLineMode = useSettingsStore((s) => s.pitchLine);
   // The session is a plain module object; publishing it bumps the timeline store, which re-runs this selector.
   const track = useTimelineStore(() => pitchSession.track);
+  const generation = useTimelineStore((s) => s.pitchTrackGeneration);
   const lines = useProjectStore((s) => s.lines);
   const themeId = useThemeStore((s) => s.activeThemeId);
   const customThemes = useThemeStore((s) => s.customThemes);
@@ -44,8 +47,8 @@ const PitchRowsScope: React.FC<PitchRowsScopeProps> = ({ style, viewportRef, chi
 
   const coverage = useMemo(() => (shown ? songWordCoverage(lines) : []), [shown, lines]);
   const rows = useMemo(
-    () => (shown && track ? { track, coverage, themeId, customThemes } : null),
-    [shown, track, coverage, themeId, customThemes],
+    () => (shown && track ? { track, generation, coverage, themeId, customThemes } : null),
+    [shown, track, generation, coverage, themeId, customThemes],
   );
 
   const scopeRef = useRef<HTMLDivElement>(null);

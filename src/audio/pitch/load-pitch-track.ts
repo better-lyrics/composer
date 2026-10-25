@@ -1,6 +1,6 @@
 import { decodeSourceAudio } from "@/audio/decoded-source-audio";
 import { cachePitchTrack, readCachedPitchTrack } from "@/audio/pitch/pitch-cache";
-import { detectPitchOffThread } from "@/audio/pitch/pitch-worker-host";
+import { startPitchDetection } from "@/audio/pitch/pitch-worker-host";
 import { resampleMono } from "@/audio/pitch/resample-mono";
 import { fetchVocalStem } from "@/audio/separation/fetch-vocal-stem";
 import { SWIFT_F0_SAMPLE_RATE } from "@/domain/pitch/swift-f0-frames";
@@ -16,6 +16,10 @@ interface PitchTrackRequest {
   jobKey: string | null;
   vocalsUrl: string;
   signal: AbortSignal;
+  focusTime: () => number;
+  onProgress: (track: PitchTrack) => void;
+  // Detection follows the viewport; the returned setter is live until the track is done.
+  onFocusSetter: (setFocusTime: ((seconds: number) => void) | null) => void;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -41,7 +45,14 @@ async function cache(jobKey: string | null, track: PitchTrack): Promise<void> {
 
 // -- Loading ------------------------------------------------------------------
 
-async function loadPitchTrack({ jobKey, vocalsUrl, signal }: PitchTrackRequest): Promise<PitchTrack> {
+async function loadPitchTrack({
+  jobKey,
+  vocalsUrl,
+  signal,
+  focusTime,
+  onProgress,
+  onFocusSetter,
+}: PitchTrackRequest): Promise<PitchTrack> {
   const cached = await readCached(jobKey);
   signal.throwIfAborted();
   if (cached) return cached;
@@ -50,7 +61,9 @@ async function loadPitchTrack({ jobKey, vocalsUrl, signal }: PitchTrackRequest):
   signal.throwIfAborted();
   const audio16k = await resampleMono(decoded, SWIFT_F0_SAMPLE_RATE);
   signal.throwIfAborted();
-  const track = await detectPitchOffThread(audio16k, signal);
+  const detection = startPitchDetection(audio16k, { focusTime: focusTime(), signal, onProgress });
+  onFocusSetter(detection.setFocusTime);
+  const track = await detection.done.finally(() => onFocusSetter(null));
   await cache(jobKey, track);
   return track;
 }

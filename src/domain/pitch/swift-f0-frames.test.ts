@@ -1,4 +1,5 @@
 import {
+  STREAM_WINDOW_FRAMES,
   SWIFT_F0_HOP,
   frameLoudnessDb,
   inferenceWindows,
@@ -38,6 +39,18 @@ describe("SwiftF0 framing matches the Python package", () => {
     expect(Array.from(silenceMask(signal, frames))).toEqual(golden.silent);
     const loudness = frameLoudnessDb(signal, frames);
     golden.loudnessDb.forEach((db, frame) => expect(Math.abs(loudness[frame] - db)).toBeLessThanOrEqual(1));
+  });
+
+  describe("invariants", () => {
+    it("short streaming windows still cover every frame exactly once", () => {
+      const sampleCount = 3_840_000;
+      const covered = new Uint8Array(swiftF0FrameCount(sampleCount));
+      for (const w of inferenceWindows(sampleCount, STREAM_WINDOW_FRAMES)) {
+        for (let frame = w.outputFrom; frame < w.outputFrom + (w.keepTo - w.keepFrom); frame++) covered[frame]++;
+        expect(w.keepFrom).toBeLessThanOrEqual(11);
+      }
+      expect(covered.every((count) => count === 1)).toBe(true);
+    });
   });
 
   describe("edge cases", () => {
