@@ -2,6 +2,13 @@ const N_FFT = 4096;
 const HOP_LENGTH = 1024;
 const WIN_LENGTH = N_FFT;
 
+interface StftFraming {
+  fftSize?: number;
+  hop?: number;
+  firstFrame?: number;
+  frameCount?: number;
+}
+
 // Periodic Hann window: divisor is `size` (not `size - 1`). Matches PyTorch's
 // `torch.hann_window(size, periodic=True)`, which is what `torch.stft` uses by
 // default. The symmetric variant (divisor `size - 1`) introduces a small but
@@ -138,26 +145,48 @@ interface StftOptions {
   normalized?: boolean;
 }
 
-function stftFrameCount(signalLength: number, center = true): number {
-  const framedLength = center ? signalLength + WIN_LENGTH : signalLength;
-  return 1 + Math.floor((framedLength - WIN_LENGTH) / HOP_LENGTH);
+function stftFrameCount(signalLength: number, center = true, framing: StftFraming = {}): number {
+  const { fftSize = N_FFT, hop = HOP_LENGTH } = framing;
+  const framedLength = center ? signalLength + fftSize : signalLength;
+  return 1 + Math.floor((framedLength - fftSize) / hop);
 }
 
 type StftFrameVisitor = (frame: number, real: Float32Array, imag: Float32Array) => void;
 
-function forEachStftFrame(signal: Float32Array, onFrame: StftFrameVisitor, center = true): void {
-  const window = hannWindow(WIN_LENGTH);
-  const framed = center ? reflectPad(signal, WIN_LENGTH / 2, WIN_LENGTH / 2) : signal;
-  const numFrames = stftFrameCount(signal.length, center);
-  const frameReal = new Float32Array(N_FFT);
-  const frameImag = new Float32Array(N_FFT);
+// Same samples as reflectPad, read in place so a frame range never copies the whole signal.
+function centeredSample(signal: Float32Array, index: number): number {
+  if (index < 0) {
+    const src = -index;
+    return signal[src < signal.length ? src : signal.length - 1];
+  }
+  if (index >= signal.length) {
+    const src = 2 * signal.length - 2 - index;
+    return signal[src >= 0 ? src : 0];
+  }
+  return signal[index];
+}
 
-  for (let f = 0; f < numFrames; f++) {
-    const start = f * HOP_LENGTH;
-    for (let i = 0; i < WIN_LENGTH; i++) {
-      frameReal[i] = framed[start + i] * window[i];
+function forEachStftFrame(
+  signal: Float32Array,
+  onFrame: StftFrameVisitor,
+  center = true,
+  framing: StftFraming = {},
+): void {
+  const { fftSize = N_FFT, hop = HOP_LENGTH, firstFrame = 0 } = framing;
+  const window = hannWindow(fftSize);
+  const totalFrames = stftFrameCount(signal.length, center, framing);
+  const lastFrame = Math.min(totalFrames, firstFrame + (framing.frameCount ?? totalFrames));
+  const offset = center ? fftSize / 2 : 0;
+  const frameReal = new Float32Array(fftSize);
+  const frameImag = new Float32Array(fftSize);
+
+  for (let f = firstFrame; f < lastFrame; f++) {
+    const start = f * hop - offset;
+    if (start >= 0 && start + fftSize <= signal.length) {
+      for (let i = 0; i < fftSize; i++) frameReal[i] = signal[start + i] * window[i];
+    } else {
+      for (let i = 0; i < fftSize; i++) frameReal[i] = centeredSample(signal, start + i) * window[i];
     }
-    if (N_FFT > WIN_LENGTH) frameReal.fill(0, WIN_LENGTH);
     frameImag.fill(0);
     fftRadix2(frameReal, frameImag);
     onFrame(f, frameReal, frameImag);
@@ -231,4 +260,4 @@ function istft(spec: Spectrogram, outputLength: number, opts: IstftOptions = {})
 }
 
 export { N_FFT, HOP_LENGTH, reflectPad, stft, stftFrameCount, forEachStftFrame, istft };
-export type { Spectrogram };
+export type { Spectrogram, StftFraming };
