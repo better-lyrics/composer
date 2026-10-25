@@ -60,9 +60,11 @@ describe("regressions", () => {
   });
 
   it("regression: reads a quiet intro heard at half time at the tempo after it", () => {
-    const { beats } = regularBeats(detections.halfTimeIntro);
+    const { beats, downbeats } = regularBeats(detections.halfTimeIntro);
     const intro = intervals(beats.filter((time) => time < 60));
     for (const interval of intro) expect(interval).toBeCloseTo(60 / 129, 1);
+    const introBars = barLengths(beats, downbeats).slice(0, 20);
+    expect(new Set(introBars)).toEqual(new Set([4]));
   });
 
   it("regression: does not read a stretch of loud off-beats as double time", () => {

@@ -189,18 +189,25 @@ function withoutHalfTime(beats: readonly number[], downbeats: readonly number[])
     const to = all[i + 1]?.from ?? beats.length - 1;
     return { ...section, to, seconds: beats[to] - beats[section.from] };
   });
+  const isFolded = (i: number) => {
+    const at = sections.findIndex((section) => i >= section.from && i < section.to);
+    const section = sections[at];
+    return section !== undefined && (isHalfOf(section, sections[at - 1]) || isHalfOf(section, sections[at + 1]));
+  };
   const bars = new Set(grid.downbeatIndices);
   const folded: number[] = [];
   const foldedDownbeats: number[] = [];
-  beats.forEach((time, i) => {
+  let barStart = -1;
+  const push = (time: number, isBar: boolean, inFold: boolean) => {
     folded.push(time);
-    if (bars.has(i)) foldedDownbeats.push(time);
-    const at = sections.findIndex((section) => i >= section.from && i < section.to);
-    const section = sections[at];
-    if (!section || !(isHalfOf(section, sections[at - 1]) || isHalfOf(section, sections[at + 1]))) return;
-    const middle = roundBeatTime((time + beats[i + 1]) / 2);
-    folded.push(middle);
-    if (bars.has(i - grid.beatsPerBar / 2)) foldedDownbeats.push(middle);
+    const index = folded.length - 1;
+    if (isBar) barStart = index;
+    if (isBar || (inFold && barStart >= 0 && (index - barStart) % grid.beatsPerBar === 0)) foldedDownbeats.push(time);
+  };
+  beats.forEach((time, i) => {
+    const foldsAfter = isFolded(i);
+    push(time, bars.has(i), foldsAfter || isFolded(i - 1));
+    if (foldsAfter) push(roundBeatTime((time + beats[i + 1]) / 2), false, true);
   });
   return { beats: folded, downbeats: foldedDownbeats };
 }
