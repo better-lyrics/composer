@@ -1,11 +1,13 @@
 import { loopRegionBetween } from "@/domain/selection/loop-region";
 import { snapPointTimes } from "@/domain/snap-point/model";
+import { gridPointAt, gridPointLabel } from "@/domain/tempo/grid-points";
 import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
+import { snappableBeatPoints } from "@/views/timeline/point-snap-anchors";
 import { commitDrawnLoopRegion } from "@/views/timeline/selection-playback";
 import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { GUTTER_WIDTH, type LoopRegionDrag, useTimelineStore } from "@/views/timeline/timeline-store";
@@ -21,7 +23,10 @@ const EDGE_SCROLL_LABEL = "loop-region-edge-scroll";
 
 function snappedTo(raw: number, snapped: number): LoopRegionDrag["snappedTo"] {
   if (snapped === raw) return null;
-  return snapPointTimes(useProjectStore.getState().customSnapPoints).includes(snapped) ? "pin" : "onset";
+  if (snapPointTimes(useProjectStore.getState().customSnapPoints).includes(snapped))
+    return { kind: "pin", label: "pin" };
+  const beat = gridPointAt(snappableBeatPoints(), snapped);
+  return beat ? { kind: "beat", label: gridPointLabel(beat) } : { kind: "onset", label: "onset" };
 }
 
 // edge null draws a new region; an edge moves that side of the current one while the other stays put.

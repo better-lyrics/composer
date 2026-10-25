@@ -1,9 +1,10 @@
 import { snapPointTimes } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
-import { type GridLines, gridPoints } from "@/domain/tempo/grid-points";
+import type { GridLines } from "@/domain/tempo/grid-points";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { snappableBeatPoints } from "@/views/timeline/point-snap-anchors";
 import {
   type SnapAnchor,
   activeSnapAnchors,
@@ -165,9 +166,7 @@ function useTimelineSnap(): UseTimelineSnap {
     if (!sameActiveKey(ctx.activeKey, key)) {
       let anchors = ctx.allAnchors;
       if (timelineSnap && vocalOnsetSnap) anchors = anchors.concat(vocalOnsetAnchors(vocalOnsetSnapPoints));
-      if (timelineSnap && beatSnap && beatGridVisible && key.beatGrid) {
-        anchors = anchors.concat(beatAnchors(gridPoints(key.beatGrid, 0, key.duration, zoom, key.beatGridLines)));
-      }
+      anchors = anchors.concat(beatAnchors(snappableBeatPoints()));
       ctx.activeAnchors = activeSnapAnchors(anchors, {
         timelineSnap,
         vocalOnsetSnap,

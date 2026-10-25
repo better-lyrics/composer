@@ -217,4 +217,4 @@ function findSnapShift(args: FindSnapShiftArgs): SnapResult {
 // -- Exports -------------------------------------------------------------------
 
 export { activeSnapAnchors, beatAnchors, collectSnapAnchors, findSnapShift, selfKey, vocalOnsetAnchors };
-export type { ActiveSnapSources, SnapAnchor };
+export type { SnapAnchor };

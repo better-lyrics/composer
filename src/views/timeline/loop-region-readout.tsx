@@ -28,7 +28,7 @@ const LoopRegionReadout: React.FC<LoopRegionReadoutProps> = ({ host }) => {
       {drag.snappedTo && (
         <span className="flex items-center gap-0.5 font-sans text-composer-accent-text">
           <IconMagnet aria-hidden="true" className="size-3" />
-          {drag.snappedTo}
+          {drag.snappedTo.label}
         </span>
       )}
     </span>,

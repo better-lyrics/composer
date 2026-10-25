@@ -37,7 +37,7 @@ type SelectionPlaybackMode = "once" | "loop";
 
 interface LoopRegionDrag {
   edge: "begin" | "end";
-  snappedTo: "pin" | "onset" | null;
+  snappedTo: { kind: "pin" | "onset" | "beat"; label: string } | null;
   draft: Bounds | null;
 }
 
