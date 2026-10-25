@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { barNumberAt, beatIndexAt, beatTime, detectedGrid, isDownbeat } from "@/domain/tempo/beat-grid";
+import { barNumberAt, beatInBar, beatIndexAt, beatTime, detectedGrid, isDownbeat } from "@/domain/tempo/beat-grid";
 
 const detection = { beats: [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5], downbeats: [0.5, 2.5, 4.5] };
 
@@ -47,6 +47,13 @@ describe("beatTime and beatIndexAt", () => {
 });
 
 describe("regressions", () => {
+  it("regression: pickup beats before the first bar count as the end of a bar, not its downbeat", () => {
+    const beats = Array.from({ length: 10 }, (_, i) => i * 0.5);
+    const grid = detectedGrid({ beats, downbeats: [1, 3] });
+    expect([0, 1].map((index) => beatInBar(grid, index))).toEqual([2, 3]);
+    expect(beatInBar(grid, 2)).toBe(0);
+  });
+
   it("regression: sparse downbeats fall back to four beats per bar instead of a bar no project can load", () => {
     const beats = Array.from({ length: 40 }, (_, i) => i * 0.5);
     expect(detectedGrid({ beats, downbeats: [0, 16] }).beatsPerBar).toBe(4);

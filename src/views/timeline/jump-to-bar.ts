@@ -16,7 +16,11 @@ function jumpToAdjacentBar(direction: 1 | -1): void {
     toast(NO_BEAT_GRID_MESSAGE);
     return;
   }
-  const target = adjacentSnapPoint(barTimes(grid), livePlaybackTime(), direction);
+  const target = adjacentSnapPoint(
+    barTimes(grid).filter((time) => time >= 0),
+    livePlaybackTime(),
+    direction,
+  );
   if (target === null) {
     toast(direction > 0 ? "No bar after the playhead" : "No bar before the playhead");
     return;

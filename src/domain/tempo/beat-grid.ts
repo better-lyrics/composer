@@ -113,7 +113,9 @@ function barNumberAt(grid: BeatGrid, index: number): number {
 
 function beatInBar(grid: BeatGrid, index: number): number {
   const bar = downbeatsUpTo(grid, index);
-  return bar > 0 ? index - grid.downbeatIndices[bar - 1] : index;
+  if (bar > 0) return index - grid.downbeatIndices[bar - 1];
+  const first = grid.downbeatIndices[0] ?? 0;
+  return (((index - first) % grid.beatsPerBar) + grid.beatsPerBar) % grid.beatsPerBar;
 }
 
 function barTimes(grid: BeatGrid): number[] {
