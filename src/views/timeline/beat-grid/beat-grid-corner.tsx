@@ -103,7 +103,7 @@ const CornerButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { r
     type="button"
     aria-label={useCornerLabel()}
     {...props}
-    className="group flex flex-col items-center justify-center gap-1.5 size-full cursor-pointer select-none text-composer-text-faint transition-colors duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-(--label) hover:bg-[color-mix(in_oklab,var(--ink)_5%,var(--gutter-bg))] aria-expanded:text-composer-accent-text aria-expanded:bg-[color-mix(in_oklab,var(--color-composer-accent)_10%,var(--gutter-bg))]"
+    className="group flex flex-col items-center justify-center gap-1.5 size-full cursor-pointer select-none text-composer-text-faint transition-colors duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-(--label) hover:bg-[color-mix(in_oklab,var(--ink)_5%,var(--gutter-bg))] focus-visible:bg-none aria-expanded:text-composer-accent-text aria-expanded:bg-[color-mix(in_oklab,var(--color-composer-accent)_10%,var(--gutter-bg))]"
   >
     <CornerFace />
   </button>
