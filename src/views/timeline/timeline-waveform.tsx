@@ -7,6 +7,7 @@ import { BeatGridCanvas } from "@/views/timeline/beat-grid/beat-grid-canvas";
 import { startLoopRegionDrag } from "@/views/timeline/loop-region-drag";
 import { LoopRegionEdges } from "@/views/timeline/loop-region-edges";
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
+import { OverviewBand } from "@/views/timeline/overview/overview-band";
 import { placeSnapPoint } from "@/views/timeline/place-snap-point";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
 import { clearLoopRegion } from "@/views/timeline/selection-playback";
@@ -35,6 +36,7 @@ const TimelineWaveform: React.FC = () => {
   const zoom = useTimelineStore((s) => s.zoom);
   const activeThemeId = useThemeStore((s) => s.activeThemeId);
   const markerMode = useTimelineStore((s) => s.markerMode);
+  const spectrumVisible = useTimelineStore((s) => s.spectrumVisible);
 
   const [ws, setWs] = useState<WaveSurfer | null>(null);
   const [settledFor, setSettledFor] = useState<WaveSurfer | null>(null);
@@ -127,10 +129,13 @@ const TimelineWaveform: React.FC = () => {
 
   // A bunch of heights here are -1 to account for the 1px border at the bottom of the waveform container.
   return (
-    <div className="sticky ml-12 top-0 z-40 bg-(--well) w-max" style={{ minHeight: bandHeight }}>
+    <OverviewBand>
       <div
         data-waveform-redraw-bg
-        className="absolute top-0 left-0 bg-(--well) border-b border-(--divider) pointer-events-none"
+        className={cn(
+          "absolute top-0 left-0 bg-(--well) border-b border-(--divider) pointer-events-none transition-opacity duration-200",
+          spectrumVisible && "opacity-0",
+        )}
         style={{ width: totalWidth, height: WAVEFORM_HEIGHT }}
       />
       <BeatGridCanvas />
@@ -139,13 +144,13 @@ const TimelineWaveform: React.FC = () => {
         data-sweeping={sweeping ? "" : undefined}
         aria-hidden="true"
         className="absolute top-0 left-0 waveform-loading-dots pointer-events-none transition-opacity duration-200 ease-out"
-        style={{ width: totalWidth, height: WAVEFORM_HEIGHT - 1, opacity: ws ? 0 : 1 }}
+        style={{ width: totalWidth, height: WAVEFORM_HEIGHT - 1, opacity: ws || spectrumVisible ? 0 : 1 }}
       />
       {audioElement && (
         <div
           data-waveform-fade
           className="pt-[13px] transition-opacity duration-150 ease-in"
-          style={{ opacity: ws ? 1 : 0 }}
+          style={{ opacity: ws && !spectrumVisible ? 1 : 0 }}
         >
           <WavesurferPlayer
             key={waveformKey}
@@ -173,12 +178,12 @@ const TimelineWaveform: React.FC = () => {
         aria-label={markerMode ? "Place snap point" : "Seek to position"}
         className={cn(
           "absolute top-0 left-0 z-10",
-          markerMode ? "waveform-armed" : altHeld ? "cursor-crosshair" : "cursor-pointer",
+          markerMode ? "waveform-armed" : altHeld || spectrumVisible ? "cursor-crosshair" : "cursor-pointer",
         )}
         key="waveform-click-layer"
         style={{
           width: totalWidth,
-          height: WAVEFORM_HEIGHT - 1,
+          height: bandHeight - 1,
         }}
         onMouseDown={(e) => {
           if (useTimelineStore.getState().pasteMode.status === "preview") return;
@@ -190,7 +195,7 @@ const TimelineWaveform: React.FC = () => {
         onKeyDown={() => {}}
       />
       <LoopRegionEdges />
-    </div>
+    </OverviewBand>
   );
 };
 

@@ -129,7 +129,7 @@ const BeatGridCorner: React.FC = () => {
         if (e.currentTarget.contains(e.target)) setTooltipHeld(false);
       }}
       style={{ height: bandHeight }}
-      className="absolute top-0 left-0 z-100 grid w-12 border-b border-r-2 border-(--divider) bg-(--gutter-bg)"
+      className="absolute top-0 left-0 z-100 grid w-12 border-b border-r-2 border-(--divider) bg-(--gutter-bg) motion-safe:transition-[height] motion-safe:duration-220 ease-[cubic-bezier(0.22,1,0.36,1)] [[data-overview-resizing]_&]:transition-none"
     >
       <Tooltip content="Beat grid" placement="right" disabled={open || tooltipHeld}>
         <Popover
