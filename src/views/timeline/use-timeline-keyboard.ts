@@ -39,6 +39,7 @@ import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from 
 import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar, jumpToAdjacentGridLine } from "@/views/timeline/jump-to-bar";
 import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
+import { showLoupeAfterKeyEdit, storedEdgeTime } from "@/views/timeline/loupe/loupe-target";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { pingGroup } from "@/views/timeline/ping-group";
 import { togglePitchLine } from "@/views/timeline/pitch/pitch-line-toggle";
@@ -170,6 +171,7 @@ function useTimelineKeyboard(
         syllablesFollowRolling: useSettingsStore.getState().syllablesFollowRolling,
         updateLineWithHistory: useProjectStore.getState().updateLineWithHistory,
       });
+      showLoupeAfterKeyEdit({ lineId: line.id, wordIndex, type: targetWord.type }, edge, word[edge]);
     },
     [lines, duration, scrollContainerRef],
   );
@@ -660,6 +662,7 @@ function useTimelineKeyboard(
             if (Math.abs(unshared.appliedDelta) > Math.abs(result.appliedDelta)) showSharedSongEdgeToast();
           }
           if (result.updates.length === 0) break;
+          const nudgedFrom = storedEdgeTime(nudgeSel[0], "begin");
           if (result.updates.length === 1) {
             useProjectStore.getState().updateLineWithHistory(result.updates[0].id, result.updates[0].updates, {
               propagateToSiblings: false,
@@ -667,6 +670,7 @@ function useTimelineKeyboard(
           } else {
             useProjectStore.getState().updateLinesWithHistory(result.updates, { propagateToSiblings: false });
           }
+          if (nudgedFrom !== null) showLoupeAfterKeyEdit(nudgeSel[0], "begin", nudgedFrom);
           break;
         }
         case "timeline.jumpToInstanceStart": {

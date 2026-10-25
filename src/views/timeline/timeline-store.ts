@@ -5,6 +5,7 @@ import { toggleWordSelection } from "@/domain/selection/set-ops";
 import type { Bounds } from "@/domain/word/bounds";
 import { useSettingsStore } from "@/stores/settings";
 import type { GroupFocus } from "@/views/timeline/group-focus";
+import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
 import type { ClipboardData, PasteMode } from "@/views/timeline/selection-types";
 import { create } from "zustand";
 
@@ -80,6 +81,7 @@ interface TimelineState {
   vocalOnsetDetectionStatus: "idle" | "processing" | "error";
   vocalOnsetDetectionError: string | null;
   pitchTrackGeneration: number;
+  loupeTarget: LoupeTarget | null;
 }
 
 interface TimelineActions {
@@ -127,6 +129,7 @@ interface TimelineActions {
   setVocalOnsetSnapPoints: (points: number[]) => void;
   setVocalOnsetDetectionStatus: (status: "idle" | "processing" | "error", error?: string | null) => void;
   setPitchTrackGeneration: (generation: number) => void;
+  setLoupeTarget: (target: LoupeTarget | null) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -182,6 +185,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     vocalOnsetDetectionStatus: "idle",
     vocalOnsetDetectionError: null,
     pitchTrackGeneration: 0,
+    loupeTarget: null,
 
     setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
     zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
@@ -263,6 +267,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setVocalOnsetDetectionStatus: (vocalOnsetDetectionStatus, error = null) =>
       set({ vocalOnsetDetectionStatus, vocalOnsetDetectionError: error }),
     setPitchTrackGeneration: (pitchTrackGeneration) => set({ pitchTrackGeneration }),
+    setLoupeTarget: (loupeTarget) => set({ loupeTarget }),
   };
 });
 

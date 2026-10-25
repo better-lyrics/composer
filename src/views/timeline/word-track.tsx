@@ -13,6 +13,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
+import { settleLoupe, showLoupeEdit } from "@/views/timeline/loupe/loupe-target";
 import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
@@ -216,6 +217,10 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
         dragStateRef.current = newState;
         setDragState(newState);
+        showLoupeEdit(
+          { lineId, track: trackType, wordIndex, edge: boundaryEdge, startTime: edgeAtStart, time: clamped },
+          false,
+        );
       };
 
       const handleMouseUp = () => {
@@ -227,7 +232,10 @@ const WordTrack: React.FC<WordTrackProps> = ({
         dragStateRef.current = null;
         setDragState(null);
 
-        if (dragged) swallowTrailingClick();
+        if (dragged) {
+          swallowTrailingClick();
+          settleLoupe();
+        }
 
         if (dragged && finalState && resizeChangedTiming(initialState, finalState, words)) {
           if (finalState.adjacentWordIndex !== undefined) {
@@ -249,6 +257,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       cleanupRef.current = () => {
         setResizing(false);
         snap.endGesture();
+        settleLoupe();
         document.removeEventListener("pointermove", handleMouseMove);
         document.removeEventListener("pointerup", handleMouseUp);
       };
