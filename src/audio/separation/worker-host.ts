@@ -19,8 +19,29 @@ interface ProcessResult {
   totalFrames: number;
 }
 
+const LOG_PREFIX = "[separation-host]";
+
+// No fixed init deadline: the download can take minutes, so fail only when the worker goes quiet.
+const INIT_INACTIVITY_TIMEOUT_MS = 120_000;
+
+// Opt-in via localStorage["composer.profileSeparation"] = "1": timestamp queries add GPU overhead.
+function readProfileFlag(): boolean {
+  try {
+    return localStorage.getItem("composer.profileSeparation") === "1";
+  } catch {
+    return false;
+  }
+}
+
+function workerError(message: string, code: string): Error {
+  const err = new Error(message);
+  (err as Error & { code?: string }).code = code;
+  return err;
+}
+
 class SeparationWorker {
   private worker: Worker | null = null;
+  private initTimer: ReturnType<typeof setTimeout> | null = null;
   private currentResolve: ((value: unknown) => void) | null = null;
   private currentReject: ((reason: Error) => void) | null = null;
   private currentProgress: ((loaded: number, total: number) => void) | null = null;
@@ -28,6 +49,14 @@ class SeparationWorker {
   private ensureWorker(): Worker {
     if (!this.worker) {
       this.worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
+      this.worker.addEventListener("error", (ev) => {
+        console.error(LOG_PREFIX, "worker error event", ev.message, ev.filename, ev.lineno, ev);
+        this.failCurrent(workerError(`Separation worker crashed: ${ev.message || "unknown error"}`, "worker-error"));
+      });
+      this.worker.addEventListener("messageerror", (ev) => {
+        console.error(LOG_PREFIX, "worker messageerror", ev);
+        this.failCurrent(workerError("Separation worker sent an unreadable message.", "worker-messageerror"));
+      });
       this.worker.addEventListener("message", (ev: MessageEvent<OutboundMessage>) => this.onMessage(ev.data));
     }
     return this.worker;
@@ -37,6 +66,7 @@ class SeparationWorker {
     if (msg.type === "init-progress" || msg.type === "process-progress") {
       const loaded = msg.type === "init-progress" ? msg.loaded : msg.processed;
       const total = msg.type === "init-progress" ? msg.total : msg.total;
+      if (msg.type === "init-progress" && this.initTimer) this.armInitTimeout();
       this.currentProgress?.(loaded, total);
       return;
     }
@@ -64,7 +94,30 @@ class SeparationWorker {
     }
   }
 
+  private armInitTimeout() {
+    if (this.initTimer) clearTimeout(this.initTimer);
+    this.initTimer = setTimeout(() => {
+      this.failCurrent(
+        workerError(
+          `Vocal model initialisation timed out after ${INIT_INACTIVITY_TIMEOUT_MS / 1000}s with no response from the worker.`,
+          "init-timeout",
+        ),
+      );
+    }, INIT_INACTIVITY_TIMEOUT_MS);
+  }
+
+  // After a crash or hang the worker state is unknown, so the next call starts from a fresh worker.
+  private failCurrent(err: Error) {
+    const reject = this.currentReject;
+    this.dispose();
+    reject?.(err);
+  }
+
   private clearCurrent() {
+    if (this.initTimer) {
+      clearTimeout(this.initTimer);
+      this.initTimer = null;
+    }
     this.currentResolve = null;
     this.currentReject = null;
     this.currentProgress = null;
@@ -79,7 +132,13 @@ class SeparationWorker {
       this.currentResolve = resolve;
       this.currentReject = reject;
       this.currentProgress = opts.onProgress ?? null;
-      this.post({ type: "init", variant: opts.variant, forceWasm: opts.forceWasm });
+      this.armInitTimeout();
+      this.post({
+        type: "init",
+        variant: opts.variant,
+        forceWasm: opts.forceWasm,
+        profile: readProfileFlag(),
+      });
     });
   }
 

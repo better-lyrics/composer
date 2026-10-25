@@ -186,7 +186,7 @@ function planTransliterationAlignment(words: WordTiming[], rawText: string): Tra
 
 function timedPrefixText(originalText: string, words: WordTiming[], text: string): string {
   const sourceCount = sourceWordCount(originalText);
-  const timedCount = timingLexicalWordGroups(words).length;
+  const timedCount = sourceWordCount(words.map((word) => word.text).join(""));
   if (timedCount >= sourceCount) return text;
   const groups = transliterationWordGroups(text);
   return groups.length === sourceCount ? groups.slice(0, timedCount).join("  ") : text;

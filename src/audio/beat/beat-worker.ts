@@ -38,7 +38,7 @@ async function readModel(): Promise<ArrayBuffer> {
 
 async function openSession(model: ArrayBuffer, forceWasm: boolean | undefined) {
   try {
-    const ort = await loadOrt(forceWasm);
+    const ort = await loadOrt(forceWasm ? "wasm" : "webgpu", false);
     const session = await ort.InferenceSession.create(model, {
       executionProviders: forceWasm ? ["wasm"] : ["webgpu", "wasm"],
       graphOptimizationLevel: "all",

@@ -1,4 +1,6 @@
-// -- Types ---------------------------------------------------------------------
+import { recordKernel } from "@/audio/separation/gpu-profile";
+
+type Backend = "webgpu" | "wasm";
 
 interface OrtTensor {
   data: Float32Array;
@@ -20,27 +22,50 @@ interface Ort {
     ): Promise<OrtSession>;
   };
   Tensor: new (dtype: "float32", data: Float32Array, dims: number[]) => OrtTensor;
-  env: { wasm: { wasmPaths?: string; numThreads?: number } };
+  env: {
+    wasm: { wasmPaths?: string; numThreads?: number };
+    webgpu?: {
+      powerPreference?: "high-performance" | "low-power";
+      profiling?: {
+        mode?: "off" | "default";
+        ondata?: (data: { programName?: string; startTime: number; endTime: number }) => void;
+      };
+    };
+  };
 }
 
-// -- Loading -------------------------------------------------------------------
+const WEBGPU_POWER_PREFERENCE = "high-performance";
 
-let loaded: Ort | null = null;
+const loaded: Partial<Record<Backend, Ort>> = {};
 
-async function loadOrt(forceWasm: boolean | undefined): Promise<Ort> {
-  if (loaded) return loaded;
-  const mod = forceWasm
-    ? await import("onnxruntime-web")
-    : await import("onnxruntime-web/webgpu").catch(() => import("onnxruntime-web"));
+// The CDN WASM/JSEP loader files must match the bundled JS version exactly.
+function getOrtVersion(): string {
+  return __ORT_VERSION__;
+}
+
+async function loadOrt(backend: Backend, profile: boolean): Promise<Ort> {
+  const cached = loaded[backend];
+  if (cached) return cached;
+  const mod = backend === "wasm" ? await import("onnxruntime-web") : await import("onnxruntime-web/webgpu");
   const candidate = (mod as unknown as { default?: Ort }).default ?? (mod as unknown as Ort);
-  // Threads need cross-origin isolation, which Composer does not have.
   candidate.env.wasm.numThreads = 1;
-  candidate.env.wasm.wasmPaths = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${__ORT_VERSION__}/dist/`;
-  loaded = candidate;
+  candidate.env.wasm.wasmPaths = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${getOrtVersion()}/dist/`;
+  // Discrete GPU on hybrid graphics; chooseBackend probes with the same options.
+  if (candidate.env.webgpu) candidate.env.webgpu.powerPreference = WEBGPU_POWER_PREFERENCE;
+  // Switched on for one chunk by the pipeline: timestamp-query mode makes profiled runs much slower.
+  if (profile && candidate.env.webgpu) {
+    candidate.env.webgpu.profiling = { mode: "off", ondata: recordKernel };
+  }
+  loaded[backend] = candidate;
   return candidate;
 }
 
-// -- Exports -------------------------------------------------------------------
+function createSession(runtime: Ort, modelBytes: ArrayBuffer, backend: Backend): Promise<OrtSession> {
+  return runtime.InferenceSession.create(modelBytes, {
+    executionProviders: backend === "webgpu" ? ["webgpu", "wasm"] : ["wasm"],
+    graphOptimizationLevel: "all",
+  });
+}
 
-export { loadOrt };
-export type { Ort, OrtSession, OrtTensor };
+export { WEBGPU_POWER_PREFERENCE, createSession, loadOrt };
+export type { Backend, Ort, OrtSession, OrtTensor };
