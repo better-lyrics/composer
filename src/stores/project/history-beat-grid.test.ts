@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
-import { withBarOneAt, withOffset } from "@/domain/tempo/grid-edits";
+import { resetGrid, withBarOneAt, withOffset } from "@/domain/tempo/grid-edits";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 
@@ -106,6 +106,29 @@ describe("project history snapshots the beat grid", () => {
     store().undo();
     expect(store().beatGrid).toEqual(grid);
     expect(store().canRedo()).toBe(true);
+  });
+
+  it("a nudge never joins an edit that only happened to change the offset", () => {
+    const store = useProjectStore.getState;
+    store().applyBeatGridWithHistory(withOffset(grid, 50));
+    store().applyBeatGridWithHistory(resetGrid(withOffset(grid, 50)));
+    store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 10));
+
+    store().undo();
+    expect(store().beatGrid?.offsetMs).toBe(0);
+  });
+
+  it("nudging back to where the nudges started leaves no empty undo step", () => {
+    const store = useProjectStore.getState;
+    store().applyBeatGridWithHistory(grid);
+    store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 10));
+    store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 0));
+    store().nudgeBeatGridOffsetWithHistory(withOffset(grid, -10));
+
+    store().undo();
+    expect(store().beatGrid).toEqual(grid);
+    store().undo();
+    expect(store().beatGrid).toBeNull();
   });
 
   it("clearing the grid marks the project dirty", () => {

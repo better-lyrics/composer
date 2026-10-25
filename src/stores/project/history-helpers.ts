@@ -89,15 +89,7 @@ function sameGridApartFromOffset(a: BeatGrid | null, b: BeatGrid | null): boolea
   return a !== null && b !== null && isStructurallyEqual({ ...a, offsetMs: 0 }, { ...b, offsetMs: 0 });
 }
 
-function isOffsetOnlyStep(before: HistoryEntry, after: HistoryEntry): boolean {
-  const { beatGrid: beforeGrid, timestamp: _beforeTime, ...beforeRest } = before;
-  const { beatGrid: afterGrid, timestamp: _afterTime, ...afterRest } = after;
-  return (
-    beforeGrid?.offsetMs !== afterGrid?.offsetMs &&
-    sameGridApartFromOffset(beforeGrid, afterGrid) &&
-    isStructurallyEqual(beforeRest, afterRest)
-  );
-}
+const offsetNudgeSteps = new WeakSet<HistoryEntry>();
 
 // Nudges in a row join one step, so a single undo returns to the offset before nudging.
 function commitBeatGridOffset(state: ProjectState, grid: BeatGrid) {
@@ -109,14 +101,19 @@ function commitBeatGridOffset(state: ProjectState, grid: BeatGrid) {
     index === state.history.length - 1 &&
     current !== undefined &&
     previous !== undefined &&
-    isOffsetOnlyStep(previous, current) &&
+    offsetNudgeSteps.has(current) &&
     sameGridApartFromOffset(state.beatGrid, grid);
-  if (!joinsStep) return commitHistory(state, { beatGrid: grid });
-  return {
-    beatGrid: grid,
-    isDirty: true,
-    history: state.history.with(index, snapshotEntry({ ...state, beatGrid: grid })),
-  };
+  if (!joinsStep) {
+    const committed = commitHistory(state, { beatGrid: grid });
+    offsetNudgeSteps.add(committed.history[committed.historyIndex]);
+    return committed;
+  }
+  if (isStructurallyEqual(previous.beatGrid, grid)) {
+    return { beatGrid: grid, isDirty: true, history: state.history.slice(0, index), historyIndex: index - 1 };
+  }
+  const joined = snapshotEntry({ ...state, beatGrid: grid });
+  offsetNudgeSteps.add(joined);
+  return { beatGrid: grid, isDirty: true, history: state.history.with(index, joined) };
 }
 
 function changedLineIds(before: readonly RawLine[], after: readonly RawLine[]): string[] {
