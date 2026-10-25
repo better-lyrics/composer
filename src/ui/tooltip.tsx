@@ -29,6 +29,9 @@ interface TooltipProps {
 
 const SHOW_DELAY = 300;
 const ARROW_SIZE = 4;
+const ARROW_TIP_RADIUS = 2;
+// Composed with the per-side rotation, so the base overlaps the body edge ring by 1px on every side.
+const ARROW_OVERLAP_STYLE = { transform: "translateY(-1px)" };
 
 // -- Component ----------------------------------------------------------------
 
@@ -70,7 +73,11 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top",
               context={context}
               width={ARROW_SIZE * 2}
               height={ARROW_SIZE}
-              className="fill-[var(--pop)]"
+              tipRadius={ARROW_TIP_RADIUS}
+              strokeWidth={1}
+              fill="currentColor"
+              className="text-(--pop) stroke-(--edge)"
+              style={ARROW_OVERLAP_STYLE}
             />
           </div>
         </FloatingPortal>
