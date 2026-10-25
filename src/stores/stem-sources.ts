@@ -59,4 +59,3 @@ async function resolveStems(
 // -- Exports ------------------------------------------------------------------
 
 export { resolveStems };
-export type { ResolvedStems };

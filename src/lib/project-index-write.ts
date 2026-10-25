@@ -93,5 +93,5 @@ function patchIndexEntry(tx: IDBTransaction, id: string, patch: IndexPatch, onWr
 
 // -- Exports ------------------------------------------------------------------
 
-export { carriedIndexFields, indexEntryForProject, patchIndexEntry, writeIndexEntry };
-export type { IndexCarriedFields, IndexPatch };
+export { indexEntryForProject, patchIndexEntry, writeIndexEntry };
+export type { IndexPatch };

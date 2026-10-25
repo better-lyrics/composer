@@ -91,4 +91,4 @@ async function removeProjectStem(slot: StemSlot): Promise<void> {
 // -- Exports ------------------------------------------------------------------
 
 export { commitStemImport, prepareStemImport, removeProjectStem };
-export type { PendingStemImport, StemImportError, StemImportState };
+export type { StemImportState };
