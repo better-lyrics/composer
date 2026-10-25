@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { openProjectIdSnapshot, subscribeOpenProjectId } from "@/lib/open-project-session";
 import { useAudioStore } from "@/stores/audio";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
@@ -23,7 +24,17 @@ function useAutoSeparate(): void {
       if (sep.status === "downloading" || sep.status === "processing") return;
       sep.separate();
     });
-    return () => unsub();
+    let prevProjectId = openProjectIdSnapshot();
+    const unsubProject = subscribeOpenProjectId(() => {
+      const projectId = openProjectIdSnapshot();
+      if (projectId === prevProjectId) return;
+      prevProjectId = projectId;
+      useSeparationStore.getState().refreshForCurrentSource();
+    });
+    return () => {
+      unsub();
+      unsubProject();
+    };
   }, []);
 }
 
