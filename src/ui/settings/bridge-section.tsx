@@ -2,8 +2,8 @@ import { useSettingsStore } from "@/stores/settings";
 import { settingEntry } from "@/stores/settings-catalog";
 import { BridgeInstallGuide } from "@/ui/settings/bridge-install-guide";
 import { BridgeUrlField } from "@/ui/settings/bridge-url-field";
+import { Switch } from "@/ui/switch";
 import { hasBridgeEverBeenDetected, markBridgeDetected } from "@/utils/bridge-detection";
-import { cn } from "@/utils/cn";
 import {
   type BridgeHealth,
   DEFAULT_BRIDGE_URL,
@@ -19,27 +19,6 @@ import { useEffect, useMemo } from "react";
 const HEALTH_REFETCH_INTERVAL = 8000;
 
 // -- Sub-components -----------------------------------------------------------
-
-const BridgeToggle: React.FC<{ enabled: boolean; onToggle: () => void }> = ({ enabled, onToggle }) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={enabled}
-    aria-label="Use Composer Bridge for YouTube"
-    onClick={onToggle}
-    className={cn(
-      "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors",
-      enabled ? "bg-composer-accent" : "bg-composer-button",
-    )}
-  >
-    <span
-      className={cn(
-        "pointer-events-none inline-block size-4 rounded-full bg-white shadow transform transition-transform mt-0.5",
-        enabled ? "translate-x-4.5" : "translate-x-0.5",
-      )}
-    />
-  </button>
-);
 
 const StatusBadge: React.FC<{
   state: "checking" | "ok" | "error";
@@ -152,11 +131,11 @@ const BridgeSection: React.FC = () => {
             .
           </span>
         </div>
-        <BridgeToggle enabled={enabled} onToggle={toggleEnabled} />
+        <Switch checked={enabled} label="Use Composer Bridge for YouTube" onCheckedChange={toggleEnabled} />
       </div>
 
       {enabled && (
-        <div className="flex flex-col gap-2 px-3 py-3 rounded-md bg-composer-input border border-composer-border">
+        <div className="flex flex-col gap-2 px-3 py-3 rounded-md bg-(--well) border border-(--edge)">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-composer-text">Bridge status</span>
             <StatusBadge state={state} data={health.data} errorMessage={errorMessage} />

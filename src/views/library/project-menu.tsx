@@ -1,16 +1,15 @@
 import { displayTitle } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { getEffectiveKeysArray, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { Menu, type MenuAnchor, MenuItem, MenuSeparator } from "@/ui/menu";
-import { formatShortcut } from "@/utils/format-key";
 import { IconArrowUpRight, IconCopy, IconDownload, IconPencil, IconTrash } from "@tabler/icons-react";
+import { useShallow } from "zustand/react/shallow";
 
 // -- Types --------------------------------------------------------------------
 
 interface ProjectMenuProps {
   project: ProjectIndexEntry;
-  anchor: MenuAnchor;
+  anchor: MenuAnchor | null;
   onClose: () => void;
   onOpen: (id: string) => void;
   onRename: (project: ProjectIndexEntry) => void;
@@ -35,7 +34,7 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
   onExport,
   onDelete,
 }) => {
-  const deleteShortcut = useShortcutBindingsStore(() => formatShortcut(getEffectiveKeysArray(DELETE_SHORTCUT_ID)));
+  const deleteKeys = useShortcutBindingsStore(useShallow(() => getEffectiveKeysArray(DELETE_SHORTCUT_ID)));
 
   return (
     <Menu anchor={anchor} onClose={onClose} aria-label={`Actions for ${displayTitle(project.title)}`}>
@@ -49,7 +48,7 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
         label="Delete"
         tone="danger"
         onSelect={() => onDelete(project)}
-        trail={deleteShortcut ? <InlineKeyBadge text={deleteShortcut} /> : undefined}
+        shortcut={deleteKeys}
       />
     </Menu>
   );

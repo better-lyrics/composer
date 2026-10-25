@@ -7,14 +7,15 @@ import { Button } from "@/ui/button";
 import { HELP_SECTIONS } from "@/ui/help-nav";
 import { HelpSearchResults } from "@/ui/help-search/help-search-results";
 import { HelpSectionContent } from "@/ui/help-sections";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { Modal } from "@/ui/modal";
 import { ModalNavLayout } from "@/ui/modal-nav-layout";
 import { withMatchCounts } from "@/ui/nav-match-counts";
+import { NoMatchMessage } from "@/ui/no-match-message";
 import { NoMatches } from "@/ui/no-matches";
 import { revealElement } from "@/ui/reveal-element";
 import { SearchField } from "@/ui/search-field";
 import { SettingLinkContext, type SettingLinkHost } from "@/ui/setting-link-context";
-import { KeyBadge } from "@/ui/shortcut-reference";
 import { splitSearchTerms } from "@/utils/search-terms";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
@@ -107,8 +108,7 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
       activeSection={isSearching ? null : activeSection}
       onSectionChange={openSection}
       sidebarHeader={<SearchField label="Search help" value={query} onChange={setQuery} inputRef={searchInputRef} />}
-      sidebarClassName="w-48"
-      contentClassName="p-6"
+      contentClassName="px-6 pt-5 pb-4"
       contentInitialScrollTop={initialScrollTop}
       contentViewportRef={viewportRef}
       onContentInitialized={revealPendingTopic}
@@ -120,7 +120,7 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
             <div className="flex py-12">
               <NoMatches
                 size="large"
-                message={`No help topics match "${query.trim()}"`}
+                message={<NoMatchMessage noun="help topics" query={query} />}
                 action={
                   <Button size="sm" variant="secondary" onClick={() => setQuery("")}>
                     Clear search
@@ -145,17 +145,13 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, ...bodyProps }) 
     isOpen={isOpen}
     onClose={onClose}
     title="Help"
-    className="max-w-4xl h-[80%] flex flex-col"
+    className="max-w-4xl h-[min(80vh,760px)] flex flex-col"
     bodyClassName="p-0 flex-1 min-h-0 flex flex-col"
   >
     <HelpModalBody {...bodyProps} />
 
-    <div className="px-5 py-3 border-t border-composer-border text-xs text-composer-text-muted text-center shrink-0 select-none flex items-center justify-center gap-1.5">
-      Press{" "}
-      {getEffectiveKeysArray("global.help").map((key) => (
-        <KeyBadge key={key} keyName={key} />
-      ))}{" "}
-      to open anytime
+    <div className="flex items-center justify-center gap-1.5 h-11 px-5 border-t border-(--divider) text-[12.5px] text-(--muted) shrink-0 select-none">
+      Press <InlineKeyBadge keys={getEffectiveKeysArray("global.help")} /> to open anytime
     </div>
   </Modal>
 );

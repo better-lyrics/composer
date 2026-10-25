@@ -35,7 +35,7 @@ async function deleteLine() {
       <Toaster />
     </>,
   );
-  await screen.getByRole("button", { name: "Delete line" }).click();
+  await screen.getByRole("menuitem", { name: "Delete line" }).click();
   await expect.poll(() => useProjectStore.getState().lines.map((line) => line.id)).toEqual(["c0"]);
   return screen;
 }

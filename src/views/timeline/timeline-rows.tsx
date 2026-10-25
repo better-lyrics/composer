@@ -1,3 +1,4 @@
+import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { useAudioStore } from "@/stores/audio";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
@@ -33,6 +34,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const defaultRowHeight = useTimelineStore((s) => s.defaultRowHeight);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const focusedGroup = useTimelineStore((s) => s.focusedGroup);
+  const openProjectId = useOpenProjectId();
 
   const allRows = useMemo(() => getEffectiveRows(lines, focusedGroup), [lines, focusedGroup]);
 
@@ -129,14 +131,20 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
     [visibleRows, rowHeights, defaultRowHeight],
   );
 
-  const totalHeight = useMemo(
-    () => visibleRows.reduce((sum, _, i) => sum + getRowHeight(i), 0),
-    [visibleRows, getRowHeight],
+  const heightEstimates = useMemo(() => visibleRows.map((_, i) => getRowHeight(i)), [visibleRows, getRowHeight]);
+  const totalHeight = useMemo(() => heightEstimates.reduce((sum, height) => sum + height, 0), [heightEstimates]);
+  // Virtuoso reads the estimates only when it mounts and treats every row it never rendered as the default height,
+  // so it remounts when rows change height off screen. A row resize happens on screen, where Virtuoso measures it.
+  const offscreenLayoutKey = useMemo(
+    () =>
+      visibleRows.map((row) => (row.kind === "group-header" ? "h" : lineRowHeight(row.line, defaultRowHeight))).join(),
+    [visibleRows, defaultRowHeight],
   );
 
   return (
     <div style={{ width: totalWidth + GUTTER_WIDTH, minWidth: "100%", height: totalHeight }}>
       <Virtuoso
+        key={`${openProjectId}:${offscreenLayoutKey}`}
         data={visibleRows}
         computeItemKey={(_, row) => (row.kind === "group-header" ? `header:${row.firstLineId}` : row.line.id)}
         itemContent={(_, row) => {
@@ -172,7 +180,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         style={{ height: "100%", width: "100%" }}
         customScrollParent={scrollContainerRef.current ?? undefined}
         overscan={200}
-        defaultItemHeight={emptyBgRowHeight(defaultRowHeight)}
+        heightEstimates={heightEstimates}
         increaseViewportBy={{ top: WAVEFORM_HEIGHT, bottom: 0 }}
       />
     </div>

@@ -21,12 +21,14 @@ interface NewSongPanelProps {
 // -- Constants ----------------------------------------------------------------
 
 const PANEL_STYLES =
-  "flex flex-col gap-4 p-5 rounded-2xl bg-composer-input shadow-[inset_0_0_0_1px_var(--color-composer-border)] select-none";
+  "flex flex-col gap-4 p-5 rounded-xl bg-(--layer-1) shadow-[inset_0_0_0_1px_var(--edge)] select-none";
+
+const FIELD_TINT = "bg-[color-mix(in_oklab,var(--color-composer-bg-dark)_28%,transparent)]";
 
 const DROP_STYLES = cn(
-  "size-auto w-full flex-row justify-start gap-3.5 p-3.5 rounded-[10px] border border-dashed border-composer-text/18",
-  "hover:border-composer-accent hover:bg-composer-accent/6",
-  "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-composer-accent",
+  "size-auto w-full flex-row justify-start gap-3.5 p-3.5 rounded-[10px] border-[1.5px] border-dashed transition-colors",
+  FIELD_TINT,
+  "border-[color-mix(in_oklab,var(--ink)_13%,transparent)] hover:border-[color-mix(in_oklab,var(--ink)_22%,transparent)]",
 );
 
 // -- Sub-components -------------------------------------------------------------
@@ -55,7 +57,7 @@ const NewSongLink: React.FC<{ onCreate: (videoId: string) => void }> = ({ onCrea
         submit();
       }}
     >
-      <label htmlFor={inputId} className="block mb-1.5 text-[13px] font-medium text-composer-text-secondary">
+      <label htmlFor={inputId} className="block mb-2 text-xs text-(--muted)">
         Or paste a YouTube link
       </label>
       <div className="flex gap-2">
@@ -72,15 +74,16 @@ const NewSongLink: React.FC<{ onCreate: (videoId: string) => void }> = ({ onCrea
             if (error) setError(null);
           }}
           wrapperClassName="flex-1"
+          className={cn("h-9 rounded-[10px]", FIELD_TINT)}
         />
-        <Button type="submit" variant="secondary" disabled={value.trim() === ""}>
+        <Button type="submit" variant="secondary" size="lg" disabled={value.trim() === ""}>
           Create
         </Button>
       </div>
       <p
         id={hintId}
         aria-live="polite"
-        className={cn("mt-1.5 text-xs", error ? "text-composer-negative select-text" : "text-composer-text-muted")}
+        className={cn("mt-2 text-xs", error ? "text-composer-negative select-text" : "text-composer-text-muted")}
       >
         {error ?? "Each song gets its own project."}
       </p>
@@ -106,12 +109,12 @@ const NewSongPanel: React.FC<NewSongPanelProps> = ({ className }) => {
 
   return (
     <section aria-labelledby={headingId} className={cn(PANEL_STYLES, className)}>
-      <div className="flex items-center justify-between -my-1 -mr-3">
+      <div className="flex items-center justify-between -my-1 -mr-1.5">
         <h2 id={headingId} className="text-[15px] font-bold">
           Start a new song
         </h2>
-        <Button variant="quiet" size="sm" hasIcon onClick={() => importInputRef.current?.click()}>
-          <IconFileImport aria-hidden="true" className="size-3.5" />
+        <Button variant="ghost" size="sm" hasIcon onClick={() => importInputRef.current?.click()}>
+          <IconFileImport aria-hidden="true" className="size-4" />
           Import project
         </Button>
         <input
@@ -129,12 +132,12 @@ const NewSongPanel: React.FC<NewSongPanelProps> = ({ className }) => {
         onProjectFileDrop={(file) => void handleProjectFileDrop(file)}
         className={DROP_STYLES}
       >
-        <span className="grid place-items-center size-10 shrink-0 rounded-lg bg-composer-button text-composer-accent-text">
-          <IconUpload aria-hidden="true" className="size-5" />
+        <span className="grid place-items-center size-10 shrink-0 rounded-[10px] btn-raised text-(--label)">
+          <IconUpload aria-hidden="true" className="size-[18px]" />
         </span>
         <span className="flex flex-col text-left">
           <strong className="text-sm font-medium">Drop an audio or project file</strong>
-          <small className="text-xs text-composer-text-muted">{AUDIO_FORMATS_PROSE}</small>
+          <small className="mt-0.5 text-xs text-(--muted)">{AUDIO_FORMATS_PROSE}</small>
         </span>
       </FileDropZone>
       <NewSongLink onCreate={startWithVideo} />

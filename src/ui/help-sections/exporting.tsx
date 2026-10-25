@@ -4,9 +4,9 @@ import { HelpTopic } from "@/ui/help-topic";
 // -- Exporting ----------------------------------------------------------------
 
 const ExportSection: React.FC = () => (
-  <HelpTopic title="Exporting" showTitle={false} className="space-y-5">
+  <HelpTopic title="Exporting" showTitle={false} className="space-y-3 max-w-[68ch]">
     <p className={PROSE}>The Export tab shows a syntax-highlighted preview of your TTML output.</p>
-    <ul className={`${PROSE} list-disc pl-4 space-y-1.5`}>
+    <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1.5`}>
       <li>
         <strong>Download TTML</strong>: Saves the file to your computer. The filename uses your project title.
       </li>
@@ -14,16 +14,17 @@ const ExportSection: React.FC = () => (
         <strong>Copy</strong>: Copies the minified TTML to your clipboard.
       </li>
       <li>
-        <strong>Edit</strong>: Lets you manually tweak the XML before downloading. Click "Regenerate" to go back to the
+        <strong>Edit</strong>: Tweak the XML by hand before downloading. Click "Regenerate" to go back to the
         auto-generated version.
       </li>
       <li>
-        <strong>Project files</strong>: Use "Export Project" to save a .json file with all your data (lyrics, timing,
-        agents, metadata). Use "Import Project" to load one back. This is how you share work with collaborators or back
-        things up.
+        <strong>Project files</strong>: Open the "Project" menu and use "Export project" to save a .json file with all
+        your data (lyrics, timing, agents, metadata). Use "Import project" to load one back. This is how you share work
+        with collaborators or back things up.
       </li>
       <li>
-        <strong>Clear</strong>: Wipes the current project. This is permanent, so it asks for confirmation.
+        <strong>Clear project</strong>: In the same Project menu, wipes the current project. This is permanent, so it
+        asks for confirmation.
       </li>
     </ul>
     <p className={PROSE}>

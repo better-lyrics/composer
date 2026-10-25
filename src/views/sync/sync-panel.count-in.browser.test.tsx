@@ -154,7 +154,7 @@ describe("Sync count-in", () => {
       const rows = () => screen.container.querySelectorAll<HTMLElement>('[role="button"][tabindex="-1"]');
       await expect.poll(() => rows().length).toBe(2);
       rows()[1].click();
-      await expect.poll(() => rows()[1].className).toContain("border-composer-accent");
+      await expect.poll(() => rows()[1].getAttribute("aria-current")).toBe("true");
       useAudioStore.setState({ currentTime: 20 });
       space();
       expect(isCountingIn()).toBe(false);

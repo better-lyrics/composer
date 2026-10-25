@@ -35,7 +35,7 @@ const StatusChip: React.FC<StatusChipProps> = ({
     role={ariaLabel ? "img" : undefined}
     data-tone={tone}
     className={cn(
-      "inline-flex h-5 shrink-0 items-center gap-1 rounded-md pl-1 pr-1.5 text-[11px] font-medium tabular-nums select-none",
+      "inline-flex h-[18px] shrink-0 items-center gap-[3px] rounded-md pl-1 pr-[5px] text-[11px] font-semibold tabular-nums select-none",
       TONE_STYLES[tone],
       className,
     )}

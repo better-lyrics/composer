@@ -11,6 +11,7 @@ import {
 import { markPersistenceSettled } from "@/lib/persistence-settled";
 import { setProjectLastTab } from "@/lib/project-repository";
 import { isRestoringProject } from "@/lib/project-restore";
+import { watchResumePosition } from "@/lib/resume-position";
 import { buildSaveInput, hadStoredAudio, storedAudioFile } from "@/lib/project-snapshot";
 import { getSaveStatus, trackSave } from "@/lib/save-status";
 import { useAudioStore } from "@/stores/audio";
@@ -68,6 +69,8 @@ function usePersistence(): void {
         markPersistenceSettled();
       });
   }, []);
+
+  useEffect(() => watchResumePosition(), []);
 
   useEffect(
     () =>

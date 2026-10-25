@@ -8,6 +8,7 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { buttonClassName } from "@/ui/button-class-name";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { NoMatchMessage } from "@/ui/no-match-message";
 import { ProjectArt } from "@/ui/projects/project-art";
 import { ProjectProgress } from "@/ui/projects/project-progress";
 import { Scroll } from "@/ui/scroll";
@@ -52,18 +53,13 @@ const SwitcherRow: React.FC<SwitcherRowProps> = ({ project, optionId, isActive, 
     onClick={onChoose}
     className={cn(
       "grid grid-cols-[36px_minmax(0,1fr)_56px_72px] items-center gap-3 w-full h-13 px-2 rounded-lg text-left cursor-pointer",
-      isActive && "bg-composer-button",
+      isActive && "bg-(--layer-2)",
     )}
   >
     <ProjectArt src={project.thumbnailDataUrl} size="md" />
     <span className="min-w-0">
       <span className="block truncate text-sm font-medium text-composer-text">{displayTitle(project.title)}</span>
-      <span
-        className={cn(
-          "block truncate text-[13px]",
-          isActive ? "text-composer-text-secondary" : "text-composer-text-muted",
-        )}
-      >
+      <span className={cn("block truncate text-[13px]", isActive ? "text-(--label)" : "text-(--muted)")}>
         {displayArtists(project.artists)}
       </span>
     </span>
@@ -71,7 +67,7 @@ const SwitcherRow: React.FC<SwitcherRowProps> = ({ project, optionId, isActive, 
     <span
       className={cn(
         "text-xs text-right whitespace-nowrap tabular-nums",
-        isActive ? "text-composer-text-secondary" : "text-composer-text-muted",
+        isActive ? "text-(--label)" : "text-(--muted)",
       )}
     >
       {formatRelativeTime(project.updatedAt, now)}
@@ -134,11 +130,11 @@ const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({ onClose }) => {
     }
   };
 
-  const emptyMessage = query.trim() ? `No projects match “${query.trim()}”` : "No other projects yet";
+  const emptyMessage = query.trim() ? <NoMatchMessage noun="projects" query={query} /> : "No other projects yet";
 
   return (
     <div className="w-[440px]">
-      <div className="flex items-center gap-2.5 h-12 px-3 border-b border-composer-border">
+      <div className="flex items-center gap-2.5 h-12 px-3 border-b border-(--divider)">
         <IconSearch aria-hidden="true" className="size-[18px] shrink-0 text-composer-text opacity-50" />
         <input
           type="text"
@@ -190,14 +186,8 @@ const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({ onClose }) => {
           )}
         </div>
       </Scroll>
-      <div className="flex items-center justify-between p-1 border-t border-composer-border">
-        <Button
-          variant="ghost"
-          size="sm"
-          hasIcon
-          onClick={startNewProject}
-          className="text-[13px] text-composer-text-secondary"
-        >
+      <div className="flex items-center justify-between p-1 border-t border-(--divider)">
+        <Button variant="ghost" size="sm" hasIcon onClick={startNewProject} className="text-[13px] text-(--label)">
           <IconPlus aria-hidden="true" className="size-[15px] text-composer-text opacity-50" />
           New project
           <InlineKeyBadge keys={getEffectiveKeysArray("global.newProject")} />
@@ -205,10 +195,7 @@ const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({ onClose }) => {
         <Link
           to={LIBRARY_PATH}
           onClick={onClose}
-          className={cn(
-            buttonClassName({ variant: "ghost", size: "sm" }),
-            "gap-2 text-[13px] text-composer-text-secondary",
-          )}
+          className={cn(buttonClassName({ variant: "ghost", size: "sm" }), "gap-2 text-[13px] text-(--label)")}
         >
           All projects
           <IconArrowRight aria-hidden="true" className="size-[15px] text-composer-text opacity-50" />

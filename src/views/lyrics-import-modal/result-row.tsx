@@ -62,7 +62,7 @@ const DurationDisplay: React.FC<DurationDisplayProps> = ({ actualSec, expectedSe
     return (
       <span
         title="Matches your duration"
-        className="inline-flex items-baseline gap-1 px-1.5 py-0.5 rounded-md bg-composer-accent/22 text-white font-mono text-[11px] font-medium tabular-nums select-text"
+        className="inline-flex items-baseline gap-1 px-1.5 py-0.5 rounded-md bg-composer-accent/22 text-composer-accent-text font-mono text-[11px] font-medium tabular-nums select-text"
       >
         {text}
       </span>
@@ -121,7 +121,7 @@ const ResultRow: React.FC<ResultRowProps> = ({
       aria-busy={isSelecting}
       className={cn(
         "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-1.5 rounded-lg w-full text-left cursor-pointer transition-colors",
-        isActive && "bg-composer-button/30",
+        isActive && "bg-(--layer-2)",
         isSelecting && "opacity-60 cursor-progress",
       )}
     >

@@ -33,7 +33,7 @@ const BestPracticesSection: React.FC = () => {
     <div className="flex flex-col gap-4">
       <p className={`${PROSE} max-w-[68ch]`}>
         Nothing here is enforced. Break every rule and the file still validates, and Better Lyrics still renders it. It
-        just reads worse: lines that outstay the vocal, backing parts you mistake for the lead.
+        reads worse: lines that outstay the vocal, backing parts you mistake for the lead.
       </p>
 
       <ul aria-label="Rule groups" className="flex flex-wrap gap-1.5 select-none">

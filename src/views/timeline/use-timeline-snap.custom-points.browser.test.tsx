@@ -1,9 +1,11 @@
+import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { snapPoints } from "@/test/factories";
+import { createLine, createWord, snapPoints } from "@/test/factories";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
+import type { Modifier } from "@dnd-kit/core";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 
@@ -14,6 +16,26 @@ const THRESHOLD = 12;
 const SELF_IDS = new Set<string>();
 const ALLOW_SHIFT = () => true;
 
+function dragModifierArgs(edgesAtStart: number[]): Parameters<Modifier>[0] {
+  return {
+    activatorEvent: null,
+    active: {
+      id: "leader",
+      data: { current: { snap: { edgesAtStart } } },
+      rect: { current: { initial: null, translated: null } },
+    },
+    activeNodeRect: null,
+    draggingNodeRect: null,
+    containerNodeRect: null,
+    over: null,
+    overlayNodeRect: null,
+    scrollableAncestors: [],
+    scrollableAncestorRects: [],
+    transform: { x: 0, y: 0, scaleX: 1, scaleY: 1 },
+    windowRect: null,
+  };
+}
+
 function beginAt(result: { current: ReturnType<typeof useTimelineSnap> }): void {
   result.current.beginGesture({ selfIds: SELF_IDS, leaderKey: "leader", overlapCheck: ALLOW_SHIFT });
 }
@@ -23,22 +45,26 @@ function beginAt(result: { current: ReturnType<typeof useTimelineSnap> }): void 
 describe("useTimelineSnap · custom snap points", () => {
   beforeEach(() => {
     useAudioStore.setState({ audioElement: null, currentTime: 0, duration: 30 });
-    useProjectStore.setState({ lines: [], customSnapPoints: [] });
+    useProjectStore.setState({ lines: [], customSnapPoints: [], beatGrid: null });
     useTimelineStore.setState({
       zoom: ZOOM,
       isBypassing: false,
       vocalOnsetSnapPoints: [],
       snappedBlockId: null,
       snappedAnchorTime: null,
+      scrollLeft: 0,
     });
+    // Intentional change: the Snap latch is now the master switch, so word snapping is turned off per source.
     useSettingsStore.setState({
-      timelineSnap: false,
+      timelineSnap: true,
+      snapWordsAndLines: false,
+      snapMarkers: true,
       vocalOnsetSnap: false,
       timelineSnapThreshold: THRESHOLD,
     });
   });
 
-  it("snaps a block to a custom point when both timelineSnap and vocalOnsetSnap are OFF", async () => {
+  it("snaps a block to a custom point when word and vocal onset snapping are OFF", async () => {
     useProjectStore.setState({ customSnapPoints: snapPoints([1]) });
     const { result } = await renderHook(() => useTimelineSnap());
 
@@ -52,7 +78,7 @@ describe("useTimelineSnap · custom snap points", () => {
     expect(useTimelineStore.getState().snappedAnchorTime).toBeCloseTo(1, 4);
   });
 
-  it("does not snap when there are no custom points and both snaps are OFF", async () => {
+  it("does not snap when there are no custom points and word and onset snapping are OFF", async () => {
     useProjectStore.setState({ customSnapPoints: [] });
     const { result } = await renderHook(() => useTimelineSnap());
 
@@ -95,7 +121,7 @@ describe("useTimelineSnap · custom snap points", () => {
     expect(useTimelineStore.getState().snappedAnchorTime).toBeNull();
   });
 
-  it("does not emit timeline grid anchors when timelineSnap is OFF but a custom point exists", async () => {
+  it("does not emit line anchors when word snapping is OFF but a custom point exists", async () => {
     useProjectStore.setState({
       lines: [{ id: "g1", text: "grid", agentId: "v1", begin: 2, end: 3 }],
       customSnapPoints: snapPoints([1]),
@@ -111,5 +137,78 @@ describe("useTimelineSnap · custom snap points", () => {
     const nearCustom = result.current.computeShiftPx(0, [0.95]);
     expect(nearCustom).toBeCloseTo((1 - 0.95) * ZOOM, 4);
     expect(useTimelineStore.getState().snappedAnchorTime).toBeCloseTo(1, 4);
+  });
+
+  it("regression: snap turned on mid-drag snaps to word edges", async () => {
+    useSettingsStore.setState({ timelineSnap: false, snapWordsAndLines: true });
+    useProjectStore.setState({ lines: [createLine({ words: [createWord({ text: "a", begin: 1, end: 2 })] })] });
+    const { result } = await renderHook(() => useTimelineSnap());
+
+    beginAt(result);
+    expect(result.current.computeShiftPx(0, [0.95])).toBe(0);
+
+    useSettingsStore.setState({ timelineSnap: true });
+    expect(result.current.computeShiftPx(0, [0.95])).toBeCloseTo((1 - 0.95) * ZOOM, 4);
+  });
+
+  it("regression: word snapping turned off mid-drag ignores word edges when custom markers exist", async () => {
+    useSettingsStore.setState({ snapWordsAndLines: true });
+    useProjectStore.setState({
+      lines: [createLine({ words: [createWord({ text: "a", begin: 1, end: 2 })] })],
+      customSnapPoints: snapPoints([5]),
+    });
+    const { result } = await renderHook(() => useTimelineSnap());
+
+    beginAt(result);
+    useSettingsStore.setState({ snapWordsAndLines: false });
+
+    expect(result.current.computeShiftPx(0, [0.95])).toBe(0);
+    expect(result.current.computeShiftPx(0, [4.95])).toBeCloseTo((5 - 4.95) * ZOOM, 4);
+  });
+
+  it("snap turned off mid-drag ignores custom markers too", async () => {
+    useProjectStore.setState({ customSnapPoints: snapPoints([5]) });
+    const { result } = await renderHook(() => useTimelineSnap());
+
+    beginAt(result);
+    expect(result.current.computeShiftPx(0, [4.95])).toBeCloseTo((5 - 4.95) * ZOOM, 4);
+    useSettingsStore.setState({ timelineSnap: false });
+
+    expect(result.current.computeShiftPx(0, [4.95])).toBe(0);
+  });
+
+  it("regression: onset points that load mid-drag snap once vocal onset snap is on", async () => {
+    const { result } = await renderHook(() => useTimelineSnap());
+    beginAt(result);
+
+    useSettingsStore.setState({ vocalOnsetSnap: true });
+    useTimelineStore.setState({ vocalOnsetSnapPoints: [2] });
+
+    expect(result.current.computeShiftPx(0, [2.05])).toBeCloseTo((2 - 2.05) * ZOOM, 4);
+  });
+
+  it("regression: drag snap measures edges after the timeline scrolls mid-drag", async () => {
+    useProjectStore.setState({ customSnapPoints: snapPoints([4]) });
+    const { result } = await renderHook(() => useTimelineSnap());
+
+    beginAt(result);
+    useTimelineStore.setState({ scrollLeft: 300 });
+    const transform = result.current.dragSnapModifier(dragModifierArgs([0.95]));
+    result.current.syncDragSnap();
+
+    expect(transform.x).toBeCloseTo((4 - 3.95) * ZOOM, 4);
+    expect(useTimelineStore.getState().snappedAnchorTime).toBeCloseTo(4, 4);
+  });
+
+  it("snaps to a visible beat grid line and stops when the grid is hidden", async () => {
+    useSettingsStore.setState({ beatSnap: true, beatGridVisible: true, beatGridLines: "1" });
+    useProjectStore.setState({ beatGrid: detectedGrid({ beats: [0, 0.5, 1, 1.5, 2], downbeats: [0, 2] }) });
+    const { result } = await renderHook(() => useTimelineSnap());
+
+    beginAt(result);
+    expect(result.current.computeShiftPx(0, [1.45])).toBeCloseTo((1.5 - 1.45) * ZOOM, 4);
+
+    useSettingsStore.setState({ beatGridVisible: false });
+    expect(result.current.computeShiftPx(0, [1.45])).toBe(0);
   });
 });

@@ -34,16 +34,13 @@ const ROW_GRID = cn(
   "max-[1100px]:grid-cols-[40px_minmax(0,2fr)_172px_128px_96px]",
 );
 const ALBUM_COLUMN = "max-[1100px]:hidden";
-const ROW_MUTED = cn(
-  "text-composer-text-muted",
-  "group-hover/row:text-composer-text/60 group-data-selected/row:text-composer-text/60 group-data-menu/row:text-composer-text/60",
-);
+const ROW_MUTED = "text-(--muted)";
 const ROW_PLACEHOLDER = "text-composer-text-faint";
 const ROW_STYLES = cn(
   ROW_GRID,
   "group/row relative h-14 pl-3 pr-13 rounded-[10px] select-none transition-colors duration-100",
   "[content-visibility:auto] [contain-intrinsic-size:auto_56px]",
-  "hover:bg-composer-input data-menu:bg-composer-input data-selected:bg-composer-accent/14",
+  "hover:bg-(--layer-1) data-menu:bg-(--layer-1) data-selected:bg-composer-accent/14",
   "has-[[data-row-open]:focus-visible]:outline-2 has-[[data-row-open]:focus-visible]:-outline-offset-2 has-[[data-row-open]:focus-visible]:outline-composer-accent",
 );
 const REVEAL_ON_ROW = "opacity-0 group-hover/row:opacity-100 group-data-[selecting=true]/list:opacity-100";
@@ -59,11 +56,11 @@ const RowProgress: React.FC<{ project: ProjectIndexEntry }> = ({ project }) => {
     <div className="flex items-center gap-3 pointer-events-none">
       <ProgressBar percent={percent} label={progressDescription(project)} className="flex-1" />
       {projectStage(project) === "synced" ? (
-        <span className="inline-flex justify-end w-9 shrink-0">
-          <SyncedBadge />
+        <span className="inline-flex justify-end w-10 shrink-0">
+          <SyncedBadge className="size-4" />
         </span>
       ) : (
-        <span className={cn("w-9 shrink-0 text-right text-[13px] tabular-nums", ROW_MUTED)}>{percent}%</span>
+        <span className={cn("w-10 shrink-0 text-right text-[13px] tabular-nums", ROW_MUTED)}>{percent}%</span>
       )}
     </div>
   );
@@ -121,7 +118,7 @@ const ProjectRowContent: React.FC<ProjectItemProps> = ({
           type="button"
           data-row-open
           onClick={() => onOpen(project.id)}
-          className="block max-w-full truncate text-left font-medium text-composer-text cursor-pointer outline-none after:absolute after:inset-0 after:rounded-[inherit]"
+          className="block max-w-full truncate text-left text-sm font-medium text-composer-text cursor-pointer outline-none after:absolute after:inset-0 after:rounded-[inherit]"
         >
           {title}
         </button>
@@ -142,10 +139,10 @@ const ProjectRowContent: React.FC<ProjectItemProps> = ({
       <IconButton
         variant="ghost"
         label={`More actions for ${title}`}
-        icon={<IconDots aria-hidden="true" className="size-5" />}
+        icon={<IconDots aria-hidden="true" className="size-4" />}
         {...menuTriggerProps(isMenuOpen)}
         onClick={(event) => onOpenMenu(project.id, { kind: "element", element: event.currentTarget })}
-        className="absolute top-3 right-2 z-1 opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 group-data-menu/row:opacity-100"
+        className="absolute top-3.5 right-3 z-1 size-7 hover:bg-(--layer-2) hover:text-composer-text opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 group-data-menu/row:opacity-100"
       />
     </li>
   );

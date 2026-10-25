@@ -22,7 +22,7 @@ const PreviewSidebarShell: React.FC<PreviewSidebarShellProps> = ({ children }) =
       id={sidebarId}
       aria-label="Lyrics preview"
       style={{ width }}
-      className="relative shrink-0 border-l border-composer-border bg-composer-bg-dark flex flex-col overflow-hidden"
+      className="relative shrink-0 border-l border-(--divider) bg-composer-bg-dark flex flex-col overflow-hidden"
     >
       <div
         role="separator"
@@ -38,9 +38,6 @@ const PreviewSidebarShell: React.FC<PreviewSidebarShellProps> = ({ children }) =
         onKeyDown={onKeyDown}
         className="absolute inset-y-0 left-0 z-20 w-1.5 cursor-ew-resize select-none hover:bg-composer-border focus-visible:bg-composer-border"
       />
-      <div className="px-3 py-2 border-b border-composer-border text-xs font-medium text-composer-text-muted select-none">
-        Preview
-      </div>
       {children}
     </aside>
   );

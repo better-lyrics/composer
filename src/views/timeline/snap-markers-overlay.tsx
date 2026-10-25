@@ -13,6 +13,7 @@ import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timelin
 
 interface SnapMarkersOverlayProps {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
+  headHost: HTMLElement | null;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -33,7 +34,7 @@ function handleSnapPinHoverChange(id: string, hovering: boolean): void {
 
 // -- Component -----------------------------------------------------------------
 
-const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainerRef }) => {
+const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainerRef, headHost }) => {
   const zoom = useTimelineStore((s) => s.zoom);
   const vocalOnsetSnapPoints = useTimelineStore((s) => s.vocalOnsetSnapPoints);
   const customSnapPoints = useProjectStore((s) => s.customSnapPoints);
@@ -111,6 +112,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
                 time={point.time}
                 zoom={zoom}
                 fadeExtent={WAVEFORM_HEIGHT}
+                headHost={headHost}
                 isDragging={draggingId === point.id}
                 isOnOnset={showOnsets && isTimeOnOnset(point.time, vocalOnsetSnapPoints, zoom, thresholdPx)}
                 onHeadPointerDown={onHeadPointerDown}

@@ -119,21 +119,21 @@ const ProjectAudioList: React.FC<ProjectAudioListProps> = ({
           ))}
         </ul>
       ) : (
-        <p className="rounded-lg bg-composer-input px-3 py-2.5 text-xs text-composer-text-muted select-none">
+        <p className="rounded-lg bg-(--well) px-3 py-2.5 text-xs text-composer-text-muted select-none">
           No audio is stored on this device.
         </p>
       )}
       {(canClearYouTube || canClearStems) && (
         <div className="flex flex-wrap gap-2">
           {canClearYouTube && (
-            <Button variant="secondary" size="sm" hasIcon onClick={clearYouTube}>
-              <IconBrandYoutube aria-hidden="true" className="size-3.5" />
+            <Button variant="secondary" size="lg" hasIcon onClick={clearYouTube}>
+              <IconBrandYoutube aria-hidden="true" className="size-4" />
               Clear YouTube audio
             </Button>
           )}
           {canClearStems && (
-            <Button variant="secondary" size="sm" hasIcon onClick={clearStems}>
-              <IconMicrophone2 aria-hidden="true" className="size-3.5" />
+            <Button variant="secondary" size="lg" hasIcon onClick={clearStems}>
+              <IconMicrophone2 aria-hidden="true" className="size-4" />
               Clear vocal stems
             </Button>
           )}

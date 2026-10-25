@@ -98,7 +98,7 @@ const SettingsModalBody: React.FC = () => {
             inputRef={searchInputRef}
           />
         }
-        contentClassName="px-6 py-2"
+        contentClassName="px-6 pt-1 pb-4"
         contentInitialScrollTop={initialScrollTop}
         contentViewportRef={viewportRef}
         onContentInitialized={revealPendingTarget}
@@ -111,7 +111,7 @@ const SettingsModalBody: React.FC = () => {
         </div>
       </ModalNavLayout>
 
-      <div className="px-5 py-3 border-t border-composer-border text-xs text-composer-text-muted text-center shrink-0 select-none">
+      <div className="flex items-center justify-center gap-1.5 h-11 px-5 border-t border-(--divider) text-[12.5px] text-(--muted) shrink-0 select-none">
         Settings are saved automatically
       </div>
     </>
@@ -124,7 +124,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => (
     onClose={onClose}
     title="Settings"
     headerAccessory={<BackToHelpChip />}
-    className="max-w-3xl h-[70%] flex flex-col"
+    className="max-w-3xl h-[min(70vh,640px)] flex flex-col"
     bodyClassName="p-0 flex-1 min-h-0 flex flex-col"
   >
     <SettingsModalBody />

@@ -1,7 +1,6 @@
 // -- Constants -----------------------------------------------------------------
 
 const MASK_DIM_ALPHA = 0.5;
-const WORD_CORNER_RADIUS_PX = 12;
 const MASK_ROOT_SELECTOR = "[data-timeline-mask-root]";
 
 // -- Helpers -------------------------------------------------------------------
@@ -26,9 +25,9 @@ function buildPlayheadMask(root: ParentNode, playheadCenterXViewport: number, co
     const el = wb as HTMLElement;
     const r = el.getBoundingClientRect();
     if (playheadCenterXViewport < r.left || playheadCenterXViewport > r.right) continue;
-    const sylPos = el.dataset.syllablePosition ?? "none";
-    const leftR = sylPos === "middle" || sylPos === "last" ? 0 : WORD_CORNER_RADIUS_PX;
-    const rightR = sylPos === "middle" || sylPos === "first" ? 0 : WORD_CORNER_RADIUS_PX;
+    const corners = getComputedStyle(el);
+    const leftR = Number.parseFloat(corners.borderTopLeftRadius) || 0;
+    const rightR = Number.parseFloat(corners.borderTopRightRadius) || 0;
     const yInset = Math.max(
       cornerYInset(playheadCenterXViewport - r.left, leftR),
       cornerYInset(r.right - playheadCenterXViewport, rightR),

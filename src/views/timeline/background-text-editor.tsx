@@ -1,5 +1,6 @@
 import { backgroundFields, CLEARED_BACKGROUND } from "@/domain/line/background";
 import { useProjectStore } from "@/stores/project";
+import { focusOnMount } from "@/utils/focus-on-mount";
 import { createBgWordsFromLine } from "@/utils/sync-helpers";
 import { useCallback, useState } from "react";
 
@@ -11,8 +12,6 @@ interface BackgroundTextEditorProps {
 }
 
 // -- Helpers -------------------------------------------------------------------
-
-const focusOnMount = (el: HTMLInputElement | null) => el?.focus();
 
 // -- Components ----------------------------------------------------------------
 

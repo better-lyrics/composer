@@ -22,7 +22,7 @@ const helpNavButton = (label: string) => helpNav().find((b) => b.textContent?.tr
 
 const activeHelpSection = () =>
   helpNav()
-    .find((b) => b.classList.contains("bg-composer-button") && HELP_NAV_LABELS.includes(b.textContent?.trim() ?? ""))
+    .find((b) => b.getAttribute("aria-current") === "page" && HELP_NAV_LABELS.includes(b.textContent?.trim() ?? ""))
     ?.textContent?.trim() ?? "";
 
 const helpModalOpen = () => document.querySelector("[data-help-content]") !== null;

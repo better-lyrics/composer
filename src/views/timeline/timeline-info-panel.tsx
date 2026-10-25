@@ -9,6 +9,7 @@ import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
+import { SingerTag } from "@/ui/singer-tag";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
 import { BackgroundTextEditor } from "@/views/timeline/background-text-editor";
@@ -52,7 +53,7 @@ const MultiSelectionInfo: React.FC<{ summary: MultiSelectionSummary; highlight: 
   summary,
   highlight,
 }) => (
-  <div className="relative flex items-center gap-6 px-6 h-[54px] border-t border-composer-border bg-composer-bg-elevated">
+  <div className="relative flex items-center gap-6 px-6 h-[54px] border-t border-(--divider) bg-(--pop)">
     {highlight && <GroupBadge highlight={highlight} title="Selected words belong to this linked group" />}
     <span className="text-sm font-medium text-composer-text">
       {selectionCountLabel(summary.wordCount, summary.lineCount)}
@@ -74,14 +75,11 @@ interface SingleWordInfoProps {
 }
 
 const SingleWordInfo: React.FC<SingleWordInfoProps> = ({ selection, line, item, highlight, onSetBegin, onSetEnd }) => (
-  <div className="relative flex items-center gap-6 px-6 py-3 border-t border-composer-border bg-composer-bg-elevated">
+  <div className="relative flex items-center gap-6 px-6 py-3 border-t border-(--divider) bg-(--pop)">
     {highlight && <GroupBadge highlight={highlight} title="This word belongs to a linked group" />}
-    <div className="flex items-center gap-2">
-      <div className="size-2.5 rounded-full" style={{ backgroundColor: getAgentColor(line.agentId) }} />
-      <span className="text-sm text-composer-text-muted">
-        {selection.type === "bg" ? `Line ${selection.lineIndex + 1} ・ Background` : `Line ${selection.lineIndex + 1}`}
-      </span>
-    </div>
+    <SingerTag color={getAgentColor(line.agentId)}>
+      {selection.type === "bg" ? `Line ${selection.lineIndex + 1} ・ Background` : `Line ${selection.lineIndex + 1}`}
+    </SingerTag>
 
     <div className="flex items-center gap-2">
       <span className="text-sm font-medium text-composer-text">{item.text}</span>

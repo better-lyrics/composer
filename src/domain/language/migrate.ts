@@ -1,4 +1,5 @@
 import { alignTrackToLine, mappedTransliteration } from "@/domain/language/align";
+import { wholeLineSegments } from "@/domain/language/manual-segments";
 import type { TransliterationTrack } from "@/domain/language/model";
 import { languageSourceText } from "@/domain/language/source-text";
 import { DASHES, normalizeTransliterationForEditing, sourceWordCount } from "@/domain/language/transliteration-format";
@@ -51,10 +52,8 @@ function migrateLegacyTransliterationLine(line: LyricLine): LyricLine {
     ...track,
     text: main.text,
     ...(background ? { backgroundText: background.text } : {}),
-    segments: [{ original: line.text, transliteration: main.text }],
-    ...(background
-      ? { backgroundSegments: [{ original: line.backgroundText ?? "", transliteration: background.text }] }
-      : {}),
+    segments: wholeLineSegments(line.text, main.text),
+    ...(background ? { backgroundSegments: wholeLineSegments(line.backgroundText ?? "", background.text) } : {}),
   };
   const aligned = alignTrackToLine(line, migratedTrack);
   const alignedTrack = aligned.transliteration as TransliterationTrack;

@@ -1,6 +1,7 @@
 import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { keepFieldArrowKeysFromTour } from "@/tour/field-arrow-keys";
 import type { GuideCardState } from "@/tour/guide-card";
+import { injectProgressBar } from "@/tour/progress-bar";
 import { leaveImportLyricsDialog } from "@/tour/import-lyrics-steps";
 import { BEST_PRACTICES_STEP_TITLE, type GatedStep, TOUR_GATED_STEPS, createTourSteps } from "@/tour/tour-steps";
 import { type DriveStep, type Driver, type PopoverDOM, driver } from "driver.js";
@@ -125,7 +126,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
         overlayColor: "#000",
         overlayOpacity: 0.6,
         stagePadding: 8,
-        stageRadius: 8,
+        stageRadius: 16,
         animate: !reducedMotion,
         smoothScroll: false,
         showProgress: true,
@@ -134,7 +135,10 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
         prevBtnText: "Back",
         doneBtnText: "Done",
         allowClose: true,
-        onPopoverRender: (popover, opts) => injectWatchVideo(popover, opts.state.activeStep, opts.driver),
+        onPopoverRender: (popover, opts) => {
+          injectProgressBar(popover, opts.state.activeIndex, steps.length);
+          injectWatchVideo(popover, opts.state.activeStep, opts.driver);
+        },
         onHighlighted: (_el, _step, opts) => {
           const idx = opts.state.activeIndex;
           if (idx !== undefined) {

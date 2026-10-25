@@ -3,6 +3,7 @@ import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TransliterationTrack } from "@/domain/language/model";
 import type { LyricLine } from "@/domain/line/model";
 import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";
+import { isStructurallyEqual } from "@/utils/structural-equal";
 
 interface TransliterationGeneration {
   language: string;
@@ -39,7 +40,7 @@ function generatedLanguageUpdates(
     const mayReplace = force || !current || current.origin === "google";
     let transliteration: TransliterationTrack | undefined = current;
     if (mayReplace && (result?.text || backgroundResult?.text)) {
-      transliteration = {
+      const generated: TransliterationTrack = {
         language: result?.text
           ? generatedRoman.language
           : (generatedRoman.backgroundLanguage ?? generatedRoman.language),
@@ -50,6 +51,14 @@ function generatedLanguageUpdates(
         origin: "google",
         sourceFingerprint: fingerprint,
       };
+      const unchanged =
+        !force &&
+        current &&
+        isStructurallyEqual(
+          { ...current, alignmentStatus: undefined, backgroundAlignmentStatus: undefined },
+          generated,
+        );
+      transliteration = unchanged ? current : generated;
     } else if (mayReplace && current?.origin === "google") {
       transliteration = undefined;
     } else if (current && current.sourceFingerprint !== fingerprint) {
@@ -58,13 +67,16 @@ function generatedLanguageUpdates(
       const { stale: _stale, ...fresh } = current;
       transliteration = fresh;
     }
-    if (transliteration) {
-      Object.assign(updates, alignTrackToLine(line, transliteration));
-    } else {
-      if (current) {
-        Object.assign(updates, alignTrackToLine(line, { ...current, text: "", backgroundText: undefined }));
+    // Re-aligning an unchanged track would reset its review status; Regenerate still re-aligns.
+    if (force || transliteration !== current) {
+      if (transliteration) {
+        Object.assign(updates, alignTrackToLine(line, transliteration));
+      } else {
+        if (current) {
+          Object.assign(updates, alignTrackToLine(line, { ...current, text: "", backgroundText: undefined }));
+        }
+        updates.transliteration = undefined;
       }
-      updates.transliteration = undefined;
     }
   }
 
@@ -97,6 +109,10 @@ function generatedLanguageUpdates(
     if (changed) updates.translations = translations;
   }
 
+  // Google repeats unchanged results on every visit; an unchanged write would still cost a history step.
+  for (const key of Object.keys(updates) as (keyof LyricLine)[]) {
+    if (isStructurallyEqual(updates[key], line[key])) delete updates[key];
+  }
   return updates;
 }
 

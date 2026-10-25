@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { scrollTrackHost } from "@/test/timeline-scroll";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 
@@ -62,6 +63,83 @@ function dragEdgeBy(block: HTMLElement, edge: "left" | "right", offsetPx: number
 // the inputs only the drag gesture can supply.
 describe("WordTrack boundary drag inputs", () => {
   describe("regressions", () => {
+    it("regression: keeps the dragged edge under the pointer when the timeline scrolls mid-drag", async () => {
+      useSettingsStore.setState({ timelineSnap: false, vocalOnsetSnap: false });
+      useTimelineStore.setState({ scrollLeft: 0 });
+      const { blocks, calls } = await renderResizableTrack(GAPPED_PAIR, { rolling: false, duration: 5 });
+      const handle = blocks[1].querySelector<HTMLElement>('[data-edge="right"]');
+      const track = blocks[1].parentElement;
+      if (!handle || !track) throw new Error("word block has no right edge handle or track");
+
+      handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: GESTURE_START_X }));
+      scrollTrackHost(track, 50);
+      document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: GESTURE_START_X + 10 }));
+      document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+
+      await expect.poll(() => calls.length).toBe(1);
+      expect(calls[0].updates.end).toBeCloseTo(2.5 + 60 / 100, 4);
+    });
+
+    it("regression: keeps the dragged edge under the pointer when the timeline zooms mid-drag", async () => {
+      useSettingsStore.setState({ timelineSnap: false, vocalOnsetSnap: false });
+      useTimelineStore.setState({ scrollLeft: 0 });
+      const { blocks, calls } = await renderResizableTrack(GAPPED_PAIR, { rolling: false, duration: 5 });
+      const handle = blocks[1].querySelector<HTMLElement>('[data-edge="right"]');
+      const track = blocks[1].parentElement;
+      if (!handle || !track) throw new Error("word block has no right edge handle or track");
+      const pointerOffsetPx = GESTURE_START_X - track.getBoundingClientRect().left;
+
+      handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: GESTURE_START_X }));
+      useTimelineStore.setState({ zoom: 200 });
+      scrollTrackHost(track, pointerOffsetPx);
+      document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: GESTURE_START_X + 10 }));
+      document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+
+      await expect.poll(() => calls.length).toBe(1);
+      expect(calls[0].updates.end).toBeCloseTo(2.5 + 10 / 200, 4);
+    });
+
+    it("regression: moves the dragged edge when the timeline zooms under a still pointer", async () => {
+      useSettingsStore.setState({ timelineSnap: false, vocalOnsetSnap: false });
+      const { blocks, calls } = await renderResizableTrack(GAPPED_PAIR, { rolling: false, duration: 5 });
+      const handle = blocks[1].querySelector<HTMLElement>('[data-edge="right"]');
+      const track = blocks[1].parentElement;
+      if (!handle || !track) throw new Error("word block has no right edge handle or track");
+      const startOffsetPx = GESTURE_START_X - track.getBoundingClientRect().left;
+      const restingWidth = blocks[1].getBoundingClientRect().width;
+
+      handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: GESTURE_START_X }));
+      document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: GESTURE_START_X + 10 }));
+      await expect.poll(() => blocks[1].getBoundingClientRect().width).toBeCloseTo(restingWidth + 10, 0);
+      useTimelineStore.setState({ zoom: 80 });
+      await Promise.resolve();
+      document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+
+      await expect.poll(() => calls.length).toBe(1);
+      expect(calls[0].updates.end).toBeCloseTo(2.5 + (startOffsetPx + 10) / 80 - startOffsetPx / 100, 4);
+    });
+
+    it("regression: moves the dragged edge when the timeline scrolls under a still pointer", async () => {
+      useSettingsStore.setState({ timelineSnap: false, vocalOnsetSnap: false });
+      useTimelineStore.setState({ scrollLeft: 0 });
+      const { blocks, calls } = await renderResizableTrack(GAPPED_PAIR, { rolling: false, duration: 5 });
+      const handle = blocks[1].querySelector<HTMLElement>('[data-edge="right"]');
+      const track = blocks[1].parentElement;
+      if (!handle || !track) throw new Error("word block has no right edge handle or track");
+
+      const restingWidth = blocks[1].getBoundingClientRect().width;
+      handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: GESTURE_START_X }));
+      document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: GESTURE_START_X + 10 }));
+      await expect.poll(() => blocks[1].getBoundingClientRect().width).toBeCloseTo(restingWidth + 10, 0);
+      scrollTrackHost(track, 50);
+      useTimelineStore.setState({ scrollLeft: 50 });
+      await expect.poll(() => blocks[1].getBoundingClientRect().width).toBeCloseTo(restingWidth + 60, 0);
+      document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+
+      await expect.poll(() => calls.length).toBe(1);
+      expect(calls[0].updates.end).toBeCloseTo(3.1, 4);
+    });
+
     it("regression: does not invert either word when dragging the left edge of a tight flush pair", async () => {
       const { blocks, calls } = await renderResizableTrack(TIGHT_PAIR);
 

@@ -1,7 +1,7 @@
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { keepsYouTubeAudio } from "@/domain/storage/audio-retention";
 import type { ProjectSaveInput } from "@/lib/persistence";
-import { type AudioSource, useAudioStore } from "@/stores/audio";
+import { type AudioSource, playableFile, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
@@ -15,11 +15,12 @@ function toSavedAudioSource(source: AudioSource): SavedAudioSource | undefined {
   return undefined;
 }
 
-function playableFile(source: AudioSource): File | null {
-  if (!source) return null;
-  if (source.type === "file") return source.file;
-  if (source.type === "youtube") return source.file ?? null;
-  return null;
+// The open project's audio, falling back to the audio it expects while that is not loaded.
+function projectAudioSource(state: {
+  source: AudioSource;
+  expectedAudio: SavedAudioSource | null;
+}): SavedAudioSource | undefined {
+  return toSavedAudioSource(state.source) ?? state.expectedAudio ?? undefined;
 }
 
 function keepsYouTubeAudioNow(): boolean {
@@ -49,13 +50,14 @@ function currentSaveInput(): ProjectSaveInput {
     granularity: projectState.granularity,
     exportTiming: projectState.exportTiming,
     syllableSplitDefaults: projectState.syllableSplitDefaults,
-    audioSource: toSavedAudioSource(audioState.source) ?? audioState.expectedAudio ?? undefined,
+    audioSource: projectAudioSource(audioState),
     dismissedSuggestions: projectState.dismissedSuggestions,
     dismissedExplicitSuggestions: projectState.dismissedExplicitSuggestions,
     dismissedMetadataMatches: projectState.dismissedMetadataMatches,
     currentStem: useSeparationStore.getState().currentStem,
     primingStripped: projectState.primingStripped,
     customSnapPoints: projectState.customSnapPoints,
+    beatGrid: projectState.beatGrid,
     hasUnexportedImport: projectState.hasUnexportedImport,
     importedMetadataKeys: projectState.importedMetadataKeys,
     ttmlEditState: projectState.ttmlEditState,
@@ -73,4 +75,4 @@ function buildSaveInput(): ProjectSaveInput | null {
 
 // -- Exports ------------------------------------------------------------------
 
-export { storedAudioFile, hadStoredAudio, buildSaveInput, currentSaveInput };
+export { storedAudioFile, hadStoredAudio, buildSaveInput, currentSaveInput, projectAudioSource };

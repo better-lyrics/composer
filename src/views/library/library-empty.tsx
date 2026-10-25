@@ -1,6 +1,7 @@
 import type { LibraryFilter } from "@/domain/project/library-view";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
+import { NoMatchMessage } from "@/ui/no-match-message";
 import { IconSearchOff } from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------
@@ -29,7 +30,7 @@ const LibraryEmpty: React.FC<LibraryEmptyProps> = ({ query, filter, onClearSearc
     content = (
       <EmptyState
         icon={IconSearchOff}
-        message={`No projects match “${trimmed}”`}
+        message={<NoMatchMessage noun="projects" query={trimmed} />}
         hint="Search looks at titles, artists, and albums."
         action={
           <Button size="sm" onClick={onClearSearch} className="mt-3">

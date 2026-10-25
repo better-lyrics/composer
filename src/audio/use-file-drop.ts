@@ -136,4 +136,4 @@ function useFileDrop({ onFileDrop, onProjectFileDrop, capture = false }: FileDro
 
 // -- Exports ------------------------------------------------------------------
 
-export { UNSUPPORTED_AUDIO_OR_PROJECT_FILE_MESSAGE, useFileDrop };
+export { ONE_SONG_AT_A_TIME_MESSAGE, UNSUPPORTED_AUDIO_OR_PROJECT_FILE_MESSAGE, useFileDrop };

@@ -74,7 +74,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
   );
 
   return (
-    <div className={cn("flex flex-col gap-2.5 p-3 rounded-lg", "bg-composer-input border border-composer-border")}>
+    <div className={cn("flex flex-col gap-2.5 p-3 rounded-lg", "bg-(--layer-1) border border-(--edge)")}>
       <div className="flex items-center justify-between gap-2">
         <Button variant="secondary" size="sm" hasIcon onClick={onSwitchToSearch}>
           <IconArrowLeft size={14} stroke={2} />
@@ -100,10 +100,8 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
         onDrop={handleDrop}
         className={cn(
           "flex flex-col items-center justify-center gap-2 px-4 py-7 rounded-lg text-center cursor-pointer w-full",
-          "bg-composer-overlay border border-dashed transition-colors",
-          isDragOver
-            ? "border-composer-accent bg-composer-accent/8"
-            : "border-composer-border hover:border-composer-border-strong",
+          "bg-(--well) border border-dashed transition-colors",
+          isDragOver ? "border-composer-accent bg-composer-accent/8" : "border-(--edge-strong) hover:border-(--muted)",
         )}
       >
         <IconMusic size={32} stroke={1.5} className="text-composer-text opacity-50 mb-0.5" />

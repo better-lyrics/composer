@@ -70,7 +70,7 @@ describe("findMatchingShortcut", () => {
     it("only nudges and jumps opt into auto-repeat", () => {
       const repeatable = SHORTCUT_DEFINITIONS.filter((definition) => definition.repeatable).map(({ id }) => id);
       for (const id of repeatable) {
-        expect(id).toMatch(/\.(nudge|jump)/);
+        expect(id).toMatch(/\.(nudge|jump|seek)/);
       }
       expect(repeatable).toContain("timeline.nudgeLeft");
       expect(repeatable).toContain("timeline.nudgeRight");
@@ -174,6 +174,17 @@ describe("bindingFromKeyboardEvent", () => {
       });
     });
 
+    it("regression: macOS Alt+Shift+, records and matches the physical key, not the glyph", () => {
+      const event = keydown({ key: "\u00af", code: "Comma", altKey: true, shiftKey: true });
+      expect(bindingFromKeyboardEvent(event)).toEqual({ key: "<", shift: true, alt: true });
+      expect(findMatchingShortcut(event, "global")).toBe("global.seekBackwardFine");
+    });
+
+    it("regression: macOS Cmd+Alt+Shift+. matches the fine typing seek", () => {
+      const event = keydown({ key: "\u02d8", code: "Period", altKey: true, shiftKey: true, ...MOD });
+      expect(findMatchingShortcut(event, "global")).toBe("global.seekForwardFineWhileTyping");
+    });
+
     it("regression: a recorded macOS Alt binding matches the same key press", () => {
       const event = keydown({ key: "\u00b4", code: "KeyE", altKey: true });
       const binding = bindingFromKeyboardEvent(event);
@@ -264,6 +275,18 @@ describe("keyboard layouts", () => {
 
     it("keeps a non-ASCII glyph when the physical key has no US mapping", () => {
       expect(bindingFromKeyboardEvent(keydown({ key: "ß", code: "IntlBackslash" }))).toEqual({ key: "ß" });
+    });
+
+    it("reads the shifted character when the browser reports the unshifted one with Mod+Shift held", () => {
+      const event = keydown({ key: ",", code: "Comma", shiftKey: true, ...MOD });
+      expect(findMatchingShortcut(event, "global")).toBe("global.seekBackwardWhileTyping");
+      expect(bindingFromKeyboardEvent(event)).toMatchObject({ key: "<", shift: true, mod: true });
+    });
+
+    it("regression: still matches a Mod+Shift binding saved with the unshifted character", () => {
+      useShortcutBindingsStore.setState({ overrides: { "global.settings": { key: ".", shift: true, mod: true } } });
+      const press = keydown({ key: ".", code: "Period", shiftKey: true, ...MOD });
+      expect(matchesShortcutBinding(press, "global.settings")).toBe(true);
     });
 
     it("keeps named keys on any layout", () => {

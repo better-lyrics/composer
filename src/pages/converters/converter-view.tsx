@@ -3,6 +3,7 @@ import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import type { ConversionResult } from "@/pages/converters/convert-via-parser";
 import type { OutputFormat } from "@/pages/converters/output-formats";
 import { Button } from "@/ui/button";
+import { INPUT_STYLES } from "@/ui/input-styles";
 import { LinkButton } from "@/ui/link-button";
 import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
 import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
@@ -34,7 +35,8 @@ interface ConverterViewProps {
   outputFormat: OutputFormat;
 }
 
-const OUTPUT_PANE_CLASS = "flex-1 min-h-[280px] md:min-h-[420px] overflow-auto font-mono text-xs p-3 select-text";
+const OUTPUT_PANE_CLASS =
+  "flex-1 min-h-[280px] md:min-h-[420px] overflow-auto overscroll-none font-mono text-xs p-3 select-text";
 
 const ConverterView: React.FC<ConverterViewProps> = ({
   title,
@@ -133,7 +135,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div
           className={cn(
-            "rounded-xl bg-composer-bg-elevated border border-composer-border p-4 flex flex-col",
+            "rounded-xl bg-(--layer-1) border border-(--edge) p-4 flex flex-col",
             isDragOver && "border-composer-accent",
           )}
           onDragOver={handleDragOver}
@@ -185,7 +187,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
             </p>
           )}
           <div className="mt-3 flex items-center gap-2">
-            <label htmlFor="converter-filename" className="text-xs text-composer-text-muted select-none">
+            <label htmlFor="converter-filename" className="text-xs text-(--muted) select-none">
               Filename
             </label>
             {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
@@ -194,11 +196,11 @@ const ConverterView: React.FC<ConverterViewProps> = ({
               type="text"
               value={filename}
               onChange={(event) => setFilename(event.target.value)}
-              className="flex-1 text-xs bg-composer-bg-dark border border-composer-border rounded-md px-2 py-1 text-composer-text focus:outline-none focus:border-composer-accent cursor-text select-text"
+              className={cn(INPUT_STYLES, "flex-1 h-8 text-xs select-text")}
             />
           </div>
         </div>
-        <div className="rounded-xl bg-composer-bg-elevated border border-composer-border p-4 flex flex-col">
+        <div className="rounded-xl bg-(--layer-1) border border-(--edge) p-4 flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium text-composer-text select-none">{outputFormat.label} output</span>
             <div className="flex items-center gap-1.5">
@@ -234,7 +236,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
             )}
           </div>
           <div className="mt-3 flex items-center justify-between gap-2">
-            <span className="text-xs text-composer-text-muted">Need to fine-tune timing against a waveform?</span>
+            <span className="text-xs text-(--muted)">Need to fine-tune timing against a waveform?</span>
             <LinkButton
               href={openInComposerHref}
               variant="primary"

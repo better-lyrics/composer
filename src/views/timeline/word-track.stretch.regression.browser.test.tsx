@@ -1,5 +1,7 @@
 import { useProjectStore } from "@/stores/project";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createWord } from "@/test/factories";
+import { scrollTrackHost } from "@/test/timeline-scroll";
 import {
   movePointer,
   pressEdge,
@@ -69,5 +71,26 @@ describe("WordTrack selection stretch regressions", () => {
     useProjectStore.getState().undo();
     const undone = storeWords();
     expect(undone[1].end).toBeCloseTo(2, 5);
+  });
+
+  it("regression: follows a timeline scroll that happens mid-drag", async () => {
+    const words = [
+      createWord({ text: "我 ", begin: 0, end: 1 }),
+      createWord({ text: "爱 ", begin: 1, end: 2 }),
+      createWord({ text: "你", begin: 5, end: 6 }),
+    ];
+    useTimelineStore.setState({ scrollLeft: 0 });
+    const { blocks } = await renderStretchTrack(words, [0, 1]);
+
+    const track = blocks[1].parentElement;
+    if (!track) throw new Error("word block has no track");
+    pressEdge(blocks[1], "right");
+    scrollTrackHost(track, 50);
+    movePointer(50);
+    releasePointer(50);
+
+    const final = storeWords();
+    expect(final[0].end).toBeCloseTo(1.5, 5);
+    expect(final[1].end).toBeCloseTo(3, 5);
   });
 });

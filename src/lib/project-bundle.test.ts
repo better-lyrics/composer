@@ -53,8 +53,6 @@ describe("buildProjectBundle", () => {
 
 describe("projectBundleFileName", () => {
   it("names the backup after the day", () => {
-    expect(projectBundleFileName(new Date("2026-09-27T12:00:00Z"))).toBe(
-      "composer-backup-2026-09-27.ttml-projects.json",
-    );
+    expect(projectBundleFileName(new Date("2026-09-27T12:00:00Z"))).toBe("composer-backup-2026-09-27.composer");
   });
 });

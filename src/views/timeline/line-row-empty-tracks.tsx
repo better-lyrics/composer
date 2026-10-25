@@ -113,7 +113,7 @@ const SyncLineButton: React.FC<{ lineId: string; wordCount: number }> = ({ lineI
     <button
       type="button"
       onClick={selectLineWords}
-      className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-composer-text-muted hover:text-composer-text hover:bg-composer-button cursor-pointer transition-colors not-italic"
+      className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-composer-text-muted hover:text-composer-text hover:bg-(--layer-2) cursor-pointer not-italic"
     >
       <IconPlus size={12} />
       Place
@@ -150,8 +150,10 @@ const EmptyBgTrack: React.FC<EmptyBgTrackProps> = ({ line, lineIndex, isOver }) 
     data-line-index={lineIndex}
     data-track="bg"
     className={cn(
-      "flex items-center px-2 text-xs font-mono truncate transition-colors border-t border-composer-border/30 cursor-pointer",
-      isOver ? "bg-composer-accent/20 text-composer-text" : "text-composer-text-muted/50 bg-composer-bg-elevated/25",
+      "flex items-center px-2 text-xs font-mono truncate border-t border-(--divider) cursor-pointer",
+      isOver
+        ? "bg-composer-accent/20 text-composer-text"
+        : "text-composer-text-muted/50 bg-[color-mix(in_oklab,var(--color-composer-bg-dark)_35%,transparent)]",
     )}
     style={{ height: BG_DROP_ZONE_HEIGHT }}
     onDoubleClick={(e) => addBackgroundWordAt(line, pointerTime(e))}

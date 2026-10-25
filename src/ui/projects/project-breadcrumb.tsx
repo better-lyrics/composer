@@ -1,4 +1,4 @@
-import { displayTitle } from "@/domain/project/display-title";
+import { displayArtists, displayTitle, hasArtists } from "@/domain/project/display-title";
 import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { useUIStore } from "@/stores/ui";
@@ -7,7 +7,7 @@ import { LinkButton } from "@/ui/link-button";
 import { Popover } from "@/ui/popover";
 import { ProjectArt } from "@/ui/projects/project-art";
 import { ProjectSwitcher } from "@/ui/projects/project-switcher";
-import { SaveStatusLabel } from "@/ui/projects/save-status-label";
+import { SaveStatusAnnouncer, SaveStatusGlyph } from "@/ui/projects/save-status-label";
 import { LIBRARY_PATH } from "@/utils/app-routes";
 import { formatShortcut } from "@/utils/format-key";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
@@ -21,6 +21,7 @@ const SWITCHER_SHORTCUT_ID = "global.openProjectSwitcher";
 const ProjectBreadcrumb: React.FC = () => {
   const title = useProjectStore((state) => state.metadata.title);
   const thumbnail = useProjectStore((state) => state.metadata.thumbnailDataUrl);
+  const artists = useProjectStore((state) => state.metadata.artists);
   const isOpen = useUIStore((state) => state.projectSwitcherOpen);
   const setOpen = useUIStore((state) => state.setProjectSwitcherOpen);
   const shownTitle = displayTitle(title);
@@ -28,12 +29,12 @@ const ProjectBreadcrumb: React.FC = () => {
   const switchTitle = switchKeys ? `Switch project (${switchKeys})` : "Switch project";
 
   return (
-    <div className="flex items-center gap-0.5 min-w-0 select-none">
-      <nav aria-label="Project" className="flex items-center gap-0.5 min-w-0">
-        <LinkButton to={LIBRARY_PATH} variant="ghost" className="px-2 text-[15px]">
+    <div className="flex items-center min-w-0 select-none">
+      <nav aria-label="Project" className="flex items-center gap-3 min-w-0">
+        <LinkButton to={LIBRARY_PATH} variant="ghost" className="-ml-1 px-2 text-[13.5px] hover:text-composer-text">
           Projects
         </LinkButton>
-        <IconChevronRight aria-hidden="true" className="size-4 shrink-0 text-composer-text-faint" />
+        <IconChevronRight aria-hidden="true" className="-ml-1.5 -mr-2 size-3.5 shrink-0 text-composer-text-faint" />
         <Popover
           open={isOpen}
           onOpenChange={setOpen}
@@ -44,13 +45,21 @@ const ProjectBreadcrumb: React.FC = () => {
               variant="ghost"
               aria-label={`${shownTitle}, switch project`}
               title={switchTitle}
-              className="group gap-2 h-8 max-w-[380px] min-w-0 px-1.5 py-0 rounded-[10px] text-[15px] leading-[22px] font-bold text-composer-text hover:text-composer-text aria-expanded:bg-composer-button"
+              className="group gap-2.5 h-10 max-w-[380px] min-w-0 pl-[5px] pr-3 py-0 rounded-xl text-composer-text hover:text-composer-text aria-expanded:bg-(--layer-1)"
             >
               <ProjectArt src={thumbnail} size="sm" />
-              <span className="truncate">{shownTitle}</span>
+              <span className="flex flex-col min-w-0 leading-[1.15] text-left">
+                <span className="flex items-center gap-1.5 min-w-0 text-sm font-bold">
+                  <span className="truncate">{shownTitle}</span>
+                  <SaveStatusGlyph />
+                </span>
+                {hasArtists(artists) && (
+                  <span className="truncate text-xs font-normal text-(--muted)">{displayArtists(artists)}</span>
+                )}
+              </span>
               <IconChevronDown
                 aria-hidden="true"
-                className="size-4 shrink-0 text-composer-text opacity-50 transition-[rotate] duration-150 motion-reduce:transition-none group-aria-expanded:rotate-180"
+                className="size-[15px] shrink-0 text-(--muted) transition-[rotate] duration-150 motion-reduce:transition-none group-aria-expanded:rotate-180"
               />
             </Button>
           }
@@ -58,7 +67,7 @@ const ProjectBreadcrumb: React.FC = () => {
           {(close) => <ProjectSwitcher onClose={close} />}
         </Popover>
       </nav>
-      <SaveStatusLabel />
+      <SaveStatusAnnouncer />
     </div>
   );
 };

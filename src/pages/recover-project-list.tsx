@@ -64,19 +64,19 @@ const RecoverProjectList: React.FC = () => {
           <h2 id={headingId} className="text-sm font-medium text-composer-text">
             Every project on this device
           </h2>
-          <p className="text-xs text-composer-text-muted">{formatProjectCount(projects.length)}</p>
+          <p className="text-xs text-(--muted)">{formatProjectCount(projects.length)}</p>
         </div>
         <Button variant="secondary" size="sm" hasIcon onClick={downloadAll}>
           <IconDownload size={14} aria-hidden="true" />
           Download all
         </Button>
       </div>
-      <ul className="flex flex-col max-h-72 overflow-y-auto rounded-lg border border-composer-border divide-y divide-composer-border">
+      <ul className="flex flex-col max-h-72 overflow-y-auto overscroll-none rounded-lg border border-(--edge) divide-y divide-(--divider)">
         {projects.map((project) => (
           <li key={project.key} className="flex items-center gap-3 px-3 py-2">
             <div className="flex-1 min-w-0">
               <p className="text-sm text-composer-text truncate select-text">{project.title}</p>
-              <p className="text-xs text-composer-text-muted select-text">
+              <p className="text-xs text-(--muted) select-text">
                 {formatSavedWorkSummary(project.lineCount, project.savedAt)}
               </p>
             </div>
@@ -94,7 +94,7 @@ const RecoverProjectList: React.FC = () => {
         ))}
       </ul>
       {message && (
-        <p role="status" className="text-xs text-composer-text-muted select-text">
+        <p role="status" className="text-xs text-(--muted) select-text">
           {message}
         </p>
       )}

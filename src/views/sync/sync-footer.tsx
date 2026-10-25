@@ -1,8 +1,6 @@
 import { getEffectiveKeysArray, getShortcutDescription } from "@/stores/shortcut-bindings";
-import { syncCarouselTransition, syncPulseVariants } from "@/utils/animationVariants";
+import { Key } from "@/ui/key";
 import { TimingDisplay } from "@/views/sync/timing-display";
-import { m } from "motion/react";
-import { cn } from "@/utils/cn";
 
 interface SyncGestureControlsProps {
   currentWord?: string;
@@ -14,6 +12,11 @@ interface SyncGestureControlsProps {
   handleTapPointerDown: React.PointerEventHandler<HTMLButtonElement>;
 }
 
+const GESTURE_KEY =
+  "w-[52px] [--key-height:56px] [--key-depth:4px] [--key-radius:999px] touch-none tap-highlight-none text-[11px] font-semibold text-(--muted) data-pressed:text-composer-accent-text";
+
+const shortcutLabel = (id: string) => getEffectiveKeysArray(id).join(" ");
+
 const SyncGestureControls: React.FC<SyncGestureControlsProps> = ({
   currentWord,
   displayWord,
@@ -23,50 +26,32 @@ const SyncGestureControls: React.FC<SyncGestureControlsProps> = ({
   handleHoldPointerRelease,
   handleTapPointerDown,
 }) => (
-  <div className="flex items-center gap-4">
-    {currentWord && <span className="text-xl font-medium text-composer-text">{displayWord ?? currentWord}</span>}
+  <div className="flex items-center justify-self-end gap-4">
+    {currentWord && <span className="text-xl font-semibold text-composer-text">{displayWord ?? currentWord}</span>}
     <div className="flex items-center gap-2">
-      <m.button
-        type="button"
+      <Key
         tabIndex={-1}
         aria-label={getShortcutDescription("sync.holdSync")}
         aria-pressed={isHolding}
+        data-pressed={isHolding || undefined}
         onPointerDown={handleHoldPointerDown}
         onPointerUp={handleHoldPointerRelease}
         onPointerCancel={handleHoldPointerRelease}
         onPointerLeave={handleHoldPointerRelease}
-        variants={syncPulseVariants}
-        initial={false}
-        animate={isHolding ? "pulse" : "idle"}
-        transition={syncCarouselTransition}
-        className={cn(
-          "flex items-center justify-center border-2 rounded-full size-14 cursor-pointer touch-none tap-highlight-none",
-          isHolding ? "bg-composer-accent/20 border-composer-accent" : "bg-composer-bg-elevated",
-        )}
+        className={GESTURE_KEY}
       >
-        <span className="text-xs font-medium text-composer-text-muted">
-          {getEffectiveKeysArray("sync.holdSync")
-            .map((k) => k.toUpperCase())
-            .join(" ")}
-        </span>
-      </m.button>
-      <m.button
-        type="button"
+        {shortcutLabel("sync.holdSync")}
+      </Key>
+      <Key
         tabIndex={-1}
         aria-label={getShortcutDescription("sync.tap")}
+        data-pressed={showPulse || undefined}
+        data-lit={showPulse || undefined}
         onPointerDown={handleTapPointerDown}
-        variants={syncPulseVariants}
-        initial={false}
-        animate={showPulse ? "pulse" : "idle"}
-        transition={syncCarouselTransition}
-        className="flex items-center justify-center border-2 rounded-full size-14 cursor-pointer touch-none tap-highlight-none bg-composer-bg-elevated"
+        className={GESTURE_KEY}
       >
-        <span className="text-xs font-medium text-composer-text-muted">
-          {getEffectiveKeysArray("sync.tap")
-            .map((k) => k.toUpperCase())
-            .join(" ")}
-        </span>
-      </m.button>
+        {shortcutLabel("sync.tap")}
+      </Key>
     </div>
   </div>
 );
@@ -90,24 +75,21 @@ const SyncFooter: React.FC<SyncFooterProps> = ({
   gestureControls,
   status,
 }) => (
-  <div className="px-6 py-4 border-t border-composer-border bg-composer-bg-dark">
-    <div className="flex items-center justify-between h-14">
-      <TimingDisplay lastSyncedTime={lastSyncedTime} />
+  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-6 h-18 shrink-0 px-5 shadow-[inset_0_1px_0_var(--divider)] bg-[color-mix(in_oklab,var(--color-composer-bg-dark)_35%,transparent)]">
+    <TimingDisplay lastSyncedTime={lastSyncedTime} />
 
-      {!isComplete && editMode && (
-        <div className="text-sm text-composer-text-muted">
-          Editing timings ・ click a word to re-record, or press Done to sync
-        </div>
-      )}
-
-      {gestureControls}
-
+    <div className="text-[13px] text-center text-(--muted)">
+      {!isComplete && editMode && "Editing timings ・ click a word to re-record, or press Done to sync"}
       {status}
-
-      {!status && !isComplete && !editMode && !isPlaying && isActive && (
-        <div className="text-sm text-composer-text-muted">Paused ・ Click a line to jump, or play to continue</div>
-      )}
+      {!status &&
+        !isComplete &&
+        !editMode &&
+        !isPlaying &&
+        isActive &&
+        "Paused ・ Click a line to jump, or play to continue"}
     </div>
+
+    {gestureControls}
   </div>
 );
 

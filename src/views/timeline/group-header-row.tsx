@@ -44,7 +44,7 @@ interface GroupHeaderRowProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const GROUP_HEADER_HEIGHT = 38;
+const GROUP_HEADER_HEIGHT = 30;
 
 // -- Component -----------------------------------------------------------------
 
@@ -66,17 +66,32 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
   const isCollapsed = collapsedInstances[`${group.id}:${instanceIdx}`] ?? false;
   const renaming = renamingGroupId === group.id && renamingInstanceIdx === instanceIdx;
 
-  const openGroupMenu = useCallback(
+  const openGroupMenuAt = useCallback(
+    (x: number, y: number) => {
+      setContextMenu({ x, y, target: { kind: "group-banner", groupId: group.id, instanceIdx, source: "gutter" } });
+    },
+    [group.id, instanceIdx, setContextMenu],
+  );
+
+  // The menu opens beside the label, so the second click of a double-click reaches the label and renames.
+  const openGroupMenuBeside = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.detail > 1) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      openGroupMenuAt(rect.right, rect.top);
+    },
+    [openGroupMenuAt],
+  );
+
+  const openGroupMenuAtPointer = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      setContextMenu({
-        x: e.clientX,
-        y: e.clientY,
-        target: { kind: "group-banner", groupId: group.id, instanceIdx, source: "gutter" },
-      });
+      openGroupMenuAt(e.clientX, e.clientY);
     },
-    [group.id, instanceIdx, setContextMenu],
+    [openGroupMenuAt],
   );
 
   const startRename = useCallback(
@@ -114,11 +129,10 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
       onDoubleClick={renaming ? undefined : startRename}
     >
       <div
-        className="shrink-0 w-12 sticky left-0 z-[60] flex items-center justify-center px-1 select-none overflow-hidden border-r-2"
+        className="shrink-0 w-12 sticky left-0 z-[60] flex items-center justify-center select-none overflow-hidden"
         style={{
-          background: `color-mix(in srgb, ${group.color} 30%, var(--color-composer-bg))`,
-          borderRightColor: group.color,
-          boxShadow: `0 -1px 0 0 color-mix(in srgb, ${group.color} 40%, var(--color-composer-border)), inset 0 -1px 0 0 color-mix(in srgb, ${group.color} 35%, var(--color-composer-border)), 10px 0 15px -3px rgb(0 0 0 / 0.1), 4px 0 6px -4px rgb(0 0 0 / 0.1)`,
+          background: `color-mix(in oklab, ${group.color} 12%, var(--gutter-bg))`,
+          boxShadow: `inset 0 1px 0 color-mix(in oklab, ${group.color} 30%, transparent), inset -2px 0 0 color-mix(in oklab, ${group.color} 60%, color-mix(in oklab, ${group.color} 12%, var(--gutter-bg))), inset 0 -1px 0 var(--divider)`,
         }}
       >
         {renaming ? (
@@ -126,18 +140,24 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
         ) : (
           <button
             type="button"
-            onClick={openGroupMenu}
-            onContextMenu={openGroupMenu}
-            className="w-full h-full flex items-center justify-center cursor-pointer hover:brightness-110 transition-[filter]"
+            onClick={openGroupMenuBeside}
+            onContextMenu={openGroupMenuAtPointer}
+            className="w-full h-full flex items-center justify-center cursor-pointer hover:brightness-110"
             title={`${group.label} · ${ordinal} of ${totalInstances}`}
           >
-            <span className="text-[10px] font-semibold text-composer-text truncate w-full text-center leading-none">
+            <span className="max-w-full pl-1 pr-1.5 text-[10px] font-semibold text-composer-text truncate leading-none">
               {group.label}
             </span>
           </button>
         )}
       </div>
-      <div className="flex-1 overflow-hidden border-b border-composer-border relative">
+      <div
+        className="flex-1 overflow-hidden border-b border-(--divider) relative"
+        style={{
+          background: `color-mix(in oklab, ${group.color} 9%, transparent)`,
+          boxShadow: `inset 0 1px 0 color-mix(in oklab, ${group.color} 30%, transparent)`,
+        }}
+      >
         <GroupBanner
           group={group}
           instanceIdx={instanceIdx}

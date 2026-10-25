@@ -2,6 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useEffectiveFocus } from "@/views/timeline/effective-focus";
 import {
+  adoptLoopRegionForPlay,
   currentPlaybackRange,
   currentSelectionBounds,
   currentlyLoops,
@@ -19,18 +20,27 @@ function isPlayingSelection(): boolean {
 
 // -- Hook ---------------------------------------------------------------------
 
-// Keeps playback inside the active range (a played selection, else the open group) on every tab: its end stops or loops.
+// Keeps playback inside the active range (a played selection or region, else the open group) on every tab: its end stops or loops.
 function useRangePlayback(): void {
   const groupOpen = useEffectiveFocus() !== null;
   const selectionPlayback = useTimelineStore((s) => s.selectionPlayback !== null);
+  const regionSet = useTimelineStore((s) => s.loopRegion !== null);
   const audio = useAudioStore((s) => s.audioElement);
-  const active = groupOpen || selectionPlayback;
+  const active = groupOpen || selectionPlayback || regionSet;
 
   // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- endTimer is set from nested handlers and cleared in the returned cleanup
   useEffect(() => {
     if (!active || !audio) return;
     let endTimer: ReturnType<typeof setTimeout> | undefined;
     let seekPending = false;
+    let ownSeeksAhead = 0;
+    let lastSeekWasOwn = false;
+
+    // A lag spike can land seeked after playback has already left a short range, so a seek of our own never reads as seeking away.
+    const seekInsideRange = (time: number) => {
+      ownSeeksAhead++;
+      useAudioStore.getState().seekTo(time);
+    };
 
     const scheduleEnd = () => {
       clearTimeout(endTimer);
@@ -53,26 +63,30 @@ function useRangePlayback(): void {
         store.setIsPlaying(false);
         if (isPlayingSelection()) stopSelectionPlayback({ pause: false });
       }
-      store.seekTo(step.seekTo);
+      seekInsideRange(step.seekTo);
     };
 
     const handlePlay = () => {
+      adoptLoopRegionForPlay();
       const range = currentPlaybackRange();
       const start = range ? soloPlayStart(audio.currentTime, range) : null;
-      if (start !== null) useAudioStore.getState().seekTo(start);
+      if (start !== null) seekInsideRange(start);
       scheduleEnd();
     };
 
     // Chrome fires a timeupdate at the seek target before seeked, with audio.seeking already false.
     const handleSeeking = () => {
       seekPending = true;
+      lastSeekWasOwn = ownSeeksAhead > 0;
+      if (lastSeekWasOwn) ownSeeksAhead--;
       clearTimeout(endTimer);
     };
 
     const handleSeeked = () => {
       seekPending = false;
+      ownSeeksAhead = 0;
       const range = currentPlaybackRange();
-      if (isPlayingSelection() && range && isOutsideRange(audio.currentTime, range)) {
+      if (!lastSeekWasOwn && isPlayingSelection() && range && isOutsideRange(audio.currentTime, range)) {
         stopSelectionPlayback({ pause: false });
         return;
       }
@@ -84,18 +98,18 @@ function useRangePlayback(): void {
       const range = currentPlaybackRange();
       if (!range) return;
       const store = useAudioStore.getState();
-      store.seekTo(range.begin);
+      seekInsideRange(range.begin);
       if (currentlyLoops()) store.setIsPlaying(true);
       else if (isPlayingSelection()) stopSelectionPlayback({ pause: true });
     };
 
     const followSelection = () => {
       if (!isPlayingSelection()) return;
-      if (currentSelectionBounds()) scheduleEnd();
+      if (useTimelineStore.getState().loopRegion || currentSelectionBounds()) scheduleEnd();
       else stopSelectionPlayback({ pause: true });
     };
     const unsubscribeSelection = useTimelineStore.subscribe((state, previous) => {
-      if (state.selectedWords !== previous.selectedWords) followSelection();
+      if (state.selectedWords !== previous.selectedWords || state.loopRegion !== previous.loopRegion) followSelection();
     });
     const unsubscribeLines = useProjectStore.subscribe((state, previous) => {
       if (state.lines !== previous.lines) followSelection();

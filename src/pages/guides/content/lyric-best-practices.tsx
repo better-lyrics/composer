@@ -6,11 +6,11 @@ import { RuleList } from "@/best-practices/rule-list";
 
 const GuideContents: React.FC = () => (
   <nav aria-label="On this page" className="mb-10">
-    <p className="font-mono text-xs text-composer-text-faint mb-3">On this page</p>
+    <p className="font-mono text-xs text-(--muted) mb-3">On this page</p>
     <ul className="space-y-1.5">
       {BEST_PRACTICE_GROUPS.map((group) => (
         <li key={group.id}>
-          <a href={`#${groupAnchorId(group.id)}`} className="text-sm text-composer-text-muted hover:text-composer-text">
+          <a href={`#${groupAnchorId(group.id)}`} className="text-sm text-(--muted) hover:text-composer-text">
             {group.label}
           </a>
         </li>

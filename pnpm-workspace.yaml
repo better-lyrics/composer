@@ -2,10 +2,7 @@ packages:
   - "."
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
-  - "@braccato/core"
-  - "@braccato/highlight"
-  - "@braccato/parsers"
-  - "@braccato/types"
+  - "@braccato/*"
   - "@uimaxbai/am-lyrics"
 trustPolicy: no-downgrade
 trustPolicyExclude:

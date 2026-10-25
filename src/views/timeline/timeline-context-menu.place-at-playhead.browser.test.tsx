@@ -59,7 +59,7 @@ async function expectNoPlaceItem() {
   const screen = await render(<TimelineContextMenu />);
   await expect
     .element(
-      screen.getByRole("button", { name: "Delete line" }).or(screen.getByRole("button", { name: "Add word here" })),
+      screen.getByRole("menuitem", { name: "Delete line" }).or(screen.getByRole("menuitem", { name: "Add word here" })),
     )
     .toBeVisible();
   expect(screen.container.ownerDocument.body.textContent).not.toContain("Place at playhead");
@@ -71,7 +71,7 @@ describe("TimelineContextMenu · place at playhead", () => {
   it("places an unplaced shared instance at the playhead from the line menu", async () => {
     seed(gutterOf("c1", 1));
     const screen = await render(<TimelineContextMenu />);
-    await screen.getByRole("button", { name: "Place at playhead" }).click();
+    await screen.getByRole("menuitem", { name: "Place at playhead" }).click();
 
     await expect.poll(() => wordBegins("c1")).toEqual([30, 31.5]);
   });
@@ -85,7 +85,7 @@ describe("TimelineContextMenu · place at playhead", () => {
         <Toaster />
       </>,
     );
-    await screen.getByRole("button", { name: "Place at playhead" }).click();
+    await screen.getByRole("menuitem", { name: "Place at playhead" }).click();
 
     await expect.element(screen.getByText("Not enough room in the song to place this instance here")).toBeVisible();
     expect(wordBegins("c1")).toBeUndefined();
@@ -94,7 +94,7 @@ describe("TimelineContextMenu · place at playhead", () => {
   it("places at the playhead, not the clicked time, from the track menu", async () => {
     seed(trackOf("c1", 1));
     const screen = await render(<TimelineContextMenu />);
-    await screen.getByRole("button", { name: "Place at playhead" }).click();
+    await screen.getByRole("menuitem", { name: "Place at playhead" }).click();
 
     await expect.poll(() => wordBegins("c1")).toEqual([30, 31.5]);
   });
@@ -140,7 +140,7 @@ describe("TimelineContextMenu · place at playhead", () => {
 
     it("places in one undo step and leaves the timed instance alone", async () => {
       const screen = await render(<TimelineContextMenu />);
-      await screen.getByRole("button", { name: "Place at playhead" }).click();
+      await screen.getByRole("menuitem", { name: "Place at playhead" }).click();
       await expect.poll(() => wordBegins("c1")).toEqual([30, 31.5]);
 
       expect(wordBegins("c0")).toEqual([10, 11.5]);
@@ -151,7 +151,7 @@ describe("TimelineContextMenu · place at playhead", () => {
 
     it("closes the menu", async () => {
       const screen = await render(<TimelineContextMenu />);
-      await screen.getByRole("button", { name: "Place at playhead" }).click();
+      await screen.getByRole("menuitem", { name: "Place at playhead" }).click();
 
       await expect.poll(() => useTimelineStore.getState().contextMenu).toBeNull();
     });

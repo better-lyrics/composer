@@ -1,22 +1,8 @@
 import { useSettingsStore } from "@/stores/settings";
-import { DETECTING_VOCAL_ONSETS } from "@/ui/vocal-onset-status-copy";
-import { cn } from "@/utils/cn";
-import { pluralize } from "@/utils/pluralize";
+import { Switch } from "@/ui/switch";
+import { describeOnsetStatus } from "@/ui/vocal-onset-status-copy";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconWaveSine } from "@tabler/icons-react";
-
-// -- Status hint --------------------------------------------------------------
-
-function describeOnsetStatus(
-  status: "idle" | "processing" | "error",
-  pointCount: number,
-  error: string | null,
-): string {
-  if (status === "processing") return DETECTING_VOCAL_ONSETS;
-  if (status === "error") return error ? `Detection failed: ${error}` : "Detection failed";
-  if (pointCount > 0) return pluralize(pointCount, "snap point");
-  return "Separate vocals to detect onsets";
-}
 
 // -- Components ----------------------------------------------------------------
 
@@ -29,32 +15,17 @@ const VocalOnsetSnapToggle: React.FC = () => {
   const hint = describeOnsetStatus(detectionStatus, pointCount, detectionError);
 
   return (
-    <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-md select-none">
-      <IconWaveSine
-        className={cn("size-4 shrink-0", enabled ? "text-composer-accent-text" : "text-composer-text opacity-55")}
-      />
+    <div className="flex items-center gap-2.5 select-none">
+      <IconWaveSine className="size-4 shrink-0 text-(--muted)" />
       <div className="flex flex-1 flex-col gap-0.5 min-w-0">
-        <span className="text-sm text-composer-text">Snap to vocal onsets</span>
-        <span className="text-xs text-composer-text-muted select-text truncate">{hint}</span>
+        <span className="text-[13px] font-medium text-composer-text">Snap to vocal onsets</span>
+        <span className="text-[12.5px] leading-[1.45] text-(--muted) select-text truncate">{hint}</span>
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={enabled}
-        aria-label="Snap to vocal onsets"
-        onClick={() => useSettingsStore.getState().set("vocalOnsetSnap", !enabled)}
-        className={cn(
-          "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors",
-          enabled ? "bg-composer-accent" : "bg-composer-button",
-        )}
-      >
-        <span
-          className={cn(
-            "pointer-events-none inline-block size-4 rounded-full bg-white shadow transform transition-transform mt-0.5",
-            enabled ? "translate-x-4.5" : "translate-x-0.5",
-          )}
-        />
-      </button>
+      <Switch
+        checked={enabled}
+        label="Snap to vocal onsets"
+        onCheckedChange={(checked) => useSettingsStore.getState().set("vocalOnsetSnap", checked)}
+      />
     </div>
   );
 };

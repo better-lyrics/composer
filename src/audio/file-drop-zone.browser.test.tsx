@@ -281,7 +281,7 @@ describe("FileDropZone ids", () => {
         </FileDropZone>,
       );
       const input = screen.getByLabelText("Upload audio or project file").element() as HTMLInputElement;
-      expect(input.accept).toBe("audio/*,.json,.ttml-project.json");
+      expect(input.accept).toBe("audio/*,.composer,.json,.ttml-project.json");
     });
 
     it("names project files in the message for a file it cannot use", async () => {
@@ -296,7 +296,9 @@ describe("FileDropZone ids", () => {
       const label = screen.container.querySelector("label") as HTMLLabelElement;
       dragFile(label, "drop", new File(["plain text"], "lyrics.txt", { type: "text/plain" }));
       await expect
-        .element(screen.getByText("Unsupported file type. Use .mp3 .wav .m4a .ogg .flac or a project file (.json)"))
+        .element(
+          screen.getByText("Unsupported file type. Use .mp3 .wav .m4a .ogg .flac or a project file (.composer .json)"),
+        )
         .toBeInTheDocument();
     });
 

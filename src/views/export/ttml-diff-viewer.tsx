@@ -24,14 +24,14 @@ interface DiffRow {
 // -- Constants ----------------------------------------------------------------
 
 const ROW_CLASS: Record<DiffKind, string> = {
-  add: "bg-green-500/10 text-green-300",
-  remove: "bg-red-500/10 text-red-300",
+  add: "bg-composer-positive/10 text-composer-positive",
+  remove: "bg-composer-negative/10 text-composer-negative",
   context: "text-composer-text-muted",
 };
 
 const MARK_CLASS: Record<DiffKind, string> = {
-  add: "bg-green-500/30 text-green-200 rounded-sm",
-  remove: "bg-red-500/30 text-red-200 rounded-sm",
+  add: "bg-composer-positive/30 text-composer-text rounded-sm",
+  remove: "bg-composer-negative/30 text-composer-text rounded-sm",
   context: "",
 };
 

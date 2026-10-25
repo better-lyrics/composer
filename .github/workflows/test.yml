@@ -62,6 +62,11 @@ jobs:
   component:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Chromium and its system libraries ship in the image, so no apt step can stall the job.
+    # Keep the tag on the playwright version in pnpm-lock.yaml.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host
 
     strategy:
       fail-fast: false
@@ -82,21 +87,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-
-      - name: Install Playwright Chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Install system deps for Playwright (cache hit case)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps chromium
 
       - name: Component tests (Chromium)
         run: pnpm test:component --shard=${{ matrix.shard }}/3

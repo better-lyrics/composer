@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { KEEPS_POPOVERS_OPEN_PROPS } from "@/ui/keeps-popovers-open";
 import { Popover } from "@/ui/popover";
 import { render } from "@/test/render";
 
@@ -123,6 +124,27 @@ describe("Popover", () => {
       );
       document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
       document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await expect.poll(() => requests).toEqual([false]);
+    });
+
+    it("stays open on a press inside a control marked to keep popovers open", async () => {
+      const requests: boolean[] = [];
+      const screen = await render(
+        <>
+          <div {...KEEPS_POPOVERS_OPEN_PROPS}>
+            <button type="button">Play</button>
+          </div>
+          <button type="button">Elsewhere</button>
+          <Popover open onOpenChange={(next) => requests.push(next)} trigger={<button type="button">Open</button>}>
+            <button type="button">Inside</button>
+          </Popover>
+        </>,
+      );
+      await expect.element(screen.getByRole("button", { name: "Inside" })).toHaveFocus();
+      await screen.getByRole("button", { name: "Play" }).click();
+      expect(requests).toEqual([]);
+      await expect.element(screen.getByRole("button", { name: "Inside" })).toHaveFocus();
+      await screen.getByRole("button", { name: "Elsewhere" }).click();
       await expect.poll(() => requests).toEqual([false]);
     });
 

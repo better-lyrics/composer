@@ -1,21 +1,39 @@
 import { Button } from "@/ui/button";
-import { cn } from "@/utils/cn";
+import { SingerTag } from "@/ui/singer-tag";
 import { formatTime } from "@/utils/format-time";
 import { pluralize } from "@/utils/pluralize";
 import { LoopToggle } from "@/views/timeline/loop-toggle";
 import { stopSelectionPlayback } from "@/views/timeline/selection-playback";
 import { selectionPlaybackIcon } from "@/views/timeline/selection-playback-icon";
-import { STRIP_CONTROL } from "@/views/timeline/strip-control";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { STRIP_BAR, STRIP_TAG, stripTint } from "@/views/timeline/strip-control";
+import { type SelectionPlaybackMode, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useSelectionPlaybackRange } from "@/views/timeline/use-selection-playback-range";
+
+// -- Interfaces ----------------------------------------------------------------
+
+interface SelectionPlaybackStripProps {
+  mode: SelectionPlaybackMode;
+  wordCount: number;
+  begin: number;
+  end: number;
+  loop: React.ReactNode;
+  onStop: () => void;
+}
+
+// -- Constants -----------------------------------------------------------------
+
+const ACCENT = "var(--color-composer-accent)";
 
 // -- Components ----------------------------------------------------------------
 
-const SelectionPlaybackBar: React.FC = () => {
-  const playback = useSelectionPlaybackRange();
-  const wordCount = useTimelineStore((s) => s.selectedWords.length);
-  const mode = useTimelineStore((s) => s.selectionPlayback);
-  if (!playback || !mode) return null;
+const SelectionPlaybackStrip: React.FC<SelectionPlaybackStripProps> = ({
+  mode,
+  wordCount,
+  begin,
+  end,
+  loop,
+  onStop,
+}) => {
   const ModeIcon = selectionPlaybackIcon(mode);
 
   return (
@@ -23,24 +41,44 @@ const SelectionPlaybackBar: React.FC = () => {
       data-selection-playback-bar
       role="group"
       aria-label="Playing selection"
-      className="flex h-10 shrink-0 select-none items-center gap-3 border-b border-composer-border bg-[color-mix(in_srgb,var(--color-composer-accent)_7%,var(--color-composer-bg-dark))] pl-3 pr-2 text-xs"
+      className={STRIP_BAR}
+      style={stripTint(ACCENT)}
     >
-      <span className="flex items-center gap-1.5 font-semibold text-composer-text">
-        <ModeIcon aria-hidden="true" className="size-3.5" />
-        {pluralize(wordCount, "word")}
-      </span>
-      <span className="select-text cursor-text tabular-nums text-composer-text-muted">
-        {`${formatTime(playback.selection.begin, 2)} to ${formatTime(playback.selection.end, 2)}`}
+      <SingerTag color={ACCENT} className={STRIP_TAG}>
+        <span className="flex items-center gap-1.5">
+          <ModeIcon aria-hidden="true" className="size-3.5" />
+          {pluralize(wordCount, "word")}
+        </span>
+      </SingerTag>
+      <span className="select-text cursor-text pl-1 tabular-nums text-composer-text-muted">
+        {`${formatTime(begin, 2)} to ${formatTime(end, 2)}`}
       </span>
       <span className="flex-1" />
-      <LoopToggle />
-      <Button size="sm" className={cn(STRIP_CONTROL, "px-2.5")} onClick={() => stopSelectionPlayback({ pause: true })}>
+      {loop}
+      <Button size="lg" className="shrink-0" onClick={onStop}>
         Stop
       </Button>
     </div>
   );
 };
 
+const SelectionPlaybackBar: React.FC = () => {
+  const playback = useSelectionPlaybackRange();
+  const wordCount = useTimelineStore((s) => s.selectedWords.length);
+  const mode = useTimelineStore((s) => s.selectionPlayback);
+  if (!playback || !mode) return null;
+  return (
+    <SelectionPlaybackStrip
+      mode={mode}
+      wordCount={wordCount}
+      begin={playback.selection.begin}
+      end={playback.selection.end}
+      loop={<LoopToggle />}
+      onStop={() => stopSelectionPlayback({ pause: true })}
+    />
+  );
+};
+
 // -- Exports -------------------------------------------------------------------
 
-export { SelectionPlaybackBar };
+export { SelectionPlaybackBar, SelectionPlaybackStrip };

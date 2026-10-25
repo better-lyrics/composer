@@ -1,7 +1,9 @@
 import { reconcileLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
+import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { EditPanel } from "@/views/edit";
+import { findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -71,16 +73,20 @@ describe("EditPanel · grouping suggestions", () => {
       await expect.element(screen.getByRole("button", { name: "Group them" })).toBeVisible();
     });
 
-    it("regression: sits below the editor so it never pushes the text down", async () => {
+    it("regression: never pushes the text down", async () => {
       useProjectStore.setState({ activeTab: "edit", lines: songWithTwoChoruses(), groups: [] });
       const screen = await render(<EditPanel />);
-      const button = screen.getByRole("button", { name: "Group them" });
-      await expect.element(button).toBeVisible();
-
+      await expect.element(screen.getByRole("button", { name: "Group them" })).toBeVisible();
+      const utilities = await installUtilitiesUsedIn(screen.container);
       const textarea = screen.container.querySelector("textarea");
       if (!textarea) throw new Error("textarea not rendered");
-      const follows = textarea.compareDocumentPosition(button.element()) & Node.DOCUMENT_POSITION_FOLLOWING;
-      expect(follows).toBeTruthy();
+      const topWithSuggestion = textarea.getBoundingClientRect().top;
+
+      store().dismissSuggestion(findRepeatingStandaloneSections(store().lines)[0].fingerprint);
+
+      await expect.element(screen.getByRole("button", { name: "Group them" })).not.toBeInTheDocument();
+      expect(textarea.getBoundingClientRect().top).toBe(topWithSuggestion);
+      utilities.remove();
     });
   });
 

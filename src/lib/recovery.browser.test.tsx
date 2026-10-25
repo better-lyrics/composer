@@ -84,7 +84,7 @@ describe("recovery", () => {
       expect(result.title).toBe("Drift");
       expect(result.lineCount).toBe(3);
       expect(result.savedAt).toBe(1715000000000);
-      expect(result.filename).toMatch(/^Drift-\d{4}-\d{2}-\d{2}\.ttml-project\.json$/);
+      expect(result.filename).toMatch(/^Drift-\d{4}-\d{2}-\d{2}\.composer$/);
     });
 
     it("falls back to 'Untitled' when metadata.title is missing or empty", async () => {
@@ -108,7 +108,7 @@ describe("recovery", () => {
         const result = await downloadRecoveryFile();
         expect(result.found).toBe(true);
         const dl = await capture.resolve();
-        expect(dl.filename).toMatch(/^Drift-\d{4}-\d{2}-\d{2}\.ttml-project\.json$/);
+        expect(dl.filename).toMatch(/^Drift-\d{4}-\d{2}-\d{2}\.composer$/);
         expect(dl.size).toBeGreaterThan(0);
       } finally {
         capture.cleanup();

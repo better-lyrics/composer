@@ -9,6 +9,11 @@ interface InlineKeyBadgeProps {
   text?: string;
 }
 
+// -- Constants ----------------------------------------------------------------
+
+const KEYCAP_CLASS =
+  "inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-medium rounded bg-current/10 leading-none shadow-[0_2px_0_0_rgba(0,0,0,0.3)]";
+
 // -- Component ----------------------------------------------------------------
 
 const InlineKeyBadge: React.FC<InlineKeyBadgeProps> = ({ keys, text }) => {
@@ -36,10 +41,7 @@ const InlineKeyBadge: React.FC<InlineKeyBadgeProps> = ({ keys, text }) => {
   return (
     <span data-inline-key-badge className="inline-flex items-center gap-0.5 ml-1.5">
       {resolvedKeys.map((key) => (
-        <span
-          key={key}
-          className="inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-medium rounded bg-current/10 leading-none shadow-[0_2px_0_0_rgba(0,0,0,0.3)]"
-        >
+        <span key={key} className={KEYCAP_CLASS}>
           {key === "Mod" && isMac ? <IconCommand className="size-2.5" /> : formatKey(key)}
         </span>
       ))}
@@ -49,4 +51,4 @@ const InlineKeyBadge: React.FC<InlineKeyBadgeProps> = ({ keys, text }) => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { InlineKeyBadge };
+export { InlineKeyBadge, KEYCAP_CLASS };

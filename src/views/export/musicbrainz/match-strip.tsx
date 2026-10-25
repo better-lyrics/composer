@@ -23,15 +23,16 @@ const LengthStatus: React.FC<{ match: RankedMatch }> = ({ match }) => {
   const delta = lengthDeltaLabel(match);
   if (match.matchesAudio && length) {
     return (
-      <span className="hidden shrink-0 items-center gap-1 text-xs text-composer-text-muted select-none sm:flex">
+      <span className="flex shrink-0 items-center gap-1 text-xs text-(--muted) select-none">
         <IconCheck className="size-3.5 text-composer-positive" />
-        <span className="tabular-nums">{length}</span> matches audio
+        <span className="tabular-nums">{length}</span>
+        <span className="sr-only">matches audio</span>
       </span>
     );
   }
   if (!delta) return null;
   return (
-    <span className="hidden shrink-0 items-center gap-1 text-xs text-composer-text-muted select-none sm:flex">
+    <span className="flex shrink-0 items-center gap-1 text-xs text-(--muted) select-none">
       <IconAlertTriangle className="size-3.5 text-composer-warning" />
       <span className="tabular-nums">{delta}</span>
     </span>
@@ -41,17 +42,17 @@ const LengthStatus: React.FC<{ match: RankedMatch }> = ({ match }) => {
 const MatchStrip: React.FC<MatchStripProps> = ({ matches, chosen, details, onChoose }) => {
   const subtitle = [details.artists.join(", "), details.releaseTitle, details.releaseYear].filter(Boolean).join(" ・ ");
   return (
-    <div className="flex items-center gap-3 rounded-[10px] border border-composer-border bg-composer-input p-2 pr-2.5">
-      <CoverArt
-        key={details.coverReleaseGroupId}
-        releaseGroupId={details.coverReleaseGroupId}
-        className="size-11 rounded-md"
-      />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-sm font-medium select-text cursor-text">{details.title}</span>
-        {subtitle && (
-          <span className="truncate text-xs text-composer-text-muted select-text cursor-text">{subtitle}</span>
-        )}
+    <div className="flex items-center gap-2.5 rounded-xl bg-(--layer-1) shadow-[inset_0_0_0_1px_var(--divider)] p-2">
+      <span className="size-10 shrink-0 overflow-hidden rounded-lg bg-(--layer-2)">
+        <CoverArt
+          key={details.coverReleaseGroupId}
+          releaseGroupId={details.coverReleaseGroupId}
+          className="size-10 rounded-lg"
+        />
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate text-[13px] font-semibold select-text cursor-text">{details.title}</span>
+        {subtitle && <span className="truncate text-xs text-(--muted) select-text cursor-text">{subtitle}</span>}
       </div>
       <LengthStatus match={chosen} />
       <Popover
@@ -59,9 +60,15 @@ const MatchStrip: React.FC<MatchStripProps> = ({ matches, chosen, details, onCho
         placement="bottom-end"
         aria-label="Change match"
         trigger={
-          <Button hasIcon variant="ghost" size="sm">
-            <IconSwitchHorizontal className="size-3.5" />
-            Change
+          <Button
+            hasIcon
+            variant="ghost"
+            size="sm"
+            aria-label="Change match"
+            title="Change match"
+            className="pl-2.5 pr-3"
+          >
+            <IconSwitchHorizontal className="size-4" />
           </Button>
         }
       >

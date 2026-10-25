@@ -27,10 +27,7 @@ const IconField: React.FC<IconFieldProps> = ({
   ...inputProps
 }) => (
   <div className={cn("relative flex items-center", wrapperClassName)}>
-    <FieldIcon
-      aria-hidden="true"
-      className="absolute left-2.5 size-4 text-composer-text opacity-50 pointer-events-none"
-    />
+    <FieldIcon aria-hidden="true" className="absolute left-2.5 size-4 text-(--muted) pointer-events-none" />
     <input
       ref={ref}
       type={type}
@@ -42,11 +39,7 @@ const IconField: React.FC<IconFieldProps> = ({
         if (staysLocal) event.stopPropagation();
         onKeyDown?.(event);
       }}
-      className={cn(
-        INPUT_STYLES,
-        "peer w-full h-8 pl-8 pr-3 rounded-lg hover:border-composer-border-hover placeholder:text-composer-text-muted select-text",
-        className,
-      )}
+      className={cn(INPUT_STYLES, "peer w-full h-8 pl-8 pr-3 rounded-lg select-text", className)}
     />
     {trailing && (
       <span className="absolute right-2 flex pointer-events-none peer-[:not(:placeholder-shown)]:hidden">

@@ -30,7 +30,7 @@ const LanguageStatusSummaries: React.FC<LanguageStatusSummariesProps> = ({ lines
     track.kind === "transliteration" ? "Transliteration" : (languageNames.get(track.language) ?? track.language);
 
   return (
-    <div className="flex flex-col gap-2 px-6 pt-4">
+    <div className="flex flex-col gap-2 px-4 pt-4 pb-3">
       <LanguageStatusBanner
         tone="error"
         aria-label="Language timing mismatches"

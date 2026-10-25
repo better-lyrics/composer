@@ -125,7 +125,7 @@ const SplitPickerLegend: React.FC<{ kinds: readonly SeparatorKind[] }> = ({ kind
         <Tooltip key={kind} content={LEGEND[kind].explanation}>
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 cursor-help rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-composer-accent"
+            className="inline-flex items-center gap-1.5 cursor-help rounded focus-visible:outline-none"
           >
             <span
               className={cn(
@@ -139,7 +139,7 @@ const SplitPickerLegend: React.FC<{ kinds: readonly SeparatorKind[] }> = ({ kind
           </button>
         </Tooltip>
       ))}
-      <span className="text-composer-text-faint">{LEGEND_SUMMARY[kinds.length]}</span>
+      <span className="text-composer-text-muted">{LEGEND_SUMMARY[kinds.length]}</span>
     </div>
   );
 };

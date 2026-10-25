@@ -19,7 +19,7 @@ const ImportSuccessBanner: React.FC<ImportSuccessBannerProps> = ({ result, filen
   const wordTimedCount = result.lines.filter((l) => l.words?.length).length;
 
   return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 text-sm rounded-lg bg-composer-accent/10 text-composer-accent-text">
+    <div className="flex items-center justify-between gap-2 h-9 pl-3 pr-1 text-[13px] rounded-xl bg-composer-accent/10 text-composer-accent-text">
       <div className="flex items-center gap-2">
         <IconFileImport className="size-4 shrink-0" />
         <span>
@@ -40,7 +40,7 @@ const ImportSuccessBanner: React.FC<ImportSuccessBannerProps> = ({ result, filen
         icon={<IconX className="size-4" />}
         variant="ghost"
         onClick={onDismiss}
-        className="size-6"
+        className="size-7 hover:bg-(--layer-2)"
       />
     </div>
   );

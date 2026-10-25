@@ -25,7 +25,7 @@ describe("lyrics import accepted files", () => {
 
   it("tells the user a project file works too when a file is refused", () => {
     expect(UNSUPPORTED_LYRICS_IMPORT_MESSAGE).toBe(
-      "Unsupported file type. Use .txt .lrc .srt .ttml .qrc or a project file (.json)",
+      "Unsupported file type. Use .txt .lrc .srt .ttml .qrc or a project file (.composer .json)",
     );
     expect(UNSUPPORTED_LYRICS_IMPORT_MESSAGE).toContain(PROJECT_FILE_PROSE);
   });

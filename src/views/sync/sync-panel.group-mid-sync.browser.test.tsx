@@ -6,7 +6,7 @@ import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { setCurrentTime } from "@/test/sync-gesture-helpers";
-import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
+import { GroupingNotices } from "@/test/grouping-notices";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -72,7 +72,7 @@ describe("SyncPanel · grouping mid-sync", () => {
   it("syncs one chorus and part of the next, groups from the Edit banner, and skips the grouped chorus", async () => {
     const screen = await render(
       <>
-        <GroupingSuggestionsBanner />
+        <GroupingNotices />
         <SyncPanel />
       </>,
     );
@@ -98,7 +98,7 @@ describe("SyncPanel · grouping mid-sync", () => {
     async function renderEditAndSync() {
       return render(
         <>
-          <GroupingSuggestionsBanner />
+          <GroupingNotices />
           <SyncPanel />
         </>,
       );

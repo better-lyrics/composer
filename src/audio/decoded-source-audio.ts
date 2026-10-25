@@ -1,4 +1,4 @@
-import { cropAudioBufferHead, parseLamePriming } from "@/audio/lame-priming";
+import { cropAudioBufferHead, parseLamePriming, primingStartFrame } from "@/audio/lame-priming";
 import { sharedAudioContext } from "@/audio/shared-audio-context";
 
 // -- Module state -------------------------------------------------------------
@@ -12,11 +12,7 @@ async function decodeWithoutPriming(source: Blob): Promise<AudioBuffer> {
   const priming = parseLamePriming(bytes);
   const ctx = sharedAudioContext();
   const decoded = await ctx.decodeAudioData(bytes);
-  const startSample =
-    priming.samples > 0 && priming.sampleRate > 0
-      ? Math.round((priming.samples * decoded.sampleRate) / priming.sampleRate)
-      : 0;
-  return cropAudioBufferHead(decoded, startSample, ctx);
+  return cropAudioBufferHead(decoded, primingStartFrame(priming, decoded.sampleRate), ctx);
 }
 
 function decodeSourceAudio(source: Blob): Promise<AudioBuffer> {

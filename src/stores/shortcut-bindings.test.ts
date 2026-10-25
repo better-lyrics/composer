@@ -10,6 +10,28 @@ import { SHORTCUT_REGISTRY } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
 import { describe, expect, it } from "vitest";
 
+describe("detectConflicts · layout keys", () => {
+  it("regression: keeps two layout keys apart, such as German Cmd+Shift+7 for / and Cmd+Shift+ß for ?", () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.settings": { key: "/", shift: true, mod: true } } });
+
+    const conflicts = detectConflicts("global.goToEdit", { key: "?", shift: true, mod: true });
+    expect(conflicts.map(({ id }) => id)).not.toContain("global.settings");
+  });
+});
+
+describe("assignBinding · key press read two ways", () => {
+  it("regression: unbinds a binding saved with the key as the browser reported it", () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.settings": { key: ".", shift: true, mod: true } } });
+    const pressedAs = { key: ".", shift: true, mod: true };
+
+    expect(
+      detectConflicts("global.goToEdit", { key: ">", shift: true, mod: true }, pressedAs).map(({ id }) => id),
+    ).toContain("global.settings");
+    assignBinding("global.goToEdit", { key: ">", shift: true, mod: true }, pressedAs);
+    expect(getEffectiveBinding("global.settings")).toEqual({ key: "" });
+  });
+});
+
 describe("assignBinding", () => {
   it("sets the binding", () => {
     assignBinding("timeline.toggleFollow", { key: "q" });
@@ -69,7 +91,79 @@ describe("migrateShortcutBindings", () => {
     expect(migrateShortcutBindings(saved, 0)).toEqual(saved);
   });
 
+  it("unbinds a timeline delete key when a saved timeline or global binding already uses it", () => {
+    const saved = { overrides: { "timeline.mergeWords": { key: "Delete" }, "global.goToSync": { key: "Backspace" } } };
+
+    expect(migrateShortcutBindings(saved, 2)).toEqual({
+      overrides: {
+        ...saved.overrides,
+        "timeline.deleteSelection": { key: "" },
+        "timeline.deleteSelectionAlternate": { key: "" },
+      },
+    });
+  });
+
+  it("unbinds a timeline clipboard shortcut when a saved timeline or global binding already uses its keys", () => {
+    const saved = { overrides: { "timeline.mergeWords": { key: "c", mod: true } } };
+
+    expect(migrateShortcutBindings(saved, 3)).toEqual({
+      overrides: { ...saved.overrides, "timeline.copy": { key: "" } },
+    });
+  });
+
+  it("leaves play/pause while typing unbound when a saved binding already uses Mod+Enter", () => {
+    const saved = { overrides: { "global.goToTimeline": { key: "Enter", mod: true } } };
+
+    expect(migrateShortcutBindings(saved, 4)).toEqual({
+      overrides: { ...saved.overrides, "global.playPauseWhileTyping": { key: "" } },
+    });
+  });
+
+  it("leaves a seek shortcut unbound when a saved binding already uses its keys", () => {
+    const saved = { overrides: { "timeline.toggleFollow": { key: "<", shift: true } } };
+
+    expect(migrateShortcutBindings(saved, 5)).toEqual({
+      overrides: { ...saved.overrides, "global.seekBackward": { key: "" } },
+    });
+  });
+
+  it("on macOS leaves a typing seek shortcut unbound when a saved Mod+Shift binding was stored unshifted", () => {
+    const saved = { overrides: { "global.settings": { key: ".", shift: true, mod: true } } };
+
+    expect(migrateShortcutBindings(saved, 5)).toEqual(
+      isMac ? { overrides: { ...saved.overrides, "global.seekForwardWhileTyping": { key: "" } } } : saved,
+    );
+  });
+
+  it("leaves a fine seek shortcut unbound when a saved binding already uses its keys", () => {
+    const saved = { overrides: { "timeline.toggleFollow": { key: ">", shift: true, alt: true } } };
+
+    expect(migrateShortcutBindings(saved, 6)).toEqual({
+      overrides: { ...saved.overrides, "global.seekForwardFine": { key: "" } },
+    });
+  });
+
+  it("regression: on macOS leaves fine seek unbound when a saved Option binding was stored as its glyph", () => {
+    const saved = { overrides: { "global.togglePlaybackSpeed": { key: "\u00af", shift: true, alt: true } } };
+
+    expect(migrateShortcutBindings(saved, 6)).toEqual(
+      isMac ? { overrides: { ...saved.overrides, "global.seekBackwardFine": { key: "" } } } : saved,
+    );
+  });
+
+  it("regression: keeps a Shift binding from another layout, such as German Shift+7 for /", () => {
+    const saved = { overrides: { "global.settings": { key: "/", shift: true } } };
+
+    expect(migrateShortcutBindings(saved, 5)).toEqual(saved);
+  });
+
   describe("edge cases", () => {
+    it("keeps the timeline delete keys when only another scope uses them", () => {
+      const saved = { overrides: { "sync.tap": { key: "Backspace" } } };
+
+      expect(migrateShortcutBindings(saved, 2)).toEqual(saved);
+    });
+
     it("leaves saved bindings without a collision untouched", () => {
       const saved = { overrides: { "timeline.toggleFollow": { key: "q" } } };
 

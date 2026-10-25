@@ -6,24 +6,31 @@ import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 
+async function openAgents(screen: Awaited<ReturnType<typeof render>>): Promise<void> {
+  await screen.getByRole("button", { name: /^Agents/ }).click();
+}
+
 describe("AgentManager", () => {
   it("renders one badge per agent in the project store", async () => {
     useProjectStore.setState({ agents: [...DEFAULT_AGENTS] });
     const screen = await render(<AgentManager />);
+    await openAgents(screen);
     for (const agent of DEFAULT_AGENTS) {
-      expect(screen.container.textContent).toContain(agent.id);
+      expect(document.body.textContent).toContain(agent.id);
     }
   });
 
   it("renders the Add button to create new agents", async () => {
     useProjectStore.setState({ agents: [...DEFAULT_AGENTS] });
     const screen = await render(<AgentManager />);
+    await openAgents(screen);
     await expect.element(screen.getByRole("button", { name: /Add/ })).toBeInTheDocument();
   });
 
   it("labels the agent name input in the edit popover", async () => {
     useProjectStore.setState({ agents: [...DEFAULT_AGENTS] });
     const screen = await render(<AgentManager />);
+    await openAgents(screen);
     await screen.getByRole("button", { name: /v1/ }).click();
     await expect.element(screen.getByRole("textbox", { name: "Agent name" })).toBeInTheDocument();
   });
@@ -31,6 +38,7 @@ describe("AgentManager", () => {
   it("labels the custom agent name input in the add popover", async () => {
     useProjectStore.setState({ agents: [...DEFAULT_AGENTS] });
     const screen = await render(<AgentManager />);
+    await openAgents(screen);
     await screen.getByRole("button", { name: /Add/ }).click();
     await expect.element(screen.getByRole("textbox", { name: "Custom agent name" })).toBeInTheDocument();
   });
@@ -44,6 +52,8 @@ describe("AgentManager", () => {
     });
     useProjectStore.getState().setLinesWithHistory([createLine({ id: "a", agentId: "v3" })]);
     const screen = await render(<AgentManager />);
+
+    await openAgents(screen);
 
     await screen.getByRole("button", { name: /v3/ }).click();
     const trash = document.querySelector<HTMLButtonElement>("button:has(.tabler-icon-trash)");
@@ -61,6 +71,7 @@ describe("AgentManager", () => {
   it("changes an agent's type via the type select and persists on save", async () => {
     useProjectStore.setState({ agents: [{ id: "v1", name: "Lead", type: "person" }] });
     const screen = await render(<AgentManager />);
+    await openAgents(screen);
     await screen.getByRole("button", { name: /v1/ }).click();
     await screen.getByRole("button", { name: "Agent type" }).click();
     await screen.getByRole("option", { name: "Group" }).click();
@@ -71,6 +82,7 @@ describe("AgentManager", () => {
   it("creates a custom agent with the chosen type", async () => {
     useProjectStore.setState({ agents: [{ id: "v1", name: "Lead", type: "person" }] });
     const screen = await render(<AgentManager />);
+    await openAgents(screen);
     await screen.getByRole("button", { name: /Add/ }).click();
     await screen.getByRole("textbox", { name: "Custom agent name" }).fill("Choir");
     await screen.getByRole("button", { name: "Custom agent type" }).click();
@@ -87,6 +99,7 @@ describe("AgentManager", () => {
       ],
     });
     const screen = await render(<AgentManager />);
+    await openAgents(screen);
     await screen.getByRole("button", { name: /v3/ }).click();
     await expect.element(screen.getByRole("button", { name: "Delete agent" })).toBeInTheDocument();
   });
@@ -98,6 +111,7 @@ describe("regressions", () => {
     const screen = await render(<AgentManager />);
 
     useProjectStore.getState().updateAgent("v1", { name: "Alice", type: "group" });
+    await openAgents(screen);
     await screen.getByRole("button", { name: /v1/ }).click();
     await expect.element(screen.getByRole("textbox", { name: "Agent name" })).toHaveValue("Alice");
     await screen.getByRole("button", { name: "Save" }).click();
@@ -111,10 +125,14 @@ describe("regressions", () => {
     useProjectStore.setState({ agents: [{ id: "v1", name: "Lead", type: "person" }] });
     const screen = await render(<AgentManager />);
 
+    await openAgents(screen);
+
     await screen.getByRole("button", { name: /v1/ }).click();
     await screen.getByRole("textbox", { name: "Agent name" }).fill("Draft");
     await userEvent.keyboard("{Escape}");
     await expect.element(screen.getByRole("textbox", { name: "Agent name" })).not.toBeInTheDocument();
+
+    await openAgents(screen);
 
     await screen.getByRole("button", { name: /v1/ }).click();
     await expect.element(screen.getByRole("textbox", { name: "Agent name" })).toHaveValue("Lead");

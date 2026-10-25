@@ -24,6 +24,7 @@ interface MbRelease {
 interface MbWorkRelation {
   type: string;
   "target-type": string;
+  "target-credit"?: string;
   artist?: { id: string; name: string };
 }
 

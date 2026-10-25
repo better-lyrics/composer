@@ -2,8 +2,25 @@
  * @vitest-environment node
  */
 import type { LyricLine } from "@/domain/line/model";
+import { detectedGrid } from "@/domain/tempo/beat-grid";
+import { gridPoints } from "@/domain/tempo/grid-points";
 import { describe, expect, it } from "vitest";
-import { type SnapAnchor, collectSnapAnchors, findSnapShift, selfKey } from "./snap";
+import {
+  type SnapAnchor,
+  activeSnapAnchors,
+  beatAnchors,
+  collectSnapAnchors,
+  findSnapShift,
+  selfKey,
+} from "@/views/timeline/snap";
+
+const ALL_SOURCES = {
+  timelineSnap: true,
+  vocalOnsetSnap: true,
+  beatSnap: true,
+  snapWordsAndLines: true,
+  snapMarkers: true,
+};
 
 // -- Fixtures ------------------------------------------------------------------
 
@@ -73,6 +90,11 @@ describe("collectSnapAnchors", () => {
     expect(anchors.filter((a) => a.kind === "word-begin" || a.kind === "word-end")).toEqual([]);
   });
 
+  it("excludes a line-synced line's own edges when its block is a self word", () => {
+    const anchors = collectSnapAnchors([lineSyncedLine()], new Set([selfKey("l2", 0, "word")]), null);
+    expect(anchors.filter((a) => a.lineId === "l2")).toEqual([]);
+  });
+
   it("excludes self words by composite selfKey(lineId, wordIndex, track)", () => {
     const selfIds = new Set([selfKey("l1", 1, "word")]);
     const anchors = collectSnapAnchors([wordTimedLine()], selfIds, null);
@@ -112,46 +134,52 @@ describe("collectSnapAnchors", () => {
     expect(onsets.every((a) => a.label === "vocal onset")).toBe(true);
   });
 
-  it("can collect vocal onset snap points without timeline anchors", () => {
-    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), 0.42, [0.12, 0.72], false);
+  it("can keep vocal onset snap points without word anchors", () => {
+    const anchors = activeSnapAnchors(collectSnapAnchors([wordTimedLine()], new Set(), null, [0.12, 0.72]), {
+      ...ALL_SOURCES,
+      snapWordsAndLines: false,
+    });
     expect(anchors.map((a) => a.kind)).toEqual(["vocal-onset", "vocal-onset"]);
     expect(anchors.map((a) => a.t)).toEqual([0.12, 0.72]);
   });
 
   it("emits one custom anchor per finite, non-negative custom time", () => {
-    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [], true, [0.25, 0.85]);
+    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [], [0.25, 0.85]);
     const customs = anchors.filter((a) => a.kind === "custom");
     expect(customs.map((a) => a.t)).toEqual([0.25, 0.85]);
     expect(customs.every((a) => a.label === "custom")).toBe(true);
   });
 
   it("filters out non-finite and negative custom times", () => {
-    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [], true, [
-      -1,
-      0,
-      Number.NaN,
-      Number.POSITIVE_INFINITY,
-      0.5,
-    ]);
+    const anchors = collectSnapAnchors(
+      [wordTimedLine()],
+      new Set(),
+      null,
+      [],
+      [-1, 0, Number.NaN, Number.POSITIVE_INFINITY, 0.5],
+    );
     const customTimes = anchors.filter((a) => a.kind === "custom").map((a) => a.t);
     expect(customTimes).toEqual([0, 0.5]);
   });
 
   it("emits no custom anchors for an empty custom-times array", () => {
-    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [0.1], true, []);
+    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [0.1], []);
     expect(anchors.some((a) => a.kind === "custom")).toBe(false);
   });
 
   it("coexists with vocal-onset anchors when both arrays are provided", () => {
-    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [0.12], true, [0.9]);
+    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [0.12], [0.9]);
     const onsets = anchors.filter((a) => a.kind === "vocal-onset");
     const customs = anchors.filter((a) => a.kind === "custom");
     expect(onsets.map((a) => a.t)).toEqual([0.12]);
     expect(customs.map((a) => a.t)).toEqual([0.9]);
   });
 
-  it("can collect custom snap points without timeline anchors", () => {
-    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), 0.42, [], false, [0.3, 0.7]);
+  it("can keep custom snap points without word anchors", () => {
+    const anchors = activeSnapAnchors(collectSnapAnchors([wordTimedLine()], new Set(), null, [], [0.3, 0.7]), {
+      ...ALL_SOURCES,
+      snapWordsAndLines: false,
+    });
     expect(anchors.map((a) => a.kind)).toEqual(["custom", "custom"]);
     expect(anchors.map((a) => a.t)).toEqual([0.3, 0.7]);
   });
@@ -159,8 +187,8 @@ describe("collectSnapAnchors", () => {
   it("backward-compat: calling without the custom-times arg is unchanged", () => {
     const lines = [wordTimedLine(), lineSyncedLine()];
     const onsets = [0.12, 0.72];
-    const withoutArg = collectSnapAnchors(lines, new Set(), 1.5, onsets, true);
-    const withEmptyArg = collectSnapAnchors(lines, new Set(), 1.5, onsets, true, []);
+    const withoutArg = collectSnapAnchors(lines, new Set(), 1.5, onsets);
+    const withEmptyArg = collectSnapAnchors(lines, new Set(), 1.5, onsets, []);
     expect(withoutArg).toEqual(withEmptyArg);
     expect(withoutArg.some((a) => a.kind === "custom")).toBe(false);
   });
@@ -181,6 +209,70 @@ describe("collectSnapAnchors", () => {
     const empty: LyricLine = { id: "lx", text: "no timing", agentId: "v1" };
     const anchors = collectSnapAnchors([empty], new Set(), null);
     expect(anchors).toEqual([]);
+  });
+});
+
+// -- activeSnapAnchors ---------------------------------------------------------
+
+describe("activeSnapAnchors", () => {
+  const all = collectSnapAnchors([wordTimedLine(), lineSyncedLine()], new Set(), 0.42, [0.12], [0.9]).concat(
+    beatAnchors([{ t: 1.5, kind: "bar", bar: 1, division: 1 }]),
+  );
+  const kinds = (overrides: Partial<typeof ALL_SOURCES>) =>
+    new Set(activeSnapAnchors(all, { ...ALL_SOURCES, ...overrides }).map((a) => a.kind));
+
+  it("keeps every kind when every source is on", () => {
+    expect(kinds({})).toEqual(
+      new Set(["word-begin", "word-end", "line-begin", "line-end", "playhead", "vocal-onset", "custom", "beat"]),
+    );
+  });
+
+  // Intentional change: the Snap latch is the master switch, so custom markers no longer snap while it is off.
+  it("returns no anchor of any kind when the master switch is off", () => {
+    expect(activeSnapAnchors(all, { ...ALL_SOURCES, timelineSnap: false })).toEqual([]);
+  });
+
+  it("removes exactly the kinds of each source switch", () => {
+    const every = kinds({});
+    const without = (...removed: string[]) => new Set([...every].filter((kind) => !removed.includes(kind)));
+    expect(kinds({ snapMarkers: false })).toEqual(without("custom"));
+    expect(kinds({ vocalOnsetSnap: false })).toEqual(without("vocal-onset"));
+    expect(kinds({ beatSnap: false })).toEqual(without("beat"));
+    expect(kinds({ snapWordsAndLines: false })).toEqual(without("word-begin", "word-end", "line-begin", "line-end"));
+  });
+});
+
+// -- beatAnchors ---------------------------------------------------------------
+
+describe("beatAnchors", () => {
+  const beats = Array.from({ length: 17 }, (_, i) => i * 0.5);
+  const grid120 = detectedGrid({ beats, downbeats: beats.filter((_, i) => i % 4 === 0) });
+
+  it("labels each grid point as its line", () => {
+    const anchors = beatAnchors(gridPoints(grid120, 0, 1, 200, "2"));
+    expect(anchors.map((a) => [a.t, a.kind, a.label])).toEqual([
+      [0, "beat", "Bar 1"],
+      [0.25, "beat", "1/2"],
+      [0.5, "beat", "Beat"],
+      [0.75, "beat", "1/2"],
+      [1, "beat", "Beat"],
+      [1.25, "beat", "1/2"],
+    ]);
+  });
+
+  it("makes no anchor for a thinned subdivision", () => {
+    const anchors = beatAnchors(gridPoints(grid120, 0, 8, 40, "2"));
+    expect(anchors.length).toBeGreaterThan(0);
+    expect(anchors.some((a) => a.label === "1/2")).toBe(false);
+  });
+
+  it("lets the closest anchor win between a beat and a word edge", () => {
+    const word: SnapAnchor = { t: 1.05, kind: "word-begin", label: "word" };
+    const nearBeat: SnapAnchor = { t: 0.97, kind: "beat", label: "Beat" };
+    const farBeat: SnapAnchor = { t: 0.94, kind: "beat", label: "Beat" };
+    const zoom = 100;
+    expect(findSnapShift({ edges: [1.0], anchors: [word, nearBeat], zoom, threshold: 8 }).anchor).toBe(nearBeat);
+    expect(findSnapShift({ edges: [1.0], anchors: [word, farBeat], zoom, threshold: 8 }).anchor).toBe(word);
   });
 });
 

@@ -13,6 +13,7 @@ import {
 } from "@/test/timeline-dnd-rows";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { wordInsetPx } from "@/views/timeline/row-geometry";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -58,8 +59,10 @@ describe("TimelinePanel drag ghost snapping", () => {
     const bg = trackRect(1, "bg");
     movePointer(bg.left + 400, bg.top + bg.height / 2);
 
-    await expect.poll(() => ghostBlock()?.getBoundingClientRect().height).toBeCloseTo(bg.height - 8, 0);
-    expect(ghostBlock()?.getBoundingClientRect().top).toBeCloseTo(bg.top + 4, 0);
+    await expect
+      .poll(() => ghostBlock()?.getBoundingClientRect().height)
+      .toBeCloseTo(bg.height - 2 * wordInsetPx("bg"), 0);
+    expect(ghostBlock()?.getBoundingClientRect().top).toBeCloseTo(bg.top + wordInsetPx("bg"), 0);
 
     releasePointer(bg.left + 400, bg.top + bg.height / 2);
     await expect
@@ -79,8 +82,8 @@ describe("TimelinePanel drag ghost snapping", () => {
     expect(main.height).toBe(80);
     movePointer(main.left + 400, main.top + 60);
 
-    await expect.poll(() => ghostBlock()?.getBoundingClientRect().height).toBeCloseTo(72, 0);
-    expect(ghostBlock()?.getBoundingClientRect().top).toBeCloseTo(main.top + 4, 0);
+    await expect.poll(() => ghostBlock()?.getBoundingClientRect().height).toBeCloseTo(80 - 2 * wordInsetPx("word"), 0);
+    expect(ghostBlock()?.getBoundingClientRect().top).toBeCloseTo(main.top + wordInsetPx("word"), 0);
   });
 
   it("keeps the ghost unsnapped at its source height when no track is under the pointer", async () => {
@@ -89,6 +92,6 @@ describe("TimelinePanel drag ghost snapping", () => {
     movePointer(2, 2);
 
     await expect.poll(() => useTimelineStore.getState().wordDragHover).toBeNull();
-    expect(ghostBlock()?.getBoundingClientRect().height).toBeCloseTo(44 - 8, 0);
+    expect(ghostBlock()?.getBoundingClientRect().height).toBeCloseTo(44 - 2 * wordInsetPx("word"), 0);
   });
 });

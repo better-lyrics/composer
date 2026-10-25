@@ -4,12 +4,11 @@ import { HelpTopic } from "@/ui/help-topic";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SettingLink } from "@/ui/setting-link";
 import { PROSE } from "@/ui/typography";
-import { MOD_KEY } from "@/utils/platform";
 
 // -- Linked Groups ------------------------------------------------------------
 
 const GroupsSection: React.FC = () => (
-  <div className="space-y-5">
+  <div className="space-y-[22px] max-w-[68ch]">
     <p className={PROSE}>
       A group is a set of contiguous lines that repeat in the song (chorus, verse, bridge). Group them once and edits to
       text, splits, agents, or background vocals propagate to every instance. Each instance sits at its own place in the
@@ -26,7 +25,7 @@ const GroupsSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Creating a group">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>Select the lines you want to group (click, then Shift-click the last line, or drag down the gutter).</li>
         <li>
           Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.createGroup")} />, or right-click any selected
@@ -46,7 +45,7 @@ const GroupsSection: React.FC = () => (
         <InlineKeyBadge keys={getEffectiveKeysArray("timeline.duplicateAsLinked")} /> (or right-click the banner and
         pick "Add instance at playhead"). Composer picks one of three landings, in this order:
       </p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           <strong>Fills empty placeholder rows in place</strong> if a matching run of empty rows sits right after the
           last timed line ending at or before the playhead. Nothing shifts down, the placeholders just light up.
@@ -58,13 +57,15 @@ const GroupsSection: React.FC = () => (
         <li>
           <strong>Copies the instance to the clipboard and opens the paste-preview ghost</strong> if the playhead is
           inside a playing line, the gap is too small, or you've already passed the last lyric. Toast says where to go
-          next: "No room at the playhead. {MOD_KEY} + V to paste somewhere clear." Move the cursor to a row you like and
-          click to drop it.
+          next: "No room at the playhead." Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.paste")} /> to
+          paste somewhere clear. Move the cursor to a row you like and click to drop it.
         </li>
       </ul>
       <p className={`${PROSE} mt-2`}>
-        You can also use the regular clipboard: select every word of an instance ({MOD_KEY} + C with the banner
-        selected), then paste ({MOD_KEY} + V) somewhere else. Same fill/insert behavior at the destination.
+        You can also use the regular clipboard: select every word of an instance (
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.copy")} /> with the banner selected), then paste (
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.paste")} />) somewhere else. Same fill/insert behavior at
+        the destination.
       </p>
       <p className={`${PROSE} mt-2`}>
         A third route is <strong>Conform</strong>: select contiguous ungrouped lines, right-click, and pick "Conform to
@@ -76,10 +77,12 @@ const GroupsSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="The banner">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
-          <strong>Click anywhere on it</strong>: selects every word in the instance. Use this before arrow-key nudge,
-          {MOD_KEY} + C, or any of the keyboard shortcuts below.
+          <strong>Click anywhere on it</strong>: selects every word in the instance. Use this before nudging with{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeLeft")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeRight")} />,{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.copy")} />, or any of the keyboard shortcuts below.
         </li>
         <li>
           <strong>Drag horizontally</strong>: shifts the entire instance in time. Sibling instances stay put. The lines
@@ -90,8 +93,9 @@ const GroupsSection: React.FC = () => (
           strip during playback so you can still tell where you are in the section.
         </li>
         <li>
-          <strong>Right-click</strong>: opens the group menu (rename, recolor, add instance, shift to playhead, detach
-          instance, delete group).
+          <strong>Right-click</strong>: opens the group menu. From there you can open the group, collapse the instance,
+          jump between instances, ping siblings, add or shift an instance at the playhead, switch between own and shared
+          timing, rename, recolor, detach the instance, or delete the group.
         </li>
         <li>
           <strong>Double-click the group name</strong>: drops the gutter label into an inline input so you can rename
@@ -112,7 +116,7 @@ const GroupsSection: React.FC = () => (
         Most of these act on the instance containing your current selection. Click a banner first to "focus" an
         instance.
       </p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.createGroup")} />: group selected lines.
         </li>
@@ -160,24 +164,24 @@ const GroupsSection: React.FC = () => (
       </p>
     </HelpTopic>
 
-    <HelpTopic title="Suggestions banner">
+    <HelpTopic title="Grouping suggestions">
       <p className={PROSE}>
-        When Composer detects two or more contiguous runs of identical lines that aren't grouped yet, a small bulb
-        banner appears below the lyrics in Edit (hidden while you type) and under the Timeline toolbar. With{" "}
+        When Composer detects two or more contiguous runs of identical lines that aren't grouped yet, a bulb suggestion
+        appears in the header pill of Edit (hidden while you type) and the Timeline. With{" "}
         <SettingLink setting="shareTimingInNewGroups" /> on, group them in Edit before you sync, so each chorus shares
-        its timing from the first tap. One suggestion shows inline with a Group them button. Multiple suggestions
-        collapse into a Review N button that opens a modal with each block previewed and a per-row Group / dismiss
-        action, plus a Group all button.
+        its timing from the first tap. One suggestion shows a Group them button in the pill. Click the pill, or Review,
+        to open the list with each block previewed, a per-row Group and dismiss, and Group all.
       </p>
       <p className={`${PROSE} mt-2`}>
         Dismissals are per-project and content-based, so adding or removing unrelated lines elsewhere will not bring a
-        suggestion back. Editing the actual text inside a dismissed block does, since the structure has changed.
+        suggestion back. Editing the actual text inside a dismissed block does, since the structure has changed. A
+        dismissal can be undone for a few seconds, and Show dismissed at the bottom of the list brings them all back.
       </p>
     </HelpTopic>
 
     <HelpTopic title="Pasting between instances">
       <p className={PROSE}>Two paste flows can land in an instance, and both behave the same way at the destination:</p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           Copy every word of an existing instance and paste somewhere. Composer treats the clipboard as a known instance
           and links the destination automatically.

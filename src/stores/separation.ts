@@ -19,7 +19,7 @@ import {
 import type { SeparationError, SeparationStatus, Stem } from "@/audio/separation/types";
 import { hasOnlyFiniteSamples } from "@/audio/separation/validate-channels";
 import type { SeparationWorker } from "@/audio/separation/worker-host";
-import { useAudioStore } from "@/stores/audio";
+import { playableFile, useAudioStore } from "@/stores/audio";
 import { runModelDownload } from "@/stores/separation-model-download";
 import { useSettingsStore } from "@/stores/settings";
 import { create } from "zustand";
@@ -95,7 +95,7 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
     endSeparationRun();
     revokeUrls(get().stemUrls);
     const source = useAudioStore.getState().source;
-    const file = source?.type === "file" ? source.file : source?.type === "youtube" ? source.file : null;
+    const file = playableFile(source);
     if (!file) {
       set({ jobKey: null, availableStems: ["original"], stemUrls: {}, currentStem: "original", status: "idle" });
       return;
@@ -152,7 +152,7 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
       return;
     }
     const source = useAudioStore.getState().source;
-    const file = source?.type === "file" ? source.file : source?.type === "youtube" ? source.file : null;
+    const file = playableFile(source);
     if (!file) return;
 
     isCancelling = false;

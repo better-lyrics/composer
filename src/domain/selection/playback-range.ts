@@ -4,6 +4,7 @@ import type { Bounds } from "@/domain/word/bounds";
 // -- Types --------------------------------------------------------------------
 
 interface PlaybackRangeSources {
+  region: Bounds | null;
   selection: Bounds | null;
   focus: Bounds | null;
   leadIn: number;
@@ -12,7 +13,8 @@ interface PlaybackRangeSources {
 
 // -- Functions ----------------------------------------------------------------
 
-function playbackRange({ selection, focus, leadIn, duration }: PlaybackRangeSources): Bounds | null {
+function playbackRange({ region, selection, focus, leadIn, duration }: PlaybackRangeSources): Bounds | null {
+  if (region) return region;
   if (!selection) return focus;
   const song = wholeSongRange(duration);
   return { begin: Math.max(song.min, selection.begin - leadIn), end: Math.min(song.max, selection.end + leadIn) };

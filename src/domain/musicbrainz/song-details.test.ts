@@ -129,6 +129,30 @@ describe("songDetailsFrom", () => {
       ).toEqual(["A", "B"]);
     });
 
+    it("regression: uses the name the work credits, falling back to the artist name", () => {
+      const artist = { id: "barikader", name: "Barikader" };
+      const recording: MbRecording = {
+        id: "r",
+        title: "Ну я хоть попытался (а ты?)",
+        relations: [
+          {
+            type: "performance",
+            "target-type": "work",
+            work: {
+              id: "w",
+              title: "Ну я хоть попытался (а ты?)",
+              relations: [
+                { type: "composer", "target-type": "artist", "target-credit": "Bondarenko Kyrylo", artist },
+                { type: "lyricist", "target-type": "artist", "target-credit": "Bondarenko Kyrylo", artist },
+                { type: "writer", "target-type": "artist", "target-credit": "", artist: { id: "b", name: "B" } },
+              ],
+            },
+          },
+        ],
+      };
+      expect(songDetailsFrom(recording).songwriters).toEqual(["Bondarenko Kyrylo", "B"]);
+    });
+
     it("lists each credited artist separately", () => {
       const recording: MbRecording = {
         id: "r",

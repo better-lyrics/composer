@@ -202,7 +202,7 @@ describe("SettingsModal search", () => {
     useSettingsStore.setState({ smartCleanup: false });
     const screen = await openModal();
     await searchBox(screen).fill("quota limit");
-    await expect.element(screen.getByRole("status")).toHaveTextContent('No settings match "quota limit"');
+    await expect.element(screen.getByRole("status")).toHaveTextContent("No settings match “quota limit”");
     await expect.element(screen.getByRole("button", { name: "Save & Storage" })).toHaveAttribute("data-dimmed");
 
     useSettingsStore.setState({ smartCleanup: true });
@@ -228,7 +228,7 @@ describe("SettingsModal search", () => {
   it("shows no matches with a clear action", async () => {
     const screen = await openModal();
     await searchBox(screen).fill("zzzqqq");
-    await expect.element(screen.getByRole("status")).toHaveTextContent('No settings match "zzzqqq"');
+    await expect.element(screen.getByRole("status")).toHaveTextContent("No settings match “zzzqqq”");
     await screen.getByRole("button", { name: "Clear search" }).first().click();
     await expect.element(searchBox(screen)).toHaveValue("");
   });

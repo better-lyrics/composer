@@ -1,7 +1,7 @@
 import { Button } from "@/ui/button";
+import { Checkbox } from "@/ui/checkbox";
 import { SplitPicker, SplitPickerLegend } from "@/ui/split-picker";
 import { separatorKinds } from "@/utils/split-separators";
-import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
 import { useMemo } from "react";
 
@@ -68,26 +68,12 @@ const SplitApplyControls: React.FC<
   >
 > = ({ applyToAll, onApplyToAllChange, caseInsensitive, onCaseInsensitiveChange, identicalCount, sourceText }) => (
   <div className="flex flex-col gap-2">
-    <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
-      {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
-      <input type="checkbox" checked={applyToAll} onChange={(e) => onApplyToAllChange(e.target.checked)} />
-      <span>Apply to all identical words</span>
-    </label>
-    <label
-      className={cn(
-        "flex items-center gap-2 select-none text-sm",
-        applyToAll ? "cursor-pointer" : "opacity-50 cursor-not-allowed",
-      )}
-    >
-      {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
-      <input
-        type="checkbox"
-        checked={applyToAll && caseInsensitive}
-        onChange={(e) => onCaseInsensitiveChange(e.target.checked)}
-        disabled={!applyToAll}
-      />
-      <span>Case-insensitive matching</span>
-    </label>
+    <Checkbox checked={applyToAll} onCheckedChange={onApplyToAllChange}>
+      Apply to all identical words
+    </Checkbox>
+    <Checkbox checked={applyToAll && caseInsensitive} onCheckedChange={onCaseInsensitiveChange} disabled={!applyToAll}>
+      Case-insensitive matching
+    </Checkbox>
     {applyToAll && identicalCount > 0 && (
       <p className="text-sm text-composer-text-secondary">
         This will also split {pluralize(identicalCount, `other "${sourceText}"`)}

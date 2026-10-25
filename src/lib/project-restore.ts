@@ -1,3 +1,4 @@
+import { type ResumePosition, isResumePosition } from "@/domain/project/resume-position";
 import { type ProjectTab, isProjectTab } from "@/domain/project/tab";
 import { applySavedProject } from "@/lib/apply-saved-project";
 import { stripLamePriming } from "@/lib/priming-migration";
@@ -8,6 +9,7 @@ import { type SavedProject, upgradeSavedProject } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
+import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types --------------------------------------------------------------------
@@ -16,12 +18,18 @@ interface RestorePayload {
   project: SavedProject | undefined;
   audio: File | undefined;
   lastTab: ProjectTab | undefined;
+  resumePosition: ResumePosition | undefined;
 }
 
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[ProjectRestore]";
-const EMPTY_RESTORE: RestorePayload = { project: undefined, audio: undefined, lastTab: undefined };
+const EMPTY_RESTORE: RestorePayload = {
+  project: undefined,
+  audio: undefined,
+  lastTab: undefined,
+  resumePosition: undefined,
+};
 
 // -- Module state -------------------------------------------------------------
 
@@ -40,7 +48,12 @@ async function loadProjectForRestore(id: string): Promise<RestorePayload> {
     const primingStripped = await stripLamePriming(project, audio);
     if (upgraded || primingStripped) await saveProjectRecord(id, project);
   }
-  return { project, audio, lastTab: isProjectTab(entry?.lastTab) ? entry.lastTab : undefined };
+  return {
+    project,
+    audio,
+    lastTab: isProjectTab(entry?.lastTab) ? entry.lastTab : undefined,
+    resumePosition: isResumePosition(entry?.resumePosition) ? entry.resumePosition : undefined,
+  };
 }
 
 function hasStoredProject(payload: RestorePayload): boolean {
@@ -76,6 +89,13 @@ function applyStoredProject(project: SavedProject, audio: File | undefined): voi
   );
 }
 
+// Runs after the source is set, because setting a source resets the playhead to 0.
+function resumeTimeline(position: ResumePosition): void {
+  useTimelineStore.getState().setZoom(position.zoom);
+  useAudioStore.getState().seekTo(position.time);
+  useTimelineStore.getState().setPendingResumeView(position);
+}
+
 function applyProjectToStores(payload: RestorePayload): void {
   restoring = true;
   try {
@@ -83,6 +103,7 @@ function applyProjectToStores(payload: RestorePayload): void {
     if (payload.project) applyStoredProject(payload.project, payload.audio);
     else if (payload.audio) useAudioStore.getState().setSource({ type: "file", file: payload.audio });
     if (payload.lastTab) useProjectStore.getState().setActiveTab(payload.lastTab);
+    resumeTimeline(payload.resumePosition ?? { time: 0, zoom: useSettingsStore.getState().defaultZoom });
     useProjectStore.getState().markClean();
   } finally {
     restoring = false;

@@ -120,7 +120,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
     if (editMode && lineBegin !== undefined && lineEnd !== undefined) {
       return (
         <span className="relative inline-block">
-          <span className="text-composer-text-muted">{renderedText}</span>
+          <span className="text-(--muted)">{renderedText}</span>
           <span
             className="absolute inset-0 overflow-hidden text-composer-accent-text"
             data-word-begin={lineBegin}
@@ -132,11 +132,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
         </span>
       );
     }
-    return (
-      <span className={lineBegin !== undefined ? "text-composer-text-muted" : "text-composer-text"}>
-        {renderedText}
-      </span>
-    );
+    return <span className={lineBegin !== undefined ? "text-(--muted)" : "text-composer-text"}>{renderedText}</span>;
   };
 
   const showSyllableIndicators = useSettingsStore((s) => s.showSyllableIndicators);
@@ -268,74 +264,68 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
       ref={lineRef}
       role="button"
       tabIndex={-1}
+      aria-current={isCurrent || undefined}
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === "Enter") onClick();
       }}
-      className={cn(
-        "flex items-start gap-3 px-4 py-2 w-full text-left cursor-pointer transition-colors hover:bg-composer-button/50 border-l",
-        isCurrent ? "bg-composer-accent/10 border-composer-accent" : "border-transparent",
-      )}
+      className={cn("group/row flex w-full text-left cursor-pointer", isCurrent && "bg-composer-accent/7")}
     >
-      <span className="flex flex-col items-center gap-1 mt-1 w-10 shrink-0">
-        <span className="flex items-center gap-1.5 w-full">
-          <span
-            className="size-2 rounded-full shrink-0"
-            style={{
-              backgroundColor: agentId ? getAgentColor(agentId) : "transparent",
-            }}
-            title={agentId}
-          />
-          <span className="flex-1 font-mono text-xs text-right text-composer-text-muted tabular-nums">
-            {lineNumber}
-          </span>
+      <span
+        className="line-cell flex justify-center w-12 shrink-0 h-auto"
+        style={{ "--agent": getAgentColor(agentId ?? "") }}
+        title={agentId}
+      >
+        <span
+          className={cn(
+            "grid place-items-center h-10 font-mono font-medium text-xs tabular-nums",
+            isCurrent ? "font-semibold text-composer-text" : "text-(--muted)",
+          )}
+        >
+          {lineNumber}
         </span>
+      </span>
+      <span className="flex flex-1 min-w-0 items-start gap-4 pt-2.5 pb-3 px-5 border-b border-(--divider) transition-colors group-hover/row:bg-(--layer-1)">
+        <div className="flex flex-col flex-1 min-w-0 gap-2 text-[17px] font-medium leading-6">
+          {granularity === "line" || lineSynced ? (
+            <div className="flex items-center justify-between gap-3">
+              {renderLineContent()}
+              {lineBegin !== undefined && onNudgeLine && onSetLineTime && (
+                <TimeNudgeInput
+                  value={lineBegin}
+                  currentTime={currentTime}
+                  canDecrease
+                  canIncrease
+                  onNudge={onNudgeLine}
+                  onSetTime={onSetLineTime}
+                />
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-x-3.5 gap-y-2 items-end">
+              {renderWordList(wordTexts, words, mainWordHandlers, mainSyllableGroups, "main")}
+            </div>
+          )}
+          {bgWordTexts.length > 0 && (
+            <div className="flex flex-wrap gap-x-3.5 gap-y-2 items-end">
+              {renderWordList(bgWordTexts, backgroundWords, bgWordHandlers, bgSyllableGroups, "bg", true)}
+            </div>
+          )}
+        </div>
         {linkInfo && (
           <span
-            className="flex items-center gap-1 px-1.5 h-4 text-[10px] rounded-md select-none"
+            className="flex shrink-0 items-center gap-[5px] h-5 mt-[3px] pl-1.5 pr-2 rounded-md text-[11.5px] font-semibold tabular-nums whitespace-nowrap select-none"
             title={`Linked: ${linkInfo.label} ${linkInfo.ordinal}/${linkInfo.totalInstances}`}
-            style={{
-              background: `color-mix(in srgb, ${linkInfo.color} 18%, transparent)`,
-              color: linkInfo.color,
-            }}
+            style={{ background: `color-mix(in oklab, ${linkInfo.color} 18%, transparent)`, color: linkInfo.color }}
           >
-            <IconLink className="size-2.5" />
-            {linkInfo.shared ? (
-              <span>Shared</span>
-            ) : (
-              <span className="tabular-nums">
-                {linkInfo.ordinal}/{linkInfo.totalInstances}
-              </span>
-            )}
+            <IconLink className="size-3" />
+            <span className="max-w-32 truncate">{linkInfo.label}</span>
+            <span className="font-medium opacity-75">
+              {linkInfo.shared ? "Shared" : `${linkInfo.ordinal}/${linkInfo.totalInstances}`}
+            </span>
           </span>
         )}
       </span>
-      <div className="flex flex-col flex-1 gap-1">
-        {granularity === "line" || lineSynced ? (
-          <div className="flex items-start justify-between gap-2">
-            {renderLineContent()}
-            {lineBegin !== undefined && onNudgeLine && onSetLineTime && (
-              <TimeNudgeInput
-                value={lineBegin}
-                currentTime={currentTime}
-                canDecrease
-                canIncrease
-                onNudge={onNudgeLine}
-                onSetTime={onSetLineTime}
-              />
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-x-3 gap-y-1 items-end">
-            {renderWordList(wordTexts, words, mainWordHandlers, mainSyllableGroups, "main")}
-          </div>
-        )}
-        {bgWordTexts.length > 0 && (
-          <div className="flex flex-wrap gap-x-3 gap-y-1 items-end">
-            {renderWordList(bgWordTexts, backgroundWords, bgWordHandlers, bgSyllableGroups, "bg", true)}
-          </div>
-        )}
-      </div>
     </div>
   );
 };

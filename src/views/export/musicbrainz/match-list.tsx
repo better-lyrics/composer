@@ -59,7 +59,7 @@ const MatchRow: React.FC<MatchRowProps> = ({ match, chosen, onSelect }) => {
       onClick={onSelect}
       className={cn(
         "h-auto w-full justify-start gap-3 rounded-md px-2.5 py-2 text-left font-normal text-composer-text",
-        chosen && "bg-composer-button",
+        chosen && "bg-(--layer-2)",
       )}
     >
       <span className="flex size-8 shrink-0 items-center justify-center rounded bg-composer-input">
@@ -81,7 +81,7 @@ const MatchList: React.FC<MatchListProps> = ({ matches, chosenId, title, onChoos
   const heading = artist ? `Recordings of ${title} by ${artist}` : `Recordings of ${title}`;
   return (
     <div className="flex w-100 flex-col p-1">
-      <p className="px-2.5 pt-1.5 pb-1 text-xs text-composer-text-muted select-none">{heading}</p>
+      <p className="px-2.5 pt-1.5 pb-1 text-xs text-composer-text-muted wrap-break-word select-none">{heading}</p>
       <div role="group" aria-label={heading} className="flex flex-col">
         {matches.slice(0, MAX_MATCHES).map((match) => (
           <MatchRow
@@ -95,7 +95,7 @@ const MatchList: React.FC<MatchListProps> = ({ matches, chosenId, title, onChoos
           />
         ))}
       </div>
-      <div className="mt-1 flex border-t border-composer-border px-1 pt-1">
+      <div className="mt-1 flex border-t border-(--divider) px-1 pt-1">
         <LinkButton href={recordingSearchPageUrl(title)} external variant="ghost" size="sm" className="gap-1">
           Search on musicbrainz.org
           <IconExternalLink className="size-3.5" />

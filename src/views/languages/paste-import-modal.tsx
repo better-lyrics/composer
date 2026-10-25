@@ -1,4 +1,5 @@
 import { alignTrackToLine, validateTransliterationAlignment } from "@/domain/language/align";
+import { wholeLineSegments } from "@/domain/language/manual-segments";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TranslationTrack, TransliterationTrack } from "@/domain/language/model";
 import { alignPastedLanguageLines } from "@/domain/language/paste-import";
@@ -100,7 +101,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
         const transliteration: TransliterationTrack = {
           language: `${sourceLanguage || "und"}-Latn`,
           text,
-          segments: [{ original: line.text, transliteration: text }],
+          segments: wholeLineSegments(line.text, text),
           origin: "import",
           sourceFingerprint,
         };
@@ -135,8 +136,8 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
       bodyClassName="p-0"
       initialFocusRef={textareaRef}
     >
-      <div className="grid h-[min(78vh,48rem)] min-h-0 overflow-y-auto lg:overflow-hidden lg:grid-cols-[minmax(20rem,0.8fr)_minmax(32rem,1.4fr)]">
-        <div className="flex min-h-0 flex-col gap-4 p-5 border-b lg:border-b-0 lg:border-r border-composer-border">
+      <div className="grid h-[min(78vh,48rem)] min-h-0 overflow-y-auto overscroll-none lg:overflow-hidden lg:grid-cols-[minmax(20rem,0.8fr)_minmax(32rem,1.4fr)]">
+        <div className="flex min-h-0 flex-col gap-4 p-5 border-b lg:border-b-0 lg:border-r border-(--divider)">
           <div className="flex items-center justify-between gap-3">
             <SegmentedControl aria-label="Import as" value={kind} options={KIND_OPTIONS} onChange={setKind} />
             {kind === "translation" && (
@@ -168,7 +169,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
         </div>
 
         <div className="flex min-w-0 min-h-0 flex-col overflow-hidden">
-          <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-composer-border select-none">
+          <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-(--divider) select-none">
             <p className="text-sm font-medium">Line mapping</p>
             <StatusChip
               tone={alignment.strategy === "manual" ? "warning" : "positive"}
@@ -188,11 +189,11 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
                 : alignment.warning}
             </div>
           )}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-none">
             {lines.map((line, index) => (
               <div
                 key={line.id}
-                className="grid grid-cols-[2rem_minmax(0,1fr)_1.25rem_minmax(0,1fr)] items-start gap-2 px-5 py-2 border-b border-composer-border"
+                className="grid grid-cols-[2rem_minmax(0,1fr)_1.25rem_minmax(0,1fr)] items-start gap-2 px-5 py-2 border-b border-(--divider)"
               >
                 <span className="pt-2 font-mono text-xs text-composer-text-muted tabular-nums select-none">
                   {index + 1}
@@ -226,7 +227,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
               </div>
             ))}
           </div>
-          <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-composer-border select-none">
+          <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-(--divider) select-none">
             <span className="text-xs text-composer-text-muted tabular-nums">
               {mappedCount} of {lines.length} lines ready
             </span>

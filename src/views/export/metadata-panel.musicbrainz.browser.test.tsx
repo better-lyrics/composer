@@ -58,8 +58,7 @@ describe("MetadataPanel MusicBrainz suggestions", () => {
       </>,
     );
 
-    await expect.element(screen.getByRole("button", { name: "Review" }), LOOKUP_TIMEOUT).toBeInTheDocument();
-    await screen.getByRole("button", { name: "Review" }).click();
+    await expect.element(screen.getByRole("button", { name: /^Fill/ }), LOOKUP_TIMEOUT).toBeInTheDocument();
     await screen.getByRole("button", { name: /^Fill/ }).click();
 
     const filled = useProjectStore.getState().metadata;

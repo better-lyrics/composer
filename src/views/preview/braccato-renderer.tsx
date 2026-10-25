@@ -10,6 +10,7 @@ import { cn } from "@/utils/cn";
 import braccatoTheme from "@/views/preview/braccato-theme.css?raw";
 import { type TimedLineElement, markLinesOutsideFocus, useFocusFade } from "@/views/preview/focus-fade";
 import { LYRICS_ELEMENT_CLASS, type LyricsLayout } from "@/views/preview/lyrics-layout";
+import { rateScaledOffsetTrims } from "@/views/preview/rate-scaled-offsets";
 import { type Lyric, injectRomanization, injectTranslation } from "@braccato/core";
 import type { BraccatoLyricsElement, LineClickDetail } from "@braccato/core/element";
 import { TTMLParser } from "@braccato/parsers";
@@ -208,7 +209,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
       // no properties to read until the registration import lands.
       if (appliedPlaybackRateRef.current !== audio.playbackRate) {
         appliedPlaybackRateRef.current = audio.playbackRate;
-        el.tickOptions = { playbackRate: audio.playbackRate };
+        el.tickOptions = { playbackRate: audio.playbackRate, ...rateScaledOffsetTrims(el, audio.playbackRate) };
       }
       el.currentTime = audio.currentTime;
       el.playing = !audio.paused;

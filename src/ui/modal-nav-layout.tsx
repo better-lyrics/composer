@@ -17,7 +17,6 @@ interface ModalNavLayoutProps<T extends string> {
   activeSection: T | null;
   onSectionChange: (id: T) => void;
   children: React.ReactNode;
-  sidebarClassName?: string;
   contentClassName?: string;
   sidebarHeader?: React.ReactNode;
   contentInitialScrollTop?: number;
@@ -33,7 +32,6 @@ function ModalNavLayout<T extends string>({
   activeSection,
   onSectionChange,
   children,
-  sidebarClassName,
   contentClassName,
   sidebarHeader,
   contentInitialScrollTop,
@@ -43,8 +41,8 @@ function ModalNavLayout<T extends string>({
 }: ModalNavLayoutProps<T>) {
   return (
     <div className="flex flex-1 min-h-0">
-      <Scroll className={cn("w-44 shrink-0 border-r border-composer-border select-none", sidebarClassName)}>
-        <div className="flex flex-col gap-px p-2">
+      <Scroll className="w-[196px] shrink-0 border-r border-(--divider) select-none">
+        <div className="flex flex-col gap-0.5 px-2.5 py-3">
           {sidebarHeader}
           {sections.map((section) => {
             const Icon = section.icon;
@@ -57,14 +55,14 @@ function ModalNavLayout<T extends string>({
                 aria-current={isActive ? "page" : undefined}
                 data-dimmed={section.dimmed ? "" : undefined}
                 className={cn(
-                  "flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-left cursor-pointer transition-[color,background-color,opacity]",
+                  "flex items-center gap-2.5 w-full h-8.5 px-2.5 rounded-[9px] text-[13.5px] font-medium text-left cursor-pointer transition-[color,background-color,opacity]",
                   isActive
-                    ? "bg-composer-button text-composer-text font-medium"
-                    : "text-composer-text-secondary hover:bg-composer-button/50 hover:text-composer-text",
+                    ? "bg-(--cap) shadow-(--raised-edge) text-composer-text [&>svg]:text-composer-accent-text"
+                    : "text-(--muted) hover:bg-(--layer-1) hover:text-(--label)",
                   section.dimmed && !isActive && "opacity-40",
                 )}
               >
-                <Icon size={16} className="shrink-0" />
+                <Icon size={17} className="shrink-0" />
                 {section.label}
                 {section.trailing && <span className="ml-auto">{section.trailing}</span>}
               </button>

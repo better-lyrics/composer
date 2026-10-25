@@ -17,11 +17,11 @@ interface BulkBarProps {
 // -- Constants ----------------------------------------------------------------
 
 const BAR_STYLES =
-  "flex items-center gap-1 p-1.5 rounded-[14px] bg-composer-bg-elevated pointer-events-auto select-none animate-[library-toast-in_200ms_var(--ease-emphasized)] shadow-pop";
+  "flex items-center gap-1 p-1.5 rounded-[14px] surface-floating pointer-events-auto select-none animate-[library-toast-in_200ms_var(--ease-emphasized)]";
 
 // -- Sub-components -------------------------------------------------------------
 
-const Divider: React.FC = () => <span aria-hidden="true" className="w-px h-5 mx-1 bg-composer-border" />;
+const Divider: React.FC = () => <span aria-hidden="true" className="w-px h-5 mx-1 bg-(--edge)" />;
 
 // -- Component ----------------------------------------------------------------
 
@@ -32,7 +32,7 @@ const BulkBar: React.FC<BulkBarProps> = ({ selectedCount, visibleCount, onSelect
   return (
     <div className="fixed inset-x-0 bottom-6 z-60 flex justify-center pointer-events-none">
       <div role="toolbar" aria-label="Selected projects" className={BAR_STYLES}>
-        <span className="pl-2 pr-2.5 font-medium tabular-nums">{selectedCount} selected</span>
+        <span className="pl-2 pr-2.5 text-[13px] font-medium tabular-nums">{selectedCount} selected</span>
         {selectedCount < visibleCount && (
           <>
             <Button variant="quiet" size="sm" onClick={onSelectAll}>

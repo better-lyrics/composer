@@ -9,7 +9,7 @@ describe("downloadProjectFile", () => {
     downloadProjectFile(projectFileFrom("p1", storedProject()));
     await expect.poll(() => downloads.anchors().length).toBe(1);
     downloads.stop();
-    expect(downloads.names()[0]).toMatch(/^Midnight City-\d{4}-\d{2}-\d{2}\.ttml-project\.json$/);
+    expect(downloads.names()[0]).toMatch(/^Midnight City-\d{4}-\d{2}-\d{2}\.composer$/);
     expect(downloads.anchors()[0]?.isConnected).toBe(false);
   });
 });

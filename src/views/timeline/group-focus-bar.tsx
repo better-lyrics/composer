@@ -8,13 +8,14 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
 import { useEffectiveFocus, useEffectiveFocusGroup } from "@/views/timeline/effective-focus";
 import { adjacentHeardInstance, focusBounds, heardInstances } from "@/views/timeline/group-focus";
 import { hearInstance } from "@/views/timeline/hear-instance";
 import { LoopToggle } from "@/views/timeline/loop-toggle";
-import { STRIP_CONTROL } from "@/views/timeline/strip-control";
+import { STRIP_BAR, STRIP_TAG, STRIP_TRAY, stripTint } from "@/views/timeline/strip-control";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
   SHARING_MENU_LABELS,
@@ -33,7 +34,7 @@ interface OpenInstanceProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const STEP_BUTTON = "size-6 rounded-md";
+const STEP_BUTTON = "size-7 rounded-lg";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -57,7 +58,7 @@ const InstanceStepper: React.FC<OpenInstanceProps> = ({ group, lines, hearInstan
   const next = adjacentHeardInstance(lines, group, hearInstanceIdx, 1);
 
   return (
-    <span className="flex items-center gap-0.5 tabular-nums text-composer-text-muted">
+    <span className={cn(STRIP_TRAY, "gap-0.5 tabular-nums text-composer-text-muted")}>
       <IconButton
         label="Previous instance"
         variant="ghost"
@@ -66,7 +67,7 @@ const InstanceStepper: React.FC<OpenInstanceProps> = ({ group, lines, hearInstan
         disabled={previous === null}
         onClick={() => previous !== null && hearInstance(group.id, hearInstanceIdx, previous)}
       />
-      <span>
+      <span className="min-w-11 text-center font-mono">
         <span className="sr-only">Instance </span>
         {`${counted.indexOf(hearInstanceIdx) + 1} of ${counted.length}`}
       </span>
@@ -102,8 +103,8 @@ const OwnTimingStatus: React.FC<Omit<OpenInstanceProps, "lines">> = ({ group, he
       <span>Own timing</span>
       {sharingAction && (
         <Button
-          size="sm"
-          className={STRIP_CONTROL}
+          size="lg"
+          className="shrink-0"
           onClick={() => applySharingMenuAction(sharingAction, group, hearInstanceIdx)}
         >
           {SHARING_MENU_LABELS[sharingAction]}
@@ -114,7 +115,7 @@ const OwnTimingStatus: React.FC<Omit<OpenInstanceProps, "lines">> = ({ group, he
 };
 
 const InstanceStatus: React.FC<OpenInstanceProps> = (props) => (
-  <span className="flex items-center gap-2 tabular-nums text-composer-text-muted">
+  <span className="flex min-w-0 items-center gap-2 pl-1 whitespace-nowrap tabular-nums text-composer-text-muted">
     {sharesTiming(props.group, props.hearInstanceIdx) ? <SharedSpan {...props} /> : <OwnTimingStatus {...props} />}
     {otherInstanceNotes(props.lines, props.group, props.hearInstanceIdx).map((note) => (
       <span key={note}>{`· ${note}`}</span>
@@ -128,22 +129,15 @@ const FocusedGroupBar: React.FC<Omit<OpenInstanceProps, "lines">> = ({ group, he
   const instance = { group, lines, hearInstanceIdx };
 
   return (
-    <div
-      data-group-focus-bar
-      role="group"
-      aria-label="Open group"
-      className="flex h-10 shrink-0 select-none items-center gap-3 border-b border-composer-border pl-3 pr-2 text-xs"
-      style={{ background: `color-mix(in srgb, ${group.color} 7%, var(--color-composer-bg-dark))` }}
-    >
-      <span className="flex items-center gap-1.5 font-semibold text-composer-text">
-        <span aria-hidden="true" className="size-2 rounded-xs" style={{ background: group.color }} />
-        {instanceName(lines, group, hearInstanceIdx)}
-      </span>
+    <div data-group-focus-bar role="group" aria-label="Open group" className={STRIP_BAR} style={stripTint(group.color)}>
+      <SingerTag color={group.color} className={STRIP_TAG}>
+        {sharesTiming(group, hearInstanceIdx) ? group.label : instanceName(lines, group, hearInstanceIdx)}
+      </SingerTag>
       {sharesTiming(group, hearInstanceIdx) && <InstanceStepper {...instance} />}
       <InstanceStatus {...instance} />
       <span className="flex-1" />
       <LoopToggle />
-      <Button size="sm" className={cn(STRIP_CONTROL, "pl-2.5 pr-1.5")} onClick={closeGroup}>
+      <Button size="lg" className="shrink-0 pr-2" onClick={closeGroup}>
         Done
         <InlineKeyBadge keys={getEffectiveKeysArray("timeline.closeGroup")} />
       </Button>

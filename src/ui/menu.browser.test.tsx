@@ -50,7 +50,8 @@ describe("Menu", () => {
     await screen.getByRole("button", { name: "More" }).click();
     const menu = screen.getByRole("menu", { name: "Actions for Heat Waves" });
     await expect.element(menu).toBeInTheDocument();
-    await expect.element(menu).toHaveClass("shadow-pop");
+    // The surface sits inside the positioned menu, so its entrance scale never scales the position.
+    await expect.poll(() => menu.element().firstElementChild?.classList.contains("surface-floating")).toBe(true);
     await expect.element(screen.getByRole("menuitem", { name: "Rename" })).toHaveFocus();
   });
 

@@ -3,6 +3,7 @@ import { userEvent } from "vitest/browser";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
+import { TabBar } from "@/ui/tab-bar";
 import { EditorScreen } from "@/views/editor-screen";
 
 describe("EditorScreen", () => {
@@ -17,7 +18,13 @@ describe("EditorScreen", () => {
 
   it("switches panels when the tab bar is used from the keyboard", async () => {
     useProjectStore.setState({ activeTab: "import" });
-    const screen = await render(<EditorScreen />, { withRouter: true });
+    const screen = await render(
+      <>
+        <TabBar />
+        <EditorScreen />
+      </>,
+      { withRouter: true },
+    );
     const editTab = screen.container.querySelector('[data-tour="tab-edit"]') as HTMLButtonElement;
     editTab.focus();
     await userEvent.keyboard("{Enter}");

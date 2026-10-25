@@ -1,5 +1,6 @@
 import { useChoiceStore } from "@/stores/choice-store";
 import { Button } from "@/ui/button";
+import { Checkbox } from "@/ui/checkbox";
 import { Modal } from "@/ui/modal";
 import { useRef } from "react";
 
@@ -30,25 +31,27 @@ const ChoiceModalHost: React.FC = () => {
       describedById={DESCRIBED_BY_ID}
       initialFocusRef={primaryIndex === -1 ? cancelRef : primaryRef}
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {typeof request.body === "string" ? (
-          <p className="m-0 text-sm leading-relaxed text-composer-text-secondary select-text">{request.body}</p>
+          <p className="m-0 text-sm leading-normal text-(--label) text-pretty wrap-break-word select-text">
+            {request.body}
+          </p>
         ) : (
           request.body
         )}
-        <div className="flex items-center justify-end gap-2 pt-1 select-none">
+        <div className="flex items-center justify-end gap-2 pt-2 select-none">
           {request.checkbox && (
-            <label className="flex items-center gap-2 mr-auto text-xs text-composer-text-muted cursor-pointer">
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={(event) => setChecked(event.target.checked)}
-                className="size-3.5 rounded accent-composer-accent cursor-pointer"
-              />
+            <Checkbox checked={checked} onCheckedChange={setChecked} className="mr-auto">
               {request.checkbox.label}
-            </label>
+            </Checkbox>
           )}
-          <Button ref={cancelRef} variant="ghost" onClick={() => answer("cancel")}>
+          <Button
+            ref={cancelRef}
+            variant="ghost"
+            size="lg"
+            className={request.checkbox ? undefined : "mr-auto"}
+            onClick={() => answer("cancel")}
+          >
             Cancel
           </Button>
           {request.options.map((option, index) => (
@@ -56,6 +59,7 @@ const ChoiceModalHost: React.FC = () => {
               key={option.value}
               ref={index === primaryIndex ? primaryRef : undefined}
               variant={option.variant}
+              size="lg"
               onClick={() => answer(option.value)}
             >
               {option.label}

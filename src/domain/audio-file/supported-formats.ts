@@ -31,4 +31,4 @@ function isSupportedAudioFile(file: Pick<File, "name" | "type">): boolean {
 
 // -- Exports -------------------------------------------------------------------
 
-export { AUDIO_FORMATS_PROSE, UNSUPPORTED_AUDIO_FILE_MESSAGE, isSupportedAudioFile };
+export { ACCEPTED_AUDIO_EXTENSIONS, AUDIO_FORMATS_PROSE, UNSUPPORTED_AUDIO_FILE_MESSAGE, isSupportedAudioFile };

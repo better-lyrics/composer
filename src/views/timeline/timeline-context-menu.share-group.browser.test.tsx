@@ -50,7 +50,7 @@ describe("TimelineContextMenu · Share timing across group", () => {
   it("shares timing across an old group", async () => {
     seedBannerMenu(createGroup({ id: "g1", label: "Chorus" }), 0);
     const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing across group" }).click();
+    await screen.getByRole("menuitem", { name: "Share timing across group" }).click();
 
     await expect.poll(() => group().sharesTiming).toBe(true);
     await expect.element(screen.getByText("Chorus shares timing in 2 instances")).toBeVisible();
@@ -60,7 +60,7 @@ describe("TimelineContextMenu · Share timing across group", () => {
     seedBannerMenu(createGroup({ id: "g1", label: "Chorus" }), 0);
     useProjectStore.setState({ lines: [chorus(0, 10), chorus(1, 40, 1.2)] });
     const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing across group" }).click();
+    await screen.getByRole("menuitem", { name: "Share timing across group" }).click();
 
     await expect.poll(() => group().sharesTiming).toBe(true);
     expect(group().ownTimingInstances).toBeUndefined();
@@ -86,7 +86,7 @@ describe("TimelineContextMenu · Share timing across group", () => {
       ],
     });
     const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing across group" }).click();
+    await screen.getByRole("menuitem", { name: "Share timing across group" }).click();
 
     await expect
       .element(
@@ -104,7 +104,7 @@ describe("TimelineContextMenu · Share timing across group", () => {
     useAudioStore.setState({ duration: 120 });
     useProjectStore.setState({ lines: [chorus(0, 10), chorus(1, 40, 1.2), chorus(2, 119, 1.2)] });
     const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing across group" }).click();
+    await screen.getByRole("menuitem", { name: "Share timing across group" }).click();
 
     await expect
       .element(screen.getByText("Chorus shares timing in 2 instances. The own timing of 1 instance was replaced."))
@@ -132,7 +132,7 @@ describe("TimelineContextMenu · Share timing across group", () => {
       });
     useProjectStore.setState({ lines: [firstWordOnly(0, 10, 10.5), firstWordOnly(1, 40, 40.8)] });
     const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing across group" }).click();
+    await screen.getByRole("menuitem", { name: "Share timing across group" }).click();
 
     await expect
       .element(
@@ -173,7 +173,7 @@ describe("TimelineContextMenu · Share timing across group", () => {
       ],
     });
     const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing across group" }).click();
+    await screen.getByRole("menuitem", { name: "Share timing across group" }).click();
 
     await expect
       .element(

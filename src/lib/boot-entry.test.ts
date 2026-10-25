@@ -45,6 +45,12 @@ describe("bootEntryPath", () => {
   });
 });
 
+describe("bootEntryPath for the Library shortcut", () => {
+  it("regression: opens the library and drops the marker even when the last project reopens", () => {
+    expect(bootEntryPath(at("/?library"), true)).toBe("/");
+  });
+});
+
 describe("redirectBootEntry", () => {
   it("rewrites the URL in place without adding a history entry", () => {
     window.history.replaceState(null, "", "/?v=dX3k_QDnzHE");

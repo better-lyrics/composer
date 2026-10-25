@@ -162,6 +162,6 @@ describe("EditPanel placeholder copy", () => {
     for (const label of [".txt", ".lrc", ".srt", ".ttml", ".qrc"]) {
       expect(textarea.placeholder).toContain(label);
     }
-    expect(textarea.placeholder).toContain("project file (.json)");
+    expect(textarea.placeholder).toContain("project file (.composer .json)");
   });
 });

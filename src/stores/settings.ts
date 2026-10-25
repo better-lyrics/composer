@@ -4,6 +4,7 @@ import type { LaunchScreen, LibraryView } from "@/domain/project/library-prefere
 import type { KeepYouTubeAudio } from "@/domain/storage/audio-retention";
 import type { StorageLimit } from "@/domain/storage/storage-limit";
 import { SETTINGS_PERSIST_VERSION, migrateSettings } from "@/stores/settings-migration";
+import { SNAP_DEFAULTS, type SnapSettings } from "@/stores/settings-snap";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
 import { PREVIEW_SIDEBAR_WIDTH } from "@/utils/preview-sidebar-width";
 import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
@@ -35,7 +36,7 @@ interface CobaltInstanceStatus {
 
 const DEFAULT_COBALT_INSTANCE_ID = "default";
 
-interface SettingsState {
+interface SettingsState extends SnapSettings {
   defaultPlaybackRate: number;
   rememberPlaybackRate: boolean;
   lastPlaybackRate: number;
@@ -50,12 +51,8 @@ interface SettingsState {
   defaultRollingEdit: boolean;
   defaultPreviewSidebar: boolean;
   previewSidebarWidth: number;
-  timelineSnap: boolean;
-  timelineSnapThreshold: number;
-  vocalOnsetSnap: boolean;
   shareTimingInNewGroups: boolean;
   loopOpenGroup: boolean;
-  snapPlayheadToPoints: boolean;
   syllablesFollowRolling: boolean;
   timelineHorizontalScroll: boolean;
 
@@ -65,6 +62,8 @@ interface SettingsState {
   redoPreroll: number;
   selectionLeadIn: number;
   syncCountIn: number;
+  seekStep: number;
+  fineSeekStep: number;
   defaultGranularity: GranularityDefault;
 
   autoSaveDelay: number;
@@ -121,6 +120,7 @@ interface SettingsActions {
 // -- Defaults -----------------------------------------------------------------
 
 const DEFAULTS: SettingsState = {
+  ...SNAP_DEFAULTS,
   defaultPlaybackRate: 0.75,
   rememberPlaybackRate: true,
   lastPlaybackRate: 0.75,
@@ -135,12 +135,8 @@ const DEFAULTS: SettingsState = {
   defaultRollingEdit: false,
   defaultPreviewSidebar: false,
   previewSidebarWidth: PREVIEW_SIDEBAR_WIDTH.default,
-  timelineSnap: true,
-  timelineSnapThreshold: 12,
-  vocalOnsetSnap: true,
   shareTimingInNewGroups: true,
   loopOpenGroup: false,
-  snapPlayheadToPoints: true,
   syllablesFollowRolling: false,
   timelineHorizontalScroll: false,
 
@@ -150,6 +146,8 @@ const DEFAULTS: SettingsState = {
   redoPreroll: 1.5,
   selectionLeadIn: 0.3,
   syncCountIn: 3,
+  seekStep: 0.5,
+  fineSeekStep: 0.05,
   defaultGranularity: "word",
 
   autoSaveDelay: 2000,

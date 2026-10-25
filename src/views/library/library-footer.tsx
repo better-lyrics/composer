@@ -12,13 +12,13 @@ interface LibraryFooterProps {
 // -- Component ----------------------------------------------------------------
 
 const LibraryFooter: React.FC<LibraryFooterProps> = ({ storedAudioBytes, onManageStorage }) => (
-  <footer className="flex items-center justify-between gap-4 mt-6 pt-4 border-t border-composer-border text-[13px] text-composer-text-muted select-none">
+  <footer className="flex items-center justify-between gap-4 -mt-10 py-4 border-t border-(--divider) text-[13px] text-(--muted) select-none">
     <span>
       Projects save on this device. <span className="tabular-nums">{formatFileSize(storedAudioBytes)}</span> of audio
       stored.
     </span>
-    <Button variant="ghost" size="sm" hasIcon onClick={onManageStorage} className="-mr-3 text-composer-text-secondary">
-      <IconDatabase aria-hidden="true" className="size-3.5" />
+    <Button variant="ghost" size="sm" hasIcon onClick={onManageStorage} className="-mr-3">
+      <IconDatabase aria-hidden="true" className="size-4" />
       Manage storage
     </Button>
   </footer>

@@ -3,7 +3,12 @@ import { restoreOpenProject } from "@/lib/open-project";
 import { PROJECT_INDEX_STORE_NAME, setInStore } from "@/lib/persistence-idb";
 import { flushPendingSave } from "@/lib/persistence-debounce";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
-import { loadProjectIndexEntry, setProjectLastTab } from "@/lib/project-repository";
+import {
+  loadProjectIndexEntry,
+  saveProjectRecord,
+  setProjectLastTab,
+  setProjectResumePosition,
+} from "@/lib/project-repository";
 import {
   EMPTY_RESTORE,
   applyProjectToStores,
@@ -44,6 +49,18 @@ describe("project-restore", () => {
     expect(payload.project?.metadata.title).toBe("Midnight City");
     expect(payload.audio?.name).toBe("city.wav");
     expect(payload.lastTab).toBe("sync");
+  });
+
+  it("restores the playhead, zoom and Timeline view without changing the default zoom", async () => {
+    const position = { time: 42, zoom: 220, scroll: { left: 900, top: 60 } };
+    await seedStoredProject("p1", { audio: createAudioFile("city.wav") });
+    await setProjectResumePosition("p1", position);
+    const defaultZoom = useSettingsStore.getState().defaultZoom;
+    applyProjectToStores(await loadProjectForRestore("p1"));
+    expect(useAudioStore.getState().currentTime).toBe(42);
+    expect(useTimelineStore.getState().zoom).toBe(220);
+    expect(useTimelineStore.getState().pendingResumeView).toEqual(position);
+    expect(useSettingsStore.getState().defaultZoom).toBe(defaultZoom);
   });
 
   it("applyProjectToStores fills every store from the payload and leaves the project clean", async () => {
@@ -99,6 +116,16 @@ describe("project-restore", () => {
       expect((await loadProjectForRestore("p1")).lastTab).toBeUndefined();
     });
 
+    it("ignores a stored resume position that is malformed", async () => {
+      await seedStoredProject("p1");
+      const entry = await loadProjectIndexEntry("p1");
+      await setInStore(PROJECT_INDEX_STORE_NAME, "p1", { ...entry, resumePosition: { time: -1, zoom: 0 } });
+      expect((await loadProjectForRestore("p1")).resumePosition).toBeUndefined();
+      applyProjectToStores(await loadProjectForRestore("p1"));
+      const defaultZoom = useSettingsStore.getState().defaultZoom;
+      expect(useTimelineStore.getState().pendingResumeView).toEqual({ time: 0, zoom: defaultZoom });
+    });
+
     it("falls back to safe defaults and warns on a malformed record", async () => {
       allowConsole(/malformed fields/);
       await seedStoredProject("p1", { project: { agents: [] } });
@@ -133,9 +160,28 @@ describe("project-restore", () => {
       expect(seen.every(Boolean)).toBe(true);
       expect(isRestoringProject()).toBe(false);
     });
+
+    it("a full project save keeps the resume position", async () => {
+      await seedStoredProject("p1");
+      await setProjectResumePosition("p1", { time: 5, zoom: 120 });
+      const project = await loadProjectRecord("p1");
+      if (!project) throw new Error("seeded project missing");
+      await saveProjectRecord("p1", project);
+      expect((await loadProjectIndexEntry("p1"))?.resumePosition).toEqual({ time: 5, zoom: 120 });
+    });
   });
 
   describe("regressions", () => {
+    it("regression: a project without a saved position frames the playhead instead of keeping the last view", async () => {
+      await seedStoredProject("p1");
+      useTimelineStore.getState().setZoom(400);
+      useTimelineStore.getState().setScrollTop(500);
+      applyProjectToStores(await loadProjectForRestore("p1"));
+      const defaultZoom = useSettingsStore.getState().defaultZoom;
+      expect(useTimelineStore.getState().zoom).toBe(defaultZoom);
+      expect(useTimelineStore.getState().pendingResumeView).toEqual({ time: 0, zoom: defaultZoom });
+    });
+
     it("regression: a boot restore does not save the project again or move its last edited time", async () => {
       useSettingsStore.setState({ autoSaveDelay: 60_000 });
       await seedStoredProject("p1", { open: true, project: { savedAt: 111, currentStem: "vocals" } });

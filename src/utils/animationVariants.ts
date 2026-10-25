@@ -37,25 +37,28 @@ const centeredFadeVariants: Variants = {
   exit: { opacity: 0, x: "-50%" },
 };
 
+// A tab's inline status icon grows in from nothing, so the label beside it slides instead of jumping.
+// The -6px margin cancels the parent's gap while the icon has no width.
+const inlineIconTransition: Transition = { type: "spring", duration: 0.3, bounce: 0 };
+
+const inlineIconVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.25, filter: "blur(4px)", width: 0, marginLeft: -6 },
+  visible: { opacity: 1, scale: 1, filter: "blur(0px)", width: "auto", marginLeft: -2 },
+  exit: { opacity: 0, scale: 0.25, filter: "blur(4px)", width: 0, marginLeft: -6 },
+};
+
+const inlineIconReducedVariants: Variants = {
+  hidden: { opacity: 0, width: 0, marginLeft: -6 },
+  visible: { opacity: 1, width: "auto", marginLeft: -2 },
+  exit: { opacity: 0, width: 0, marginLeft: -6 },
+};
+
 // -- Sync Carousel (vertical, direction-aware, instant) ----------------------
 
 const syncCarouselTransition: Transition = {
   type: "spring",
   stiffness: 400,
   damping: 30,
-};
-
-const syncPulseVariants: Variants = {
-  idle: {
-    boxShadow: "0 0 0px rgba(129, 140, 248, 0)",
-    borderColor: "rgba(255, 255, 255, 0.1)",
-    transition: { type: "spring", stiffness: 400, damping: 30 },
-  },
-  pulse: {
-    boxShadow: "0 0 16px rgba(255, 255, 255, 0.15)",
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    transition: { duration: 0 },
-  },
 };
 
 function buildGroupPingVariants(color: string): Variants {
@@ -103,26 +106,23 @@ const pinDropInVariants: Variants = {
 };
 
 const snapFlashVariants: Variants = {
-  initial: { opacity: 0, boxShadow: "0 0 0px rgba(255, 255, 255, 0)" },
+  initial: { opacity: 0, "--flash-glow": "0px" },
   animate: {
     opacity: [0.9, 0],
-    boxShadow: ["0 0 18px rgba(255, 255, 255, 0.9)", "0 0 0px rgba(255, 255, 255, 0)"],
+    "--flash-glow": ["18px", "0px"],
     transition: { type: "spring", stiffness: 120, damping: 22, mass: 0.7 },
   },
 };
 
-// -- Accordion ----------------------------------------------------------------
+// -- Floating Entrance --------------------------------------------------------
 
-const accordionTransition: Transition = {
-  type: "spring",
-  stiffness: 500,
-  damping: 40,
-};
-
-const accordionVariants: Variants = {
-  hidden: { height: 0, opacity: 0 },
-  visible: { height: "auto", opacity: 1 },
-};
+// Popovers and menus grow out of their trigger; floating-ui runs it as a CSS transition.
+const floatingEntrance = {
+  durationMs: 150,
+  ease: "cubic-bezier(0.22, 1, 0.36, 1)",
+  initial: { opacity: 0, scale: "0.97" },
+  reducedInitial: { opacity: 0 },
+} as const;
 
 // -- Stagger Container --------------------------------------------------------
 
@@ -134,12 +134,13 @@ export {
   centeredSlideUpVariants,
   centeredFadeVariants,
   syncCarouselTransition,
-  syncPulseVariants,
   buildGroupPingVariants,
   shimmerTransition,
   shimmerVariants,
   pinDropInVariants,
   snapFlashVariants,
-  accordionTransition,
-  accordionVariants,
+  floatingEntrance,
+  inlineIconTransition,
+  inlineIconVariants,
+  inlineIconReducedVariants,
 };

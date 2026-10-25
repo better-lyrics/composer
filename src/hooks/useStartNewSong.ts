@@ -11,7 +11,7 @@ import { toast } from "sonner";
 // -- Types --------------------------------------------------------------------
 
 interface NewSongStarters {
-  startWithFile: (file: File) => void;
+  startWithFile: (file: File) => Promise<void>;
   startWithVideo: (videoId: string) => void;
 }
 
@@ -30,7 +30,7 @@ function useStartNewSong(): NewSongStarters {
       startWithFile: (file: File) => {
         createProject();
         navigate(EDITOR_PATH);
-        loadAudioFile(file);
+        return loadAudioFile(file);
       },
       startWithVideo: (videoId: string) => {
         const newId = createProject();

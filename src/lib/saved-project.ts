@@ -32,6 +32,7 @@ interface SavedProject {
   currentStem?: Stem;
   primingStripped?: boolean;
   customSnapPoints?: (SnapPoint | number)[];
+  beatGrid?: unknown;
   hasUnexportedImport?: boolean;
   importedMetadataKeys?: MetadataKey[];
   ttmlEditState?: TtmlEditState;

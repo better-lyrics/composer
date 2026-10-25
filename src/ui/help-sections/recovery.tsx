@@ -1,12 +1,12 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { PROSE } from "@/ui/typography";
+import { PROSE, PROSE_LINK } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { HelpTopic } from "@/ui/help-topic";
 
 // -- Recovery -----------------------------------------------------------------
 
 const RecoverySection: React.FC = () => (
-  <div className="space-y-5">
+  <div className="space-y-[22px] max-w-[68ch]">
     <p className={PROSE}>
       Composer saves your work as you go. If the app crashes, freezes, or you accidentally close the tab, your lyrics
       and timing are still there. Here's how to get them back.
@@ -15,19 +15,14 @@ const RecoverySection: React.FC = () => (
     <HelpTopic title="The app showed an error">
       <p className={PROSE}>
         Hit <strong>Download my work</strong> on the error screen. You'll get a project file. Reload Composer, head to
-        the Export tab, and click <strong>Import Project</strong> to pick up where you left off.
+        the Export tab, and pick <strong>Import project</strong> from the Project menu to pick up where you left off.
       </p>
     </HelpTopic>
 
     <HelpTopic title="The app is frozen">
       <p className={PROSE}>
         Open{" "}
-        <a
-          href="/recover"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
-        >
+        <a href="/recover" target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
           /recover
         </a>{" "}
         in a new tab. It's a tiny page that fetches your work without loading anything else, so it still works when
@@ -61,8 +56,8 @@ const RecoverySection: React.FC = () => (
       <p className={PROSE}>
         Sometimes the saved data itself is the issue. After downloading the backup, the same screen (error page or
         /recover) shows a <strong>Clear saved data</strong> button. It wipes the autosave so Composer opens fresh next
-        time. Import the file back whenever you're ready. If you can still get into the app, the Export tab's{" "}
-        <strong>Clear</strong> button does the same thing.
+        time. Import the file back whenever you're ready. If you can still get into the app,{" "}
+        <strong>Clear project</strong> in the Export tab's Project menu does the same thing.
       </p>
     </HelpTopic>
   </div>

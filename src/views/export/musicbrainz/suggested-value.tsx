@@ -1,6 +1,6 @@
 import type { Suggestion } from "@/domain/musicbrainz/suggestion";
 import { Button } from "@/ui/button";
-import { INPUT_STYLES } from "@/ui/input-styles";
+import { DETAILS_FIELD_STYLES, DETAILS_LABEL_STYLES } from "@/views/export/song-details-styles";
 import { cn } from "@/utils/cn";
 import { IconArrowBackUp } from "@tabler/icons-react";
 import { useId } from "react";
@@ -43,11 +43,11 @@ const UseSuggestionButton: React.FC<UseSuggestionButtonProps> = ({ value, fieldN
     aria-label={`Use ${value} for ${fieldName}`}
     onClick={onUse}
     className={cn(
-      "h-5 shrink-0 gap-1 rounded pl-1.5 pr-2 text-[11.5px] text-composer-accent-text bg-composer-accent/14 hover:bg-composer-accent/24 hover:text-composer-accent-text",
+      "h-5 shrink-0 gap-[3px] rounded-md pl-[5px] pr-[7px] text-[11.5px] text-composer-accent-text bg-composer-accent/14 hover:bg-composer-accent/24 hover:text-composer-accent-text",
       className,
     )}
   >
-    <IconArrowBackUp className="size-3.5" />
+    <IconArrowBackUp className="size-[13px]" />
     Use
   </Button>
 );
@@ -73,16 +73,21 @@ const SuggestedField: React.FC<SuggestedFieldProps> = ({
   const filling = suggestion?.kind === "fill";
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={inputId} className="text-xs font-medium text-composer-text-secondary select-none">
+      <label htmlFor={inputId} className={DETAILS_LABEL_STYLES}>
         {fieldName}
       </label>
-      <span className="relative flex">
+      <span className="relative flex items-center gap-1.5">
         <input
           type="text"
           id={inputId}
           {...inputProps}
           placeholder={filling ? suggestion.value : placeholder}
-          className={cn("flex-1", INPUT_STYLES, filling && "pr-16 placeholder:text-composer-accent-text", className)}
+          className={cn(
+            "flex-1 min-w-0",
+            DETAILS_FIELD_STYLES,
+            filling && "pr-16 placeholder:text-composer-accent-text",
+            className,
+          )}
         />
         {filling && (
           <UseSuggestionButton
@@ -106,9 +111,13 @@ const SuggestedField: React.FC<SuggestedFieldProps> = ({
 };
 
 const SuggestedRow: React.FC<SuggestedRowProps> = ({ value, fieldName, onUse }) => (
-  <div className="flex items-center gap-2">
+  <div className="flex items-center gap-1.5">
     <span
-      className={cn("flex flex-1 min-w-0 items-center gap-2", INPUT_STYLES, "py-1 pr-1.5 text-composer-accent-text")}
+      className={cn(
+        "flex flex-1 min-w-0 items-center gap-1.5",
+        DETAILS_FIELD_STYLES,
+        "pr-1.5 text-composer-accent-text",
+      )}
     >
       <span className="min-w-0 flex-1 truncate select-text">{value}</span>
       <UseSuggestionButton value={value} fieldName={fieldName} onUse={onUse} />

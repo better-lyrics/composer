@@ -1,14 +1,12 @@
-import { useSettingsStore } from "@/stores/settings";
-import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SegmentedControl } from "@/ui/segmented-control";
+import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { IconLanguage, IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
 
 // -- Interfaces ---------------------------------------------------------------
 
 interface SyncHeaderProps {
-  progressText: string;
+  progress: { done: number; total: number };
   textVariant: "original" | "transliteration";
   hasTransliteration: boolean;
   toggleTextVariant: () => void;
@@ -31,7 +29,7 @@ const GRANULARITY_OPTIONS = [
 // -- Components ---------------------------------------------------------------
 
 const SyncHeader: React.FC<SyncHeaderProps> = ({
-  progressText,
+  progress,
   textVariant,
   hasTransliteration,
   toggleTextVariant,
@@ -43,26 +41,27 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
   handleReset,
   handleStartSync,
 }) => {
-  const showShortcutHints = useSettingsStore((s) => s.showShortcutHints);
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border">
-      <div className="flex items-baseline gap-3">
-        <h2 className="text-lg font-medium">Sync</h2>
-        <span className="font-mono text-sm text-composer-text-muted tabular-nums">{progressText}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Button
-          hasIcon
-          size="sm"
-          variant={textVariant === "transliteration" ? "primary" : "ghost"}
-          disabled={!hasTransliteration}
-          onClick={toggleTextVariant}
-          title="Toggle original / transliteration text"
-        >
-          <IconLanguage className="size-4" />
-          {textVariant === "transliteration" ? "Transliteration" : "Original"}
-          {showShortcutHints && <InlineKeyBadge keys={getEffectiveKeysArray("sync.toggleTextVariant")} />}
-        </Button>
+    <div className="flex items-center justify-between gap-4 h-13 shrink-0 pl-5 pr-2 border-b border-(--divider)">
+      <h2 className="sr-only">Sync</h2>
+      <span className="flex items-baseline gap-1.5 text-[13px] text-(--muted) tabular-nums select-none">
+        <b className="font-mono text-[15px] font-bold text-composer-text">{progress.done}</b> / {progress.total}{" "}
+        {granularity === "word" ? "words" : "lines"} synced
+      </span>
+      <div className="flex items-center gap-3">
+        <div className="tray">
+          <ShortcutToggleButton
+            active={textVariant === "transliteration"}
+            label={textVariant === "transliteration" ? "Transliteration" : "Original"}
+            stateInLabel
+            shortcut="sync.toggleTextVariant"
+            onClick={toggleTextVariant}
+            disabled={!hasTransliteration}
+            description="Toggle original / transliteration text"
+          >
+            <IconLanguage />
+          </ShortcutToggleButton>
+        </div>
         <SegmentedControl
           aria-label="Timing granularity"
           value={granularity}
@@ -71,6 +70,7 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
         />
         <Button
           hasIcon
+          size="lg"
           variant={editMode ? "primary" : "secondary"}
           onClick={handleToggleEdit}
           title={editMode ? "Done editing, back to syncing" : "Edit timings (pauses playback)"}
@@ -79,14 +79,14 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
           {editMode ? "Done" : "Edit"}
         </Button>
         {isActive && !editMode && (
-          <Button hasIcon onClick={handleReset}>
+          <Button hasIcon size="lg" onClick={handleReset}>
             <IconRefresh className="size-4" />
             Reset
           </Button>
         )}
         {!isActive && !editMode && (
-          <Button hasIcon variant="primary" onClick={handleStartSync}>
-            <IconPlayerPlayFilled className="size-4" />
+          <Button hasIcon size="lg" variant="primary" onClick={handleStartSync}>
+            <IconPlayerPlayFilled className="size-3.5" />
             Start
           </Button>
         )}

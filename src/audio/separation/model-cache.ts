@@ -3,15 +3,16 @@ import type { ModelDescriptor } from "@/audio/separation/model-registry";
 const CACHE_NAME = "composer-vocal-model-v1";
 
 type DownloadProgress = (loaded: number, total: number) => void;
+type CachedModel = Pick<ModelDescriptor, "url" | "approxBytes">;
 
-async function hasCachedModel(model: ModelDescriptor): Promise<boolean> {
+async function hasCachedModel(model: CachedModel): Promise<boolean> {
   if (typeof caches === "undefined") return false;
   const cache = await caches.open(CACHE_NAME);
   const hit = await cache.match(model.url);
   return hit !== undefined;
 }
 
-async function readCachedModel(model: ModelDescriptor): Promise<ArrayBuffer | null> {
+async function readCachedModel(model: CachedModel): Promise<ArrayBuffer | null> {
   if (typeof caches === "undefined") return null;
   const cache = await caches.open(CACHE_NAME);
   const hit = await cache.match(model.url);
@@ -20,7 +21,7 @@ async function readCachedModel(model: ModelDescriptor): Promise<ArrayBuffer | nu
 }
 
 async function fetchAndCacheModel(
-  model: ModelDescriptor,
+  model: CachedModel,
   signal: AbortSignal,
   onProgress: DownloadProgress,
 ): Promise<ArrayBuffer> {

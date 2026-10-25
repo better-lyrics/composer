@@ -13,7 +13,9 @@ function useEscapeLayer(kind: EscapeLayerKind, active: boolean, onEscape: () => 
     const { push, pop } = useEscapeLayerStackStore.getState();
     const token = push(kind);
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && isTopEscapeLayer(token)) handleEscape();
+      if (event.key !== "Escape" || !isTopEscapeLayer(token)) return;
+      event.preventDefault();
+      handleEscape();
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => {

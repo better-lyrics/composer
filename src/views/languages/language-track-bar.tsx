@@ -17,8 +17,7 @@ interface LanguageTrackBarProps {
 
 // -- Constants ----------------------------------------------------------------
 
-const CHIP =
-  "inline-flex items-center gap-1.5 h-7 pl-2.5 pr-1 text-xs font-medium rounded-lg bg-composer-button text-composer-text";
+const CHIP = "inline-flex shrink-0 items-center gap-1.5 h-7 pl-[9px] pr-1 text-[13px] rounded-lg text-(--label)";
 
 // -- Component ----------------------------------------------------------------
 
@@ -30,9 +29,9 @@ const LanguageTrackBar: React.FC<LanguageTrackBarProps> = ({
   onAdd,
   onRemove,
 }) => (
-  <div className="flex flex-wrap items-center gap-2 px-6 py-2 border-b border-composer-border select-none">
+  <div className="tray min-w-0 overflow-x-auto overscroll-none select-none">
     <span className={CHIP}>
-      <IconAbc aria-hidden="true" className="size-3.5 text-composer-text-muted" />
+      <IconAbc aria-hidden="true" className="size-3.5 text-(--muted)" />
       Transliteration
       <TransliterationHelp />
     </span>
@@ -43,10 +42,10 @@ const LanguageTrackBar: React.FC<LanguageTrackBarProps> = ({
           {name}
           <IconButton
             label={`Remove ${name}`}
-            icon={<IconX className="size-3.5" />}
+            icon={<IconX className="size-[13px]" />}
             variant="ghost"
             onClick={() => onRemove(language)}
-            className="size-5 rounded-md"
+            className="size-5 rounded-md hover:bg-(--layer-2) hover:text-composer-text"
           />
         </span>
       );
@@ -59,8 +58,14 @@ const LanguageTrackBar: React.FC<LanguageTrackBarProps> = ({
         placement="bottom-start"
         options={availableLanguages.map(([value, label]) => ({ value, label }))}
         trigger={
-          <Button variant="ghost" size="sm" hasIcon disabled={disabled}>
-            <IconPlus className="size-4" />
+          <Button
+            variant="ghost"
+            size="sm"
+            hasIcon
+            disabled={disabled}
+            className="shrink-0 h-7 gap-[5px] pl-[7px] pr-2.5 text-[13px] hover:bg-(--layer-2) hover:text-composer-text"
+          >
+            <IconPlus className="size-3.5" />
             Add language
           </Button>
         }

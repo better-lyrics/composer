@@ -37,7 +37,7 @@ const GoHomeButton: React.FC<{ primary: boolean }> = ({ primary }) => (
 type RecoveryStatus = "idle" | "downloading" | "success" | "empty" | "failed";
 
 const RECOVERY_MESSAGES: Partial<Record<RecoveryStatus, string>> = {
-  success: "Saved. Open Composer, head to the Export tab, and click Import Project to keep going.",
+  success: "Saved. Open Composer, head to the Export tab, and pick Import project from the Project menu to keep going.",
   empty: "Nothing saved in this browser yet.",
   failed: "Couldn't reach your save. Try opening /recover in a fresh tab.",
 };
@@ -72,7 +72,7 @@ const ErrorActions: React.FC<{ homeIsPrimary: boolean }> = ({ homeIsPrimary }) =
           {recoveryStatus === "downloading" ? "Downloading…" : "Download my work"}
         </Button>
       </div>
-      {recoveryMessage && <p className="text-xs text-composer-text-muted select-text">{recoveryMessage}</p>}
+      {recoveryMessage && <p className="text-xs text-(--muted) select-text">{recoveryMessage}</p>}
       {recoveryStatus === "success" && (
         <ClearRecoveryButton clearedMessage="Cleared. Reload Composer to start fresh." />
       )}
@@ -90,7 +90,7 @@ const TechnicalDetails: React.FC<{ stack?: string; responseData?: unknown }> = (
       <button
         type="button"
         onClick={() => setShowDetails((v) => !v)}
-        className="inline-flex items-center gap-1 text-xs text-composer-text-muted hover:text-composer-text transition-colors cursor-pointer"
+        className="inline-flex items-center gap-1 text-xs text-(--muted) hover:text-composer-text transition-colors cursor-pointer"
         aria-expanded={showDetails}
       >
         {showDetails ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
@@ -99,14 +99,14 @@ const TechnicalDetails: React.FC<{ stack?: string; responseData?: unknown }> = (
       {showDetails && (
         <div className="w-full flex flex-col gap-2 text-left">
           {responseDataString && (
-            <Scroll className="rounded-md bg-composer-button max-h-48">
+            <Scroll className="rounded-md bg-(--well) max-h-48">
               <pre className="p-3 text-[11px] leading-relaxed text-composer-text-secondary select-text font-mono">
                 {responseDataString}
               </pre>
             </Scroll>
           )}
           {stack && (
-            <Scroll className="rounded-md bg-composer-button max-h-72">
+            <Scroll className="rounded-md bg-(--well) max-h-72">
               <pre className="p-3 text-[11px] leading-relaxed text-composer-text-secondary select-text font-mono whitespace-pre-wrap">
                 {stack}
               </pre>
@@ -129,7 +129,7 @@ const ErrorFallbackPanel: React.FC<{ details: ErrorPresentation }> = ({ details 
         <div className="flex flex-col gap-1.5">
           <h1 className="text-2xl font-semibold text-composer-text">{details.title}</h1>
           {details.errorName && details.errorName !== "Error" && (
-            <p className="text-xs font-mono text-composer-text-muted select-text">{details.errorName}</p>
+            <p className="text-xs font-mono text-(--muted) select-text">{details.errorName}</p>
           )}
           <p className="text-sm text-composer-text-secondary leading-relaxed select-text break-words">
             {details.subtitle}

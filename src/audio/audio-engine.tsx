@@ -119,11 +119,13 @@ const AudioEngine: React.FC = () => {
         volume: initialVolume,
         isMuted: initialIsMuted,
         isPlaying: initialIsPlaying,
+        currentTime: initialCurrentTime,
       } = useAudioStore.getState();
       audio.playbackRate = initialPlaybackRate;
       audio.preservesPitch = useSettingsStore.getState().preservePitch;
       audio.volume = initialVolume;
       audio.muted = initialIsMuted;
+      if (initialCurrentTime > 0) audio.currentTime = initialCurrentTime;
       audio.style.display = "none";
       document.body.appendChild(audio);
       audioRef.current = audio;

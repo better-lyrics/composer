@@ -1,6 +1,7 @@
 import { TOKEN_VAR } from "@/domain/theme/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { bufferToBlobUrl, createAudioFile, makeSineBuffer } from "@/test/audio-fixtures";
 import {
   WAVEFORM_SWEEP_ANIMATION,
@@ -147,19 +148,18 @@ describe("TimelineWaveform redraw background", () => {
     expect(bg?.style.height).toBe("80px");
   });
 
-  it("background uses bg-composer-bg so it matches the page and the area never visually 'pops'", async () => {
+  it("background uses the well surface so the area never visually 'pops'", async () => {
     setupWaveformAudio(30);
     await render(<TimelineWaveform />);
-    expect(getBackground()?.className).toContain("bg-composer-bg");
+    expect(getBackground()?.className).toContain("bg-(--well)");
   });
 
-  it("background owns the border and shadow so they remain visible while the WaveSurfer fade-in is mid-flight", async () => {
+  it("background owns the border so it remains visible while the WaveSurfer fade-in is mid-flight", async () => {
     setupWaveformAudio(30);
     await render(<TimelineWaveform />);
     const bg = getBackground();
     expect(bg?.className).toContain("border-b");
-    expect(bg?.className).toContain("border-composer-border");
-    expect(bg?.className).toContain("shadow-lg");
+    expect(bg?.className).toContain("border-(--divider)");
   });
 
   it("the WaveSurfer fade wrapper holds the opacity transition, NOT the outer sticky host", async () => {
@@ -506,5 +506,66 @@ describe("TimelineWaveform · stacking", () => {
 
     expect(Number(getComputedStyle(shade).zIndex)).toBeGreaterThan(WAVESURFER_PROGRESS_Z_INDEX);
     utilities.remove();
+  });
+});
+
+describe("TimelineWaveform loop region", () => {
+  let utilities: HTMLStyleElement | null = null;
+
+  afterEach(() => {
+    utilities?.remove();
+    utilities = null;
+  });
+
+  async function renderInScrollContainer() {
+    setupWaveformAudio(30);
+    useSettingsStore.setState({ snapPlayheadToPoints: false });
+    useTimelineStore.setState({ zoom: 50, loopRegion: null, selectedWords: [] });
+    const screen = await render(
+      <div data-scroll-container style={{ width: 800, overflow: "auto" }}>
+        <TimelineWaveform />
+      </div>,
+    );
+    utilities = await installUtilitiesUsedIn(screen.container);
+    return screen.container.querySelector(".cursor-pointer") as HTMLElement;
+  }
+
+  function mouse(type: string, target: EventTarget, clientX: number) {
+    target.dispatchEvent(new MouseEvent(type, { clientX, clientY: 40, button: 0, bubbles: true }));
+  }
+
+  it("dragging across the waveform draws a region with Loop on", async () => {
+    const layer = await renderInScrollContainer();
+    const left = layer.getBoundingClientRect().left;
+    mouse("mousedown", layer, left + 100);
+    mouse("mousemove", document, left + 200);
+    // The draft only replaces the region on release, so playback never loops a half-drawn one.
+    expect(useTimelineStore.getState().loopRegion).toBeNull();
+    expect(useTimelineStore.getState().loopRegionDrag?.draft?.end).toBeCloseTo(4, 1);
+    mouse("mouseup", document, left + 200);
+    const region = useTimelineStore.getState().loopRegion;
+    expect(region?.begin).toBeCloseTo(2, 1);
+    expect(region?.end).toBeCloseTo(4, 1);
+    expect(region?.loops).toBe(true);
+  });
+
+  it("regression: losing window focus mid-draw cancels it", async () => {
+    const layer = await renderInScrollContainer();
+    const left = layer.getBoundingClientRect().left;
+    mouse("mousedown", layer, left + 100);
+    mouse("mousemove", document, left + 200);
+    window.dispatchEvent(new Event("blur"));
+    mouse("mousemove", document, left + 300);
+    mouse("mouseup", document, left + 300);
+    expect(useTimelineStore.getState().loopRegionDrag).toBeNull();
+    expect(useTimelineStore.getState().loopRegion).toBeNull();
+  });
+
+  it("a click without a drag draws nothing", async () => {
+    const layer = await renderInScrollContainer();
+    const left = layer.getBoundingClientRect().left;
+    mouse("mousedown", layer, left + 100);
+    mouse("mouseup", document, left + 100);
+    expect(useTimelineStore.getState().loopRegion).toBeNull();
   });
 });

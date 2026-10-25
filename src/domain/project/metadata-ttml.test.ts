@@ -65,6 +65,10 @@ describe("fromComposerMeta", () => {
   });
   describe("edge cases", () => {
     it("returns an empty object for no pairs", () => expect(fromComposerMeta([])).toEqual({}));
+    it("keeps the exported YouTube video ID out of song details", () => {
+      expect(fromComposerMeta([{ key: "ytVideoId", value: "dQw4w9WgXcQ" }])).toEqual({});
+      expect(RESERVED_META_KEYS.has("ytVideoId")).toBe(true);
+    });
     it("ignores pairs with an empty key", () => expect(fromComposerMeta([{ key: "", value: "x" }])).toEqual({}));
     it("ignores pairs with an empty value", () => {
       expect(

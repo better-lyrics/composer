@@ -21,23 +21,23 @@ const AudioStatusLabel: React.FC<AudioStatusLabelProps> = ({ project, compact = 
   const textSize = compact ? "text-xs" : "text-[13px]";
 
   if (status.kind === "none") {
-    return <span className={cn(textSize, "text-composer-text-muted")}>No audio</span>;
+    return <span className={cn(textSize, "text-(--muted)")}>No audio</span>;
   }
   if (status.kind === "missing") {
     return (
       <span className={cn(LABEL_STYLES, textSize, "text-composer-warning")}>
-        <IconAlertTriangle aria-hidden="true" className="size-4 shrink-0" />
+        <IconAlertTriangle aria-hidden="true" className="size-[15px] shrink-0" />
         Audio missing
       </span>
     );
   }
   const StatusIcon = status.kind === "youtube" ? IconBrandYoutube : IconFileMusic;
   return (
-    <span className={cn(LABEL_STYLES, textSize, "text-composer-text-secondary")}>
-      <StatusIcon aria-hidden="true" className="size-4 shrink-0 text-composer-text opacity-50" />
+    <span className={cn(LABEL_STYLES, textSize, "text-(--muted)")}>
+      <StatusIcon aria-hidden="true" className="size-[15px] shrink-0" />
       {status.kind === "youtube" ? "YouTube" : status.format}
       {status.kind === "file" && !compact && (
-        <span className="tabular-nums text-composer-text-muted">{formatFileSize(status.bytes)}</span>
+        <span className="tabular-nums text-composer-text-faint">{formatFileSize(status.bytes)}</span>
       )}
     </span>
   );

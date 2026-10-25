@@ -16,7 +16,7 @@ const DESCRIPTION = "Grab the backup Composer saved in this browser and pick up 
 // -- Helpers ------------------------------------------------------------------
 
 // Middle-ellipsis truncation so the extension stays visible. End-truncation
-// (CSS text-overflow) would hide ".ttml-project.json" which is the most
+// (CSS text-overflow) would hide ".composer" which is the most
 // useful part for the user to recognise.
 function truncateMiddle(text: string, max: number): string {
   if (text.length <= max) return text;
@@ -36,9 +36,7 @@ type RecoveryState =
   | { phase: "failed"; message: string };
 
 const SavedWorkSummary: React.FC<{ result: RecoveryResult }> = ({ result }) => (
-  <p className="text-xs text-composer-text-muted select-text">
-    {formatSavedWorkSummary(result.lineCount, result.savedAt)}
-  </p>
+  <p className="text-xs text-(--muted) select-text">{formatSavedWorkSummary(result.lineCount, result.savedAt)}</p>
 );
 
 const RecoverPanel: React.FC = () => {
@@ -96,16 +94,17 @@ const RecoverPanel: React.FC = () => {
           <h1 className="text-2xl font-semibold text-composer-text">Recover your work</h1>
           <p className="text-sm text-composer-text-secondary leading-relaxed">
             Composer saves your work automatically as you go. This page grabs that backup and downloads it as a file.
-            Open Composer, head to the Export tab, and click Import Project to pick up where you left off.
+            Open Composer, head to the Export tab, and pick Import project from the Project menu to pick up where you
+            left off.
           </p>
         </div>
 
-        {state.phase === "reading" && <p className="text-xs text-composer-text-muted">Looking for your work…</p>}
+        {state.phase === "reading" && <p className="text-xs text-(--muted)">Looking for your work…</p>}
 
         {state.phase === "downloaded" && (
           <div className="flex flex-col items-center gap-2 text-sm max-w-full">
             <p className="inline-flex items-center gap-2 text-composer-text max-w-full flex-wrap justify-center">
-              <IconCheck size={16} className="text-green-400 shrink-0" />
+              <IconCheck size={16} className="text-composer-positive shrink-0" />
               <span className="shrink-0">Downloaded as</span>
               <span className="font-mono text-xs select-text" title={state.result.filename}>
                 {truncateMiddle(state.result.filename, 44)}
@@ -132,7 +131,7 @@ const RecoverPanel: React.FC = () => {
         {state.phase === "failed" && (
           <div className="flex flex-col items-center gap-2 text-sm">
             <p className="text-composer-error-text">Something went wrong while trying to find your work.</p>
-            <p className="text-xs font-mono text-composer-text-muted select-text break-all max-w-md">{state.message}</p>
+            <p className="text-xs font-mono text-(--muted) select-text break-all max-w-md">{state.message}</p>
           </div>
         )}
 
@@ -171,7 +170,7 @@ const RecoverPanel: React.FC = () => {
 // -- Page ---------------------------------------------------------------------
 
 const RecoverFallback: React.FC = () => (
-  <div className="flex items-center justify-center h-screen bg-composer-bg text-composer-text-muted text-sm">
+  <div className="flex items-center justify-center h-screen bg-composer-bg text-(--muted) text-sm">
     Looking for your work…
   </div>
 );

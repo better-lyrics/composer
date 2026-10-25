@@ -1,4 +1,5 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { wholeLineSegments } from "@/domain/language/manual-segments";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import { alignTrackToLine } from "@/domain/language/align";
@@ -24,7 +25,7 @@ function withTransliteration(line: LyricLine, text: string): LyricLine {
     text,
     origin: "manual" as const,
     sourceFingerprint: `fp-${line.id}`,
-    segments: [{ original: line.text, transliteration: text }],
+    segments: wholeLineSegments(line.text, text),
   };
   return reconcileLine({ ...line, ...alignTrackToLine(line, track) });
 }

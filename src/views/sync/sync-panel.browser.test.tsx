@@ -345,7 +345,7 @@ describe("progress counter", () => {
       ],
     });
     const screen = await render(<SyncPanel />);
-    expect(screen.container.querySelector("h2 + span")?.textContent).toBe("1/2");
+    expect(screen.container.querySelector("h2 + span")?.textContent).toBe("1 / 2 lines synced");
   });
 });
 

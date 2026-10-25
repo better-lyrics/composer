@@ -59,7 +59,20 @@ function historyShortcutAction(event: KeyboardEvent, options: HistoryShortcutOpt
   return legacy;
 }
 
+// Held keys run one step; repeats are still consumed so the browser never runs its own undo.
+function runHistoryShortcut(
+  event: KeyboardEvent,
+  run: (action: HistoryAction) => void,
+  options: HistoryShortcutOptions = {},
+): boolean {
+  const action = historyShortcutAction(event, options);
+  if (!action) return false;
+  event.preventDefault();
+  if (!event.repeat) run(action);
+  return true;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { historyShortcutAction };
+export { historyShortcutAction, runHistoryShortcut };
 export type { HistoryAction };

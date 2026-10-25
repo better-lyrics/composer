@@ -24,7 +24,7 @@ function useSelectionPlaybackRange(): SelectionPlaybackRange | null {
   const duration = useAudioStore((s) => s.duration);
   return useMemo(() => {
     const selection = active ? selectionBounds(lines, selectedWords) : null;
-    const range = selection ? playbackRange({ selection, focus: null, leadIn, duration }) : null;
+    const range = selection ? playbackRange({ region: null, selection, focus: null, leadIn, duration }) : null;
     return selection && range ? { selection, range } : null;
   }, [active, selectedWords, lines, leadIn, duration]);
 }

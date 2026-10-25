@@ -49,7 +49,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
   it("gives a shared instance its own timing", async () => {
     seedBannerMenu(createGroup({ id: "g1", label: "Chorus", sharesTiming: true }), 1);
     const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Use own timing" }).click();
+    await screen.getByRole("menuitem", { name: "Use own timing" }).click();
 
     await expect.poll(() => group().ownTimingInstances).toEqual([1]);
     await expect.element(screen.getByText("Chorus 2 uses its own timing")).toBeVisible();
@@ -59,7 +59,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
     seedBannerMenu(createGroup({ id: "g1", label: "Chorus", sharesTiming: true, ownTimingInstances: [1] }), 1);
     useProjectStore.setState({ lines: [chorus(0, 10), chorus(1, 40, 1.2)] });
     const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing", exact: true }).click();
+    await screen.getByRole("menuitem", { name: "Share timing", exact: true }).click();
 
     await expect.poll(() => group().ownTimingInstances).toBeUndefined();
     expect(secondWordBegin("c1")).toBeCloseTo(41.5, 6);
@@ -69,7 +69,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
   it("edge case: says nothing was replaced when the own timing already matched", async () => {
     seedBannerMenu(createGroup({ id: "g1", label: "Chorus", sharesTiming: true, ownTimingInstances: [1] }), 1);
     const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing" }).click();
+    await screen.getByRole("menuitem", { name: "Share timing" }).click();
 
     await expect.element(screen.getByText("Chorus 2 shares timing again", { exact: true })).toBeVisible();
   });
@@ -87,7 +87,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
       });
     useProjectStore.setState({ lines: [line(0, 0, 10), line(0, 1, 13), line(1, 0, 40), line(1, 1)] });
     const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing", exact: true }).click();
+    await screen.getByRole("menuitem", { name: "Share timing", exact: true }).click();
 
     await expect.element(screen.getByText("Chorus 2 shares timing again", { exact: true })).toBeVisible();
     expect(store().lines[3].begin).toBe(43);
@@ -102,7 +102,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
       ],
     });
     const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing" }).click();
+    await screen.getByRole("menuitem", { name: "Share timing" }).click();
 
     await expect
       .element(
@@ -115,7 +115,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
   it("undoes an override change from the toast", async () => {
     seedBannerMenu(createGroup({ id: "g1", label: "Chorus", sharesTiming: true }), 1);
     const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Use own timing" }).click();
+    await screen.getByRole("menuitem", { name: "Use own timing" }).click();
     await expect.poll(() => group().ownTimingInstances).toEqual([1]);
 
     await screen.getByRole("button", { name: "Undo" }).click();
@@ -128,7 +128,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
       seedBannerMenu(createGroup({ id: "g1", label: "Chorus", sharesTiming: true }), 0);
       const screen = await renderMenu();
 
-      await expect.element(screen.getByRole("button", { name: "Use own timing" })).toBeVisible();
+      await expect.element(screen.getByRole("menuitem", { name: "Use own timing" })).toBeVisible();
       expect(screen.container.ownerDocument.body.textContent).not.toContain("Share timing");
     });
 
@@ -136,7 +136,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
       seedBannerMenu(createGroup({ id: "g1", label: "Chorus" }), 0);
       const screen = await renderMenu();
 
-      await expect.element(screen.getByRole("button", { name: "Share timing across group" })).toBeVisible();
+      await expect.element(screen.getByRole("menuitem", { name: "Share timing across group" })).toBeVisible();
       expect(screen.container.ownerDocument.body.textContent).not.toContain("Use own timing");
     });
   });
@@ -145,7 +145,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
     it("closes the menu and records one undo step", async () => {
       seedBannerMenu(createGroup({ id: "g1", label: "Chorus", sharesTiming: true }), 1);
       const screen = await renderMenu();
-      await screen.getByRole("button", { name: "Use own timing" }).click();
+      await screen.getByRole("menuitem", { name: "Use own timing" }).click();
 
       await expect.poll(() => useTimelineStore.getState().contextMenu).toBeNull();
       store().undo();
@@ -157,7 +157,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
       seedBannerMenu(createGroup({ id: "g1", label: "Chorus", sharesTiming: true }), 1);
       const before = store().lines;
       const screen = await renderMenu();
-      await screen.getByRole("button", { name: "Use own timing" }).click();
+      await screen.getByRole("menuitem", { name: "Use own timing" }).click();
 
       await expect.poll(() => group().ownTimingInstances).toEqual([1]);
       expect(store().lines).toEqual(before);
@@ -170,6 +170,6 @@ describe("TimelineContextMenu · banner sharing items keep the old items", () =>
 
   it("still offers Ping siblings", async () => {
     const screen = await renderMenu();
-    await expect.element(screen.getByRole("button", { name: "Ping siblings" })).toBeVisible();
+    await expect.element(screen.getByRole("menuitem", { name: "Ping siblings" })).toBeVisible();
   });
 });

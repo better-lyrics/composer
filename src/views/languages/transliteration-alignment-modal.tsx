@@ -47,6 +47,7 @@ function groupBoundaryPoints(words: WordTiming[]): number[] {
 
 const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps> = ({ line, field, onClose }) => {
   const updateLine = useProjectStore((state) => state.updateLine);
+  const commitPendingLineEdit = useProjectStore((state) => state.commitPendingLineEdit);
   const track = line.transliteration;
   const canonicalText = field === "words" ? track?.text : track?.backgroundText;
   const sourceWords = line[field];
@@ -118,6 +119,8 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
         };
       }
     }
+    // A language-only edit, so it must not reach the shared timing copy that history writes run.
+    const { lines: baseline, isDirtySinceHistory: baselineWasDirty } = useProjectStore.getState();
     updateLine(
       line.id,
       {
@@ -131,6 +134,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
       },
       { deriveText: false },
     );
+    commitPendingLineEdit(baseline, baselineWasDirty);
     onClose();
   };
 
@@ -144,7 +148,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
       className="max-h-[calc(100vh-2rem)] max-w-3xl flex flex-col"
       bodyClassName="p-0 min-h-0 flex flex-1 flex-col"
     >
-      <div data-transliteration-alignment-scroll-region className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div data-transliteration-alignment-scroll-region className="min-h-0 flex-1 overflow-y-auto overscroll-none">
         <div className="flex flex-col gap-5 p-5">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-composer-text-secondary text-pretty select-none">
@@ -162,7 +166,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
             {group.words.map((word) => (
               <span
                 key={`${word.begin}-${word.end}-${word.text}`}
-                className="inline-flex h-7 items-baseline gap-2 rounded-lg bg-composer-button px-2.5 text-sm leading-7"
+                className="inline-flex h-7 items-baseline gap-2 rounded-lg bg-(--layer-2) px-2.5 text-sm leading-7"
               >
                 <span className="select-text">{word.text.trimEnd()}</span>
                 <span className="font-mono text-[11px] text-composer-text-muted tabular-nums select-text">
@@ -195,7 +199,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-composer-border px-5 py-4">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-(--divider) px-5 py-4">
         <SplitPickerLegend kinds={separatorKinds([reading], "literal")} />
         <div className="ml-auto flex gap-2 select-none">
           <Button onClick={onClose}>Cancel</Button>

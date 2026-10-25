@@ -57,32 +57,31 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
   const bgWords = line.backgroundWords?.length ? line.backgroundWords : null;
 
   return (
-    <div data-timeline-row className="relative flex">
-      <div
-        className="shrink-0 flex items-center justify-center text-xs text-composer-text-muted border-r-2 shadow-[inset_0_-1px_0_0_var(--color-composer-border),10px_0_15px_-3px_rgb(0_0_0/0.1),4px_0_6px_-4px_rgb(0_0_0/0.1)] bg-composer-bg w-12 sticky left-0 z-60"
-        style={{ borderRightColor: color }}
-      >
-        <GutterAgentPicker lineId={line.id} lineIndex={lineIndex} agentId={line.agentId} />
+    <div
+      data-timeline-row
+      data-row-line={lineIndex}
+      data-in-group={groupColor ? "" : undefined}
+      className="group/row relative flex"
+      style={{ "--agent": color, "--group": groupColor }}
+    >
+      <div className="line-cell shrink-0 w-12 sticky left-0 z-60">
+        <GutterAgentPicker lineId={line.id} lineIndex={lineIndex} agentId={line.agentId} numberHeight={rowHeight} />
       </div>
 
-      <div className={cn("flex-1 border-b border-composer-border relative", mainWords && "overflow-hidden")}>
+      <div className={cn("flex-1 border-b border-(--divider) relative", mainWords && "overflow-hidden")}>
         <div className="absolute inset-0 pointer-events-none" style={{ transform: shiftTransform }}>
           {groupColor && (
             <div
               aria-hidden
               className="absolute inset-0 pointer-events-none z-0"
-              style={{ background: groupColor, opacity: 0.06 }}
+              style={{ background: groupColor, opacity: 0.04 }}
             />
           )}
         </div>
         <div
           data-line-index={lineIndex}
           data-track="word"
-          className={cn(
-            "transition-colors relative",
-            !mainWords && "opacity-50",
-            hoveredTrack === "word" && "bg-composer-accent/10",
-          )}
+          className={cn("relative", !mainWords && "opacity-50", hoveredTrack === "word" && "bg-composer-accent/10")}
           style={{ transform: shiftTransform }}
         >
           {mainWords ? (
@@ -106,8 +105,10 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
             data-line-index={lineIndex}
             data-track="bg"
             className={cn(
-              "relative opacity-70 transition-colors border-t border-composer-border/50",
-              hoveredTrack === "bg" ? "bg-composer-accent/10" : "bg-composer-bg-elevated/25",
+              "relative shadow-[inset_0_1px_0_var(--divider)]",
+              hoveredTrack === "bg"
+                ? "bg-composer-accent/10"
+                : "bg-[color-mix(in_oklab,var(--color-composer-bg-dark)_35%,transparent)]",
             )}
             style={{ transform: shiftTransform }}
           >
@@ -132,7 +133,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
         aria-orientation="horizontal"
         aria-hidden="true"
         className={cn(
-          "absolute left-0 right-0 bottom-0 h-1 cursor-ns-resize hover:bg-composer-accent/30 transition-colors z-10",
+          "absolute left-0 right-0 bottom-0 h-1 cursor-ns-resize hover:bg-composer-accent/30 z-10",
           isResizing && "bg-composer-accent/50",
         )}
         onMouseDown={startResize}

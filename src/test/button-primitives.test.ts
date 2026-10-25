@@ -14,8 +14,7 @@ interface PrimitiveRule {
   offendingExamples: string[];
 }
 
-// Not a toggle: the sync header text toggle has no inactive dimming.
-const TOGGLE_RECIPE_EXCEPTIONS = new Set(["views/sync/sync-header.tsx"]);
+const TOGGLE_RECIPE_EXCEPTIONS = new Set<string>();
 
 const RULES: PrimitiveRule[] = [
   {
@@ -26,8 +25,8 @@ const RULES: PrimitiveRule[] = [
     offendingExamples: ['<Button\n  variant="ghost"\n  size="icon"\n>'],
   },
   {
-    name: 'a hand-rolled toggle variant (? "primary" : "ghost")',
-    pattern: /\? "primary" : "ghost"/,
+    name: 'a hand-rolled toggle variant (? "latch" : "ghost")',
+    pattern: /\? "(?:primary|latch)" : "ghost"/,
     use: "ToggleButton from @/ui/toggle-button, which sets aria-pressed",
     allowed: (relPath) => relPath === "ui/toggle-button.tsx" || TOGGLE_RECIPE_EXCEPTIONS.has(relPath),
     exceptions: TOGGLE_RECIPE_EXCEPTIONS,

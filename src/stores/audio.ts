@@ -35,6 +35,7 @@ interface AudioActions {
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
   setPlaybackRate: (rate: number) => void;
+  restorePlaybackRates: (rates: { playbackRate: number; otherPlaybackRate: number }) => void;
   setVolume: (volume: number) => void;
   toggleMute: () => void;
   setIsLoading: (isLoading: boolean) => void;
@@ -47,6 +48,7 @@ interface AudioActions {
 // -- Constants ----------------------------------------------------------------
 
 const NORMAL_PLAYBACK_RATE = 1;
+const FULL_VOLUME = 1;
 const FIRST_OTHER_PLAYBACK_RATE = 0.75;
 
 function createInitialState(): AudioState {
@@ -59,7 +61,7 @@ function createInitialState(): AudioState {
     duration: 0,
     playbackRate: startRate,
     otherPlaybackRate: startRate === NORMAL_PLAYBACK_RATE ? FIRST_OTHER_PLAYBACK_RATE : startRate,
-    volume: settings.rememberVolume ? settings.lastVolume : 1,
+    volume: settings.rememberVolume ? settings.lastVolume : FULL_VOLUME,
     isMuted: false,
     isLoading: false,
     audioElement: null,
@@ -157,6 +159,10 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
     if (settings.rememberPlaybackRate) settings.set("lastPlaybackRate", playbackRate);
     set(playbackRate === NORMAL_PLAYBACK_RATE ? { playbackRate } : { playbackRate, otherPlaybackRate: playbackRate });
   },
+  restorePlaybackRates: ({ playbackRate, otherPlaybackRate }) => {
+    useAudioStore.getState().setPlaybackRate(playbackRate);
+    set({ otherPlaybackRate });
+  },
   setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
   toggleMute: () => set((s) => ({ isMuted: !s.isMuted })),
   setIsLoading: (isLoading) => set({ isLoading }),
@@ -185,7 +191,30 @@ function livePlaybackTime(): number {
   return audioElement?.currentTime ?? currentTime;
 }
 
+function seekBy(seconds: number): void {
+  const { duration, seekTo } = useAudioStore.getState();
+  const target = Math.max(0, livePlaybackTime() + seconds);
+  seekTo(duration > 0 ? Math.min(duration, target) : target);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { livePlaybackTime, toggledPlaybackRate, useAudioStore };
+// -- Source --------------------------------------------------------------------
+
+function playableFile(source: AudioSource): File | null {
+  if (!source) return null;
+  if (source.type === "file") return source.file;
+  if (source.type === "youtube") return source.file ?? null;
+  return null;
+}
+
+export {
+  FULL_VOLUME,
+  NORMAL_PLAYBACK_RATE,
+  livePlaybackTime,
+  playableFile,
+  seekBy,
+  toggledPlaybackRate,
+  useAudioStore,
+};
 export type { AudioSource };

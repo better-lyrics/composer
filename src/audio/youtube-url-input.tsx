@@ -1,6 +1,8 @@
 import { isYouTubeLoadError, isYouTubeLoadFailure, useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
+import { INPUT_STYLES } from "@/ui/input-styles";
+import { cn } from "@/utils/cn";
 import { INVALID_YOUTUBE_LINK_MESSAGE, extractVideoId } from "@/utils/youtube-url";
 import { IconBrandYoutube, IconLoader2 } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
@@ -58,7 +60,7 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
   const trimmed = value.trim();
 
   return (
-    <div className={`flex flex-col gap-1.5 w-full max-w-md ${className ?? ""}`}>
+    <div className={cn("flex flex-col gap-1.5 w-full", className)}>
       <div className="flex gap-2">
         <input
           type="text"
@@ -75,14 +77,14 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
           spellCheck={false}
           autoCapitalize="off"
           autoComplete="off"
-          className="flex-1 h-8 px-3 text-sm rounded-md bg-composer-input border border-composer-border focus:outline-none focus:border-composer-accent cursor-text disabled:opacity-50 select-text"
+          className={cn(INPUT_STYLES, "flex-1 h-9 rounded-lg select-text")}
         />
-        <Button variant="primary" hasIcon onClick={handleSubmit} disabled={isLoading || trimmed.length === 0}>
+        <Button variant="primary" size="lg" hasIcon onClick={handleSubmit} disabled={isLoading || trimmed.length === 0}>
           {isLoading ? <IconLoader2 size={16} className="animate-spin" /> : <IconBrandYoutube size={16} />}
           {isLoading ? "Loading" : "Load"}
         </Button>
       </div>
-      {error && <p className="text-xs text-red-400 select-text">{error}</p>}
+      {error && <p className="text-xs text-composer-negative select-text">{error}</p>}
     </div>
   );
 };

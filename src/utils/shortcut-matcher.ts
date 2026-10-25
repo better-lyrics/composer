@@ -1,22 +1,9 @@
 import { bindingsEqual, getEffectiveBinding } from "@/stores/shortcut-bindings";
 import { type ShortcutBinding, type ShortcutScope, getShortcutsByScope } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
+import { US_PUNCTUATION_BY_CODE } from "@/utils/us-punctuation";
 
 // -- Matching -----------------------------------------------------------------
-
-const US_PUNCTUATION_BY_CODE: Record<string, [base: string, shifted: string]> = {
-  Backquote: ["`", "~"],
-  Minus: ["-", "_"],
-  Equal: ["=", "+"],
-  BracketLeft: ["[", "{"],
-  BracketRight: ["]", "}"],
-  Backslash: ["\\", "|"],
-  Semicolon: [";", ":"],
-  Quote: ["'", '"'],
-  Comma: [",", "<"],
-  Period: [".", ">"],
-  Slash: ["/", "?"],
-};
 
 function physicalKey(event: KeyboardEvent): string | null {
   const { code, shiftKey } = event;
@@ -36,7 +23,11 @@ function getEventKey(event: KeyboardEvent): string {
     if (event.code.startsWith("Key") && event.code.length === 4) return event.code.slice(3).toLowerCase();
     if (event.code.startsWith("Digit") && event.code.length === 6) return event.code.slice(5);
   }
+  const punctuation = US_PUNCTUATION_BY_CODE[event.code];
+  if (event.altKey && punctuation) return punctuation[event.shiftKey ? 1 : 0];
   if (isNonLatinLetter(event.key)) return physicalKey(event) ?? event.key;
+  // Chrome and Safari on macOS can drop Shift from event.key while Cmd is held (Cmd+Shift+, reads ",").
+  if (event.shiftKey && punctuation && event.key === punctuation[0]) return punctuation[1];
   return event.key.length === 1 ? event.key.toLowerCase() : event.key;
 }
 
@@ -91,13 +82,17 @@ function bindingFromKeyboardEvent(event: KeyboardEvent): ShortcutBinding | null 
   };
 }
 
+function reportedBinding(event: KeyboardEvent, binding: ShortcutBinding): ShortcutBinding | undefined {
+  const reportedKey = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  return reportedKey === binding.key ? undefined : { ...binding, key: reportedKey };
+}
+
 function matchesBinding(event: KeyboardEvent, binding: ShortcutBinding): boolean {
   if (binding.key === "") return false;
   if (event.getModifierState("AltGraph")) return false;
-  const eventKey = getEventKey(event);
   const bindingKey = binding.key.length === 1 ? binding.key.toLowerCase() : binding.key;
-
-  if (eventKey !== bindingKey) return false;
+  const reportedKey = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  if (getEventKey(event) !== bindingKey && reportedKey !== bindingKey) return false;
   if (!!binding.shift !== event.shiftKey) return false;
   if (!!binding.alt !== event.altKey) return false;
 
@@ -190,6 +185,7 @@ function isReservedBrowserShortcut(binding: ShortcutBinding): boolean {
 // -- Exports ------------------------------------------------------------------
 
 export {
+  reportedBinding,
   bindingFromKeyboardEvent,
   findMatchingShortcut,
   isCommandBinding,

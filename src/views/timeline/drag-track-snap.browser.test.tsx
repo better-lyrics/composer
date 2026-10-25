@@ -6,7 +6,13 @@ import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";
 import { DND_LINES, DndRows, installTimelineLayoutStyles, trackRect } from "@/test/timeline-dnd-rows";
 import { trackSnapModifier, trackSnapOffsetY } from "@/views/timeline/drag-track-snap";
+import { wordInsetPx } from "@/views/timeline/row-geometry";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+
+// -- Constants -----------------------------------------------------------------
+
+const MAIN_INSET = wordInsetPx("word");
+const BG_INSET = wordInsetPx("bg");
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -15,7 +21,7 @@ async function renderRows() {
 }
 
 function sourceTop(): number {
-  return trackRect(0, "word").top + 4;
+  return trackRect(0, "word").top + MAIN_INSET;
 }
 
 function rectAt(top: number): ClientRect {
@@ -53,11 +59,11 @@ describe("trackSnapOffsetY", () => {
     useProjectStore.setState({ lines: DND_LINES });
   });
 
-  it("aligns the ghost top 4px inside the BG zone under the pointer", async () => {
+  it("aligns the ghost top inside the BG zone under the pointer", async () => {
     await renderRows();
     const bg = trackRect(1, "bg");
     expect(trackSnapOffsetY(bg.left + 200, bg.top + bg.height / 2, sourceTop())).toBeCloseTo(
-      bg.top + 4 - sourceTop(),
+      bg.top + BG_INSET - sourceTop(),
       5,
     );
   });
@@ -65,7 +71,10 @@ describe("trackSnapOffsetY", () => {
   it("aligns to the main track under the pointer", async () => {
     await renderRows();
     const main = trackRect(1, "word");
-    expect(trackSnapOffsetY(main.left + 200, main.top + 5, sourceTop())).toBeCloseTo(main.top + 4 - sourceTop(), 5);
+    expect(trackSnapOffsetY(main.left + 200, main.top + 5, sourceTop())).toBeCloseTo(
+      main.top + MAIN_INSET - sourceTop(),
+      5,
+    );
   });
 
   it("returns zero offset over the source track itself", async () => {
@@ -92,7 +101,7 @@ describe("trackSnapOffsetY", () => {
       const first = trackSnapModifier(modifierArgs(activatorEvent, startRect, transform));
       const afterScroll = trackSnapModifier(modifierArgs(activatorEvent, rectAt(sourceTop() - 120), transform));
 
-      expect(first.y).toBeCloseTo(bg.top + 4 - sourceTop(), 5);
+      expect(first.y).toBeCloseTo(bg.top + BG_INSET - sourceTop(), 5);
       expect(afterScroll.y).toBeCloseTo(first.y, 5);
     });
 
@@ -103,7 +112,7 @@ describe("trackSnapOffsetY", () => {
       const pointerAt = (y: number) => new PointerEvent("pointerdown", { clientX: main.left + 200, clientY: y });
 
       trackSnapModifier(modifierArgs(pointerAt(main.top + 5), rectAt(sourceTop()), transform));
-      const second = trackSnapModifier(modifierArgs(pointerAt(main.top + 5), rectAt(main.top + 4), transform));
+      const second = trackSnapModifier(modifierArgs(pointerAt(main.top + 5), rectAt(main.top + MAIN_INSET), transform));
 
       expect(second.y).toBeCloseTo(0, 5);
     });
@@ -116,7 +125,7 @@ describe("trackSnapOffsetY", () => {
       const main = trackRect(1, "word");
       expect(main.height).toBe(80);
       expect(trackSnapOffsetY(main.left + 200, main.bottom - 2, sourceTop())).toBeCloseTo(
-        main.top + 4 - sourceTop(),
+        main.top + MAIN_INSET - sourceTop(),
         5,
       );
     });
@@ -125,7 +134,7 @@ describe("trackSnapOffsetY", () => {
       useTimelineStore.setState({ defaultRowHeight: 60, rowHeights: {} });
       await renderRows();
       const bg = trackRect(0, "bg");
-      expect(trackSnapOffsetY(bg.left + 200, bg.top + 2, sourceTop())).toBeCloseTo(bg.top + 4 - sourceTop(), 5);
+      expect(trackSnapOffsetY(bg.left + 200, bg.top + 2, sourceTop())).toBeCloseTo(bg.top + BG_INSET - sourceTop(), 5);
     });
   });
 });

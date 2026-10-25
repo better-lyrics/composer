@@ -18,7 +18,7 @@ const SearchResultGroupHeader: React.FC<SearchResultGroupHeaderProps> = ({ icon:
       type="button"
       aria-label={`Open ${label} section`}
       onClick={onOpenSection}
-      className="ml-auto text-composer-text-faint hover:text-composer-accent-text cursor-pointer transition-colors"
+      className="ml-auto text-composer-text-muted hover:text-composer-accent-text cursor-pointer transition-colors"
     >
       Open section
     </button>

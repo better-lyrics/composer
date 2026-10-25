@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import ortPkg from "./node_modules/onnxruntime-web/package.json";
 import pkg from "./package.json";
 
 // Node 17+ returns `localhost` as ::1 (IPv6) first. When the browser server and
@@ -15,6 +16,7 @@ export default defineConfig({
   plugins: [react()],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    __ORT_VERSION__: JSON.stringify(ortPkg.version),
   },
   resolve: {
     alias: {

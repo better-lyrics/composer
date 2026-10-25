@@ -102,6 +102,7 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
     currentStem: "original",
     primingStripped: false,
     customSnapPoints: [],
+    beatGrid: null,
     hasUnexportedImport: false,
     importedMetadataKeys: [],
     ttmlEditState: null,

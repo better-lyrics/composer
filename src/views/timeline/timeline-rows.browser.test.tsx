@@ -84,5 +84,27 @@ describe("TimelineRows", () => {
       const screen = await render(<Harness />);
       expect(sizerHeight(screen.container)).toBe(`${80 + 80 + 1}px`);
     });
+
+    it("regression: places rows below rows that changed height before they were ever rendered", async () => {
+      useTimelineStore.setState({ defaultRowHeight: 44, rowHeights: {} });
+      const plain = Array.from({ length: 40 }, (_, i) => createLine({ id: `l${i}`, text: `line ${i}` }));
+      useProjectStore.setState({ lines: plain.slice(0, 1) });
+      const screen = await render(<Harness />);
+      const ooh = [createWord({ text: "ooh", begin: 0, end: 1 })];
+      useProjectStore.setState({ lines: plain.map((line, i) => (i < 30 ? { ...line, backgroundWords: ooh } : line)) });
+      await expect.poll(() => sizerHeight(screen.container)).toBe(`${30 * 89 + 10 * 69}px`);
+
+      const scroller = screen.container.firstElementChild as HTMLElement;
+      scroller.scrollTop = scroller.scrollHeight;
+
+      await expect
+        .poll(() => {
+          const first = Number(screen.container.querySelector("[data-item-index]")?.getAttribute("data-item-index"));
+          const list = screen.container.querySelector<HTMLElement>("[data-testid=virtuoso-item-list]");
+          const expectedTop = Math.min(first, 30) * 89 + Math.max(0, first - 30) * 69;
+          return first > 0 && list?.style.paddingTop === `${expectedTop}px`;
+        })
+        .toBe(true);
+    });
   });
 });

@@ -9,6 +9,7 @@ import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
 import type { ProjectTab } from "@/domain/project/tab";
 import type { SnapPoint } from "@/domain/snap-point/model";
+import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { ensureOpenProjectId, findOpenProjectId } from "@/lib/open-project-session";
 import { deleteProjectAudio, saveProjectAudio } from "@/lib/project-audio";
 import { saveProjectRecord } from "@/lib/project-repository";
@@ -33,6 +34,7 @@ interface ProjectSaveInput {
   currentStem: Stem;
   primingStripped: boolean;
   customSnapPoints: SnapPoint[];
+  beatGrid: BeatGrid | null;
   hasUnexportedImport: boolean;
   importedMetadataKeys: MetadataKey[];
   ttmlEditState: TtmlEditState;

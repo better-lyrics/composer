@@ -2,6 +2,7 @@ import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
+import { createGroup } from "@/test/factories";
 import { render } from "@/test/render";
 import { TransliterationAlignmentModal } from "@/views/languages/transliteration-alignment-modal";
 import { describe, expect, it, vi } from "vitest";
@@ -67,6 +68,40 @@ describe("TransliterationAlignmentModal", () => {
       expect(saved.words?.[0].transliteration).toBe("ga");
       expect(saved.words?.[1].transliteration).toBe("na");
       expect(saved.transliteration?.alignmentStatus).toBe("confirmed");
+    });
+
+    it("regression: saves as one undo step", async () => {
+      const line = setupLine();
+      useProjectStore.getState().clearHistory();
+      const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
+      await screen.getByRole("button", { name: "Save", exact: true }).click();
+
+      expect(useProjectStore.getState().isDirtySinceHistory).toBe(false);
+      useProjectStore.getState().undo();
+      expect(useProjectStore.getState().lines[0].words?.[0].transliteration).toBeUndefined();
+    });
+
+    it("regression: leaves the readings of another instance sharing timing alone", async () => {
+      const line = { ...setupLine(), groupId: "g1", instanceIdx: 0, templateLineIdx: 0 };
+      const repeat: LyricLine = {
+        id: "l2",
+        agentId: "v1",
+        text: line.text,
+        transliteration: line.transliteration,
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [
+          { text: "가", begin: 10, end: 10.5, transliteration: "gan" },
+          { text: "나", begin: 10.5, end: 11, transliteration: "a" },
+        ],
+      };
+      useProjectStore.setState({ lines: [line, repeat], groups: [createGroup({ id: "g1", sharesTiming: true })] });
+      const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
+      await screen.getByRole("button", { name: "Save", exact: true }).click();
+
+      expect(useProjectStore.getState().lines[0].words?.[0].transliteration).toBe("ga");
+      expect(useProjectStore.getState().lines[1].words?.map((word) => word.transliteration)).toEqual(["gan", "a"]);
     });
   });
 

@@ -1,6 +1,5 @@
-import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { saveNow } from "@/lib/persistence-debounce";
-import { isRestoringProject } from "@/lib/project-restore";
+import { canSaveOpenProject } from "@/lib/save-open-project";
 import { findMatchingShortcut, matchesShortcutBinding } from "@/utils/shortcut-matcher";
 import { useEffect } from "react";
 
@@ -17,7 +16,7 @@ function useSaveShortcut(canSave: boolean): void {
       if (!matchesShortcutBinding(event, SAVE_SHORTCUT_ID)) return;
       event.preventDefault();
       if (findMatchingShortcut(event, "global") !== SAVE_SHORTCUT_ID) return;
-      if (!canSave || openProjectIdSnapshot() === undefined || isRestoringProject()) return;
+      if (!canSave || !canSaveOpenProject()) return;
       saveNow().catch((error: unknown) => console.error(LOG_PREFIX, "could not save the project", error));
     };
     window.addEventListener("keydown", handleKeyDown, true);

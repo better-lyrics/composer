@@ -1,5 +1,5 @@
 import type { TtmlEditState } from "@/stores/project/types";
-import { withoutAudioDuration } from "@/utils/ttml";
+import { withoutAudioIdentity } from "@/utils/ttml";
 
 // -- Types --------------------------------------------------------------------
 
@@ -8,7 +8,7 @@ type TtmlEdit = NonNullable<TtmlEditState>;
 // -- Rule ---------------------------------------------------------------------
 
 function crossedProjectChange(edit: TtmlEdit, generated: string): boolean {
-  return edit.lyricsChanged === true || withoutAudioDuration(edit.source) !== withoutAudioDuration(generated);
+  return edit.lyricsChanged === true || withoutAudioIdentity(edit.source) !== withoutAudioIdentity(generated);
 }
 
 function marked(edit: TtmlEdit, crossed: boolean): TtmlEdit {

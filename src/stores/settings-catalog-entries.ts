@@ -74,6 +74,20 @@ const SETTINGS_CATALOG = {
     keywords: ["scrub", "sound"],
     settingKey: "audioScrubPreview",
   },
+  seekStep: {
+    section: "playback",
+    label: "Seek step",
+    description: "How far the seek back and seek forward shortcuts move the playhead.",
+    keywords: ["skip", "rewind", "forward", "jump"],
+    settingKey: "seekStep",
+  },
+  fineSeekStep: {
+    section: "playback",
+    label: "Fine seek step",
+    description: "How far the fine seek shortcuts move the playhead. Keep it small to land right before a word.",
+    keywords: ["skip", "rewind", "forward", "jump", "frame", "nudge"],
+    settingKey: "fineSeekStep",
+  },
   autoSeparateOnImport: {
     section: "playback",
     label: "Auto-separate vocals on import",

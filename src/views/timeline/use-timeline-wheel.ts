@@ -57,13 +57,6 @@ function useTimelineWheel(scrollContainerRef: RefObject<HTMLDivElement | null>, 
         const currentTime = livePlaybackTime();
         const newTime = computeScrubTime(currentTime, normalizeWheelDelta(e.deltaY, e.deltaMode), zoom, duration);
         useAudioStore.getState().seekTo(newTime);
-        const playheadX = newTime * zoom;
-        const viewportInner = container.clientWidth - GUTTER_WIDTH;
-        if (playheadX < container.scrollLeft) {
-          container.scrollLeft = Math.max(0, playheadX);
-        } else if (playheadX > container.scrollLeft + viewportInner) {
-          container.scrollLeft = playheadX - viewportInner;
-        }
 
         const curr: ScrubSample = { time: newTime, wallClockMs: performance.now() };
         const velocity = computeScrubVelocity(prevScrubSampleRef.current, curr, DEFAULT_SCRUB_OPTS);

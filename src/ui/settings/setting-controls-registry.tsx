@@ -1,5 +1,6 @@
 import { useSettingsStore } from "@/stores/settings";
 import type { SettingId } from "@/stores/settings-catalog";
+import { BEAT_GRID_LINE_OPTIONS } from "@/ui/beat-grid-line-options";
 import { LAUNCH_SCREEN_OPTIONS, LIBRARY_SORT_OPTIONS } from "@/ui/projects/library-options";
 import { BridgeSection } from "@/ui/settings/bridge-section";
 import { CobaltInstancesSetting } from "@/ui/settings/cobalt-instances-setting";
@@ -95,6 +96,11 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   },
   timelineSnap: TOGGLE,
   vocalOnsetSnap: TOGGLE,
+  snapWordsAndLines: TOGGLE,
+  snapMarkers: TOGGLE,
+  beatSnap: TOGGLE,
+  beatGridVisible: TOGGLE,
+  beatGridLines: { kind: "select", options: [...BEAT_GRID_LINE_OPTIONS] },
   shareTimingInNewGroups: TOGGLE,
   loopOpenGroup: TOGGLE,
   selectionLeadIn: { kind: "slider", min: 0, max: 1, step: 0.05, format: (v) => (v === 0 ? "Off" : asMilliseconds(v)) },
@@ -110,6 +116,8 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   defaultWordDuration: { kind: "slider", min: 0.1, max: 1, step: 0.05, format: asMilliseconds },
   minWordDuration: { kind: "slider", min: 0.01, max: 0.2, step: 0.01, format: asMilliseconds },
   redoPreroll: { kind: "slider", min: 0, max: 5, step: 0.1, format: asMilliseconds },
+  seekStep: { kind: "slider", min: 0.1, max: 5, step: 0.1, format: (v) => `${v.toFixed(1)}s` },
+  fineSeekStep: { kind: "slider", min: 0.01, max: 0.5, step: 0.01, format: asMilliseconds },
   syncCountIn: { kind: "slider", min: 0, max: 10, step: 1, format: (v) => (v === 0 ? "Off" : `${v}s`) },
   defaultGranularity: {
     kind: "select",

@@ -10,6 +10,7 @@ const defaultProps = {
   time: 2,
   zoom: 100,
   fadeExtent: 220,
+  headHost: document.body,
   isDragging: false,
   isOnOnset: false,
   onHeadPointerDown: () => {},
@@ -19,8 +20,7 @@ const defaultProps = {
 const flash = (container: HTMLElement): HTMLElement | null =>
   container.querySelector<HTMLElement>("[data-snap-marker-flash]");
 
-const head = (container: HTMLElement): HTMLElement | null =>
-  container.querySelector<HTMLElement>("[data-snap-marker-head]");
+const head = (): HTMLElement | null => document.body.querySelector<HTMLElement>("[data-snap-marker-head]");
 
 const line = (container: HTMLElement): HTMLElement | null =>
   container.querySelector<HTMLElement>("[data-snap-marker-line]");
@@ -49,24 +49,24 @@ describe("SnapMarkerPin", () => {
   });
 
   it("renders an interactive draggable head with grab cursor", async () => {
-    const screen = await render(<SnapMarkerPin {...defaultProps} />);
-    const headEl = head(screen.container);
+    await render(<SnapMarkerPin {...defaultProps} />);
+    const headEl = head();
     expect(headEl?.classList.contains("snap-custom-head")).toBe(true);
     expect(headEl?.classList.contains("pointer-events-auto")).toBe(true);
     expect(headEl?.classList.contains("cursor-grab")).toBe(true);
   });
 
   it("switches the head to grabbing cursor while dragging", async () => {
-    const screen = await render(<SnapMarkerPin {...defaultProps} isDragging />);
-    const headEl = head(screen.container);
+    await render(<SnapMarkerPin {...defaultProps} isDragging />);
+    const headEl = head();
     expect(headEl?.classList.contains("cursor-grabbing")).toBe(true);
     expect(headEl?.classList.contains("cursor-grab")).toBe(false);
   });
 
   it("calls onHeadPointerDown with the id when the head is pressed", async () => {
     const onHeadPointerDown = vi.fn();
-    const screen = await render(<SnapMarkerPin {...defaultProps} id="pin-3" onHeadPointerDown={onHeadPointerDown} />);
-    const headEl = head(screen.container);
+    await render(<SnapMarkerPin {...defaultProps} id="pin-3" onHeadPointerDown={onHeadPointerDown} />);
+    const headEl = head();
     headEl?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0 }));
     expect(onHeadPointerDown).toHaveBeenCalledTimes(1);
     expect(onHeadPointerDown.mock.calls[0][0]).toBe("pin-3");
@@ -74,10 +74,10 @@ describe("SnapMarkerPin", () => {
 
   describe("tooltip", () => {
     it("shows a tooltip with the formatted time on hover", async () => {
-      const screen = await render(<SnapMarkerPin {...defaultProps} time={2} />);
+      await render(<SnapMarkerPin {...defaultProps} time={2} />);
       expect(tooltip()).toBeNull();
 
-      const headEl = head(screen.container);
+      const headEl = head();
       if (headEl) await userEvent.hover(headEl);
 
       await expect.poll(() => tooltip()).not.toBeNull();
@@ -86,16 +86,16 @@ describe("SnapMarkerPin", () => {
     });
 
     it("hides the tooltip while dragging", async () => {
-      const screen = await render(<SnapMarkerPin {...defaultProps} isDragging />);
-      const headEl = head(screen.container);
+      await render(<SnapMarkerPin {...defaultProps} isDragging />);
+      const headEl = head();
       if (headEl) await userEvent.hover(headEl);
       await expect.poll(() => tooltip()).toBeNull();
     });
 
     it("calls onDelete with the id when the delete button is clicked", async () => {
       const onDelete = vi.fn();
-      const screen = await render(<SnapMarkerPin {...defaultProps} id="pin-2" onDelete={onDelete} />);
-      const headEl = head(screen.container);
+      await render(<SnapMarkerPin {...defaultProps} id="pin-2" onDelete={onDelete} />);
+      const headEl = head();
       if (headEl) await userEvent.hover(headEl);
 
       const button = await vi.waitFor(() => {
@@ -110,8 +110,8 @@ describe("SnapMarkerPin", () => {
 
     it("regression: tooltip stays open while moving from the head onto the delete button", async () => {
       const onDelete = vi.fn();
-      const screen = await render(<SnapMarkerPin {...defaultProps} id="pin-4" onDelete={onDelete} />);
-      const headEl = head(screen.container);
+      await render(<SnapMarkerPin {...defaultProps} id="pin-4" onDelete={onDelete} />);
+      const headEl = head();
       if (headEl) await userEvent.hover(headEl);
 
       const button = await vi.waitFor(() => {
@@ -128,8 +128,8 @@ describe("SnapMarkerPin", () => {
     });
 
     it("renders the delete button before the time label in DOM order", async () => {
-      const screen = await render(<SnapMarkerPin {...defaultProps} />);
-      const headEl = head(screen.container);
+      await render(<SnapMarkerPin {...defaultProps} />);
+      const headEl = head();
       if (headEl) await userEvent.hover(headEl);
 
       const tooltipEl = await vi.waitFor(() => {
@@ -150,8 +150,8 @@ describe("SnapMarkerPin", () => {
     });
 
     it("gives the delete button an enlarged hit area anchored to itself", async () => {
-      const screen = await render(<SnapMarkerPin {...defaultProps} />);
-      const headEl = head(screen.container);
+      await render(<SnapMarkerPin {...defaultProps} />);
+      const headEl = head();
       if (headEl) await userEvent.hover(headEl);
 
       const button = await vi.waitFor(() => {
@@ -169,8 +169,8 @@ describe("SnapMarkerPin", () => {
 
     it("reports hover open and close through onHoverChange", async () => {
       const onHoverChange = vi.fn();
-      const screen = await render(<SnapMarkerPin {...defaultProps} onHoverChange={onHoverChange} />);
-      const headEl = head(screen.container);
+      await render(<SnapMarkerPin {...defaultProps} onHoverChange={onHoverChange} />);
+      const headEl = head();
       if (headEl) await userEvent.hover(headEl);
       await vi.waitFor(() => expect(onHoverChange).toHaveBeenCalledWith(defaultProps.id, true));
 
@@ -179,8 +179,8 @@ describe("SnapMarkerPin", () => {
     });
 
     it("stays start-aligned with the delete control leading when there is room on the right", async () => {
-      const screen = await render(<SnapMarkerPin {...defaultProps} time={2} zoom={100} />);
-      const headEl = head(screen.container);
+      await render(<SnapMarkerPin {...defaultProps} time={2} zoom={100} />);
+      const headEl = head();
       if (headEl) await userEvent.hover(headEl);
 
       const tip = await vi.waitFor(() => {
@@ -193,8 +193,8 @@ describe("SnapMarkerPin", () => {
     });
 
     it("flips to end alignment near the right edge so the delete control stays under the head", async () => {
-      const screen = await render(<SnapMarkerPin {...defaultProps} />);
-      const headEl = head(screen.container);
+      await render(<SnapMarkerPin {...defaultProps} />);
+      const headEl = head();
       if (!headEl) throw new Error("head not rendered");
       const nearRight = window.innerWidth - 12;
       Object.defineProperty(headEl, "getBoundingClientRect", {

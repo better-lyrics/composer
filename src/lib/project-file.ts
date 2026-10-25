@@ -9,7 +9,7 @@ interface ProjectFile extends SavedProject {
 
 // -- Constants ----------------------------------------------------------------
 
-const PROJECT_FILE_SUFFIX = ".ttml-project.json";
+const PROJECT_FILE_SUFFIX = ".composer";
 
 // -- Building -----------------------------------------------------------------
 
