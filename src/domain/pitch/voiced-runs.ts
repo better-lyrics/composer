@@ -30,12 +30,20 @@ function voicedRuns(track: PitchTrack, fromSeconds: number, toSeconds: number): 
   return runs.filter((points) => points.length >= MIN_RUN_POINTS);
 }
 
+// A lead word splits a run, so the ribbon never bridges the pitch it hides.
 function backgroundLaneRuns(runs: readonly PitchPoint[][], leadSpans: readonly Bounds[]): PitchPoint[][] {
-  return runs
-    .map((run) =>
-      run.filter((point) => !leadSpans.some((span) => point.seconds >= span.begin && point.seconds < span.end)),
-    )
-    .filter((run) => run.length >= MIN_RUN_POINTS);
+  const kept: PitchPoint[][] = [];
+  for (const run of runs) {
+    let piece: PitchPoint[] = [];
+    for (const point of run) {
+      if (leadSpans.some((span) => point.seconds >= span.begin && point.seconds < span.end)) {
+        if (piece.length > 0) kept.push(piece);
+        piece = [];
+      } else piece.push(point);
+    }
+    if (piece.length > 0) kept.push(piece);
+  }
+  return kept.filter((run) => run.length >= MIN_RUN_POINTS);
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -81,6 +81,13 @@ describe("spill", () => {
     expect(kept.length).toBeGreaterThan(0);
   });
 
+  it("regression: splits a background run where a lead word hides its middle", () => {
+    const runs = backgroundLaneRuns([runFrom(0, 1)], [{ begin: 0.4, end: 0.6 }]);
+    expect(runs).toHaveLength(2);
+    expect(runs[0].at(-1)?.seconds).toBeLessThan(0.4);
+    expect(runs[1][0].seconds).toBeGreaterThanOrEqual(0.6);
+  });
+
   describe("invariants", () => {
     it("isCovered agrees with a linear scan over overlapping spans", () => {
       const spans = [
