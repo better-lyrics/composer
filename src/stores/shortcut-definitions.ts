@@ -537,6 +537,20 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     repeatable: true,
   },
   {
+    id: "timeline.jumpPrevBar",
+    scope: "timeline",
+    description: "Jump to previous bar",
+    defaultBinding: { key: "ArrowLeft", shift: true, mod: true },
+    repeatable: true,
+  },
+  {
+    id: "timeline.jumpNextBar",
+    scope: "timeline",
+    description: "Jump to next bar",
+    defaultBinding: { key: "ArrowRight", shift: true, mod: true },
+    repeatable: true,
+  },
+  {
     id: "timeline.copy",
     scope: "timeline",
     description: "Copy selected words",

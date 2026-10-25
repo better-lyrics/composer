@@ -156,6 +156,11 @@ const TimelineExtras: React.FC = () => (
           playhead on the first beat of a bar and choose <strong>Set at playhead</strong> next to Downbeat.{" "}
           <strong>Half</strong> and <strong>Double</strong> fix a tempo read at twice or half the speed.
         </li>
+        <li>
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpPrevBar")} /> or{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpNextBar")} /> to jump the playhead to the bar before
+          or after it.
+        </li>
         <li>Every change can be undone, and the grid saves with the project.</li>
         <li>
           Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleBeatGrid")} /> to show or hide the grid. The

@@ -31,6 +31,7 @@ import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instanc
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
+import { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar } from "@/views/timeline/jump-to-bar";
 import { currentEffectiveFocus, scrollToFocusStart } from "@/views/timeline/effective-focus";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import { isInFocus } from "@/views/timeline/group-focus";
@@ -342,7 +343,7 @@ function useTimelineKeyboard(
         }
         case "timeline.toggleBeatGrid": {
           if (!useProjectStore.getState().beatGrid) {
-            toast("No beat grid yet. Set one up from the Snap menu.");
+            toast(NO_BEAT_GRID_MESSAGE);
             break;
           }
           const s = useSettingsStore.getState();
@@ -705,6 +706,11 @@ function useTimelineKeyboard(
             .shiftInstance(inst.groupId, inst.instanceIdx, delta, useAudioStore.getState().duration);
           break;
         }
+        case "timeline.jumpPrevBar":
+        case "timeline.jumpNextBar":
+          e.preventDefault();
+          jumpToAdjacentBar(matched === "timeline.jumpNextBar" ? 1 : -1);
+          break;
         case "timeline.jumpPrevSnapPoint":
         case "timeline.jumpNextSnapPoint":
         case "timeline.jumpPrevSnapPointFine":
