@@ -1,9 +1,11 @@
+import { CHUNK_FRAMES } from "@/domain/spectrum/chunk-order";
 import { ByteLru } from "@/domain/spectrum/byte-lru";
 import { type RowBinTable, rowBinTable } from "@/domain/spectrum/frequency-scale";
 import type { PaletteLookup } from "@/domain/spectrum/palettes";
 import type { SpectrumLook } from "@/domain/spectrum/settings";
 import { TILE_WIDTH, tileKey, visibleTileRange } from "@/domain/spectrum/tile-key";
 import { renderTile } from "@/views/timeline/spectrum/render-tile";
+import { requestSpectrumRawPhase } from "@/views/timeline/spectrum/use-spectrum-session";
 import type { SpectrumSessionState } from "@/views/timeline/spectrum/spectrum-session";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -52,6 +54,30 @@ const rowTables = new Map<string, RowBinTable>();
 let tilesGeneration = -1;
 
 // -- Functions -----------------------------------------------------------------
+
+const requestedRawChunks = { generation: -1, chunks: new Set<number>() };
+
+// Raw phase is computed on demand, for every chunk the drawn tiles cover, offscreen parts included.
+function requestRawPhaseForTiles(view: TileView, first: number, last: number): void {
+  if (view.look.spectrumPalette !== "phase" || view.look.spectrumPhase !== "raw") return;
+  const { session } = view;
+  if (requestedRawChunks.generation !== session.generation) {
+    requestedRawChunks.generation = session.generation;
+    requestedRawChunks.chunks.clear();
+  }
+  const framesPerSecond = session.sampleRate / session.hop;
+  const chunkAt = (px: number) =>
+    Math.max(0, Math.floor(((px / view.pixelsPerSecond) * framesPerSecond) / CHUNK_FRAMES));
+  const wanted: number[] = [];
+  const lastChunk = Math.min(chunkAt((last + 1) * TILE_WIDTH), (session.chunkReady?.length ?? 0) - 1);
+  for (let chunk = chunkAt(first * TILE_WIDTH); chunk <= lastChunk; chunk++) {
+    if (requestedRawChunks.chunks.has(chunk) || session.rawReady?.[chunk] === 1) continue;
+    wanted.push(chunk);
+  }
+  if (wanted.length > 0 && requestSpectrumRawPhase(wanted)) {
+    for (const chunk of wanted) requestedRawChunks.chunks.add(chunk);
+  }
+}
 
 function rowTableFor(view: TileView, heightPx: number): RowBinTable {
   const { spectrumScale, spectrumTop } = view.look;
@@ -130,6 +156,7 @@ function drawTiles(
 ): DrawResult {
   context.clearRect(0, 0, view.viewportWidth, view.heightCss);
   const { first, last } = visibleTileRange(view.scrollLeft, view.viewportWidth);
+  requestRawPhaseForTiles(view, first, last);
   const budget: TileBudget = { remaining: TILE_BUILD_BUDGET };
   const resolved: { index: number; canvas: OffscreenCanvas }[] = [];
   const complete: number[] = [];

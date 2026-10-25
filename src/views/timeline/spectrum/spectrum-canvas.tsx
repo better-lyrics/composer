@@ -1,4 +1,3 @@
-import { CHUNK_FRAMES } from "@/domain/spectrum/chunk-order";
 import { spectrumLookOf } from "@/domain/spectrum/settings";
 import { visibleTileRange } from "@/domain/spectrum/tile-key";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
@@ -10,7 +9,6 @@ import { spectrumSession } from "@/views/timeline/spectrum/spectrum-session";
 import { beginWarmUp, blitWarming, createWarmUp, noteDrawnTiles } from "@/views/timeline/spectrum/spectrum-warm-up";
 import { resolveSpectrumPalette } from "@/views/timeline/spectrum/theme-palette";
 import { type TileView, drawTiles } from "@/views/timeline/spectrum/tile-cache";
-import { requestSpectrumRawPhase } from "@/views/timeline/spectrum/use-spectrum-session";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect, useRef, useState } from "react";
 
@@ -38,28 +36,6 @@ function drawingSignature(view: TileView): string {
     look.spectrumPhase,
     view.themeGeneration,
   ].join("|");
-}
-
-const requestedRawChunks = { generation: -1, chunks: new Set<number>() };
-
-function requestVisibleRawPhase(view: TileView): void {
-  if (view.look.spectrumPalette !== "phase" || view.look.spectrumPhase !== "raw") return;
-  const { session } = view;
-  if (requestedRawChunks.generation !== session.generation) {
-    requestedRawChunks.generation = session.generation;
-    requestedRawChunks.chunks.clear();
-  }
-  const framesPerSecond = session.sampleRate / session.hop;
-  const chunkAt = (px: number) =>
-    Math.max(0, Math.floor(((px / view.pixelsPerSecond) * framesPerSecond) / CHUNK_FRAMES));
-  const wanted: number[] = [];
-  for (let chunk = chunkAt(view.scrollLeft); chunk <= chunkAt(view.scrollLeft + view.viewportWidth); chunk++) {
-    if (requestedRawChunks.chunks.has(chunk) || session.rawReady?.[chunk] === 1) continue;
-    wanted.push(chunk);
-  }
-  if (wanted.length > 0 && requestSpectrumRawPhase(wanted)) {
-    for (const chunk of wanted) requestedRawChunks.chunks.add(chunk);
-  }
 }
 
 // -- Components ----------------------------------------------------------------
@@ -107,7 +83,6 @@ const SpectrumCanvas: React.FC = () => {
       drawnRef.current = null;
       return;
     }
-    requestVisibleRawPhase(view);
     const now = performance.now();
     if (warmUp.generation !== spectrumSession.generation) {
       const { first, last } = visibleTileRange(view.scrollLeft, view.viewportWidth);
