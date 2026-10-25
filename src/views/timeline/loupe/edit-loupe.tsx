@@ -14,7 +14,7 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { FloatingPortal } from "@floating-ui/react";
 import { IconMicrophone2 } from "@tabler/icons-react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
-import { type RefObject, useLayoutEffect, useRef } from "react";
+import { type RefObject, useCallback, useLayoutEffect, useRef } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -71,13 +71,12 @@ const LoupeCard: React.FC<LoupeCardProps> = ({ target, scrollContainerRef }) => 
   const hasPitch = useTimelineStore(() => pitchSession.track !== null);
   const deltaMs = Math.round((target.time - target.startTime) * 1000);
 
-  const place = () => {
+  const place = useCallback(() => {
     const card = cardRef.current;
     const container = scrollContainerRef.current;
     if (card && container) placeCard(card, container, target);
-  };
-  // biome-ignore lint/correctness/useExhaustiveDependencies: placement reads the DOM for the current target
-  useLayoutEffect(place, [target, hasPitch]);
+  }, [target, scrollContainerRef]);
+  useLayoutEffect(place, [place]);
   useFrameLoop(place, "edit loupe placement");
 
   return (

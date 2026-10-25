@@ -17,6 +17,18 @@ import WavesurferPlayer from "@wavesurfer/react";
 import { useCallback, useEffect, useState } from "react";
 import type WaveSurfer from "wavesurfer.js";
 
+// -- Interfaces ----------------------------------------------------------------
+
+interface WaveformBarsProps {
+  media: HTMLAudioElement;
+  width: number;
+  shown: boolean;
+  colors: { wave: string; progress: string };
+  initialZoom: number;
+  onDestroy: () => void;
+  onReady: (wavesurfer: WaveSurfer) => void;
+}
+
 // -- Constants -----------------------------------------------------------------
 
 const FADE_SETTLE_MS = 260;
@@ -25,6 +37,41 @@ const WAVEFORM_BARS_HEIGHT = 54;
 const LOG_PREFIX = "[TimelineWaveform]";
 
 // -- Component -----------------------------------------------------------------
+
+const WaveformBars: React.FC<WaveformBarsProps> = ({
+  media,
+  width,
+  shown,
+  colors,
+  initialZoom,
+  onDestroy,
+  onReady,
+}) => (
+  <div
+    data-waveform-fade
+    className="pt-[13px] overflow-clip transition-opacity duration-150 ease-in"
+    style={{ width, opacity: shown ? 1 : 0 }}
+  >
+    <div className="w-max">
+      <WavesurferPlayer
+        height={WAVEFORM_BARS_HEIGHT}
+        waveColor={colors.wave}
+        progressColor={colors.progress}
+        cursorColor="transparent"
+        barWidth={2}
+        barGap={1}
+        barRadius={12}
+        media={media}
+        interact={false}
+        hideScrollbar={true}
+        fillParent={false}
+        minPxPerSec={initialZoom}
+        onDestroy={onDestroy}
+        onReady={onReady}
+      />
+    </div>
+  </div>
+);
 
 const TimelineWaveform: React.FC = () => {
   const bandHeight = useOverviewBandHeight();
@@ -148,31 +195,16 @@ const TimelineWaveform: React.FC = () => {
         style={{ width: totalWidth, height: WAVEFORM_HEIGHT - 1, opacity: ws || spectrumVisible ? 0 : 1 }}
       />
       {audioElement && (
-        <div
-          data-waveform-fade
-          className="pt-[13px] overflow-clip transition-opacity duration-150 ease-in"
-          style={{ width: totalWidth, opacity: ws && !spectrumVisible ? 1 : 0 }}
-        >
-          <div className="w-max">
-            <WavesurferPlayer
-              key={waveformKey}
-              height={WAVEFORM_BARS_HEIGHT}
-              waveColor={initialColors.wave}
-              progressColor={initialColors.progress}
-              cursorColor="transparent"
-              barWidth={2}
-              barGap={1}
-              barRadius={12}
-              media={audioElement}
-              interact={false}
-              hideScrollbar={true}
-              fillParent={false}
-              minPxPerSec={initialZoom}
-              onDestroy={onDestroy}
-              onReady={onReady}
-            />
-          </div>
-        </div>
+        <WaveformBars
+          key={waveformKey}
+          media={audioElement}
+          width={totalWidth}
+          shown={ws !== null && !spectrumVisible}
+          colors={initialColors}
+          initialZoom={initialZoom}
+          onDestroy={onDestroy}
+          onReady={onReady}
+        />
       )}
       <WaveformFocusShade />
       <div

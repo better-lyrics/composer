@@ -42,13 +42,16 @@ function useMountedOverviewBand(bandRef: RefObject<HTMLElement | null>): void {
       bandAnimating = event.type === "transitionrun";
       restingHeight = null;
     };
-    const events = ["transitionrun", "transitionend", "transitioncancel"] as const;
-    for (const type of events) band.addEventListener(type, onTransition);
+    band.addEventListener("transitionrun", onTransition);
+    band.addEventListener("transitionend", onTransition);
+    band.addEventListener("transitioncancel", onTransition);
     mountedBand = band;
     bandAnimating = false;
     restingHeight = null;
     return () => {
-      for (const type of events) band.removeEventListener(type, onTransition);
+      band.removeEventListener("transitionrun", onTransition);
+      band.removeEventListener("transitionend", onTransition);
+      band.removeEventListener("transitioncancel", onTransition);
       if (mountedBand === band) mountedBand = null;
     };
   }, [bandRef]);
