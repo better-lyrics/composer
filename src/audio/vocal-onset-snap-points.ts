@@ -1,5 +1,6 @@
 import { detectOnsetsOffThread } from "@/audio/pcm-worker-host";
 import { decodeFileToFloat32 } from "@/audio/separation/audio-codec";
+import { fetchVocalStem } from "@/audio/separation/fetch-vocal-stem";
 import { getStemJobOnsets, putStemJobOnsets } from "@/audio/separation/stem-store";
 
 // -- Constants ----------------------------------------------------------------
@@ -44,9 +45,7 @@ async function loadVocalOnsets({ jobKey, vocalsUrl, signal, onDetectionStart }: 
   if (cached) return cached;
 
   onDetectionStart();
-  const response = await fetch(vocalsUrl, { signal });
-  if (!response.ok) throw new Error(`Could not read vocal stem (${response.status}).`);
-  const decoded = await decodeFileToFloat32(await response.blob());
+  const decoded = await decodeFileToFloat32(await fetchVocalStem(vocalsUrl, signal));
   signal.throwIfAborted();
   const onsets = await detectOnsetsOffThread(decoded.channels, decoded.sampleRate, signal);
   await cacheOnsets(jobKey, onsets);

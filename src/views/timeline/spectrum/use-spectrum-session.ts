@@ -1,3 +1,4 @@
+import { fetchVocalStem } from "@/audio/separation/fetch-vocal-stem";
 import { resolveAnalysis } from "@/domain/spectrum/analysis-window";
 import { playableFile, useAudioStore } from "@/stores/audio";
 import { useSeparationStore } from "@/stores/separation";
@@ -14,12 +15,6 @@ let activeRun: SpectrumRun | null = null;
 
 // -- Functions ----------------------------------------------------------------
 
-async function fetchBlob(url: string): Promise<Blob> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Could not read the vocal stem (${response.status}).`);
-  return response.blob();
-}
-
 function desiredTarget(): SpectrumTarget | null {
   if (!useTimelineStore.getState().spectrumVisible) return null;
   const { spectrumSource, spectrumWindow } = useSettingsStore.getState();
@@ -27,7 +22,7 @@ function desiredTarget(): SpectrumTarget | null {
   const vocalsUrl = stemUrls.vocals ?? null;
   const analysis = resolveAnalysis(spectrumSource, spectrumWindow, vocalsUrl !== null);
   if (analysis.source === "vocals" && vocalsUrl) {
-    return { ...analysis, sourceKey: `vocals:${vocalsUrl}`, audio: () => fetchBlob(vocalsUrl), jobKey };
+    return { ...analysis, sourceKey: `vocals:${vocalsUrl}`, audio: () => fetchVocalStem(vocalsUrl), jobKey };
   }
   const file = playableFile(useAudioStore.getState().source);
   if (!file) return null;
