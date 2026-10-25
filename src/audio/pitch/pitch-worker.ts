@@ -27,7 +27,7 @@ async function readModel(): Promise<ArrayBuffer> {
 
 // The model is too small to gain from WebGPU, so it always runs on WASM.
 async function detectPitch({ audio16k }: PitchJob): Promise<PitchFrames> {
-  const ort = await loadOrt(true);
+  const ort = await loadOrt("wasm", false);
   const session = await ort.InferenceSession.create(await readModel(), {
     executionProviders: ["wasm"],
     graphOptimizationLevel: "all",
