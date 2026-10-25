@@ -173,6 +173,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
       elementRef.current = el;
       if (!el || initializedElementRef.current === el) return;
       initializedElementRef.current = el;
+      appliedLyricsRef.current = null;
       el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
       applyLyrics(el, latestLyricsRef.current, latestSongwritersRef.current);
     },
