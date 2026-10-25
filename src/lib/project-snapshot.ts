@@ -64,6 +64,7 @@ function currentSaveInput(): ProjectSaveInput {
     currentStem: useSeparationStore.getState().currentStem,
     primingStripped: projectState.primingStripped,
     customSnapPoints: projectState.customSnapPoints,
+    beatGrid: projectState.beatGrid,
     hasUnexportedImport: projectState.hasUnexportedImport,
     importedMetadataKeys: projectState.importedMetadataKeys,
     ttmlEditState: projectState.ttmlEditState,

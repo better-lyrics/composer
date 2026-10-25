@@ -3,6 +3,7 @@ import { savedExportTiming } from "@/domain/project/export-timing";
 import { isMetadataKey } from "@/domain/project/imported-metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
+import { readBeatGrid } from "@/domain/tempo/read-beat-grid";
 import type { SavedProject } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -38,6 +39,7 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   // The flag describes stored timings against the stored audio, which a project file does not carry.
   if (origin === "storage") state.setPrimingStripped(project.primingStripped ?? false);
   state.setCustomSnapPoints(project.customSnapPoints ?? []);
+  state.setBeatGrid(readBeatGrid(project.beatGrid));
   if (origin === "file" || project.hasUnexportedImport) state.markSongDetailsImported();
   state.restoreImportedMetadataKeys((project.importedMetadataKeys ?? []).filter(isMetadataKey));
   state.setTtmlEditState(project.ttmlEditState ?? null);

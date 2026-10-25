@@ -1,4 +1,6 @@
 import type { Agent } from "@/domain/agent/model";
+import { detectedGrid } from "@/domain/tempo/beat-grid";
+import { withOffset } from "@/domain/tempo/grid-edits";
 import { applySavedProject } from "@/lib/apply-saved-project";
 import { buildSaveInput } from "@/lib/project-snapshot";
 import type { SavedProject } from "@/lib/saved-project";
@@ -108,6 +110,36 @@ describe("applySavedProject", () => {
 
       expect(useProjectStore.getState().isDirty).toBe(true);
       expect(buildSaveInput()?.exportTiming).toBe("line");
+    });
+  });
+
+  describe("beat grid", () => {
+    const beats = [0.5, 1, 1.5, 2, 2.5];
+    const grid = withOffset(detectedGrid({ beats, downbeats: [0.5, 2.5] }), 20);
+
+    it("round-trips through save and restore", async () => {
+      useProjectStore.getState().setLinesWithHistory([createLine({ id: "a1", text: "line" })]);
+      useProjectStore.getState().applyBeatGridWithHistory(grid);
+      const saved = buildSaveInput();
+      if (!saved) throw new Error("expected a save input");
+      await resetAllStores();
+
+      applySavedProject(JSON.parse(JSON.stringify({ version: 3, savedAt: 0, ...saved })), "storage");
+
+      expect(useProjectStore.getState().beatGrid).toEqual(grid);
+    });
+
+    it("opens a project with a malformed grid without one", () => {
+      applySavedProject(projectFile({ beatGrid: { ...grid, beats: [2, 1] } }), "file");
+
+      expect(useProjectStore.getState().beatGrid).toBeNull();
+      expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["b1"]);
+    });
+
+    it("opens an older project with no grid", () => {
+      applySavedProject(projectFile(), "file");
+
+      expect(useProjectStore.getState().beatGrid).toBeNull();
     });
   });
 });
