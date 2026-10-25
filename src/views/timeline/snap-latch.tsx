@@ -1,7 +1,6 @@
 import { useSettingsStore } from "@/stores/settings";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { IconButton } from "@/ui/icon-button";
-import { menuTriggerProps } from "@/ui/menu-trigger-props";
 import { Popover } from "@/ui/popover";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { cn } from "@/utils/cn";
@@ -27,6 +26,12 @@ const SnapLatch: React.FC = () => {
   const [view, setView] = useState<SnapMenuView>("sources");
   const [pill, setPill] = useState<HTMLDivElement | null>(null);
 
+  const backOnEscape = (e: React.KeyboardEvent) => {
+    if (e.key !== "Escape") return;
+    e.stopPropagation();
+    setView("sources");
+  };
+
   const handleOpenChange = (next: boolean) => {
     if (next) setView("sources");
     setOpen(next);
@@ -48,7 +53,6 @@ const SnapLatch: React.FC = () => {
         open={open}
         onOpenChange={handleOpenChange}
         placement="bottom-start"
-        hasPopup="menu"
         aria-label="Snap sources"
         positionAnchor={pill?.parentElement}
         trigger={
@@ -56,7 +60,6 @@ const SnapLatch: React.FC = () => {
             variant="ghost"
             label="Snap sources"
             icon={<IconChevronDown aria-hidden="true" className="size-[13px]" />}
-            {...menuTriggerProps(open)}
           />
         }
       >
@@ -65,7 +68,9 @@ const SnapLatch: React.FC = () => {
             <SnapMenu onOpenBeatGrid={() => setView("beat-grid")} />
           </PopBody>
         ) : (
-          <BeatGridPopoverBody onBack={() => setView("sources")} />
+          <div onKeyDown={backOnEscape}>
+            <BeatGridPopoverBody onBack={() => setView("sources")} />
+          </div>
         )}
       </Popover>
     </div>

@@ -341,6 +341,10 @@ function useTimelineKeyboard(
           break;
         }
         case "timeline.toggleBeatGrid": {
+          if (!useProjectStore.getState().beatGrid) {
+            toast("No beat grid yet. Set one up from the Snap menu.");
+            break;
+          }
           const s = useSettingsStore.getState();
           s.set("beatGridVisible", !s.beatGridVisible);
           break;

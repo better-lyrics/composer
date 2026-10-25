@@ -51,10 +51,12 @@ function useBeatsHint(): string {
   const grid = useProjectStore((s) => s.beatGrid);
   const status = useBeatDetectionStore((s) => s.status);
   const lines = useSettingsStore((s) => s.beatGridLines);
+  const visible = useSettingsStore((s) => s.beatGridVisible);
   if (isDetectionRunning(status)) return "Finding beats…";
   if (status === "error") return "Detection failed";
   const stats = grid ? tempoStats(grid) : null;
   if (!stats) return "Set a tempo first";
+  if (!visible) return "Grid hidden, so beats don't snap";
   const linesLabel = BEAT_GRID_LINE_OPTIONS.find((option) => option.value === lines)?.label ?? "Beat";
   return `${formatBpm(stats.bpm)} BPM ・ ${linesLabel} lines`;
 }
