@@ -74,7 +74,7 @@ const StemModelBlock: React.FC = () => {
           <p className="text-[13px] font-medium text-composer-text">Separate with the vocal model</p>
           <p className="mt-0.5 text-xs leading-[1.45] text-(--muted) text-pretty">
             Makes the {fills} from this song.
-            {!modelCached && ` Needs a one-time ${approxMb} MB download.`}
+            {!modelCached && ` Needs a one-time ${approxMb}\u00a0MB download.`}
           </p>
         </div>
         <Button
