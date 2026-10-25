@@ -1,8 +1,9 @@
+import { type Ort, type OrtSession, type OrtTensor, loadOrt } from "@/audio/ort-runtime";
 /// <reference lib="webworker" />
 // biome-ignore organizeImports: the webworker triple-slash reference must stay before imports.
 import { type Chunk, SEGMENT_SAMPLES, chunkCount, iterateChunks, stitchChunks } from "@/audio/separation/chunker";
-import { MAGSPEC_DIMS, computeMagspec } from "@/audio/separation/demucs-spec";
 import { denormalizeDemucsOutput, extractVocalsStem, normalizeForDemucs } from "@/audio/separation/demucs-postprocess";
+import { MAGSPEC_DIMS, computeMagspec } from "@/audio/separation/demucs-spec";
 import { fetchAndCacheModel, hasCachedModel, readCachedModel } from "@/audio/separation/model-cache";
 import { getModelDescriptor } from "@/audio/separation/model-registry";
 import type { VocalModelVariant } from "@/stores/settings";
@@ -35,51 +36,12 @@ type OutboundMessage =
   | { type: "cancelled" }
   | { type: "error"; code: string; message: string };
 
-interface Ort {
-  InferenceSession: {
-    create(
-      bytes: ArrayBuffer | Uint8Array,
-      opts: { executionProviders: string[]; graphOptimizationLevel?: string },
-    ): Promise<OrtSession>;
-  };
-  Tensor: new (dtype: "float32", data: Float32Array, dims: number[]) => OrtTensor;
-  env: { wasm: { wasmPaths?: string; numThreads?: number } };
-}
-
-interface OrtTensor {
-  data: Float32Array;
-  dims: number[];
-}
-
-interface OrtSession {
-  inputNames: string[];
-  outputNames: string[];
-  run(feeds: Record<string, OrtTensor>): Promise<Record<string, OrtTensor>>;
-  release?(): Promise<void>;
-}
-
 let ort: Ort | null = null;
 let session: OrtSession | null = null;
 let cancelled = false;
 
 function post(message: OutboundMessage, transfer?: Transferable[]) {
   self.postMessage(message, transfer ?? []);
-}
-
-async function loadOrt(forceWasm: boolean | undefined): Promise<Ort> {
-  if (ort) return ort;
-  const mod = forceWasm
-    ? await import("onnxruntime-web")
-    : await import("onnxruntime-web/webgpu").catch(() => import("onnxruntime-web"));
-  const candidate = (mod as unknown as { default?: Ort }).default ?? (mod as unknown as Ort);
-  candidate.env.wasm.numThreads = 1;
-  candidate.env.wasm.wasmPaths = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${getOrtVersion()}/dist/`;
-  ort = candidate;
-  return candidate;
-}
-
-function getOrtVersion(): string {
-  return "1.26.0";
 }
 
 async function handleInit(variant: VocalModelVariant, forceWasm?: boolean) {
@@ -121,6 +83,7 @@ async function handleInit(variant: VocalModelVariant, forceWasm?: boolean) {
 
   try {
     const runtime = await loadOrt(forceWasm);
+    ort = runtime;
     const providers = forceWasm ? ["wasm"] : ["webgpu", "wasm"];
     session = await runtime.InferenceSession.create(modelBytes, {
       executionProviders: providers,
