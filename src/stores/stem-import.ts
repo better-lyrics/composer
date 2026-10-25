@@ -45,12 +45,15 @@ async function prepareStemImport(slot: StemSlot, file: File, set: SetStemImportS
     set({ importError: { slot, message: UNSUPPORTED_AUDIO_FILE_MESSAGE } });
     return null;
   }
-  const probe = await probeAudioFile(file);
+  const song = playableFile(useAudioStore.getState().source);
+  if (!song) return null;
+  const [probe, songProbe] = await Promise.all([probeAudioFile(file), probeAudioFile(song)]);
   if (!probe.ok) {
     set({ importError: { slot, message: `Unable to read ${file.name}. Use ${AUDIO_FORMATS_PROSE}.` } });
     return null;
   }
-  const mismatchSeconds = stemDurationMismatch(probe.duration, useAudioStore.getState().duration);
+  const songSeconds = songProbe.ok ? songProbe.duration : 0;
+  const mismatchSeconds = stemDurationMismatch(probe.duration, songSeconds);
   if (mismatchSeconds === null) return probe.duration;
   set({ pendingImport: { slot, file, durationSeconds: probe.duration, mismatchSeconds } });
   return null;

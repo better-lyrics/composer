@@ -269,6 +269,15 @@ describe("imported stems", () => {
     expect((await loadProjectStems("import-mismatch"))?.slots.vocals?.origin).toBe("imported");
   });
 
+  it("regression: measures the song, not the stem that is playing, when checking a stem's length", async () => {
+    await openSong("import-measure-song");
+    useAudioStore.getState().setDuration(3.2);
+    await useSeparationStore.getState().importStem("instrumental", createAudioFile("inst.wav", 2));
+
+    expect(useSeparationStore.getState().pendingImport).toBeNull();
+    expect((await loadProjectStems("import-measure-song"))?.slots.instrumental?.origin).toBe("imported");
+  });
+
   it("separation fills only the empty slot and never replaces an imported stem", async () => {
     await openSong("import-fill");
     const acapella = createAudioFile("acapella.wav", 2);
