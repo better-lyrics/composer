@@ -1,6 +1,7 @@
-import { type BeatGrid, beatInBar, isDownbeat } from "@/domain/tempo/beat-grid";
+import { type BeatGrid, barNumberAt, beatInBar, isDownbeat } from "@/domain/tempo/beat-grid";
 import { tempoSections } from "@/domain/tempo/tempo-sections";
 import type { TempoStats } from "@/domain/tempo/tempo-stats";
+import { Tooltip } from "@/ui/tooltip";
 import { cn } from "@/utils/cn";
 import { formatBpm } from "@/utils/format-bpm";
 import { pluralize } from "@/utils/pluralize";
@@ -21,8 +22,17 @@ const BPM_NUMBER_CLASS =
 
 function tempoDescription(grid: BeatGrid, stats: TempoStats): string {
   const sections = tempoSections(grid);
-  if (sections.length > 1) return `${sections.map((section) => formatBpm(section.bpm)).join(" → ")} BPM`;
+  if (sections.length === 2) return `${sections.map((section) => formatBpm(section.bpm)).join(" → ")} BPM`;
+  if (sections.length > 2) return `${sections.length} tempos`;
   return stats.steady ? "steady tempo" : `drifts ${formatBpm(stats.low)} to ${formatBpm(stats.high)}`;
+}
+
+function tempoChanges(grid: BeatGrid): string[] {
+  const sections = tempoSections(grid);
+  if (sections.length < 2) return [];
+  return sections.map(
+    (section) => `${formatBpm(section.bpm)} BPM from bar ${Math.max(1, barNumberAt(grid, section.from))}`,
+  );
 }
 
 function tempoFacts(grid: BeatGrid, stats: TempoStats): string[] {
@@ -66,9 +76,26 @@ const BeatLeds: React.FC<{ grid: BeatGrid }> = ({ grid }) => {
   );
 };
 
+const TempoChangesFact: React.FC<{ fact: string; changes: string[] }> = ({ fact, changes }) => (
+  <Tooltip
+    placement="bottom"
+    content={changes.map((change) => (
+      <span key={change} className="block">
+        {change}
+      </span>
+    ))}
+  >
+    {/* biome-ignore lint/a11y/noNoninteractiveTabindex: focus opens the tooltip that says where the tempo changes */}
+    <span tabIndex={0} className="whitespace-nowrap cursor-help underline decoration-dotted underline-offset-2">
+      {fact}
+    </span>
+  </Tooltip>
+);
+
 const TempoDisplay: React.FC<{ grid: BeatGrid; stats: TempoStats }> = ({ grid, stats }) => {
   const [meter, ...rest] = tempoFacts(grid, stats);
   const bpm = usePlayheadTempo(grid, "beat-grid-display-tempo", stats.bpm);
+  const changes = grid.source === "manual" ? [] : tempoChanges(grid);
   return (
     <div
       className={cn(
@@ -82,10 +109,14 @@ const TempoDisplay: React.FC<{ grid: BeatGrid; stats: TempoStats }> = ({ grid, s
       </span>
       <span className="text-[12.5px] leading-[1.2] text-(--muted)">
         <b className="font-medium tabular-nums text-(--label) whitespace-nowrap">{meter}</b>
-        {rest.map((fact) => (
+        {rest.map((fact, i) => (
           <Fragment key={fact}>
             {"\u00a0・ "}
-            <span className="whitespace-nowrap">{fact}</span>
+            {i === rest.length - 1 && changes.length > 0 ? (
+              <TempoChangesFact fact={fact} changes={changes} />
+            ) : (
+              <span className="whitespace-nowrap">{fact}</span>
+            )}
           </Fragment>
         ))}
       </span>

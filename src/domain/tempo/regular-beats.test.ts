@@ -51,6 +51,27 @@ describe("regularBeats", () => {
   });
 });
 
+describe("regressions", () => {
+  it("regression: ignores downbeats the model hears on every beat", () => {
+    const beats = Array.from({ length: 48 }, (_, i) => i * 0.5);
+    const downbeatIndices = [0, 4, 8, 12, 16, 17, 18, 19, 20, 22, 24, 28, 32, 36, 40, 44];
+    const result = regularBeats({ beats, downbeats: downbeatIndices.map((i) => beats[i]) });
+    expect(new Set(barLengths(result.beats, result.downbeats))).toEqual(new Set([4]));
+  });
+
+  it("regression: reads a quiet intro heard at half time at the tempo after it", () => {
+    const { beats } = regularBeats(detections.halfTimeIntro);
+    const intro = intervals(beats.filter((time) => time < 60));
+    for (const interval of intro) expect(interval).toBeCloseTo(60 / 129, 1);
+  });
+
+  it("regression: does not read a stretch of loud off-beats as double time", () => {
+    const { beats } = regularBeats(detections.offBeatStretch);
+    const step = median(intervals(beats));
+    for (const interval of intervals(beats)) expect(interval).toBeGreaterThan(step * 0.75);
+  });
+});
+
 describe("edge cases", () => {
   it("passes through detections too short to read a tempo from", () => {
     expect(regularBeats({ beats: [], downbeats: [] })).toEqual({ beats: [], downbeats: [] });
@@ -58,9 +79,10 @@ describe("edge cases", () => {
     expect(regularBeats({ beats: [1, 1.5], downbeats: [1] })).toEqual({ beats: [1, 1.5], downbeats: [1] });
   });
 
-  it("keeps a real meter change", () => {
-    const beats = Array.from({ length: 24 }, (_, i) => i * 0.5);
-    const downbeats = [0, 2, 4, 5.5, 7, 8.5, 10];
-    expect(regularBeats({ beats, downbeats })).toEqual({ beats, downbeats });
+  it("keeps a single short bar when the bars after it confirm the shift", () => {
+    const beats = Array.from({ length: 40 }, (_, i) => i * 0.5);
+    const downbeatIndices = [0, 4, 8, 12, 14, 18, 22, 26, 30, 34, 38];
+    const result = regularBeats({ beats, downbeats: downbeatIndices.map((i) => beats[i]) });
+    expect(barLengths(result.beats, result.downbeats)).toEqual([4, 4, 4, 2, 4, 4, 4, 4, 4, 4]);
   });
 });

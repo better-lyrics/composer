@@ -12,7 +12,7 @@ interface TempoSection {
 
 const EVEN_TOLERANCE_SECONDS = 0.0021;
 const MIN_SECTION_BEATS = 16;
-const SAME_TEMPO_RATIO = 0.03;
+const SAME_TEMPO_RATIO = 0.08;
 
 // -- Sections ------------------------------------------------------------------
 
