@@ -73,10 +73,11 @@ const TimelineWaveform: React.FC = () => {
     return () => audioElement.removeEventListener("loadstart", onLoadStart);
   }, [ws, audioElement]);
 
+  // Hidden under the spectrum the waveform keeps its old zoom; it catches up when it shows again.
   useEffect(() => {
-    if (!ws) return;
+    if (!ws || spectrumVisible || ws.options.minPxPerSec === zoom) return;
     ws.setOptions({ minPxPerSec: zoom });
-  }, [ws, zoom]);
+  }, [ws, zoom, spectrumVisible]);
 
   useEffect(() => {
     if (!ws) return;
@@ -149,26 +150,28 @@ const TimelineWaveform: React.FC = () => {
       {audioElement && (
         <div
           data-waveform-fade
-          className="pt-[13px] transition-opacity duration-150 ease-in"
-          style={{ opacity: ws && !spectrumVisible ? 1 : 0 }}
+          className="pt-[13px] overflow-clip transition-opacity duration-150 ease-in"
+          style={{ width: totalWidth, opacity: ws && !spectrumVisible ? 1 : 0 }}
         >
-          <WavesurferPlayer
-            key={waveformKey}
-            height={WAVEFORM_BARS_HEIGHT}
-            waveColor={initialColors.wave}
-            progressColor={initialColors.progress}
-            cursorColor="transparent"
-            barWidth={2}
-            barGap={1}
-            barRadius={12}
-            media={audioElement}
-            interact={false}
-            hideScrollbar={true}
-            fillParent={false}
-            minPxPerSec={initialZoom}
-            onDestroy={onDestroy}
-            onReady={onReady}
-          />
+          <div className="w-max">
+            <WavesurferPlayer
+              key={waveformKey}
+              height={WAVEFORM_BARS_HEIGHT}
+              waveColor={initialColors.wave}
+              progressColor={initialColors.progress}
+              cursorColor="transparent"
+              barWidth={2}
+              barGap={1}
+              barRadius={12}
+              media={audioElement}
+              interact={false}
+              hideScrollbar={true}
+              fillParent={false}
+              minPxPerSec={initialZoom}
+              onDestroy={onDestroy}
+              onReady={onReady}
+            />
+          </div>
         </div>
       )}
       <WaveformFocusShade />
