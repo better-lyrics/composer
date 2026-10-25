@@ -2,10 +2,11 @@ import { tempoStats } from "@/domain/tempo/tempo-stats";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { BEAT_GRID_LINE_OPTIONS } from "@/ui/beat-grid-line-options";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { Switch } from "@/ui/switch";
 import { describeOnsetStatus } from "@/ui/vocal-onset-snap-toggle";
-import { cn } from "@/utils/cn";
 import { formatBpm } from "@/utils/format-bpm";
 import { PopGroup, PopHead, PopRow } from "@/views/timeline/beat-grid/beat-grid-layout";
 import { isDetectionRunning } from "@/views/timeline/beat-grid/detection-progress";
@@ -66,17 +67,26 @@ function useBeatsHint(): string {
 const SnapSourceRow: React.FC<SnapSourceRowProps> = ({ setting, label, icon, hint, disabled }) => {
   const checked = useSettingsStore((s) => s[setting]);
   const snapOn = useSettingsStore((s) => s.timelineSnap);
-  const dimmed = !snapOn || disabled;
   return (
-    <PopRow label={label} icon={icon} hint={hint} dimmed={dimmed}>
+    <PopRow label={label} icon={icon} hint={hint} dimmed={!snapOn || disabled}>
       <Switch
         checked={checked && !disabled}
-        disabled={disabled}
+        disabled={!snapOn || disabled}
         label={label}
         onCheckedChange={(next) => useSettingsStore.getState().set(setting, next)}
-        className={cn(dimmed && !disabled && "opacity-60")}
       />
     </PopRow>
+  );
+};
+
+const SnapOffNote: React.FC = () => {
+  const snapOn = useSettingsStore((s) => s.timelineSnap);
+  if (snapOn) return null;
+  return (
+    <p className="px-2.5 mt-1 text-xs leading-[1.45] text-(--muted)">
+      Snap is off. Turn it on with the magnet or <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleSnap")} />{" "}
+      to pick what snaps.
+    </p>
   );
 };
 
@@ -107,6 +117,7 @@ const SnapMenu: React.FC<{ onOpenBeatGrid: () => void }> = ({ onOpenBeatGrid }) 
   return (
     <>
       <PopHead title="Snap to" />
+      <SnapOffNote />
       <PopGroup className="mt-1.5">
         <SnapSourceRow setting="snapWordsAndLines" label="Words and lines" icon={IconTextSize} />
         <SnapSourceRow setting="snapMarkers" label="Markers" icon={IconMapPin} hint={markersHint} />
