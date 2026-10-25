@@ -4,6 +4,7 @@ import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { isAbortError } from "@/utils/abort-error";
 import { fileIdentityKey } from "@/utils/file-identity";
+import { createLatestRequest } from "@/utils/latest-request";
 import { clearPitchSession, setPitchSessionTrack } from "@/views/timeline/pitch/pitch-session";
 import { useEffect } from "react";
 
@@ -21,37 +22,30 @@ function playableFileKey(source: AudioSource): string | null {
 // The only driver of pitch detection: it follows the vocal stem, the pitch line setting and the song.
 function usePitchTrack(): void {
   useEffect(() => {
-    let running: AbortController | null = null;
+    const request = createLatestRequest();
     let appliedVocalsUrl: string | null = null;
-
-    const cancelRunning = () => {
-      running?.abort();
-      running = null;
-    };
+    const cancelRunning = request.cancel;
 
     const load = (vocalsUrl: string, jobKey: string | null) => {
-      cancelRunning();
-      const request = new AbortController();
-      running = request;
+      const { signal, isCurrent, finish } = request.start();
       appliedVocalsUrl = vocalsUrl;
       let detected = false;
-      const isCurrent = () => running === request && !request.signal.aborted;
       loadPitchTrack({
         jobKey,
         vocalsUrl,
-        signal: request.signal,
+        signal,
         onDetectionStart: () => {
           detected = true;
         },
       }).then(
         (track) => {
           if (!isCurrent()) return;
-          running = null;
+          finish();
           setPitchSessionTrack(track, jobKey, detected ? performance.now() : null);
         },
         (error: unknown) => {
           if (!isCurrent() || isAbortError(error)) return;
-          running = null;
+          finish();
           appliedVocalsUrl = null;
           console.error(LOG_PREFIX, "could not detect pitch", error);
         },
@@ -68,7 +62,7 @@ function usePitchTrack(): void {
         return;
       }
       if (useSettingsStore.getState().pitchLine === "off") {
-        if (!running) return;
+        if (!request.isRunning()) return;
         cancelRunning();
         appliedVocalsUrl = null;
         return;

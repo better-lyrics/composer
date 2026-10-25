@@ -6,6 +6,7 @@ import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { isAbortError } from "@/utils/abort-error";
 import { fileIdentityKey } from "@/utils/file-identity";
+import { createLatestRequest } from "@/utils/latest-request";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect } from "react";
 
@@ -37,38 +38,31 @@ function isAnotherSong(next: AudioSource, previous: AudioSource): boolean {
 
 function useVocalOnsetSnapPoints(): void {
   useEffect(() => {
-    let running: AbortController | null = null;
+    const request = createLatestRequest();
     let appliedVocalsUrl: string | null = null;
-
-    const cancelRunning = () => {
-      running?.abort();
-      running = null;
-    };
+    const cancelRunning = request.cancel;
 
     const load = (vocalsUrl: string, jobKey: string | null) => {
-      cancelRunning();
-      const request = new AbortController();
-      running = request;
+      const { signal, isCurrent, finish } = request.start();
       appliedVocalsUrl = vocalsUrl;
-      const isCurrent = () => running === request && !request.signal.aborted;
       loadVocalOnsets({
         jobKey,
         vocalsUrl,
-        signal: request.signal,
+        signal,
         onDetectionStart: () => {
           if (isCurrent()) useTimelineStore.getState().setVocalOnsetDetectionStatus("processing");
         },
       }).then(
         (points) => {
           if (!isCurrent()) return;
-          running = null;
+          finish();
           const timeline = useTimelineStore.getState();
           timeline.setVocalOnsetSnapPoints(points);
           timeline.setVocalOnsetDetectionStatus("idle");
         },
         (error: unknown) => {
           if (!isCurrent() || isAbortError(error)) return;
-          running = null;
+          finish();
           appliedVocalsUrl = null;
           useTimelineStore
             .getState()
@@ -89,7 +83,7 @@ function useVocalOnsetSnapPoints(): void {
       }
       if (!useSettingsStore.getState().vocalOnsetSnap) {
         if (timeline.vocalOnsetDetectionStatus === "error") timeline.setVocalOnsetDetectionStatus("idle");
-        if (!running) return;
+        if (!request.isRunning()) return;
         cancelRunning();
         appliedVocalsUrl = null;
         timeline.setVocalOnsetDetectionStatus("idle");
