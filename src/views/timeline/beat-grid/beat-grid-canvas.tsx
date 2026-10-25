@@ -25,6 +25,7 @@ interface DrawnState {
   lines: GridLines;
   themeId: string;
   customThemes: readonly unknown[];
+  overSpectrum: boolean;
 }
 
 interface ResolvedColours {
@@ -40,6 +41,14 @@ const BAR_NUMBER_INSET_X = 4;
 const BAR_NUMBER_Y = 7;
 const SHORT_LINE_INSET = 4;
 const BAR_NUMBER_REACH_PX = 32;
+// The spectrum is a dark display in every theme, so lines over it are white, not theme ink.
+const SPECTRUM_GRID_COLOURS: GridColours = {
+  bar: "rgba(255, 255, 255, 0.34)",
+  beat: "rgba(255, 255, 255, 0.15)",
+  sub: "rgba(255, 255, 255, 0.08)",
+  number: "rgba(255, 255, 255, 0.72)",
+};
+const NUMBER_SHADOW = { colour: "rgba(0, 0, 0, 0.85)", blur: 3 };
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -74,7 +83,8 @@ function isSameDrawing(a: DrawnState, b: DrawnState): boolean {
     a.grid === b.grid &&
     a.lines === b.lines &&
     a.themeId === b.themeId &&
-    a.customThemes === b.customThemes
+    a.customThemes === b.customThemes &&
+    a.overSpectrum === b.overSpectrum
   );
 }
 
@@ -93,8 +103,14 @@ function paintGrid(context: CanvasRenderingContext2D, grid: BeatGrid, state: Dra
     const labelX = x + BAR_NUMBER_INSET_X;
     if (!isBar || labelX < labelEnd) continue;
     const label = String(point.bar);
+    context.save();
+    if (state.overSpectrum) {
+      context.shadowColor = NUMBER_SHADOW.colour;
+      context.shadowBlur = NUMBER_SHADOW.blur;
+    }
     context.fillStyle = colours.number;
     context.fillText(label, labelX, BAR_NUMBER_Y);
+    context.restore();
     labelEnd = labelX + context.measureText(label).width + BAR_NUMBER_INSET_X * 2;
   }
 }
@@ -128,6 +144,7 @@ const BeatGridCanvas: React.FC = () => {
         lines: useSettingsStore.getState().beatGridLines,
         themeId: activeThemeId,
         customThemes,
+        overSpectrum: useTimelineStore.getState().spectrumVisible,
       };
       const playedX = `${Math.round(livePlaybackTime() * next.zoom - next.scrollLeft)}px`;
       if (canvas.style.getPropertyValue("--played-x") !== playedX) canvas.style.setProperty("--played-x", playedX);
@@ -154,7 +171,7 @@ const BeatGridCanvas: React.FC = () => {
         resolved = { themeId: next.themeId, customThemes, colours: resolveGridColours() };
         coloursRef.current = resolved;
       }
-      paintGrid(context, grid, next, resolved.colours);
+      paintGrid(context, grid, next, next.overSpectrum ? SPECTRUM_GRID_COLOURS : resolved.colours);
     },
     "beat-grid-canvas",
     enabled,
