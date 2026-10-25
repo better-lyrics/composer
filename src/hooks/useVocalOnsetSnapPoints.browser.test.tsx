@@ -1,7 +1,6 @@
 import { getStemJobOnsets, putStem, putStemJobOnsets, stemJobKey } from "@/audio/separation/stem-store";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
 import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import {

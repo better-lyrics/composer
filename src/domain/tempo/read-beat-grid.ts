@@ -1,9 +1,8 @@
-import type { BeatGrid, DetectedBeats, ManualTempo } from "@/domain/tempo/beat-grid";
+import { type BeatGrid, type DetectedBeats, MAX_BEATS_PER_BAR, type ManualTempo } from "@/domain/tempo/beat-grid";
 import { isValidBpm } from "@/domain/tempo/tap-tempo";
 
 // -- Constants -----------------------------------------------------------------
 
-const MAX_BEATS_PER_BAR = 12;
 const MAX_OFFSET_MS = 200;
 const MAX_TEMPO_SCALE_STEPS = 4;
 

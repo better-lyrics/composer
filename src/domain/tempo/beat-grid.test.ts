@@ -47,6 +47,11 @@ describe("beatTime and beatIndexAt", () => {
 });
 
 describe("regressions", () => {
+  it("regression: sparse downbeats fall back to four beats per bar instead of a bar no project can load", () => {
+    const beats = Array.from({ length: 40 }, (_, i) => i * 0.5);
+    expect(detectedGrid({ beats, downbeats: [0, 16] }).beatsPerBar).toBe(4);
+  });
+
   it("regression: a playhead put on a beat that was rounded up by a millisecond still reads that beat", () => {
     const grid = detectedGrid({ beats: [1, 1.5, 2.001], downbeats: [1] });
     expect(beatIndexAt(grid, 2.0006)).toBe(2);

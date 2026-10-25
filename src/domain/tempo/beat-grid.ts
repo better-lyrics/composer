@@ -27,6 +27,7 @@ interface BeatGrid {
 
 const DOWNBEAT_MATCH_SECONDS = 0.03;
 const DEFAULT_BEATS_PER_BAR = 4;
+const MAX_BEATS_PER_BAR = 12;
 const BEAT_TOLERANCE_SECONDS = 0.001;
 
 // -- Grid ----------------------------------------------------------------------
@@ -45,7 +46,7 @@ function mostCommonBarLength(downbeatIndices: readonly number[]): number {
       bestCount = count;
     }
   }
-  return best;
+  return best <= MAX_BEATS_PER_BAR ? best : DEFAULT_BEATS_PER_BAR;
 }
 
 function nearestBeatIndex(beats: readonly number[], time: number, from: number): number {
@@ -124,5 +125,5 @@ function isDownbeat(grid: BeatGrid, index: number): boolean {
 
 // -- Exports -------------------------------------------------------------------
 
-export { barNumberAt, barTimes, beatInBar, beatIndexAt, beatTime, detectedGrid, isDownbeat };
+export { MAX_BEATS_PER_BAR, barNumberAt, barTimes, beatInBar, beatIndexAt, beatTime, detectedGrid, isDownbeat };
 export type { BeatGrid, DetectedBeats, ManualTempo };
