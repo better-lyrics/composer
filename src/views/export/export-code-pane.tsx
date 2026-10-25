@@ -25,7 +25,7 @@ const FileHead: React.FC<{ fileName: string; content: string; exportTiming: Timi
   content,
   exportTiming,
 }) => (
-  <div className="flex h-7 min-w-0 items-center justify-between gap-3 flex-1 select-none">
+  <div className="flex h-7 min-w-0 items-center justify-between gap-3 flex-1 px-1 select-none">
     <span className="truncate text-[13px] font-medium text-(--label)">{fileName}</span>
     <span className="shrink-0 font-mono text-xs text-(--muted)">
       {content.split("\n").length} lines ・ {exportTiming === "line" ? "Line" : "Word"} timing
