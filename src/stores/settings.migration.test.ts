@@ -184,3 +184,26 @@ describe("selectionLeadIn migration", () => {
     expect(migrated.selectionLeadIn).toBe(0);
   });
 });
+
+describe("spectrum and pitch settings", () => {
+  it("fills defaults for blobs written before they existed", async () => {
+    const blob = Object.fromEntries(
+      Object.entries(legacyBlob()).filter(
+        ([key]) => !key.startsWith("spectrum") && key !== "showSpectrum" && key !== "pitchLine",
+      ),
+    );
+    await rehydrateAt(10, blob);
+    const state = useSettingsStore.getState();
+    expect(state.showSpectrum).toBe(false);
+    expect(state.spectrumBandHeight).toBe(168);
+    expect(state.pitchLine).toBe("always");
+  });
+
+  it("drops spectrum values it does not recognise", async () => {
+    await rehydrateAt(10, legacyBlob({ spectrumPalette: "rainbow", pitchLine: "sometimes", spectrumBandHeight: 9000 }));
+    const state = useSettingsStore.getState();
+    expect(state.spectrumPalette).toBe("heat");
+    expect(state.pitchLine).toBe("always");
+    expect(state.spectrumBandHeight).toBe(320);
+  });
+});

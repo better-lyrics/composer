@@ -1,5 +1,7 @@
+import { isPitchLineMode } from "@/domain/pitch/pitch-line-mode";
 import { isLibrarySort } from "@/domain/project/library-order";
 import { isLaunchScreen, isLibraryView } from "@/domain/project/library-preferences";
+import { sanitizeSpectrumSettings } from "@/domain/spectrum/settings";
 import { isKeepYouTubeAudio } from "@/domain/storage/audio-retention";
 import { isStorageLimit } from "@/domain/storage/storage-limit";
 import type { SettingsState } from "@/stores/settings";
@@ -12,7 +14,7 @@ interface RetiredSettings {
 
 // -- Constants ----------------------------------------------------------------
 
-const SETTINGS_PERSIST_VERSION = 10;
+const SETTINGS_PERSIST_VERSION = 11;
 
 // -- Migration ----------------------------------------------------------------
 
@@ -40,9 +42,39 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   // 5 was the default before 10, so a saved 5 is the old default, not a choice.
   if (version < 10 && next.seekStep === 5) next.seekStep = 0.5;
   if (version < 10 && typeof next.seekStep === "number" && next.seekStep > 5) next.seekStep = 5;
-  const { librarySort, libraryView, launchScreen, keepYouTubeAudio, smartCleanup, storageLimit, ...rest } = next;
+  const {
+    librarySort,
+    libraryView,
+    launchScreen,
+    keepYouTubeAudio,
+    smartCleanup,
+    storageLimit,
+    pitchLine,
+    showSpectrum,
+    spectrumBandHeight,
+    spectrumSource,
+    spectrumPalette,
+    spectrumContrast,
+    spectrumScale,
+    spectrumTop,
+    spectrumWindow,
+    spectrumPhase,
+    ...rest
+  } = next;
   return {
     ...rest,
+    ...sanitizeSpectrumSettings({
+      showSpectrum,
+      spectrumBandHeight,
+      spectrumSource,
+      spectrumPalette,
+      spectrumContrast,
+      spectrumScale,
+      spectrumTop,
+      spectrumWindow,
+      spectrumPhase,
+    }),
+    ...(isPitchLineMode(pitchLine) ? { pitchLine } : {}),
     ...(isLibrarySort(librarySort) ? { librarySort } : {}),
     ...(isLibraryView(libraryView) ? { libraryView } : {}),
     ...(isLaunchScreen(launchScreen) ? { launchScreen } : {}),

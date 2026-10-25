@@ -1,6 +1,8 @@
-import type { LibrarySort } from "@/domain/project/library-order";
 import type { MusicBrainzLookup } from "@/domain/musicbrainz/lookup-mode";
+import { DEFAULT_PITCH_LINE_MODE, type PitchLineMode } from "@/domain/pitch/pitch-line-mode";
+import type { LibrarySort } from "@/domain/project/library-order";
 import type { LaunchScreen, LibraryView } from "@/domain/project/library-preferences";
+import { SPECTRUM_SETTING_DEFAULTS, type SpectrumSettings } from "@/domain/spectrum/settings";
 import type { KeepYouTubeAudio } from "@/domain/storage/audio-retention";
 import type { StorageLimit } from "@/domain/storage/storage-limit";
 import { SETTINGS_PERSIST_VERSION, migrateSettings } from "@/stores/settings-migration";
@@ -36,7 +38,8 @@ interface CobaltInstanceStatus {
 
 const DEFAULT_COBALT_INSTANCE_ID = "default";
 
-interface SettingsState extends SnapSettings {
+interface SettingsState extends SnapSettings, SpectrumSettings {
+  pitchLine: PitchLineMode;
   defaultPlaybackRate: number;
   rememberPlaybackRate: boolean;
   lastPlaybackRate: number;
@@ -120,6 +123,8 @@ interface SettingsActions {
 // -- Defaults -----------------------------------------------------------------
 
 const DEFAULTS: SettingsState = {
+  ...SPECTRUM_SETTING_DEFAULTS,
+  pitchLine: DEFAULT_PITCH_LINE_MODE,
   ...SNAP_DEFAULTS,
   defaultPlaybackRate: 0.75,
   rememberPlaybackRate: true,
