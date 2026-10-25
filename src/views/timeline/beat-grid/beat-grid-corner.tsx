@@ -3,7 +3,11 @@ import { useAudioStore } from "@/stores/audio";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { Popover } from "@/ui/popover";
+import { Tooltip } from "@/ui/tooltip";
+import { cn } from "@/utils/cn";
 import { formatBpm } from "@/utils/format-bpm";
 import { keepSpaceForFocusedControl } from "@/views/timeline/beat-grid/beat-grid-layout";
 import { BeatGridPopoverBody } from "@/views/timeline/beat-grid/beat-grid-popover";
@@ -20,7 +24,7 @@ const TEMPO_NUMBER_CLASS =
 
 // -- Components ----------------------------------------------------------------
 
-const CornerTempo: React.FC<{ bpm: string }> = ({ bpm }) => {
+const CornerTempo: React.FC<{ bpm: string; dimmed: boolean }> = ({ bpm, dimmed }) => {
   const grid = useProjectStore((s) => s.beatGrid);
   const numberRef = useRef<HTMLElement>(null);
   const flashedAt = useRef<number | null>(null);
@@ -40,7 +44,7 @@ const CornerTempo: React.FC<{ bpm: string }> = ({ bpm }) => {
   });
 
   return (
-    <span className="grid justify-items-center gap-0.5">
+    <span className={cn("grid justify-items-center gap-0.5", dimmed && "opacity-50")}>
       <b ref={numberRef} className={TEMPO_NUMBER_CLASS}>
         {bpm}
       </b>
@@ -78,7 +82,7 @@ const CornerFace: React.FC = () => {
   return (
     <>
       <IconWaveSine aria-hidden="true" className="size-4" />
-      {stats && visible && <CornerTempo bpm={formatBpm(stats.bpm)} />}
+      {stats && <CornerTempo bpm={formatBpm(stats.bpm)} dimmed={!visible} />}
     </>
   );
 };
@@ -105,16 +109,29 @@ const CornerButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { r
   </button>
 );
 
+const CornerTooltip: React.FC = () => {
+  const hasGrid = useProjectStore((s) => s.beatGrid !== null);
+  const showHints = useSettingsStore((s) => s.showShortcutHints);
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      Beat grid
+      {hasGrid && showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleBeatGrid")} />}
+    </span>
+  );
+};
+
 // The cell sits in the Timeline scroll host, which starts a marquee on mousedown.
 const BeatGridCorner: React.FC = () => (
   <div
     onMouseDown={(e) => e.stopPropagation()}
     onKeyDown={keepSpaceForFocusedControl}
-    className="absolute top-0 left-0 z-100 w-12 h-20 border-b border-r-2 border-(--divider) bg-(--gutter-bg)"
+    className="absolute top-0 left-0 z-100 grid w-12 h-20 border-b border-r-2 border-(--divider) bg-(--gutter-bg)"
   >
-    <Popover placement="right-start" aria-label="Beat grid" trigger={<CornerButton />}>
-      <BeatGridPopoverBody />
-    </Popover>
+    <Tooltip content={<CornerTooltip />} placement="right">
+      <Popover placement="right-start" aria-label="Beat grid" trigger={<CornerButton />}>
+        <BeatGridPopoverBody />
+      </Popover>
+    </Tooltip>
   </div>
 );
 
