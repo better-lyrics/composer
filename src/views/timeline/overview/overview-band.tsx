@@ -1,6 +1,8 @@
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { BandViewport } from "@/views/timeline/overview/band-viewport";
 import { useBandResize } from "@/views/timeline/overview/use-band-resize";
+import { SpectrumCanvas } from "@/views/timeline/spectrum/spectrum-canvas";
+import { useSpectrumSession } from "@/views/timeline/spectrum/use-spectrum-session";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { Activity, type ReactNode } from "react";
 
@@ -38,12 +40,18 @@ const BandResizeHandle: React.FC = () => {
 const OverviewBand: React.FC<OverviewBandProps> = ({ children }) => {
   const bandHeight = useOverviewBandHeight();
   const spectrumVisible = useTimelineStore((s) => s.spectrumVisible);
+  useSpectrumSession();
 
   return (
     <div data-overview-band className={BAND_CLASS} style={{ minHeight: bandHeight }}>
+      <Activity mode={spectrumVisible ? "visible" : "hidden"}>
+        <BandViewport label="spectrum viewport" className="bottom-px overflow-clip">
+          <SpectrumCanvas />
+        </BandViewport>
+      </Activity>
       {children}
       <Activity mode={spectrumVisible ? "visible" : "hidden"}>
-        <BandViewport label="overview band controls" className="z-30">
+        <BandViewport label="overview band controls" className="z-30 overflow-x-clip">
           <BandResizeHandle />
         </BandViewport>
       </Activity>

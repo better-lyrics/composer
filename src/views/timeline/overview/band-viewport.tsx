@@ -28,8 +28,10 @@ const BandViewport: React.FC<BandViewportProps> = ({ label, className, children 
   }, label);
 
   return (
-    <div ref={rootRef} className={cn("absolute inset-y-0 left-0 pointer-events-none", className)}>
-      {children}
+    <div className={cn("absolute inset-0 pointer-events-none", className)}>
+      <div ref={rootRef} className="absolute inset-y-0 left-0">
+        {children}
+      </div>
     </div>
   );
 };
