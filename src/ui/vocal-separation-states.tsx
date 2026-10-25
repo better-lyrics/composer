@@ -1,5 +1,6 @@
 import type { Stem } from "@/audio/separation/types";
 import { Button } from "@/ui/button";
+import { PitchLineSwitch } from "@/ui/pitch-line-switch";
 import { ProgressBar } from "@/ui/progress-bar";
 import { STEMS, STEM_ICONS, STEM_LABELS } from "@/ui/stem-labels";
 import { VocalOnsetSnapToggle } from "@/ui/vocal-onset-snap-toggle";
@@ -109,6 +110,9 @@ const IdleReadyState: React.FC<{
       )}
       <div className="h-px my-2.5 bg-(--divider)" />
       <VocalOnsetSnapToggle />
+      <div className="mt-3.5">
+        <PitchLineSwitch />
+      </div>
     </div>
   );
 };
