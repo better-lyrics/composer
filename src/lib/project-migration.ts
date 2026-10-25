@@ -7,7 +7,8 @@ import {
   runTransaction,
 } from "@/lib/persistence-idb";
 import { protectStorageForFirstProject } from "@/lib/browser-storage";
-import { createProjectId, indexEntryForProject } from "@/lib/project-repository";
+import { indexEntryForProject } from "@/lib/project-index-write";
+import { createProjectId } from "@/lib/project-repository";
 import { LEGACY_AUDIO_KEY, LEGACY_PROJECT_KEY, OPEN_PROJECT_KEY, getOpenProjectId } from "@/lib/project-storage";
 import type { SavedAudioFile, SavedProject } from "@/lib/saved-project";
 

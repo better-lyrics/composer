@@ -77,4 +77,11 @@ describe("project stems", () => {
     expect(copy?.slots.vocals?.data.byteLength).toBe(write.file.size);
     expect((await loadProjectIndexEntry(copyId))?.storedStemBytes).toBe(write.file.size);
   });
+
+  it("counts stems saved before the project's first record", async () => {
+    const write = importedVocals();
+    await saveProjectStem("stems-early", "h", write);
+    await seedStoredProject("stems-early");
+    expect((await loadProjectIndexEntry("stems-early"))?.storedStemBytes).toBe(write.file.size);
+  });
 });

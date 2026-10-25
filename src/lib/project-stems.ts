@@ -1,3 +1,4 @@
+import { type SavedProjectStem, type SavedProjectStems, storedStemBytes } from "@/domain/stems/saved-stems";
 import { STEM_SLOTS, type StemOrigin, type StemSlot } from "@/domain/stems/stem-slot";
 import {
   APP_STATE_STORE_NAME,
@@ -7,25 +8,11 @@ import {
   runTransaction,
 } from "@/lib/persistence-idb";
 import { notifyProjectIndexChanged } from "@/lib/project-index-changes";
-import { patchIndexEntry } from "@/lib/project-repository";
+import { patchIndexEntry } from "@/lib/project-index-write";
 import { whenProjectWritable } from "@/lib/project-tombstones";
 import { notifyStorageSignal, reportStorageWriteError } from "@/lib/storage-signals";
 
 // -- Types --------------------------------------------------------------------
-
-interface SavedProjectStem {
-  origin: StemOrigin;
-  name: string;
-  type: string;
-  data: ArrayBuffer;
-  durationSeconds: number;
-}
-
-interface SavedProjectStems {
-  songHash: string;
-  revision: number;
-  slots: Partial<Record<StemSlot, SavedProjectStem>>;
-}
 
 interface ProjectStemWrite {
   slot: StemSlot;
@@ -41,12 +28,6 @@ type StemsChange = (current: SavedProjectStems | undefined) => SavedProjectStems
 const STEM_WRITE_STORES = [PROJECT_STEMS_STORE_NAME, PROJECT_INDEX_STORE_NAME, APP_STATE_STORE_NAME];
 
 // -- Helpers ------------------------------------------------------------------
-
-function storedStemBytes(stems: SavedProjectStems | undefined): number {
-  let total = 0;
-  for (const slot of STEM_SLOTS) total += stems?.slots[slot]?.data.byteLength ?? 0;
-  return total;
-}
 
 function stemFile(stem: SavedProjectStem): File {
   return new File([stem.data], stem.name, { type: stem.type });
@@ -120,13 +101,4 @@ async function deleteProjectStems(id: string): Promise<void> {
 
 // -- Exports ------------------------------------------------------------------
 
-export {
-  copyProjectStems,
-  deleteProjectStem,
-  deleteProjectStems,
-  loadProjectStems,
-  saveProjectStem,
-  stemFile,
-  storedStemBytes,
-};
-export type { SavedProjectStem, SavedProjectStems };
+export { copyProjectStems, deleteProjectStem, deleteProjectStems, loadProjectStems, saveProjectStem, stemFile };

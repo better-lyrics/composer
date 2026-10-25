@@ -4,7 +4,7 @@ import { usePersistence } from "@/hooks/usePersistence";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { PROJECT_INDEX_STORE_NAME, setInStore } from "@/lib/persistence-idb";
 import { getLinkProjectSettled, getPersistenceSettled, getQueryImportSettled } from "@/lib/persistence-settled";
-import { indexEntryForProject } from "@/lib/project-repository";
+import { indexEntryForProject } from "@/lib/project-index-write";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { isProjectDeleted } from "@/lib/project-tombstones";
 import { useAudioStore } from "@/stores/audio";

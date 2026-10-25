@@ -8,7 +8,7 @@ import {
   runTransaction,
 } from "@/lib/persistence-idb";
 import { notifyProjectIndexChanged } from "@/lib/project-index-changes";
-import { patchIndexEntry } from "@/lib/project-repository";
+import { patchIndexEntry } from "@/lib/project-index-write";
 import { whenProjectWritable } from "@/lib/project-tombstones";
 import type { SavedAudioFile } from "@/lib/saved-project";
 import { notifyStorageSignal } from "@/lib/storage-signals";

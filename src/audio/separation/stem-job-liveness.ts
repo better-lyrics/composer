@@ -1,6 +1,6 @@
 import type { StemRecord } from "@/audio/separation/stem-derived-records";
 import { PROJECT_STEMS_STORE_NAME, STEM_STORE_NAME } from "@/lib/persistence-idb";
-import type { SavedProjectStems } from "@/lib/project-stems";
+import type { SavedProjectStems } from "@/domain/stems/saved-stems";
 
 // -- Constants ----------------------------------------------------------------
 
