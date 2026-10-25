@@ -108,7 +108,8 @@ const TimelineExtras: React.FC = () => (
         </li>
         <li>
           <strong>Snap</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleSnap")} />
-          ): a magnet for word edges and the playhead. Hold {MOD_KEY} mid-drag to bypass.
+          ): a magnet for word edges and the playhead. The arrow beside it picks what snaps. Hold {MOD_KEY} mid-drag to
+          bypass.
         </li>
         <li>
           <strong>Marker</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleMarkerMode")} />
@@ -128,6 +129,36 @@ const TimelineExtras: React.FC = () => (
         Snap remembers its state across reloads. Follow, Rolling and Preview start each session from their defaults in{" "}
         <SettingLink section="timeline" />.
       </p>
+    </HelpTopic>
+
+    <HelpTopic title="Beat grid">
+      <p className={PROSE}>
+        The beat grid draws the song's bars and beats behind the waveform so words can snap to the beat. Open it from
+        the wave icon at the left of the waveform.
+      </p>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
+        <li>
+          <strong>Detect beats</strong> runs on your device. The first run downloads a 9 MB model. After that it takes a
+          few seconds and works offline.
+        </li>
+        <li>
+          <strong>Set by hand</strong> to type a tempo, or play the song and tap along. Bar 1 starts at the playhead.
+        </li>
+        <li>
+          <strong>Lines</strong> sets the finest lines: bars, beats, or halves, thirds or quarters of a beat. Finer
+          lines show up as you zoom in, and only lines you can see are snap targets.
+        </li>
+        <li>
+          Grid a little early or late? Nudge it with <strong>Offset</strong>. Bars starting on the wrong beat? Put the
+          playhead on the first beat of a bar and choose <strong>Set at playhead</strong>. <strong>Half</strong> and{" "}
+          <strong>Double</strong> fix a tempo read at twice or half the speed.
+        </li>
+        <li>Every change can be undone, and the grid saves with the project.</li>
+        <li>
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleBeatGrid")} /> to show or hide the grid. The
+          arrow next to the magnet picks what snaps: words and lines, markers, vocal onsets and beats.
+        </li>
+      </ul>
     </HelpTopic>
 
     <HelpTopic title="Other features">

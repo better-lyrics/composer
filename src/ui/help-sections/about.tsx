@@ -6,6 +6,7 @@ import { IconBrandDiscord, IconBrandGithub, IconBug } from "@tabler/icons-react"
 // -- Constants ----------------------------------------------------------------
 
 const GITHUB_URL = "https://github.com/better-lyrics/composer";
+const BEAT_THIS_URL = "https://github.com/CPJKU/beat_this";
 const DISCORD_URL = "https://discord.gg/UsHE3d5fWF";
 const ISSUE_URL = "https://github.com/better-lyrics/composer/issues/new/choose";
 
@@ -58,6 +59,16 @@ const AboutSection: React.FC = () => (
             GitHub
           </a>
           . PRs welcome if you spot something to fix.
+        </p>
+      </HelpTopic>
+
+      <HelpTopic title="Credits">
+        <p className={PROSE}>
+          Beat detection uses{" "}
+          <a href={BEAT_THIS_URL} target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
+            Beat This!
+          </a>{" "}
+          by the Institute of Computational Perception at JKU Linz, under the MIT license.
         </p>
       </HelpTopic>
 
