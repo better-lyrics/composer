@@ -22,6 +22,19 @@ function audioSourceKey(source: AudioSource): string | null {
   return null;
 }
 
+function songKey(source: AudioSource): string | null {
+  if (source?.type === "file") return `file:${fileIdentityKey(source.file)}`;
+  if (source?.type === "youtube") return `youtube:${source.videoId}`;
+  return null;
+}
+
+// Audio that goes missing and comes back, or a YouTube file that arrives later, is still the same song.
+function isAnotherSong(next: AudioSource, previous: AudioSource): boolean {
+  const nextSong = songKey(next);
+  const previousSong = songKey(previous);
+  return nextSong !== null && previousSong !== null && nextSong !== previousSong;
+}
+
 function useVocalOnsetSnapPoints(): void {
   useEffect(() => {
     let running: AbortController | null = null;
@@ -101,8 +114,10 @@ function useVocalOnsetSnapPoints(): void {
       appliedVocalsUrl = null;
       const timeline = useTimelineStore.getState();
       timeline.setVocalOnsetSnapPoints([]);
-      useProjectStore.getState().clearCustomSnapPoints();
-      useProjectStore.getState().clearBeatGrid();
+      if (isAnotherSong(state.source, prev.source)) {
+        useProjectStore.getState().clearCustomSnapPoints();
+        useProjectStore.getState().clearBeatGrid();
+      }
       timeline.setVocalOnsetDetectionStatus("idle");
     });
 
