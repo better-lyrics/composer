@@ -124,6 +124,13 @@ const floatingEntrance = {
   reducedInitial: { opacity: 0 },
 } as const;
 
+// -- Pitch Line ---------------------------------------------------------------
+
+// Canvas layers in the Timeline rows animate through the Web Animations API, so these are plain numbers.
+const pitchLineMotion = {
+  spillFadeMs: 150,
+} as const;
+
 // -- Stagger Container --------------------------------------------------------
 
 // -- Exports ------------------------------------------------------------------
@@ -143,4 +150,5 @@ export {
   inlineIconTransition,
   inlineIconVariants,
   inlineIconReducedVariants,
+  pitchLineMotion,
 };

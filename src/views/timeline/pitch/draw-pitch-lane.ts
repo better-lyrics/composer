@@ -43,6 +43,7 @@ const WORD_STYLES = {
   selected: { line: 1, fill: 0.4, width: 1.75 },
 } as const satisfies Record<string, RibbonStyle>;
 const SPILL_STYLE: RibbonStyle = { line: 0.95, fill: 0.32, width: 1.5 };
+const LIT_STYLE: RibbonStyle = { line: 1, fill: 0.85, width: 2.25 };
 const MAX_CANVAS_PX = 16384;
 
 // -- Geometry ------------------------------------------------------------------
@@ -181,7 +182,25 @@ function drawPitchLane(
   ribbon(context, drawing.window, spills, warning, SPILL_STYLE);
 }
 
+// The sung layer: the same ribbons in accent, revealed behind the playhead by a clip, never repainted per frame.
+function drawSungLane(canvas: HTMLCanvasElement, drawing: LaneDrawing, accent: Rgb): void {
+  const context = sizeCanvas(canvas, drawing.window);
+  if (context) wordRibbons(context, drawing, accent, () => LIT_STYLE);
+}
+
+// When an edit removes a spill, the old pixels fade out over the redraw, so amber eases to the singer colour.
+function fadeOutSnapshot(canvas: HTMLCanvasElement, ghost: HTMLCanvasElement, durationMs: number): void {
+  if (!canvas.width) return;
+  ghost.width = canvas.width;
+  ghost.height = canvas.height;
+  ghost.style.left = canvas.style.left;
+  ghost.style.width = canvas.style.width;
+  ghost.style.height = canvas.style.height;
+  ghost.getContext("2d")?.drawImage(canvas, 0, 0);
+  ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: durationMs, easing: "ease-out" });
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { drawPitchLane, laneRuns, laneWindow };
+export { drawPitchLane, drawSungLane, fadeOutSnapshot, laneRuns, laneWindow };
 export type { LaneWord, PitchLaneKind };

@@ -973,12 +973,21 @@ braccato-lyrics .blyrics-container {
 
 /* Timeline pitch line: a canvas over each lane's words, shown by the mode the rows scope carries in data-pitch. Labels lift to make room. */
 @layer components {
-  .pitch-lane {
+  .pitch-lane,
+  .pitch-lane-ghost {
     position: absolute;
     top: 0;
     z-index: 1;
     pointer-events: none;
+  }
+  .pitch-lane {
     transition: opacity 150ms cubic-bezier(0.22, 1, 0.36, 1);
+    &[data-sung] {
+      z-index: 2;
+    }
+  }
+  .pitch-lane-ghost {
+    opacity: 0;
   }
   :is(
       [data-pitch="always"],
