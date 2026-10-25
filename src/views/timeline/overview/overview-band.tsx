@@ -2,6 +2,7 @@ import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { BandViewport } from "@/views/timeline/overview/band-viewport";
 import { useBandResize } from "@/views/timeline/overview/use-band-resize";
 import { SpectrumCanvas } from "@/views/timeline/spectrum/spectrum-canvas";
+import { SpectrumReadout } from "@/views/timeline/spectrum/spectrum-readout";
 import { useSpectrumSession } from "@/views/timeline/spectrum/use-spectrum-session";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { Activity, type ReactNode } from "react";
@@ -52,6 +53,7 @@ const OverviewBand: React.FC<OverviewBandProps> = ({ children }) => {
       {children}
       <Activity mode={spectrumVisible ? "visible" : "hidden"}>
         <BandViewport label="overview band controls" className="z-30 overflow-x-clip">
+          <SpectrumReadout />
           <BandResizeHandle />
         </BandViewport>
       </Activity>

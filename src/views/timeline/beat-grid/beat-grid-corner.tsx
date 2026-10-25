@@ -14,18 +14,27 @@ import { keepSpaceForFocusedControl } from "@/views/timeline/beat-grid/keep-spac
 import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
 import { usePlayheadTempo } from "@/views/timeline/beat-grid/use-playhead-tempo";
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
+import { FrequencyAxis } from "@/views/timeline/spectrum/frequency-axis";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconAlertTriangle, IconLoader2, IconWaveSine } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
 const FLASH_MS = 110;
+const CORNER_TEMPO_HEIGHT = 26;
+const CORNER_BORDER = 1;
 const TEMPO_NUMBER_CLASS =
   "font-mono text-xs font-semibold leading-none tabular-nums text-(--label) transition-colors duration-160 ease-[cubic-bezier(0.22,1,0.36,1)] group-aria-expanded:text-composer-text data-beat:text-composer-accent-text data-beat:duration-0";
 
 // -- Components ----------------------------------------------------------------
 
-const CornerTempo: React.FC<{ grid: BeatGrid; songBpm: number; dimmed: boolean }> = ({ grid, songBpm, dimmed }) => {
+const CornerTempo: React.FC<{ grid: BeatGrid; songBpm: number; dimmed: boolean; compact: boolean }> = ({
+  grid,
+  songBpm,
+  dimmed,
+  compact,
+}) => {
   const bpm = usePlayheadTempo(grid, "beat-grid-corner-tempo", songBpm);
   const numberRef = useRef<HTMLElement>(null);
   const flashedAt = useRef<number | null>(null);
@@ -45,16 +54,20 @@ const CornerTempo: React.FC<{ grid: BeatGrid; songBpm: number; dimmed: boolean }
   });
 
   return (
-    <span className={cn("grid justify-items-center gap-0.5", dimmed && "opacity-50")}>
+    <span className={cn("grid justify-items-center", compact ? "gap-px" : "gap-0.5", dimmed && "opacity-50")}>
       <b ref={numberRef} className={TEMPO_NUMBER_CLASS}>
         {bpm}
       </b>
-      <span className="text-[9.5px] font-medium leading-none text-composer-text-faint">BPM</span>
+      <span
+        className={cn("font-medium leading-none text-composer-text-faint", compact ? "text-[8.5px]" : "text-[9.5px]")}
+      >
+        BPM
+      </span>
     </span>
   );
 };
 
-const CornerFace: React.FC = () => {
+const CornerFace: React.FC<{ compact: boolean }> = ({ compact }) => {
   const grid = useProjectStore((s) => s.beatGrid);
   const visible = useSettingsStore((s) => s.beatGridVisible);
   const status = useBeatDetectionStore((s) => s.status);
@@ -64,10 +77,12 @@ const CornerFace: React.FC = () => {
   if (isDetectionRunning(status)) {
     return (
       <>
-        <IconLoader2
-          aria-hidden="true"
-          className="size-4 text-composer-accent-text animate-spin motion-reduce:animate-none"
-        />
+        {!compact && (
+          <IconLoader2
+            aria-hidden="true"
+            className="size-4 text-composer-accent-text animate-spin motion-reduce:animate-none"
+          />
+        )}
         <span className="font-mono text-xs font-semibold leading-none tabular-nums text-(--label)">{percent}%</span>
       </>
     );
@@ -75,15 +90,15 @@ const CornerFace: React.FC = () => {
   if (status === "error") {
     return (
       <>
-        <IconWaveSine aria-hidden="true" className="size-4" />
+        {!compact && <IconWaveSine aria-hidden="true" className="size-4" />}
         <IconAlertTriangle aria-hidden="true" className="size-[13px] text-composer-warning" />
       </>
     );
   }
   return (
     <>
-      <IconWaveSine aria-hidden="true" className="size-4" />
-      {grid && stats && <CornerTempo grid={grid} songBpm={stats.bpm} dimmed={!visible} />}
+      {!(compact && stats) && <IconWaveSine aria-hidden="true" className="size-4" />}
+      {grid && stats && <CornerTempo grid={grid} songBpm={stats.bpm} dimmed={!visible} compact={compact} />}
     </>
   );
 };
@@ -97,18 +112,30 @@ function useCornerLabel(): string {
   return stats ? `Beat grid, ${formatBpm(stats.bpm)} BPM` : "Beat grid";
 }
 
-const CornerButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { ref?: React.Ref<HTMLButtonElement> }> = (
-  props,
-) => (
-  <button
-    type="button"
-    aria-label={useCornerLabel()}
-    {...props}
-    className="group flex flex-col items-center justify-center gap-1.5 size-full cursor-pointer select-none text-composer-text-faint transition-colors duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-(--label) hover:bg-[color-mix(in_oklab,var(--ink)_5%,var(--gutter-bg))] focus-visible:bg-none aria-expanded:text-composer-accent-text aria-expanded:bg-[color-mix(in_oklab,var(--color-composer-accent)_10%,var(--gutter-bg))]"
-  >
-    <CornerFace />
-  </button>
-);
+const CornerButton: React.FC<
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { ref?: React.Ref<HTMLButtonElement>; bandHeight: number }
+> = ({ bandHeight, ...props }) => {
+  const compact = useTimelineStore((s) => s.spectrumVisible);
+  return (
+    <button
+      type="button"
+      aria-label={useCornerLabel()}
+      {...props}
+      className="group relative overflow-hidden size-full cursor-pointer select-none text-composer-text-faint transition-colors duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-(--label) hover:bg-[color-mix(in_oklab,var(--ink)_5%,var(--gutter-bg))] focus-visible:bg-none aria-expanded:text-composer-accent-text aria-expanded:bg-[color-mix(in_oklab,var(--color-composer-accent)_10%,var(--gutter-bg))]"
+    >
+      {compact && <FrequencyAxis height={bandHeight - CORNER_BORDER} reserveTop={CORNER_TEMPO_HEIGHT} />}
+      <span
+        className={cn(
+          "absolute inset-0 flex flex-col items-center justify-center gap-1.5",
+          compact && "bottom-auto right-0.5 gap-0 shadow-[inset_0_-1px_0_var(--divider)]",
+        )}
+        style={compact ? { height: CORNER_TEMPO_HEIGHT } : undefined}
+      >
+        <CornerFace compact={compact} />
+      </span>
+    </button>
+  );
+};
 
 // The cell sits in the Timeline scroll host, which starts a marquee on mousedown.
 const BeatGridCorner: React.FC = () => {
@@ -137,7 +164,7 @@ const BeatGridCorner: React.FC = () => {
           onOpenChange={handleOpenChange}
           placement="right-start"
           aria-label="Beat grid"
-          trigger={<CornerButton />}
+          trigger={<CornerButton bandHeight={bandHeight} />}
         >
           <BeatGridPopoverBody />
         </Popover>
@@ -148,4 +175,4 @@ const BeatGridCorner: React.FC = () => {
 
 // -- Exports -------------------------------------------------------------------
 
-export { BeatGridCorner };
+export { BeatGridCorner, CORNER_TEMPO_HEIGHT };
