@@ -516,14 +516,14 @@ braccato-lyrics .blyrics-container {
   height: 28px;
   border-radius: 8px;
   transition: background-color var(--split-ease), box-shadow var(--split-ease);
-  &:has(> [aria-pressed="true"]) {
+  &:has([aria-pressed="true"]) {
     background: color-mix(in oklab, var(--color-composer-accent) 12%, var(--cap));
     box-shadow: inset 0 0 0 1px var(--lit-ring);
   }
-  &:has(> [aria-pressed="false"]:hover:not(:disabled)) {
+  &:has([aria-pressed="false"]:hover:not(:disabled)) {
     background: var(--layer-1);
   }
-  & > button[aria-pressed] {
+  & button[aria-pressed] {
     background: none;
     box-shadow: none;
     padding-right: 6px;
@@ -541,7 +541,7 @@ braccato-lyrics .blyrics-container {
     background: var(--layer-2);
     color: var(--ink);
   }
-  &:has(> [aria-pressed="true"]) > button[aria-haspopup] {
+  &:has([aria-pressed="true"]) > button[aria-haspopup] {
     color: var(--color-composer-accent-text);
   }
   & > button[aria-haspopup] > svg {
