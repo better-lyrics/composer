@@ -143,6 +143,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
       fadeOutSnapshot(spark, ghost, pitchLineMotion.spillFadeMs);
     }
     spillCountRef.current = spills.length;
+    spark.toggleAttribute("data-empty", drawing.runs.length === 0);
     const inks = laneInks(inksRef.current, color, rows);
     inksRef.current = inks;
     drawPitchLane(spark, drawing, spills, inks.ink, inks.warning);
