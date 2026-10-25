@@ -3,8 +3,6 @@ import { useAudioStore } from "@/stores/audio";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { Popover } from "@/ui/popover";
 import { Tooltip } from "@/ui/tooltip";
 import { cn } from "@/utils/cn";
@@ -14,7 +12,7 @@ import { BeatGridPopoverBody } from "@/views/timeline/beat-grid/beat-grid-popove
 import { detectionPercent, isDetectionRunning } from "@/views/timeline/beat-grid/detection-progress";
 import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
 import { IconAlertTriangle, IconLoader2, IconWaveSine } from "@tabler/icons-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -109,31 +107,29 @@ const CornerButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { r
   </button>
 );
 
-const CornerTooltip: React.FC = () => {
-  const hasGrid = useProjectStore((s) => s.beatGrid !== null);
-  const showHints = useSettingsStore((s) => s.showShortcutHints);
+// The cell sits in the Timeline scroll host, which starts a marquee on mousedown.
+const BeatGridCorner: React.FC = () => {
+  const [open, setOpen] = useState(false);
   return (
-    <span className="inline-flex items-center gap-1.5">
-      Beat grid
-      {hasGrid && showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleBeatGrid")} />}
-    </span>
+    <div
+      onMouseDown={(e) => e.stopPropagation()}
+      onKeyDown={keepSpaceForFocusedControl}
+      className="absolute top-0 left-0 z-100 grid w-12 h-20 border-b border-r-2 border-(--divider) bg-(--gutter-bg)"
+    >
+      <Tooltip content="Beat grid" placement="right" disabled={open}>
+        <Popover
+          open={open}
+          onOpenChange={setOpen}
+          placement="right-start"
+          aria-label="Beat grid"
+          trigger={<CornerButton />}
+        >
+          <BeatGridPopoverBody />
+        </Popover>
+      </Tooltip>
+    </div>
   );
 };
-
-// The cell sits in the Timeline scroll host, which starts a marquee on mousedown.
-const BeatGridCorner: React.FC = () => (
-  <div
-    onMouseDown={(e) => e.stopPropagation()}
-    onKeyDown={keepSpaceForFocusedControl}
-    className="absolute top-0 left-0 z-100 grid w-12 h-20 border-b border-r-2 border-(--divider) bg-(--gutter-bg)"
-  >
-    <Tooltip content={<CornerTooltip />} placement="right">
-      <Popover placement="right-start" aria-label="Beat grid" trigger={<CornerButton />}>
-        <BeatGridPopoverBody />
-      </Popover>
-    </Tooltip>
-  </div>
-);
 
 // -- Exports -------------------------------------------------------------------
 

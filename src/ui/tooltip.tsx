@@ -23,6 +23,7 @@ interface TooltipProps {
   children: React.ReactNode;
   placement?: Placement;
   delay?: number;
+  disabled?: boolean;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -32,13 +33,20 @@ const ARROW_SIZE = 4;
 
 // -- Component ----------------------------------------------------------------
 
-const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top", delay = SHOW_DELAY }) => {
+const Tooltip: React.FC<TooltipProps> = ({
+  content,
+  children,
+  placement = "top",
+  delay = SHOW_DELAY,
+  disabled = false,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const arrowRef = useRef(null);
+  if (disabled && isOpen) setIsOpen(false);
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
-    onOpenChange: setIsOpen,
+    onOpenChange: (open) => setIsOpen(open && !disabled),
     placement,
     middleware: [offset(6), flip(), shift({ padding: 8 }), arrow({ element: arrowRef })],
     whileElementsMounted: autoUpdate,
