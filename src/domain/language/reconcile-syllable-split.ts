@@ -1,8 +1,10 @@
 import { mappedTransliteration, withAlignedWords } from "@/domain/language/align";
+import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { wholeLineSegments } from "@/domain/language/manual-segments";
 import type { TransliterationAlignmentStatus, TransliterationTrack } from "@/domain/language/model";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { trackWords, type WordTrack } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -82,6 +84,50 @@ function splitWordsKeepingTransliteration(
   return { words, transliteration: trackWithText(line, track, type, text, status) };
 }
 
+// Splitting a word into words inserts a space into the source text, so the
+// track is re-stamped against the new text. The rejoined text is mechanical, so
+// the track keeps its origin. A track that was already out of date keeps its
+// old fingerprint.
+function splitWordIntoWordsKeepingTransliteration(
+  line: LyricLine,
+  type: WordTrack,
+  wordIndex: number,
+  replacementWords: WordTiming[],
+  splitChar: string,
+): WordSplitResult | null {
+  const split = splitWordsKeepingTransliteration(line, type, wordIndex, replacementWords);
+  const track = line.transliteration;
+  if (!split || !track) return split;
+
+  const editedSideText = type === "word" ? track.text : track.backgroundText;
+  const hasEditedSide = Boolean(editedSideText?.trim());
+  const wasCurrent = track.sourceFingerprint === languageSourceFingerprint(line.text, line.backgroundText);
+  // Only the other side has a transliteration: nothing to rewrite, but the
+  // fingerprint still has to follow the new source text.
+  const reconciled = split.transliteration ?? (hasEditedSide || !wasCurrent ? null : track);
+  if (!reconciled) return split;
+
+  const splitText = reconstructLineText(split.words, splitChar);
+  const text = type === "word" ? splitText : line.text;
+  const backgroundText = type === "bg" ? splitText : line.backgroundText;
+  const { stale: _stale, ...fresh } = reconciled;
+  const segments = !hasEditedSide
+    ? {}
+    : type === "word"
+      ? { segments: wholeLineSegments(text, fresh.text) }
+      : { backgroundSegments: [{ original: backgroundText ?? "", transliteration: fresh.backgroundText ?? "" }] };
+
+  return {
+    words: split.words,
+    transliteration: {
+      ...fresh,
+      ...segments,
+      origin: track.origin,
+      sourceFingerprint: wasCurrent ? languageSourceFingerprint(text, backgroundText) : track.sourceFingerprint,
+    },
+  };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { splitWordsKeepingTransliteration };
+export { splitWordIntoWordsKeepingTransliteration, splitWordsKeepingTransliteration };

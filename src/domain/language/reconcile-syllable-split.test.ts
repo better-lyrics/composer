@@ -1,6 +1,10 @@
 import { planTransliterationAlignment } from "@/domain/language/align";
+import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TransliterationTrack } from "@/domain/language/model";
-import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
+import {
+  splitWordIntoWordsKeepingTransliteration,
+  splitWordsKeepingTransliteration,
+} from "@/domain/language/reconcile-syllable-split";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
@@ -295,5 +299,117 @@ describe("splitWordsKeepingTransliteration", () => {
       expect(splitWordsKeepingTransliteration(untimed, "word", 0, ILDAN_SPLIT)).toBeNull();
       expect(splitWordsKeepingTransliteration(koreanLine(), "bg", 0, ILDAN_SPLIT)).toBeNull();
     });
+  });
+});
+
+describe("splitWordIntoWordsKeepingTransliteration", () => {
+  function line(sourceFingerprint: string): LyricLine {
+    return {
+      id: "line",
+      agentId: "v1",
+      text: "хорошо",
+      words: [{ text: "хорошо", begin: 0, end: 1, transliteration: "khorosho" }],
+      transliteration: {
+        language: "ru-Latn",
+        text: "khorosho",
+        segments: [],
+        origin: "manual",
+        sourceFingerprint,
+        alignmentStatus: "confirmed",
+      },
+    };
+  }
+  const pieces = [
+    { text: "хор ", begin: 0, end: 0.5, transliteration: "khor", transliterationJoinerAfter: "" },
+    { text: "ошо", begin: 0.5, end: 1, transliteration: "osho" },
+  ];
+
+  it("re-stamps the track against the split text", () => {
+    const result = splitWordIntoWordsKeepingTransliteration(
+      line(languageSourceFingerprint("хорошо")),
+      "word",
+      0,
+      pieces,
+      "|",
+    )?.transliteration;
+
+    expect(result?.text).toBe("khorosho");
+    expect(result?.segments).toEqual([{ original: "хор ошо", transliteration: "khorosho" }]);
+    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("хор ошо"));
+  });
+
+  it("keeps the track's origin", () => {
+    const google = line(languageSourceFingerprint("хорошо"));
+    google.transliteration!.origin = "google";
+
+    expect(splitWordIntoWordsKeepingTransliteration(google, "word", 0, pieces, "|")?.transliteration?.origin).toBe(
+      "google",
+    );
+  });
+
+  it("re-stamps a background-only track when the main words are split", () => {
+    const backgroundOnly: LyricLine = {
+      id: "line",
+      agentId: "v1",
+      text: "everyday",
+      backgroundText: "привет",
+      words: [{ text: "everyday", begin: 0, end: 1 }],
+      transliteration: {
+        language: "ru-Latn",
+        text: "",
+        backgroundText: "privet",
+        segments: [],
+        origin: "manual",
+        sourceFingerprint: languageSourceFingerprint("everyday", "привет"),
+      },
+    };
+    const result = splitWordIntoWordsKeepingTransliteration(
+      backgroundOnly,
+      "word",
+      0,
+      [
+        { text: "every ", begin: 0, end: 0.5 },
+        { text: "day", begin: 0.5, end: 1 },
+      ],
+      "|",
+    )?.transliteration;
+
+    expect(result).toMatchObject({ text: "", backgroundText: "privet", origin: "manual" });
+    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("every day", "привет"));
+  });
+
+  it("rewrites the background side when a background word is split", () => {
+    const background: LyricLine = {
+      id: "line",
+      agentId: "v1",
+      text: "da",
+      backgroundText: "хорошо",
+      backgroundWords: [{ text: "хорошо", begin: 0, end: 1, transliteration: "khorosho" }],
+      transliteration: {
+        language: "ru-Latn",
+        text: "da",
+        backgroundText: "khorosho",
+        segments: [],
+        origin: "manual",
+        sourceFingerprint: languageSourceFingerprint("da", "хорошо"),
+      },
+    };
+    const result = splitWordIntoWordsKeepingTransliteration(background, "bg", 0, pieces, "|")?.transliteration;
+
+    expect(result).toMatchObject({ text: "da", backgroundText: "khorosho" });
+    expect(result?.backgroundSegments).toEqual([{ original: "хор ошо", transliteration: "khorosho" }]);
+    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("da", "хор ошо"));
+  });
+
+  it("keeps an already out-of-date track flagged for review", () => {
+    const result = splitWordIntoWordsKeepingTransliteration(
+      line("older source"),
+      "word",
+      0,
+      pieces,
+      "|",
+    )?.transliteration;
+
+    expect(result?.sourceFingerprint).toBe("older source");
   });
 });
