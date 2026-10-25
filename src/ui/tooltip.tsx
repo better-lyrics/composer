@@ -51,10 +51,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   const [opensWarm, setOpensWarm] = useState(false);
   const arrowRef = useRef(null);
   const isOpenRef = useRef(false);
-  if (disabled && isOpen) {
-    isOpenRef.current = false;
-    setIsOpen(false);
-  }
+  if (disabled && isOpen) setIsOpen(false);
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
