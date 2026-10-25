@@ -17,13 +17,13 @@ import {
   useRole,
 } from "@floating-ui/react";
 import type { Placement } from "@floating-ui/react";
-import { useEffect, useRef, useState } from "react";
+import { cloneElement, useEffect, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
 interface TooltipProps {
   content: React.ReactNode;
-  children: React.ReactNode;
+  children: React.ReactElement<{ "aria-describedby"?: string }>;
   placement?: Placement;
   delay?: number;
 }
@@ -73,11 +73,13 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top",
   const role = useRole(context, { role: "tooltip" });
 
   const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, dismiss, role]);
+  // The span is the hover target so disabled triggers still show the tip; the description goes on the child that takes focus.
+  const { "aria-describedby": describedBy, ...referenceProps } = getReferenceProps();
 
   return (
     <>
-      <span ref={refs.setReference} className="inline-flex" {...getReferenceProps()}>
-        {children}
+      <span ref={refs.setReference} className="inline-flex" {...referenceProps}>
+        {typeof describedBy === "string" ? cloneElement(children, { "aria-describedby": describedBy }) : children}
       </span>
       {isOpen && (
         <FloatingPortal>
