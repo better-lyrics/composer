@@ -13,14 +13,7 @@ import { SegmentedControl } from "@/ui/segmented-control";
 import { Switch } from "@/ui/switch";
 import { Tooltip } from "@/ui/tooltip";
 import { formatBpm } from "@/utils/format-bpm";
-import {
-  PopButton,
-  PopGroup,
-  PopHead,
-  PopIconButton,
-  PopRow,
-  SetByHandButton,
-} from "@/ui/pop-layout";
+import { PopButton, PopGroup, PopHead, PopIconButton, PopRow, SetByHandButton } from "@/ui/pop-layout";
 import { OffsetStepper } from "@/views/timeline/beat-grid/offset-stepper";
 import { TempoDisplay } from "@/views/timeline/beat-grid/tempo-display";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
