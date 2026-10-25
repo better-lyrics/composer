@@ -119,7 +119,7 @@ const BeatGridCanvas: React.FC = () => {
       const { activeThemeId, customThemes } = useThemeStore.getState();
       const next: DrawnState = {
         canvas,
-        scrollLeft: container.scrollLeft,
+        scrollLeft: Math.round(container.scrollLeft),
         zoom: useTimelineStore.getState().zoom,
         width: Math.max(0, container.clientWidth - GUTTER_WIDTH),
         height: band.clientHeight,
