@@ -46,4 +46,4 @@ const VocalOnsetSnapToggle: React.FC = () => {
 
 // -- Exports -------------------------------------------------------------------
 
-export { VocalOnsetSnapToggle };
+export { VocalOnsetSnapToggle, describeOnsetStatus };

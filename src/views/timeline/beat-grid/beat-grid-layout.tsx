@@ -124,7 +124,7 @@ const PopRow: React.FC<PopRowProps> = ({ label, icon: RowIcon, hint, dimmed, chi
     >
       {label}
       {hint && (
-        <span className="block mt-[3px] text-xs font-normal text-(--muted) whitespace-normal">{hint}</span>
+        <span className="block mt-[3px] text-xs font-normal tabular-nums text-(--muted) whitespace-normal">{hint}</span>
       )}
     </span>
     {children}

@@ -2,11 +2,14 @@ import { tempoStats } from "@/domain/tempo/tempo-stats";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { BEAT_GRID_LINE_OPTIONS } from "@/ui/beat-grid-line-options";
 import { Switch } from "@/ui/switch";
+import { describeOnsetStatus } from "@/ui/vocal-onset-snap-toggle";
 import { cn } from "@/utils/cn";
 import { formatBpm } from "@/utils/format-bpm";
 import { PopGroup, PopHead, PopRow } from "@/views/timeline/beat-grid/beat-grid-layout";
 import { isDetectionRunning } from "@/views/timeline/beat-grid/detection-progress";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
   type Icon,
   IconAdjustmentsHorizontal,
@@ -28,6 +31,32 @@ interface SnapSourceRowProps {
   icon: Icon;
   hint?: string;
   disabled?: boolean;
+}
+
+// -- Hooks ---------------------------------------------------------------------
+
+function useMarkersHint(): string {
+  const count = useProjectStore((s) => s.customSnapPoints.length);
+  return count > 0 ? `${count} in this song` : "None yet";
+}
+
+function useVocalOnsetsHint(): string {
+  const status = useTimelineStore((s) => s.vocalOnsetDetectionStatus);
+  const pointCount = useTimelineStore((s) => s.vocalOnsetSnapPoints.length);
+  const error = useTimelineStore((s) => s.vocalOnsetDetectionError);
+  return describeOnsetStatus(status, pointCount, error);
+}
+
+function useBeatsHint(): string {
+  const grid = useProjectStore((s) => s.beatGrid);
+  const status = useBeatDetectionStore((s) => s.status);
+  const lines = useSettingsStore((s) => s.beatGridLines);
+  if (isDetectionRunning(status)) return "Finding beats…";
+  if (status === "error") return "Detection failed";
+  const stats = grid ? tempoStats(grid) : null;
+  if (!stats) return "Set a tempo first";
+  const linesLabel = BEAT_GRID_LINE_OPTIONS.find((option) => option.value === lines)?.label ?? "Beat";
+  return `${formatBpm(stats.bpm)} BPM ・ ${linesLabel} lines`;
 }
 
 // -- Components ----------------------------------------------------------------
@@ -70,26 +99,24 @@ const BeatGridSummary: React.FC = () => {
 
 const SnapMenu: React.FC<{ onOpenBeatGrid: () => void }> = ({ onOpenBeatGrid }) => {
   const hasGrid = useProjectStore((s) => s.beatGrid !== null);
+  const markersHint = useMarkersHint();
+  const vocalOnsetsHint = useVocalOnsetsHint();
+  const beatsHint = useBeatsHint();
   return (
     <>
       <PopHead title="Snap to" />
       <PopGroup className="mt-1.5">
         <SnapSourceRow setting="snapWordsAndLines" label="Words and lines" icon={IconTextSize} />
-        <SnapSourceRow setting="snapMarkers" label="Markers" icon={IconMapPin} />
-        <SnapSourceRow setting="vocalOnsetSnap" label="Vocal onsets" icon={IconWaveSine} />
-        <SnapSourceRow
-          setting="beatSnap"
-          label="Beats"
-          icon={IconMetronome}
-          disabled={!hasGrid}
-          hint={hasGrid ? undefined : "Set up a beat grid first."}
-        />
+        <SnapSourceRow setting="snapMarkers" label="Markers" icon={IconMapPin} hint={markersHint} />
+        <SnapSourceRow setting="vocalOnsetSnap" label="Vocal onsets" icon={IconWaveSine} hint={vocalOnsetsHint} />
+        <SnapSourceRow setting="beatSnap" label="Beats" icon={IconMetronome} disabled={!hasGrid} hint={beatsHint} />
       </PopGroup>
-      <PopGroup>
+      <div className="h-px my-1.5 -mx-1.5 bg-(--divider)" />
+      <PopGroup className="mt-0">
         <button
           type="button"
           onClick={onOpenBeatGrid}
-          className="group flex items-center gap-3 w-full min-h-9 pl-2.5 pr-2 rounded-lg text-left cursor-pointer transition-colors duration-150 hover:bg-(--layer-2)"
+          className="group flex items-center gap-3 w-full min-h-9 pl-2.5 pr-1 rounded-lg text-left cursor-pointer transition-colors duration-150 hover:bg-(--layer-2)"
         >
           <IconAdjustmentsHorizontal aria-hidden="true" className="size-4 shrink-0 text-(--muted)" />
           <span className="flex-1 min-w-0 text-[13px] font-medium text-(--label)">Beat grid</span>
