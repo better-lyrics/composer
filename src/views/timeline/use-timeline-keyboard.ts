@@ -351,6 +351,9 @@ function useTimelineKeyboard(
           s.set("beatGridVisible", !s.beatGridVisible);
           break;
         }
+        case "timeline.toggleSpectrum":
+          useTimelineStore.getState().toggleSpectrum();
+          break;
         case "timeline.toggleRollingEdit":
           useTimelineStore.getState().toggleRollingEditMode();
           break;

@@ -491,6 +491,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "b" },
   },
   {
+    id: "timeline.toggleSpectrum",
+    scope: "timeline",
+    description: "Show spectrum",
+    defaultBinding: { key: "v" },
+  },
+  {
     id: "timeline.toggleRollingEdit",
     scope: "timeline",
     description: "Toggle rolling edit tool",
