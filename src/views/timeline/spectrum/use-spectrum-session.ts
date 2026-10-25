@@ -21,7 +21,7 @@ function desiredTarget(): SpectrumTarget | null {
   const { stemUrls, jobKey } = useSeparationStore.getState();
   const vocalsUrl = stemUrls.vocals ?? null;
   const analysis = resolveAnalysis(spectrumSource, spectrumWindow, vocalsUrl !== null);
-  if (analysis.source === "vocals" && vocalsUrl) {
+  if (analysis.source === "vocals" && vocalsUrl && jobKey) {
     return { ...analysis, sourceKey: `vocals:${vocalsUrl}`, audio: () => fetchVocalStem(vocalsUrl), jobKey };
   }
   const file = playableFile(useAudioStore.getState().source);
@@ -34,8 +34,10 @@ function focusTime(): number {
   return zoom > 0 ? scrollLeft / zoom : 0;
 }
 
-function requestSpectrumRawPhase(chunks: readonly number[]): void {
-  activeRun?.requestRawPhase(chunks);
+function requestSpectrumRawPhase(chunks: readonly number[]): boolean {
+  if (!activeRun) return false;
+  activeRun.requestRawPhase(chunks);
+  return true;
 }
 
 // The only driver of spectrum analysis: it follows visibility, source, window and stem job.

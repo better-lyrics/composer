@@ -21,6 +21,7 @@ interface SpectrumSessionState {
   chunkReady: Uint8Array | null;
   rawReady: Uint8Array | null;
   readyChunks: number;
+  rawChunks: number;
   status: SpectrumStatus;
   error: string | null;
 }
@@ -58,6 +59,7 @@ const spectrumSession: SpectrumSessionState = {
   chunkReady: null,
   rawReady: null,
   readyChunks: 0,
+  rawChunks: 0,
   status: "idle",
   error: null,
 };
@@ -112,6 +114,7 @@ function clearSpectrumSession(): void {
   spectrumSession.chunkReady = null;
   spectrumSession.rawReady = null;
   spectrumSession.readyChunks = 0;
+  spectrumSession.rawChunks = 0;
   setSpectrumStatus("idle");
 }
 
@@ -126,6 +129,7 @@ function beginSpectrumSession(layout: SessionLayout): void {
     chunkReady: new Uint8Array(chunkCount(layout.frames)),
     rawReady: new Uint8Array(chunkCount(layout.frames)),
     readyChunks: 0,
+    rawChunks: 0,
   });
   setSpectrumStatus("analysing");
 }
@@ -139,11 +143,14 @@ function storeSpectrumChunk(
   const { chunkReady, bins } = spectrumSession;
   if (!chunkReady || !spectrumSession.magnitude || !spectrumSession.phaseChange || chunk >= chunkReady.length) return;
   const offset = chunk * CHUNK_FRAMES * bins;
+  const expected = Math.min(CHUNK_FRAMES, spectrumSession.frames - chunk * CHUNK_FRAMES) * bins;
+  if (magnitude.length !== expected || phaseChange.length !== expected) return;
   spectrumSession.magnitude.set(magnitude, offset);
   spectrumSession.phaseChange.set(phaseChange, offset);
   if (rawPhase && spectrumSession.rawReady) {
     spectrumSession.rawPhase ??= new Uint8Array(spectrumSession.frames * bins);
     spectrumSession.rawPhase.set(rawPhase, offset);
+    if (!spectrumSession.rawReady[chunk]) spectrumSession.rawChunks++;
     spectrumSession.rawReady[chunk] = 1;
   }
   if (!chunkReady[chunk]) {

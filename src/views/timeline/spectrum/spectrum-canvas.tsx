@@ -30,6 +30,7 @@ function drawingSignature(view: TileView): string {
     view.pixelRatio,
     session.generation,
     session.readyChunks,
+    session.rawChunks,
     look.spectrumPalette,
     look.spectrumContrast,
     look.spectrumScale,
@@ -54,10 +55,11 @@ function requestVisibleRawPhase(view: TileView): void {
   const wanted: number[] = [];
   for (let chunk = chunkAt(view.scrollLeft); chunk <= chunkAt(view.scrollLeft + view.viewportWidth); chunk++) {
     if (requestedRawChunks.chunks.has(chunk) || session.rawReady?.[chunk] === 1) continue;
-    requestedRawChunks.chunks.add(chunk);
     wanted.push(chunk);
   }
-  if (wanted.length > 0) requestSpectrumRawPhase(wanted);
+  if (wanted.length > 0 && requestSpectrumRawPhase(wanted)) {
+    for (const chunk of wanted) requestedRawChunks.chunks.add(chunk);
+  }
 }
 
 // -- Components ----------------------------------------------------------------

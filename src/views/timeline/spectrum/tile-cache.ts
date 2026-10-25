@@ -26,7 +26,7 @@ interface TileBudget {
 
 interface PendingTile {
   canvas: OffscreenCanvas;
-  readyChunks: number;
+  progress: number;
 }
 
 // Returns true while the tile is still animating in.
@@ -64,6 +64,10 @@ function rowTableFor(view: TileView, heightPx: number): RowBinTable {
   return table;
 }
 
+function tileProgress(session: TileView["session"]): number {
+  return session.readyChunks + session.rawChunks;
+}
+
 // Incomplete tiles stay out of the cache; they are reused only until the next chunk lands.
 function tileAt(
   view: TileView,
@@ -86,7 +90,7 @@ function tileAt(
   const cached = tiles.get(key);
   if (cached) return { canvas: cached, complete: true };
   const pending = pendingTiles.get(key);
-  if (pending && pending.readyChunks === view.session.readyChunks) return { canvas: pending.canvas, complete: false };
+  if (pending && pending.progress === tileProgress(view.session)) return { canvas: pending.canvas, complete: false };
   if (budget.remaining <= 0) return pending ? { canvas: pending.canvas, complete: false } : null;
   budget.remaining--;
   const rendered = renderTile({
@@ -106,7 +110,7 @@ function tileAt(
     tiles.set(key, rendered.canvas, rendered.bytes);
   } else {
     if (pendingTiles.size >= MAX_PENDING_TILES) pendingTiles.clear();
-    pendingTiles.set(key, { canvas: rendered.canvas, readyChunks: view.session.readyChunks });
+    pendingTiles.set(key, { canvas: rendered.canvas, progress: tileProgress(view.session) });
   }
   return { canvas: rendered.canvas, complete: rendered.complete };
 }

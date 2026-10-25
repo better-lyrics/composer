@@ -87,6 +87,7 @@ function renderTile(inputs: TileRenderInputs): RenderedTile {
     }
     const rawReady =
       wantsRaw && session.rawPhase !== null && session.rawReady?.[Math.floor(firstFrame / CHUNK_FRAMES)] === 1;
+    if (wantsRaw && !rawReady) complete = false;
     const red = rawReady && session.rawPhase ? session.rawPhase : phaseChange;
     for (let y = 0; y < height; y++) {
       let loudest = 0;

@@ -21,20 +21,27 @@ const LOG_PREFIX = "[Spectrum cache]";
 
 // -- Functions ----------------------------------------------------------------
 
-function spectrumChunkKey(jobKey: string, source: SpectrumSource, fftSize: number, chunk: number): string {
-  return derivedRecordKey(jobKey, "spectrum", source, fftSize, chunk, `v${SPECTRUM_CACHE_VERSION}`);
+function spectrumChunkKey(
+  jobKey: string,
+  source: SpectrumSource,
+  sampleRate: number,
+  fftSize: number,
+  chunk: number,
+): string {
+  return derivedRecordKey(jobKey, "spectrum", source, sampleRate, fftSize, chunk, `v${SPECTRUM_CACHE_VERSION}`);
 }
 
 async function readSpectrumChunks(
   jobKey: string,
   source: SpectrumSource,
+  sampleRate: number,
   fftSize: number,
   chunkTotal: number,
 ): Promise<Map<number, CachedSpectrumChunk>> {
   const chunks = new Map<number, CachedSpectrumChunk>();
   const blobs = await Promise.all(
     Array.from({ length: chunkTotal }, (_, chunk) =>
-      getDerivedRecord(spectrumChunkKey(jobKey, source, fftSize, chunk)),
+      getDerivedRecord(spectrumChunkKey(jobKey, source, sampleRate, fftSize, chunk)),
     ),
   );
   await Promise.all(
@@ -49,7 +56,12 @@ async function readSpectrumChunks(
 }
 
 // Each record is the chunk's magnitude followed by its phase change. Raw phase is never stored.
-function createSpectrumChunkWriter(jobKey: string, source: SpectrumSource, fftSize: number): SpectrumChunkWriter {
+function createSpectrumChunkWriter(
+  jobKey: string,
+  source: SpectrumSource,
+  sampleRate: number,
+  fftSize: number,
+): SpectrumChunkWriter {
   let batch = new Map<string, Blob>();
   let writes = Promise.resolve();
 
@@ -69,7 +81,7 @@ function createSpectrumChunkWriter(jobKey: string, source: SpectrumSource, fftSi
   return {
     add(chunk, magnitude, phaseChange) {
       const blob = new Blob([magnitude.slice(), phaseChange.slice()], { type: "application/octet-stream" });
-      batch.set(spectrumChunkKey(jobKey, source, fftSize, chunk), blob);
+      batch.set(spectrumChunkKey(jobKey, source, sampleRate, fftSize, chunk), blob);
       if (batch.size >= CHUNKS_PER_WRITE) void write();
     },
     flush: write,
@@ -79,4 +91,4 @@ function createSpectrumChunkWriter(jobKey: string, source: SpectrumSource, fftSi
 // -- Exports ------------------------------------------------------------------
 
 export { createSpectrumChunkWriter, readSpectrumChunks };
-export type { CachedSpectrumChunk };
+export type { CachedSpectrumChunk, SpectrumChunkWriter };
