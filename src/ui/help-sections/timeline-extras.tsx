@@ -159,7 +159,9 @@ const TimelineExtras: React.FC = () => (
         <li>
           Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpPrevBar")} /> or{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpNextBar")} /> to jump the playhead to the bar before
-          or after it.
+          or after it. <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpPrevGridLine")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpNextGridLine")} /> step through the lines you can
+          see instead, so zoom in to move by beats or parts of a beat.
         </li>
         <li>Every change can be undone, and the grid saves with the project.</li>
         <li>

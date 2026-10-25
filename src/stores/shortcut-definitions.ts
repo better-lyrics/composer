@@ -551,6 +551,20 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     repeatable: true,
   },
   {
+    id: "timeline.jumpPrevGridLine",
+    scope: "timeline",
+    description: "Jump to previous beat grid line",
+    defaultBinding: { key: "ArrowLeft", shift: true, mod: true, alt: true },
+    repeatable: true,
+  },
+  {
+    id: "timeline.jumpNextGridLine",
+    scope: "timeline",
+    description: "Jump to next beat grid line",
+    defaultBinding: { key: "ArrowRight", shift: true, mod: true, alt: true },
+    repeatable: true,
+  },
+  {
     id: "timeline.copy",
     scope: "timeline",
     description: "Copy selected words",
