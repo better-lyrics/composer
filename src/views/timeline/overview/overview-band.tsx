@@ -1,3 +1,4 @@
+import { SPECTRUM_BAND_HEIGHT } from "@/domain/spectrum/settings";
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { BandViewport } from "@/views/timeline/overview/band-viewport";
 import { useBandResize } from "@/views/timeline/overview/use-band-resize";
@@ -24,12 +25,18 @@ const RESIZE_HANDLE_CLASS =
 // -- Components ----------------------------------------------------------------
 
 const BandResizeHandle: React.FC = () => {
-  const { onPointerDown, onDoubleClick } = useBandResize();
+  const { onPointerDown, onDoubleClick, onKeyDown } = useBandResize();
+  const bandHeight = useOverviewBandHeight();
   return (
     <div
       role="separator"
+      tabIndex={0}
       aria-orientation="horizontal"
       aria-label="Resize spectrum"
+      aria-valuenow={bandHeight}
+      aria-valuemin={SPECTRUM_BAND_HEIGHT.min}
+      aria-valuemax={SPECTRUM_BAND_HEIGHT.max}
+      onKeyDown={onKeyDown}
       className={RESIZE_HANDLE_CLASS}
       onPointerDown={onPointerDown}
       onDoubleClick={onDoubleClick}

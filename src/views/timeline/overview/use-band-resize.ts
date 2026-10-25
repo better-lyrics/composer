@@ -7,6 +7,8 @@ import { useCallback, useEffect, useRef } from "react";
 // -- Constants -----------------------------------------------------------------
 
 const RESIZING_ATTRIBUTE = "data-overview-resizing";
+const KEY_STEP_PX = 8;
+const KEY_STEP_LARGE_PX = 32;
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -58,7 +60,26 @@ function useBandResize() {
     persistBandHeight(SPECTRUM_BAND_HEIGHT.min);
   }, []);
 
-  return { onPointerDown, onDoubleClick };
+  const onKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const step = e.shiftKey ? KEY_STEP_LARGE_PX : KEY_STEP_PX;
+    const height = currentOverviewBandHeight();
+    const next =
+      e.key === "ArrowDown"
+        ? height + step
+        : e.key === "ArrowUp"
+          ? height - step
+          : e.key === "Home"
+            ? SPECTRUM_BAND_HEIGHT.min
+            : e.key === "End"
+              ? SPECTRUM_BAND_HEIGHT.max
+              : null;
+    if (next === null) return;
+    e.preventDefault();
+    e.stopPropagation();
+    persistBandHeight(next);
+  }, []);
+
+  return { onPointerDown, onDoubleClick, onKeyDown };
 }
 
 // -- Exports -------------------------------------------------------------------
