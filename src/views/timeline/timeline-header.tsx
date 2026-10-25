@@ -8,7 +8,9 @@ import { useSettingsStore } from "@/stores/settings";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { ShortcutTip } from "@/ui/shortcut-tip";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
+import { Tooltip, TooltipGroup } from "@/ui/tooltip";
 import { cn } from "@/utils/cn";
 import { MOD_KEY } from "@/utils/platform";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -47,8 +49,6 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   const snapEnabled = useSettingsStore((s) => s.timelineSnap);
   const setSetting = useSettingsStore((s) => s.set);
   const isBypassing = useTimelineStore((s) => s.isBypassing);
-  const toggleSnapKeys = getEffectiveKeysArray("timeline.toggleSnap");
-  const toggleMarkerKeys = getEffectiveKeysArray("timeline.toggleMarkerMode");
   const lines = useProjectStore((s) => s.lines);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const setInstanceCollapsed = useTimelineStore((s) => s.setInstanceCollapsed);
@@ -131,103 +131,115 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   }, [handleExpandAll]);
 
   return (
-    <div className="@container flex items-center justify-between gap-4 h-13 shrink-0 px-2 border-b border-(--divider) @max-[72rem]:[&_[data-inline-key-badge]]:hidden">
-      <h2 className="sr-only">Timeline</h2>
-      <div className="flex items-center gap-3 shrink-0">
-        <div className="tray">
-          <ShortcutToggleButton
-            active={textVariant === "transliteration"}
-            label={textVariant === "transliteration" ? "Transliteration" : "Original"}
-            stateInLabel
-            shortcut="timeline.toggleTextVariant"
-            onClick={toggleTextVariant}
-            disabled={!linesHaveTransliteration}
-            title="Toggle original / transliteration labels"
-          >
-            <IconLanguage />
-          </ShortcutToggleButton>
+    <TooltipGroup>
+      <div className="@container flex items-center justify-between gap-4 h-13 shrink-0 px-2 border-b border-(--divider) @max-[72rem]:[&_[data-inline-key-badge]]:hidden">
+        <h2 className="sr-only">Timeline</h2>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="tray">
+            <ShortcutToggleButton
+              active={textVariant === "transliteration"}
+              label={textVariant === "transliteration" ? "Transliteration" : "Original"}
+              stateInLabel
+              shortcut="timeline.toggleTextVariant"
+              onClick={toggleTextVariant}
+              disabled={!linesHaveTransliteration}
+              description="Toggle original / transliteration labels"
+              iconOnly
+            >
+              <IconLanguage />
+            </ShortcutToggleButton>
+          </div>
+
+          <div className="tray">
+            <ShortcutToggleButton
+              active={followEnabled}
+              label="Follow"
+              shortcut="timeline.toggleFollow"
+              onClick={toggleFollow}
+              iconOnly
+            >
+              <IconFocusCentered />
+            </ShortcutToggleButton>
+            <ShortcutToggleButton
+              active={rollingEditMode}
+              label="Rolling"
+              shortcut="timeline.toggleRollingEdit"
+              onClick={toggleRollingEditMode}
+              description="Rolling edit: drag a shared word boundary and both words move together"
+              iconOnly
+            >
+              <IconArrowBarBoth />
+            </ShortcutToggleButton>
+            <ShortcutToggleButton
+              active={previewSidebarOpen}
+              label="Preview"
+              shortcut="timeline.togglePreview"
+              onClick={togglePreviewSidebar}
+              iconOnly
+            >
+              <IconEye />
+            </ShortcutToggleButton>
+          </div>
+
+          <div className="tray">
+            <ShortcutToggleButton
+              active={snapEnabled}
+              label="Snap"
+              shortcut="timeline.toggleSnap"
+              onClick={() => setSetting("timelineSnap", !snapEnabled)}
+              className={cn(isBypassing && "opacity-50")}
+              description={`Hold ${MOD_KEY} to bypass`}
+              iconOnly
+            >
+              <IconMagnet />
+            </ShortcutToggleButton>
+            <ShortcutToggleButton
+              active={markerMode}
+              label="Marker"
+              shortcut="timeline.toggleMarkerMode"
+              onClick={toggleMarkerMode}
+              iconOnly
+            >
+              <IconMapPin />
+            </ShortcutToggleButton>
+          </div>
+
+          {onImportLyrics && (
+            <HeaderAction onClick={onImportLyrics} label="Import" shortcut="timeline.importLyrics" showHint={showHints}>
+              <IconTextPlus />
+            </HeaderAction>
+          )}
+
+          {hasUnexpandedLines && (
+            <HeaderAction
+              onClick={handleExpandAll}
+              label="Expand All"
+              shortcut="timeline.expandAll"
+              showHint={showHints}
+            >
+              <IconLayoutDistributeHorizontal />
+            </HeaderAction>
+          )}
+
+          {hasGroups && (
+            <HeaderAction
+              onClick={handleToggleAllCollapsed}
+              label={anyExpanded ? "Collapse all" : "Expand all"}
+              description={anyExpanded ? "Collapse all groups" : "Expand all groups"}
+              shortcut="timeline.toggleAllCollapsed"
+              showHint={showHints}
+            >
+              {anyExpanded ? <IconChevronsUp /> : <IconChevronsDown />}
+            </HeaderAction>
+          )}
         </div>
 
-        <div className="tray">
-          <ShortcutToggleButton
-            active={followEnabled}
-            label="Follow"
-            shortcut="timeline.toggleFollow"
-            onClick={toggleFollow}
-          >
-            <IconFocusCentered />
-          </ShortcutToggleButton>
-          <ShortcutToggleButton
-            active={rollingEditMode}
-            label="Rolling"
-            shortcut="timeline.toggleRollingEdit"
-            onClick={toggleRollingEditMode}
-            title="Rolling edit: drag a shared word boundary and both words move together"
-          >
-            <IconArrowBarBoth />
-          </ShortcutToggleButton>
-          <ShortcutToggleButton
-            active={previewSidebarOpen}
-            label="Preview"
-            shortcut="timeline.togglePreview"
-            onClick={togglePreviewSidebar}
-          >
-            <IconEye />
-          </ShortcutToggleButton>
+        <div className="flex flex-1 min-w-0 items-center justify-end gap-3">
+          <TimelineNotices />
+          <TimelineZoomControls scrollContainerRef={scrollContainerRef} />
         </div>
-
-        <div className="tray">
-          <ShortcutToggleButton
-            active={snapEnabled}
-            label="Snap"
-            shortcut="timeline.toggleSnap"
-            onClick={() => setSetting("timelineSnap", !snapEnabled)}
-            className={cn(isBypassing && "opacity-50")}
-            title={`Snap${toggleSnapKeys.length ? ` (${toggleSnapKeys.join(" ")})` : ""} · hold ${MOD_KEY} to bypass`}
-          >
-            <IconMagnet />
-          </ShortcutToggleButton>
-          <ShortcutToggleButton
-            active={markerMode}
-            label="Marker"
-            shortcut="timeline.toggleMarkerMode"
-            onClick={toggleMarkerMode}
-            title={`Marker mode${toggleMarkerKeys.length ? ` (${toggleMarkerKeys.join(" ")})` : ""}`}
-          >
-            <IconMapPin />
-          </ShortcutToggleButton>
-        </div>
-
-        {onImportLyrics && (
-          <HeaderAction onClick={onImportLyrics} label="Import" shortcut="timeline.importLyrics" showHint={showHints}>
-            <IconTextPlus />
-          </HeaderAction>
-        )}
-
-        {hasUnexpandedLines && (
-          <HeaderAction onClick={handleExpandAll} label="Expand All" shortcut="timeline.expandAll" showHint={showHints}>
-            <IconLayoutDistributeHorizontal />
-          </HeaderAction>
-        )}
-
-        {hasGroups && (
-          <HeaderAction
-            onClick={handleToggleAllCollapsed}
-            label={anyExpanded ? "Collapse all" : "Expand all"}
-            title={anyExpanded ? "Collapse all groups" : "Expand all groups"}
-            shortcut="timeline.toggleAllCollapsed"
-            showHint={showHints}
-          >
-            {anyExpanded ? <IconChevronsUp /> : <IconChevronsDown />}
-          </HeaderAction>
-        )}
       </div>
-
-      <div className="flex flex-1 min-w-0 items-center justify-end gap-3">
-        <TimelineNotices />
-        <TimelineZoomControls scrollContainerRef={scrollContainerRef} />
-      </div>
-    </div>
+    </TooltipGroup>
   );
 };
 
@@ -236,21 +248,22 @@ const HeaderAction: React.FC<{
   label: string;
   shortcut: string;
   showHint: boolean;
-  title?: string;
+  description?: string;
   children: React.ReactNode;
-}> = ({ onClick, label, shortcut, showHint, title, children }) => (
-  <Button
-    variant="ghost"
-    size="lg"
-    hasIcon
-    onClick={onClick}
-    title={title}
-    className={cn("shrink-0 [&>svg]:size-4 [&>[data-inline-key-badge]]:ml-0", showHint && "pr-2")}
-  >
-    {children}
-    <span>{label}</span>
-    {showHint && <InlineKeyBadge keys={getEffectiveKeysArray(shortcut)} />}
-  </Button>
+}> = ({ onClick, label, shortcut, showHint, description, children }) => (
+  <Tooltip content={<ShortcutTip label={label} shortcut={shortcut} description={description} />} placement="bottom">
+    <Button
+      variant="ghost"
+      size="lg"
+      hasIcon
+      onClick={onClick}
+      aria-label={label}
+      className="shrink-0 min-w-9 gap-1 px-2 [&>svg]:size-4 [&>[data-inline-key-badge]]:ml-0"
+    >
+      {children}
+      {showHint && <InlineKeyBadge keys={getEffectiveKeysArray(shortcut)} />}
+    </Button>
+  </Tooltip>
 );
 
 // -- Exports -------------------------------------------------------------------

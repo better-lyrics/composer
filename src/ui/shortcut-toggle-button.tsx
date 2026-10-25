@@ -1,7 +1,9 @@
 import { useSettingsStore } from "@/stores/settings";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { ShortcutTip } from "@/ui/shortcut-tip";
 import { ToggleButton } from "@/ui/toggle-button";
+import { Tooltip } from "@/ui/tooltip";
 import { cn } from "@/utils/cn";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -13,9 +15,10 @@ interface ShortcutToggleButtonProps {
   onClick: () => void;
   children: React.ReactNode;
   disabled?: boolean;
-  title?: string;
+  description?: string;
   className?: string;
   stateInLabel?: boolean;
+  iconOnly?: boolean;
 }
 
 // -- Components ----------------------------------------------------------------
@@ -28,30 +31,33 @@ const ShortcutToggleButton: React.FC<ShortcutToggleButtonProps> = ({
   onClick,
   children,
   disabled,
-  title,
+  description,
   className,
   stateInLabel,
+  iconOnly,
 }) => {
   const showHints = useSettingsStore((s) => s.showShortcutHints);
   return (
-    <ToggleButton
-      pressed={active}
-      stateInLabel={stateInLabel}
-      size="sm"
-      onClick={onClick}
-      disabled={disabled}
-      hasIcon
-      className={cn(
-        "h-7 pl-2 text-[13px] [&>svg]:size-4 [&>[data-inline-key-badge]]:ml-0",
-        showHints ? "pr-1.5" : "pr-2.5",
-        className,
-      )}
-      title={title}
-    >
-      {children}
-      <span>{label}</span>
-      {showHints && <InlineKeyBadge keys={getEffectiveKeysArray(shortcut)} />}
-    </ToggleButton>
+    <Tooltip content={<ShortcutTip label={label} shortcut={shortcut} description={description} />} placement="bottom">
+      <ToggleButton
+        pressed={active}
+        stateInLabel={stateInLabel}
+        size="sm"
+        onClick={onClick}
+        disabled={disabled}
+        hasIcon
+        aria-label={iconOnly ? label : undefined}
+        className={cn(
+          "h-7 text-[13px] [&>svg]:size-4 [&>[data-inline-key-badge]]:ml-0",
+          iconOnly ? "min-w-7 gap-1 px-1.5" : cn("pl-2", showHints ? "pr-1.5" : "pr-2.5"),
+          className,
+        )}
+      >
+        {children}
+        {!iconOnly && <span>{label}</span>}
+        {showHints && <InlineKeyBadge keys={getEffectiveKeysArray(shortcut)} />}
+      </ToggleButton>
+    </Tooltip>
   );
 };
 
