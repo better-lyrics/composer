@@ -978,14 +978,26 @@ braccato-lyrics .blyrics-container {
     top: 0;
     z-index: 1;
     pointer-events: none;
-    opacity: 0;
     transition: opacity 150ms cubic-bezier(0.22, 1, 0.36, 1);
   }
-  [data-pitch="always"] .pitch-lane {
-    opacity: 1;
+  :is(
+      [data-pitch="always"],
+      [data-pitch="focus"] [data-timeline-row]:is([data-current], :has([data-word-block][data-selected]))
+    )
+    :is(.pitch-lane, .word-face > span) {
+    --pitch-shown: 1;
   }
-  [data-pitch="always"] .word-face > span {
-    translate: 0 -5px;
+  @media (hover: hover) {
+    [data-pitch="focus"] [data-timeline-row]:hover :is(.pitch-lane, .word-face > span) {
+      --pitch-shown: 1;
+      transition-delay: 80ms;
+    }
+  }
+  .pitch-lane {
+    opacity: var(--pitch-shown, 0);
+  }
+  .word-face > span {
+    translate: 0 calc(var(--pitch-shown, 0) * -5px);
   }
   @media (prefers-reduced-motion: no-preference) {
     .word-face > span {

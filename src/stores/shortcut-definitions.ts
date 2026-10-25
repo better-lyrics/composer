@@ -497,6 +497,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "v" },
   },
   {
+    id: "timeline.togglePitchLine",
+    scope: "timeline",
+    description: "Pitch line",
+    defaultBinding: { key: "k" },
+  },
+  {
     id: "timeline.toggleRollingEdit",
     scope: "timeline",
     description: "Toggle rolling edit tool",

@@ -41,6 +41,7 @@ import { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar, jumpToAdjacentGridLine } from 
 import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { pingGroup } from "@/views/timeline/ping-group";
+import { togglePitchLine } from "@/views/timeline/pitch/pitch-line-toggle";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { clearLoopRegion, playSelection } from "@/views/timeline/selection-playback";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
@@ -353,6 +354,9 @@ function useTimelineKeyboard(
         }
         case "timeline.toggleSpectrum":
           useTimelineStore.getState().toggleSpectrum();
+          break;
+        case "timeline.togglePitchLine":
+          togglePitchLine();
           break;
         case "timeline.toggleRollingEdit":
           useTimelineStore.getState().toggleRollingEditMode();
