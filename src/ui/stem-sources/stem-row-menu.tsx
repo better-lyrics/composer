@@ -4,6 +4,7 @@ import { loadProjectStems } from "@/lib/project-stems";
 import { useConfirm } from "@/stores/confirm-store";
 import { useSeparationStore } from "@/stores/separation";
 import { IconButton } from "@/ui/icon-button";
+import { KEEPS_POPOVERS_OPEN_PROPS } from "@/ui/keeps-popovers-open";
 import { Menu, type MenuAnchor, MenuItem, MenuSeparator } from "@/ui/menu";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
 import { STEM_LABELS } from "@/ui/stem-labels";
@@ -104,28 +105,30 @@ const StemRowMenu: React.FC<StemRowMenuProps> = ({ slot, origin, onImportFile })
         className="size-7 shrink-0 mr-[3px] rounded-md text-(--muted) transition-colors duration-150 motion-reduce:transition-none hover:bg-(--layer-3) hover:text-composer-text aria-expanded:bg-(--layer-3) aria-expanded:text-composer-text"
       />
       <Menu anchor={anchor} onClose={() => setAnchor(null)} aria-label={`${label} stem`}>
-        {origin === "imported" ? (
-          <>
-            {details && (
-              <MenuHeader
-                title={details.name}
-                detail={`${formatTime(details.durationSeconds, 2)} ・ ${formatFileSize(details.bytes)}`}
+        <div {...KEEPS_POPOVERS_OPEN_PROPS} className="contents">
+          {origin === "imported" ? (
+            <>
+              {details && (
+                <MenuHeader
+                  title={details.name}
+                  detail={`${formatTime(details.durationSeconds, 2)} ・ ${formatFileSize(details.bytes)}`}
+                />
+              )}
+              <MenuItem icon={IconReplace} label="Replace file…" onSelect={() => onImportFile(slot)} />
+              <MenuItem
+                icon={IconTrash}
+                label={`Remove ${lowerLabel}`}
+                tone="danger"
+                onSelect={() => void confirmRemove()}
               />
-            )}
-            <MenuItem icon={IconReplace} label="Replace file…" onSelect={() => onImportFile(slot)} />
-            <MenuItem
-              icon={IconTrash}
-              label={`Remove ${lowerLabel}`}
-              tone="danger"
-              onSelect={() => void confirmRemove()}
-            />
-          </>
-        ) : (
-          <>
-            <MenuHeader title={`Separated ${lowerLabel}`} detail="Made by the vocal model" />
-            <MenuItem icon={IconUpload} label="Import a file instead…" onSelect={() => onImportFile(slot)} />
-          </>
-        )}
+            </>
+          ) : (
+            <>
+              <MenuHeader title={`Separated ${lowerLabel}`} detail="Made by the vocal model" />
+              <MenuItem icon={IconUpload} label="Import a file instead…" onSelect={() => onImportFile(slot)} />
+            </>
+          )}
+        </div>
       </Menu>
     </>
   );
