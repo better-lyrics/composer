@@ -145,7 +145,10 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   );
 
   return (
-    <PitchRowsScope style={{ width: totalWidth + GUTTER_WIDTH, minWidth: "100%", height: totalHeight }}>
+    <PitchRowsScope
+      viewportRef={scrollContainerRef}
+      style={{ width: totalWidth + GUTTER_WIDTH, minWidth: "100%", height: totalHeight }}
+    >
       <Virtuoso
         key={`${openProjectId}:${offscreenLayoutKey}`}
         data={visibleRows}

@@ -129,6 +129,13 @@ const floatingEntrance = {
 // Canvas layers in the Timeline rows animate through the Web Animations API, so these are plain numbers.
 const pitchLineMotion = {
   spillFadeMs: 150,
+  wipeMs: 850,
+  wipeEase: [0.45, 0, 0.25, 1],
+  rowLeadMs: 120,
+  rowStaggerMs: 140,
+  riseMs: 320,
+  labelLeadPx: 6,
+  reducedFadeMs: 150,
 } as const;
 
 // -- Stagger Container --------------------------------------------------------
