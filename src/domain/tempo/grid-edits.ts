@@ -63,11 +63,15 @@ function originBeats(grid: BeatGrid): readonly number[] {
   return "bpm" in grid.origin ? manualGrid(grid.origin).beats : grid.origin.beats;
 }
 
-function beatsAtScale(base: readonly number[], scale: number, barTime: number): number[] {
+function beatsAtScale(base: readonly number[], scale: number, barTimes: readonly number[]): number[] {
   if (scale < 1) {
     const step = Math.round(1 / scale);
-    const phase = nearestIndex(base, barTime) % step;
-    return base.filter((_, i) => i % step === phase);
+    const barStarts = new Set(barTimes.map((time) => nearestIndex(base, time)));
+    let anchor = nearestIndex(base, barTimes[0] ?? 0);
+    return base.filter((_, i) => {
+      if (barStarts.has(i)) anchor = i;
+      return (((i - anchor) % step) + step) % step === 0;
+    });
   }
   const beats: number[] = [];
   base.forEach((time, i) => {
@@ -79,7 +83,7 @@ function beatsAtScale(base: readonly number[], scale: number, barTime: number): 
 }
 
 function rescaled(grid: BeatGrid, scale: number, barTimes: readonly number[]): BeatGrid {
-  const beats = beatsAtScale(originBeats(grid), scale, barTimes[0] ?? 0);
+  const beats = beatsAtScale(originBeats(grid), scale, barTimes);
   const downbeatIndices = [...new Set(barTimes.map((time) => nearestIndex(beats, time)))];
   return { ...grid, beats, downbeatIndices, tempoScale: scale };
 }

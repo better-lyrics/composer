@@ -64,6 +64,12 @@ describe("halve and double", () => {
     expect(downbeatTimes(half)).toEqual(downbeatTimes(grid).filter((_, i) => i % 2 === 0));
   });
 
+  it("regression: halving after a bar of odd length keeps bars on their downbeats", () => {
+    const downbeatIndices = [0, 4, 8, 11, 15, 19, 23, 27, 31];
+    const uneven = detectedGrid({ beats, downbeats: downbeatIndices.map((i) => beats[i]) });
+    expect(downbeatTimes(halved(uneven))).toEqual(downbeatTimes(uneven).filter((_, i) => i % 2 === 0));
+  });
+
   it("halves a bar of three too", () => {
     const waltz = detectedGrid({ beats, downbeats: beats.filter((_, i) => i % 3 === 0) });
     expect(canHalve(waltz)).toBe(true);
