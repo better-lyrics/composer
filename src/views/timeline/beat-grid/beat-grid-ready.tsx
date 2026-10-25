@@ -17,12 +17,13 @@ import { PopButton, PopGroup, PopHead, PopIconButton, PopRow } from "@/views/tim
 import { OffsetStepper } from "@/views/timeline/beat-grid/offset-stepper";
 import { TempoDisplay } from "@/views/timeline/beat-grid/tempo-display";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { IconArrowBackUp, IconFlag, IconMetronome, IconRefresh } from "@tabler/icons-react";
+import { IconArrowBackUp, IconFlag, IconHandFinger, IconMetronome, IconRefresh } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
 interface BeatGridReadyProps {
   grid: BeatGrid;
+  onSetByHand: () => void;
   onBack?: () => void;
 }
 
@@ -72,7 +73,11 @@ const GridGroup: React.FC<{ grid: BeatGrid }> = ({ grid }) => {
   );
 };
 
-const FixGridGroup: React.FC<{ grid: BeatGrid; stats: TempoStats }> = ({ grid, stats }) => {
+const FixGridGroup: React.FC<{ grid: BeatGrid; stats: TempoStats; onSetByHand: () => void }> = ({
+  grid,
+  stats,
+  onSetByHand,
+}) => {
   const apply = useProjectStore((s) => s.applyBeatGridWithHistory);
   return (
     <PopGroup label="Fix the grid">
@@ -87,6 +92,9 @@ const FixGridGroup: React.FC<{ grid: BeatGrid; stats: TempoStats }> = ({ grid, s
       </PopRow>
       <PopRow label="Tempo">
         <div className="flex gap-1.5">
+          <PopButton icon={IconHandFinger} onClick={onSetByHand}>
+            Set by hand
+          </PopButton>
           <Tooltip content={`${formatBpm(stats.bpm / 2)} BPM`}>
             <PopButton disabled={!canHalve(grid)} onClick={() => apply(halved(grid))}>
               Half
@@ -116,7 +124,7 @@ const EditedFooter: React.FC<{ grid: BeatGrid; duration: number }> = ({ grid, du
   </div>
 );
 
-const BeatGridReady: React.FC<BeatGridReadyProps> = ({ grid, onBack }) => {
+const BeatGridReady: React.FC<BeatGridReadyProps> = ({ grid, onSetByHand, onBack }) => {
   const duration = useAudioStore((s) => s.duration);
   const canDetect = useAudioStore((s) => playableFile(s.source) !== null);
   const stats = tempoStats(grid);
@@ -141,7 +149,7 @@ const BeatGridReady: React.FC<BeatGridReadyProps> = ({ grid, onBack }) => {
         <ShowOnWaveformRow />
       </PopGroup>
       <GridGroup grid={grid} />
-      {stats && <FixGridGroup grid={grid} stats={stats} />}
+      {stats && <FixGridGroup grid={grid} stats={stats} onSetByHand={onSetByHand} />}
       {isEdited(grid, duration) ? <EditedFooter grid={grid} duration={duration} /> : <div className="h-1" />}
     </>
   );

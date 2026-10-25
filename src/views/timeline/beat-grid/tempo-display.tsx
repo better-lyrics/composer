@@ -26,6 +26,14 @@ function tempoFacts(grid: BeatGrid, stats: TempoStats): string[] {
 
 // -- Components ----------------------------------------------------------------
 
+const StaticLeds: React.FC<{ lit: number }> = ({ lit }) => (
+  <span aria-hidden="true" className="flex gap-1.5">
+    {[0, 1, 2, 3].map((led) => (
+      <span key={led} data-on={led < lit ? "" : undefined} className={LED_CLASS} />
+    ))}
+  </span>
+);
+
 const BeatLeds: React.FC<{ grid: BeatGrid }> = ({ grid }) => {
   const stripRef = useRef<HTMLSpanElement>(null);
   const count = Math.min(grid.beatsPerBar, MAX_LEDS);
@@ -74,4 +82,4 @@ const TempoDisplay: React.FC<{ grid: BeatGrid; stats: TempoStats }> = ({ grid, s
 
 // -- Exports -------------------------------------------------------------------
 
-export { TempoDisplay };
+export { BPM_NUMBER_CLASS, DISPLAY_SURFACE, StaticLeds, TempoDisplay };
