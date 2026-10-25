@@ -32,6 +32,8 @@ import { saveResumePositionNow } from "@/lib/resume-position";
 import { awaitInFlightSaves, trackSave } from "@/lib/save-status";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSeparationStore } from "@/stores/separation";
+import { saveOpenStemsTo } from "@/stores/stem-fork";
 
 // -- Types --------------------------------------------------------------------
 
@@ -201,7 +203,9 @@ async function forkOpenProject(): Promise<string> {
     await trackSave("project", saveProjectRecord(id, buildSavedProject(args), useProjectStore.getState().activeTab));
   const file = storedAudioFile(useAudioStore.getState().source);
   if (file) await trackSave("audio", saveProjectAudio(id, file));
+  await trackSave("audio", saveOpenStemsTo(id));
   await setOpenProjectId(id);
+  void useSeparationStore.getState().refreshForCurrentSource();
   return id;
 }
 

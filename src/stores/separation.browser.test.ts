@@ -10,7 +10,9 @@ import {
 import { SeparationWorker } from "@/audio/separation/worker-host";
 import { useAudioStore } from "@/stores/audio";
 import { isStemJobInUse, toggledStem, useSeparationStore } from "@/stores/separation";
+import { forkOpenProject } from "@/lib/open-project";
 import { adoptOpenProjectId } from "@/lib/open-project-session";
+import { removeProjectData } from "@/lib/project-repository";
 import { loadProjectStems } from "@/lib/project-stems";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { seedStoredProject } from "@/test/projects";
@@ -288,6 +290,15 @@ describe("imported stems", () => {
 
     expect(await loadProjectStems("import-into-b")).toBeUndefined();
     expect(await loadProjectStems("import-from-a")).toBeUndefined();
+  });
+
+  it("regression: keeping a project deleted in another tab keeps its imported stems", async () => {
+    await openSong("fork-source");
+    await useSeparationStore.getState().importStem("vocals", createAudioFile("acapella.wav", 2));
+    await removeProjectData("fork-source");
+
+    const forkId = await forkOpenProject();
+    expect((await loadProjectStems(forkId))?.slots.vocals).toMatchObject({ origin: "imported", name: "acapella.wav" });
   });
 
   it("separation fills only the empty slot and never replaces an imported stem", async () => {
