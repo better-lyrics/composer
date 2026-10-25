@@ -10,9 +10,9 @@ import { Button } from "@/ui/button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { cn } from "@/utils/cn";
-import { MOD_KEY } from "@/utils/platform";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { TimelineZoomControls } from "@/views/timeline/timeline-header-controls";
+import { SnapLatch } from "@/views/timeline/snap-latch";
 import { TimelineNotices } from "@/views/timeline/timeline-notices";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
@@ -23,7 +23,6 @@ import {
   IconFocusCentered,
   IconLanguage,
   IconLayoutDistributeHorizontal,
-  IconMagnet,
   IconMapPin,
   IconTextPlus,
 } from "@tabler/icons-react";
@@ -44,10 +43,6 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   const markerMode = useTimelineStore((s) => s.markerMode);
   const toggleMarkerMode = useTimelineStore((s) => s.toggleMarkerMode);
   const showHints = useSettingsStore((s) => s.showShortcutHints);
-  const snapEnabled = useSettingsStore((s) => s.timelineSnap);
-  const setSetting = useSettingsStore((s) => s.set);
-  const isBypassing = useTimelineStore((s) => s.isBypassing);
-  const toggleSnapKeys = getEffectiveKeysArray("timeline.toggleSnap");
   const toggleMarkerKeys = getEffectiveKeysArray("timeline.toggleMarkerMode");
   const lines = useProjectStore((s) => s.lines);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
@@ -177,16 +172,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
         </div>
 
         <div className="tray">
-          <ShortcutToggleButton
-            active={snapEnabled}
-            label="Snap"
-            shortcut="timeline.toggleSnap"
-            onClick={() => setSetting("timelineSnap", !snapEnabled)}
-            className={cn(isBypassing && "opacity-50")}
-            title={`Snap${toggleSnapKeys.length ? ` (${toggleSnapKeys.join(" ")})` : ""} · hold ${MOD_KEY} to bypass`}
-          >
-            <IconMagnet />
-          </ShortcutToggleButton>
+          <SnapLatch />
           <ShortcutToggleButton
             active={markerMode}
             label="Marker"
