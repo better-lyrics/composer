@@ -46,6 +46,7 @@ function readManualOrigin(value: unknown): ManualTempo | null {
 
 function readBeatGrid(value: unknown): BeatGrid | null {
   if (!isRecord(value) || !isAscendingTimes(value.beats) || !isBeatsPerBar(value.beatsPerBar)) return null;
+  if (value.beats.length < 2) return null;
   const { source, beats, beatsPerBar, offsetMs } = value;
   const downbeatIndices = readDownbeatIndices(value.downbeatIndices, beats.length);
   if (!downbeatIndices) return null;
