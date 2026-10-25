@@ -197,8 +197,8 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
     // The element upgrades once the registration import resolves, long after the mount
     // wake expired, so the first frame that can address its accessors has to be asked for.
     void ensureRegistered().then((registered) => {
+      setIsElementUnavailable(!registered);
       if (registered) wake();
-      else setIsElementUnavailable(true);
     });
   }, []);
 
