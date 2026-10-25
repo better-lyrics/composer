@@ -1276,6 +1276,7 @@ braccato-lyrics .blyrics-container {
   background: var(--raised-face);
   box-shadow: var(--raised-edge);
   transition: background-color 150ms, color 150ms, scale 150ms;
+  will-change: scale;
 }
 
 [data-sonner-toaster]
