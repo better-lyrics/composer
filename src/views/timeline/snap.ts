@@ -1,9 +1,18 @@
 import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { type GridPoint, gridPointLabel } from "@/domain/tempo/grid-points";
 
 // -- Types ---------------------------------------------------------------------
 
-type AnchorKind = "word-begin" | "word-end" | "line-begin" | "line-end" | "playhead" | "vocal-onset" | "custom";
+type AnchorKind =
+  | "word-begin"
+  | "word-end"
+  | "line-begin"
+  | "line-end"
+  | "playhead"
+  | "vocal-onset"
+  | "custom"
+  | "beat";
 
 interface SnapAnchor {
   t: number;
@@ -19,6 +28,9 @@ type SelfKey = string;
 interface ActiveSnapSources {
   timelineSnap: boolean;
   vocalOnsetSnap: boolean;
+  beatSnap: boolean;
+  snapWordsAndLines: boolean;
+  snapMarkers: boolean;
 }
 
 interface FindSnapShiftArgs {
@@ -141,13 +153,30 @@ function vocalOnsetAnchors(times: readonly number[]): SnapAnchor[] {
   return anchors;
 }
 
+function beatAnchors(points: readonly GridPoint[]): SnapAnchor[] {
+  return points.map((point) => ({ t: point.t, kind: "beat", label: gridPointLabel(point) }));
+}
+
+function isSourceOn(kind: AnchorKind, sources: ActiveSnapSources): boolean {
+  switch (kind) {
+    case "custom":
+      return sources.snapMarkers;
+    case "vocal-onset":
+      return sources.vocalOnsetSnap;
+    case "beat":
+      return sources.beatSnap;
+    case "playhead":
+      return true;
+    default:
+      return sources.snapWordsAndLines;
+  }
+}
+
 function activeSnapAnchors(anchors: SnapAnchor[], sources: ActiveSnapSources): SnapAnchor[] {
-  if (sources.timelineSnap && sources.vocalOnsetSnap) return anchors;
-  return anchors.filter((anchor) => {
-    if (anchor.kind === "custom") return true;
-    if (anchor.kind === "vocal-onset") return sources.vocalOnsetSnap;
-    return sources.timelineSnap;
-  });
+  if (!sources.timelineSnap) return [];
+  const { vocalOnsetSnap, beatSnap, snapWordsAndLines, snapMarkers } = sources;
+  if (vocalOnsetSnap && beatSnap && snapWordsAndLines && snapMarkers) return anchors;
+  return anchors.filter((anchor) => isSourceOn(anchor.kind, sources));
 }
 
 // -- Snap resolution -----------------------------------------------------------
@@ -187,5 +216,5 @@ function findSnapShift(args: FindSnapShiftArgs): SnapResult {
 
 // -- Exports -------------------------------------------------------------------
 
-export { activeSnapAnchors, collectSnapAnchors, findSnapShift, selfKey, vocalOnsetAnchors };
-export type { SnapAnchor };
+export { activeSnapAnchors, beatAnchors, collectSnapAnchors, findSnapShift, selfKey, vocalOnsetAnchors };
+export type { ActiveSnapSources, SnapAnchor };

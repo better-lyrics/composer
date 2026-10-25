@@ -1,10 +1,13 @@
 import { snapPointTimes } from "@/domain/snap-point/model";
-import { livePlaybackTime } from "@/stores/audio";
+import type { BeatGrid } from "@/domain/tempo/beat-grid";
+import { type GridLines, gridPoints } from "@/domain/tempo/grid-points";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import {
   type SnapAnchor,
   activeSnapAnchors,
+  beatAnchors,
   collectSnapAnchors,
   findSnapShift,
   vocalOnsetAnchors,
@@ -21,11 +24,19 @@ interface BeginGestureArgs {
   overlapCheck: (shift: number) => boolean;
 }
 
+interface ActiveAnchorsKey {
+  sources: number;
+  onsetTimes: readonly number[];
+  beatGrid: BeatGrid | null;
+  zoom: number;
+  beatGridLines: GridLines;
+  duration: number;
+}
+
 interface SnapCtx {
   allAnchors: SnapAnchor[];
   activeAnchors: SnapAnchor[];
-  activeSourcesKey: number;
-  activeOnsetTimes: readonly number[] | null;
+  activeKey: ActiveAnchorsKey | null;
   selfIds: Set<string>;
   leaderKey: string;
   overlapCheck: ((shift: number) => boolean) | null;
@@ -47,6 +58,22 @@ interface UseTimelineSnap {
 
 // -- Helpers ------------------------------------------------------------------
 
+function sameActiveKey(a: ActiveAnchorsKey | null, b: ActiveAnchorsKey): boolean {
+  return (
+    a !== null &&
+    a.sources === b.sources &&
+    a.onsetTimes === b.onsetTimes &&
+    a.beatGrid === b.beatGrid &&
+    a.zoom === b.zoom &&
+    a.beatGridLines === b.beatGridLines &&
+    a.duration === b.duration
+  );
+}
+
+function sourcesBits(flags: readonly boolean[]): number {
+  return flags.reduce((bits, flag, index) => bits | (Number(flag) << index), 0);
+}
+
 function writeSnappedLeader(leaderKey: string, anchorTime: number | null): void {
   const store = useTimelineStore.getState();
   if (anchorTime === null) {
@@ -63,6 +90,11 @@ function writeSnappedLeader(leaderKey: string, anchorTime: number | null): void 
 function useTimelineSnap(): UseTimelineSnap {
   useSettingsStore((s) => s.timelineSnap);
   useSettingsStore((s) => s.vocalOnsetSnap);
+  useSettingsStore((s) => s.beatSnap);
+  useSettingsStore((s) => s.beatGridVisible);
+  useSettingsStore((s) => s.beatGridLines);
+  useSettingsStore((s) => s.snapWordsAndLines);
+  useSettingsStore((s) => s.snapMarkers);
   useTimelineStore((s) => s.zoom);
   useTimelineStore((s) => s.isBypassing);
   useTimelineStore((s) => s.vocalOnsetSnapPoints);
@@ -74,8 +106,7 @@ function useTimelineSnap(): UseTimelineSnap {
   const ctxRef = useRef<SnapCtx>({
     allAnchors: [],
     activeAnchors: [],
-    activeSourcesKey: -1,
-    activeOnsetTimes: null,
+    activeKey: null,
     selfIds: new Set(),
     leaderKey: "",
     overlapCheck: null,
@@ -94,8 +125,7 @@ function useTimelineSnap(): UseTimelineSnap {
       [],
       snapPointTimes(projectSnapPoints),
     );
-    ctxRef.current.activeSourcesKey = -1;
-    ctxRef.current.activeOnsetTimes = null;
+    ctxRef.current.activeKey = null;
     ctxRef.current.selfIds = args.selfIds;
     ctxRef.current.leaderKey = args.leaderKey;
     ctxRef.current.overlapCheck = args.overlapCheck;
@@ -105,8 +135,7 @@ function useTimelineSnap(): UseTimelineSnap {
   const endGesture = useCallback(() => {
     ctxRef.current.allAnchors = [];
     ctxRef.current.activeAnchors = [];
-    ctxRef.current.activeSourcesKey = -1;
-    ctxRef.current.activeOnsetTimes = null;
+    ctxRef.current.activeKey = null;
     ctxRef.current.selfIds = new Set();
     ctxRef.current.leaderKey = "";
     ctxRef.current.overlapCheck = null;
@@ -122,17 +151,33 @@ function useTimelineSnap(): UseTimelineSnap {
 
   const resolveSnap = useCallback((proposedDeltaPx: number, edgesAtStart: number[]): SnapResolution => {
     const ctx = ctxRef.current;
-    const { timelineSnap, vocalOnsetSnap, timelineSnapThreshold: threshold } = useSettingsStore.getState();
-    const sourcesKey = Number(timelineSnap) * 2 + Number(vocalOnsetSnap);
+    const settings = useSettingsStore.getState();
+    const { timelineSnap, vocalOnsetSnap, beatSnap, beatGridVisible, snapWordsAndLines, snapMarkers } = settings;
     const { zoom, isBypassing, vocalOnsetSnapPoints } = useTimelineStore.getState();
-    if (ctx.activeSourcesKey !== sourcesKey || ctx.activeOnsetTimes !== vocalOnsetSnapPoints) {
-      const withOnsets = vocalOnsetSnap
-        ? ctx.allAnchors.concat(vocalOnsetAnchors(vocalOnsetSnapPoints))
-        : ctx.allAnchors;
-      ctx.activeAnchors = activeSnapAnchors(withOnsets, { timelineSnap, vocalOnsetSnap });
-      ctx.activeSourcesKey = sourcesKey;
-      ctx.activeOnsetTimes = vocalOnsetSnapPoints;
+    const key: ActiveAnchorsKey = {
+      sources: sourcesBits([timelineSnap, vocalOnsetSnap, beatSnap, beatGridVisible, snapWordsAndLines, snapMarkers]),
+      onsetTimes: vocalOnsetSnapPoints,
+      beatGrid: useProjectStore.getState().beatGrid,
+      zoom,
+      beatGridLines: settings.beatGridLines,
+      duration: useAudioStore.getState().duration,
+    };
+    if (!sameActiveKey(ctx.activeKey, key)) {
+      let anchors = ctx.allAnchors;
+      if (timelineSnap && vocalOnsetSnap) anchors = anchors.concat(vocalOnsetAnchors(vocalOnsetSnapPoints));
+      if (timelineSnap && beatSnap && beatGridVisible && key.beatGrid) {
+        anchors = anchors.concat(beatAnchors(gridPoints(key.beatGrid, 0, key.duration, zoom, key.beatGridLines)));
+      }
+      ctx.activeAnchors = activeSnapAnchors(anchors, {
+        timelineSnap,
+        vocalOnsetSnap,
+        beatSnap,
+        snapWordsAndLines,
+        snapMarkers,
+      });
+      ctx.activeKey = key;
     }
+    const threshold = settings.timelineSnapThreshold;
     if (isBypassing || ctx.activeAnchors.length === 0) return { shiftPx: 0, anchorTime: null };
     const deltaT = proposedDeltaPx / zoom;
     const proposedEdges = edgesAtStart.map((edge) => edge + deltaT);

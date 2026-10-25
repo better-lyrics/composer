@@ -1,3 +1,4 @@
+import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -44,7 +45,7 @@ function beginAt(result: { current: ReturnType<typeof useTimelineSnap> }): void 
 describe("useTimelineSnap · custom snap points", () => {
   beforeEach(() => {
     useAudioStore.setState({ audioElement: null, currentTime: 0, duration: 30 });
-    useProjectStore.setState({ lines: [], customSnapPoints: [] });
+    useProjectStore.setState({ lines: [], customSnapPoints: [], beatGrid: null });
     useTimelineStore.setState({
       zoom: ZOOM,
       isBypassing: false,
@@ -53,14 +54,17 @@ describe("useTimelineSnap · custom snap points", () => {
       snappedAnchorTime: null,
       scrollLeft: 0,
     });
+    // Intentional change: the Snap latch is now the master switch, so word snapping is turned off per source.
     useSettingsStore.setState({
-      timelineSnap: false,
+      timelineSnap: true,
+      snapWordsAndLines: false,
+      snapMarkers: true,
       vocalOnsetSnap: false,
       timelineSnapThreshold: THRESHOLD,
     });
   });
 
-  it("snaps a block to a custom point when both timelineSnap and vocalOnsetSnap are OFF", async () => {
+  it("snaps a block to a custom point when word and vocal onset snapping are OFF", async () => {
     useProjectStore.setState({ customSnapPoints: snapPoints([1]) });
     const { result } = await renderHook(() => useTimelineSnap());
 
@@ -74,7 +78,7 @@ describe("useTimelineSnap · custom snap points", () => {
     expect(useTimelineStore.getState().snappedAnchorTime).toBeCloseTo(1, 4);
   });
 
-  it("does not snap when there are no custom points and both snaps are OFF", async () => {
+  it("does not snap when there are no custom points and word and onset snapping are OFF", async () => {
     useProjectStore.setState({ customSnapPoints: [] });
     const { result } = await renderHook(() => useTimelineSnap());
 
@@ -117,7 +121,7 @@ describe("useTimelineSnap · custom snap points", () => {
     expect(useTimelineStore.getState().snappedAnchorTime).toBeNull();
   });
 
-  it("does not emit timeline grid anchors when timelineSnap is OFF but a custom point exists", async () => {
+  it("does not emit line anchors when word snapping is OFF but a custom point exists", async () => {
     useProjectStore.setState({
       lines: [{ id: "g1", text: "grid", agentId: "v1", begin: 2, end: 3 }],
       customSnapPoints: snapPoints([1]),
@@ -136,6 +140,7 @@ describe("useTimelineSnap · custom snap points", () => {
   });
 
   it("regression: snap turned on mid-drag snaps to word edges", async () => {
+    useSettingsStore.setState({ timelineSnap: false, snapWordsAndLines: true });
     useProjectStore.setState({ lines: [createLine({ words: [createWord({ text: "a", begin: 1, end: 2 })] })] });
     const { result } = await renderHook(() => useTimelineSnap());
 
@@ -146,8 +151,8 @@ describe("useTimelineSnap · custom snap points", () => {
     expect(result.current.computeShiftPx(0, [0.95])).toBeCloseTo((1 - 0.95) * ZOOM, 4);
   });
 
-  it("regression: snap turned off mid-drag ignores word edges when custom markers exist", async () => {
-    useSettingsStore.setState({ timelineSnap: true });
+  it("regression: word snapping turned off mid-drag ignores word edges when custom markers exist", async () => {
+    useSettingsStore.setState({ snapWordsAndLines: true });
     useProjectStore.setState({
       lines: [createLine({ words: [createWord({ text: "a", begin: 1, end: 2 })] })],
       customSnapPoints: snapPoints([5]),
@@ -155,10 +160,21 @@ describe("useTimelineSnap · custom snap points", () => {
     const { result } = await renderHook(() => useTimelineSnap());
 
     beginAt(result);
-    useSettingsStore.setState({ timelineSnap: false });
+    useSettingsStore.setState({ snapWordsAndLines: false });
 
     expect(result.current.computeShiftPx(0, [0.95])).toBe(0);
     expect(result.current.computeShiftPx(0, [4.95])).toBeCloseTo((5 - 4.95) * ZOOM, 4);
+  });
+
+  it("snap turned off mid-drag ignores custom markers too", async () => {
+    useProjectStore.setState({ customSnapPoints: snapPoints([5]) });
+    const { result } = await renderHook(() => useTimelineSnap());
+
+    beginAt(result);
+    expect(result.current.computeShiftPx(0, [4.95])).toBeCloseTo((5 - 4.95) * ZOOM, 4);
+    useSettingsStore.setState({ timelineSnap: false });
+
+    expect(result.current.computeShiftPx(0, [4.95])).toBe(0);
   });
 
   it("regression: onset points that load mid-drag snap once vocal onset snap is on", async () => {
@@ -182,5 +198,17 @@ describe("useTimelineSnap · custom snap points", () => {
 
     expect(transform.x).toBeCloseTo((4 - 3.95) * ZOOM, 4);
     expect(useTimelineStore.getState().snappedAnchorTime).toBeCloseTo(4, 4);
+  });
+
+  it("snaps to a visible beat grid line and stops when the grid is hidden", async () => {
+    useSettingsStore.setState({ beatSnap: true, beatGridVisible: true, beatGridLines: "1" });
+    useProjectStore.setState({ beatGrid: detectedGrid({ beats: [0, 0.5, 1, 1.5, 2], downbeats: [0, 2] }) });
+    const { result } = await renderHook(() => useTimelineSnap());
+
+    beginAt(result);
+    expect(result.current.computeShiftPx(0, [1.45])).toBeCloseTo((1.5 - 1.45) * ZOOM, 4);
+
+    useSettingsStore.setState({ beatGridVisible: false });
+    expect(result.current.computeShiftPx(0, [1.45])).toBe(0);
   });
 });

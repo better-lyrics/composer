@@ -1,3 +1,5 @@
+import { useProjectStore } from "@/stores/project";
+import type { SnapSettings } from "@/stores/settings-snap";
 import { useSettingsStore } from "@/stores/settings";
 import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -23,6 +25,15 @@ interface UseGestureInputReplayArgs {
 
 // -- Constants -----------------------------------------------------------------
 const NO_MODIFIERS: HeldModifiers = { altKey: false, shiftKey: false, metaKey: false, ctrlKey: false };
+const SNAP_SOURCE_SETTINGS: readonly (keyof SnapSettings)[] = [
+  "timelineSnap",
+  "vocalOnsetSnap",
+  "beatSnap",
+  "beatGridVisible",
+  "beatGridLines",
+  "snapWordsAndLines",
+  "snapMarkers",
+];
 
 // -- Hook ----------------------------------------------------------------------
 function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplayArgs) {
@@ -87,9 +98,10 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
     };
 
     const unsubscribeSettings = useSettingsStore.subscribe((state, prev) => {
-      if (state.timelineSnap !== prev.timelineSnap || state.vocalOnsetSnap !== prev.vocalOnsetSnap) {
-        replayLastPointer();
-      }
+      if (SNAP_SOURCE_SETTINGS.some((key) => state[key] !== prev[key])) replayLastPointer();
+    });
+    const unsubscribeProject = useProjectStore.subscribe((state, prev) => {
+      if (state.beatGrid !== prev.beatGrid) replayLastPointer();
     });
     const unsubscribeTimeline = useTimelineStore.subscribe((state, prev) => {
       if (
@@ -112,6 +124,7 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
       window.removeEventListener("keydown", handleKey);
       window.removeEventListener("keyup", handleKey);
       unsubscribeSettings();
+      unsubscribeProject();
       unsubscribeTimeline();
     };
   }, [active, getLastPointer]);
