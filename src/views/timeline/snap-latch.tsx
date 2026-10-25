@@ -1,14 +1,13 @@
 import { useSettingsStore } from "@/stores/settings";
-import { IconButton } from "@/ui/icon-button";
-import { Popover } from "@/ui/popover";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
+import { SplitLatch } from "@/ui/split-latch";
 import { cn } from "@/utils/cn";
 import { MOD_KEY } from "@/utils/platform";
-import { PopBody } from "@/views/timeline/beat-grid/beat-grid-layout";
+import { PopBody } from "@/ui/pop-layout";
 import { BeatGridPopoverBody } from "@/views/timeline/beat-grid/beat-grid-popover";
 import { SnapMenu } from "@/views/timeline/snap-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { IconChevronDown, IconMagnet } from "@tabler/icons-react";
+import { IconMagnet } from "@tabler/icons-react";
 import { useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -22,7 +21,6 @@ const SnapLatch: React.FC = () => {
   const isBypassing = useTimelineStore((s) => s.isBypassing);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<SnapMenuView>("sources");
-  const [pill, setPill] = useState<HTMLDivElement | null>(null);
 
   const backOnEscape = (e: React.KeyboardEvent) => {
     if (e.key !== "Escape") return;
@@ -36,43 +34,34 @@ const SnapLatch: React.FC = () => {
   };
 
   return (
-    <div ref={setPill} className="snap-split">
-      <ShortcutToggleButton
-        active={enabled}
-        label="Snap"
-        shortcut="timeline.toggleSnap"
-        onClick={() => useSettingsStore.getState().set("timelineSnap", !enabled)}
-        className={cn(isBypassing && "opacity-50")}
-        description={`Hold ${MOD_KEY} to bypass`}
-        iconOnly
-      >
-        <IconMagnet />
-      </ShortcutToggleButton>
-      <Popover
-        open={open}
-        onOpenChange={handleOpenChange}
-        placement="bottom-start"
-        aria-label="Snap sources"
-        positionAnchor={pill?.parentElement}
-        trigger={
-          <IconButton
-            variant="ghost"
-            label="Snap sources"
-            icon={<IconChevronDown aria-hidden="true" className="size-[13px]" />}
-          />
-        }
-      >
-        {view === "sources" ? (
-          <PopBody>
-            <SnapMenu onOpenBeatGrid={() => setView("beat-grid")} />
-          </PopBody>
-        ) : (
-          <div onKeyDown={backOnEscape}>
-            <BeatGridPopoverBody onBack={() => setView("sources")} />
-          </div>
-        )}
-      </Popover>
-    </div>
+    <SplitLatch
+      menuLabel="Snap sources"
+      open={open}
+      onOpenChange={handleOpenChange}
+      latch={
+        <ShortcutToggleButton
+          active={enabled}
+          label="Snap"
+          shortcut="timeline.toggleSnap"
+          onClick={() => useSettingsStore.getState().set("timelineSnap", !enabled)}
+          className={cn(isBypassing && "opacity-50")}
+          description={`Hold ${MOD_KEY} to bypass`}
+          iconOnly
+        >
+          <IconMagnet />
+        </ShortcutToggleButton>
+      }
+    >
+      {view === "sources" ? (
+        <PopBody>
+          <SnapMenu onOpenBeatGrid={() => setView("beat-grid")} />
+        </PopBody>
+      ) : (
+        <div onKeyDown={backOnEscape}>
+          <BeatGridPopoverBody onBack={() => setView("sources")} />
+        </div>
+      )}
+    </SplitLatch>
   );
 };
 
