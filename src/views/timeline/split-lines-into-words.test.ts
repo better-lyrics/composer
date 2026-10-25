@@ -139,6 +139,20 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
     expect("words" in updates[0].updates).toBe(false);
   });
 
+  it("does not copy a bg word's transliteration onto every split piece", () => {
+    const line: LyricLine = {
+      ...sentenceBg,
+      backgroundWords: [
+        { text: "ooh yeah baby", begin: 1, end: 4, transliteration: "u  ye  bei", transliterationJoinerAfter: " " },
+      ],
+    };
+    const [update] = computeSplitIntoWordsUpdates(bg("L4"), [line]);
+    for (const word of update.updates.backgroundWords ?? []) {
+      expect(word).not.toHaveProperty("transliteration");
+      expect(word).not.toHaveProperty("transliterationJoinerAfter");
+    }
+  });
+
   it("splits only the multi-word bg word and leaves its neighbours' timing alone", () => {
     const line: LyricLine = {
       ...sentenceBg,
