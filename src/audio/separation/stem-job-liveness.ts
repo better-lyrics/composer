@@ -31,7 +31,8 @@ function isProjectStemJobKey(jobKey: string | null): boolean {
 function whenProjectJobLive(tx: IDBTransaction, job: { projectId: string; revision: number }, write: () => void) {
   const request = tx.objectStore(PROJECT_STEMS_STORE_NAME).get(job.projectId);
   request.onsuccess = () => {
-    if ((request.result as SavedProjectStems | undefined)?.revision === job.revision) write();
+    const stems = request.result as SavedProjectStems | undefined;
+    if (stems && (stems.slots.vocals?.revision ?? 0) === job.revision) write();
   };
 }
 

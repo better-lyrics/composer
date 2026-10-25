@@ -69,18 +69,29 @@ async function writeProjectStems(id: string, change: StemsChange): Promise<void>
   notifyProjectIndexChanged();
 }
 
-async function saveProjectStem(id: string, songHash: string, write: ProjectStemWrite): Promise<void> {
-  const stem: SavedProjectStem = {
+// Stems of another song are replaced; a stem the user imported is never replaced by the model's output.
+function withStem(
+  current: SavedProjectStems | undefined,
+  songKey: string,
+  slot: StemSlot,
+  stem: Omit<SavedProjectStem, "revision">,
+): SavedProjectStems {
+  const sameSong = current?.songKey === songKey;
+  if (sameSong && stem.origin === "separated" && current.slots[slot]?.origin === "imported") return current;
+  const revision = (current?.revision ?? 0) + 1;
+  const keptSlots = sameSong ? current.slots : {};
+  return { songKey, revision, slots: { ...keptSlots, [slot]: { ...stem, revision } } };
+}
+
+async function saveProjectStem(id: string, songKey: string, write: ProjectStemWrite): Promise<void> {
+  const stem = {
     origin: write.origin,
     name: write.file.name,
     type: write.file.type,
     data: await write.file.arrayBuffer(),
     durationSeconds: write.durationSeconds,
   };
-  await writeProjectStems(id, (current) => {
-    const keptSlots = current?.songHash === songHash ? current.slots : {};
-    return { songHash, revision: (current?.revision ?? 0) + 1, slots: { ...keptSlots, [write.slot]: stem } };
-  });
+  await writeProjectStems(id, (current) => withStem(current, songKey, write.slot, stem));
   notifyStorageSignal("media-stored");
 }
 

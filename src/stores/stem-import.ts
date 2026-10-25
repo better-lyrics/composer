@@ -9,15 +9,23 @@ import { stemDurationMismatch } from "@/domain/stems/duration-match";
 import type { StemSlot } from "@/domain/stems/stem-slot";
 import { ensureOpenProjectId, openProjectIdSnapshot } from "@/lib/open-project-session";
 import { deleteProjectStem, saveProjectStem } from "@/lib/project-stems";
-import { playableFile, useAudioStore } from "@/stores/audio";
+import { isQuotaExceededError } from "@/lib/storage-signals";
+import { type AudioSource, playableFile, useAudioStore } from "@/stores/audio";
+import { songKeyFor } from "@/stores/stem-sources";
 
 // -- Types --------------------------------------------------------------------
+
+interface StemImportTarget {
+  source: AudioSource;
+  projectId: string | undefined;
+}
 
 interface PendingStemImport {
   slot: StemSlot;
   file: File;
   durationSeconds: number;
   mismatchSeconds: number;
+  target: StemImportTarget;
 }
 
 interface StemImportError {
@@ -30,61 +38,91 @@ interface StemImportState {
   importError: StemImportError | null;
 }
 
+interface ReadyStemImport {
+  durationSeconds: number;
+  target: StemImportTarget;
+}
+
 type SetStemImportState = (partial: Partial<StemImportState>) => void;
 
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[StemImport]";
 
+// -- Target -------------------------------------------------------------------
+
+function currentImportTarget(): StemImportTarget {
+  return { source: useAudioStore.getState().source, projectId: openProjectIdSnapshot() };
+}
+
+// An import belongs to the song and project it started in; a switch while it was checked or saved drops it.
+function isCurrentImportTarget(target: StemImportTarget): boolean {
+  return useAudioStore.getState().source === target.source && openProjectIdSnapshot() === target.projectId;
+}
+
+function saveFailureMessage(file: File, error: unknown): string {
+  if (isQuotaExceededError(error)) return `Unable to save ${file.name}. Free up storage space and try again.`;
+  return `Unable to save ${file.name}. Import it again.`;
+}
+
 // -- Import -------------------------------------------------------------------
 
-// Resolves the stem's duration when it can be stored right away; otherwise records why not and resolves null.
-async function prepareStemImport(slot: StemSlot, file: File, set: SetStemImportState): Promise<number | null> {
+// Resolves when the stem can be stored right away; otherwise records why not and resolves null.
+async function prepareStemImport(slot: StemSlot, file: File, set: SetStemImportState): Promise<ReadyStemImport | null> {
   set({ pendingImport: null, importError: null });
   if (!isSupportedAudioFile(file)) {
     set({ importError: { slot, message: UNSUPPORTED_AUDIO_FILE_MESSAGE } });
     return null;
   }
-  const song = playableFile(useAudioStore.getState().source);
+  const target = currentImportTarget();
+  const song = playableFile(target.source);
   if (!song) return null;
   const [probe, songProbe] = await Promise.all([probeAudioFile(file), probeAudioFile(song)]);
+  if (!isCurrentImportTarget(target)) return null;
   if (!probe.ok) {
     set({ importError: { slot, message: `Unable to read ${file.name}. Use ${AUDIO_FORMATS_PROSE}.` } });
     return null;
   }
-  const songSeconds = songProbe.ok ? songProbe.duration : 0;
-  const mismatchSeconds = stemDurationMismatch(probe.duration, songSeconds);
-  if (mismatchSeconds === null) return probe.duration;
-  set({ pendingImport: { slot, file, durationSeconds: probe.duration, mismatchSeconds } });
+  const mismatchSeconds = stemDurationMismatch(probe.duration, songProbe.ok ? songProbe.duration : 0);
+  if (mismatchSeconds === null) return { durationSeconds: probe.duration, target };
+  set({ pendingImport: { slot, file, durationSeconds: probe.duration, mismatchSeconds, target } });
   return null;
 }
 
 async function commitStemImport(
   slot: StemSlot,
   file: File,
-  durationSeconds: number,
+  { durationSeconds, target }: ReadyStemImport,
   set: SetStemImportState,
 ): Promise<boolean> {
-  const song = playableFile(useAudioStore.getState().source);
-  if (!song) return false;
+  const song = playableFile(target.source);
+  if (!song || !isCurrentImportTarget(target)) return false;
   try {
-    const [projectId, songHash] = await Promise.all([ensureOpenProjectId(), hashFile(song)]);
-    await saveProjectStem(projectId, songHash, { slot, file, origin: "imported", durationSeconds });
+    const audioHash = await hashFile(song);
+    if (!isCurrentImportTarget(target)) return false;
+    const projectId = target.projectId ?? (await ensureOpenProjectId());
+    await saveProjectStem(projectId, songKeyFor(target.source, audioHash), {
+      slot,
+      file,
+      origin: "imported",
+      durationSeconds,
+    });
     return true;
   } catch (error) {
     console.error(LOG_PREFIX, "could not store the imported stem", error);
-    set({ importError: { slot, message: `Unable to save ${file.name}. Free up storage space and try again.` } });
+    set({ importError: { slot, message: saveFailureMessage(file, error) } });
     return false;
   }
 }
 
-async function removeProjectStem(slot: StemSlot): Promise<void> {
+async function removeProjectStem(slot: StemSlot, set: SetStemImportState): Promise<void> {
   const projectId = openProjectIdSnapshot();
   if (!projectId) return;
   try {
     await deleteProjectStem(projectId, slot);
   } catch (error) {
     console.error(LOG_PREFIX, "could not remove the stem", error);
+    set({ importError: { slot, message: `Unable to remove the ${slot} stem. Try again.` } });
   }
 }
 

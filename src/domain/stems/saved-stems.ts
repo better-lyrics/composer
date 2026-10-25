@@ -8,10 +8,11 @@ interface SavedProjectStem {
   type: string;
   data: ArrayBuffer;
   durationSeconds: number;
+  revision: number;
 }
 
 interface SavedProjectStems {
-  songHash: string;
+  songKey: string;
   revision: number;
   slots: Partial<Record<StemSlot, SavedProjectStem>>;
 }

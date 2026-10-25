@@ -20,7 +20,7 @@ describe("project stems", () => {
     const write = importedVocals();
     await saveProjectStem("stems-save", "song-hash", write);
     const stems = await loadProjectStems("stems-save");
-    expect(stems?.songHash).toBe("song-hash");
+    expect(stems?.songKey).toBe("song-hash");
     expect(stems?.slots.vocals).toMatchObject({ origin: "imported", name: "acapella.wav", durationSeconds: 60 });
     expect(stems?.slots.instrumental).toBeUndefined();
     expect((await loadProjectIndexEntry("stems-save"))?.storedStemBytes).toBe(write.file.size);
@@ -47,7 +47,7 @@ describe("project stems", () => {
     await saveProjectStem("stems-song", "old-song", importedVocals());
     await saveProjectStem("stems-song", "new-song", { ...importedVocals(), slot: "instrumental" });
     const stems = await loadProjectStems("stems-song");
-    expect(stems?.songHash).toBe("new-song");
+    expect(stems?.songKey).toBe("new-song");
     expect(Object.keys(stems?.slots ?? {})).toEqual(["instrumental"]);
   });
 
@@ -83,5 +83,23 @@ describe("project stems", () => {
     await saveProjectStem("stems-early", "h", write);
     await seedStoredProject("stems-early");
     expect((await loadProjectIndexEntry("stems-early"))?.storedStemBytes).toBe(write.file.size);
+  });
+
+  it("never lets a separated stem replace an imported one", async () => {
+    await seedStoredProject("stems-guard");
+    const write = importedVocals();
+    await saveProjectStem("stems-guard", "h", write);
+    await saveProjectStem("stems-guard", "h", { ...importedVocals("model.wav"), origin: "separated" });
+    const stems = await loadProjectStems("stems-guard");
+    expect(stems?.slots.vocals).toMatchObject({ origin: "imported", name: "acapella.wav" });
+  });
+
+  it("stamps each slot with the revision it was written at, so an untouched slot keeps its revision", async () => {
+    await seedStoredProject("stems-revision");
+    await saveProjectStem("stems-revision", "h", importedVocals());
+    await saveProjectStem("stems-revision", "h", { ...importedVocals("inst.wav"), slot: "instrumental" });
+    const stems = await loadProjectStems("stems-revision");
+    expect(stems?.slots.vocals?.revision).toBe(1);
+    expect(stems?.slots.instrumental?.revision).toBe(2);
   });
 });

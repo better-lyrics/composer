@@ -1,61 +1,74 @@
 import { projectStemJobKey } from "@/audio/separation/stem-job-liveness";
 import { getStem, hasStems, stemJobKey } from "@/audio/separation/stem-store";
 import { STEM_SLOTS, type StemOrigin, type StemSlot } from "@/domain/stems/stem-slot";
-import { deleteProjectStems, loadProjectStems, stemFile } from "@/lib/project-stems";
+import { loadProjectStems, stemFile } from "@/lib/project-stems";
+import type { AudioSource } from "@/stores/audio";
 import type { VocalModelVariant } from "@/stores/settings";
 
 // -- Types --------------------------------------------------------------------
 
-interface ResolvedStems {
-  jobKey: string;
-  files: Partial<Record<StemSlot, Blob>>;
-  origins: Partial<Record<StemSlot, StemOrigin>>;
-  ownedByProject: boolean;
+interface ImportedStemDetails {
+  name: string;
+  durationSeconds: number;
+  bytes: number;
 }
 
-// -- Constants ----------------------------------------------------------------
+interface ResolvedStem {
+  file: Blob;
+  origin: StemOrigin;
+  key: string;
+  details?: ImportedStemDetails;
+}
 
-const LOG_PREFIX = "[StemSources]";
+interface ResolvedStems {
+  jobKey: string;
+  slots: Partial<Record<StemSlot, ResolvedStem>>;
+}
+
+// -- Song identity ------------------------------------------------------------
+
+// A YouTube song is the video, whatever bytes this session downloaded; a file is its content.
+function songKeyFor(source: AudioSource, audioHash: string): string {
+  return source?.type === "youtube" ? `youtube:${source.videoId}` : audioHash;
+}
 
 // -- Resolution ---------------------------------------------------------------
 
 async function cachedStems(audioHash: string, variant: VocalModelVariant): Promise<ResolvedStems> {
   const jobKey = stemJobKey(audioHash, variant);
-  if (!(await hasStems(audioHash, variant))) return { jobKey, files: {}, origins: {}, ownedByProject: false };
-  const files: ResolvedStems["files"] = {};
-  const origins: ResolvedStems["origins"] = {};
+  const slots: ResolvedStems["slots"] = {};
+  if (!(await hasStems(audioHash, variant))) return { jobKey, slots };
   for (const slot of STEM_SLOTS) {
     const blob = await getStem(audioHash, slot, variant);
-    if (!blob) continue;
-    files[slot] = blob;
-    origins[slot] = "separated";
+    if (blob) slots[slot] = { file: blob, origin: "separated", key: `${jobKey}|${slot}` };
   }
-  return { jobKey, files, origins, ownedByProject: false };
+  return { jobKey, slots };
 }
 
+// Reads only: stems saved for another song stay stored but are not used, so a relink never loses them.
 async function resolveStems(
   projectId: string | undefined,
+  songKey: string,
   audioHash: string,
   variant: VocalModelVariant,
 ): Promise<ResolvedStems> {
   const stems = projectId ? await loadProjectStems(projectId) : undefined;
-  if (projectId && stems && stems.songHash !== audioHash) {
-    await deleteProjectStems(projectId).catch((error: unknown) =>
-      console.error(LOG_PREFIX, "could not drop the stems of a replaced song", error),
-    );
-  }
-  if (!projectId || !stems || stems.songHash !== audioHash) return cachedStems(audioHash, variant);
-  const files: ResolvedStems["files"] = {};
-  const origins: ResolvedStems["origins"] = {};
+  if (!projectId || !stems || stems.songKey !== songKey) return cachedStems(audioHash, variant);
+  const slots: ResolvedStems["slots"] = {};
   for (const slot of STEM_SLOTS) {
     const stem = stems.slots[slot];
     if (!stem) continue;
-    files[slot] = stemFile(stem);
-    origins[slot] = stem.origin;
+    slots[slot] = {
+      file: stemFile(stem),
+      origin: stem.origin,
+      key: `${projectId}|${slot}|r${stem.revision}`,
+      details: { name: stem.name, durationSeconds: stem.durationSeconds, bytes: stem.data.byteLength },
+    };
   }
-  return { jobKey: projectStemJobKey(projectId, stems.revision), files, origins, ownedByProject: true };
+  return { jobKey: projectStemJobKey(projectId, stems.slots.vocals?.revision ?? 0), slots };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { resolveStems };
+export { resolveStems, songKeyFor };
+export type { ImportedStemDetails, ResolvedStem };

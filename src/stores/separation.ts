@@ -12,7 +12,8 @@ import { storeSeparatedStems } from "@/stores/separated-stem-write";
 import { runModelDownload } from "@/stores/separation-model-download";
 import { separateSongFile } from "@/stores/separation-pipeline";
 import { useSettingsStore } from "@/stores/settings";
-import { resolveStems } from "@/stores/stem-sources";
+import { type ImportedStemDetails, resolveStems, songKeyFor } from "@/stores/stem-sources";
+import { nextStemUrls, releaseStemUrls } from "@/stores/stem-urls";
 import { type StemImportState, commitStemImport, prepareStemImport, removeProjectStem } from "@/stores/stem-import";
 import { create } from "zustand";
 
@@ -27,6 +28,7 @@ interface SeparationState extends StemImportState {
   jobKey: string | null;
   stemUrls: Partial<Record<Stem, string>>;
   stemOrigins: Partial<Record<StemSlot, StemOrigin>>;
+  stemDetails: Partial<Record<StemSlot, ImportedStemDetails>>;
   hostingConfigured: boolean;
 }
 
@@ -73,13 +75,8 @@ function endSeparationOfOtherSong(file: File | null): void {
   separatingFile = null;
 }
 
-const NO_STEMS = { availableStems: ["original"] as Stem[], stemUrls: {}, stemOrigins: {} };
-
-function revokeUrls(urls: Partial<Record<Stem, string>>) {
-  for (const url of Object.values(urls)) {
-    if (url) URL.revokeObjectURL(url);
-  }
-}
+const LOG_PREFIX = "[Separation]";
+const NO_STEMS = { availableStems: ["original"] as Stem[], stemUrls: {}, stemOrigins: {}, stemDetails: {} };
 
 const useSeparationStore = create<SeparationState & SeparationActions>((set, get) => ({
   status: "idle",
@@ -92,6 +89,7 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
   jobKey: null,
   stemUrls: {},
   stemOrigins: {},
+  stemDetails: {},
   pendingImport: null,
   importError: null,
   hostingConfigured: isModelHostingConfigured(),
@@ -109,39 +107,42 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
 
   refreshForCurrentSource: async () => {
     const isCurrentRun = beginRefreshRun();
-    const file = playableFile(useAudioStore.getState().source);
+    const source = useAudioStore.getState().source;
+    const projectId = openProjectIdSnapshot();
+    const file = playableFile(source);
     endSeparationOfOtherSong(file);
     if (!file) {
-      revokeUrls(get().stemUrls);
+      releaseStemUrls(get().stemUrls);
       set({ ...NO_STEMS, jobKey: null, currentStem: "original", status: "idle" });
       return;
     }
     const variant = useSettingsStore.getState().vocalModelVariant;
-    const audioHash = await hashFile(file);
-    const cacheJobKey = stemJobKey(audioHash, variant);
-    beginLoadingStemJob(cacheJobKey);
     try {
-      const resolved = await resolveStems(openProjectIdSnapshot(), audioHash, variant);
-      if (!isCurrentRun()) return;
-      revokeUrls(get().stemUrls);
-      const stemUrls: Partial<Record<Stem, string>> = {};
-      for (const slot of STEM_SLOTS) {
-        const blob = resolved.files[slot];
-        if (blob) stemUrls[slot] = URL.createObjectURL(blob);
+      const audioHash = await hashFile(file);
+      const cacheJobKey = stemJobKey(audioHash, variant);
+      beginLoadingStemJob(cacheJobKey);
+      try {
+        const resolved = await resolveStems(projectId, songKeyFor(source, audioHash), audioHash, variant);
+        if (!isCurrentRun()) return;
+        const stemUrls = nextStemUrls(get().stemUrls, resolved.slots);
+        const slots = STEM_SLOTS.filter((slot) => resolved.slots[slot]);
+        const availableStems: Stem[] = ["original", ...slots];
+        const { currentStem, status } = get();
+        const busy = separatingFile !== null && (status === "downloading" || status === "processing");
+        set({
+          jobKey: resolved.jobKey,
+          availableStems,
+          stemUrls,
+          stemOrigins: Object.fromEntries(slots.map((slot) => [slot, resolved.slots[slot]?.origin])),
+          stemDetails: Object.fromEntries(slots.map((slot) => [slot, resolved.slots[slot]?.details])),
+          currentStem: availableStems.includes(currentStem) ? currentStem : "original",
+          ...(busy ? {} : { status: slots.length > 0 ? "ready" : "idle" }),
+        });
+      } finally {
+        endLoadingStemJob(cacheJobKey);
       }
-      const availableStems: Stem[] = ["original", ...STEM_SLOTS.filter((slot) => stemUrls[slot])];
-      const { currentStem, status } = get();
-      const busy = separatingFile !== null && (status === "downloading" || status === "processing");
-      set({
-        jobKey: resolved.jobKey,
-        availableStems,
-        stemUrls,
-        stemOrigins: resolved.origins,
-        currentStem: availableStems.includes(currentStem) ? currentStem : "original",
-        ...(busy ? {} : { status: availableStems.length > 1 ? "ready" : "idle" }),
-      });
-    } finally {
-      endLoadingStemJob(cacheJobKey);
+    } catch (error) {
+      console.error(LOG_PREFIX, "could not load the stems for this song", error);
     }
   },
 
@@ -196,16 +197,15 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
   },
 
   importStem: async (slot, file) => {
-    const durationSeconds = await prepareStemImport(slot, file, set);
-    if (durationSeconds === null) return;
-    if (await commitStemImport(slot, file, durationSeconds, set)) await get().refreshForCurrentSource();
+    const ready = await prepareStemImport(slot, file, set);
+    if (ready && (await commitStemImport(slot, file, ready, set))) await get().refreshForCurrentSource();
   },
 
   acceptPendingImport: async () => {
     const pending = get().pendingImport;
     if (!pending) return;
     set({ pendingImport: null });
-    if (await commitStemImport(pending.slot, pending.file, pending.durationSeconds, set)) {
+    if (await commitStemImport(pending.slot, pending.file, pending, set)) {
       await get().refreshForCurrentSource();
     }
   },
@@ -213,7 +213,7 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
   cancelPendingImport: () => set({ pendingImport: null }),
 
   removeImportedStem: async (slot) => {
-    await removeProjectStem(slot);
+    await removeProjectStem(slot, set);
     await get().refreshForCurrentSource();
   },
 
@@ -250,7 +250,7 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
     endSeparationRun();
     separatingFile = null;
     refreshRun += 1;
-    revokeUrls(get().stemUrls);
+    releaseStemUrls(get().stemUrls);
     disposeSeparationWorker();
     set({
       status: "idle",

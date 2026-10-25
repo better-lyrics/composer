@@ -278,6 +278,18 @@ describe("imported stems", () => {
     expect((await loadProjectStems("import-measure-song"))?.slots.instrumental?.origin).toBe("imported");
   });
 
+  it("regression: an import started in one project never lands in the project opened while it was checked", async () => {
+    await openSong("import-from-a");
+    await seedStoredProject("import-into-b");
+    const importing = useSeparationStore.getState().importStem("vocals", createAudioFile("acapella.wav", 2));
+    adoptOpenProjectId("import-into-b");
+    useAudioStore.getState().setSource({ type: "file", file: createAudioFile("other-song.wav", 2) });
+    await importing;
+
+    expect(await loadProjectStems("import-into-b")).toBeUndefined();
+    expect(await loadProjectStems("import-from-a")).toBeUndefined();
+  });
+
   it("separation fills only the empty slot and never replaces an imported stem", async () => {
     await openSong("import-fill");
     const acapella = createAudioFile("acapella.wav", 2);
