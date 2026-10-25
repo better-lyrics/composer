@@ -22,6 +22,10 @@ function parseProjectStemJobKey(jobKey: string): { projectId: string; revision: 
   return Number.isInteger(revision) ? { projectId: rest.slice(0, split), revision } : null;
 }
 
+function isProjectStemJobKey(jobKey: string | null): boolean {
+  return jobKey !== null && parseProjectStemJobKey(jobKey) !== null;
+}
+
 // -- Liveness -----------------------------------------------------------------
 
 function whenProjectJobLive(tx: IDBTransaction, job: { projectId: string; revision: number }, write: () => void) {
@@ -53,4 +57,4 @@ function whenStemJobLive(tx: IDBTransaction, jobKey: string, write: () => void):
 
 // -- Exports ------------------------------------------------------------------
 
-export { projectStemJobKey, whenStemJobLive };
+export { isProjectStemJobKey, projectStemJobKey, whenStemJobLive };
