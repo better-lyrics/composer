@@ -1,5 +1,5 @@
 import { type SavedProjectStem, type SavedProjectStems, storedStemBytes } from "@/domain/stems/saved-stems";
-import { STEM_SLOTS, type StemOrigin, type StemSlot } from "@/domain/stems/stem-slot";
+import type { StemOrigin, StemSlot } from "@/domain/stems/stem-slot";
 import {
   APP_STATE_STORE_NAME,
   PROJECT_INDEX_STORE_NAME,
@@ -33,10 +33,10 @@ function stemFile(stem: SavedProjectStem): File {
   return new File([stem.data], stem.name, { type: stem.type });
 }
 
-function withoutSlot(stems: SavedProjectStems, slot: StemSlot): SavedProjectStems | undefined {
+// The record outlives its last stem, so a later import never reuses a revision and its stale derived data.
+function withoutSlot(stems: SavedProjectStems, slot: StemSlot): SavedProjectStems {
   const slots = { ...stems.slots };
   delete slots[slot];
-  if (STEM_SLOTS.every((kept) => !slots[kept])) return undefined;
   return { ...stems, revision: stems.revision + 1, slots };
 }
 

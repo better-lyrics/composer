@@ -50,6 +50,7 @@ interface SeparationActions {
 let isCancelling = false;
 let separationRun = 0;
 let separatingFile: File | null = null;
+let stemsFile: File | null = null;
 let refreshRun = 0;
 
 function endSeparationRun(): void {
@@ -111,9 +112,13 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
     const projectId = openProjectIdSnapshot();
     const file = playableFile(source);
     endSeparationOfOtherSong(file);
-    if (!file) {
+    if (file !== stemsFile) {
       releaseStemUrls(get().stemUrls);
-      set({ ...NO_STEMS, jobKey: null, currentStem: "original", status: "idle" });
+      set({ ...NO_STEMS, jobKey: null });
+      stemsFile = file;
+    }
+    if (!file) {
+      set({ currentStem: "original", status: "idle" });
       return;
     }
     const variant = useSettingsStore.getState().vocalModelVariant;
@@ -250,6 +255,7 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
   reset: () => {
     endSeparationRun();
     separatingFile = null;
+    stemsFile = null;
     refreshRun += 1;
     releaseStemUrls(get().stemUrls);
     disposeSeparationWorker();

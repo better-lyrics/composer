@@ -51,11 +51,11 @@ describe("project stems", () => {
     expect(Object.keys(stems?.slots ?? {})).toEqual(["instrumental"]);
   });
 
-  it("deletes one slot and drops the record once both slots are empty", async () => {
+  it("deletes a slot and counts no bytes once both slots are empty", async () => {
     await seedStoredProject("stems-delete");
     await saveProjectStem("stems-delete", "h", importedVocals());
     await deleteProjectStem("stems-delete", "vocals");
-    expect(await loadProjectStems("stems-delete")).toBeUndefined();
+    expect((await loadProjectStems("stems-delete"))?.slots).toEqual({});
     expect((await loadProjectIndexEntry("stems-delete"))?.storedStemBytes).toBe(0);
   });
 
@@ -101,5 +101,13 @@ describe("project stems", () => {
     const stems = await loadProjectStems("stems-revision");
     expect(stems?.slots.vocals?.revision).toBe(1);
     expect(stems?.slots.instrumental?.revision).toBe(2);
+  });
+
+  it("regression: never reuses a revision after every stem was removed", async () => {
+    await seedStoredProject("stems-reuse");
+    await saveProjectStem("stems-reuse", "h", importedVocals());
+    await deleteProjectStem("stems-reuse", "vocals");
+    await saveProjectStem("stems-reuse", "h", importedVocals("other.wav"));
+    expect((await loadProjectStems("stems-reuse"))?.slots.vocals?.revision).toBe(3);
   });
 });

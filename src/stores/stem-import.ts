@@ -1,3 +1,4 @@
+import { decodeAudioToWav, needsWavConversion } from "@/audio/audio-decode";
 import { hashFile } from "@/audio/separation/audio-codec";
 import { probeAudioFile } from "@/audio/probe-audio-file";
 import {
@@ -65,6 +66,12 @@ function saveFailureMessage(file: File, error: unknown): string {
   return `Unable to save ${file.name}. Import it again.`;
 }
 
+// The song plays from a priming-stripped WAV when it is mp3 or raw aac; its stems must play the same way to stay in step.
+async function seekableStem(file: File): Promise<File> {
+  if (!needsWavConversion(file)) return file;
+  return new File([await decodeAudioToWav(file)], file.name, { type: "audio/wav" });
+}
+
 // -- Import -------------------------------------------------------------------
 
 // Resolves when the stem can be stored right away; otherwise records why not and resolves null.
@@ -100,10 +107,12 @@ async function commitStemImport(
   try {
     const audioHash = await hashFile(song);
     if (!isCurrentImportTarget(target)) return false;
+    const playable = await seekableStem(file);
+    if (!isCurrentImportTarget(target)) return false;
     const projectId = target.projectId ?? (await ensureOpenProjectId());
     await saveProjectStem(projectId, songKeyFor(target.source, audioHash), {
       slot,
-      file,
+      file: playable,
       origin: "imported",
       durationSeconds,
     });

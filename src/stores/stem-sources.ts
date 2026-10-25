@@ -53,7 +53,8 @@ async function resolveStems(
   variant: VocalModelVariant,
 ): Promise<ResolvedStems> {
   const stems = projectId ? await loadProjectStems(projectId) : undefined;
-  if (!projectId || !stems || stems.songKey !== songKey) return cachedStems(audioHash, variant);
+  const owned = stems?.songKey === songKey && STEM_SLOTS.some((slot) => stems.slots[slot]);
+  if (!projectId || !stems || !owned) return cachedStems(audioHash, variant);
   const slots: ResolvedStems["slots"] = {};
   for (const slot of STEM_SLOTS) {
     const stem = stems.slots[slot];
