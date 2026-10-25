@@ -1,6 +1,6 @@
+import { describe, expect, it } from "vitest";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { gridDensity, gridPointAt, gridPointLabel, gridPoints } from "@/domain/tempo/grid-points";
-import { describe, expect, it } from "vitest";
 
 const beats = Array.from({ length: 17 }, (_, i) => i * 0.5);
 const grid120 = detectedGrid({ beats, downbeats: beats.filter((_, i) => i % 4 === 0) });

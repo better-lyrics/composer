@@ -1,9 +1,9 @@
-import { type Ort, type OrtSession, type OrtTensor, loadOrt } from "@/audio/ort-runtime";
 /// <reference lib="webworker" />
 // biome-ignore organizeImports: the webworker triple-slash reference must stay before imports.
+import { type Ort, type OrtSession, type OrtTensor, loadOrt } from "@/audio/ort-runtime";
 import { type Chunk, SEGMENT_SAMPLES, chunkCount, iterateChunks, stitchChunks } from "@/audio/separation/chunker";
-import { denormalizeDemucsOutput, extractVocalsStem, normalizeForDemucs } from "@/audio/separation/demucs-postprocess";
 import { MAGSPEC_DIMS, computeMagspec } from "@/audio/separation/demucs-spec";
+import { denormalizeDemucsOutput, extractVocalsStem, normalizeForDemucs } from "@/audio/separation/demucs-postprocess";
 import { fetchAndCacheModel, hasCachedModel, readCachedModel } from "@/audio/separation/model-cache";
 import { getModelDescriptor } from "@/audio/separation/model-registry";
 import type { VocalModelVariant } from "@/stores/settings";

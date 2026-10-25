@@ -1,7 +1,7 @@
+import { describe, expect, it } from "vitest";
 import { BEAT_CHUNK_BORDER, chunkInput, chunkStarts, mergeChunkLogits } from "@/audio/beat/beat-chunks";
 import { beatsFromLogits, peakFrames } from "@/audio/beat/beat-peaks";
 import peaksReference from "@/audio/beat/test-fixtures/peaks-reference.json";
-import { describe, expect, it } from "vitest";
 
 describe("chunkStarts", () => {
   it("matches upstream split_piece for every length", () => {

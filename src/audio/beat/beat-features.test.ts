@@ -1,6 +1,6 @@
+import { describe, expect, it } from "vitest";
 import { BEAT_SAMPLE_RATE, N_MELS, logMel } from "@/audio/beat/beat-features";
 import melReference from "@/audio/beat/test-fixtures/mel-reference.json";
-import { describe, expect, it } from "vitest";
 
 function referenceSignal(): Float32Array {
   const signal = new Float32Array(BEAT_SAMPLE_RATE);
