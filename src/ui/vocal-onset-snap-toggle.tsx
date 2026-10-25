@@ -1,3 +1,4 @@
+import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { Switch } from "@/ui/switch";
 import { describeOnsetStatus } from "@/ui/vocal-onset-status-copy";
@@ -12,7 +13,9 @@ const VocalOnsetSnapToggle: React.FC = () => {
   const pointCount = useTimelineStore((s) => s.vocalOnsetSnapPoints.length);
   const detectionError = useTimelineStore((s) => s.vocalOnsetDetectionError);
 
-  const hint = describeOnsetStatus(detectionStatus, pointCount, detectionError);
+  const hasVocals = useSeparationStore((s) => s.availableStems.includes("vocals"));
+
+  const hint = hasVocals ? describeOnsetStatus(detectionStatus, pointCount, detectionError) : "Needs a vocals stem";
 
   return (
     <div className="flex items-center gap-2.5 select-none">
@@ -22,7 +25,8 @@ const VocalOnsetSnapToggle: React.FC = () => {
         <span className="text-[12.5px] leading-[1.45] text-(--muted) select-text truncate">{hint}</span>
       </div>
       <Switch
-        checked={enabled}
+        checked={enabled && hasVocals}
+        disabled={!hasVocals}
         label="Snap to vocal onsets"
         onCheckedChange={(checked) => useSettingsStore.getState().set("vocalOnsetSnap", checked)}
       />

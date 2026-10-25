@@ -11,12 +11,11 @@ const StemModule: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [moduleElement, setModuleElement] = useState<HTMLDivElement | null>(null);
   const hasSource = useAudioStore((state) => state.source !== null);
-  const hostingConfigured = useSeparationStore((state) => state.hostingConfigured);
   const currentStem = useSeparationStore((state) => state.currentStem);
   const availableStems = useSeparationStore((state) => state.availableStems);
   const selectStem = useSeparationStore((state) => state.selectStem);
 
-  if (!hostingConfigured || !hasSource) return null;
+  if (!hasSource) return null;
 
   return (
     <div ref={setModuleElement} className="flex items-center gap-2">
@@ -29,7 +28,7 @@ const StemModule: React.FC = () => {
             <Key
               key={stem}
               aria-pressed={currentStem === stem}
-              aria-label={available ? STEM_LABELS[stem] : `${STEM_LABELS[stem]}, separate vocals first`}
+              aria-label={available ? STEM_LABELS[stem] : `${STEM_LABELS[stem]}, import or separate first`}
               title={STEM_LABELS[stem]}
               data-unavailable={available ? undefined : ""}
               onClick={() => (available ? selectStem(stem) : setOpen(true))}
