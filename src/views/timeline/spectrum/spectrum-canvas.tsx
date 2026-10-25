@@ -1,16 +1,17 @@
 import { CHUNK_FRAMES } from "@/domain/spectrum/chunk-order";
 import type { SpectrumLook } from "@/domain/spectrum/settings";
-import { TILE_WIDTH } from "@/domain/spectrum/tile-key";
+import { visibleTileRange } from "@/domain/spectrum/tile-key";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { animateFrames } from "@/lib/frame-loop";
 import { useSettingsStore } from "@/stores/settings";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { spectrumSession } from "@/views/timeline/spectrum/spectrum-session";
+import { beginWarmUp, blitWarming, createWarmUp, noteDrawnTiles } from "@/views/timeline/spectrum/spectrum-warm-up";
 import { resolveSpectrumPalette } from "@/views/timeline/spectrum/theme-palette";
 import { type TileView, drawTiles } from "@/views/timeline/spectrum/tile-cache";
 import { requestSpectrumRawPhase } from "@/views/timeline/spectrum/use-spectrum-session";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -87,14 +88,15 @@ const SpectrumCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawnRef = useRef<string | null>(null);
   const releaseRef = useRef<(() => void) | null>(null);
+  const [warmUp] = useState(createWarmUp);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    warmUp.generation = -1;
+    return () => {
       releaseRef.current?.();
       releaseRef.current = null;
-    },
-    [],
-  );
+    };
+  }, [warmUp]);
 
   useFrameLoop(() => {
     const canvas = canvasRef.current;
@@ -126,11 +128,21 @@ const SpectrumCanvas: React.FC = () => {
       return;
     }
     requestVisibleRawPhase(view);
-    const result = drawTiles(context, view, (target, tile, _index, x) =>
-      target.drawImage(tile, x, 0, TILE_WIDTH, view.heightCss),
+    const now = performance.now();
+    if (warmUp.generation !== spectrumSession.generation) {
+      const { first, last } = visibleTileRange(view.scrollLeft, view.viewportWidth);
+      const visible = Array.from({ length: last - first + 1 }, (_, offset) => first + offset);
+      beginWarmUp(warmUp, visible, spectrumSession.generation, now);
+    }
+    const result = drawTiles(
+      context,
+      view,
+      (target, tile, index, x) => blitWarming(warmUp, target, tile, index, x, view.heightCss, now),
+      (complete, incomplete) => noteDrawnTiles(warmUp, complete, incomplete, now),
     );
-    drawnRef.current = result.settled ? signature : null;
-    if (result.settled) {
+    const idle = result.settled && !result.animating;
+    drawnRef.current = idle ? signature : null;
+    if (idle) {
       releaseRef.current?.();
       releaseRef.current = null;
     } else {

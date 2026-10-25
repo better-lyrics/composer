@@ -29,11 +29,12 @@ interface PendingTile {
   readyChunks: number;
 }
 
-type TileBlit = (context: CanvasRenderingContext2D, tile: OffscreenCanvas, index: number, x: number) => void;
+// Returns true while the tile is still animating in.
+type TileBlit = (context: CanvasRenderingContext2D, tile: OffscreenCanvas, index: number, x: number) => boolean;
 
 interface DrawResult {
   settled: boolean;
-  completeIndices: number[];
+  animating: boolean;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -114,23 +115,32 @@ function drawTiles(
   context: CanvasRenderingContext2D,
   view: TileView,
   blit: TileBlit,
-  budget: TileBudget = { remaining: TILE_BUILD_BUDGET },
+  onResolved?: (complete: readonly number[], incomplete: readonly number[]) => void,
 ): DrawResult {
   context.clearRect(0, 0, view.viewportWidth, view.heightCss);
   const { first, last } = visibleTileRange(view.scrollLeft, view.viewportWidth);
-  const result: DrawResult = { settled: true, completeIndices: [] };
+  const budget: TileBudget = { remaining: TILE_BUILD_BUDGET };
+  const resolved: { index: number; canvas: OffscreenCanvas }[] = [];
+  const complete: number[] = [];
+  const incomplete: number[] = [];
+  let settled = true;
   for (let index = first; index <= last; index++) {
     const tile = tileAt(view, index, budget);
     if (!tile) {
-      result.settled = false;
+      settled = false;
       continue;
     }
-    if (tile.complete) result.completeIndices.push(index);
-    else result.settled = false;
-    const x = Math.round((index * TILE_WIDTH - view.scrollLeft) * view.pixelRatio) / view.pixelRatio;
-    blit(context, tile.canvas, index, x);
+    if (tile.complete) complete.push(index);
+    else incomplete.push(index);
+    resolved.push({ index, canvas: tile.canvas });
   }
-  return result;
+  onResolved?.(complete, incomplete);
+  let animating = false;
+  for (const { index, canvas } of resolved) {
+    const x = Math.round((index * TILE_WIDTH - view.scrollLeft) * view.pixelRatio) / view.pixelRatio;
+    if (blit(context, canvas, index, x)) animating = true;
+  }
+  return { settled: settled && incomplete.length === 0, animating };
 }
 
 // -- Exports -------------------------------------------------------------------
