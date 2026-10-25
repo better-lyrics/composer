@@ -1,6 +1,7 @@
 import type { SettingsState } from "@/stores/settings";
 import type { SettingEntry } from "@/stores/settings-catalog";
 import { GENERAL_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-general";
+import { SPECTRUM_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-spectrum";
 import { STORAGE_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-storage";
 import { TIMELINE_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-timeline";
 import { pluralize } from "@/utils/pluralize";
@@ -104,6 +105,7 @@ const SETTINGS_CATALOG = {
     settingKey: "vocalModelVariant",
   },
   ...TIMELINE_CATALOG_ENTRIES,
+  ...SPECTRUM_CATALOG_ENTRIES,
   splitCharacter: {
     section: "sync",
     label: "Split character",

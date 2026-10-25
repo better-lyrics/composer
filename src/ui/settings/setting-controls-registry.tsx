@@ -1,3 +1,4 @@
+import { SPECTRUM_CONTRAST } from "@/domain/spectrum/settings";
 import { useSettingsStore } from "@/stores/settings";
 import type { SettingId } from "@/stores/settings-catalog";
 import { BEAT_GRID_LINE_OPTIONS } from "@/ui/beat-grid-line-options";
@@ -15,6 +16,15 @@ import { KEEP_YOUTUBE_AUDIO_OPTIONS, STORAGE_LIMIT_OPTIONS } from "@/ui/settings
 import { StorageProtectionSetting } from "@/ui/settings/storage/storage-protection-setting";
 import { StorageUsageSetting } from "@/ui/settings/storage/storage-usage-setting";
 import { ThemeSettings } from "@/ui/settings/theme/theme-settings";
+import {
+  ANALYSIS_WINDOW_OPTIONS,
+  FREQUENCY_SCALE_OPTIONS,
+  PHASE_COLOUR_OPTIONS,
+  PITCH_LINE_OPTIONS,
+  SPECTRUM_PALETTE_OPTIONS,
+  SPECTRUM_SOURCE_OPTIONS,
+  SPECTRUM_TOP_OPTIONS,
+} from "@/ui/spectrum-options";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
@@ -111,6 +121,21 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   syllablesFollowRolling: TOGGLE,
   defaultPreviewSidebar: TOGGLE,
   timelineHorizontalScroll: TOGGLE,
+  pitchLine: { kind: "select", options: [...PITCH_LINE_OPTIONS] },
+  showSpectrum: TOGGLE,
+  spectrumSource: { kind: "select", options: [...SPECTRUM_SOURCE_OPTIONS] },
+  spectrumPalette: { kind: "select", options: [...SPECTRUM_PALETTE_OPTIONS] },
+  spectrumContrast: {
+    kind: "slider",
+    min: SPECTRUM_CONTRAST.min,
+    max: SPECTRUM_CONTRAST.max,
+    step: 1,
+    format: (v) => `${v} dB`,
+  },
+  spectrumScale: { kind: "select", options: [...FREQUENCY_SCALE_OPTIONS] },
+  spectrumTop: { kind: "select", options: [...SPECTRUM_TOP_OPTIONS] },
+  spectrumWindow: { kind: "select", options: [...ANALYSIS_WINDOW_OPTIONS] },
+  spectrumPhase: { kind: "select", options: [...PHASE_COLOUR_OPTIONS] },
   splitCharacter: { kind: "custom", Component: SplitCharacterSetting },
   nudgeAmount: { kind: "slider", min: 0.01, max: 0.2, step: 0.01, format: asMilliseconds },
   defaultWordDuration: { kind: "slider", min: 0.1, max: 1, step: 0.05, format: asMilliseconds },
