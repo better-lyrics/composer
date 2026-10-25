@@ -190,13 +190,13 @@ const TimelineExtras: React.FC = () => (
           spectrum around that edge. Line the edge up with the sound.
         </li>
         <li>
-          Once vocals are separated, a pitch line runs along the bottom of each word and follows the melody. Amber means
-          the singing carries on past the word's edge, which usually means the edge ends too early.
+          Once vocals are separated, press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.togglePitchLine")} />{" "}
+          and a pitch line runs along the bottom of each word, following the melody. Amber means the singing carries on
+          past the word's edge, which usually means the edge ends too early.
         </li>
         <li>
           <SettingLink setting="pitchLine" /> shows the line on every row, only on the row you point at, select or hear,
-          or not at all. Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.togglePitchLine")} /> to turn it
-          off and on.
+          or not at all. It stays off until you turn it on.
         </li>
       </ul>
       <p className={`${PROSE} mt-3`}>

@@ -14,7 +14,7 @@ interface RetiredSettings {
 
 // -- Constants ----------------------------------------------------------------
 
-const SETTINGS_PERSIST_VERSION = 11;
+const SETTINGS_PERSIST_VERSION = 12;
 
 // -- Migration ----------------------------------------------------------------
 
@@ -42,6 +42,8 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   // 5 was the default before 10, so a saved 5 is the old default, not a choice.
   if (version < 10 && next.seekStep === 5) next.seekStep = 0.5;
   if (version < 10 && typeof next.seekStep === "number" && next.seekStep > 5) next.seekStep = 5;
+  // "always" was the default before 12, so a saved "always" is the old default, not a choice.
+  if (version < 12 && next.pitchLine === "always") next.pitchLine = "off";
   const {
     librarySort,
     libraryView,

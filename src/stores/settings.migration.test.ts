@@ -196,14 +196,21 @@ describe("spectrum and pitch settings", () => {
     const state = useSettingsStore.getState();
     expect(state.showSpectrum).toBe(false);
     expect(state.spectrumBandHeight).toBe(168);
-    expect(state.pitchLine).toBe("always");
+    expect(state.pitchLine).toBe("off");
   });
 
   it("drops spectrum values it does not recognise", async () => {
     await rehydrateAt(10, legacyBlob({ spectrumPalette: "rainbow", pitchLine: "sometimes", spectrumBandHeight: 9000 }));
     const state = useSettingsStore.getState();
     expect(state.spectrumPalette).toBe("heat");
-    expect(state.pitchLine).toBe("always");
+    expect(state.pitchLine).toBe("off");
     expect(state.spectrumBandHeight).toBe(320);
+  });
+
+  it("turns off the pitch line saved by the old default, but keeps a picked mode", async () => {
+    await rehydrateAt(11, legacyBlob({ pitchLine: "always" }));
+    expect(useSettingsStore.getState().pitchLine).toBe("off");
+    await rehydrateAt(11, legacyBlob({ pitchLine: "focus" }));
+    expect(useSettingsStore.getState().pitchLine).toBe("focus");
   });
 });

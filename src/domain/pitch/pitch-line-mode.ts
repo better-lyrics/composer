@@ -5,7 +5,7 @@ type PitchLineMode = "always" | "focus" | "off";
 // -- Constants ----------------------------------------------------------------
 
 const PITCH_LINE_MODES: readonly PitchLineMode[] = ["always", "focus", "off"];
-const DEFAULT_PITCH_LINE_MODE: PitchLineMode = "always";
+const DEFAULT_PITCH_LINE_MODE: PitchLineMode = "off";
 
 // -- Functions ----------------------------------------------------------------
 
