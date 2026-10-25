@@ -78,11 +78,17 @@ describe("TimelinePanel drag ghost snapping", () => {
   it("sizes the ghost to a resized row's main track", async () => {
     seedTimeline({ "line-1": 80 });
     await renderPanelAndGrab();
-    const main = trackRect(1, "word");
-    expect(main.height).toBe(80);
-    movePointer(main.left + 400, main.top + 60);
+    expect(trackRect(1, "word").height).toBe(80);
 
-    await expect.poll(() => ghostBlock()?.getBoundingClientRect().height).toBeCloseTo(80 - 2 * wordInsetPx("word"), 0);
+    // Rows can still settle after the grab, so each retry aims at where the track is now.
+    await expect
+      .poll(() => {
+        const track = trackRect(1, "word");
+        movePointer(track.left + 400, track.top + 60);
+        return ghostBlock()?.getBoundingClientRect().height;
+      })
+      .toBeCloseTo(80 - 2 * wordInsetPx("word"), 0);
+    const main = trackRect(1, "word");
     expect(ghostBlock()?.getBoundingClientRect().top).toBeCloseTo(main.top + wordInsetPx("word"), 0);
   });
 
