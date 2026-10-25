@@ -15,6 +15,7 @@ interface BeatDetectionProgress {
   done: number;
   chunks: number;
   error: string | null;
+  errorDetail: string | null;
 }
 
 interface BeatDetectionState extends BeatDetectionProgress {
@@ -27,8 +28,20 @@ interface BeatDetectionState extends BeatDetectionProgress {
 
 const LOG_PREFIX = "[BeatDetection]";
 const NO_BEATS_MESSAGE = "No beats found in this song. Set the tempo by hand instead.";
-const DETECTOR_FAILED_MESSAGE = "Couldn't load the beat detector. Check your connection and try again.";
-const IDLE: BeatDetectionProgress = { status: "idle", loaded: 0, total: 0, done: 0, chunks: 0, error: null };
+const FAILURE_MESSAGES: Record<string, string> = {
+  "fetch-failed": "Couldn't download the beat detector. Check your connection and try again.",
+  "decode-failed": "Couldn't read this audio file.",
+};
+const DETECTOR_FAILED_MESSAGE = "Couldn't run the beat detector. Try again, or set the tempo by hand.";
+const IDLE: BeatDetectionProgress = {
+  status: "idle",
+  loaded: 0,
+  total: 0,
+  done: 0,
+  chunks: 0,
+  error: null,
+  errorDetail: null,
+};
 
 // -- Store ---------------------------------------------------------------------
 
@@ -38,9 +51,10 @@ function isAbort(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
-function errorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error);
-  return message || DETECTOR_FAILED_MESSAGE;
+function failure(error: unknown): Pick<BeatDetectionProgress, "error" | "errorDetail"> {
+  const code = error instanceof Error && "code" in error ? String(error.code) : "";
+  const detail = error instanceof Error ? error.message : String(error);
+  return { error: FAILURE_MESSAGES[code] ?? DETECTOR_FAILED_MESSAGE, errorDetail: detail || null };
 }
 
 const useBeatDetectionStore = create<BeatDetectionState>((set) => ({
@@ -76,7 +90,7 @@ const useBeatDetectionStore = create<BeatDetectionState>((set) => ({
     } catch (error) {
       if (!isCurrent() || isAbort(error)) return;
       console.warn(LOG_PREFIX, "detection failed", error);
-      set({ ...IDLE, status: "error", error: errorMessage(error) });
+      set({ ...IDLE, status: "error", ...failure(error) });
     } finally {
       if (running === controller) running = null;
     }
