@@ -1,6 +1,4 @@
 import type { StemOrigin, StemSlot } from "@/domain/stems/stem-slot";
-import { openProjectIdSnapshot } from "@/lib/open-project-session";
-import { loadProjectStems } from "@/lib/project-stems";
 import { useConfirm } from "@/stores/confirm-store";
 import { useSeparationStore } from "@/stores/separation";
 import { IconButton } from "@/ui/icon-button";
@@ -11,7 +9,7 @@ import { STEM_LABELS } from "@/ui/stem-labels";
 import { formatFileSize } from "@/utils/format-file-size";
 import { formatTime } from "@/utils/format-time";
 import { IconDots, IconReplace, IconTrash, IconUpload } from "@tabler/icons-react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -19,30 +17,6 @@ interface StemRowMenuProps {
   slot: StemSlot;
   origin: StemOrigin;
   onImportFile: (slot: StemSlot) => void;
-}
-
-interface ImportedStemDetails {
-  name: string;
-  durationSeconds: number;
-  bytes: number;
-}
-
-// -- Constants ----------------------------------------------------------------
-
-const LOG_PREFIX = "[StemRowMenu]";
-
-// -- Helpers ------------------------------------------------------------------
-
-async function loadImportedStemDetails(slot: StemSlot): Promise<ImportedStemDetails | null> {
-  const projectId = openProjectIdSnapshot();
-  if (!projectId) return null;
-  try {
-    const stem = (await loadProjectStems(projectId))?.slots[slot];
-    return stem ? { name: stem.name, durationSeconds: stem.durationSeconds, bytes: stem.data.byteLength } : null;
-  } catch (error) {
-    console.error(LOG_PREFIX, "could not read the imported stem", error);
-    return null;
-  }
 }
 
 // -- Components ---------------------------------------------------------------
@@ -59,8 +33,7 @@ const MenuHeader: React.FC<{ title: string; detail: string }> = ({ title, detail
 
 const StemRowMenu: React.FC<StemRowMenuProps> = ({ slot, origin, onImportFile }) => {
   const [anchor, setAnchor] = useState<MenuAnchor | null>(null);
-  const [details, setDetails] = useState<ImportedStemDetails | null>(null);
-  const detailsRequestRef = useRef<Promise<ImportedStemDetails | null>>(Promise.resolve(null));
+  const details = useSeparationStore((s) => s.stemDetails[slot]);
   const label = STEM_LABELS[slot];
   const lowerLabel = label.toLowerCase();
 
@@ -70,21 +43,13 @@ const StemRowMenu: React.FC<StemRowMenuProps> = ({ slot, origin, onImportFile })
       return;
     }
     setAnchor({ kind: "element", element: event.currentTarget });
-    if (origin !== "imported") return;
-    const request = loadImportedStemDetails(slot);
-    detailsRequestRef.current = request;
-    setDetails(null);
-    void request.then((loaded) => {
-      if (detailsRequestRef.current === request) setDetails(loaded);
-    });
   };
 
   const confirmRemove = async () => {
-    const loaded = await detailsRequestRef.current;
     const confirmed = await useConfirm()({
       title: `Remove imported ${lowerLabel}?`,
-      description: loaded ? (
-        <>This deletes “{loaded.name}” from the project. To use it again, import the file again.</>
+      description: details ? (
+        <>This deletes “{details.name}” from the project. To use it again, import the file again.</>
       ) : (
         "This deletes the file from the project. To use it again, import the file again."
       ),

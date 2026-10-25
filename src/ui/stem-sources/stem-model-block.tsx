@@ -51,12 +51,12 @@ const StemModelBlock: React.FC = () => {
   const approxMb = useSettingsStore((s) => getModelDescriptor(s.vocalModelVariant)?.approxMb ?? FALLBACK_MODEL_MB);
 
   const emptySlots = STEM_SLOTS.filter((slot) => stemUrls[slot] === undefined);
-  if (!hostingConfigured || emptySlots.length === 0) return null;
-
   const fills = emptySlots.map((slot) => STEM_LABELS[slot].toLowerCase()).join(" and ");
+  if (!hostingConfigured) return null;
 
   if (status === "downloading" || status === "processing") {
-    const title = status === "downloading" ? "Downloading model…" : `Separating ${fills}…`;
+    const separating = fills ? `Separating ${fills}…` : "Separating…";
+    const title = status === "downloading" ? "Downloading model…" : separating;
     const keepsImported = STEM_SLOTS.some((slot) => stemOrigins[slot] === "imported");
     return (
       <>
@@ -65,6 +65,7 @@ const StemModelBlock: React.FC = () => {
       </>
     );
   }
+  if (emptySlots.length === 0) return null;
 
   return (
     <>

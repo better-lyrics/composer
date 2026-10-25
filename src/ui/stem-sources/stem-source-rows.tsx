@@ -45,7 +45,7 @@ const SourceButton: React.FC<SourceButtonProps> = ({ stem, selected, origin, onS
   return (
     <button
       type="button"
-      role="menuitemradio"
+      role="radio"
       aria-checked={selected}
       onClick={() => onSelect(stem)}
       className={cn(
@@ -118,7 +118,7 @@ const StemSourceRows: React.FC<StemSourceRowsProps> = ({ onSelect }) => {
   const { fileInputProps, openFilePicker, dropSlot, dropHandlers } = useStemFileImport();
 
   return (
-    <div role="group" aria-label="Playback source" className="grid gap-0.5 -mx-1.5 mt-2">
+    <div role="radiogroup" aria-label="Playback source" className="grid gap-0.5 -mx-1.5 mt-2">
       <SourceButton stem="original" selected={currentStem === "original"} onSelect={onSelect} />
       {STEM_SLOTS.map((slot) => {
         const filled = stemUrls[slot] !== undefined;
