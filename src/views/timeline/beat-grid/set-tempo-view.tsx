@@ -37,8 +37,14 @@ const METER_OPTIONS: readonly { value: Meter; label: string }[] = [
   { value: "3", label: "3" },
   { value: "4", label: "4" },
 ];
+const KEY_PRESS_FLASH_MS = 80;
 
 // -- Helpers -------------------------------------------------------------------
+
+function flashPressed(key: Element): void {
+  key.setAttribute("data-pressed", "");
+  setTimeout(() => key.removeAttribute("data-pressed"), KEY_PRESS_FLASH_MS);
+}
 
 function tapStatus(taps: TapState | null, text: string, valid: boolean): string {
   if (!taps && text !== "" && !valid) return `Use ${MIN_BPM} to ${MAX_BPM} BPM`;
@@ -99,7 +105,9 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     if (matchesShortcutBinding(e.nativeEvent, "sync.tap")) {
       e.preventDefault();
       e.stopPropagation();
-      if (!e.repeat) tap();
+      if (e.repeat) return;
+      tap();
+      flashPressed(e.currentTarget);
       return;
     }
     if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1) return;
