@@ -5,7 +5,7 @@ import { SpectrumCanvas } from "@/views/timeline/spectrum/spectrum-canvas";
 import { SpectrumReadout } from "@/views/timeline/spectrum/spectrum-readout";
 import { useSpectrumSession } from "@/views/timeline/spectrum/use-spectrum-session";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { Activity, type ReactNode } from "react";
+import { Activity, type ReactNode, useEffect, useRef } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -38,13 +38,27 @@ const BandResizeHandle: React.FC = () => {
   );
 };
 
+// The rows list measures its offset only on scroll, so a band height change has to announce itself.
+function useAnnounceBandResize(bandRef: React.RefObject<HTMLDivElement | null>): void {
+  useEffect(() => {
+    const band = bandRef.current;
+    const container = band?.closest<HTMLElement>("[data-scroll-container]");
+    if (!band || !container) return;
+    const observer = new ResizeObserver(() => container.dispatchEvent(new Event("scroll")));
+    observer.observe(band);
+    return () => observer.disconnect();
+  }, [bandRef]);
+}
+
 const OverviewBand: React.FC<OverviewBandProps> = ({ children }) => {
+  const bandRef = useRef<HTMLDivElement>(null);
   const bandHeight = useOverviewBandHeight();
   const spectrumVisible = useTimelineStore((s) => s.spectrumVisible);
   useSpectrumSession();
+  useAnnounceBandResize(bandRef);
 
   return (
-    <div data-overview-band className={BAND_CLASS} style={{ minHeight: bandHeight }}>
+    <div ref={bandRef} data-overview-band className={BAND_CLASS} style={{ minHeight: bandHeight }}>
       <Activity mode={spectrumVisible ? "visible" : "hidden"}>
         <BandViewport label="spectrum viewport" className="bottom-px overflow-clip">
           <SpectrumCanvas />
