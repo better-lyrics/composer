@@ -121,8 +121,14 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     fieldRef.current?.setSelectionRange(typed.length, typed.length);
   };
 
+  const backOnEscape = (e: React.KeyboardEvent) => {
+    if (e.key !== "Escape") return;
+    e.stopPropagation();
+    onDone();
+  };
+
   return (
-    <div>
+    <div onKeyDown={backOnEscape}>
       <PopHead title="Set tempo" onBack={onDone} />
       <div className={cn("grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 mt-2.5 p-2.5", DISPLAY_SURFACE)}>
         <span className="justify-self-start flex items-baseline gap-1.5 -mx-1 -my-[3px] px-1 py-[3px] rounded-md transition-[background-color,box-shadow] duration-150 hover:bg-(--layer-1) focus-within:shadow-[inset_0_0_0_1px_var(--lit-ring)]">
