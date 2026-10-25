@@ -1,8 +1,8 @@
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { LoopRegion } from "@/domain/selection/loop-region";
-import type { Bounds } from "@/domain/word/bounds";
 import type { WordSelection } from "@/domain/selection/model";
 import { toggleWordSelection } from "@/domain/selection/set-ops";
+import type { Bounds } from "@/domain/word/bounds";
 import { useSettingsStore } from "@/stores/settings";
 import type { GroupFocus } from "@/views/timeline/group-focus";
 import type { ClipboardData, PasteMode } from "@/views/timeline/selection-types";
@@ -79,6 +79,7 @@ interface TimelineState {
   vocalOnsetSnapPoints: number[];
   vocalOnsetDetectionStatus: "idle" | "processing" | "error";
   vocalOnsetDetectionError: string | null;
+  pitchTrackGeneration: number;
 }
 
 interface TimelineActions {
@@ -125,6 +126,7 @@ interface TimelineActions {
   setSnappedAnchorTime: (t: number | null) => void;
   setVocalOnsetSnapPoints: (points: number[]) => void;
   setVocalOnsetDetectionStatus: (status: "idle" | "processing" | "error", error?: string | null) => void;
+  setPitchTrackGeneration: (generation: number) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -179,6 +181,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     vocalOnsetSnapPoints: [],
     vocalOnsetDetectionStatus: "idle",
     vocalOnsetDetectionError: null,
+    pitchTrackGeneration: 0,
 
     setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
     zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
@@ -259,6 +262,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
       }),
     setVocalOnsetDetectionStatus: (vocalOnsetDetectionStatus, error = null) =>
       set({ vocalOnsetDetectionStatus, vocalOnsetDetectionError: error }),
+    setPitchTrackGeneration: (pitchTrackGeneration) => set({ pitchTrackGeneration }),
   };
 });
 

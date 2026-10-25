@@ -83,6 +83,7 @@ async function resetAllStores(): Promise<void> {
     vocalOnsetSnapPoints: [],
     vocalOnsetDetectionStatus: "idle",
     vocalOnsetDetectionError: null,
+    pitchTrackGeneration: 0,
   });
 
   if (hasLocalStorage()) globalThis.localStorage.clear();

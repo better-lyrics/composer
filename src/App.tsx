@@ -5,11 +5,12 @@ import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
 import { useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
-import { useLaunchQueue } from "@/hooks/useLaunchQueue";
 import { useLanguageAutoRefresh } from "@/hooks/useLanguageAutoRefresh";
+import { useLaunchQueue } from "@/hooks/useLaunchQueue";
 import { useMusicBrainzMatch } from "@/hooks/useMusicBrainzMatch";
 import { usePanicRecovery } from "@/hooks/usePanicRecovery";
 import { usePersistence } from "@/hooks/usePersistence";
+import { usePitchTrack } from "@/hooks/usePitchTrack";
 import { useProjectChannel } from "@/hooks/useProjectChannel";
 import { useProjectShortcuts } from "@/hooks/useProjectShortcuts";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
@@ -119,6 +120,7 @@ const AppShell: React.FC = () => {
   useAutoSeparate();
   useDocumentTitle(screen);
   useVocalOnsetSnapPoints();
+  usePitchTrack();
 
   const setHelpOpenCb = useCallback((open: boolean) => (open ? openHelp() : closeHelp()), [openHelp, closeHelp]);
   const setSettingsOpenCb = useCallback(
