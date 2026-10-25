@@ -45,10 +45,11 @@ const PitchRowsScope: React.FC<PitchRowsScopeProps> = ({ style, viewportRef, chi
   const customThemes = useThemeStore((s) => s.customThemes);
   const shown = track !== null && mode !== "off";
 
-  const coverage = useMemo(() => (shown ? songWordCoverage(lines) : []), [shown, lines]);
+  // Lanes stay mounted while the line is off, so turning it off fades it out instead of removing it.
+  const coverage = useMemo(() => (track ? songWordCoverage(lines) : []), [track, lines]);
   const rows = useMemo(
-    () => (shown && track ? { track, generation, coverage, themeId, customThemes } : null),
-    [shown, track, generation, coverage, themeId, customThemes],
+    () => (track ? { track, generation, coverage, themeId, customThemes } : null),
+    [track, generation, coverage, themeId, customThemes],
   );
 
   const scopeRef = useRef<HTMLDivElement>(null);
