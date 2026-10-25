@@ -3,11 +3,11 @@ import {
   PHASE_STOPS,
   type PaletteLookup,
   type PaletteStop,
-  type Rgb,
   paletteLookup,
 } from "@/domain/spectrum/palettes";
 import type { SpectrumPalette } from "@/domain/spectrum/settings";
 import { useThemeStore } from "@/stores/theme";
+import { cssVariable, rgbOf } from "@/utils/theme/css-colour";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -33,24 +33,8 @@ const FIXED_LOOKUPS: Record<Exclude<SpectrumPalette, "theme">, PaletteLookup> = 
 let themeGeneration = 0;
 let themeLookup: PaletteLookup | null = null;
 let resolvedFor: ThemeSnapshot | null = null;
-let parseContext: OffscreenCanvasRenderingContext2D | null = null;
 
 // -- Functions -----------------------------------------------------------------
-
-function cssVariable(name: string): string {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-}
-
-function rgbOf(css: string): Rgb {
-  parseContext ??= new OffscreenCanvas(1, 1).getContext("2d", { willReadFrequently: true });
-  if (!parseContext) return [0, 0, 0];
-  parseContext.clearRect(0, 0, 1, 1);
-  parseContext.fillStyle = "#000";
-  parseContext.fillStyle = css;
-  parseContext.fillRect(0, 0, 1, 1);
-  const [r, g, b] = parseContext.getImageData(0, 0, 1, 1).data;
-  return [r, g, b];
-}
 
 function themeStops(): PaletteStop[] {
   const dark = cssVariable("--color-composer-bg-dark");

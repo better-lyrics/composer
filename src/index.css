@@ -971,6 +971,29 @@ braccato-lyrics .blyrics-container {
   }
 }
 
+/* Timeline pitch line: a canvas over each lane's words, shown by the mode the rows scope carries in data-pitch. Labels lift to make room. */
+@layer components {
+  .pitch-lane {
+    position: absolute;
+    top: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 150ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  [data-pitch="always"] .pitch-lane {
+    opacity: 1;
+  }
+  [data-pitch="always"] .word-face > span {
+    translate: 0 -5px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .word-face > span {
+      transition: translate 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  }
+}
+
 /* Timeline line cell: the singer tint (--agent) with a 2px edge that lights while a word of the line is sung and flashes on each new word. */
 @layer components {
   .line-cell {

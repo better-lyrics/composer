@@ -6,6 +6,7 @@ import { useProjectStore } from "@/stores/project";
 import { cn } from "@/utils/cn";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tracks";
+import { PitchLane } from "@/views/timeline/pitch/pitch-lane";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRowResize } from "@/views/timeline/use-row-resize";
 import { WordTrack } from "@/views/timeline/word-track";
@@ -84,6 +85,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
           className={cn("relative", !mainWords && "opacity-50", hoveredTrack === "word" && "bg-composer-accent/10")}
           style={{ transform: shiftTransform }}
         >
+          {mainWords && <PitchLane line={line} kind="word" height={rowHeight} color={color} />}
           {mainWords ? (
             <WordTrack
               lineId={line.id}
@@ -112,6 +114,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
             )}
             style={{ transform: shiftTransform }}
           >
+            <PitchLane line={line} kind="bg" height={rowHeight} color={color} />
             <WordTrack
               lineId={line.id}
               lineIndex={lineIndex}

@@ -11,6 +11,7 @@ import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
 import { LineRow } from "@/views/timeline/line-row";
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
+import { PitchRowsScope } from "@/views/timeline/pitch/pitch-rows";
 import { emptyBgRowHeight, lineRowHeight } from "@/views/timeline/row-geometry";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/utils";
@@ -144,7 +145,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   );
 
   return (
-    <div style={{ width: totalWidth + GUTTER_WIDTH, minWidth: "100%", height: totalHeight }}>
+    <PitchRowsScope style={{ width: totalWidth + GUTTER_WIDTH, minWidth: "100%", height: totalHeight }}>
       <Virtuoso
         key={`${openProjectId}:${offscreenLayoutKey}`}
         data={visibleRows}
@@ -185,7 +186,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         heightEstimates={heightEstimates}
         increaseViewportBy={{ top: bandHeight, bottom: 0 }}
       />
-    </div>
+    </PitchRowsScope>
   );
 };
 

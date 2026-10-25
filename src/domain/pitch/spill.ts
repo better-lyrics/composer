@@ -1,3 +1,5 @@
+import { effectiveTrackWords } from "@/domain/line/effective-words";
+import type { LyricLine } from "@/domain/line/model";
 import type { PitchPoint } from "@/domain/pitch/track";
 import type { Bounds } from "@/domain/word/bounds";
 
@@ -16,6 +18,13 @@ function wordCoverage(spans: readonly Bounds[]): Bounds[] {
     else merged.push({ begin: span.begin, end: span.end });
   }
   return merged;
+}
+
+// Every timed word of the song, lead and background, so a spill is singing that no word claims.
+function songWordCoverage(lines: readonly LyricLine[]): Bounds[] {
+  return wordCoverage(
+    lines.flatMap((line) => [...(effectiveTrackWords(line, "word") ?? []), ...(effectiveTrackWords(line, "bg") ?? [])]),
+  );
 }
 
 function isCovered(coverage: readonly Bounds[], seconds: number): boolean {
@@ -52,4 +61,4 @@ function spillRuns(runs: readonly PitchPoint[][], coverage: readonly Bounds[]): 
 
 // -- Exports ------------------------------------------------------------------
 
-export { isCovered, spillRuns, wordCoverage };
+export { isCovered, songWordCoverage, spillRuns, wordCoverage };
