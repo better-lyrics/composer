@@ -103,12 +103,12 @@ const SpectrumReadout: React.FC = () => {
       <div
         ref={lineRef}
         hidden
-        className="absolute inset-x-0 h-0 border-t border-white/60 shadow-[0_1px_0_rgb(0_0_0/0.35)]"
+        className="absolute inset-x-0 h-0 border-t border-white/60 shadow-[0_1px_0_rgb(0_0_0/0.35)] [[data-overview-resizing]_&]:hidden"
       />
       <div
         ref={readoutRef}
         hidden
-        className="absolute top-0 left-0 flex h-5 items-center gap-1.5 whitespace-nowrap rounded-md bg-(--pop) px-2 font-mono text-[11px] font-medium tabular-nums text-(--ink) shadow-[inset_0_0_0_1px_var(--edge),0_6px_16px_-6px_rgb(var(--shade)/0.5)] select-text"
+        className="absolute top-0 left-0 flex h-5 items-center [[data-overview-resizing]_&]:hidden gap-1.5 whitespace-nowrap rounded-md bg-(--pop) px-2 font-mono text-[11px] font-medium tabular-nums text-(--ink) shadow-[inset_0_0_0_1px_var(--edge),0_6px_16px_-6px_rgb(var(--shade)/0.5)] select-text"
       >
         <span ref={hzRef} />
         <span className="font-sans font-semibold text-composer-accent-text">

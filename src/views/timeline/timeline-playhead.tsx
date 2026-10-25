@@ -40,7 +40,7 @@ const PlayheadCap: React.FC<{ ref: React.Ref<HTMLDivElement>; onMouseDown: React
 }) => (
   // react-doctor-disable-next-line react-doctor/no-permanent-will-change -- moved by the frame loop every frame while playing or scrolling, so it needs its own compositor layer
   <div ref={ref} aria-hidden="true" className="timeline-playhead-cap absolute inset-y-0 left-0 w-0 pointer-events-none">
-    <div className="absolute top-[18px] bottom-0 -left-px w-0.5 rounded-[1px] bg-composer-accent" />
+    <div className="absolute top-[18px] bottom-0 -left-px w-0.5 bg-composer-accent" />
     {/* react-doctor-disable-next-line react-doctor/no-static-element-interactions -- a pointer-only grip; keyboard and assistive tech use the Playhead separator */}
     <div
       className="absolute top-0.5 -left-2 flex justify-center gap-0.5 w-4 h-5 pt-1.5 rounded-[6px_6px_8px_8px] bg-composer-accent shadow-[inset_0_1px_0_color-mix(in_oklab,white_40%,transparent)] cursor-grab active:cursor-grabbing pointer-events-auto"
@@ -230,7 +230,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         role="separator"
         aria-label="Playhead"
         aria-orientation="vertical"
-        className="timeline-playhead-bar absolute top-0 left-0 w-0.5 rounded-[1px] bg-composer-accent cursor-ew-resize pointer-events-auto expanded-hit-x-sm"
+        className="timeline-playhead-bar absolute top-0 left-0 w-0.5 rounded-b-[1px] bg-composer-accent cursor-ew-resize pointer-events-auto expanded-hit-x-sm"
         style={{ height: containerHeight }}
         onMouseDown={drag.onMouseDown}
       />
