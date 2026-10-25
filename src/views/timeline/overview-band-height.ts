@@ -1,6 +1,13 @@
 import { clampSpectrumBandHeight } from "@/domain/spectrum/settings";
 import { useSettingsStore } from "@/stores/settings";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
+import { type RefObject, useEffect } from "react";
+
+// -- State --------------------------------------------------------------------
+
+let mountedBand: HTMLElement | null = null;
+let bandAnimating = false;
+let restingHeight: number | null = null;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -8,14 +15,16 @@ function overviewBandHeight(spectrumVisible: boolean, storedSpectrumHeight: numb
   return spectrumVisible ? clampSpectrumBandHeight(storedSpectrumHeight) : WAVEFORM_HEIGHT;
 }
 
-// While the band animates to a new height the rows follow its animated min-height, so read that when mounted.
+// While the band animates to a new height the rows follow its animated min-height; at rest the style read is skipped.
 function currentOverviewBandHeight(): number {
-  const band = document.querySelector<HTMLElement>("[data-overview-band]");
-  if (band) return Number.parseFloat(getComputedStyle(band).minHeight) || WAVEFORM_HEIGHT;
-  return overviewBandHeight(
+  const target = overviewBandHeight(
     useTimelineStore.getState().spectrumVisible,
     useSettingsStore.getState().spectrumBandHeight,
   );
+  if (!mountedBand || (!bandAnimating && restingHeight === target)) return target;
+  const height = Number.parseFloat(getComputedStyle(mountedBand).minHeight) || WAVEFORM_HEIGHT;
+  restingHeight = !bandAnimating && height === target ? target : null;
+  return height;
 }
 
 function useOverviewBandHeight(): number {
@@ -24,6 +33,27 @@ function useOverviewBandHeight(): number {
   return overviewBandHeight(visible, stored);
 }
 
+function useMountedOverviewBand(bandRef: RefObject<HTMLElement | null>): void {
+  useEffect(() => {
+    const band = bandRef.current;
+    if (!band) return;
+    const onTransition = (event: TransitionEvent) => {
+      if (event.target !== band || event.propertyName !== "min-height") return;
+      bandAnimating = event.type === "transitionrun";
+      restingHeight = null;
+    };
+    const events = ["transitionrun", "transitionend", "transitioncancel"] as const;
+    for (const type of events) band.addEventListener(type, onTransition);
+    mountedBand = band;
+    bandAnimating = false;
+    restingHeight = null;
+    return () => {
+      for (const type of events) band.removeEventListener(type, onTransition);
+      if (mountedBand === band) mountedBand = null;
+    };
+  }, [bandRef]);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { currentOverviewBandHeight, useOverviewBandHeight };
+export { currentOverviewBandHeight, useMountedOverviewBand, useOverviewBandHeight };

@@ -1,5 +1,5 @@
 import { SPECTRUM_BAND_HEIGHT } from "@/domain/spectrum/settings";
-import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
+import { useMountedOverviewBand, useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { BandViewport } from "@/views/timeline/overview/band-viewport";
 import { useBandResize } from "@/views/timeline/overview/use-band-resize";
 import { SpectrumCanvas } from "@/views/timeline/spectrum/spectrum-canvas";
@@ -63,6 +63,7 @@ const OverviewBand: React.FC<OverviewBandProps> = ({ children }) => {
   const spectrumVisible = useTimelineStore((s) => s.spectrumVisible);
   useSpectrumSession();
   useAnnounceBandResize(bandRef);
+  useMountedOverviewBand(bandRef);
 
   return (
     <div ref={bandRef} data-overview-band className={BAND_CLASS} style={{ minHeight: bandHeight }}>
