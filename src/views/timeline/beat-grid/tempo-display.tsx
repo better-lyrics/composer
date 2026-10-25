@@ -7,7 +7,7 @@ import { formatBpm } from "@/utils/format-bpm";
 import { pluralize } from "@/utils/pluralize";
 import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
 import { usePlayheadTempo } from "@/views/timeline/beat-grid/use-playhead-tempo";
-import { Fragment, useRef } from "react";
+import { useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -107,17 +107,15 @@ const TempoDisplay: React.FC<{ grid: BeatGrid; stats: TempoStats }> = ({ grid, s
         <b className={cn(BPM_NUMBER_CLASS, "select-text cursor-text")}>{bpm}</b>
         <span className="text-xs leading-[1.3] font-medium text-(--on-display-dim)">BPM</span>
       </span>
-      <span className="text-[12.5px] leading-[1.2] text-(--muted)">
+      <span className="flex flex-wrap gap-x-5 gap-y-1 overflow-x-clip text-[12.5px] leading-[1.3] text-(--muted)">
         <b className="font-medium tabular-nums text-(--label) whitespace-nowrap">{meter}</b>
         {rest.map((fact, i) => (
-          <Fragment key={fact}>
-            {"\u00a0・ "}
-            {i === rest.length - 1 && changes.length > 0 ? (
-              <TempoChangesFact fact={fact} changes={changes} />
-            ) : (
-              <span className="whitespace-nowrap">{fact}</span>
-            )}
-          </Fragment>
+          <span key={fact} className="-ml-5 whitespace-nowrap">
+            <span aria-hidden="true" className="inline-block w-5 text-center">
+              ・
+            </span>
+            {i === rest.length - 1 && changes.length > 0 ? <TempoChangesFact fact={fact} changes={changes} /> : fact}
+          </span>
         ))}
       </span>
       <BeatLeds grid={grid} />

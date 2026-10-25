@@ -89,7 +89,7 @@ const PopBody: React.FC<{ focusOnEnter?: keyof typeof FOCUS_ON_ENTER; children: 
   <div
     ref={FOCUS_ON_ENTER[focusOnEnter]}
     onKeyDown={keepSpaceForFocusedControl}
-    className="w-85 p-1.5 text-[13px] leading-[1.3] text-(--label)"
+    className="w-95 p-1.5 text-[13px] leading-[1.3] text-(--label)"
   >
     {children}
   </div>
