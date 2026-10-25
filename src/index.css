@@ -485,18 +485,21 @@ braccato-lyrics .blyrics-container {
   --face-top: color-mix(in oklab, var(--ink) 15%, var(--display));
   --face-bottom: color-mix(in oklab, var(--ink) 9%, var(--display));
   --side: color-mix(in oklab, var(--face-bottom) 55%, var(--display));
-  width: 88px;
+  min-width: 88px;
   html[data-scheme="light"] & {
     --face-top: white;
     --face-bottom: color-mix(in oklab, white 70%, var(--pop));
     --side: color-mix(in oklab, var(--pop) 70%, var(--color-composer-text-faint));
   }
   & > .key-cap {
-    padding-right: 4px;
+    padding-inline: 12px;
     font-size: 14px;
     font-weight: 600;
     line-height: 1;
     color: var(--ink);
+  }
+  & > .key-cap > [data-inline-key-badge] {
+    margin-left: 0;
   }
 }
 
