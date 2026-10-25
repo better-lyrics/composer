@@ -2,6 +2,7 @@ import { manualGrid } from "@/domain/tempo/grid-edits";
 import { EMPTY_TAPS, type TapState, isValidBpm, sanitizeBpmInput, tapTempo } from "@/domain/tempo/tap-tempo";
 import { tempoStats } from "@/domain/tempo/tempo-stats";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
+import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
 import { SegmentedControl } from "@/ui/segmented-control";
 import { cn } from "@/utils/cn";
@@ -66,6 +67,8 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     const duration = useAudioStore.getState().duration;
     const grid = manualGrid({ bpm, beatsPerBar: Number(meter), anchor: livePlaybackTime() }, duration);
     useProjectStore.getState().applyBeatGridWithHistory(grid);
+    const detection = useBeatDetectionStore.getState();
+    if (detection.status === "error") detection.dismiss();
     onDone();
   };
 
