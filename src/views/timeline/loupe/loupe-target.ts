@@ -46,7 +46,7 @@ function cancelClear(): void {
 // Back to back edits of one edge keep the first start time, so the delta reads the whole edit.
 function showLoupeEdit(edit: LoupeEdit, settled: boolean): void {
   const timeline = useTimelineStore.getState();
-  if (!timeline.spectrumVisible) return;
+  if (!timeline.spectrumVisible) return clearLoupe();
   cancelClear();
   const previous = timeline.loupeTarget;
   const startTime = previous && sameEdge(previous, edit) ? previous.startTime : edit.startTime;

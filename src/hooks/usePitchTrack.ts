@@ -62,6 +62,7 @@ function usePitchTrack(): void {
         return;
       }
       if (useSettingsStore.getState().pitchLine === "off") {
+        if (vocalsUrl !== appliedVocalsUrl) clearPitchSession();
         if (!request.isRunning()) return;
         cancelRunning();
         appliedVocalsUrl = null;
