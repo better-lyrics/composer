@@ -1,4 +1,5 @@
 import { unscaledReference, useFloatingEntrance } from "@/ui/floating-motion";
+import { keepsPopoversOpen } from "@/ui/keeps-popovers-open";
 import {
   FloatingFocusManager,
   FloatingPortal,
@@ -21,6 +22,7 @@ import {
   type ReactNode,
   cloneElement,
   useCallback,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -104,7 +106,22 @@ const Popover: React.FC<PopoverProps> = ({
 
   const click = useClick(context);
   // Dismissing on click, after mousedown moved focus to the body, lets focus return to the trigger.
-  const dismiss = useDismiss(context, { outsidePressEvent: "click" });
+  const dismiss = useDismiss(context, {
+    outsidePressEvent: "click",
+    outsidePress: ({ target }) => !keepsPopoversOpen(target),
+  });
+  const floatingElement = refs.floating;
+  // A press on a control marked to keep popovers open leaves focus here, so this popover's keys keep working.
+  useEffect(() => {
+    if (!isOpen) return;
+    const keepFocusInside = (event: MouseEvent) => {
+      if (keepsPopoversOpen(event.target) && floatingElement.current?.contains(document.activeElement)) {
+        event.preventDefault();
+      }
+    };
+    document.addEventListener("mousedown", keepFocusInside, true);
+    return () => document.removeEventListener("mousedown", keepFocusInside, true);
+  }, [isOpen, floatingElement]);
   const role = useRole(context);
   const unusedListRef = useRef<Array<HTMLElement | null>>([]);
   const navigation = useListNavigation(context, {

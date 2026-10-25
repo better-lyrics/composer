@@ -292,9 +292,8 @@ const TimelinePanel: React.FC = () => {
                   onMouseDown={handleMouseDown}
                   onAuxClick={(e) => e.preventDefault()}
                   onKeyDown={(e) => {
-                    if (e.key === " " || e.key === "Enter") {
-                      e.preventDefault();
-                    }
+                    const fromOwnContent = e.target instanceof Node && e.currentTarget.contains(e.target);
+                    if (fromOwnContent && (e.key === " " || e.key === "Enter")) e.preventDefault();
                   }}
                 >
                   <BeatGridCorner />

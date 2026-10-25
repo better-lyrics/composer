@@ -1,7 +1,9 @@
 import { Button, type ButtonProps } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
-import { type Icon, IconChevronLeft } from "@tabler/icons-react";
+import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { isTypingTarget } from "@/utils/typing-target";
+import { type Icon, IconChevronLeft, IconHandFinger } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -28,6 +30,30 @@ interface PopIconButtonProps extends Omit<ButtonProps, "size" | "children"> {
   label: string;
   icon: Icon;
 }
+
+// -- Constants -----------------------------------------------------------------
+
+const FOCUSABLE_CONTROL = "button:not(:disabled), input:not(:disabled)";
+const SET_BY_HAND_BUTTON = "[data-set-by-hand]";
+
+// -- Helpers -------------------------------------------------------------------
+
+// Space presses the focused control here instead of reaching the Timeline shortcuts behind the popover.
+function keepSpaceForFocusedControl(e: React.KeyboardEvent): void {
+  if (e.key !== " " || isTypingTarget(e.target) || findMatchingShortcut(e.nativeEvent, "global") !== null) return;
+  e.stopPropagation();
+}
+
+// A view swap unmounts the focused control, so the new view takes focus unless one of its controls already did.
+function focusIfFocusLost(body: HTMLDivElement | null, selector: string): void {
+  if (!body || (document.activeElement !== null && document.activeElement !== document.body)) return;
+  (body.querySelector<HTMLElement>(selector) ?? body.querySelector<HTMLElement>(FOCUSABLE_CONTROL))?.focus();
+}
+
+const FOCUS_ON_ENTER = {
+  "first-control": (body: HTMLDivElement | null) => focusIfFocusLost(body, FOCUSABLE_CONTROL),
+  "set-by-hand": (body: HTMLDivElement | null) => focusIfFocusLost(body, SET_BY_HAND_BUTTON),
+} as const;
 
 // -- Components ----------------------------------------------------------------
 
@@ -63,8 +89,17 @@ const PopActions: React.FC<{ children: React.ReactNode; split?: boolean; classNa
   <div className={cn("flex gap-2 px-1 pb-1", split ? "justify-between" : "justify-end", className)}>{children}</div>
 );
 
-const PopBody: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="w-85 p-1.5 text-[13px] leading-[1.3] text-(--label)">{children}</div>
+const PopBody: React.FC<{ focusOnEnter?: keyof typeof FOCUS_ON_ENTER; children: React.ReactNode }> = ({
+  focusOnEnter = "first-control",
+  children,
+}) => (
+  <div
+    ref={FOCUS_ON_ENTER[focusOnEnter]}
+    onKeyDown={keepSpaceForFocusedControl}
+    className="w-85 p-1.5 text-[13px] leading-[1.3] text-(--label)"
+  >
+    {children}
+  </div>
 );
 
 const PopGroup: React.FC<{ label?: string; className?: string; children: React.ReactNode }> = ({
@@ -88,7 +123,9 @@ const PopRow: React.FC<PopRowProps> = ({ label, icon: RowIcon, hint, dimmed, chi
       )}
     >
       {label}
-      {hint && <span className="block mt-[3px] text-xs font-normal text-(--muted) whitespace-normal">{hint}</span>}
+      {hint && (
+        <span className="block mt-[3px] text-xs font-normal text-(--muted) whitespace-normal">{hint}</span>
+      )}
     </span>
     {children}
   </div>
@@ -107,6 +144,23 @@ const PopButton: React.FC<PopButtonProps> = ({ icon: ButtonIcon, variant, classN
   </Button>
 );
 
+const SetByHandButton: React.FC<{ variant?: ButtonProps["variant"]; onClick: () => void }> = ({ variant, onClick }) => (
+  <PopButton variant={variant} icon={IconHandFinger} onClick={onClick} data-set-by-hand="">
+    Set by hand
+  </PopButton>
+);
+
 // -- Exports -------------------------------------------------------------------
 
-export { PopActions, PopBody, PopButton, PopGroup, PopHead, PopIconButton, PopRow, PopText };
+export {
+  PopActions,
+  PopBody,
+  PopButton,
+  PopGroup,
+  PopHead,
+  PopIconButton,
+  PopRow,
+  PopText,
+  SetByHandButton,
+  keepSpaceForFocusedControl,
+};

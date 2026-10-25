@@ -1,6 +1,5 @@
 import { useBeatDetectionStore } from "@/stores/beat-detection";
-import { IconHandFinger } from "@tabler/icons-react";
-import { PopActions, PopButton, PopHead } from "@/views/timeline/beat-grid/beat-grid-layout";
+import { PopActions, PopButton, PopHead, SetByHandButton } from "@/views/timeline/beat-grid/beat-grid-layout";
 
 // -- Components ----------------------------------------------------------------
 
@@ -13,9 +12,7 @@ const BeatGridFailed: React.FC<{ onSetByHand: () => void; onBack?: () => void }>
         {error}
       </div>
       <PopActions split className="mt-4">
-        <PopButton variant="ghost" icon={IconHandFinger} onClick={onSetByHand}>
-          Set by hand
-        </PopButton>
+        <SetByHandButton variant="ghost" onClick={onSetByHand} />
         <span className="flex gap-1.5">
           <PopButton onClick={() => useBeatDetectionStore.getState().dismiss()}>Dismiss</PopButton>
           <PopButton variant="primary" onClick={() => void useBeatDetectionStore.getState().run()}>

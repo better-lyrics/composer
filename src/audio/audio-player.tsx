@@ -7,6 +7,7 @@ import { VolumeKnob } from "@/audio/deck/volume-knob";
 import { togglePlayback } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { selectIsCountingIn, useSyncCountInStore } from "@/stores/sync-count-in";
+import { KEEPS_POPOVERS_OPEN_PROPS } from "@/ui/keeps-popovers-open";
 import { Key } from "@/ui/key";
 import { cn } from "@/utils/cn";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
@@ -41,6 +42,7 @@ const AudioPlayer: React.FC = () => {
   return (
     <div
       data-transport-deck
+      {...KEEPS_POPOVERS_OPEN_PROPS}
       className="grid grid-cols-[auto_auto_minmax(280px,1fr)_auto_auto_auto] items-center h-20 shrink-0 px-2 select-none"
     >
       <DeckModule>

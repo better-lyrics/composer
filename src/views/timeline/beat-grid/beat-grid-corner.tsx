@@ -5,6 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { Popover } from "@/ui/popover";
 import { formatBpm } from "@/utils/format-bpm";
+import { keepSpaceForFocusedControl } from "@/views/timeline/beat-grid/beat-grid-layout";
 import { BeatGridPopoverBody } from "@/views/timeline/beat-grid/beat-grid-popover";
 import { detectionPercent, isDetectionRunning } from "@/views/timeline/beat-grid/detection-progress";
 import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
@@ -14,7 +15,6 @@ import { useRef } from "react";
 // -- Constants -----------------------------------------------------------------
 
 const FLASH_MS = 110;
-const ACTIVATION_KEYS = new Set([" ", "Enter"]);
 const TEMPO_NUMBER_CLASS =
   "font-mono text-xs font-semibold leading-none tabular-nums text-(--label) transition-colors duration-160 ease-[cubic-bezier(0.22,1,0.36,1)] group-aria-expanded:text-composer-text data-beat:text-composer-accent-text data-beat:duration-0";
 
@@ -105,15 +105,11 @@ const CornerButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { r
   </button>
 );
 
-// The cell sits in the Timeline scroll host, which starts a marquee on mousedown and swallows Space and Enter.
-function keepActivationKeys(e: React.KeyboardEvent): void {
-  if (ACTIVATION_KEYS.has(e.key)) e.stopPropagation();
-}
-
+// The cell sits in the Timeline scroll host, which starts a marquee on mousedown.
 const BeatGridCorner: React.FC = () => (
   <div
     onMouseDown={(e) => e.stopPropagation()}
-    onKeyDown={keepActivationKeys}
+    onKeyDown={keepSpaceForFocusedControl}
     className="absolute top-0 left-0 z-100 w-12 h-20 border-b border-r-2 border-(--divider) bg-(--gutter-bg)"
   >
     <Popover placement="right-start" aria-label="Beat grid" trigger={<CornerButton />}>

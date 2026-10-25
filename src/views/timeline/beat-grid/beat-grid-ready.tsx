@@ -13,11 +13,18 @@ import { SegmentedControl } from "@/ui/segmented-control";
 import { Switch } from "@/ui/switch";
 import { Tooltip } from "@/ui/tooltip";
 import { formatBpm } from "@/utils/format-bpm";
-import { PopButton, PopGroup, PopHead, PopIconButton, PopRow } from "@/views/timeline/beat-grid/beat-grid-layout";
+import {
+  PopButton,
+  PopGroup,
+  PopHead,
+  PopIconButton,
+  PopRow,
+  SetByHandButton,
+} from "@/views/timeline/beat-grid/beat-grid-layout";
 import { OffsetStepper } from "@/views/timeline/beat-grid/offset-stepper";
 import { TempoDisplay } from "@/views/timeline/beat-grid/tempo-display";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { IconArrowBackUp, IconFlag, IconHandFinger, IconMetronome, IconRefresh } from "@tabler/icons-react";
+import { IconArrowBackUp, IconFlag, IconMetronome, IconRefresh } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -92,9 +99,7 @@ const FixGridGroup: React.FC<{ grid: BeatGrid; stats: TempoStats; onSetByHand: (
       </PopRow>
       <PopRow label="Tempo">
         <div className="flex gap-1.5">
-          <PopButton icon={IconHandFinger} onClick={onSetByHand}>
-            Set by hand
-          </PopButton>
+          <SetByHandButton onClick={onSetByHand} />
           <Tooltip content={`${formatBpm(stats.bpm / 2)} BPM`}>
             <PopButton disabled={!canHalve(grid)} onClick={() => apply(halved(grid))}>
               Half

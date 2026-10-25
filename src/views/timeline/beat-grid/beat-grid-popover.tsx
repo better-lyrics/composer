@@ -10,6 +10,10 @@ import { isDetectionRunning } from "@/views/timeline/beat-grid/detection-progres
 import { SetTempoView } from "@/views/timeline/beat-grid/set-tempo-view";
 import { useState } from "react";
 
+// -- Types ---------------------------------------------------------------------
+
+type BodyView = "state" | "set-tempo" | "back-from-set-tempo";
+
 // -- Interfaces ----------------------------------------------------------------
 
 interface BeatGridPopoverBodyProps {
@@ -34,14 +38,14 @@ const BeatGridState: React.FC<BeatGridStateProps> = ({ onSetByHand, onBack }) =>
 };
 
 const BeatGridPopoverBody: React.FC<BeatGridPopoverBodyProps> = ({ onBack }) => {
-  const [settingTempo, setSettingTempo] = useState(false);
-  return (
-    <PopBody>
-      {settingTempo ? (
-        <SetTempoView onDone={() => setSettingTempo(false)} />
-      ) : (
-        <BeatGridState onSetByHand={() => setSettingTempo(true)} onBack={onBack} />
-      )}
+  const [view, setView] = useState<BodyView>("state");
+  return view === "set-tempo" ? (
+    <PopBody key="set-tempo">
+      <SetTempoView onDone={() => setView("back-from-set-tempo")} />
+    </PopBody>
+  ) : (
+    <PopBody key="state" focusOnEnter={view === "back-from-set-tempo" ? "set-by-hand" : "first-control"}>
+      <BeatGridState onSetByHand={() => setView("set-tempo")} onBack={onBack} />
     </PopBody>
   );
 };

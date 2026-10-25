@@ -1,8 +1,8 @@
 import { BEAT_MODEL } from "@/audio/beat/beat-model";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { formatWholeMegabytes } from "@/utils/format-file-size";
-import { PopActions, PopButton, PopHead, PopText } from "@/views/timeline/beat-grid/beat-grid-layout";
-import { IconHandFinger, IconMetronome } from "@tabler/icons-react";
+import { PopActions, PopButton, PopHead, PopText, SetByHandButton } from "@/views/timeline/beat-grid/beat-grid-layout";
+import { IconMetronome } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -23,9 +23,7 @@ const BeatGridEmpty: React.FC<BeatGridEmptyProps> = ({ hasAudio, onSetByHand, on
         ` Detection runs on your device after a one-time ${formatWholeMegabytes(BEAT_MODEL.approxBytes)} download.`}
     </PopText>
     <PopActions split className="mt-4">
-      <PopButton variant="ghost" icon={IconHandFinger} onClick={onSetByHand}>
-        Set by hand
-      </PopButton>
+      <SetByHandButton variant="ghost" onClick={onSetByHand} />
       {hasAudio && (
         <PopButton variant="primary" icon={IconMetronome} onClick={() => void useBeatDetectionStore.getState().run()}>
           Detect beats

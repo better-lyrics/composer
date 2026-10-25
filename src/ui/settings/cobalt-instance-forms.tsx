@@ -1,11 +1,10 @@
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
+import { focusOnMount } from "@/utils/focus-on-mount";
 import { displayHostFromUrl, ensureHttpScheme, isValidHttpUrl } from "@/utils/url";
 import { useState } from "react";
 
 // -- Helpers ------------------------------------------------------------------
-
-const focusOnMount = (el: HTMLInputElement | null) => el?.focus();
 
 // -- Cobalt Instance Forms ----------------------------------------------------
 
