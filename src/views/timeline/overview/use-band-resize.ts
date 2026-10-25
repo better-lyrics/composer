@@ -57,7 +57,7 @@ function useBandResize() {
 
   const onDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    persistBandHeight(SPECTRUM_BAND_HEIGHT.min);
+    persistBandHeight(SPECTRUM_BAND_HEIGHT.default);
   }, []);
 
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
