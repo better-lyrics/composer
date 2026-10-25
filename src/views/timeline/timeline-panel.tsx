@@ -10,6 +10,7 @@ import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { useAudioStore } from "@/stores/audio";
 import { useImportModal } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
+import { BeatGridCorner } from "@/views/timeline/beat-grid/beat-grid-corner";
 import { HoverSizedDragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
 import { dragGhostCells } from "@/views/timeline/drag-ghost-cells";
 import { trackSnapModifier } from "@/views/timeline/drag-track-snap";
@@ -49,7 +50,7 @@ import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { useTimelineWheel } from "@/views/timeline/use-timeline-wheel";
 import { WordEditOverlay } from "@/views/timeline/word-edit-overlay";
 import { DndContext } from "@dnd-kit/core";
-import { IconMusic, IconWaveSine } from "@tabler/icons-react";
+import { IconMusic } from "@tabler/icons-react";
 import { useOverlayScrollbars } from "overlayscrollbars-react";
 import "overlayscrollbars/overlayscrollbars.css";
 import { Activity, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -296,9 +297,7 @@ const TimelinePanel: React.FC = () => {
                     }
                   }}
                 >
-                  <div className="absolute grid place-items-center top-0 left-0 z-100 w-12 h-20 border-b border-r-2 border-(--divider) bg-(--gutter-bg) text-composer-text-faint">
-                    <IconWaveSine aria-hidden="true" className="size-4" />
-                  </div>
+                  <BeatGridCorner />
                   <TimelineWaveform />
 
                   <TimelineRows scrollContainerRef={scrollContainerRef} />

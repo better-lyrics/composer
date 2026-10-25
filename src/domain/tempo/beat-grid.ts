@@ -105,11 +105,16 @@ function barNumberAt(grid: BeatGrid, index: number): number {
   return downbeatsUpTo(grid, index);
 }
 
+function beatInBar(grid: BeatGrid, index: number): number {
+  const bar = downbeatsUpTo(grid, index);
+  return bar > 0 ? index - grid.downbeatIndices[bar - 1] : index;
+}
+
 function isDownbeat(grid: BeatGrid, index: number): boolean {
   return downbeatsUpTo(grid, index) > downbeatsUpTo(grid, index - 1);
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export { barNumberAt, beatIndexAt, beatTime, detectedGrid, isDownbeat };
+export { barNumberAt, beatInBar, beatIndexAt, beatTime, detectedGrid, isDownbeat };
 export type { BeatGrid, BeatGridSource, DetectedBeats, ManualTempo };
