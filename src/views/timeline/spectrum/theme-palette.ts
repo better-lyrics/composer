@@ -37,14 +37,14 @@ let resolvedFor: ThemeSnapshot | null = null;
 // -- Functions -----------------------------------------------------------------
 
 function themeStops(): PaletteStop[] {
-  const dark = cssVariable("--color-composer-bg-dark");
   const accent = cssVariable("--color-composer-accent");
-  const accentText = cssVariable("--color-composer-accent-text");
+  // Built from the accent alone, like Heat it stays dark-based in light themes too, so it is always monotonic.
+  const floor = `color-mix(in oklab, ${accent} 12%, black)`;
   return [
-    [0, rgbOf(`color-mix(in oklab, ${dark} 55%, black)`)],
-    [0.35, rgbOf(`color-mix(in oklab, ${accent} 40%, ${dark})`)],
+    [0, rgbOf(`color-mix(in oklab, ${accent} 6%, black)`)],
+    [0.35, rgbOf(`color-mix(in oklab, ${accent} 45%, ${floor})`)],
     [0.7, rgbOf(accent)],
-    [0.88, rgbOf(accentText)],
+    [0.88, rgbOf(`color-mix(in oklab, ${accent} 50%, white)`)],
     [1, [255, 255, 255]],
   ];
 }
