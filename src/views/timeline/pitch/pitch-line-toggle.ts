@@ -1,5 +1,11 @@
 import type { PitchLineMode } from "@/domain/pitch/pitch-line-mode";
+import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
+import { toast } from "sonner";
+
+// -- Constants -----------------------------------------------------------------
+
+const NEEDS_VOCALS_TOAST_ID = "pitch-line-needs-vocals";
 
 // -- State ---------------------------------------------------------------------
 
@@ -15,7 +21,14 @@ function setPitchLineShown(shown: boolean): void {
 }
 
 function togglePitchLine(): void {
-  setPitchLineShown(useSettingsStore.getState().pitchLine === "off");
+  const show = useSettingsStore.getState().pitchLine === "off";
+  setPitchLineShown(show);
+  if (show && !useSeparationStore.getState().stemUrls.vocals) {
+    toast("The pitch line needs separated vocals", {
+      id: NEEDS_VOCALS_TOAST_ID,
+      description: "Separate vocals in the Stem menu and it appears in each word.",
+    });
+  }
 }
 
 // -- Exports -------------------------------------------------------------------
