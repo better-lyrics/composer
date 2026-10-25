@@ -19,7 +19,7 @@ import { formatBpm } from "@/utils/format-bpm";
 import { formatTime } from "@/utils/format-time";
 import { pluralize } from "@/utils/pluralize";
 import { matchesShortcutBinding } from "@/utils/shortcut-matcher";
-import { PopActions, PopButton, PopGroup, PopHead, PopRow } from "@/views/timeline/beat-grid/beat-grid-layout";
+import { PopActions, PopButton, PopGroup, PopHead, PopRow } from "@/ui/pop-layout";
 import { TapKey } from "@/views/timeline/beat-grid/tap-key";
 import { BPM_NUMBER_CLASS, DISPLAY_SURFACE, StaticLeds } from "@/views/timeline/beat-grid/tempo-display";
 import { useRef, useState } from "react";

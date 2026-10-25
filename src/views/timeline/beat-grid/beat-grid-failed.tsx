@@ -1,5 +1,5 @@
 import { useBeatDetectionStore } from "@/stores/beat-detection";
-import { PopActions, PopButton, PopHead, PopText, SetByHandButton } from "@/views/timeline/beat-grid/beat-grid-layout";
+import { PopActions, PopButton, PopHead, PopText, SetByHandButton } from "@/ui/pop-layout";
 
 // -- Components ----------------------------------------------------------------
 

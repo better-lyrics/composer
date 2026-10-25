@@ -1,7 +1,7 @@
 import { Button, type ButtonProps } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
-import { keepSpaceForFocusedControl } from "@/views/timeline/beat-grid/keep-space-for-focused-control";
+import { keepSpaceForFocusedControl } from "@/ui/keep-space-for-focused-control";
 import { type Icon, IconChevronLeft, IconHandFinger } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------

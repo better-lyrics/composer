@@ -2,7 +2,7 @@ import { playableFile, useAudioStore } from "@/stores/audio";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
 import { BeatGridEmpty } from "@/views/timeline/beat-grid/beat-grid-empty";
-import { PopBody } from "@/views/timeline/beat-grid/beat-grid-layout";
+import { PopBody } from "@/ui/pop-layout";
 import { BeatGridFailed } from "@/views/timeline/beat-grid/beat-grid-failed";
 import { BeatGridProgress } from "@/views/timeline/beat-grid/beat-grid-progress";
 import { BeatGridReady } from "@/views/timeline/beat-grid/beat-grid-ready";

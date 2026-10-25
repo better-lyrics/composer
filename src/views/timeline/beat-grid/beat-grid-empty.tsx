@@ -1,7 +1,7 @@
 import { BEAT_MODEL } from "@/audio/beat/beat-model";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { formatWholeMegabytes } from "@/utils/format-file-size";
-import { PopActions, PopButton, PopHead, PopText, SetByHandButton } from "@/views/timeline/beat-grid/beat-grid-layout";
+import { PopActions, PopButton, PopHead, PopText, SetByHandButton } from "@/ui/pop-layout";
 import { IconMetronome } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------

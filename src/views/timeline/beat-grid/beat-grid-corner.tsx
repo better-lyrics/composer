@@ -10,7 +10,7 @@ import { cn } from "@/utils/cn";
 import { formatBpm } from "@/utils/format-bpm";
 import { BeatGridPopoverBody } from "@/views/timeline/beat-grid/beat-grid-popover";
 import { detectionPercent, isDetectionRunning } from "@/views/timeline/beat-grid/detection-progress";
-import { keepSpaceForFocusedControl } from "@/views/timeline/beat-grid/keep-space-for-focused-control";
+import { keepSpaceForFocusedControl } from "@/ui/keep-space-for-focused-control";
 import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
 import { usePlayheadTempo } from "@/views/timeline/beat-grid/use-playhead-tempo";
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";

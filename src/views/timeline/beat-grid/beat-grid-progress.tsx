@@ -2,7 +2,7 @@ import { BEAT_MODEL } from "@/audio/beat/beat-model";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { ProgressBar } from "@/ui/progress-bar";
 import { formatMegabytesOf } from "@/utils/format-file-size";
-import { PopActions, PopButton, PopHead, PopText } from "@/views/timeline/beat-grid/beat-grid-layout";
+import { PopActions, PopButton, PopHead, PopText } from "@/ui/pop-layout";
 import { detectionPercent } from "@/views/timeline/beat-grid/detection-progress";
 
 // -- Components ----------------------------------------------------------------

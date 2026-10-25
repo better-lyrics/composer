@@ -20,7 +20,7 @@ import {
   PopIconButton,
   PopRow,
   SetByHandButton,
-} from "@/views/timeline/beat-grid/beat-grid-layout";
+} from "@/ui/pop-layout";
 import { OffsetStepper } from "@/views/timeline/beat-grid/offset-stepper";
 import { TempoDisplay } from "@/views/timeline/beat-grid/tempo-display";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
