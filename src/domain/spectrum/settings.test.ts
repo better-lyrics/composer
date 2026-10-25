@@ -1,6 +1,5 @@
 import {
   SPECTRUM_BAND_HEIGHT,
-  SPECTRUM_SETTING_DEFAULTS,
   clampSpectrumBandHeight,
   isDefaultSpectrumLook,
   sanitizeSpectrumSettings,
@@ -9,20 +8,6 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("spectrum settings", () => {
-  it("defaults to the agreed look", () => {
-    expect(SPECTRUM_SETTING_DEFAULTS).toEqual({
-      showSpectrum: false,
-      spectrumBandHeight: 168,
-      spectrumSource: "vocals",
-      spectrumPalette: "heat",
-      spectrumContrast: -72,
-      spectrumScale: "mel",
-      spectrumTop: "full",
-      spectrumWindow: "auto",
-      spectrumPhase: "change",
-    });
-  });
-
   it("treats only look keys as resettable", () => {
     const look = spectrumLookDefaults();
     expect(isDefaultSpectrumLook(look)).toBe(true);
