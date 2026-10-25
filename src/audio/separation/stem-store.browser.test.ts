@@ -12,7 +12,11 @@ import {
   removeStemJobs,
   stemJobKey,
 } from "@/audio/separation/stem-store";
+import { projectStemJobKey } from "@/audio/separation/stem-job-liveness";
+import { saveProjectStem } from "@/lib/project-stems";
 import { type StorageSignal, subscribeStorageSignals } from "@/lib/storage-signals";
+import { createAudioFile } from "@/test/audio-fixtures";
+import { seedStoredProject } from "@/test/projects";
 import { describe, expect, it, vi } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
@@ -178,6 +182,35 @@ describe("stem job onsets", () => {
       await putStemJobOnsets(job, [1]);
       stop();
       expect(seen).toEqual([]);
+    });
+  });
+});
+
+describe("project stem job onsets", () => {
+  async function importVocals(id: string): Promise<void> {
+    await saveProjectStem(id, "song", {
+      slot: "vocals",
+      file: createAudioFile("acapella.wav"),
+      origin: "imported",
+      durationSeconds: 60,
+    });
+  }
+
+  it("round-trips the onsets of a project's current stems", async () => {
+    await seedStoredProject("onsets-live");
+    await importVocals("onsets-live");
+    const job = projectStemJobKey("onsets-live", 1);
+    expect(await putStemJobOnsets(job, [0.5, 2])).toBe(true);
+    expect(await getStemJobOnsets(job)).toEqual([0.5, 2]);
+  });
+
+  describe("invariants", () => {
+    it("never writes onsets for an older revision of a project's stems", async () => {
+      await seedStoredProject("onsets-stale");
+      await importVocals("onsets-stale");
+      await importVocals("onsets-stale");
+      expect(await putStemJobOnsets(projectStemJobKey("onsets-stale", 1), [1])).toBe(false);
+      expect(await putStemJobOnsets(projectStemJobKey("onsets-stale", 2), [1])).toBe(true);
     });
   });
 });
