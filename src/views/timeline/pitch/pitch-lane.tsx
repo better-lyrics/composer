@@ -3,6 +3,7 @@ import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { pitchRangeBetween } from "@/domain/pitch/line-range";
 import { songWordCoverage, spillRuns } from "@/domain/pitch/spill";
+import type { PitchPoint } from "@/domain/pitch/track";
 import type { Rgb } from "@/domain/spectrum/palettes";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { livePlaybackTime } from "@/stores/audio";
@@ -85,6 +86,17 @@ function laneInks(previous: LaneInks | null, colour: string, rows: PitchRows): L
   };
 }
 
+// Only a word with pitch under it lifts its label to make room for the line.
+function markPitchedWords(track: HTMLElement | null, runs: readonly PitchPoint[][]): void {
+  if (!track) return;
+  for (const block of track.querySelectorAll<HTMLElement>("[data-word-block]")) {
+    const begin = Number(block.dataset.begin);
+    const end = Number(block.dataset.end);
+    const pitched = runs.some((run) => run.some((point) => point.seconds >= begin && point.seconds < end));
+    block.toggleAttribute("data-pitched", pitched);
+  }
+}
+
 // -- Components ----------------------------------------------------------------
 
 const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line, kind, height, color, rows }) => {
@@ -143,7 +155,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
       fadeOutSnapshot(spark, ghost, pitchLineMotion.spillFadeMs);
     }
     spillCountRef.current = spills.length;
-    spark.toggleAttribute("data-empty", drawing.runs.length === 0);
+    markPitchedWords(spark.parentElement, drawing.runs);
     const inks = laneInks(inksRef.current, color, rows);
     inksRef.current = inks;
     drawPitchLane(spark, drawing, spills, inks.ink, inks.warning);

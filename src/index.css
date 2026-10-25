@@ -1008,7 +1008,7 @@ braccato-lyrics .blyrics-container {
   .word-face > span {
     translate: 0 calc(var(--pitch-shown, 0) * -5px);
   }
-  [data-track]:has(> .pitch-lane[data-empty]) .word-face > span {
+  .word-face:not([data-pitched]) > span {
     translate: none;
   }
   @media (prefers-reduced-motion: no-preference) {
