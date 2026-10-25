@@ -9,6 +9,7 @@ import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
 import type { ProjectTab } from "@/domain/project/tab";
 import type { SnapPoint } from "@/domain/snap-point/model";
+import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Store-local Types --------------------------------------------------------
@@ -22,6 +23,7 @@ interface HistoryEntry {
   groups: LinkGroup[];
   agents: Agent[];
   customSnapPoints: SnapPoint[];
+  beatGrid: BeatGrid | null;
   timestamp: number;
 }
 
@@ -72,6 +74,10 @@ interface DismissalsState {
 
 interface SnapPointsState {
   customSnapPoints: SnapPoint[];
+}
+
+interface BeatGridState {
+  beatGrid: BeatGrid | null;
 }
 
 interface HistoryState {
@@ -142,6 +148,12 @@ interface SnapPointActions {
   moveCustomSnapPoint: (id: string, time: number) => void;
   commitSnapPointDrag: (baseline: SnapPoint[]) => void;
   clearCustomSnapPoints: () => void;
+}
+
+interface BeatGridActions {
+  setBeatGrid: (grid: BeatGrid | null) => void;
+  applyBeatGridWithHistory: (grid: BeatGrid | null) => void;
+  clearBeatGrid: () => void;
 }
 
 interface HistoryActions {
@@ -231,6 +243,7 @@ type ProjectState = MetadataState &
   UiState &
   DismissalsState &
   SnapPointsState &
+  BeatGridState &
   HistoryState;
 
 type ProjectActions = MetadataActions &
@@ -238,6 +251,7 @@ type ProjectActions = MetadataActions &
   UiActions &
   DismissalActions &
   SnapPointActions &
+  BeatGridActions &
   HistoryActions &
   LineActions &
   GroupActions;
@@ -257,6 +271,7 @@ export type {
   UiState,
   DismissalsState,
   SnapPointsState,
+  BeatGridState,
   HistoryEntry,
   HistoryState,
   MetadataActions,
@@ -264,6 +279,7 @@ export type {
   UiActions,
   DismissalActions,
   SnapPointActions,
+  BeatGridActions,
   HistoryActions,
   LineActions,
   GroupActions,

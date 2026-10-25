@@ -4,6 +4,7 @@ import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine, RawLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import type { SnapPoint } from "@/domain/snap-point/model";
+import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { notifySharedTimingCopied } from "@/lib/shared-timing-signals";
 import type { HistoryEntry, ProjectState } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -14,7 +15,7 @@ const MAX_HISTORY_SIZE = 100;
 
 // -- Snapshots ----------------------------------------------------------------
 
-type SnapshotFields = Pick<HistoryEntry, "lines" | "groups" | "agents" | "customSnapPoints">;
+type SnapshotFields = Pick<HistoryEntry, "lines" | "groups" | "agents" | "customSnapPoints" | "beatGrid">;
 
 function snapshotEntry(fields: SnapshotFields): HistoryEntry {
   return {
@@ -22,6 +23,7 @@ function snapshotEntry(fields: SnapshotFields): HistoryEntry {
     groups: structuredClone(fields.groups),
     agents: structuredClone(fields.agents),
     customSnapPoints: structuredClone(fields.customSnapPoints),
+    beatGrid: structuredClone(fields.beatGrid),
     timestamp: Date.now(),
   };
 }
@@ -32,6 +34,7 @@ function restoreEntry(entry: HistoryEntry): SnapshotFields {
     groups: structuredClone(entry.groups),
     agents: structuredClone(entry.agents),
     customSnapPoints: structuredClone(entry.customSnapPoints),
+    beatGrid: structuredClone(entry.beatGrid),
   };
 }
 
@@ -44,7 +47,13 @@ function capHistory(history: HistoryEntry[]): HistoryEntry[] {
 
 function commitHistory(
   state: ProjectState,
-  changes: { lines?: RawLine[]; groups?: LinkGroup[]; agents?: Agent[]; customSnapPoints?: SnapPoint[] },
+  changes: {
+    lines?: RawLine[];
+    groups?: LinkGroup[];
+    agents?: Agent[];
+    customSnapPoints?: SnapPoint[];
+    beatGrid?: BeatGrid | null;
+  },
   options: { deriveText?: boolean } = {},
 ) {
   const splitChar = getSplitCharacter();
@@ -59,6 +68,7 @@ function commitHistory(
     groups: changes.groups ?? state.groups,
     agents: changes.agents ?? state.agents,
     customSnapPoints: changes.customSnapPoints ?? state.customSnapPoints,
+    beatGrid: changes.beatGrid === undefined ? state.beatGrid : changes.beatGrid,
   };
 
   const newHistory = state.history.slice(0, state.historyIndex + 1);
