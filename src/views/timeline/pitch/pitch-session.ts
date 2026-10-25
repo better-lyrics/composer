@@ -6,13 +6,12 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 interface PitchSession {
   track: PitchTrack | null;
   jobKey: string | null;
-  arrivedAt: number | null;
 }
 
 // -- State --------------------------------------------------------------------
 
 // Read every frame by the pitch lane, so it is a plain object; rows follow pitchTrackGeneration.
-const pitchSession: PitchSession = { track: null, jobKey: null, arrivedAt: null };
+const pitchSession: PitchSession = { track: null, jobKey: null };
 
 // -- Functions ----------------------------------------------------------------
 
@@ -21,10 +20,9 @@ function publishPitchSession(): void {
   timeline.setPitchTrackGeneration(timeline.pitchTrackGeneration + 1);
 }
 
-function setPitchSessionTrack(track: PitchTrack, jobKey: string | null, arrivedAt: number | null): void {
+function setPitchSessionTrack(track: PitchTrack, jobKey: string | null): void {
   pitchSession.track = track;
   pitchSession.jobKey = jobKey;
-  pitchSession.arrivedAt = arrivedAt;
   publishPitchSession();
 }
 
@@ -32,7 +30,6 @@ function clearPitchSession(): void {
   if (!pitchSession.track) return;
   pitchSession.track = null;
   pitchSession.jobKey = null;
-  pitchSession.arrivedAt = null;
   publishPitchSession();
 }
 

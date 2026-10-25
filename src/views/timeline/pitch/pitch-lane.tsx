@@ -59,6 +59,12 @@ function singerInk(agentColour: string): Rgb {
   return rgbOf(`color-mix(in oklab, ${agentColour} ${light ? 72 : 38}%, ${cssVariable("--color-composer-text")})`);
 }
 
+// What has been sung lights up in the singer's own colour, pushed away from the word face.
+function singerLitInk(agentColour: string): Rgb {
+  const light = document.documentElement.dataset.scheme === "light";
+  return rgbOf(`color-mix(in oklab, ${agentColour} ${light ? 70 : 62}%, ${light ? "black" : "white"})`);
+}
+
 // -- Components ----------------------------------------------------------------
 
 const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line, kind, height, color, rows }) => {
@@ -117,7 +123,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
     }
     spillCountRef.current = spills.length;
     drawPitchLane(spark, drawing, spills, singerInk(color), rgbOf(cssVariable("--color-composer-warning")));
-    drawSungLane(sung, drawing, rgbOf(cssVariable("--color-composer-accent-text")));
+    drawSungLane(sung, drawing, singerLitInk(color));
     sungClipRef.current = { left: window.left, width: window.width, zoom, shown: -1 };
     revealSung();
   }, [rows, line, kind, zoom, height, color, selected, live, revealSung]);

@@ -29,19 +29,11 @@ function usePitchTrack(): void {
     const load = (vocalsUrl: string, jobKey: string | null) => {
       const { signal, isCurrent, finish } = request.start();
       appliedVocalsUrl = vocalsUrl;
-      let detected = false;
-      loadPitchTrack({
-        jobKey,
-        vocalsUrl,
-        signal,
-        onDetectionStart: () => {
-          detected = true;
-        },
-      }).then(
+      loadPitchTrack({ jobKey, vocalsUrl, signal }).then(
         (track) => {
           if (!isCurrent()) return;
           finish();
-          setPitchSessionTrack(track, jobKey, detected ? performance.now() : null);
+          setPitchSessionTrack(track, jobKey);
         },
         (error: unknown) => {
           if (!isCurrent() || isAbortError(error)) return;

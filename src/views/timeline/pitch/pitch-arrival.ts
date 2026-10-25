@@ -1,4 +1,5 @@
 import type { PitchLineMode } from "@/domain/pitch/pitch-line-mode";
+import type { PitchTrack } from "@/domain/pitch/track";
 import { pitchLineMotion } from "@/utils/animationVariants";
 
 // -- Types ---------------------------------------------------------------------
@@ -12,15 +13,19 @@ interface PitchArrival {
 
 // -- State ---------------------------------------------------------------------
 
-// A remount (tab switch, project reload) must not replay a wipe that already ran.
-let playedArrival: number | null = null;
+// The track already on screen: a remount (tab switch) keeps it, hiding the line or a new track clears it.
+let shownTrack: PitchTrack | null = null;
 
 // -- Functions -----------------------------------------------------------------
 
-function claimArrival(arrivedAt: number | null): boolean {
-  if (arrivedAt === null || arrivedAt === playedArrival) return false;
-  playedArrival = arrivedAt;
+function claimArrival(track: PitchTrack | null): boolean {
+  if (track === null || track === shownTrack) return false;
+  shownTrack = track;
   return true;
+}
+
+function forgetArrival(): void {
+  shownTrack = null;
 }
 
 // Fraction of the wipe's duration at which its edge reaches a given fraction of the width.
@@ -108,4 +113,4 @@ function playPitchArrival({ scope, viewport, zoom, mode }: PitchArrival): () => 
 
 // -- Exports -------------------------------------------------------------------
 
-export { claimArrival, playPitchArrival };
+export { claimArrival, forgetArrival, playPitchArrival };

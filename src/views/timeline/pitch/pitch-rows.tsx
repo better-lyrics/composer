@@ -6,7 +6,7 @@ import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
-import { claimArrival, playPitchArrival } from "@/views/timeline/pitch/pitch-arrival";
+import { claimArrival, forgetArrival, playPitchArrival } from "@/views/timeline/pitch/pitch-arrival";
 import { pitchSession } from "@/views/timeline/pitch/pitch-session";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { type RefObject, createContext, useContext, useEffect, useMemo, useRef } from "react";
@@ -51,12 +51,15 @@ const PitchRowsScope: React.FC<PitchRowsScopeProps> = ({ style, viewportRef, chi
   const scopeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!track || mode === "off") return;
+    if (!track || mode === "off") {
+      forgetArrival();
+      return;
+    }
     let cancelArrival: (() => void) | null = null;
     const frame = nextFrame(() => {
       const scope = scopeRef.current;
       const viewport = viewportRef.current;
-      if (!scope || !viewport || !claimArrival(pitchSession.arrivedAt)) return;
+      if (!scope || !viewport || !claimArrival(track)) return;
       const zoom = useTimelineStore.getState().zoom;
       cancelArrival = playPitchArrival({ scope, viewport, zoom, mode });
     });

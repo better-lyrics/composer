@@ -16,7 +16,6 @@ interface PitchTrackRequest {
   jobKey: string | null;
   vocalsUrl: string;
   signal: AbortSignal;
-  onDetectionStart: () => void;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -42,12 +41,11 @@ async function cache(jobKey: string | null, track: PitchTrack): Promise<void> {
 
 // -- Loading ------------------------------------------------------------------
 
-async function loadPitchTrack({ jobKey, vocalsUrl, signal, onDetectionStart }: PitchTrackRequest): Promise<PitchTrack> {
+async function loadPitchTrack({ jobKey, vocalsUrl, signal }: PitchTrackRequest): Promise<PitchTrack> {
   const cached = await readCached(jobKey);
   signal.throwIfAborted();
   if (cached) return cached;
 
-  onDetectionStart();
   const decoded = await decodeSourceAudio(await fetchVocalStem(vocalsUrl, signal));
   signal.throwIfAborted();
   const audio16k = await resampleMono(decoded, SWIFT_F0_SAMPLE_RATE);
