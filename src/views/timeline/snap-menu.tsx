@@ -6,7 +6,7 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { BEAT_GRID_LINE_OPTIONS } from "@/ui/beat-grid-line-options";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { Switch } from "@/ui/switch";
-import { describeOnsetStatus } from "@/ui/vocal-onset-snap-toggle";
+import { describeOnsetStatus } from "@/ui/vocal-onset-status-copy";
 import { formatBpm } from "@/utils/format-bpm";
 import { PopGroup, PopHead, PopRow } from "@/views/timeline/beat-grid/beat-grid-layout";
 import { isDetectionRunning } from "@/views/timeline/beat-grid/detection-progress";

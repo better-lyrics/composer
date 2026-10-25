@@ -7,7 +7,7 @@ import { Popover } from "@/ui/popover";
 import { Tooltip } from "@/ui/tooltip";
 import { cn } from "@/utils/cn";
 import { formatBpm } from "@/utils/format-bpm";
-import { keepSpaceForFocusedControl } from "@/views/timeline/beat-grid/beat-grid-layout";
+import { keepSpaceForFocusedControl } from "@/views/timeline/beat-grid/keep-space-for-focused-control";
 import { BeatGridPopoverBody } from "@/views/timeline/beat-grid/beat-grid-popover";
 import { detectionPercent, isDetectionRunning } from "@/views/timeline/beat-grid/detection-progress";
 import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
@@ -111,6 +111,7 @@ const CornerButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { r
 const BeatGridCorner: React.FC = () => {
   const [open, setOpen] = useState(false);
   return (
+    // react-doctor-disable-next-line react-doctor/no-static-element-interactions -- the cell only stops events from reaching the scroll host; the button inside is the control
     <div
       onMouseDown={(e) => e.stopPropagation()}
       onKeyDown={keepSpaceForFocusedControl}

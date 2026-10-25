@@ -59,6 +59,7 @@ async function detect({ signal, forceWasm }: BeatWorkerRequest): Promise<void> {
   try {
     for (const start of starts) {
       const chunk = chunkInput(mel, frames, start);
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop -- one session runs one chunk at a time, and progress follows each chunk
       const output = await runChunk(session, new ort.Tensor("float32", chunk.input, [1, chunk.frames, N_MELS]));
       chunks.push(output);
       post({ type: "detect-progress", done: chunks.length, total: starts.length });

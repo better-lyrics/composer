@@ -1,22 +1,8 @@
 import { useSettingsStore } from "@/stores/settings";
 import { Switch } from "@/ui/switch";
-import { DETECTING_VOCAL_ONSETS } from "@/ui/vocal-onset-status-copy";
-import { pluralize } from "@/utils/pluralize";
+import { describeOnsetStatus } from "@/ui/vocal-onset-status-copy";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconWaveSine } from "@tabler/icons-react";
-
-// -- Status hint --------------------------------------------------------------
-
-function describeOnsetStatus(
-  status: "idle" | "processing" | "error",
-  pointCount: number,
-  error: string | null,
-): string {
-  if (status === "processing") return DETECTING_VOCAL_ONSETS;
-  if (status === "error") return error ? `Detection failed: ${error}` : "Detection failed";
-  if (pointCount > 0) return pluralize(pointCount, "snap point");
-  return "Separate vocals to detect onsets";
-}
 
 // -- Components ----------------------------------------------------------------
 
@@ -46,4 +32,4 @@ const VocalOnsetSnapToggle: React.FC = () => {
 
 // -- Exports -------------------------------------------------------------------
 
-export { VocalOnsetSnapToggle, describeOnsetStatus };
+export { VocalOnsetSnapToggle };

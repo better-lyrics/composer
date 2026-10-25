@@ -1,8 +1,7 @@
 import { Button, type ButtonProps } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
-import { findMatchingShortcut } from "@/utils/shortcut-matcher";
-import { isTypingTarget } from "@/utils/typing-target";
+import { keepSpaceForFocusedControl } from "@/views/timeline/beat-grid/keep-space-for-focused-control";
 import { type Icon, IconChevronLeft, IconHandFinger } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -37,12 +36,6 @@ const FOCUSABLE_CONTROL = "button:not(:disabled), input:not(:disabled)";
 const SET_BY_HAND_BUTTON = "[data-set-by-hand]";
 
 // -- Helpers -------------------------------------------------------------------
-
-// Space presses the focused control here instead of reaching the Timeline shortcuts behind the popover.
-function keepSpaceForFocusedControl(e: React.KeyboardEvent): void {
-  if (e.key !== " " || isTypingTarget(e.target) || findMatchingShortcut(e.nativeEvent, "global") !== null) return;
-  e.stopPropagation();
-}
 
 // A view swap unmounts the focused control, so the new view takes focus unless one of its controls already did.
 function focusIfFocusLost(body: HTMLDivElement | null, selector: string): void {
@@ -152,15 +145,4 @@ const SetByHandButton: React.FC<{ variant?: ButtonProps["variant"]; onClick: () 
 
 // -- Exports -------------------------------------------------------------------
 
-export {
-  PopActions,
-  PopBody,
-  PopButton,
-  PopGroup,
-  PopHead,
-  PopIconButton,
-  PopRow,
-  PopText,
-  SetByHandButton,
-  keepSpaceForFocusedControl,
-};
+export { PopActions, PopBody, PopButton, PopGroup, PopHead, PopIconButton, PopRow, PopText, SetByHandButton };
