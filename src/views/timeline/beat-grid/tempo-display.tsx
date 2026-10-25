@@ -4,7 +4,7 @@ import { cn } from "@/utils/cn";
 import { formatBpm } from "@/utils/format-bpm";
 import { pluralize } from "@/utils/pluralize";
 import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
-import { useRef } from "react";
+import { Fragment, useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -71,9 +71,14 @@ const TempoDisplay: React.FC<{ grid: BeatGrid; stats: TempoStats }> = ({ grid, s
         <b className={cn(BPM_NUMBER_CLASS, "select-text cursor-text")}>{formatBpm(stats.bpm)}</b>
         <span className="text-xs leading-[1.3] font-medium text-(--on-display-dim)">BPM</span>
       </span>
-      <span className="text-[12.5px] leading-[1.2] text-(--muted) whitespace-nowrap overflow-hidden text-ellipsis">
-        <b className="font-medium tabular-nums text-(--label)">{meter}</b>
-        {rest.map((fact) => ` ・ ${fact}`).join("")}
+      <span className="text-[12.5px] leading-[1.2] text-(--muted)">
+        <b className="font-medium tabular-nums text-(--label) whitespace-nowrap">{meter}</b>
+        {rest.map((fact) => (
+          <Fragment key={fact}>
+            {"\u00a0・ "}
+            <span className="whitespace-nowrap">{fact}</span>
+          </Fragment>
+        ))}
       </span>
       <BeatLeds grid={grid} />
     </div>
