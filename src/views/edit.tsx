@@ -435,7 +435,7 @@ const EditPanel: React.FC = () => {
           <div className="flex flex-col flex-1 min-w-0">
             <label
               htmlFor={textareaId}
-              className="flex items-center h-7 mb-2 text-[13px] font-medium select-none text-(--label)"
+              className="flex items-center self-start h-7 mb-2 text-[13px] font-medium select-none text-(--label)"
             >
               Paste or type lyrics
             </label>

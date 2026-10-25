@@ -1,5 +1,4 @@
 import { useSettingsStore } from "@/stores/settings";
-import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { IconButton } from "@/ui/icon-button";
 import { Popover } from "@/ui/popover";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
@@ -21,7 +20,6 @@ type SnapMenuView = "sources" | "beat-grid";
 const SnapLatch: React.FC = () => {
   const enabled = useSettingsStore((s) => s.timelineSnap);
   const isBypassing = useTimelineStore((s) => s.isBypassing);
-  const toggleKeys = getEffectiveKeysArray("timeline.toggleSnap");
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<SnapMenuView>("sources");
   const [pill, setPill] = useState<HTMLDivElement | null>(null);
@@ -45,7 +43,8 @@ const SnapLatch: React.FC = () => {
         shortcut="timeline.toggleSnap"
         onClick={() => useSettingsStore.getState().set("timelineSnap", !enabled)}
         className={cn(isBypassing && "opacity-50")}
-        title={`Snap${toggleKeys.length ? ` (${toggleKeys.join(" ")})` : ""} · hold ${MOD_KEY} to bypass`}
+        description={`Hold ${MOD_KEY} to bypass`}
+        iconOnly
       >
         <IconMagnet />
       </ShortcutToggleButton>

@@ -57,7 +57,7 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
             shortcut="sync.toggleTextVariant"
             onClick={toggleTextVariant}
             disabled={!hasTransliteration}
-            title="Toggle original / transliteration text"
+            description="Toggle original / transliteration text"
           >
             <IconLanguage />
           </ShortcutToggleButton>
