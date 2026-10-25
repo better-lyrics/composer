@@ -11,22 +11,22 @@ interface DecodedAudio {
 
 interface DecodeOptions {
   stripPriming?: boolean;
+  sampleRate?: number;
 }
 
 async function decodeFileToFloat32(file: File | Blob, opts: DecodeOptions = {}): Promise<DecodedAudio> {
   const buf = await file.arrayBuffer();
   const shouldStrip = opts.stripPriming !== false;
+  const sampleRate = opts.sampleRate ?? TARGET_SAMPLE_RATE;
   const priming = shouldStrip ? parseLamePriming(buf) : { samples: 0, sampleRate: 0 };
   const trimAtTarget =
-    priming.samples > 0 && priming.sampleRate > 0
-      ? Math.round((priming.samples * TARGET_SAMPLE_RATE) / priming.sampleRate)
-      : 0;
+    priming.samples > 0 && priming.sampleRate > 0 ? Math.round((priming.samples * sampleRate) / priming.sampleRate) : 0;
   const applyStrip = (channels: Float32Array[]): Float32Array[] => stripLeading(channels, trimAtTarget);
 
-  const ctx = new OfflineAudioContext(TARGET_CHANNELS, 1, TARGET_SAMPLE_RATE);
+  const ctx = new OfflineAudioContext(TARGET_CHANNELS, 1, sampleRate);
   const decoded = await ctx.decodeAudioData(buf);
 
-  if (decoded.sampleRate === TARGET_SAMPLE_RATE && decoded.numberOfChannels === TARGET_CHANNELS) {
+  if (decoded.sampleRate === sampleRate && decoded.numberOfChannels === TARGET_CHANNELS) {
     const channels: Float32Array[] = [];
     for (let c = 0; c < TARGET_CHANNELS; c++) {
       const out = new Float32Array(decoded.length);
@@ -34,12 +34,12 @@ async function decodeFileToFloat32(file: File | Blob, opts: DecodeOptions = {}):
       channels.push(out);
     }
     const stripped = applyStrip(channels);
-    return { channels: stripped, sampleRate: TARGET_SAMPLE_RATE, numFrames: stripped[0]?.length ?? 0 };
+    return { channels: stripped, sampleRate, numFrames: stripped[0]?.length ?? 0 };
   }
 
   const durationSec = decoded.length / decoded.sampleRate;
-  const targetFrames = Math.ceil(durationSec * TARGET_SAMPLE_RATE);
-  const resampleCtx = new OfflineAudioContext(TARGET_CHANNELS, targetFrames, TARGET_SAMPLE_RATE);
+  const targetFrames = Math.ceil(durationSec * sampleRate);
+  const resampleCtx = new OfflineAudioContext(TARGET_CHANNELS, targetFrames, sampleRate);
   const source = resampleCtx.createBufferSource();
 
   if (decoded.numberOfChannels === 1) {
@@ -62,7 +62,7 @@ async function decodeFileToFloat32(file: File | Blob, opts: DecodeOptions = {}):
     channels.push(out);
   }
   const stripped = applyStrip(channels);
-  return { channels: stripped, sampleRate: TARGET_SAMPLE_RATE, numFrames: stripped[0]?.length ?? 0 };
+  return { channels: stripped, sampleRate, numFrames: stripped[0]?.length ?? 0 };
 }
 
 async function sha256Hex(bytes: ArrayBuffer | Uint8Array): Promise<string> {
