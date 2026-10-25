@@ -49,6 +49,7 @@ const MAX_PENDING_TILES = 32;
 const tiles = new ByteLru<OffscreenCanvas>(TILE_CACHE_BYTES);
 const pendingTiles = new Map<string, PendingTile>();
 const rowTables = new Map<string, RowBinTable>();
+let tilesGeneration = -1;
 
 // -- Functions -----------------------------------------------------------------
 
@@ -74,6 +75,12 @@ function tileAt(
   index: number,
   budget: TileBudget,
 ): { canvas: OffscreenCanvas; complete: boolean } | null {
+  // Tiles of an earlier analysis can never be drawn again.
+  if (view.session.generation !== tilesGeneration) {
+    tilesGeneration = view.session.generation;
+    tiles.clear();
+    pendingTiles.clear();
+  }
   const heightPx = Math.round(view.heightCss * view.pixelRatio);
   const key = tileKey({
     analysisGeneration: view.session.generation,
