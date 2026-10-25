@@ -34,6 +34,14 @@ interface SungClip {
   shown: number;
 }
 
+interface LaneInks {
+  colour: string;
+  rows: PitchRows;
+  ink: Rgb;
+  lit: Rgb;
+  warning: Rgb;
+}
+
 interface PitchLaneProps {
   line: LyricLine;
   kind: PitchLaneKind;
@@ -65,6 +73,18 @@ function singerLitInk(agentColour: string): Rgb {
   return rgbOf(`color-mix(in oklab, ${agentColour} ${light ? 70 : 62}%, ${light ? "black" : "white"})`);
 }
 
+// Resolving a colour reads computed styles, so a lane resolves its inks again only when the singer or theme changes.
+function laneInks(previous: LaneInks | null, colour: string, rows: PitchRows): LaneInks {
+  if (previous && previous.colour === colour && previous.rows === rows) return previous;
+  return {
+    colour,
+    rows,
+    ink: singerInk(colour),
+    lit: singerLitInk(colour),
+    warning: rgbOf(cssVariable("--color-composer-warning")),
+  };
+}
+
 // -- Components ----------------------------------------------------------------
 
 const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line, kind, height, color, rows }) => {
@@ -76,6 +96,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
   const ghostRef = useRef<HTMLCanvasElement>(null);
   const spillCountRef = useRef<number | null>(null);
   const sungClipRef = useRef<SungClip | null>(null);
+  const inksRef = useRef<LaneInks | null>(null);
 
   const revealSung = useCallback(() => {
     const sung = sungRef.current;
@@ -122,8 +143,10 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
       fadeOutSnapshot(spark, ghost, pitchLineMotion.spillFadeMs);
     }
     spillCountRef.current = spills.length;
-    drawPitchLane(spark, drawing, spills, singerInk(color), rgbOf(cssVariable("--color-composer-warning")));
-    drawSungLane(sung, drawing, singerLitInk(color));
+    const inks = laneInks(inksRef.current, color, rows);
+    inksRef.current = inks;
+    drawPitchLane(spark, drawing, spills, inks.ink, inks.warning);
+    drawSungLane(sung, drawing, inks.lit);
     sungClipRef.current = { left: window.left, width: window.width, zoom, shown: -1 };
     revealSung();
   }, [rows, line, kind, zoom, height, color, selected, live, revealSung]);
