@@ -1,5 +1,14 @@
 import { manualGrid } from "@/domain/tempo/grid-edits";
-import { EMPTY_TAPS, type TapState, isValidBpm, sanitizeBpmInput, tapTempo } from "@/domain/tempo/tap-tempo";
+import {
+  EMPTY_TAPS,
+  MAX_BPM,
+  MIN_BPM,
+  type TapState,
+  isValidBpm,
+  sanitizeBpmInput,
+  tapAnchor,
+  tapTempo,
+} from "@/domain/tempo/tap-tempo";
 import { tempoStats } from "@/domain/tempo/tempo-stats";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
@@ -10,7 +19,6 @@ import { formatBpm } from "@/utils/format-bpm";
 import { formatTime } from "@/utils/format-time";
 import { pluralize } from "@/utils/pluralize";
 import { matchesShortcutBinding } from "@/utils/shortcut-matcher";
-import { isTypingTarget } from "@/utils/typing-target";
 import { PopActions, PopButton, PopGroup, PopHead, PopRow } from "@/views/timeline/beat-grid/beat-grid-layout";
 import { TapKey } from "@/views/timeline/beat-grid/tap-key";
 import { BPM_NUMBER_CLASS, DISPLAY_SURFACE, StaticLeds } from "@/views/timeline/beat-grid/tempo-display";
@@ -32,7 +40,8 @@ const METER_OPTIONS: readonly { value: Meter; label: string }[] = [
 
 // -- Helpers -------------------------------------------------------------------
 
-function tapStatus(taps: TapState | null): string {
+function tapStatus(taps: TapState | null, text: string, valid: boolean): string {
+  if (!taps && text !== "" && !valid) return `Use ${MIN_BPM} to ${MAX_BPM} BPM`;
   if (!taps) return "Play, then tap along";
   const count = taps.taps.length;
   if (count < TAPS_FOR_TEMPO) return `Tap ${pluralize(TAPS_FOR_TEMPO - count, "more time")}`;
@@ -41,13 +50,13 @@ function tapStatus(taps: TapState | null): string {
 
 // -- Components ----------------------------------------------------------------
 
-const PlayheadTime: React.FC = () => {
+const BarOneTime: React.FC<{ tappedAt: number | null }> = ({ tappedAt }) => {
   const currentTime = useAudioStore((s) => s.currentTime);
   return (
     <span className="text-[12.5px] text-(--muted) whitespace-nowrap">
-      At the playhead{" "}
+      {tappedAt === null ? "At the playhead" : "At the first tap"}{" "}
       <span className="ml-1 font-mono text-xs font-medium tabular-nums text-(--label) select-text">
-        {formatTime(currentTime, 2)}
+        {formatTime(tappedAt ?? currentTime, 2)}
       </span>
     </span>
   );
@@ -64,11 +73,15 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   const fieldRef = useRef<HTMLInputElement>(null);
   const bpm = Number.parseFloat(text);
   const valid = isValidBpm(bpm);
+  const tappedAt = taps && valid ? tapAnchor(taps, bpm) : null;
 
   const applyTempo = () => {
     if (!valid) return;
     const duration = useAudioStore.getState().duration;
-    const grid = manualGrid({ bpm, beatsPerBar: Number(meter), anchor: livePlaybackTime() }, duration);
+    const grid = manualGrid(
+      { bpm, beatsPerBar: Number(meter), anchor: Math.max(0, tappedAt ?? livePlaybackTime()) },
+      duration,
+    );
     useProjectStore.getState().applyBeatGridWithHistory(grid);
     const detection = useBeatDetectionStore.getState();
     if (detection.status === "error") detection.dismiss();
@@ -76,21 +89,20 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   };
 
   const tap = () => {
-    const next = tapTempo(taps ?? EMPTY_TAPS, performance.now());
+    if (!useAudioStore.getState().isPlaying) return;
+    const next = tapTempo(taps ?? EMPTY_TAPS, livePlaybackTime() * 1000);
     setTaps(next);
     if (next.bpm !== null) setText(formatBpm(next.bpm));
   };
 
-  const tapOnShortcut = (e: React.KeyboardEvent) => {
-    if (isTypingTarget(e.target) || !matchesShortcutBinding(e.nativeEvent, "sync.tap")) return;
-    e.preventDefault();
-    e.stopPropagation();
-    if (!e.repeat) tap();
-  };
-
-  const typeIntoField = (e: React.KeyboardEvent) => {
+  const onTapKeyDown = (e: React.KeyboardEvent) => {
+    if (matchesShortcutBinding(e.nativeEvent, "sync.tap")) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!e.repeat) tap();
+      return;
+    }
     if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1) return;
-    if (matchesShortcutBinding(e.nativeEvent, "sync.tap")) return;
     const typed = sanitizeBpmInput(e.key);
     if (typed === "") return;
     e.preventDefault();
@@ -103,7 +115,7 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   };
 
   return (
-    <div onKeyDown={tapOnShortcut}>
+    <div>
       <PopHead title="Set tempo" onBack={onDone} />
       <div className={cn("grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 mt-2.5 p-2.5", DISPLAY_SURFACE)}>
         <span className="justify-self-start flex items-baseline gap-1.5 -mx-1 -my-[3px] px-1 py-[3px] rounded-md transition-[background-color,box-shadow] duration-150 hover:bg-(--layer-1) focus-within:shadow-[inset_0_0_0_1px_var(--lit-ring)]">
@@ -115,6 +127,7 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
               setTaps(null);
             }}
             onKeyDown={(e) => {
+              if (e.key === "Escape") return;
               if (matchesShortcutBinding(e.nativeEvent, "global.playPauseWhileTyping")) return;
               e.stopPropagation();
               if (e.key !== "Enter") return;
@@ -132,11 +145,11 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
           />
           <span className="text-xs leading-[1.3] font-medium text-(--on-display-dim)">BPM</span>
         </span>
-        <TapKey onTap={tap} onKeyDown={typeIntoField} className="col-start-2 row-start-1 row-span-2 self-center" />
+        <TapKey onTap={tap} onKeyDown={onTapKeyDown} className="col-start-2 row-start-1 row-span-2 self-center" />
         <span className="flex items-center gap-2.5 min-w-0">
           <StaticLeds lit={taps ? Math.min(taps.taps.length, TAPS_FOR_TEMPO) : 0} />
           <span className="text-[12.5px] leading-[1.2] text-(--muted) whitespace-nowrap" aria-live="polite">
-            {tapStatus(taps)}
+            {tapStatus(taps, text, valid)}
           </span>
         </span>
       </div>
@@ -151,7 +164,7 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
           />
         </PopRow>
         <PopRow label="Bar 1">
-          <PlayheadTime />
+          <BarOneTime tappedAt={tappedAt} />
         </PopRow>
       </PopGroup>
       <PopActions className="mt-4">

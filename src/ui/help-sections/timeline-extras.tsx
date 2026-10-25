@@ -133,8 +133,8 @@ const TimelineExtras: React.FC = () => (
 
     <HelpTopic title="Beat grid">
       <p className={PROSE}>
-        The beat grid draws the song's bars and beats behind the waveform so words can snap to the beat. Open it from
-        the wave icon at the left of the waveform.
+        The beat grid reads the song's tempo in BPM and draws its bars and beats behind the waveform, so words can snap
+        to the beat. Open it from the wave icon at the left of the waveform.
       </p>
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
@@ -142,7 +142,10 @@ const TimelineExtras: React.FC = () => (
           few seconds and works offline.
         </li>
         <li>
-          <strong>Set by hand</strong> to type a tempo, or play the song and tap along. Bar 1 starts at the playhead.
+          <strong>Set by hand</strong> to type a tempo, or press{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.playPause")} /> to play and tap along with{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} />. Bar 1 starts at your first tap, or at the
+          playhead if you typed the tempo.
         </li>
         <li>
           <strong>Lines</strong> sets the finest lines: bars, beats, or halves, thirds or quarters of a beat. Finer

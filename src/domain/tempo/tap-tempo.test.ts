@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY_TAPS, isValidBpm, sanitizeBpmInput, tapTempo } from "@/domain/tempo/tap-tempo";
+import { EMPTY_TAPS, isValidBpm, sanitizeBpmInput, tapAnchor, tapTempo } from "@/domain/tempo/tap-tempo";
 
 function tapEvery(gapMs: number, count: number, start = 1000) {
   let state = EMPTY_TAPS;
@@ -27,10 +27,31 @@ describe("tapTempo", () => {
     expect(tapTempo(tapEvery(500, 2), 1000 + 500 + 2000).taps).toHaveLength(3);
   });
 
+  it("starts over when the song jumps back", () => {
+    const state = tapTempo(tapEvery(500, 4), 1200);
+    expect(state.taps).toEqual([1200]);
+  });
+
   it("keeps only the last 9 taps", () => {
     const state = tapEvery(500, 10);
     expect(state.taps).toHaveLength(9);
     expect(state.taps[0]).toBe(1500);
+  });
+});
+
+describe("tapAnchor", () => {
+  it("is the first tap of an even run", () => {
+    expect(tapAnchor(tapEvery(500, 5, 3000), 120)).toBeCloseTo(3);
+  });
+
+  it("averages out early and late taps", () => {
+    let state = EMPTY_TAPS;
+    for (const [i, jitter] of [0, 20, -20, 10, -10].entries()) state = tapTempo(state, 3000 + i * 500 + jitter);
+    expect(tapAnchor(state, 120)).toBeCloseTo(3);
+  });
+
+  it("is null without a tempo", () => {
+    expect(tapAnchor(tapTempo(EMPTY_TAPS, 1000), 120)).toBeNull();
   });
 });
 
