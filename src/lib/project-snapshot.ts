@@ -1,7 +1,7 @@
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { keepsYouTubeAudio } from "@/domain/storage/audio-retention";
 import type { ProjectSaveInput } from "@/lib/persistence";
-import { type AudioSource, useAudioStore } from "@/stores/audio";
+import { type AudioSource, playableFile, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
@@ -21,13 +21,6 @@ function projectAudioSource(state: {
   expectedAudio: SavedAudioSource | null;
 }): SavedAudioSource | undefined {
   return toSavedAudioSource(state.source) ?? state.expectedAudio ?? undefined;
-}
-
-function playableFile(source: AudioSource): File | null {
-  if (!source) return null;
-  if (source.type === "file") return source.file;
-  if (source.type === "youtube") return source.file ?? null;
-  return null;
 }
 
 function keepsYouTubeAudioNow(): boolean {

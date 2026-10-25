@@ -199,5 +199,22 @@ function seekBy(seconds: number): void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { FULL_VOLUME, NORMAL_PLAYBACK_RATE, livePlaybackTime, seekBy, toggledPlaybackRate, useAudioStore };
+// -- Source --------------------------------------------------------------------
+
+function playableFile(source: AudioSource): File | null {
+  if (!source) return null;
+  if (source.type === "file") return source.file;
+  if (source.type === "youtube") return source.file ?? null;
+  return null;
+}
+
+export {
+  FULL_VOLUME,
+  NORMAL_PLAYBACK_RATE,
+  livePlaybackTime,
+  playableFile,
+  seekBy,
+  toggledPlaybackRate,
+  useAudioStore,
+};
 export type { AudioSource };
