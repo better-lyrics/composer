@@ -1,5 +1,6 @@
 import { derivedRecordKey, getDerivedRecord, putDerivedRecords } from "@/audio/separation/stem-derived-records";
 import type { PitchTrack } from "@/domain/pitch/track";
+import { notifyStorageSignal } from "@/lib/storage-signals";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -66,7 +67,7 @@ async function readCachedPitchTrack(jobKey: string): Promise<PitchTrack | null> 
 
 async function cachePitchTrack(jobKey: string, track: PitchTrack): Promise<void> {
   const blob = new Blob([encodePitchTrack(track)], { type: "application/octet-stream" });
-  await putDerivedRecords(jobKey, new Map([[pitchRecordKey(jobKey), blob]]));
+  if (await putDerivedRecords(jobKey, new Map([[pitchRecordKey(jobKey), blob]]))) notifyStorageSignal("media-stored");
 }
 
 // -- Exports ------------------------------------------------------------------
