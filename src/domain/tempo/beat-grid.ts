@@ -28,6 +28,7 @@ interface BeatGrid {
 
 const DOWNBEAT_MATCH_SECONDS = 0.03;
 const DEFAULT_BEATS_PER_BAR = 4;
+const MIN_BEATS_PER_BAR = 2;
 const MAX_BEATS_PER_BAR = 12;
 const BEAT_TOLERANCE_SECONDS = 0.001;
 
@@ -47,7 +48,7 @@ function mostCommonBarLength(downbeatIndices: readonly number[]): number {
       bestCount = count;
     }
   }
-  return best <= MAX_BEATS_PER_BAR ? best : DEFAULT_BEATS_PER_BAR;
+  return best >= MIN_BEATS_PER_BAR && best <= MAX_BEATS_PER_BAR ? best : DEFAULT_BEATS_PER_BAR;
 }
 
 function nearestBeatIndex(beats: readonly number[], time: number, from: number): number {

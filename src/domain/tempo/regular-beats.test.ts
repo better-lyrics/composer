@@ -67,6 +67,12 @@ describe("regressions", () => {
     expect(new Set(introBars)).toEqual(new Set([4]));
   });
 
+  it("regression: never reads bars one beat long when the model hears a downbeat on almost every beat", () => {
+    const { beats, downbeats } = regularBeats(detections.downbeatOnEveryBeat);
+    expect(detectedGrid({ beats, downbeats }).beatsPerBar).toBeGreaterThan(1);
+    for (const length of barLengths(beats, downbeats)) expect(length).toBeGreaterThan(1);
+  });
+
   it("regression: does not read a stretch of loud off-beats as double time", () => {
     const { beats } = regularBeats(detections.offBeatStretch);
     const step = median(intervals(beats));
