@@ -67,4 +67,3 @@ async function detectBeats(options: DetectBeatsOptions): Promise<DetectedBeats> 
 // -- Exports -------------------------------------------------------------------
 
 export { detectBeats };
-export type { BeatDetectionError, DetectBeatsOptions };

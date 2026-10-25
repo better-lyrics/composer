@@ -59,5 +59,5 @@ function mergeChunkLogits(chunks: readonly ChunkLogits[], starts: readonly numbe
 
 // -- Exports -------------------------------------------------------------------
 
-export { BEAT_CHUNK_BORDER, BEAT_CHUNK_FRAMES, chunkInput, chunkStarts, mergeChunkLogits };
-export type { ChunkInput, ChunkLogits };
+export { BEAT_CHUNK_BORDER, chunkInput, chunkStarts, mergeChunkLogits };
+export type { ChunkLogits };

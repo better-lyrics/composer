@@ -155,4 +155,3 @@ function logMel(signal: Float32Array): LogMel {
 // -- Exports -------------------------------------------------------------------
 
 export { BEAT_FPS, BEAT_SAMPLE_RATE, N_MELS, logMel };
-export type { LogMel };

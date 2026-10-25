@@ -21,7 +21,6 @@ interface GridDensity {
 
 // -- Constants -----------------------------------------------------------------
 
-const GRID_LINES: readonly GridLines[] = ["bar", "1", "2", "3", "4"];
 const MIN_SUBDIVISION_PX = 14;
 const MIN_BEAT_PX = 10;
 const SAME_TIME_SECONDS = 1e-6;
@@ -80,5 +79,5 @@ function gridPointAt(points: readonly GridPoint[], time: number): GridPoint | nu
 
 // -- Exports -------------------------------------------------------------------
 
-export { GRID_LINES, gridDensity, gridPointAt, gridPointLabel, gridPoints };
-export type { GridDensity, GridLines, GridPoint, GridPointKind };
+export { gridDensity, gridPointAt, gridPointLabel, gridPoints };
+export type { GridLines, GridPoint, GridPointKind };

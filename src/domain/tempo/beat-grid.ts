@@ -125,4 +125,4 @@ function isDownbeat(grid: BeatGrid, index: number): boolean {
 // -- Exports -------------------------------------------------------------------
 
 export { barNumberAt, barTimes, beatInBar, beatIndexAt, beatTime, detectedGrid, isDownbeat };
-export type { BeatGrid, BeatGridSource, DetectedBeats, ManualTempo };
+export type { BeatGrid, DetectedBeats, ManualTempo };
