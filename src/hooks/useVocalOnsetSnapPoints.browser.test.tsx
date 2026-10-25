@@ -1,4 +1,5 @@
 import { getStemJobOnsets, putStem, putStemJobOnsets, stemJobKey } from "@/audio/separation/stem-store";
+import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -95,15 +96,17 @@ describe("useVocalOnsetSnapPoints", () => {
       expect(useTimelineStore.getState().vocalOnsetDetectionStatus).toBe("idle");
     });
 
-    it("regression: clears user-placed custom snap points when the audio source changes", async () => {
+    it("regression: clears user-placed custom snap points and the beat grid when the audio source changes", async () => {
       await render(<HookHarness />);
 
       useProjectStore.getState().setCustomSnapPoints([2, 4, 6]);
+      useProjectStore.getState().setBeatGrid(detectedGrid({ beats: [1, 2, 3], downbeats: [1] }));
       expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([2, 4, 6]);
 
       useAudioStore.setState({ source: { type: "file", file: createAudioFile("another-song.wav") } });
 
       await expect.poll(() => useProjectStore.getState().customSnapPoints).toEqual([]);
+      expect(useProjectStore.getState().beatGrid).toBeNull();
     });
 
     it("regression: clears stale onset points when switching between file-less youtube sources", async () => {

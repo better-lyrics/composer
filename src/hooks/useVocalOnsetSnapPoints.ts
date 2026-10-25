@@ -102,6 +102,7 @@ function useVocalOnsetSnapPoints(): void {
       const timeline = useTimelineStore.getState();
       timeline.setVocalOnsetSnapPoints([]);
       useProjectStore.getState().clearCustomSnapPoints();
+      useProjectStore.getState().clearBeatGrid();
       timeline.setVocalOnsetDetectionStatus("idle");
     });
 
