@@ -8,7 +8,10 @@ function overviewBandHeight(spectrumVisible: boolean, storedSpectrumHeight: numb
   return spectrumVisible ? clampSpectrumBandHeight(storedSpectrumHeight) : WAVEFORM_HEIGHT;
 }
 
+// While the band animates to a new height the rows follow its animated min-height, so read that when mounted.
 function currentOverviewBandHeight(): number {
+  const band = document.querySelector<HTMLElement>("[data-overview-band]");
+  if (band) return Number.parseFloat(getComputedStyle(band).minHeight) || WAVEFORM_HEIGHT;
   return overviewBandHeight(
     useTimelineStore.getState().spectrumVisible,
     useSettingsStore.getState().spectrumBandHeight,
