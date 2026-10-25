@@ -56,6 +56,8 @@ async function playRegionOnTimeline(): Promise<HTMLAudioElement> {
 
 async function runToSongEnd(audio: HTMLAudioElement): Promise<void> {
   await expect.poll(() => audio.paused).toBe(false);
+  // Play seeks to the lead-in first; a test seek made before that lands merges into it.
+  await expect.poll(() => !audio.seeking && audio.currentTime >= WORD_BEGIN - LEAD_IN - 0.005).toBe(true);
   const ended = new Promise((resolve) => audio.addEventListener("ended", resolve, { once: true }));
   audio.currentTime = audio.duration;
   await ended;
