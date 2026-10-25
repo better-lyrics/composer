@@ -33,7 +33,6 @@ interface SeparationState extends StemImportState {
 interface SeparationActions {
   refreshModelCacheStatus: () => Promise<void>;
   refreshForCurrentSource: () => Promise<void>;
-  downloadModel: () => Promise<void>;
   separate: () => Promise<void>;
   importStem: (slot: StemSlot, file: File) => Promise<void>;
   acceptPendingImport: () => Promise<void>;
@@ -143,21 +142,6 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
       });
     } finally {
       endLoadingStemJob(cacheJobKey);
-    }
-  },
-
-  downloadModel: async () => {
-    if (!get().hostingConfigured) {
-      set({
-        status: "error",
-        error: { code: "no-base-url", message: "Vocal model URL is not configured." },
-      });
-      return;
-    }
-    isCancelling = false;
-    const variant = useSettingsStore.getState().vocalModelVariant;
-    if (await runModelDownload(set, variant, () => isCancelling)) {
-      set({ status: "idle", modelCached: true });
     }
   },
 

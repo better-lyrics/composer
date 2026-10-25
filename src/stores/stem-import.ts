@@ -70,7 +70,7 @@ async function commitStemImport(
     return true;
   } catch (error) {
     console.error(LOG_PREFIX, "could not store the imported stem", error);
-    set({ importError: { slot, message: `Unable to save ${file.name}. Free up space in Settings and try again.` } });
+    set({ importError: { slot, message: `Unable to save ${file.name}. Free up storage space and try again.` } });
     return false;
   }
 }

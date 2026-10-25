@@ -14,10 +14,8 @@ type SetModelDownloadState = (partial: Partial<ModelDownloadState>) => void;
 
 // -- Download -----------------------------------------------------------------
 
-// Shared download-init prologue used by both `downloadModel` (which then sets
-// idle) and `separate` (which then continues to processing). Returns true if
-// the model initialised, false if it aborted or errored. On abort/error the
-// caller's status has already been written to "idle" or "error".
+// Download-init prologue for `separate`. Returns true if the model initialised, false if it aborted or
+// errored; on abort or error the caller's status has already been written to "idle" or "error".
 async function runModelDownload(
   set: SetModelDownloadState,
   variant: VocalModelVariant,
