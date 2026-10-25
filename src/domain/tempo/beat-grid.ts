@@ -19,6 +19,7 @@ interface BeatGrid {
   downbeatIndices: number[];
   beatsPerBar: number;
   offsetMs: number;
+  tempoScale: number;
   origin: DetectedBeats | ManualTempo;
 }
 
@@ -71,6 +72,7 @@ function detectedGrid(detection: DetectedBeats): BeatGrid {
     downbeatIndices,
     beatsPerBar: mostCommonBarLength(downbeatIndices),
     offsetMs: 0,
+    tempoScale: 1,
     origin: { beats: detection.beats.slice(), downbeats: detection.downbeats.slice() },
   };
 }

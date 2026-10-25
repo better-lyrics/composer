@@ -171,7 +171,7 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
             onChange={setMeter}
           />
         </PopRow>
-        <PopRow label="Bar 1">
+        <PopRow label="Downbeat">
           <BarOneTime tappedAt={tappedAt} />
         </PopRow>
       </PopGroup>

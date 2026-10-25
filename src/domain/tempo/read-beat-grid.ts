@@ -5,6 +5,7 @@ import { isValidBpm } from "@/domain/tempo/tap-tempo";
 
 const MAX_BEATS_PER_BAR = 12;
 const MAX_OFFSET_MS = 200;
+const MAX_TEMPO_SCALE_STEPS = 4;
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -29,6 +30,12 @@ function readDownbeatIndices(value: unknown, beatCount: number): number[] | null
   return valid ? (value as number[]) : null;
 }
 
+function readTempoScale(value: unknown): number | null {
+  if (value === undefined) return 1;
+  if (typeof value !== "number" || value <= 0 || !Number.isInteger(Math.log2(value))) return null;
+  return Math.abs(Math.log2(value)) <= MAX_TEMPO_SCALE_STEPS ? value : null;
+}
+
 function readDetectedOrigin(value: unknown): DetectedBeats | null {
   if (!isRecord(value) || !isAscendingTimes(value.beats) || !isAscendingTimes(value.downbeats)) return null;
   return { beats: value.beats, downbeats: value.downbeats };
@@ -51,7 +58,9 @@ function readBeatGrid(value: unknown): BeatGrid | null {
   const downbeatIndices = readDownbeatIndices(value.downbeatIndices, beats.length);
   if (!downbeatIndices) return null;
   if (typeof offsetMs !== "number" || !Number.isFinite(offsetMs) || Math.abs(offsetMs) > MAX_OFFSET_MS) return null;
-  const fields = { beats, downbeatIndices, beatsPerBar, offsetMs };
+  const tempoScale = readTempoScale(value.tempoScale);
+  if (tempoScale === null) return null;
+  const fields = { beats, downbeatIndices, beatsPerBar, offsetMs, tempoScale };
   if (source === "detected") {
     const origin = readDetectedOrigin(value.origin);
     return origin ? { source, ...fields, origin } : null;

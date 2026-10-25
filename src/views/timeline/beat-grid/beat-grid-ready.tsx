@@ -80,11 +80,15 @@ const GridGroup: React.FC<{ grid: BeatGrid }> = ({ grid }) => {
   );
 };
 
-const FixGridGroup: React.FC<{ grid: BeatGrid; onSetByHand: () => void }> = ({ grid, onSetByHand }) => {
+const FixGridGroup: React.FC<{ grid: BeatGrid; duration: number; onSetByHand: () => void }> = ({
+  grid,
+  duration,
+  onSetByHand,
+}) => {
   const apply = useProjectStore((s) => s.applyBeatGridWithHistory);
   return (
     <PopGroup label="Fix the grid">
-      <PopRow label="Bar 1">
+      <PopRow label="Downbeat">
         <PopButton
           icon={IconFlag}
           title="Makes the beat at the playhead the first beat of a bar"
@@ -97,16 +101,20 @@ const FixGridGroup: React.FC<{ grid: BeatGrid; onSetByHand: () => void }> = ({ g
         <div className="flex gap-1.5">
           <SetByHandButton onClick={onSetByHand} />
           <Tooltip
-            content={canHalve(grid) ? `${formatBpm(tempoStats(halved(grid))?.bpm ?? 0)} BPM` : "Too slow to halve"}
+            content={
+              canHalve(grid) ? `${formatBpm(tempoStats(halved(grid, duration))?.bpm ?? 0)} BPM` : "Too slow to halve"
+            }
           >
-            <PopButton disabled={!canHalve(grid)} onClick={() => apply(halved(grid))}>
+            <PopButton disabled={!canHalve(grid)} onClick={() => apply(halved(grid, duration))}>
               Half
             </PopButton>
           </Tooltip>
           <Tooltip
-            content={canDouble(grid) ? `${formatBpm(tempoStats(doubled(grid))?.bpm ?? 0)} BPM` : "Too fast to double"}
+            content={
+              canDouble(grid) ? `${formatBpm(tempoStats(doubled(grid, duration))?.bpm ?? 0)} BPM` : "Too fast to double"
+            }
           >
-            <PopButton disabled={!canDouble(grid)} onClick={() => apply(doubled(grid))}>
+            <PopButton disabled={!canDouble(grid)} onClick={() => apply(doubled(grid, duration))}>
               Double
             </PopButton>
           </Tooltip>
@@ -154,7 +162,7 @@ const BeatGridReady: React.FC<BeatGridReadyProps> = ({ grid, onSetByHand, onBack
         <ShowOnWaveformRow />
       </PopGroup>
       <GridGroup grid={grid} />
-      {stats && <FixGridGroup grid={grid} onSetByHand={onSetByHand} />}
+      {stats && <FixGridGroup grid={grid} duration={duration} onSetByHand={onSetByHand} />}
       {isEdited(grid, duration) ? <EditedFooter grid={grid} duration={duration} /> : <div className="h-1" />}
     </>
   );

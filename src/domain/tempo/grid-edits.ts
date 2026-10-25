@@ -39,16 +39,8 @@ function withBarOneAt(grid: BeatGrid, time: number): BeatGrid {
 }
 
 function canHalve(grid: BeatGrid): boolean {
-  if (grid.beatsPerBar % 2 !== 0 || grid.beats.length < 3) return false;
-  const bpm = tempoStats(halved(grid))?.bpm;
-  return bpm !== undefined && bpm >= MIN_BPM;
-}
-
-function halved(grid: BeatGrid): BeatGrid {
-  const parity = (grid.downbeatIndices[0] ?? 0) % 2;
-  const beats = grid.beats.filter((_, i) => i % 2 === parity);
-  const downbeatIndices = grid.downbeatIndices.filter((i) => i % 2 === parity).map((i) => (i - parity) / 2);
-  return { ...grid, beats, downbeatIndices, beatsPerBar: grid.beatsPerBar / 2 };
+  const bpm = tempoStats(grid)?.bpm;
+  return bpm !== undefined && grid.downbeatIndices.length >= 2 && bpm / 2 >= MIN_BPM;
 }
 
 function canDouble(grid: BeatGrid): boolean {
@@ -56,18 +48,59 @@ function canDouble(grid: BeatGrid): boolean {
   return bpm !== undefined && bpm * 2 <= MAX_DOUBLED_BPM;
 }
 
-function doubled(grid: BeatGrid): BeatGrid {
+function nearestIndex(times: readonly number[], time: number): number {
+  let lo = 0;
+  let hi = times.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (times[mid] < time) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo > 0 && time - times[lo - 1] < times[lo] - time ? lo - 1 : lo;
+}
+
+function originBeats(grid: BeatGrid, duration: number): readonly number[] {
+  return "bpm" in grid.origin ? manualGrid(grid.origin, duration).beats : grid.origin.beats;
+}
+
+function beatsAtScale(base: readonly number[], scale: number, barTime: number): number[] {
+  if (scale < 1) {
+    const step = Math.round(1 / scale);
+    const phase = nearestIndex(base, barTime) % step;
+    return base.filter((_, i) => i % step === phase);
+  }
   const beats: number[] = [];
-  grid.beats.forEach((time, i) => {
+  base.forEach((time, i) => {
     beats.push(time);
-    if (i < grid.beats.length - 1) beats.push((time + grid.beats[i + 1]) / 2);
+    if (i === base.length - 1) return;
+    for (let part = 1; part < scale; part++) beats.push(time + ((base[i + 1] - time) * part) / scale);
   });
-  return {
-    ...grid,
-    beats,
-    downbeatIndices: grid.downbeatIndices.map((i) => i * 2),
-    beatsPerBar: grid.beatsPerBar * 2,
-  };
+  return beats;
+}
+
+function rescaled(grid: BeatGrid, scale: number, barTimes: readonly number[], duration: number): BeatGrid {
+  const beats = beatsAtScale(originBeats(grid, duration), scale, barTimes[0] ?? 0);
+  const downbeatIndices = [...new Set(barTimes.map((time) => nearestIndex(beats, time)))];
+  return { ...grid, beats, downbeatIndices, tempoScale: scale };
+}
+
+function halved(grid: BeatGrid, duration: number): BeatGrid {
+  const barTimes = grid.downbeatIndices.filter((_, i) => i % 2 === 0).map((i) => grid.beats[i]);
+  return rescaled(grid, grid.tempoScale / 2, barTimes, duration);
+}
+
+function doubled(grid: BeatGrid, duration: number): BeatGrid {
+  const twice = rescaled(
+    grid,
+    grid.tempoScale * 2,
+    grid.downbeatIndices.map((i) => grid.beats[i]),
+    duration,
+  );
+  const downbeatIndices = twice.downbeatIndices.flatMap((index, i) => {
+    const middle = index + grid.beatsPerBar;
+    return middle < (twice.downbeatIndices[i + 1] ?? twice.beats.length) ? [index, middle] : [index];
+  });
+  return { ...twice, downbeatIndices };
 }
 
 // -- Manual tempo and reset ----------------------------------------------------
@@ -84,6 +117,7 @@ function manualGrid(tempo: ManualTempo, duration: number): BeatGrid {
     downbeatIndices: barsFrom(anchorIndex, beats.length, tempo.beatsPerBar),
     beatsPerBar: tempo.beatsPerBar,
     offsetMs: 0,
+    tempoScale: 1,
     origin: { ...tempo },
   };
 }

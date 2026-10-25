@@ -144,8 +144,8 @@ const TimelineExtras: React.FC = () => (
         <li>
           <strong>Set by hand</strong> to type a tempo, or press{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("global.playPause")} /> to play and tap along with{" "}
-          <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} />. Bar 1 starts at your first tap, or at the
-          playhead if you typed the tempo.
+          <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} />. Bars start on your first tap, or at the playhead
+          if you typed the tempo.
         </li>
         <li>
           <strong>Lines</strong> sets the finest lines: bars, beats, or halves, thirds or quarters of a beat. Finer
@@ -153,8 +153,8 @@ const TimelineExtras: React.FC = () => (
         </li>
         <li>
           Grid a little early or late? Nudge it with <strong>Offset</strong>. Bars starting on the wrong beat? Put the
-          playhead on the first beat of a bar and choose <strong>Set at playhead</strong>. <strong>Half</strong> and{" "}
-          <strong>Double</strong> fix a tempo read at twice or half the speed.
+          playhead on the first beat of a bar and choose <strong>Set at playhead</strong> next to Downbeat.{" "}
+          <strong>Half</strong> and <strong>Double</strong> fix a tempo read at twice or half the speed.
         </li>
         <li>Every change can be undone, and the grid saves with the project.</li>
         <li>
