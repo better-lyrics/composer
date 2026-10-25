@@ -2,10 +2,11 @@ import { effectiveBounds } from "@/domain/line/bounds";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { pitchRangeBetween } from "@/domain/pitch/line-range";
-import { spillRuns } from "@/domain/pitch/spill";
+import { songWordCoverage, spillRuns } from "@/domain/pitch/spill";
 import type { Rgb } from "@/domain/spectrum/palettes";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { livePlaybackTime } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { pitchLineMotion } from "@/utils/animationVariants";
 import { cssVariable, rgbOf } from "@/utils/theme/css-colour";
 import {
@@ -17,6 +18,7 @@ import {
   laneRuns,
   laneWindow,
 } from "@/views/timeline/pitch/draw-pitch-lane";
+import { useLiveWordEdit } from "@/views/timeline/pitch/live-word-edit";
 import { type PitchRows, usePitchRows } from "@/views/timeline/pitch/pitch-rows";
 import { wordBlockWidth } from "@/views/timeline/row-geometry";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -62,6 +64,7 @@ function singerInk(agentColour: string): Rgb {
 const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line, kind, height, color, rows }) => {
   const zoom = useTimelineStore((s) => s.zoom);
   const selected = useTimelineStore((s) => selectedIndices(s.selectedWords, line.id, kind));
+  const live = useLiveWordEdit(line.id, kind);
   const sparkRef = useRef<HTMLCanvasElement>(null);
   const sungRef = useRef<HTMLCanvasElement>(null);
   const ghostRef = useRef<HTMLCanvasElement>(null);
@@ -88,12 +91,15 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
     const words = effectiveTrackWords(line, kind) ?? [];
     if (!spark || !sung || !ghost || !lineBounds || words.length === 0) return;
     const selectedSet = new Set(selected.split(",").filter(Boolean).map(Number));
-    const laneWords: LaneWord[] = words.map((word, index) => ({
-      begin: word.begin,
-      end: word.end,
-      tick: wordFit(word.text, wordBlockWidth(word.begin, word.end, zoom)).fit === "tick",
-      selected: selectedSet.has(index),
-    }));
+    const laneWords: LaneWord[] = words.map((word, index) => {
+      const { begin, end } = live?.words.get(index) ?? word;
+      return {
+        begin,
+        end,
+        tick: wordFit(word.text, wordBlockWidth(begin, end, zoom)).fit === "tick",
+        selected: selectedSet.has(index),
+      };
+    });
     const window = laneWindow(
       lineBounds,
       zoom,
@@ -102,7 +108,10 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
     );
     const leadWords = kind === "bg" ? (effectiveTrackWords(line, "word") ?? []) : [];
     const drawing = { window, runs: laneRuns(rows.track, kind, window, laneWords, leadWords), words: laneWords };
-    const spills = kind === "word" ? spillRuns(drawing.runs, rows.coverage) : [];
+    const coverage = live
+      ? songWordCoverage(useProjectStore.getState().lines, { lineId: line.id, track: kind, words: laneWords })
+      : rows.coverage;
+    const spills = kind === "word" ? spillRuns(drawing.runs, coverage) : [];
     if (spillCountRef.current !== null && spills.length < spillCountRef.current) {
       fadeOutSnapshot(spark, ghost, pitchLineMotion.spillFadeMs);
     }
@@ -111,7 +120,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
     drawSungLane(sung, drawing, rgbOf(cssVariable("--color-composer-accent-text")));
     sungClipRef.current = { left: window.left, width: window.width, zoom, shown: -1 };
     revealSung();
-  }, [rows, line, kind, zoom, height, color, selected, revealSung]);
+  }, [rows, line, kind, zoom, height, color, selected, live, revealSung]);
 
   return (
     <>

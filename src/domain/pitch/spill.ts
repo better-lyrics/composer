@@ -21,10 +21,19 @@ function wordCoverage(spans: readonly Bounds[]): Bounds[] {
 }
 
 // Every timed word of the song, lead and background, so a spill is singing that no word claims.
-function songWordCoverage(lines: readonly LyricLine[]): Bounds[] {
-  return wordCoverage(
-    lines.flatMap((line) => [...(effectiveTrackWords(line, "word") ?? []), ...(effectiveTrackWords(line, "bg") ?? [])]),
-  );
+interface EditedTrack {
+  lineId: string;
+  track: "word" | "bg";
+  words: readonly Bounds[];
+}
+
+// An edited track stands in for that line's stored words, so spills can follow an edit that is not saved yet.
+function songWordCoverage(lines: readonly LyricLine[], edited?: EditedTrack): Bounds[] {
+  const wordsOf = (line: LyricLine, track: "word" | "bg") =>
+    edited && edited.lineId === line.id && edited.track === track
+      ? edited.words
+      : (effectiveTrackWords(line, track) ?? []);
+  return wordCoverage(lines.flatMap((line) => [...wordsOf(line, "word"), ...wordsOf(line, "bg")]));
 }
 
 function isCovered(coverage: readonly Bounds[], seconds: number): boolean {

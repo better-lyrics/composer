@@ -12,6 +12,8 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { findInsertionSlot } from "@/utils/word-spaces";
+import type { Bounds } from "@/domain/word/bounds";
+import { setLiveWordEdit } from "@/views/timeline/pitch/live-word-edit";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { settleLoupe, showLoupeEdit } from "@/views/timeline/loupe/loupe-target";
 import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
@@ -55,6 +57,14 @@ interface DragState {
 }
 
 // -- Helpers -------------------------------------------------------------------
+
+function liveWordBounds(state: DragState): Map<number, Bounds> {
+  const words = new Map<number, Bounds>([[state.wordIndex, { begin: state.begin, end: state.end }]]);
+  if (state.adjacentWordIndex !== undefined && state.adjacentBegin !== undefined && state.adjacentEnd !== undefined) {
+    words.set(state.adjacentWordIndex, { begin: state.adjacentBegin, end: state.adjacentEnd });
+  }
+  return words;
+}
 
 function resizeChangedTiming(initial: DragState, final: DragState, words: WordTiming[]): boolean {
   if (final.begin !== initial.begin || final.end !== initial.end) return true;
@@ -217,6 +227,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
         dragStateRef.current = newState;
         setDragState(newState);
+        setLiveWordEdit({ lineId, kind: trackType, words: liveWordBounds(newState) });
         showLoupeEdit(
           { lineId, track: trackType, wordIndex, edge: boundaryEdge, startTime: edgeAtStart, time: clamped },
           false,
@@ -231,6 +242,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
         const dragged = draggedRef.current;
         dragStateRef.current = null;
         setDragState(null);
+        setLiveWordEdit(null);
 
         if (dragged) {
           swallowTrailingClick();
@@ -256,6 +268,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
       cleanupRef.current = () => {
         setResizing(false);
+        setLiveWordEdit(null);
         snap.endGesture();
         settleLoupe();
         document.removeEventListener("pointermove", handleMouseMove);
