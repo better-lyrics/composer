@@ -1,4 +1,4 @@
-import { type BeatGrid, type ManualTempo, beatIndexAt, detectedGrid } from "@/domain/tempo/beat-grid";
+import { type BeatGrid, type ManualTempo, beatIndexAt, detectedGrid, roundBeatTime } from "@/domain/tempo/beat-grid";
 import { MIN_BPM } from "@/domain/tempo/tap-tempo";
 import { tempoStats } from "@/domain/tempo/tempo-stats";
 
@@ -108,7 +108,7 @@ function manualGrid(tempo: ManualTempo): BeatGrid {
   const step = 60 / tempo.bpm;
   const first = tempo.anchor - Math.floor(tempo.anchor / step) * step;
   const beats: number[] = [];
-  for (let k = 0; first + k * step <= tempo.end; k++) beats.push(Math.round((first + k * step) * 1000) / 1000);
+  for (let k = 0; first + k * step <= tempo.end; k++) beats.push(roundBeatTime(first + k * step));
   const anchorIndex = Math.round((tempo.anchor - first) / step);
   return {
     source: "manual",

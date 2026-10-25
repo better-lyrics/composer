@@ -79,6 +79,10 @@ function detectedGrid(detection: DetectedBeats): BeatGrid {
   };
 }
 
+function roundBeatTime(time: number): number {
+  return Math.round(time * 1000) / 1000;
+}
+
 function beatTime(grid: BeatGrid, index: number): number {
   return grid.beats[index] + grid.offsetMs / 1000;
 }
@@ -128,5 +132,15 @@ function isDownbeat(grid: BeatGrid, index: number): boolean {
 
 // -- Exports -------------------------------------------------------------------
 
-export { MAX_BEATS_PER_BAR, barNumberAt, barTimes, beatInBar, beatIndexAt, beatTime, detectedGrid, isDownbeat };
+export {
+  MAX_BEATS_PER_BAR,
+  barNumberAt,
+  barTimes,
+  beatInBar,
+  beatIndexAt,
+  beatTime,
+  detectedGrid,
+  isDownbeat,
+  roundBeatTime,
+};
 export type { BeatGrid, DetectedBeats, ManualTempo };

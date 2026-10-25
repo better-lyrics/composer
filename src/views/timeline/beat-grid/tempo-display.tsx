@@ -1,9 +1,11 @@
-import { type BeatGrid, beatInBar } from "@/domain/tempo/beat-grid";
+import { type BeatGrid, beatInBar, isDownbeat } from "@/domain/tempo/beat-grid";
+import { tempoSections } from "@/domain/tempo/tempo-sections";
 import type { TempoStats } from "@/domain/tempo/tempo-stats";
 import { cn } from "@/utils/cn";
 import { formatBpm } from "@/utils/format-bpm";
 import { pluralize } from "@/utils/pluralize";
 import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
+import { usePlayheadTempo } from "@/views/timeline/beat-grid/use-playhead-tempo";
 import { Fragment, useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
@@ -17,11 +19,16 @@ const BPM_NUMBER_CLASS =
 
 // -- Helpers -------------------------------------------------------------------
 
+function tempoDescription(grid: BeatGrid, stats: TempoStats): string {
+  const sections = tempoSections(grid);
+  if (sections.length > 1) return `${sections.map((section) => formatBpm(section.bpm)).join(" → ")} BPM`;
+  return stats.steady ? "steady tempo" : `drifts ${formatBpm(stats.low)} to ${formatBpm(stats.high)}`;
+}
+
 function tempoFacts(grid: BeatGrid, stats: TempoStats): string[] {
   const meter = `${grid.beatsPerBar}/4`;
   if (grid.source === "manual") return [meter, "set by hand"];
-  const tempo = stats.steady ? "steady tempo" : `drifts ${formatBpm(stats.low)} to ${formatBpm(stats.high)}`;
-  return [meter, pluralize(stats.bars, "bar"), tempo];
+  return [meter, pluralize(stats.bars, "bar"), tempoDescription(grid, stats)];
 }
 
 // -- Components ----------------------------------------------------------------
@@ -41,10 +48,11 @@ const BeatLeds: React.FC<{ grid: BeatGrid }> = ({ grid }) => {
   usePlayheadBeat(grid, "beat-grid-leds", (index, changed) => {
     const strip = stripRef.current;
     if (!strip || !changed) return;
-    const lit = index >= 0 ? beatInBar(grid, index) % count : -1;
+    const lit = index >= 0 ? Math.min(beatInBar(grid, index), count - 1) : -1;
+    const down = index >= 0 && isDownbeat(grid, index);
     Array.from(strip.children).forEach((led, position) => {
       led.toggleAttribute("data-on", position === lit);
-      led.toggleAttribute("data-down", position === lit && lit === 0);
+      led.toggleAttribute("data-down", position === lit && down);
     });
   });
 
@@ -60,6 +68,7 @@ const BeatLeds: React.FC<{ grid: BeatGrid }> = ({ grid }) => {
 
 const TempoDisplay: React.FC<{ grid: BeatGrid; stats: TempoStats }> = ({ grid, stats }) => {
   const [meter, ...rest] = tempoFacts(grid, stats);
+  const bpm = usePlayheadTempo(grid, "beat-grid-display-tempo", stats.bpm);
   return (
     <div
       className={cn(
@@ -68,7 +77,7 @@ const TempoDisplay: React.FC<{ grid: BeatGrid; stats: TempoStats }> = ({ grid, s
       )}
     >
       <span className="row-span-2 flex items-baseline gap-1.5">
-        <b className={cn(BPM_NUMBER_CLASS, "select-text cursor-text")}>{formatBpm(stats.bpm)}</b>
+        <b className={cn(BPM_NUMBER_CLASS, "select-text cursor-text")}>{bpm}</b>
         <span className="text-xs leading-[1.3] font-medium text-(--on-display-dim)">BPM</span>
       </span>
       <span className="text-[12.5px] leading-[1.2] text-(--muted)">

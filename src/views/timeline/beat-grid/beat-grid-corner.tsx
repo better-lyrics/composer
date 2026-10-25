@@ -1,3 +1,4 @@
+import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { tempoStats } from "@/domain/tempo/tempo-stats";
 import { useAudioStore } from "@/stores/audio";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
@@ -11,6 +12,7 @@ import { keepSpaceForFocusedControl } from "@/views/timeline/beat-grid/keep-spac
 import { BeatGridPopoverBody } from "@/views/timeline/beat-grid/beat-grid-popover";
 import { detectionPercent, isDetectionRunning } from "@/views/timeline/beat-grid/detection-progress";
 import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
+import { usePlayheadTempo } from "@/views/timeline/beat-grid/use-playhead-tempo";
 import { IconAlertTriangle, IconLoader2, IconWaveSine } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 
@@ -22,8 +24,8 @@ const TEMPO_NUMBER_CLASS =
 
 // -- Components ----------------------------------------------------------------
 
-const CornerTempo: React.FC<{ bpm: string; dimmed: boolean }> = ({ bpm, dimmed }) => {
-  const grid = useProjectStore((s) => s.beatGrid);
+const CornerTempo: React.FC<{ grid: BeatGrid; songBpm: number; dimmed: boolean }> = ({ grid, songBpm, dimmed }) => {
+  const bpm = usePlayheadTempo(grid, "beat-grid-corner-tempo", songBpm);
   const numberRef = useRef<HTMLElement>(null);
   const flashedAt = useRef<number | null>(null);
 
@@ -80,7 +82,7 @@ const CornerFace: React.FC = () => {
   return (
     <>
       <IconWaveSine aria-hidden="true" className="size-4" />
-      {stats && <CornerTempo bpm={formatBpm(stats.bpm)} dimmed={!visible} />}
+      {grid && stats && <CornerTempo grid={grid} songBpm={stats.bpm} dimmed={!visible} />}
     </>
   );
 };

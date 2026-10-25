@@ -7,6 +7,7 @@ import { beatsFromLogits } from "@/audio/beat/beat-peaks";
 import type { BeatDetectionErrorCode, BeatWorkerEvent, BeatWorkerRequest } from "@/audio/beat/beat-worker-messages";
 import { type OrtSession, loadOrt } from "@/audio/ort-runtime";
 import { fetchAndCacheModel, readCachedModel } from "@/audio/separation/model-cache";
+import { regularBeats } from "@/domain/tempo/regular-beats";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -70,7 +71,7 @@ async function detect({ signal, forceWasm }: BeatWorkerRequest): Promise<void> {
     await session.release?.();
   }
   const logits = mergeChunkLogits(chunks, starts, frames);
-  const { beats, downbeats } = beatsFromLogits(logits.beat, logits.downbeat);
+  const { beats, downbeats } = regularBeats(beatsFromLogits(logits.beat, logits.downbeat));
   post({ type: "done", beats, downbeats });
 }
 

@@ -1,4 +1,5 @@
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
+import { beatIntervals, median } from "@/domain/tempo/beat-intervals";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -17,9 +18,7 @@ const STEADY_SPREAD = 0.04;
 // -- Stats ---------------------------------------------------------------------
 
 function medianBpm(beats: readonly number[]): number {
-  const intervals = beats.slice(1).map((time, i) => time - beats[i]);
-  const sorted = intervals.toSorted((a, b) => a - b);
-  return 60 / sorted[Math.floor(sorted.length / 2)];
+  return 60 / median(beatIntervals(beats));
 }
 
 function barTempos(grid: BeatGrid): number[] {
