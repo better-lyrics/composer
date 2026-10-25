@@ -2,6 +2,7 @@ import { rowOfFrequency } from "@/domain/spectrum/frequency-scale";
 import type { FrequencyScale, SpectrumTop } from "@/domain/spectrum/settings";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
+import { CANVAS_MONO_LABEL_FONT } from "@/views/timeline/canvas-fonts";
 import { useEffect, useRef } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -28,7 +29,6 @@ const TICK_LENGTH = 5;
 const LABEL_RIGHT = 37;
 const EDGE_MARGIN = 7;
 const LABEL_ALPHA = 0.85;
-const AXIS_FONT = `500 9.5px "Geist Mono", ui-monospace, monospace`;
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -48,7 +48,7 @@ function paintAxis(canvas: HTMLCanvasElement, layout: AxisLayout): void {
   const styles = getComputedStyle(document.documentElement);
   const faint = styles.getPropertyValue("--color-composer-text-faint").trim();
   const label = styles.getPropertyValue("--color-composer-text-tertiary").trim();
-  context.font = AXIS_FONT;
+  context.font = CANVAS_MONO_LABEL_FONT;
   context.textAlign = "right";
   context.textBaseline = "middle";
   const minimumGap = layout.height - layout.reserveTop < 80 ? 16 : 13;

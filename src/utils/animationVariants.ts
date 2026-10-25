@@ -138,6 +138,29 @@ const pitchLineMotion = {
   reducedFadeMs: 150,
 } as const;
 
+// -- Edit Loupe ---------------------------------------------------------------
+
+const loupeEnterTransition: Transition = { type: "spring", duration: 0.18, bounce: 0 };
+const loupeExitTransition: Transition = { type: "spring", duration: 0.12, bounce: 0 };
+
+const loupeVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.96, filter: "blur(4px)" },
+  visible: { opacity: 1, scale: 1, filter: "blur(0px)", transition: loupeEnterTransition },
+  exit: { opacity: 0, scale: 0.96, filter: "blur(4px)", transition: loupeExitTransition },
+};
+
+const loupeReducedVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: loupeEnterTransition },
+  exit: { opacity: 0, transition: loupeExitTransition },
+};
+
+// Keyframes need a tween; a spring cannot run a three-step scale.
+const loupeDeltaPopVariants: Variants = {
+  rest: { scale: 1 },
+  pop: { scale: [1, 1.12, 1], transition: { duration: 0.16, ease: "easeOut" } },
+};
+
 // -- Stagger Container --------------------------------------------------------
 
 // -- Exports ------------------------------------------------------------------
@@ -154,6 +177,9 @@ export {
   pinDropInVariants,
   snapFlashVariants,
   floatingEntrance,
+  loupeDeltaPopVariants,
+  loupeReducedVariants,
+  loupeVariants,
   inlineIconTransition,
   inlineIconVariants,
   inlineIconReducedVariants,

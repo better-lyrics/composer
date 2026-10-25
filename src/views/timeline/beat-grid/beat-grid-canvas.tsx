@@ -5,6 +5,7 @@ import { livePlaybackTime } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
+import { CANVAS_MONO_LABEL_FONT } from "@/views/timeline/canvas-fonts";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRef } from "react";
 
@@ -36,7 +37,6 @@ interface ResolvedColours {
 
 // -- Constants -----------------------------------------------------------------
 
-const BAR_NUMBER_FONT = `500 9.5px "Geist Mono", ui-monospace, monospace`;
 const BAR_NUMBER_INSET_X = 4;
 const BAR_NUMBER_Y = 7;
 const SHORT_LINE_INSET = 4;
@@ -92,7 +92,7 @@ function paintGrid(context: CanvasRenderingContext2D, grid: BeatGrid, state: Dra
   const { scrollLeft, zoom, width, height, lines } = state;
   const t0 = (scrollLeft - BAR_NUMBER_REACH_PX) / zoom;
   const t1 = (scrollLeft + width + 1) / zoom;
-  context.font = BAR_NUMBER_FONT;
+  context.font = CANVAS_MONO_LABEL_FONT;
   context.textBaseline = "middle";
   let labelEnd = Number.NEGATIVE_INFINITY;
   for (const point of gridPoints(grid, t0, t1, zoom, lines)) {

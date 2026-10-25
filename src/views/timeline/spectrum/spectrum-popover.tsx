@@ -10,7 +10,6 @@ import { PaletteThumbnails } from "@/views/timeline/spectrum/palette-thumbnails"
 import { SpectrumAdvanced } from "@/views/timeline/spectrum/spectrum-advanced";
 import { SpectrumStatusLine } from "@/views/timeline/spectrum/spectrum-status-line";
 import { useId } from "react";
-import { useShallow } from "zustand/react/shallow";
 
 // -- Components ----------------------------------------------------------------
 
@@ -22,19 +21,7 @@ const FieldLabel: React.FC<{ id: string; children: React.ReactNode; value?: stri
 );
 
 const ResetLook: React.FC = () => {
-  const isDefault = useSettingsStore(
-    useShallow((s) =>
-      isDefaultSpectrumLook({
-        spectrumSource: s.spectrumSource,
-        spectrumPalette: s.spectrumPalette,
-        spectrumContrast: s.spectrumContrast,
-        spectrumScale: s.spectrumScale,
-        spectrumTop: s.spectrumTop,
-        spectrumWindow: s.spectrumWindow,
-        spectrumPhase: s.spectrumPhase,
-      }),
-    ),
-  );
+  const isDefault = useSettingsStore(isDefaultSpectrumLook);
   if (isDefault) return null;
   return (
     <button

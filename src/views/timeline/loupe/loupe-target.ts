@@ -1,5 +1,5 @@
 import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-words";
-import type { WordSelection } from "@/domain/selection/model";
+import { type WordIdentity, sameWordSelection } from "@/domain/selection/identity";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -19,8 +19,6 @@ interface LoupeTarget {
 
 type LoupeEdit = Omit<LoupeTarget, "settledAt">;
 
-type EditedWord = Pick<WordSelection, "lineId" | "wordIndex" | "type">;
-
 // -- Constants ----------------------------------------------------------------
 
 const LOUPE_LINGER_MS = 700;
@@ -31,8 +29,12 @@ let clearTimer: ReturnType<typeof setTimeout> | null = null;
 
 // -- Functions ----------------------------------------------------------------
 
-function sameEdge(a: LoupeTarget, b: LoupeEdit): boolean {
-  return a.lineId === b.lineId && a.track === b.track && a.wordIndex === b.wordIndex && a.edge === b.edge;
+function editedWord(edit: LoupeEdit): WordIdentity {
+  return { lineId: edit.lineId, wordIndex: edit.wordIndex, type: edit.track };
+}
+
+function sameEdge(a: LoupeEdit, b: LoupeEdit): boolean {
+  return a.edge === b.edge && sameWordSelection(editedWord(a), editedWord(b));
 }
 
 function cancelClear(): void {
@@ -62,14 +64,14 @@ function clearLoupe(): void {
   useTimelineStore.getState().setLoupeTarget(null);
 }
 
-function storedEdgeTime(word: EditedWord, edge: LoupeEdge): number | null {
+function storedEdgeTime(word: WordIdentity, edge: LoupeEdge): number | null {
   const line = getEffectiveLines(useProjectStore.getState().lines).find((candidate) => candidate.id === word.lineId);
   const timing = line ? effectiveTrackWords(line, word.type)?.[word.wordIndex] : undefined;
   return timing ? timing[edge] : null;
 }
 
 // For key edits that write the store directly: the edge's new time is read back after the write.
-function showLoupeAfterKeyEdit(word: EditedWord, edge: LoupeEdge, startTime: number): void {
+function showLoupeAfterKeyEdit(word: WordIdentity, edge: LoupeEdge, startTime: number): void {
   if (!useTimelineStore.getState().spectrumVisible) return;
   const time = storedEdgeTime(word, edge);
   if (time === null) return;

@@ -22,6 +22,7 @@ import { useSeekReveal } from "@/views/timeline/use-seek-reveal";
 import { LoopRegionBar } from "@/views/timeline/loop-region-bar";
 import { LoopRegionGuides } from "@/views/timeline/loop-region-guides";
 import { LoopRegionReadout } from "@/views/timeline/loop-region-readout";
+import { EditLoupe } from "@/views/timeline/loupe/edit-loupe";
 import { SelectionPlaybackBar } from "@/views/timeline/selection-playback-bar";
 import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
@@ -329,6 +330,8 @@ const TimelinePanel: React.FC = () => {
                     scrollContainerRef={scrollContainerRef}
                   />
                 )}
+
+                <EditLoupe scrollContainerRef={scrollContainerRef} />
               </div>
 
               <TimelineInfoPanel />

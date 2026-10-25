@@ -58,6 +58,18 @@ function spectrumLookDefaults(): SpectrumLook {
   return { ...SPECTRUM_LOOK_DEFAULTS };
 }
 
+function spectrumLookOf(settings: SpectrumLook): SpectrumLook {
+  return {
+    spectrumSource: settings.spectrumSource,
+    spectrumPalette: settings.spectrumPalette,
+    spectrumContrast: settings.spectrumContrast,
+    spectrumScale: settings.spectrumScale,
+    spectrumTop: settings.spectrumTop,
+    spectrumWindow: settings.spectrumWindow,
+    spectrumPhase: settings.spectrumPhase,
+  };
+}
+
 function isDefaultSpectrumLook(look: SpectrumLook): boolean {
   return (Object.keys(SPECTRUM_LOOK_DEFAULTS) as (keyof SpectrumLook)[]).every(
     (key) => look[key] === SPECTRUM_LOOK_DEFAULTS[key],
@@ -101,6 +113,7 @@ export {
   isDefaultSpectrumLook,
   sanitizeSpectrumSettings,
   spectrumLookDefaults,
+  spectrumLookOf,
 };
 export type {
   AnalysisWindow,

@@ -1,10 +1,11 @@
 import { CHUNK_FRAMES } from "@/domain/spectrum/chunk-order";
-import type { SpectrumLook } from "@/domain/spectrum/settings";
+import { spectrumLookOf } from "@/domain/spectrum/settings";
 import { visibleTileRange } from "@/domain/spectrum/tile-key";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { animateFrames } from "@/lib/frame-loop";
 import { useSettingsStore } from "@/stores/settings";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
+import { sizeCanvas } from "@/views/timeline/size-canvas";
 import { spectrumSession } from "@/views/timeline/spectrum/spectrum-session";
 import { beginWarmUp, blitWarming, createWarmUp, noteDrawnTiles } from "@/views/timeline/spectrum/spectrum-warm-up";
 import { resolveSpectrumPalette } from "@/views/timeline/spectrum/theme-palette";
@@ -18,19 +19,6 @@ import { useEffect, useRef, useState } from "react";
 const BAND_BORDER = 1;
 
 // -- Helpers -------------------------------------------------------------------
-
-function lookOf(): SpectrumLook {
-  const s = useSettingsStore.getState();
-  return {
-    spectrumSource: s.spectrumSource,
-    spectrumPalette: s.spectrumPalette,
-    spectrumContrast: s.spectrumContrast,
-    spectrumScale: s.spectrumScale,
-    spectrumTop: s.spectrumTop,
-    spectrumWindow: s.spectrumWindow,
-    spectrumPhase: s.spectrumPhase,
-  };
-}
 
 function drawingSignature(view: TileView): string {
   const { look, session } = view;
@@ -49,16 +37,6 @@ function drawingSignature(view: TileView): string {
     look.spectrumPhase,
     view.themeGeneration,
   ].join("|");
-}
-
-function sizeCanvas(canvas: HTMLCanvasElement, width: number, height: number, pixelRatio: number): void {
-  const pixelWidth = Math.round(width * pixelRatio);
-  const pixelHeight = Math.round(height * pixelRatio);
-  if (canvas.width === pixelWidth && canvas.height === pixelHeight) return;
-  canvas.width = pixelWidth;
-  canvas.height = pixelHeight;
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
 }
 
 const requestedRawChunks = { generation: -1, chunks: new Set<number>() };
@@ -102,7 +80,7 @@ const SpectrumCanvas: React.FC = () => {
     const canvas = canvasRef.current;
     const container = canvas?.closest<HTMLElement>("[data-scroll-container]");
     if (!canvas || !container) return;
-    const look = lookOf();
+    const look = spectrumLookOf(useSettingsStore.getState());
     const palette = resolveSpectrumPalette(look.spectrumPalette);
     const view: TileView = {
       session: spectrumSession,

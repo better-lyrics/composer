@@ -4,7 +4,9 @@ import type { WordSelection } from "@/domain/selection/model";
 
 // A word selection is identified by (lineId, wordIndex, type); lineIndex is a
 // render-position hint and never participates in identity comparisons.
-function sameWordSelection(a: WordSelection, b: WordSelection): boolean {
+type WordIdentity = Pick<WordSelection, "lineId" | "wordIndex" | "type">;
+
+function sameWordSelection(a: WordIdentity, b: WordIdentity): boolean {
   return a.lineId === b.lineId && a.wordIndex === b.wordIndex && a.type === b.type;
 }
 
@@ -15,3 +17,4 @@ function isWordSelected(selections: WordSelection[], lineId: string, wordIndex: 
 // -- Exports ------------------------------------------------------------------
 
 export { isWordSelected, sameWordSelection };
+export type { WordIdentity };
