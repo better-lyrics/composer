@@ -3,6 +3,7 @@ import { useThemeStore } from "@/stores/theme";
 import { isAbortError } from "@/utils/abort-error";
 import { cn } from "@/utils/cn";
 import { readToken } from "@/utils/theme/read-token";
+import { BeatGridCanvas } from "@/views/timeline/beat-grid/beat-grid-canvas";
 import { startLoopRegionDrag } from "@/views/timeline/loop-region-drag";
 import { LoopRegionEdges } from "@/views/timeline/loop-region-edges";
 import { placeSnapPoint } from "@/views/timeline/place-snap-point";
@@ -130,6 +131,7 @@ const TimelineWaveform: React.FC = () => {
         className="absolute top-0 left-0 bg-(--well) border-b border-(--divider) pointer-events-none"
         style={{ width: totalWidth, height: WAVEFORM_HEIGHT }}
       />
+      <BeatGridCanvas />
       <div
         data-waveform-loading-dots
         data-sweeping={sweeping ? "" : undefined}
