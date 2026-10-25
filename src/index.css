@@ -475,6 +475,10 @@ braccato-lyrics .blyrics-container {
   box-shadow: var(--well-edge);
 }
 
+@utility beat-grid-past-dim {
+  mask-image: linear-gradient(to right, rgb(0 0 0 / 0.4) var(--played-x, 0px), black var(--played-x, 0px));
+}
+
 @utility tray-compact {
   --tray-pad: 2px;
   --tray-height: 28px;

@@ -1,6 +1,7 @@
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { type GridLines, type GridPointKind, gridPoints } from "@/domain/tempo/grid-points";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
+import { livePlaybackTime } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
@@ -128,6 +129,8 @@ const BeatGridCanvas: React.FC = () => {
         themeId: activeThemeId,
         customThemes,
       };
+      const playedX = `${Math.round(livePlaybackTime() * next.zoom - next.scrollLeft)}px`;
+      if (canvas.style.getPropertyValue("--played-x") !== playedX) canvas.style.setProperty("--played-x", playedX);
       const drawn = drawnRef.current;
       if (drawn && isSameDrawing(drawn, next)) return;
       drawnRef.current = next;
@@ -161,7 +164,7 @@ const BeatGridCanvas: React.FC = () => {
 
   return (
     <div aria-hidden="true" className="absolute inset-x-0 top-0 bottom-px overflow-hidden pointer-events-none">
-      <canvas ref={canvasRef} data-beat-grid-canvas className="absolute top-0 left-0" />
+      <canvas ref={canvasRef} data-beat-grid-canvas className="absolute top-0 left-0 beat-grid-past-dim" />
     </div>
   );
 };
