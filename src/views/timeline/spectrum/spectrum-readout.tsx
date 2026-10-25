@@ -63,6 +63,7 @@ const SpectrumReadout: React.FC = () => {
       readout.hidden = true;
     };
     const handlePointerMove = (e: PointerEvent) => {
+      if (e.target instanceof Element && e.target.closest("[data-band-resize-handle]")) return hide();
       const box = viewport.getBoundingClientRect();
       const height = currentOverviewBandHeight() - BAND_BORDER;
       const { zoom } = useTimelineStore.getState();
