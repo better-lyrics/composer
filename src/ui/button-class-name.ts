@@ -15,7 +15,7 @@ interface ButtonStyleOptions {
 // -- Styles -------------------------------------------------------------------
 
 const BASE_STYLES =
-  "inline-flex items-center justify-center gap-1.5 font-medium rounded-lg transition-[background-color,color,scale] cursor-pointer active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100";
+  "inline-flex items-center justify-center gap-1.5 font-medium rounded-lg transition-[background-color,color,scale] cursor-pointer will-change-[scale] active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100";
 
 const VARIANT_STYLES: Record<ButtonVariant, string> = {
   primary: "btn-lit",

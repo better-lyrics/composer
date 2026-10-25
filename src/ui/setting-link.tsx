@@ -27,7 +27,7 @@ interface SettingChipProps {
 // -- Styles --------------------------------------------------------------------
 
 const CHIP_STYLES =
-  "group inline-flex items-center align-baseline mx-px pl-1.5 pr-2 rounded-md whitespace-nowrap select-none cursor-pointer text-[0.93em] font-medium leading-[1.45] text-composer-accent-text bg-composer-accent/13 ring-1 ring-inset ring-composer-accent/22 hover:bg-composer-accent/22 active:scale-[0.96] transition-[background-color,scale] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-composer-accent";
+  "group inline-flex items-center align-baseline mx-px pl-1.5 pr-2 rounded-md whitespace-nowrap select-none cursor-pointer text-[0.93em] font-medium leading-[1.45] text-composer-accent-text bg-composer-accent/13 ring-1 ring-inset ring-composer-accent/22 hover:bg-composer-accent/22 will-change-[scale] active:scale-[0.96] transition-[background-color,scale] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-composer-accent";
 
 const ARROW_STYLES =
   "w-0 opacity-0 scale-25 blur-[4px] transition-[width,margin,opacity,scale,filter] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:ml-0.5 group-hover:w-3 group-hover:opacity-100 group-hover:scale-100 group-hover:blur-none group-focus-visible:ml-0.5 group-focus-visible:w-3 group-focus-visible:opacity-100 group-focus-visible:scale-100 group-focus-visible:blur-none motion-reduce:transition-none";
