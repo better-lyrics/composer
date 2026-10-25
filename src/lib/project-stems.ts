@@ -105,11 +105,6 @@ async function deleteProjectStem(id: string, slot: StemSlot): Promise<void> {
   notifyStorageSignal("media-removed");
 }
 
-async function deleteProjectStems(id: string): Promise<void> {
-  await writeProjectStems(id, () => undefined);
-  notifyStorageSignal("media-removed");
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export { copyProjectStems, deleteProjectStem, deleteProjectStems, loadProjectStems, saveProjectStem, stemFile };
+export { copyProjectStems, deleteProjectStem, loadProjectStems, saveProjectStem, stemFile };
