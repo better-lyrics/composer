@@ -1,11 +1,14 @@
+import { useFloatingEntrance } from "@/ui/floating-motion";
 import {
   FloatingArrow,
+  FloatingDelayGroup,
   FloatingPortal,
   arrow,
   autoUpdate,
   flip,
   offset,
   shift,
+  useDelayGroup,
   useDismiss,
   useFloating,
   useFocus,
@@ -14,7 +17,7 @@ import {
   useRole,
 } from "@floating-ui/react";
 import type { Placement } from "@floating-ui/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -28,6 +31,7 @@ interface TooltipProps {
 // -- Constants ----------------------------------------------------------------
 
 const SHOW_DELAY = 300;
+const WARM_GROUP_MS = 400;
 const ARROW_SIZE = 4;
 const ARROW_TIP_RADIUS = 2;
 // Composed with the per-side rotation, so the base overlaps the body edge ring by 1px on every side.
@@ -37,17 +41,33 @@ const ARROW_OVERLAP_STYLE = { transform: "translateY(-1px)" };
 
 const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top", delay = SHOW_DELAY }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [opensWarm, setOpensWarm] = useState(false);
   const arrowRef = useRef(null);
+  const isOpenRef = useRef(false);
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
-    onOpenChange: setIsOpen,
+    onOpenChange: (open) => {
+      if (open) setOpensWarm(group.isInstantPhase || group.currentId != null);
+      isOpenRef.current = open;
+      setIsOpen(open);
+    },
     placement,
     middleware: [offset(6), flip(), shift({ padding: 8 }), arrow({ element: arrowRef })],
     whileElementsMounted: autoUpdate,
   });
 
-  const hover = useHover(context, { move: false, delay: { open: delay, close: 0 } });
+  const group = useDelayGroup(context);
+  const { setCurrentId } = group;
+  // useDelayGroup only releases the group on close, so a trigger removed while open would leave it warm.
+  useEffect(
+    () => () => {
+      if (isOpenRef.current) setCurrentId(null);
+    },
+    [setCurrentId],
+  );
+  const { styles: entranceStyles } = useFloatingEntrance(context, opensWarm);
+  const hover = useHover(context, { move: false, delay: { open: group.currentId == null ? delay : 0, close: 0 } });
   const focus = useFocus(context);
   const dismiss = useDismiss(context);
   const role = useRole(context, { role: "tooltip" });
@@ -61,24 +81,24 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top",
       </span>
       {isOpen && (
         <FloatingPortal>
-          <div
-            ref={refs.setFloating}
-            style={floatingStyles}
-            {...getFloatingProps()}
-            className="layer-floating w-max max-w-48 select-none px-2 py-1.5 text-xs text-center leading-snug rounded-lg text-composer-text surface-floating"
-          >
-            {content}
-            <FloatingArrow
-              ref={arrowRef}
-              context={context}
-              width={ARROW_SIZE * 2}
-              height={ARROW_SIZE}
-              tipRadius={ARROW_TIP_RADIUS}
-              strokeWidth={1}
-              fill="currentColor"
-              className="text-(--pop) stroke-(--edge)"
-              style={ARROW_OVERLAP_STYLE}
-            />
+          <div ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()} className="layer-floating">
+            <div
+              style={entranceStyles}
+              className="w-max max-w-48 select-none px-2 py-1.5 text-xs text-center leading-snug rounded-lg text-composer-text surface-floating"
+            >
+              {content}
+              <FloatingArrow
+                ref={arrowRef}
+                context={context}
+                width={ARROW_SIZE * 2}
+                height={ARROW_SIZE}
+                tipRadius={ARROW_TIP_RADIUS}
+                strokeWidth={1}
+                fill="currentColor"
+                className="text-(--pop) stroke-(--edge)"
+                style={ARROW_OVERLAP_STYLE}
+              />
+            </div>
           </div>
         </FloatingPortal>
       )}
@@ -86,6 +106,12 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top",
   );
 };
 
+const TooltipGroup: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <FloatingDelayGroup delay={SHOW_DELAY} timeoutMs={WARM_GROUP_MS}>
+    {children}
+  </FloatingDelayGroup>
+);
+
 // -- Exports ------------------------------------------------------------------
 
-export { Tooltip };
+export { Tooltip, TooltipGroup };
