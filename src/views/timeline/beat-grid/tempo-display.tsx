@@ -9,6 +9,13 @@ import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
 import { usePlayheadTempo } from "@/views/timeline/beat-grid/use-playhead-tempo";
 import { useRef } from "react";
 
+// -- Types ---------------------------------------------------------------------
+
+interface TempoFact {
+  id: string;
+  text: string;
+}
+
 // -- Constants -----------------------------------------------------------------
 
 const MAX_LEDS = 8;
@@ -27,18 +34,23 @@ function tempoDescription(grid: BeatGrid, stats: TempoStats): string {
   return stats.steady ? "steady tempo" : `drifts ${formatBpm(stats.low)} to ${formatBpm(stats.high)}`;
 }
 
-function tempoChanges(grid: BeatGrid): string[] {
+function tempoChanges(grid: BeatGrid): TempoFact[] {
   const sections = tempoSections(grid);
   if (sections.length < 2) return [];
-  return sections.map(
-    (section) => `${formatBpm(section.bpm)} BPM from bar ${Math.max(1, barNumberAt(grid, section.from))}`,
-  );
+  return sections.map((section) => ({
+    id: String(section.from),
+    text: `${formatBpm(section.bpm)} BPM from bar ${Math.max(1, barNumberAt(grid, section.from))}`,
+  }));
 }
 
-function tempoFacts(grid: BeatGrid, stats: TempoStats): string[] {
-  const meter = `${grid.beatsPerBar}/4`;
-  if (grid.source === "manual") return [meter, "set by hand"];
-  return [meter, pluralize(stats.bars, "bar"), tempoDescription(grid, stats)];
+function tempoFacts(grid: BeatGrid, stats: TempoStats): TempoFact[] {
+  const meter = { id: "meter", text: `${grid.beatsPerBar}/4` };
+  if (grid.source === "manual") return [meter, { id: "manual", text: "set by hand" }];
+  return [
+    meter,
+    { id: "bars", text: pluralize(stats.bars, "bar") },
+    { id: "tempo", text: tempoDescription(grid, stats) },
+  ];
 }
 
 // -- Components ----------------------------------------------------------------
@@ -76,12 +88,12 @@ const BeatLeds: React.FC<{ grid: BeatGrid }> = ({ grid }) => {
   );
 };
 
-const TempoChangesFact: React.FC<{ fact: string; changes: string[] }> = ({ fact, changes }) => (
+const TempoChangesFact: React.FC<{ fact: string; changes: TempoFact[] }> = ({ fact, changes }) => (
   <Tooltip
     placement="bottom"
-    content={changes.map((change, i) => (
-      <span key={`${i}-${change}`} className="block">
-        {change}
+    content={changes.map((change) => (
+      <span key={change.id} className="block">
+        {change.text}
       </span>
     ))}
   >
@@ -108,13 +120,17 @@ const TempoDisplay: React.FC<{ grid: BeatGrid; stats: TempoStats }> = ({ grid, s
         <span className="text-xs leading-[1.3] font-medium text-(--on-display-dim)">BPM</span>
       </span>
       <span className="flex flex-wrap gap-x-5 gap-y-1 overflow-x-clip text-[12.5px] leading-[1.3] text-(--muted)">
-        <b className="font-medium tabular-nums text-(--label) whitespace-nowrap">{meter}</b>
+        <b className="font-medium tabular-nums text-(--label) whitespace-nowrap">{meter.text}</b>
         {rest.map((fact, i) => (
-          <span key={`${i}-${fact}`} className="-ml-5 whitespace-nowrap">
+          <span key={fact.id} className="-ml-5 whitespace-nowrap">
             <span aria-hidden="true" className="inline-block w-5 text-center">
               ・
             </span>
-            {i === rest.length - 1 && changes.length > 0 ? <TempoChangesFact fact={fact} changes={changes} /> : fact}
+            {i === rest.length - 1 && changes.length > 0 ? (
+              <TempoChangesFact fact={fact.text} changes={changes} />
+            ) : (
+              fact.text
+            )}
           </span>
         ))}
       </span>
