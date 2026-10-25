@@ -10,6 +10,14 @@ function formatMegabytes(bytes: number): string {
   return `${(bytes / MEGABYTE).toFixed(1)} MB`;
 }
 
+function formatWholeMegabytes(bytes: number): string {
+  return `${Math.round(bytes / MEGABYTE)} MB`;
+}
+
+function formatMegabytesOf(loaded: number, total: number): string {
+  return `${(loaded / MEGABYTE).toFixed(1)} of ${formatMegabytes(total)}`;
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes < KILOBYTE) return `${bytes} B`;
   const kilobytes = (bytes / KILOBYTE).toFixed(1);
@@ -25,4 +33,4 @@ function formatApproximateFileSize(bytes: number): string {
 
 // -- Exports ------------------------------------------------------------------
 
-export { formatFileSize, formatMegabytes, formatApproximateFileSize };
+export { formatApproximateFileSize, formatFileSize, formatMegabytes, formatMegabytesOf, formatWholeMegabytes };

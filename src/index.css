@@ -468,11 +468,17 @@ braccato-lyrics .blyrics-container {
   display: flex;
   align-items: center;
   gap: var(--tray-pad);
-  height: 36px;
+  height: var(--tray-height, 36px);
   padding: var(--tray-pad);
-  border-radius: calc(8px + var(--tray-pad));
+  border-radius: calc(var(--tray-inner-radius, 8px) + var(--tray-pad));
   background: var(--well);
   box-shadow: var(--well-edge);
+}
+
+@utility tray-compact {
+  --tray-pad: 2px;
+  --tray-height: 28px;
+  --tray-inner-radius: 6px;
 }
 
 @utility latch-on {

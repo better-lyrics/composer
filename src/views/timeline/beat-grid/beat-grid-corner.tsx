@@ -3,7 +3,9 @@ import { useAudioStore } from "@/stores/audio";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { Popover } from "@/ui/popover";
 import { formatBpm } from "@/utils/format-bpm";
+import { BeatGridPopoverBody } from "@/views/timeline/beat-grid/beat-grid-popover";
 import { detectionPercent, isDetectionRunning } from "@/views/timeline/beat-grid/detection-progress";
 import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
 import { IconAlertTriangle, IconLoader2, IconWaveSine } from "@tabler/icons-react";
@@ -114,7 +116,9 @@ const BeatGridCorner: React.FC = () => (
     onKeyDown={keepActivationKeys}
     className="absolute top-0 left-0 z-100 w-12 h-20 border-b border-r-2 border-(--divider) bg-(--gutter-bg)"
   >
-    <CornerButton aria-haspopup="dialog" />
+    <Popover placement="right-start" aria-label="Beat grid" trigger={<CornerButton />}>
+      <BeatGridPopoverBody />
+    </Popover>
   </div>
 );
 
