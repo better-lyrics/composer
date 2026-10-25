@@ -35,8 +35,8 @@ function barTempos(grid: BeatGrid): number[] {
 
 function tempoStats(grid: BeatGrid): TempoStats | null {
   if (grid.beats.length < 2) return null;
-  const bpm = medianBpm(grid.beats);
   const tempos = barTempos(grid);
+  const bpm = tempos.length > 0 ? tempos[Math.floor(tempos.length / 2)] : medianBpm(grid.beats);
   const low = tempos[Math.floor(tempos.length * 0.1)] ?? bpm;
   const high = tempos[Math.floor(tempos.length * 0.9)] ?? bpm;
   return { bpm, low, high, steady: (high - low) / bpm < STEADY_SPREAD, bars: grid.downbeatIndices.length };

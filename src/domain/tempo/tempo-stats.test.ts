@@ -29,6 +29,14 @@ describe("tempoStats", () => {
     expect(stats?.low).toBeLessThan(stats?.high ?? 0);
   });
 
+  it("reads the tempo from whole bars when beats swing long and short", () => {
+    const beats = Array.from({ length: 33 }, (_, i) => Math.floor(i / 2) * 0.5 + (i % 2) * 0.3);
+    const stats = tempoStats(detectedGrid({ beats, downbeats: everyFourth(beats) }));
+    expect(stats?.bpm).toBeCloseTo(240);
+    expect(stats?.bpm).toBeGreaterThanOrEqual(stats?.low ?? 0);
+    expect(stats?.bpm).toBeLessThanOrEqual(stats?.high ?? 0);
+  });
+
   it("ignores the offset", () => {
     const grid = detectedGrid({ beats: evenBeats(90, 9), downbeats: [0] });
     expect(tempoStats({ ...grid, offsetMs: 150 })?.bpm).toBeCloseTo(90);

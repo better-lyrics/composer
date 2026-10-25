@@ -1,7 +1,7 @@
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { canDouble, canHalve, doubled, halved, isEdited, resetGrid, withBarOneAt } from "@/domain/tempo/grid-edits";
 import { gridDensity } from "@/domain/tempo/grid-points";
-import { type TempoStats, tempoStats } from "@/domain/tempo/tempo-stats";
+import { tempoStats } from "@/domain/tempo/tempo-stats";
 import { livePlaybackTime, playableFile, useAudioStore } from "@/stores/audio";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
@@ -80,11 +80,7 @@ const GridGroup: React.FC<{ grid: BeatGrid }> = ({ grid }) => {
   );
 };
 
-const FixGridGroup: React.FC<{ grid: BeatGrid; stats: TempoStats; onSetByHand: () => void }> = ({
-  grid,
-  stats,
-  onSetByHand,
-}) => {
+const FixGridGroup: React.FC<{ grid: BeatGrid; onSetByHand: () => void }> = ({ grid, onSetByHand }) => {
   const apply = useProjectStore((s) => s.applyBeatGridWithHistory);
   return (
     <PopGroup label="Fix the grid">
@@ -100,12 +96,16 @@ const FixGridGroup: React.FC<{ grid: BeatGrid; stats: TempoStats; onSetByHand: (
       <PopRow label="Tempo">
         <div className="flex gap-1.5">
           <SetByHandButton onClick={onSetByHand} />
-          <Tooltip content={`${formatBpm(stats.bpm / 2)} BPM`}>
+          <Tooltip
+            content={canHalve(grid) ? `${formatBpm(tempoStats(halved(grid))?.bpm ?? 0)} BPM` : "Too slow to halve"}
+          >
             <PopButton disabled={!canHalve(grid)} onClick={() => apply(halved(grid))}>
               Half
             </PopButton>
           </Tooltip>
-          <Tooltip content={`${formatBpm(stats.bpm * 2)} BPM`}>
+          <Tooltip
+            content={canDouble(grid) ? `${formatBpm(tempoStats(doubled(grid))?.bpm ?? 0)} BPM` : "Too fast to double"}
+          >
             <PopButton disabled={!canDouble(grid)} onClick={() => apply(doubled(grid))}>
               Double
             </PopButton>
@@ -154,7 +154,7 @@ const BeatGridReady: React.FC<BeatGridReadyProps> = ({ grid, onSetByHand, onBack
         <ShowOnWaveformRow />
       </PopGroup>
       <GridGroup grid={grid} />
-      {stats && <FixGridGroup grid={grid} stats={stats} onSetByHand={onSetByHand} />}
+      {stats && <FixGridGroup grid={grid} onSetByHand={onSetByHand} />}
       {isEdited(grid, duration) ? <EditedFooter grid={grid} duration={duration} /> : <div className="h-1" />}
     </>
   );

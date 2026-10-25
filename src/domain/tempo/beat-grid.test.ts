@@ -46,6 +46,13 @@ describe("beatTime and beatIndexAt", () => {
   });
 });
 
+describe("regressions", () => {
+  it("regression: a playhead put on a beat that was rounded up by a millisecond still reads that beat", () => {
+    const grid = detectedGrid({ beats: [1, 1.5, 2.001], downbeats: [1] });
+    expect(beatIndexAt(grid, 2.0006)).toBe(2);
+  });
+});
+
 describe("bars", () => {
   const grid = detectedGrid(detection);
 

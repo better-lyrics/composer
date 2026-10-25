@@ -83,14 +83,18 @@ function paintGrid(context: CanvasRenderingContext2D, grid: BeatGrid, state: Dra
   const t1 = (scrollLeft + width + 1) / zoom;
   context.font = BAR_NUMBER_FONT;
   context.textBaseline = "middle";
+  let labelEnd = Number.NEGATIVE_INFINITY;
   for (const point of gridPoints(grid, t0, t1, zoom, lines)) {
     const x = Math.round(point.t * zoom - scrollLeft) + 0.5;
     const isBar = point.kind === "bar";
     context.fillStyle = colours[point.kind];
     context.fillRect(x - 0.5, isBar ? 0 : SHORT_LINE_INSET, 1, isBar ? height : height - SHORT_LINE_INSET * 2);
-    if (!isBar) continue;
+    const labelX = x + BAR_NUMBER_INSET_X;
+    if (!isBar || labelX < labelEnd) continue;
+    const label = String(point.bar);
     context.fillStyle = colours.number;
-    context.fillText(String(point.bar), x + BAR_NUMBER_INSET_X, BAR_NUMBER_Y);
+    context.fillText(label, labelX, BAR_NUMBER_Y);
+    labelEnd = labelX + context.measureText(label).width + BAR_NUMBER_INSET_X * 2;
   }
 }
 

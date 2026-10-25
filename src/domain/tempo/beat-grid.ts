@@ -26,6 +26,7 @@ interface BeatGrid {
 
 const DOWNBEAT_MATCH_SECONDS = 0.03;
 const DEFAULT_BEATS_PER_BAR = 4;
+const BEAT_TOLERANCE_SECONDS = 0.001;
 
 // -- Grid ----------------------------------------------------------------------
 
@@ -81,10 +82,11 @@ function beatTime(grid: BeatGrid, index: number): number {
 function beatIndexAt(grid: BeatGrid, time: number): number {
   let lo = 0;
   let hi = grid.beats.length - 1;
-  if (hi < 0 || time < beatTime(grid, 0)) return -1;
+  const reach = time + BEAT_TOLERANCE_SECONDS;
+  if (hi < 0 || reach < beatTime(grid, 0)) return -1;
   while (lo < hi) {
     const mid = (lo + hi + 1) >> 1;
-    if (beatTime(grid, mid) <= time) lo = mid;
+    if (beatTime(grid, mid) <= reach) lo = mid;
     else hi = mid - 1;
   }
   return lo;

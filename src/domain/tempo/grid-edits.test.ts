@@ -77,6 +77,11 @@ describe("halve and double", () => {
     expect(twice.beats[1]).toBeCloseTo(1.25);
   });
 
+  it("cannot halve below 30 BPM", () => {
+    const slow = Array.from({ length: 17 }, (_, i) => (i * 60) / 50);
+    expect(canHalve(detectedGrid({ beats: slow, downbeats: slow.filter((_, i) => i % 4 === 0) }))).toBe(false);
+  });
+
   it("cannot double past 240 BPM", () => {
     expect(canDouble(grid)).toBe(true);
     const fast = Array.from({ length: 9 }, (_, i) => (i * 60) / 121);

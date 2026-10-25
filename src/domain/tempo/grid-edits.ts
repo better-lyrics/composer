@@ -1,4 +1,5 @@
 import { type BeatGrid, type ManualTempo, beatIndexAt, detectedGrid } from "@/domain/tempo/beat-grid";
+import { MIN_BPM } from "@/domain/tempo/tap-tempo";
 import { tempoStats } from "@/domain/tempo/tempo-stats";
 
 // -- Constants -----------------------------------------------------------------
@@ -38,7 +39,9 @@ function withBarOneAt(grid: BeatGrid, time: number): BeatGrid {
 }
 
 function canHalve(grid: BeatGrid): boolean {
-  return grid.beatsPerBar % 2 === 0 && grid.beats.length >= 2;
+  if (grid.beatsPerBar % 2 !== 0 || grid.beats.length < 3) return false;
+  const bpm = tempoStats(halved(grid))?.bpm;
+  return bpm !== undefined && bpm >= MIN_BPM;
 }
 
 function halved(grid: BeatGrid): BeatGrid {
