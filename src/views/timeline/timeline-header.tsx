@@ -13,6 +13,7 @@ import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { Tooltip, TooltipGroup } from "@/ui/tooltip";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { SnapLatch } from "@/views/timeline/snap-latch";
+import { SpectrumLatch } from "@/views/timeline/spectrum/spectrum-latch";
 import { TimelineZoomControls } from "@/views/timeline/timeline-header-controls";
 import { TimelineNotices } from "@/views/timeline/timeline-notices";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -187,6 +188,10 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
             >
               <IconMapPin />
             </ShortcutToggleButton>
+          </div>
+
+          <div className="tray">
+            <SpectrumLatch />
           </div>
 
           {onImportLyrics && (
