@@ -1,6 +1,6 @@
 import type { PitchLineMode } from "@/domain/pitch/pitch-line-mode";
 import type { PitchTrack } from "@/domain/pitch/track";
-import { pitchLineMotion } from "@/utils/animationVariants";
+import { pitchLineKeyframes, pitchLineMotion } from "@/utils/animationVariants";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -41,12 +41,6 @@ function isInView(element: Element, box: DOMRect): boolean {
   return rect.bottom > box.top && rect.top < box.bottom && rect.right > box.left && rect.left < box.right;
 }
 
-function wipeKeyframes(reducedMotion: boolean): Keyframe[] {
-  return reducedMotion
-    ? [{ opacity: 0 }, { opacity: 1 }]
-    : [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)" }];
-}
-
 // Each label rises when the wipe reaches its word.
 function scheduleLabelRises(lane: HTMLCanvasElement, zoom: number, rowDelay: number): number {
   const left = Number.parseFloat(lane.style.left);
@@ -80,14 +74,19 @@ function playPitchArrival({ scope, viewport, zoom, mode }: PitchArrival): () => 
     (row) => isInView(row, box) && [...row.querySelectorAll("[data-word-block]")].some((word) => isInView(word, box)),
   );
   const duration = reducedMotion ? pitchLineMotion.reducedFadeMs : pitchLineMotion.wipeMs;
-  const easing = reducedMotion ? "ease-out" : `cubic-bezier(${pitchLineMotion.wipeEase.join(", ")})`;
+  const easing = reducedMotion ? pitchLineMotion.fadeEase : `cubic-bezier(${pitchLineMotion.wipeEase.join(", ")})`;
   const animations: Animation[] = [];
   let end = 0;
   rows.forEach((row, index) => {
     const rowDelay = pitchLineMotion.rowLeadMs + index * pitchLineMotion.rowStaggerMs;
     for (const lane of row.querySelectorAll<HTMLCanvasElement>(".pitch-lane:not([data-sung])")) {
       animations.push(
-        lane.animate(wipeKeyframes(reducedMotion), { duration, delay: rowDelay, easing, fill: "backwards" }),
+        lane.animate(reducedMotion ? pitchLineKeyframes.reducedWipe : pitchLineKeyframes.wipe, {
+          duration,
+          delay: rowDelay,
+          easing,
+          fill: "backwards",
+        }),
       );
       if (!reducedMotion) end = Math.max(end, scheduleLabelRises(lane, zoom, rowDelay));
     }

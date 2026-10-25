@@ -136,7 +136,14 @@ const pitchLineMotion = {
   riseMs: 240,
   labelLeadPx: 6,
   reducedFadeMs: 150,
+  fadeEase: "ease-out",
 } as const;
+
+const pitchLineKeyframes: Record<"wipe" | "reducedWipe" | "fadeOut", Keyframe[]> = {
+  wipe: [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)" }],
+  reducedWipe: [{ opacity: 0 }, { opacity: 1 }],
+  fadeOut: [{ opacity: 1 }, { opacity: 0 }],
+};
 
 // -- Edit Loupe ---------------------------------------------------------------
 
@@ -183,5 +190,6 @@ export {
   inlineIconTransition,
   inlineIconVariants,
   inlineIconReducedVariants,
+  pitchLineKeyframes,
   pitchLineMotion,
 };

@@ -1,3 +1,4 @@
+import { pitchLineKeyframes, pitchLineMotion } from "@/utils/animationVariants";
 import type { PitchRange } from "@/domain/pitch/line-range";
 import type { PitchPoint, PitchTrack } from "@/domain/pitch/track";
 import { backgroundLaneRuns, voicedRuns } from "@/domain/pitch/voiced-runs";
@@ -197,7 +198,7 @@ function fadeOutSnapshot(canvas: HTMLCanvasElement, ghost: HTMLCanvasElement, du
   ghost.style.width = canvas.style.width;
   ghost.style.height = canvas.style.height;
   ghost.getContext("2d")?.drawImage(canvas, 0, 0);
-  ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: durationMs, easing: "ease-out" });
+  ghost.animate(pitchLineKeyframes.fadeOut, { duration: durationMs, easing: pitchLineMotion.fadeEase });
 }
 
 // -- Exports -------------------------------------------------------------------
