@@ -5,7 +5,7 @@ import { readBeatGrid } from "@/domain/tempo/read-beat-grid";
 
 const beats = [0.5, 1, 1.5, 2, 2.5];
 const grid = withOffset(detectedGrid({ beats, downbeats: [0.5, 2.5] }), 20);
-const manual = manualGrid({ bpm: 120, beatsPerBar: 4, anchor: 1 }, 10);
+const manual = manualGrid({ bpm: 120, beatsPerBar: 4, anchor: 1, end: 10 });
 
 describe("readBeatGrid", () => {
   it("reads back a saved detected grid and a saved manual grid", () => {
@@ -33,7 +33,9 @@ describe("error paths", () => {
     ["an offset out of range", { ...grid, offsetMs: 500 }],
     ["a detected grid with a manual origin", { ...grid, origin: manual.origin }],
     ["a manual grid with a detected origin", { ...manual, origin: grid.origin }],
-    ["a manual origin with an invalid tempo", { ...manual, origin: { bpm: 0, beatsPerBar: 4, anchor: 1 } }],
+    ["a manual origin with an invalid tempo", { ...manual, origin: { ...manual.origin, bpm: 0 } }],
+    ["a manual origin without an end", { ...manual, origin: { bpm: 120, beatsPerBar: 4, anchor: 1 } }],
+    ["a tempo scale that is not a power of two", { ...grid, tempoScale: 3 }],
     ["a detected origin with bad beats", { ...grid, origin: { beats: [2, 1], downbeats: [] } }],
   ];
 

@@ -49,7 +49,7 @@ describe("beat grid snapping", () => {
     const line = createLine({ text: "hold", words: [word] });
     useProjectStore.setState({
       lines: [line],
-      beatGrid: manualGrid({ bpm: 120, beatsPerBar: 4, anchor: 0 }, DURATION),
+      beatGrid: manualGrid({ bpm: 120, beatsPerBar: 4, anchor: 0, end: DURATION }),
     });
     await render(
       <WordTrack

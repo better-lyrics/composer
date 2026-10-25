@@ -42,10 +42,11 @@ function readDetectedOrigin(value: unknown): DetectedBeats | null {
 
 function readManualOrigin(value: unknown): ManualTempo | null {
   if (!isRecord(value)) return null;
-  const { bpm, beatsPerBar, anchor } = value;
+  const { bpm, beatsPerBar, anchor, end } = value;
   if (typeof bpm !== "number" || !isValidBpm(bpm) || !isBeatsPerBar(beatsPerBar)) return null;
   if (typeof anchor !== "number" || !Number.isFinite(anchor) || anchor < 0) return null;
-  return { bpm, beatsPerBar, anchor };
+  if (typeof end !== "number" || !Number.isFinite(end) || end <= 0) return null;
+  return { bpm, beatsPerBar, anchor, end };
 }
 
 // -- Reading -------------------------------------------------------------------

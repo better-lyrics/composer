@@ -11,6 +11,7 @@ interface ManualTempo {
   bpm: number;
   beatsPerBar: number;
   anchor: number;
+  end: number;
 }
 
 interface BeatGrid {

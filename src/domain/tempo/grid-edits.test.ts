@@ -32,8 +32,8 @@ describe("withOffset", () => {
   });
 
   it("survives halving and doubling", () => {
-    expect(halved(withOffset(grid, 30), DURATION).offsetMs).toBe(30);
-    expect(doubled(withOffset(grid, 30), DURATION).offsetMs).toBe(30);
+    expect(halved(withOffset(grid, 30)).offsetMs).toBe(30);
+    expect(doubled(withOffset(grid, 30)).offsetMs).toBe(30);
   });
 });
 
@@ -58,7 +58,7 @@ describe("withBarOneAt", () => {
 
 describe("halve and double", () => {
   it("halving keeps the meter and every other bar", () => {
-    const half = halved(grid, DURATION);
+    const half = halved(grid);
     expect(half.beatsPerBar).toBe(4);
     expect(half.beats).toHaveLength(17);
     expect(downbeatTimes(half)).toEqual(downbeatTimes(grid).filter((_, i) => i % 2 === 0));
@@ -67,11 +67,11 @@ describe("halve and double", () => {
   it("halves a bar of three too", () => {
     const waltz = detectedGrid({ beats, downbeats: beats.filter((_, i) => i % 3 === 0) });
     expect(canHalve(waltz)).toBe(true);
-    expect(halved(waltz, DURATION).beatsPerBar).toBe(3);
+    expect(halved(waltz).beatsPerBar).toBe(3);
   });
 
   it("doubling keeps the meter and adds a bar in the middle of each bar", () => {
-    const twice = doubled(grid, DURATION);
+    const twice = doubled(grid);
     expect(twice.beatsPerBar).toBe(4);
     expect(twice.beats).toHaveLength(65);
     expect(twice.beats[1]).toBeCloseTo(1.25);
@@ -91,29 +91,29 @@ describe("halve and double", () => {
   });
 
   it("halving a doubled grid gives the grid back", () => {
-    expect(halved(doubled(grid, DURATION), DURATION)).toEqual(grid);
+    expect(halved(doubled(grid))).toEqual(grid);
   });
 
   it("doubling a halved grid gives the grid back, with the last beat", () => {
-    expect(doubled(halved(grid, DURATION), DURATION)).toEqual(grid);
-    const twice = halved(halved(grid, DURATION), DURATION);
-    expect(doubled(doubled(twice, DURATION), DURATION)).toEqual(grid);
+    expect(doubled(halved(grid))).toEqual(grid);
+    const twice = halved(halved(grid));
+    expect(doubled(doubled(twice))).toEqual(grid);
   });
 
   it("doubling a halved manual grid gives the grid back", () => {
-    const manual = manualGrid({ bpm: 81, beatsPerBar: 4, anchor: 2.3 }, DURATION);
-    expect(doubled(halved(manual, DURATION), DURATION)).toEqual(manual);
+    const manual = manualGrid({ bpm: 81, beatsPerBar: 4, anchor: 2.3, end: DURATION });
+    expect(doubled(halved(manual))).toEqual(manual);
   });
 
   it("keeps the bar the user set across halving and doubling", () => {
     const moved = withBarOneAt(grid, 2);
-    expect(doubled(halved(moved, DURATION), DURATION)).toEqual(moved);
+    expect(doubled(halved(moved))).toEqual(moved);
   });
 });
 
 describe("manualGrid", () => {
-  const tempo = { bpm: 120, beatsPerBar: 4, anchor: 3.2 };
-  const manual = manualGrid(tempo, DURATION);
+  const tempo = { bpm: 120, beatsPerBar: 4, anchor: 3.2, end: DURATION };
+  const manual = manualGrid(tempo);
 
   it("puts a downbeat on the anchor", () => {
     expect(downbeatTimes(manual)).toContain(3.2);
@@ -127,7 +127,7 @@ describe("manualGrid", () => {
   });
 
   it("spaces bars by the beats per bar, also before the anchor", () => {
-    const waltz = manualGrid({ bpm: 90, beatsPerBar: 3, anchor: 5 }, DURATION);
+    const waltz = manualGrid({ bpm: 90, beatsPerBar: 3, anchor: 5, end: DURATION });
     const gaps = waltz.downbeatIndices.slice(1).map((v, i) => v - waltz.downbeatIndices[i]);
     expect(gaps.every((gap) => gap === 3)).toBe(true);
     expect(waltz.downbeatIndices[0]).toBeLessThan(3);
@@ -141,36 +141,30 @@ describe("manualGrid", () => {
 
 describe("reset and edited", () => {
   it("a fresh grid is not edited", () => {
-    expect(isEdited(grid, DURATION)).toBe(false);
-    expect(isEdited(manualGrid({ bpm: 100, beatsPerBar: 4, anchor: 1 }, DURATION), DURATION)).toBe(false);
+    expect(isEdited(grid)).toBe(false);
+    expect(isEdited(manualGrid({ bpm: 100, beatsPerBar: 4, anchor: 1, end: DURATION }))).toBe(false);
   });
 
   it("any edit marks the grid edited", () => {
-    expect(isEdited(withOffset(grid, 10), DURATION)).toBe(true);
-    expect(isEdited(halved(grid, DURATION), DURATION)).toBe(true);
-    expect(isEdited(withBarOneAt(grid, 2), DURATION)).toBe(true);
+    expect(isEdited(withOffset(grid, 10))).toBe(true);
+    expect(isEdited(halved(grid))).toBe(true);
+    expect(isEdited(withBarOneAt(grid, 2))).toBe(true);
   });
 
   it("reset undoes every edit of a detected grid", () => {
-    const edited = withBarOneAt(halved(withOffset(grid, 40), DURATION), 3);
-    expect(resetGrid(edited, DURATION)).toEqual(grid);
+    const edited = withBarOneAt(halved(withOffset(grid, 40)), 3);
+    expect(resetGrid(edited)).toEqual(grid);
   });
 
   it("reset rebuilds a manual grid from its tempo", () => {
-    const manual = manualGrid({ bpm: 100, beatsPerBar: 4, anchor: 1 }, DURATION);
-    expect(resetGrid(doubled(withOffset(manual, -20), DURATION), DURATION)).toEqual(manual);
+    const manual = manualGrid({ bpm: 100, beatsPerBar: 4, anchor: 1, end: DURATION });
+    expect(resetGrid(doubled(withOffset(manual, -20)))).toEqual(manual);
   });
 });
 
 describe("invariants", () => {
   it("no edit breaks the ascending order of beats or downbeats", () => {
-    const edits = [
-      withOffset(grid, 50),
-      withBarOneAt(grid, 7),
-      halved(grid, DURATION),
-      doubled(grid, DURATION),
-      resetGrid(grid, 20),
-    ];
+    const edits = [withOffset(grid, 50), withBarOneAt(grid, 7), halved(grid), doubled(grid), resetGrid(grid)];
     for (const edited of edits) {
       expect(isAscending(edited.beats)).toBe(true);
       expect(isAscending(edited.downbeatIndices)).toBe(true);
@@ -182,8 +176,8 @@ describe("invariants", () => {
     const before = structuredClone(grid);
     withOffset(grid, 50);
     withBarOneAt(grid, 7);
-    halved(grid, DURATION);
-    doubled(grid, DURATION);
+    halved(grid);
+    doubled(grid);
     expect(grid).toEqual(before);
     expect(beatTime(grid, 0)).toBe(1);
   });

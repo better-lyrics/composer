@@ -80,11 +80,7 @@ const GridGroup: React.FC<{ grid: BeatGrid }> = ({ grid }) => {
   );
 };
 
-const FixGridGroup: React.FC<{ grid: BeatGrid; duration: number; onSetByHand: () => void }> = ({
-  grid,
-  duration,
-  onSetByHand,
-}) => {
+const FixGridGroup: React.FC<{ grid: BeatGrid; onSetByHand: () => void }> = ({ grid, onSetByHand }) => {
   const apply = useProjectStore((s) => s.applyBeatGridWithHistory);
   return (
     <PopGroup label="Fix the grid">
@@ -102,21 +98,17 @@ const FixGridGroup: React.FC<{ grid: BeatGrid; duration: number; onSetByHand: ()
           <SetByHandButton onClick={onSetByHand} />
           <Tooltip
             placement="bottom"
-            content={
-              canHalve(grid) ? `${formatBpm(tempoStats(halved(grid, duration))?.bpm ?? 0)} BPM` : "Too slow to halve"
-            }
+            content={canHalve(grid) ? `${formatBpm(tempoStats(halved(grid))?.bpm ?? 0)} BPM` : "Too slow to halve"}
           >
-            <PopButton disabled={!canHalve(grid)} onClick={() => apply(halved(grid, duration))}>
+            <PopButton disabled={!canHalve(grid)} onClick={() => apply(halved(grid))}>
               Half
             </PopButton>
           </Tooltip>
           <Tooltip
             placement="bottom"
-            content={
-              canDouble(grid) ? `${formatBpm(tempoStats(doubled(grid, duration))?.bpm ?? 0)} BPM` : "Too fast to double"
-            }
+            content={canDouble(grid) ? `${formatBpm(tempoStats(doubled(grid))?.bpm ?? 0)} BPM` : "Too fast to double"}
           >
-            <PopButton disabled={!canDouble(grid)} onClick={() => apply(doubled(grid, duration))}>
+            <PopButton disabled={!canDouble(grid)} onClick={() => apply(doubled(grid))}>
               Double
             </PopButton>
           </Tooltip>
@@ -126,13 +118,13 @@ const FixGridGroup: React.FC<{ grid: BeatGrid; duration: number; onSetByHand: ()
   );
 };
 
-const EditedFooter: React.FC<{ grid: BeatGrid; duration: number }> = ({ grid, duration }) => (
+const EditedFooter: React.FC<{ grid: BeatGrid }> = ({ grid }) => (
   <div className="flex items-center justify-between mt-3 -mx-1.5 pt-1.5 pb-0.5 pl-4 pr-2.5 border-t border-(--divider)">
     <span className="text-xs leading-[1.3] text-(--muted)">Edited</span>
     <PopButton
       variant="ghost"
       icon={IconArrowBackUp}
-      onClick={() => useProjectStore.getState().applyBeatGridWithHistory(resetGrid(grid, duration))}
+      onClick={() => useProjectStore.getState().applyBeatGridWithHistory(resetGrid(grid))}
     >
       {grid.source === "manual" ? "Reset" : "Reset to detected"}
     </PopButton>
@@ -140,7 +132,6 @@ const EditedFooter: React.FC<{ grid: BeatGrid; duration: number }> = ({ grid, du
 );
 
 const BeatGridReady: React.FC<BeatGridReadyProps> = ({ grid, onSetByHand, onBack }) => {
-  const duration = useAudioStore((s) => s.duration);
   const canDetect = useAudioStore((s) => playableFile(s.source) !== null);
   const stats = tempoStats(grid);
   const detectLabel = grid.source === "manual" ? "Detect beats" : "Detect again";
@@ -164,8 +155,8 @@ const BeatGridReady: React.FC<BeatGridReadyProps> = ({ grid, onSetByHand, onBack
         <ShowOnWaveformRow />
       </PopGroup>
       <GridGroup grid={grid} />
-      {stats && <FixGridGroup grid={grid} duration={duration} onSetByHand={onSetByHand} />}
-      {isEdited(grid, duration) ? <EditedFooter grid={grid} duration={duration} /> : <div className="h-1" />}
+      {stats && <FixGridGroup grid={grid} onSetByHand={onSetByHand} />}
+      {isEdited(grid) ? <EditedFooter grid={grid} /> : <div className="h-1" />}
     </>
   );
 };

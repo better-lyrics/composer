@@ -46,7 +46,8 @@ function flashPressed(key: Element): void {
   setTimeout(() => key.removeAttribute("data-pressed"), KEY_PRESS_FLASH_MS);
 }
 
-function tapStatus(taps: TapState | null, text: string, valid: boolean): string {
+function tapStatus(taps: TapState | null, text: string, valid: boolean, hasSong: boolean): string {
+  if (!hasSong) return "Load the song first";
   if (!taps && text !== "" && !valid) return `Use ${MIN_BPM} to ${MAX_BPM} BPM`;
   if (!taps) return "Play, then tap along";
   const count = taps.taps.length;
@@ -79,15 +80,13 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   const fieldRef = useRef<HTMLInputElement>(null);
   const bpm = Number.parseFloat(text);
   const valid = isValidBpm(bpm);
+  const hasSong = useAudioStore((s) => s.duration > 0);
   const tappedAt = taps && valid ? tapAnchor(taps, bpm) : null;
 
   const applyTempo = () => {
-    if (!valid) return;
-    const duration = useAudioStore.getState().duration;
-    const grid = manualGrid(
-      { bpm, beatsPerBar: Number(meter), anchor: Math.max(0, tappedAt ?? livePlaybackTime()) },
-      duration,
-    );
+    if (!valid || !hasSong) return;
+    const anchor = Math.max(0, tappedAt ?? livePlaybackTime());
+    const grid = manualGrid({ bpm, beatsPerBar: Number(meter), anchor, end: useAudioStore.getState().duration });
     useProjectStore.getState().applyBeatGridWithHistory(grid);
     const detection = useBeatDetectionStore.getState();
     if (detection.status === "error") detection.dismiss();
@@ -157,7 +156,7 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
         <span className="flex items-center gap-2.5 min-w-0">
           <StaticLeds lit={taps ? Math.min(taps.taps.length, TAPS_FOR_TEMPO) : 0} />
           <span className="text-[12.5px] leading-[1.2] text-(--muted) whitespace-nowrap" aria-live="polite">
-            {tapStatus(taps, text, valid)}
+            {tapStatus(taps, text, valid, hasSong)}
           </span>
         </span>
       </div>
@@ -177,7 +176,7 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
       </PopGroup>
       <PopActions className="mt-4">
         <PopButton onClick={onDone}>Cancel</PopButton>
-        <PopButton variant="primary" disabled={!valid} onClick={applyTempo}>
+        <PopButton variant="primary" disabled={!valid || !hasSong} onClick={applyTempo}>
           {valid ? `Use ${bpm} BPM` : "Use tempo"}
         </PopButton>
       </PopActions>

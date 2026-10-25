@@ -59,8 +59,8 @@ function nearestIndex(times: readonly number[], time: number): number {
   return lo > 0 && time - times[lo - 1] < times[lo] - time ? lo - 1 : lo;
 }
 
-function originBeats(grid: BeatGrid, duration: number): readonly number[] {
-  return "bpm" in grid.origin ? manualGrid(grid.origin, duration).beats : grid.origin.beats;
+function originBeats(grid: BeatGrid): readonly number[] {
+  return "bpm" in grid.origin ? manualGrid(grid.origin).beats : grid.origin.beats;
 }
 
 function beatsAtScale(base: readonly number[], scale: number, barTime: number): number[] {
@@ -78,23 +78,22 @@ function beatsAtScale(base: readonly number[], scale: number, barTime: number): 
   return beats;
 }
 
-function rescaled(grid: BeatGrid, scale: number, barTimes: readonly number[], duration: number): BeatGrid {
-  const beats = beatsAtScale(originBeats(grid, duration), scale, barTimes[0] ?? 0);
+function rescaled(grid: BeatGrid, scale: number, barTimes: readonly number[]): BeatGrid {
+  const beats = beatsAtScale(originBeats(grid), scale, barTimes[0] ?? 0);
   const downbeatIndices = [...new Set(barTimes.map((time) => nearestIndex(beats, time)))];
   return { ...grid, beats, downbeatIndices, tempoScale: scale };
 }
 
-function halved(grid: BeatGrid, duration: number): BeatGrid {
+function halved(grid: BeatGrid): BeatGrid {
   const barTimes = grid.downbeatIndices.filter((_, i) => i % 2 === 0).map((i) => grid.beats[i]);
-  return rescaled(grid, grid.tempoScale / 2, barTimes, duration);
+  return rescaled(grid, grid.tempoScale / 2, barTimes);
 }
 
-function doubled(grid: BeatGrid, duration: number): BeatGrid {
+function doubled(grid: BeatGrid): BeatGrid {
   const twice = rescaled(
     grid,
     grid.tempoScale * 2,
     grid.downbeatIndices.map((i) => grid.beats[i]),
-    duration,
   );
   const downbeatIndices = twice.downbeatIndices.flatMap((index, i) => {
     const middle = index + grid.beatsPerBar;
@@ -105,11 +104,11 @@ function doubled(grid: BeatGrid, duration: number): BeatGrid {
 
 // -- Manual tempo and reset ----------------------------------------------------
 
-function manualGrid(tempo: ManualTempo, duration: number): BeatGrid {
+function manualGrid(tempo: ManualTempo): BeatGrid {
   const step = 60 / tempo.bpm;
   const first = tempo.anchor - Math.floor(tempo.anchor / step) * step;
   const beats: number[] = [];
-  for (let k = 0; first + k * step <= duration; k++) beats.push(Math.round((first + k * step) * 1000) / 1000);
+  for (let k = 0; first + k * step <= tempo.end; k++) beats.push(Math.round((first + k * step) * 1000) / 1000);
   const anchorIndex = Math.round((tempo.anchor - first) / step);
   return {
     source: "manual",
@@ -122,13 +121,13 @@ function manualGrid(tempo: ManualTempo, duration: number): BeatGrid {
   };
 }
 
-function resetGrid(grid: BeatGrid, duration: number): BeatGrid {
-  if ("bpm" in grid.origin) return manualGrid(grid.origin, duration);
+function resetGrid(grid: BeatGrid): BeatGrid {
+  if ("bpm" in grid.origin) return manualGrid(grid.origin);
   return detectedGrid(grid.origin);
 }
 
-function isEdited(grid: BeatGrid, duration: number): boolean {
-  const original = resetGrid(grid, duration);
+function isEdited(grid: BeatGrid): boolean {
+  const original = resetGrid(grid);
   return (
     grid.offsetMs !== original.offsetMs ||
     grid.beatsPerBar !== original.beatsPerBar ||
