@@ -1,9 +1,9 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { INLINE_CODE, PROSE } from "@/ui/typography";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { MOD_KEY } from "@/utils/platform";
-import { SettingLink } from "@/ui/setting-link";
 import { HelpTopic } from "@/ui/help-topic";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { SettingLink } from "@/ui/setting-link";
+import { INLINE_CODE, PROSE } from "@/ui/typography";
+import { MOD_KEY } from "@/utils/platform";
 
 // -- Timeline extras ----------------------------------------------------------
 
@@ -169,6 +169,39 @@ const TimelineExtras: React.FC = () => (
           arrow next to the magnet picks what snaps: words and lines, markers, vocal onsets and beats.
         </li>
       </ul>
+    </HelpTopic>
+
+    <HelpTopic title="Spectrum and pitch line">
+      <p className={PROSE}>
+        Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleSpectrum")} /> to swap the waveform for a
+        spectrum. Time runs left to right, pitch runs up, and brighter is louder. A sung vowel shows as a stack of
+        bright bands and a consonant as a short burst of noise, which makes it easy to see where a word starts and ends.
+      </p>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
+        <li>Drag the bottom edge of the spectrum to make it taller. Double-click the edge to shrink it back.</li>
+        <li>
+          The arrow next to the Spectrum button holds its settings: the separated vocals or the full mix, the colours,
+          and contrast, which hides background noise or brings out quiet detail.
+        </li>
+        <li>
+          While the spectrum shows, dragging a word edge, nudging it or pressing{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordBegin")} /> or{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} /> opens a small magnifier with the
+          spectrum around that edge. Line the edge up with the sound.
+        </li>
+        <li>
+          Once vocals are separated, a pitch line runs along the bottom of each word and follows the melody. Amber means
+          the singing carries on past the word's edge, which usually means the edge ends too early.
+        </li>
+        <li>
+          <SettingLink setting="pitchLine" /> shows the line on every row, only on the row you point at, select or hear,
+          or not at all. Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.togglePitchLine")} /> to turn it
+          off and on.
+        </li>
+      </ul>
+      <p className={`${PROSE} mt-3`}>
+        Analysis runs on your device and is saved with the separated vocals, so it opens straight away next time.
+      </p>
     </HelpTopic>
 
     <HelpTopic title="Other features">
