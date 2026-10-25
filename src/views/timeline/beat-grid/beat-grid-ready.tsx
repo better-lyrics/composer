@@ -101,6 +101,7 @@ const FixGridGroup: React.FC<{ grid: BeatGrid; duration: number; onSetByHand: ()
         <div className="flex gap-1.5">
           <SetByHandButton onClick={onSetByHand} />
           <Tooltip
+            placement="bottom"
             content={
               canHalve(grid) ? `${formatBpm(tempoStats(halved(grid, duration))?.bpm ?? 0)} BPM` : "Too slow to halve"
             }
@@ -110,6 +111,7 @@ const FixGridGroup: React.FC<{ grid: BeatGrid; duration: number; onSetByHand: ()
             </PopButton>
           </Tooltip>
           <Tooltip
+            placement="bottom"
             content={
               canDouble(grid) ? `${formatBpm(tempoStats(doubled(grid, duration))?.bpm ?? 0)} BPM` : "Too fast to double"
             }

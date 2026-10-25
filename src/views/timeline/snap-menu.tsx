@@ -83,9 +83,9 @@ const SnapOffNote: React.FC = () => {
   const snapOn = useSettingsStore((s) => s.timelineSnap);
   if (snapOn) return null;
   return (
-    <p className="px-2.5 mt-1 text-xs leading-[1.45] text-(--muted)">
-      Snap is off. Turn it on with the magnet or <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleSnap")} />{" "}
-      to pick what snaps.
+    <p className="px-2.5 mt-1 text-xs leading-[1.45] text-pretty text-(--muted)">
+      Snap is off. Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleSnap")} /> or the magnet to turn it
+      on.
     </p>
   );
 };

@@ -110,17 +110,26 @@ const CornerButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { r
 // The cell sits in the Timeline scroll host, which starts a marquee on mousedown.
 const BeatGridCorner: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [tooltipHeld, setTooltipHeld] = useState(false);
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) setTooltipHeld(true);
+  };
   return (
     // react-doctor-disable-next-line react-doctor/no-static-element-interactions -- the cell only stops events from reaching the scroll host; the button inside is the control
     <div
       onMouseDown={(e) => e.stopPropagation()}
       onKeyDown={keepSpaceForFocusedControl}
+      onPointerLeave={() => setTooltipHeld(false)}
+      onBlur={(e) => {
+        if (e.currentTarget.contains(e.target)) setTooltipHeld(false);
+      }}
       className="absolute top-0 left-0 z-100 grid w-12 h-20 border-b border-r-2 border-(--divider) bg-(--gutter-bg)"
     >
-      <Tooltip content="Beat grid" placement="right" disabled={open}>
+      <Tooltip content="Beat grid" placement="right" disabled={open || tooltipHeld}>
         <Popover
           open={open}
-          onOpenChange={setOpen}
+          onOpenChange={handleOpenChange}
           placement="right-start"
           aria-label="Beat grid"
           trigger={<CornerButton />}
