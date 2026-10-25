@@ -340,6 +340,11 @@ function useTimelineKeyboard(
           s.set("timelineSnap", !s.timelineSnap);
           break;
         }
+        case "timeline.toggleBeatGrid": {
+          const s = useSettingsStore.getState();
+          s.set("beatGridVisible", !s.beatGridVisible);
+          break;
+        }
         case "timeline.toggleRollingEdit":
           useTimelineStore.getState().toggleRollingEditMode();
           break;

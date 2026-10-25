@@ -485,6 +485,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "t" },
   },
   {
+    id: "timeline.toggleBeatGrid",
+    scope: "timeline",
+    description: "Show or hide the beat grid",
+    defaultBinding: { key: "b" },
+  },
+  {
     id: "timeline.toggleRollingEdit",
     scope: "timeline",
     description: "Toggle rolling edit tool",
