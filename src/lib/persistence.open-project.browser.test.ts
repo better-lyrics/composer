@@ -2,7 +2,7 @@ import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { reconcileLine } from "@/domain/line/model";
 import { findOpenProjectId, forgetOpenProjectId } from "@/lib/open-project-session";
 import { clearAudioFile, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
-import { DB_NAME } from "@/lib/persistence-idb";
+import { DB_NAME, DB_VERSION } from "@/lib/persistence-idb";
 import { listProjectIndex } from "@/lib/project-repository";
 import { loadProjectForRestore } from "@/lib/project-restore";
 import { getOpenProjectId, loadProjectRecord } from "@/lib/project-storage";
@@ -101,7 +101,7 @@ describe("persistence · open project", () => {
     });
 
     it("regression: a database opened at a newer version rejects reads and writes, and recovers once the database is deleted", async () => {
-      await openAndCloseAtVersion(DB_NAME, 4);
+      await openAndCloseAtVersion(DB_NAME, DB_VERSION + 1);
 
       await expect(loadOpenProjectRecord()).rejects.toThrow();
       await expect(save("Blocked")).rejects.toThrow();
@@ -114,7 +114,7 @@ describe("persistence · open project", () => {
     });
 
     it("regression: a failed lookup is retried on the next load without a save in between", async () => {
-      await openAndCloseAtVersion(DB_NAME, 4);
+      await openAndCloseAtVersion(DB_NAME, DB_VERSION + 1);
       await expect(loadOpenProjectRecord()).rejects.toThrow();
 
       await deleteDatabase(DB_NAME);

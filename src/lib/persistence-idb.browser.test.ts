@@ -3,6 +3,7 @@ import {
   DB_NAME,
   DB_VERSION,
   PROJECT_AUDIO_STORE_NAME,
+  PROJECT_STEMS_STORE_NAME,
   PROJECT_INDEX_STORE_NAME,
   PROJECT_RECORD_STORE_NAME,
   PROJECT_STORE_NAME,
@@ -25,13 +26,14 @@ import { describe, expect, it } from "vitest";
 describe("persistence-idb · schema", () => {
   it("openDB returns a db at the expected version with every store", async () => {
     const db = await openDB();
-    expect(db.version).toBe(3);
+    expect(db.version).toBe(4);
     for (const name of [
       PROJECT_STORE_NAME,
       STEM_STORE_NAME,
       PROJECT_RECORD_STORE_NAME,
       PROJECT_INDEX_STORE_NAME,
       PROJECT_AUDIO_STORE_NAME,
+      PROJECT_STEMS_STORE_NAME,
       APP_STATE_STORE_NAME,
     ]) {
       expect(db.objectStoreNames.contains(name)).toBe(true);
@@ -139,6 +141,7 @@ describe("persistence-idb · upgrade", () => {
       PROJECT_RECORD_STORE_NAME,
       PROJECT_INDEX_STORE_NAME,
       PROJECT_AUDIO_STORE_NAME,
+      PROJECT_STEMS_STORE_NAME,
       APP_STATE_STORE_NAME,
     ]) {
       expect(upgraded.objectStoreNames.contains(name)).toBe(true);

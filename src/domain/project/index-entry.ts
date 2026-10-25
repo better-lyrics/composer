@@ -22,6 +22,7 @@ interface ProjectIndexEntry {
   hasWordTiming: boolean;
   audioKind: ProjectAudioKind;
   storedAudioBytes: number;
+  storedStemBytes?: number;
   recordBytes?: number;
   updatedAt: number;
   openedAt?: number;
@@ -35,6 +36,7 @@ interface IndexEntryInput {
   lines: unknown;
   audioSource: SavedAudioSource | undefined;
   storedAudioBytes: number;
+  storedStemBytes?: number;
   recordBytes?: number;
   updatedAt: number;
   openedAt?: number;
@@ -73,6 +75,7 @@ function buildIndexEntry(input: IndexEntryInput): ProjectIndexEntry {
     hasWordTiming: lyricLines.some(isWordSynced),
     audioKind: input.audioSource?.kind ?? "none",
     storedAudioBytes: input.storedAudioBytes,
+    ...(input.storedStemBytes ? { storedStemBytes: input.storedStemBytes } : {}),
     ...(input.recordBytes !== undefined ? { recordBytes: input.recordBytes } : {}),
     updatedAt: input.updatedAt,
     ...(input.openedAt !== undefined ? { openedAt: input.openedAt } : {}),

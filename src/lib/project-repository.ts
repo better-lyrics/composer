@@ -26,6 +26,7 @@ import { nanoid } from "nanoid";
 
 interface IndexCarriedFields {
   storedAudioBytes: number;
+  storedStemBytes?: number;
   openedAt?: number;
   lastTab?: ProjectTab;
   resumePosition?: ResumePosition;
@@ -71,6 +72,7 @@ function indexEntryForProject(id: string, project: SavedProject, carried: IndexC
 function carriedIndexFields(entry: ProjectIndexEntry): IndexCarriedFields {
   return {
     storedAudioBytes: entry.storedAudioBytes,
+    storedStemBytes: entry.storedStemBytes,
     openedAt: entry.openedAt,
     lastTab: entry.lastTab,
     resumePosition: entry.resumePosition,

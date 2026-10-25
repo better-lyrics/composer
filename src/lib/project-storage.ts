@@ -3,6 +3,7 @@ import {
   PROJECT_AUDIO_STORE_NAME,
   PROJECT_INDEX_STORE_NAME,
   PROJECT_RECORD_STORE_NAME,
+  PROJECT_STEMS_STORE_NAME,
   PROJECT_STORE_NAME,
   STEM_STORE_NAME,
   getFromStore,
@@ -26,7 +27,12 @@ const LOG_PREFIX = "[ProjectStorage]";
 const OPEN_PROJECT_KEY = "open-project-id";
 const LEGACY_PROJECT_KEY = "current";
 const LEGACY_AUDIO_KEY = "current-audio";
-const PROJECT_DATA_STORES = [PROJECT_RECORD_STORE_NAME, PROJECT_INDEX_STORE_NAME, PROJECT_AUDIO_STORE_NAME];
+const PROJECT_DATA_STORES = [
+  PROJECT_RECORD_STORE_NAME,
+  PROJECT_INDEX_STORE_NAME,
+  PROJECT_AUDIO_STORE_NAME,
+  PROJECT_STEMS_STORE_NAME,
+];
 
 // -- Module state -------------------------------------------------------------
 
