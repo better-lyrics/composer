@@ -1,4 +1,4 @@
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 

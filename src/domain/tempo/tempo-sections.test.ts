@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import { detectedGrid, roundBeatTime } from "@/domain/tempo/beat-grid";
 import { regularBeats } from "@/domain/tempo/regular-beats";
 import { tempoSections } from "@/domain/tempo/tempo-sections";
 import detections from "@/domain/tempo/test-fixtures/detected-beats.json";
+import { describe, expect, it } from "vitest";
 
 function evenBeats(from: number, bpm: number, count: number): number[] {
   return Array.from({ length: count }, (_, i) => roundBeatTime(from + (60 / bpm) * i));

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { detectLrcSyncType, detectQrcSyncType, detectTtmlSyncType } from "@/domain/lyrics-search/sync-type";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
+import { describe, expect, it } from "vitest";
 
 // -- detectLrcSyncType --------------------------------------------------------
 

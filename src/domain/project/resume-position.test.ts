@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { isResumePosition } from "@/domain/project/resume-position";
+import { describe, expect, it } from "vitest";
 
 describe("isResumePosition", () => {
   it("accepts a time and zoom, with or without a scroll", () => {

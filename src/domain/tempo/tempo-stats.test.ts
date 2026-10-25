@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { tempoStats } from "@/domain/tempo/tempo-stats";
+import { describe, expect, it } from "vitest";
 
 function evenBeats(bpm: number, count: number): number[] {
   return Array.from({ length: count }, (_, i) => (60 / bpm) * i);

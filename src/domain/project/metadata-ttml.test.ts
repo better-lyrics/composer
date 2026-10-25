@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { RESERVED_META_KEYS, fromComposerMeta, toComposerMeta } from "@/domain/project/metadata-ttml";
+import { describe, expect, it } from "vitest";
 
 const base: ProjectMetadata = {
   title: "Song",

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { barNumberAt, beatInBar, beatIndexAt, beatTime, detectedGrid, isDownbeat } from "@/domain/tempo/beat-grid";
+import { describe, expect, it } from "vitest";
 
 const detection = { beats: [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5], downbeats: [0.5, 2.5, 4.5] };
 

@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
 import { applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
 import { createGroup, createLine, createWord } from "@/test/factories";
+import { describe, expect, it } from "vitest";
 
 const DURATION = 20;
 

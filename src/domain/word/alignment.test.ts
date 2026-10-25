@@ -1,8 +1,8 @@
+import { lcsPairs, wordKey } from "@/domain/word/alignment";
 /**
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { lcsPairs, wordKey } from "@/domain/word/alignment";
 
 describe("wordKey", () => {
   it("strips trailing whitespace", () => {

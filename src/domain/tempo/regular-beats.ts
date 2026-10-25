@@ -1,6 +1,6 @@
 import { type DetectedBeats, detectedGrid, roundBeatTime } from "@/domain/tempo/beat-grid";
 import { beatIntervals, median } from "@/domain/tempo/beat-intervals";
-import { type CountedBeat, evenTempoBeats, stepAt, steadyBeats, steadyLine } from "@/domain/tempo/tempo-fit";
+import { type CountedBeat, evenTempoBeats, steadyBeats, steadyLine, stepAt } from "@/domain/tempo/tempo-fit";
 import { tempoSections } from "@/domain/tempo/tempo-sections";
 
 // Peak picking hears off-beats and misses quiet beats. A beat tracker over the peaks

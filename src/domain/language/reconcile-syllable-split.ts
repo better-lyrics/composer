@@ -3,7 +3,7 @@ import { wholeLineSegments } from "@/domain/language/manual-segments";
 import type { TransliterationAlignmentStatus, TransliterationTrack } from "@/domain/language/model";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { trackWords, type WordTrack } from "@/domain/line/tracks";
+import { type WordTrack, trackWords } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------

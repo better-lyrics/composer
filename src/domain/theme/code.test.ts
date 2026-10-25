@@ -2,8 +2,8 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { decodeThemeCode, encodeThemeCode, SEED_CODE_ORDER } from "./code";
-import { type Theme, SEED_TOKENS } from "./model";
+import { SEED_CODE_ORDER, decodeThemeCode, encodeThemeCode } from "./code";
+import { SEED_TOKENS, type Theme } from "./model";
 import { PRESETS } from "./presets";
 
 let counter = 0;

@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vitest";
 import {
+  CLEARED_BACKGROUND,
   applyBackground,
   backgroundFields,
-  CLEARED_BACKGROUND,
   manualBackgroundWordEdit,
 } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
+import { describe, expect, it } from "vitest";
 
 const line: LyricLine = { id: "a", text: "hello", agentId: "v1" };
 

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
 import { createLine } from "@/test/factories";
+import { describe, expect, it } from "vitest";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 

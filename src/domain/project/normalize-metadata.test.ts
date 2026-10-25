@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { describe, expect, it } from "vitest";
 
 describe("normalizeLoadedMetadata", () => {
   it("upgrades legacy single artist string to an array", () => {

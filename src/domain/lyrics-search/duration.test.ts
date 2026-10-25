@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { hasUsableDuration, toUsableDurationSec } from "@/domain/lyrics-search/duration";
+import { describe, expect, it } from "vitest";
 
 // -- Tests --------------------------------------------------------------------
 

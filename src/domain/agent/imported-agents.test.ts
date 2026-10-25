@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
 import type { Agent } from "@/domain/agent/model";
+import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 

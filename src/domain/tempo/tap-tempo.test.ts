@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { EMPTY_TAPS, isValidBpm, sanitizeBpmInput, tapAnchor, tapTempo } from "@/domain/tempo/tap-tempo";
+import { describe, expect, it } from "vitest";
 
 function tapEvery(gapMs: number, count: number, start = 1000) {
   let state = EMPTY_TAPS;

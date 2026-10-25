@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { isValidLanguageTag, normalizeLanguageTag } from "@/domain/project/language";
+import { describe, expect, it } from "vitest";
 
 describe("normalizeLanguageTag", () => {
   it("keeps a plain language tag", () => {

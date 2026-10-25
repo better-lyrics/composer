@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { songSearchUrl } from "@/domain/musicbrainz/query";
+import { describe, expect, it } from "vitest";
 
 function queryOf(url: string): string | null {
   return new URL(url).searchParams.get("query");

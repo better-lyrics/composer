@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
+import { describe, expect, it } from "vitest";
 
 describe("reconcileMatchedTiming", () => {
   it("returns the same reference when the typed text is identical", () => {

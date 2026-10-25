@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { type BeatGrid, beatTime, detectedGrid } from "@/domain/tempo/beat-grid";
 import {
   canDouble,
@@ -11,6 +10,7 @@ import {
   withBarOneAt,
   withOffset,
 } from "@/domain/tempo/grid-edits";
+import { describe, expect, it } from "vitest";
 
 const DURATION = 20;
 const beats = Array.from({ length: 33 }, (_, i) => 1 + i * 0.5);

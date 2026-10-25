@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { getEffectiveLines } from "@/domain/line/effective-words";
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { trackField, trackWords } from "@/domain/line/tracks";
+import { describe, expect, it } from "vitest";
 
 function line(extras: Partial<LooseLine> = {}): LyricLine {
   return reconcileLine({ id: "l1", text: "Hello world", agentId: "v1", ...extras });

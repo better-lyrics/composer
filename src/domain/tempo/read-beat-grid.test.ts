@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { manualGrid, withOffset } from "@/domain/tempo/grid-edits";
 import { readBeatGrid } from "@/domain/tempo/read-beat-grid";
+import { describe, expect, it } from "vitest";
 
 const beats = [0.5, 1, 1.5, 2, 2.5];
 const grid = withOffset(detectedGrid({ beats, downbeats: [0.5, 2.5] }), 20);

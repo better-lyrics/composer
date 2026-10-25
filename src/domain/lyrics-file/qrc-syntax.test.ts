@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vitest";
 import {
-  matchAllLineHeaders,
-  matchAllWordTags,
   QRC_LINE_HEADER_REGEX,
   QRC_WORD_TAG_REGEX,
+  matchAllLineHeaders,
+  matchAllWordTags,
   stripWordTags,
 } from "@/domain/lyrics-file/qrc-syntax";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
+import { describe, expect, it } from "vitest";
 
 // The SICKO MODE title line from QQ Music: its lyric text carries literal parentheses next to word tags.
 const SICKO_MODE_TITLE_LINE =

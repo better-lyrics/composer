@@ -1,6 +1,6 @@
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
-import { describe, expect, it } from "vitest";
 import { instanceBounds } from "@/domain/instance/bounds";
+import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 

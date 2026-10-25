@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import type { WordTiming } from "@/domain/word/timing";
 import { reorderWordTrack } from "@/domain/word/reorder-track";
+import type { WordTiming } from "@/domain/word/timing";
+import { describe, expect, it } from "vitest";
 
 const track: WordTiming[] = [
   { text: "one ", begin: 10, end: 11 },

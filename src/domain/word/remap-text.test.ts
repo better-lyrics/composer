@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { insertSlot, remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "@/domain/word/timing";
+import { describe, expect, it } from "vitest";
 
 const flush: WordTiming[] = [
   { text: "I ", begin: 1, end: 2 },

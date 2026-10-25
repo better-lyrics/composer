@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { regularBeats } from "@/domain/tempo/regular-beats";
 import detections from "@/domain/tempo/test-fixtures/detected-beats.json";
+import { describe, expect, it } from "vitest";
 
 function intervals(beats: readonly number[]): number[] {
   return beats.slice(1).map((time, i) => time - beats[i]);

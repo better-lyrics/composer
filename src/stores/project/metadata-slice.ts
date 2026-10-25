@@ -4,12 +4,12 @@ import { changesProject, editedLyricsWrite } from "@/domain/project/edited-lyric
 import { importedKeysAfterWrite, metadataAfterImport } from "@/domain/project/imported-metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createAgentsInitialState } from "@/stores/project/agents-slice";
+import { createBeatGridInitialState } from "@/stores/project/beat-grid-slice";
 import { createDismissalsInitialState } from "@/stores/project/dismissals-slice";
 import { createGroupsInitialState } from "@/stores/project/groups-slice";
 import { commitHistory } from "@/stores/project/history-helpers";
 import { createHistoryInitialState } from "@/stores/project/history-slice";
 import { createLinesInitialState } from "@/stores/project/lines-slice";
-import { createBeatGridInitialState } from "@/stores/project/beat-grid-slice";
 import { createSnapPointsInitialState } from "@/stores/project/snap-points-slice";
 import type { MetadataActions, MetadataState, ProjectState, ProjectStore } from "@/stores/project/types";
 import { createUiInitialState } from "@/stores/project/ui-slice";

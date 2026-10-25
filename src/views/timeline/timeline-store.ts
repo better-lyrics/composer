@@ -63,6 +63,7 @@ interface TimelineState {
   contextMenu: ContextMenuState | null;
   editingWord: EditingWord | null;
   rollingEditMode: boolean;
+  spectrumVisible: boolean;
   markerMode: boolean;
   hoveredSnapPointId: string | null;
   collapsedInstances: Record<string, boolean>;
@@ -108,6 +109,7 @@ interface TimelineActions {
   clearEditingWord: () => void;
   resetProjectScope: () => void;
   toggleRollingEditMode: () => void;
+  toggleSpectrum: () => void;
   toggleMarkerMode: () => void;
   setHoveredSnapPointId: (id: string | null) => void;
   setInstanceCollapsed: (key: string, isCollapsed: boolean) => void;
@@ -161,6 +163,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     contextMenu: null,
     editingWord: null,
     rollingEditMode: settings.defaultRollingEdit,
+    spectrumVisible: settings.showSpectrum,
     markerMode: false,
     hoveredSnapPointId: null,
     collapsedInstances: {},
@@ -227,6 +230,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
         focusedGroup: null,
       }),
     toggleRollingEditMode: () => set((s) => ({ rollingEditMode: !s.rollingEditMode })),
+    toggleSpectrum: () => set((s) => ({ spectrumVisible: !s.spectrumVisible })),
     toggleMarkerMode: () => set((s) => ({ markerMode: !s.markerMode })),
     setHoveredSnapPointId: (hoveredSnapPointId) => set({ hoveredSnapPointId }),
     setInstanceCollapsed: (key, isCollapsed) =>

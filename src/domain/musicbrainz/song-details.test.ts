@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { pickAlbumRelease, pickDisplayRelease, songDetailsFrom } from "@/domain/musicbrainz/song-details";
 import type { MbRecording, MbRelease } from "@/domain/musicbrainz/types";
 import { YOUR_POWER_ALBUM_RECORDING } from "@/test/musicbrainz-recording-fixtures";
+import { describe, expect, it } from "vitest";
 
 function release(
   id: string,

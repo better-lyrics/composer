@@ -1,6 +1,6 @@
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { alignmentNeedsReview, getLanguageReviewItems } from "@/domain/language/review";
 import type { TransliterationTrack } from "@/domain/language/model";
+import { alignmentNeedsReview, getLanguageReviewItems } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 

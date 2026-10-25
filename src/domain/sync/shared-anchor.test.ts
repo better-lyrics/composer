@@ -1,6 +1,6 @@
-import { createGroup, createLine } from "@/test/factories";
 import { placeSharedInstance } from "@/domain/group/shared-placement";
 import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
+import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>

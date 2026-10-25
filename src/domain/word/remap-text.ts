@@ -1,6 +1,6 @@
+import { lcsPairs, wordKey } from "@/domain/word/alignment";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { lcsPairs, wordKey } from "@/domain/word/alignment";
 import { synthesizeBracketedWord } from "@/utils/word-timing";
 
 // -- Helpers ------------------------------------------------------------------

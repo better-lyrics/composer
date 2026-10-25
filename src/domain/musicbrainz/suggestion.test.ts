@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import type { SongDetails } from "@/domain/musicbrainz/song-details";
 import { fillPatch, metadataSuggestions, suggestionCount } from "@/domain/musicbrainz/suggestion";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { describe, expect, it } from "vitest";
 
 const details: SongDetails = {
   recordingId: "r",

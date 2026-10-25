@@ -1,14 +1,14 @@
-import { describe, expect, it } from "vitest";
 import {
   advanceCursor,
   isCursorPastEnd,
   nextSyncableLineIndex,
-  previousSlot,
   prevSyncableLineIndex,
+  previousSlot,
   resolveSyncCursor,
   slotBounds,
 } from "@/domain/sync/cursor";
 import { createLine } from "@/test/factories";
+import { describe, expect, it } from "vitest";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 const blank = () => createLine({ text: "" });

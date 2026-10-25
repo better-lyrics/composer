@@ -1,5 +1,3 @@
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
-import { describe, expect, it } from "vitest";
 import {
   instanceCount,
   instanceIndicesOf,
@@ -9,6 +7,8 @@ import {
   nextInstanceIdx,
 } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
+import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 

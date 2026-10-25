@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { type LookupProgress, waitingStatus } from "@/domain/musicbrainz/match-status";
+import { describe, expect, it } from "vitest";
 
 const song = { title: "Your Power", artist: "Billie Eilish", isrc: null };
 

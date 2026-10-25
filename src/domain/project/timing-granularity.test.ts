@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { timingGranularityOf } from "@/domain/project/timing-granularity";
+import { describe, expect, it } from "vitest";
 
 const wordSynced: LyricLine = {
   id: "w",

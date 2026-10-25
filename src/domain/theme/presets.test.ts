@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { contrastRatio } from "./color";
 import { deriveTheme } from "./derive";
 import { type ResolvedTheme, SEED_TOKENS } from "./model";
-import { DEFAULT_PRESET_ID, PRESET_BY_ID, PRESETS } from "./presets";
+import { DEFAULT_PRESET_ID, PRESETS, PRESET_BY_ID } from "./presets";
 
 describe("PRESETS shape", () => {
   it("ships 36 presets", () => {

@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { rankMatches } from "@/domain/musicbrainz/rank-matches";
 import { YOUR_POWER_ALBUM_RECORDING_ID } from "@/test/musicbrainz-recording-fixtures";
 import { YOUR_POWER_SEARCH } from "@/test/musicbrainz-search-fixtures";
+import { describe, expect, it } from "vitest";
 
 const rankedIds = (durationSec: number | null) =>
   rankMatches(YOUR_POWER_SEARCH.recordings, durationSec).map((match) => match.recording.id);

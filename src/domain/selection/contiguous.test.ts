@@ -1,6 +1,6 @@
+import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import type { WordSelection } from "@/domain/selection/model";
 import { describe, expect, it } from "vitest";
-import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 
 // -- Helpers ------------------------------------------------------------------
 

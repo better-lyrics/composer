@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { applyMainWordEdit, mainWordEditFields } from "@/domain/line/main-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
+import { describe, expect, it } from "vitest";
 
 const baseLine = (overrides: Partial<LyricLine> = {}): LyricLine =>
   ({

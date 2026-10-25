@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { describe, expect, it } from "vitest";
 
 describe("ProjectMetadata", () => {
   it("preserves thumbnailForVideoId when set alongside thumbnailDataUrl", () => {

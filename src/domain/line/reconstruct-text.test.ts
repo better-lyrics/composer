@@ -1,7 +1,7 @@
+import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { describe, expect, it } from "vitest";
-import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
 
 // -- Helpers ------------------------------------------------------------------
 

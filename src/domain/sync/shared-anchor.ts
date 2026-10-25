@@ -1,6 +1,6 @@
 import {
-  instanceStart,
   firstFullyTimedInstance,
+  instanceStart,
   isSharedLine,
   sharedInstancesInLineOrder,
 } from "@/domain/group/shared-timing";

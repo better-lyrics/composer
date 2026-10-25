@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vitest";
 import {
+  type SnapPoint,
   createSnapPoint,
   normalizeSnapPoints,
   normalizeTimes,
-  type SnapPoint,
   snapPointTimes,
   toSnapPoints,
 } from "@/domain/snap-point/model";
+import { describe, expect, it } from "vitest";
 
 // -- createSnapPoint ----------------------------------------------------------
 
