@@ -101,6 +101,8 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
       return;
     }
     const variant = useSettingsStore.getState().vocalModelVariant;
+    // Until the new file is hashed, the previous job must not be read or written as this song's.
+    set({ jobKey: null });
     const audioHash = await hashFile(file);
     const jobKey = stemJobKey(audioHash, variant);
 
