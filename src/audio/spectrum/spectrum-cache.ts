@@ -1,5 +1,6 @@
 import { derivedRecordKey, getDerivedRecord, putDerivedRecords } from "@/audio/separation/stem-derived-records";
 import type { SpectrumSource } from "@/domain/spectrum/settings";
+import { notifyStorageSignal } from "@/lib/storage-signals";
 
 // -- Types --------------------------------------------------------------------
 
@@ -72,7 +73,9 @@ function createSpectrumChunkWriter(
     writes = writes
       .then(() => putDerivedRecords(jobKey, records))
       .then(
-        () => undefined,
+        (written) => {
+          if (written) notifyStorageSignal("media-stored");
+        },
         (error: unknown) => console.error(LOG_PREFIX, "could not store spectrum chunks", error),
       );
     return writes;
