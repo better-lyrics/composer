@@ -9,9 +9,10 @@ import { cn } from "@/utils/cn";
 import { pasteOverlaps, pastedWordBounds } from "@/views/timeline/apply-paste-to-lines";
 import { commitPasteAt } from "@/views/timeline/commit-paste";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
+import { currentOverviewBandHeight, useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { bgTrackHeight, wordBlockWidth, wordInsetPx } from "@/views/timeline/row-geometry";
 import type { ClipboardData } from "@/views/timeline/selection-types";
-import { GUTTER_WIDTH, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type RowLayout, computeRowLayout, getLineIndexAtY } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -36,7 +37,6 @@ interface GhostWord {
 // -- Constants -----------------------------------------------------------------
 
 const WAVEFORM_BORDER = 1;
-const ROWS_START_Y = WAVEFORM_HEIGHT + WAVEFORM_BORDER;
 const BG_BORDER = 1;
 
 // -- Component -----------------------------------------------------------------
@@ -68,7 +68,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         defaultRowHeight,
         collapsedInstances,
         focusedGroup,
-        waveformHeight: ROWS_START_Y,
+        waveformHeight: currentOverviewBandHeight() + WAVEFORM_BORDER,
         groupHeaderHeight: GROUP_HEADER_HEIGHT,
       });
 
@@ -93,6 +93,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   const defaultRowHeight = useTimelineStore((s) => s.defaultRowHeight);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const focusedGroup = useTimelineStore((s) => s.focusedGroup);
+  const bandHeight = useOverviewBandHeight();
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
   const duration = useAudioStore((s) => s.duration);
@@ -106,10 +107,10 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         defaultRowHeight,
         collapsedInstances,
         focusedGroup,
-        waveformHeight: ROWS_START_Y,
+        waveformHeight: bandHeight + WAVEFORM_BORDER,
         groupHeaderHeight: GROUP_HEADER_HEIGHT,
       }),
-    [lines, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup],
+    [lines, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup, bandHeight],
   );
 
   const container = scrollContainerRef.current;

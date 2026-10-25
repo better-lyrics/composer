@@ -6,6 +6,7 @@ import { readToken } from "@/utils/theme/read-token";
 import { BeatGridCanvas } from "@/views/timeline/beat-grid/beat-grid-canvas";
 import { startLoopRegionDrag } from "@/views/timeline/loop-region-drag";
 import { LoopRegionEdges } from "@/views/timeline/loop-region-edges";
+import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { placeSnapPoint } from "@/views/timeline/place-snap-point";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
 import { clearLoopRegion } from "@/views/timeline/selection-playback";
@@ -25,6 +26,7 @@ const LOG_PREFIX = "[TimelineWaveform]";
 // -- Component -----------------------------------------------------------------
 
 const TimelineWaveform: React.FC = () => {
+  const bandHeight = useOverviewBandHeight();
   const source = useAudioStore((s) => s.source);
   const duration = useAudioStore((s) => s.duration);
   const audioElement = useAudioStore((s) => s.audioElement);
@@ -125,7 +127,7 @@ const TimelineWaveform: React.FC = () => {
 
   // A bunch of heights here are -1 to account for the 1px border at the bottom of the waveform container.
   return (
-    <div className="sticky ml-12 top-0 z-40 bg-(--well) w-max" style={{ minHeight: WAVEFORM_HEIGHT }}>
+    <div className="sticky ml-12 top-0 z-40 bg-(--well) w-max" style={{ minHeight: bandHeight }}>
       <div
         data-waveform-redraw-bg
         className="absolute top-0 left-0 bg-(--well) border-b border-(--divider) pointer-events-none"

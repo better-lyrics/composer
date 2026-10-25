@@ -1,6 +1,7 @@
 import { useProjectStore } from "@/stores/project";
+import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import type { createRowLayoutCache } from "@/views/timeline/row-layout-cache";
-import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { FollowInput } from "@/views/timeline/vertical-follow";
 
 // -- Types --------------------------------------------------------------------
@@ -17,7 +18,7 @@ function createFollowInput(): FollowInput {
     layout: { lineTops: new Map(), headerTops: new Map() },
     collapsedInstances: {},
     viewportHeight: 0,
-    coveredTop: WAVEFORM_HEIGHT,
+    coveredTop: currentOverviewBandHeight(),
   };
 }
 
@@ -37,6 +38,7 @@ function fillFollowInput(
   input.layout = rowLayoutFor(lines, timeline);
   input.collapsedInstances = timeline.collapsedInstances;
   input.viewportHeight = viewportHeight;
+  input.coveredTop = currentOverviewBandHeight();
   return input;
 }
 

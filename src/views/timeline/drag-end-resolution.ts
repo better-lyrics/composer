@@ -1,12 +1,12 @@
 import type { LyricLine } from "@/domain/line/model";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import { type TrackHit, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
+import { type TrackHit, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
 
 // -- Constants -----------------------------------------------------------------
 
 const WAVEFORM_BORDER = 1;
-const ROWS_START_Y = WAVEFORM_HEIGHT + WAVEFORM_BORDER;
 const TRACK_SELECTOR = "[data-line-index][data-track]";
 
 // -- Types ---------------------------------------------------------------------
@@ -85,7 +85,7 @@ function resolveViaLayoutModel(
     defaultRowHeight,
     collapsedInstances,
     focusedGroup,
-    waveformHeight: ROWS_START_Y,
+    waveformHeight: currentOverviewBandHeight() + WAVEFORM_BORDER,
     groupHeaderHeight: GROUP_HEADER_HEIGHT,
   });
   return getLineAndTrackAtY(cursorY, lines, layout);

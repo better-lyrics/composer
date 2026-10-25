@@ -2,7 +2,8 @@ import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
 
 // -- Functions -----------------------------------------------------------------
@@ -18,7 +19,7 @@ function scrollToInstanceHeader(groupId: string, instanceIdx: number): void {
     defaultRowHeight,
     collapsedInstances,
     focusedGroup,
-    waveformHeight: WAVEFORM_HEIGHT,
+    waveformHeight: currentOverviewBandHeight(),
     groupHeaderHeight: GROUP_HEADER_HEIGHT,
   });
   const target = layout.headerTops.get(`${groupId}:${instanceIdx}`);

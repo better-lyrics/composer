@@ -2,7 +2,8 @@ import type { Bounds } from "@/domain/word/bounds";
 import { useAudioStore } from "@/stores/audio";
 import { cn } from "@/utils/cn";
 import { useEffectiveFocusGroup } from "@/views/timeline/effective-focus";
-import { WAVEFORM_HEIGHT, shownLoopRegion, useTimelineStore } from "@/views/timeline/timeline-store";
+import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
+import { shownLoopRegion, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useFocusRange } from "@/views/timeline/use-focus-range";
 import { useSelectionPlaybackRange } from "@/views/timeline/use-selection-playback-range";
 
@@ -19,11 +20,11 @@ interface RangeShadeProps {
 const ACCENT = "var(--color-composer-accent)";
 const SHADE = "pointer-events-none absolute top-0 z-3 bg-composer-bg-dark/70";
 const LEAD_IN = "range-lead-in pointer-events-none absolute top-0 z-3";
-const SHADE_HEIGHT = WAVEFORM_HEIGHT - 1;
 
 // -- Components ----------------------------------------------------------------
 
 const RangeShade: React.FC<RangeShadeProps> = ({ range, color, inner }) => {
+  const shadeHeight = useOverviewBandHeight() - 1;
   const zoom = useTimelineStore((s) => s.zoom);
   const duration = useAudioStore((s) => s.duration);
   if (duration <= 0) return null;
@@ -37,13 +38,13 @@ const RangeShade: React.FC<RangeShadeProps> = ({ range, color, inner }) => {
         data-waveform-focus-shade="before"
         aria-hidden="true"
         className={cn(SHADE, "border-r")}
-        style={{ left: 0, width: beginX, height: SHADE_HEIGHT, borderColor: color }}
+        style={{ left: 0, width: beginX, height: shadeHeight, borderColor: color }}
       />
       <div
         data-waveform-focus-shade="after"
         aria-hidden="true"
         className={cn(SHADE, "border-l")}
-        style={{ left: endX, width: Math.max(0, duration * zoom - endX), height: SHADE_HEIGHT, borderColor: color }}
+        style={{ left: endX, width: Math.max(0, duration * zoom - endX), height: shadeHeight, borderColor: color }}
       />
       {inner && (
         <>
@@ -51,13 +52,13 @@ const RangeShade: React.FC<RangeShadeProps> = ({ range, color, inner }) => {
             data-waveform-lead-in="before"
             aria-hidden="true"
             className={LEAD_IN}
-            style={{ left: beginX, width: Math.max(0, inner.begin * zoom - beginX), height: SHADE_HEIGHT }}
+            style={{ left: beginX, width: Math.max(0, inner.begin * zoom - beginX), height: shadeHeight }}
           />
           <div
             data-waveform-lead-in="after"
             aria-hidden="true"
             className={LEAD_IN}
-            style={{ left: inner.end * zoom, width: Math.max(0, endX - inner.end * zoom), height: SHADE_HEIGHT }}
+            style={{ left: inner.end * zoom, width: Math.max(0, endX - inner.end * zoom), height: shadeHeight }}
           />
         </>
       )}

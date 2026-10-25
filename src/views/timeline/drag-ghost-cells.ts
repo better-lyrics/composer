@@ -9,8 +9,9 @@ import {
 import type { DragGhostCell } from "@/views/timeline/drag-ghost";
 import type { DragData } from "@/views/timeline/drag-handlers";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
+import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { bgTrackHeight, wordBlockWidth, wordInsetPx } from "@/views/timeline/row-geometry";
-import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
 
 // -- Types ---------------------------------------------------------------------
@@ -34,7 +35,7 @@ function dragGhostCells(activeDrag: DragData, zoom: number, effectiveLines: Lyri
     defaultRowHeight,
     collapsedInstances,
     focusedGroup,
-    waveformHeight: WAVEFORM_HEIGHT,
+    waveformHeight: currentOverviewBandHeight(),
     groupHeaderHeight: GROUP_HEADER_HEIGHT,
   });
 

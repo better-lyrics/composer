@@ -1,17 +1,18 @@
-import { useOpenProjectId } from "@/hooks/useOpenProjectId";
-import { useAudioStore } from "@/stores/audio";
+import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
+import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
-import { useProjectStore } from "@/stores/project";
+import { isLineSynced } from "@/domain/line/predicates";
 import type { WordTiming } from "@/domain/word/timing";
+import { useOpenProjectId } from "@/hooks/useOpenProjectId";
+import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
 import { LineRow } from "@/views/timeline/line-row";
-import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { emptyBgRowHeight, lineRowHeight } from "@/views/timeline/row-geometry";
-import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
-import { isLinked } from "@/domain/instance/predicates";
-import { isLineSynced } from "@/domain/line/predicates";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useMemo } from "react";
 import { Virtuoso } from "react-virtuoso";
@@ -25,6 +26,7 @@ interface TimelineRowsProps {
 // -- Component -----------------------------------------------------------------
 
 const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
+  const bandHeight = useOverviewBandHeight();
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
@@ -181,7 +183,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         customScrollParent={scrollContainerRef.current ?? undefined}
         overscan={200}
         heightEstimates={heightEstimates}
-        increaseViewportBy={{ top: WAVEFORM_HEIGHT, bottom: 0 }}
+        increaseViewportBy={{ top: bandHeight, bottom: 0 }}
       />
     </div>
   );

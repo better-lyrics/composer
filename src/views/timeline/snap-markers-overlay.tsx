@@ -1,13 +1,14 @@
-import { AnimatePresence } from "motion/react";
-import { useMemo, useRef } from "react";
 import { snapPointTimes } from "@/domain/snap-point/model";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { SnapMarkerPin } from "@/views/timeline/snap-marker-pin";
+import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { computeCoveredOnsets, isTimeOnOnset } from "@/views/timeline/snap-marker-math";
+import { SnapMarkerPin } from "@/views/timeline/snap-marker-pin";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useSnapMarkerDrag } from "@/views/timeline/use-snap-marker-drag";
-import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { AnimatePresence } from "motion/react";
+import { useMemo, useRef } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -35,6 +36,7 @@ function handleSnapPinHoverChange(id: string, hovering: boolean): void {
 // -- Component -----------------------------------------------------------------
 
 const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainerRef, headHost }) => {
+  const bandHeight = useOverviewBandHeight();
   const zoom = useTimelineStore((s) => s.zoom);
   const vocalOnsetSnapPoints = useTimelineStore((s) => s.vocalOnsetSnapPoints);
   const customSnapPoints = useProjectStore((s) => s.customSnapPoints);
@@ -75,7 +77,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
     <div
       data-snap-markers-overlay
       className="absolute inset-0 pointer-events-none overflow-hidden select-none z-40"
-      style={{ clipPath: `inset(0 0 calc(100% - ${WAVEFORM_HEIGHT - 1}px) ${GUTTER_WIDTH}px)` }}
+      style={{ clipPath: `inset(0 0 calc(100% - ${bandHeight - 1}px) ${GUTTER_WIDTH}px)` }}
     >
       <div
         ref={layerRef}
@@ -96,7 +98,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
                 }`}
                 style={{
                   left: time * zoom,
-                  height: WAVEFORM_HEIGHT,
+                  height: bandHeight,
                   animationDelay: `${Math.min(index * ONSET_STAGGER_STEP_MS, ONSET_STAGGER_CAP_MS)}ms`,
                 }}
               />
@@ -111,7 +113,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
                 id={point.id}
                 time={point.time}
                 zoom={zoom}
-                fadeExtent={WAVEFORM_HEIGHT}
+                fadeExtent={bandHeight}
                 headHost={headHost}
                 isDragging={draggingId === point.id}
                 isOnOnset={showOnsets && isTimeOnOnset(point.time, vocalOnsetSnapPoints, zoom, thresholdPx)}

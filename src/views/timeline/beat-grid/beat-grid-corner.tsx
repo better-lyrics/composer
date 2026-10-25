@@ -8,11 +8,12 @@ import { Popover } from "@/ui/popover";
 import { Tooltip } from "@/ui/tooltip";
 import { cn } from "@/utils/cn";
 import { formatBpm } from "@/utils/format-bpm";
-import { keepSpaceForFocusedControl } from "@/views/timeline/beat-grid/keep-space-for-focused-control";
 import { BeatGridPopoverBody } from "@/views/timeline/beat-grid/beat-grid-popover";
 import { detectionPercent, isDetectionRunning } from "@/views/timeline/beat-grid/detection-progress";
+import { keepSpaceForFocusedControl } from "@/views/timeline/beat-grid/keep-space-for-focused-control";
 import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
 import { usePlayheadTempo } from "@/views/timeline/beat-grid/use-playhead-tempo";
+import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { IconAlertTriangle, IconLoader2, IconWaveSine } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 
@@ -111,6 +112,7 @@ const CornerButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { r
 
 // The cell sits in the Timeline scroll host, which starts a marquee on mousedown.
 const BeatGridCorner: React.FC = () => {
+  const bandHeight = useOverviewBandHeight();
   const [open, setOpen] = useState(false);
   const [tooltipHeld, setTooltipHeld] = useState(false);
   const handleOpenChange = (next: boolean) => {
@@ -126,7 +128,8 @@ const BeatGridCorner: React.FC = () => {
       onBlur={(e) => {
         if (e.currentTarget.contains(e.target)) setTooltipHeld(false);
       }}
-      className="absolute top-0 left-0 z-100 grid w-12 h-20 border-b border-r-2 border-(--divider) bg-(--gutter-bg)"
+      style={{ height: bandHeight }}
+      className="absolute top-0 left-0 z-100 grid w-12 border-b border-r-2 border-(--divider) bg-(--gutter-bg)"
     >
       <Tooltip content="Beat grid" placement="right" disabled={open || tooltipHeld}>
         <Popover

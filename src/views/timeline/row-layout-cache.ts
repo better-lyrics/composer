@@ -1,5 +1,5 @@
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import { WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { type RowLayout, type RowLayoutInput, computeRowLayout } from "@/views/timeline/utils";
 
 // -- Types --------------------------------------------------------------------
@@ -13,6 +13,7 @@ function createRowLayoutCache(): (lines: RowLayoutInput["lines"], view: RowLayou
   let cached: RowLayoutInput | null = null;
   let layout: RowLayout | null = null;
   return (lines, view) => {
+    const waveformHeight = currentOverviewBandHeight();
     if (
       layout &&
       cached &&
@@ -20,7 +21,8 @@ function createRowLayoutCache(): (lines: RowLayoutInput["lines"], view: RowLayou
       cached.rowHeights === view.rowHeights &&
       cached.defaultRowHeight === view.defaultRowHeight &&
       cached.collapsedInstances === view.collapsedInstances &&
-      cached.focusedGroup === view.focusedGroup
+      cached.focusedGroup === view.focusedGroup &&
+      cached.waveformHeight === waveformHeight
     ) {
       return layout;
     }
@@ -30,7 +32,7 @@ function createRowLayoutCache(): (lines: RowLayoutInput["lines"], view: RowLayou
       defaultRowHeight: view.defaultRowHeight,
       collapsedInstances: view.collapsedInstances,
       focusedGroup: view.focusedGroup,
-      waveformHeight: WAVEFORM_HEIGHT,
+      waveformHeight,
       groupHeaderHeight: GROUP_HEADER_HEIGHT,
     };
     layout = computeRowLayout(cached);
