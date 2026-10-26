@@ -79,7 +79,6 @@ interface AlignmentActions {
   alignLines: (lineIds?: readonly string[], options?: AlignOptions) => Promise<AlignmentResult | null>;
   cancel: () => void;
   dismissError: () => void;
-  /** Defaults to the model selected in settings. */
   refreshModelCached: (modelId?: string) => Promise<void>;
 }
 
@@ -243,6 +242,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         signal.throwIfAborted();
         const { line, taps, words, existing, previous } = plan;
         const window = alignmentWindow(taps, { ...DEFAULT_WINDOW_OPTIONS, duration, previous });
+        // react-doctor-disable-next-line react-doctor/async-await-in-loop -- the worker aligns one line at a time, and progress and cancel follow each line
         const result = await aligner.align(
           {
             words,
