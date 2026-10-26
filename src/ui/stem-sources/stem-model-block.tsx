@@ -4,7 +4,7 @@ import { STEM_SLOTS } from "@/domain/stems/stem-slot";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
-import { ProgressBar } from "@/ui/progress-bar";
+import { ModelProgress } from "@/ui/model-progress";
 import { STEM_LABELS } from "@/ui/stem-labels";
 import { COMPACT_BUTTON } from "@/ui/stem-sources/compact-button";
 import { separationErrorCopy } from "@/ui/stem-sources/separation-error-copy";
@@ -17,33 +17,6 @@ const FALLBACK_MODEL_MB = 85;
 // -- Components ---------------------------------------------------------------
 
 const Separator: React.FC = () => <div className="h-px my-2.5 bg-(--divider)" />;
-
-const ModelProgress: React.FC<{ title: string; keepsImported: boolean }> = ({ title, keepsImported }) => {
-  const progress = useSeparationStore((s) => s.progress);
-  const pct = progress.total > 0 ? Math.round((progress.loaded / progress.total) * 100) : 0;
-  return (
-    <div>
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[13px] font-medium text-composer-text">{title}</span>
-        <span className="text-xs tabular-nums text-composer-accent-text">{pct}%</span>
-      </div>
-      <ProgressBar percent={pct} label={title} className="mt-2.5" />
-      <div className="flex items-center justify-between gap-3 mt-3">
-        <p className="text-xs leading-[1.45] text-(--muted) text-pretty">
-          {keepsImported && "Your imported stems stay as they are."}
-        </p>
-        <Button
-          size="sm"
-          variant="secondary"
-          className={COMPACT_BUTTON}
-          onClick={() => useSeparationStore.getState().cancel()}
-        >
-          Cancel
-        </Button>
-      </div>
-    </div>
-  );
-};
 
 const ModelError: React.FC<{ error: SeparationError }> = ({ error }) => {
   const { title, next } = separationErrorCopy(error.code);
@@ -74,6 +47,7 @@ const ModelError: React.FC<{ error: SeparationError }> = ({ error }) => {
 
 const StemModelBlock: React.FC = () => {
   const status = useSeparationStore((s) => s.status);
+  const progress = useSeparationStore((s) => s.progress);
   const error = useSeparationStore((s) => s.error);
   const stemUrls = useSeparationStore((s) => s.stemUrls);
   const stemOrigins = useSeparationStore((s) => s.stemOrigins);
@@ -101,7 +75,12 @@ const StemModelBlock: React.FC = () => {
     return (
       <>
         <Separator />
-        <ModelProgress title={title} keepsImported={keepsImported} />
+        <ModelProgress
+          title={title}
+          pct={progress.total > 0 ? Math.round((progress.loaded / progress.total) * 100) : 0}
+          note={keepsImported && "Your imported stems stay as they are."}
+          onCancel={() => useSeparationStore.getState().cancel()}
+        />
       </>
     );
   }

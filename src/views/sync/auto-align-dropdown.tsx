@@ -7,7 +7,9 @@ import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
-import { ErrorState, PopActions, PopText, PopTitle, ProgressState } from "@/ui/vocal-separation-states";
+import { ModelProgress } from "@/ui/model-progress";
+import { COMPACT_BUTTON } from "@/ui/stem-sources/compact-button";
+import { StemNotice } from "@/ui/stem-sources/stem-notice";
 import { cn } from "@/utils/cn";
 import { formatMegabytes } from "@/utils/format-file-size";
 import { pluralize } from "@/utils/pluralize";
@@ -27,6 +29,10 @@ function percent(done: number, total: number): number {
 }
 
 // -- Components ---------------------------------------------------------------
+
+const Hint: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
+  <p className={cn("mt-0.5 text-xs leading-[1.45] text-(--muted) text-pretty", className)}>{children}</p>
+);
 
 const Step: React.FC<{ done: boolean; label: string; children?: React.ReactNode }> = ({ done, label, children }) => (
   <div>
@@ -118,46 +124,69 @@ const AutoAlignDropdown: React.FC = () => {
       }
     >
       {() => (
-        <div className="w-78 p-3.5">
+        <div className="w-80 p-3.5">
           {status === "error" && error && (
-            <ErrorState
-              title="Auto-align failed"
-              message={error.message}
-              onRetry={() => run(lastRequest.current.realign)}
-              onDismiss={() => useAlignmentStore.getState().dismissError()}
-            />
+            <StemNotice
+              tone="negative"
+              className="-mx-1.5"
+              actions={
+                <>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className={COMPACT_BUTTON}
+                    onClick={() => useAlignmentStore.getState().dismissError()}
+                  >
+                    Dismiss
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    className={COMPACT_BUTTON}
+                    onClick={() => run(lastRequest.current.realign)}
+                  >
+                    Try again
+                  </Button>
+                </>
+              }
+            >
+              <p className="text-[13px] font-medium leading-[1.35] text-composer-text text-pretty">Auto-align failed</p>
+              <p className="mt-1.5 text-xs leading-[1.45] text-(--muted) wrap-break-word select-text cursor-text">
+                {error.message}
+              </p>
+            </StemNotice>
           )}
 
           {status === "downloading" && (
-            <ProgressState
+            <ModelProgress
               title={modelCached ? "Loading alignment model…" : "Downloading alignment model…"}
-              detail={
+              pct={pct}
+              note={
                 progress.total > 0
                   ? `${formatMegabytes(progress.done)} / ${formatMegabytes(progress.total)}`
                   : "Preparing…"
               }
-              pct={pct}
               onCancel={cancel}
             />
           )}
 
           {status === "running" && (
-            <ProgressState
+            <ModelProgress
               title="Aligning words…"
-              detail={`Line ${Math.min(progress.done + 1, progress.total)} of ${progress.total}`}
               pct={pct}
+              note={`Line ${Math.min(progress.done + 1, progress.total)} of ${progress.total}`}
               onCancel={cancel}
             />
           )}
 
           {status === "idle" && (
             <div>
-              <PopTitle>Auto-align words</PopTitle>
-              <PopText>
+              <p className="text-[13.5px] font-bold text-composer-text">Auto-align words</p>
+              <Hint className="mt-1.5">
                 Times each word from the separated vocals, using your line timing as a guide. Works for English,
                 Mandarin and Japanese lyrics, and follows your transliterations for how Chinese and Japanese lines are
                 sung.
-              </PopText>
+              </Hint>
 
               <div className="grid gap-1 mt-3">
                 <Step
@@ -168,7 +197,7 @@ const AutoAlignDropdown: React.FC = () => {
                       : "Sync each line's start and end"
                   }
                 >
-                  {!hasTaps && <PopText className="mt-0">Tap lines in Line mode first. Rough timing is fine.</PopText>}
+                  {!hasTaps && <Hint className="mt-0">Tap lines in Line mode first. Rough timing is fine.</Hint>}
                   {!hasTaps && granularity === "word" && (
                     <Button
                       size="sm"
@@ -183,9 +212,9 @@ const AutoAlignDropdown: React.FC = () => {
                 <Step done={hasVocals} label="Separate the vocals">
                   {!hasVocals &&
                     (separating ? (
-                      <PopText className="mt-0 tabular-nums">
+                      <Hint className="mt-0 tabular-nums">
                         Separating… {percent(separationProgress.loaded, separationProgress.total)}%
-                      </PopText>
+                      </Hint>
                     ) : (
                       <Button
                         size="sm"
@@ -199,10 +228,10 @@ const AutoAlignDropdown: React.FC = () => {
               </div>
 
               {!modelCached && sizeMb && (
-                <PopText className="mt-3">Requires a one-time ~{sizeMb} MB model download.</PopText>
+                <Hint className="mt-3">Requires a one-time ~{sizeMb} MB model download.</Hint>
               )}
 
-              <PopActions>
+              <div className="flex justify-end gap-2 mt-3.5">
                 {counts.wordTimed > 0 && (
                   <Button
                     size="sm"
@@ -219,7 +248,7 @@ const AutoAlignDropdown: React.FC = () => {
                     {`${modelCached ? "Align" : "Download & align"} ${pluralize(counts.lineTimed, "line")}`}
                   </Button>
                 )}
-              </PopActions>
+              </div>
             </div>
           )}
         </div>
