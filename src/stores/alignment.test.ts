@@ -175,6 +175,38 @@ describe("alignment store", () => {
     expect(seen.japanese).toHaveLength(1);
   });
 
+  it("regression: saves nothing into a project opened while the run was going", async () => {
+    useProjectStore.getState().setLines([{ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }]);
+
+    const run = useAlignmentStore.getState().alignLines();
+    useProjectStore.getState().startProjectSession();
+
+    expect(await run).toBeNull();
+    expect(useProjectStore.getState().lines[0].words).toBeUndefined();
+  });
+
+  it("regression: saves nothing when cancelled before the model has loaded", async () => {
+    useProjectStore.getState().setLines([{ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }]);
+
+    const run = useAlignmentStore.getState().alignLines();
+    useAlignmentStore.getState().cancel();
+
+    expect(await run).toBeNull();
+    expect(useProjectStore.getState().lines[0].words).toBeUndefined();
+    expect(useAlignmentStore.getState().status).toBe("idle");
+  });
+
+  it("regression: keeps the untimed text of a partly synced line it doesn't touch", async () => {
+    useProjectStore.getState().setLines([
+      { id: "L1", text: "hello there", agentId: "v1", begin: 1, end: 2 },
+      { id: "L2", text: "one more line", agentId: "v1", words: [{ text: "one ", begin: 3, end: 4 }] },
+    ]);
+
+    await useAlignmentStore.getState().alignLines(["L1"]);
+
+    expect(useProjectStore.getState().lines[1].text).toBe("one more line");
+  });
+
   it("refuses without separated vocals", async () => {
     useSeparationStore.setState({ stemUrls: {} });
     useProjectStore.getState().setLines([{ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }]);

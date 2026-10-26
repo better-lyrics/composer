@@ -3,7 +3,7 @@
 import { decodeAlignment } from "@/audio/alignment/hubertfa/decoder";
 import japaneseDictionaryText from "@/audio/alignment/hubertfa/dictionary-ja.txt?raw";
 import mandarinDictionaryText from "@/audio/alignment/hubertfa/dictionary-zh.txt?raw";
-import { type G2pContext, type HanReading, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
+import { type G2pContext, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
 import { createJapaneseReader } from "@/audio/alignment/hubertfa/japanese-tokenizer";
 import { type Pronunciations, parseDictionary } from "@/audio/alignment/hubertfa/lexicon";
 import type { AlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
@@ -17,6 +17,7 @@ import { chooseBackend } from "@/audio/separation/backend-selection";
 import { type CachedModel, fetchAndCacheModel, readCachedModel } from "@/audio/separation/model-cache";
 import { describeError, log } from "@/audio/separation/worker-log";
 import { hasHan } from "@/domain/alignment/cjk";
+import type { HanReading } from "@/domain/alignment/language";
 import type { WordInterval } from "@/domain/alignment/words";
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -175,8 +176,14 @@ async function handleInit(assets: AlignmentAssets, forceWasm?: boolean, japanese
 async function fallBackToWasm(reason: unknown): Promise<void> {
   if (!modelAsset || !ort) throw reason;
   log(`WebGPU run failed (${describeError(reason)}); switching alignment to WASM (CPU)`);
-  const modelBytes = await readCachedModel(modelAsset);
-  if (!modelBytes) throw reason;
+  // Caching is best effort, so with no free storage the model downloads again.
+  downloadAbort = new AbortController();
+  let modelBytes: ArrayBuffer;
+  try {
+    modelBytes = await loadAsset(modelAsset, downloadAbort.signal, () => {});
+  } finally {
+    downloadAbort = null;
+  }
   await session?.release?.();
   session = await createSession(ort, modelBytes, "wasm");
   activeBackend = "wasm";
@@ -265,7 +272,10 @@ self.addEventListener("message", (ev: MessageEvent<InboundMessage>) => {
   const msg = ev.data;
   if (msg.type === "init") void handleInit(msg.assets, msg.forceWasm, msg.japanese);
   else if (msg.type === "align") {
-    void handleAlign(msg.samples, msg.sampleRate, msg.words, msg.hanReading, msg.transliteration);
+    // Anything that escapes (a lazily loaded chunk failing, say) must still answer, or the run waits forever.
+    handleAlign(msg.samples, msg.sampleRate, msg.words, msg.hanReading, msg.transliteration).catch((err) =>
+      post({ type: "error", code: "align-failed", message: describeError(err) }),
+    );
   } else if (msg.type === "cancel") downloadAbort?.abort();
 });
 

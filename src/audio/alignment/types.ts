@@ -1,4 +1,4 @@
-import type { HanReading } from "@/audio/alignment/hubertfa/g2p";
+import type { HanReading } from "@/domain/alignment/language";
 import type { AlignmentWord, WordInterval } from "@/domain/alignment/words";
 
 // -- Types --------------------------------------------------------------------

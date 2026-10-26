@@ -77,6 +77,10 @@ describe("lineToPhoneUnits", () => {
     expect(result[2]).toBe("2,3:n a m a e");
   });
 
+  it("regression: reads every word inside one part that spans several of them", () => {
+    expect(phones(lineToPhoneUnits([["君の名前"]], context("ja")))).toEqual(["0:k i m i n o n a m a e"]);
+  });
+
   it("mixes English and Japanese in one line", () => {
     expect(phones(lineToPhoneUnits([["君", "と"], ["dance"]], context("ja")))).toEqual([
       "0:k i m i",

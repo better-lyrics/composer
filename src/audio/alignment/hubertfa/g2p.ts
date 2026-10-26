@@ -2,13 +2,11 @@ import { type ReadingToken, isKana, kanaToMorae } from "@/audio/alignment/hubert
 import { type Pronunciations, lookupWord } from "@/audio/alignment/hubertfa/lexicon";
 import { pinyinSyllables, plainWords, romajiLine } from "@/audio/alignment/hubertfa/romanization";
 import { hasCjk, hasHan, hasLetterOrDigit } from "@/domain/alignment/cjk";
+import type { HanReading } from "@/domain/alignment/language";
 
 // -- Types --------------------------------------------------------------------
 
 type Language = "en" | "zh" | "ja";
-
-/** How Han characters are read: as Mandarin, or as Japanese kanji. */
-type HanReading = "zh" | "ja";
 
 /** A stretch of the line timed as one block of phones, covering one or more parts. */
 interface PhoneUnit {
@@ -80,6 +78,33 @@ function japaneseReadings(text: string, readJapanese: G2pContext["readJapanese"]
   return groups;
 }
 
+type ReadingGroup = ReturnType<typeof japaneseReadings>[number];
+
+// Where a unit must end to keep every reading group it touches whole, or null when it touches none.
+function groupsEnd(groups: readonly ReadingGroup[], start: number, end: number): number | null {
+  const touched = groups.filter((g) => start < g.end && end > g.start);
+  return touched.length > 0 ? Math.max(end, ...touched.map((g) => g.end)) : null;
+}
+
+// The kana sung across a span: each reading group as the tokenizer reads it, other kana as written.
+// Null when a kanji in the span has no reading.
+function spanKana(text: string, start: number, end: number, groups: readonly ReadingGroup[]): string | null {
+  let kana = "";
+  let k = start;
+  while (k < end) {
+    const group = groups.find((g) => g.start <= k && k < g.end);
+    if (group) {
+      kana += group.kana;
+      k = group.end;
+      continue;
+    }
+    if (hasHan(text[k])) return null;
+    if (isKana(text[k])) kana += text[k];
+    k++;
+  }
+  return kana;
+}
+
 // Units and their dictionary readings. English words are units of their own;
 // each Chinese character and each Japanese kana part is its own unit so it
 // gets its own timing; a kanji word is one unit across its characters, since
@@ -112,12 +137,17 @@ function readingUnits(words: readonly string[][], context: G2pContext): ReadingU
       i++;
       continue;
     }
-    const group = kanjiGroups.find((g) => part.start < g.end && part.start + part.text.length > g.start);
-    if (group) {
+    let end = groupsEnd(kanjiGroups, part.start, part.start + part.text.length);
+    if (end !== null) {
       const indices = [i];
-      while (i + 1 < parts.length && parts[i + 1].start < group.end) indices.push(++i);
+      while (i + 1 < parts.length && parts[i + 1].start < end) {
+        const next = parts[++i];
+        indices.push(i);
+        end = groupsEnd(kanjiGroups, next.start, Math.max(end, next.start + next.text.length)) ?? end;
+      }
       i++;
-      units.push({ parts: indices, language: "ja", text: partsText(indices), reading: kanaToMorae(group.kana) });
+      const kana = spanKana(text, part.start, end, kanjiGroups);
+      units.push({ parts: indices, language: "ja", text: partsText(indices), reading: kana ? kanaToMorae(kana) : null });
       continue;
     }
     const kana = [...part.text].filter((c) => isKana(c)).join("");
@@ -250,4 +280,4 @@ function lineToPhoneUnits(words: readonly string[][], context: G2pContext): G2pR
 // -- Exports ------------------------------------------------------------------
 
 export { lineToPhoneUnits };
-export type { G2pContext, HanReading, PhoneUnit };
+export type { G2pContext, PhoneUnit };

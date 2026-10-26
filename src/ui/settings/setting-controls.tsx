@@ -81,9 +81,15 @@ const ToggleSetting: React.FC<{ id: SettingId }> = ({ id }) => {
   );
 };
 
-const SelectSetting: React.FC<{ id: SettingId; options: SelectOption[] }> = ({ id, options }) => {
+// `displayValue` shows what the stored value resolves to, when that can differ from what's stored.
+const SelectSetting: React.FC<{ id: SettingId; options: SelectOption[]; displayValue?: string }> = ({
+  id,
+  options,
+  displayValue,
+}) => {
   const settingKey = settingKeyOf(id);
-  const value = useSettingsStore((s) => String(s[settingKey]));
+  const stored = useSettingsStore((s) => String(s[settingKey]));
+  const value = displayValue ?? stored;
   const set = useSettingsStore((s) => s.set);
 
   return (

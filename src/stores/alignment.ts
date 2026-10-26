@@ -8,8 +8,8 @@ import type { Aligner } from "@/audio/alignment/types";
 import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { isModelHostingConfigured } from "@/audio/separation/model-registry";
 import { DEFAULT_WINDOW_OPTIONS, alignmentWindow, sliceWindow } from "@/domain/alignment/window";
-import type { HanReading } from "@/audio/alignment/hubertfa/g2p";
-import { hasCjk, hasKana } from "@/domain/alignment/cjk";
+import { hasCjk } from "@/domain/alignment/cjk";
+import { hanReadingFor, isSupportedLanguage } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
 import {
   type AlignmentWord,
@@ -96,24 +96,6 @@ interface PlannedLine {
 let controller: AbortController | null = null;
 
 // -- Functions ----------------------------------------------------------------
-
-// The model covers English, Mandarin and Japanese, mixed freely within a line.
-// With no project language set, each line is tried; lines in other scripts
-// fall back to the character split.
-const SUPPORTED_LANGUAGES = new Set(["en", "zh", "cmn", "ja"]);
-
-function isSupportedLanguage(language: string | undefined): boolean {
-  return !language || SUPPORTED_LANGUAGES.has(language.toLowerCase().split("-")[0]);
-}
-
-// Han characters are kanji in a Japanese project, or when any line has kana
-// (an all-kanji line in a Japanese song would otherwise read as Mandarin).
-function hanReadingFor(language: string | undefined, lines: readonly LyricLine[]): HanReading {
-  const base = language?.toLowerCase().split("-")[0];
-  if (base === "ja") return "ja";
-  if (base === "zh" || base === "cmn") return "zh";
-  return lines.some((line) => hasKana(line.text)) ? "ja" : "zh";
-}
 
 function selectedAssets(modelId = useSettingsStore.getState().alignmentModelId): Promise<AlignmentAssets | null> {
   return resolveAlignmentAssets(modelId);
@@ -204,30 +186,30 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     const project = useProjectStore.getState();
     const planned = planLines(project.lines, lineIds, options.realign ?? false);
     if (planned.length === 0) return { aligned: 0, skipped: 0, fellBack: 0, unknownWords: [] };
-    // Claims the run before the first await; every exit until the try goes through fail().
+    // Claims the run and makes it cancellable before the first await.
     set({ status: "downloading", error: null, progress: { done: 0, total: 0 } });
-    if (!(await selectedAssets())) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
-    if (!isSupportedLanguage(project.metadata.language)) {
-      return fail(set, "unsupported-language", "Auto-align supports English, Mandarin and Japanese lyrics.");
-    }
-    const hanReading = hanReadingFor(project.metadata.language, project.lines);
-    const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
-    const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
-    if (!vocalsUrl) {
-      return fail(
-        set,
-        "needs-vocals",
-        "Separate the vocals first. Alignment on the full mix is less accurate than tapping by hand.",
-      );
-    }
-    if (!options.allowDownload && !(await areAlignmentAssetsCached(await selectedAssets()))) {
-      return fail(set, "needs-model", "Auto-align needs a one-time model download.");
-    }
-
     controller = new AbortController();
     const { signal } = controller;
 
     try {
+      if (!(await selectedAssets())) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
+      if (!isSupportedLanguage(project.metadata.language)) {
+        return fail(set, "unsupported-language", "Auto-align supports English, Mandarin and Japanese lyrics.");
+      }
+      const hanReading = hanReadingFor(project.metadata.language, project.lines);
+      const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
+      const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
+      if (!vocalsUrl) {
+        return fail(
+          set,
+          "needs-vocals",
+          "Separate the vocals first. Alignment on the full mix is less accurate than tapping by hand.",
+        );
+      }
+      if (!options.allowDownload && !(await areAlignmentAssetsCached(await selectedAssets()))) {
+        return fail(set, "needs-model", "Auto-align needs a one-time model download.");
+      }
+      signal.throwIfAborted();
       const modelId = useSettingsStore.getState().alignmentModelId;
       await aligner.prepare((loaded, total) => set({ progress: { done: loaded, total } }), signal, { japanese, modelId });
       set({ status: "running", modelCached: true, progress: { done: 0, total: planned.length } });
@@ -264,11 +246,15 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         set({ progress: { done: updates.length, total: planned.length } });
       }
 
+      signal.throwIfAborted();
       const latest = useProjectStore.getState();
+      // Another project can share line ids and text (a duplicate, a re-import); this run's timing isn't its.
+      if (latest.projectSession !== project.projectSession) throw new DOMException("Project changed", "AbortError");
       const currentById = new Map(latest.lines.map((l) => [l.id, l]));
       const applicable = updates.filter((u) => isUnchanged(currentById.get(u.id), plannedById.get(u.id)!));
       if (applicable.length > 0) {
-        latest.updateLinesWithHistory(applicable);
+        // Timing only: deriving text would drop the untimed words of partly synced lines.
+        latest.updateLinesWithHistory(applicable, { deriveText: false });
         // Lines are tapped in Line mode; once they have word timing, refine words.
         latest.setGranularity("word");
       }

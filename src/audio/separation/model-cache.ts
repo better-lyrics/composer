@@ -1,6 +1,7 @@
 import type { ModelDescriptor } from "@/audio/separation/model-registry";
 
 const CACHE_NAME = "composer-vocal-model-v1";
+const LOG_PREFIX = "[ModelCache]";
 
 type DownloadProgress = (loaded: number, total: number) => void;
 // Any large file fetched once and kept: the vocal model, the alignment model
@@ -30,7 +31,7 @@ async function storeInCache(model: CachedModel, bytes: ArrayBuffer | Uint8Array)
     const cache = await caches.open(CACHE_NAME);
     await cache.put(model.url, new Response(bytes, { headers: { "content-type": "application/octet-stream" } }));
   } catch (err) {
-    console.warn(`[model-cache] could not cache ${model.url}; it will download again next time`, err);
+    console.warn(`${LOG_PREFIX} could not cache ${model.url}; it will download again next time`, err);
   }
 }
 

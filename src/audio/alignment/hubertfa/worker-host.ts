@@ -1,4 +1,4 @@
-import type { HanReading } from "@/audio/alignment/hubertfa/g2p";
+import type { HanReading } from "@/domain/alignment/language";
 import type { AlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import type { AlignOutcome, InboundMessage, OutboundMessage } from "@/audio/alignment/hubertfa/worker";
 import type { Backend } from "@/audio/ort-runtime";
