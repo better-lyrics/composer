@@ -6,7 +6,7 @@ import { runChunkPipeline } from "@/audio/separation/chunk-pipeline";
 import { type Chunk, chunkCount, stitchChunks } from "@/audio/separation/chunker";
 import { denormalizeDemucsOutput, normalizeForDemucs } from "@/audio/separation/demucs-postprocess";
 import { fetchAndCacheModel, hasCachedModel, readCachedModel } from "@/audio/separation/model-cache";
-import { getModelDescriptor } from "@/audio/separation/model-registry";
+import { type ModelDescriptor, getModelDescriptor } from "@/audio/separation/model-registry";
 import { describeError, log } from "@/audio/separation/worker-log";
 import type { VocalModelVariant } from "@/stores/settings";
 
@@ -31,6 +31,7 @@ let activeBackend: Backend = "wasm";
 let adapterHasTimestampQuery: boolean | null = null;
 let cancelled = false;
 let profileGpu = false;
+let loadedModel: ModelDescriptor | null = null;
 
 function post(message: OutboundMessage, transfer?: Transferable[]) {
   self.postMessage(message, transfer ?? []);
@@ -112,6 +113,7 @@ async function handleInit(variant: VocalModelVariant, forceWasm?: boolean, profi
       session = await createSession(runtime, modelBytes, "wasm");
     }
     ort = runtime;
+    loadedModel = descriptor;
     post({ type: "init-done" });
   } catch (err) {
     log("init failed:", err);
@@ -120,6 +122,14 @@ async function handleInit(variant: VocalModelVariant, forceWasm?: boolean, profi
 }
 
 const cancelHandlers = new Set<() => void>();
+
+async function recreateSessionOnWasm(gpuSession: OrtSession, runtime: Ort, gpuError: unknown): Promise<OrtSession> {
+  await gpuSession.release?.().catch((err: unknown) => log("releasing the WebGPU session failed:", err));
+  const modelBytes = loadedModel && (await readCachedModel(loadedModel));
+  if (!modelBytes) throw gpuError;
+  activeBackend = "wasm";
+  return createSession(runtime, modelBytes, "wasm");
+}
 
 async function handleProcess(channels: Float32Array[], totalFrames: number) {
   if (!session || !ort) {
@@ -139,11 +149,10 @@ async function handleProcess(channels: Float32Array[], totalFrames: number) {
   log(`processing ${totalChunks} chunks on ${activeBackend}`);
   const normalized = normalizeForDemucs(channels, totalFrames);
 
-  let vocalChunks: Chunk[];
-  try {
-    const result = await runChunkPipeline({
-      session,
-      runtime: ort,
+  const separate = (activeSession: OrtSession, runtime: Ort) =>
+    runChunkPipeline({
+      session: activeSession,
+      runtime,
       channels: normalized.channels,
       totalChunks,
       backend: activeBackend,
@@ -152,6 +161,19 @@ async function handleProcess(channels: Float32Array[], totalFrames: number) {
       isCancelled: () => cancelled,
       onProgress: (processed, total) => post({ type: "process-progress", processed, total }),
     });
+
+  let vocalChunks: Chunk[];
+  try {
+    let result: Awaited<ReturnType<typeof runChunkPipeline>>;
+    try {
+      result = await separate(session, ort);
+    } catch (err) {
+      if (activeBackend === "wasm" || cancelled) throw err;
+      // A GPU without enough memory for the model fails inside run(), after the session was created.
+      log(`WebGPU inference failed (${describeError(err)}); retrying on WASM (CPU)`);
+      session = await recreateSessionOnWasm(session, ort, err);
+      result = await separate(session, ort);
+    }
     if (result.status === "cancelled") {
       post({ type: "cancelled" });
       return;
