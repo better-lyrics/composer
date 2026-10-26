@@ -12,7 +12,7 @@ updates:
       braccato:
         patterns: ["@braccato/*"]
         update-types: [minor, patch]
-      # vitest and its browser packages must move in lockstep, majors included.
+      # vitest and its browser packages must move in lockstep.
       vitest:
         patterns: ["vitest", "@vitest/*", "vitest-browser-react"]
       # Everything else non-breaking in one PR. Majors still come in
@@ -25,3 +25,10 @@ updates:
       # v7 removed that subpath, so any v7+ bump fails the SSG build.
       - dependency-name: react-router-dom
         versions: [">=7.0.0"]
+      # vitest 5 changes matcher types and browser test timing; migrate on purpose, not via Dependabot.
+      - dependency-name: vitest
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: vitest-browser-react
+        update-types: ["version-update:semver-major"]
