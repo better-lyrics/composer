@@ -175,6 +175,16 @@ describe("credits", () => {
       expect(names).toEqual(["Jay-Z (feat. Kanye)", "*NSYNC"]);
     });
 
+    it("regression: unwraps a whole emphasised credit and nested marks", () => {
+      expect(read("[Verse: *Drake & Future*]\n1\n[Chorus: (Future & Drake)]\n2").agents).toEqual([
+        { id: "v1000", type: "group", name: "Drake, Future" },
+      ]);
+      expect(read("[Verse: **Drake**]\n1\n[Chorus: (a) (b)]\n2").agents?.map((agent) => agent.name)).toEqual([
+        "Drake",
+        "(a) (b)",
+      ]);
+    });
+
     it("regression: an uncredited section holding only the Embed counter makes no lead", () => {
       expect(read("[Verse: Drake]\n1\n[Outro]\n12Embed").agents).toEqual([{ id: "v1", type: "person", name: "Drake" }]);
     });

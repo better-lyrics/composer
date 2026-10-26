@@ -25,7 +25,7 @@ const ARTIST_LIST_JOINER = /\s+&\s+/;
 const ARTIST_LIST_SEPARATOR = /\s*,\s*|\s+&\s+/;
 const PAGE_TITLE = /\sLyrics$/;
 const SONG_DESCRIPTION = /Read More$/;
-const WRAPPING_MARKS = /^(?:\*(.+)\*|_(.+)_|\((.+)\))$/;
+const WRAPPING_MARKS = /^(?:\*(.+)\*|_(.+)_|\(([^()]+)\))$/;
 const MIN_SECTION_TAGS = 2;
 const MAX_HEADER_ROWS = 30;
 const LEAD_AGENT_ID = "v1";
@@ -54,16 +54,19 @@ function readsAsGeniusLyrics(text: string): boolean {
   return hasPageHeader(rows) || rows.filter((row) => SECTION_TAG.test(row)).length >= MIN_SECTION_TAGS;
 }
 
-// Genius wraps a credited name in emphasis ("*Drake*", "(Rihanna)"); marks inside a name stay.
+// Genius wraps a credited name in emphasis ("*Drake*", "**Drake**", "(Rihanna)"); marks inside a name stay.
 function unwrappedName(name: string): string {
-  const trimmed = name.trim();
-  const wrapped = WRAPPING_MARKS.exec(trimmed);
-  return (wrapped ? (wrapped[1] ?? wrapped[2] ?? wrapped[3]) : trimmed).trim();
+  let text = name.trim();
+  for (let wrapped = WRAPPING_MARKS.exec(text); wrapped; wrapped = WRAPPING_MARKS.exec(text)) {
+    text = (wrapped[1] ?? wrapped[2] ?? wrapped[3]).trim();
+  }
+  return text;
 }
 
 // A lone comma belongs to a name ("Tyler, The Creator"); with an ampersand it separates a list ("A, B & C").
 function creditedPerformers(credit: string): string[] {
-  const names = (ARTIST_LIST_JOINER.test(credit) ? credit.split(ARTIST_LIST_SEPARATOR) : [credit])
+  const list = unwrappedName(credit);
+  const names = (ARTIST_LIST_JOINER.test(list) ? list.split(ARTIST_LIST_SEPARATOR) : [list])
     .map(unwrappedName)
     .filter((name) => name !== "");
   return dedupeIgnoringCase(names);
