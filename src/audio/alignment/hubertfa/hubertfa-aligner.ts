@@ -1,3 +1,4 @@
+import type { AlignOutcome } from "@/audio/alignment/hubertfa/worker";
 import { resolveAlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import { AlignmentWorker } from "@/audio/alignment/hubertfa/worker-host";
 import { splitByCharacters } from "@/audio/alignment/split-by-characters";
@@ -38,13 +39,22 @@ const hubertfaAligner: Aligner = {
     signal.throwIfAborted();
     if (!worker) throw new Error("Alignment model is not loaded.");
     const parts = segment.words.map((word) => word.parts);
-    const outcome = await worker.align(
-      segment.samples,
-      segment.sampleRate,
-      parts,
-      segment.hanReading,
-      segment.transliteration,
-    );
+    // A WebGPU failure can start a fresh model download mid-run, which Cancel must stop.
+    const active = worker;
+    const onAbort = () => active.cancel();
+    signal.addEventListener("abort", onAbort);
+    let outcome: AlignOutcome;
+    try {
+      outcome = await active.align(
+        segment.samples,
+        segment.sampleRate,
+        parts,
+        segment.hanReading,
+        segment.transliteration,
+      );
+    } finally {
+      signal.removeEventListener("abort", onAbort);
+    }
     if (outcome.kind === "aligned") {
       const intervals = outcome.intervals.map((iv) => ({
         begin: segment.windowBegin + iv.begin,
