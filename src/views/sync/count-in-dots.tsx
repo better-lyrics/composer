@@ -43,7 +43,6 @@ const CountInDots: React.FC = () => {
     <span ref={containerRef} data-count-in-dots="" aria-hidden="true" className="flex items-center gap-2">
       {Array.from({ length: dotCount }, (_, index) => (
         <span
-          // biome-ignore lint/suspicious/noArrayIndexKey: dots are positional and never reorder
           key={index}
           data-count-in-dot=""
           className="size-1.5 rounded-full bg-composer-bg-elevated transition-colors duration-150 data-on:bg-composer-text-secondary"

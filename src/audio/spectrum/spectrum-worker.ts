@@ -1,6 +1,5 @@
 import { stftFrameCount } from "@/audio/separation/stft";
 /// <reference lib="webworker" />
-// biome-ignore organizeImports: the webworker triple-slash reference must stay before imports.
 import { analyseChunk } from "@/audio/spectrum/analyse-chunk";
 import type { SpectrumWorkerRequest, SpectrumWorkerResult } from "@/audio/spectrum/spectrum-worker-protocol";
 import { chunkCount, nextChunk } from "@/domain/spectrum/chunk-order";

@@ -104,7 +104,6 @@ function useLaunchQueue(): void {
     if (action.kind === "reload") enqueueLaunch(() => reloadInto(target.href));
   });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
   useEffect(() => {
     window.launchQueue?.setConsumer((params) => consumeLaunch(params));
   }, []);

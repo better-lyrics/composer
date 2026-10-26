@@ -75,7 +75,6 @@ const AppShell: React.FC = () => {
   const resumeTourLater = useEffectEvent(() => resumeOrStartTour());
   if (!isEditor && tourRequested) setTourRequested(false);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
   useEffect(() => {
     if (!isEditor || (!shouldShowTour && !tourRequested)) return;
     const timer = setTimeout(() => {

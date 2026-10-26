@@ -77,7 +77,6 @@ const BlockPreview: React.FC<{ lines: string[] }> = ({ lines }) => {
   return (
     <div className="rounded-md border border-composer-border bg-composer-bg-elevated/60 px-3 py-2 text-xs text-composer-text-secondary whitespace-pre-wrap break-words">
       {display.map((entry, idx) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: stable order from collapseLines
         <div key={idx} className={entry.kind === "ellipsis" ? "text-composer-text-muted" : undefined}>
           {entry.kind === "line" ? truncate(entry.text.trim() || "(empty line)", MODAL_LINE_MAX) : "…"}
         </div>

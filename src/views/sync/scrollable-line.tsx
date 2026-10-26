@@ -175,7 +175,6 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
     if (groups.length === 0) {
       return texts.map((word, idx) => (
         <WordRenderer
-          // biome-ignore lint/suspicious/noArrayIndexKey: index is stable for word position
           key={`${lineNumber}-${prefix}-${idx}`}
           lineId={lineId}
           word={word}

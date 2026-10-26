@@ -52,7 +52,6 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ percent, label, tone = "defau
       >
         {Array.from({ length: segments }, (_, index) => (
           <i
-            // biome-ignore lint/suspicious/noArrayIndexKey: segments are a fixed, ordered strip
             key={index}
             className={cn("rounded-[2px]", index < litCount ? SEGMENT_LIT_STYLES[tone] : SEGMENT_OFF_STYLES[tone])}
           />

@@ -42,12 +42,7 @@ async function armTimeline(options: {
   await renderHook(() => useTimelineKeyboard(scrollContainerRef, [options.line], duration));
 }
 
-async function armPlayhead(options: {
-  lines: LyricLine[];
-  currentTime: number;
-  rolling: boolean;
-  duration?: number;
-}) {
+async function armPlayhead(options: { lines: LyricLine[]; currentTime: number; rolling: boolean; duration?: number }) {
   const duration = options.duration ?? 10;
   useAudioStore.setState({ currentTime: options.currentTime, duration });
   useProjectStore.setState({ activeTab: "timeline", lines: options.lines });

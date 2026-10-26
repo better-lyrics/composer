@@ -36,7 +36,6 @@ function useFocusFade(
   const markOnChange = useEffectEvent(markLines);
   const begin = focusRange?.begin;
   const end = focusRange?.end;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
   useEffect(() => {
     const range = begin === undefined || end === undefined ? null : { begin, end };
     latestRangeRef.current = range;

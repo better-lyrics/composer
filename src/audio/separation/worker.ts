@@ -1,5 +1,4 @@
 /// <reference lib="webworker" />
-// biome-ignore organizeImports: the webworker triple-slash reference must stay before imports.
 import { type Backend, type Ort, type OrtSession, createSession, loadOrt } from "@/audio/ort-runtime";
 import { chooseBackend, describeUnsupportedVariant } from "@/audio/separation/backend-selection";
 import { runChunkPipeline } from "@/audio/separation/chunk-pipeline";

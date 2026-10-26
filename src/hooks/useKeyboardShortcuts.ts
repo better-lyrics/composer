@@ -32,7 +32,6 @@ function useKeyboardShortcuts(actions: ShortcutActions, options: ShortcutOptions
     action();
   });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => handleKeyDown(event);
     window.addEventListener("keydown", onKeyDown);

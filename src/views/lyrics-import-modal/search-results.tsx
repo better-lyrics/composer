@@ -60,7 +60,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       <div className="flex flex-col gap-1.5" aria-busy="true">
         {Array.from({ length: SKELETON_ROW_COUNT }).map((_, i) => (
           <div
-            // biome-ignore lint/suspicious/noArrayIndexKey: fixed-count decorative skeleton
             key={i}
             data-testid="result-skeleton"
             className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-1.5 rounded-lg animate-pulse"

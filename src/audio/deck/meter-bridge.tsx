@@ -88,7 +88,6 @@ const MeterBridge: React.FC = () => {
                 <b className="font-mono font-medium text-[11px] leading-2 text-(--on-display-dim)">{channel}</b>
                 {Array.from({ length: SEGMENTS }, (_, segment) => (
                   <i
-                    // biome-ignore lint/suspicious/noArrayIndexKey: segments are a fixed, ordered strip
                     key={segment}
                     ref={(element) => {
                       segmentRefs.current[channelIndex][segment] = element;

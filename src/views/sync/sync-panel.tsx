@@ -152,7 +152,6 @@ const SyncPanel: React.FC = () => {
     if (bounds) seekTo(Math.max(0, bounds.begin - useSettingsStore.getState().redoPreroll));
   });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
   useEffect(() => {
     if (!audioElement) return;
     const handleEnded = () => stopSessionAtSongEnd();
@@ -352,7 +351,6 @@ const SyncPanel: React.FC = () => {
     }
   }, [showGestureCircles, isHolding, endHold]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "sync") return;

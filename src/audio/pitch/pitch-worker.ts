@@ -1,5 +1,4 @@
 /// <reference lib="webworker" />
-// biome-ignore organizeImports: the webworker triple-slash reference must stay before imports.
 import { loadOrt } from "@/audio/ort-runtime";
 import { inferPitchWindow, pitchRange } from "@/audio/pitch/swift-f0-inference";
 import { nextChunk } from "@/domain/spectrum/chunk-order";

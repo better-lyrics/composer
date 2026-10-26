@@ -81,7 +81,6 @@ const BeatLeds: React.FC<{ grid: BeatGrid }> = ({ grid }) => {
   return (
     <span ref={stripRef} aria-hidden="true" className="flex gap-1.5">
       {Array.from({ length: count }, (_, led) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: LEDs are a fixed, ordered strip
         <span key={led} className={LED_CLASS} />
       ))}
     </span>

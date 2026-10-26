@@ -89,7 +89,6 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
           <div className="absolute inset-0 pointer-events-none z-10">
             {vocalOnsetSnapPoints.map((time, index) => (
               <div
-                // biome-ignore lint/suspicious/noArrayIndexKey: index tiebreaks identical onset times
                 key={`${time}-${index}`}
                 data-snap-marker="onset"
                 data-covered={coveredOnsets.has(index) ? "" : undefined}

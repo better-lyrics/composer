@@ -1,5 +1,4 @@
 /// <reference lib="webworker" />
-// biome-ignore organizeImports: the webworker triple-slash reference must stay before imports.
 import { type LevelEnvelope, computeLevelEnvelope } from "@/audio/level-envelope";
 import { detectVocalOnsets, mixToMono } from "@/audio/onset-detection";
 import { encodeWav } from "@/audio/wav-encode";

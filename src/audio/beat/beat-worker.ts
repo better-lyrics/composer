@@ -1,5 +1,4 @@
 /// <reference lib="webworker" />
-// biome-ignore organizeImports: the webworker triple-slash reference must stay before imports.
 import { chunkInput, chunkStarts, mergeChunkLogits, type ChunkLogits } from "@/audio/beat/beat-chunks";
 import { N_MELS, logMel } from "@/audio/beat/beat-features";
 import { BEAT_MODEL } from "@/audio/beat/beat-model";

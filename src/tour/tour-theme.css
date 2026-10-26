@@ -9,7 +9,10 @@
   padding: 16px 16px 14px;
   color: var(--ink);
   font-family: var(--font-sans);
-  box-shadow: inset 0 0 0 1px var(--edge), inset 0 1px 0 var(--highlight), 0 24px 48px -12px rgb(var(--shade) / 0.6);
+  box-shadow:
+    inset 0 0 0 1px var(--edge),
+    inset 0 1px 0 var(--highlight),
+    0 24px 48px -12px rgb(var(--shade) / 0.6);
   max-width: 360px;
   animation: modal-pop-in 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -99,7 +102,10 @@ html[data-scheme="light"] .driver-overlay path {
   font-family: var(--font-sans);
   text-shadow: none;
   cursor: pointer;
-  transition: background-color 120ms, color 120ms, scale 120ms;
+  transition:
+    background-color 120ms,
+    color 120ms,
+    scale 120ms;
 }
 
 .driver-popover.composer-tour .driver-popover-footer button:active {
