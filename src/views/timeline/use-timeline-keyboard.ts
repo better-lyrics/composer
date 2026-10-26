@@ -322,16 +322,12 @@ function useTimelineKeyboard(
         case "timeline.playSelection":
           if (playSelection()) e.preventDefault();
           break;
-        case "timeline.toggleFollow": {
-          const s = useSettingsStore.getState();
-          s.set("followPlayhead", !s.followPlayhead);
+        case "timeline.toggleFollow":
+          useSettingsStore.getState().toggle("followPlayhead");
           break;
-        }
-        case "timeline.togglePreview": {
-          const s = useSettingsStore.getState();
-          s.set("previewSidebar", !s.previewSidebar);
+        case "timeline.togglePreview":
+          useSettingsStore.getState().toggle("previewSidebar");
           break;
-        }
         case "timeline.copy":
           e.preventDefault();
           handleCopy();
@@ -344,33 +340,26 @@ function useTimelineKeyboard(
           e.preventDefault();
           handlePaste();
           break;
-        case "timeline.toggleSnap": {
-          const s = useSettingsStore.getState();
-          s.set("timelineSnap", !s.timelineSnap);
+        case "timeline.toggleSnap":
+          useSettingsStore.getState().toggle("timelineSnap");
           break;
-        }
         case "timeline.toggleBeatGrid": {
           if (!useProjectStore.getState().beatGrid) {
             toast(NO_BEAT_GRID_MESSAGE);
             break;
           }
-          const s = useSettingsStore.getState();
-          s.set("beatGridVisible", !s.beatGridVisible);
+          useSettingsStore.getState().toggle("beatGridVisible");
           break;
         }
-        case "timeline.toggleSpectrum": {
-          const s = useSettingsStore.getState();
-          s.set("showSpectrum", !s.showSpectrum);
+        case "timeline.toggleSpectrum":
+          useSettingsStore.getState().toggle("showSpectrum");
           break;
-        }
         case "timeline.togglePitchLine":
           togglePitchLine();
           break;
-        case "timeline.toggleRollingEdit": {
-          const s = useSettingsStore.getState();
-          s.set("rollingEdit", !s.rollingEdit);
+        case "timeline.toggleRollingEdit":
+          useSettingsStore.getState().toggle("rollingEdit");
           break;
-        }
         case "timeline.toggleMarkerMode":
           e.preventDefault();
           useTimelineStore.getState().toggleMarkerMode();

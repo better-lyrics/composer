@@ -117,8 +117,7 @@ function toggleLoop(): void {
     setLoopRegion({ ...loopRegion, loops: !loopRegion.loops });
     return;
   }
-  const settings = useSettingsStore.getState();
-  settings.set("loopOpenGroup", !settings.loopOpenGroup);
+  useSettingsStore.getState().toggle("loopOpenGroup");
 }
 
 // Away from the Timeline only a range that is already running can change.

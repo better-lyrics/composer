@@ -555,9 +555,9 @@ describe("Timeline zoom scrollTop preservation", () => {
       container.scrollTop = 600;
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-      useSettingsStore.getState().set("followPlayhead", !useSettingsStore.getState().followPlayhead);
+      useSettingsStore.getState().toggle("followPlayhead");
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-      useSettingsStore.getState().set("followPlayhead", !useSettingsStore.getState().followPlayhead);
+      useSettingsStore.getState().toggle("followPlayhead");
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
       expect(container.scrollTop).toBe(600);
@@ -572,7 +572,7 @@ describe("Timeline zoom scrollTop preservation", () => {
       container.scrollTop = 600;
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-      useSettingsStore.getState().set("previewSidebar", !useSettingsStore.getState().previewSidebar);
+      useSettingsStore.getState().toggle("previewSidebar");
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
       expect(container.scrollTop).toBe(600);

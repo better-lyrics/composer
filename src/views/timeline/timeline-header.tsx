@@ -148,7 +148,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
               active={followPlayhead}
               label="Follow"
               shortcut="timeline.toggleFollow"
-              onClick={() => useSettingsStore.getState().set("followPlayhead", !followPlayhead)}
+              onClick={() => useSettingsStore.getState().toggle("followPlayhead")}
               iconOnly
             >
               <IconFocusCentered />
@@ -157,7 +157,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
               active={rollingEdit}
               label="Rolling"
               shortcut="timeline.toggleRollingEdit"
-              onClick={() => useSettingsStore.getState().set("rollingEdit", !rollingEdit)}
+              onClick={() => useSettingsStore.getState().toggle("rollingEdit")}
               description="Rolling edit: drag a shared word boundary and both words move together"
               iconOnly
             >
@@ -167,7 +167,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
               active={previewSidebar}
               label="Preview"
               shortcut="timeline.togglePreview"
-              onClick={() => useSettingsStore.getState().set("previewSidebar", !previewSidebar)}
+              onClick={() => useSettingsStore.getState().toggle("previewSidebar")}
               iconOnly
             >
               <IconEye />

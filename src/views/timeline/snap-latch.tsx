@@ -43,7 +43,7 @@ const SnapLatch: React.FC = () => {
           active={enabled}
           label="Snap"
           shortcut="timeline.toggleSnap"
-          onClick={() => useSettingsStore.getState().set("timelineSnap", !enabled)}
+          onClick={() => useSettingsStore.getState().toggle("timelineSnap")}
           className={cn(isBypassing && "opacity-50")}
           description={`Hold ${MOD_KEY} to bypass`}
           iconOnly

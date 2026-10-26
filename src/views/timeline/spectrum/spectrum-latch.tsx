@@ -20,7 +20,7 @@ const SpectrumLatch: React.FC = () => {
           active={visible}
           label="Spectrum"
           shortcut="timeline.toggleSpectrum"
-          onClick={() => useSettingsStore.getState().set("showSpectrum", !visible)}
+          onClick={() => useSettingsStore.getState().toggle("showSpectrum")}
           iconOnly
         >
           <IconGrain />
