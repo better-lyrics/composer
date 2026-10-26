@@ -60,4 +60,3 @@ function createPerformerAgents(): PerformerAgents {
 // -- Exports ------------------------------------------------------------------
 
 export { agentIdAt, createPerformerAgents, dedupeIgnoringCase, isGroupPerformerName };
-export type { PerformerAgents };

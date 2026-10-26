@@ -90,4 +90,3 @@ function readGeniusLyrics(text: string): GeniusLyrics {
 // -- Exports ------------------------------------------------------------------
 
 export { isSectionTagLine, readGeniusLyrics, readsAsGeniusLyrics };
-export type { GeniusLyrics };
