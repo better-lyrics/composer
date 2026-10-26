@@ -61,6 +61,10 @@ describe("readGeniusLyrics", () => {
     it("never leaves leading or trailing blank lines", () => {
       expect(texts("[Verse]\n\nA\n\n[Chorus]\n")).toEqual(["A"]);
     });
+
+    it("regression: drops the page header when the copy has no section tags", () => {
+      expect(texts("12 Contributors\nTranslations\nEspañol\nSong Lyrics\nFirst\nSecond")).toEqual(["First", "Second"]);
+    });
   });
 });
 
@@ -83,18 +87,32 @@ describe("credits", () => {
     expect(agentOf("We'll remember these golden days")).toBe("v1");
   });
 
-  it("splits credits on commas, ampersands, and, with, x", () => {
-    const names = read("[Verse: A, B and C]\n1\n[Chorus: D with E x F]\n2").agents?.map((agent) => agent.name);
-    expect(names).toEqual(["A, B, C", "D, E, F"]);
+  it("splits credits on the ampersand Genius puts between artists", () => {
+    const names = read("[Verse: A, B & C]\n1\n[Chorus: D & E]\n2").agents?.map((agent) => agent.name);
+    expect(names).toEqual(["A, B, C", "D, E"]);
+  });
+
+  describe("regressions", () => {
+    it("regression: lines before the first credit belong to the lead, not the featured singer", () => {
+      const result = read("[Verse 1]\nA\n[Verse 2: Rihanna]\nB\n[Chorus]\nC");
+      expect(result.agents).toEqual([
+        { id: "v1", type: "person", name: "Lead" },
+        { id: "v2", type: "person", name: "Rihanna" },
+      ]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2", "v1"]);
+    });
+
+    it("regression: an artist name with a comma or a joining word stays one singer", () => {
+      const names = read("[Verse: Tyler, The Creator]\n1\n[Chorus: Florence and the Machine]\n2").agents?.map(
+        (agent) => agent.name,
+      );
+      expect(names).toEqual(["Tyler, The Creator", "Florence and the Machine"]);
+    });
   });
 
   describe("edge cases", () => {
     it("declares no singers when no tag has a credit", () => {
       expect(read(TAGGED_LYRICS).agents).toBeUndefined();
-    });
-
-    it("keeps a name that contains a separator word inside it", () => {
-      expect(read("[Verse: Malcolm X]\n1\n[Chorus]\n2").agents?.map((agent) => agent.name)).toEqual(["Malcolm X"]);
     });
 
     it("matches performers case-insensitively and keeps the first spelling", () => {

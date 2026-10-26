@@ -1,3 +1,4 @@
+import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { Agent } from "@/domain/agent/model";
 import { createPerformerAgents, dedupeIgnoringCase } from "@/domain/agent/performer-agents";
 
@@ -20,10 +21,12 @@ const SECTION_TAG =
 const PAGE_HEADER = /^\d[\d,.]*K?\s+Contributors?$/i;
 const INLINE_PROMO = /^(?:You might also like|See .+ Live|Get tickets as low as \$\d+)$/i;
 const EMBED_COUNTER = /\d*Embed$/;
-const CREDIT_SEPARATOR = /\s*[,&]\s*|\s+(?:and|with|x)\s+/i;
+const CREDIT_SEPARATOR = /\s+&\s+/;
+const PAGE_TITLE = /\sLyrics$/;
 const EMPHASIS_MARKS = /^[*_()\s]+|[*_()\s]+$/g;
 const MIN_SECTION_TAGS = 2;
 const LEAD_AGENT_ID = "v1";
+const LEAD_NAME = DEFAULT_AGENTS[0].name ?? "Lead";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -39,6 +42,10 @@ function hasPageHeader(rows: readonly string[]): boolean {
   return rows.some((row) => PAGE_HEADER.test(row));
 }
 
+function readsAsGeniusPageCopy(text: string): boolean {
+  return hasPageHeader(trimmedRows(text));
+}
+
 function readsAsGeniusLyrics(text: string): boolean {
   const rows = trimmedRows(text);
   return hasPageHeader(rows) || rows.filter((row) => SECTION_TAG.test(row)).length >= MIN_SECTION_TAGS;
@@ -52,6 +59,16 @@ function creditedPerformers(credit: string): string[] {
   return dedupeIgnoringCase(names);
 }
 
+// The page header (contributors, translations, "<Title> Lyrics") sits above the first section tag.
+function lyricsStart(rows: readonly string[]): number {
+  const header = rows.findIndex((row) => PAGE_HEADER.test(row));
+  if (header === -1) return 0;
+  const firstTag = rows.findIndex((row) => SECTION_TAG.test(row));
+  if (firstTag > header) return firstTag;
+  const title = rows.findIndex((row, index) => index > header && PAGE_TITLE.test(row));
+  return title === -1 ? header + 1 : title + 1;
+}
+
 function withoutBlankEdges(lines: GeniusLine[]): GeniusLine[] {
   const first = lines.findIndex((line) => line.text !== "");
   const last = lines.findLastIndex((line) => line.text !== "");
@@ -62,8 +79,7 @@ function withoutBlankEdges(lines: GeniusLine[]): GeniusLine[] {
 
 function readGeniusLyrics(text: string): GeniusLyrics {
   const rows = trimmedRows(text);
-  const firstTag = rows.findIndex((row) => SECTION_TAG.test(row));
-  const body = hasPageHeader(rows) && firstTag > 0 ? rows.slice(firstTag) : rows;
+  const body = rows.slice(lyricsStart(rows));
   const lastLyric = body.findLastIndex((row) => row !== "" && !SECTION_TAG.test(row));
   const lines: GeniusLine[] = [];
   const performers = createPerformerAgents();
@@ -72,7 +88,10 @@ function readGeniusLyrics(text: string): GeniusLyrics {
     const tag = SECTION_TAG.exec(row);
     if (tag) {
       const names = creditedPerformers(tag[1] ?? "");
-      // Genius leaves the credit off sections the primary artist sings.
+      // Genius leaves the credit off sections the primary artist sings, so uncredited lines are the lead's.
+      if (names.length > 0 && performers.agents.length === 0 && lines.some((line) => line.text !== "")) {
+        performers.agentFor([LEAD_NAME]);
+      }
       agentId = names.length > 0 ? performers.agentFor(names).id : (performers.agents[0]?.id ?? LEAD_AGENT_ID);
       return;
     }
@@ -89,4 +108,4 @@ function readGeniusLyrics(text: string): GeniusLyrics {
 
 // -- Exports ------------------------------------------------------------------
 
-export { isSectionTagLine, readGeniusLyrics, readsAsGeniusLyrics };
+export { isSectionTagLine, readGeniusLyrics, readsAsGeniusLyrics, readsAsGeniusPageCopy };

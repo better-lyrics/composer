@@ -1,4 +1,4 @@
-import { classifyPastedText } from "@/views/edit/smart-paste";
+import { type PasteScope, classifyPastedText } from "@/views/edit/smart-paste";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importPastedLyrics, importProjectFileForLyrics } from "@/views/lyrics-import-modal/import-lyrics-source";
 import { useCallback } from "react";
@@ -10,6 +10,14 @@ interface SmartPasteOptions {
   onBeforeImport: () => void;
 }
 
+// -- Helpers ------------------------------------------------------------------
+
+function pasteScope(textarea: HTMLTextAreaElement): PasteScope {
+  const { value, selectionStart, selectionEnd } = textarea;
+  const coversAll = selectionStart === 0 && selectionEnd === value.length;
+  return value.trim() === "" || coversAll ? "whole-text" : "insert";
+}
+
 // -- Hook ---------------------------------------------------------------------
 
 function useSmartPaste({ typedPasteRef, onBeforeImport }: SmartPasteOptions) {
@@ -19,7 +27,7 @@ function useSmartPaste({ typedPasteRef, onBeforeImport }: SmartPasteOptions) {
     (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
       const text = event.clipboardData?.getData("text/plain") ?? "";
       const duration = pasteContext.audioDuration > 0 ? pasteContext.audioDuration : undefined;
-      const pasted = classifyPastedText(text, duration);
+      const pasted = classifyPastedText(text, duration, pasteScope(event.currentTarget));
       if (pasted.kind === "typed-text") {
         typedPasteRef.current = true;
         return;
