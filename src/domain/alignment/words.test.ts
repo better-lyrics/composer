@@ -28,6 +28,17 @@ describe("groupAlignmentWords", () => {
 describe("sanitizeIntervals", () => {
   const bounds = { begin: 10, end: 12 };
 
+  it("regression: keeps every part inside a window too short for the minimum length", () => {
+    const window = { begin: 0, end: 0.25 };
+    const out = sanitizeIntervals(
+      Array.from({ length: 40 }, () => ({ begin: 0, end: 0 })),
+      window,
+    );
+    expect(
+      out.every((iv, i) => iv.begin >= 0 && iv.end <= 0.25 && iv.begin <= iv.end && iv.begin >= (out[i - 1]?.end ?? 0)),
+    ).toBe(true);
+  });
+
   it("keeps clean intervals as they are", () => {
     const clean = [
       { begin: 10.2, end: 10.6 },

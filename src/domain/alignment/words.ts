@@ -71,13 +71,16 @@ function groupTimedWords(timings: readonly WordTiming[]): AlignmentWord[] {
 // line's window, and every word at least long enough to grab in the timeline.
 function sanitizeIntervals(intervals: WordInterval[], bounds: WordInterval): WordInterval[] {
   const out: WordInterval[] = [];
+  // A window too short for the minimum gives each part an even share of it instead.
+  const minimum = Math.min(MIN_PART_DURATION, Math.max(0, bounds.end - bounds.begin) / Math.max(1, intervals.length));
   let cursor = bounds.begin;
   for (let i = 0; i < intervals.length; i++) {
     const remaining = intervals.length - i;
-    const latestBegin = bounds.end - remaining * MIN_PART_DURATION;
-    const begin = Math.min(Math.max(intervals[i].begin, cursor), latestBegin);
+    const latestBegin = bounds.end - remaining * minimum;
+    // The outer clamps only absorb rounding when the parts fill the window exactly.
+    const begin = Math.max(cursor, Math.min(Math.max(intervals[i].begin, cursor), latestBegin));
     const nextBegin = intervals[i + 1]?.begin ?? bounds.end;
-    const end = Math.max(begin + MIN_PART_DURATION, Math.min(intervals[i].end, nextBegin, bounds.end));
+    const end = Math.min(bounds.end, Math.max(begin + minimum, Math.min(intervals[i].end, nextBegin, bounds.end)));
     out.push({ begin, end });
     cursor = end;
   }
