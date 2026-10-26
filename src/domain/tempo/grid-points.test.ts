@@ -66,6 +66,11 @@ describe("gridPoints", () => {
   it("is empty for an empty grid", () => {
     expect(gridPoints({ ...grid120, beats: [], downbeatIndices: [] }, 0, 10, 200, "2")).toEqual([]);
   });
+
+  it("gives each subdivision its own note value, so the middle 1/4 tick is a half beat", () => {
+    const subs = gridPoints(grid120, 0, 0.49, 200, "4").filter((p) => p.kind === "sub");
+    expect(subs.map((p) => p.division)).toEqual([4, 2, 4]);
+  });
 });
 
 describe("labels and lookup", () => {

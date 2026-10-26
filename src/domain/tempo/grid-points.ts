@@ -25,6 +25,19 @@ const MIN_SUBDIVISION_PX = 14;
 const MIN_BEAT_PX = 10;
 const SAME_TIME_SECONDS = 1e-6;
 
+// -- Helpers -------------------------------------------------------------------
+
+function reducedDenominator(numerator: number, denominator: number): number {
+  let a = numerator;
+  let b = denominator;
+  while (b) {
+    const remainder = a % b;
+    a = b;
+    b = remainder;
+  }
+  return denominator / a;
+}
+
 // -- Density -------------------------------------------------------------------
 
 function gridDensity(grid: BeatGrid, pxPerSecond: number, lines: GridLines): GridDensity {
@@ -53,7 +66,7 @@ function gridPoints(grid: BeatGrid, t0: number, t1: number, pxPerSecond: number,
     if (!density.beats || density.division < 2 || i === last) continue;
     const step = (beatTime(grid, i + 1) - t) / density.division;
     for (let k = 1; k < density.division; k++) {
-      points.push({ t: t + step * k, kind: "sub", bar, division: density.division });
+      points.push({ t: t + step * k, kind: "sub", bar, division: reducedDenominator(k, density.division) });
     }
   }
   return points;
@@ -80,4 +93,4 @@ function gridPointAt(points: readonly GridPoint[], time: number): GridPoint | nu
 // -- Exports -------------------------------------------------------------------
 
 export { gridDensity, gridPointAt, gridPointLabel, gridPoints };
-export type { GridLines, GridPoint, GridPointKind };
+export type { GridLines, GridPoint };

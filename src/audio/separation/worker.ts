@@ -6,7 +6,7 @@ import { runChunkPipeline } from "@/audio/separation/chunk-pipeline";
 import { type Chunk, chunkCount, stitchChunks } from "@/audio/separation/chunker";
 import { denormalizeDemucsOutput, normalizeForDemucs } from "@/audio/separation/demucs-postprocess";
 import { fetchAndCacheModel, hasCachedModel, readCachedModel } from "@/audio/separation/model-cache";
-import { getModelDescriptor } from "@/audio/separation/model-registry";
+import { type ModelDescriptor, getModelDescriptor } from "@/audio/separation/model-registry";
 import { describeError, log } from "@/audio/separation/worker-log";
 import type { VocalModelVariant } from "@/stores/settings";
 
@@ -31,6 +31,7 @@ let activeBackend: Backend = "wasm";
 let adapterHasTimestampQuery: boolean | null = null;
 let cancelled = false;
 let profileGpu = false;
+let loadedModel: ModelDescriptor | null = null;
 
 function post(message: OutboundMessage, transfer?: Transferable[]) {
   self.postMessage(message, transfer ?? []);
@@ -112,6 +113,7 @@ async function handleInit(variant: VocalModelVariant, forceWasm?: boolean, profi
       session = await createSession(runtime, modelBytes, "wasm");
     }
     ort = runtime;
+    loadedModel = descriptor;
     post({ type: "init-done" });
   } catch (err) {
     log("init failed:", err);
@@ -120,6 +122,24 @@ async function handleInit(variant: VocalModelVariant, forceWasm?: boolean, profi
 }
 
 const cancelHandlers = new Set<() => void>();
+
+// Resolves null when cancelled; each await is a point where a cancel can arrive.
+async function recreateSessionOnWasm(
+  gpuSession: OrtSession,
+  runtime: Ort,
+  gpuError: unknown,
+): Promise<OrtSession | null> {
+  const modelBytes = loadedModel && (await readCachedModel(loadedModel));
+  if (!modelBytes) throw gpuError;
+  await gpuSession.release?.().catch((err: unknown) => log("releasing the WebGPU session failed:", err));
+  session = null;
+  if (cancelled) return null;
+  activeBackend = "wasm";
+  const wasmSession = await createSession(runtime, modelBytes, "wasm");
+  if (!cancelled) return wasmSession;
+  await wasmSession.release?.().catch((err: unknown) => log("releasing the WASM session failed:", err));
+  return null;
+}
 
 async function handleProcess(channels: Float32Array[], totalFrames: number) {
   if (!session || !ort) {
@@ -139,11 +159,10 @@ async function handleProcess(channels: Float32Array[], totalFrames: number) {
   log(`processing ${totalChunks} chunks on ${activeBackend}`);
   const normalized = normalizeForDemucs(channels, totalFrames);
 
-  let vocalChunks: Chunk[];
-  try {
-    const result = await runChunkPipeline({
-      session,
-      runtime: ort,
+  const separate = (activeSession: OrtSession, runtime: Ort) =>
+    runChunkPipeline({
+      session: activeSession,
+      runtime,
       channels: normalized.channels,
       totalChunks,
       backend: activeBackend,
@@ -152,12 +171,33 @@ async function handleProcess(channels: Float32Array[], totalFrames: number) {
       isCancelled: () => cancelled,
       onProgress: (processed, total) => post({ type: "process-progress", processed, total }),
     });
+
+  let vocalChunks: Chunk[];
+  try {
+    let result: Awaited<ReturnType<typeof runChunkPipeline>>;
+    try {
+      result = await separate(session, ort);
+    } catch (err) {
+      if (activeBackend === "wasm") throw err;
+      if (cancelled) {
+        result = { status: "cancelled" };
+      } else {
+        // A GPU without enough memory for the model fails inside run(), after the session was created.
+        log(`WebGPU inference failed (${describeError(err)}); retrying on WASM (CPU)`);
+        session = await recreateSessionOnWasm(session, ort, err);
+        result = session ? await separate(session, ort) : { status: "cancelled" };
+      }
+    }
     if (result.status === "cancelled") {
       post({ type: "cancelled" });
       return;
     }
     vocalChunks = result.chunks;
   } catch (err) {
+    if (cancelled) {
+      post({ type: "cancelled" });
+      return;
+    }
     log("processing failed:", err);
     post({ type: "error", code: "ort-failed", message: describeError(err) });
     return;
@@ -170,7 +210,7 @@ async function handleProcess(channels: Float32Array[], totalFrames: number) {
   // releasing the session explicitly also covers the keep-worker-alive case
   // and helps WebGPU EP flush its buffer pool.
   try {
-    await session.release?.();
+    await session?.release?.();
   } catch {}
   session = null;
 
