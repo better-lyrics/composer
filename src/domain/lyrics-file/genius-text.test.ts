@@ -169,5 +169,14 @@ describe("credits", () => {
         "Rihanna",
       ]);
     });
+
+    it("regression: keeps marks that are part of a name", () => {
+      const names = read("[Verse: Jay-Z (feat. Kanye)]\n1\n[Chorus: *NSYNC]\n2").agents?.map((agent) => agent.name);
+      expect(names).toEqual(["Jay-Z (feat. Kanye)", "*NSYNC"]);
+    });
+
+    it("regression: an uncredited section holding only the Embed counter makes no lead", () => {
+      expect(read("[Verse: Drake]\n1\n[Outro]\n12Embed").agents).toEqual([{ id: "v1", type: "person", name: "Drake" }]);
+    });
   });
 });

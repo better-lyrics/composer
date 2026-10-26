@@ -521,6 +521,12 @@ describe("parseQrc", () => {
       }
     });
 
+    it("regression: reads back the Chorus group singer an export writes", () => {
+      const result = parseQrc("[1000,500]Chorus：(1000,500)\n[2000,500]One(2000,500)");
+      expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Chorus" }]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000"]);
+    });
+
     it("keeps an ordinary solo performer a person", () => {
       const result = parseQrc("[1000,500]Allison：(1000,500)\n[2000,500]One(2000,500)");
       expect(result.agents).toEqual([{ id: "v1", type: "person", name: "Allison" }]);

@@ -25,7 +25,7 @@ const ARTIST_LIST_JOINER = /\s+&\s+/;
 const ARTIST_LIST_SEPARATOR = /\s*,\s*|\s+&\s+/;
 const PAGE_TITLE = /\sLyrics$/;
 const SONG_DESCRIPTION = /Read More$/;
-const EMPHASIS_MARKS = /^[*_()\s]+|[*_()\s]+$/g;
+const WRAPPING_MARKS = /^(?:\*(.+)\*|_(.+)_|\((.+)\))$/;
 const MIN_SECTION_TAGS = 2;
 const MAX_HEADER_ROWS = 30;
 const LEAD_AGENT_ID = "v1";
@@ -54,10 +54,17 @@ function readsAsGeniusLyrics(text: string): boolean {
   return hasPageHeader(rows) || rows.filter((row) => SECTION_TAG.test(row)).length >= MIN_SECTION_TAGS;
 }
 
+// Genius wraps a credited name in emphasis ("*Drake*", "(Rihanna)"); marks inside a name stay.
+function unwrappedName(name: string): string {
+  const trimmed = name.trim();
+  const wrapped = WRAPPING_MARKS.exec(trimmed);
+  return (wrapped ? (wrapped[1] ?? wrapped[2] ?? wrapped[3]) : trimmed).trim();
+}
+
 // A lone comma belongs to a name ("Tyler, The Creator"); with an ampersand it separates a list ("A, B & C").
 function creditedPerformers(credit: string): string[] {
   const names = (ARTIST_LIST_JOINER.test(credit) ? credit.split(ARTIST_LIST_SEPARATOR) : [credit])
-    .map((name) => name.replace(EMPHASIS_MARKS, ""))
+    .map(unwrappedName)
     .filter((name) => name !== "");
   return dedupeIgnoringCase(names);
 }
@@ -89,7 +96,7 @@ function needsLead(body: readonly string[]): boolean {
     if (tag) {
       sectionCredited = creditedPerformers(tag[1] ?? "").length > 0;
       anyCredit ||= sectionCredited;
-    } else if (row !== "" && !sectionCredited && !INLINE_PROMO.test(row)) {
+    } else if (!sectionCredited && !INLINE_PROMO.test(row) && row.replace(EMBED_COUNTER, "") !== "") {
       uncreditedLyric = true;
     }
   }

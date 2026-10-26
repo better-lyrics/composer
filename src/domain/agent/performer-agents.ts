@@ -9,9 +9,9 @@ interface PerformerAgents {
 
 // -- Constants ----------------------------------------------------------------
 
-const GROUP_PERFORMER_NAMES = new Set(["合", "合唱", "all"]);
 const GROUP_AGENT_ID = "v1000";
 const MIXED_GROUPS_NAME = "Chorus";
+const GROUP_PERFORMER_NAMES = new Set(["合", "合唱", "all", MIXED_GROUPS_NAME.toLowerCase()]);
 
 // -- Helpers ------------------------------------------------------------------
 
