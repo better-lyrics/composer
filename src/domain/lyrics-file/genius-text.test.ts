@@ -63,3 +63,51 @@ describe("readGeniusLyrics", () => {
     });
   });
 });
+
+describe("credits", () => {
+  const read = (content: string) => readGeniusLyrics(content);
+
+  it("makes one singer per credited performer or combination, in order of first credit", () => {
+    expect(read(GENIUS_PAGE_COPY).agents).toEqual([
+      { id: "v1", type: "person", name: "Drake" },
+      { id: "v2", type: "group", name: "Drake, Rihanna" },
+      { id: "v3", type: "person", name: "Rihanna" },
+    ]);
+  });
+
+  it("assigns each line to its section's singer, uncredited sections to the first", () => {
+    const agentOf = (text: string) => read(GENIUS_PAGE_COPY).lines.find((line) => line.text === text)?.agentId;
+    expect(agentOf("Midnight rain on the window glass")).toBe("v1");
+    expect(agentOf("Hold on, we're almost home tonight")).toBe("v2");
+    expect(agentOf("Streetlights flicker in the morning haze")).toBe("v3");
+    expect(agentOf("We'll remember these golden days")).toBe("v1");
+  });
+
+  it("splits credits on commas, ampersands, and, with, x", () => {
+    const names = read("[Verse: A, B and C]\n1\n[Chorus: D with E x F]\n2").agents?.map((agent) => agent.name);
+    expect(names).toEqual(["A, B, C", "D, E, F"]);
+  });
+
+  describe("edge cases", () => {
+    it("declares no singers when no tag has a credit", () => {
+      expect(read(TAGGED_LYRICS).agents).toBeUndefined();
+    });
+
+    it("keeps a name that contains a separator word inside it", () => {
+      expect(read("[Verse: Malcolm X]\n1\n[Chorus]\n2").agents?.map((agent) => agent.name)).toEqual(["Malcolm X"]);
+    });
+
+    it("matches performers case-insensitively and keeps the first spelling", () => {
+      expect(read("[Verse: Drake]\n1\n[Chorus: drake]\n2").agents).toEqual([
+        { id: "v1", type: "person", name: "Drake" },
+      ]);
+    });
+
+    it("strips Genius emphasis marks around names", () => {
+      expect(read("[Verse: *Drake*]\n1\n[Chorus: (Rihanna)]\n2").agents?.map((agent) => agent.name)).toEqual([
+        "Drake",
+        "Rihanna",
+      ]);
+    });
+  });
+});

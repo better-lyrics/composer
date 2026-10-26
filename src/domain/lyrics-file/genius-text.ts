@@ -1,3 +1,6 @@
+import type { Agent } from "@/domain/agent/model";
+import { createPerformerAgents, dedupeIgnoringCase } from "@/domain/agent/performer-agents";
+
 // -- Types --------------------------------------------------------------------
 
 interface GeniusLine {
@@ -7,6 +10,7 @@ interface GeniusLine {
 
 interface GeniusLyrics {
   lines: GeniusLine[];
+  agents?: Agent[];
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -16,6 +20,8 @@ const SECTION_TAG =
 const PAGE_HEADER = /^\d[\d,.]*K?\s+Contributors?$/i;
 const INLINE_PROMO = /^(?:You might also like|See .+ Live|Get tickets as low as \$\d+)$/i;
 const EMBED_COUNTER = /\d*Embed$/;
+const CREDIT_SEPARATOR = /\s*[,&]\s*|\s+(?:and|with|x)\s+/i;
+const EMPHASIS_MARKS = /^[*_()\s]+|[*_()\s]+$/g;
 const MIN_SECTION_TAGS = 2;
 const LEAD_AGENT_ID = "v1";
 
@@ -38,6 +44,14 @@ function readsAsGeniusLyrics(text: string): boolean {
   return hasPageHeader(rows) || rows.filter((row) => SECTION_TAG.test(row)).length >= MIN_SECTION_TAGS;
 }
 
+function creditedPerformers(credit: string): string[] {
+  const names = credit
+    .split(CREDIT_SEPARATOR)
+    .map((name) => name.replace(EMPHASIS_MARKS, ""))
+    .filter((name) => name !== "");
+  return dedupeIgnoringCase(names);
+}
+
 function withoutBlankEdges(lines: GeniusLine[]): GeniusLine[] {
   const first = lines.findIndex((line) => line.text !== "");
   const last = lines.findLastIndex((line) => line.text !== "");
@@ -52,14 +66,25 @@ function readGeniusLyrics(text: string): GeniusLyrics {
   const body = hasPageHeader(rows) && firstTag > 0 ? rows.slice(firstTag) : rows;
   const lastLyric = body.findLastIndex((row) => row !== "" && !SECTION_TAG.test(row));
   const lines: GeniusLine[] = [];
-  const agentId = LEAD_AGENT_ID;
+  const performers = createPerformerAgents();
+  let agentId = LEAD_AGENT_ID;
   body.forEach((row, index) => {
-    if (SECTION_TAG.test(row) || INLINE_PROMO.test(row)) return;
+    const tag = SECTION_TAG.exec(row);
+    if (tag) {
+      const names = creditedPerformers(tag[1] ?? "");
+      // Genius leaves the credit off sections the primary artist sings.
+      agentId = names.length > 0 ? performers.agentFor(names).id : (performers.agents[0]?.id ?? LEAD_AGENT_ID);
+      return;
+    }
+    if (INLINE_PROMO.test(row)) return;
     const lyric = index === lastLyric ? row.replace(EMBED_COUNTER, "").trimEnd() : row;
     if (lyric === "" && row !== "") return;
     lines.push({ text: lyric, agentId });
   });
-  return { lines: withoutBlankEdges(lines) };
+  return {
+    lines: withoutBlankEdges(lines),
+    agents: performers.agents.length > 0 ? performers.agents : undefined,
+  };
 }
 
 // -- Exports ------------------------------------------------------------------
