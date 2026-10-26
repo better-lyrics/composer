@@ -29,17 +29,30 @@ describe("isGroupPerformerName", () => {
 });
 
 describe("createPerformerAgents", () => {
-  it("numbers people from v1 and groups from v1000, each in order of first appearance", () => {
+  it("numbers people from v1 and gives every group the one v1000 singer", () => {
     const performers = createPerformerAgents();
     const ids = [["Drake"], ["Drake", "Rihanna"], ["Rihanna"], ["合唱"], ["Rihanna", "Drake"]].map(
       (names) => performers.agentFor(names).id,
     );
-    expect(ids).toEqual(["v1", "v1000", "v2", "v1001", "v1000"]);
+    expect(ids).toEqual(["v1", "v1000", "v2", "v1000", "v1000"]);
     expect(performers.agents).toEqual([
       { id: "v1", type: "person", name: "Drake" },
-      { id: "v1000", type: "group", name: "Drake, Rihanna" },
+      { id: "v1000", type: "group", name: "Chorus" },
       { id: "v2", type: "person", name: "Rihanna" },
-      { id: "v1001", type: "group", name: "合唱" },
     ]);
+  });
+
+  it("regression: a name with a slash is not read as two members", () => {
+    const performers = createPerformerAgents();
+    performers.agentFor(["AC/DC", "Foo"]);
+    performers.agentFor(["AC", "DC", "Foo"]);
+    expect(performers.agents).toEqual([{ id: "v1000", type: "group", name: "Chorus" }]);
+  });
+
+  it("keeps the name of the only group a song has", () => {
+    const performers = createPerformerAgents();
+    performers.agentFor(["Drake", "Rihanna"]);
+    performers.agentFor(["rihanna", "drake"]);
+    expect(performers.agents).toEqual([{ id: "v1000", type: "group", name: "Drake, Rihanna" }]);
   });
 });

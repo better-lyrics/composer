@@ -112,8 +112,15 @@ describe("credits", () => {
   });
 
   it("splits an artist list on commas and the final ampersand", () => {
-    const names = read("[Verse: A, B & C]\n1\n[Chorus: D & E]\n2").agents?.map((agent) => agent.name);
-    expect(names).toEqual(["A, B, C", "D, E"]);
+    expect(read("[Verse: A, B & C]\n1\n[Chorus: C & A & B]\n2").agents).toEqual([
+      { id: "v1000", type: "group", name: "A, B, C" },
+    ]);
+  });
+
+  it("gives different artist lists the one group singer, named Chorus", () => {
+    const result = read("[Verse: A & B]\n1\n[Chorus: C & D]\n2");
+    expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Chorus" }]);
+    expect(result.lines.map((line) => line.agentId)).toEqual(["v1000", "v1000"]);
   });
 
   describe("regressions", () => {

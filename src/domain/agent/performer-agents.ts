@@ -10,7 +10,8 @@ interface PerformerAgents {
 // -- Constants ----------------------------------------------------------------
 
 const GROUP_PERFORMER_NAMES = new Set(["合", "合唱", "all"]);
-const FIRST_GROUP_ORDINAL = 1000;
+const GROUP_AGENT_ID = "v1000";
+const MIXED_GROUPS_NAME = "Chorus";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -33,30 +34,40 @@ function dedupeIgnoringCase(names: readonly string[]): string[] {
 
 // -- Roster -------------------------------------------------------------------
 
-// A line carries one agent id, so a combination is an agent of its own, keyed by its sorted
-// case-folded members joined on the slash no member can contain: casing drift and a reordering
-// both resolve to one agent, while the display name keeps the order the document first wrote.
-// Groups take ids from v1000, the TTML convention for lines sung together.
+// A combination is keyed by its sorted case-folded members joined on a line break no name can
+// contain, so casing drift and a reordering resolve to the same singer. Every group sings as v1000,
+// the id lyric renderers centre as "all vocals together"; it keeps the name of the song's only
+// combination, and reads as the chorus once a second one appears.
 function createPerformerAgents(): PerformerAgents {
   const agents: Agent[] = [];
   const byKey = new Map<string, Agent>();
+  const groupKeys = new Set<string>();
   const agentFor = (performers: readonly string[]): Agent => {
     const key = performers
       .map((performer) => performer.toLowerCase())
       .toSorted()
-      .join("/");
+      .join("\n");
+    if (performers.length > 1 || isGroupPerformerName(performers[0])) {
+      groupKeys.add(key);
+      const groupIndex = agents.findIndex((agent) => agent.id === GROUP_AGENT_ID);
+      if (groupIndex === -1) {
+        const group: Agent = { id: GROUP_AGENT_ID, type: "group", name: performers.join(", ") };
+        agents.push(group);
+        return group;
+      }
+      if (groupKeys.size > 1) agents[groupIndex] = { ...agents[groupIndex], name: MIXED_GROUPS_NAME };
+      return agents[groupIndex];
+    }
     const existing = byKey.get(key);
     if (existing) return existing;
-    const isGroup = performers.length > 1 || isGroupPerformerName(performers[0]);
-    const sameKind = agents.filter((agent) => (agent.type === "group") === isGroup).length;
-    const agent: Agent = {
-      id: isGroup ? `v${FIRST_GROUP_ORDINAL + sameKind}` : agentIdAt(sameKind),
-      type: isGroup ? "group" : "person",
+    const person: Agent = {
+      id: agentIdAt(agents.filter((agent) => agent.type === "person").length),
+      type: "person",
       name: performers.join(", "),
     };
-    agents.push(agent);
-    byKey.set(key, agent);
-    return agent;
+    agents.push(person);
+    byKey.set(key, person);
+    return person;
   };
   return { agentFor, agents };
 }
