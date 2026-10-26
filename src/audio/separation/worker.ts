@@ -124,9 +124,9 @@ async function handleInit(variant: VocalModelVariant, forceWasm?: boolean, profi
 const cancelHandlers = new Set<() => void>();
 
 async function recreateSessionOnWasm(gpuSession: OrtSession, runtime: Ort, gpuError: unknown): Promise<OrtSession> {
-  await gpuSession.release?.().catch((err: unknown) => log("releasing the WebGPU session failed:", err));
   const modelBytes = loadedModel && (await readCachedModel(loadedModel));
   if (!modelBytes) throw gpuError;
+  await gpuSession.release?.().catch((err: unknown) => log("releasing the WebGPU session failed:", err));
   activeBackend = "wasm";
   return createSession(runtime, modelBytes, "wasm");
 }
