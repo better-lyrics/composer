@@ -19,6 +19,8 @@ import { songKeyFor } from "@/stores/stem-sources";
 interface StemImportTarget {
   source: AudioSource;
   projectId: string | undefined;
+  slot: StemSlot;
+  token: number;
 }
 
 interface PendingStemImport {
@@ -50,15 +52,26 @@ type SetStemImportState = (partial: Partial<StemImportState>) => void;
 
 const LOG_PREFIX = "[StemImport]";
 
+// -- Module state -------------------------------------------------------------
+
+const latestImports = new Map<StemSlot, number>();
+let importCount = 0;
+
 // -- Target -------------------------------------------------------------------
 
-function currentImportTarget(): StemImportTarget {
-  return { source: useAudioStore.getState().source, projectId: openProjectIdSnapshot() };
+function beginImport(slot: StemSlot): StemImportTarget {
+  importCount += 1;
+  latestImports.set(slot, importCount);
+  return { source: useAudioStore.getState().source, projectId: openProjectIdSnapshot(), slot, token: importCount };
 }
 
-// An import belongs to the song and project it started in; a switch while it was checked or saved drops it.
+// An import belongs to the song and project it started in, and only the newest import into a slot may save.
 function isCurrentImportTarget(target: StemImportTarget): boolean {
-  return useAudioStore.getState().source === target.source && openProjectIdSnapshot() === target.projectId;
+  return (
+    latestImports.get(target.slot) === target.token &&
+    useAudioStore.getState().source === target.source &&
+    openProjectIdSnapshot() === target.projectId
+  );
 }
 
 function saveFailureMessage(file: File, error: unknown): string {
@@ -76,12 +89,12 @@ async function seekableStem(file: File): Promise<File> {
 
 // Resolves when the stem can be stored right away; otherwise records why not and resolves null.
 async function prepareStemImport(slot: StemSlot, file: File, set: SetStemImportState): Promise<ReadyStemImport | null> {
+  const target = beginImport(slot);
   set({ pendingImport: null, importError: null });
   if (!isSupportedAudioFile(file)) {
     set({ importError: { slot, message: UNSUPPORTED_AUDIO_FILE_MESSAGE } });
     return null;
   }
-  const target = currentImportTarget();
   const song = playableFile(target.source);
   if (!song) return null;
   const [probe, songProbe] = await Promise.all([probeAudioFile(file), probeAudioFile(song)]);

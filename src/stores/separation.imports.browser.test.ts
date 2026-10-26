@@ -92,6 +92,16 @@ describe("imported stems", () => {
     expect(stem).toMatchObject({ name: "acapella.mp3", type: "audio/wav" });
   });
 
+  it("regression: a slower earlier import never overwrites the file chosen after it", async () => {
+    await openSong("import-race");
+    const earlier = useSeparationStore.getState().importStem("vocals", createMp3File("first.mp3"));
+    const later = useSeparationStore.getState().importStem("vocals", createAudioFile("second.wav", 2));
+    await Promise.all([earlier, later]);
+    await useSeparationStore.getState().acceptPendingImport();
+
+    expect((await loadProjectStems("import-race"))?.slots.vocals?.name).toBe("second.wav");
+  });
+
   it("separation fills only the empty slot and never replaces an imported stem", async () => {
     await openSong("import-fill");
     const acapella = createAudioFile("acapella.wav", 2);
