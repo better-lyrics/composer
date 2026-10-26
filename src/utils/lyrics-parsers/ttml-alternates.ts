@@ -1,6 +1,6 @@
 import { alignTrackToLine } from "@/domain/language/align";
-import { wholeLineSegments } from "@/domain/language/manual-segments";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { wholeLineSegments } from "@/domain/language/manual-segments";
 import { normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";

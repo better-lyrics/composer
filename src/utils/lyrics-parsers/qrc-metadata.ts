@@ -1,3 +1,4 @@
+import { dedupeIgnoringCase } from "@/domain/agent/performer-agents";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 
 // -- Constants ----------------------------------------------------------------
@@ -14,7 +15,6 @@ const COLON_REGEX = /[:：]/;
 const MARKER_REJECTED_PUNCTUATION_REGEX = /[,!?;。，！？]/;
 const WHITESPACE_REGEX = /\s+/g;
 const FALLBACK_CREDIT_KEY = "qrcCredits";
-const GROUP_PERFORMER_NAMES = new Set(["合", "合唱", "all"]);
 const CREDIT_KEYS_BY_PREFIX = new Map([
   ["lyricsby", "qrcLyricsBy"],
   ["composedby", "qrcComposedBy"],
@@ -209,15 +209,6 @@ function isQrcTitleLine(text: string, tags: Partial<ProjectMetadata>): boolean {
 
 // -- Singer markers -----------------------------------------------------------
 
-function dedupeIgnoringCase(names: string[]): string[] {
-  const byFoldedName = new Map<string, string>();
-  for (const name of names) {
-    const key = name.toLowerCase();
-    if (!byFoldedName.has(key)) byFoldedName.set(key, name);
-  }
-  return [...byFoldedName.values()];
-}
-
 // The length bound is per performer: a duet marker is no less a marker for being twice as long.
 // The count bound replaces the ceiling that per-performer lengths alone no longer impose.
 function readSingerMarker(text: string): string[] | null {
@@ -233,10 +224,6 @@ function readSingerMarker(text: string): string[] | null {
   return performers;
 }
 
-function isGroupPerformerName(name: string): boolean {
-  return GROUP_PERFORMER_NAMES.has(name.toLowerCase());
-}
-
 // -- Exports ------------------------------------------------------------------
 
 export {
@@ -244,7 +231,6 @@ export {
   creditValue,
   decodeCredits,
   isCreditLine,
-  isGroupPerformerName,
   isQrcTitleLine,
   isWritingCreditKey,
   MS_PER_SECOND,

@@ -1,3 +1,4 @@
+import { readsAsGeniusLyrics, readsAsGeniusPageCopy } from "@/domain/lyrics-file/genius-text";
 import { QRC_LINE_HEADER_REGEX, QRC_WORD_TAG_REGEX } from "@/domain/lyrics-file/qrc-syntax";
 import type { ProjectFileContents } from "@/lib/project-file-read";
 import { PARSERS } from "@/utils/lyrics-parsers";
@@ -12,6 +13,8 @@ type PastedText =
   | { kind: "lyrics-file"; parsed: ParseResult }
   | { kind: "typed-text" };
 
+type PasteScope = "whole-text" | "insert";
+
 // -- Constants ----------------------------------------------------------------
 
 const TYPED_TEXT: PastedText = { kind: "typed-text" };
@@ -22,7 +25,9 @@ const QRC_LINE_AT_LINE_START = new RegExp(`^\\s*${QRC_LINE_HEADER_REGEX.source}`
 // -- Helpers ------------------------------------------------------------------
 
 // File sniffing finds a format anywhere in the text; a paste only counts when the text reads as a whole document.
-function readsAsWholeDocument(fileType: LyricsFileType, text: string): boolean {
+// Tagged lyrics without the Genius page header may be a fragment, so they import only over the whole text.
+function readsAsWholeDocument(fileType: LyricsFileType, text: string, scope: PasteScope): boolean {
+  if (fileType === "txt") return readsAsGeniusPageCopy(text) || (scope === "whole-text" && readsAsGeniusLyrics(text));
   if (fileType === "ttml") return TTML_DOCUMENT_START.test(text);
   if (fileType === "qrc") {
     return text.includes("<QrcInfos") || (QRC_LINE_AT_LINE_START.test(text) && QRC_WORD_TAG_REGEX.test(text));
@@ -32,12 +37,12 @@ function readsAsWholeDocument(fileType: LyricsFileType, text: string): boolean {
 
 // -- Classification -----------------------------------------------------------
 
-function classifyPastedText(text: string, fallbackDuration?: number): PastedText {
+function classifyPastedText(text: string, fallbackDuration?: number, scope: PasteScope = "whole-text"): PastedText {
   const contents = readProjectFileText(text);
   if (contents) return { kind: "project-file", contents };
   const body = text.replace(LEADING_BOM_AND_BLANK_LINES, "");
   const fileType = detectFileType("", body);
-  if (fileType === "txt" || fileType === "unknown" || !readsAsWholeDocument(fileType, body)) return TYPED_TEXT;
+  if (fileType === "unknown" || !readsAsWholeDocument(fileType, body, scope)) return TYPED_TEXT;
   const parsed = PARSERS[fileType](body, fallbackDuration);
   return parsed.lines.length > 0 || hasUnsupportedTags(parsed.issues) ? { kind: "lyrics-file", parsed } : TYPED_TEXT;
 }
@@ -45,3 +50,4 @@ function classifyPastedText(text: string, fallbackDuration?: number): PastedText
 // -- Exports ------------------------------------------------------------------
 
 export { classifyPastedText };
+export type { PasteScope };

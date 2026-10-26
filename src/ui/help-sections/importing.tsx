@@ -113,6 +113,13 @@ const ImportSection: React.FC = () => (
         dropping a file onto the editor. Plain lines still paste as typed text.
       </p>
       <p className={`${PROSE} mt-3`}>
+        You can paste lyrics straight from a Genius page. Composer drops the [Verse] and [Chorus] tags and the page
+        clutter around the lyrics (the contributor count, "You might also like", the Embed counter). A credit like
+        [Chorus: Drake &amp; Rihanna] gives those lines to that singer. Genius doesn't name who sings an uncredited
+        section, so those lines go to a Lead singer you can rename. A few tagged lines pasted into existing lyrics stay
+        as you pasted them, and the [brackets] notice can remove the tags.
+      </p>
+      <p className={`${PROSE} mt-3`}>
         A project file can come in through any of these. Composer asks what to do with it:{" "}
         <strong>{USE_PROJECT_LYRICS_LABEL}</strong> takes its lyrics, singers and song details into the open project as
         one undoable step, and <strong>{OPEN_PROJECT_LABEL}</strong> adds it to your library and switches to it. A

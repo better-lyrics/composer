@@ -1,3 +1,4 @@
+import { GENIUS_PAGE_COPY, TAGGED_LYRICS } from "@/test/genius-fixtures";
 import { SINGER_TAGGED_LRC } from "@/test/lrc-fixtures";
 import { backupText, projectFileText } from "@/test/project-file-fixtures";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
@@ -21,6 +22,25 @@ describe("classifyPastedText", () => {
   it("reads a project file and a backup as project files", () => {
     expect(classifyPastedText(projectFileText()).kind).toBe("project-file");
     expect(classifyPastedText(backupText(["One", "Two"])).kind).toBe("project-file");
+  });
+
+  it("reads lyrics copied from Genius as a lyrics file", () => {
+    const pasted = classifyPastedText(GENIUS_PAGE_COPY);
+    expect(pasted.kind).toBe("lyrics-file");
+    if (pasted.kind === "lyrics-file") expect(pasted.parsed.agents?.map((agent) => agent.name)).toContain("Drake");
+  });
+
+  it("regression: tagged lyrics pasted into existing text stay typed text", () => {
+    expect(classifyPastedText(TAGGED_LYRICS, undefined, "insert").kind).toBe("typed-text");
+    expect(classifyPastedText(TAGGED_LYRICS, undefined, "whole-text").kind).toBe("lyrics-file");
+  });
+
+  it("reads a Genius page copy as a lyrics file wherever it is pasted", () => {
+    expect(classifyPastedText(GENIUS_PAGE_COPY, undefined, "insert").kind).toBe("lyrics-file");
+  });
+
+  it("regression: a single bracket line in typed lyrics stays typed text", () => {
+    expect(classifyPastedText("[Chorus]\nHello").kind).toBe("typed-text");
   });
 
   it("keeps plain lyrics as typed text", () => {

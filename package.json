@@ -1,7 +1,7 @@
 {
   "name": "composer",
   "private": true,
-  "version": "2.13.3",
+  "version": "2.14.0",
   "type": "module",
   "scripts": {
     "dev": "vite-react-ssg dev",
@@ -38,7 +38,7 @@
     "diff": "^9.0.0",
     "driver.js": "^1.10.2",
     "lit": "^3.3.3",
-    "motion": "^13.2.0",
+    "motion": "^14.4.0",
     "music-metadata": "^12.2.3",
     "nanoid": "^6.0.2",
     "node-diff3": "^3.2.1",
