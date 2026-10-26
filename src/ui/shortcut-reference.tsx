@@ -109,7 +109,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["T"], description: "Toggle snap (magnet)", shortcutId: "timeline.toggleSnap" },
       { keys: ["B"], description: "Show or hide the beat grid", shortcutId: "timeline.toggleBeatGrid" },
       { keys: ["V"], description: "Show spectrum", shortcutId: "timeline.toggleSpectrum" },
-      { keys: ["Shift", "A"], description: "Auto-align words", shortcutId: "timeline.autoAlign" },
+      { keys: ["Shift", "A"], description: "Auto-align the selected line", shortcutId: "timeline.autoAlign" },
       { keys: ["K"], description: "Pitch line", shortcutId: "timeline.togglePitchLine" },
       { keys: ["N"], description: "Insert line below selected word", shortcutId: "timeline.insertLineBelow" },
       { keys: ["Shift", "N"], description: "Insert line above selected word", shortcutId: "timeline.insertLineAbove" },
