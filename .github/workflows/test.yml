@@ -65,7 +65,7 @@ jobs:
     # Chromium and its system libraries ship in the image, so no apt step can stall the job.
     # Keep the tag on the playwright version in pnpm-lock.yaml.
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
       options: --ipc=host
 
     strategy:
