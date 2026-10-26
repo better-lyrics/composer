@@ -12,14 +12,7 @@ import { cn } from "@/utils/cn";
 import { formatMegabytes } from "@/utils/format-file-size";
 import { pluralize } from "@/utils/pluralize";
 import { IconCheck, IconLoader2, IconWand } from "@tabler/icons-react";
-import { useEffect, useMemo, useRef } from "react";
-
-// -- Types --------------------------------------------------------------------
-
-interface LastRequest {
-  realign: boolean;
-}
-
+import { useEffect, useMemo } from "react";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -65,8 +58,7 @@ const AutoAlignPanel: React.FC = () => {
   const separationStatus = useSeparationStore((s) => s.status);
   const separationProgress = useSeparationStore((s) => s.progress);
   const hasVocals = useSeparationStore((s) => !!s.stemUrls.vocals);
-  const { autoAlign, cancel } = useAutoAlign();
-  const lastRequest = useRef<LastRequest>({ realign: false });
+  const { autoAlign, cancel, retry } = useAutoAlign();
 
   const counts = useMemo(() => {
     const { lineTimed, wordTimed } = countAlignableLines(lines);
@@ -79,7 +71,6 @@ const AutoAlignPanel: React.FC = () => {
   }, [refreshModelCached, modelId]);
 
   const run = (realign: boolean) => {
-    lastRequest.current = { realign };
     void autoAlign(undefined, { allowDownload: true, realign, toastErrors: false });
   };
 
@@ -103,12 +94,7 @@ const AutoAlignPanel: React.FC = () => {
               >
                 Dismiss
               </Button>
-              <Button
-                size="sm"
-                variant="primary"
-                className={COMPACT_BUTTON}
-                onClick={() => run(lastRequest.current.realign)}
-              >
+              <Button size="sm" variant="primary" className={COMPACT_BUTTON} onClick={retry}>
                 Try again
               </Button>
             </>
@@ -126,9 +112,7 @@ const AutoAlignPanel: React.FC = () => {
           title={modelCached ? "Loading alignment model…" : "Downloading alignment model…"}
           pct={pct}
           note={
-            progress.total > 0
-              ? `${formatMegabytes(progress.done)} / ${formatMegabytes(progress.total)}`
-              : "Preparing…"
+            progress.total > 0 ? `${formatMegabytes(progress.done)} / ${formatMegabytes(progress.total)}` : "Preparing…"
           }
           onCancel={cancel}
         />
@@ -147,9 +131,8 @@ const AutoAlignPanel: React.FC = () => {
         <div>
           <p className="text-[13.5px] font-bold text-composer-text">Auto-align words</p>
           <Hint className="mt-1.5">
-            Times each word from the separated vocals, using your line timing as a guide. Works for English,
-            Mandarin and Japanese lyrics, and follows your transliterations for how Chinese and Japanese lines are
-            sung.
+            Times each word from the separated vocals, using your line timing as a guide. Works for English, Mandarin
+            and Japanese lyrics, and follows your transliterations for how Chinese and Japanese lines are sung.
           </Hint>
 
           <div className="grid gap-1 mt-3">
@@ -180,20 +163,14 @@ const AutoAlignPanel: React.FC = () => {
                     Separating… {percent(separationProgress.loaded, separationProgress.total)}%
                   </Hint>
                 ) : (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => void useSeparationStore.getState().separate()}
-                  >
+                  <Button size="sm" variant="secondary" onClick={() => void useSeparationStore.getState().separate()}>
                     Separate vocals
                   </Button>
                 ))}
             </Step>
           </div>
 
-          {!modelCached && sizeMb && (
-            <Hint className="mt-3">Requires a one-time ~{sizeMb} MB model download.</Hint>
-          )}
+          {!modelCached && sizeMb && <Hint className="mt-3">Requires a one-time ~{sizeMb} MB model download.</Hint>}
 
           <div className="flex justify-end gap-2 mt-3.5">
             {counts.wordTimed > 0 && (
@@ -227,7 +204,10 @@ const AutoAlignStatus: React.FC<{ idleLabel: string }> = ({ idleLabel }) => {
   return (
     <>
       {busy ? (
-        <IconLoader2 aria-hidden="true" className="size-4 text-composer-accent-text animate-spin motion-reduce:animate-none" />
+        <IconLoader2
+          aria-hidden="true"
+          className="size-4 text-composer-accent-text animate-spin motion-reduce:animate-none"
+        />
       ) : (
         <IconWand aria-hidden="true" className="size-4" />
       )}

@@ -20,6 +20,12 @@ type AutoAlign = (lineIds?: readonly string[], options?: AutoAlignOptions) => Pr
 
 const UNKNOWN_WORDS_SHOWN = 8;
 
+// -- State ---------------------------------------------------------------------
+
+// The latest run, from any trigger, so Try again repeats it: the Timeline's one
+// line, or the Sync tab's whole song, with the same realign choice.
+let lastRequest: { lineIds?: readonly string[]; realign: boolean } = { realign: false };
+
 // -- Functions -----------------------------------------------------------------
 
 function alignedMessage(aligned: number, skipped: number): string {
@@ -68,6 +74,7 @@ function useAutoAlign() {
   const progress = useAlignmentStore((s) => s.progress);
 
   const autoAlign: AutoAlign = useCallback(async (lineIds, options) => {
+    lastRequest = { lineIds, realign: options?.realign ?? false };
     const result = await useAlignmentStore.getState().alignLines(lineIds, options);
     if (!result) {
       if (options?.toastErrors !== false) showAlignmentError(autoAlign, lineIds, options?.realign);
@@ -93,10 +100,16 @@ function useAutoAlign() {
   }, []);
 
   const cancel = useCallback(() => useAlignmentStore.getState().cancel(), []);
+  const retry = useCallback(
+    () =>
+      void autoAlign(lastRequest.lineIds, { allowDownload: true, realign: lastRequest.realign, toastErrors: false }),
+    [autoAlign],
+  );
 
   return {
     autoAlign,
     cancel,
+    retry,
     isDownloading: status === "downloading",
     isRunning: status === "running" || status === "downloading",
     progress,
