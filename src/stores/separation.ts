@@ -44,6 +44,7 @@ interface SeparationActions {
   restoreCurrentStem: (stem: Stem) => void;
   cancel: () => void;
   retry: () => Promise<void>;
+  dismissError: () => void;
   reset: () => void;
 }
 
@@ -246,6 +247,8 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
     cancelSeparationWorker();
     set({ status: "idle", progress: { loaded: 0, total: 0 } });
   },
+
+  dismissError: () => set({ error: null, status: get().availableStems.length > 1 ? "ready" : "idle" }),
 
   retry: async () => {
     set({ error: null });

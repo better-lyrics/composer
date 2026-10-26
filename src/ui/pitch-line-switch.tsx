@@ -1,3 +1,4 @@
+import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { settingEntry } from "@/stores/settings-catalog";
 import { Switch } from "@/ui/switch";
@@ -8,6 +9,7 @@ import { IconChartLine } from "@tabler/icons-react";
 
 const PitchLineSwitch: React.FC = () => {
   const shown = useSettingsStore((s) => s.pitchLine !== "off");
+  const hasVocals = useSeparationStore((s) => s.availableStems.includes("vocals"));
   const label = settingEntry("pitchLine").label;
 
   return (
@@ -15,9 +17,11 @@ const PitchLineSwitch: React.FC = () => {
       <IconChartLine className="size-4 shrink-0 text-(--muted)" />
       <div className="flex flex-1 flex-col gap-0.5 min-w-0">
         <span className="text-[13px] font-medium text-composer-text">{label}</span>
-        <span className="text-[12.5px] leading-[1.45] text-(--muted) truncate">Sung pitch inside word blocks</span>
+        <span className="text-[12.5px] leading-[1.45] text-(--muted) truncate">
+          {hasVocals ? "Sung pitch inside word blocks" : "Needs a vocals stem"}
+        </span>
       </div>
-      <Switch checked={shown} label={label} onCheckedChange={setPitchLineShown} />
+      <Switch checked={shown && hasVocals} disabled={!hasVocals} label={label} onCheckedChange={setPitchLineShown} />
     </div>
   );
 };

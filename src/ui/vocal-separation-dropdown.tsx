@@ -9,7 +9,6 @@ import { StemModelBlock } from "@/ui/stem-sources/stem-model-block";
 import { StemSourceRows } from "@/ui/stem-sources/stem-source-rows";
 import { VocalOnsetSnapToggle } from "@/ui/vocal-onset-snap-toggle";
 import { DETECTING_VOCAL_ONSETS } from "@/ui/vocal-onset-status-copy";
-import { ErrorState } from "@/ui/vocal-separation-states";
 import { StemPickLabel, VocalOnsetStatusAnnouncer } from "@/ui/vocal-separation-trigger";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect } from "react";
@@ -24,22 +23,14 @@ interface VocalSeparationDropdownProps {
 
 // -- Helpers ------------------------------------------------------------------
 
-function dismissSeparationError(): void {
-  const { reset, refreshForCurrentSource } = useSeparationStore.getState();
-  reset();
-  void refreshForCurrentSource();
-}
-
 // -- Component ----------------------------------------------------------------
 
 const VocalSeparationDropdown: React.FC<VocalSeparationDropdownProps> = ({ open, onOpenChange, positionAnchor }) => {
   const source = useAudioStore((s) => s.source);
   const status = useSeparationStore((s) => s.status);
   const progress = useSeparationStore((s) => s.progress);
-  const error = useSeparationStore((s) => s.error);
   const currentStem = useSeparationStore((s) => s.currentStem);
   const refreshModelCacheStatus = useSeparationStore((s) => s.refreshModelCacheStatus);
-  const retry = useSeparationStore((s) => s.retry);
   const selectStem = useSeparationStore((s) => s.selectStem);
   const detectingOnsets = useTimelineStore((s) => s.vocalOnsetDetectionStatus === "processing");
   const variant = useSettingsStore((s) => s.vocalModelVariant);
@@ -78,9 +69,6 @@ const VocalSeparationDropdown: React.FC<VocalSeparationDropdownProps> = ({ open,
           };
           return (
             <div className="w-80 p-3.5">
-              {status === "error" && error && (
-                <ErrorState message={error.message} onRetry={retry} onDismiss={dismissSeparationError} />
-              )}
               <p className="text-[13.5px] font-bold text-composer-text">Playback source</p>
               <StemSourceRows onSelect={selectAndClose} />
               <StemModelBlock />
