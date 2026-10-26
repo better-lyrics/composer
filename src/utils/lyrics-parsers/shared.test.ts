@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
+import { describe, expect, it } from "vitest";
 
 describe("skippedLinesMessage", () => {
   it("names a single unreadable line", () => {

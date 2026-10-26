@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import { generateTTML } from "@/utils/ttml";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
+import { generateTTML } from "@/utils/ttml";
+import { describe, expect, it } from "vitest";
 
 const metadata: ProjectMetadata = {
   title: "Song",

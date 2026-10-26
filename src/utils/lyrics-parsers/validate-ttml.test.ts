@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
+import { describe, expect, it } from "vitest";
 
 const VALID = `<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p>Hello</p></div></body></tt>`;
 

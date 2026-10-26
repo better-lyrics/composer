@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { parseTxt } from "@/utils/lyrics-parsers/txt";
+import { describe, expect, it } from "vitest";
 
 const texts = (content: string) => parseTxt(content).lines.map((line) => line.text);
 

@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
-import { parseLyricsFile, PARSERS } from "@/utils/lyrics-parsers";
+import { PARSERS, parseLyricsFile } from "@/utils/lyrics-parsers";
 import type { LyricsFileType } from "@/utils/lyrics-parsers/detect";
+import { describe, expect, it } from "vitest";
 
 describe("parser registry", () => {
   it("has an entry for every concrete LyricsFileType", () => {

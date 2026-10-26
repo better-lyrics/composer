@@ -1,5 +1,5 @@
+import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { cleanSplitCharacters, getSplitCharacter } from "@/utils/split-character";
-import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
 
 // -- Plain Text Parser --------------------------------------------------------
 
