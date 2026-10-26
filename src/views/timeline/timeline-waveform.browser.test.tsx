@@ -506,6 +506,7 @@ describe("TimelineWaveform loading dots", () => {
       const audio = setupPlayableAudio(2);
       await render(<TimelineWaveform />);
       const stemUrl = bufferToBlobUrl(makeSineBuffer(2));
+      expect(requireDots().style.opacity).toBe("1");
       audio.src = stemUrl;
 
       await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
