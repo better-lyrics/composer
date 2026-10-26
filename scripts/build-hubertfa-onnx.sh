@@ -17,12 +17,18 @@
 set -euo pipefail
 
 OUT_DIR="${1:-./hubertfa-onnx-out}"
-WORK_DIR="${WORK_DIR:-/tmp/composer-hubertfa-build}"
+# In the user's own cache, not a shared /tmp path another account could plant a venv in.
+WORK_DIR="${WORK_DIR:-${XDG_CACHE_HOME:-${HOME}/.cache}/composer-hubertfa-build}"
 RELEASE_URL="https://github.com/wolfgitpr/HubertFA/releases/download/v0.0.7/1218_hfa_model_new_dict.zip"
 RELEASE_SHA256="48bd6dbcc293e47cc6cbcc556baf575e3d91d61d0ac88ddeccd6098f8f346fa2"
 LICENSE_URL="https://raw.githubusercontent.com/wolfgitpr/HubertFA/main/LICENSE"
 
 mkdir -p "${OUT_DIR}" "${WORK_DIR}"
+# The build runs the venv's python from here, so it must be this user's alone.
+if [[ ! -O "${WORK_DIR}" ]] || [[ -n "$(find "${WORK_DIR}" -maxdepth 0 -perm /022)" ]]; then
+  echo "ERROR: ${WORK_DIR} must be owned by you and not writable by others." >&2
+  exit 1
+fi
 
 if [[ ! -f "${WORK_DIR}/release.zip" ]]; then
   echo "==> downloading HubertFA v0.0.7"
