@@ -12,9 +12,17 @@ import { pinyin } from "pinyin-pro";
 import { beforeAll, describe, expect, it } from "vitest";
 
 const english = parseDictionary(
-  ["i\tay", "love\tl ah v", "you\ty uw", "dance\td ae n s", "ay\tay", "yeah\ty ae", "poser\tp ow z er", "mash\tm ae sh", "karat\tk eh r ax t"].join(
-    "\n",
-  ),
+  [
+    "i\tay",
+    "love\tl ah v",
+    "you\ty uw",
+    "dance\td ae n s",
+    "ay\tay",
+    "yeah\ty ae",
+    "poser\tp ow z er",
+    "mash\tm ae sh",
+    "karat\tk eh r ax t",
+  ].join("\n"),
 );
 const mandarin = parseDictionary(mandarinText);
 const japanese = parseDictionary(japaneseText);

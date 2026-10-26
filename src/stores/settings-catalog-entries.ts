@@ -114,7 +114,8 @@ const SETTINGS_CATALOG = {
   keepAlignmentModelLoaded: {
     section: "playback",
     label: "Keep alignment model loaded",
-    description: "Keeps the model in memory between runs, so aligning one line at a time starts at once. Uses about 400 MB.",
+    description:
+      "Keeps the model in memory between runs, so aligning one line at a time starts at once. Uses about 400 MB.",
     keywords: ["hubertfa", "auto-align", "memory", "gpu", "unload"],
     settingKey: "keepAlignmentModelLoaded",
   },

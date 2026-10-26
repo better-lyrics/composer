@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-// biome-ignore organizeImports: the webworker triple-slash reference must stay before imports.
+// biome-ignore assist/source/organizeImports: the webworker triple-slash reference must stay before imports.
 import { decodeAlignment } from "@/audio/alignment/hubertfa/decoder";
 import japaneseDictionaryText from "@/audio/alignment/hubertfa/dictionary-ja.txt?raw";
 import mandarinDictionaryText from "@/audio/alignment/hubertfa/dictionary-zh.txt?raw";

@@ -134,48 +134,48 @@ const Select: React.FC<SelectProps> = ({
       {(close, getItemProps) => (
         <>
           {header}
-        <Scroll className="max-h-80" onInitialized={focusTabStopOption}>
-          {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role -- styled single-select popover; datalist is input autocomplete, not a listbox, and would reintroduce native chrome */}
-          <div role="listbox" aria-label={ariaLabel} className="flex flex-col p-1.5 w-max min-w-50 max-w-80">
-            {options.map((option, index) => {
-              const isSelected = option.value === value;
-              return (
-                <button
-                  key={option.value}
-                  ref={(node) => {
-                    listRef.current[index] = node;
-                  }}
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  tabIndex={index === tabStopIndex ? 0 : -1}
-                  data-active={index === activeIndex || undefined}
-                  {...getItemProps({
-                    onClick: () => {
-                      onChange(option.value);
-                      close();
-                    },
-                  })}
-                  className={cn(
-                    "flex items-center gap-2 w-full px-2 rounded-lg text-[13px] text-left transition-colors data-active:bg-(--layer-1) data-active:text-composer-text",
-                    option.detail ? "min-h-8.5 py-1.5" : "h-8.5",
-                    isSelected
-                      ? "bg-(--layer-2) text-composer-text"
-                      : "cursor-pointer text-(--label) hover:bg-(--layer-1) hover:text-composer-text",
-                  )}
-                >
-                  <span className="flex flex-1 min-w-0">
-                    {renderOption ? renderOption(option) : <OptionLabel option={option} />}
-                  </span>
-                  <IconCheck
-                    aria-hidden={!isSelected}
-                    className={cn("size-[15px] text-composer-accent-text shrink-0", !isSelected && "invisible")}
-                  />
-                </button>
-              );
-            })}
-          </div>
-        </Scroll>
+          <Scroll className="max-h-80" onInitialized={focusTabStopOption}>
+            {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role -- styled single-select popover; datalist is input autocomplete, not a listbox, and would reintroduce native chrome */}
+            <div role="listbox" aria-label={ariaLabel} className="flex flex-col p-1.5 w-max min-w-50 max-w-80">
+              {options.map((option, index) => {
+                const isSelected = option.value === value;
+                return (
+                  <button
+                    key={option.value}
+                    ref={(node) => {
+                      listRef.current[index] = node;
+                    }}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    tabIndex={index === tabStopIndex ? 0 : -1}
+                    data-active={index === activeIndex || undefined}
+                    {...getItemProps({
+                      onClick: () => {
+                        onChange(option.value);
+                        close();
+                      },
+                    })}
+                    className={cn(
+                      "flex items-center gap-2 w-full px-2 rounded-lg text-[13px] text-left transition-colors data-active:bg-(--layer-1) data-active:text-composer-text",
+                      option.detail ? "min-h-8.5 py-1.5" : "h-8.5",
+                      isSelected
+                        ? "bg-(--layer-2) text-composer-text"
+                        : "cursor-pointer text-(--label) hover:bg-(--layer-1) hover:text-composer-text",
+                    )}
+                  >
+                    <span className="flex flex-1 min-w-0">
+                      {renderOption ? renderOption(option) : <OptionLabel option={option} />}
+                    </span>
+                    <IconCheck
+                      aria-hidden={!isSelected}
+                      className={cn("size-[15px] text-composer-accent-text shrink-0", !isSelected && "invisible")}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </Scroll>
         </>
       )}
     </Popover>

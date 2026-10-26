@@ -213,7 +213,10 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       }
       signal.throwIfAborted();
       const modelId = useSettingsStore.getState().alignmentModelId;
-      await aligner.prepare((loaded, total) => set({ progress: { done: loaded, total } }), signal, { japanese, modelId });
+      await aligner.prepare((loaded, total) => set({ progress: { done: loaded, total } }), signal, {
+        japanese,
+        modelId,
+      });
       set({ status: "running", modelCached: true, progress: { done: 0, total: planned.length } });
       const pcm = await loadVocalsPcm(vocalsUrl);
       const duration = pcm.samples.length / pcm.sampleRate;

@@ -148,7 +148,12 @@ function readingUnits(words: readonly string[][], context: G2pContext): ReadingU
       }
       i++;
       const kana = spanKana(text, part.start, end, kanjiGroups);
-      units.push({ parts: indices, language: "ja", text: partsText(indices), reading: kana ? kanaToMorae(kana) : null });
+      units.push({
+        parts: indices,
+        language: "ja",
+        text: partsText(indices),
+        reading: kana ? kanaToMorae(kana) : null,
+      });
       continue;
     }
     const kana = [...part.text].filter((c) => isKana(c)).join("");

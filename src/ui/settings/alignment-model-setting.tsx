@@ -85,7 +85,13 @@ const AlignmentModelSetting: React.FC = () => {
   const header = all.length > 2 && (
     <div className="flex flex-wrap items-center justify-between gap-2 px-2.5 pt-2.5 pb-1 border-b border-(--divider)">
       {tabs.length > 0 && (
-        <SegmentedControl size="sm" aria-label="Language" value={activeLanguage} options={tabs} onChange={setLanguage} />
+        <SegmentedControl
+          size="sm"
+          aria-label="Language"
+          value={activeLanguage}
+          options={tabs}
+          onChange={setLanguage}
+        />
       )}
       <SegmentedControl size="sm" aria-label="Order" value={order} options={ORDER_OPTIONS} onChange={setOrder} />
     </div>

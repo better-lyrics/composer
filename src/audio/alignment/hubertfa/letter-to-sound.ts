@@ -81,7 +81,9 @@ const LONG_VOWELS: Record<string, string[]> = {
 
 /** Every phone a guess can contain, so a test can hold them to the model's vocabulary. */
 const LETTER_PHONES = [
-  ...new Set([GROUPS, LETTERS, LONG_VOWELS, { s: ["s"], c: ["s"], y: ["iy", "ih"] }].flatMap((t) => Object.values(t).flat())),
+  ...new Set(
+    [GROUPS, LETTERS, LONG_VOWELS, { s: ["s"], c: ["s"], y: ["iy", "ih"] }].flatMap((t) => Object.values(t).flat()),
+  ),
 ];
 
 // -- Functions ----------------------------------------------------------------
