@@ -1,3 +1,5 @@
+import { isAutoAlignAvailable } from "@/stores/alignment";
+import { useAudioStore } from "@/stores/audio";
 import { Tooltip } from "@/ui/tooltip";
 import { ShortcutTip } from "@/ui/shortcut-tip";
 import { AutoAlignDropdown } from "@/views/sync/auto-align-dropdown";
@@ -13,12 +15,17 @@ const AUTO_ALIGN_EVENT = "timeline:auto-align";
 // rather than starting a run, so the download prompt and Re-align stay a choice.
 const TimelineAutoAlign: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const hasAudio = useAudioStore((s) => !!s.source);
+  const available = hasAudio && isAutoAlignAvailable();
 
   useEffect(() => {
+    if (!available) return;
     const toggle = () => setOpen((was) => !was);
     window.addEventListener(AUTO_ALIGN_EVENT, toggle);
     return () => window.removeEventListener(AUTO_ALIGN_EVENT, toggle);
-  }, []);
+  }, [available]);
+
+  if (!available) return null;
 
   return (
     <Tooltip
@@ -26,7 +33,7 @@ const TimelineAutoAlign: React.FC = () => {
       placement="bottom"
       disabled={open}
     >
-      <div className="tray empty:hidden">
+      <div className="tray">
         <AutoAlignDropdown open={open} onOpenChange={setOpen} size="sm" />
       </div>
     </Tooltip>

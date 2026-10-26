@@ -95,9 +95,10 @@ function magicEVowel(letters: string): number {
   return isVowel(letters[n - 4]) ? -1 : n - 3;
 }
 
-function letterPhones(letters: string, i: number, longVowel: number): string[] {
+// `spelled` still has the silent final e, which softens a c before it ("ice").
+function letterPhones(letters: string, spelled: string, i: number, longVowel: number): string[] {
   const letter = letters[i];
-  const next = letters[i + 1];
+  const next = spelled[i + 1];
   if (i === longVowel) return LONG_VOWELS[letter];
   if (letter === "c" && (next === "e" || next === "i" || next === "y")) return ["s"];
   // "h" is only heard before a vowel: "yuh", "ohh".
@@ -108,8 +109,9 @@ function letterPhones(letters: string, i: number, longVowel: number): string[] {
 
 /** Phones for a word read by its spelling, or null when it has no letters to read. */
 function guessPhones(word: string): string[] | null {
-  let letters = word.toLowerCase().replace(/[^a-z]/g, "");
-  const longVowel = magicEVowel(letters);
+  const spelled = word.toLowerCase().replace(/[^a-z]/g, "");
+  const longVowel = magicEVowel(spelled);
+  let letters = spelled;
   // A final e is silent when the word has another vowel ("pose", "the" aside).
   if (letters.length > 2 && letters.endsWith("e") && /[aeiouy]/.test(letters.slice(0, -1))) {
     letters = letters.slice(0, -1);
@@ -128,7 +130,7 @@ function guessPhones(word: string): string[] | null {
       i += length;
       continue;
     }
-    phones.push(...letterPhones(letters, i, longVowel));
+    phones.push(...letterPhones(letters, spelled, i, longVowel));
     i++;
   }
   return phones.length > 0 ? phones : null;
