@@ -123,12 +123,22 @@ async function handleInit(variant: VocalModelVariant, forceWasm?: boolean, profi
 
 const cancelHandlers = new Set<() => void>();
 
-async function recreateSessionOnWasm(gpuSession: OrtSession, runtime: Ort, gpuError: unknown): Promise<OrtSession> {
+// Resolves null when cancelled; each await is a point where a cancel can arrive.
+async function recreateSessionOnWasm(
+  gpuSession: OrtSession,
+  runtime: Ort,
+  gpuError: unknown,
+): Promise<OrtSession | null> {
   const modelBytes = loadedModel && (await readCachedModel(loadedModel));
   if (!modelBytes) throw gpuError;
   await gpuSession.release?.().catch((err: unknown) => log("releasing the WebGPU session failed:", err));
+  session = null;
+  if (cancelled) return null;
   activeBackend = "wasm";
-  return createSession(runtime, modelBytes, "wasm");
+  const wasmSession = await createSession(runtime, modelBytes, "wasm");
+  if (!cancelled) return wasmSession;
+  await wasmSession.release?.().catch((err: unknown) => log("releasing the WASM session failed:", err));
+  return null;
 }
 
 async function handleProcess(channels: Float32Array[], totalFrames: number) {
@@ -168,11 +178,15 @@ async function handleProcess(channels: Float32Array[], totalFrames: number) {
     try {
       result = await separate(session, ort);
     } catch (err) {
-      if (activeBackend === "wasm" || cancelled) throw err;
-      // A GPU without enough memory for the model fails inside run(), after the session was created.
-      log(`WebGPU inference failed (${describeError(err)}); retrying on WASM (CPU)`);
-      session = await recreateSessionOnWasm(session, ort, err);
-      result = cancelled ? { status: "cancelled" } : await separate(session, ort);
+      if (activeBackend === "wasm") throw err;
+      if (cancelled) {
+        result = { status: "cancelled" };
+      } else {
+        // A GPU without enough memory for the model fails inside run(), after the session was created.
+        log(`WebGPU inference failed (${describeError(err)}); retrying on WASM (CPU)`);
+        session = await recreateSessionOnWasm(session, ort, err);
+        result = session ? await separate(session, ort) : { status: "cancelled" };
+      }
     }
     if (result.status === "cancelled") {
       post({ type: "cancelled" });
@@ -180,6 +194,10 @@ async function handleProcess(channels: Float32Array[], totalFrames: number) {
     }
     vocalChunks = result.chunks;
   } catch (err) {
+    if (cancelled) {
+      post({ type: "cancelled" });
+      return;
+    }
     log("processing failed:", err);
     post({ type: "error", code: "ort-failed", message: describeError(err) });
     return;
@@ -192,7 +210,7 @@ async function handleProcess(channels: Float32Array[], totalFrames: number) {
   // releasing the session explicitly also covers the keep-worker-alive case
   // and helps WebGPU EP flush its buffer pool.
   try {
-    await session.release?.();
+    await session?.release?.();
   } catch {}
   session = null;
 
