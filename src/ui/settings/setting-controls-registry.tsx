@@ -84,6 +84,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
     ],
   },
   alignmentModelId: { kind: "custom", Component: AlignmentModelSetting },
+  keepAlignmentModelLoaded: TOGGLE,
   defaultZoom: {
     kind: "slider",
     min: 20,

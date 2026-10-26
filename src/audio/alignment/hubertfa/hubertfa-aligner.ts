@@ -7,6 +7,8 @@ import type { Aligner } from "@/audio/alignment/types";
 // -- State --------------------------------------------------------------------
 
 let worker: AlignmentWorker | null = null;
+// What the loaded worker was set up with, so a kept model is only reused when it fits the run.
+let loaded: { modelId: string; japanese: boolean } | null = null;
 
 // -- Aligner ------------------------------------------------------------------
 
@@ -18,7 +20,8 @@ const hubertfaAligner: Aligner = {
   listensToAudio: true,
 
   prepare: async (onProgress, signal, { japanese, modelId }) => {
-    if (worker) return;
+    if (worker && loaded?.modelId === modelId && (loaded.japanese || !japanese)) return;
+    hubertfaAligner.release();
     const assets = await resolveAlignmentAssets(modelId);
     if (!assets) throw new Error("Auto-align isn't available on this deployment.");
     const next = new AlignmentWorker();
@@ -27,6 +30,7 @@ const hubertfaAligner: Aligner = {
     try {
       await next.init(assets, onProgress, japanese);
       worker = next;
+      loaded = { modelId, japanese };
     } catch (err) {
       next.dispose();
       throw err;
@@ -73,6 +77,7 @@ const hubertfaAligner: Aligner = {
   release: () => {
     worker?.dispose();
     worker = null;
+    loaded = null;
   },
 };
 

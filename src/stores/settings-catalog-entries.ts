@@ -111,6 +111,13 @@ const SETTINGS_CATALOG = {
     keywords: ["hubertfa", "auto-align", "forced alignment", "checkpoint", "manifest"],
     settingKey: "alignmentModelId",
   },
+  keepAlignmentModelLoaded: {
+    section: "playback",
+    label: "Keep alignment model loaded",
+    description: "Keeps the model in memory between runs, so aligning one line at a time starts at once. Uses about 400 MB.",
+    keywords: ["hubertfa", "auto-align", "memory", "gpu", "unload"],
+    settingKey: "keepAlignmentModelLoaded",
+  },
   ...TIMELINE_CATALOG_ENTRIES,
   ...SPECTRUM_CATALOG_ENTRIES,
   splitCharacter: {

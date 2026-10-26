@@ -103,6 +103,7 @@ interface SettingsState extends SnapSettings, SpectrumSettings {
   autoSeparateOnImport: boolean;
   vocalModelVariant: VocalModelVariant;
   alignmentModelId: string;
+  keepAlignmentModelLoaded: boolean;
 
   cobaltInstances: CobaltInstance[];
   selectedCobaltInstanceId: string;
@@ -190,6 +191,7 @@ const DEFAULTS: SettingsState = {
   autoSeparateOnImport: false,
   vocalModelVariant: "fp32",
   alignmentModelId: BUILTIN_ALIGNMENT_MODEL.id,
+  keepAlignmentModelLoaded: false,
 
   cobaltInstances: [],
   selectedCobaltInstanceId: DEFAULT_COBALT_INSTANCE_ID,

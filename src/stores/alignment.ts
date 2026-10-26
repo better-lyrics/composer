@@ -277,14 +277,19 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       }
       return fail(set, "failed", (err as Error).message);
     } finally {
-      // Free the model (and its GPU memory) between runs; the download stays cached.
-      aligner.release();
+      // Free the model (and its GPU memory) between runs unless asked to keep it; the download stays cached.
+      if (get().status !== "idle" || !useSettingsStore.getState().keepAlignmentModelLoaded) aligner.release();
       if (controller?.signal === signal) controller = null;
     }
   },
 
   cancel: () => controller?.abort(),
 }));
+
+// A model kept loaded is freed once the setting is turned off, unless a run is using it.
+useSettingsStore.subscribe((s, prev) => {
+  if (prev.keepAlignmentModelLoaded && !s.keepAlignmentModelLoaded && !controller) hubertfaAligner.release();
+});
 
 // -- Exports ------------------------------------------------------------------
 
