@@ -9,6 +9,8 @@ interface AlignmentModel {
   modelUrl: string;
   dictionaryUrl: string;
   approxBytes: number;
+  /** Base language codes the checkpoint was trained for, such as "en". */
+  languages: string[];
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -23,6 +25,7 @@ const BUILTIN_ALIGNMENT_MODEL = {
   label: "HubertFA v0.0.7",
   filename: "hubertfa_v007_fp32_webgpu.onnx",
   approxBytes: 396 * MIB,
+  languages: ["en", "zh", "ja"],
 };
 const DICTIONARY_FILENAME = "hubertfa_v007_cmudict.txt";
 const DICTIONARY_APPROX_BYTES = 3.3 * MIB;
@@ -42,12 +45,21 @@ function builtinModel(baseUrl: string): AlignmentModel {
     modelUrl: `${baseUrl}/${BUILTIN_ALIGNMENT_MODEL.filename}`,
     dictionaryUrl: `${baseUrl}/${DICTIONARY_FILENAME}`,
     approxBytes: BUILTIN_ALIGNMENT_MODEL.approxBytes,
+    languages: BUILTIN_ALIGNMENT_MODEL.languages,
   };
+}
+
+// A checkpoint that doesn't list its languages keeps the base model's.
+function parseLanguages(raw: unknown, fallback: string[]): string[] {
+  if (!Array.isArray(raw)) return fallback;
+  const codes = raw.filter((code): code is string => typeof code === "string" && !!code.trim());
+  const languages = [...new Set(codes.map((code) => code.trim().toLowerCase().split("-")[0]))];
+  return languages.length > 0 ? languages : fallback;
 }
 
 function parseEntry(raw: unknown, manifestUrl: string, fallback: AlignmentModel): AlignmentModel | null {
   if (!raw || typeof raw !== "object") return null;
-  const { id, label, model, dictionary, sizeMb } = raw as Record<string, unknown>;
+  const { id, label, model, dictionary, sizeMb, languages } = raw as Record<string, unknown>;
   if (typeof id !== "string" || !id || typeof model !== "string" || !model) return null;
   try {
     return {
@@ -56,6 +68,7 @@ function parseEntry(raw: unknown, manifestUrl: string, fallback: AlignmentModel)
       modelUrl: new URL(model, manifestUrl).href,
       dictionaryUrl: typeof dictionary === "string" ? new URL(dictionary, manifestUrl).href : fallback.dictionaryUrl,
       approxBytes: typeof sizeMb === "number" && sizeMb > 0 ? sizeMb * MIB : fallback.approxBytes,
+      languages: parseLanguages(languages, fallback.languages),
     };
   } catch (err) {
     console.warn(`${LOG_PREFIX} skipping manifest entry ${id}: bad URL`, err);

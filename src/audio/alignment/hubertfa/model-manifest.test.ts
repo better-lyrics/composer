@@ -9,7 +9,7 @@ describe("parseAlignmentManifest", () => {
     const models = parseAlignmentManifest(
       {
         models: [
-          { id: "ft-1", label: "Posttrain 1", model: "ft1.onnx", sizeMb: 400 },
+          { id: "ft-1", label: "Posttrain 1", model: "ft1.onnx", sizeMb: 400, languages: ["EN-us", "en", 3] },
           { id: "ft-2", model: "https://cdn.example.com/ft2.onnx", dictionary: "../dict.txt" },
           { id: "broken", label: "No model file" },
           { id: BUILTIN_ALIGNMENT_MODEL.id, label: "Duplicate of the built-in", model: "dup.onnx" },
@@ -27,12 +27,14 @@ describe("parseAlignmentManifest", () => {
         modelUrl: "https://models.example.com/hubertfa/ft1.onnx",
         dictionaryUrl: `${BASE_URL}/hubertfa_v007_cmudict.txt`,
         approxBytes: 400 * 1024 * 1024,
+        languages: ["en"],
       },
       expect.objectContaining({
         id: "ft-2",
         label: "ft-2",
         modelUrl: "https://cdn.example.com/ft2.onnx",
         dictionaryUrl: "https://models.example.com/dict.txt",
+        languages: BUILTIN_ALIGNMENT_MODEL.languages,
       }),
     ]);
   });

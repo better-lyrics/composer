@@ -10,6 +10,8 @@ import { type ReactElement, type ReactNode, cloneElement, useRef, useState } fro
 interface SelectOption {
   value: string;
   label: string;
+  /** A second line under the label. Options with one wrap instead of truncating. */
+  detail?: string;
 }
 
 interface SelectProps {
@@ -25,6 +27,10 @@ interface SelectProps {
   trigger?: ReactElement<{ disabled?: boolean }>;
   appearance?: SelectAppearance;
   renderOption?: (option: SelectOption) => ReactNode;
+  /** Controls above the list, such as filter tabs. */
+  header?: ReactNode;
+  /** Names the value on the trigger when a filter has left it out of `options`. */
+  valueLabel?: string;
 }
 
 type SelectAppearance = "field" | "pick";
@@ -50,7 +56,17 @@ const focusTabStopOption = (viewport: HTMLDivElement) => {
   option?.focus();
 };
 
-// -- Component ----------------------------------------------------------------
+// -- Components ---------------------------------------------------------------
+
+const OptionLabel: React.FC<{ option: SelectOption }> = ({ option }) =>
+  option.detail ? (
+    <span className="flex flex-col gap-0.5 min-w-0">
+      <span className="text-pretty">{option.label}</span>
+      <span className="text-xs text-(--muted) tabular-nums">{option.detail}</span>
+    </span>
+  ) : (
+    <span className="truncate">{option.label}</span>
+  );
 
 const Select: React.FC<SelectProps> = ({
   value,
@@ -65,19 +81,22 @@ const Select: React.FC<SelectProps> = ({
   trigger,
   appearance = "field",
   renderOption,
+  header,
+  valueLabel,
 }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const listRef = useRef<Array<HTMLElement | null>>([]);
   const selectedIndex = options.findIndex((option) => option.value === value);
   const selected = options[selectedIndex];
   const tabStopIndex = activeIndex ?? (selected ? selectedIndex : 0);
-  const showPlaceholder = !selected && placeholder !== undefined;
-  const triggerLabel = selected?.label ?? placeholder ?? value;
+  const showPlaceholder = !selected && !valueLabel && placeholder !== undefined;
+  const triggerLabel = selected?.label ?? valueLabel ?? placeholder ?? value;
 
   const triggerElement = (disabled && trigger ? cloneElement(trigger, { disabled }) : trigger) ?? (
     <button
       type="button"
       aria-label={ariaLabel}
+      title={selected?.detail || valueLabel ? triggerLabel : undefined}
       disabled={disabled}
       className={cn(
         "inline-flex items-center justify-between gap-1.5 cursor-pointer transition-[color,background-color,border-color,box-shadow] disabled:cursor-not-allowed disabled:opacity-50",
@@ -113,6 +132,8 @@ const Select: React.FC<SelectProps> = ({
       }}
     >
       {(close, getItemProps) => (
+        <>
+          {header}
         <Scroll className="max-h-80" onInitialized={focusTabStopOption}>
           {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role -- styled single-select popover; datalist is input autocomplete, not a listbox, and would reintroduce native chrome */}
           <div role="listbox" aria-label={ariaLabel} className="flex flex-col p-1.5 w-max min-w-50 max-w-80">
@@ -136,14 +157,15 @@ const Select: React.FC<SelectProps> = ({
                     },
                   })}
                   className={cn(
-                    "flex items-center gap-2 w-full h-8.5 px-2 rounded-lg text-[13px] text-left transition-colors data-active:bg-(--layer-1) data-active:text-composer-text",
+                    "flex items-center gap-2 w-full px-2 rounded-lg text-[13px] text-left transition-colors data-active:bg-(--layer-1) data-active:text-composer-text",
+                    option.detail ? "min-h-8.5 py-1.5" : "h-8.5",
                     isSelected
                       ? "bg-(--layer-2) text-composer-text"
                       : "cursor-pointer text-(--label) hover:bg-(--layer-1) hover:text-composer-text",
                   )}
                 >
                   <span className="flex flex-1 min-w-0">
-                    {renderOption ? renderOption(option) : <span className="truncate">{option.label}</span>}
+                    {renderOption ? renderOption(option) : <OptionLabel option={option} />}
                   </span>
                   <IconCheck
                     aria-hidden={!isSelected}
@@ -154,6 +176,7 @@ const Select: React.FC<SelectProps> = ({
             })}
           </div>
         </Scroll>
+        </>
       )}
     </Popover>
   );
