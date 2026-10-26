@@ -56,6 +56,53 @@ const focusTabStopOption = (viewport: HTMLDivElement) => {
   option?.focus();
 };
 
+interface FieldTriggerOptions {
+  label: string;
+  /** Shown on hover when the label may be cut short. */
+  title?: string;
+  muted: boolean;
+  appearance: SelectAppearance;
+  ariaLabel?: string;
+  disabled: boolean;
+  leadingColor?: string;
+  className?: string;
+}
+
+// A plain element, not a component: the Popover clones its trigger to attach a ref and handlers.
+const fieldTrigger = ({
+  label,
+  title,
+  muted,
+  appearance,
+  ariaLabel,
+  disabled,
+  leadingColor,
+  className,
+}: FieldTriggerOptions) => (
+  <button
+    type="button"
+    aria-label={ariaLabel}
+    title={title}
+    disabled={disabled}
+    className={cn(
+      "inline-flex items-center justify-between gap-1.5 cursor-pointer transition-[color,background-color,border-color,box-shadow] disabled:cursor-not-allowed disabled:opacity-50",
+      TRIGGER_STYLES[appearance],
+      className,
+    )}
+  >
+    <span className="flex items-center gap-1.5 truncate">
+      {leadingColor && <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: leadingColor }} />}
+      <span className={cn("truncate", muted && appearance === "field" && "text-(--muted)")}>{label}</span>
+    </span>
+    <IconChevronDown
+      className={cn(
+        "shrink-0 opacity-50 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90",
+        CHEVRON_STYLES[appearance],
+      )}
+    />
+  </button>
+);
+
 // -- Components ---------------------------------------------------------------
 
 const OptionLabel: React.FC<{ option: SelectOption }> = ({ option }) =>
@@ -67,6 +114,49 @@ const OptionLabel: React.FC<{ option: SelectOption }> = ({ option }) =>
   ) : (
     <span className="truncate">{option.label}</span>
   );
+
+interface OptionRowProps {
+  option: SelectOption;
+  selected: boolean;
+  tabStop: boolean;
+  active: boolean;
+  itemRef: (node: HTMLButtonElement | null) => void;
+  itemProps: Record<string, unknown>;
+  renderOption?: (option: SelectOption) => ReactNode;
+}
+
+const OptionRow: React.FC<OptionRowProps> = ({
+  option,
+  selected,
+  tabStop,
+  active,
+  itemRef,
+  itemProps,
+  renderOption,
+}) => (
+  <button
+    ref={itemRef}
+    type="button"
+    role="option"
+    aria-selected={selected}
+    tabIndex={tabStop ? 0 : -1}
+    data-active={active || undefined}
+    {...itemProps}
+    className={cn(
+      "flex items-center gap-2 w-full px-2 rounded-lg text-[13px] text-left transition-colors data-active:bg-(--layer-1) data-active:text-composer-text",
+      option.detail ? "min-h-8.5 py-1.5" : "h-8.5",
+      selected
+        ? "bg-(--layer-2) text-composer-text"
+        : "cursor-pointer text-(--label) hover:bg-(--layer-1) hover:text-composer-text",
+    )}
+  >
+    <span className="flex flex-1 min-w-0">{renderOption ? renderOption(option) : <OptionLabel option={option} />}</span>
+    <IconCheck
+      aria-hidden={!selected}
+      className={cn("size-[15px] text-composer-accent-text shrink-0", !selected && "invisible")}
+    />
+  </button>
+);
 
 const Select: React.FC<SelectProps> = ({
   value,
@@ -92,32 +182,18 @@ const Select: React.FC<SelectProps> = ({
   const showPlaceholder = !selected && !valueLabel && placeholder !== undefined;
   const triggerLabel = selected?.label ?? valueLabel ?? placeholder ?? value;
 
-  const triggerElement = (disabled && trigger ? cloneElement(trigger, { disabled }) : trigger) ?? (
-    <button
-      type="button"
-      aria-label={ariaLabel}
-      title={selected?.detail || valueLabel ? triggerLabel : undefined}
-      disabled={disabled}
-      className={cn(
-        "inline-flex items-center justify-between gap-1.5 cursor-pointer transition-[color,background-color,border-color,box-shadow] disabled:cursor-not-allowed disabled:opacity-50",
-        TRIGGER_STYLES[appearance],
-        className,
-      )}
-    >
-      <span className="flex items-center gap-1.5 truncate">
-        {leadingColor && <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: leadingColor }} />}
-        <span className={cn("truncate", showPlaceholder && appearance === "field" && "text-(--muted)")}>
-          {triggerLabel}
-        </span>
-      </span>
-      <IconChevronDown
-        className={cn(
-          "shrink-0 opacity-50 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90",
-          CHEVRON_STYLES[appearance],
-        )}
-      />
-    </button>
-  );
+  const triggerElement =
+    (disabled && trigger ? cloneElement(trigger, { disabled }) : trigger) ??
+    fieldTrigger({
+      label: triggerLabel,
+      title: selected?.detail || valueLabel ? triggerLabel : undefined,
+      muted: showPlaceholder,
+      appearance,
+      ariaLabel,
+      disabled,
+      leadingColor,
+      className,
+    });
 
   return (
     <Popover
@@ -137,43 +213,25 @@ const Select: React.FC<SelectProps> = ({
           <Scroll className="max-h-80" onInitialized={focusTabStopOption}>
             {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role -- styled single-select popover; datalist is input autocomplete, not a listbox, and would reintroduce native chrome */}
             <div role="listbox" aria-label={ariaLabel} className="flex flex-col p-1.5 w-max min-w-50 max-w-80">
-              {options.map((option, index) => {
-                const isSelected = option.value === value;
-                return (
-                  <button
-                    key={option.value}
-                    ref={(node) => {
-                      listRef.current[index] = node;
-                    }}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    tabIndex={index === tabStopIndex ? 0 : -1}
-                    data-active={index === activeIndex || undefined}
-                    {...getItemProps({
-                      onClick: () => {
-                        onChange(option.value);
-                        close();
-                      },
-                    })}
-                    className={cn(
-                      "flex items-center gap-2 w-full px-2 rounded-lg text-[13px] text-left transition-colors data-active:bg-(--layer-1) data-active:text-composer-text",
-                      option.detail ? "min-h-8.5 py-1.5" : "h-8.5",
-                      isSelected
-                        ? "bg-(--layer-2) text-composer-text"
-                        : "cursor-pointer text-(--label) hover:bg-(--layer-1) hover:text-composer-text",
-                    )}
-                  >
-                    <span className="flex flex-1 min-w-0">
-                      {renderOption ? renderOption(option) : <OptionLabel option={option} />}
-                    </span>
-                    <IconCheck
-                      aria-hidden={!isSelected}
-                      className={cn("size-[15px] text-composer-accent-text shrink-0", !isSelected && "invisible")}
-                    />
-                  </button>
-                );
-              })}
+              {options.map((option, index) => (
+                <OptionRow
+                  key={option.value}
+                  option={option}
+                  selected={option.value === value}
+                  tabStop={index === tabStopIndex}
+                  active={index === activeIndex}
+                  itemRef={(node) => {
+                    listRef.current[index] = node;
+                  }}
+                  itemProps={getItemProps({
+                    onClick: () => {
+                      onChange(option.value);
+                      close();
+                    },
+                  })}
+                  renderOption={renderOption}
+                />
+              ))}
             </div>
           </Scroll>
         </>
