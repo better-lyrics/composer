@@ -35,10 +35,7 @@ function takePendingSave(): Promise<void> {
     setSavePending(false);
     return Promise.resolve();
   }
-  const written = trackSave(
-    "project",
-    saveProjectTo(pending.target, pending.input, openProjectView()),
-  );
+  const written = trackSave("project", saveProjectTo(pending.target, pending.input, openProjectView()));
   setSavePending(false);
   return written;
 }

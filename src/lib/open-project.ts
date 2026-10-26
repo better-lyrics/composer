@@ -199,8 +199,7 @@ async function forkOpenProject(): Promise<string> {
   const id = createProjectId();
   adoptOpenProjectId(id);
   const args = buildSaveInput();
-  if (args)
-    await trackSave("project", saveProjectRecord(id, buildSavedProject(args), openProjectView()));
+  if (args) await trackSave("project", saveProjectRecord(id, buildSavedProject(args), openProjectView()));
   const file = storedAudioFile(useAudioStore.getState().source);
   if (file) await trackSave("audio", saveProjectAudio(id, file));
   await trackSave("audio", saveOpenStemsTo(id));
