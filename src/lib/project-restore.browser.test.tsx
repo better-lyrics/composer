@@ -8,6 +8,7 @@ import {
   saveProjectRecord,
   setProjectLastTab,
   setProjectResumePosition,
+  setProjectTextVariant,
 } from "@/lib/project-repository";
 import {
   EMPTY_RESTORE,
@@ -63,6 +64,20 @@ describe("project-restore", () => {
     expect(useSettingsStore.getState().defaultZoom).toBe(defaultZoom);
   });
 
+  it("restores the project's Original or Transliteration choice", async () => {
+    await seedStoredProject("p1", { audio: createAudioFile("city.wav") });
+    await setProjectTextVariant("p1", "transliteration");
+    applyProjectToStores(await loadProjectForRestore("p1"));
+    expect(useTimelineStore.getState().textVariant).toBe("transliteration");
+  });
+
+  it("opens a project without a saved choice on Original", async () => {
+    useTimelineStore.setState({ textVariant: "transliteration" });
+    await seedStoredProject("p1", { audio: createAudioFile("city.wav") });
+    applyProjectToStores(await loadProjectForRestore("p1"));
+    expect(useTimelineStore.getState().textVariant).toBe("original");
+  });
+
   it("applyProjectToStores fills every store from the payload and leaves the project clean", async () => {
     await seedStoredProject("p1", {
       audio: createAudioFile("city.wav"),
@@ -114,6 +129,13 @@ describe("project-restore", () => {
       const entry = await loadProjectIndexEntry("p1");
       await setInStore(PROJECT_INDEX_STORE_NAME, "p1", { ...entry, lastTab: "library" });
       expect((await loadProjectForRestore("p1")).lastTab).toBeUndefined();
+    });
+
+    it("ignores a stored text variant that is not a variant", async () => {
+      await seedStoredProject("p1");
+      const entry = await loadProjectIndexEntry("p1");
+      await setInStore(PROJECT_INDEX_STORE_NAME, "p1", { ...entry, textVariant: "romaji" });
+      expect((await loadProjectForRestore("p1")).textVariant).toBeUndefined();
     });
 
     it("ignores a stored resume position that is malformed", async () => {
@@ -201,6 +223,15 @@ describe("project-restore", () => {
       useProjectStore.getState().setActiveTab("sync");
       await expect.poll(async () => (await loadProjectIndexEntry("p1"))?.lastTab).toBe("sync");
       expect((await loadProjectRecord("p1"))?.savedAt).toBe(222);
+    });
+
+    it("switching to Transliteration remembers it for the open project without saving the record", async () => {
+      await seedStoredProject("p1", { open: true, project: { savedAt: 333 } });
+      await render(<PersistenceHost />);
+      await getPersistenceSettled();
+      useTimelineStore.getState().toggleTextVariant();
+      await expect.poll(async () => (await loadProjectIndexEntry("p1"))?.textVariant).toBe("transliteration");
+      expect((await loadProjectRecord("p1"))?.savedAt).toBe(333);
     });
   });
 });

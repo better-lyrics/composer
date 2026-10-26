@@ -1,3 +1,4 @@
+import type { LanguageTextVariant } from "@/domain/language/display";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { LoopRegion } from "@/domain/selection/loop-region";
 import type { WordSelection } from "@/domain/selection/model";
@@ -44,7 +45,7 @@ interface LoopRegionDrag {
 
 interface TimelineState {
   zoom: number;
-  textVariant: "original" | "transliteration";
+  textVariant: LanguageTextVariant;
   selectedWords: WordSelection[];
   selectionPlayback: SelectionPlaybackMode | null;
   loopRegion: LoopRegion | null;
@@ -85,6 +86,7 @@ interface TimelineActions {
   zoomIn: () => void;
   zoomOut: () => void;
   toggleTextVariant: () => void;
+  setTextVariant: (textVariant: LanguageTextVariant) => void;
   setSelectedWords: (selections: WordSelection[]) => void;
   setSelectionPlayback: (mode: SelectionPlaybackMode | null) => void;
   setLoopRegion: (region: LoopRegion | null) => void;
@@ -180,6 +182,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     zoomOut: () => set((s) => ({ zoom: Math.max(MIN_ZOOM, s.zoom - ZOOM_STEP) })),
     toggleTextVariant: () =>
       set((s) => ({ textVariant: s.textVariant === "original" ? "transliteration" : "original" })),
+    setTextVariant: (textVariant) => set({ textVariant }),
     setSelectedWords: (selectedWords) =>
       set(selectedWords.length > 0 ? { selectedWords, loopRegion: null } : { selectedWords }),
     setSelectionPlayback: (selectionPlayback) => set({ selectionPlayback }),
@@ -221,6 +224,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
         scrollTop: null,
         pendingResumeView: null,
         focusedGroup: null,
+        textVariant: "original",
       }),
     toggleMarkerMode: () => set((s) => ({ markerMode: !s.markerMode })),
     setHoveredSnapPointId: (hoveredSnapPointId) => set({ hoveredSnapPointId }),

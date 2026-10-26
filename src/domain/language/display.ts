@@ -11,6 +11,10 @@ import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 
 type LanguageTextVariant = "original" | "transliteration";
 
+function isLanguageTextVariant(value: unknown): value is LanguageTextVariant {
+  return value === "original" || value === "transliteration";
+}
+
 interface LanguageDisplayLine {
   text: string;
   backgroundText?: string;
@@ -118,5 +122,5 @@ function getLanguageDisplayLine(line: LyricLine, variant: LanguageTextVariant): 
   };
 }
 
-export { getLanguageDisplayLine };
+export { getLanguageDisplayLine, isLanguageTextVariant };
 export type { LanguageDisplayLine, LanguageTextVariant };

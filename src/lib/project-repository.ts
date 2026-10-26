@@ -1,3 +1,4 @@
+import type { LanguageTextVariant } from "@/domain/language/display";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { ProjectTab } from "@/domain/project/tab";
@@ -183,6 +184,10 @@ function setProjectResumePosition(id: string, resumePosition: ResumePosition): P
   return patchProjectIndex(id, { resumePosition });
 }
 
+function setProjectTextVariant(id: string, textVariant: LanguageTextVariant): Promise<void> {
+  return patchProjectIndex(id, { textVariant });
+}
+
 // -- Removal ------------------------------------------------------------------
 
 function removeProjectData(id: string): Promise<void> {
@@ -216,5 +221,6 @@ export {
   markProjectOpened,
   setProjectLastTab,
   setProjectResumePosition,
+  setProjectTextVariant,
   removeProjectData,
 };

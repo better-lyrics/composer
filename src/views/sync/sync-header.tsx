@@ -1,3 +1,4 @@
+import type { LanguageTextVariant } from "@/domain/language/display";
 import { Button } from "@/ui/button";
 import { SegmentedControl } from "@/ui/segmented-control";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
@@ -7,7 +8,7 @@ import { IconLanguage, IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh
 
 interface SyncHeaderProps {
   progress: { done: number; total: number };
-  textVariant: "original" | "transliteration";
+  textVariant: LanguageTextVariant;
   hasTransliteration: boolean;
   toggleTextVariant: () => void;
   granularity: "line" | "word";

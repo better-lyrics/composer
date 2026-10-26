@@ -1,5 +1,6 @@
 import { type ProjectIndexEntry, buildIndexEntry } from "@/domain/project/index-entry";
 import { estimateRecordBytes } from "@/domain/project/record-bytes";
+import type { LanguageTextVariant } from "@/domain/language/display";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { ProjectTab } from "@/domain/project/tab";
 import { type SavedProjectStems, storedStemBytes } from "@/domain/stems/saved-stems";
@@ -14,6 +15,7 @@ interface IndexCarriedFields {
   openedAt?: number;
   lastTab?: ProjectTab;
   resumePosition?: ResumePosition;
+  textVariant?: LanguageTextVariant;
 }
 
 interface IndexEntryWrite {
@@ -45,6 +47,7 @@ function carriedIndexFields(entry: ProjectIndexEntry): IndexCarriedFields {
     openedAt: entry.openedAt,
     lastTab: entry.lastTab,
     resumePosition: entry.resumePosition,
+    textVariant: entry.textVariant,
   };
 }
 

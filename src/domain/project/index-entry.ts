@@ -1,3 +1,4 @@
+import type { LanguageTextVariant } from "@/domain/language/display";
 import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming, hasMainLyrics, isWordSynced } from "@/domain/line/predicates";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
@@ -28,6 +29,7 @@ interface ProjectIndexEntry {
   openedAt?: number;
   lastTab?: ProjectTab;
   resumePosition?: ResumePosition;
+  textVariant?: LanguageTextVariant;
 }
 
 interface IndexEntryInput {
@@ -42,6 +44,7 @@ interface IndexEntryInput {
   openedAt?: number;
   lastTab?: ProjectTab;
   resumePosition?: ResumePosition;
+  textVariant?: LanguageTextVariant;
 }
 
 // -- Derivation ---------------------------------------------------------------
@@ -81,6 +84,7 @@ function buildIndexEntry(input: IndexEntryInput): ProjectIndexEntry {
     ...(input.openedAt !== undefined ? { openedAt: input.openedAt } : {}),
     ...(input.lastTab ? { lastTab: input.lastTab } : {}),
     ...(input.resumePosition ? { resumePosition: input.resumePosition } : {}),
+    ...(input.textVariant ? { textVariant: input.textVariant } : {}),
   };
 }
 
