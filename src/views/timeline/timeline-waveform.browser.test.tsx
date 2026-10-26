@@ -479,6 +479,40 @@ describe("TimelineWaveform loading dots", () => {
       expect(requireDots().style.width).toBe("240px");
     });
 
+    it("regression: zooming after a stem switch redraws the waveform instead of rebuilding it", async () => {
+      const audio = setupPlayableAudio(2);
+      useTimelineStore.setState({ zoom: 50 });
+      await render(<TimelineWaveform />);
+      const layer = requireDots();
+      await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
+
+      audio.src = bufferToBlobUrl(makeSineBuffer(2));
+      await expect.poll(() => audio.readyState > 0 && sweepAnimationName() === "none", { timeout: 5000 }).toBe(true);
+
+      const shownOpacities: string[] = [];
+      const observer = new MutationObserver(() => shownOpacities.push(layer.style.opacity));
+      observer.observe(layer, { attributes: true, attributeFilter: ["style"] });
+      try {
+        useTimelineStore.setState({ zoom: 80 });
+        for (let frame = 0; frame < 10; frame++) await nextFrame();
+      } finally {
+        observer.disconnect();
+      }
+
+      expect(shownOpacities.filter((opacity) => opacity === "1")).toEqual([]);
+    });
+
+    it("regression: a stem chosen while the waveform is still loading stays on the audio element", async () => {
+      const audio = setupPlayableAudio(2);
+      await render(<TimelineWaveform />);
+      const stemUrl = bufferToBlobUrl(makeSineBuffer(2));
+      audio.src = stemUrl;
+
+      await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
+      for (let frame = 0; frame < 10; frame++) await nextFrame();
+      expect(audio.src).toBe(stemUrl);
+    });
+
     it("settle delay outlasts the fade-out transition it is paired with", async () => {
       setupWaveformAudio(30);
       await render(<TimelineWaveform />);

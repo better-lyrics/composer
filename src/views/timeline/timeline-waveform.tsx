@@ -1,6 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
 import { useThemeStore } from "@/stores/theme";
-import { isAbortError } from "@/utils/abort-error";
 import { cn } from "@/utils/cn";
 import { readToken } from "@/utils/theme/read-token";
 import { BeatGridCanvas } from "@/views/timeline/beat-grid/beat-grid-canvas";
@@ -14,7 +13,7 @@ import { clearLoopRegion } from "@/views/timeline/selection-playback";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import { WaveformFocusShade } from "@/views/timeline/waveform-focus-shade";
 import WavesurferPlayer from "@wavesurfer/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import type WaveSurfer from "wavesurfer.js";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -34,7 +33,6 @@ interface WaveformBarsProps {
 const FADE_SETTLE_MS = 260;
 // The bars sit in a 13px margin inside the 80px band.
 const WAVEFORM_BARS_HEIGHT = 54;
-const LOG_PREFIX = "[TimelineWaveform]";
 
 // -- Component -----------------------------------------------------------------
 
@@ -93,7 +91,16 @@ const TimelineWaveform: React.FC = () => {
   const sweeping = ws === null || settledFor !== ws;
 
   const totalWidth = duration > 0 ? duration * zoom : 0;
-  const waveformKey = audioElement?.src ?? "no-audio";
+  // Rebuild on loadstart, keyed on currentSrc: wavesurfer loads currentSrc, which lags src until then.
+  const subscribeToMediaSource = useCallback(
+    (onSourceChange: () => void) => {
+      audioElement?.addEventListener("loadstart", onSourceChange);
+      return () => audioElement?.removeEventListener("loadstart", onSourceChange);
+    },
+    [audioElement],
+  );
+  const readMediaSource = () => audioElement?.currentSrc || audioElement?.src || "no-audio";
+  const waveformKey = useSyncExternalStore(subscribeToMediaSource, readMediaSource, readMediaSource);
 
   const [initialColors] = useState(() => ({
     wave: readToken("wave"),
@@ -107,18 +114,6 @@ const TimelineWaveform: React.FC = () => {
     if (!ws) return;
     ws.setOptions({ waveColor: readToken("wave"), progressColor: readToken("wave-progress") });
   }, [ws, activeThemeId]);
-
-  useEffect(() => {
-    if (!ws || !audioElement) return;
-    const onLoadStart = () => {
-      if (!audioElement.src) return;
-      ws.load(audioElement.src).catch((error: unknown) => {
-        if (!isAbortError(error)) console.error(LOG_PREFIX, "waveform reload failed", error);
-      });
-    };
-    audioElement.addEventListener("loadstart", onLoadStart);
-    return () => audioElement.removeEventListener("loadstart", onLoadStart);
-  }, [ws, audioElement]);
 
   // Hidden under the spectrum the waveform keeps its old zoom; it catches up when it shows again.
   useEffect(() => {
