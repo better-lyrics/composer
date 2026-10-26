@@ -32,3 +32,6 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: vitest-browser-react
         update-types: ["version-update:semver-major"]
+      # wavesurfer.js 8 only fixes surfaces Composer does not use (WebAudio backend, plugins, regions).
+      - dependency-name: wavesurfer.js
+        versions: [">=8.0.0"]
