@@ -34,9 +34,9 @@ describe("parseTxt", () => {
   describe("Genius lyrics", () => {
     it("drops section tags and page junk and declares credited singers", () => {
       const result = parseTxt(GENIUS_PAGE_COPY);
-      expect(result.lines[0]).toMatchObject({ text: "Yeah, yeah", agentId: "v1" });
+      expect(result.lines[0]).toMatchObject({ text: "Yeah, yeah", agentId: "v2" });
       expect(result.lines.some((line) => line.text.startsWith("["))).toBe(false);
-      expect(result.agents?.map((agent) => agent.name)).toEqual(["Drake", "Drake, Rihanna", "Rihanna"]);
+      expect(result.agents?.map((agent) => agent.name)).toEqual(["Lead", "Drake", "Drake, Rihanna", "Rihanna"]);
     });
 
     it("regression: plain lyrics with one bracket line are unchanged", () => {

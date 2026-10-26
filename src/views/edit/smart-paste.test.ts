@@ -27,7 +27,7 @@ describe("classifyPastedText", () => {
   it("reads lyrics copied from Genius as a lyrics file", () => {
     const pasted = classifyPastedText(GENIUS_PAGE_COPY);
     expect(pasted.kind).toBe("lyrics-file");
-    if (pasted.kind === "lyrics-file") expect(pasted.parsed.agents?.[0]?.name).toBe("Drake");
+    if (pasted.kind === "lyrics-file") expect(pasted.parsed.agents?.map((agent) => agent.name)).toContain("Drake");
   });
 
   it("regression: tagged lyrics pasted into existing text stay typed text", () => {

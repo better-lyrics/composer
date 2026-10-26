@@ -21,10 +21,12 @@ const SECTION_TAG =
 const PAGE_HEADER = /^\d[\d,.]*K?\s+Contributors?$/i;
 const INLINE_PROMO = /^(?:You might also like|See .+ Live|Get tickets as low as \$\d+)$/i;
 const EMBED_COUNTER = /\d*Embed$/;
-const CREDIT_SEPARATOR = /\s+&\s+/;
+const ARTIST_LIST_JOINER = /\s+&\s+/;
+const ARTIST_LIST_SEPARATOR = /\s*,\s*|\s+&\s+/;
 const PAGE_TITLE = /\sLyrics$/;
 const EMPHASIS_MARKS = /^[*_()\s]+|[*_()\s]+$/g;
 const MIN_SECTION_TAGS = 2;
+const MAX_HEADER_ROWS = 30;
 const LEAD_AGENT_ID = "v1";
 const LEAD_NAME = DEFAULT_AGENTS[0].name ?? "Lead";
 
@@ -51,9 +53,9 @@ function readsAsGeniusLyrics(text: string): boolean {
   return hasPageHeader(rows) || rows.filter((row) => SECTION_TAG.test(row)).length >= MIN_SECTION_TAGS;
 }
 
+// A lone comma belongs to a name ("Tyler, The Creator"); with an ampersand it separates a list ("A, B & C").
 function creditedPerformers(credit: string): string[] {
-  const names = credit
-    .split(CREDIT_SEPARATOR)
+  const names = (ARTIST_LIST_JOINER.test(credit) ? credit.split(ARTIST_LIST_SEPARATOR) : [credit])
     .map((name) => name.replace(EMPHASIS_MARKS, ""))
     .filter((name) => name !== "");
   return dedupeIgnoringCase(names);
@@ -65,8 +67,28 @@ function lyricsStart(rows: readonly string[]): number {
   if (header === -1) return 0;
   const firstTag = rows.findIndex((row) => SECTION_TAG.test(row));
   if (firstTag > header) return firstTag;
-  const title = rows.findIndex((row, index) => index > header && PAGE_TITLE.test(row));
+  const title = rows.findIndex(
+    (row, index) => index > header && index <= header + MAX_HEADER_ROWS && PAGE_TITLE.test(row),
+  );
   return title === -1 ? header + 1 : title + 1;
+}
+
+// Genius leaves the credit off sections the primary artist sings without naming them, so a
+// placeholder lead takes those lines whenever other sections name their singers.
+function needsLead(body: readonly string[]): boolean {
+  let anyCredit = false;
+  let sectionCredited = false;
+  let uncreditedLyric = false;
+  for (const row of body) {
+    const tag = SECTION_TAG.exec(row);
+    if (tag) {
+      sectionCredited = creditedPerformers(tag[1] ?? "").length > 0;
+      anyCredit ||= sectionCredited;
+    } else if (row !== "" && !sectionCredited && !INLINE_PROMO.test(row)) {
+      uncreditedLyric = true;
+    }
+  }
+  return anyCredit && uncreditedLyric;
 }
 
 function withoutBlankEdges(lines: GeniusLine[]): GeniusLine[] {
@@ -83,16 +105,13 @@ function readGeniusLyrics(text: string): GeniusLyrics {
   const lastLyric = body.findLastIndex((row) => row !== "" && !SECTION_TAG.test(row));
   const lines: GeniusLine[] = [];
   const performers = createPerformerAgents();
+  if (needsLead(body)) performers.agentFor([LEAD_NAME]);
   let agentId = LEAD_AGENT_ID;
   body.forEach((row, index) => {
     const tag = SECTION_TAG.exec(row);
     if (tag) {
       const names = creditedPerformers(tag[1] ?? "");
-      // Genius leaves the credit off sections the primary artist sings, so uncredited lines are the lead's.
-      if (names.length > 0 && performers.agents.length === 0 && lines.some((line) => line.text !== "")) {
-        performers.agentFor([LEAD_NAME]);
-      }
-      agentId = names.length > 0 ? performers.agentFor(names).id : (performers.agents[0]?.id ?? LEAD_AGENT_ID);
+      agentId = names.length > 0 ? performers.agentFor(names).id : LEAD_AGENT_ID;
       return;
     }
     if (INLINE_PROMO.test(row)) return;

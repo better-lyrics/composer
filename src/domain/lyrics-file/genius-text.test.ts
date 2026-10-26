@@ -71,23 +71,31 @@ describe("readGeniusLyrics", () => {
 describe("credits", () => {
   const read = (content: string) => readGeniusLyrics(content);
 
-  it("makes one singer per credited performer or combination, in order of first credit", () => {
+  it("makes the lead first, then one singer per credited performer or combination", () => {
     expect(read(GENIUS_PAGE_COPY).agents).toEqual([
-      { id: "v1", type: "person", name: "Drake" },
-      { id: "v2", type: "group", name: "Drake, Rihanna" },
-      { id: "v3", type: "person", name: "Rihanna" },
+      { id: "v1", type: "person", name: "Lead" },
+      { id: "v2", type: "person", name: "Drake" },
+      { id: "v3", type: "group", name: "Drake, Rihanna" },
+      { id: "v4", type: "person", name: "Rihanna" },
     ]);
   });
 
-  it("assigns each line to its section's singer, uncredited sections to the first", () => {
+  it("assigns each line to its section's singer, uncredited sections to the lead", () => {
     const agentOf = (text: string) => read(GENIUS_PAGE_COPY).lines.find((line) => line.text === text)?.agentId;
-    expect(agentOf("Midnight rain on the window glass")).toBe("v1");
-    expect(agentOf("Hold on, we're almost home tonight")).toBe("v2");
-    expect(agentOf("Streetlights flicker in the morning haze")).toBe("v3");
+    expect(agentOf("Midnight rain on the window glass")).toBe("v2");
+    expect(agentOf("Hold on, we're almost home tonight")).toBe("v3");
+    expect(agentOf("Streetlights flicker in the morning haze")).toBe("v4");
     expect(agentOf("We'll remember these golden days")).toBe("v1");
   });
 
-  it("splits credits on the ampersand Genius puts between artists", () => {
+  it("makes no lead when every section is credited", () => {
+    expect(read("[Verse: Drake]\n1\n[Chorus: Drake & Rihanna]\n2").agents?.map((agent) => agent.name)).toEqual([
+      "Drake",
+      "Drake, Rihanna",
+    ]);
+  });
+
+  it("splits an artist list on commas and the final ampersand", () => {
     const names = read("[Verse: A, B & C]\n1\n[Chorus: D & E]\n2").agents?.map((agent) => agent.name);
     expect(names).toEqual(["A, B, C", "D, E"]);
   });
@@ -100,6 +108,17 @@ describe("credits", () => {
         { id: "v2", type: "person", name: "Rihanna" },
       ]);
       expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2", "v1"]);
+    });
+
+    it("regression: an uncredited section after a featured intro belongs to the lead", () => {
+      const result = read("[Intro: Rihanna]\nA\n[Verse 1]\nB");
+      expect(result.agents?.map((agent) => agent.name)).toEqual(["Lead", "Rihanna"]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v2", "v1"]);
+    });
+
+    it("regression: one artist list in any order is one singer", () => {
+      const result = read("[Chorus: Kanye West, Kid Cudi & Jay-Z]\n1\n[Outro: Kid Cudi, Kanye West & Jay-Z]\n2");
+      expect(result.agents).toHaveLength(1);
     });
 
     it("regression: an artist name with a comma or a joining word stays one singer", () => {
