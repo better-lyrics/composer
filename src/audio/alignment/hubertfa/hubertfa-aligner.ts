@@ -3,6 +3,7 @@ import { resolveAlignmentAssets } from "@/audio/alignment/hubertfa/model-registr
 import { AlignmentWorker } from "@/audio/alignment/hubertfa/worker-host";
 import { splitByCharacters } from "@/audio/alignment/split-by-characters";
 import type { Aligner } from "@/audio/alignment/types";
+import type { WordInterval } from "@/domain/alignment/words";
 
 // -- State --------------------------------------------------------------------
 
@@ -60,17 +61,20 @@ const hubertfaAligner: Aligner = {
       signal.removeEventListener("abort", onAbort);
     }
     if (outcome.kind === "aligned") {
-      const intervals = outcome.intervals.map((iv) => ({
+      const toSong = (iv: WordInterval) => ({
         begin: segment.windowBegin + iv.begin,
         end: segment.windowBegin + iv.end,
-      }));
-      return { intervals, fellBack: false, unknownWords: [], guessedWords: outcome.guessed };
+      });
+      const intervals = outcome.intervals.map(toSong);
+      const splits = outcome.splits.map((split) => ({ ...split, intervals: split.intervals.map(toSong) }));
+      return { intervals, fellBack: false, unknownWords: [], guessedWords: outcome.guessed, splits };
     }
     return {
       intervals: splitByCharacters(segment),
       fellBack: true,
       unknownWords: outcome.kind === "unknown" ? outcome.words : [],
       guessedWords: [],
+      splits: [],
     };
   },
 

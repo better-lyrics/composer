@@ -10,6 +10,7 @@ import type { AlignmentAssets } from "@/audio/alignment/hubertfa/model-registry"
 import {
   buildPhoneSequence,
   partIntervalsFromUnits,
+  phonesByUnit,
   unitIntervalsFromPhones,
 } from "@/audio/alignment/hubertfa/sequence";
 import { type Backend, type Ort, type OrtSession, createSession, loadOrt } from "@/audio/ort-runtime";
@@ -18,14 +19,14 @@ import { type CachedModel, fetchAndCacheModel, readCachedModel } from "@/audio/s
 import { describeError, log } from "@/audio/separation/worker-log";
 import { hasHan } from "@/domain/alignment/cjk";
 import type { HanReading } from "@/domain/alignment/language";
-import type { WordInterval } from "@/domain/alignment/words";
+import type { PartSplit, WordInterval } from "@/domain/alignment/words";
 
 declare const self: DedicatedWorkerGlobalScope;
 
 // -- Types --------------------------------------------------------------------
 
 type AlignOutcome =
-  | { kind: "aligned"; intervals: WordInterval[]; guessed: string[] }
+  | { kind: "aligned"; intervals: WordInterval[]; guessed: string[]; splits: PartSplit[] }
   | { kind: "unknown"; words: string[] }
   | { kind: "no-path" };
 
@@ -259,8 +260,9 @@ async function handleAlign(
       return;
     }
     const unitIntervals = unitIntervalsFromPhones(phones, built.sequence, g2p.units.length);
-    const intervals = partIntervalsFromUnits(g2p.units, unitIntervals, words.flat());
-    post({ type: "align-done", outcome: { kind: "aligned", intervals, guessed: g2p.guessed } });
+    const unitPhones = phonesByUnit(phones, built.sequence, g2p.units);
+    const { intervals, splits } = partIntervalsFromUnits(g2p.units, unitIntervals, words.flat(), unitPhones);
+    post({ type: "align-done", outcome: { kind: "aligned", intervals, guessed: g2p.guessed, splits } });
   } catch (err) {
     post({ type: "error", code: "ort-failed", message: describeError(err) });
   }

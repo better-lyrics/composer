@@ -14,6 +14,8 @@ interface PhoneUnit {
   parts: number[];
   /** Phones as dictionary entries, each tagged with its language. */
   phones: { language: Language; phone: string }[];
+  /** True when the pronunciation was guessed from spelling. */
+  guessed?: boolean;
 }
 
 interface G2pContext {
@@ -279,7 +281,9 @@ function lineToPhoneUnits(words: readonly string[][], context: G2pContext): G2pR
       );
       continue;
     }
-    phoneUnits.push({ parts: unit.parts, phones: phones.map((phone) => ({ language: unit.language, phone })) });
+    const timed = phones.map((phone) => ({ language: unit.language, phone }));
+    const wasGuessed = unit.language === "en" && lookupWord(unit.text, context.dictionaries.en).kind === "guessed";
+    phoneUnits.push({ parts: unit.parts, phones: timed, guessed: wasGuessed });
   }
   if (unknown.size > 0) return { kind: "unknown", words: [...unknown] };
   return { kind: "units", units: phoneUnits, guessed: [...guessed] };

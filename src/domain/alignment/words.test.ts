@@ -69,16 +69,18 @@ describe("sanitizeIntervals", () => {
 // -- timingsFromParts / retimeWords --------------------------------------------
 
 describe("timingsFromParts", () => {
-  it("gives each part its own interval and keeps the space after each word", () => {
+  it("gives each part its own interval, keeps the space after each word, and groups a word's syllables", () => {
     const words = groupAlignmentWords(["hel", "lo", "you"], [false, true, false]);
     const timings = timingsFromParts(words, [
       { begin: 1, end: 1.3 },
       { begin: 1.3, end: 1.5 },
       { begin: 2, end: 2.4 },
     ]);
+    const group = timings[0].syllableGroupId;
+    expect(group).toBeDefined();
     expect(timings).toEqual([
-      { text: "hel", begin: 1, end: 1.3 },
-      { text: "lo ", begin: 1.3, end: 1.5 },
+      { text: "hel", begin: 1, end: 1.3, syllableGroupId: group },
+      { text: "lo ", begin: 1.3, end: 1.5, syllableGroupId: group },
       { text: "you", begin: 2, end: 2.4 },
     ]);
   });

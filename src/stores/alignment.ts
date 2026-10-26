@@ -174,7 +174,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         for (const word of result.unknownWords) unknownWords.add(word);
         for (const word of result.guessedWords) guessedWords.add(word);
         const safe = sanitizeIntervals(result.intervals, window);
-        const timings = existing ? retimeWords(existing, safe) : timingsFromParts(words, safe);
+        const timings = existing ? retimeWords(existing, safe) : timingsFromParts(words, safe, result.splits);
         updates.push({ id: line.id, updates: { words: timings } });
         plannedById.set(line.id, plan);
         set({ progress: { done: updates.length, total: planned.length } });

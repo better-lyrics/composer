@@ -43,12 +43,13 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
       align: async (segment: Segment) => {
         seen.segments.push({ hanReading: segment.hanReading, parts: segment.words.map((w) => w.parts) });
         const unknown = segment.words.some((w) => w.text === "zzz");
-        return {
-          intervals: splitByCharacters(segment),
-          fellBack: unknown,
-          unknownWords: unknown ? ["zzz"] : [],
-          guessedWords: [],
-        };
+        const intervals = splitByCharacters(segment);
+        // The audio calls for splitting an unsplit "yellow" into "yel|low".
+        const parts = segment.words.flatMap((w) => w.parts);
+        const splits = parts.flatMap((part, i) =>
+          part === "yellow" ? [{ part: i, at: [3], intervals: [intervals[i], intervals[i]] }] : [],
+        );
+        return { intervals, fellBack: unknown, unknownWords: unknown ? ["zzz"] : [], guessedWords: [], splits };
       },
     },
   };
@@ -84,6 +85,18 @@ describe("alignment store", () => {
     useProjectStore.getState().setLines([{ id: "L1", text: "hel|lo you", agentId: "v1", begin: 1, end: 2 }]);
     await useAlignmentStore.getState().alignLines();
     expect(useProjectStore.getState().lines[0].words?.map((w) => w.text)).toEqual(["hel", "lo ", "you"]);
+  });
+
+  it("regression: groups every split word it writes, from the lyrics or from the audio, separately", async () => {
+    useProjectStore.getState().setLines([{ id: "L1", text: "hel|lo yellow there", agentId: "v1", begin: 1, end: 4 }]);
+    await useAlignmentStore.getState().alignLines();
+
+    const words = useProjectStore.getState().lines[0].words!;
+    expect(words.map((w) => w.text)).toEqual(["hel", "lo ", "yel", "low ", "there"]);
+    const [a, b, c, d, e] = words.map((w) => w.syllableGroupId);
+    expect(a).toBeDefined();
+    expect(c).toBeDefined();
+    expect([a === b, c === d, a === c, e]).toEqual([true, true, false, undefined]);
   });
 
   it("leaves word-synced and unselected lines alone", async () => {

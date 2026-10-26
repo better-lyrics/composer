@@ -1,5 +1,5 @@
 import type { HanReading } from "@/domain/alignment/language";
-import type { AlignmentWord, WordInterval } from "@/domain/alignment/words";
+import type { AlignmentWord, PartSplit, WordInterval } from "@/domain/alignment/words";
 
 // -- Types --------------------------------------------------------------------
 
@@ -29,6 +29,8 @@ interface SegmentAlignment {
   unknownWords: string[];
   /** Words aligned on a pronunciation guessed from their spelling. */
   guessedWords: string[];
+  /** Unsplit parts worth splitting into syllables, in song time. Only applied to new word timing. */
+  splits: PartSplit[];
 }
 
 /**

@@ -1,7 +1,8 @@
 import type { PhoneInterval } from "@/audio/alignment/hubertfa/decoder";
 import type { PhoneUnit } from "@/audio/alignment/hubertfa/g2p";
+import { type TimedPhone, noticeableSplit, syllableIntervals } from "@/audio/alignment/hubertfa/syllables";
 import vocab from "@/audio/alignment/hubertfa/vocab.json";
-import type { WordInterval } from "@/domain/alignment/words";
+import type { PartSplit, WordInterval } from "@/domain/alignment/words";
 
 // -- Types --------------------------------------------------------------------
 
@@ -84,15 +85,56 @@ function unitIntervalsFromPhones(
   });
 }
 
-// Spreads each unit's interval over the parts it covers by character count:
-// syllables of an English word, or the characters of a kanji word.
+// Each unit's decoded phones by name, or none when they don't pair up one to one.
+function phonesByUnit(
+  phones: readonly PhoneInterval[],
+  sequence: PhoneSequence,
+  units: readonly PhoneUnit[],
+): TimedPhone[][] {
+  const decoded: PhoneInterval[][] = units.map(() => []);
+  for (const phone of phones) {
+    const u = sequence.unitOf[phone.index];
+    if (u >= 0) decoded[u].push(phone);
+  }
+  return units.map((unit, u) =>
+    decoded[u].length === unit.phones.length
+      ? decoded[u].map((p, k) => ({ phone: unit.phones[k].phone, begin: p.begin, end: p.end }))
+      : [],
+  );
+}
+
+// Times the parts of each unit. An English word's syllables follow its phones
+// when they match its spelling, and an unsplit English word is split where
+// that's noticeable (not for guessed pronunciations, whose vowels are a guess
+// too). Otherwise the unit's interval is spread over its parts by character
+// count: the characters of a kanji word, say.
 function partIntervalsFromUnits(
   units: readonly PhoneUnit[],
   unitIntervals: readonly WordInterval[],
   parts: readonly string[],
-): WordInterval[] {
+  unitPhones: readonly TimedPhone[][],
+): { intervals: WordInterval[]; splits: PartSplit[] } {
   const out: WordInterval[] = new Array(parts.length);
+  const splits: PartSplit[] = [];
   units.forEach((unit, u) => {
+    const english = unit.phones[0]?.language === "en" && unitPhones[u].length > 0;
+    const syllables =
+      english && unit.parts.length > 1
+        ? syllableIntervals(
+            unit.parts.map((p) => parts[p]),
+            unitPhones[u],
+          )
+        : null;
+    if (syllables) {
+      unit.parts.forEach((p, k) => {
+        out[p] = syllables[k];
+      });
+      return;
+    }
+    if (english && unit.parts.length === 1 && !unit.guessed) {
+      const split = noticeableSplit(parts[unit.parts[0]], unitPhones[u]);
+      if (split) splits.push({ part: unit.parts[0], ...split });
+    }
     const { begin, end } = unitIntervals[u];
     const total = unit.parts.reduce((sum, p) => sum + parts[p].length, 0) || 1;
     let at = begin;
@@ -102,9 +144,9 @@ function partIntervalsFromUnits(
       at = next;
     });
   });
-  return out;
+  return { intervals: out, splits };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { buildPhoneSequence, partIntervalsFromUnits, unitIntervalsFromPhones };
+export { buildPhoneSequence, partIntervalsFromUnits, phonesByUnit, unitIntervalsFromPhones };

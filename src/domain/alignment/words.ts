@@ -1,5 +1,6 @@
 import { splitCjkPart } from "@/domain/alignment/cjk";
 import type { WordTiming } from "@/domain/word/timing";
+import { nanoid } from "nanoid";
 
 // -- Types --------------------------------------------------------------------
 
@@ -13,6 +14,16 @@ interface AlignmentWord {
 interface WordInterval {
   begin: number;
   end: number;
+}
+
+/** An unsplit part the audio shows is worth splitting into syllables. */
+interface PartSplit {
+  /** Index into the line's flattened parts. */
+  part: number;
+  /** Character offsets in the part where each later syllable starts. */
+  at: number[];
+  /** One interval per syllable. */
+  intervals: WordInterval[];
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -73,14 +84,31 @@ function sanitizeIntervals(intervals: WordInterval[], bounds: WordInterval): Wor
   return out;
 }
 
-// Word timings for a line-timed line, one per part, with the space after each
-// word kept on its last part.
-function timingsFromParts(words: AlignmentWord[], partIntervals: WordInterval[]): WordTiming[] {
+// One part's timed pieces: itself, or its syllables when the audio split it.
+function partPieces(part: string, interval: WordInterval, split: PartSplit | undefined) {
+  if (!split) return [{ text: part, ...interval }];
+  const intervals = sanitizeIntervals(split.intervals, interval);
+  return [0, ...split.at].map((start, k) => ({ text: part.slice(start, split.at[k] ?? part.length), ...intervals[k] }));
+}
+
+// Word timings for a line-timed line, one per part (or per syllable of a part
+// the audio split), with the space after each word kept on its last piece.
+// Every split word gets its own syllable group: a line groups syllables by id
+// as soon as any word has one, so a word without one would come apart.
+function timingsFromParts(
+  words: AlignmentWord[],
+  partIntervals: WordInterval[],
+  splits: PartSplit[] = [],
+): WordTiming[] {
+  const splitOf = new Map(splits.map((split) => [split.part, split]));
   const timings: WordTiming[] = [];
+  let index = 0;
   for (const { parts, trailingSpace } of words) {
-    parts.forEach((part, p) => {
-      const { begin, end } = partIntervals[timings.length];
-      timings.push({ text: p === parts.length - 1 && trailingSpace ? `${part} ` : part, begin, end });
+    const pieces = parts.flatMap((part) => partPieces(part, partIntervals[index], splitOf.get(index++)));
+    const groupId = pieces.length > 1 ? nanoid(8) : undefined;
+    pieces.forEach((piece, k) => {
+      const text = k === pieces.length - 1 && trailingSpace ? `${piece.text} ` : piece.text;
+      timings.push({ text, begin: piece.begin, end: piece.end, ...(groupId ? { syllableGroupId: groupId } : {}) });
     });
   }
   return timings;
@@ -95,4 +123,4 @@ function retimeWords(existing: readonly WordTiming[], partIntervals: WordInterva
 // -- Exports ------------------------------------------------------------------
 
 export { groupAlignmentWords, groupTimedWords, retimeWords, sanitizeIntervals, timingsFromParts };
-export type { AlignmentWord, WordInterval };
+export type { AlignmentWord, PartSplit, WordInterval };
