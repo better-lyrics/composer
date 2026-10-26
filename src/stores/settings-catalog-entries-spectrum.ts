@@ -13,7 +13,7 @@ const SPECTRUM_CATALOG_ENTRIES = {
   showSpectrum: {
     section: "timeline",
     label: "Show spectrum",
-    description: "Open projects with the spectrum in place of the waveform.",
+    description: "Show the spectrum in place of the waveform.",
     keywords: ["spectrogram", "frequency", "waveform"],
     settingKey: "showSpectrum",
   },

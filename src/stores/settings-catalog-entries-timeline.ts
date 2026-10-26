@@ -106,8 +106,8 @@ const TIMELINE_CATALOG_ENTRIES = {
   },
   rollingEdit: {
     section: "timeline",
-    label: "Default rolling edit mode",
-    description: "Start in rolling edit mode when opening a project.",
+    label: "Rolling edit",
+    description: "Dragging a shared word boundary moves both words together.",
     settingKey: "rollingEdit",
   },
   syllablesFollowRolling: {
@@ -119,8 +119,8 @@ const TIMELINE_CATALOG_ENTRIES = {
   },
   previewSidebar: {
     section: "timeline",
-    label: "Default preview sidebar",
-    description: "Open the preview sidebar by default.",
+    label: "Preview sidebar",
+    description: "Show the lyrics preview beside the timeline.",
     settingKey: "previewSidebar",
   },
   timelineHorizontalScroll: {
