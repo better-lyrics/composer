@@ -11,23 +11,12 @@ import { DEFAULT_WINDOW_OPTIONS, alignmentWindow, sliceWindow } from "@/domain/a
 import { hasCjk } from "@/domain/alignment/cjk";
 import { hanReadingFor, isSupportedLanguage } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
-import {
-  type AlignmentWord,
-  type WordInterval,
-  groupAlignmentWords,
-  groupTimedWords,
-  retimeWords,
-  sanitizeIntervals,
-  timingsFromParts,
-} from "@/domain/alignment/words";
-import { mainBounds } from "@/domain/line/bounds";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import type { WordTiming } from "@/domain/word/timing";
+import { retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
+import type { LineUpdate } from "@/domain/line/model";
+import { type PlannedLine, isUnchanged, planLines } from "@/stores/alignment-plan";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------
@@ -60,13 +49,6 @@ interface AlignOptions {
   realign?: boolean;
 }
 
-interface AlignableCounts {
-  /** Lines with only line timing: what a first run aligns. */
-  lineTimed: number;
-  /** Lines that already have word timing: only aligned when re-aligning. */
-  wordTimed: number;
-}
-
 interface AlignmentState {
   status: AlignmentStatus;
   progress: { done: number; total: number };
@@ -82,15 +64,6 @@ interface AlignmentActions {
   cancel: () => void;
   dismissError: () => void;
   refreshModelCached: (modelId?: string) => Promise<void>;
-}
-
-interface PlannedLine {
-  line: LyricLine;
-  taps: WordInterval;
-  words: AlignmentWord[];
-  /** The line's current word timing when re-aligning; its parts are kept and retimed. */
-  existing: WordTiming[] | null;
-  previous: WordInterval | null;
 }
 
 // -- State --------------------------------------------------------------------
@@ -111,52 +84,6 @@ function isAutoAlignAvailable(): boolean {
 function fail(set: (partial: Partial<AlignmentState>) => void, code: AlignmentErrorCode, message: string): null {
   set({ status: "error", error: { code, message }, progress: { done: 0, total: 0 } });
   return null;
-}
-
-function planLine(line: LyricLine, realign: boolean): Pick<PlannedLine, "taps" | "words" | "existing"> | null {
-  if (isLineSynced(line)) {
-    if (line.end <= line.begin) return null;
-    const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
-    if (parts.length === 0) return null;
-    return {
-      taps: { begin: line.begin, end: line.end },
-      words: groupAlignmentWords(parts, trailingSpace),
-      existing: null,
-    };
-  }
-  if (realign && isWordSynced(line)) {
-    const taps = mainBounds(line);
-    if (!taps || taps.end <= taps.begin) return null;
-    return { taps, words: groupTimedWords(line.words!), existing: line.words! };
-  }
-  return null;
-}
-
-function planLines(lines: readonly LyricLine[], lineIds: readonly string[] | undefined, realign: boolean) {
-  const wanted = lineIds ? new Set(lineIds) : null;
-  const planned: PlannedLine[] = [];
-  let previous: WordInterval | null = null;
-  for (const line of lines) {
-    const bounds = mainBounds(line);
-    const plan = !wanted || wanted.has(line.id) ? planLine(line, realign) : null;
-    if (plan) planned.push({ line, ...plan, previous });
-    if (bounds) previous = bounds;
-  }
-  return planned;
-}
-
-function countAlignableLines(lines: readonly LyricLine[], lineIds?: readonly string[]): AlignableCounts {
-  const all = planLines(lines, lineIds, true);
-  const lineTimed = all.filter((p) => p.existing === null).length;
-  return { lineTimed, wordTimed: all.length - lineTimed };
-}
-
-// A line the user retimed or retyped mid-run keeps their edit. The store
-// replaces a line's object (and its words array) on every change.
-function isUnchanged(current: LyricLine | undefined, planned: PlannedLine): boolean {
-  if (!current || current.text !== planned.line.text) return false;
-  if (planned.existing) return current.words === planned.existing;
-  return isLineSynced(current) && current.begin === planned.taps.begin && current.end === planned.taps.end;
 }
 
 function isAbortError(err: unknown): boolean {
@@ -296,4 +223,4 @@ useSettingsStore.subscribe((s, prev) => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { countAlignableLines, isAutoAlignAvailable, useAlignmentStore };
+export { isAutoAlignAvailable, useAlignmentStore };

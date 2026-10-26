@@ -1,7 +1,8 @@
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { useAutoAlign } from "@/hooks/use-auto-align";
-import { countAlignableLines, isAutoAlignAvailable, useAlignmentStore } from "@/stores/alignment";
+import { isAutoAlignAvailable, useAlignmentStore } from "@/stores/alignment";
+import { countAlignableLines } from "@/stores/alignment-plan";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";

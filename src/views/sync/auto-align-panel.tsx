@@ -1,6 +1,7 @@
 import { hasMainLyrics, isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { useAutoAlign } from "@/hooks/use-auto-align";
-import { countAlignableLines, useAlignmentStore } from "@/stores/alignment";
+import { useAlignmentStore } from "@/stores/alignment";
+import { countAlignableLines } from "@/stores/alignment-plan";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
