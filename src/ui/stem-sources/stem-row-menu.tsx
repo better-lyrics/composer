@@ -34,6 +34,7 @@ const MenuHeader: React.FC<{ title: string; detail: string }> = ({ title, detail
 const StemRowMenu: React.FC<StemRowMenuProps> = ({ slot, origin, onImportFile }) => {
   const [anchor, setAnchor] = useState<MenuAnchor | null>(null);
   const details = useSeparationStore((s) => s.stemDetails[slot]);
+  const confirm = useConfirm();
   const label = STEM_LABELS[slot];
   const lowerLabel = label.toLowerCase();
 
@@ -46,7 +47,7 @@ const StemRowMenu: React.FC<StemRowMenuProps> = ({ slot, origin, onImportFile })
   };
 
   const confirmRemove = async () => {
-    const confirmed = await useConfirm()({
+    const confirmed = await confirm({
       title: `Remove imported ${lowerLabel}?`,
       description: details ? (
         <>This deletes “{details.name}” from the project. To use it again, import the file again.</>

@@ -15,20 +15,23 @@ async function saveOpenStemsTo(projectId: string): Promise<void> {
   const song = playableFile(source);
   if (!song || !isProjectStemJobKey(jobKey)) return;
   const songKey = songKeyFor(source, await hashFile(song));
-  for (const slot of STEM_SLOTS) {
-    const url = stemUrls[slot];
-    const origin = stemOrigins[slot];
-    if (!url || !origin) continue;
-    const blob = await (await fetch(url)).blob();
-    const details = stemDetails[slot];
-    const file = new File([blob], details?.name ?? `${slot}.wav`, { type: blob.type });
-    await saveProjectStem(projectId, songKey, {
-      slot,
-      file,
-      origin,
-      durationSeconds: details?.durationSeconds ?? 0,
-    });
-  }
+  await Promise.all(
+    STEM_SLOTS.map(async (slot) => {
+      const url = stemUrls[slot];
+      const origin = stemOrigins[slot];
+      if (!url || !origin) return;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Could not read the ${slot} stem (${response.status})`);
+      const blob = await response.blob();
+      const details = stemDetails[slot];
+      await saveProjectStem(projectId, songKey, {
+        slot,
+        file: new File([blob], details?.name ?? `${slot}.wav`, { type: blob.type }),
+        origin,
+        durationSeconds: details?.durationSeconds ?? 0,
+      });
+    }),
+  );
 }
 
 // -- Exports ------------------------------------------------------------------

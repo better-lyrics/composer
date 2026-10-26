@@ -38,10 +38,11 @@ async function cachedStems(audioHash: string, variant: VocalModelVariant): Promi
   const jobKey = stemJobKey(audioHash, variant);
   const slots: ResolvedStems["slots"] = {};
   if (!(await hasStems(audioHash, variant))) return { jobKey, slots };
-  for (const slot of STEM_SLOTS) {
-    const blob = await getStem(audioHash, slot, variant);
+  const blobs = await Promise.all(STEM_SLOTS.map((slot) => getStem(audioHash, slot, variant)));
+  STEM_SLOTS.forEach((slot, index) => {
+    const blob = blobs[index];
     if (blob) slots[slot] = { file: blob, origin: "separated", key: `${jobKey}|${slot}` };
-  }
+  });
   return { jobKey, slots };
 }
 
