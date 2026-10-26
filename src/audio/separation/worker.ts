@@ -172,7 +172,7 @@ async function handleProcess(channels: Float32Array[], totalFrames: number) {
       // A GPU without enough memory for the model fails inside run(), after the session was created.
       log(`WebGPU inference failed (${describeError(err)}); retrying on WASM (CPU)`);
       session = await recreateSessionOnWasm(session, ort, err);
-      result = await separate(session, ort);
+      result = cancelled ? { status: "cancelled" } : await separate(session, ort);
     }
     if (result.status === "cancelled") {
       post({ type: "cancelled" });
