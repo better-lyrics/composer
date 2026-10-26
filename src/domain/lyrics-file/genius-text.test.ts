@@ -175,6 +175,12 @@ describe("credits", () => {
       expect(names).toEqual(["Jay-Z (feat. Kanye)", "*NSYNC"]);
     });
 
+    it("regression: unwraps each emphasised name in a credit list", () => {
+      expect(read("[Verse: *Drake* & *Future*]\n1\n[Chorus: _Future_ & _Drake_]\n2").agents).toEqual([
+        { id: "v1000", type: "group", name: "Drake, Future" },
+      ]);
+    });
+
     it("regression: unwraps a whole emphasised credit and nested marks", () => {
       expect(read("[Verse: *Drake & Future*]\n1\n[Chorus: (Future & Drake)]\n2").agents).toEqual([
         { id: "v1000", type: "group", name: "Drake, Future" },
