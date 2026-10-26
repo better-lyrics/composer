@@ -258,16 +258,18 @@ describe("WordTrack", () => {
     expect(blocks.map((b) => b.dataset.syllablePosition)).toEqual(["none", "first", "middle", "last", "none"]);
   });
 
-  // Word faces have no border since 2.0: a timing gap inside a syllable group keeps both facing corners round.
-  it("rounds both facing syllable edges when the group has a timing gap", async () => {
+  // A timing gap inside a syllable group keeps both facing corners square and marks them as cut ends.
+  it("squares and marks both facing syllable edges when the group has a timing gap", async () => {
     const words = [
       createWord({ text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" }),
       createWord({ text: "er", begin: 0.8, end: 1.3, syllableGroupId: "g" }),
     ];
     const { screen } = await renderTrack(words);
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
-    expect(blocks[0].className).not.toContain("rounded-r-none");
-    expect(blocks[1].className).not.toContain("rounded-l-none");
+    expect(blocks[0].className).toContain("rounded-r-none");
+    expect(blocks[1].className).toContain("rounded-l-none");
+    expect(blocks[0].dataset.gapAfter).toBeDefined();
+    expect(blocks[1].dataset.gapBefore).toBeDefined();
   });
 
   it("drags a flush syllable boundary conjoined, moving the shared edge as one", async () => {

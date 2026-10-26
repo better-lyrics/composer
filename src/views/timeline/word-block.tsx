@@ -2,6 +2,7 @@ import { cn } from "@/utils/cn";
 import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import { wordBlockWidth } from "@/views/timeline/row-geometry";
 import { selfKey } from "@/views/timeline/snap";
+import { SYLLABLE_RADIUS } from "@/views/timeline/syllable-radius";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordEdgeHandle } from "@/views/timeline/word-edge-handle";
 import { wordFit } from "@/views/timeline/word-fit";
@@ -42,13 +43,6 @@ interface WordBlockProps {
 }
 
 // -- Component -----------------------------------------------------------------
-
-// A syllable squares the corners it shares with its neighbours; a timing gap keeps the facing corners round.
-function syllableRadius(position: SyllablePosition, gapBefore?: boolean, gapAfter?: boolean): string | undefined {
-  const squareLeft = (position === "middle" || position === "last") && !gapBefore;
-  const squareRight = (position === "first" || position === "middle") && !gapAfter;
-  return cn(squareLeft && "rounded-l-none", squareRight && "rounded-r-none") || undefined;
-}
 
 const WordBlock: React.FC<WordBlockProps> = ({
   id,
@@ -113,10 +107,12 @@ const WordBlock: React.FC<WordBlockProps> = ({
       data-begin={begin}
       data-end={end}
       data-selected={isSelected || undefined}
+      data-gap-before={gapBefore || undefined}
+      data-gap-after={gapAfter || undefined}
       className={cn(
         "word-face absolute flex items-center justify-center whitespace-nowrap select-none cursor-grab",
         "inset-y-[5px]",
-        syllableRadius(syllablePosition, gapBefore, gapAfter),
+        SYLLABLE_RADIUS[syllablePosition],
         isDimmed && "opacity-30",
         isDragging && "opacity-50 cursor-grabbing z-50",
         isExplicit && "is-explicit-word",

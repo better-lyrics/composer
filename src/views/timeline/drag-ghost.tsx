@@ -3,6 +3,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import { cn } from "@/utils/cn";
 import { type WordTrackType, bgTrackHeight, wordInsetPx } from "@/views/timeline/row-geometry";
+import { SYLLABLE_RADIUS } from "@/views/timeline/syllable-radius";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
@@ -25,15 +26,6 @@ interface DragGhostProps {
   isSnapped: boolean;
 }
 
-// -- Constants -----------------------------------------------------------------
-
-const GHOST_SYLLABLE_RADIUS: Record<SyllablePosition, string | undefined> = {
-  none: undefined,
-  first: "rounded-r-none",
-  middle: "rounded-none",
-  last: "rounded-l-none",
-};
-
 // -- Components ----------------------------------------------------------------
 
 const DragGhost: React.FC<DragGhostProps> = ({ cells, anchorWidth, anchorHeight, color, isSnapped }) => (
@@ -46,7 +38,7 @@ const DragGhost: React.FC<DragGhostProps> = ({ cells, anchorWidth, anchorHeight,
         data-lane={cell.lane}
         className={cn(
           "word-face absolute flex items-center justify-center whitespace-nowrap pointer-events-none",
-          GHOST_SYLLABLE_RADIUS[cell.syllablePosition],
+          SYLLABLE_RADIUS[cell.syllablePosition],
           isSnapped && "is-snapped",
         )}
         style={{
