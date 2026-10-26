@@ -941,8 +941,30 @@ braccato-lyrics .blyrics-container {
     &[data-selected][data-lit] {
       --word-fill: color-mix(in oklab, var(--agent) 58%, var(--word-face));
     }
+    /* A syllable split from its word by a timing gap keeps a cut line on the open end. */
+    --syllable-cut: color-mix(in oklab, var(--agent) 70%, var(--ink));
+    &[data-gap-before]::before,
+    &[data-gap-after]::after {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      width: 1px;
+      background: var(--syllable-cut);
+      pointer-events: none;
+    }
+    &[data-gap-before]::before {
+      left: 0;
+    }
+    &[data-gap-after]::after {
+      right: 0;
+    }
+    &[data-selected]::before,
+    &[data-selected]::after {
+      content: none;
+    }
   }
   html[data-scheme="light"] .word-face {
+    --syllable-cut: color-mix(in oklab, var(--agent) 75%, black);
     background-image: var(--hatch, none),
       linear-gradient(
         to bottom,
@@ -954,6 +976,7 @@ braccato-lyrics .blyrics-container {
       color: #fff;
       background-image: var(--hatch, none);
       --word-fill: color-mix(in oklab, var(--agent) 80%, black);
+      --syllable-cut: color-mix(in oklab, var(--agent) 40%, black);
     }
     &[data-selected] {
       background-image: var(--hatch, none),
