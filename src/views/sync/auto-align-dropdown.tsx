@@ -22,6 +22,14 @@ interface LastRequest {
   realign: boolean;
 }
 
+interface AutoAlignDropdownProps {
+  /** Controls the popover, for a shortcut that opens it. Uncontrolled when omitted. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** "sm" fits a header tray. */
+  size?: "sm" | "lg";
+}
+
 // -- Functions ----------------------------------------------------------------
 
 function percent(done: number, total: number): number {
@@ -54,7 +62,7 @@ const Step: React.FC<{ done: boolean; label: string; children?: React.ReactNode 
 // Word timing from the separated vocals, using each line's tapped timing as
 // the guide. Laid out like the vocal separation popover: the trigger shows
 // progress, the popover walks through what's still needed.
-const AutoAlignDropdown: React.FC = () => {
+const AutoAlignDropdown: React.FC<AutoAlignDropdownProps> = ({ open, onOpenChange, size = "lg" }) => {
   const source = useAudioStore((s) => s.source);
   const lines = useProjectStore((s) => s.lines);
   const granularity = useProjectStore((s) => s.granularity);
@@ -95,12 +103,14 @@ const AutoAlignDropdown: React.FC = () => {
 
   return (
     <Popover
+      open={open}
+      onOpenChange={onOpenChange}
       placement="bottom-end"
       aria-label="Auto-align words"
       trigger={
         <Button
           variant="ghost"
-          size="lg"
+          size={size}
           hasIcon
           className="shrink-0 tabular-nums aria-expanded:bg-(--layer-1)"
           aria-label="Auto-align words"
