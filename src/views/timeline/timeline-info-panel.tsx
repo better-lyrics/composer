@@ -138,7 +138,7 @@ const TimelineInfoPanel: React.FC = () => {
         time: currentTime,
         minDuration: useSettingsStore.getState().minWordDuration,
         range: timeRangeResolver(rawLines, groups, duration)(lines[selectedWord.lineIndex]),
-        rolling: useTimelineStore.getState().rollingEditMode,
+        rolling: useSettingsStore.getState().rollingEdit,
         syllablesFollowRolling: useSettingsStore.getState().syllablesFollowRolling,
         updateLineWithHistory,
       });

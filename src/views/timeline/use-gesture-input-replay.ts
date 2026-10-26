@@ -1,6 +1,6 @@
 import { useProjectStore } from "@/stores/project";
-import type { SnapSettings } from "@/stores/settings-snap";
 import { useSettingsStore } from "@/stores/settings";
+import type { SnapSettings } from "@/stores/settings-snap";
 import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect, useRef } from "react";
@@ -98,17 +98,15 @@ function useGestureInputReplay({ active, getLastPointer }: UseGestureInputReplay
     };
 
     const unsubscribeSettings = useSettingsStore.subscribe((state, prev) => {
-      if (SNAP_SOURCE_SETTINGS.some((key) => state[key] !== prev[key])) replayLastPointer();
+      if (state.rollingEdit !== prev.rollingEdit || SNAP_SOURCE_SETTINGS.some((key) => state[key] !== prev[key])) {
+        replayLastPointer();
+      }
     });
     const unsubscribeProject = useProjectStore.subscribe((state, prev) => {
       if (state.beatGrid !== prev.beatGrid) replayLastPointer();
     });
     const unsubscribeTimeline = useTimelineStore.subscribe((state, prev) => {
-      if (
-        state.rollingEditMode !== prev.rollingEditMode ||
-        state.vocalOnsetSnapPoints !== prev.vocalOnsetSnapPoints ||
-        state.scrollLeft !== prev.scrollLeft
-      ) {
+      if (state.vocalOnsetSnapPoints !== prev.vocalOnsetSnapPoints || state.scrollLeft !== prev.scrollLeft) {
         replayLastPointer();
       } else if (state.zoom !== prev.zoom) {
         replayAfterZoom();

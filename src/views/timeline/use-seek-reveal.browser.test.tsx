@@ -1,5 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useSeekReveal } from "@/views/timeline/use-seek-reveal";
@@ -32,7 +33,8 @@ async function revealSetup(width: number) {
   const audio = await loadedAudio(80);
   useAudioStore.setState({ audioElement: audio, duration: 80, currentTime: 0 });
   useProjectStore.setState({ activeTab: "timeline" });
-  useTimelineStore.setState({ zoom: 100, followEnabled: false });
+  useSettingsStore.setState({ followPlayhead: false });
+  useTimelineStore.setState({ zoom: 100 });
   await renderHook(() => useSeekReveal(ref, true));
   return container;
 }

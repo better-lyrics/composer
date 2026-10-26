@@ -1,19 +1,20 @@
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GUTTER_WIDTH, timeToX } from "@/views/timeline/coords";
 import { currentFocusScrollRange } from "@/views/timeline/effective-focus";
+import { createFollowInput, fillFollowInput } from "@/views/timeline/follow-input";
 import { clampScrollLeft } from "@/views/timeline/group-focus";
 import { createPlayheadDrag } from "@/views/timeline/playhead-drag";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
-import { createFollowInput, fillFollowInput } from "@/views/timeline/follow-input";
 import { createRowLayoutCache } from "@/views/timeline/row-layout-cache";
-import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
 import { createTimelineLights, paintTimelineLights } from "@/views/timeline/timeline-lights";
-import { pinCutWordLabels } from "@/views/timeline/word-label-pin";
+import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createFollowMemory, followScrollTop, followStep, resetFollowMemory } from "@/views/timeline/vertical-follow";
+import { pinCutWordLabels } from "@/views/timeline/word-label-pin";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -79,13 +80,13 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
     // Read directly from audio element for smooth updates
     const isPlaying = useAudioStore.getState().isPlaying;
     const currentTime = livePlaybackTime();
-    const { zoom, scrollLeft, isDraggingPlayhead, dragTime, followEnabled, loopRegionDrag } =
-      useTimelineStore.getState();
+    const { zoom, scrollLeft, isDraggingPlayhead, dragTime, loopRegionDrag } = useTimelineStore.getState();
+    const { followPlayhead } = useSettingsStore.getState();
 
     // Auto-scroll to keep playhead centered when follow is enabled
     const container = scrollContainerRef.current;
     // Follow would scroll the lanes under a region drag and stretch the region.
-    if (followEnabled && isPlaying && container && !isDraggingPlayhead && !loopRegionDrag) {
+    if (followPlayhead && isPlaying && container && !isDraggingPlayhead && !loopRegionDrag) {
       const viewportWidth = container.clientWidth;
       const centerOffset = viewportWidth / 2 - GUTTER_WIDTH;
       const targetScrollLeft = Math.max(0, currentTime * zoom - centerOffset);
@@ -111,7 +112,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
       verticalTargetRef.current = null;
     }
 
-    container?.parentElement?.classList.toggle("scrollbar-hidden", isPlaying && followEnabled);
+    container?.parentElement?.classList.toggle("scrollbar-hidden", isPlaying && followPlayhead);
 
     const displayTime = isDraggingPlayhead ? dragTime : currentTime;
     const actualScrollLeft = container?.scrollLeft ?? scrollLeft;

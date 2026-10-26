@@ -34,7 +34,8 @@ async function armTimeline(options: { lines: LyricLine[]; groups: LinkGroup[]; s
   useAudioStore.setState({ currentTime: 6, duration: DURATION });
   useProjectStore.setState({ activeTab: "timeline", lines: options.lines, groups: options.groups });
   useProjectStore.getState().clearHistory();
-  useTimelineStore.setState({ rollingEditMode: false, selectedWords: options.selection });
+  useSettingsStore.setState({ rollingEdit: false });
+  useTimelineStore.setState({ selectedWords: options.selection });
   const scrollContainerRef = createRef<HTMLDivElement | null>();
   await renderHook(() =>
     useTimelineKeyboard(

@@ -3,6 +3,7 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { isWordSelected } from "@/domain/selection/identity";
 import { overlapsLoopRegion } from "@/domain/selection/loop-region";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
+import type { Bounds } from "@/domain/word/bounds";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
@@ -12,18 +13,17 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { findInsertionSlot } from "@/utils/word-spaces";
-import type { Bounds } from "@/domain/word/bounds";
-import { setLiveWordEdit } from "@/views/timeline/pitch/live-word-edit";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { settleLoupe, showLoupeEdit } from "@/views/timeline/loupe/loupe-target";
+import { setLiveWordEdit } from "@/views/timeline/pitch/live-word-edit";
 import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
-import { selectionGripEdges } from "@/views/timeline/stretch-grips";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
+import { selectionGripEdges } from "@/views/timeline/stretch-grips";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
 import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
+import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { WordBlock } from "@/views/timeline/word-block";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -89,7 +89,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
-  const rollingEditMode = useTimelineStore((s) => s.rollingEditMode);
+  const rollingEdit = useSettingsStore((s) => s.rollingEdit);
   const textVariant = useTimelineStore((s) => s.textVariant);
 
   const syllablesFollowRolling = useSettingsStore((s) => s.syllablesFollowRolling);
@@ -191,7 +191,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
           words,
           wordIndex,
           edge: boundaryEdge,
-          rollingEdit: useTimelineStore.getState().rollingEditMode,
+          rollingEdit: useSettingsStore.getState().rollingEdit,
           syllablesFollowRolling: syllablesFollowRollingAtStart,
           syllablePositions,
           altHeld: e.altKey,
@@ -286,7 +286,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       words,
       wordIndex: boundaryIndex,
       edge: "end",
-      rollingEdit: rollingEditMode,
+      rollingEdit,
       syllablesFollowRolling,
       syllablePositions,
       altHeld: altPressed,

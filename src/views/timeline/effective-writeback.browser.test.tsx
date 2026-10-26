@@ -1,10 +1,11 @@
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
-import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
+import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { installScrollHost, makeAltDuplicateEvent } from "@/views/timeline/use-timeline-dnd.test-helpers";
+import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
@@ -43,8 +44,8 @@ describe("effective line write-back", () => {
   it("'[' set-begin-to-playhead on a selected line-synced block keeps it line-synced", async () => {
     useAudioStore.setState({ duration: 30, currentTime: 18 });
     useProjectStore.setState({ activeTab: "timeline", lines: [LINE_SYNCED] });
+    useSettingsStore.setState({ rollingEdit: false });
     useTimelineStore.setState({
-      rollingEditMode: false,
       selectedWords: [{ lineId: "ls", lineIndex: 0, wordIndex: 0, type: "word" }],
     });
     const lines = getEffectiveLines(useProjectStore.getState().lines);

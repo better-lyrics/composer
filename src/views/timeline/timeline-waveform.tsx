@@ -1,4 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
+import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
 import { isAbortError } from "@/utils/abort-error";
 import { cn } from "@/utils/cn";
@@ -83,7 +84,7 @@ const TimelineWaveform: React.FC = () => {
   const zoom = useTimelineStore((s) => s.zoom);
   const activeThemeId = useThemeStore((s) => s.activeThemeId);
   const markerMode = useTimelineStore((s) => s.markerMode);
-  const spectrumVisible = useTimelineStore((s) => s.spectrumVisible);
+  const showSpectrum = useSettingsStore((s) => s.showSpectrum);
 
   const [ws, setWs] = useState<WaveSurfer | null>(null);
   const [settledFor, setSettledFor] = useState<WaveSurfer | null>(null);
@@ -122,9 +123,9 @@ const TimelineWaveform: React.FC = () => {
 
   // Hidden under the spectrum the waveform keeps its old zoom; it catches up when it shows again.
   useEffect(() => {
-    if (!ws || spectrumVisible || ws.options.minPxPerSec === zoom) return;
+    if (!ws || showSpectrum || ws.options.minPxPerSec === zoom) return;
     ws.setOptions({ minPxPerSec: zoom });
-  }, [ws, zoom, spectrumVisible]);
+  }, [ws, zoom, showSpectrum]);
 
   useEffect(() => {
     if (!ws) return;
@@ -182,7 +183,7 @@ const TimelineWaveform: React.FC = () => {
         data-waveform-redraw-bg
         className={cn(
           "absolute top-0 left-0 bg-(--well) border-b border-(--divider) pointer-events-none transition-opacity duration-200",
-          spectrumVisible && "opacity-0",
+          showSpectrum && "opacity-0",
         )}
         style={{ width: totalWidth, height: WAVEFORM_HEIGHT }}
       />
@@ -192,14 +193,14 @@ const TimelineWaveform: React.FC = () => {
         data-sweeping={sweeping ? "" : undefined}
         aria-hidden="true"
         className="absolute top-0 left-0 waveform-loading-dots pointer-events-none transition-opacity duration-200 ease-out"
-        style={{ width: totalWidth, height: WAVEFORM_HEIGHT - 1, opacity: ws || spectrumVisible ? 0 : 1 }}
+        style={{ width: totalWidth, height: WAVEFORM_HEIGHT - 1, opacity: ws || showSpectrum ? 0 : 1 }}
       />
       {audioElement && (
         <WaveformBars
           key={waveformKey}
           media={audioElement}
           width={totalWidth}
-          shown={ws !== null && !spectrumVisible}
+          shown={ws !== null && !showSpectrum}
           colors={initialColors}
           initialZoom={initialZoom}
           onDestroy={onDestroy}
@@ -213,7 +214,7 @@ const TimelineWaveform: React.FC = () => {
         aria-label={markerMode ? "Place snap point" : "Seek to position"}
         className={cn(
           "absolute top-0 left-0 z-10",
-          markerMode ? "waveform-armed" : altHeld || spectrumVisible ? "cursor-crosshair" : "cursor-pointer",
+          markerMode ? "waveform-armed" : altHeld || showSpectrum ? "cursor-crosshair" : "cursor-pointer",
         )}
         key="waveform-click-layer"
         style={{

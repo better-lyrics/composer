@@ -4,18 +4,17 @@ import { useAudioStore } from "@/stores/audio";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { keepSpaceForFocusedControl } from "@/ui/keep-space-for-focused-control";
 import { Popover } from "@/ui/popover";
 import { Tooltip } from "@/ui/tooltip";
 import { cn } from "@/utils/cn";
 import { formatBpm } from "@/utils/format-bpm";
 import { BeatGridPopoverBody } from "@/views/timeline/beat-grid/beat-grid-popover";
 import { detectionPercent, isDetectionRunning } from "@/views/timeline/beat-grid/detection-progress";
-import { keepSpaceForFocusedControl } from "@/ui/keep-space-for-focused-control";
 import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
 import { usePlayheadTempo } from "@/views/timeline/beat-grid/use-playhead-tempo";
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { FrequencyAxis } from "@/views/timeline/spectrum/frequency-axis";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconAlertTriangle, IconLoader2, IconWaveSine } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 
@@ -106,7 +105,7 @@ function useCornerLabel(): string {
 const CornerButton: React.FC<
   React.ButtonHTMLAttributes<HTMLButtonElement> & { ref?: React.Ref<HTMLButtonElement>; bandHeight: number }
 > = ({ bandHeight, ...props }) => {
-  const compact = useTimelineStore((s) => s.spectrumVisible);
+  const compact = useSettingsStore((s) => s.showSpectrum);
   return (
     <button
       type="button"

@@ -1,5 +1,5 @@
+import { useSettingsStore } from "@/stores/settings";
 import { type SpectrumStatusView, useSpectrumStatus } from "@/views/timeline/spectrum/spectrum-session";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconLoader2 } from "@tabler/icons-react";
 
 // -- Helpers -------------------------------------------------------------------
@@ -20,7 +20,7 @@ function statusText(view: SpectrumStatusView, visible: boolean): string {
 
 const SpectrumStatusLine: React.FC = () => {
   const view = useSpectrumStatus();
-  const visible = useTimelineStore((s) => s.spectrumVisible);
+  const visible = useSettingsStore((s) => s.showSpectrum);
   if (visible && view.status === "error") {
     return <p className="text-[12.5px] text-composer-warning select-text cursor-text">{view.error}</p>;
   }

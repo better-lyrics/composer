@@ -2,6 +2,7 @@ import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-
 import type { LyricLine } from "@/domain/line/model";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { loupeDeltaPopVariants, loupeReducedVariants, loupeVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
@@ -130,12 +131,12 @@ const LoupeCard: React.FC<LoupeCardProps> = ({ target, scrollContainerRef }) => 
 
 // Gated on the spectrum: for ordinary syncing the loupe is noise.
 const EditLoupe: React.FC<EditLoupeProps> = ({ scrollContainerRef }) => {
-  const spectrumVisible = useTimelineStore((s) => s.spectrumVisible);
+  const showSpectrum = useSettingsStore((s) => s.showSpectrum);
   const target = useTimelineStore((s) => s.loupeTarget);
   return (
     <FloatingPortal>
       <AnimatePresence>
-        {spectrumVisible && target && (
+        {showSpectrum && target && (
           <LoupeCard key="edit-loupe" target={target} scrollContainerRef={scrollContainerRef} />
         )}
       </AnimatePresence>

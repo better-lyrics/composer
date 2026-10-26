@@ -1,6 +1,7 @@
 import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-words";
 import { type WordIdentity, sameWordSelection } from "@/domain/selection/identity";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types --------------------------------------------------------------------
@@ -45,8 +46,8 @@ function cancelClear(): void {
 
 // Back to back edits of one edge keep the first start time, so the delta reads the whole edit.
 function showLoupeEdit(edit: LoupeEdit, settled: boolean): void {
+  if (!useSettingsStore.getState().showSpectrum) return clearLoupe();
   const timeline = useTimelineStore.getState();
-  if (!timeline.spectrumVisible) return clearLoupe();
   cancelClear();
   const previous = timeline.loupeTarget;
   const startTime = previous && sameEdge(previous, edit) ? previous.startTime : edit.startTime;
@@ -72,7 +73,7 @@ function storedEdgeTime(word: WordIdentity, edge: LoupeEdge): number | null {
 
 // For key edits that write the store directly: the edge's new time is read back after the write.
 function showLoupeAfterKeyEdit(word: WordIdentity, edge: LoupeEdge, startTime: number): void {
-  if (!useTimelineStore.getState().spectrumVisible) return;
+  if (!useSettingsStore.getState().showSpectrum) return;
   const time = storedEdgeTime(word, edge);
   if (time === null) return;
   showLoupeEdit({ lineId: word.lineId, track: word.type, wordIndex: word.wordIndex, edge, startTime, time }, true);

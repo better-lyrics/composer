@@ -6,7 +6,6 @@ import {
   useSettingsStore,
 } from "@/stores/settings";
 import { migrateSettings } from "@/stores/settings-migration";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { beforeEach, describe, expect, it } from "vitest";
 
 describe("preview renderer settings", () => {
@@ -271,16 +270,6 @@ describe("settings v4 -> v5 migration (snapPlayheadToPoints)", () => {
   it("preserves an explicitly disabled snapPlayheadToPoints", async () => {
     const migrated = migrateSettings({ snapPlayheadToPoints: false }, 4) as { snapPlayheadToPoints: boolean };
     expect(migrated.snapPlayheadToPoints).toBe(false);
-  });
-});
-
-describe("timeline store reads header-toggle defaults at init", () => {
-  it("initial previewSidebarOpen matches settings.previewSidebar at the moment the store was created", () => {
-    expect(useTimelineStore.getState().previewSidebarOpen).toBe(useSettingsStore.getState().previewSidebar);
-  });
-
-  it("initial rollingEditMode matches settings.rollingEdit at the moment the store was created", () => {
-    expect(useTimelineStore.getState().rollingEditMode).toBe(useSettingsStore.getState().rollingEdit);
   });
 });
 

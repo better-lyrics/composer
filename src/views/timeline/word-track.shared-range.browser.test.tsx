@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -7,6 +6,7 @@ import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -27,8 +27,8 @@ const chorus = (id: string, instanceIdx: number, begin: number) =>
 
 async function renderSharedTrack(sharesTiming: boolean, selectWholeLine = false) {
   const calls: Partial<WordTiming>[] = [];
+  useSettingsStore.setState({ rollingEdit: false });
   useTimelineStore.setState({
-    rollingEditMode: false,
     zoom: 100,
     selectedWords: selectWholeLine
       ? [0, 1].map((wordIndex) => ({ lineId: "c1", lineIndex: 1, wordIndex, type: "word" as const }))

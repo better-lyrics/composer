@@ -187,7 +187,7 @@ const BeatGridCanvas: React.FC = () => {
         lines: useSettingsStore.getState().beatGridLines,
         themeId: activeThemeId,
         customThemes,
-        overSpectrum: useTimelineStore.getState().spectrumVisible,
+        overSpectrum: useSettingsStore.getState().showSpectrum,
       };
       const playedX = `${Math.round(livePlaybackTime() * next.zoom - next.scrollLeft)}px`;
       if (canvas.style.getPropertyValue("--played-x") !== playedX) canvas.style.setProperty("--played-x", playedX);

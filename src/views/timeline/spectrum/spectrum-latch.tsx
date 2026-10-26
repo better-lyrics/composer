@@ -1,15 +1,14 @@
+import { useSettingsStore } from "@/stores/settings";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { SplitLatch } from "@/ui/split-latch";
 import { SpectrumPopoverBody } from "@/views/timeline/spectrum/spectrum-popover";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconGrain } from "@tabler/icons-react";
 import { useState } from "react";
 
 // -- Component -----------------------------------------------------------------
 
 const SpectrumLatch: React.FC = () => {
-  const visible = useTimelineStore((s) => s.spectrumVisible);
-  const toggleSpectrum = useTimelineStore((s) => s.toggleSpectrum);
+  const visible = useSettingsStore((s) => s.showSpectrum);
   const [open, setOpen] = useState(false);
   return (
     <SplitLatch
@@ -21,7 +20,7 @@ const SpectrumLatch: React.FC = () => {
           active={visible}
           label="Spectrum"
           shortcut="timeline.toggleSpectrum"
-          onClick={toggleSpectrum}
+          onClick={() => useSettingsStore.getState().set("showSpectrum", !visible)}
           iconOnly
         >
           <IconGrain />

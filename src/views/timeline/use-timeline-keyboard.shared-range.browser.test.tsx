@@ -1,14 +1,14 @@
-import { createRef } from "react";
-import { describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine, createWord } from "@/test/factories";
-import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
+import { createRef } from "react";
+import { describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -35,7 +35,8 @@ async function armSharedTimeline(options: { sharesTiming: boolean; selection: Wo
     lines: [chorus("c0", 0, 3), chorus("c1", 1, 10), chorus("c2", 2, 16)],
     groups: [createGroup({ id: "g1", ...(options.sharesTiming ? { sharesTiming: true } : {}) })],
   });
-  useTimelineStore.setState({ rollingEditMode: false, selectedWords: options.selection });
+  useSettingsStore.setState({ rollingEdit: false });
+  useTimelineStore.setState({ selectedWords: options.selection });
   const scrollContainerRef = createRef<HTMLDivElement | null>();
   await renderHook(() =>
     useTimelineKeyboard(

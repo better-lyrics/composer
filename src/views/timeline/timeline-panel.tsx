@@ -10,39 +10,40 @@ import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { useAudioStore } from "@/stores/audio";
 import { useImportModal } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { BeatGridCorner } from "@/views/timeline/beat-grid/beat-grid-corner";
 import { HoverSizedDragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
 import { dragGhostCells } from "@/views/timeline/drag-ghost-cells";
 import { trackSnapModifier } from "@/views/timeline/drag-track-snap";
 import { EmptyTimelineImport } from "@/views/timeline/empty-timeline-import";
 import { GroupFocusBar } from "@/views/timeline/group-focus-bar";
-import { MarqueeSelection } from "@/views/timeline/marquee-selection";
-import { PastePreview } from "@/views/timeline/paste-preview";
-import { useSeekReveal } from "@/views/timeline/use-seek-reveal";
 import { LoopRegionBar } from "@/views/timeline/loop-region-bar";
 import { LoopRegionGuides } from "@/views/timeline/loop-region-guides";
 import { LoopRegionReadout } from "@/views/timeline/loop-region-readout";
 import { EditLoupe } from "@/views/timeline/loupe/edit-loupe";
+import { MarqueeSelection } from "@/views/timeline/marquee-selection";
+import { PastePreview } from "@/views/timeline/paste-preview";
 import { SelectionPlaybackBar } from "@/views/timeline/selection-playback-bar";
 import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
-import { TimelineRuler } from "@/views/timeline/timeline-ruler";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
+import { TimelineRuler } from "@/views/timeline/timeline-ruler";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
+import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useGroupFocusScroll } from "@/views/timeline/use-group-focus-scroll";
 import { useGroupFocusShortcuts } from "@/views/timeline/use-group-focus-shortcuts";
 import { useMarquee } from "@/views/timeline/use-marquee";
 import { useResumeView } from "@/views/timeline/use-resume-view";
+import { useSeekReveal } from "@/views/timeline/use-seek-reveal";
 import { useSharedTimingPing } from "@/views/timeline/use-shared-timing-ping";
-import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineFrameWake } from "@/views/timeline/use-timeline-frame-wake";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
@@ -84,7 +85,7 @@ const TimelinePanel: React.FC = () => {
   const zoom = useTimelineStore((s) => s.zoom);
   const setScrollLeft = useTimelineStore((s) => s.setScrollLeft);
   const setScrollTop = useTimelineStore((s) => s.setScrollTop);
-  const previewSidebarOpen = useTimelineStore((s) => s.previewSidebarOpen);
+  const previewSidebar = useSettingsStore((s) => s.previewSidebar);
   const pasteMode = useTimelineStore((s) => s.pasteMode);
   const editingWord = useTimelineStore((s) => s.editingWord);
   const ghostSnapped = useTimelineStore((s) => s.snappedBlockId !== null);
@@ -337,7 +338,7 @@ const TimelinePanel: React.FC = () => {
               <TimelineInfoPanel />
             </div>
 
-            <Activity mode={previewSidebarOpen ? "visible" : "hidden"}>
+            <Activity mode={previewSidebar ? "visible" : "hidden"}>
               <TimelinePreviewSidebar />
             </Activity>
           </div>

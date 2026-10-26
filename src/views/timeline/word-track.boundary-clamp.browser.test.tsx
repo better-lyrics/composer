@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -7,6 +6,7 @@ import { render } from "@/test/render";
 import { scrollTrackHost } from "@/test/timeline-scroll";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -28,7 +28,8 @@ const GAPPED_PAIR = [createWord({ text: "a ", begin: 0, end: 1 }), createWord({ 
 async function renderResizableTrack(words: WordTiming[], options: { rolling?: boolean; duration?: number } = {}) {
   const { rolling = true, duration = 3 } = options;
   const calls: ResizeCall[] = [];
-  useTimelineStore.setState({ rollingEditMode: rolling, zoom: 100 });
+  useSettingsStore.setState({ rollingEdit: rolling });
+  useTimelineStore.setState({ zoom: 100 });
   const line = createLine({ words });
   useProjectStore.setState({ lines: [line] });
   const screen = await render(

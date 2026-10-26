@@ -167,7 +167,7 @@ function useTimelineKeyboard(
         time: currentTime,
         minDuration: useSettingsStore.getState().minWordDuration,
         range: timeRangeResolver(useProjectStore.getState().lines, useProjectStore.getState().groups, duration)(line),
-        rolling: useTimelineStore.getState().rollingEditMode,
+        rolling: useSettingsStore.getState().rollingEdit,
         syllablesFollowRolling: useSettingsStore.getState().syllablesFollowRolling,
         updateLineWithHistory: useProjectStore.getState().updateLineWithHistory,
       });
@@ -322,12 +322,16 @@ function useTimelineKeyboard(
         case "timeline.playSelection":
           if (playSelection()) e.preventDefault();
           break;
-        case "timeline.toggleFollow":
-          useTimelineStore.getState().toggleFollow();
+        case "timeline.toggleFollow": {
+          const s = useSettingsStore.getState();
+          s.set("followPlayhead", !s.followPlayhead);
           break;
-        case "timeline.togglePreview":
-          useTimelineStore.getState().togglePreviewSidebar();
+        }
+        case "timeline.togglePreview": {
+          const s = useSettingsStore.getState();
+          s.set("previewSidebar", !s.previewSidebar);
           break;
+        }
         case "timeline.copy":
           e.preventDefault();
           handleCopy();
@@ -354,15 +358,19 @@ function useTimelineKeyboard(
           s.set("beatGridVisible", !s.beatGridVisible);
           break;
         }
-        case "timeline.toggleSpectrum":
-          useTimelineStore.getState().toggleSpectrum();
+        case "timeline.toggleSpectrum": {
+          const s = useSettingsStore.getState();
+          s.set("showSpectrum", !s.showSpectrum);
           break;
+        }
         case "timeline.togglePitchLine":
           togglePitchLine();
           break;
-        case "timeline.toggleRollingEdit":
-          useTimelineStore.getState().toggleRollingEditMode();
+        case "timeline.toggleRollingEdit": {
+          const s = useSettingsStore.getState();
+          s.set("rollingEdit", !s.rollingEdit);
           break;
+        }
         case "timeline.toggleMarkerMode":
           e.preventDefault();
           useTimelineStore.getState().toggleMarkerMode();

@@ -53,8 +53,6 @@ async function resetAllStores(): Promise<void> {
   const settings = useSettingsStore.getState();
   useTimelineStore.setState({
     zoom: settings.defaultZoom,
-    followEnabled: settings.followPlayhead,
-    previewSidebarOpen: false,
     selectedWords: [],
     selectionPlayback: null,
     loopRegion: null,
@@ -68,7 +66,6 @@ async function resetAllStores(): Promise<void> {
     dragTime: 0,
     contextMenu: null,
     editingWord: null,
-    rollingEditMode: false,
     markerMode: false,
     hoveredSnapPointId: null,
     collapsedInstances: {},

@@ -1,6 +1,6 @@
 import { clampSpectrumBandHeight } from "@/domain/spectrum/settings";
 import { useSettingsStore } from "@/stores/settings";
-import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
+import { WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { type RefObject, useEffect } from "react";
 
 // -- State --------------------------------------------------------------------
@@ -11,14 +11,14 @@ let restingHeight: number | null = null;
 
 // -- Functions ----------------------------------------------------------------
 
-function overviewBandHeight(spectrumVisible: boolean, storedSpectrumHeight: number): number {
-  return spectrumVisible ? clampSpectrumBandHeight(storedSpectrumHeight) : WAVEFORM_HEIGHT;
+function overviewBandHeight(showSpectrum: boolean, storedSpectrumHeight: number): number {
+  return showSpectrum ? clampSpectrumBandHeight(storedSpectrumHeight) : WAVEFORM_HEIGHT;
 }
 
 // While the band animates to a new height the rows follow its animated min-height; at rest the style read is skipped.
 function currentOverviewBandHeight(): number {
   const target = overviewBandHeight(
-    useTimelineStore.getState().spectrumVisible,
+    useSettingsStore.getState().showSpectrum,
     useSettingsStore.getState().spectrumBandHeight,
   );
   if (!mountedBand || (!bandAnimating && restingHeight === target)) return target;
@@ -28,7 +28,7 @@ function currentOverviewBandHeight(): number {
 }
 
 function useOverviewBandHeight(): number {
-  const visible = useTimelineStore((s) => s.spectrumVisible);
+  const visible = useSettingsStore((s) => s.showSpectrum);
   const stored = useSettingsStore((s) => s.spectrumBandHeight);
   return overviewBandHeight(visible, stored);
 }

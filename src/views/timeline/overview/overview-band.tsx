@@ -1,11 +1,11 @@
 import { SPECTRUM_BAND_HEIGHT } from "@/domain/spectrum/settings";
+import { useSettingsStore } from "@/stores/settings";
 import { useMountedOverviewBand, useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { BandViewport } from "@/views/timeline/overview/band-viewport";
 import { useBandResize } from "@/views/timeline/overview/use-band-resize";
 import { SpectrumCanvas } from "@/views/timeline/spectrum/spectrum-canvas";
 import { SpectrumReadout } from "@/views/timeline/spectrum/spectrum-readout";
 import { useSpectrumSession } from "@/views/timeline/spectrum/use-spectrum-session";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { Activity, type ReactNode, useEffect, useRef } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -61,20 +61,20 @@ function useAnnounceBandResize(bandRef: React.RefObject<HTMLDivElement | null>):
 const OverviewBand: React.FC<OverviewBandProps> = ({ children }) => {
   const bandRef = useRef<HTMLDivElement>(null);
   const bandHeight = useOverviewBandHeight();
-  const spectrumVisible = useTimelineStore((s) => s.spectrumVisible);
+  const showSpectrum = useSettingsStore((s) => s.showSpectrum);
   useSpectrumSession();
   useAnnounceBandResize(bandRef);
   useMountedOverviewBand(bandRef);
 
   return (
     <div ref={bandRef} data-overview-band className={BAND_CLASS} style={{ minHeight: bandHeight }}>
-      <Activity mode={spectrumVisible ? "visible" : "hidden"}>
+      <Activity mode={showSpectrum ? "visible" : "hidden"}>
         <BandViewport label="spectrum viewport" className="bottom-px overflow-clip">
           <SpectrumCanvas />
         </BandViewport>
       </Activity>
       {children}
-      <Activity mode={spectrumVisible ? "visible" : "hidden"}>
+      <Activity mode={showSpectrum ? "visible" : "hidden"}>
         <BandViewport label="overview band controls" className="z-30 overflow-x-clip">
           <SpectrumReadout />
           <BandResizeHandle />

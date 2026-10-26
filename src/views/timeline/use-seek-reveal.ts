@@ -1,5 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { revealTimeScrollLeft } from "@/views/timeline/coords";
 import { currentFocusScrollRange } from "@/views/timeline/effective-focus";
 import { clampScrollLeft } from "@/views/timeline/group-focus";
@@ -16,8 +17,9 @@ function useSeekReveal(scrollContainerRef: RefObject<HTMLDivElement | null>, ena
     const handleSeeking = () => {
       const container = scrollContainerRef.current;
       if (!container || useProjectStore.getState().activeTab !== "timeline") return;
-      const { zoom, followEnabled, isDraggingPlayhead, loopRegionDrag } = useTimelineStore.getState();
-      if (isDraggingPlayhead || loopRegionDrag || (followEnabled && !audio.paused)) return;
+      const { zoom, isDraggingPlayhead, loopRegionDrag } = useTimelineStore.getState();
+      const { followPlayhead } = useSettingsStore.getState();
+      if (isDraggingPlayhead || loopRegionDrag || (followPlayhead && !audio.paused)) return;
       const next = revealTimeScrollLeft(audio.currentTime, zoom, container.scrollLeft, container.clientWidth);
       if (next === null) return;
       const focusRange = currentFocusScrollRange(container);

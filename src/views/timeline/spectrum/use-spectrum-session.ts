@@ -16,7 +16,7 @@ let activeRun: SpectrumRun | null = null;
 // -- Functions ----------------------------------------------------------------
 
 function desiredTarget(): SpectrumTarget | null {
-  if (!useTimelineStore.getState().spectrumVisible) return null;
+  if (!useSettingsStore.getState().showSpectrum) return null;
   const { spectrumSource, spectrumWindow } = useSettingsStore.getState();
   const { stemUrls, jobKey } = useSeparationStore.getState();
   const vocalsUrl = stemUrls.vocals ?? null;
@@ -62,11 +62,16 @@ function useSpectrumSession(): void {
 
     sync();
     const unsubscribeTimeline = useTimelineStore.subscribe((state, prev) => {
-      if (state.spectrumVisible !== prev.spectrumVisible) sync();
-      else if (state.scrollLeft !== prev.scrollLeft || state.zoom !== prev.zoom) activeRun?.setFocusTime(focusTime());
+      if (state.scrollLeft !== prev.scrollLeft || state.zoom !== prev.zoom) activeRun?.setFocusTime(focusTime());
     });
     const unsubscribeSettings = useSettingsStore.subscribe((state, prev) => {
-      if (state.spectrumSource !== prev.spectrumSource || state.spectrumWindow !== prev.spectrumWindow) sync();
+      if (
+        state.showSpectrum !== prev.showSpectrum ||
+        state.spectrumSource !== prev.spectrumSource ||
+        state.spectrumWindow !== prev.spectrumWindow
+      ) {
+        sync();
+      }
     });
     const unsubscribeSeparation = useSeparationStore.subscribe((state, prev) => {
       if (state.stemUrls.vocals !== prev.stemUrls.vocals || state.jobKey !== prev.jobKey) sync();
