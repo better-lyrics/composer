@@ -91,16 +91,16 @@ describe("credits", () => {
     expect(read(GENIUS_PAGE_COPY).agents).toEqual([
       { id: "v1", type: "person", name: "Lead" },
       { id: "v2", type: "person", name: "Drake" },
-      { id: "v3", type: "group", name: "Drake, Rihanna" },
-      { id: "v4", type: "person", name: "Rihanna" },
+      { id: "v1000", type: "group", name: "Drake, Rihanna" },
+      { id: "v3", type: "person", name: "Rihanna" },
     ]);
   });
 
   it("assigns each line to its section's singer, uncredited sections to the lead", () => {
     const agentOf = (text: string) => read(GENIUS_PAGE_COPY).lines.find((line) => line.text === text)?.agentId;
     expect(agentOf("Midnight rain on the window glass")).toBe("v2");
-    expect(agentOf("Hold on, we're almost home tonight")).toBe("v3");
-    expect(agentOf("Streetlights flicker in the morning haze")).toBe("v4");
+    expect(agentOf("Hold on, we're almost home tonight")).toBe("v1000");
+    expect(agentOf("Streetlights flicker in the morning haze")).toBe("v3");
     expect(agentOf("We'll remember these golden days")).toBe("v1");
   });
 

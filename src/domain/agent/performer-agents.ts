@@ -10,6 +10,7 @@ interface PerformerAgents {
 // -- Constants ----------------------------------------------------------------
 
 const GROUP_PERFORMER_NAMES = new Set(["合", "合唱", "all"]);
+const FIRST_GROUP_ORDINAL = 1000;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -35,6 +36,7 @@ function dedupeIgnoringCase(names: readonly string[]): string[] {
 // A line carries one agent id, so a combination is an agent of its own, keyed by its sorted
 // case-folded members joined on the slash no member can contain: casing drift and a reordering
 // both resolve to one agent, while the display name keeps the order the document first wrote.
+// Groups take ids from v1000, the TTML convention for lines sung together.
 function createPerformerAgents(): PerformerAgents {
   const agents: Agent[] = [];
   const byKey = new Map<string, Agent>();
@@ -45,9 +47,11 @@ function createPerformerAgents(): PerformerAgents {
       .join("/");
     const existing = byKey.get(key);
     if (existing) return existing;
+    const isGroup = performers.length > 1 || isGroupPerformerName(performers[0]);
+    const sameKind = agents.filter((agent) => (agent.type === "group") === isGroup).length;
     const agent: Agent = {
-      id: agentIdAt(agents.length),
-      type: performers.length > 1 || isGroupPerformerName(performers[0]) ? "group" : "person",
+      id: isGroup ? `v${FIRST_GROUP_ORDINAL + sameKind}` : agentIdAt(sameKind),
+      type: isGroup ? "group" : "person",
       name: performers.join(", "),
     };
     agents.push(agent);

@@ -41,14 +41,14 @@ const PRODUCTION_CREDIT_PREFIXES = [
 // The ten markers SICKO_MODE_QRC carries name seven distinct combinations.
 const SICKO_MODE_AGENTS: Agent[] = [
   { id: "v1", type: "person", name: "Drake" },
-  { id: "v2", type: "group", name: "Travis Scott, The Notorious B.I.G." },
-  { id: "v3", type: "group", name: "Big Hawk, Swae Lee, Travis Scott" },
-  { id: "v4", type: "group", name: "Travis Scott, Swae Lee, Luke" },
-  { id: "v5", type: "group", name: "Big Hawk, Swae Lee" },
-  { id: "v6", type: "group", name: "Drake, Travis Scott" },
-  { id: "v7", type: "person", name: "Travis Scott" },
+  { id: "v1000", type: "group", name: "Travis Scott, The Notorious B.I.G." },
+  { id: "v1001", type: "group", name: "Big Hawk, Swae Lee, Travis Scott" },
+  { id: "v1002", type: "group", name: "Travis Scott, Swae Lee, Luke" },
+  { id: "v1003", type: "group", name: "Big Hawk, Swae Lee" },
+  { id: "v1004", type: "group", name: "Drake, Travis Scott" },
+  { id: "v2", type: "person", name: "Travis Scott" },
 ];
-const SICKO_MODE_AGENT_IDS = ["v1", "v1", "v2", "v3", "v4", "v5", "v6", "v6", "v6", "v6", "v7"];
+const SICKO_MODE_AGENT_IDS = ["v1", "v1", "v1000", "v1001", "v1002", "v1003", "v1004", "v1004", "v1004", "v1004", "v2"];
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -445,8 +445,8 @@ describe("parseQrc", () => {
 
     it("mints one group agent for a marker that names several performers", () => {
       const result = parseQrc("[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)");
-      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Drake, Travis Scott" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1"]);
+      expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Drake, Travis Scott" }]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000"]);
     });
 
     it("names every singer combination SICKO MODE marks", () => {
@@ -469,16 +469,16 @@ describe("parseQrc", () => {
       const result = parseQrc(
         "[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]DRAKE/TRAVIS SCOTT：(3000,500)\n[4000,500]Two(4000,500)",
       );
-      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Drake, Travis Scott" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1"]);
+      expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Drake, Travis Scott" }]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000", "v1000"]);
     });
 
     it("treats a reordered combination as the same singer", () => {
       const result = parseQrc(
         "[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]Travis Scott/Drake：(3000,500)\n[4000,500]Two(4000,500)",
       );
-      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Drake, Travis Scott" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1"]);
+      expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Drake, Travis Scott" }]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000", "v1000"]);
     });
 
     it("keeps two combinations apart when only the split points differ", () => {
@@ -486,10 +486,10 @@ describe("parseQrc", () => {
         "[1000,500]Drake Travis/Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]Drake/Travis Scott：(3000,500)\n[4000,500]Two(4000,500)",
       );
       expect(result.agents).toEqual([
-        { id: "v1", type: "group", name: "Drake Travis, Scott" },
-        { id: "v2", type: "group", name: "Drake, Travis Scott" },
+        { id: "v1000", type: "group", name: "Drake Travis, Scott" },
+        { id: "v1001", type: "group", name: "Drake, Travis Scott" },
       ]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2"]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1000", "v1001"]);
     });
 
     it("gives lines before a combination marker the default voice", () => {
@@ -498,9 +498,9 @@ describe("parseQrc", () => {
       );
       expect(result.agents).toEqual([
         { id: "v1", type: "person", name: DEFAULT_AGENTS[0].name },
-        { id: "v2", type: "group", name: "Drake, Travis Scott" },
+        { id: "v1000", type: "group", name: "Drake, Travis Scott" },
       ]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2"]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1000"]);
     });
 
     it("keeps a solo marker apart from a combination that names the same performer", () => {
@@ -509,22 +509,22 @@ describe("parseQrc", () => {
       );
       expect(result.agents).toEqual([
         { id: "v1", type: "person", name: "Drake" },
-        { id: "v2", type: "group", name: "Drake, Travis Scott" },
+        { id: "v1000", type: "group", name: "Drake, Travis Scott" },
       ]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2"]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1000"]);
     });
 
     it("reads a combination QQ tagged one word at a time", () => {
       const result = parseQrc("[1000,500]Drake/(1000,150)Travis (1150,150)Scott：(1300,200)\n[2000,500]Hi(2000,500)");
-      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Drake, Travis Scott" }]);
+      expect(result.agents).toEqual([{ id: "v1000", type: "group", name: "Drake, Travis Scott" }]);
       expect(result.agents?.[0].name).not.toContain(getSplitCharacter());
     });
 
     it("mints a group agent for the name QQ gives the whole cast", () => {
       for (const name of ["合", "合唱", "ALL", "all"]) {
         const result = parseQrc(`[1000,500]${name}：(1000,500)\n[2000,500]One(2000,500)`);
-        expect(result.agents).toEqual([{ id: "v1", type: "group", name }]);
-        expect(result.lines.map((line) => line.agentId)).toEqual(["v1"]);
+        expect(result.agents).toEqual([{ id: "v1000", type: "group", name }]);
+        expect(result.lines.map((line) => line.agentId)).toEqual(["v1000"]);
       }
     });
 
@@ -538,7 +538,7 @@ describe("parseQrc", () => {
         const result = parseQrc(SICKO_MODE_QRC);
         expect(result.lines.map((line) => line.text)).not.toContain("Travis Scott/The Notorious B.I.G.：");
         expect(result.agents).toContainEqual({
-          id: "v2",
+          id: "v1000",
           type: "group",
           name: "Travis Scott, The Notorious B.I.G.",
         });
