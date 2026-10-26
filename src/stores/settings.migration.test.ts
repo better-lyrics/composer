@@ -214,3 +214,16 @@ describe("spectrum and pitch settings", () => {
     expect(useSettingsStore.getState().pitchLine).toBe("focus");
   });
 });
+
+describe("timeline toggle renames", () => {
+  it("carries a saved defaultRollingEdit and defaultPreviewSidebar to the new keys", () => {
+    const migrated = migrateSettings(
+      legacyBlob({ defaultRollingEdit: true, defaultPreviewSidebar: true }),
+      12,
+    ) as Record<string, unknown>;
+    expect(migrated.rollingEdit).toBe(true);
+    expect(migrated.previewSidebar).toBe(true);
+    expect(migrated).not.toHaveProperty("defaultRollingEdit");
+    expect(migrated).not.toHaveProperty("defaultPreviewSidebar");
+  });
+});

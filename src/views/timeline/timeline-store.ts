@@ -149,7 +149,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
   return {
     zoom: settings.defaultZoom,
     followEnabled: settings.followPlayhead,
-    previewSidebarOpen: settings.defaultPreviewSidebar,
+    previewSidebarOpen: settings.previewSidebar,
     textVariant: "original",
     selectedWords: [],
     selectionPlayback: null,
@@ -167,7 +167,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     dragTime: 0,
     contextMenu: null,
     editingWord: null,
-    rollingEditMode: settings.defaultRollingEdit,
+    rollingEditMode: settings.rollingEdit,
     spectrumVisible: settings.showSpectrum,
     markerMode: false,
     hoveredSnapPointId: null,

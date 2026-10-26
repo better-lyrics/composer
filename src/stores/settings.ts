@@ -51,8 +51,8 @@ interface SettingsState extends SnapSettings, SpectrumSettings {
   defaultZoom: number;
   defaultRowHeight: number;
   followPlayhead: boolean;
-  defaultRollingEdit: boolean;
-  defaultPreviewSidebar: boolean;
+  rollingEdit: boolean;
+  previewSidebar: boolean;
   previewSidebarWidth: number;
   shareTimingInNewGroups: boolean;
   loopOpenGroup: boolean;
@@ -137,8 +137,8 @@ const DEFAULTS: SettingsState = {
   defaultZoom: 100,
   defaultRowHeight: 44,
   followPlayhead: true,
-  defaultRollingEdit: false,
-  defaultPreviewSidebar: false,
+  rollingEdit: false,
+  previewSidebar: false,
   previewSidebarWidth: PREVIEW_SIDEBAR_WIDTH.default,
   shareTimingInNewGroups: true,
   loopOpenGroup: false,
