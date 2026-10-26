@@ -89,4 +89,4 @@ function gridPointAt(points: readonly GridPoint[], time: number): GridPoint | nu
 // -- Exports -------------------------------------------------------------------
 
 export { gridDensity, gridPointAt, gridPointLabel, gridPoints };
-export type { GridLines, GridPoint, GridPointKind };
+export type { GridLines, GridPoint };

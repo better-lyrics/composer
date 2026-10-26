@@ -83,6 +83,10 @@ function lineLevel(point: GridPoint): GridLineLevel {
   return point.division === 2 ? "half" : "fine";
 }
 
+function lineX(point: GridPoint, state: DrawnState): number {
+  return Math.round(point.t * state.zoom - state.scrollLeft) + 0.5;
+}
+
 function lineExtent(level: GridLineLevel, height: number, overSpectrum: boolean): [top: number, length: number] {
   if (overSpectrum) return [0, Math.round(height * SPECTRUM_LINE_LENGTH[level])];
   return level === "bar" ? [0, height] : [SHORT_LINE_INSET, height - SHORT_LINE_INSET * 2];
@@ -108,13 +112,10 @@ function paintGrid(context: CanvasRenderingContext2D, grid: BeatGrid, state: Dra
   const { scrollLeft, zoom, width, height, lines } = state;
   const t0 = (scrollLeft - BAR_NUMBER_REACH_PX) / zoom;
   const t1 = (scrollLeft + width + 1) / zoom;
-  context.font = CANVAS_MONO_LABEL_FONT;
-  context.textBaseline = "middle";
-  let labelEnd = Number.NEGATIVE_INFINITY;
-  for (const point of gridPoints(grid, t0, t1, zoom, lines)) {
-    const x = Math.round(point.t * zoom - scrollLeft) + 0.5;
+  const points = gridPoints(grid, t0, t1, zoom, lines);
+  for (const point of points) {
+    const x = lineX(point, state);
     const level = lineLevel(point);
-    const isBar = level === "bar";
     const [top, length] = lineExtent(level, height, state.overSpectrum);
     if (state.overSpectrum) {
       context.fillStyle = SPECTRUM_LINE_EDGE;
@@ -122,19 +123,34 @@ function paintGrid(context: CanvasRenderingContext2D, grid: BeatGrid, state: Dra
     }
     context.fillStyle = colours[level];
     context.fillRect(x - 0.5, top, 1, length);
-    const labelX = x + BAR_NUMBER_INSET_X;
-    if (!isBar || labelX < labelEnd) continue;
+  }
+  paintBarNumbers(context, points, state, colours.number);
+}
+
+function paintBarNumbers(
+  context: CanvasRenderingContext2D,
+  points: readonly GridPoint[],
+  state: DrawnState,
+  colour: string,
+): void {
+  context.save();
+  context.font = CANVAS_MONO_LABEL_FONT;
+  context.textBaseline = "middle";
+  context.fillStyle = colour;
+  if (state.overSpectrum) {
+    context.shadowColor = NUMBER_SHADOW.colour;
+    context.shadowBlur = NUMBER_SHADOW.blur;
+  }
+  let labelEnd = Number.NEGATIVE_INFINITY;
+  for (const point of points) {
+    if (point.kind !== "bar") continue;
+    const labelX = lineX(point, state) + BAR_NUMBER_INSET_X;
+    if (labelX < labelEnd) continue;
     const label = String(point.bar);
-    context.save();
-    if (state.overSpectrum) {
-      context.shadowColor = NUMBER_SHADOW.colour;
-      context.shadowBlur = NUMBER_SHADOW.blur;
-    }
-    context.fillStyle = colours.number;
     context.fillText(label, labelX, BAR_NUMBER_Y);
-    context.restore();
     labelEnd = labelX + context.measureText(label).width + BAR_NUMBER_INSET_X * 2;
   }
+  context.restore();
 }
 
 // -- Component -----------------------------------------------------------------
