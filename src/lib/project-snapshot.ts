@@ -1,10 +1,12 @@
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { keepsYouTubeAudio } from "@/domain/storage/audio-retention";
 import type { ProjectSaveInput } from "@/lib/persistence";
+import type { IndexViewFields } from "@/lib/project-index-write";
 import { type AudioSource, playableFile, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Audio --------------------------------------------------------------------
 
@@ -64,6 +66,10 @@ function currentSaveInput(): ProjectSaveInput {
   };
 }
 
+function openProjectView(): IndexViewFields {
+  return { lastTab: useProjectStore.getState().activeTab, textVariant: useTimelineStore.getState().textVariant };
+}
+
 function buildSaveInput(): ProjectSaveInput | null {
   const projectState = useProjectStore.getState();
   const audioState = useAudioStore.getState();
@@ -75,4 +81,4 @@ function buildSaveInput(): ProjectSaveInput | null {
 
 // -- Exports ------------------------------------------------------------------
 
-export { storedAudioFile, hadStoredAudio, buildSaveInput, currentSaveInput, projectAudioSource };
+export { storedAudioFile, hadStoredAudio, buildSaveInput, currentSaveInput, openProjectView, projectAudioSource };

@@ -134,14 +134,14 @@ describe("saveProjectRecordWithAudio", () => {
 
 describe("saveProjectRecord: last tab", () => {
   it("writes the tab on the first save of a project", async () => {
-    await saveProjectRecord("a", storedProject(songTitled("Alpha")), "edit");
+    await saveProjectRecord("a", storedProject(songTitled("Alpha")), { lastTab: "edit" });
     expect((await loadProjectIndexEntry("a"))?.lastTab).toBe("edit");
   });
 
   it("replaces the remembered tab when a save carries one", async () => {
     await seedStoredProject("a");
     await setProjectLastTab("a", "sync");
-    await saveProjectRecord("a", storedProject(), "timeline");
+    await saveProjectRecord("a", storedProject(), { lastTab: "timeline" });
     expect((await loadProjectIndexEntry("a"))?.lastTab).toBe("timeline");
   });
 

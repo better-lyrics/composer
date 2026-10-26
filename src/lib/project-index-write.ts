@@ -18,10 +18,15 @@ interface IndexCarriedFields {
   textVariant?: LanguageTextVariant;
 }
 
+interface IndexViewFields {
+  lastTab?: ProjectTab;
+  textVariant?: LanguageTextVariant;
+}
+
 interface IndexEntryWrite {
   id: string;
   project: SavedProject;
-  lastTab?: ProjectTab;
+  view?: IndexViewFields;
   onFirstEntry?: () => void;
 }
 
@@ -53,14 +58,16 @@ function carriedIndexFields(entry: ProjectIndexEntry): IndexCarriedFields {
 
 // -- Writing ------------------------------------------------------------------
 
-function writeIndexEntry(tx: IDBTransaction, { id, project, lastTab, onFirstEntry }: IndexEntryWrite): void {
+function writeIndexEntry(tx: IDBTransaction, { id, project, view = {}, onFirstEntry }: IndexEntryWrite): void {
   const index = tx.objectStore(PROJECT_INDEX_STORE_NAME);
   const previous = index.get(id);
   previous.onsuccess = () => {
     const entry = previous.result as ProjectIndexEntry | undefined;
     if (entry) {
       const carried = carriedIndexFields(entry);
-      index.put(indexEntryForProject(id, project, { ...carried, lastTab: lastTab ?? carried.lastTab }), id);
+      const lastTab = view.lastTab ?? carried.lastTab;
+      const textVariant = view.textVariant ?? carried.textVariant;
+      index.put(indexEntryForProject(id, project, { ...carried, lastTab, textVariant }), id);
       return;
     }
     const count = index.count();
@@ -73,7 +80,7 @@ function writeIndexEntry(tx: IDBTransaction, { id, project, lastTab, onFirstEntr
           storedAudioBytes: saved?.data.byteLength ?? 0,
           storedStemBytes: storedStemBytes(stems.result as SavedProjectStems | undefined),
           openedAt: project.savedAt,
-          lastTab,
+          ...view,
         };
         index.put(indexEntryForProject(id, project, carried), id);
         if (count.result === 0) onFirstEntry?.();
@@ -97,4 +104,4 @@ function patchIndexEntry(tx: IDBTransaction, id: string, patch: IndexPatch, onWr
 // -- Exports ------------------------------------------------------------------
 
 export { indexEntryForProject, patchIndexEntry, writeIndexEntry };
-export type { IndexPatch };
+export type { IndexPatch, IndexViewFields };

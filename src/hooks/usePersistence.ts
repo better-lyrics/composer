@@ -13,7 +13,7 @@ import { setProjectLastTab } from "@/lib/project-repository";
 import { isRestoringProject } from "@/lib/project-restore";
 import { watchProjectTextVariant } from "@/lib/project-text-variant";
 import { watchResumePosition } from "@/lib/resume-position";
-import { buildSaveInput, hadStoredAudio, storedAudioFile } from "@/lib/project-snapshot";
+import { buildSaveInput, hadStoredAudio, openProjectView, storedAudioFile } from "@/lib/project-snapshot";
 import { getSaveStatus, trackSave } from "@/lib/save-status";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -37,7 +37,7 @@ function commitProjectSaveNow(): void {
   const input = buildSaveInput();
   if (!input) return;
   cancelPendingSave();
-  trackSave("stem", saveCurrentProject(input, useProjectStore.getState().activeTab)).catch((err) =>
+  trackSave("stem", saveCurrentProject(input, openProjectView())).catch((err) =>
     console.error(LOG_PREFIX, "Immediate save failed:", err),
   );
 }

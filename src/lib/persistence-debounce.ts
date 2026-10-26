@@ -1,8 +1,7 @@
 import { bindSaveTarget } from "@/lib/open-project-session";
 import { type ProjectSaveInput, saveProjectTo } from "@/lib/persistence";
-import { currentSaveInput } from "@/lib/project-snapshot";
+import { currentSaveInput, openProjectView } from "@/lib/project-snapshot";
 import { awaitInFlightSaves, setSavePending, trackSave } from "@/lib/save-status";
-import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 
 // -- Constants ----------------------------------------------------------------
@@ -38,7 +37,7 @@ function takePendingSave(): Promise<void> {
   }
   const written = trackSave(
     "project",
-    saveProjectTo(pending.target, pending.input, useProjectStore.getState().activeTab),
+    saveProjectTo(pending.target, pending.input, openProjectView()),
   );
   setSavePending(false);
   return written;

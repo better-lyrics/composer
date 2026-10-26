@@ -1,4 +1,5 @@
 import { type LanguageTextVariant, isLanguageTextVariant } from "@/domain/language/display";
+import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { type ResumePosition, isResumePosition } from "@/domain/project/resume-position";
 import { type ProjectTab, isProjectTab } from "@/domain/project/tab";
 import { applySavedProject } from "@/lib/apply-saved-project";
@@ -107,7 +108,9 @@ function applyProjectToStores(payload: RestorePayload): void {
     if (payload.project) applyStoredProject(payload.project, payload.audio);
     else if (payload.audio) useAudioStore.getState().setSource({ type: "file", file: payload.audio });
     if (payload.lastTab) useProjectStore.getState().setActiveTab(payload.lastTab);
-    if (payload.textVariant) useTimelineStore.getState().setTextVariant(payload.textVariant);
+    if (payload.textVariant && hasTransliteration(useProjectStore.getState().lines)) {
+      useTimelineStore.getState().setTextVariant(payload.textVariant);
+    }
     resumeTimeline(payload.resumePosition ?? { time: 0, zoom: useSettingsStore.getState().defaultZoom });
     useProjectStore.getState().markClean();
   } finally {

@@ -1,5 +1,6 @@
+import type { LyricLine } from "@/domain/line/model";
 import { usePersistence } from "@/hooks/usePersistence";
-import { restoreOpenProject } from "@/lib/open-project";
+import { createProject, restoreOpenProject } from "@/lib/open-project";
 import { PROJECT_INDEX_STORE_NAME, setInStore } from "@/lib/persistence-idb";
 import { flushPendingSave } from "@/lib/persistence-debounce";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
@@ -35,6 +36,17 @@ import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
+const TRANSLITERATED_LINE: LyricLine = {
+  ...createLine({ text: "今日" }),
+  transliteration: {
+    language: "ja-Latn",
+    text: "kyou",
+    segments: [{ original: "今日", transliteration: "kyou" }],
+    origin: "manual",
+    sourceFingerprint: "test",
+  },
+};
+
 const PersistenceHost: React.FC = () => {
   usePersistence();
   return null;
@@ -65,10 +77,17 @@ describe("project-restore", () => {
   });
 
   it("restores the project's Original or Transliteration choice", async () => {
-    await seedStoredProject("p1", { audio: createAudioFile("city.wav") });
+    await seedStoredProject("p1", { project: { lines: [TRANSLITERATED_LINE] } });
     await setProjectTextVariant("p1", "transliteration");
     applyProjectToStores(await loadProjectForRestore("p1"));
     expect(useTimelineStore.getState().textVariant).toBe("transliteration");
+  });
+
+  it("regression: opens on Original when the saved Transliteration has nothing to show", async () => {
+    await seedStoredProject("p1");
+    await setProjectTextVariant("p1", "transliteration");
+    applyProjectToStores(await loadProjectForRestore("p1"));
+    expect(useTimelineStore.getState().textVariant).toBe("original");
   });
 
   it("opens a project without a saved choice on Original", async () => {
@@ -232,6 +251,16 @@ describe("project-restore", () => {
       useTimelineStore.getState().toggleTextVariant();
       await expect.poll(async () => (await loadProjectIndexEntry("p1"))?.textVariant).toBe("transliteration");
       expect((await loadProjectRecord("p1"))?.savedAt).toBe(333);
+    });
+
+    it("regression: a choice made before the first save is kept by that save", async () => {
+      useSettingsStore.setState({ autoSaveDelay: 20 });
+      await render(<PersistenceHost />);
+      await getPersistenceSettled();
+      const id = createProject();
+      useTimelineStore.getState().setTextVariant("transliteration");
+      useProjectStore.getState().setLines([TRANSLITERATED_LINE]);
+      await expect.poll(async () => (await loadProjectIndexEntry(id))?.textVariant).toBe("transliteration");
     });
   });
 });

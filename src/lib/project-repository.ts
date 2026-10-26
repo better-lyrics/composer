@@ -3,7 +3,7 @@ import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { ProjectTab } from "@/domain/project/tab";
 import { protectStorageForFirstProject } from "@/lib/browser-storage";
-import { type IndexPatch, patchIndexEntry, writeIndexEntry } from "@/lib/project-index-write";
+import { type IndexPatch, type IndexViewFields, patchIndexEntry, writeIndexEntry } from "@/lib/project-index-write";
 import {
   APP_STATE_STORE_NAME,
   type AbortTransaction,
@@ -62,7 +62,7 @@ function writeProjectRecord(
   prepare: (tx: IDBTransaction, abort: AbortTransaction, write: () => void) => void,
   id: string,
   project: SavedProject,
-  lastTab?: ProjectTab,
+  view?: IndexViewFields,
 ): Promise<void> {
   let createdFirstEntry = false;
   return runTransaction(RECORD_WRITE_STORES, "readwrite", (tx, abort) => {
@@ -71,7 +71,7 @@ function writeProjectRecord(
       writeIndexEntry(tx, {
         id,
         project,
-        lastTab,
+        view,
         onFirstEntry: () => {
           createdFirstEntry = true;
         },
@@ -83,8 +83,8 @@ function writeProjectRecord(
   });
 }
 
-function saveProjectRecord(id: string, project: SavedProject, lastTab?: ProjectTab): Promise<void> {
-  return writeProjectRecord((tx, abort, write) => whenProjectWritable(tx, abort, id, write), id, project, lastTab);
+function saveProjectRecord(id: string, project: SavedProject, view?: IndexViewFields): Promise<void> {
+  return writeProjectRecord((tx, abort, write) => whenProjectWritable(tx, abort, id, write), id, project, view);
 }
 
 function restoreDeletedProjectRecord(id: string, project: SavedProject): Promise<void> {

@@ -7,11 +7,11 @@ import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
-import type { ProjectTab } from "@/domain/project/tab";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { ensureOpenProjectId, findOpenProjectId } from "@/lib/open-project-session";
 import { deleteProjectAudio, saveProjectAudio } from "@/lib/project-audio";
+import type { IndexViewFields } from "@/lib/project-index-write";
 import { saveProjectRecord } from "@/lib/project-repository";
 import { SAVED_PROJECT_VERSION, type SavedProject } from "@/lib/saved-project";
 import type { GranularityMode } from "@/stores/project";
@@ -47,15 +47,15 @@ function buildSavedProject(input: ProjectSaveInput): SavedProject {
   return { version: SAVED_PROJECT_VERSION, savedAt: Date.now(), ...input, audioFileName };
 }
 
-async function saveProjectTo(target: Promise<string>, input: ProjectSaveInput, lastTab?: ProjectTab): Promise<void> {
+async function saveProjectTo(target: Promise<string>, input: ProjectSaveInput, view?: IndexViewFields): Promise<void> {
   const project = buildSavedProject(input);
-  await saveProjectRecord(await target, project, lastTab);
+  await saveProjectRecord(await target, project, view);
 }
 
 // -- Public API ---------------------------------------------------------------
 
-function saveCurrentProject(input: ProjectSaveInput, lastTab?: ProjectTab): Promise<void> {
-  return saveProjectTo(ensureOpenProjectId(), input, lastTab);
+function saveCurrentProject(input: ProjectSaveInput, view?: IndexViewFields): Promise<void> {
+  return saveProjectTo(ensureOpenProjectId(), input, view);
 }
 
 // -- Audio File Persistence ---------------------------------------------------
