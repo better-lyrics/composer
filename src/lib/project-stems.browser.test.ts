@@ -110,4 +110,11 @@ describe("project stems", () => {
     await saveProjectStem("stems-reuse", "h", importedVocals("other.wav"));
     expect((await loadProjectStems("stems-reuse"))?.slots.vocals?.revision).toBe(3);
   });
+
+  it("leaves the record untouched when the write is no longer wanted at commit time", async () => {
+    await seedStoredProject("stems-unwanted");
+    await saveProjectStem("stems-unwanted", "h", importedVocals());
+    await saveProjectStem("stems-unwanted", "h", { ...importedVocals("stale.wav"), shouldWrite: () => false });
+    expect((await loadProjectStems("stems-unwanted"))?.slots.vocals?.name).toBe("acapella.wav");
+  });
 });

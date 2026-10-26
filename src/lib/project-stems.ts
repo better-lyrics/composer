@@ -19,6 +19,7 @@ interface ProjectStemWrite {
   file: File;
   origin: StemOrigin;
   durationSeconds: number;
+  shouldWrite?: () => boolean;
 }
 
 type StemsChange = (current: SavedProjectStems | undefined) => SavedProjectStems | undefined;
@@ -91,7 +92,10 @@ async function saveProjectStem(id: string, songKey: string, write: ProjectStemWr
     data: await write.file.arrayBuffer(),
     durationSeconds: write.durationSeconds,
   };
-  await writeProjectStems(id, (current) => withStem(current, songKey, write.slot, stem));
+  await writeProjectStems(id, (current) => {
+    if (write.shouldWrite && !write.shouldWrite()) return current;
+    return withStem(current, songKey, write.slot, stem);
+  });
   notifyStorageSignal("media-stored");
 }
 

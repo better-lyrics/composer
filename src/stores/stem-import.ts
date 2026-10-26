@@ -128,6 +128,7 @@ async function commitStemImport(
       file: playable,
       origin: "imported",
       durationSeconds,
+      shouldWrite: () => isCurrentImportTarget(target),
     });
     return true;
   } catch (error) {
