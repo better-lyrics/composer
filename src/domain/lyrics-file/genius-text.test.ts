@@ -62,6 +62,22 @@ describe("readGeniusLyrics", () => {
       expect(texts("[Verse]\n\nA\n\n[Chorus]\n")).toEqual(["A"]);
     });
 
+    it("regression: keeps opening lyrics between the page title and the first tag", () => {
+      expect(texts("12 Contributors\nSong Lyrics\nOpening lyric\n[Chorus]\nNext lyric\n[Verse]\nLast")).toEqual([
+        "Opening lyric",
+        "Next lyric",
+        "Last",
+      ]);
+    });
+
+    it("regression: drops the song description under the page title", () => {
+      expect(
+        texts(
+          '12 Contributors\nSong Lyrics\n"Song" is the lead single from the album... Read More\n[Intro]\nYeah\n[Verse]\nGo',
+        ),
+      ).toEqual(["Yeah", "Go"]);
+    });
+
     it("regression: drops the page header when the copy has no section tags", () => {
       expect(texts("12 Contributors\nTranslations\nEspañol\nSong Lyrics\nFirst\nSecond")).toEqual(["First", "Second"]);
     });

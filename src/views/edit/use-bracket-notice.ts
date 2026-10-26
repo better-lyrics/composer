@@ -35,8 +35,6 @@ function useBracketNotice(parsed: readonly ParsedLine[]): NoticeKind | null {
       icon: IconAlertTriangle,
       tone: "warn",
       summary: `${pluralize(bracketLines.length, "line")} ${pluralWord(bracketLines.length, "contains", "contain")} [brackets]`,
-      singleAction:
-        removableIds.length === 1 && bracketLines.length === 1 ? removeAction("Remove it", removableIds) : undefined,
       rows: bracketLines.map((line) => {
         const removable = isRemovableSectionTag(line);
         return {

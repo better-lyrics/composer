@@ -24,6 +24,7 @@ const EMBED_COUNTER = /\d*Embed$/;
 const ARTIST_LIST_JOINER = /\s+&\s+/;
 const ARTIST_LIST_SEPARATOR = /\s*,\s*|\s+&\s+/;
 const PAGE_TITLE = /\sLyrics$/;
+const SONG_DESCRIPTION = /Read More$/;
 const EMPHASIS_MARKS = /^[*_()\s]+|[*_()\s]+$/g;
 const MIN_SECTION_TAGS = 2;
 const MAX_HEADER_ROWS = 30;
@@ -61,16 +62,20 @@ function creditedPerformers(credit: string): string[] {
   return dedupeIgnoringCase(names);
 }
 
-// The page header (contributors, translations, "<Title> Lyrics") sits above the first section tag.
+// The page header (contributors, translations, "<Title> Lyrics", a "Read More" description) sits above the lyrics.
 function lyricsStart(rows: readonly string[]): number {
   const header = rows.findIndex((row) => PAGE_HEADER.test(row));
   if (header === -1) return 0;
   const firstTag = rows.findIndex((row) => SECTION_TAG.test(row));
-  if (firstTag > header) return firstTag;
-  const title = rows.findIndex(
-    (row, index) => index > header && index <= header + MAX_HEADER_ROWS && PAGE_TITLE.test(row),
-  );
-  return title === -1 ? header + 1 : title + 1;
+  const headerEnd = Math.min(header + MAX_HEADER_ROWS, firstTag > header ? firstTag : rows.length);
+  const title = rows.findIndex((row, index) => index > header && index < headerEnd && PAGE_TITLE.test(row));
+  if (title !== -1) {
+    const description = rows.findIndex(
+      (row, index) => index > title && index < headerEnd && SONG_DESCRIPTION.test(row),
+    );
+    return (description === -1 ? title : description) + 1;
+  }
+  return firstTag > header ? firstTag : header + 1;
 }
 
 // Genius leaves the credit off sections the primary artist sings without naming them, so a
