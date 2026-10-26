@@ -164,6 +164,17 @@ describe("alignment store", () => {
     });
   });
 
+  it("regression: ignores a second run started while the first is still resolving its model", async () => {
+    useProjectStore.getState().setLines([{ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }]);
+
+    const { alignLines } = useAlignmentStore.getState();
+    const [first, second] = await Promise.all([alignLines(), alignLines()]);
+
+    expect(first).toMatchObject({ aligned: 1 });
+    expect(second).toBeNull();
+    expect(seen.japanese).toHaveLength(1);
+  });
+
   it("refuses without separated vocals", async () => {
     useSeparationStore.setState({ stemUrls: {} });
     useProjectStore.getState().setLines([{ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }]);

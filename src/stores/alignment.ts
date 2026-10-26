@@ -204,7 +204,8 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     const project = useProjectStore.getState();
     const planned = planLines(project.lines, lineIds, options.realign ?? false);
     if (planned.length === 0) return { aligned: 0, skipped: 0, fellBack: 0, unknownWords: [] };
-
+    // Claims the run before the first await; every exit until the try goes through fail().
+    set({ status: "downloading", error: null, progress: { done: 0, total: 0 } });
     if (!(await selectedAssets())) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
     if (!isSupportedLanguage(project.metadata.language)) {
       return fail(set, "unsupported-language", "Auto-align supports English, Mandarin and Japanese lyrics.");
@@ -225,7 +226,6 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
 
     controller = new AbortController();
     const { signal } = controller;
-    set({ status: "downloading", error: null, progress: { done: 0, total: 0 } });
 
     try {
       const modelId = useSettingsStore.getState().alignmentModelId;
