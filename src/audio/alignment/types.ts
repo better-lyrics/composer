@@ -52,6 +52,8 @@ interface Aligner {
     options: { japanese: boolean; modelId: string },
   ) => Promise<void>;
   align: (segment: AlignmentSegment, signal: AbortSignal) => Promise<SegmentAlignment>;
+  /** Whether a model that fits these options is already in memory, so a run needs no load. */
+  isLoaded: (options: { japanese: boolean; modelId: string }) => boolean;
   /** Frees the model. The next run prepares again from the download cache. */
   release: () => void;
 }

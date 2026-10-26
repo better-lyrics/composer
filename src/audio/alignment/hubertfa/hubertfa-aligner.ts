@@ -20,8 +20,11 @@ const hubertfaAligner: Aligner = {
   id: "hubertfa",
   listensToAudio: true,
 
-  prepare: async (onProgress, signal, { japanese, modelId }) => {
-    if (worker && loaded?.modelId === modelId && (loaded.japanese || !japanese)) return;
+  isLoaded: ({ japanese, modelId }) => worker !== null && loaded?.modelId === modelId && (loaded.japanese || !japanese),
+
+  prepare: async (onProgress, signal, options) => {
+    if (hubertfaAligner.isLoaded(options)) return;
+    const { japanese, modelId } = options;
     hubertfaAligner.release();
     const assets = await resolveAlignmentAssets(modelId);
     if (!assets) throw new Error("Auto-align isn't available on this deployment.");

@@ -7,13 +7,12 @@ import {
 import type { Aligner } from "@/audio/alignment/types";
 import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { isModelHostingConfigured } from "@/audio/separation/model-registry";
-import { DEFAULT_WINDOW_OPTIONS, alignmentWindow, sliceWindow } from "@/domain/alignment/window";
 import { hasCjk } from "@/domain/alignment/cjk";
 import { hanReadingFor, isSupportedLanguage } from "@/domain/alignment/language";
-import { sungTransliteration } from "@/domain/alignment/transliteration";
+import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
-import type { LineUpdate } from "@/domain/line/model";
-import { type PlannedLine, isUnchanged, planLines } from "@/stores/alignment-plan";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { type PlannedLine, isUnchanged, planLines, segmentFor } from "@/stores/alignment-plan";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
@@ -64,6 +63,11 @@ interface AlignmentActions {
   cancel: () => void;
   dismissError: () => void;
   refreshModelCached: (modelId?: string) => Promise<void>;
+  /**
+   * Times the syllables of words split since `before`, when the model is
+   * already loaded. Only the boundaries inside each split word move.
+   */
+  retimeNewSyllables: (before: readonly LyricLine[]) => Promise<void>;
 }
 
 // -- State --------------------------------------------------------------------
@@ -146,7 +150,6 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       });
       set({ status: "running", modelCached: true, progress: { done: 0, total: planned.length } });
       const pcm = await loadVocalsPcm(vocalsUrl);
-      const duration = pcm.samples.length / pcm.sampleRate;
       const updates: LineUpdate[] = [];
       const plannedById = new Map<string, PlannedLine>();
       const unknownWords = new Set<string>();
@@ -155,21 +158,10 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
 
       for (const plan of planned) {
         signal.throwIfAborted();
-        const { line, taps, words, existing, previous } = plan;
-        const window = alignmentWindow(taps, { ...DEFAULT_WINDOW_OPTIONS, duration, previous });
+        const { line, words, existing } = plan;
+        const { segment, window } = segmentFor(plan, hanReading, pcm);
         // react-doctor-disable-next-line react-doctor/async-await-in-loop -- the worker aligns one line at a time, and progress and cancel follow each line
-        const result = await aligner.align(
-          {
-            words,
-            hanReading,
-            transliteration: sungTransliteration(line),
-            taps,
-            windowBegin: window.begin,
-            samples: sliceWindow(pcm.samples, pcm.sampleRate, window),
-            sampleRate: pcm.sampleRate,
-          },
-          signal,
-        );
+        const result = await aligner.align(segment, signal);
         if (result.fellBack) fellBack++;
         for (const word of result.unknownWords) unknownWords.add(word);
         for (const word of result.guessedWords) guessedWords.add(word);
@@ -209,6 +201,66 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     } finally {
       // Free the model (and its GPU memory) between runs unless asked to keep it; the download stays cached.
       if (get().status !== "idle" || !useSettingsStore.getState().keepAlignmentModelLoaded) aligner.release();
+      if (controller?.signal === signal) controller = null;
+    }
+  },
+
+  retimeNewSyllables: async (before) => {
+    const status = get().status;
+    if (status === "running" || status === "downloading") return;
+    const aligner: Aligner = hubertfaAligner;
+    const project = useProjectStore.getState();
+    const beforeById = new Map(before.map((line) => [line.id, line]));
+    const groupsOf = new Map(
+      project.lines.flatMap((line) => {
+        const was = beforeById.get(line.id)?.words;
+        const groups = line.words && line.words !== was ? newSyllableGroups(was, line.words) : [];
+        return groups.length > 0 ? [[line.id, groups] as const] : [];
+      }),
+    );
+    const planned = planLines(project.lines, [...groupsOf.keys()], true);
+    const hanReading = hanReadingFor(project.metadata.language, project.lines);
+    const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
+    const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
+    const modelId = useSettingsStore.getState().alignmentModelId;
+    // A split never starts a model load; this only runs with one kept in memory.
+    if (planned.length === 0 || !vocalsUrl || !aligner.isLoaded({ japanese, modelId })) return;
+    if (!isSupportedLanguage(project.metadata.language)) return;
+    set({ status: "running", error: null, progress: { done: 0, total: planned.length } });
+    controller = new AbortController();
+    const { signal } = controller;
+    try {
+      const pcm = await loadVocalsPcm(vocalsUrl);
+      const updates: LineUpdate[] = [];
+      for (const plan of planned) {
+        signal.throwIfAborted();
+        const { segment, window } = segmentFor(plan, hanReading, pcm);
+        // react-doctor-disable-next-line react-doctor/async-await-in-loop -- the worker aligns one line at a time, and cancel follows each line
+        const result = await aligner.align(segment, signal);
+        const intervals = sanitizeIntervals(result.intervals, window);
+        const groups = groupsOf.get(plan.line.id) ?? [];
+        if (!result.fellBack) {
+          updates.push({
+            id: plan.line.id,
+            updates: { words: retimeInnerBoundaries(plan.existing!, groups, intervals) },
+          });
+        }
+        set({ progress: { done: planned.indexOf(plan) + 1, total: planned.length } });
+      }
+      signal.throwIfAborted();
+      const latest = useProjectStore.getState();
+      if (latest.projectSession !== project.projectSession) return;
+      const currentById = new Map(latest.lines.map((l) => [l.id, l]));
+      const plannedById = new Map(planned.map((p) => [p.line.id, p]));
+      const applicable = updates.filter((u) => isUnchanged(currentById.get(u.id), plannedById.get(u.id)!));
+      if (applicable.length > 0) latest.updateLinesWithHistory(applicable, { deriveText: false });
+    } catch (err) {
+      if (!isAbortError(err) && !signal.aborted) {
+        console.warn("[alignment] could not time the new syllables", err);
+        aligner.release();
+      }
+    } finally {
+      set({ status: "idle", progress: { done: 0, total: 0 } });
       if (controller?.signal === signal) controller = null;
     }
   },

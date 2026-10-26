@@ -3,6 +3,7 @@ import { splitTransliterationAtBoundaries } from "@/domain/language/transliterat
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { WordTiming } from "@/domain/word/timing";
 import { livePlaybackTime } from "@/stores/audio";
+import { useAlignmentStore } from "@/stores/alignment";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-options";
@@ -138,9 +139,9 @@ function useTimelineSyllableSplitterState({
     const extraUpdates = split.transliteration ? { transliteration: split.transliteration } : {};
 
     if (type === "word") {
-      void handleWordChangeWithDivergenceCheck(lineId, split.words, "words", extraUpdates);
+      return handleWordChangeWithDivergenceCheck(lineId, split.words, "words", extraUpdates);
     } else {
-      void handleWordChangeWithDivergenceCheck(lineId, split.words, "backgroundWords", {
+      return handleWordChangeWithDivergenceCheck(lineId, split.words, "backgroundWords", {
         ...manualBackgroundWordEdit(split.words),
         ...extraUpdates,
       });
@@ -151,6 +152,9 @@ function useTimelineSyllableSplitterState({
     if (!target || splitPoints.length === 0) return;
 
     useProjectStore.getState().setSyllableSplitDefaults({ applyToAll, caseInsensitive });
+    // With the alignment model kept in memory, the new syllables are timed from the audio.
+    const before = useProjectStore.getState().lines;
+    const retime = () => void useAlignmentStore.getState().retimeNewSyllables(before);
 
     if (target.mode === "syllable" && !target.word.transliteration && applyToAll && identicalCount > 0) {
       const ok = await confirm(buildApplyToAllConfirmOptions({ identicalCount, sourceText }));
@@ -160,12 +164,13 @@ function useTimelineSyllableSplitterState({
         splitPoints,
         caseInsensitive,
       });
+      retime();
       resetSplitPoints();
       closeModal();
       return;
     }
 
-    applySingleWordSplit();
+    void applySingleWordSplit()?.then(retime);
     resetSplitPoints();
     closeModal();
   }, [

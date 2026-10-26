@@ -1,3 +1,7 @@
+import type { AlignmentSegment } from "@/audio/alignment/types";
+import type { HanReading } from "@/domain/alignment/language";
+import { sungTransliteration } from "@/domain/alignment/transliteration";
+import { DEFAULT_WINDOW_OPTIONS, alignmentWindow, sliceWindow } from "@/domain/alignment/window";
 import { groupAlignmentWords, groupTimedWords, type AlignmentWord, type WordInterval } from "@/domain/alignment/words";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
@@ -73,7 +77,27 @@ function isUnchanged(current: LyricLine | undefined, planned: PlannedLine): bool
   return isLineSynced(current) && current.begin === planned.taps.begin && current.end === planned.taps.end;
 }
 
+/** The aligner's input for one planned line, cut from the song's vocals, and the window it was cut from. */
+function segmentFor(
+  plan: PlannedLine,
+  hanReading: HanReading,
+  pcm: { samples: Float32Array; sampleRate: number },
+): { segment: AlignmentSegment; window: WordInterval } {
+  const duration = pcm.samples.length / pcm.sampleRate;
+  const window = alignmentWindow(plan.taps, { ...DEFAULT_WINDOW_OPTIONS, duration, previous: plan.previous });
+  const segment: AlignmentSegment = {
+    words: plan.words,
+    hanReading,
+    transliteration: sungTransliteration(plan.line),
+    taps: plan.taps,
+    windowBegin: window.begin,
+    samples: sliceWindow(pcm.samples, pcm.sampleRate, window),
+    sampleRate: pcm.sampleRate,
+  };
+  return { segment, window };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { countAlignableLines, isUnchanged, planLine, planLines };
+export { countAlignableLines, isUnchanged, planLine, planLines, segmentFor };
 export type { PlannedLine };
