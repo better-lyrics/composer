@@ -87,9 +87,13 @@ function lineX(point: GridPoint, state: DrawnState): number {
   return Math.round(point.t * state.zoom - state.scrollLeft) + 0.5;
 }
 
-function lineExtent(level: GridLineLevel, height: number, overSpectrum: boolean): [top: number, length: number] {
-  if (overSpectrum) return [0, Math.round(height * SPECTRUM_LINE_LENGTH[level])];
-  return level === "bar" ? [0, height] : [SHORT_LINE_INSET, height - SHORT_LINE_INSET * 2];
+function lineTop(level: GridLineLevel, overSpectrum: boolean): number {
+  return overSpectrum || level === "bar" ? 0 : SHORT_LINE_INSET;
+}
+
+function lineLength(level: GridLineLevel, height: number, overSpectrum: boolean): number {
+  if (overSpectrum) return Math.round(height * SPECTRUM_LINE_LENGTH[level]);
+  return level === "bar" ? height : height - SHORT_LINE_INSET * 2;
 }
 
 function isSameDrawing(a: DrawnState, b: DrawnState): boolean {
@@ -116,7 +120,8 @@ function paintGrid(context: CanvasRenderingContext2D, grid: BeatGrid, state: Dra
   for (const point of points) {
     const x = lineX(point, state);
     const level = lineLevel(point);
-    const [top, length] = lineExtent(level, height, state.overSpectrum);
+    const top = lineTop(level, state.overSpectrum);
+    const length = lineLength(level, height, state.overSpectrum);
     if (state.overSpectrum) {
       context.fillStyle = SPECTRUM_LINE_EDGE;
       context.fillRect(x - 1.5, top, 3, length);

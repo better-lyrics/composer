@@ -30,7 +30,11 @@ const SAME_TIME_SECONDS = 1e-6;
 function reducedDenominator(numerator: number, denominator: number): number {
   let a = numerator;
   let b = denominator;
-  while (b) [a, b] = [b, a % b];
+  while (b) {
+    const remainder = a % b;
+    a = b;
+    b = remainder;
+  }
   return denominator / a;
 }
 
