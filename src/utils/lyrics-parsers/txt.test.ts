@@ -1,3 +1,4 @@
+import { GENIUS_PAGE_COPY } from "@/test/genius-fixtures";
 import { parseTxt } from "@/utils/lyrics-parsers/txt";
 import { describe, expect, it } from "vitest";
 
@@ -27,6 +28,20 @@ describe("parseTxt", () => {
 
     it("returns no lines for whitespace only content", () => {
       expect(texts("  \n \n")).toEqual([]);
+    });
+  });
+
+  describe("Genius lyrics", () => {
+    it("drops section tags and page junk and declares credited singers", () => {
+      const result = parseTxt(GENIUS_PAGE_COPY);
+      expect(result.lines[0]).toMatchObject({ text: "Yeah, yeah", agentId: "v1" });
+      expect(result.lines.some((line) => line.text.startsWith("["))).toBe(false);
+      expect(result.agents?.map((agent) => agent.name)).toEqual(["Drake", "Drake, Rihanna", "Rihanna"]);
+    });
+
+    it("regression: plain lyrics with one bracket line are unchanged", () => {
+      expect(texts("[Chorus]\nHello")).toEqual(["[Chorus]", "Hello"]);
+      expect(parseTxt("[Chorus]\nHello").agents).toBeUndefined();
     });
   });
 
