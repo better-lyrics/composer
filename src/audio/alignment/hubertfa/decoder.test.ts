@@ -35,6 +35,11 @@ describe("decodeAlignment", () => {
     expect(phones?.map((p) => p.index)).toContain(3);
   });
 
+  it("regression: returns nothing when the window is too short for every phone", () => {
+    const phoneIds = Int32Array.from([0, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 0]);
+    expect(decodeAlignment({ ...scenario(), phoneIds })).toBeNull();
+  });
+
   it("returns nothing for an empty sequence", () => {
     expect(decodeAlignment({ ...scenario(), phoneIds: new Int32Array(0) })).toBeNull();
   });

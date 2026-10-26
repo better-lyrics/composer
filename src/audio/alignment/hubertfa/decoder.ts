@@ -147,6 +147,8 @@ function viterbi(
   }
 
   let s = S === 1 ? 0 : dp[at(S - 2, T - 1)] > dp[at(S - 1, T - 1)] && phoneIds[S - 1] === SILENCE_ID ? S - 2 : S - 1;
+  // No path reaches the end when the window is too short for every phone; backtracking would invent one.
+  if (!Number.isFinite(dp[at(s, T - 1)])) return null;
   const states: number[] = [];
   const starts: number[] = [];
   for (let t = T - 1; t >= 0; t--) {
