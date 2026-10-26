@@ -143,6 +143,24 @@ HTDemucs is the official Facebook AI Research model (`facebookresearch/demucs`, 
 
 Cost: free egress, and about $0.0015 a month to store the fp16 model.
 
+### Trying other alignment checkpoints
+
+Auto-align uses HubertFA v0.0.7 by default. To try other checkpoints with the same inputs, outputs and phone set, list them in a manifest named `hubertfa-models.json` next to the models (`$VITE_VOCAL_MODEL_BASE_URL/hubertfa-models.json`). Each one then shows up under Settings > Playback > Alignment model.
+
+```json
+{
+  "models": [
+    { "id": "ft-2026-10-25", "label": "Posttrain Oct 25", "model": "hubertfa_ft_2026-10-25.onnx", "sizeMb": 396 }
+  ]
+}
+```
+
+- `model` and the optional `dictionary` (the English pronunciation dictionary, defaulting to the v0.0.7 one) are URLs, relative to the manifest.
+- The phone vocabulary is bundled with the app (`src/audio/alignment/hubertfa/vocab.json`), so a checkpoint with a different phone set needs a code change, not a manifest entry.
+- The browser caches each model by URL, so give every export a new file name. Re-uploading under the same name keeps serving the old copy.
+- The manifest is fetched once per page load, without caching. Upload it with `Cache-Control: no-cache` so the edge doesn't keep a stale copy. `./scripts/upload-hubertfa.sh` does this when `hubertfa-models.json` is in its assets folder.
+- To test checkpoints on your machine without uploading them, serve a folder holding the manifest and models with CORS enabled (for example `npx serve --cors -l 8787 ./checkpoints`), set `VITE_ALIGNMENT_MODEL_MANIFEST_URL=http://localhost:8787/hubertfa-models.json` in `.env.local`, and restart `pnpm dev`.
+
 ## Tech stack
 
 React, TypeScript, Vite, Tailwind CSS v4, Zustand, Motion, Vitest

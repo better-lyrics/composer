@@ -37,11 +37,15 @@ interface Aligner {
   readonly id: string;
   /** False when the aligner ignores the audio. */
   readonly listensToAudio: boolean;
-  /** Downloads and loads whatever the aligner needs, including the kanji dictionary when `japanese`. */
+  /**
+   * Downloads and loads whatever the aligner needs, including the kanji
+   * dictionary when `japanese`. `modelId` picks the checkpoint for aligners
+   * that offer more than one.
+   */
   prepare: (
     onProgress: (loaded: number, total: number) => void,
     signal: AbortSignal,
-    options: { japanese: boolean },
+    options: { japanese: boolean; modelId: string },
   ) => Promise<void>;
   align: (segment: AlignmentSegment, signal: AbortSignal) => Promise<SegmentAlignment>;
   /** Frees the model. The next run prepares again from the download cache. */

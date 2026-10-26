@@ -1,4 +1,9 @@
-import type { CachedModel } from "@/audio/separation/model-cache";
+import {
+  type AlignmentModel,
+  DICTIONARY_APPROX_BYTES,
+  resolveAlignmentModel,
+} from "@/audio/alignment/hubertfa/model-manifest";
+import { type CachedModel, hasCachedModel } from "@/audio/separation/model-cache";
 import { getModelBaseUrl } from "@/audio/separation/model-registry";
 
 // -- Types --------------------------------------------------------------------
@@ -13,13 +18,6 @@ interface AlignmentAssets {
 
 // -- Constants ----------------------------------------------------------------
 
-// HubertFA v0.0.7 (Apache-2.0) in fp32, with its two fp32 -> fp16 -> fp32 Cast
-// round-trips removed: WebGPU can only run fp16 casts on GPUs with shader-f16,
-// and the round-trips only dropped precision.
-const MODEL_FILENAME = "hubertfa_v007_fp32_webgpu.onnx";
-const MODEL_APPROX_BYTES = 396 * 1024 * 1024;
-const DICTIONARY_FILENAME = "hubertfa_v007_cmudict.txt";
-const DICTIONARY_APPROX_BYTES = 3.3 * 1024 * 1024;
 const JAPANESE_DICTIONARY_DIR = "kuromoji-ipadic";
 const JAPANESE_DICTIONARY_FILES: Record<string, number> = {
   "base.dat.gz": 3956825,
@@ -38,23 +36,37 @@ const JAPANESE_DICTIONARY_FILES: Record<string, number> = {
 
 // -- Functions ----------------------------------------------------------------
 
-// Hosted next to the vocal separation model.
-function getAlignmentAssets(): AlignmentAssets | null {
+// The kanji dictionary is hosted next to the vocal separation model whichever
+// alignment model is selected.
+function getAlignmentAssets(model: AlignmentModel): AlignmentAssets | null {
   const base = getModelBaseUrl();
   if (!base) return null;
   return {
-    model: { url: `${base}/${MODEL_FILENAME}`, approxBytes: MODEL_APPROX_BYTES },
-    dictionary: { url: `${base}/${DICTIONARY_FILENAME}`, approxBytes: DICTIONARY_APPROX_BYTES },
+    model: { url: model.modelUrl, approxBytes: model.approxBytes },
+    dictionary: { url: model.dictionaryUrl, approxBytes: DICTIONARY_APPROX_BYTES },
     japaneseDictionary: Object.fromEntries(
       Object.entries(JAPANESE_DICTIONARY_FILES).map(([name, approxBytes]) => [
         name,
         { url: `${base}/${JAPANESE_DICTIONARY_DIR}/${name}`, approxBytes },
       ]),
     ),
-    approxMb: Math.round((MODEL_APPROX_BYTES + DICTIONARY_APPROX_BYTES) / (1024 * 1024)),
+    approxMb: Math.round((model.approxBytes + DICTIONARY_APPROX_BYTES) / (1024 * 1024)),
   };
+}
+
+async function resolveAlignmentAssets(modelId: string): Promise<AlignmentAssets | null> {
+  const model = await resolveAlignmentModel(modelId);
+  return model ? getAlignmentAssets(model) : null;
+}
+
+// The kanji dictionary is left out: it's fetched only for Japanese lyrics.
+async function areAlignmentAssetsCached(assets: AlignmentAssets | null): Promise<boolean> {
+  if (!assets) return false;
+  const [model, dictionary] = await Promise.all([hasCachedModel(assets.model), hasCachedModel(assets.dictionary)]);
+  return model && dictionary;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { getAlignmentAssets };
+export { areAlignmentAssetsCached, resolveAlignmentAssets };
+export type { AlignmentAssets };

@@ -1,4 +1,5 @@
 import type { HanReading } from "@/audio/alignment/hubertfa/g2p";
+import type { AlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import type { AlignOutcome, InboundMessage, OutboundMessage } from "@/audio/alignment/hubertfa/worker";
 import type { Backend } from "@/audio/ort-runtime";
 
@@ -87,8 +88,12 @@ class AlignmentWorker {
     });
   }
 
-  async init(onProgress?: (loaded: number, total: number) => void, japanese = false): Promise<Backend> {
-    const promise = this.request({ type: "init", japanese }, [], onProgress);
+  async init(
+    assets: AlignmentAssets,
+    onProgress?: (loaded: number, total: number) => void,
+    japanese = false,
+  ): Promise<Backend> {
+    const promise = this.request({ type: "init", assets, japanese }, [], onProgress);
     this.armInitTimeout();
     const msg = await promise;
     if (msg.type !== "init-done") throw workerError("Unexpected reply to init.", "protocol");

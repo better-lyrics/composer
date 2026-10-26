@@ -1,9 +1,10 @@
 import { hasMainLyrics, isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { useAutoAlign } from "@/hooks/use-auto-align";
-import { alignmentModelSizeMb, countAlignableLines, isAutoAlignAvailable, useAlignmentStore } from "@/stores/alignment";
+import { countAlignableLines, isAutoAlignAvailable, useAlignmentStore } from "@/stores/alignment";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
+import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { ErrorState, PopActions, PopText, PopTitle, ProgressState } from "@/ui/vocal-separation-states";
@@ -55,6 +56,8 @@ const AutoAlignDropdown: React.FC = () => {
   const progress = useAlignmentStore((s) => s.progress);
   const error = useAlignmentStore((s) => s.error);
   const modelCached = useAlignmentStore((s) => s.modelCached);
+  const sizeMb = useAlignmentStore((s) => s.modelSizeMb);
+  const modelId = useSettingsStore((s) => s.alignmentModelId);
   const refreshModelCached = useAlignmentStore((s) => s.refreshModelCached);
   const separationStatus = useSeparationStore((s) => s.status);
   const separationProgress = useSeparationStore((s) => s.progress);
@@ -69,8 +72,8 @@ const AutoAlignDropdown: React.FC = () => {
   }, [lines]);
 
   useEffect(() => {
-    void refreshModelCached();
-  }, [refreshModelCached]);
+    void refreshModelCached(modelId);
+  }, [refreshModelCached, modelId]);
 
   if (!isAutoAlignAvailable() || !source) return null;
 
@@ -82,7 +85,6 @@ const AutoAlignDropdown: React.FC = () => {
   const busy = status === "downloading" || status === "running";
   const separating = separationStatus === "downloading" || separationStatus === "processing";
   const pct = percent(progress.done, progress.total);
-  const sizeMb = alignmentModelSizeMb();
   const hasTaps = counts.lineTimed + counts.wordTimed > 0;
 
   return (

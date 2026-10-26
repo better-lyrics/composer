@@ -1,8 +1,12 @@
 import { hubertfaAligner } from "@/audio/alignment/hubertfa/hubertfa-aligner";
-import { getAlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
+import {
+  type AlignmentAssets,
+  areAlignmentAssetsCached,
+  resolveAlignmentAssets,
+} from "@/audio/alignment/hubertfa/model-registry";
 import type { Aligner } from "@/audio/alignment/types";
 import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
-import { hasCachedModel } from "@/audio/separation/model-cache";
+import { isModelHostingConfigured } from "@/audio/separation/model-registry";
 import { DEFAULT_WINDOW_OPTIONS, alignmentWindow, sliceWindow } from "@/domain/alignment/window";
 import type { HanReading } from "@/audio/alignment/hubertfa/g2p";
 import { hasCjk, hasKana } from "@/domain/alignment/cjk";
@@ -22,6 +26,7 @@ import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
+import { useSettingsStore } from "@/stores/settings";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { create } from "zustand";
 
@@ -65,6 +70,8 @@ interface AlignmentState {
   progress: { done: number; total: number };
   error: AlignmentError | null;
   modelCached: boolean;
+  /** Download size of the selected model and its dictionary, once resolved. */
+  modelSizeMb: number | null;
 }
 
 interface AlignmentActions {
@@ -72,7 +79,8 @@ interface AlignmentActions {
   alignLines: (lineIds?: readonly string[], options?: AlignOptions) => Promise<AlignmentResult | null>;
   cancel: () => void;
   dismissError: () => void;
-  refreshModelCached: () => Promise<void>;
+  /** Defaults to the model selected in settings. */
+  refreshModelCached: (modelId?: string) => Promise<void>;
 }
 
 interface PlannedLine {
@@ -108,20 +116,13 @@ function hanReadingFor(language: string | undefined, lines: readonly LyricLine[]
   return lines.some((line) => hasKana(line.text)) ? "ja" : "zh";
 }
 
-async function isModelCached(): Promise<boolean> {
-  const assets = getAlignmentAssets();
-  if (!assets) return false;
-  const [model, dictionary] = await Promise.all([hasCachedModel(assets.model), hasCachedModel(assets.dictionary)]);
-  return model && dictionary;
-}
-
-function alignmentModelSizeMb(): number | null {
-  return getAlignmentAssets()?.approxMb ?? null;
+function selectedAssets(modelId = useSettingsStore.getState().alignmentModelId): Promise<AlignmentAssets | null> {
+  return resolveAlignmentAssets(modelId);
 }
 
 // Auto-align shares the vocal separation model's host; without one it's hidden.
 function isAutoAlignAvailable(): boolean {
-  return getAlignmentAssets() !== null;
+  return isModelHostingConfigured();
 }
 
 function fail(set: (partial: Partial<AlignmentState>) => void, code: AlignmentErrorCode, message: string): null {
@@ -186,8 +187,12 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
   progress: { done: 0, total: 0 },
   error: null,
   modelCached: false,
+  modelSizeMb: null,
 
-  refreshModelCached: async () => set({ modelCached: await isModelCached() }),
+  refreshModelCached: async (modelId) => {
+    const assets = await selectedAssets(modelId);
+    set({ modelCached: await areAlignmentAssetsCached(assets), modelSizeMb: assets?.approxMb ?? null });
+  },
 
   dismissError: () => {
     if (get().status === "error") set({ status: "idle", error: null });
@@ -201,7 +206,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     const planned = planLines(project.lines, lineIds, options.realign ?? false);
     if (planned.length === 0) return { aligned: 0, skipped: 0, fellBack: 0, unknownWords: [] };
 
-    if (!getAlignmentAssets()) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
+    if (!(await selectedAssets())) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
     if (!isSupportedLanguage(project.metadata.language)) {
       return fail(set, "unsupported-language", "Auto-align supports English, Mandarin and Japanese lyrics.");
     }
@@ -215,7 +220,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         "Separate the vocals first. Alignment on the full mix is less accurate than tapping by hand.",
       );
     }
-    if (!options.allowDownload && !(await isModelCached())) {
+    if (!options.allowDownload && !(await areAlignmentAssetsCached(await selectedAssets()))) {
       return fail(set, "needs-model", "Auto-align needs a one-time model download.");
     }
 
@@ -224,7 +229,8 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     set({ status: "downloading", error: null, progress: { done: 0, total: 0 } });
 
     try {
-      await aligner.prepare((loaded, total) => set({ progress: { done: loaded, total } }), signal, { japanese });
+      const modelId = useSettingsStore.getState().alignmentModelId;
+      await aligner.prepare((loaded, total) => set({ progress: { done: loaded, total } }), signal, { japanese, modelId });
       set({ status: "running", modelCached: true, progress: { done: 0, total: planned.length } });
       const pcm = await loadVocalsPcm(vocalsUrl);
       const duration = pcm.samples.length / pcm.sampleRate;
@@ -291,4 +297,4 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
 
 // -- Exports ------------------------------------------------------------------
 
-export { alignmentModelSizeMb, countAlignableLines, isAutoAlignAvailable, useAlignmentStore };
+export { countAlignableLines, isAutoAlignAvailable, useAlignmentStore };

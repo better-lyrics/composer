@@ -6,7 +6,7 @@ import mandarinDictionaryText from "@/audio/alignment/hubertfa/dictionary-zh.txt
 import { type G2pContext, type HanReading, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
 import { createJapaneseReader } from "@/audio/alignment/hubertfa/japanese-tokenizer";
 import { type Pronunciations, parseDictionary } from "@/audio/alignment/hubertfa/lexicon";
-import { getAlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
+import type { AlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import {
   buildPhoneSequence,
   partIntervalsFromUnits,
@@ -29,7 +29,7 @@ type AlignOutcome =
   | { kind: "no-path" };
 
 type InboundMessage =
-  | { type: "init"; forceWasm?: boolean; japanese?: boolean }
+  | { type: "init"; assets: AlignmentAssets; forceWasm?: boolean; japanese?: boolean }
   | {
       type: "align";
       samples: Float32Array;
@@ -58,6 +58,7 @@ let ort: Ort | null = null;
 let session: OrtSession | null = null;
 let activeBackend: Backend = "wasm";
 let dictionary: Pronunciations | null = null;
+let modelAsset: CachedModel | null = null;
 let readJapanese: G2pContext["readJapanese"] = null;
 let pinyinOf: G2pContext["pinyinOf"] = null;
 const mandarinDictionary = parseDictionary(mandarinDictionaryText);
@@ -95,13 +96,8 @@ async function loadPinyin(): Promise<NonNullable<G2pContext["pinyinOf"]>> {
   return pinyinOf;
 }
 
-async function handleInit(forceWasm?: boolean, japanese?: boolean) {
-  const assets = getAlignmentAssets();
-  if (!assets) {
-    post({ type: "error", code: "no-base-url", message: "VITE_VOCAL_MODEL_BASE_URL is not configured." });
-    return;
-  }
-
+async function handleInit(assets: AlignmentAssets, forceWasm?: boolean, japanese?: boolean) {
+  modelAsset = assets.model;
   downloadAbort = new AbortController();
   const { signal } = downloadAbort;
   const japaneseFiles = japanese && !readJapanese ? assets.japaneseDictionary : {};
@@ -177,10 +173,9 @@ async function handleInit(forceWasm?: boolean, japanese?: boolean) {
 // Some GPUs fail kernels only at run time. Rebuild the session on the CPU from
 // the download cache rather than failing every remaining line.
 async function fallBackToWasm(reason: unknown): Promise<void> {
-  const assets = getAlignmentAssets();
-  if (!assets || !ort) throw reason;
+  if (!modelAsset || !ort) throw reason;
   log(`WebGPU run failed (${describeError(reason)}); switching alignment to WASM (CPU)`);
-  const modelBytes = await readCachedModel(assets.model);
+  const modelBytes = await readCachedModel(modelAsset);
   if (!modelBytes) throw reason;
   await session?.release?.();
   session = await createSession(ort, modelBytes, "wasm");
@@ -268,7 +263,7 @@ async function handleAlign(
 
 self.addEventListener("message", (ev: MessageEvent<InboundMessage>) => {
   const msg = ev.data;
-  if (msg.type === "init") void handleInit(msg.forceWasm, msg.japanese);
+  if (msg.type === "init") void handleInit(msg.assets, msg.forceWasm, msg.japanese);
   else if (msg.type === "align") {
     void handleAlign(msg.samples, msg.sampleRate, msg.words, msg.hanReading, msg.transliteration);
   } else if (msg.type === "cancel") downloadAbort?.abort();

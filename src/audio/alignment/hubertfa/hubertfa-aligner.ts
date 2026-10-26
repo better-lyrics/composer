@@ -1,3 +1,4 @@
+import { resolveAlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import { AlignmentWorker } from "@/audio/alignment/hubertfa/worker-host";
 import { splitByCharacters } from "@/audio/alignment/split-by-characters";
 import type { Aligner } from "@/audio/alignment/types";
@@ -15,13 +16,15 @@ const hubertfaAligner: Aligner = {
   id: "hubertfa",
   listensToAudio: true,
 
-  prepare: async (onProgress, signal, { japanese }) => {
+  prepare: async (onProgress, signal, { japanese, modelId }) => {
     if (worker) return;
+    const assets = await resolveAlignmentAssets(modelId);
+    if (!assets) throw new Error("Auto-align isn't available on this deployment.");
     const next = new AlignmentWorker();
     const onAbort = () => next.cancel();
     signal.addEventListener("abort", onAbort);
     try {
-      await next.init(onProgress, japanese);
+      await next.init(assets, onProgress, japanese);
       worker = next;
     } catch (err) {
       next.dispose();

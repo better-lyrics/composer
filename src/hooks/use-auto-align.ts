@@ -1,4 +1,4 @@
-import { alignmentModelSizeMb, useAlignmentStore } from "@/stores/alignment";
+import { useAlignmentStore } from "@/stores/alignment";
 import { useSeparationStore } from "@/stores/separation";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { pluralWord, pluralize } from "@/utils/pluralize";
@@ -46,7 +46,7 @@ function showAlignmentError(autoAlign: AutoAlign, lineIds?: readonly string[], r
     return;
   }
   if (error.code === "needs-model") {
-    const size = alignmentModelSizeMb();
+    const size = useAlignmentStore.getState().modelSizeMb;
     toast(error.message, {
       description: "It's cached in this browser afterwards.",
       // A download this size is a decision; don't let the prompt time out under the user.

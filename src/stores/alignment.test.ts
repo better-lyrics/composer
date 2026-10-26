@@ -12,10 +12,12 @@ const seen = vi.hoisted(() => ({
   japanese: [] as boolean[],
 }));
 
-vi.mock("@/audio/alignment/hubertfa/model-registry", () => ({
-  getAlignmentAssets: () => ({
+vi.mock("@/audio/alignment/hubertfa/model-registry", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/audio/alignment/hubertfa/model-registry")>()),
+  resolveAlignmentAssets: async () => ({
     model: { url: "https://models.test/model.onnx", approxBytes: 1 },
     dictionary: { url: "https://models.test/dict.txt", approxBytes: 1 },
+    japaneseDictionary: {},
     approxMb: 399,
   }),
 }));

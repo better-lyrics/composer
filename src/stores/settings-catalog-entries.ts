@@ -104,6 +104,13 @@ const SETTINGS_CATALOG = {
     keywords: ["fp16", "fp32", "stems", "separation"],
     settingKey: "vocalModelVariant",
   },
+  alignmentModelId: {
+    section: "playback",
+    label: "Alignment model",
+    description: "Checkpoint auto-align uses. Extra checkpoints come from the alignment model manifest.",
+    keywords: ["hubertfa", "auto-align", "forced alignment", "checkpoint", "manifest"],
+    settingKey: "alignmentModelId",
+  },
   ...TIMELINE_CATALOG_ENTRIES,
   ...SPECTRUM_CATALOG_ENTRIES,
   splitCharacter: {
