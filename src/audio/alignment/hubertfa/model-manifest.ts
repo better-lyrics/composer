@@ -49,11 +49,23 @@ function builtinModel(baseUrl: string): AlignmentModel {
   };
 }
 
+// The base language of a code ("en_US" -> "en"), or null for one Intl can't
+// name: the picker labels its tabs with Intl.DisplayNames, which throws on those.
+function baseLanguage(code: unknown): string | null {
+  if (typeof code !== "string") return null;
+  const base = code.trim().replaceAll("_", "-").split("-")[0].toLowerCase();
+  try {
+    return Intl.getCanonicalLocales(base)[0] ?? null;
+  } catch (err) {
+    console.warn(`${LOG_PREFIX} skipping language code ${JSON.stringify(code)}`, err);
+    return null;
+  }
+}
+
 // A checkpoint that doesn't list its languages keeps the base model's.
 function parseLanguages(raw: unknown, fallback: string[]): string[] {
   if (!Array.isArray(raw)) return fallback;
-  const codes = raw.filter((code): code is string => typeof code === "string" && !!code.trim());
-  const languages = [...new Set(codes.map((code) => code.trim().toLowerCase().split("-")[0]))];
+  const languages = [...new Set(raw.map(baseLanguage).filter((code): code is string => code !== null))];
   return languages.length > 0 ? languages : fallback;
 }
 

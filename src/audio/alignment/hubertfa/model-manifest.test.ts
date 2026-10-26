@@ -20,7 +20,10 @@ describe("parseAlignmentManifest", () => {
     );
 
     expect(models).toEqual([
-      expect.objectContaining({ id: BUILTIN_ALIGNMENT_MODEL.id, modelUrl: `${BASE_URL}/hubertfa_v007_fp32_webgpu.onnx` }),
+      expect.objectContaining({
+        id: BUILTIN_ALIGNMENT_MODEL.id,
+        modelUrl: `${BASE_URL}/hubertfa_v007_fp32_webgpu.onnx`,
+      }),
       {
         id: "ft-1",
         label: "Posttrain 1",
@@ -37,6 +40,15 @@ describe("parseAlignmentManifest", () => {
         languages: BUILTIN_ALIGNMENT_MODEL.languages,
       }),
     ]);
+  });
+
+  it("regression: keeps only language codes the browser can name", () => {
+    const [, model] = parseAlignmentManifest(
+      { models: [{ id: "ft", model: "ft.onnx", languages: ["en_US", "not a code!", "x"] }] },
+      MANIFEST_URL,
+      BASE_URL,
+    );
+    expect(model.languages).toEqual(["en"]);
   });
 
   it("falls back to the built-in model alone for a malformed manifest", () => {
