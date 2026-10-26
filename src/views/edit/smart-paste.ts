@@ -1,3 +1,4 @@
+import { readsAsGeniusLyrics } from "@/domain/lyrics-file/genius-text";
 import { QRC_LINE_HEADER_REGEX, QRC_WORD_TAG_REGEX } from "@/domain/lyrics-file/qrc-syntax";
 import type { ProjectFileContents } from "@/lib/project-file-read";
 import { PARSERS } from "@/utils/lyrics-parsers";
@@ -23,6 +24,7 @@ const QRC_LINE_AT_LINE_START = new RegExp(`^\\s*${QRC_LINE_HEADER_REGEX.source}`
 
 // File sniffing finds a format anywhere in the text; a paste only counts when the text reads as a whole document.
 function readsAsWholeDocument(fileType: LyricsFileType, text: string): boolean {
+  if (fileType === "txt") return readsAsGeniusLyrics(text);
   if (fileType === "ttml") return TTML_DOCUMENT_START.test(text);
   if (fileType === "qrc") {
     return text.includes("<QrcInfos") || (QRC_LINE_AT_LINE_START.test(text) && QRC_WORD_TAG_REGEX.test(text));
@@ -37,7 +39,7 @@ function classifyPastedText(text: string, fallbackDuration?: number): PastedText
   if (contents) return { kind: "project-file", contents };
   const body = text.replace(LEADING_BOM_AND_BLANK_LINES, "");
   const fileType = detectFileType("", body);
-  if (fileType === "txt" || fileType === "unknown" || !readsAsWholeDocument(fileType, body)) return TYPED_TEXT;
+  if (fileType === "unknown" || !readsAsWholeDocument(fileType, body)) return TYPED_TEXT;
   const parsed = PARSERS[fileType](body, fallbackDuration);
   return parsed.lines.length > 0 || hasUnsupportedTags(parsed.issues) ? { kind: "lyrics-file", parsed } : TYPED_TEXT;
 }
