@@ -26,7 +26,8 @@ interface G2pContext {
   transliteration?: string | null;
 }
 
-type G2pResult = { kind: "units"; units: PhoneUnit[] } | { kind: "unknown"; words: string[] };
+/** `guessed` lists words read from their spelling, whose timing is worth a check. */
+type G2pResult = { kind: "units"; units: PhoneUnit[]; guessed: string[] } | { kind: "unknown"; words: string[] };
 
 /**
  * A unit before its phones are looked up. Mandarin and Japanese readings are
@@ -230,11 +231,12 @@ function applyLineTransliteration(
   });
 }
 
-function lookupPhones(unit: ReadingUnit, dictionaries: G2pContext["dictionaries"]): string[] | null {
+function lookupPhones(unit: ReadingUnit, dictionaries: G2pContext["dictionaries"], guessed: Set<string>) {
   if (unit.language === "en") {
     const lookup = lookupWord(unit.text, dictionaries.en);
     if (lookup.kind === "unknown") return null;
-    return lookup.kind === "phones" ? lookup.phones : [];
+    if (lookup.kind === "guessed") guessed.add(lookup.key);
+    return lookup.kind === "silent" ? [] : lookup.phones;
   }
   if (!unit.reading) return null;
   const phones: string[] = [];
@@ -256,13 +258,14 @@ function lineToPhoneUnits(words: readonly string[][], context: G2pContext): G2pR
   if (context.transliteration) applyLineTransliteration(units, context.transliteration, context.hanReading, isMora);
 
   const unknown = new Set<string>();
+  const guessed = new Set<string>();
   const phoneUnits: PhoneUnit[] = [];
   for (const unit of units) {
     if (unit.language === "en" && hasLetterOrDigit(unit.text) && !LATIN_OR_DIGIT.test(unit.text)) {
       unknown.add(unit.text.trim());
       continue;
     }
-    const phones = lookupPhones(unit, context.dictionaries);
+    const phones = lookupPhones(unit, context.dictionaries, guessed);
     if (!phones) {
       unknown.add(
         unit.language === "en"
@@ -274,7 +277,7 @@ function lineToPhoneUnits(words: readonly string[][], context: G2pContext): G2pR
     phoneUnits.push({ parts: unit.parts, phones: phones.map((phone) => ({ language: unit.language, phone })) });
   }
   if (unknown.size > 0) return { kind: "unknown", words: [...unknown] };
-  return { kind: "units", units: phoneUnits };
+  return { kind: "units", units: phoneUnits, guessed: [...guessed] };
 }
 
 // -- Exports ------------------------------------------------------------------

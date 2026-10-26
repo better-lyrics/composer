@@ -11,8 +11,8 @@ let worker: AlignmentWorker | null = null;
 // -- Aligner ------------------------------------------------------------------
 
 // HubertFA forced alignment on the separated vocals, run in a worker. Lines it
-// can't place (unknown words, no path through the audio) get the character
-// split, and the caller is told which.
+// can't place (words it can't even guess, no path through the audio) get the
+// character split, and the caller is told which.
 const hubertfaAligner: Aligner = {
   id: "hubertfa",
   listensToAudio: true,
@@ -60,12 +60,13 @@ const hubertfaAligner: Aligner = {
         begin: segment.windowBegin + iv.begin,
         end: segment.windowBegin + iv.end,
       }));
-      return { intervals, fellBack: false, unknownWords: [] };
+      return { intervals, fellBack: false, unknownWords: [], guessedWords: outcome.guessed };
     }
     return {
       intervals: splitByCharacters(segment),
       fellBack: true,
       unknownWords: outcome.kind === "unknown" ? outcome.words : [],
+      guessedWords: [],
     };
   },
 

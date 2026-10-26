@@ -49,6 +49,8 @@ interface AlignmentResult {
   fellBack: number;
   /** Words with no known pronunciation; their lines fell back. */
   unknownWords: string[];
+  /** Words aligned on a pronunciation guessed from their spelling. */
+  guessedWords: string[];
 }
 
 interface AlignOptions {
@@ -185,7 +187,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     const aligner: Aligner = hubertfaAligner;
     const project = useProjectStore.getState();
     const planned = planLines(project.lines, lineIds, options.realign ?? false);
-    if (planned.length === 0) return { aligned: 0, skipped: 0, fellBack: 0, unknownWords: [] };
+    if (planned.length === 0) return { aligned: 0, skipped: 0, fellBack: 0, unknownWords: [], guessedWords: [] };
     // Claims the run and makes it cancellable before the first await.
     set({ status: "downloading", error: null, progress: { done: 0, total: 0 } });
     controller = new AbortController();
@@ -218,6 +220,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       const updates: LineUpdate[] = [];
       const plannedById = new Map<string, PlannedLine>();
       const unknownWords = new Set<string>();
+      const guessedWords = new Set<string>();
       let fellBack = 0;
 
       for (const plan of planned) {
@@ -239,6 +242,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         );
         if (result.fellBack) fellBack++;
         for (const word of result.unknownWords) unknownWords.add(word);
+        for (const word of result.guessedWords) guessedWords.add(word);
         const safe = sanitizeIntervals(result.intervals, window);
         const timings = existing ? retimeWords(existing, safe) : timingsFromParts(words, safe);
         updates.push({ id: line.id, updates: { words: timings } });
@@ -264,6 +268,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         skipped: updates.length - applicable.length,
         fellBack,
         unknownWords: [...unknownWords],
+        guessedWords: [...guessedWords],
       };
     } catch (err) {
       if (isAbortError(err) || signal.aborted) {

@@ -25,7 +25,7 @@ declare const self: DedicatedWorkerGlobalScope;
 // -- Types --------------------------------------------------------------------
 
 type AlignOutcome =
-  | { kind: "aligned"; intervals: WordInterval[] }
+  | { kind: "aligned"; intervals: WordInterval[]; guessed: string[] }
   | { kind: "unknown"; words: string[] }
   | { kind: "no-path" };
 
@@ -260,7 +260,7 @@ async function handleAlign(
     }
     const unitIntervals = unitIntervalsFromPhones(phones, built.sequence, g2p.units.length);
     const intervals = partIntervalsFromUnits(g2p.units, unitIntervals, words.flat());
-    post({ type: "align-done", outcome: { kind: "aligned", intervals } });
+    post({ type: "align-done", outcome: { kind: "aligned", intervals, guessed: g2p.guessed } });
   } catch (err) {
     post({ type: "error", code: "ort-failed", message: describeError(err) });
   }

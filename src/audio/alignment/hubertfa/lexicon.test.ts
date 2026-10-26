@@ -63,7 +63,8 @@ describe("lookupWord", () => {
     expect(phones("Hélló")).toBe("hh ax l ow");
   });
 
-  it("reports words it can't pronounce by their normalised spelling", () => {
-    expect(lookupWord("Peyote!", dictionary)).toEqual({ kind: "unknown", key: "peyote" });
+  it("guesses words it lacks from their normalised spelling, but not numbers", () => {
+    expect(lookupWord("Peyote!", dictionary)).toMatchObject({ kind: "guessed", key: "peyote" });
+    expect(lookupWord("1999", dictionary)).toEqual({ kind: "unknown", key: "1999" });
   });
 });

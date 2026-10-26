@@ -27,6 +27,8 @@ interface SegmentAlignment {
   fellBack: boolean;
   /** Words the aligner couldn't pronounce, which caused a fallback. */
   unknownWords: string[];
+  /** Words aligned on a pronunciation guessed from their spelling. */
+  guessedWords: string[];
 }
 
 /**

@@ -2,6 +2,8 @@
 import { type G2pContext, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
 import { kanaToMorae } from "@/audio/alignment/hubertfa/japanese";
 import { createJapaneseReader } from "@/audio/alignment/hubertfa/japanese-tokenizer";
+import { LETTER_PHONES, guessPhones } from "@/audio/alignment/hubertfa/letter-to-sound";
+import vocab from "@/audio/alignment/hubertfa/vocab.json";
 import japaneseText from "@/audio/alignment/hubertfa/dictionary-ja.txt?raw";
 import mandarinText from "@/audio/alignment/hubertfa/dictionary-zh.txt?raw";
 import { parseDictionary } from "@/audio/alignment/hubertfa/lexicon";
@@ -10,7 +12,9 @@ import { pinyin } from "pinyin-pro";
 import { beforeAll, describe, expect, it } from "vitest";
 
 const english = parseDictionary(
-  ["i\tay", "love\tl ah v", "you\ty uw", "dance\td ae n s", "ay\tay", "yeah\ty ae"].join("\n"),
+  ["i\tay", "love\tl ah v", "you\ty uw", "dance\td ae n s", "ay\tay", "yeah\ty ae", "poser\tp ow z er", "mash\tm ae sh", "karat\tk eh r ax t"].join(
+    "\n",
+  ),
 );
 const mandarin = parseDictionary(mandarinText);
 const japanese = parseDictionary(japaneseText);
@@ -50,6 +54,17 @@ describe("kanaToMorae", () => {
     expect(kanaToMorae("きって")).toEqual(["ki", "cl", "te"]);
     expect(kanaToMorae("コーヒー")).toEqual(["ko", "o", "hi", "i"]);
     expect(kanaToMorae("さん")).toEqual(["sa", "n"]);
+  });
+});
+
+describe("guessPhones", () => {
+  it("only emits phones the model knows", () => {
+    expect(LETTER_PHONES.filter((phone) => !(`en/${phone}` in vocab.vocab))).toEqual([]);
+  });
+
+  it("guesses a word from its spelling", () => {
+    expect(guessPhones("yuh")).toEqual(["y", "ah"]);
+    expect(guessPhones("ult")).toEqual(["ah", "l", "t"]);
   });
 });
 
@@ -111,6 +126,12 @@ describe("lineToPhoneUnits", () => {
   it("follows the transliteration where the dictionary can't read a character", () => {
     const result = phones(lineToPhoneUnits([["我", "去"]], { ...context("zh"), transliteration: "wǒ qù" }));
     expect(result).toEqual(["0:w uo", "1:q v"]);
+  });
+
+  it("regression: aligns a line around words the dictionary lacks, reading inflections from their stem", () => {
+    const result = lineToPhoneUnits([["posers"], ["mashin'"], ["karats"], ["yuh"], ["love"]], context("zh"));
+    expect(phones(result)).toEqual(["0:p ow z er z", "1:m ae sh ih n", "2:k eh r ax t s", "3:y ah", "4:l ah v"]);
+    expect(result).toMatchObject({ guessed: ["yuh"] });
   });
 
   it("reports words in scripts the model doesn't cover", () => {

@@ -1,16 +1,24 @@
+import { lookupInflected } from "@/audio/alignment/hubertfa/inflection";
+import { guessPhones } from "@/audio/alignment/hubertfa/letter-to-sound";
 import { stripMarks } from "@/audio/alignment/hubertfa/romanization";
 import { hasLetterOrDigit } from "@/domain/alignment/cjk";
 
 // Word → phone lookup against HubertFA's English dictionary (ds_cmudict-07b).
 // Mirrors the benchmark's normalisation so lyric spellings like "Don’t,",
 // "lovin'" and "oh-oh" find an entry. Words with no entry are reported rather
-// than dropped: dropping one shifts every later word in the line.
+// than dropped: dropping one shifts every later word in the line. A word made
+// of letters gets a pronunciation guessed from its spelling instead, so the
+// rest of its line still aligns.
 
 // -- Types --------------------------------------------------------------------
 
 type Pronunciations = Map<string, string[]>;
 
-type Lookup = { kind: "phones"; phones: string[] } | { kind: "silent" } | { kind: "unknown"; key: string };
+type Lookup =
+  | { kind: "phones"; phones: string[] }
+  | { kind: "guessed"; phones: string[]; key: string }
+  | { kind: "silent" }
+  | { kind: "unknown"; key: string };
 
 // -- Constants ----------------------------------------------------------------
 
@@ -85,6 +93,8 @@ function lookupNormalized(word: string, dictionary: Pronunciations): string[] | 
     const hit = dictionary.get(variant);
     if (hit) return [...hit];
   }
+  const inflected = lookupInflected(stem, (base) => dictionary.get(base));
+  if (inflected) return inflected;
   if (/[- ]/.test(word)) {
     const phones: string[] = [];
     for (const piece of word.split(/[- ]+/).filter(Boolean)) {
@@ -105,7 +115,10 @@ function lookupWord(word: string, dictionary: Pronunciations): Lookup {
   const key = normalizeWord(word);
   if (!/[a-z0-9]/.test(key)) return { kind: "unknown", key: word.trim() };
   const phones = lookupNormalized(key, dictionary);
-  return phones ? { kind: "phones", phones } : { kind: "unknown", key };
+  if (phones) return { kind: "phones", phones };
+  // Numbers need spelling out; a guess from their digits would be nonsense.
+  const guess = /\d/.test(key) ? null : guessPhones(key);
+  return guess ? { kind: "guessed", phones: guess, key } : { kind: "unknown", key };
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -85,6 +85,11 @@ function useAutoAlign() {
         },
       );
     }
+    if (result.guessedWords.length > 0) {
+      toast.info(`Guessed how to sing ${listWords(result.guessedWords)}`, {
+        description: "They're not in the dictionary, so their timing may be off. Check them in the Timeline.",
+      });
+    }
   }, []);
 
   const cancel = useCallback(() => useAlignmentStore.getState().cancel(), []);

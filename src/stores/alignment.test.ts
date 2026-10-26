@@ -43,7 +43,12 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
       align: async (segment: Segment) => {
         seen.segments.push({ hanReading: segment.hanReading, parts: segment.words.map((w) => w.parts) });
         const unknown = segment.words.some((w) => w.text === "zzz");
-        return { intervals: splitByCharacters(segment), fellBack: unknown, unknownWords: unknown ? ["zzz"] : [] };
+        return {
+          intervals: splitByCharacters(segment),
+          fellBack: unknown,
+          unknownWords: unknown ? ["zzz"] : [],
+          guessedWords: [],
+        };
       },
     },
   };
@@ -67,7 +72,7 @@ describe("alignment store", () => {
 
     const result = await useAlignmentStore.getState().alignLines();
 
-    expect(result).toEqual({ aligned: 1, skipped: 0, fellBack: 0, unknownWords: [] });
+    expect(result).toEqual({ aligned: 1, skipped: 0, fellBack: 0, unknownWords: [], guessedWords: [] });
     const [line, empty] = useProjectStore.getState().lines;
     expect(line.words?.map((w) => w.text)).toEqual(["hello ", "there"]);
     expect(line.words?.[0].begin).toBeGreaterThanOrEqual(10);
