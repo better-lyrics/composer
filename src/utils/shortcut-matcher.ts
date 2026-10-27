@@ -1,3 +1,4 @@
+import { hasLatinLetter } from "@/domain/language/script-detection";
 import { isShortcutDisabled } from "@/lib/disabled-shortcuts";
 import { bindingsEqual, getEffectiveBinding } from "@/stores/shortcut-bindings";
 import { type ShortcutBinding, type ShortcutScope, getShortcutsByScope } from "@/stores/shortcut-registry";
@@ -14,7 +15,7 @@ function physicalKey(event: KeyboardEvent): string | null {
 }
 
 function isNonLatinLetter(key: string): boolean {
-  return key.length === 1 && /\p{L}/u.test(key) && !/\p{Script=Latin}/u.test(key);
+  return key.length === 1 && /\p{L}/u.test(key) && !hasLatinLetter(key);
 }
 
 // Layout glyphs (Option on macOS: Alt+E → "´"; non-Latin layouts: E → "у")
