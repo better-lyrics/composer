@@ -1,9 +1,18 @@
+import { decodesLameTrimmed } from "@/audio/decoded-source-audio";
 import { parseLamePriming } from "@/audio/lame-priming";
 import type { LyricLine } from "@/domain/line/model";
 import { shiftWords } from "@/domain/line/shift";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { shiftedSnapPoints } from "@/domain/snap-point/model";
+import { shiftedGrid } from "@/domain/tempo/grid-edits";
+import { readBeatGrid } from "@/domain/tempo/read-beat-grid";
 import type { WordTiming } from "@/domain/word/timing";
+import { dropSeparatedProjectStems, padImportedMp3Stems } from "@/lib/project-stems";
 import type { SavedProject } from "@/lib/saved-project";
+
+// -- Constants ----------------------------------------------------------------
+
+const LOG_PREFIX = "[PrimingMigration]";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -25,14 +34,53 @@ function shiftAllTimings(lines: LyricLine[], deltaSec: number): LyricLine[] {
   return lines.map((line) => shiftLine(line, deltaSec));
 }
 
-async function stripLamePriming(project: SavedProject, audio: File | undefined): Promise<boolean> {
-  if (project.primingStripped === true || !audio) return false;
+// -- Migration ----------------------------------------------------------------
+
+interface PrimingFlags {
+  primingStripped?: boolean;
+  primingCorrected?: boolean;
+}
+
+// Corrected implies stripped: a new project can be saved before the audio engine sets primingStripped.
+function primingMigrationShift(flags: PrimingFlags, primingSeconds: number, decoderTrims: boolean): number {
+  if (flags.primingCorrected === true) return 0;
+  const stripShift = flags.primingStripped === true ? 0 : -primingSeconds;
+  return stripShift + (decoderTrims ? primingSeconds : 0);
+}
+
+function shiftSavedTimings(project: SavedProject, deltaSec: number): void {
+  if (deltaSec === 0) return;
+  project.lines = shiftAllTimings(project.lines ?? [], deltaSec);
+  if (project.customSnapPoints) project.customSnapPoints = shiftedSnapPoints(project.customSnapPoints, deltaSec);
+  const grid = readBeatGrid(project.beatGrid);
+  if (grid) project.beatGrid = shiftedGrid(grid, deltaSec);
+}
+
+async function decoderTrims(audio: File): Promise<boolean | null> {
+  try {
+    return await decodesLameTrimmed(audio);
+  } catch (error) {
+    console.warn(LOG_PREFIX, "could not decode the project audio; its timings stay as saved", error);
+    return null;
+  }
+}
+
+async function migratePrimingTimings(id: string, project: SavedProject, audio: File | undefined): Promise<boolean> {
+  if (!audio || (project.primingStripped === true && project.primingCorrected === true)) return false;
   const { samples, sampleRate } = parseLamePriming(await audio.arrayBuffer());
-  if (samples > 0 && sampleRate > 0) project.lines = shiftAllTimings(project.lines ?? [], -(samples / sampleRate));
+  const primingSeconds = samples > 0 && sampleRate > 0 ? samples / sampleRate : 0;
+  const trims = project.primingCorrected !== true && primingSeconds > 0 ? await decoderTrims(audio) : false;
+  if (trims === null) return false;
+  shiftSavedTimings(project, primingMigrationShift(project, primingSeconds, trims));
+  if (trims) {
+    await dropSeparatedProjectStems(id);
+    await padImportedMp3Stems(id, primingSeconds);
+  }
   project.primingStripped = true;
+  project.primingCorrected = true;
   return true;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { shiftAllTimings, stripLamePriming };
+export { migratePrimingTimings, primingMigrationShift, shiftAllTimings, shiftSavedTimings };
