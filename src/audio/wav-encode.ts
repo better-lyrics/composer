@@ -79,4 +79,3 @@ function withLeadingSilence(wav: ArrayBuffer, frames: number): ArrayBuffer | nul
 }
 
 export { encodeWav, readWavLayout, withLeadingSilence };
-export type { WavLayout };
