@@ -12,6 +12,8 @@ import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { isWordSelected } from "@/domain/selection/identity";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
+import { isAutoAlignAvailable } from "@/stores/alignment";
+import { countAlignableLines } from "@/stores/alignment-plan";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -185,8 +187,18 @@ function useContextMenuTargets() {
     return { count: updates.length };
   }, [contextMenu, selectedWords, rawLines]);
 
+  const autoAlignInfo = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word" || !isAutoAlignAvailable()) return null;
+    const targets = splitTargetsForMenu(contextMenu.target, selectedWords).filter((t) => t.type === "word");
+    const lineIds = [...new Set(targets.map((t) => t.lineId))];
+    const { lineTimed, wordTimed } = countAlignableLines(rawLines, lineIds);
+    const count = lineTimed + wordTimed;
+    return count > 0 ? { count, lineIds, realign: wordTimed > 0 } : null;
+  }, [contextMenu, selectedWords, rawLines]);
+
   return {
     lines,
+    autoAlignInfo,
     explicitToggleContext,
     clickedSelectionCount,
     gutterLineGroupInfo,
