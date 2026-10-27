@@ -1,3 +1,4 @@
+import { isShortcutDisabled } from "@/lib/disabled-shortcuts";
 import { bindingsEqual, getEffectiveBinding } from "@/stores/shortcut-bindings";
 import { type ShortcutBinding, type ShortcutScope, getShortcutsByScope } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
@@ -112,7 +113,8 @@ function findMatchingShortcut(event: KeyboardEvent, scope: ShortcutScope): strin
   const shortcuts = getShortcutsByScope(scope);
   for (const shortcut of shortcuts) {
     const binding = getEffectiveBinding(shortcut.id);
-    if (matchesBinding(event, binding)) return event.repeat && !shortcut.repeatable ? null : shortcut.id;
+    if (matchesBinding(event, binding))
+      return isShortcutDisabled(shortcut.id) || (event.repeat && !shortcut.repeatable) ? null : shortcut.id;
   }
   return null;
 }

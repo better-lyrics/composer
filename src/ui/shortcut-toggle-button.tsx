@@ -1,3 +1,4 @@
+import { disableShortcut } from "@/lib/disabled-shortcuts";
 import { useSettingsStore } from "@/stores/settings";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
@@ -5,6 +6,7 @@ import { ShortcutTip } from "@/ui/shortcut-tip";
 import { ToggleButton } from "@/ui/toggle-button";
 import { Tooltip } from "@/ui/tooltip";
 import { cn } from "@/utils/cn";
+import { useEffect } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -37,6 +39,7 @@ const ShortcutToggleButton: React.FC<ShortcutToggleButtonProps> = ({
   iconOnly,
 }) => {
   const showHints = useSettingsStore((s) => s.showShortcutHints);
+  useEffect(() => (disabled ? disableShortcut(shortcut) : undefined), [disabled, shortcut]);
   return (
     <Tooltip content={<ShortcutTip label={label} shortcut={shortcut} description={description} />} placement="bottom">
       <ToggleButton

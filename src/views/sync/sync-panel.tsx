@@ -382,7 +382,7 @@ const SyncPanel: React.FC = () => {
           break;
         case "sync.toggleTextVariant":
           e.preventDefault();
-          if (linesHaveTransliteration) toggleTextVariant();
+          toggleTextVariant();
           break;
       }
     };
@@ -413,7 +413,7 @@ const SyncPanel: React.FC = () => {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [activeTab, undo, redo, handleNudgeLastSynced, editMode, isHolding, linesHaveTransliteration, toggleTextVariant]);
+  }, [activeTab, undo, redo, handleNudgeLastSynced, editMode, isHolding, toggleTextVariant]);
 
   const showScrollableView = (!isPlaying && !countIn.countingIn) || editMode;
 
