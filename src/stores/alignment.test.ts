@@ -15,18 +15,13 @@ const seen = vi.hoisted(() => ({
   fallBackAfter: null as number | null,
 }));
 
-vi.mock("@/audio/alignment/hubertfa/model-registry", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/audio/alignment/hubertfa/model-registry")>()),
-  resolveAlignmentAssets: async () => ({
-    model: { url: "https://models.test/model.onnx", approxBytes: 1 },
-    dictionary: { url: "https://models.test/dict.txt", approxBytes: 1 },
-    japaneseDictionary: {},
-    approxBytes: 399 * 1024 * 1024,
-    languages: ["en", "zh", "ja"],
-  }),
-}));
-
-vi.mock("@/audio/separation/model-cache", () => ({ hasCachedModel: async () => cached.value }));
+// Real model resolution: hosting is configured, the manifest fetch finds none
+// (the built-in model only), and the browser cache answers from `cached`.
+vi.stubEnv("VITE_VOCAL_MODEL_BASE_URL", "https://models.test");
+vi.stubGlobal("fetch", async () => new Response(null, { status: 404 }));
+vi.stubGlobal("caches", {
+  open: async () => ({ match: async () => (cached.value ? new Response() : undefined) }),
+});
 
 vi.mock("@/audio/alignment/vocals-pcm", () => ({
   loadVocalsPcm: async () => ({ samples: new Float32Array(44100 * 60), sampleRate: 44100 }),
