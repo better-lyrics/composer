@@ -4,12 +4,15 @@
 import { useAlignmentStore } from "@/stores/alignment";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
+import { createGroup } from "@/test/factories";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const cached = vi.hoisted(() => ({ value: true }));
 const seen = vi.hoisted(() => ({
   segments: [] as { hanReading: string; parts: string[][] }[],
   japanese: [] as boolean[],
+  // Lines whose window starts after this song time fall back, as if the model found no path.
+  fallBackAfter: null as number | null,
 }));
 
 vi.mock("@/audio/alignment/hubertfa/model-registry", async (importOriginal) => ({
@@ -31,7 +34,7 @@ vi.mock("@/audio/alignment/vocals-pcm", () => ({
 // Stands in for the model: splits by characters, and can't pronounce "zzz".
 vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
   const { splitByCharacters } = await import("@/audio/alignment/split-by-characters");
-  type Segment = Parameters<typeof splitByCharacters>[0] & { hanReading: string };
+  type Segment = Parameters<typeof splitByCharacters>[0] & { hanReading: string; windowBegin: number };
   return {
     hubertfaAligner: {
       id: "fake",
@@ -43,7 +46,9 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
       isLoaded: () => true,
       align: async (segment: Segment) => {
         seen.segments.push({ hanReading: segment.hanReading, parts: segment.words.map((w) => w.parts) });
-        const unknown = segment.words.some((w) => w.text === "zzz");
+        const unknown =
+          segment.words.some((w) => w.text === "zzz") ||
+          (seen.fallBackAfter !== null && segment.windowBegin > seen.fallBackAfter);
         const intervals = splitByCharacters(segment);
         // The audio calls for splitting an unsplit "yellow" into "yel|low".
         const parts = segment.words.flatMap((w) => w.parts);
@@ -61,6 +66,8 @@ describe("alignment store", () => {
     cached.value = true;
     seen.segments = [];
     seen.japanese = [];
+    seen.fallBackAfter = null;
+    useProjectStore.setState({ groups: [] });
     useProjectStore.setState(INITIAL_STATE);
     useAlignmentStore.setState({ status: "idle", progress: { done: 0, total: 0 }, error: null });
     useSeparationStore.setState({ stemUrls: { vocals: "blob:vocals" } });
@@ -248,6 +255,52 @@ describe("alignment store", () => {
 
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines[0].words).toEqual([whole]);
+  });
+
+  it("regression: syllable timing found for one shared instance reaches the others", async () => {
+    const chorus = (instanceIdx: number, begin: number, split: number) => ({
+      id: `c${instanceIdx}`,
+      text: "hello",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx: 0,
+      words: [
+        { text: "hel", begin, end: begin + split, syllableGroupId: `s${instanceIdx}` },
+        { text: "lo", begin: begin + split, end: begin + 1, syllableGroupId: `s${instanceIdx}` },
+      ],
+    });
+    useProjectStore.setState({ groups: [createGroup({ id: "g1", sharesTiming: true })] });
+    useProjectStore.getState().setLinesWithHistory([
+      {
+        id: "c0",
+        text: "hello",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [{ text: "hello", begin: 10, end: 11 }],
+      },
+      {
+        id: "c1",
+        text: "hello",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [{ text: "hello", begin: 40, end: 41 }],
+      },
+    ]);
+    const before = useProjectStore.getState().lines;
+    useProjectStore.getState().setLinesWithHistory([chorus(0, 10, 0.9), chorus(1, 40, 0.9)]);
+    // The second instance's alignment falls back; it should still get the first one's timing.
+    seen.fallBackAfter = 30;
+
+    await useAlignmentStore.getState().retimeNewSyllables(before);
+
+    const [first, second] = useProjectStore.getState().lines;
+    expect(first.words![0].end).not.toBeCloseTo(10.9, 6);
+    expect(second.words![0].end - 40).toBeCloseTo(first.words![0].end - 10, 6);
   });
 
   it("refuses without separated vocals", async () => {

@@ -12,7 +12,7 @@ import { hanReadingFor, isSupportedLanguage } from "@/domain/alignment/language"
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { type PlannedLine, isUnchanged, planLines, segmentFor } from "@/stores/alignment-plan";
+import { type PlannedLine, isUnchanged, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
@@ -267,7 +267,9 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         return moved && isUnchanged(currentById.get(u.id), planned);
       });
       // Part of the split, so one undo takes back both; anything done since leaves the split as it was.
-      if (stepIsCurrent && applicable.length > 0) latest.applyLineUpdatesToCurrentStep(applicable);
+      const shared =
+        stepIsCurrent && applicable.length > 0 ? withSharedTiming(latest.lines, latest.groups, applicable) : null;
+      if (shared) latest.applyLineUpdatesToCurrentStep(shared);
     } catch (err) {
       if (!isAbortError(err) && !signal.aborted) {
         console.warn(`${LOG_PREFIX} could not time the new syllables`, err);
