@@ -58,7 +58,7 @@ async function chooseBackend(forceWasm: boolean | undefined): Promise<BackendCho
 // Without shader-f16 the fp16 session fails and fp16 on WASM is too slow, so refuse before the download.
 function describeUnsupportedVariant(variant: VocalModelVariant, choice: BackendChoice): string | null {
   if (variant === "fp16" && choice.backend === "webgpu" && !choice.hasShaderF16) {
-    return `The fp16 model needs WebGPU shader-f16 support, which this browser/GPU (${choice.adapterLabel}) does not provide. Set the "Vocal model precision" setting to fp32.`;
+    return `The fp16 model needs WebGPU shader-f16 support, which this browser/GPU (${choice.adapterLabel}) doesn't provide. Switch the Vocal model setting to fp32.`;
   }
   return null;
 }
