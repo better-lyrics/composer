@@ -56,10 +56,9 @@ async function decodePrimingCrop(source: Blob): Promise<PrimingCrop> {
   return (await decodeSource(source)).crop;
 }
 
-// Data built from a decode that cropped LAME priming twice is keyed apart from data built from the corrected one.
+// The old build cropped every file its legacy reading tagged, so those files are keyed apart without a decode.
 async function primingDecodeTag(source: Blob): Promise<string> {
-  const crop = await decodePrimingCrop(source);
-  return crop.beforeSeconds !== crop.nowSeconds ? CROP_CHANGED_DECODE_TAG : "";
+  return parseLamePriming(await source.arrayBuffer()).legacySamples > 0 ? CROP_CHANGED_DECODE_TAG : "";
 }
 
 // -- Exports ------------------------------------------------------------------

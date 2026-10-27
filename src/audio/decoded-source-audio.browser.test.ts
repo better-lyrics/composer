@@ -1,7 +1,7 @@
 import { decodeSourceAudio, primingDecodeTag } from "@/audio/decoded-source-audio";
 import { createMp3File, encodeWav, makeSineBuffer } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 function sineWav(seconds: number): Blob {
   return new Blob([encodeWav(makeSineBuffer(seconds))], { type: "audio/wav" });
@@ -33,6 +33,13 @@ describe("decodeSourceAudio", () => {
     const mismatched = new File([bytes], "mismatched.mp3", { type: "audio/mpeg" });
 
     expect(await primingDecodeTag(mismatched)).toBe("lt1");
+  });
+
+  it("regression: tags a LAME mp3 from its bytes without decoding it", async () => {
+    const decode = vi.spyOn(BaseAudioContext.prototype, "decodeAudioData");
+    expect(await primingDecodeTag(createMp3File())).toBe("lt1");
+    expect(decode).not.toHaveBeenCalled();
+    decode.mockRestore();
   });
 
   it("tags a LAME mp3 the browser trims and leaves other sources untagged", async () => {
