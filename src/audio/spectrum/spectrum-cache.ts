@@ -22,19 +22,32 @@ const LOG_PREFIX = "[Spectrum cache]";
 
 // -- Functions ----------------------------------------------------------------
 
+// An empty decode tag keeps the key every unaffected source was cached under.
 function spectrumChunkKey(
   jobKey: string,
   source: SpectrumSource,
+  decodeTag: string,
   sampleRate: number,
   fftSize: number,
   chunk: number,
 ): string {
-  return derivedRecordKey(jobKey, "spectrum", source, sampleRate, fftSize, chunk, `v${SPECTRUM_CACHE_VERSION}`);
+  const tagged = decodeTag ? [decodeTag] : [];
+  return derivedRecordKey(
+    jobKey,
+    "spectrum",
+    source,
+    sampleRate,
+    fftSize,
+    chunk,
+    `v${SPECTRUM_CACHE_VERSION}`,
+    ...tagged,
+  );
 }
 
 async function readSpectrumChunks(
   jobKey: string,
   source: SpectrumSource,
+  decodeTag: string,
   sampleRate: number,
   fftSize: number,
   chunkTotal: number,
@@ -42,7 +55,7 @@ async function readSpectrumChunks(
   const chunks = new Map<number, CachedSpectrumChunk>();
   const blobs = await Promise.all(
     Array.from({ length: chunkTotal }, (_, chunk) =>
-      getDerivedRecord(spectrumChunkKey(jobKey, source, sampleRate, fftSize, chunk)),
+      getDerivedRecord(spectrumChunkKey(jobKey, source, decodeTag, sampleRate, fftSize, chunk)),
     ),
   );
   await Promise.all(
@@ -60,6 +73,7 @@ async function readSpectrumChunks(
 function createSpectrumChunkWriter(
   jobKey: string,
   source: SpectrumSource,
+  decodeTag: string,
   sampleRate: number,
   fftSize: number,
 ): SpectrumChunkWriter {
@@ -84,7 +98,7 @@ function createSpectrumChunkWriter(
   return {
     add(chunk, magnitude, phaseChange) {
       const blob = new Blob([magnitude.slice(), phaseChange.slice()], { type: "application/octet-stream" });
-      batch.set(spectrumChunkKey(jobKey, source, sampleRate, fftSize, chunk), blob);
+      batch.set(spectrumChunkKey(jobKey, source, decodeTag, sampleRate, fftSize, chunk), blob);
       if (batch.size >= CHUNKS_PER_WRITE) void write();
     },
     flush: write,
