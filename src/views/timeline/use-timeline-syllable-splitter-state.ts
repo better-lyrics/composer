@@ -87,6 +87,8 @@ function useTimelineSyllableSplitterState({
     const trimmedText = word.text.trimEnd();
 
     let newWords: WordTiming[];
+    // A boundary placed at the playhead was set by ear, so the model doesn't move it.
+    let placedByEar = false;
 
     if (mode === "word") {
       newWords = splitWordIntoWords(word, splitPoints);
@@ -95,6 +97,7 @@ function useTimelineSyllableSplitterState({
       const playheadOnWord = currentTime > word.begin && currentTime < word.end;
 
       if (playheadOnWord && splitPoints.length === 1) {
+        placedByEar = true;
         const groupId = word.syllableGroupId ?? nanoid(8);
         const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
         const partitions = [
@@ -138,14 +141,15 @@ function useTimelineSyllableSplitterState({
     if (!split) return;
     const extraUpdates = split.transliteration ? { transliteration: split.transliteration } : {};
 
-    if (type === "word") {
-      return handleWordChangeWithDivergenceCheck(lineId, split.words, "words", extraUpdates);
-    } else {
-      return handleWordChangeWithDivergenceCheck(lineId, split.words, "backgroundWords", {
-        ...manualBackgroundWordEdit(split.words),
-        ...extraUpdates,
-      });
-    }
+    const done =
+      type === "word"
+        ? handleWordChangeWithDivergenceCheck(lineId, split.words, "words", extraUpdates)
+        : handleWordChangeWithDivergenceCheck(lineId, split.words, "backgroundWords", {
+            ...manualBackgroundWordEdit(split.words),
+            ...extraUpdates,
+          });
+    // Only a split that wasn't placed by ear is timed from the audio afterwards.
+    return placedByEar ? undefined : done;
   }, [target, splitPoints, transliterationSplitPoints]);
 
   const confirmSplit = useCallback(async () => {
