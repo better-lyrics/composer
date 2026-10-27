@@ -1,4 +1,5 @@
 import { probeAudioFile } from "@/audio/probe-audio-file";
+import { correctPrimingForProjectAudio } from "@/lib/attach-audio-priming";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { waitForYouTubeLoad } from "@/hooks/useLoadYouTubeSource";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
@@ -38,6 +39,8 @@ async function relinkProjectAudioFile(file: File): Promise<boolean> {
   }
   if (!isStillMissing(projectId)) return false;
   if (needsConfirmation(expected, file) && !(await confirmDifferentFile(expected.name, file.name))) return false;
+  if (!isStillMissing(projectId)) return false;
+  if (projectId) await correctPrimingForProjectAudio(projectId, file);
   if (!isStillMissing(projectId)) return false;
   useAudioStore.getState().setSource({ type: "file", file });
   await saveOpenProjectNow();

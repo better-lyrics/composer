@@ -58,6 +58,7 @@ function currentSaveInput(): ProjectSaveInput {
     dismissedMetadataMatches: projectState.dismissedMetadataMatches,
     currentStem: useSeparationStore.getState().currentStem,
     primingStripped: projectState.primingStripped,
+    primingCorrected: projectState.primingCorrected,
     customSnapPoints: projectState.customSnapPoints,
     beatGrid: projectState.beatGrid,
     hasUnexportedImport: projectState.hasUnexportedImport,

@@ -2,12 +2,14 @@ import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { usePersistence } from "@/hooks/usePersistence";
 import { ensureOpenProjectId, openProjectIdSnapshot } from "@/lib/open-project-session";
 import { DB_NAME, DB_VERSION } from "@/lib/persistence-idb";
+import { saveOpenProjectNow } from "@/lib/persistence-debounce";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { loadProjectAudio } from "@/lib/project-audio";
+import { loadProjectForRestore } from "@/lib/project-restore";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { createAudioFile, createUnplayableAudioFile } from "@/test/audio-fixtures";
+import { createAudioFile, createMp3File, createUnplayableAudioFile } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
 import { deleteDatabase, openAndCloseAtVersion } from "@/test/idb";
@@ -203,5 +205,28 @@ describe("useLoadAudioFile · projects", () => {
       expect(useProjectStore.getState().metadata.title).toBe("b-side");
       await deleteDatabase(DB_NAME);
     });
+  });
+});
+
+describe("useLoadAudioFile priming flags", () => {
+  it("regression: audio loaded in place into an old project without audio keeps its times over a reload", async () => {
+    await seedStoredProject("old", {
+      open: true,
+      project: {
+        lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+        primingStripped: true,
+        primingCorrected: false,
+      },
+    });
+    await render(<PersistenceHost />);
+    await getPersistenceSettled();
+    const load = await loader();
+
+    await load(createMp3File());
+    await saveOpenProjectNow();
+    const reloaded = (await loadProjectForRestore("old")).project;
+
+    expect((reloaded?.lines[0] as { begin: number }).begin).toBeCloseTo(1, 9);
+    expect(reloaded).toMatchObject({ primingStripped: true, primingCorrected: true });
   });
 });

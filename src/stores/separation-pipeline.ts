@@ -2,6 +2,7 @@ import { settingEntry } from "@/stores/settings-catalog";
 import { TARGET_SAMPLE_RATE, decodeFileToFloat32, hashFile } from "@/audio/separation/audio-codec";
 import { encodeSeparatedStems } from "@/audio/separation/separated-stems";
 import { getSeparationWorker } from "@/audio/separation/shared-separation-worker";
+import { stemCacheHash } from "@/audio/separation/stem-store";
 import type { SeparationError, SeparationStatus } from "@/audio/separation/types";
 import { hasOnlyFiniteSamples } from "@/audio/separation/validate-channels";
 import type { SeparationWorker } from "@/audio/separation/worker-host";
@@ -18,11 +19,12 @@ interface PipelineRun {
   set: (partial: Partial<PipelineState>) => void;
   isCurrentRun: () => boolean;
   isCancelling: () => boolean;
-  onHashed: (audioHash: string) => void;
+  onHashed: (cacheHash: string) => void;
 }
 
 interface SeparatedSong {
   audioHash: string;
+  cacheHash: string;
   stemFiles: Awaited<ReturnType<typeof encodeSeparatedStems>>;
   durationSeconds: number;
 }
@@ -43,8 +45,9 @@ async function separateSongFile(file: File, run: PipelineRun): Promise<Separated
   }
 
   const audioHash = await hashFile(file);
+  const cacheHash = await stemCacheHash(file, audioHash);
   if (!run.isCurrentRun()) return null;
-  run.onHashed(audioHash);
+  run.onHashed(cacheHash);
 
   let result: Awaited<ReturnType<SeparationWorker["process"]>>;
   try {
@@ -85,7 +88,7 @@ async function separateSongFile(file: File, run: PipelineRun): Promise<Separated
     run.set({ status: "error", error: { code: "unknown", message: (err as Error).message } });
     return null;
   }
-  return { audioHash, stemFiles, durationSeconds: decoded.numFrames / TARGET_SAMPLE_RATE };
+  return { audioHash, cacheHash, stemFiles, durationSeconds: decoded.numFrames / TARGET_SAMPLE_RATE };
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -1,4 +1,6 @@
 import { useEnsureAuth } from "@/hooks/useEnsureAuth";
+import { correctPrimingForProjectAudio } from "@/lib/attach-audio-priming";
+import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { flushPendingSaveQuietly } from "@/lib/persistence-debounce";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { useAudioStore } from "@/stores/audio";
@@ -63,6 +65,17 @@ class TunnelError extends Error {
 }
 
 // -- Helpers ------------------------------------------------------------------
+
+// Times and stems are corrected before the file is published, so no stem loads before its repair.
+async function correctBeforePublishing(file: File): Promise<void> {
+  const projectId = openProjectIdSnapshot();
+  if (!projectId) return;
+  try {
+    await correctPrimingForProjectAudio(projectId, file);
+  } catch (error) {
+    console.error(LOG_PREFIX, "could not correct the project's MP3 timings", error);
+  }
+}
 
 function buildAudioFile(buffer: ArrayBuffer, filename: string | undefined, videoId: string): File {
   const safeName = (filename ?? videoId).replace(/[\\/:*?"<>|]/g, "").trim() || videoId;
@@ -170,32 +183,36 @@ function useResolveYouTubeTunnel(): void {
     const data = query.data;
     if (!data || !videoId) return;
     let cancelled = false;
-    void getPersistenceSettled().then(() => {
-      if (cancelled) return;
+    const isStillWanted = () => {
       const current = useAudioStore.getState().source;
-      if (current?.type !== "youtube" || current.videoId !== videoId) return;
-      useAudioStore.getState().setYouTubeFile(data.file);
-      useAudioStore.getState().setYouTubeLoadError(null);
+      return !cancelled && current?.type === "youtube" && current.videoId === videoId;
+    };
+    void getPersistenceSettled()
+      .then(() => (isStillWanted() ? correctBeforePublishing(data.file) : undefined))
+      .then(() => {
+        if (!isStillWanted()) return;
+        useAudioStore.getState().setYouTubeFile(data.file);
+        useAudioStore.getState().setYouTubeLoadError(null);
 
-      const project = useProjectStore.getState();
-      const currentTitle = project.metadata.title;
-      if (!currentTitle || currentTitle === videoId) {
-        const metadataPatch: Partial<typeof project.metadata> = { title: data.title || data.filename || videoId };
-        if (data.artist) metadataPatch.artists = [data.artist];
-        if (data.album) metadataPatch.album = data.album;
-        const bridgeIsrc = data.isrc ? normalizeIsrc(data.isrc) : undefined;
-        if (bridgeIsrc) metadataPatch.isrc = bridgeIsrc;
-        project.setMetadata(metadataPatch);
-        flushPendingSaveQuietly();
-      }
-      if (
-        data.instanceId !== BRIDGE_INSTANCE_ID &&
-        !data.wasDefault &&
-        data.instanceId !== DEFAULT_COBALT_INSTANCE_ID
-      ) {
-        useSettingsStore.getState().recordCobaltInstanceResult(data.instanceId, "success");
-      }
-    });
+        const project = useProjectStore.getState();
+        const currentTitle = project.metadata.title;
+        if (!currentTitle || currentTitle === videoId) {
+          const metadataPatch: Partial<typeof project.metadata> = { title: data.title || data.filename || videoId };
+          if (data.artist) metadataPatch.artists = [data.artist];
+          if (data.album) metadataPatch.album = data.album;
+          const bridgeIsrc = data.isrc ? normalizeIsrc(data.isrc) : undefined;
+          if (bridgeIsrc) metadataPatch.isrc = bridgeIsrc;
+          project.setMetadata(metadataPatch);
+          flushPendingSaveQuietly();
+        }
+        if (
+          data.instanceId !== BRIDGE_INSTANCE_ID &&
+          !data.wasDefault &&
+          data.instanceId !== DEFAULT_COBALT_INSTANCE_ID
+        ) {
+          useSettingsStore.getState().recordCobaltInstanceResult(data.instanceId, "success");
+        }
+      });
     return () => {
       cancelled = true;
     };

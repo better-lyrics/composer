@@ -11,7 +11,10 @@ import type { SavedProject } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import { createAudioFile, createUnplayableAudioFile } from "@/test/audio-fixtures";
+import { createAudioFile, createMp3File, createUnplayableAudioFile } from "@/test/audio-fixtures";
+import { createLine } from "@/test/factories";
+import { detectedGrid } from "@/domain/tempo/beat-grid";
+import { correctPrimingForProjectAudio } from "@/lib/attach-audio-priming";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
 import { Toaster } from "sonner";
@@ -191,5 +194,73 @@ describe("retryProjectAudio", () => {
       retryProjectAudio();
       expect(useAudioStore.getState().source).toBeNull();
     });
+  });
+});
+
+describe("relinking LAME mp3 audio", () => {
+  it("moves an uncorrected project's times later once, before the audio plays", async () => {
+    await openProject({
+      audioSource: { kind: "file", name: "silence.mp3" },
+      primingStripped: true,
+      primingCorrected: false,
+      lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+    });
+
+    expect(await relinkProjectAudioFile(createMp3File())).toBe(true);
+
+    const P = 1104 / 44_100;
+    expect((useProjectStore.getState().lines[0] as { begin: number }).begin).toBeCloseTo(1 + P, 9);
+    expect(useProjectStore.getState().primingCorrected).toBe(true);
+    expect(useProjectStore.getState().history).toEqual([]);
+    const saved = await loadProjectRecord("p");
+    expect(saved?.primingCorrected).toBe(true);
+    expect((saved?.lines[0] as { begin: number }).begin).toBeCloseTo(1 + P, 9);
+  });
+
+  it("regression: keeps edits made while the relinked audio decodes", async () => {
+    await openProject({
+      audioSource: { kind: "file", name: "silence.mp3" },
+      primingStripped: true,
+      primingCorrected: false,
+      lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+    });
+
+    const correcting = correctPrimingForProjectAudio("p", createMp3File());
+    useProjectStore.getState().setMetadata({ title: "Edited while decoding" });
+    await correcting;
+
+    expect(useProjectStore.getState().metadata.title).toBe("Edited while decoding");
+    expect((useProjectStore.getState().lines[0] as { begin: number }).begin).toBeCloseTo(1 + 1104 / 44_100, 9);
+  });
+
+  it("regression: keeps undo history when the relinked audio needs no shift", async () => {
+    await openProject({
+      audioSource: { kind: "file", name: "city.wav" },
+      primingStripped: true,
+      primingCorrected: false,
+    });
+    useProjectStore.getState().applyBeatGridWithHistory(detectedGrid({ beats: [1, 1.5, 2], downbeats: [1] }));
+    const history = useProjectStore.getState().history;
+
+    expect(await relinkProjectAudioFile(createAudioFile("city.wav"))).toBe(true);
+
+    expect(useProjectStore.getState().history).toEqual(history);
+    expect(useProjectStore.getState().primingCorrected).toBe(true);
+  });
+
+  it("regression: two overlapping corrections of one project shift its times once", async () => {
+    await openProject({
+      audioSource: { kind: "file", name: "silence.mp3" },
+      primingStripped: true,
+      primingCorrected: false,
+      lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+    });
+
+    await Promise.all([
+      correctPrimingForProjectAudio("p", createMp3File()),
+      correctPrimingForProjectAudio("p", createMp3File()),
+    ]);
+
+    expect((useProjectStore.getState().lines[0] as { begin: number }).begin).toBeCloseTo(1 + 1104 / 44_100, 9);
   });
 });

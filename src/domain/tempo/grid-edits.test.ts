@@ -7,6 +7,7 @@ import {
   isEdited,
   manualGrid,
   resetGrid,
+  shiftedGrid,
   withBarOneAt,
   withOffset,
 } from "@/domain/tempo/grid-edits";
@@ -186,5 +187,44 @@ describe("invariants", () => {
     doubled(grid);
     expect(grid).toEqual(before);
     expect(beatTime(grid, 0)).toBe(1);
+  });
+});
+
+describe("shiftedGrid", () => {
+  const detected = detectedGrid({ beats: [1, 1.5, 2, 2.5, 3], downbeats: [1, 3] });
+
+  it("moves every detected beat and its origin, keeping bars", () => {
+    const moved = shiftedGrid(detected, 0.025);
+    expect(moved?.beats.map((beat, i) => beat - detected.beats[i])).toEqual(
+      detected.beats.map(() => expect.closeTo(0.025, 9)),
+    );
+    expect(moved?.downbeatIndices).toEqual(detected.downbeatIndices);
+    expect(moved && "beats" in moved.origin ? moved.origin.downbeats[0] : null).toBeCloseTo(1.025, 9);
+  });
+
+  it("moves a manual grid's anchor and end", () => {
+    const manual = manualGrid({ bpm: 120, beatsPerBar: 4, anchor: 1, end: 10 });
+    const moved = shiftedGrid(manual, 0.025);
+    expect(moved?.origin).toMatchObject({ anchor: 1.025, end: 10.025 });
+  });
+
+  describe("invariants", () => {
+    it("an unedited grid stays unedited", () => {
+      expect(isEdited(shiftedGrid(detected, 0.025) ?? detected)).toBe(false);
+      const manual = manualGrid({ bpm: 120, beatsPerBar: 4, anchor: 1, end: 10 });
+      expect(isEdited(shiftedGrid(manual, 0.025) ?? manual)).toBe(false);
+    });
+
+    it("an edited grid keeps its offset and stays edited", () => {
+      const moved = shiftedGrid(withOffset(detected, 20), 0.025);
+      expect(moved?.offsetMs).toBe(20);
+      expect(moved && isEdited(moved)).toBe(true);
+    });
+  });
+
+  describe("edge cases", () => {
+    it("drops a grid moved before the song start", () => {
+      expect(shiftedGrid(detectedGrid({ beats: [0.01, 0.5, 1], downbeats: [0.01] }), -0.025)).toBeNull();
+    });
   });
 });

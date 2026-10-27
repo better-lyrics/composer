@@ -1,3 +1,4 @@
+import { primingDecodeTag } from "@/audio/decoded-source-audio";
 import {
   type StemRecord,
   derivedRecordKey,
@@ -51,6 +52,11 @@ function makeKey(audioHash: string, stem: Stem, variant: VocalModelVariant): str
 
 function stemJobKey(audioHash: string, variant: VocalModelVariant): string {
   return `${audioHash}|${variant}|v${STEM_CACHE_VERSION}`;
+}
+
+async function stemCacheHash(source: Blob, audioHash: string): Promise<string> {
+  const tag = await primingDecodeTag(source);
+  return tag ? `${audioHash}-${tag}` : audioHash;
 }
 
 function onsetsKey(jobKey: string): string {
@@ -177,6 +183,7 @@ async function evictIfOverCapacity(): Promise<void> {
 // -- Exports ------------------------------------------------------------------
 
 export {
+  stemCacheHash,
   stemJobKey,
   getStem,
   getStemJobOnsets,

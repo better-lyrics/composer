@@ -1,4 +1,4 @@
-import { parseLamePriming, primingStartFrame } from "@/audio/lame-priming";
+import { parseLamePriming, primingToCrop } from "@/audio/lame-priming";
 import type { LevelEnvelope } from "@/audio/level-envelope";
 import { computeLevelEnvelopeOffThread } from "@/audio/pcm-worker-host";
 
@@ -25,7 +25,7 @@ async function analyseLevels(source: Blob, signal: AbortSignal): Promise<LevelEn
   const bytes = await source.arrayBuffer();
   const priming = parseLamePriming(bytes);
   const decoded = await new OfflineAudioContext(1, 1, ANALYSIS_SAMPLE_RATE).decodeAudioData(bytes);
-  const startFrame = primingStartFrame(priming, decoded.sampleRate);
+  const startFrame = primingToCrop(priming, decoded);
   const channelCount = Math.min(2, decoded.numberOfChannels);
   const channels = Array.from({ length: channelCount }, (_, channel) =>
     decoded.getChannelData(channel).slice(startFrame),

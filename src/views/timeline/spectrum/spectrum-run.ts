@@ -1,4 +1,4 @@
-import { decodeSourceAudio } from "@/audio/decoded-source-audio";
+import { decodeSourceAudio, primingDecodeTag } from "@/audio/decoded-source-audio";
 import { mixToMono } from "@/audio/onset-detection";
 import { stftFrameCount } from "@/audio/separation/stft";
 import {
@@ -30,6 +30,7 @@ interface SpectrumTarget extends ResolvedAnalysis {
 interface MonoAudio {
   pcm: Float32Array;
   sampleRate: number;
+  decodeTag: string;
 }
 
 interface SpectrumRun {
@@ -55,9 +56,9 @@ function decodeMono(target: SpectrumTarget): Promise<MonoAudio> {
   if (cached) return cached;
   const decoding = (async () => {
     const blob = typeof target.audio === "function" ? await target.audio() : target.audio;
-    const buffer = await decodeSourceAudio(blob);
+    const [buffer, decodeTag] = await Promise.all([decodeSourceAudio(blob), primingDecodeTag(blob)]);
     const channels = Array.from({ length: buffer.numberOfChannels }, (_, i) => buffer.getChannelData(i));
-    return { pcm: mixToMono(channels), sampleRate: buffer.sampleRate };
+    return { pcm: mixToMono(channels), sampleRate: buffer.sampleRate, decodeTag };
   })();
   decoding.catch(() => monoCache.delete(target.sourceKey));
   monoCache.set(target.sourceKey, decoding);
@@ -70,12 +71,19 @@ function decodeMono(target: SpectrumTarget): Promise<MonoAudio> {
 
 async function readCachedChunks(
   target: SpectrumTarget,
-  sampleRate: number,
+  audio: MonoAudio,
   total: number,
 ): Promise<Map<number, CachedSpectrumChunk>> {
   if (!target.jobKey) return new Map();
   try {
-    return await readSpectrumChunks(target.jobKey, target.source, sampleRate, target.fftSize, total);
+    return await readSpectrumChunks(
+      target.jobKey,
+      target.source,
+      audio.decodeTag,
+      audio.sampleRate,
+      target.fftSize,
+      total,
+    );
   } catch (error) {
     console.warn(LOG_PREFIX, "could not read the cached spectrum; analysing again", error);
     return new Map();
@@ -144,11 +152,11 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
       frames,
     });
     const total = chunkCount(frames);
-    const cached = await readCachedChunks(target, audio.sampleRate, total);
+    const cached = await readCachedChunks(target, audio, total);
     if (cancelled) return;
     for (const [chunk, stored] of cached) storeSpectrumChunk(chunk, stored.magnitude, stored.phaseChange);
     writer = target.jobKey
-      ? createSpectrumChunkWriter(target.jobKey, target.source, audio.sampleRate, target.fftSize)
+      ? createSpectrumChunkWriter(target.jobKey, target.source, audio.decodeTag, audio.sampleRate, target.fftSize)
       : null;
     cacheRead = true;
     if (cached.size === total && rawQueue.size === 0) return finish();

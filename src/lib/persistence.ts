@@ -33,6 +33,7 @@ interface ProjectSaveInput {
   dismissedMetadataMatches: string[];
   currentStem: Stem;
   primingStripped: boolean;
+  primingCorrected: boolean;
   customSnapPoints: SnapPoint[];
   beatGrid: BeatGrid | null;
   hasUnexportedImport: boolean;

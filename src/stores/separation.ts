@@ -3,7 +3,13 @@ import { hasCachedModel } from "@/audio/separation/model-cache";
 import { getModelDescriptor, isModelHostingConfigured } from "@/audio/separation/model-registry";
 import { cancelSeparationWorker, disposeSeparationWorker } from "@/audio/separation/shared-separation-worker";
 import { isProjectStemJobKey } from "@/audio/separation/stem-job-liveness";
-import { beginLoadingStemJob, endLoadingStemJob, isStemJobLoading, stemJobKey } from "@/audio/separation/stem-store";
+import {
+  beginLoadingStemJob,
+  endLoadingStemJob,
+  isStemJobLoading,
+  stemCacheHash,
+  stemJobKey,
+} from "@/audio/separation/stem-store";
 import type { SeparationError, SeparationStatus, Stem } from "@/audio/separation/types";
 import { STEM_SLOTS, type StemOrigin, type StemSlot } from "@/domain/stems/stem-slot";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
@@ -125,10 +131,11 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
     const variant = useSettingsStore.getState().vocalModelVariant;
     try {
       const audioHash = await hashFile(file);
-      const cacheJobKey = stemJobKey(audioHash, variant);
+      const cacheHash = await stemCacheHash(file, audioHash);
+      const cacheJobKey = stemJobKey(cacheHash, variant);
       beginLoadingStemJob(cacheJobKey);
       try {
-        const resolved = await resolveStems(projectId, songKeyFor(source, audioHash), audioHash, variant);
+        const resolved = await resolveStems(projectId, songKeyFor(source, audioHash), cacheHash, variant);
         if (!isCurrentRun()) return;
         const stemUrls = nextStemUrls(get().stemUrls, resolved.slots);
         const slots = STEM_SLOTS.filter((slot) => resolved.slots[slot]);
@@ -178,14 +185,14 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
         set,
         isCurrentRun,
         isCancelling: () => isCancelling,
-        onHashed: (audioHash) => {
-          if (!isProjectStemJobKey(get().jobKey)) set({ jobKey: stemJobKey(audioHash, variant) });
+        onHashed: (cacheHash) => {
+          if (!isProjectStemJobKey(get().jobKey)) set({ jobKey: stemJobKey(cacheHash, variant) });
         },
       });
       if (!separated || !isCurrentRun()) return;
       try {
         await storeSeparatedStems({
-          audioHash: separated.audioHash,
+          cacheHash: separated.cacheHash,
           songKey: songKeyFor(source, separated.audioHash),
           variant,
           files: separated.stemFiles,

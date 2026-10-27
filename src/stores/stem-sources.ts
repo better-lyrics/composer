@@ -34,11 +34,11 @@ function songKeyFor(source: AudioSource, audioHash: string): string {
 
 // -- Resolution ---------------------------------------------------------------
 
-async function cachedStems(audioHash: string, variant: VocalModelVariant): Promise<ResolvedStems> {
-  const jobKey = stemJobKey(audioHash, variant);
+async function cachedStems(cacheHash: string, variant: VocalModelVariant): Promise<ResolvedStems> {
+  const jobKey = stemJobKey(cacheHash, variant);
   const slots: ResolvedStems["slots"] = {};
-  if (!(await hasStems(audioHash, variant))) return { jobKey, slots };
-  const blobs = await Promise.all(STEM_SLOTS.map((slot) => getStem(audioHash, slot, variant)));
+  if (!(await hasStems(cacheHash, variant))) return { jobKey, slots };
+  const blobs = await Promise.all(STEM_SLOTS.map((slot) => getStem(cacheHash, slot, variant)));
   STEM_SLOTS.forEach((slot, index) => {
     const blob = blobs[index];
     if (blob) slots[slot] = { file: blob, origin: "separated", key: `${jobKey}|${slot}` };
@@ -50,12 +50,12 @@ async function cachedStems(audioHash: string, variant: VocalModelVariant): Promi
 async function resolveStems(
   projectId: string | undefined,
   songKey: string,
-  audioHash: string,
+  cacheHash: string,
   variant: VocalModelVariant,
 ): Promise<ResolvedStems> {
   const stems = projectId ? await loadProjectStems(projectId) : undefined;
   const owned = stems?.songKey === songKey && STEM_SLOTS.some((slot) => stems.slots[slot]);
-  if (!projectId || !stems || !owned) return cachedStems(audioHash, variant);
+  if (!projectId || !stems || !owned) return cachedStems(cacheHash, variant);
   const slots: ResolvedStems["slots"] = {};
   for (const slot of STEM_SLOTS) {
     const stem = stems.slots[slot];

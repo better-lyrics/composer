@@ -26,6 +26,7 @@ function storedProject(overrides: Partial<SavedProject> = {}): SavedProject {
     lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 }), createLine({ text: "Waiting for a ride" })],
     granularity: "word",
     primingStripped: true,
+    primingCorrected: true,
     ...overrides,
   };
 }
@@ -40,6 +41,7 @@ function saveInputTitled(title: string): ProjectSaveInput {
     lines: [createLine({ text: `${title} line` })],
     audioSource: undefined,
     primingStripped: true,
+    primingCorrected: true,
   });
 }
 

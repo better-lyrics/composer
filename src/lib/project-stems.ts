@@ -1,5 +1,7 @@
 import { type SavedProjectStem, type SavedProjectStems, storedStemBytes } from "@/domain/stems/saved-stems";
-import type { StemOrigin, StemSlot } from "@/domain/stems/stem-slot";
+import { readWavLayout, withLeadingSilence } from "@/audio/wav-encode";
+import { measuredPrimingFrames } from "@/domain/stems/priming-evidence";
+import { STEM_SLOTS, type StemOrigin, type StemSlot } from "@/domain/stems/stem-slot";
 import {
   APP_STATE_STORE_NAME,
   PROJECT_INDEX_STORE_NAME,
@@ -11,6 +13,7 @@ import { notifyProjectIndexChanged } from "@/lib/project-index-changes";
 import { patchIndexEntry } from "@/lib/project-index-write";
 import { whenProjectWritable } from "@/lib/project-tombstones";
 import { notifyStorageSignal, reportStorageWriteError } from "@/lib/storage-signals";
+import { fileExtensionLabel } from "@/utils/file-name";
 
 // -- Types --------------------------------------------------------------------
 
@@ -21,6 +24,8 @@ interface ProjectStemWrite {
   durationSeconds: number;
   shouldWrite?: () => boolean;
 }
+
+type SeparatedStemRepair = "drop" | "keep" | "undecided";
 
 type StemsChange = (current: SavedProjectStems | undefined) => SavedProjectStems | undefined;
 
@@ -41,6 +46,56 @@ function withoutSlot(stems: SavedProjectStems, slot: StemSlot): SavedProjectStem
   return { ...stems, revision: stems.revision + 1, slots };
 }
 
+// A separated stem from the double-cropped decode is early, unless the song's crop did not change.
+function isUncheckedSeparated(stem: SavedProjectStem | undefined): boolean {
+  return stem?.origin === "separated" && !stem.primingCorrected;
+}
+
+// An imported mp3 was stored as the WAV of its decode, so the name is the only record of its format.
+function measuredMp3StemPriming(stem: SavedProjectStem | undefined): number | null {
+  if (stem?.origin !== "imported" || stem.primingCorrected || fileExtensionLabel(stem.name, "") !== "MP3") return null;
+  const layout = readWavLayout(stem.data);
+  return layout ? measuredPrimingFrames({ durationSeconds: stem.durationSeconds, ...layout }) : null;
+}
+
+function hasUncheckedSeparatedStems(stems: SavedProjectStems): boolean {
+  return STEM_SLOTS.some((slot) => isUncheckedSeparated(stems.slots[slot]));
+}
+
+function hasStemsToRepair(stems: SavedProjectStems): boolean {
+  return (
+    hasUncheckedSeparatedStems(stems) || STEM_SLOTS.some((slot) => measuredMp3StemPriming(stems.slots[slot]) !== null)
+  );
+}
+
+function repairedSlot(
+  stem: SavedProjectStem,
+  separated: SeparatedStemRepair,
+  revision: number,
+): SavedProjectStem | null | undefined {
+  if (isUncheckedSeparated(stem)) {
+    if (separated === "undecided") return stem;
+    return separated === "drop" ? null : { ...stem, primingCorrected: true };
+  }
+  const cropped = measuredMp3StemPriming(stem);
+  const data = cropped === null ? null : withLeadingSilence(stem.data, cropped);
+  return data ? { ...stem, data, revision, primingCorrected: true } : stem;
+}
+
+function repairedStems(stems: SavedProjectStems, separated: SeparatedStemRepair): SavedProjectStems | null {
+  const revision = stems.revision + 1;
+  const slots: SavedProjectStems["slots"] = {};
+  let changed = false;
+  for (const slot of STEM_SLOTS) {
+    const stem = stems.slots[slot];
+    if (!stem) continue;
+    const next = repairedSlot(stem, separated, revision);
+    if (next !== stem) changed = true;
+    if (next) slots[slot] = next;
+  }
+  return changed ? { ...stems, revision, slots } : null;
+}
+
 // -- Reads --------------------------------------------------------------------
 
 function loadProjectStems(id: string): Promise<SavedProjectStems | undefined> {
@@ -56,7 +111,9 @@ async function writeProjectStems(id: string, change: StemsChange): Promise<void>
         const store = tx.objectStore(PROJECT_STEMS_STORE_NAME);
         const request = store.get(id);
         request.onsuccess = () => {
-          const next = change(request.result as SavedProjectStems | undefined);
+          const current = request.result as SavedProjectStems | undefined;
+          const next = change(current);
+          if (next === current) return;
           if (next) store.put(next, id);
           else store.delete(id);
           patchIndexEntry(tx, id, { storedStemBytes: storedStemBytes(next) });
@@ -91,6 +148,7 @@ async function saveProjectStem(id: string, songKey: string, write: ProjectStemWr
     type: write.file.type,
     data: await write.file.arrayBuffer(),
     durationSeconds: write.durationSeconds,
+    primingCorrected: true,
   };
   await writeProjectStems(id, (current) => {
     if (write.shouldWrite && !write.shouldWrite()) return current;
@@ -109,6 +167,30 @@ async function deleteProjectStem(id: string, slot: StemSlot): Promise<void> {
   notifyStorageSignal("media-removed");
 }
 
+async function repairOldProjectStems(id: string, separated: SeparatedStemRepair): Promise<boolean> {
+  let change: { before: number; after: number } | null = null;
+  await writeProjectStems(id, (current) => {
+    const next = current ? repairedStems(current, separated) : null;
+    if (!next) return current;
+    change = { before: storedStemBytes(current), after: storedStemBytes(next) };
+    return next;
+  });
+  if (!change) return false;
+  const { before, after } = change;
+  notifyStorageSignal(after < before ? "media-removed" : "media-stored");
+  return true;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { copyProjectStems, deleteProjectStem, loadProjectStems, saveProjectStem, stemFile };
+export type { SeparatedStemRepair };
+export {
+  copyProjectStems,
+  deleteProjectStem,
+  hasStemsToRepair,
+  hasUncheckedSeparatedStems,
+  loadProjectStems,
+  repairOldProjectStems,
+  saveProjectStem,
+  stemFile,
+};

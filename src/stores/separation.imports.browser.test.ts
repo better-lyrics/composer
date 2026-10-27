@@ -112,7 +112,7 @@ describe("imported stems", () => {
     };
 
     await storeSeparatedStems({
-      audioHash: "song",
+      cacheHash: "song",
       songKey: (await loadProjectStems("import-fill"))?.songKey ?? "",
       variant: "fp32",
       files: modelOutput,

@@ -1,4 +1,5 @@
 import { type BeatGrid, type ManualTempo, beatIndexAt, detectedGrid, roundBeatTime } from "@/domain/tempo/beat-grid";
+import { readBeatGrid } from "@/domain/tempo/read-beat-grid";
 import { MIN_BPM } from "@/domain/tempo/tap-tempo";
 import { tempoStats } from "@/domain/tempo/tempo-stats";
 
@@ -140,6 +141,17 @@ function isEdited(grid: BeatGrid): boolean {
   );
 }
 
+// An unedited grid is rebuilt from its moved origin so it still reads as unedited; a grid moved before 0 is invalid.
+function shiftedGrid(grid: BeatGrid, seconds: number): BeatGrid | null {
+  const shift = (times: readonly number[]) => times.map((time) => time + seconds);
+  const origin =
+    "bpm" in grid.origin
+      ? { ...grid.origin, anchor: grid.origin.anchor + seconds, end: grid.origin.end + seconds }
+      : { beats: shift(grid.origin.beats), downbeats: shift(grid.origin.downbeats) };
+  const moved: BeatGrid = { ...grid, beats: shift(grid.beats), origin };
+  return readBeatGrid(isEdited(grid) ? moved : resetGrid(moved));
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { canDouble, canHalve, doubled, halved, isEdited, manualGrid, resetGrid, withBarOneAt, withOffset };
+export { canDouble, canHalve, doubled, halved, isEdited, manualGrid, resetGrid, shiftedGrid, withBarOneAt, withOffset };

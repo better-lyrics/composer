@@ -14,7 +14,7 @@ const PROJECT_FILE_SUFFIX = ".composer";
 // -- Building -----------------------------------------------------------------
 
 function projectFileFrom(projectId: string | undefined, project: SavedProject): ProjectFile {
-  // primingStripped ships with the file: re-importing it must never re-shift already-corrected LAME priming timings.
+  // The priming flags ship with the file: re-importing it must never re-shift already-corrected LAME priming timings.
   const { currentStem: _stem, hasUnexportedImport: _import, ...portable } = project;
   return projectId ? { ...portable, projectId } : portable;
 }

@@ -16,7 +16,7 @@ function chunkBytes(chunk: number, salt: number): Uint8Array {
 }
 
 async function writeChunks(chunks: readonly number[]): Promise<void> {
-  const writer = createSpectrumChunkWriter(job, "vocals", 44100, 1024);
+  const writer = createSpectrumChunkWriter(job, "vocals", "", 44100, 1024);
   for (const chunk of chunks) writer.add(chunk, chunkBytes(chunk, 1), chunkBytes(chunk, 2));
   await writer.flush();
 }
@@ -28,7 +28,7 @@ describe("spectrum chunk cache", () => {
     await separate();
     const chunks = Array.from({ length: 20 }, (_, i) => i);
     await writeChunks(chunks);
-    const read = await readSpectrumChunks(job, "vocals", 44100, 1024, 20);
+    const read = await readSpectrumChunks(job, "vocals", "", 44100, 1024, 20);
     expect(read.size).toBe(20);
     for (const chunk of chunks) {
       expect(read.get(chunk)?.magnitude).toEqual(chunkBytes(chunk, 1));
@@ -40,9 +40,10 @@ describe("spectrum chunk cache", () => {
     it("returns only the chunks that exist", async () => {
       await separate();
       await writeChunks([0, 3]);
-      expect([...(await readSpectrumChunks(job, "vocals", 44100, 1024, 6)).keys()].toSorted()).toEqual([0, 3]);
-      expect((await readSpectrumChunks(job, "mix", 44100, 1024, 6)).size).toBe(0);
-      expect((await readSpectrumChunks(job, "vocals", 48000, 1024, 6)).size).toBe(0);
+      expect([...(await readSpectrumChunks(job, "vocals", "", 44100, 1024, 6)).keys()].toSorted()).toEqual([0, 3]);
+      expect((await readSpectrumChunks(job, "mix", "", 44100, 1024, 6)).size).toBe(0);
+      expect((await readSpectrumChunks(job, "vocals", "", 48000, 1024, 6)).size).toBe(0);
+      expect((await readSpectrumChunks(job, "vocals", "lt1", 44100, 1024, 6)).size).toBe(0);
     });
   });
 
@@ -60,7 +61,7 @@ describe("spectrum chunk cache", () => {
       expect(after?.createdAt).toBe(before?.createdAt);
       expect(after?.bytes).toBeGreaterThan(before?.bytes ?? 0);
       await removeStemJobs([job]);
-      expect((await readSpectrumChunks(job, "vocals", 44100, 1024, 1)).size).toBe(0);
+      expect((await readSpectrumChunks(job, "vocals", "", 44100, 1024, 1)).size).toBe(0);
     });
   });
 });

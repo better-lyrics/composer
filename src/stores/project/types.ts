@@ -64,6 +64,7 @@ interface UiState {
   activeTab: ProjectTab;
   syllableSplitDefaults: SyllableSplitDefaults;
   primingStripped: boolean;
+  primingCorrected: boolean;
 }
 
 interface DismissalsState {
@@ -126,6 +127,7 @@ interface UiActions {
   setActiveTab: (tab: ProjectTab) => void;
   setSyllableSplitDefaults: (defaults: SyllableSplitDefaults) => void;
   setPrimingStripped: (value: boolean) => void;
+  setPrimingCorrected: (value: boolean) => void;
 }
 
 interface DismissalActions {

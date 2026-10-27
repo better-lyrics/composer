@@ -101,6 +101,7 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
     dismissedMetadataMatches: [],
     currentStem: "original",
     primingStripped: false,
+    primingCorrected: true,
     customSnapPoints: [],
     beatGrid: null,
     hasUnexportedImport: false,

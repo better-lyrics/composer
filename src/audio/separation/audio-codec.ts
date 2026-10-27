@@ -1,4 +1,4 @@
-import { parseLamePriming, stripLeading } from "@/audio/lame-priming";
+import { parseLamePriming, primingToCrop, stripLeading } from "@/audio/lame-priming";
 
 const TARGET_SAMPLE_RATE = 44_100;
 const TARGET_CHANNELS = 2;
@@ -18,13 +18,12 @@ async function decodeFileToFloat32(file: File | Blob, opts: DecodeOptions = {}):
   const buf = await file.arrayBuffer();
   const shouldStrip = opts.stripPriming !== false;
   const sampleRate = opts.sampleRate ?? TARGET_SAMPLE_RATE;
-  const priming = shouldStrip ? parseLamePriming(buf) : { samples: 0, sampleRate: 0 };
-  const trimAtTarget =
-    priming.samples > 0 && priming.sampleRate > 0 ? Math.round((priming.samples * sampleRate) / priming.sampleRate) : 0;
-  const applyStrip = (channels: Float32Array[]): Float32Array[] => stripLeading(channels, trimAtTarget);
+  const priming = shouldStrip ? parseLamePriming(buf) : null;
 
   const ctx = new OfflineAudioContext(TARGET_CHANNELS, 1, sampleRate);
   const decoded = await ctx.decodeAudioData(buf);
+  const trimAtTarget = priming ? primingToCrop(priming, decoded, sampleRate) : 0;
+  const applyStrip = (channels: Float32Array[]): Float32Array[] => stripLeading(channels, trimAtTarget);
 
   if (decoded.sampleRate === sampleRate && decoded.numberOfChannels === TARGET_CHANNELS) {
     const channels: Float32Array[] = [];

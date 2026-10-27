@@ -3,7 +3,7 @@ import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { type ResumePosition, isResumePosition } from "@/domain/project/resume-position";
 import { type ProjectTab, isProjectTab } from "@/domain/project/tab";
 import { applySavedProject } from "@/lib/apply-saved-project";
-import { stripLamePriming } from "@/lib/priming-migration";
+import { migratePrimingTimings, repairProjectStems } from "@/lib/priming-migration";
 import { loadProjectAudio } from "@/lib/project-audio";
 import { loadProjectIndexEntry, saveProjectRecord } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
@@ -49,8 +49,9 @@ async function loadProjectForRestore(id: string): Promise<RestorePayload> {
   ]);
   if (project) {
     const upgraded = upgradeSavedProject(project);
-    const primingStripped = await stripLamePriming(project, audio);
-    if (upgraded || primingStripped) await saveProjectRecord(id, project);
+    const migrated = await migratePrimingTimings(project, audio);
+    await repairProjectStems(id, audio);
+    if (upgraded || migrated) await saveProjectRecord(id, project);
   }
   return {
     project,
