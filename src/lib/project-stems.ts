@@ -44,18 +44,23 @@ function withoutSlot(stems: SavedProjectStems, slot: StemSlot): SavedProjectStem
   return { ...stems, revision: stems.revision + 1, slots };
 }
 
+// A separated stem made from the double-cropped decode is early; one made by this build is not.
+function needsDrop(stem: SavedProjectStem | undefined): boolean {
+  return stem?.origin === "separated" && !stem.primingCorrected;
+}
+
 function withoutSeparatedSlots(stems: SavedProjectStems): SavedProjectStems {
   const slots: SavedProjectStems["slots"] = {};
   for (const slot of STEM_SLOTS) {
     const stem = stems.slots[slot];
-    if (stem && stem.origin !== "separated") slots[slot] = stem;
+    if (stem && !needsDrop(stem)) slots[slot] = stem;
   }
   return { ...stems, revision: stems.revision + 1, slots };
 }
 
 // An imported mp3 was stored as the WAV of its decode, so the name is the only record of its format.
 function needsPrimingPad(stem: SavedProjectStem | undefined): stem is SavedProjectStem {
-  return stem?.origin === "imported" && !stem.primingPadded && fileExtensionLabel(stem.name, "") === "MP3";
+  return stem?.origin === "imported" && !stem.primingCorrected && fileExtensionLabel(stem.name, "") === "MP3";
 }
 
 function withPaddedMp3Slots(stems: SavedProjectStems, seconds: number): SavedProjectStems | null {
@@ -70,7 +75,7 @@ function withPaddedMp3Slots(stems: SavedProjectStems, seconds: number): SavedPro
       console.warn(LOG_PREFIX, "left an imported mp3 stem unpadded; its bytes are not a WAV Composer wrote", stem.name);
       continue;
     }
-    slots[slot] = { ...stem, data, durationSeconds: stem.durationSeconds + seconds, revision, primingPadded: true };
+    slots[slot] = { ...stem, data, durationSeconds: stem.durationSeconds + seconds, revision, primingCorrected: true };
     padded = true;
   }
   return padded ? { ...stems, revision, slots } : null;
@@ -128,6 +133,7 @@ async function saveProjectStem(id: string, songKey: string, write: ProjectStemWr
     type: write.file.type,
     data: await write.file.arrayBuffer(),
     durationSeconds: write.durationSeconds,
+    primingCorrected: true,
   };
   await writeProjectStems(id, (current) => {
     if (write.shouldWrite && !write.shouldWrite()) return current;
@@ -149,7 +155,7 @@ async function deleteProjectStem(id: string, slot: StemSlot): Promise<void> {
 async function dropSeparatedProjectStems(id: string): Promise<boolean> {
   let dropped = false;
   await writeProjectStems(id, (current) => {
-    if (!current || !STEM_SLOTS.some((slot) => current.slots[slot]?.origin === "separated")) return current;
+    if (!current || !STEM_SLOTS.some((slot) => needsDrop(current.slots[slot]))) return current;
     dropped = true;
     return withoutSeparatedSlots(current);
   });

@@ -9,7 +9,8 @@ interface SavedProjectStem {
   data: ArrayBuffer;
   durationSeconds: number;
   revision: number;
-  primingPadded?: boolean;
+  // Set on every stem written by a build with the corrected MP3 decode.
+  primingCorrected?: boolean;
 }
 
 interface SavedProjectStems {

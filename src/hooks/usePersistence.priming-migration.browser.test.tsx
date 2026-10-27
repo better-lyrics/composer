@@ -14,6 +14,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { createProjectSaveInput } from "@/test/factories";
+import { saveStemFromOldBuild } from "@/test/legacy-stems";
 import { loadOpenProjectRecord } from "@/test/projects";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "vitest-browser-react";
@@ -169,7 +170,7 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
     await seedTimedAgainstDoubleCrop();
     const id = (await getOpenProjectId())!;
     await saveProjectStem(id, "song", stem("vocals", "imported"));
-    await saveProjectStem(id, "song", stem("instrumental", "separated"));
+    await saveStemFromOldBuild(id, "song", stem("instrumental", "separated"));
 
     await loadOpenProjectForRestore();
 
@@ -181,8 +182,8 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
   it("pads an imported mp3 stem once and leaves an imported wav stem alone", async () => {
     await seedTimedAgainstDoubleCrop();
     const id = (await getOpenProjectId())!;
-    await saveProjectStem(id, "song", stem("vocals", "imported", "acapella.mp3"));
-    await saveProjectStem(id, "song", stem("instrumental", "imported", "inst.wav"));
+    await saveStemFromOldBuild(id, "song", stem("vocals", "imported", "acapella.mp3"));
+    await saveStemFromOldBuild(id, "song", stem("instrumental", "imported", "inst.wav"));
     const before = await loadProjectStems(id);
 
     await loadOpenProjectForRestore();
@@ -195,11 +196,23 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
     expect(await loadProjectStems(id)).toEqual(padded);
   });
 
+  it("regression: stems saved by this build are neither dropped nor padded", async () => {
+    await seedTimedAgainstDoubleCrop();
+    const id = (await getOpenProjectId())!;
+    await saveProjectStem(id, "song", stem("vocals", "imported", "acapella.mp3"));
+    await saveProjectStem(id, "song", stem("instrumental", "separated"));
+    const before = await loadProjectStems(id);
+
+    await loadOpenProjectForRestore();
+
+    expect(await loadProjectStems(id)).toEqual(before);
+  });
+
   it("regression: a failing stem write still opens the project and shifts its times once", async () => {
     allowConsole(/\[PrimingMigration\] could not correct the project's stems/);
     await seedTimedAgainstDoubleCrop();
     const id = (await getOpenProjectId())!;
-    await saveProjectStem(id, "song", stem("instrumental", "separated"));
+    await saveStemFromOldBuild(id, "song", stem("instrumental", "separated"));
     const put = IDBObjectStore.prototype.put;
     const failStemWrites = vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(function (
       this: IDBObjectStore,

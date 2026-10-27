@@ -10,6 +10,7 @@ import {
 } from "@/lib/project-stems";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { createAudioFile } from "@/test/audio-fixtures";
+import { saveStemFromOldBuild } from "@/test/legacy-stems";
 import { seedStoredProject } from "@/test/projects";
 import { describe, expect, it, vi } from "vitest";
 
@@ -128,7 +129,7 @@ describe("project stems", () => {
   it("drops separated slots, keeps imported ones and raises the revision", async () => {
     await seedStoredProject("stems-drop");
     await saveProjectStem("stems-drop", "h", importedVocals());
-    await saveProjectStem("stems-drop", "h", {
+    await saveStemFromOldBuild("stems-drop", "h", {
       slot: "instrumental",
       file: createAudioFile("inst.wav"),
       origin: "separated",
@@ -155,7 +156,7 @@ describe("project stems", () => {
 
   it("pads imported mp3 stems with leading silence and leaves other stems alone", async () => {
     await seedStoredProject("stems-pad");
-    await saveProjectStem("stems-pad", "h", importedVocals("acapella.mp3"));
+    await saveStemFromOldBuild("stems-pad", "h", importedVocals("acapella.mp3"));
     await saveProjectStem("stems-pad", "h", { ...importedVocals("inst.wav"), slot: "instrumental" });
     const before = await loadProjectStems("stems-pad");
 
@@ -182,7 +183,7 @@ describe("project stems", () => {
 
   it("regression: pads an imported mp3 stem only once when the migration runs again", async () => {
     await seedStoredProject("stems-pad-twice");
-    await saveProjectStem("stems-pad-twice", "h", importedVocals("acapella.mp3"));
+    await saveStemFromOldBuild("stems-pad-twice", "h", importedVocals("acapella.mp3"));
     await padImportedMp3Stems("stems-pad-twice", 0.025);
     const once = await loadProjectStems("stems-pad-twice");
 
