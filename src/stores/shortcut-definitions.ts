@@ -511,7 +511,7 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
   {
     id: "timeline.autoAlign",
     scope: "timeline",
-    description: "Auto-align the selected line",
+    description: "Align the selected line",
     defaultBinding: { key: "a", shift: true },
   },
   {

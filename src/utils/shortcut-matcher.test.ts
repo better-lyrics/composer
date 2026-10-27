@@ -1,3 +1,4 @@
+import { disableShortcut, isShortcutDisabled } from "@/lib/disabled-shortcuts";
 import { assignBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS } from "@/stores/shortcut-definitions";
 import { isMac } from "@/utils/platform";
@@ -63,6 +64,25 @@ describe("findMatchingShortcut", () => {
   describe("edge cases", () => {
     it("returns null for a key with no binding in the scope", () => {
       expect(findMatchingShortcut(keydown({ key: "F13" }), "timeline")).toBeNull();
+    });
+  });
+
+  describe("disabled shortcuts", () => {
+    it("regression: a disabled button's shortcut does not match", () => {
+      const release = disableShortcut("timeline.toggleTextVariant");
+      expect(findMatchingShortcut(keydown({ key: "l" }), "timeline")).toBeNull();
+      release();
+      expect(findMatchingShortcut(keydown({ key: "l" }), "timeline")).toBe("timeline.toggleTextVariant");
+    });
+
+    it("stays disabled until every holder releases", () => {
+      const first = disableShortcut("timeline.toggleTextVariant");
+      const second = disableShortcut("timeline.toggleTextVariant");
+      first();
+      first();
+      expect(isShortcutDisabled("timeline.toggleTextVariant")).toBe(true);
+      second();
+      expect(isShortcutDisabled("timeline.toggleTextVariant")).toBe(false);
     });
   });
 

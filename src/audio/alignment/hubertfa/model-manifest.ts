@@ -1,4 +1,5 @@
 import { getModelBaseUrl } from "@/audio/separation/model-registry";
+import { baseLanguage, isAlignableLanguage } from "@/domain/alignment/language";
 
 // -- Types --------------------------------------------------------------------
 
@@ -55,8 +56,8 @@ function builtinModel(baseUrl: string): AlignmentModel {
 }
 
 // The base language of a code ("en_US" -> "en"), or null for one Intl can't
-// name: the picker labels its tabs with Intl.DisplayNames, which throws on those.
-function baseLanguage(code: unknown): string | null {
+// name: the picker names languages with Intl.DisplayNames, which throws on those.
+function canonicalBase(code: unknown): string | null {
   if (typeof code !== "string") return null;
   const base = code.trim().replaceAll("_", "-").split("-")[0].toLowerCase();
   try {
@@ -67,11 +68,13 @@ function baseLanguage(code: unknown): string | null {
   }
 }
 
-// A checkpoint that doesn't list its languages keeps the base model's.
+// A checkpoint that lists no readable language keeps the base model's. Listed
+// languages auto-align can't run are dropped, so a model never claims them.
 function parseLanguages(raw: unknown, fallback: string[]): string[] {
   if (!Array.isArray(raw)) return fallback;
-  const languages = [...new Set(raw.map(baseLanguage).filter((code): code is string => code !== null))];
-  return languages.length > 0 ? languages : fallback;
+  const listed = raw.map(canonicalBase).filter((code): code is string => code !== null);
+  if (listed.length === 0) return fallback;
+  return [...new Set(listed.filter(isAlignableLanguage).map((code) => baseLanguage(code) ?? code))];
 }
 
 function parseEntry(raw: unknown, manifestUrl: string, fallback: AlignmentModel): AlignmentModel | null {

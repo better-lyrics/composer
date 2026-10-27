@@ -5,7 +5,6 @@ interface ModelDescriptor {
   url: string;
   filename: string;
   approxBytes: number;
-  approxMb: number;
 }
 
 const MODEL_FILENAMES: Record<VocalModelVariant, string> = {
@@ -13,7 +12,7 @@ const MODEL_FILENAMES: Record<VocalModelVariant, string> = {
   fp32: "htdemucs_fp32.onnx",
 };
 
-const MODEL_APPROX_BYTES: Record<VocalModelVariant, number> = {
+const VOCAL_MODEL_APPROX_BYTES: Record<VocalModelVariant, number> = {
   fp16: 85 * 1024 * 1024,
   fp32: 171 * 1024 * 1024,
 };
@@ -29,13 +28,12 @@ function getModelDescriptor(variant: VocalModelVariant): ModelDescriptor | null 
   const base = getBaseUrl();
   if (!base) return null;
   const filename = MODEL_FILENAMES[variant];
-  const approxBytes = MODEL_APPROX_BYTES[variant];
+  const approxBytes = VOCAL_MODEL_APPROX_BYTES[variant];
   return {
     variant,
     url: `${base}/${filename}`,
     filename,
     approxBytes,
-    approxMb: Math.round(approxBytes / (1024 * 1024)),
   };
 }
 
@@ -43,5 +41,5 @@ function isModelHostingConfigured(): boolean {
   return getBaseUrl() !== null;
 }
 
-export { getBaseUrl as getModelBaseUrl, getModelDescriptor, isModelHostingConfigured };
+export { getBaseUrl as getModelBaseUrl, getModelDescriptor, isModelHostingConfigured, VOCAL_MODEL_APPROX_BYTES };
 export type { ModelDescriptor };

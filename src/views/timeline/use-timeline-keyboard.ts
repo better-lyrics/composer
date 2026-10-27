@@ -4,7 +4,6 @@ import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceCount, linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
-import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
@@ -374,7 +373,7 @@ function useTimelineKeyboard(
           break;
         }
         case "timeline.toggleTextVariant":
-          if (hasTransliteration(useProjectStore.getState().lines)) useTimelineStore.getState().toggleTextVariant();
+          useTimelineStore.getState().toggleTextVariant();
           break;
         case "timeline.setWordBegin":
           e.preventDefault();

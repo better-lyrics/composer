@@ -1,3 +1,4 @@
+import { VOCAL_MODEL_APPROX_BYTES } from "@/audio/separation/model-registry";
 import { SPECTRUM_CONTRAST } from "@/domain/spectrum/settings";
 import { useSettingsStore } from "@/stores/settings";
 import type { SettingId } from "@/stores/settings-catalog";
@@ -9,7 +10,8 @@ import { CobaltInstancesSetting } from "@/ui/settings/cobalt-instances-setting";
 import { DefaultPlaybackRateSetting } from "@/ui/settings/default-playback-rate-setting";
 import { LibraryViewSetting } from "@/ui/settings/library-view-setting";
 import { ResetAllSettingsSetting, ResetTourSetting } from "@/ui/settings/reset-settings";
-import type { SelectOption, SliderAction } from "@/ui/settings/setting-controls";
+import type { SelectOption } from "@/ui/select";
+import type { SliderAction } from "@/ui/settings/setting-controls";
 import { SplitCharacterSetting } from "@/ui/settings/split-character-setting";
 import { BackUpAllProjectsSetting, DeleteAllProjectsSetting } from "@/ui/settings/storage/backup-settings-setting";
 import { ProjectAudioListSetting } from "@/ui/settings/storage/project-audio-list-setting";
@@ -26,6 +28,7 @@ import {
   SPECTRUM_SOURCE_OPTIONS,
   SPECTRUM_TOP_OPTIONS,
 } from "@/ui/spectrum-options";
+import { formatWholeMegabytes } from "@/utils/format-file-size";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
@@ -79,8 +82,18 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   vocalModelVariant: {
     kind: "select",
     options: [
-      { value: "fp32", label: "fp32 (~171 MB, recommended)" },
-      { value: "fp16", label: "fp16 (~85 MB, experimental)" },
+      {
+        value: "fp32",
+        label: "fp32",
+        badge: "Recommended",
+        detail: `${formatWholeMegabytes(VOCAL_MODEL_APPROX_BYTES.fp32)} · Runs on every GPU`,
+      },
+      {
+        value: "fp16",
+        label: "fp16",
+        badge: "Experimental",
+        detail: `${formatWholeMegabytes(VOCAL_MODEL_APPROX_BYTES.fp16)} · Needs WebGPU shader-f16`,
+      },
     ],
   },
   alignmentModelId: { kind: "custom", Component: AlignmentModelSetting },

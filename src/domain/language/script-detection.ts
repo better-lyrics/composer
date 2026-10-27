@@ -1,3 +1,4 @@
+const LATIN = /\p{Script=Latin}/u;
 const NON_LATIN = /[^\p{Script_Extensions=Latin}\p{Script_Extensions=Common}]/u;
 
 const SCRIPT_TO_LANGUAGE: ReadonlyArray<readonly [RegExp, string]> = [
@@ -24,6 +25,10 @@ const SCRIPT_TO_LANGUAGE: ReadonlyArray<readonly [RegExp, string]> = [
   [/\p{Script=Lao}/u, "lo"],
 ];
 
+function hasLatinLetter(text: string): boolean {
+  return LATIN.test(text);
+}
+
 function containsNonLatin(text: string): boolean {
   return NON_LATIN.test(text);
 }
@@ -35,4 +40,4 @@ function detectNonLatinLanguage(text: string): string | null {
   return null;
 }
 
-export { containsNonLatin, detectNonLatinLanguage };
+export { containsNonLatin, detectNonLatinLanguage, hasLatinLetter };

@@ -1,3 +1,4 @@
+import { settingEntry } from "@/stores/settings-catalog";
 import { TARGET_SAMPLE_RATE, decodeFileToFloat32, hashFile } from "@/audio/separation/audio-codec";
 import { encodeSeparatedStems } from "@/audio/separation/separated-stems";
 import { getSeparationWorker } from "@/audio/separation/shared-separation-worker";
@@ -70,8 +71,7 @@ async function separateSongFile(file: File, run: PipelineRun): Promise<Separated
       status: "error",
       error: {
         code: "ort-failed",
-        message:
-          "The vocal model returned invalid audio samples. Switch Vocal model precision to fp32 and run separation again.",
+        message: `The vocal model returned invalid audio samples. Switch ${settingEntry("vocalModelVariant").label} to fp32 and run separation again.`,
       },
     });
     return null;

@@ -20,7 +20,7 @@ interface PopButtonProps extends Omit<ButtonProps, "size" | "hasIcon"> {
 interface PopRowProps {
   label: React.ReactNode;
   icon?: Icon;
-  hint?: string;
+  hint?: React.ReactNode;
   dimmed?: boolean;
   children: React.ReactNode;
 }

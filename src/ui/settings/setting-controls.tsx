@@ -1,7 +1,7 @@
 import { Slider } from "@/ui/slider";
 import { useSettingsStore } from "@/stores/settings";
 import { type SettingId, settingEntry, settingKeyOf } from "@/stores/settings-catalog";
-import { Select } from "@/ui/select";
+import { Select, type SelectOption } from "@/ui/select";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
 import { Switch } from "@/ui/switch";
@@ -12,11 +12,6 @@ import { useId } from "react";
 interface SliderAction {
   label: string;
   onClick: () => void;
-}
-
-interface SelectOption {
-  value: string;
-  label: string;
 }
 
 interface SliderSettingProps {
@@ -115,4 +110,4 @@ const SettingsGroup: React.FC<{ title: string; children: React.ReactNode }> = ({
 // -- Exports -------------------------------------------------------------------
 
 export { SelectSetting, SettingsGroup, SliderSetting, ToggleSetting };
-export type { SelectOption, SliderAction };
+export type { SliderAction };

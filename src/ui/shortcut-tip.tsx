@@ -5,7 +5,7 @@ import { InlineKeyBadge } from "@/ui/inline-key-badge";
 
 interface ShortcutTipProps {
   label: string;
-  shortcut: string;
+  shortcut?: string;
   description?: string;
 }
 
@@ -15,7 +15,7 @@ const ShortcutTip: React.FC<ShortcutTipProps> = ({ label, shortcut, description 
   <span className="flex flex-col items-center gap-0.5">
     <span className="inline-flex items-center whitespace-nowrap">
       {label}
-      <InlineKeyBadge keys={getEffectiveKeysArray(shortcut)} />
+      {shortcut && <InlineKeyBadge keys={getEffectiveKeysArray(shortcut)} />}
     </span>
     {description && <span className="text-(--muted)">{description}</span>}
   </span>
