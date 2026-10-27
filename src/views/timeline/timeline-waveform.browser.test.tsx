@@ -375,6 +375,11 @@ describe("TimelineWaveform loading dots", () => {
       return new Promise((resolve) => requestAnimationFrame(() => resolve()));
     }
 
+    function drawnWaveformWidth(): string | undefined {
+      const host = [...document.querySelectorAll("[data-waveform-fade] *")].find((element) => element.shadowRoot);
+      return host?.shadowRoot?.querySelector<HTMLElement>(".wrapper")?.style.width;
+    }
+
     function setupPlayableAudio(durationSeconds: number): HTMLAudioElement {
       const audio = new Audio();
       audio.src = bufferToBlobUrl(makeSineBuffer(durationSeconds));
@@ -494,7 +499,7 @@ describe("TimelineWaveform loading dots", () => {
       observer.observe(layer, { attributes: true, attributeFilter: ["style"] });
       try {
         useTimelineStore.setState({ zoom: 80 });
-        for (let frame = 0; frame < 10; frame++) await nextFrame();
+        await expect.poll(() => drawnWaveformWidth(), { timeout: 5000 }).toBe("160px");
       } finally {
         observer.disconnect();
       }
@@ -510,7 +515,6 @@ describe("TimelineWaveform loading dots", () => {
       audio.src = stemUrl;
 
       await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
-      for (let frame = 0; frame < 10; frame++) await nextFrame();
       expect(audio.src).toBe(stemUrl);
     });
 
