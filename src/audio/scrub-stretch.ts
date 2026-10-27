@@ -32,6 +32,7 @@ let loadedBuffer: AudioBuffer | null = null;
 let loading: Promise<void> = Promise.resolve();
 let latestRequest = 0;
 let segment = { input: 0, at: 0, rate: 0 };
+let lastMoveTime = Number.NaN;
 let stopTimer: ReturnType<typeof setTimeout> | null = null;
 
 // -- Functions ----------------------------------------------------------------
@@ -97,13 +98,16 @@ function fadeOut({ node, gain }: Stretch, at: number): void {
 }
 
 // The audio is time-stretched, so the pitch never changes. While it is sounding, each move steers the speed so the
-// audio catches up with the playhead over FOLLOW_S instead of jumping. Changes are scheduled for now only: the node
+// audio catches up with the playhead over FOLLOW_S instead of jumping. The speed never goes negative, so a backward
+// move restarts at the playhead and the song never plays reversed. Changes are scheduled for now only: the node
 // treats a future change as current. A playhead that stops keeps sounding for SCRUB_HOLD_S.
 function applyMove(stretch: Stretch, move: ScrubMove): void {
   const { node, gain } = stretch;
   const now = node.context.currentTime;
   const expected = segment.input + (now - segment.at) * segment.rate;
-  if (stopTimer !== null && Math.abs(move.time - expected) < JUMP_S) {
+  const forward = !(move.time < lastMoveTime);
+  lastMoveTime = move.time;
+  if (stopTimer !== null && forward && Math.abs(move.time - expected) < JUMP_S) {
     const rate = Math.max(0, Math.min(MAX_RATE, move.rate + (move.time - expected) / FOLLOW_S));
     void node.schedule({ rate, active: true });
     segment = { input: expected, at: now, rate };
