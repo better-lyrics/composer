@@ -44,8 +44,13 @@ function readsAscii(view: DataView, offset: number, text: string): boolean {
   return true;
 }
 
-// Only the canonical layout encodeWav writes is extended; any other WAV returns null.
-function withLeadingSilence(wav: ArrayBuffer, seconds: number): ArrayBuffer | null {
+interface WavLayout {
+  sampleRate: number;
+  frames: number;
+}
+
+// Only the canonical layout encodeWav writes is read; any other WAV returns null.
+function readWavLayout(wav: ArrayBuffer): WavLayout | null {
   if (wav.byteLength < WAV_HEADER_BYTES) return null;
   const view = new DataView(wav);
   const isCanonical =
@@ -57,7 +62,12 @@ function withLeadingSilence(wav: ArrayBuffer, seconds: number): ArrayBuffer | nu
     view.getUint16(34, true) === 16 &&
     view.getUint32(40, true) === wav.byteLength - WAV_HEADER_BYTES;
   if (!isCanonical) return null;
-  const silentBytes = Math.round(seconds * view.getUint32(24, true)) * view.getUint16(32, true);
+  return { sampleRate: view.getUint32(24, true), frames: view.getUint32(40, true) / view.getUint16(32, true) };
+}
+
+function withLeadingSilence(wav: ArrayBuffer, frames: number): ArrayBuffer | null {
+  if (!readWavLayout(wav)) return null;
+  const silentBytes = Math.round(frames) * new DataView(wav).getUint16(32, true);
   if (silentBytes <= 0) return wav;
   const padded = new Uint8Array(wav.byteLength + silentBytes);
   padded.set(new Uint8Array(wav, 0, WAV_HEADER_BYTES));
@@ -68,4 +78,5 @@ function withLeadingSilence(wav: ArrayBuffer, seconds: number): ArrayBuffer | nu
   return padded.buffer;
 }
 
-export { encodeWav, withLeadingSilence };
+export { encodeWav, readWavLayout, withLeadingSilence };
+export type { WavLayout };

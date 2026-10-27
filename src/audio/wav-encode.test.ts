@@ -1,5 +1,5 @@
 import { hashFile } from "@/audio/separation/audio-codec";
-import { encodeWav, withLeadingSilence } from "@/audio/wav-encode";
+import { encodeWav, readWavLayout, withLeadingSilence } from "@/audio/wav-encode";
 import {
   GOLDEN_MONO_WAV_SHA256,
   GOLDEN_STEREO_WAV_SHA256,
@@ -76,10 +76,17 @@ describe("encodeWav", () => {
   });
 });
 
+describe("readWavLayout", () => {
+  it("reads the rate and frame count of a WAV encodeWav wrote", () => {
+    const stereo = encodeWav([new Float32Array(7), new Float32Array(7)], 48_000);
+    expect(readWavLayout(stereo)).toEqual({ sampleRate: 48_000, frames: 7 });
+  });
+});
+
 describe("withLeadingSilence", () => {
-  it("prepends silent frames at the file's rate and keeps every original sample", () => {
+  it("prepends silent frames and keeps every original sample", () => {
     const original = encodeWav([Float32Array.from([0.5, -0.5]), Float32Array.from([0.25, -0.25])], 1000);
-    const padded = withLeadingSilence(original, 0.003);
+    const padded = withLeadingSilence(original, 3);
     expect(padded).not.toBeNull();
     const view = new DataView(padded as ArrayBuffer);
     expect(view.getUint32(40, true)).toBe(5 * 4);
@@ -102,10 +109,11 @@ describe("withLeadingSilence", () => {
     });
 
     it("refuses bytes that are not a 16-bit PCM WAV it can extend", () => {
-      expect(withLeadingSilence(new Uint8Array([1, 2, 3, 4]).buffer, 0.01)).toBeNull();
+      expect(withLeadingSilence(new Uint8Array([1, 2, 3, 4]).buffer, 10)).toBeNull();
       const float = encodeWav([Float32Array.from([0.5])], 1000);
       new DataView(float).setUint16(34, 32, true);
-      expect(withLeadingSilence(float, 0.01)).toBeNull();
+      expect(withLeadingSilence(float, 10)).toBeNull();
+      expect(readWavLayout(float)).toBeNull();
     });
   });
 });

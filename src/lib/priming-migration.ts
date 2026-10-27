@@ -91,10 +91,10 @@ async function primingCropFor(audio: File): Promise<PrimingCrop | null> {
 }
 
 // Stems left uncorrected only sound early; the project must still open and its times must still move once.
-async function correctProjectStems(id: string, primingSeconds: number): Promise<void> {
+async function correctProjectStems(id: string): Promise<void> {
   try {
     await dropSeparatedProjectStems(id);
-    await padImportedMp3Stems(id, primingSeconds);
+    await padImportedMp3Stems(id);
   } catch (error) {
     console.error(LOG_PREFIX, "could not correct the project's stems; they stay as saved", error);
   }
@@ -110,7 +110,7 @@ async function primingCorrectionShift(
   if (flags.primingCorrected === true) return 0;
   const crop = await primingCropFor(audio);
   if (!crop) return null;
-  if (crop.beforeSeconds !== crop.nowSeconds) await correctProjectStems(id, crop.beforeSeconds);
+  if (crop.beforeSeconds !== crop.nowSeconds) await correctProjectStems(id);
   return primingMigrationShift(flags, crop);
 }
 

@@ -1,5 +1,6 @@
 import { type SavedProjectStem, type SavedProjectStems, storedStemBytes } from "@/domain/stems/saved-stems";
-import { withLeadingSilence } from "@/audio/wav-encode";
+import { readWavLayout, withLeadingSilence } from "@/audio/wav-encode";
+import { measuredPrimingFrames } from "@/domain/stems/priming-evidence";
 import { STEM_SLOTS, type StemOrigin, type StemSlot } from "@/domain/stems/stem-slot";
 import {
   APP_STATE_STORE_NAME,
@@ -63,19 +64,26 @@ function needsPrimingPad(stem: SavedProjectStem | undefined): stem is SavedProje
   return stem?.origin === "imported" && !stem.primingCorrected && fileExtensionLabel(stem.name, "") === "MP3";
 }
 
-function withPaddedMp3Slots(stems: SavedProjectStems, seconds: number): SavedProjectStems | null {
+function paddedStem(stem: SavedProjectStem, revision: number): SavedProjectStem | null {
+  const layout = readWavLayout(stem.data);
+  if (!layout) {
+    console.warn(LOG_PREFIX, "left an imported mp3 stem unpadded; its bytes are not a WAV Composer wrote", stem.name);
+    return null;
+  }
+  const cropped = measuredPrimingFrames({ durationSeconds: stem.durationSeconds, ...layout });
+  const data = cropped === null ? null : withLeadingSilence(stem.data, cropped);
+  return data ? { ...stem, data, revision, primingCorrected: true } : null;
+}
+
+function withPaddedMp3Slots(stems: SavedProjectStems): SavedProjectStems | null {
   const revision = stems.revision + 1;
   const slots = { ...stems.slots };
   let padded = false;
   for (const slot of STEM_SLOTS) {
     const stem = stems.slots[slot];
-    if (!needsPrimingPad(stem)) continue;
-    const data = withLeadingSilence(stem.data, seconds);
-    if (!data) {
-      console.warn(LOG_PREFIX, "left an imported mp3 stem unpadded; its bytes are not a WAV Composer wrote", stem.name);
-      continue;
-    }
-    slots[slot] = { ...stem, data, durationSeconds: stem.durationSeconds + seconds, revision, primingCorrected: true };
+    const next = needsPrimingPad(stem) ? paddedStem(stem, revision) : null;
+    if (!next) continue;
+    slots[slot] = next;
     padded = true;
   }
   return padded ? { ...stems, revision, slots } : null;
@@ -163,10 +171,10 @@ async function dropSeparatedProjectStems(id: string): Promise<boolean> {
   return dropped;
 }
 
-async function padImportedMp3Stems(id: string, seconds: number): Promise<boolean> {
+async function padImportedMp3Stems(id: string): Promise<boolean> {
   let padded = false;
   await writeProjectStems(id, (current) => {
-    const next = current ? withPaddedMp3Slots(current, seconds) : null;
+    const next = current ? withPaddedMp3Slots(current) : null;
     if (!next) return current;
     padded = true;
     return next;

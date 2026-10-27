@@ -1,4 +1,5 @@
 import { PROJECT_STEMS_STORE_NAME } from "@/lib/persistence-idb";
+import type { SavedProjectStem } from "@/domain/stems/saved-stems";
 import { duplicateProject } from "@/lib/project-library-actions";
 import { loadProjectIndexEntry, removeProjectData } from "@/lib/project-repository";
 import {
@@ -10,7 +11,7 @@ import {
 } from "@/lib/project-stems";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { createAudioFile } from "@/test/audio-fixtures";
-import { saveStemFromOldBuild } from "@/test/legacy-stems";
+import { croppedMp3StemWrite, saveStemFromOldBuild } from "@/test/legacy-stems";
 import { seedStoredProject } from "@/test/projects";
 import { describe, expect, it, vi } from "vitest";
 
@@ -154,40 +155,87 @@ describe("project stems", () => {
     expect(await loadProjectStems("stems-keep")).toEqual(before);
   });
 
-  it("pads imported mp3 stems with leading silence and leaves other stems alone", async () => {
+  async function padOldStem(id: string, write: ReturnType<typeof croppedMp3StemWrite>) {
+    await seedStoredProject(id);
+    await saveStemFromOldBuild(id, "h", write);
+    const before = await loadProjectStems(id);
+    const padded = await padImportedMp3Stems(id);
+    return { before, after: await loadProjectStems(id), padded };
+  }
+
+  function silentFramesAdded(before: SavedProjectStem | undefined, after: SavedProjectStem | undefined): number {
+    return ((after?.data.byteLength ?? 0) - (before?.data.byteLength ?? 0)) / 2;
+  }
+
+  it("pads an old imported mp3 stem by its measured crop and leaves other stems alone", async () => {
     await seedStoredProject("stems-pad");
-    await saveStemFromOldBuild("stems-pad", "h", importedVocals("acapella.mp3"));
-    await saveProjectStem("stems-pad", "h", { ...importedVocals("inst.wav"), slot: "instrumental" });
+    await saveStemFromOldBuild("stems-pad", "h", croppedMp3StemWrite("vocals"));
+    await saveStemFromOldBuild("stems-pad", "h", { ...importedVocals("inst.wav"), slot: "instrumental" });
     const before = await loadProjectStems("stems-pad");
 
-    expect(await padImportedMp3Stems("stems-pad", 0.025)).toBe(true);
+    expect(await padImportedMp3Stems("stems-pad")).toBe(true);
 
     const after = await loadProjectStems("stems-pad");
-    const addedBytes = Math.round(0.025 * 8000) * 2;
-    expect(after?.slots.vocals?.data.byteLength).toBe((before?.slots.vocals?.data.byteLength ?? 0) + addedBytes);
-    expect(after?.slots.vocals?.durationSeconds).toBeCloseTo(60.025, 9);
+    expect(silentFramesAdded(before?.slots.vocals, after?.slots.vocals)).toBe(1104);
+    expect(
+      new Int16Array(after?.slots.vocals?.data ?? new ArrayBuffer(0), 44, 1104).every((sample) => sample === 0),
+    ).toBe(true);
+    expect(after?.slots.vocals?.durationSeconds).toBe(before?.slots.vocals?.durationSeconds);
     expect(after?.slots.vocals?.revision).toBe((before?.revision ?? 0) + 1);
     expect(after?.slots.instrumental).toEqual(before?.slots.instrumental);
     expect((await loadProjectIndexEntry("stems-pad"))?.storedStemBytes).toBe(
-      (before?.slots.vocals?.data.byteLength ?? 0) + addedBytes + (before?.slots.instrumental?.data.byteLength ?? 0),
+      (after?.slots.vocals?.data.byteLength ?? 0) + (after?.slots.instrumental?.data.byteLength ?? 0),
     );
   });
 
-  it("leaves a project without imported mp3 stems untouched", async () => {
-    await seedStoredProject("stems-nopad");
-    await saveProjectStem("stems-nopad", "h", importedVocals());
-    const before = await loadProjectStems("stems-nopad");
-    expect(await padImportedMp3Stems("stems-nopad", 0.025)).toBe(false);
-    expect(await loadProjectStems("stems-nopad")).toEqual(before);
+  it("pads a 48 kHz stem by its measured crop", async () => {
+    const { before, after } = await padOldStem(
+      "stems-pad-48k",
+      croppedMp3StemWrite("vocals", { sampleRate: 48_000, frames: 4800 }),
+    );
+    expect(silentFramesAdded(before?.slots.vocals, after?.slots.vocals)).toBe(1104);
+  });
+
+  it("pads a 44.1 kHz mp3 decoded at 48 kHz by its measured crop", async () => {
+    const { before, after } = await padOldStem(
+      "stems-pad-resampled",
+      croppedMp3StemWrite("vocals", { sampleRate: 48_000, frames: 4800, croppedFrames: 1202 }),
+    );
+    expect(silentFramesAdded(before?.slots.vocals, after?.slots.vocals)).toBe(1202);
+  });
+
+  describe("stems without evidence of the old crop", () => {
+    it("skips an untagged mp3 stem the old build never cropped", async () => {
+      const { before, after, padded } = await padOldStem(
+        "stems-untagged",
+        croppedMp3StemWrite("vocals", { croppedFrames: 0 }),
+      );
+      expect(padded).toBe(false);
+      expect(after).toEqual(before);
+    });
+
+    it("skips a stem whose measured crop is far from the default priming", async () => {
+      const { before, after, padded } = await padOldStem(
+        "stems-far",
+        croppedMp3StemWrite("vocals", { croppedFrames: 3000 }),
+      );
+      expect(padded).toBe(false);
+      expect(after).toEqual(before);
+    });
+
+    it("skips an imported wav stem", async () => {
+      await seedStoredProject("stems-nopad");
+      await saveStemFromOldBuild("stems-nopad", "h", importedVocals());
+      const before = await loadProjectStems("stems-nopad");
+      expect(await padImportedMp3Stems("stems-nopad")).toBe(false);
+      expect(await loadProjectStems("stems-nopad")).toEqual(before);
+    });
   });
 
   it("regression: pads an imported mp3 stem only once when the migration runs again", async () => {
-    await seedStoredProject("stems-pad-twice");
-    await saveStemFromOldBuild("stems-pad-twice", "h", importedVocals("acapella.mp3"));
-    await padImportedMp3Stems("stems-pad-twice", 0.025);
-    const once = await loadProjectStems("stems-pad-twice");
+    const { after: once } = await padOldStem("stems-pad-twice", croppedMp3StemWrite("vocals"));
 
-    expect(await padImportedMp3Stems("stems-pad-twice", 0.025)).toBe(false);
+    expect(await padImportedMp3Stems("stems-pad-twice")).toBe(false);
 
     expect(await loadProjectStems("stems-pad-twice")).toEqual(once);
   });

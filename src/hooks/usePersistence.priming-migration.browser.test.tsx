@@ -14,7 +14,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { createProjectSaveInput } from "@/test/factories";
-import { saveStemFromOldBuild } from "@/test/legacy-stems";
+import { croppedMp3StemWrite, saveStemFromOldBuild } from "@/test/legacy-stems";
 import { loadOpenProjectRecord } from "@/test/projects";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "vitest-browser-react";
@@ -179,10 +179,10 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
     expect(stems?.slots.instrumental).toBeUndefined();
   });
 
-  it("pads an imported mp3 stem once and leaves an imported wav stem alone", async () => {
+  it("pads an old imported mp3 stem once by its measured crop and leaves an imported wav stem alone", async () => {
     await seedTimedAgainstDoubleCrop();
     const id = (await getOpenProjectId())!;
-    await saveStemFromOldBuild(id, "song", stem("vocals", "imported", "acapella.mp3"));
+    await saveStemFromOldBuild(id, "song", croppedMp3StemWrite("vocals"));
     await saveStemFromOldBuild(id, "song", stem("instrumental", "imported", "inst.wav"));
     const before = await loadProjectStems(id);
 
@@ -190,8 +190,7 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
     const padded = await loadProjectStems(id);
     await loadOpenProjectForRestore();
 
-    const silentBytes = Math.round(P * 8000) * 2;
-    expect(padded?.slots.vocals?.data.byteLength).toBe((before?.slots.vocals?.data.byteLength ?? 0) + silentBytes);
+    expect(padded?.slots.vocals?.data.byteLength).toBe((before?.slots.vocals?.data.byteLength ?? 0) + 1104 * 2);
     expect(padded?.slots.instrumental).toEqual(before?.slots.instrumental);
     expect(await loadProjectStems(id)).toEqual(padded);
   });

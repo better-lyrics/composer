@@ -1,3 +1,5 @@
+import { encodeWav } from "@/audio/wav-encode";
+import type { StemSlot } from "@/domain/stems/stem-slot";
 import { copyProjectStems, loadProjectStems, saveProjectStem } from "@/lib/project-stems";
 
 // -- Helpers ------------------------------------------------------------------
@@ -14,6 +16,26 @@ async function saveStemFromOldBuild(id: string, songKey: string, write: StemWrit
   await copyProjectStems(id, { ...stems, slots: { ...stems.slots, [write.slot]: unmarked } });
 }
 
+interface CroppedMp3Stem {
+  sampleRate?: number;
+  frames?: number;
+  croppedFrames?: number;
+}
+
+// The WAV the old build stored for an imported mp3: its decode minus the cropped frames, beside the probed duration.
+function croppedMp3StemWrite(
+  slot: StemSlot,
+  { sampleRate = 44_100, frames = 4410, croppedFrames = 1104 }: CroppedMp3Stem = {},
+): StemWrite {
+  const wav = encodeWav([new Float32Array(frames).fill(0.25)], sampleRate);
+  return {
+    slot,
+    file: new File([wav], `${slot}.mp3`, { type: "audio/wav" }),
+    origin: "imported",
+    durationSeconds: (frames + croppedFrames) / sampleRate,
+  };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { saveStemFromOldBuild };
+export { croppedMp3StemWrite, saveStemFromOldBuild };
