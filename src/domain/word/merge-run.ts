@@ -95,4 +95,11 @@ function mergeWordRun(words: WordTiming[], indices: number[]): WordTiming[] | nu
 
 // -- Exports ------------------------------------------------------------------
 
-export { isPartialSyllableRun, isWholeSyllableGroupRun, mergeWordRun, mergeWordText, mergedTransliteration };
+export {
+  isPartialSyllableRun,
+  isWholeSyllableGroupRun,
+  mergeWordRun,
+  mergeWordText,
+  mergedTransliteration,
+  mergedWord,
+};

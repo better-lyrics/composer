@@ -4,7 +4,7 @@ import { CLEARED_BACKGROUND, applyBackground, manualBackgroundWordEdit } from "@
 import { applyMainWordEdit } from "@/domain/line/main-words";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import { mergedTransliteration } from "@/domain/word/merge-run";
+import { mergedWord } from "@/domain/word/merge-run";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
@@ -159,26 +159,7 @@ function applyMergeSyllableGroup(
       let touched = false;
       for (let k = run.startIndex; k <= run.endIndex; k++) if (selected.has(k)) touched = true;
       if (touched) {
-        const runWords = lineWords.slice(run.startIndex, run.endIndex + 1);
-        const first = lineWords[run.startIndex];
-        const last = lineWords[run.endIndex];
-        const {
-          syllableGroupId: _drop,
-          transliteration: _firstTransliteration,
-          transliterationJoinerAfter: _firstTransliterationJoiner,
-          ...rest
-        } = first;
-        const transliteration = mergedTransliteration(runWords);
-        collapsed.push({
-          ...rest,
-          text: runWords.map((word) => word.text).join(""),
-          begin: first.begin,
-          end: last.end,
-          ...(transliteration ? { transliteration } : {}),
-          ...(last.transliterationJoinerAfter !== undefined
-            ? { transliterationJoinerAfter: last.transliterationJoinerAfter }
-            : {}),
-        });
+        collapsed.push(mergedWord(lineWords.slice(run.startIndex, run.endIndex + 1), undefined));
         changed = true;
       } else {
         for (let k = run.startIndex; k <= run.endIndex; k++) collapsed.push(lineWords[k]);
