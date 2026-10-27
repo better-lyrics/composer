@@ -4,6 +4,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
+import { SyllableGroup } from "@/views/sync/syllable-group";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
 import { type WordHandlers, WordRenderer } from "@/views/sync/word-renderer";
 import { IconLink } from "@tabler/icons-react";
@@ -199,39 +200,36 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
     while (i < texts.length) {
       const group = groupByStart.get(i);
       if (group) {
+        const label = displayWordTexts
+          ? texts
+              .slice(group.startIndex, group.endIndex + 1)
+              .map((word) => word.trim())
+              .join("-")
+          : group.originalWord;
+        const merge =
+          !isBackground && timings?.[group.startIndex]?.syllableGroupId !== undefined
+            ? { lineId, wordIndex: group.startIndex }
+            : undefined;
         elements.push(
-          <span
-            key={`${lineNumber}-${prefix}-group-${group.startIndex}`}
-            className="inline-flex flex-col items-center shrink-0"
-          >
-            <span className="w-full text-center text-sm text-composer-text-muted border-t border-l border-r border-composer-border rounded-t-lg px-1.5 leading-relaxed">
-              {displayWordTexts
-                ? texts
-                    .slice(group.startIndex, group.endIndex + 1)
-                    .map((word) => word.trim())
-                    .join("-")
-                : group.originalWord}
-            </span>
-            <span className="inline-flex flex-nowrap gap-x-3 bg-composer-button/30 rounded-b-lg px-1.5 py-0.5 border border-composer-border">
-              {texts.slice(group.startIndex, group.endIndex + 1).map((word, j) => {
-                const idx = group.startIndex + j;
-                return (
-                  <WordRenderer
-                    key={`${lineNumber}-${prefix}-${idx}`}
-                    lineId={lineId}
-                    word={word}
-                    idx={idx}
-                    timing={timings?.[idx]}
-                    allWords={timings}
-                    handlers={handlers}
-                    isBackground={isBackground}
-                    editMode={editMode}
-                    currentTime={currentTime}
-                  />
-                );
-              })}
-            </span>
-          </span>,
+          <SyllableGroup key={`${lineNumber}-${prefix}-group-${group.startIndex}`} label={label} merge={merge}>
+            {texts.slice(group.startIndex, group.endIndex + 1).map((word, j) => {
+              const idx = group.startIndex + j;
+              return (
+                <WordRenderer
+                  key={`${lineNumber}-${prefix}-${idx}`}
+                  lineId={lineId}
+                  word={word}
+                  idx={idx}
+                  timing={timings?.[idx]}
+                  allWords={timings}
+                  handlers={handlers}
+                  isBackground={isBackground}
+                  editMode={editMode}
+                  currentTime={currentTime}
+                />
+              );
+            })}
+          </SyllableGroup>,
         );
         i = group.endIndex + 1;
       } else if (!inGroup.has(i)) {
