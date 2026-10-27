@@ -1,5 +1,6 @@
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
+import { adoptOpenProjectId } from "@/lib/open-project-session";
 import { useAudioStore } from "@/stores/audio";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
@@ -315,6 +316,32 @@ describe("LyricsImportModal close behaviors", () => {
     await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
     openModal();
     await expect.element(screen.getByLabelText("Track")).toBeInTheDocument();
+  });
+
+  it("regression: re-opening keeps what the user typed into the search fields", async () => {
+    const screen = await render(withQueryClient(<LyricsImportModalHost />));
+    openModal();
+    await userEvent.fill(screen.getByLabelText("Track"), "Typed track");
+    await screen.getByRole("button", { name: /Cancel/i }).click();
+    await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
+    openModal();
+    await expect.element(screen.getByLabelText("Track")).toHaveValue("Typed track");
+  });
+
+  it("a different project ignores the old draft and fills from its YouTube song details", async () => {
+    const screen = await render(withQueryClient(<LyricsImportModalHost />));
+    openModal();
+    await userEvent.fill(screen.getByLabelText("Track"), "Typed track");
+    useImportModalStore.getState().close();
+    await expect.poll(() => document.querySelector("dialog")).toBeNull();
+    adoptOpenProjectId("other-project");
+    useAudioStore.getState().setYouTubeSource("fJ9rUzIMcZQ");
+    useProjectStore.getState().setMetadata({ title: "Bohemian Rhapsody", artists: ["Queen"], duration: 355 });
+    openModal();
+    await expect.element(screen.getByLabelText("Track")).toHaveValue("Bohemian Rhapsody");
+    await expect.element(screen.getByLabelText("Artist")).toHaveValue("Queen");
+    await expect.element(screen.getByLabelText("Duration")).toHaveValue("5:55");
+    await expect.element(screen.getByLabelText("Video ID")).toHaveValue("fJ9rUzIMcZQ");
   });
 });
 

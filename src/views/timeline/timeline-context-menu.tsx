@@ -88,6 +88,11 @@ function splitIntoWordsLabel(count: number): string {
   return count > 1 ? `Split ${count} lines into words` : "Split into words";
 }
 
+function autoAlignLabel({ count, realign }: { count: number; realign: boolean }): string {
+  const verb = realign ? "Re-align" : "Auto-align";
+  return count > 1 ? `${verb} ${count} lines` : `${verb} words`;
+}
+
 function deleteWordLabel(selectionCount: number | null, isSyllable: boolean): string {
   if (selectionCount !== null && selectionCount > 1) return `Delete ${pluralize(selectionCount, "word")}`;
   return isSyllable ? "Delete syllable" : "Delete word";
@@ -158,6 +163,7 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
     groupedWordInfo,
     snapNeededInfo,
     splitIntoWordsInfo,
+    autoAlignInfo,
     explicitToggleContext,
     clickedSelectionCount,
   } = targets;
@@ -171,7 +177,7 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
     handleSnapSyllables,
     handleMergeWords,
   } = useWordMenuActions(targets, clearContextMenu);
-  const { handleSplitIntoWords } = useLineMenuActions(targets, clearContextMenu);
+  const { handleSplitIntoWords, handleAutoAlign } = useLineMenuActions(targets, clearContextMenu);
   const word: WordSelection = {
     lineId: target.lineId,
     lineIndex: target.lineIndex,
@@ -221,6 +227,12 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
             shortcut={getEffectiveKeysArray("timeline.splitIntoWords")}
             onSelect={handleSplitIntoWords}
           />
+        </>
+      )}
+      {autoAlignInfo && (
+        <>
+          {!splitIntoWordsInfo && <MenuSeparator />}
+          <MenuItem label={autoAlignLabel(autoAlignInfo)} onSelect={handleAutoAlign} />
         </>
       )}
       <SelectionGrouping targets={targets} clearContextMenu={clearContextMenu} />

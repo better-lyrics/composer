@@ -104,6 +104,21 @@ const SETTINGS_CATALOG = {
     keywords: ["fp16", "fp32", "stems", "separation"],
     settingKey: "vocalModelVariant",
   },
+  alignmentModelId: {
+    section: "playback",
+    label: "Alignment model",
+    description: "Checkpoint auto-align uses. Extra checkpoints come from the alignment model manifest.",
+    keywords: ["hubertfa", "auto-align", "forced alignment", "checkpoint", "manifest"],
+    settingKey: "alignmentModelId",
+  },
+  keepAlignmentModelLoaded: {
+    section: "playback",
+    label: "Keep alignment model loaded",
+    description:
+      "Keeps the model in memory between runs, so aligning one line starts at once and splitting a word times its syllables from the audio. Uses about 400 MB.",
+    keywords: ["hubertfa", "auto-align", "memory", "gpu", "unload"],
+    settingKey: "keepAlignmentModelLoaded",
+  },
   ...TIMELINE_CATALOG_ENTRIES,
   ...SPECTRUM_CATALOG_ENTRIES,
   splitCharacter: {

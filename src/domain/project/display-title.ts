@@ -26,4 +26,4 @@ function youtubeSourceTitle(title: string, videoId: string): string {
 
 // -- Exports ------------------------------------------------------------------
 
-export { displayTitle, quotedTitle, displayArtists, hasArtists, youtubeSourceTitle };
+export { displayTitle, quotedTitle, displayArtists, hasArtists, namedArtists, youtubeSourceTitle };
