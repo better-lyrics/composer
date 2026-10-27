@@ -6,9 +6,9 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createBgWordsFromTextAt } from "@/utils/sync-helpers";
-import { mergeWordText } from "@/utils/word-merge";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
+import { mergeSelectedWords } from "@/views/timeline/merge-selected-words";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
@@ -123,29 +123,9 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
   const handleMergeWords = useCallback(() => {
     if (!mergeInfo) return;
-    const { indices, lineId, type } = mergeInfo;
-    const line = lines.find((l) => l.id === lineId);
-    if (!line) return;
-
-    const wordsArray = trackWords(line, type);
-    if (!wordsArray) return;
-
-    const firstIdx = indices[0];
-    const lastIdx = indices[indices.length - 1];
-    const mergedText = mergeWordText(indices.map((idx) => wordsArray[idx].text));
-    const merged: WordTiming = {
-      text: mergedText,
-      begin: wordsArray[firstIdx].begin,
-      end: wordsArray[lastIdx].end,
-    };
-
-    const updatedWords = [...wordsArray.slice(0, firstIdx), merged, ...wordsArray.slice(lastIdx + 1)];
-
-    updateLineWithHistory(lineId, type === "word" ? { words: updatedWords } : manualBackgroundWordEdit(updatedWords));
-
-    useTimelineStore.getState().clearSelection();
+    void mergeSelectedWords(mergeInfo.lineId, mergeInfo.type, mergeInfo.indices);
     clearContextMenu();
-  }, [mergeInfo, lines, updateLineWithHistory, clearContextMenu]);
+  }, [mergeInfo, clearContextMenu]);
 
   return {
     handleEditWord,

@@ -423,6 +423,18 @@ braccato-lyrics .blyrics-container {
   cursor: crosshair;
 }
 
+/* Word blocks set their own cursors, so the paste cursor must win over them. */
+@utility paste-cursor {
+  &[data-paste-cursor="copy"],
+  &[data-paste-cursor="copy"] * {
+    cursor: copy !important;
+  }
+  &[data-paste-cursor="blocked"],
+  &[data-paste-cursor="blocked"] * {
+    cursor: not-allowed !important;
+  }
+}
+
 /* Marker mode arms the ruler and the waveform as one drop zone. */
 @utility marker-zone-armed {
   height: calc(var(--spacing) * 7 + 80px);

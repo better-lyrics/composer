@@ -25,12 +25,15 @@ const TimelineExtras: React.FC = () => (
         <li>
           To undo a syllable split, right-click any syllable of the word and pick <strong>Merge syllables</strong>, or
           press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeSyllablesIntoWord")} />. The syllable group
-          collapses back into one plain word that spans from the first syllable's start to the last syllable's end.
+          collapses back into one plain word that spans from the first syllable's start to the last syllable's end. To
+          join only some syllables, select two or more next to each other first. They become one syllable, and the rest
+          of the word stays split.
         </li>
         <li>
           Select two or more adjacent words on the same line and press{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeWords")} /> to merge them into one block. This
-          works even when the selected words have a space between them; the joining space is dropped.
+          works even when the selected words have a space between them; the joining space is dropped. If the selection
+          reaches into a split word, the whole split word is merged in.
         </li>
       </ul>
     </HelpTopic>
@@ -63,11 +66,11 @@ const TimelineExtras: React.FC = () => (
     <HelpTopic title="Right-click menus">
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
-          Right-click a word: Edit text, Split syllables, Split word. Merge words appears when multiple words are
-          selected. On a word already split into syllables you also get Merge syllables and Snap syllables flush. Mark
-          as explicit (or Unmark explicit) toggles the explicit flag. Group this line and Split into words show up when
-          they apply, and Delete word is always there. Right-click inside a selection of several words and it deletes
-          them all.
+          Right-click a word: Edit text, Split syllables, Split word. Merge words appears when several adjacent words
+          are selected, and reads Merge syllables when they all sit inside one split word. On a word already split into
+          syllables you also get Merge syllables and Snap syllables flush. Mark as explicit (or Unmark explicit) toggles
+          the explicit flag. Group this line and Split into words show up when they apply, and Delete word is always
+          there. Right-click inside a selection of several words and it deletes them all.
         </li>
         <li>
           Right-click empty track space: Add word here, plus Place line here or Place at playhead when they apply.
