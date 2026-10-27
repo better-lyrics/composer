@@ -51,8 +51,9 @@ function initialSearchInputs(prefill: LyricsSearchQuery | null): SearchInputs {
   return inputsFromQuery(prefill ?? projectSearchQuery());
 }
 
-function saveSearchDraft(inputs: SearchInputs): void {
-  useImportModalStore.getState().setSearchDraft({ projectId: openProjectIdSnapshot(), inputs });
+// Callers pass the project the fields were loaded for, so a project switch while the modal is open cannot relabel them.
+function saveSearchDraft(projectId: string | undefined, inputs: SearchInputs): void {
+  useImportModalStore.getState().setSearchDraft({ projectId, inputs });
 }
 
 // -- Exports ------------------------------------------------------------------

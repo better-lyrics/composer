@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { useLyricsSearch } from "@/hooks/useLyricsSearch";
+import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import type { SearchInputs } from "@/stores/import-modal-store";
 import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 import { formatDuration, parseDurationInput } from "@/views/lyrics-import-modal/duration-input-utils";
@@ -51,6 +52,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   onSwitchToPaste,
   onSwitchToUpload,
 }) => {
+  const [projectId] = useState(openProjectIdSnapshot);
   const [inputs, setInputs] = useState<SearchInputs>(() => initialSearchInputs(initialPrefill));
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [hoveredIndex, setHoveredIndex] = useState(-1);
@@ -64,10 +66,13 @@ const SearchSection: React.FC<SearchSectionProps> = ({
     expectedDurationSec: effectiveExpectedDuration,
   });
 
-  const updateInputs = useCallback((next: SearchInputs) => {
-    setInputs(next);
-    saveSearchDraft(next);
-  }, []);
+  const updateInputs = useCallback(
+    (next: SearchInputs) => {
+      setInputs(next);
+      saveSearchDraft(projectId, next);
+    },
+    [projectId],
+  );
 
   const handleDurationBlur = useCallback(() => {
     const parsed = parseDurationInput(inputs.duration);
