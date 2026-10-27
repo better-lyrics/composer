@@ -47,4 +47,3 @@ async function mergeSelectedWords(lineId: string, type: WordTrack, indices: numb
 // -- Exports -------------------------------------------------------------------
 
 export { isPartialSyllableSelection, mergeRunKind, mergeSelectedWords };
-export type { MergeRunKind };
