@@ -25,7 +25,7 @@ import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
 import { isTypingTarget } from "@/utils/typing-target";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
-import { mergeWordText } from "@/utils/word-merge";
+import { mergeWordText } from "@/domain/word/merge-run";
 import { centerTimeScrollLeft } from "@/views/timeline/coords";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";

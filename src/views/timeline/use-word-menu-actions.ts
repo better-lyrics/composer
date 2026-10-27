@@ -6,7 +6,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createBgWordsFromTextAt } from "@/utils/sync-helpers";
-import { mergeWordText } from "@/utils/word-merge";
+import { mergeWordText } from "@/domain/word/merge-run";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
