@@ -172,18 +172,21 @@ function play(time: number, velocity: number): void {
   activeSnippet = { time: targetTime, rate: velocity };
   if (!releaseScheduler) {
     const ctx = getContext();
-    startGrain(ctx, buffer, scheduleTime(ctx));
+    const at = scheduleTime(ctx);
+    fadeOutGrains(at, CROSSFADE_S);
+    startGrain(ctx, buffer, at);
     ensureScheduler();
   }
 }
 
+function fadeOutGrains(at: number, fadeS: number): void {
+  for (const grain of grains) fadeOutScrubSound(grain, at, fadeS);
+  grains = [];
+}
+
 function stop(): void {
   pendingSnippet = null;
-  if (grains.length > 0) {
-    const at = scheduleTime(sharedAudioContext());
-    for (const grain of grains) fadeOutScrubSound(grain, at, STOP_FADE_S);
-    grains = [];
-  }
+  if (grains.length > 0) fadeOutGrains(scheduleTime(sharedAudioContext()), STOP_FADE_S);
   endSession();
 }
 
