@@ -18,7 +18,7 @@ function noise(seconds: number): Float32Array {
 describe("alignedGrainOffset", () => {
   it("starts the next grain in phase with the previous one", () => {
     const samples = sine(441, 1);
-    const offset = alignedGrainOffset(samples, SAMPLE_RATE, 0.1, 0.2 + 37 / SAMPLE_RATE, 0.015, 0.04);
+    const offset = alignedGrainOffset([samples], SAMPLE_RATE, 0.1, 0.2 + 37 / SAMPLE_RATE, 0.015, 0.04);
     const shift = Math.round((offset - 0.1) * SAMPLE_RATE);
     expect(shift % 100).toBe(0);
     expect(Math.abs(offset - 0.2)).toBeLessThanOrEqual(0.015);
@@ -26,16 +26,27 @@ describe("alignedGrainOffset", () => {
 
   it("continues seamlessly when the continuation is in reach", () => {
     const samples = noise(1);
-    expect(alignedGrainOffset(samples, SAMPLE_RATE, 0.3, 0.31, 0.015, 0.04)).toBeCloseTo(0.3, 6);
+    expect(alignedGrainOffset([samples], SAMPLE_RATE, 0.3, 0.31, 0.015, 0.04)).toBeCloseTo(0.3, 6);
   });
 
   describe("edge cases", () => {
     it("falls back to the target when the reference runs past the audio", () => {
-      expect(alignedGrainOffset(sine(441, 1), SAMPLE_RATE, 0.99, 0.5, 0.015, 0.04)).toBe(0.5);
+      expect(alignedGrainOffset([sine(441, 1)], SAMPLE_RATE, 0.99, 0.5, 0.015, 0.04)).toBe(0.5);
+    });
+
+    it("regression: matches on the channel with sound when the other is silent", () => {
+      const silent = new Float32Array(SAMPLE_RATE);
+      const offset = alignedGrainOffset([silent, sine(441, 1)], SAMPLE_RATE, 0.1, 0.2 + 37 / SAMPLE_RATE, 0.015, 0.04);
+      expect(Math.round((offset - 0.1) * SAMPLE_RATE) % 100).toBe(0);
+    });
+
+    it("keeps the target in silence", () => {
+      const silent = new Float32Array(SAMPLE_RATE);
+      expect(alignedGrainOffset([silent], SAMPLE_RATE, 0.1, 0.5, 0.015, 0.04)).toBe(0.5);
     });
 
     it("stays inside the audio near the start", () => {
-      expect(alignedGrainOffset(noise(1), SAMPLE_RATE, 0.5, 0, 0.015, 0.04)).toBeGreaterThanOrEqual(0);
+      expect(alignedGrainOffset([noise(1)], SAMPLE_RATE, 0.5, 0, 0.015, 0.04)).toBeGreaterThanOrEqual(0);
     });
   });
 });

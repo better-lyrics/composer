@@ -57,11 +57,22 @@ function targetVolume(): number {
   return isMuted ? 0 : volume;
 }
 
+const channelCache = new WeakMap<AudioBuffer, Float32Array[]>();
+
+function channelsOf(source: AudioBuffer): Float32Array[] {
+  let channels = channelCache.get(source);
+  if (!channels) {
+    channels = Array.from({ length: source.numberOfChannels }, (_, index) => source.getChannelData(index));
+    channelCache.set(source, channels);
+  }
+  return channels;
+}
+
 // A steady drag lands on the previous grain's continuation, which plays the song seamlessly.
 function nextGrainOffset(source: AudioBuffer): number {
   if (!Number.isFinite(lastGrainOffset)) return targetTime;
   return alignedGrainOffset(
-    source.getChannelData(0),
+    channelsOf(source),
     source.sampleRate,
     lastGrainOffset + GRAIN_HOP_S,
     targetTime,
