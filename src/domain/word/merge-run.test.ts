@@ -1,4 +1,5 @@
 import {
+  indicesCoveringSameText,
   isPartialSyllableRun,
   isWholeSyllableGroupRun,
   mergeWordRun,
@@ -163,5 +164,33 @@ describe("isWholeSyllableGroupRun", () => {
     expect(isWholeSyllableGroupRun(beautiful(), [0, 1, 2])).toBe(true);
     expect(isWholeSyllableGroupRun(beautiful(), [1, 2])).toBe(false);
     expect(isWholeSyllableGroupRun([{ text: "so ", begin: 0, end: 1 }, ...beautiful()], [0, 1, 2, 3])).toBe(false);
+  });
+});
+
+describe("indicesCoveringSameText", () => {
+  const source: WordTiming[] = [
+    { text: "one ", begin: 0, end: 1 },
+    { text: "two ", begin: 1, end: 2 },
+    { text: "three", begin: 2, end: 3 },
+  ];
+
+  it("maps a run onto a copy split the same way", () => {
+    expect(indicesCoveringSameText(source, [0, 1], source)).toEqual([0, 1]);
+  });
+
+  it("maps a run onto every word of a copy that covers the same text", () => {
+    const copy: WordTiming[] = [
+      { text: "o", begin: 10, end: 10.4 },
+      { text: "ne ", begin: 10.4, end: 11 },
+      { text: "two ", begin: 11, end: 12 },
+      { text: "three", begin: 12, end: 13 },
+    ];
+    expect(indicesCoveringSameText(source, [0, 1], copy)).toEqual([0, 1, 2]);
+  });
+
+  describe("edge cases", () => {
+    it("returns no indices when the copy has not reached the run yet", () => {
+      expect(indicesCoveringSameText(source, [1, 2], [{ text: "one ", begin: 0, end: 1 }])).toEqual([]);
+    });
   });
 });

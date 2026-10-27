@@ -93,9 +93,27 @@ function mergeWordRun(words: WordTiming[], indices: number[]): WordTiming[] | nu
   return [...words.slice(0, start), merged, ...words.slice(end + 1)];
 }
 
+function textOffsets(words: WordTiming[]): number[] {
+  const offsets = [0];
+  for (const word of words) offsets.push(offsets[offsets.length - 1] + word.text.length);
+  return offsets;
+}
+
+// Linked copies share their text, so a run maps onto a copy by the characters it covers, not by word slots.
+function indicesCoveringSameText(source: WordTiming[], sourceIndices: number[], target: WordTiming[]): number[] {
+  const span = runSpan(source, sourceIndices);
+  if (!span) return [];
+  const sourceOffsets = textOffsets(source);
+  const start = sourceOffsets[span.start];
+  const end = sourceOffsets[span.end + 1];
+  const targetOffsets = textOffsets(target);
+  return target.flatMap((_, index) => (targetOffsets[index] < end && targetOffsets[index + 1] > start ? [index] : []));
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
+  indicesCoveringSameText,
   isPartialSyllableRun,
   isWholeSyllableGroupRun,
   mergeWordRun,

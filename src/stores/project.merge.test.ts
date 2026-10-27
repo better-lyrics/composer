@@ -649,4 +649,38 @@ describe("mergeSelectedWords", () => {
     expect(texts("a0")).toEqual(["everyday"]);
     expect(texts("a1")).toEqual(["everyday"]);
   });
+
+  it("regression: a merge leaves the other words of a differently split copy untouched", async () => {
+    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    const linked = (id: string, instanceIdx: number, words: NonNullable<LyricLine["words"]>): LyricLine => ({
+      id,
+      text: "one two three",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx: 0,
+      words,
+    });
+    useProjectStore.getState().setLines([
+      linked("a0", 0, [
+        { text: "one ", begin: 0, end: 1 },
+        { text: "two ", begin: 1, end: 2 },
+        { text: "three", begin: 2, end: 3 },
+      ]),
+      linked("a1", 1, [
+        { text: "o", begin: 10, end: 10.4 },
+        { text: "ne ", begin: 10.4, end: 11 },
+        { text: "two ", begin: 11, end: 12.5 },
+        { text: "three", begin: 12.5, end: 13 },
+      ]),
+    ]);
+
+    await mergeSelectedWords("a0", "word", [0, 1]);
+
+    const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
+    expect(a1?.words).toEqual([
+      { text: "onetwo ", begin: 10, end: 12.5 },
+      { text: "three", begin: 12.5, end: 13 },
+    ]);
+  });
 });

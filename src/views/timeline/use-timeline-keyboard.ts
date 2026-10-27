@@ -423,7 +423,7 @@ function useTimelineKeyboard(
           const run = contiguousSelectionRun(useTimelineStore.getState().selectedWords);
           if (!run) break;
           e.preventDefault();
-          void mergeSelectedWords(run.lineId, run.type, run.indices);
+          mergeSelectedWords(run.lineId, run.type, run.indices);
           break;
         }
         case "timeline.mergeSyllablesIntoWord": {
@@ -436,7 +436,7 @@ function useTimelineKeyboard(
           const run = contiguousSelectionRun(mSel);
           const runLine = useProjectStore.getState().lines.find((l) => l.id === first.lineId);
           if (run && runLine && isPartialSyllableSelection(runLine, run)) {
-            void mergeSelectedWords(run.lineId, run.type, run.indices);
+            mergeSelectedWords(run.lineId, run.type, run.indices);
             break;
           }
           useProjectStore.getState().mergeSyllableGroupIntoWord(
