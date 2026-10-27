@@ -46,6 +46,13 @@ describe("scrub-preview", () => {
     expect(snippet?.rate).toBe(2);
   });
 
+  test("regression: a held scrub fades out once events stop", async () => {
+    scrubPreview.useBuffer(makeSineBuffer(2));
+    scrubPreview.play(0.5, 1);
+    scrubPreview.play(0.52, 1);
+    await expect.poll(() => scrubPreview.getActiveSnippet(), { timeout: 1000, interval: 20 }).toBeNull();
+  });
+
   test("play clamps time to within buffer duration", () => {
     scrubPreview.useBuffer(makeSineBuffer(1));
     scrubPreview.play(99, 1);
