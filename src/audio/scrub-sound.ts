@@ -55,15 +55,18 @@ function startScrubSound(ctx: AudioContext, options: ScrubSoundOptions): ScrubSo
   scheduleEnvelope(gain, envelope);
   source.connect(gain);
   gain.connect(ctx.destination);
+  source.addEventListener("ended", () => {
+    source.disconnect();
+    gain.disconnect();
+  });
   source.start(at, offset);
   const endsAt = lengthS === undefined ? Number.POSITIVE_INFINITY : at + lengthS;
   if (lengthS !== undefined) source.stop(endsAt);
   return { source, gain, envelope, endsAt };
 }
 
-// Fades from the value scheduled for `at`, since `gain.value` lags the render thread.
-function fadeOutScrubSound(sound: ScrubSound, at: number, fadeS: number): void {
-  if (at + fadeS >= sound.endsAt) return;
+// Ramps from the value scheduled for `at`, since `gain.value` lags the render thread.
+function rampEnvelope(sound: ScrubSound, at: number, fadeS: number, value: number): void {
   const from = envelopeValueAt(sound.envelope, at);
   const earlier = sound.envelope.filter((point) => point.at < at);
   const param = sound.gain.gain;
@@ -71,13 +74,23 @@ function fadeOutScrubSound(sound: ScrubSound, at: number, fadeS: number): void {
   // Ramping to the held value keeps a fade-in that the cancel cut short on its line.
   if (earlier.length > 0) param.linearRampToValueAtTime(from, at);
   else param.setValueAtTime(from, at);
-  param.linearRampToValueAtTime(0, at + fadeS);
-  sound.envelope = [...earlier, { at, value: from }, { at: at + fadeS, value: 0 }];
+  param.linearRampToValueAtTime(value, at + fadeS);
+  sound.envelope = [...earlier, { at, value: from }, { at: at + fadeS, value }];
+}
+
+function fadeOutScrubSound(sound: ScrubSound, at: number, fadeS: number): void {
+  if (at + fadeS >= sound.endsAt) return;
+  rampEnvelope(sound, at, fadeS, 0);
   sound.endsAt = at + fadeS;
   sound.source.stop(sound.endsAt);
 }
 
+function retargetScrubSoundVolume(sound: ScrubSound, at: number, volume: number, fadeS: number): void {
+  if (sound.endsAt !== Number.POSITIVE_INFINITY || sound.envelope.at(-1)?.value === volume) return;
+  rampEnvelope(sound, at, fadeS, volume);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { fadeOutScrubSound, startScrubSound };
+export { fadeOutScrubSound, retargetScrubSoundVolume, startScrubSound };
 export type { ScrubSound };

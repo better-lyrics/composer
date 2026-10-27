@@ -1,4 +1,4 @@
-import { fadeOutScrubSound, type ScrubSound, startScrubSound } from "@/audio/scrub-sound";
+import { type ScrubSound, fadeOutScrubSound, retargetScrubSoundVolume, startScrubSound } from "@/audio/scrub-sound";
 import { scrubStep } from "@/audio/scrub-step";
 import { sharedAudioContext } from "@/audio/shared-audio-context";
 import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
@@ -55,7 +55,7 @@ function getContext(): AudioContext {
 
 // currentTime can trail the render thread by one callback, and a ramp that starts in the past jumps.
 function scheduleTime(ctx: AudioContext): number {
-  return ctx.currentTime + ctx.baseLatency;
+  return ctx.currentTime + (Number.isFinite(ctx.baseLatency) ? ctx.baseLatency : 0);
 }
 
 function targetVolume(): number {
@@ -99,6 +99,7 @@ function steerVoice(running: Voice, rate: number, now: number): void {
   running.updatedAt = now;
   running.rate = rate;
   running.sound.source.playbackRate.setTargetAtTime(rate, now, RATE_SMOOTHING_S);
+  retargetScrubSoundVolume(running.sound, now, targetVolume(), CROSSFADE_S);
 }
 
 function playClip(ctx: AudioContext, source: AudioBuffer, time: number, now: number): void {
