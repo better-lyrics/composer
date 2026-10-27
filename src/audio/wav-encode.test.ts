@@ -1,5 +1,5 @@
 import { hashFile } from "@/audio/separation/audio-codec";
-import { encodeWav } from "@/audio/wav-encode";
+import { encodeWav, withLeadingSilence } from "@/audio/wav-encode";
 import {
   GOLDEN_MONO_WAV_SHA256,
   GOLDEN_STEREO_WAV_SHA256,
@@ -72,6 +72,40 @@ describe("encodeWav", () => {
     it("regression: produces the same mono bytes as before the worker move", async () => {
       const { channels, sampleRate } = goldenMonoInput();
       expect(await hashFile(new Blob([encodeWav(channels, sampleRate)]))).toBe(GOLDEN_MONO_WAV_SHA256);
+    });
+  });
+});
+
+describe("withLeadingSilence", () => {
+  it("prepends silent frames at the file's rate and keeps every original sample", () => {
+    const original = encodeWav([Float32Array.from([0.5, -0.5]), Float32Array.from([0.25, -0.25])], 1000);
+    const padded = withLeadingSilence(original, 0.003);
+    expect(padded).not.toBeNull();
+    const view = new DataView(padded as ArrayBuffer);
+    expect(view.getUint32(40, true)).toBe(5 * 4);
+    expect(view.getUint32(4, true)).toBe(36 + 5 * 4);
+    expect(Array.from(new Int16Array((padded as ArrayBuffer).slice(44)))).toEqual([
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      ...new Int16Array(original.slice(44)),
+    ]);
+  });
+
+  describe("edge cases", () => {
+    it("returns the same bytes for no silence", () => {
+      const original = encodeWav([Float32Array.from([0.5])], 1000);
+      expect(withLeadingSilence(original, 0)).toBe(original);
+    });
+
+    it("refuses bytes that are not a 16-bit PCM WAV it can extend", () => {
+      expect(withLeadingSilence(new Uint8Array([1, 2, 3, 4]).buffer, 0.01)).toBeNull();
+      const float = encodeWav([Float32Array.from([0.5])], 1000);
+      new DataView(float).setUint16(34, 32, true);
+      expect(withLeadingSilence(float, 0.01)).toBeNull();
     });
   });
 });

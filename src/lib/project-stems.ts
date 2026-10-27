@@ -1,5 +1,6 @@
 import { type SavedProjectStem, type SavedProjectStems, storedStemBytes } from "@/domain/stems/saved-stems";
-import type { StemOrigin, StemSlot } from "@/domain/stems/stem-slot";
+import { withLeadingSilence } from "@/audio/wav-encode";
+import { STEM_SLOTS, type StemOrigin, type StemSlot } from "@/domain/stems/stem-slot";
 import {
   APP_STATE_STORE_NAME,
   PROJECT_INDEX_STORE_NAME,
@@ -11,6 +12,7 @@ import { notifyProjectIndexChanged } from "@/lib/project-index-changes";
 import { patchIndexEntry } from "@/lib/project-index-write";
 import { whenProjectWritable } from "@/lib/project-tombstones";
 import { notifyStorageSignal, reportStorageWriteError } from "@/lib/storage-signals";
+import { fileExtensionLabel } from "@/utils/file-name";
 
 // -- Types --------------------------------------------------------------------
 
@@ -26,6 +28,7 @@ type StemsChange = (current: SavedProjectStems | undefined) => SavedProjectStems
 
 // -- Constants ----------------------------------------------------------------
 
+const LOG_PREFIX = "[ProjectStems]";
 const STEM_WRITE_STORES = [PROJECT_STEMS_STORE_NAME, PROJECT_INDEX_STORE_NAME, APP_STATE_STORE_NAME];
 
 // -- Helpers ------------------------------------------------------------------
@@ -39,6 +42,38 @@ function withoutSlot(stems: SavedProjectStems, slot: StemSlot): SavedProjectStem
   const slots = { ...stems.slots };
   delete slots[slot];
   return { ...stems, revision: stems.revision + 1, slots };
+}
+
+function withoutSeparatedSlots(stems: SavedProjectStems): SavedProjectStems {
+  const slots: SavedProjectStems["slots"] = {};
+  for (const slot of STEM_SLOTS) {
+    const stem = stems.slots[slot];
+    if (stem && stem.origin !== "separated") slots[slot] = stem;
+  }
+  return { ...stems, revision: stems.revision + 1, slots };
+}
+
+// An imported mp3 was stored as the WAV of its decode, so the name is the only record of its format.
+function isImportedMp3(stem: SavedProjectStem | undefined): stem is SavedProjectStem {
+  return stem?.origin === "imported" && fileExtensionLabel(stem.name, "") === "MP3";
+}
+
+function withPaddedMp3Slots(stems: SavedProjectStems, seconds: number): SavedProjectStems | null {
+  const revision = stems.revision + 1;
+  const slots = { ...stems.slots };
+  let padded = false;
+  for (const slot of STEM_SLOTS) {
+    const stem = stems.slots[slot];
+    if (!isImportedMp3(stem)) continue;
+    const data = withLeadingSilence(stem.data, seconds);
+    if (!data) {
+      console.warn(LOG_PREFIX, "left an imported mp3 stem unpadded; its bytes are not a WAV Composer wrote", stem.name);
+      continue;
+    }
+    slots[slot] = { ...stem, data, durationSeconds: stem.durationSeconds + seconds, revision };
+    padded = true;
+  }
+  return padded ? { ...stems, revision, slots } : null;
 }
 
 // -- Reads --------------------------------------------------------------------
@@ -109,6 +144,37 @@ async function deleteProjectStem(id: string, slot: StemSlot): Promise<void> {
   notifyStorageSignal("media-removed");
 }
 
+async function dropSeparatedProjectStems(id: string): Promise<boolean> {
+  let dropped = false;
+  await writeProjectStems(id, (current) => {
+    if (!current || !STEM_SLOTS.some((slot) => current.slots[slot]?.origin === "separated")) return current;
+    dropped = true;
+    return withoutSeparatedSlots(current);
+  });
+  if (dropped) notifyStorageSignal("media-removed");
+  return dropped;
+}
+
+async function padImportedMp3Stems(id: string, seconds: number): Promise<boolean> {
+  let padded = false;
+  await writeProjectStems(id, (current) => {
+    const next = current ? withPaddedMp3Slots(current, seconds) : null;
+    if (!next) return current;
+    padded = true;
+    return next;
+  });
+  if (padded) notifyStorageSignal("media-stored");
+  return padded;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { copyProjectStems, deleteProjectStem, loadProjectStems, saveProjectStem, stemFile };
+export {
+  copyProjectStems,
+  deleteProjectStem,
+  dropSeparatedProjectStems,
+  loadProjectStems,
+  padImportedMp3Stems,
+  saveProjectStem,
+  stemFile,
+};

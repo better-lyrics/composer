@@ -1,6 +1,12 @@
 import { duplicateProject } from "@/lib/project-library-actions";
 import { loadProjectIndexEntry, removeProjectData } from "@/lib/project-repository";
-import { deleteProjectStem, loadProjectStems, saveProjectStem } from "@/lib/project-stems";
+import {
+  deleteProjectStem,
+  dropSeparatedProjectStems,
+  loadProjectStems,
+  padImportedMp3Stems,
+  saveProjectStem,
+} from "@/lib/project-stems";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { seedStoredProject } from "@/test/projects";
@@ -116,5 +122,60 @@ describe("project stems", () => {
     await saveProjectStem("stems-unwanted", "h", importedVocals());
     await saveProjectStem("stems-unwanted", "h", { ...importedVocals("stale.wav"), shouldWrite: () => false });
     expect((await loadProjectStems("stems-unwanted"))?.slots.vocals?.name).toBe("acapella.wav");
+  });
+
+  it("drops separated slots, keeps imported ones and raises the revision", async () => {
+    await seedStoredProject("stems-drop");
+    await saveProjectStem("stems-drop", "h", importedVocals());
+    await saveProjectStem("stems-drop", "h", {
+      slot: "instrumental",
+      file: createAudioFile("inst.wav"),
+      origin: "separated",
+      durationSeconds: 60,
+    });
+    const before = await loadProjectStems("stems-drop");
+
+    expect(await dropSeparatedProjectStems("stems-drop")).toBe(true);
+
+    const after = await loadProjectStems("stems-drop");
+    expect(after?.slots.vocals?.origin).toBe("imported");
+    expect(after?.slots.instrumental).toBeUndefined();
+    expect(after?.revision).toBe((before?.revision ?? 0) + 1);
+    expect((await loadProjectIndexEntry("stems-drop"))?.storedStemBytes).toBe(after?.slots.vocals?.data.byteLength);
+  });
+
+  it("leaves a project without separated stems untouched", async () => {
+    await seedStoredProject("stems-keep");
+    await saveProjectStem("stems-keep", "h", importedVocals());
+    const before = await loadProjectStems("stems-keep");
+    expect(await dropSeparatedProjectStems("stems-keep")).toBe(false);
+    expect(await loadProjectStems("stems-keep")).toEqual(before);
+  });
+
+  it("pads imported mp3 stems with leading silence and leaves other stems alone", async () => {
+    await seedStoredProject("stems-pad");
+    await saveProjectStem("stems-pad", "h", importedVocals("acapella.mp3"));
+    await saveProjectStem("stems-pad", "h", { ...importedVocals("inst.wav"), slot: "instrumental" });
+    const before = await loadProjectStems("stems-pad");
+
+    expect(await padImportedMp3Stems("stems-pad", 0.025)).toBe(true);
+
+    const after = await loadProjectStems("stems-pad");
+    const addedBytes = Math.round(0.025 * 8000) * 2;
+    expect(after?.slots.vocals?.data.byteLength).toBe((before?.slots.vocals?.data.byteLength ?? 0) + addedBytes);
+    expect(after?.slots.vocals?.durationSeconds).toBeCloseTo(60.025, 9);
+    expect(after?.slots.vocals?.revision).toBe((before?.revision ?? 0) + 1);
+    expect(after?.slots.instrumental).toEqual(before?.slots.instrumental);
+    expect((await loadProjectIndexEntry("stems-pad"))?.storedStemBytes).toBe(
+      (before?.slots.vocals?.data.byteLength ?? 0) + addedBytes + (before?.slots.instrumental?.data.byteLength ?? 0),
+    );
+  });
+
+  it("leaves a project without imported mp3 stems untouched", async () => {
+    await seedStoredProject("stems-nopad");
+    await saveProjectStem("stems-nopad", "h", importedVocals());
+    const before = await loadProjectStems("stems-nopad");
+    expect(await padImportedMp3Stems("stems-nopad", 0.025)).toBe(false);
+    expect(await loadProjectStems("stems-nopad")).toEqual(before);
   });
 });
