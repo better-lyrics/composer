@@ -199,4 +199,3 @@ export {
   primingToCrop,
   stripLeading,
 };
-export type { LamePriming, LamePrimingDecode };
