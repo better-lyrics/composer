@@ -12,6 +12,8 @@ interface SelectOption {
   label: string;
   /** A second line under the label. Options with one wrap instead of truncating. */
   detail?: string;
+  /** A short tag after the label, such as "Recommended". */
+  badge?: string;
 }
 
 interface SelectProps {
@@ -105,10 +107,19 @@ const fieldTrigger = ({
 
 // -- Components ---------------------------------------------------------------
 
+const OptionBadge: React.FC<{ text: string }> = ({ text }) => (
+  <span className="ml-1.5 inline-flex h-[18px] items-center rounded-md px-1.5 align-[1px] text-[11px] font-semibold bg-composer-accent/15 text-composer-accent-text select-none">
+    {text}
+  </span>
+);
+
 const OptionLabel: React.FC<{ option: SelectOption }> = ({ option }) =>
   option.detail ? (
     <span className="flex flex-col gap-0.5 min-w-0">
-      <span className="text-pretty">{option.label}</span>
+      <span className="text-pretty">
+        {option.label}
+        {option.badge && <OptionBadge text={option.badge} />}
+      </span>
       <span className="text-xs text-(--muted) tabular-nums">{option.detail}</span>
     </span>
   ) : (

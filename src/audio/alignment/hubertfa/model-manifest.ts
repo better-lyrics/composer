@@ -11,6 +11,8 @@ interface AlignmentModel {
   approxBytes: number;
   /** Base language codes the checkpoint was trained for, such as "en". */
   languages: string[];
+  /** Marked in the manifest as the one to use; the picker tags it. */
+  recommended: boolean;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -27,6 +29,8 @@ const BUILTIN_ALIGNMENT_MODEL = {
   approxBytes: 396 * MIB,
   languages: ["en", "zh", "ja"],
 };
+/** The default setting: whichever model the manifest recommends, so a new recommendation reaches everyone who didn't pick one. */
+const RECOMMENDED_ALIGNMENT_MODEL = "recommended";
 const DICTIONARY_FILENAME = "hubertfa_v007_cmudict.txt";
 const DICTIONARY_APPROX_BYTES = 3.3 * MIB;
 const MANIFEST_FILENAME = "hubertfa-models.json";
@@ -46,6 +50,7 @@ function builtinModel(baseUrl: string): AlignmentModel {
     dictionaryUrl: `${baseUrl}/${DICTIONARY_FILENAME}`,
     approxBytes: BUILTIN_ALIGNMENT_MODEL.approxBytes,
     languages: BUILTIN_ALIGNMENT_MODEL.languages,
+    recommended: false,
   };
 }
 
@@ -71,7 +76,7 @@ function parseLanguages(raw: unknown, fallback: string[]): string[] {
 
 function parseEntry(raw: unknown, manifestUrl: string, fallback: AlignmentModel): AlignmentModel | null {
   if (!raw || typeof raw !== "object") return null;
-  const { id, label, model, dictionary, sizeMb, languages } = raw as Record<string, unknown>;
+  const { id, label, model, dictionary, sizeMb, languages, recommended } = raw as Record<string, unknown>;
   if (typeof id !== "string" || !id || typeof model !== "string" || !model) return null;
   try {
     return {
@@ -81,6 +86,7 @@ function parseEntry(raw: unknown, manifestUrl: string, fallback: AlignmentModel)
       dictionaryUrl: typeof dictionary === "string" ? new URL(dictionary, manifestUrl).href : fallback.dictionaryUrl,
       approxBytes: typeof sizeMb === "number" && sizeMb > 0 ? sizeMb * MIB : fallback.approxBytes,
       languages: parseLanguages(languages, fallback.languages),
+      recommended: recommended === true,
     };
   } catch (err) {
     console.warn(`${LOG_PREFIX} skipping manifest entry ${id}: bad URL`, err);
@@ -130,10 +136,15 @@ function loadAlignmentModels(): Promise<AlignmentModel[]> {
   return modelsPromise;
 }
 
-/** The model saved in settings, or the built-in one when that id has left the manifest. */
+/** The model a setting means: the recommended one, the one picked by hand, or the built-in one when neither exists. */
+function pickAlignmentModel(models: readonly AlignmentModel[], id: string): AlignmentModel | null {
+  const wanted =
+    id === RECOMMENDED_ALIGNMENT_MODEL ? models.find((m) => m.recommended) : models.find((m) => m.id === id);
+  return wanted ?? models[0] ?? null;
+}
+
 async function resolveAlignmentModel(id: string): Promise<AlignmentModel | null> {
-  const models = await loadAlignmentModels();
-  return models.find((m) => m.id === id) ?? models[0] ?? null;
+  return pickAlignmentModel(await loadAlignmentModels(), id);
 }
 
 // -- Exports ------------------------------------------------------------------
@@ -142,7 +153,9 @@ export {
   BUILTIN_ALIGNMENT_MODEL,
   DICTIONARY_APPROX_BYTES,
   loadAlignmentModels,
+  RECOMMENDED_ALIGNMENT_MODEL,
   parseAlignmentManifest,
+  pickAlignmentModel,
   resolveAlignmentModel,
 };
 export type { AlignmentModel };

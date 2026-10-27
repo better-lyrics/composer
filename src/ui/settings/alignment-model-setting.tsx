@@ -1,6 +1,7 @@
 import {
   type AlignmentModel,
   BUILTIN_ALIGNMENT_MODEL,
+  RECOMMENDED_ALIGNMENT_MODEL,
   loadAlignmentModels,
 } from "@/audio/alignment/hubertfa/model-manifest";
 import { settingEntry } from "@/stores/settings-catalog";
@@ -51,7 +52,25 @@ function visibleModels(models: readonly AlignmentModel[], language: string, orde
 
 function toOption(model: AlignmentModel): SelectOption {
   const languages = model.languages.map(languageName).join(", ");
-  return { value: model.id, label: model.label, detail: `~${formatWholeMegabytes(model.approxBytes)} · ${languages}` };
+  const detail = `~${formatWholeMegabytes(model.approxBytes)} · ${languages}`;
+  return { value: model.id, label: model.label, detail, ...(model.recommended ? { badge: "Recommended" } : {}) };
+}
+
+// What the picker shows as chosen. Once the list loads, a saved model that left
+// the manifest, or Recommended with nothing recommended, shows as the built-in
+// model auto-align falls back to.
+function shownValue(models: readonly AlignmentModel[] | undefined, stored: string): string {
+  if (!models) return stored;
+  if (stored === RECOMMENDED_ALIGNMENT_MODEL) {
+    return models.some((m) => m.recommended) ? stored : BUILTIN_ALIGNMENT_MODEL.id;
+  }
+  return models.some((m) => m.id === stored) ? stored : BUILTIN_ALIGNMENT_MODEL.id;
+}
+
+// "Recommended" follows the manifest: it names the model it currently means.
+function recommendedOption(models: readonly AlignmentModel[]): SelectOption[] {
+  const model = models.find((m) => m.recommended);
+  return model ? [{ value: RECOMMENDED_ALIGNMENT_MODEL, label: "Recommended", detail: `Uses ${model.label}` }] : [];
 }
 
 // -- Component -----------------------------------------------------------------
@@ -73,12 +92,13 @@ const AlignmentModelSetting: React.FC = () => {
   const all = models ?? [];
   const tabs = languageTabs(all);
   const activeLanguage = tabs.some((t) => t.value === language) ? language : ALL_LANGUAGES;
-  const options = all.length > 0 ? visibleModels(all, activeLanguage, order).map(toOption) : [BUILTIN_OPTION];
-  // While loading, a saved checkpoint shows as pending; once loaded, one that left
-  // the manifest shows as the built-in model auto-align falls back to.
-  const known = all.some((m) => m.id === stored);
-  const value = !models ? stored : known ? stored : BUILTIN_OPTION.value;
-  const pending = !models && stored !== BUILTIN_OPTION.value ? [{ value: stored, label: "Loading…" }] : [];
+  const options =
+    all.length > 0
+      ? [...recommendedOption(all), ...visibleModels(all, activeLanguage, order).map(toOption)]
+      : [BUILTIN_OPTION];
+  const value = shownValue(models, stored);
+  const pendingLabel = stored === RECOMMENDED_ALIGNMENT_MODEL ? "Recommended" : "Loading…";
+  const pending = !models && stored !== BUILTIN_OPTION.value ? [{ value: stored, label: pendingLabel }] : [];
   // A language tab can filter the selected model out of the list; keep its name on the trigger.
   const selectedLabel = all.find((m) => m.id === value)?.label;
 

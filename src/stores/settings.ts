@@ -1,4 +1,4 @@
-import { BUILTIN_ALIGNMENT_MODEL } from "@/audio/alignment/hubertfa/model-manifest";
+import { RECOMMENDED_ALIGNMENT_MODEL } from "@/audio/alignment/hubertfa/model-manifest";
 import type { MusicBrainzLookup } from "@/domain/musicbrainz/lookup-mode";
 import { DEFAULT_PITCH_LINE_MODE, type PitchLineMode } from "@/domain/pitch/pitch-line-mode";
 import type { LibrarySort } from "@/domain/project/library-order";
@@ -190,7 +190,7 @@ const DEFAULTS: SettingsState = {
 
   autoSeparateOnImport: false,
   vocalModelVariant: "fp32",
-  alignmentModelId: BUILTIN_ALIGNMENT_MODEL.id,
+  alignmentModelId: RECOMMENDED_ALIGNMENT_MODEL,
   keepAlignmentModelLoaded: false,
 
   cobaltInstances: [],

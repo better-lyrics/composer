@@ -1,4 +1,9 @@
-import { BUILTIN_ALIGNMENT_MODEL, parseAlignmentManifest } from "@/audio/alignment/hubertfa/model-manifest";
+import {
+  BUILTIN_ALIGNMENT_MODEL,
+  RECOMMENDED_ALIGNMENT_MODEL,
+  parseAlignmentManifest,
+  pickAlignmentModel,
+} from "@/audio/alignment/hubertfa/model-manifest";
 import { describe, expect, it } from "vitest";
 
 const MANIFEST_URL = "https://models.example.com/hubertfa/models.json";
@@ -9,7 +14,14 @@ describe("parseAlignmentManifest", () => {
     const models = parseAlignmentManifest(
       {
         models: [
-          { id: "ft-1", label: "Posttrain 1", model: "ft1.onnx", sizeMb: 400, languages: ["EN-us", "en", 3] },
+          {
+            id: "ft-1",
+            label: "Posttrain 1",
+            model: "ft1.onnx",
+            sizeMb: 400,
+            languages: ["EN-us", "en", 3],
+            recommended: true,
+          },
           { id: "ft-2", model: "https://cdn.example.com/ft2.onnx", dictionary: "../dict.txt" },
           { id: "broken", label: "No model file" },
           { id: BUILTIN_ALIGNMENT_MODEL.id, label: "Duplicate of the built-in", model: "dup.onnx" },
@@ -31,6 +43,7 @@ describe("parseAlignmentManifest", () => {
         dictionaryUrl: `${BASE_URL}/hubertfa_v007_cmudict.txt`,
         approxBytes: 400 * 1024 * 1024,
         languages: ["en"],
+        recommended: true,
       },
       expect.objectContaining({
         id: "ft-2",
@@ -38,6 +51,7 @@ describe("parseAlignmentManifest", () => {
         modelUrl: "https://cdn.example.com/ft2.onnx",
         dictionaryUrl: "https://models.example.com/dict.txt",
         languages: BUILTIN_ALIGNMENT_MODEL.languages,
+        recommended: false,
       }),
     ]);
   });
@@ -55,5 +69,28 @@ describe("parseAlignmentManifest", () => {
     expect(parseAlignmentManifest("not json", MANIFEST_URL, BASE_URL).map((m) => m.id)).toEqual([
       BUILTIN_ALIGNMENT_MODEL.id,
     ]);
+  });
+});
+
+describe("pickAlignmentModel", () => {
+  const models = parseAlignmentManifest(
+    {
+      models: [
+        { id: "ft-1", model: "ft1.onnx" },
+        { id: "ft-2", model: "ft2.onnx", recommended: true },
+      ],
+    },
+    MANIFEST_URL,
+    BASE_URL,
+  );
+
+  it("follows the manifest's recommended model by default, and keeps a model picked by hand", () => {
+    expect(pickAlignmentModel(models, RECOMMENDED_ALIGNMENT_MODEL)?.id).toBe("ft-2");
+    expect(pickAlignmentModel(models, "ft-1")?.id).toBe("ft-1");
+  });
+
+  it("falls back to the built-in model with no recommendation, or for a model that left the manifest", () => {
+    expect(pickAlignmentModel(models.slice(0, 2), RECOMMENDED_ALIGNMENT_MODEL)?.id).toBe(BUILTIN_ALIGNMENT_MODEL.id);
+    expect(pickAlignmentModel(models, "gone")?.id).toBe(BUILTIN_ALIGNMENT_MODEL.id);
   });
 });

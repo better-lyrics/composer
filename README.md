@@ -155,7 +155,8 @@ Auto-align uses HubertFA v0.0.7 by default. To try other checkpoints with the sa
       "label": "Posttrain Oct 25",
       "model": "hubertfa_ft_2026-10-25.onnx",
       "sizeMb": 396,
-      "languages": ["en"]
+      "languages": ["en"],
+      "recommended": true
     }
   ]
 }
@@ -163,6 +164,7 @@ Auto-align uses HubertFA v0.0.7 by default. To try other checkpoints with the sa
 
 - `model` and the optional `dictionary` (the English pronunciation dictionary, defaulting to the v0.0.7 one) are URLs, relative to the manifest.
 - `languages` lists the language codes a checkpoint was trained for. It defaults to the base model's English, Mandarin and Japanese. When the checkpoints cover different languages, the picker gets a tab per language.
+- `"recommended": true` tags a checkpoint as the one to use. The setting defaults to **Recommended**, which follows whichever checkpoint has the tag, so moving the tag moves everyone who hasn't picked a model by hand. With no tagged checkpoint, Recommended uses v0.0.7; with several, the first one listed.
 - The picker lists checkpoints in manifest order, after the built-in model, and can sort them by name instead. Numbers in names sort as numbers, so `step 900` comes before `step 5000`.
 - The phone vocabulary is bundled with the app (`src/audio/alignment/hubertfa/vocab.json`), so a checkpoint with a different phone set needs a code change, not a manifest entry.
 - The browser caches each model by URL, so give every export a new file name. Re-uploading under the same name keeps serving the old copy.
