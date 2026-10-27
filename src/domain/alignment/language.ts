@@ -23,9 +23,15 @@ function baseLanguage(tag: string | undefined): string | null {
   return base === "cmn" ? "zh" : base;
 }
 
-function isSupportedLanguage(language: string | undefined): boolean {
+function isAlignableLanguage(code: string): boolean {
+  const base = baseLanguage(code);
+  return base !== null && SUPPORTED_LANGUAGES.has(base);
+}
+
+// A song with no language set is never blocked: each line is tried.
+function canAlignLanguage(language: string | undefined, modelLanguages: readonly string[]): boolean {
   const base = baseLanguage(language);
-  return !base || SUPPORTED_LANGUAGES.has(base);
+  return !base || (SUPPORTED_LANGUAGES.has(base) && coversLanguage(modelLanguages, base));
 }
 
 // Han characters are kanji in a Japanese project, or when any line has kana
@@ -62,5 +68,13 @@ function coverageColumns(languageLists: readonly (readonly string[])[], song: st
 
 // -- Exports ------------------------------------------------------------------
 
-export { coverageColumns, coversLanguage, hanReadingFor, isSupportedLanguage, songLanguage };
+export {
+  baseLanguage,
+  canAlignLanguage,
+  coverageColumns,
+  coversLanguage,
+  hanReadingFor,
+  isAlignableLanguage,
+  songLanguage,
+};
 export type { HanReading };

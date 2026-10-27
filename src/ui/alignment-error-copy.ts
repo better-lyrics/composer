@@ -15,8 +15,8 @@ function alignmentErrorCopy(code: AlignmentErrorCode): AlignmentErrorCopy {
   }
   if (code === "unsupported-language") {
     return {
-      title: "This song's language isn't supported",
-      next: "Auto-align works for English, Mandarin and Japanese. Check the song language, or time the words by hand.",
+      title: "The model doesn't cover this song's language",
+      next: "Pick a model that covers it, check the song language, or time the words by hand.",
     };
   }
   if (code === "needs-vocals") {

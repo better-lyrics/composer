@@ -67,6 +67,21 @@ describe("parseAlignmentManifest", () => {
     expect(model.languages).toEqual(["en"]);
   });
 
+  it("keeps only languages auto-align can align, and none when a model lists only others", () => {
+    const [, mixed, foreign] = parseAlignmentManifest(
+      {
+        models: [
+          { id: "mixed", model: "mixed.onnx", languages: ["ko", "ja", "cmn"] },
+          { id: "foreign", model: "foreign.onnx", languages: ["ko"] },
+        ],
+      },
+      MANIFEST_URL,
+      BASE_URL,
+    );
+    expect(mixed.languages).toEqual(["ja", "zh"]);
+    expect(foreign.languages).toEqual([]);
+  });
+
   it("falls back to the built-in model alone for a malformed manifest", () => {
     expect(parseAlignmentManifest("not json", MANIFEST_URL, BASE_URL).map((m) => m.id)).toEqual([
       BUILTIN_ALIGNMENT_MODEL.id,

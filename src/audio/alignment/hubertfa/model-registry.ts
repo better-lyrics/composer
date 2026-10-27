@@ -14,6 +14,7 @@ interface AlignmentAssets {
   /** kuromoji's IPADIC files (gzipped), needed only to read kanji. */
   japaneseDictionary: Record<string, CachedModel>;
   approxBytes: number;
+  languages: readonly string[];
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -51,6 +52,7 @@ function getAlignmentAssets(model: AlignmentModel): AlignmentAssets | null {
       ]),
     ),
     approxBytes: model.approxBytes + DICTIONARY_APPROX_BYTES,
+    languages: model.languages,
   };
 }
 

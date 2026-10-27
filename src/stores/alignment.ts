@@ -8,7 +8,7 @@ import type { Aligner } from "@/audio/alignment/types";
 import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { isModelHostingConfigured } from "@/audio/separation/model-registry";
 import { hasCjk } from "@/domain/alignment/cjk";
-import { hanReadingFor, isSupportedLanguage } from "@/domain/alignment/language";
+import { canAlignLanguage, hanReadingFor } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
@@ -129,9 +129,10 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     const { signal } = controller;
 
     try {
-      if (!(await selectedAssets())) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
-      if (!isSupportedLanguage(project.metadata.language)) {
-        return fail(set, "unsupported-language", "Auto-align supports English, Mandarin and Japanese lyrics.");
+      const assets = await selectedAssets();
+      if (!assets) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
+      if (!canAlignLanguage(project.metadata.language, assets.languages)) {
+        return fail(set, "unsupported-language", "The alignment model doesn't cover this song's language.");
       }
       const hanReading = hanReadingFor(project.metadata.language, project.lines);
       const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
@@ -231,11 +232,12 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     const modelId = useSettingsStore.getState().alignmentModelId;
     // A split never starts a model load; this only runs with one kept in memory.
     if (planned.length === 0 || !vocalsUrl || !aligner.isLoaded({ japanese, modelId })) return;
-    if (!isSupportedLanguage(project.metadata.language)) return;
     set({ status: "running", error: null, progress: { done: 0, total: planned.length } });
     controller = new AbortController();
     const { signal } = controller;
     try {
+      const assets = await selectedAssets(modelId);
+      if (!assets || !canAlignLanguage(project.metadata.language, assets.languages)) return;
       const pcm = await loadVocalsPcm(vocalsUrl);
       const updates: LineUpdate[] = [];
       for (const plan of planned) {
