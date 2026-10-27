@@ -213,6 +213,13 @@ describe("spectrum and pitch settings", () => {
     await rehydrateAt(11, legacyBlob({ pitchLine: "focus" }));
     expect(useSettingsStore.getState().pitchLine).toBe("focus");
   });
+
+  it("moves the alignment model saved by the old default to the recommended one, but keeps a picked model", async () => {
+    await rehydrateAt(12, legacyBlob({ alignmentModelId: "hubertfa-v007" }));
+    expect(useSettingsStore.getState().alignmentModelId).toBe("recommended");
+    await rehydrateAt(12, legacyBlob({ alignmentModelId: "hubertfa-pt-run2-s3000" }));
+    expect(useSettingsStore.getState().alignmentModelId).toBe("hubertfa-pt-run2-s3000");
+  });
 });
 
 describe("timeline toggle renames", () => {

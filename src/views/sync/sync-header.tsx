@@ -2,6 +2,7 @@ import type { LanguageTextVariant } from "@/domain/language/display";
 import { Button } from "@/ui/button";
 import { SegmentedControl } from "@/ui/segmented-control";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
+import { AutoAlignDropdown } from "@/views/sync/auto-align-dropdown";
 import { IconLanguage, IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -50,6 +51,7 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
         {granularity === "word" ? "words" : "lines"} synced
       </span>
       <div className="flex items-center gap-3">
+        {!editMode && <AutoAlignDropdown />}
         <div className="tray">
           <ShortcutToggleButton
             active={textVariant === "transliteration"}

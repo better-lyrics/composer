@@ -509,6 +509,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "r" },
   },
   {
+    id: "timeline.autoAlign",
+    scope: "timeline",
+    description: "Auto-align the selected line",
+    defaultBinding: { key: "a", shift: true },
+  },
+  {
     id: "timeline.toggleMarkerMode",
     scope: "timeline",
     description: "Toggle marker mode",

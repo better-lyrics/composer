@@ -3,6 +3,7 @@ import { useSettingsStore } from "@/stores/settings";
 import type { SettingId } from "@/stores/settings-catalog";
 import { BEAT_GRID_LINE_OPTIONS } from "@/ui/beat-grid-line-options";
 import { LAUNCH_SCREEN_OPTIONS, LIBRARY_SORT_OPTIONS } from "@/ui/projects/library-options";
+import { AlignmentModelSetting } from "@/ui/settings/alignment-model-setting";
 import { BridgeSection } from "@/ui/settings/bridge-section";
 import { CobaltInstancesSetting } from "@/ui/settings/cobalt-instances-setting";
 import { DefaultPlaybackRateSetting } from "@/ui/settings/default-playback-rate-setting";
@@ -82,6 +83,8 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
       { value: "fp16", label: "fp16 (~85 MB, experimental)" },
     ],
   },
+  alignmentModelId: { kind: "custom", Component: AlignmentModelSetting },
+  keepAlignmentModelLoaded: TOGGLE,
   defaultZoom: {
     kind: "slider",
     min: 20,

@@ -43,5 +43,5 @@ function isModelHostingConfigured(): boolean {
   return getBaseUrl() !== null;
 }
 
-export { getModelDescriptor, isModelHostingConfigured };
+export { getBaseUrl as getModelBaseUrl, getModelDescriptor, isModelHostingConfigured };
 export type { ModelDescriptor };

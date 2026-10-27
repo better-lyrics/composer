@@ -3,6 +3,7 @@ import { splitTransliterationAtBoundaries } from "@/domain/language/transliterat
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { WordTiming } from "@/domain/word/timing";
 import { livePlaybackTime } from "@/stores/audio";
+import { useAlignmentStore } from "@/stores/alignment";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-options";
@@ -86,6 +87,8 @@ function useTimelineSyllableSplitterState({
     const trimmedText = word.text.trimEnd();
 
     let newWords: WordTiming[];
+    // A boundary placed at the playhead was set by ear, so the model doesn't move it.
+    let placedByEar = false;
 
     if (mode === "word") {
       newWords = splitWordIntoWords(word, splitPoints);
@@ -94,6 +97,7 @@ function useTimelineSyllableSplitterState({
       const playheadOnWord = currentTime > word.begin && currentTime < word.end;
 
       if (playheadOnWord && splitPoints.length === 1) {
+        placedByEar = true;
         const groupId = word.syllableGroupId ?? nanoid(8);
         const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
         const partitions = [
@@ -137,20 +141,24 @@ function useTimelineSyllableSplitterState({
     if (!split) return;
     const extraUpdates = split.transliteration ? { transliteration: split.transliteration } : {};
 
-    if (type === "word") {
-      void handleWordChangeWithDivergenceCheck(lineId, split.words, "words", extraUpdates);
-    } else {
-      void handleWordChangeWithDivergenceCheck(lineId, split.words, "backgroundWords", {
-        ...manualBackgroundWordEdit(split.words),
-        ...extraUpdates,
-      });
-    }
+    const done =
+      type === "word"
+        ? handleWordChangeWithDivergenceCheck(lineId, split.words, "words", extraUpdates)
+        : handleWordChangeWithDivergenceCheck(lineId, split.words, "backgroundWords", {
+            ...manualBackgroundWordEdit(split.words),
+            ...extraUpdates,
+          });
+    // Only a split that wasn't placed by ear is timed from the audio afterwards.
+    return placedByEar ? undefined : done;
   }, [target, splitPoints, transliterationSplitPoints]);
 
   const confirmSplit = useCallback(async () => {
     if (!target || splitPoints.length === 0) return;
 
     useProjectStore.getState().setSyllableSplitDefaults({ applyToAll, caseInsensitive });
+    // With the alignment model kept in memory, the new syllables are timed from the audio.
+    const before = useProjectStore.getState().lines;
+    const retime = () => void useAlignmentStore.getState().retimeNewSyllables(before);
 
     if (target.mode === "syllable" && !target.word.transliteration && applyToAll && identicalCount > 0) {
       const ok = await confirm(buildApplyToAllConfirmOptions({ identicalCount, sourceText }));
@@ -160,12 +168,13 @@ function useTimelineSyllableSplitterState({
         splitPoints,
         caseInsensitive,
       });
+      retime();
       resetSplitPoints();
       closeModal();
       return;
     }
 
-    applySingleWordSplit();
+    void applySingleWordSplit()?.then(retime);
     resetSplitPoints();
     closeModal();
   }, [

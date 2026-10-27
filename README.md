@@ -143,6 +143,34 @@ HTDemucs is the official Facebook AI Research model (`facebookresearch/demucs`, 
 
 Cost: free egress, and about $0.0015 a month to store the fp16 model.
 
+### Trying other alignment checkpoints
+
+Auto-align uses HubertFA v0.0.7 by default. To try other checkpoints with the same inputs, outputs and phone set, list them in a manifest named `hubertfa-models.json` next to the models (`$VITE_VOCAL_MODEL_BASE_URL/hubertfa-models.json`). Each one then shows up under Settings > Playback > Alignment model.
+
+```json
+{
+  "models": [
+    {
+      "id": "ft-2026-10-25",
+      "label": "Posttrain Oct 25",
+      "model": "hubertfa_ft_2026-10-25.onnx",
+      "sizeMb": 396,
+      "languages": ["en"],
+      "recommended": true
+    }
+  ]
+}
+```
+
+- `model` and the optional `dictionary` (the English pronunciation dictionary, defaulting to the v0.0.7 one) are URLs, relative to the manifest.
+- `languages` lists the language codes a checkpoint was trained for. It defaults to the base model's English, Mandarin and Japanese. When the checkpoints cover different languages, the picker gets a tab per language.
+- `"recommended": true` tags a checkpoint as the one to use. The setting defaults to **Recommended**, which follows whichever checkpoint has the tag, so moving the tag moves everyone who hasn't picked a model by hand. With no tagged checkpoint, Recommended uses v0.0.7; with several, the first one listed. The id `recommended` is reserved for this, so an entry with it is skipped.
+- The picker lists checkpoints in manifest order, after the built-in model, and can sort them by name instead. Numbers in names sort as numbers, so `step 900` comes before `step 5000`.
+- The phone vocabulary is bundled with the app (`src/audio/alignment/hubertfa/vocab.json`), so a checkpoint with a different phone set needs a code change, not a manifest entry.
+- The browser caches each model by URL, so give every export a new file name. Re-uploading under the same name keeps serving the old copy.
+- The manifest is fetched once per page load, without caching. Upload it with `Cache-Control: no-cache` so the edge doesn't keep a stale copy. `./scripts/upload-hubertfa.sh` does this when `hubertfa-models.json` is in its assets folder.
+- To test checkpoints on your machine without uploading them, serve a folder holding the manifest and models with CORS enabled (for example `npx serve --cors -l 8787 ./checkpoints`), set `VITE_ALIGNMENT_MODEL_MANIFEST_URL=http://localhost:8787/hubertfa-models.json` in `.env.local`, and restart `pnpm dev`.
+
 ## Tech stack
 
 React, TypeScript, Vite, Tailwind CSS v4, Zustand, Motion, Vitest

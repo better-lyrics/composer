@@ -48,6 +48,7 @@ import { clearLoopRegion, playSelection } from "@/views/timeline/selection-playb
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { AUTO_ALIGN_EVENT } from "@/views/timeline/timeline-auto-align";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
 import { computeRowLayout, partitionNudgeSelections, shiftSelectionsTogether } from "@/views/timeline/utils";
 import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
@@ -353,6 +354,10 @@ function useTimelineKeyboard(
         }
         case "timeline.toggleSpectrum":
           useSettingsStore.getState().toggle("showSpectrum");
+          break;
+        case "timeline.autoAlign":
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent(AUTO_ALIGN_EVENT));
           break;
         case "timeline.togglePitchLine":
           togglePitchLine();

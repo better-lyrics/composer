@@ -1,3 +1,4 @@
+import { BUILTIN_ALIGNMENT_MODEL, RECOMMENDED_ALIGNMENT_MODEL } from "@/audio/alignment/hubertfa/model-manifest";
 import { isPitchLineMode } from "@/domain/pitch/pitch-line-mode";
 import { isLibrarySort } from "@/domain/project/library-order";
 import { isLaunchScreen, isLibraryView } from "@/domain/project/library-preferences";
@@ -52,6 +53,10 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   if (version < 10 && typeof next.seekStep === "number" && next.seekStep > 5) next.seekStep = 5;
   // "always" was the default before 12, so a saved "always" is the old default, not a choice.
   if (version < 12 && next.pitchLine === "always") next.pitchLine = "off";
+  // The built-in model was the default before 13, so a saved one is the old default, not a choice.
+  if (version < 13 && next.alignmentModelId === BUILTIN_ALIGNMENT_MODEL.id) {
+    next.alignmentModelId = RECOMMENDED_ALIGNMENT_MODEL;
+  }
   const {
     librarySort,
     libraryView,

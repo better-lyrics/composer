@@ -1,3 +1,4 @@
+import { RECOMMENDED_ALIGNMENT_MODEL } from "@/audio/alignment/hubertfa/model-manifest";
 import type { MusicBrainzLookup } from "@/domain/musicbrainz/lookup-mode";
 import { DEFAULT_PITCH_LINE_MODE, type PitchLineMode } from "@/domain/pitch/pitch-line-mode";
 import type { LibrarySort } from "@/domain/project/library-order";
@@ -104,6 +105,8 @@ interface SettingsState extends SnapSettings, SpectrumSettings {
 
   autoSeparateOnImport: boolean;
   vocalModelVariant: VocalModelVariant;
+  alignmentModelId: string;
+  keepAlignmentModelLoaded: boolean;
 
   cobaltInstances: CobaltInstance[];
   selectedCobaltInstanceId: string;
@@ -191,6 +194,8 @@ const DEFAULTS: SettingsState = {
 
   autoSeparateOnImport: false,
   vocalModelVariant: "fp32",
+  alignmentModelId: RECOMMENDED_ALIGNMENT_MODEL,
+  keepAlignmentModelLoaded: false,
 
   cobaltInstances: [],
   selectedCobaltInstanceId: DEFAULT_COBALT_INSTANCE_ID,
