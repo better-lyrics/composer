@@ -3,85 +3,63 @@ import {
   BUILTIN_ALIGNMENT_MODEL,
   RECOMMENDED_ALIGNMENT_MODEL,
   loadAlignmentModels,
+  pickAlignmentModel,
 } from "@/audio/alignment/hubertfa/model-manifest";
+import { coverageColumns, coversLanguage } from "@/domain/alignment/language";
+import { useSongLanguage } from "@/hooks/useSongLanguage";
 import { settingEntry } from "@/stores/settings-catalog";
 import { useSettingsStore } from "@/stores/settings";
-import { SegmentedControl, type SegmentedOption } from "@/ui/segmented-control";
+import { CoverageCodes, languageName } from "@/ui/language-coverage";
 import { Select, type SelectOption } from "@/ui/select";
+import { AlignmentModelOption } from "@/ui/settings/alignment-model-option";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
-import { formatWholeMegabytes } from "@/utils/format-file-size";
+import { StatusChip } from "@/ui/status-chip";
+import { IconAlertTriangle } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-
-// -- Types ---------------------------------------------------------------------
-
-type ModelOrder = "listed" | "name";
 
 // -- Constants -----------------------------------------------------------------
 
-const ALL_LANGUAGES = "all";
 const BUILTIN_OPTION: SelectOption = { value: BUILTIN_ALIGNMENT_MODEL.id, label: BUILTIN_ALIGNMENT_MODEL.label };
-const ORDER_OPTIONS: SegmentedOption<ModelOrder>[] = [
-  { value: "listed", label: "Listed" },
-  { value: "name", label: "A-Z" },
-];
-const LANGUAGE_NAMES = new Intl.DisplayNames(["en"], { type: "language", fallback: "code" });
-// Run and step numbers sort as numbers, so "step 5000" comes after "step 900".
-const byName = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
 
 // -- Helpers -------------------------------------------------------------------
 
-const languageName = (code: string) => LANGUAGE_NAMES.of(code) ?? code;
-
-// Tabs only help when the checkpoints cover different languages.
-function languageTabs(models: readonly AlignmentModel[]): SegmentedOption<string>[] {
-  const codes = [...new Set(models.flatMap((m) => m.languages))];
-  const differ = models.some((m) => m.languages.length !== codes.length);
-  if (!differ) return [];
-  return [{ value: ALL_LANGUAGES, label: "All" }, ...codes.map((code) => ({ value: code, label: languageName(code) }))];
+// Recommended first, then the models that cover the song, each group in manifest order.
+function orderedModels(models: readonly AlignmentModel[], song: string | null): AlignmentModel[] {
+  const rank = (model: AlignmentModel) => {
+    if (model.recommended) return 0;
+    return song && coversLanguage(model.languages, song) ? 1 : 2;
+  };
+  return models.toSorted((a, b) => rank(a) - rank(b));
 }
 
-// The built-in model stays first, as the one to compare the others against.
-function visibleModels(models: readonly AlignmentModel[], language: string, order: ModelOrder): AlignmentModel[] {
-  const [builtin, ...rest] = models;
-  const shown = language === ALL_LANGUAGES ? rest : rest.filter((m) => m.languages.includes(language));
-  if (order === "name") shown.sort((a, b) => byName.compare(a.label, b.label));
-  return builtin ? [builtin, ...shown] : shown;
+function loadingLanguages(value: string): readonly string[] | undefined {
+  return value === BUILTIN_ALIGNMENT_MODEL.id ? BUILTIN_ALIGNMENT_MODEL.languages : undefined;
 }
 
-function toOption(model: AlignmentModel): SelectOption {
-  const languages = model.languages.map(languageName).join(", ");
-  const detail = `~${formatWholeMegabytes(model.approxBytes)} · ${languages}`;
-  return { value: model.id, label: model.label, detail, ...(model.recommended ? { badge: "Recommended" } : {}) };
-}
+// -- Components ----------------------------------------------------------------
 
-// What the picker shows as chosen. Once the list loads, a saved model that left
-// the manifest, or Recommended with nothing recommended, shows as the built-in
-// model auto-align falls back to.
-function shownValue(models: readonly AlignmentModel[] | undefined, stored: string): string {
-  if (!models) return stored;
-  if (stored === RECOMMENDED_ALIGNMENT_MODEL) {
-    return models.some((m) => m.recommended) ? stored : BUILTIN_ALIGNMENT_MODEL.id;
-  }
-  return models.some((m) => m.id === stored) ? stored : BUILTIN_ALIGNMENT_MODEL.id;
-}
+const SongLanguageHeader: React.FC<{ song: string }> = ({ song }) => (
+  <div className="px-3.5 pt-2.5 pb-2 border-b border-(--divider) text-xs text-(--muted)">
+    This song is in <span className="text-composer-text">{languageName(song)}</span>
+  </div>
+);
 
-// "Recommended" follows the manifest: it names the model it currently means.
-function recommendedOption(models: readonly AlignmentModel[]): SelectOption[] {
-  const model = models.find((m) => m.recommended);
-  return model ? [{ value: RECOMMENDED_ALIGNMENT_MODEL, label: "Recommended", detail: `Uses ${model.label}` }] : [];
-}
-
-// -- Component -----------------------------------------------------------------
+const TriggerCoverage: React.FC<{ languages: readonly string[]; song: string | null }> = ({ languages, song }) =>
+  song && !coversLanguage(languages, song) ? (
+    <StatusChip tone="warning" icon={IconAlertTriangle}>
+      No {song.toUpperCase()}
+    </StatusChip>
+  ) : (
+    <CoverageCodes covered={languages} />
+  );
 
 // The choices come from the hosted manifest, which loads once per page and is
 // shared with auto-align, so the query neither refetches nor cancels it.
 const AlignmentModelSetting: React.FC = () => {
   const stored = useSettingsStore((s) => s.alignmentModelId);
   const set = useSettingsStore((s) => s.set);
-  const [language, setLanguage] = useState(ALL_LANGUAGES);
-  const [order, setOrder] = useState<ModelOrder>("listed");
+  const song = useSongLanguage();
   const { data: models } = useQuery({
     queryKey: ["alignment-models"],
     queryFn: loadAlignmentModels,
@@ -89,33 +67,25 @@ const AlignmentModelSetting: React.FC = () => {
     gcTime: 0,
   });
 
-  const all = models ?? [];
-  const tabs = languageTabs(all);
-  const activeLanguage = tabs.some((t) => t.value === language) ? language : ALL_LANGUAGES;
-  const options =
-    all.length > 0
-      ? [...recommendedOption(all), ...visibleModels(all, activeLanguage, order).map(toOption)]
-      : [BUILTIN_OPTION];
-  const value = shownValue(models, stored);
-  const pendingLabel = stored === RECOMMENDED_ALIGNMENT_MODEL ? "Recommended" : "Loading…";
-  const pending = !models && stored !== BUILTIN_OPTION.value ? [{ value: stored, label: pendingLabel }] : [];
-  // A language tab can filter the selected model out of the list; keep its name on the trigger.
-  const selectedLabel = all.find((m) => m.id === value)?.label;
-
-  const header = all.length > 2 && (
-    <div className="flex flex-wrap items-center justify-between gap-2 px-2.5 pt-2.5 pb-1 border-b border-(--divider)">
-      {tabs.length > 0 && (
-        <SegmentedControl
-          size="sm"
-          aria-label="Language"
-          value={activeLanguage}
-          options={tabs}
-          onChange={setLanguage}
-        />
-      )}
-      <SegmentedControl size="sm" aria-label="Order" value={order} options={ORDER_OPTIONS} onChange={setOrder} />
-    </div>
+  const ordered = models ? orderedModels(models, song) : [];
+  const columns = coverageColumns(
+    ordered.map((m) => m.languages),
+    song,
   );
+  const byId = new Map(ordered.map((m) => [m.id, m]));
+  const recommendedId = ordered.find((m) => m.recommended)?.id;
+  const pending = !models && stored !== BUILTIN_OPTION.value ? [{ value: stored, label: "Loading…" }] : [];
+  const options: SelectOption[] = models
+    ? ordered.map((m) => ({ value: m.id, label: m.label }))
+    : [BUILTIN_OPTION, ...pending];
+  const value = models ? (pickAlignmentModel(models, stored)?.id ?? BUILTIN_OPTION.value) : stored;
+  const selectedLanguages = models ? byId.get(value)?.languages : loadingLanguages(value);
+
+  const renderOption = (option: SelectOption) => {
+    const model = byId.get(option.value);
+    if (!model) return <span className="truncate">{option.label}</span>;
+    return <AlignmentModelOption model={model} columns={columns} song={song} />;
+  };
 
   return (
     <SettingRowLayout>
@@ -123,11 +93,12 @@ const AlignmentModelSetting: React.FC = () => {
       <Select
         aria-label={settingEntry("alignmentModelId").label}
         value={value}
-        onChange={(next) => set("alignmentModelId", next)}
-        options={[...options, ...pending]}
-        valueLabel={selectedLabel}
-        header={header}
-        className="h-9 max-w-56 pl-3 pr-[5px] rounded-xl border-transparent hover:border-transparent btn-raised [&>svg]:size-3.5"
+        onChange={(next) => set("alignmentModelId", next === recommendedId ? RECOMMENDED_ALIGNMENT_MODEL : next)}
+        options={options}
+        renderOption={renderOption}
+        header={song && <SongLanguageHeader song={song} />}
+        triggerAdornment={selectedLanguages && <TriggerCoverage languages={selectedLanguages} song={song} />}
+        className="h-9 pl-3 pr-[5px] rounded-xl border-transparent hover:border-transparent btn-raised [&>svg]:size-3.5"
       />
     </SettingRowLayout>
   );
