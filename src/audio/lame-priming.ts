@@ -3,6 +3,13 @@
 const DECODER_DELAY_SAMPLES = 528;
 const PRIMING_HARD_CAP = 8192;
 const LOG_PREFIX = "[LamePriming]";
+const XING_FRAMES_FLAG = 0x01;
+const XING_FIELD_SIZES: readonly number[] = [4, 4, 100, 4];
+const XING_HEADER_SIZE = 8;
+const SAMPLES_PER_FRAME_MPEG1 = 1152;
+const SAMPLES_PER_FRAME_MPEG2 = 576;
+// Trimmed and untrimmed lengths differ by delay + padding (at least 576); resampling moves a length by under 8.
+const DECODED_LENGTH_TOLERANCE = 64;
 
 const MPEG1_SAMPLE_RATES: readonly number[] = [44_100, 48_000, 32_000];
 const MPEG2_SAMPLE_RATES: readonly number[] = [22_050, 24_000, 16_000];
@@ -23,7 +30,27 @@ const CHANNEL_MODE_MONO = 3;
 interface LamePriming {
   samples: number;
   sampleRate: number;
+  encoderDelay: number;
+  padding: number;
+  frameCount: number | null;
+  samplesPerFrame: number;
 }
+
+type LamePrimingDecode = "none" | "trimmed" | "untrimmed" | "unknown";
+
+interface DecodedLength {
+  length: number;
+  sampleRate: number;
+}
+
+const NO_PRIMING: LamePriming = {
+  samples: 0,
+  sampleRate: 0,
+  encoderDelay: 0,
+  padding: 0,
+  frameCount: null,
+  samplesPerFrame: 0,
+};
 
 // -- Functions -----------------------------------------------------------------
 
@@ -52,8 +79,26 @@ function readTagOffset(versionBits: number, channelMode: number): number {
   return 0;
 }
 
+function readXingFlags(bytes: Uint8Array, tagOffset: number): number | null {
+  if (tagOffset + XING_HEADER_SIZE > bytes.length) return null;
+  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(tagOffset + 4);
+}
+
+function readFrameCount(bytes: Uint8Array, tagOffset: number, flags: number): number | null {
+  if (!(flags & XING_FRAMES_FLAG) || tagOffset + XING_HEADER_SIZE + 4 > bytes.length) return null;
+  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(tagOffset + XING_HEADER_SIZE);
+}
+
+// The LAME extension follows only the Xing fields (frames, bytes, TOC, quality) the flags declare.
+function readLameOffset(tagOffset: number, flags: number): number {
+  return XING_FIELD_SIZES.reduce(
+    (offset, size, bit) => (flags & (1 << bit) ? offset + size : offset),
+    tagOffset + XING_HEADER_SIZE,
+  );
+}
+
 function parseLamePriming(input: ArrayBuffer | Uint8Array): LamePriming {
-  const empty: LamePriming = { samples: 0, sampleRate: 0 };
+  const empty = NO_PRIMING;
   const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
   const frameOffset = findFirstMp3FrameOffset(bytes);
   if (frameOffset + 4 > bytes.length) return empty;
@@ -78,7 +123,9 @@ function parseLamePriming(input: ArrayBuffer | Uint8Array): LamePriming {
     String.fromCharCode(bytes[tagOffset + 3]);
   if (tag !== "Xing" && tag !== "Info") return empty;
 
-  const lameOffset = tagOffset + 0x78;
+  const flags = readXingFlags(bytes, tagOffset);
+  if (flags === null) return empty;
+  const lameOffset = readLameOffset(tagOffset, flags);
   if (lameOffset + 0x18 > bytes.length) return empty;
   const high = bytes[lameOffset + 0x15];
   const mixed = bytes[lameOffset + 0x16];
@@ -88,12 +135,38 @@ function parseLamePriming(input: ArrayBuffer | Uint8Array): LamePriming {
     console.warn(`${LOG_PREFIX} LAME priming over cap:`, samples);
     return empty;
   }
-  return { samples, sampleRate };
+  return {
+    samples,
+    sampleRate,
+    encoderDelay,
+    padding: ((mixed & 0x0f) << 8) | bytes[lameOffset + 0x17],
+    frameCount: readFrameCount(bytes, tagOffset, flags),
+    samplesPerFrame: versionBits === MPEG_VERSION_1 ? SAMPLES_PER_FRAME_MPEG1 : SAMPLES_PER_FRAME_MPEG2,
+  };
 }
 
-function primingStartFrame(priming: LamePriming, decodedSampleRate: number): number {
-  if (priming.samples <= 0 || priming.sampleRate <= 0) return 0;
-  return Math.round((priming.samples * decodedSampleRate) / priming.sampleRate);
+function lamePrimingDecode(priming: LamePriming, decoded: DecodedLength): LamePrimingDecode {
+  if (priming.samples <= 0 || priming.sampleRate <= 0) return "none";
+  if (!priming.frameCount || decoded.sampleRate <= 0) return "unknown";
+  const sourceLength = (decoded.length * priming.sampleRate) / decoded.sampleRate;
+  const encodedLength = priming.frameCount * priming.samplesPerFrame;
+  const isNear = (target: number) => Math.abs(sourceLength - target) <= DECODED_LENGTH_TOLERANCE;
+  if (isNear(encodedLength - priming.encoderDelay - priming.padding)) return "trimmed";
+  if (isNear(encodedLength)) return "untrimmed";
+  return "unknown";
+}
+
+function primingToCrop(priming: LamePriming, decoded: DecodedLength, outputSampleRate = decoded.sampleRate): number {
+  const decode = lamePrimingDecode(priming, decoded);
+  if (decode === "untrimmed") return Math.round((priming.samples * outputSampleRate) / priming.sampleRate);
+  if (decode === "unknown") {
+    console.warn(
+      `${LOG_PREFIX} decoded length does not match the LAME tag; not cropping:`,
+      decoded.length,
+      decoded.sampleRate,
+    );
+  }
+  return 0;
 }
 
 function stripLeading<T extends Float32Array>(channels: T[], n: number): T[] {
@@ -118,4 +191,5 @@ function cropAudioBufferHead(audio: AudioBuffer, startSample: number, ctx: BaseA
 
 // -- Exports -------------------------------------------------------------------
 
-export { cropAudioBufferHead, findFirstMp3FrameOffset, parseLamePriming, primingStartFrame, stripLeading };
+export { cropAudioBufferHead, findFirstMp3FrameOffset, lamePrimingDecode, parseLamePriming, primingToCrop, stripLeading };
+export type { LamePriming, LamePrimingDecode };

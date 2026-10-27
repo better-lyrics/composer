@@ -1,5 +1,4 @@
-import { decodeSourceAudio } from "@/audio/decoded-source-audio";
-import { parseLamePriming } from "@/audio/lame-priming";
+import { decodeSourceAudio, primingDecodeTag } from "@/audio/decoded-source-audio";
 import { createMp3File, encodeWav, makeSineBuffer } from "@/test/audio-fixtures";
 import { describe, expect, it } from "vitest";
 
@@ -13,18 +12,22 @@ describe("decodeSourceAudio", () => {
     expect(decoded.duration).toBeCloseTo(1, 1);
   });
 
-  it("strips LAME priming from an mp3 source", async () => {
+  it("regression: does not crop an mp3 the browser already trimmed", async () => {
     const mp3 = createMp3File();
     const bytes = await mp3.arrayBuffer();
-    const { samples, sampleRate } = parseLamePriming(bytes);
-    expect(samples).toBeGreaterThan(0);
     const ctx = new AudioContext();
-    const unstripped = await ctx.decodeAudioData(bytes.slice(0));
+    const raw = await ctx.decodeAudioData(bytes.slice(0));
     await ctx.close();
 
     const decoded = await decodeSourceAudio(mp3);
 
-    expect(decoded.length).toBe(unstripped.length - Math.round((samples * unstripped.sampleRate) / sampleRate));
+    expect(decoded.length).toBe(raw.length);
+  });
+
+  it("tags a LAME mp3 the browser trims and leaves other sources untagged", async () => {
+    expect(await primingDecodeTag(createMp3File())).toBe("lt1");
+    expect(await primingDecodeTag(sineWav(0.5))).toBe("");
+    expect(await primingDecodeTag(new Blob([new Uint8Array([0, 1, 2, 3])]))).toBe("");
   });
 
   describe("invariants", () => {
