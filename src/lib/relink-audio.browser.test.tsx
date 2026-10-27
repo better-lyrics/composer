@@ -247,4 +247,20 @@ describe("relinking LAME mp3 audio", () => {
     expect(useProjectStore.getState().history).toEqual(history);
     expect(useProjectStore.getState().primingCorrected).toBe(true);
   });
+
+  it("regression: two overlapping corrections of one project shift its times once", async () => {
+    await openProject({
+      audioSource: { kind: "file", name: "silence.mp3" },
+      primingStripped: true,
+      primingCorrected: false,
+      lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+    });
+
+    await Promise.all([
+      correctPrimingForProjectAudio("p", createMp3File()),
+      correctPrimingForProjectAudio("p", createMp3File()),
+    ]);
+
+    expect((useProjectStore.getState().lines[0] as { begin: number }).begin).toBeCloseTo(1 + 1104 / 44_100, 9);
+  });
 });
