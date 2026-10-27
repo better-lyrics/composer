@@ -17,7 +17,7 @@ import { dragGhostCells } from "@/views/timeline/drag-ghost-cells";
 import { trackSnapModifier } from "@/views/timeline/drag-track-snap";
 import { EmptyTimelineImport } from "@/views/timeline/empty-timeline-import";
 import { GroupFocusBar } from "@/views/timeline/group-focus-bar";
-import { rememberPointer } from "@/views/timeline/last-pointer";
+import { forgetPointer, rememberPointer } from "@/views/timeline/last-pointer";
 import { LoopRegionBar } from "@/views/timeline/loop-region-bar";
 import { LoopRegionGuides } from "@/views/timeline/loop-region-guides";
 import { LoopRegionReadout } from "@/views/timeline/loop-region-readout";
@@ -284,6 +284,7 @@ const TimelinePanel: React.FC = () => {
                 ref={contentRef}
                 data-timeline-scroll-host
                 onPointerMove={rememberPointer}
+                onPointerLeave={forgetPointer}
                 className="relative flex-1 flex flex-col overflow-hidden isolate"
               >
                 <div
