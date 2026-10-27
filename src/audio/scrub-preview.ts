@@ -1,5 +1,4 @@
-import { type ScrubSound, fadeOutScrubSound, retargetScrubSoundVolume, startScrubSound } from "@/audio/scrub-sound";
-import { furthestTimeAfter, scrubStep } from "@/audio/scrub-step";
+import { type ScrubSound, fadeOutScrubSound, startScrubSound } from "@/audio/scrub-sound";
 import { sharedAudioContext } from "@/audio/shared-audio-context";
 import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
@@ -10,23 +9,17 @@ import { useSettingsStore } from "@/stores/settings";
 type ActiveSnippet = { time: number; rate: number };
 type BufferLoader = () => Promise<AudioBuffer>;
 
-interface Voice {
-  sound: ScrubSound;
-  position: number;
-  rate: number;
-  updatedAt: number;
-}
-
 // -- Constants ----------------------------------------------------------------
 
 const SNIPPET_S = 0.12;
-const CROSSFADE_S = 0.008;
+const CROSSFADE_S = 0.04;
+const GRAIN_HOP_S = SNIPPET_S - CROSSFADE_S;
+const MAX_DRIFT_S = 0.04;
+const LOOKAHEAD_S = 0.05;
+const STOP_FADE_S = 0.01;
+const STOP_AFTER_MS = 100;
 const MIN_AUDIBLE_RATE = 0.1;
 const MAX_BUFFER_DURATION_S = 60 * 60;
-const RATE_SMOOTHING_S = 0.015;
-const MIN_SPEED_INTERVAL_MS = 4;
-const MAX_SPEED_INTERVAL_MS = 300;
-const MIN_STOP_AFTER_MS = 60;
 const FRAME_LABEL = "scrub-preview";
 const LOG_PREFIX = "[ScrubPreview]";
 
@@ -38,13 +31,12 @@ let bufferToken = 0;
 let loadingToken: number | null = null;
 let pendingSnippet: ActiveSnippet | null = null;
 let activeSnippet: ActiveSnippet | null = null;
-let voice: Voice | null = null;
-let clip: ScrubSound | null = null;
-let previousTime = Number.NEGATIVE_INFINITY;
-let furthestTime = Number.NEGATIVE_INFINITY;
-let lastPlayAtMs = Number.NEGATIVE_INFINITY;
-let stopAfterMs = MIN_STOP_AFTER_MS;
-let releaseWatchdog: (() => void) | null = null;
+let grains: ScrubSound[] = [];
+let targetTime = 0;
+let lastEventMs = Number.NEGATIVE_INFINITY;
+let nextGrainAt = 0;
+let lastGrainOffset = Number.NEGATIVE_INFINITY;
+let releaseScheduler: (() => void) | null = null;
 
 // -- Audio --------------------------------------------------------------------
 
@@ -64,95 +56,58 @@ function targetVolume(): number {
   return isMuted ? 0 : volume;
 }
 
-function voicePosition(running: Voice, now: number): number {
-  return running.position + running.rate * (now - running.updatedAt);
+// Grains continue the previous one while the playhead stays close, so steady drags play the song seamlessly.
+function nextGrainOffset(): number {
+  const continued = lastGrainOffset + GRAIN_HOP_S;
+  return Math.abs(targetTime - continued) <= MAX_DRIFT_S ? continued : targetTime;
 }
 
-function fadeOutAll(now: number): void {
-  if (voice) fadeOutScrubSound(voice.sound, now, CROSSFADE_S);
-  if (clip) fadeOutScrubSound(clip, now, CROSSFADE_S);
-  voice = null;
-  clip = null;
-}
-
-function startVoice(ctx: AudioContext, source: AudioBuffer, time: number, rate: number, now: number): void {
-  fadeOutAll(now);
-  const sound = startScrubSound(ctx, {
+function startGrain(ctx: AudioContext, source: AudioBuffer, at: number): void {
+  const offset = Math.max(0, Math.min(nextGrainOffset(), source.duration - SNIPPET_S));
+  const grain = startScrubSound(ctx, {
     buffer: source,
-    offset: time,
-    at: now,
+    offset,
+    at,
     volume: targetVolume(),
-    rate,
-    fadeS: CROSSFADE_S,
-  });
-  const started: Voice = { sound, position: time, rate, updatedAt: now };
-  sound.source.onended = () => {
-    if (voice !== started) return;
-    voice = null;
-    activeSnippet = null;
-  };
-  voice = started;
-  ensureWatchdog();
-}
-
-function steerVoice(running: Voice, rate: number, now: number): void {
-  running.position = voicePosition(running, now);
-  running.updatedAt = now;
-  running.rate = rate;
-  running.sound.source.playbackRate.setTargetAtTime(rate, now, RATE_SMOOTHING_S);
-  retargetScrubSoundVolume(running.sound, now, targetVolume(), CROSSFADE_S);
-}
-
-function playClip(ctx: AudioContext, source: AudioBuffer, time: number, now: number): void {
-  fadeOutAll(now);
-  const sound = startScrubSound(ctx, {
-    buffer: source,
-    offset: time,
-    at: now,
-    volume: targetVolume(),
-    rate: 1,
     fadeS: CROSSFADE_S,
     lengthS: SNIPPET_S,
   });
-  sound.source.onended = () => {
-    if (clip !== sound) return;
-    clip = null;
-    activeSnippet = null;
-  };
-  clip = sound;
+  grain.source.addEventListener("ended", () => {
+    grains = grains.filter((live) => live !== grain);
+  });
+  grains.push(grain);
+  lastGrainOffset = offset;
+  nextGrainAt = at + GRAIN_HOP_S;
 }
 
-// -- Watchdog -----------------------------------------------------------------
+// -- Scheduler ----------------------------------------------------------------
 
-function releaseWatchdogFrames(): void {
-  releaseWatchdog?.();
-  releaseWatchdog = null;
+function endSession(): void {
+  releaseScheduler?.();
+  releaseScheduler = null;
+  activeSnippet = null;
+  lastGrainOffset = Number.NEGATIVE_INFINITY;
+  lastEventMs = Number.NEGATIVE_INFINITY;
 }
 
 // A frame callback must never write to a store: this one only touches audio nodes and module state.
-function stopHeldVoice(nowMs: number): void {
-  if (!voice) {
-    releaseWatchdogFrames();
+// Grains are scheduled only a few frames ahead, so a hidden tab, which pauses frames, falls silent on its own.
+function scheduleGrains(nowMs: number): void {
+  if (!buffer || nowMs - lastEventMs > STOP_AFTER_MS) {
+    endSession();
     return;
   }
-  if (nowMs - lastPlayAtMs <= stopAfterMs) return;
-  fadeOutScrubSound(voice.sound, scheduleTime(sharedAudioContext()), CROSSFADE_S);
-  voice = null;
-  activeSnippet = null;
-  releaseWatchdogFrames();
+  const ctx = sharedAudioContext();
+  const now = scheduleTime(ctx);
+  if (nextGrainAt < now) nextGrainAt = now;
+  while (nextGrainAt < now + LOOKAHEAD_S) startGrain(ctx, buffer, nextGrainAt);
 }
 
-function ensureWatchdog(): void {
-  if (releaseWatchdog) return;
+function ensureScheduler(): void {
+  if (releaseScheduler) return;
   const releaseHold = holdFrames(FRAME_LABEL);
-  const unsubscribe = subscribeFrame(stopHeldVoice, FRAME_LABEL);
-  // Hidden tabs pause animation frames, so the watchdog alone would let a voice play on.
-  const stopWhenHidden = () => {
-    if (document.hidden) stop();
-  };
-  document.addEventListener("visibilitychange", stopWhenHidden);
-  releaseWatchdog = () => {
-    document.removeEventListener("visibilitychange", stopWhenHidden);
+  const unsubscribe = subscribeFrame(scheduleGrains, FRAME_LABEL);
+  releaseScheduler = () => {
     unsubscribe();
     releaseHold();
   };
@@ -212,34 +167,24 @@ function play(time: number, velocity: number): void {
     return;
   }
 
-  const ctx = getContext();
-  const now = scheduleTime(ctx);
-  const nowMs = performance.now();
-  const clampedTime = Math.max(0, Math.min(time, Math.max(0, buffer.duration - SNIPPET_S)));
-  const intervalMs = nowMs - lastPlayAtMs;
-  const measured = intervalMs >= MIN_SPEED_INTERVAL_MS && intervalMs <= MAX_SPEED_INTERVAL_MS;
-  const speed = measured ? (clampedTime - previousTime) / (intervalMs / 1000) : velocity;
-  stopAfterMs = measured ? Math.max(MIN_STOP_AFTER_MS, 2 * intervalMs) : MIN_STOP_AFTER_MS;
-
-  const step = scrubStep(voice ? voicePosition(voice, now) : null, clampedTime, furthestTime, speed);
-  if (step.kind === "clip") playClip(ctx, buffer, clampedTime, now);
-  else if (step.kind === "steer" && voice) steerVoice(voice, step.rate, now);
-  else startVoice(ctx, buffer, clampedTime, step.rate, now);
-
-  furthestTime = furthestTimeAfter(step, furthestTime, clampedTime);
-  previousTime = clampedTime;
-  lastPlayAtMs = nowMs;
-  activeSnippet = { time: clampedTime, rate: velocity };
+  targetTime = Math.max(0, Math.min(time, Math.max(0, buffer.duration - SNIPPET_S)));
+  lastEventMs = performance.now();
+  activeSnippet = { time: targetTime, rate: velocity };
+  if (!releaseScheduler) {
+    const ctx = getContext();
+    startGrain(ctx, buffer, scheduleTime(ctx));
+    ensureScheduler();
+  }
 }
 
 function stop(): void {
   pendingSnippet = null;
-  if (voice || clip) fadeOutAll(scheduleTime(sharedAudioContext()));
-  releaseWatchdogFrames();
-  activeSnippet = null;
-  previousTime = Number.NEGATIVE_INFINITY;
-  furthestTime = Number.NEGATIVE_INFINITY;
-  lastPlayAtMs = Number.NEGATIVE_INFINITY;
+  if (grains.length > 0) {
+    const at = scheduleTime(sharedAudioContext());
+    for (const grain of grains) fadeOutScrubSound(grain, at, STOP_FADE_S);
+    grains = [];
+  }
+  endSession();
 }
 
 function getActiveSnippet(): ActiveSnippet | null {
