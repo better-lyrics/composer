@@ -583,4 +583,35 @@ describe("mergeSelectedWords", () => {
       ["ery", 10.3, 11],
     ]);
   });
+
+  it("regression: a linked sibling keeps its syllable group after a partial merge", async () => {
+    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    const linked = (id: string, instanceIdx: number, offset: number): LyricLine => ({
+      id,
+      text: "so beautiful",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx: 0,
+      words: [
+        { text: "so ", begin: offset, end: offset + 0.5 },
+        { text: "beau", begin: offset + 0.5, end: offset + 0.8, syllableGroupId: `g_${id}` },
+        { text: "ti", begin: offset + 0.8, end: offset + 1.1, syllableGroupId: `g_${id}` },
+        { text: "ful", begin: offset + 1.1, end: offset + 1.6, syllableGroupId: `g_${id}` },
+      ],
+    });
+    useProjectStore.getState().setLines([linked("a0", 0, 0), linked("a1", 1, 10)]);
+
+    await mergeSelectedWords("a0", "word", [1, 2]);
+
+    const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
+    expect(a1?.words).toEqual([
+      { text: "so ", begin: 10, end: 10.5 },
+      { text: "beauti", begin: 10.5, end: 11.1, syllableGroupId: "g_a1" },
+      { text: "ful", begin: 11.1, end: 11.6, syllableGroupId: "g_a1" },
+    ]);
+    useProjectStore.getState().undo();
+    const restored = useProjectStore.getState().lines.find((l) => l.id === "a1");
+    expect(restored?.words?.map((w) => w.text)).toEqual(["so ", "beau", "ti", "ful"]);
+  });
 });
