@@ -91,7 +91,7 @@ const AlignmentModelSetting: React.FC = () => {
         renderOption={renderOption}
         header={song && <SongLanguageHeader song={song} />}
         triggerAdornment={selectedLanguages && <TriggerCoverage languages={selectedLanguages} song={song} />}
-        className="h-9 pl-3 pr-[5px] rounded-xl border-transparent hover:border-transparent btn-raised [&>svg]:size-3.5"
+        className="h-9 max-w-72 pl-3 pr-[5px] rounded-xl border-transparent hover:border-transparent btn-raised [&>svg]:size-3.5"
       />
     </SettingRowLayout>
   );
