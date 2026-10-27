@@ -116,10 +116,13 @@ function scheduleGrains(nowMs: number): void {
     endSession();
     return;
   }
-  const ctx = sharedAudioContext();
+  fillLookahead(sharedAudioContext(), buffer);
+}
+
+function fillLookahead(ctx: AudioContext, source: AudioBuffer): void {
   const now = scheduleTime(ctx);
   if (nextGrainAt < now) nextGrainAt = now;
-  while (nextGrainAt < now + LOOKAHEAD_S) startGrain(ctx, buffer, nextGrainAt);
+  while (nextGrainAt < now + LOOKAHEAD_S) startGrain(ctx, source, nextGrainAt);
 }
 
 function ensureScheduler(): void {
@@ -193,7 +196,8 @@ function play(time: number, velocity: number): void {
     const ctx = getContext();
     const at = scheduleTime(ctx);
     fadeOutGrains(at, CROSSFADE_S);
-    startGrain(ctx, buffer, at);
+    nextGrainAt = at;
+    fillLookahead(ctx, buffer);
     ensureScheduler();
   }
 }
