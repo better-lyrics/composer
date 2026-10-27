@@ -105,7 +105,7 @@ function textOffsets(words: WordTiming[]): number[] {
   return offsets;
 }
 
-// Linked copies share their text, so a run maps onto a copy by the characters it covers, not by word slots.
+// Linked copies share their text, so a run maps onto the copy's words that lie inside the same characters, never wider.
 function indicesCoveringSameText(source: WordTiming[], sourceIndices: number[], target: WordTiming[]): number[] {
   const span = mergedSpan(source, sourceIndices);
   if (!span) return [];
@@ -113,7 +113,9 @@ function indicesCoveringSameText(source: WordTiming[], sourceIndices: number[], 
   const start = sourceOffsets[span.start];
   const end = sourceOffsets[span.end + 1];
   const targetOffsets = textOffsets(target);
-  return target.flatMap((_, index) => (targetOffsets[index] < end && targetOffsets[index + 1] > start ? [index] : []));
+  return target.flatMap((_, index) =>
+    targetOffsets[index] >= start && targetOffsets[index + 1] <= end ? [index] : [],
+  );
 }
 
 // -- Exports ------------------------------------------------------------------

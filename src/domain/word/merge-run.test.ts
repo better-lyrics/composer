@@ -205,6 +205,20 @@ describe("indicesCoveringSameText", () => {
     expect(indicesCoveringSameText(grouped, [0, 1], copy)).toEqual([0, 1, 2, 3, 4]);
   });
 
+  it("regression: never widens a copy past the merged text", () => {
+    const grouped: WordTiming[] = [
+      { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g" },
+      { text: "ti", begin: 0.3, end: 0.6, syllableGroupId: "g" },
+      { text: "ful", begin: 0.6, end: 0.9, syllableGroupId: "g" },
+    ];
+    const copy: WordTiming[] = [
+      { text: "be", begin: 10, end: 10.2, syllableGroupId: "h" },
+      { text: "aut", begin: 10.2, end: 10.5, syllableGroupId: "h" },
+      { text: "iful", begin: 10.5, end: 10.9, syllableGroupId: "h" },
+    ];
+    expect(indicesCoveringSameText(grouped, [0, 1], copy)).toEqual([0, 1]);
+  });
+
   describe("edge cases", () => {
     it("returns no indices when the copy has not reached the run yet", () => {
       expect(indicesCoveringSameText(source, [1, 2], [{ text: "one ", begin: 0, end: 1 }])).toEqual([]);
