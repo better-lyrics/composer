@@ -17,7 +17,7 @@ interface RetiredSettings {
 
 // -- Constants ----------------------------------------------------------------
 
-const SETTINGS_PERSIST_VERSION = 13;
+const SETTINGS_PERSIST_VERSION = 14;
 
 // -- Migration ----------------------------------------------------------------
 

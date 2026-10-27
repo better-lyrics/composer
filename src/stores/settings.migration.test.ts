@@ -233,4 +233,18 @@ describe("timeline toggle renames", () => {
     expect(migrated).not.toHaveProperty("defaultRollingEdit");
     expect(migrated).not.toHaveProperty("defaultPreviewSidebar");
   });
+
+  it("regression: carries the old keys for a profile already saved at version 13", async () => {
+    const {
+      rollingEdit: _rolling,
+      previewSidebar: _preview,
+      ...blob
+    } = legacyBlob({
+      defaultRollingEdit: true,
+      defaultPreviewSidebar: true,
+    });
+    await rehydrateAt(13, blob);
+    expect(useSettingsStore.getState().rollingEdit).toBe(true);
+    expect(useSettingsStore.getState().previewSidebar).toBe(true);
+  });
 });
