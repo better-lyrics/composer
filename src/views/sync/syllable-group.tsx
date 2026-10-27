@@ -37,6 +37,7 @@ const SyllableGroup: React.FC<SyllableGroupProps> = ({ label, merge, children })
               event.stopPropagation();
               useProjectStore.getState().mergeSyllableGroupIntoWord(merge.lineId, "words", [merge.wordIndex]);
             }}
+            onKeyDown={(event) => event.stopPropagation()}
           />
         </span>
       )}
