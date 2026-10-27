@@ -384,9 +384,9 @@ describe("primingCropChanged", () => {
     it("regression: is true for a decode that matches neither length, which the old code cropped", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
       expect(primingCropChanged(priming, { length: 200_000, sampleRate: 44_100 })).toBe(true);
-      expect(primingCropChanged(parseLamePriming(buildLameTagFrame()), { length: SOURCE_LENGTH, sampleRate: 44_100 })).toBe(
-        true,
-      );
+      expect(
+        primingCropChanged(parseLamePriming(buildLameTagFrame()), { length: SOURCE_LENGTH, sampleRate: 44_100 }),
+      ).toBe(true);
       warn.mockRestore();
     });
   });

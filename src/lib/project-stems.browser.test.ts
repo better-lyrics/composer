@@ -178,4 +178,15 @@ describe("project stems", () => {
     expect(await padImportedMp3Stems("stems-nopad", 0.025)).toBe(false);
     expect(await loadProjectStems("stems-nopad")).toEqual(before);
   });
+
+  it("regression: pads an imported mp3 stem only once when the migration runs again", async () => {
+    await seedStoredProject("stems-pad-twice");
+    await saveProjectStem("stems-pad-twice", "h", importedVocals("acapella.mp3"));
+    await padImportedMp3Stems("stems-pad-twice", 0.025);
+    const once = await loadProjectStems("stems-pad-twice");
+
+    expect(await padImportedMp3Stems("stems-pad-twice", 0.025)).toBe(false);
+
+    expect(await loadProjectStems("stems-pad-twice")).toEqual(once);
+  });
 });

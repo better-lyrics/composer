@@ -54,8 +54,8 @@ function withoutSeparatedSlots(stems: SavedProjectStems): SavedProjectStems {
 }
 
 // An imported mp3 was stored as the WAV of its decode, so the name is the only record of its format.
-function isImportedMp3(stem: SavedProjectStem | undefined): stem is SavedProjectStem {
-  return stem?.origin === "imported" && fileExtensionLabel(stem.name, "") === "MP3";
+function needsPrimingPad(stem: SavedProjectStem | undefined): stem is SavedProjectStem {
+  return stem?.origin === "imported" && !stem.primingPadded && fileExtensionLabel(stem.name, "") === "MP3";
 }
 
 function withPaddedMp3Slots(stems: SavedProjectStems, seconds: number): SavedProjectStems | null {
@@ -64,13 +64,13 @@ function withPaddedMp3Slots(stems: SavedProjectStems, seconds: number): SavedPro
   let padded = false;
   for (const slot of STEM_SLOTS) {
     const stem = stems.slots[slot];
-    if (!isImportedMp3(stem)) continue;
+    if (!needsPrimingPad(stem)) continue;
     const data = withLeadingSilence(stem.data, seconds);
     if (!data) {
       console.warn(LOG_PREFIX, "left an imported mp3 stem unpadded; its bytes are not a WAV Composer wrote", stem.name);
       continue;
     }
-    slots[slot] = { ...stem, data, durationSeconds: stem.durationSeconds + seconds, revision };
+    slots[slot] = { ...stem, data, durationSeconds: stem.durationSeconds + seconds, revision, primingPadded: true };
     padded = true;
   }
   return padded ? { ...stems, revision, slots } : null;

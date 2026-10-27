@@ -9,6 +9,7 @@ interface SavedProjectStem {
   data: ArrayBuffer;
   durationSeconds: number;
   revision: number;
+  primingPadded?: boolean;
 }
 
 interface SavedProjectStems {
