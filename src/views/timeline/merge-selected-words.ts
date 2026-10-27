@@ -61,6 +61,7 @@ async function mergeSelectedWords(lineId: string, type: WordTrack, indices: numb
       ? await askWordDivergence({
           affectedSiblingCount: crossing,
           groupLabel: groups.find((group) => group.id === source.groupId)?.label,
+          widensCopies: true,
         })
       : "apply";
   if (resolution === "cancel") return;
