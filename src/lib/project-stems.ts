@@ -25,11 +25,12 @@ interface ProjectStemWrite {
   shouldWrite?: () => boolean;
 }
 
+type SeparatedStemRepair = "drop" | "keep" | "undecided";
+
 type StemsChange = (current: SavedProjectStems | undefined) => SavedProjectStems | undefined;
 
 // -- Constants ----------------------------------------------------------------
 
-const LOG_PREFIX = "[ProjectStems]";
 const STEM_WRITE_STORES = [PROJECT_STEMS_STORE_NAME, PROJECT_INDEX_STORE_NAME, APP_STATE_STORE_NAME];
 
 // -- Helpers ------------------------------------------------------------------
@@ -45,48 +46,54 @@ function withoutSlot(stems: SavedProjectStems, slot: StemSlot): SavedProjectStem
   return { ...stems, revision: stems.revision + 1, slots };
 }
 
-// A separated stem made from the double-cropped decode is early; one made by this build is not.
-function needsDrop(stem: SavedProjectStem | undefined): boolean {
+// A separated stem from the double-cropped decode is early, unless the song's crop did not change.
+function isUncheckedSeparated(stem: SavedProjectStem | undefined): boolean {
   return stem?.origin === "separated" && !stem.primingCorrected;
 }
 
-function withoutSeparatedSlots(stems: SavedProjectStems): SavedProjectStems {
-  const slots: SavedProjectStems["slots"] = {};
-  for (const slot of STEM_SLOTS) {
-    const stem = stems.slots[slot];
-    if (stem && !needsDrop(stem)) slots[slot] = stem;
-  }
-  return { ...stems, revision: stems.revision + 1, slots };
-}
-
 // An imported mp3 was stored as the WAV of its decode, so the name is the only record of its format.
-function needsPrimingPad(stem: SavedProjectStem | undefined): stem is SavedProjectStem {
-  return stem?.origin === "imported" && !stem.primingCorrected && fileExtensionLabel(stem.name, "") === "MP3";
-}
-
-function paddedStem(stem: SavedProjectStem, revision: number): SavedProjectStem | null {
+function measuredMp3StemPriming(stem: SavedProjectStem | undefined): number | null {
+  if (stem?.origin !== "imported" || stem.primingCorrected || fileExtensionLabel(stem.name, "") !== "MP3") return null;
   const layout = readWavLayout(stem.data);
-  if (!layout) {
-    console.warn(LOG_PREFIX, "left an imported mp3 stem unpadded; its bytes are not a WAV Composer wrote", stem.name);
-    return null;
-  }
-  const cropped = measuredPrimingFrames({ durationSeconds: stem.durationSeconds, ...layout });
-  const data = cropped === null ? null : withLeadingSilence(stem.data, cropped);
-  return data ? { ...stem, data, revision, primingCorrected: true } : null;
+  return layout ? measuredPrimingFrames({ durationSeconds: stem.durationSeconds, ...layout }) : null;
 }
 
-function withPaddedMp3Slots(stems: SavedProjectStems): SavedProjectStems | null {
+function hasUncheckedSeparatedStems(stems: SavedProjectStems): boolean {
+  return STEM_SLOTS.some((slot) => isUncheckedSeparated(stems.slots[slot]));
+}
+
+function hasStemsToRepair(stems: SavedProjectStems): boolean {
+  return (
+    hasUncheckedSeparatedStems(stems) || STEM_SLOTS.some((slot) => measuredMp3StemPriming(stems.slots[slot]) !== null)
+  );
+}
+
+function repairedSlot(
+  stem: SavedProjectStem,
+  separated: SeparatedStemRepair,
+  revision: number,
+): SavedProjectStem | null | undefined {
+  if (isUncheckedSeparated(stem)) {
+    if (separated === "undecided") return stem;
+    return separated === "drop" ? null : { ...stem, primingCorrected: true };
+  }
+  const cropped = measuredMp3StemPriming(stem);
+  const data = cropped === null ? null : withLeadingSilence(stem.data, cropped);
+  return data ? { ...stem, data, revision, primingCorrected: true } : stem;
+}
+
+function repairedStems(stems: SavedProjectStems, separated: SeparatedStemRepair): SavedProjectStems | null {
   const revision = stems.revision + 1;
-  const slots = { ...stems.slots };
-  let padded = false;
+  const slots: SavedProjectStems["slots"] = {};
+  let changed = false;
   for (const slot of STEM_SLOTS) {
     const stem = stems.slots[slot];
-    const next = needsPrimingPad(stem) ? paddedStem(stem, revision) : null;
-    if (!next) continue;
-    slots[slot] = next;
-    padded = true;
+    if (!stem) continue;
+    const next = repairedSlot(stem, separated, revision);
+    if (next !== stem) changed = true;
+    if (next) slots[slot] = next;
   }
-  return padded ? { ...stems, revision, slots } : null;
+  return changed ? { ...stems, revision, slots } : null;
 }
 
 // -- Reads --------------------------------------------------------------------
@@ -160,37 +167,30 @@ async function deleteProjectStem(id: string, slot: StemSlot): Promise<void> {
   notifyStorageSignal("media-removed");
 }
 
-async function dropSeparatedProjectStems(id: string): Promise<boolean> {
-  let dropped = false;
+async function repairOldProjectStems(id: string, separated: SeparatedStemRepair): Promise<boolean> {
+  let change: { before: number; after: number } | null = null;
   await writeProjectStems(id, (current) => {
-    if (!current || !STEM_SLOTS.some((slot) => needsDrop(current.slots[slot]))) return current;
-    dropped = true;
-    return withoutSeparatedSlots(current);
-  });
-  if (dropped) notifyStorageSignal("media-removed");
-  return dropped;
-}
-
-async function padImportedMp3Stems(id: string): Promise<boolean> {
-  let padded = false;
-  await writeProjectStems(id, (current) => {
-    const next = current ? withPaddedMp3Slots(current) : null;
+    const next = current ? repairedStems(current, separated) : null;
     if (!next) return current;
-    padded = true;
+    change = { before: storedStemBytes(current), after: storedStemBytes(next) };
     return next;
   });
-  if (padded) notifyStorageSignal("media-stored");
-  return padded;
+  if (!change) return false;
+  const { before, after } = change;
+  notifyStorageSignal(after < before ? "media-removed" : "media-stored");
+  return true;
 }
 
 // -- Exports ------------------------------------------------------------------
 
+export type { SeparatedStemRepair };
 export {
   copyProjectStems,
   deleteProjectStem,
-  dropSeparatedProjectStems,
+  hasStemsToRepair,
+  hasUncheckedSeparatedStems,
   loadProjectStems,
-  padImportedMp3Stems,
+  repairOldProjectStems,
   saveProjectStem,
   stemFile,
 };

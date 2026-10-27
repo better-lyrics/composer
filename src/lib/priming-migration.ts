@@ -8,7 +8,14 @@ import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { shiftedGrid } from "@/domain/tempo/grid-edits";
 import { readBeatGrid } from "@/domain/tempo/read-beat-grid";
 import type { WordTiming } from "@/domain/word/timing";
-import { dropSeparatedProjectStems, padImportedMp3Stems } from "@/lib/project-stems";
+import {
+  type SeparatedStemRepair,
+  hasStemsToRepair,
+  hasUncheckedSeparatedStems,
+  loadProjectStems,
+  repairOldProjectStems,
+} from "@/lib/project-stems";
+import type { SavedProjectStems } from "@/domain/stems/saved-stems";
 import type { SavedProject } from "@/lib/saved-project";
 
 // -- Constants ----------------------------------------------------------------
@@ -90,33 +97,37 @@ async function primingCropFor(audio: File): Promise<PrimingCrop | null> {
   }
 }
 
-// Stems left uncorrected only sound early; the project must still open and its times must still move once.
-async function correctProjectStems(id: string): Promise<void> {
+// Only stems left unchecked by an earlier open decode the song, and only to decide on separated ones.
+async function separatedStemRepair(stems: SavedProjectStems, audio: File | undefined): Promise<SeparatedStemRepair> {
+  if (!audio || !hasUncheckedSeparatedStems(stems)) return "undecided";
+  const crop = await primingCropFor(audio);
+  if (!crop) return "undecided";
+  return crop.beforeSeconds !== crop.nowSeconds ? "drop" : "keep";
+}
+
+// Runs on every open until it succeeds; a failure leaves the stems unchecked and the project still opens.
+async function repairProjectStems(id: string, audio: File | undefined): Promise<void> {
   try {
-    await dropSeparatedProjectStems(id);
-    await padImportedMp3Stems(id);
+    const stems = await loadProjectStems(id);
+    if (!stems || !hasStemsToRepair(stems)) return;
+    await repairOldProjectStems(id, await separatedStemRepair(stems, audio));
   } catch (error) {
     console.error(LOG_PREFIX, "could not correct the project's stems; they stay as saved", error);
   }
 }
 
 // Null leaves the flags as they are; a number is the shift to apply before both flags are set.
-async function primingCorrectionShift(
-  id: string,
-  flags: PrimingFlags,
-  audio: File | undefined,
-): Promise<number | null> {
+async function primingCorrectionShift(flags: PrimingFlags, audio: File | undefined): Promise<number | null> {
   if (!audio || (flags.primingStripped === true && flags.primingCorrected === true)) return null;
   if (flags.primingCorrected === true) return 0;
   const crop = await primingCropFor(audio);
   if (!crop) return null;
-  if (crop.beforeSeconds !== crop.nowSeconds) await correctProjectStems(id);
   return primingMigrationShift(flags, crop);
 }
 
-async function migratePrimingTimings(id: string, project: SavedProject, audio: File | undefined): Promise<boolean> {
+async function migratePrimingTimings(project: SavedProject, audio: File | undefined): Promise<boolean> {
   const flags = { primingStripped: project.primingStripped, primingCorrected: project.primingCorrected };
-  const shift = await primingCorrectionShift(id, flags, audio);
+  const shift = await primingCorrectionShift(flags, audio);
   if (shift === null) return false;
   shiftSavedTimings(project, shift);
   project.primingStripped = true;
@@ -130,6 +141,7 @@ export {
   migratePrimingTimings,
   primingCorrectionShift,
   primingMigrationShift,
+  repairProjectStems,
   shiftAllTimings,
   shiftSavedTimings,
   shiftedSongTimings,

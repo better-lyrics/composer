@@ -1,5 +1,5 @@
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
-import { primingCorrectionShift, shiftedSongTimings } from "@/lib/priming-migration";
+import { primingCorrectionShift, repairProjectStems, shiftedSongTimings } from "@/lib/priming-migration";
 import { useProjectStore } from "@/stores/project";
 
 // -- Module state -------------------------------------------------------------
@@ -17,7 +17,8 @@ function adoptPrimingForNewAudio(): void {
 
 async function correctOnce(projectId: string, audio: File): Promise<void> {
   const { primingStripped, primingCorrected } = useProjectStore.getState();
-  const shift = await primingCorrectionShift(projectId, { primingStripped, primingCorrected }, audio);
+  const shift = await primingCorrectionShift({ primingStripped, primingCorrected }, audio);
+  await repairProjectStems(projectId, audio);
   if (shift === null || openProjectIdSnapshot() !== projectId) return;
   const state = useProjectStore.getState();
   if (state.primingCorrected) return;

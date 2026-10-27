@@ -2,13 +2,7 @@ import { PROJECT_STEMS_STORE_NAME } from "@/lib/persistence-idb";
 import type { SavedProjectStem } from "@/domain/stems/saved-stems";
 import { duplicateProject } from "@/lib/project-library-actions";
 import { loadProjectIndexEntry, removeProjectData } from "@/lib/project-repository";
-import {
-  deleteProjectStem,
-  dropSeparatedProjectStems,
-  loadProjectStems,
-  padImportedMp3Stems,
-  saveProjectStem,
-} from "@/lib/project-stems";
+import { deleteProjectStem, loadProjectStems, repairOldProjectStems, saveProjectStem } from "@/lib/project-stems";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { croppedMp3StemWrite, saveStemFromOldBuild } from "@/test/legacy-stems";
@@ -138,7 +132,7 @@ describe("project stems", () => {
     });
     const before = await loadProjectStems("stems-drop");
 
-    expect(await dropSeparatedProjectStems("stems-drop")).toBe(true);
+    expect(await repairOldProjectStems("stems-drop", "drop")).toBe(true);
 
     const after = await loadProjectStems("stems-drop");
     expect(after?.slots.vocals?.origin).toBe("imported");
@@ -151,7 +145,7 @@ describe("project stems", () => {
     await seedStoredProject("stems-keep");
     await saveProjectStem("stems-keep", "h", importedVocals());
     const before = await loadProjectStems("stems-keep");
-    expect(await dropSeparatedProjectStems("stems-keep")).toBe(false);
+    expect(await repairOldProjectStems("stems-keep", "drop")).toBe(false);
     expect(await loadProjectStems("stems-keep")).toEqual(before);
   });
 
@@ -159,7 +153,7 @@ describe("project stems", () => {
     await seedStoredProject(id);
     await saveStemFromOldBuild(id, "h", write);
     const before = await loadProjectStems(id);
-    const padded = await padImportedMp3Stems(id);
+    const padded = await repairOldProjectStems(id, "undecided");
     return { before, after: await loadProjectStems(id), padded };
   }
 
@@ -173,7 +167,7 @@ describe("project stems", () => {
     await saveStemFromOldBuild("stems-pad", "h", { ...importedVocals("inst.wav"), slot: "instrumental" });
     const before = await loadProjectStems("stems-pad");
 
-    expect(await padImportedMp3Stems("stems-pad")).toBe(true);
+    expect(await repairOldProjectStems("stems-pad", "undecided")).toBe(true);
 
     const after = await loadProjectStems("stems-pad");
     expect(silentFramesAdded(before?.slots.vocals, after?.slots.vocals)).toBe(1104);
@@ -227,7 +221,7 @@ describe("project stems", () => {
       await seedStoredProject("stems-nopad");
       await saveStemFromOldBuild("stems-nopad", "h", importedVocals());
       const before = await loadProjectStems("stems-nopad");
-      expect(await padImportedMp3Stems("stems-nopad")).toBe(false);
+      expect(await repairOldProjectStems("stems-nopad", "undecided")).toBe(false);
       expect(await loadProjectStems("stems-nopad")).toEqual(before);
     });
   });
@@ -235,7 +229,7 @@ describe("project stems", () => {
   it("regression: pads an imported mp3 stem only once when the migration runs again", async () => {
     const { after: once } = await padOldStem("stems-pad-twice", croppedMp3StemWrite("vocals"));
 
-    expect(await padImportedMp3Stems("stems-pad-twice")).toBe(false);
+    expect(await repairOldProjectStems("stems-pad-twice", "undecided")).toBe(false);
 
     expect(await loadProjectStems("stems-pad-twice")).toEqual(once);
   });
@@ -245,7 +239,7 @@ describe("project stems", () => {
     await saveProjectStem("stems-nothing", "h", importedVocals());
     const put = vi.spyOn(IDBObjectStore.prototype, "put");
 
-    await dropSeparatedProjectStems("stems-nothing");
+    await repairOldProjectStems("stems-nothing", "drop");
 
     expect(put.mock.contexts.some((store) => (store as IDBObjectStore).name === PROJECT_STEMS_STORE_NAME)).toBe(false);
     put.mockRestore();

@@ -207,6 +207,33 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
     expect(await loadProjectStems(id)).toEqual(before);
   });
 
+  it("regression: pads an old cropped mp3 stem even when the main recording is a WAV", async () => {
+    await saveAudioFile(createAudioFile());
+    await seedSavedProject({ primingStripped: true, primingCorrected: false });
+    const id = (await getOpenProjectId())!;
+    await saveStemFromOldBuild(id, "song", croppedMp3StemWrite("vocals"));
+    const before = await loadProjectStems(id);
+
+    await loadOpenProjectForRestore();
+
+    const after = await loadProjectStems(id);
+    expect(after?.slots.vocals?.data.byteLength).toBe((before?.slots.vocals?.data.byteLength ?? 0) + 1104 * 2);
+  });
+
+  it("opens a corrected project with nothing to repair without decoding or writing stems", async () => {
+    await seedTimedAgainstDoubleCrop();
+    await loadOpenProjectForRestore();
+    const decode = vi.spyOn(BaseAudioContext.prototype, "decodeAudioData");
+    const put = vi.spyOn(IDBObjectStore.prototype, "put");
+
+    await loadOpenProjectForRestore();
+
+    expect(decode).not.toHaveBeenCalled();
+    expect(put.mock.contexts.some((store) => (store as IDBObjectStore).name === PROJECT_STEMS_STORE_NAME)).toBe(false);
+    decode.mockRestore();
+    put.mockRestore();
+  });
+
   it("regression: a failing stem write still opens the project and shifts its times once", async () => {
     allowConsole(/\[PrimingMigration\] could not correct the project's stems/);
     await seedTimedAgainstDoubleCrop();
@@ -226,6 +253,8 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
     const first = await loadOpenProjectForRestore();
     failStemWrites.mockRestore();
     const second = await loadOpenProjectForRestore();
+
+    expect((await loadProjectStems(id))?.slots.instrumental).toBeUndefined();
 
     expect((first!.lines[0] as { words: WordTiming[] }).words[0].begin).toBeCloseTo(1.0 + P, 9);
     expect(first!.primingCorrected).toBe(true);
