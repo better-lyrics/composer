@@ -59,9 +59,10 @@ function commitHistory(
 ) {
   const splitChar = getSplitCharacter();
   const deriveText = options.deriveText ?? true;
+  const unchangedLines = new Set<RawLine>(state.lines);
   const nextLines = changes.lines
     ? deriveText
-      ? changes.lines.map((line) => withDerivedText(line, splitChar))
+      ? changes.lines.map((line) => (unchangedLines.has(line) ? line : withDerivedText(line, splitChar)))
       : changes.lines
     : state.lines;
   const next: SnapshotFields = {
