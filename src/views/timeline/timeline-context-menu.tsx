@@ -206,12 +206,14 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
       <MenuItem label="Split word" shortcut={getEffectiveKeysArray("timeline.splitWord")} onSelect={handleSplitWord} />
       {mergeInfo && (
         <MenuItem
-          label="Merge words"
-          shortcut={getEffectiveKeysArray("timeline.mergeWords")}
+          label={mergeInfo.kind === "syllables" ? "Merge syllables" : "Merge words"}
+          shortcut={getEffectiveKeysArray(
+            mergeInfo.kind === "syllables" ? "timeline.mergeSyllablesIntoWord" : "timeline.mergeWords",
+          )}
           onSelect={handleMergeWords}
         />
       )}
-      {groupedWordInfo && (
+      {!mergeInfo && groupedWordInfo && (
         <MenuItem
           label="Merge syllables"
           shortcut={getEffectiveKeysArray("timeline.mergeSyllablesIntoWord")}

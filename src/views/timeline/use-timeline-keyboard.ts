@@ -5,7 +5,6 @@ import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceCount, linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
@@ -24,8 +23,6 @@ import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
 import { isTypingTarget } from "@/utils/typing-target";
-import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
-import { mergeWordText } from "@/domain/word/merge-run";
 import { centerTimeScrollLeft } from "@/views/timeline/coords";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
@@ -40,6 +37,7 @@ import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar, jumpToAdjacentGridLine } from "@/views/timeline/jump-to-bar";
 import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { showLoupeAfterKeyEdit, storedEdgeTime } from "@/views/timeline/loupe/loupe-target";
+import { isPartialSyllableSelection, mergeSelectedWords } from "@/views/timeline/merge-selected-words";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { pingGroup } from "@/views/timeline/ping-group";
 import { togglePitchLine } from "@/views/timeline/pitch/pitch-line-toggle";
@@ -423,29 +421,10 @@ function useTimelineKeyboard(
           break;
         }
         case "timeline.mergeWords": {
-          const { selectedWords: mSel } = useTimelineStore.getState();
-          const run = contiguousSelectionRun(mSel);
+          const run = contiguousSelectionRun(useTimelineStore.getState().selectedWords);
           if (!run) break;
-          const mLine = lines.find((l) => l.id === run.lineId);
-          const mWords = mLine ? trackWords(mLine, run.type) : undefined;
-          if (!mWords) break;
           e.preventDefault();
-          const firstIdx = run.indices[0];
-          const lastIdx = run.indices[run.indices.length - 1];
-          const mergedText = mergeWordText(run.indices.map((idx) => mWords[idx].text));
-          const merged = { text: mergedText, begin: mWords[firstIdx].begin, end: mWords[lastIdx].end };
-          const updatedWords = [...mWords.slice(0, firstIdx), merged, ...mWords.slice(lastIdx + 1)];
-          if (run.type === "word") {
-            void handleWordChangeWithDivergenceCheck(run.lineId, updatedWords, "words");
-          } else {
-            void handleWordChangeWithDivergenceCheck(
-              run.lineId,
-              updatedWords,
-              "backgroundWords",
-              manualBackgroundWordEdit(updatedWords),
-            );
-          }
-          useTimelineStore.getState().clearSelection();
+          void mergeSelectedWords(run.lineId, run.type, run.indices);
           break;
         }
         case "timeline.mergeSyllablesIntoWord": {
@@ -455,6 +434,12 @@ function useTimelineKeyboard(
           if (!mSel.every((w) => w.lineId === first.lineId && w.type === first.type)) break;
           const field = trackField(first.type);
           e.preventDefault();
+          const run = contiguousSelectionRun(mSel);
+          const runLine = useProjectStore.getState().lines.find((l) => l.id === first.lineId);
+          if (run && runLine && isPartialSyllableSelection(runLine, run)) {
+            void mergeSelectedWords(run.lineId, run.type, run.indices);
+            break;
+          }
           useProjectStore.getState().mergeSyllableGroupIntoWord(
             first.lineId,
             field,

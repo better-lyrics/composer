@@ -24,6 +24,7 @@ import {
   lineIdsAreContiguous,
   selectionTouchesAnyGroup,
 } from "@/views/timeline/group-ops";
+import { mergeRunKind } from "@/views/timeline/merge-selected-words";
 import { computeSplitIntoWordsUpdates, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
 import type { ContextMenuTarget } from "@/views/timeline/timeline-store";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -130,12 +131,12 @@ function useContextMenuTargets() {
     if (!run) return null;
 
     const line = lines.find((l) => l.id === run.lineId);
-    if (!line) return null;
-    const wordsArray = trackWords(line, run.type);
-    if (!wordsArray) return null;
+    if (!line || !trackWords(line, run.type)) return null;
+    const rawLine = rawLines.find((l) => l.id === run.lineId);
+    const kind = rawLine ? mergeRunKind(rawLine, run) : "words";
 
-    return { indices: run.indices, lineId: run.lineId, type: run.type };
-  }, [selectedWords, lines]);
+    return { indices: run.indices, lineId: run.lineId, type: run.type, kind };
+  }, [selectedWords, lines, rawLines]);
 
   const groupedWordInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
