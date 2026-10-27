@@ -1,30 +1,141 @@
+import { alignedGrainOffset } from "@/audio/grain-alignment";
+import { type ScrubSound, fadeOutScrubSound, startScrubSound } from "@/audio/scrub-sound";
 import { sharedAudioContext } from "@/audio/shared-audio-context";
+import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 
-const SNIPPET_S = 0.12;
-const CROSSFADE_S = 0.008;
-const MIN_AUDIBLE_RATE = 0.1;
-const MAX_BUFFER_DURATION_S = 60 * 60;
-const LOG_PREFIX = "[ScrubPreview]";
+// -- Types --------------------------------------------------------------------
 
 type ActiveSnippet = { time: number; rate: number };
 type BufferLoader = () => Promise<AudioBuffer>;
+
+// -- Constants ----------------------------------------------------------------
+
+const GRAIN_S = 0.024;
+const CROSSFADE_S = 0.008;
+const GRAIN_HOP_S = GRAIN_S - CROSSFADE_S;
+const ALIGN_SEARCH_S = 0.008;
+const LOOKAHEAD_S = 0.05;
+const STOP_FADE_S = 0.01;
+const STOP_AFTER_MS = 100;
+const MIN_AUDIBLE_RATE = 0.1;
+const MAX_BUFFER_DURATION_S = 60 * 60;
+const FRAME_LABEL = "scrub-preview";
+const LOG_PREFIX = "[ScrubPreview]";
+
+// -- State --------------------------------------------------------------------
 
 let buffer: AudioBuffer | null = null;
 let loadBuffer: BufferLoader | null = null;
 let bufferToken = 0;
 let loadingToken: number | null = null;
 let pendingSnippet: ActiveSnippet | null = null;
-let currentSource: AudioBufferSourceNode | null = null;
-let currentGain: GainNode | null = null;
 let activeSnippet: ActiveSnippet | null = null;
+let grains: ScrubSound[] = [];
+let targetTime = 0;
+let lastEventMs = Number.NEGATIVE_INFINITY;
+let nextGrainAt = 0;
+let lastGrainOffset = Number.NEGATIVE_INFINITY;
+let releaseScheduler: (() => void) | null = null;
+
+// -- Audio --------------------------------------------------------------------
 
 function getContext(): AudioContext {
   const ctx = sharedAudioContext();
   if (ctx.state === "suspended") void ctx.resume();
   return ctx;
 }
+
+// currentTime can trail the render thread by one callback, and a ramp that starts in the past jumps.
+function scheduleTime(ctx: AudioContext): number {
+  return ctx.currentTime + (Number.isFinite(ctx.baseLatency) ? ctx.baseLatency : 0);
+}
+
+function targetVolume(): number {
+  const { isMuted, volume } = useAudioStore.getState();
+  return isMuted ? 0 : volume;
+}
+
+const channelCache = new WeakMap<AudioBuffer, Float32Array[]>();
+
+function channelsOf(source: AudioBuffer): Float32Array[] {
+  let channels = channelCache.get(source);
+  if (!channels) {
+    channels = Array.from({ length: source.numberOfChannels }, (_, index) => source.getChannelData(index));
+    channelCache.set(source, channels);
+  }
+  return channels;
+}
+
+// A steady drag lands on the previous grain's continuation, which plays the song seamlessly.
+function nextGrainOffset(source: AudioBuffer): number {
+  if (!Number.isFinite(lastGrainOffset)) return targetTime;
+  return alignedGrainOffset(
+    channelsOf(source),
+    source.sampleRate,
+    lastGrainOffset + GRAIN_HOP_S,
+    targetTime,
+    ALIGN_SEARCH_S,
+    CROSSFADE_S,
+  );
+}
+
+function startGrain(ctx: AudioContext, source: AudioBuffer, at: number): void {
+  const offset = Math.max(0, Math.min(nextGrainOffset(source), source.duration - GRAIN_S));
+  const grain = startScrubSound(ctx, {
+    buffer: source,
+    offset,
+    at,
+    volume: targetVolume(),
+    fadeS: CROSSFADE_S,
+    lengthS: GRAIN_S,
+  });
+  grain.source.addEventListener("ended", () => {
+    grains = grains.filter((live) => live !== grain);
+  });
+  grains.push(grain);
+  lastGrainOffset = offset;
+  nextGrainAt = at + GRAIN_HOP_S;
+}
+
+// -- Scheduler ----------------------------------------------------------------
+
+function endSession(): void {
+  releaseScheduler?.();
+  releaseScheduler = null;
+  activeSnippet = null;
+  lastGrainOffset = Number.NEGATIVE_INFINITY;
+  lastEventMs = Number.NEGATIVE_INFINITY;
+}
+
+// A frame callback must never write to a store: this one only touches audio nodes and module state.
+// Grains are scheduled only a few frames ahead, so a hidden tab, which pauses frames, falls silent on its own.
+function scheduleGrains(nowMs: number): void {
+  if (!buffer || nowMs - lastEventMs > STOP_AFTER_MS) {
+    endSession();
+    return;
+  }
+  fillLookahead(sharedAudioContext(), buffer);
+}
+
+function fillLookahead(ctx: AudioContext, source: AudioBuffer): void {
+  const now = scheduleTime(ctx);
+  if (nextGrainAt < now) nextGrainAt = now;
+  while (nextGrainAt < now + LOOKAHEAD_S) startGrain(ctx, source, nextGrainAt);
+}
+
+function ensureScheduler(): void {
+  if (releaseScheduler) return;
+  const releaseHold = holdFrames(FRAME_LABEL);
+  const unsubscribe = subscribeFrame(scheduleGrains, FRAME_LABEL);
+  releaseScheduler = () => {
+    unsubscribe();
+    releaseHold();
+  };
+}
+
+// -- Buffer -------------------------------------------------------------------
 
 function useBuffer(next: AudioBuffer | null): void {
   stop();
@@ -64,18 +175,7 @@ function requestBuffer(time: number, velocity: number): void {
   );
 }
 
-function fadeOutAndStop(source: AudioBufferSourceNode, gain: GainNode): void {
-  const ctx = getContext();
-  const now = ctx.currentTime;
-  gain.gain.cancelScheduledValues(now);
-  gain.gain.setValueAtTime(gain.gain.value, now);
-  gain.gain.linearRampToValueAtTime(0, now + CROSSFADE_S);
-  try {
-    source.stop(now + CROSSFADE_S + 0.002);
-  } catch {
-    /* source already ended; safe to ignore */
-  }
-}
+// -- Playback -----------------------------------------------------------------
 
 function isEnabled(): boolean {
   return useSettingsStore.getState().audioScrubPreview;
@@ -89,55 +189,35 @@ function play(time: number, velocity: number): void {
     return;
   }
 
-  const ctx = getContext();
-  const maxStartTime = Math.max(0, buffer.duration - SNIPPET_S);
-  const clampedTime = Math.max(0, Math.min(time, maxStartTime));
-
-  if (currentSource && currentGain) {
-    fadeOutAndStop(currentSource, currentGain);
+  targetTime = Math.max(0, Math.min(time, Math.max(0, buffer.duration - GRAIN_S)));
+  lastEventMs = performance.now();
+  activeSnippet = { time: targetTime, rate: velocity };
+  if (!releaseScheduler) {
+    const ctx = getContext();
+    const at = scheduleTime(ctx);
+    fadeOutGrains(at, CROSSFADE_S);
+    nextGrainAt = at;
+    fillLookahead(ctx, buffer);
+    ensureScheduler();
   }
+}
 
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-
-  const gain = ctx.createGain();
-  const now = ctx.currentTime;
-  const audioState = useAudioStore.getState();
-  const targetVolume = audioState.isMuted ? 0 : audioState.volume;
-  gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(targetVolume, now + CROSSFADE_S);
-
-  source.connect(gain);
-  gain.connect(ctx.destination);
-
-  source.start(now, clampedTime, SNIPPET_S);
-
-  currentSource = source;
-  currentGain = gain;
-  activeSnippet = { time: clampedTime, rate: velocity };
-
-  source.onended = () => {
-    if (currentSource === source) {
-      currentSource = null;
-      currentGain = null;
-      activeSnippet = null;
-    }
-  };
+function fadeOutGrains(at: number, fadeS: number): void {
+  for (const grain of grains) fadeOutScrubSound(grain, at, fadeS);
+  grains = [];
 }
 
 function stop(): void {
   pendingSnippet = null;
-  if (currentSource && currentGain) {
-    fadeOutAndStop(currentSource, currentGain);
-  }
-  currentSource = null;
-  currentGain = null;
-  activeSnippet = null;
+  if (grains.length > 0) fadeOutGrains(scheduleTime(sharedAudioContext()), STOP_FADE_S);
+  endSession();
 }
 
 function getActiveSnippet(): ActiveSnippet | null {
   return activeSnippet;
 }
+
+// -- Exports ------------------------------------------------------------------
 
 const scrubPreview = { useBuffer, useLazyBuffer, play, stop, getActiveSnippet };
 
