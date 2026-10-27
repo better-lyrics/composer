@@ -4,6 +4,7 @@ import { detectedGrid } from "@/domain/tempo/beat-grid";
 import type { WordTiming } from "@/domain/word/timing";
 import { usePersistence } from "@/hooks/usePersistence";
 import { type ProjectSaveInput, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
+import { PROJECT_STEMS_STORE_NAME } from "@/lib/persistence-idb";
 import { loadProjectForRestore } from "@/lib/project-restore";
 import { loadProjectStems, saveProjectStem } from "@/lib/project-stems";
 import { getOpenProjectId } from "@/lib/project-storage";
@@ -14,7 +15,7 @@ import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { createProjectSaveInput } from "@/test/factories";
 import { loadOpenProjectRecord } from "@/test/projects";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "vitest-browser-react";
 
 // -- Helpers ------------------------------------------------------------------
@@ -192,6 +193,31 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
     expect(padded?.slots.vocals?.data.byteLength).toBe((before?.slots.vocals?.data.byteLength ?? 0) + silentBytes);
     expect(padded?.slots.instrumental).toEqual(before?.slots.instrumental);
     expect(await loadProjectStems(id)).toEqual(padded);
+  });
+
+  it("regression: a failing stem write still opens the project and shifts its times once", async () => {
+    allowConsole(/\[PrimingMigration\] could not correct the project's stems/);
+    await seedTimedAgainstDoubleCrop();
+    const id = (await getOpenProjectId())!;
+    await saveProjectStem(id, "song", stem("instrumental", "separated"));
+    const put = IDBObjectStore.prototype.put;
+    const failStemWrites = vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(function (
+      this: IDBObjectStore,
+      ...args: Parameters<IDBObjectStore["put"]>
+    ) {
+      const request = put.apply(this, args);
+      const transaction = this.transaction;
+      if (this.name === PROJECT_STEMS_STORE_NAME) queueMicrotask(() => transaction.abort());
+      return request;
+    });
+
+    const first = await loadOpenProjectForRestore();
+    failStemWrites.mockRestore();
+    const second = await loadOpenProjectForRestore();
+
+    expect((first!.lines[0] as { words: WordTiming[] }).words[0].begin).toBeCloseTo(1.0 + P, 9);
+    expect(first!.primingCorrected).toBe(true);
+    expect(second!.lines).toEqual(first!.lines);
   });
 
   it("regression: audio with a LAME tag that cannot decode still opens and keeps its flags", async () => {

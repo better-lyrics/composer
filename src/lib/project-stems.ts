@@ -91,7 +91,9 @@ async function writeProjectStems(id: string, change: StemsChange): Promise<void>
         const store = tx.objectStore(PROJECT_STEMS_STORE_NAME);
         const request = store.get(id);
         request.onsuccess = () => {
-          const next = change(request.result as SavedProjectStems | undefined);
+          const current = request.result as SavedProjectStems | undefined;
+          const next = change(current);
+          if (next === current) return;
           if (next) store.put(next, id);
           else store.delete(id);
           patchIndexEntry(tx, id, { storedStemBytes: storedStemBytes(next) });

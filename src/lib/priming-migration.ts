@@ -65,6 +65,16 @@ async function decoderTrims(audio: File): Promise<boolean | null> {
   }
 }
 
+// Stems left uncorrected only sound early; the project must still open and its times must still move once.
+async function correctProjectStems(id: string, primingSeconds: number): Promise<void> {
+  try {
+    await dropSeparatedProjectStems(id);
+    await padImportedMp3Stems(id, primingSeconds);
+  } catch (error) {
+    console.error(LOG_PREFIX, "could not correct the project's stems; they stay as saved", error);
+  }
+}
+
 async function migratePrimingTimings(id: string, project: SavedProject, audio: File | undefined): Promise<boolean> {
   if (!audio || (project.primingStripped === true && project.primingCorrected === true)) return false;
   const { samples, sampleRate } = parseLamePriming(await audio.arrayBuffer());
@@ -72,10 +82,7 @@ async function migratePrimingTimings(id: string, project: SavedProject, audio: F
   const trims = project.primingCorrected !== true && primingSeconds > 0 ? await decoderTrims(audio) : false;
   if (trims === null) return false;
   shiftSavedTimings(project, primingMigrationShift(project, primingSeconds, trims));
-  if (trims) {
-    await dropSeparatedProjectStems(id);
-    await padImportedMp3Stems(id, primingSeconds);
-  }
+  if (trims) await correctProjectStems(id, primingSeconds);
   project.primingStripped = true;
   project.primingCorrected = true;
   return true;

@@ -1,3 +1,4 @@
+import { PROJECT_STEMS_STORE_NAME } from "@/lib/persistence-idb";
 import { duplicateProject } from "@/lib/project-library-actions";
 import { loadProjectIndexEntry, removeProjectData } from "@/lib/project-repository";
 import {
@@ -10,7 +11,7 @@ import {
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { seedStoredProject } from "@/test/projects";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -188,5 +189,16 @@ describe("project stems", () => {
     expect(await padImportedMp3Stems("stems-pad-twice", 0.025)).toBe(false);
 
     expect(await loadProjectStems("stems-pad-twice")).toEqual(once);
+  });
+
+  it("writes no stem record when there is nothing to drop", async () => {
+    await seedStoredProject("stems-nothing");
+    await saveProjectStem("stems-nothing", "h", importedVocals());
+    const put = vi.spyOn(IDBObjectStore.prototype, "put");
+
+    await dropSeparatedProjectStems("stems-nothing");
+
+    expect(put.mock.contexts.some((store) => (store as IDBObjectStore).name === PROJECT_STEMS_STORE_NAME)).toBe(false);
+    put.mockRestore();
   });
 });
