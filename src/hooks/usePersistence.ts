@@ -11,6 +11,7 @@ import {
 import { markPersistenceSettled } from "@/lib/persistence-settled";
 import { setProjectLastTab } from "@/lib/project-repository";
 import { isRestoringProject } from "@/lib/project-restore";
+import { watchRememberedVolume } from "@/lib/remembered-volume";
 import { watchProjectTextVariant } from "@/lib/project-text-variant";
 import { watchResumePosition } from "@/lib/resume-position";
 import { buildSaveInput, hadStoredAudio, openProjectView, storedAudioFile } from "@/lib/project-snapshot";
@@ -18,7 +19,6 @@ import { getSaveStatus, trackSave } from "@/lib/save-status";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
-import { useSettingsStore } from "@/stores/settings";
 import { useEffect } from "react";
 
 // -- Constants ----------------------------------------------------------------
@@ -116,21 +116,7 @@ function usePersistence(): void {
     });
   }, []);
 
-  useEffect(() => {
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-    const unsubscribe = useAudioStore.subscribe((state, prev) => {
-      if (state.volume === prev.volume) return;
-      if (!useSettingsStore.getState().rememberVolume) return;
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        useSettingsStore.getState().set("lastVolume", state.volume);
-      }, 500);
-    });
-    return () => {
-      unsubscribe();
-      if (debounceTimer) clearTimeout(debounceTimer);
-    };
-  }, []);
+  useEffect(() => watchRememberedVolume(), []);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
