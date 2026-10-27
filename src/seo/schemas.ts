@@ -24,7 +24,7 @@ function organizationSchema() {
     "@type": "Organization",
     name: ORG_NAME,
     url: ORG_URL,
-    sameAs: [SITE_ORIGIN, "https://lyrics-api-docs.boidu.dev", "https://blog.boidu.dev"],
+    sameAs: [SITE_ORIGIN, "https://docs.betterlyrics.org", "https://blog.boidu.dev"],
   };
 }
 

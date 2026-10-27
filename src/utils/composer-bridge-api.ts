@@ -6,6 +6,7 @@ import { composeAbortSignals } from "@/utils/abort-signals";
 import { stripTrailingSlashes } from "@/utils/url";
 
 const DEFAULT_BRIDGE_URL = "http://localhost:7777";
+const BRIDGE_REPO_URL = "https://github.com/better-lyrics/composer-bridge";
 const HEALTH_QUERY_KEY = "composer-bridge-health";
 const HEALTH_TIMEOUT_MS = 1500;
 const AUDIO_TIMEOUT_MS = 5 * 60 * 1000;
@@ -159,6 +160,7 @@ function formatBridgeErrorForToast(err: unknown): string {
 }
 
 export {
+  BRIDGE_REPO_URL,
   DEFAULT_BRIDGE_URL,
   HEALTH_QUERY_KEY,
   BridgeError,

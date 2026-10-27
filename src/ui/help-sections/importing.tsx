@@ -4,6 +4,7 @@ import { HelpTopic } from "@/ui/help-topic";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SettingLink } from "@/ui/setting-link";
 import { INLINE_CODE, PROSE, PROSE_LINK } from "@/ui/typography";
+import { BRIDGE_REPO_URL } from "@/utils/composer-bridge-api";
 import { providerLabelsProse } from "@/utils/lyrics-search/provider-labels";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { OPEN_PROJECT_LABEL, USE_PROJECT_LYRICS_LABEL } from "@/views/lyrics-import-modal/import-lyrics-source";
@@ -74,12 +75,7 @@ const ImportSection: React.FC = () => (
       </ul>
       <p className={`${PROSE} mt-3`}>
         Sources, releases, and self-build instructions live on{" "}
-        <a
-          href="https://github.com/better-lyrics/composer-bridge"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={PROSE_LINK}
-        >
+        <a href={BRIDGE_REPO_URL} target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
           GitHub
         </a>
         . The install script verifies the release checksum before unpacking.
