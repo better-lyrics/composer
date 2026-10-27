@@ -1,3 +1,4 @@
+import { alignedGrainOffset } from "@/audio/grain-alignment";
 import { type ScrubSound, fadeOutScrubSound, startScrubSound } from "@/audio/scrub-sound";
 import { sharedAudioContext } from "@/audio/shared-audio-context";
 import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
@@ -14,7 +15,7 @@ type BufferLoader = () => Promise<AudioBuffer>;
 const SNIPPET_S = 0.12;
 const CROSSFADE_S = 0.04;
 const GRAIN_HOP_S = SNIPPET_S - CROSSFADE_S;
-const MAX_DRIFT_S = 0.04;
+const ALIGN_SEARCH_S = 0.015;
 const LOOKAHEAD_S = 0.05;
 const STOP_FADE_S = 0.01;
 const STOP_AFTER_MS = 100;
@@ -56,14 +57,21 @@ function targetVolume(): number {
   return isMuted ? 0 : volume;
 }
 
-// Grains continue the previous one while the playhead stays close, so steady drags play the song seamlessly.
-function nextGrainOffset(): number {
-  const continued = lastGrainOffset + GRAIN_HOP_S;
-  return Math.abs(targetTime - continued) <= MAX_DRIFT_S ? continued : targetTime;
+// A steady drag lands on the previous grain's continuation, which plays the song seamlessly.
+function nextGrainOffset(source: AudioBuffer): number {
+  if (!Number.isFinite(lastGrainOffset)) return targetTime;
+  return alignedGrainOffset(
+    source.getChannelData(0),
+    source.sampleRate,
+    lastGrainOffset + GRAIN_HOP_S,
+    targetTime,
+    ALIGN_SEARCH_S,
+    CROSSFADE_S,
+  );
 }
 
 function startGrain(ctx: AudioContext, source: AudioBuffer, at: number): void {
-  const offset = Math.max(0, Math.min(nextGrainOffset(), source.duration - SNIPPET_S));
+  const offset = Math.max(0, Math.min(nextGrainOffset(source), source.duration - SNIPPET_S));
   const grain = startScrubSound(ctx, {
     buffer: source,
     offset,
