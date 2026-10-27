@@ -3,6 +3,7 @@ import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { waitForYouTubeLoad } from "@/hooks/useLoadYouTubeSource";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { saveOpenProjectNow } from "@/lib/persistence-debounce";
+import { migrateRelinkedProjectTimings } from "@/lib/relink-priming";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { toast } from "sonner";
@@ -38,6 +39,8 @@ async function relinkProjectAudioFile(file: File): Promise<boolean> {
   }
   if (!isStillMissing(projectId)) return false;
   if (needsConfirmation(expected, file) && !(await confirmDifferentFile(expected.name, file.name))) return false;
+  if (!isStillMissing(projectId)) return false;
+  if (projectId) await migrateRelinkedProjectTimings(projectId, file);
   if (!isStillMissing(projectId)) return false;
   useAudioStore.getState().setSource({ type: "file", file });
   await saveOpenProjectNow();

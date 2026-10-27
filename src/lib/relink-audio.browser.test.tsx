@@ -11,7 +11,8 @@ import type { SavedProject } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import { createAudioFile, createUnplayableAudioFile } from "@/test/audio-fixtures";
+import { createAudioFile, createMp3File, createUnplayableAudioFile } from "@/test/audio-fixtures";
+import { createLine } from "@/test/factories";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
 import { Toaster } from "sonner";
@@ -191,5 +192,26 @@ describe("retryProjectAudio", () => {
       retryProjectAudio();
       expect(useAudioStore.getState().source).toBeNull();
     });
+  });
+});
+
+describe("relinking LAME mp3 audio", () => {
+  it("moves an uncorrected project's times later once, before the audio plays", async () => {
+    await openProject({
+      audioSource: { kind: "file", name: "silence.mp3" },
+      primingStripped: true,
+      primingCorrected: false,
+      lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+    });
+
+    expect(await relinkProjectAudioFile(createMp3File())).toBe(true);
+
+    const P = 1104 / 44_100;
+    expect((useProjectStore.getState().lines[0] as { begin: number }).begin).toBeCloseTo(1 + P, 9);
+    expect(useProjectStore.getState().primingCorrected).toBe(true);
+    expect(useProjectStore.getState().history).toEqual([]);
+    const saved = await loadProjectRecord("p");
+    expect(saved?.primingCorrected).toBe(true);
+    expect((saved?.lines[0] as { begin: number }).begin).toBeCloseTo(1 + P, 9);
   });
 });
