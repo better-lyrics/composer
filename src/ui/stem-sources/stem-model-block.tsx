@@ -1,4 +1,4 @@
-import { getModelDescriptor } from "@/audio/separation/model-registry";
+import { VOCAL_MODEL_APPROX_BYTES } from "@/audio/separation/model-registry";
 import type { SeparationError } from "@/audio/separation/types";
 import { STEM_SLOTS } from "@/domain/stems/stem-slot";
 import { useSeparationStore } from "@/stores/separation";
@@ -9,10 +9,7 @@ import { STEM_LABELS } from "@/ui/stem-labels";
 import { COMPACT_BUTTON } from "@/ui/stem-sources/compact-button";
 import { separationErrorCopy } from "@/ui/stem-sources/separation-error-copy";
 import { StemNotice } from "@/ui/stem-sources/stem-notice";
-
-// -- Constants ----------------------------------------------------------------
-
-const FALLBACK_MODEL_MB = 85;
+import { formatMegabytesOf, formatWholeMegabytes } from "@/utils/format-file-size";
 
 // -- Components ---------------------------------------------------------------
 
@@ -53,7 +50,7 @@ const StemModelBlock: React.FC = () => {
   const stemOrigins = useSeparationStore((s) => s.stemOrigins);
   const modelCached = useSeparationStore((s) => s.modelCached);
   const hostingConfigured = useSeparationStore((s) => s.hostingConfigured);
-  const approxMb = useSettingsStore((s) => getModelDescriptor(s.vocalModelVariant)?.approxMb ?? FALLBACK_MODEL_MB);
+  const approxBytes = useSettingsStore((s) => VOCAL_MODEL_APPROX_BYTES[s.vocalModelVariant]);
 
   const emptySlots = STEM_SLOTS.filter((slot) => stemUrls[slot] === undefined);
   const fills = emptySlots.map((slot) => STEM_LABELS[slot].toLowerCase()).join(" and ");
@@ -69,18 +66,22 @@ const StemModelBlock: React.FC = () => {
   }
 
   if (status === "downloading" || status === "processing") {
+    const downloading = status === "downloading";
     const separating = fills ? `Separating ${fills}…` : "Separating…";
-    const title = status === "downloading" ? "Downloading model…" : separating;
     const keepsImported = STEM_SLOTS.some((slot) => stemOrigins[slot] === "imported");
+    const pct = progress.total > 0 ? Math.round((progress.loaded / progress.total) * 100) : 0;
     return (
       <>
         <Separator />
-        <ModelProgress
-          title={title}
-          pct={progress.total > 0 ? Math.round((progress.loaded / progress.total) * 100) : 0}
-          note={keepsImported && "Your imported stems stay as they are."}
-          onCancel={() => useSeparationStore.getState().cancel()}
-        />
+        <div className="-mx-2">
+          <ModelProgress
+            title={downloading ? "Downloading model…" : separating}
+            meta={downloading ? formatMegabytesOf(progress.loaded, progress.total || approxBytes) : `${pct}%`}
+            pct={pct}
+            note={keepsImported && "Your imported stems stay as they are."}
+            onCancel={() => useSeparationStore.getState().cancel()}
+          />
+        </div>
       </>
     );
   }
@@ -94,7 +95,7 @@ const StemModelBlock: React.FC = () => {
           <p className="text-[13px] font-medium text-composer-text">Separate with the vocal model</p>
           <p className="mt-0.5 text-xs leading-[1.45] text-(--muted) text-pretty">
             Makes the {fills} from this song.
-            {!modelCached && ` Needs a one-time ${approxMb}\u00a0MB download.`}
+            {!modelCached && ` Needs a one-time ${formatWholeMegabytes(approxBytes)} download.`}
           </p>
         </div>
         <Button

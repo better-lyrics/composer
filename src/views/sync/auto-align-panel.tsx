@@ -78,6 +78,7 @@ const AutoAlignProgress: React.FC<{ onCancel: () => void }> = ({ onCancel }) => 
     return (
       <ModelProgress
         title={modelCached ? "Loading alignment model…" : "Downloading alignment model…"}
+        meta={`${pct}%`}
         pct={pct}
         note={
           progress.total > 0 ? `${formatMegabytes(progress.done)} / ${formatMegabytes(progress.total)}` : "Preparing…"
@@ -89,6 +90,7 @@ const AutoAlignProgress: React.FC<{ onCancel: () => void }> = ({ onCancel }) => 
   return (
     <ModelProgress
       title="Aligning words…"
+      meta={`${pct}%`}
       pct={pct}
       note={`Line ${Math.min(progress.done + 1, progress.total)} of ${progress.total}`}
       onCancel={onCancel}
