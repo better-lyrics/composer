@@ -1,3 +1,5 @@
+import { hasLatinLetter } from "@/domain/language/script-detection";
+import { isShortcutDisabled } from "@/lib/disabled-shortcuts";
 import { bindingsEqual, getEffectiveBinding } from "@/stores/shortcut-bindings";
 import { type ShortcutBinding, type ShortcutScope, getShortcutsByScope } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
@@ -13,7 +15,7 @@ function physicalKey(event: KeyboardEvent): string | null {
 }
 
 function isNonLatinLetter(key: string): boolean {
-  return key.length === 1 && /\p{L}/u.test(key) && !/\p{Script=Latin}/u.test(key);
+  return key.length === 1 && /\p{L}/u.test(key) && !hasLatinLetter(key);
 }
 
 // Layout glyphs (Option on macOS: Alt+E → "´"; non-Latin layouts: E → "у")
@@ -112,7 +114,8 @@ function findMatchingShortcut(event: KeyboardEvent, scope: ShortcutScope): strin
   const shortcuts = getShortcutsByScope(scope);
   for (const shortcut of shortcuts) {
     const binding = getEffectiveBinding(shortcut.id);
-    if (matchesBinding(event, binding)) return event.repeat && !shortcut.repeatable ? null : shortcut.id;
+    if (matchesBinding(event, binding))
+      return isShortcutDisabled(shortcut.id) || (event.repeat && !shortcut.repeatable) ? null : shortcut.id;
   }
   return null;
 }

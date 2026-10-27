@@ -118,9 +118,9 @@ const TimelineExtras: React.FC = () => (
         </li>
         <li>
           <strong>Auto-align</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.autoAlign")} />
-          ): times the words of the selected line, or the line at the playhead, from the separated vocals. The arrow
-          beside it aligns the whole song and walks through what's still needed. To align several lines, select their
-          words, right-click and choose Auto-align.
+          ): times the words of the selected line, or the line at the playhead, from the separated vocals. The{" "}
+          <strong>Align whole song</strong> menu next to it sets up and runs auto-align for every line. To align several
+          lines, select their words, right-click and choose Align.
         </li>
         <li>
           <strong>Import</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} />

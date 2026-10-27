@@ -51,7 +51,6 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
         {granularity === "word" ? "words" : "lines"} synced
       </span>
       <div className="flex items-center gap-3">
-        {!editMode && <AutoAlignDropdown />}
         <div className="tray">
           <ShortcutToggleButton
             active={textVariant === "transliteration"}
@@ -71,6 +70,7 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
           options={GRANULARITY_OPTIONS}
           onChange={handleGranularityChange}
         />
+        <AutoAlignDropdown disabled={editMode} />
         <Button
           hasIcon
           size="lg"

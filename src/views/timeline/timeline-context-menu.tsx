@@ -89,7 +89,7 @@ function splitIntoWordsLabel(count: number): string {
 }
 
 function autoAlignLabel({ count, realign }: { count: number; realign: boolean }): string {
-  const verb = realign ? "Re-align" : "Auto-align";
+  const verb = realign ? "Re-align" : "Align";
   return count > 1 ? `${verb} ${count} lines` : `${verb} words`;
 }
 
@@ -232,7 +232,11 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
       {autoAlignInfo && (
         <>
           {!splitIntoWordsInfo && <MenuSeparator />}
-          <MenuItem label={autoAlignLabel(autoAlignInfo)} onSelect={handleAutoAlign} />
+          <MenuItem
+            label={autoAlignLabel(autoAlignInfo)}
+            shortcut={getEffectiveKeysArray("timeline.autoAlign")}
+            onSelect={handleAutoAlign}
+          />
         </>
       )}
       <SelectionGrouping targets={targets} clearContextMenu={clearContextMenu} />

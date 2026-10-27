@@ -1,14 +1,10 @@
 import { hubertfaAligner } from "@/audio/alignment/hubertfa/hubertfa-aligner";
-import {
-  type AlignmentAssets,
-  areAlignmentAssetsCached,
-  resolveAlignmentAssets,
-} from "@/audio/alignment/hubertfa/model-registry";
+import { areAlignmentAssetsCached, resolveAlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import type { Aligner } from "@/audio/alignment/types";
 import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { isModelHostingConfigured } from "@/audio/separation/model-registry";
 import { hasCjk } from "@/domain/alignment/cjk";
-import { hanReadingFor, isSupportedLanguage } from "@/domain/alignment/language";
+import { canAlignLanguage, hanReadingFor } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
@@ -54,7 +50,7 @@ interface AlignmentState {
   error: AlignmentError | null;
   modelCached: boolean;
   /** Download size of the selected model and its dictionary, once resolved. */
-  modelSizeMb: number | null;
+  modelSizeBytes: number | null;
 }
 
 interface AlignmentActions {
@@ -80,10 +76,6 @@ let controller: AbortController | null = null;
 
 // -- Functions ----------------------------------------------------------------
 
-function selectedAssets(modelId = useSettingsStore.getState().alignmentModelId): Promise<AlignmentAssets | null> {
-  return resolveAlignmentAssets(modelId);
-}
-
 // Auto-align shares the vocal separation model's host; without one it's hidden.
 function isAutoAlignAvailable(): boolean {
   return isModelHostingConfigured();
@@ -105,11 +97,11 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
   progress: { done: 0, total: 0 },
   error: null,
   modelCached: false,
-  modelSizeMb: null,
+  modelSizeBytes: null,
 
   refreshModelCached: async (modelId) => {
-    const assets = await selectedAssets(modelId);
-    set({ modelCached: await areAlignmentAssetsCached(assets), modelSizeMb: assets?.approxMb ?? null });
+    const assets = await resolveAlignmentAssets(modelId ?? useSettingsStore.getState().alignmentModelId);
+    set({ modelCached: await areAlignmentAssetsCached(assets), modelSizeBytes: assets?.approxBytes ?? null });
   },
 
   dismissError: () => {
@@ -127,11 +119,14 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     set({ status: "downloading", error: null, progress: { done: 0, total: 0 } });
     controller = new AbortController();
     const { signal } = controller;
+    // One model for the whole run, even if the setting changes while it starts.
+    const modelId = useSettingsStore.getState().alignmentModelId;
 
     try {
-      if (!(await selectedAssets())) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
-      if (!isSupportedLanguage(project.metadata.language)) {
-        return fail(set, "unsupported-language", "Auto-align supports English, Mandarin and Japanese lyrics.");
+      const assets = await resolveAlignmentAssets(modelId);
+      if (!assets) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
+      if (!canAlignLanguage(project.metadata.language, assets.languages)) {
+        return fail(set, "unsupported-language", "The alignment model doesn't cover this song's language.");
       }
       const hanReading = hanReadingFor(project.metadata.language, project.lines);
       const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
@@ -143,11 +138,10 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
           "Separate the vocals first. Alignment on the full mix is less accurate than tapping by hand.",
         );
       }
-      if (!options.allowDownload && !(await areAlignmentAssetsCached(await selectedAssets()))) {
+      if (!options.allowDownload && !(await areAlignmentAssetsCached(assets))) {
         return fail(set, "needs-model", "Auto-align needs a one-time model download.");
       }
       signal.throwIfAborted();
-      const modelId = useSettingsStore.getState().alignmentModelId;
       await aligner.prepare((loaded, total) => set({ progress: { done: loaded, total } }), signal, {
         japanese,
         modelId,
@@ -231,11 +225,12 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     const modelId = useSettingsStore.getState().alignmentModelId;
     // A split never starts a model load; this only runs with one kept in memory.
     if (planned.length === 0 || !vocalsUrl || !aligner.isLoaded({ japanese, modelId })) return;
-    if (!isSupportedLanguage(project.metadata.language)) return;
     set({ status: "running", error: null, progress: { done: 0, total: planned.length } });
     controller = new AbortController();
     const { signal } = controller;
     try {
+      const assets = await resolveAlignmentAssets(modelId);
+      if (!assets || !canAlignLanguage(project.metadata.language, assets.languages)) return;
       const pcm = await loadVocalsPcm(vocalsUrl);
       const updates: LineUpdate[] = [];
       for (const plan of planned) {
@@ -293,3 +288,4 @@ useSettingsStore.subscribe((s, prev) => {
 // -- Exports ------------------------------------------------------------------
 
 export { isAutoAlignAvailable, useAlignmentStore };
+export type { AlignmentError, AlignmentErrorCode };

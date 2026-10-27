@@ -10,6 +10,7 @@ import { StemSourceRows } from "@/ui/stem-sources/stem-source-rows";
 import { VocalOnsetSnapToggle } from "@/ui/vocal-onset-snap-toggle";
 import { DETECTING_VOCAL_ONSETS } from "@/ui/vocal-onset-status-copy";
 import { StemPickLabel, VocalOnsetStatusAnnouncer } from "@/ui/vocal-separation-trigger";
+import { percent } from "@/utils/percent";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect } from "react";
 
@@ -42,7 +43,7 @@ const VocalSeparationDropdown: React.FC<VocalSeparationDropdownProps> = ({ open,
 
   if (!source) return null;
 
-  const pct = progress.total > 0 ? Math.round((progress.loaded / progress.total) * 100) : 0;
+  const pct = percent(progress.loaded, progress.total);
   const separating = status === "downloading" || status === "processing";
   const showDetecting = detectingOnsets && !separating;
   const triggerLabel = separating ? `${pct}%` : STEM_LABELS[currentStem];
