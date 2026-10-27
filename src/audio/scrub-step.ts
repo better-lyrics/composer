@@ -4,7 +4,7 @@ interface ScrubVoiceState {
   position: number;
 }
 
-type ScrubStep = { kind: "start" } | { kind: "steer"; rate: number } | { kind: "clip" };
+type ScrubStep = { kind: "start"; rate: number } | { kind: "steer"; rate: number } | { kind: "clip" };
 
 // -- Constants ----------------------------------------------------------------
 
@@ -16,16 +16,23 @@ const DRIFT_GAIN = 4;
 
 // -- Functions ----------------------------------------------------------------
 
+function clampRate(rate: number): number {
+  return Math.min(MAX_VOICE_RATE, Math.max(MIN_VOICE_RATE, rate));
+}
+
 function scrubStep(voice: ScrubVoiceState | null, time: number, previousTime: number, speed: number): ScrubStep {
   if (time < previousTime) return { kind: "clip" };
-  if (!voice) return { kind: "start" };
+  const start: ScrubStep = { kind: "start", rate: clampRate(speed) };
+  if (!voice) return start;
   const drift = time - voice.position;
-  if (Math.abs(drift) > SCRUB_JUMP_S) return { kind: "start" };
-  const rate = Math.min(MAX_VOICE_RATE, Math.max(MIN_VOICE_RATE, speed + DRIFT_GAIN * drift));
-  return { kind: "steer", rate };
+  if (Math.abs(drift) > SCRUB_JUMP_S) return start;
+  const corrected = speed + DRIFT_GAIN * drift;
+  // Ahead of the playhead with the rate already at the floor, the voice would take seconds to fall back in line.
+  if (drift < 0 && corrected < MIN_VOICE_RATE) return start;
+  return { kind: "steer", rate: clampRate(corrected) };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { MAX_VOICE_RATE, MIN_VOICE_RATE, SCRUB_JUMP_S, scrubStep };
+export { SCRUB_JUMP_S, scrubStep };
 export type { ScrubStep, ScrubVoiceState };

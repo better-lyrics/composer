@@ -5,7 +5,7 @@ const voice = { position: 10 };
 
 describe("scrubStep", () => {
   it("starts a voice when none is playing", () => {
-    expect(scrubStep(null, 10.02, 10, 1)).toEqual({ kind: "start" });
+    expect(scrubStep(null, 10.02, 10, 1)).toEqual({ kind: "start", rate: 1 });
   });
 
   it("steers the running voice for a small forward move", () => {
@@ -25,7 +25,7 @@ describe("scrubStep", () => {
   });
 
   it("jumps on a move larger than the jump threshold", () => {
-    expect(scrubStep(voice, 10 + SCRUB_JUMP_S + 0.01, 10, 1)).toEqual({ kind: "start" });
+    expect(scrubStep(voice, 10 + SCRUB_JUMP_S + 0.01, 10, 1)).toEqual({ kind: "start", rate: 1 });
   });
 
   it("plays a clip when the playhead moves backward", () => {
@@ -35,9 +35,18 @@ describe("scrubStep", () => {
   describe("edge cases", () => {
     it("keeps the rate inside 0.05x to 4x", () => {
       const fast = scrubStep(voice, 10.14, 10, 4);
-      const slow = scrubStep({ position: 10.14 }, 10.01, 10, 0.05);
+      const slow = scrubStep({ position: 10.01 }, 10.01, 10, 0.02);
       expect(fast).toEqual({ kind: "steer", rate: 4 });
       expect(slow).toEqual({ kind: "steer", rate: 0.05 });
+    });
+
+    it("starts at the clamped speed", () => {
+      expect(scrubStep(null, 10.02, 10, 9)).toEqual({ kind: "start", rate: 4 });
+      expect(scrubStep(null, 10.02, 10, 0.01)).toEqual({ kind: "start", rate: 0.05 });
+    });
+
+    it("restarts when the voice ran further ahead than slowing down can recover", () => {
+      expect(scrubStep({ position: 10.086 }, 10.02, 10.01, 0.08)).toEqual({ kind: "start", rate: 0.08 });
     });
 
     it("treats an unchanged playhead as a steer, not a jump", () => {
@@ -45,7 +54,7 @@ describe("scrubStep", () => {
     });
 
     it("jumps when the voice has run far ahead of a slow playhead", () => {
-      expect(scrubStep({ position: 10.3 }, 10.01, 10, 0.1)).toEqual({ kind: "start" });
+      expect(scrubStep({ position: 10.3 }, 10.01, 10, 0.1)).toEqual({ kind: "start", rate: 0.1 });
     });
   });
 });

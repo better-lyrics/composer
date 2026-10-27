@@ -1,30 +1,151 @@
+import { fadeOutScrubSound, type ScrubSound, startScrubSound } from "@/audio/scrub-sound";
+import { scrubStep } from "@/audio/scrub-step";
 import { sharedAudioContext } from "@/audio/shared-audio-context";
+import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
+
+// -- Types --------------------------------------------------------------------
+
+type ActiveSnippet = { time: number; rate: number };
+type BufferLoader = () => Promise<AudioBuffer>;
+
+interface Voice {
+  sound: ScrubSound;
+  position: number;
+  rate: number;
+  updatedAt: number;
+}
+
+// -- Constants ----------------------------------------------------------------
 
 const SNIPPET_S = 0.12;
 const CROSSFADE_S = 0.008;
 const MIN_AUDIBLE_RATE = 0.1;
 const MAX_BUFFER_DURATION_S = 60 * 60;
+const RATE_SMOOTHING_S = 0.015;
+const MIN_SPEED_INTERVAL_MS = 4;
+const MAX_SPEED_INTERVAL_MS = 300;
+const MIN_STOP_AFTER_MS = 60;
+const FRAME_LABEL = "scrub-preview";
 const LOG_PREFIX = "[ScrubPreview]";
 
-type ActiveSnippet = { time: number; rate: number };
-type BufferLoader = () => Promise<AudioBuffer>;
+// -- State --------------------------------------------------------------------
 
 let buffer: AudioBuffer | null = null;
 let loadBuffer: BufferLoader | null = null;
 let bufferToken = 0;
 let loadingToken: number | null = null;
 let pendingSnippet: ActiveSnippet | null = null;
-let currentSource: AudioBufferSourceNode | null = null;
-let currentGain: GainNode | null = null;
 let activeSnippet: ActiveSnippet | null = null;
+let voice: Voice | null = null;
+let clip: ScrubSound | null = null;
+let previousTime = Number.NEGATIVE_INFINITY;
+let lastPlayAtMs = Number.NEGATIVE_INFINITY;
+let stopAfterMs = MIN_STOP_AFTER_MS;
+let releaseWatchdog: (() => void) | null = null;
+
+// -- Audio --------------------------------------------------------------------
 
 function getContext(): AudioContext {
   const ctx = sharedAudioContext();
   if (ctx.state === "suspended") void ctx.resume();
   return ctx;
 }
+
+function targetVolume(): number {
+  const { isMuted, volume } = useAudioStore.getState();
+  return isMuted ? 0 : volume;
+}
+
+function voicePosition(running: Voice, now: number): number {
+  return running.position + running.rate * (now - running.updatedAt);
+}
+
+function fadeOutAll(now: number): void {
+  if (voice) fadeOutScrubSound(voice.sound, now, CROSSFADE_S);
+  if (clip) fadeOutScrubSound(clip, now, CROSSFADE_S);
+  voice = null;
+  clip = null;
+}
+
+function startVoice(ctx: AudioContext, source: AudioBuffer, time: number, rate: number, now: number): void {
+  fadeOutAll(now);
+  const sound = startScrubSound(ctx, {
+    buffer: source,
+    offset: time,
+    at: now,
+    volume: targetVolume(),
+    rate,
+    fadeS: CROSSFADE_S,
+  });
+  const started: Voice = { sound, position: time, rate, updatedAt: now };
+  sound.source.onended = () => {
+    if (voice !== started) return;
+    voice = null;
+    activeSnippet = null;
+  };
+  voice = started;
+  ensureWatchdog();
+}
+
+function steerVoice(running: Voice, rate: number, now: number): void {
+  running.position = voicePosition(running, now);
+  running.updatedAt = now;
+  running.rate = rate;
+  running.sound.source.playbackRate.setTargetAtTime(rate, now, RATE_SMOOTHING_S);
+}
+
+function playClip(ctx: AudioContext, source: AudioBuffer, time: number, now: number): void {
+  fadeOutAll(now);
+  const sound = startScrubSound(ctx, {
+    buffer: source,
+    offset: time,
+    at: now,
+    volume: targetVolume(),
+    rate: 1,
+    fadeS: CROSSFADE_S,
+    lengthS: SNIPPET_S,
+  });
+  sound.source.onended = () => {
+    if (clip !== sound) return;
+    clip = null;
+    activeSnippet = null;
+  };
+  clip = sound;
+}
+
+// -- Watchdog -----------------------------------------------------------------
+
+function releaseWatchdogFrames(): void {
+  releaseWatchdog?.();
+  releaseWatchdog = null;
+}
+
+// A frame callback must never write to a store: this one only touches audio nodes and module state.
+function stopHeldVoice(nowMs: number): void {
+  if (!voice) {
+    releaseWatchdogFrames();
+    return;
+  }
+  if (nowMs - lastPlayAtMs <= stopAfterMs) return;
+  fadeOutScrubSound(voice.sound, sharedAudioContext().currentTime, CROSSFADE_S);
+  voice = null;
+  activeSnippet = null;
+  releaseWatchdogFrames();
+}
+
+function ensureWatchdog(): void {
+  if (releaseWatchdog) return;
+  const releaseHold = holdFrames(FRAME_LABEL);
+  const unsubscribe = subscribeFrame(stopHeldVoice, FRAME_LABEL);
+  releaseWatchdog = () => {
+    unsubscribe();
+    releaseHold();
+  };
+}
+
+// -- Buffer -------------------------------------------------------------------
 
 function useBuffer(next: AudioBuffer | null): void {
   stop();
@@ -64,18 +185,7 @@ function requestBuffer(time: number, velocity: number): void {
   );
 }
 
-function fadeOutAndStop(source: AudioBufferSourceNode, gain: GainNode): void {
-  const ctx = getContext();
-  const now = ctx.currentTime;
-  gain.gain.cancelScheduledValues(now);
-  gain.gain.setValueAtTime(gain.gain.value, now);
-  gain.gain.linearRampToValueAtTime(0, now + CROSSFADE_S);
-  try {
-    source.stop(now + CROSSFADE_S + 0.002);
-  } catch {
-    /* source already ended; safe to ignore */
-  }
-}
+// -- Playback -----------------------------------------------------------------
 
 function isEnabled(): boolean {
   return useSettingsStore.getState().audioScrubPreview;
@@ -90,54 +200,39 @@ function play(time: number, velocity: number): void {
   }
 
   const ctx = getContext();
-  const maxStartTime = Math.max(0, buffer.duration - SNIPPET_S);
-  const clampedTime = Math.max(0, Math.min(time, maxStartTime));
-
-  if (currentSource && currentGain) {
-    fadeOutAndStop(currentSource, currentGain);
-  }
-
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-
-  const gain = ctx.createGain();
   const now = ctx.currentTime;
-  const audioState = useAudioStore.getState();
-  const targetVolume = audioState.isMuted ? 0 : audioState.volume;
-  gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(targetVolume, now + CROSSFADE_S);
+  const nowMs = performance.now();
+  const clampedTime = Math.max(0, Math.min(time, Math.max(0, buffer.duration - SNIPPET_S)));
+  const intervalMs = nowMs - lastPlayAtMs;
+  const measured = intervalMs >= MIN_SPEED_INTERVAL_MS && intervalMs <= MAX_SPEED_INTERVAL_MS;
+  const speed = measured ? (clampedTime - previousTime) / (intervalMs / 1000) : velocity;
+  stopAfterMs = measured ? Math.max(MIN_STOP_AFTER_MS, 2 * intervalMs) : MIN_STOP_AFTER_MS;
 
-  source.connect(gain);
-  gain.connect(ctx.destination);
+  const running = voice ? { position: voicePosition(voice, now) } : null;
+  const step = scrubStep(running, clampedTime, previousTime, speed);
+  if (step.kind === "clip") playClip(ctx, buffer, clampedTime, now);
+  else if (step.kind === "steer" && voice) steerVoice(voice, step.rate, now);
+  else startVoice(ctx, buffer, clampedTime, step.rate, now);
 
-  source.start(now, clampedTime, SNIPPET_S);
-
-  currentSource = source;
-  currentGain = gain;
+  previousTime = clampedTime;
+  lastPlayAtMs = nowMs;
   activeSnippet = { time: clampedTime, rate: velocity };
-
-  source.onended = () => {
-    if (currentSource === source) {
-      currentSource = null;
-      currentGain = null;
-      activeSnippet = null;
-    }
-  };
 }
 
 function stop(): void {
   pendingSnippet = null;
-  if (currentSource && currentGain) {
-    fadeOutAndStop(currentSource, currentGain);
-  }
-  currentSource = null;
-  currentGain = null;
+  if (voice || clip) fadeOutAll(sharedAudioContext().currentTime);
+  releaseWatchdogFrames();
   activeSnippet = null;
+  previousTime = Number.NEGATIVE_INFINITY;
+  lastPlayAtMs = Number.NEGATIVE_INFINITY;
 }
 
 function getActiveSnippet(): ActiveSnippet | null {
   return activeSnippet;
 }
+
+// -- Exports ------------------------------------------------------------------
 
 const scrubPreview = { useBuffer, useLazyBuffer, play, stop, getActiveSnippet };
 
