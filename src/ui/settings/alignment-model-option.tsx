@@ -4,19 +4,19 @@ import { languageName } from "@/domain/project/language";
 import { LanguageCoverage } from "@/ui/language-coverage";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
-import { formatWholeMegabytes } from "@/utils/format-file-size";
 
 // -- Interfaces ----------------------------------------------------------------
 
 interface AlignmentModelOptionProps {
   model: AlignmentModel;
+  detail: string;
   columns: readonly string[];
   song: string | null;
 }
 
 // -- Components ----------------------------------------------------------------
 
-const AlignmentModelOption: React.FC<AlignmentModelOptionProps> = ({ model, columns, song }) => {
+const AlignmentModelOption: React.FC<AlignmentModelOptionProps> = ({ model, detail, columns, song }) => {
   const missed = song && !coversLanguage(model.languages, song) ? song : null;
   return (
     <span className="flex flex-1 items-center gap-3 min-w-0">
@@ -32,7 +32,7 @@ const AlignmentModelOption: React.FC<AlignmentModelOptionProps> = ({ model, colu
         {missed ? (
           <span className="text-xs tabular-nums text-composer-warning">Doesn't cover {languageName(missed)}</span>
         ) : (
-          <span className="text-xs tabular-nums text-(--muted)">{formatWholeMegabytes(model.approxBytes)}</span>
+          <span className="text-xs tabular-nums text-(--muted)">{detail}</span>
         )}
       </span>
       <LanguageCoverage columns={columns} covered={model.languages} song={song} dimmed={missed !== null} />

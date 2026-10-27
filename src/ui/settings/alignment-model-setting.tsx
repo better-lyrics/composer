@@ -16,6 +16,7 @@ import { AlignmentModelOption } from "@/ui/settings/alignment-model-option";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
 import { StatusChip } from "@/ui/status-chip";
+import { formatWholeMegabytes } from "@/utils/format-file-size";
 import { IconAlertTriangle } from "@tabler/icons-react";
 
 // -- Constants -----------------------------------------------------------------
@@ -69,14 +70,16 @@ const AlignmentModelSetting: React.FC = () => {
   const recommendedId = ordered.find((m) => m.recommended)?.id;
   const pending = !models && stored !== BUILTIN_OPTION.value ? [{ value: stored, label: "Loading…" }] : [];
   const options: SelectOption[] =
-    ordered.length > 0 ? ordered.map((m) => ({ value: m.id, label: m.label })) : [BUILTIN_OPTION, ...pending];
+    ordered.length > 0
+      ? ordered.map((m) => ({ value: m.id, label: m.label, detail: formatWholeMegabytes(m.approxBytes) }))
+      : [BUILTIN_OPTION, ...pending];
   const value = models ? (pickAlignmentModel(models, stored)?.id ?? BUILTIN_OPTION.value) : stored;
   const selectedLanguages = byId.get(value)?.languages ?? loadingLanguages(value);
 
   const renderOption = (option: SelectOption) => {
     const model = byId.get(option.value);
     if (!model) return <span className="truncate">{option.label}</span>;
-    return <AlignmentModelOption model={model} columns={columns} song={song} />;
+    return <AlignmentModelOption model={model} detail={option.detail ?? ""} columns={columns} song={song} />;
   };
 
   return (

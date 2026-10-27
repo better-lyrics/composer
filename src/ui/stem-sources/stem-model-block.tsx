@@ -28,12 +28,32 @@ const ModelError: React.FC<{ error: SeparationError }> = ({ error }) => {
   );
 };
 
+// The stem popover still insets 14px; -mx-2 brings the progress to the pop layout's 6px.
+const StemProgress: React.FC<{ downloading: boolean; fills: string; approxBytes: number }> = ({
+  downloading,
+  fills,
+  approxBytes,
+}) => {
+  const progress = useSeparationStore((s) => s.progress);
+  const keepsImported = useSeparationStore((s) => STEM_SLOTS.some((slot) => s.stemOrigins[slot] === "imported"));
+  const pct = percent(progress.loaded, progress.total);
+  return (
+    <div className="-mx-2">
+      <ModelProgress
+        title={downloading ? "Downloading model…" : fills ? `Separating ${fills}…` : "Separating…"}
+        meta={downloading ? formatMegabytesOf(progress.loaded, progress.total || approxBytes) : `${pct}%`}
+        pct={pct}
+        note={keepsImported && "Your imported stems stay as they are."}
+        onCancel={() => useSeparationStore.getState().cancel()}
+      />
+    </div>
+  );
+};
+
 const StemModelBlock: React.FC = () => {
   const status = useSeparationStore((s) => s.status);
-  const progress = useSeparationStore((s) => s.progress);
   const error = useSeparationStore((s) => s.error);
   const stemUrls = useSeparationStore((s) => s.stemUrls);
-  const stemOrigins = useSeparationStore((s) => s.stemOrigins);
   const modelCached = useSeparationStore((s) => s.modelCached);
   const hostingConfigured = useSeparationStore((s) => s.hostingConfigured);
   const approxBytes = useSettingsStore((s) => VOCAL_MODEL_APPROX_BYTES[s.vocalModelVariant]);
@@ -52,22 +72,10 @@ const StemModelBlock: React.FC = () => {
   }
 
   if (status === "downloading" || status === "processing") {
-    const downloading = status === "downloading";
-    const separating = fills ? `Separating ${fills}…` : "Separating…";
-    const keepsImported = STEM_SLOTS.some((slot) => stemOrigins[slot] === "imported");
-    const pct = percent(progress.loaded, progress.total);
     return (
       <>
         <Separator />
-        <div className="-mx-2">
-          <ModelProgress
-            title={downloading ? "Downloading model…" : separating}
-            meta={downloading ? formatMegabytesOf(progress.loaded, progress.total || approxBytes) : `${pct}%`}
-            pct={pct}
-            note={keepsImported && "Your imported stems stay as they are."}
-            onCancel={() => useSeparationStore.getState().cancel()}
-          />
-        </div>
+        <StemProgress downloading={status === "downloading"} fills={fills} approxBytes={approxBytes} />
       </>
     );
   }
