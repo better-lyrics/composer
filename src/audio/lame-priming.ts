@@ -191,5 +191,12 @@ function cropAudioBufferHead(audio: AudioBuffer, startSample: number, ctx: BaseA
 
 // -- Exports -------------------------------------------------------------------
 
-export { cropAudioBufferHead, findFirstMp3FrameOffset, lamePrimingDecode, parseLamePriming, primingToCrop, stripLeading };
+export {
+  cropAudioBufferHead,
+  findFirstMp3FrameOffset,
+  lamePrimingDecode,
+  parseLamePriming,
+  primingToCrop,
+  stripLeading,
+};
 export type { LamePriming, LamePrimingDecode };

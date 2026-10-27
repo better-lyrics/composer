@@ -248,7 +248,10 @@ function buildLameTagFrame({
   view.setUint32(tagOffset + 4, flags);
   if (flags & 0x01) view.setUint32(tagOffset + 8, frameCount ?? 0);
   const fieldSizes = [4, 4, 100, 4];
-  const lameOffset = fieldSizes.reduce((offset, size, bit) => (flags & (1 << bit) ? offset + size : offset), tagOffset + 8);
+  const lameOffset = fieldSizes.reduce(
+    (offset, size, bit) => (flags & (1 << bit) ? offset + size : offset),
+    tagOffset + 8,
+  );
   frame.set(new TextEncoder().encode("LAME3.100"), lameOffset);
   frame[lameOffset + 0x15] = (encoderDelay >> 4) & 0xff;
   frame[lameOffset + 0x16] = ((encoderDelay & 0x0f) << 4) | ((padding >> 8) & 0x0f);

@@ -154,15 +154,4 @@ function shiftedGrid(grid: BeatGrid, seconds: number): BeatGrid | null {
 
 // -- Exports -------------------------------------------------------------------
 
-export {
-  canDouble,
-  canHalve,
-  doubled,
-  halved,
-  isEdited,
-  manualGrid,
-  resetGrid,
-  shiftedGrid,
-  withBarOneAt,
-  withOffset,
-};
+export { canDouble, canHalve, doubled, halved, isEdited, manualGrid, resetGrid, shiftedGrid, withBarOneAt, withOffset };

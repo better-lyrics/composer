@@ -76,7 +76,14 @@ async function readCachedChunks(
 ): Promise<Map<number, CachedSpectrumChunk>> {
   if (!target.jobKey) return new Map();
   try {
-    return await readSpectrumChunks(target.jobKey, target.source, audio.decodeTag, audio.sampleRate, target.fftSize, total);
+    return await readSpectrumChunks(
+      target.jobKey,
+      target.source,
+      audio.decodeTag,
+      audio.sampleRate,
+      target.fftSize,
+      total,
+    );
   } catch (error) {
     console.warn(LOG_PREFIX, "could not read the cached spectrum; analysing again", error);
     return new Map();
