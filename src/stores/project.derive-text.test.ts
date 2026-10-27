@@ -29,6 +29,29 @@ beforeEach(() => {
   useProjectStore.getState().clearHistory();
 });
 
+describe("history writes derive text only for the lines they change", () => {
+  it("regression: merging syllables on one line keeps the untimed words of another", () => {
+    useProjectStore.getState().setLines([
+      reconcileLine({
+        id: "split",
+        text: "beautiful",
+        agentId: "v1",
+        words: [
+          { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g1" },
+          { text: "ti", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+          { text: "ful", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+        ],
+      }),
+      reconcileLine({ id: "partial", text: "hello world", agentId: "v1", words: [w("hello ", 1, 1.5)] }),
+    ]);
+
+    useProjectStore.getState().mergeSyllableGroupIntoWord("split", "words", [0]);
+
+    const partial = useProjectStore.getState().lines.find((line) => line.id === "partial");
+    expect(partial?.text).toBe("hello world");
+  });
+});
+
 // -- updateLineWithHistory ----------------------------------------------------
 
 describe("updateLineWithHistory derives text from words", () => {

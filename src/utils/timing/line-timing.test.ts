@@ -19,6 +19,21 @@ function seedLine(begin: number, end: number): void {
   });
 }
 
+function seedWordSyncedLine(): void {
+  useProjectStore.setState({
+    lines: [
+      createLine({
+        id: "l1",
+        text: "Hello world",
+        words: [
+          { text: "Hello ", begin: 1, end: 1.5 },
+          { text: "world", begin: 1.5, end: 2 },
+        ],
+      }),
+    ],
+  });
+}
+
 const store = () => useProjectStore.getState();
 const lineAt = (index: number) => store().lines[index];
 
@@ -30,6 +45,28 @@ describe("nudgeLineBegin", () => {
 
     expect(lineAt(0)).toMatchObject({ begin: 10.5, end: 12.5 });
     expect(lineAt(0).backgroundWords).toEqual([{ text: "ooh", begin: 10.75, end: 11.25 }]);
+  });
+
+  it("regression: moves every word of a word-synced line", () => {
+    seedWordSyncedLine();
+
+    nudgeLineBegin(store().lines, 0, 0.5, store().updateLineWithHistory);
+
+    expect(lineAt(0).words).toMatchObject([
+      { text: "Hello ", begin: 1.5, end: 2 },
+      { text: "world", begin: 2, end: 2.5 },
+    ]);
+  });
+
+  it("regression: keeps the untimed words of a partly timed line", () => {
+    useProjectStore.setState({
+      lines: [createLine({ id: "l1", text: "Hello world", words: [{ text: "Hello ", begin: 1, end: 1.5 }] })],
+    });
+
+    nudgeLineBegin(store().lines, 0, 0.5, store().updateLineWithHistory);
+
+    expect(lineAt(0).text).toBe("Hello world");
+    expect(lineAt(0).words).toMatchObject([{ text: "Hello ", begin: 1.5, end: 2 }]);
   });
 
   describe("edge cases", () => {
@@ -73,6 +110,17 @@ describe("setLineBegin", () => {
 
     expect(lineAt(0)).toMatchObject({ begin: 20, end: 22 });
     expect(lineAt(0).backgroundWords).toEqual([{ text: "ooh", begin: 20.25, end: 20.75 }]);
+  });
+
+  it("regression: sets the start of a word-synced line", () => {
+    seedWordSyncedLine();
+
+    setLineBegin(store().lines, 0, 3, store().updateLineWithHistory);
+
+    expect(lineAt(0).words).toMatchObject([
+      { text: "Hello ", begin: 3, end: 3.5 },
+      { text: "world", begin: 3.5, end: 4 },
+    ]);
   });
 
   describe("edge cases", () => {
