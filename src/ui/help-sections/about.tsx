@@ -79,8 +79,8 @@ const AboutSection: React.FC = () => (
       <HelpTopic title="What it is">
         <p className={PROSE}>
           Free and open-source, runs entirely in your browser. No accounts, and your projects and audio stay on your
-          machine. Only lyrics search, song details, translations and YouTube links reach a server. Bring your audio and
-          lyrics, sync them up, export TTML.
+          machine. Only lyrics search, song details, translation, transliteration and YouTube links reach a server.
+          Bring your audio and lyrics, sync them up, export TTML.
         </p>
       </HelpTopic>
 
