@@ -19,6 +19,7 @@ const ALIGN_SEARCH_S = 0.008;
 const LOOKAHEAD_S = 0.05;
 const STOP_FADE_S = 0.01;
 const RUN_S = 0.12;
+const IDLE_END_MS = 1000;
 const MIN_AUDIBLE_RATE = 0.1;
 const MAX_BUFFER_DURATION_S = 60 * 60;
 const FRAME_LABEL = "scrub-preview";
@@ -35,6 +36,7 @@ let activeSnippet: ActiveSnippet | null = null;
 let grains: ScrubSound[] = [];
 let targetTime = 0;
 let runTarget = Number.NaN;
+let lastEventMs = Number.NEGATIVE_INFINITY;
 let nextGrainAt = 0;
 let lastGrainOffset = Number.NEGATIVE_INFINITY;
 let releaseScheduler: (() => void) | null = null;
@@ -69,11 +71,12 @@ function channelsOf(source: AudioBuffer): Float32Array[] {
 }
 
 // Grains continue the song at 1x for up to RUN_S past the playhead, so a slow scrub plays whole syllables.
-// Past that the run restarts at the playhead if it moved, else the session ends. Null ends the session.
+// Past that the run restarts at the playhead if it moved. Null means the run is over.
 function nextGrainOffset(source: AudioBuffer): number | null {
   const continuation = lastGrainOffset + GRAIN_HOP_S;
-  if (continuation >= targetTime && continuation < targetTime + RUN_S) return continuation;
-  if (continuation >= targetTime + RUN_S && targetTime === runTarget) return null;
+  const runEnd = Math.min(targetTime + RUN_S, source.duration - GRAIN_S);
+  if (continuation >= targetTime && continuation <= runEnd) return continuation;
+  if (continuation > runEnd && targetTime === runTarget) return null;
   runTarget = targetTime;
   if (!Number.isFinite(lastGrainOffset)) return targetTime;
   return alignedGrainOffset(
@@ -115,27 +118,29 @@ function endSession(): void {
   activeSnippet = null;
   lastGrainOffset = Number.NEGATIVE_INFINITY;
   runTarget = Number.NaN;
+  lastEventMs = Number.NEGATIVE_INFINITY;
 }
 
 // A frame callback must never write to a store: this one only touches audio nodes and module state.
 // Grains are scheduled only a few frames ahead, so a hidden tab, which pauses frames, falls silent on its own.
-function scheduleGrains(): void {
-  if (!buffer) {
+// The idle limit ends a session whose grains never finish, such as on a suspended AudioContext.
+function scheduleGrains(nowMs: number): void {
+  if (!buffer || nowMs - lastEventMs > IDLE_END_MS) {
     endSession();
     return;
   }
-  fillLookahead(sharedAudioContext(), buffer);
+  const running = fillLookahead(sharedAudioContext(), buffer);
+  if (!running && grains.length === 0) endSession();
 }
 
-function fillLookahead(ctx: AudioContext, source: AudioBuffer): void {
+// Returns false once the run is over.
+function fillLookahead(ctx: AudioContext, source: AudioBuffer): boolean {
   const now = scheduleTime(ctx);
   if (nextGrainAt < now) nextGrainAt = now;
   while (nextGrainAt < now + LOOKAHEAD_S) {
-    if (!startGrain(ctx, source, nextGrainAt)) {
-      endSession();
-      return;
-    }
+    if (!startGrain(ctx, source, nextGrainAt)) return false;
   }
+  return true;
 }
 
 function ensureScheduler(): void {
@@ -202,8 +207,9 @@ function play(time: number, velocity: number): void {
     return;
   }
 
-  targetTime = Math.max(0, Math.min(time, Math.max(0, buffer.duration - GRAIN_S)));
+  targetTime = Math.max(0, Math.min(time, Math.max(0, buffer.duration - RUN_S)));
   activeSnippet = { time: targetTime, rate: velocity };
+  lastEventMs = performance.now();
   if (!releaseScheduler) {
     const ctx = getContext();
     const at = scheduleTime(ctx);

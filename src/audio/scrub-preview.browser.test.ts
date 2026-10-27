@@ -53,11 +53,17 @@ describe("scrub-preview", () => {
     await expect.poll(() => scrubPreview.getActiveSnippet(), { timeout: 1000, interval: 20 }).toBeNull();
   });
 
+  test("regression: a held scrub at the end of the song fades out", async () => {
+    scrubPreview.useBuffer(makeSineBuffer(1));
+    scrubPreview.play(0.95, 1);
+    await expect.poll(() => scrubPreview.getActiveSnippet(), { timeout: 1000, interval: 20 }).toBeNull();
+  });
+
   test("play clamps time to within buffer duration", () => {
     scrubPreview.useBuffer(makeSineBuffer(1));
     scrubPreview.play(99, 1);
     const snippet = scrubPreview.getActiveSnippet();
-    expect(snippet?.time).toBeCloseTo(1 - 0.024, 3);
+    expect(snippet?.time).toBeCloseTo(1 - 0.12, 3);
   });
 
   test("play is a no-op when audioScrubPreview setting is off", () => {
@@ -145,7 +151,7 @@ describe("scrub-preview", () => {
         scrubPreview.useBuffer(makeSineBuffer(0.5));
         await new Promise((resolve) => setTimeout(resolve, 50));
         scrubPreview.play(99, 1);
-        expect(scrubPreview.getActiveSnippet()?.time).toBeCloseTo(0.5 - 0.024, 3);
+        expect(scrubPreview.getActiveSnippet()?.time).toBeCloseTo(0.5 - 0.12, 3);
       });
     });
 
