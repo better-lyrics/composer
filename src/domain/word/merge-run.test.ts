@@ -188,6 +188,23 @@ describe("indicesCoveringSameText", () => {
     expect(indicesCoveringSameText(source, [0, 1], copy)).toEqual([0, 1, 2]);
   });
 
+  it("regression: maps the run after it grows to the whole split word", () => {
+    const grouped: WordTiming[] = [
+      { text: "so ", begin: 0, end: 1 },
+      { text: "beau", begin: 1, end: 1.2, syllableGroupId: "g" },
+      { text: "ti", begin: 1.2, end: 1.4, syllableGroupId: "g" },
+      { text: "ful", begin: 1.4, end: 1.8, syllableGroupId: "g" },
+    ];
+    const copy: WordTiming[] = [
+      { text: "so ", begin: 10, end: 11 },
+      { text: "be", begin: 11, end: 11.1 },
+      { text: "au", begin: 11.1, end: 11.2 },
+      { text: "ti", begin: 11.2, end: 11.4 },
+      { text: "ful", begin: 11.4, end: 11.8 },
+    ];
+    expect(indicesCoveringSameText(grouped, [0, 1], copy)).toEqual([0, 1, 2, 3, 4]);
+  });
+
   describe("edge cases", () => {
     it("returns no indices when the copy has not reached the run yet", () => {
       expect(indicesCoveringSameText(source, [1, 2], [{ text: "one ", begin: 0, end: 1 }])).toEqual([]);

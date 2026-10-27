@@ -84,12 +84,18 @@ function mergedWord(run: WordTiming[], syllableGroupId: string | undefined): Wor
   };
 }
 
-function mergeWordRun(words: WordTiming[], indices: number[]): WordTiming[] | null {
+function mergedSpan(words: WordTiming[], indices: number[]): IndexSpan | null {
   const span = runSpan(words, indices);
   if (!span) return null;
-  const partial = isPartialSyllableRun(words, indices);
-  const { start, end } = partial ? span : expandedToWholeGroups(words, span);
-  const merged = mergedWord(words.slice(start, end + 1), partial ? words[start].syllableGroupId : undefined);
+  return isPartialSyllableRun(words, indices) ? span : expandedToWholeGroups(words, span);
+}
+
+function mergeWordRun(words: WordTiming[], indices: number[]): WordTiming[] | null {
+  const span = mergedSpan(words, indices);
+  if (!span) return null;
+  const { start, end } = span;
+  const groupId = isPartialSyllableRun(words, indices) ? words[start].syllableGroupId : undefined;
+  const merged = mergedWord(words.slice(start, end + 1), groupId);
   return [...words.slice(0, start), merged, ...words.slice(end + 1)];
 }
 
@@ -101,7 +107,7 @@ function textOffsets(words: WordTiming[]): number[] {
 
 // Linked copies share their text, so a run maps onto a copy by the characters it covers, not by word slots.
 function indicesCoveringSameText(source: WordTiming[], sourceIndices: number[], target: WordTiming[]): number[] {
-  const span = runSpan(source, sourceIndices);
+  const span = mergedSpan(source, sourceIndices);
   if (!span) return [];
   const sourceOffsets = textOffsets(source);
   const start = sourceOffsets[span.start];
