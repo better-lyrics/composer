@@ -1,16 +1,16 @@
-import { cropAudioBufferHead, lamePrimingDecode, parseLamePriming, primingToCrop } from "@/audio/lame-priming";
+import { cropAudioBufferHead, parseLamePriming, primingCropChanged, primingToCrop } from "@/audio/lame-priming";
 import { sharedAudioContext } from "@/audio/shared-audio-context";
 
 // -- Types --------------------------------------------------------------------
 
 interface DecodedSource {
   audio: AudioBuffer;
-  lameTrimmed: boolean;
+  cropChanged: boolean;
 }
 
 // -- Constants ----------------------------------------------------------------
 
-const LAME_TRIMMED_DECODE_TAG = "lt1";
+const CROP_CHANGED_DECODE_TAG = "lt1";
 
 // -- Module state -------------------------------------------------------------
 
@@ -25,7 +25,7 @@ async function decodeWithoutPriming(source: Blob): Promise<DecodedSource> {
   const decoded = await ctx.decodeAudioData(bytes);
   return {
     audio: cropAudioBufferHead(decoded, primingToCrop(priming, decoded), ctx),
-    lameTrimmed: lamePrimingDecode(priming, decoded) === "trimmed",
+    cropChanged: primingCropChanged(priming, decoded),
   };
 }
 
@@ -44,16 +44,16 @@ async function decodeSourceAudio(source: Blob): Promise<AudioBuffer> {
   return (await decodeSource(source)).audio;
 }
 
-async function decodesLameTrimmed(source: Blob): Promise<boolean> {
+async function decodeCropChanged(source: Blob): Promise<boolean> {
   if (parseLamePriming(await source.arrayBuffer()).samples <= 0) return false;
-  return (await decodeSource(source)).lameTrimmed;
+  return (await decodeSource(source)).cropChanged;
 }
 
 // Data built from a decode that cropped LAME priming twice is keyed apart from data built from the corrected one.
 async function primingDecodeTag(source: Blob): Promise<string> {
-  return (await decodesLameTrimmed(source)) ? LAME_TRIMMED_DECODE_TAG : "";
+  return (await decodeCropChanged(source)) ? CROP_CHANGED_DECODE_TAG : "";
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { decodeSourceAudio, decodesLameTrimmed, primingDecodeTag };
+export { decodeCropChanged, decodeSourceAudio, primingDecodeTag };

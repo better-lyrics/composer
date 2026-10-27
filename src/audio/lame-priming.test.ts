@@ -3,6 +3,7 @@ import {
   findFirstMp3FrameOffset,
   lamePrimingDecode,
   parseLamePriming,
+  primingCropChanged,
   primingToCrop,
   stripLeading,
 } from "@/audio/lame-priming";
@@ -362,6 +363,30 @@ describe("lamePrimingDecode and primingToCrop", () => {
       expect(lamePrimingDecode(priming, { length: 200_000, sampleRate: 44_100 })).toBe("unknown");
       expect(primingToCrop(priming, { length: 200_000, sampleRate: 44_100 })).toBe(0);
       expect(warn).toHaveBeenCalledTimes(1);
+      warn.mockRestore();
+    });
+  });
+});
+
+describe("primingCropChanged", () => {
+  const priming = parseLamePriming(CBR_TAG);
+
+  it("is true when the old code cropped and the new code does not", () => {
+    expect(primingCropChanged(priming, { length: SOURCE_LENGTH, sampleRate: 44_100 })).toBe(true);
+  });
+
+  it("is false when both crop the same", () => {
+    expect(primingCropChanged(priming, { length: UNTRIMMED_LENGTH, sampleRate: 44_100 })).toBe(false);
+    expect(primingCropChanged(parseLamePriming(new Uint8Array(4)), { length: 1000, sampleRate: 44_100 })).toBe(false);
+  });
+
+  describe("edge cases", () => {
+    it("regression: is true for a decode that matches neither length, which the old code cropped", () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      expect(primingCropChanged(priming, { length: 200_000, sampleRate: 44_100 })).toBe(true);
+      expect(primingCropChanged(parseLamePriming(buildLameTagFrame()), { length: SOURCE_LENGTH, sampleRate: 44_100 })).toBe(
+        true,
+      );
       warn.mockRestore();
     });
   });

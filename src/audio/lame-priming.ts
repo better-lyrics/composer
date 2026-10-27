@@ -156,6 +156,11 @@ function lamePrimingDecode(priming: LamePriming, decoded: DecodedLength): LamePr
   return "unknown";
 }
 
+// The double-crop build cut the priming whenever a tag had it; this build cuts it only from an untrimmed decode.
+function primingCropChanged(priming: LamePriming, decoded: DecodedLength): boolean {
+  return priming.samples > 0 && priming.sampleRate > 0 && lamePrimingDecode(priming, decoded) !== "untrimmed";
+}
+
 function primingToCrop(priming: LamePriming, decoded: DecodedLength, outputSampleRate = decoded.sampleRate): number {
   const decode = lamePrimingDecode(priming, decoded);
   if (decode === "untrimmed") return Math.round((priming.samples * outputSampleRate) / priming.sampleRate);
@@ -196,6 +201,7 @@ export {
   findFirstMp3FrameOffset,
   lamePrimingDecode,
   parseLamePriming,
+  primingCropChanged,
   primingToCrop,
   stripLeading,
 };

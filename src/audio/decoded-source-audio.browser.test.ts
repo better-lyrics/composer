@@ -1,5 +1,6 @@
 import { decodeSourceAudio, primingDecodeTag } from "@/audio/decoded-source-audio";
 import { createMp3File, encodeWav, makeSineBuffer } from "@/test/audio-fixtures";
+import { allowConsole } from "@/test/console-guard";
 import { describe, expect, it } from "vitest";
 
 function sineWav(seconds: number): Blob {
@@ -22,6 +23,16 @@ describe("decodeSourceAudio", () => {
     const decoded = await decodeSourceAudio(mp3);
 
     expect(decoded.length).toBe(raw.length);
+  });
+
+  it("regression: tags an mp3 whose decode matches neither tag length, since the old crop changed for it too", async () => {
+    allowConsole(/decoded length does not match the LAME tag/);
+    const bytes = new Uint8Array(await createMp3File().arrayBuffer());
+    const tagOffset = new TextDecoder("latin1").decode(bytes).indexOf("Info");
+    new DataView(bytes.buffer).setUint32(tagOffset + 8, 999);
+    const mismatched = new File([bytes], "mismatched.mp3", { type: "audio/mpeg" });
+
+    expect(await primingDecodeTag(mismatched)).toBe("lt1");
   });
 
   it("tags a LAME mp3 the browser trims and leaves other sources untagged", async () => {

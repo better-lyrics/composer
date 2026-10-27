@@ -1,4 +1,4 @@
-import { decodesLameTrimmed } from "@/audio/decoded-source-audio";
+import { decodeCropChanged } from "@/audio/decoded-source-audio";
 import { parseLamePriming } from "@/audio/lame-priming";
 import type { LyricLine } from "@/domain/line/model";
 import { shiftWords } from "@/domain/line/shift";
@@ -58,7 +58,7 @@ function shiftSavedTimings(project: SavedProject, deltaSec: number): void {
 
 async function decoderTrims(audio: File): Promise<boolean | null> {
   try {
-    return await decodesLameTrimmed(audio);
+    return await decodeCropChanged(audio);
   } catch (error) {
     console.warn(LOG_PREFIX, "could not decode the project audio; its timings stay as saved", error);
     return null;
