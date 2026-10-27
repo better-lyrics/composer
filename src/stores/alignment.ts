@@ -70,6 +70,10 @@ interface AlignmentActions {
   retimeNewSyllables: (before: readonly LyricLine[]) => Promise<void>;
 }
 
+// -- Constants ----------------------------------------------------------------
+
+const LOG_PREFIX = "[alignment]";
+
 // -- State --------------------------------------------------------------------
 
 let controller: AbortController | null = null;
@@ -210,6 +214,8 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     if (status === "running" || status === "downloading") return;
     const aligner: Aligner = hubertfaAligner;
     const project = useProjectStore.getState();
+    // The split's own history step, which the new timing joins if nothing has happened since.
+    const step = project.history[project.historyIndex];
     const beforeById = new Map(before.map((line) => [line.id, line]));
     const groupsOf = new Map(
       project.lines.flatMap((line) => {
@@ -252,15 +258,24 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       if (latest.projectSession !== project.projectSession) return;
       const currentById = new Map(latest.lines.map((l) => [l.id, l]));
       const plannedById = new Map(planned.map((p) => [p.line.id, p]));
-      const applicable = updates.filter((u) => isUnchanged(currentById.get(u.id), plannedById.get(u.id)!));
-      if (applicable.length > 0) latest.updateLinesWithHistory(applicable, { deriveText: false });
+      const stepIsCurrent = latest.history[latest.historyIndex] === step && !latest.isDirtySinceHistory;
+      const applicable = updates.filter((u) => {
+        const planned = plannedById.get(u.id)!;
+        const moved = u.updates.words?.some(
+          (w, i) => w.begin !== planned.existing![i].begin || w.end !== planned.existing![i].end,
+        );
+        return moved && isUnchanged(currentById.get(u.id), planned);
+      });
+      // Part of the split, so one undo takes back both; anything done since leaves the split as it was.
+      if (stepIsCurrent && applicable.length > 0) latest.applyLineUpdatesToCurrentStep(applicable);
     } catch (err) {
       if (!isAbortError(err) && !signal.aborted) {
-        console.warn("[alignment] could not time the new syllables", err);
+        console.warn(`${LOG_PREFIX} could not time the new syllables`, err);
         aligner.release();
       }
     } finally {
       set({ status: "idle", progress: { done: 0, total: 0 } });
+      if (!useSettingsStore.getState().keepAlignmentModelLoaded) aligner.release();
       if (controller?.signal === signal) controller = null;
     }
   },

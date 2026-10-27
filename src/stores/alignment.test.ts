@@ -40,6 +40,7 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
         seen.japanese.push(options.japanese);
       },
       release: () => {},
+      isLoaded: () => true,
       align: async (segment: Segment) => {
         seen.segments.push({ hanReading: segment.hanReading, parts: segment.words.map((w) => w.parts) });
         const unknown = segment.words.some((w) => w.text === "zzz");
@@ -223,6 +224,30 @@ describe("alignment store", () => {
     await useAlignmentStore.getState().alignLines(["L1"]);
 
     expect(useProjectStore.getState().lines[1].text).toBe("one more line");
+  });
+
+  it("regression: a split and the syllable timing that follows it undo in one step", async () => {
+    const whole = { text: "hello", begin: 1, end: 2 };
+    useProjectStore.getState().setLinesWithHistory([{ id: "L1", text: "hello", agentId: "v1", words: [whole] }]);
+    const before = useProjectStore.getState().lines;
+    // Split off-centre, so the model's even-by-letter timing moves the boundary.
+    useProjectStore.getState().setLinesWithHistory([
+      {
+        id: "L1",
+        text: "hello",
+        agentId: "v1",
+        words: [
+          { text: "hel", begin: 1, end: 1.9, syllableGroupId: "g" },
+          { text: "lo", begin: 1.9, end: 2, syllableGroupId: "g" },
+        ],
+      },
+    ]);
+
+    await useAlignmentStore.getState().retimeNewSyllables(before);
+    expect(useProjectStore.getState().lines[0].words?.[0].end).not.toBe(1.9);
+
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].words).toEqual([whole]);
   });
 
   it("refuses without separated vocals", async () => {
