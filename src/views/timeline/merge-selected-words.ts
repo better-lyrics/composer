@@ -6,6 +6,7 @@ import { type TrackField, type WordTrack, trackField } from "@/domain/line/track
 import type { SelectionRun } from "@/domain/selection/contiguous";
 import { isPartialSyllableRun, isWholeSyllableGroupRun, mergeWordRun } from "@/domain/word/merge-run";
 import { useProjectStore } from "@/stores/project";
+import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
@@ -34,22 +35,34 @@ function mergedFieldUpdate(line: LyricLine, field: TrackField, indices: number[]
   return { id: line.id, updates: field === "backgroundWords" ? manualBackgroundWordEdit(merged) : { words: merged } };
 }
 
-// Each linked copy merges its own words at the same slots, so its own timing and syllable groups survive.
-function mergeSelectedWords(lineId: string, type: WordTrack, indices: number[]): void {
+// Copies with the same slots merge their own words, keeping their timing and syllable groups; any other shape goes through the divergence prompt.
+async function mergeSelectedWords(lineId: string, type: WordTrack, indices: number[]): Promise<void> {
   const { lines, updateLinesWithHistory } = useProjectStore.getState();
   const source = lines.find((l) => l.id === lineId);
   if (!source) return;
   const field = trackField(type);
-  const sourceCount = source[field]?.length;
+  const sourceUpdate = mergedFieldUpdate(source, field, indices);
+  if (!sourceUpdate) return;
   const scope = getLinkScope(source);
-  const updates = lines.flatMap((line) => {
-    const isTarget = line.id === lineId || (isLinkedSibling(line, scope) && line[field]?.length === sourceCount);
-    const update = isTarget ? mergedFieldUpdate(line, field, indices) : null;
+  const siblings = lines.filter((line) => line.id !== lineId && isLinkedSibling(line, scope) && line[field]);
+  useTimelineStore.getState().clearSelection();
+
+  if (siblings.some((line) => line[field]?.length !== source[field]?.length)) {
+    const merged = sourceUpdate.updates[field] ?? [];
+    await handleWordChangeWithDivergenceCheck(
+      lineId,
+      merged,
+      field,
+      field === "backgroundWords" ? sourceUpdate.updates : {},
+    );
+    return;
+  }
+
+  const siblingUpdates = siblings.flatMap((line) => {
+    const update = mergedFieldUpdate(line, field, indices);
     return update ? [update] : [];
   });
-  if (!updates.some((update) => update.id === lineId)) return;
-  useTimelineStore.getState().clearSelection();
-  updateLinesWithHistory(updates, { propagateToSiblings: false });
+  updateLinesWithHistory([sourceUpdate, ...siblingUpdates], { propagateToSiblings: false });
 }
 
 // -- Exports -------------------------------------------------------------------

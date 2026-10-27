@@ -614,4 +614,39 @@ describe("mergeSelectedWords", () => {
     const restored = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(restored?.words?.map((w) => w.text)).toEqual(["so ", "beau", "ti", "ful"]);
   });
+
+  it("regression: a linked copy split differently follows the merge", async () => {
+    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    const linked = (id: string, instanceIdx: number, words: NonNullable<LyricLine["words"]>): LyricLine => ({
+      id,
+      text: "every day",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx: 0,
+      words,
+    });
+    useProjectStore.getState().setLines([
+      linked("a0", 0, [
+        { text: "every ", begin: 0, end: 0.6 },
+        { text: "day", begin: 0.6, end: 1 },
+      ]),
+      linked("a1", 1, [
+        { text: "ev", begin: 10, end: 10.2 },
+        { text: "er", begin: 10.2, end: 10.4 },
+        { text: "y ", begin: 10.4, end: 10.6 },
+        { text: "day", begin: 10.6, end: 11 },
+      ]),
+    ]);
+
+    await mergeSelectedWords("a0", "word", [0, 1]);
+
+    const texts = (id: string) =>
+      useProjectStore
+        .getState()
+        .lines.find((l) => l.id === id)
+        ?.words?.map((w) => w.text);
+    expect(texts("a0")).toEqual(["everyday"]);
+    expect(texts("a1")).toEqual(["everyday"]);
+  });
 });
