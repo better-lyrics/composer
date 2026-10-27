@@ -18,6 +18,7 @@ interface ScrubMove {
 
 // -- Constants ----------------------------------------------------------------
 
+const BLOCK_MS = 60;
 const FOLLOW_S = 0.05;
 const SCRUB_HOLD_S = 0.12;
 const JUMP_S = 0.5;
@@ -46,6 +47,7 @@ function createStretch(): Promise<Stretch> {
       return SignalsmithStretch(sharedAudioContext());
     })
     .then((node) => {
+      void node.configure({ blockMs: BLOCK_MS });
       const gain = new GainNode(node.context, { gain: 0 });
       node.connect(gain).connect(node.context.destination);
       return { node, gain };

@@ -12,6 +12,7 @@ declare module "signalsmith-stretch" {
     addBuffers(channels: Float32Array[]): Promise<number>;
     dropBuffers(): Promise<{ start: number; end: number }>;
     latency(): Promise<number>;
+    configure(config: { blockMs?: number; intervalMs?: number }): Promise<void>;
   }
 
   const SignalsmithStretch: {
