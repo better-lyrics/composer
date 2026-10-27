@@ -68,12 +68,13 @@ function canonicalBase(code: unknown): string | null {
   }
 }
 
-// A checkpoint that doesn't list its languages keeps the base model's. Listed
+// A checkpoint that lists no readable language keeps the base model's. Listed
 // languages auto-align can't run are dropped, so a model never claims them.
 function parseLanguages(raw: unknown, fallback: string[]): string[] {
   if (!Array.isArray(raw)) return fallback;
-  const codes = raw.map(canonicalBase).filter((code): code is string => code !== null && isAlignableLanguage(code));
-  return [...new Set(codes.map((code) => baseLanguage(code) ?? code))];
+  const listed = raw.map(canonicalBase).filter((code): code is string => code !== null);
+  if (listed.length === 0) return fallback;
+  return [...new Set(listed.filter(isAlignableLanguage).map((code) => baseLanguage(code) ?? code))];
 }
 
 function parseEntry(raw: unknown, manifestUrl: string, fallback: AlignmentModel): AlignmentModel | null {

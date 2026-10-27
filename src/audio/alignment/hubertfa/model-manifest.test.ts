@@ -82,6 +82,21 @@ describe("parseAlignmentManifest", () => {
     expect(foreign.languages).toEqual([]);
   });
 
+  it("regression: an empty or unreadable language list keeps the base model's languages", () => {
+    const [, empty, unreadable] = parseAlignmentManifest(
+      {
+        models: [
+          { id: "empty", model: "empty.onnx", languages: [] },
+          { id: "unreadable", model: "unreadable.onnx", languages: ["not a code!", 3] },
+        ],
+      },
+      MANIFEST_URL,
+      BASE_URL,
+    );
+    expect(empty.languages).toEqual(BUILTIN_ALIGNMENT_MODEL.languages);
+    expect(unreadable.languages).toEqual(BUILTIN_ALIGNMENT_MODEL.languages);
+  });
+
   it("falls back to the built-in model alone for a malformed manifest", () => {
     expect(parseAlignmentManifest("not json", MANIFEST_URL, BASE_URL).map((m) => m.id)).toEqual([
       BUILTIN_ALIGNMENT_MODEL.id,
