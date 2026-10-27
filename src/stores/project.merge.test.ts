@@ -4,6 +4,7 @@
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import { mergeSelectedWords } from "@/views/timeline/merge-selected-words";
 import { beforeEach, describe, expect, it } from "vitest";
 
 beforeEach(() => {
@@ -529,5 +530,57 @@ describe("snapSyllablesFlush · background provenance", () => {
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+  });
+});
+
+describe("mergeSelectedWords", () => {
+  it("merges part of a split word into one syllable, undone in one step", async () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "beautiful",
+        agentId: "v1",
+        words: [
+          { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g1" },
+          { text: "ti", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+          { text: "ful", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+        ],
+      },
+    ]);
+
+    await mergeSelectedWords("line-1", "word", [1, 2]);
+
+    expect(useProjectStore.getState().lines[0].words).toEqual([
+      { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g1" },
+      { text: "tiful", begin: 0.3, end: 0.9, syllableGroupId: "g1" },
+    ]);
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].words?.map((w) => w.text)).toEqual(["beau", "ti", "ful"]);
+  });
+
+  it("carries the merge to linked siblings with the same rhythm without asking", async () => {
+    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    const linked = (id: string, instanceIdx: number, offset: number): LyricLine => ({
+      id,
+      text: "every",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx: 0,
+      words: [
+        { text: "ev", begin: offset, end: offset + 0.3, syllableGroupId: `g_${id}` },
+        { text: "er", begin: offset + 0.3, end: offset + 0.6, syllableGroupId: `g_${id}` },
+        { text: "y", begin: offset + 0.6, end: offset + 1, syllableGroupId: `g_${id}` },
+      ],
+    });
+    useProjectStore.getState().setLines([linked("a0", 0, 0), linked("a1", 1, 10)]);
+
+    await mergeSelectedWords("a0", "word", [1, 2]);
+
+    const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
+    expect(a1?.words?.map((w) => [w.text, w.begin, w.end])).toEqual([
+      ["ev", 10, 10.3],
+      ["ery", 10.3, 11],
+    ]);
   });
 });
