@@ -6,6 +6,7 @@ const LOG_PREFIX = "[LamePriming]";
 const XING_FRAMES_FLAG = 0x01;
 const XING_FIELD_SIZES: readonly number[] = [4, 4, 100, 4];
 const XING_HEADER_SIZE = 8;
+const LEGACY_LAME_OFFSET = 0x78;
 const SAMPLES_PER_FRAME_MPEG1 = 1152;
 const SAMPLES_PER_FRAME_MPEG2 = 576;
 // Trimmed and untrimmed lengths differ by delay + padding (at least 576); resampling moves a length by under 8.
@@ -34,6 +35,12 @@ interface LamePriming {
   padding: number;
   frameCount: number | null;
   samplesPerFrame: number;
+  legacySamples: number;
+}
+
+interface PrimingCrop {
+  beforeSeconds: number;
+  nowSeconds: number;
 }
 
 type LamePrimingDecode = "none" | "trimmed" | "untrimmed" | "unknown";
@@ -50,6 +57,7 @@ const NO_PRIMING: LamePriming = {
   padding: 0,
   frameCount: null,
   samplesPerFrame: 0,
+  legacySamples: 0,
 };
 
 // -- Functions -----------------------------------------------------------------
@@ -97,8 +105,16 @@ function readLameOffset(tagOffset: number, flags: number): number {
   );
 }
 
+// The double-crop build read the delay at a fixed offset, which is right only when every Xing field is present.
+function readLegacyPrimingSamples(bytes: Uint8Array, tagOffset: number): number {
+  const lameOffset = tagOffset + LEGACY_LAME_OFFSET;
+  if (lameOffset + 0x18 > bytes.length) return 0;
+  const samples = ((bytes[lameOffset + 0x15] << 4) | (bytes[lameOffset + 0x16] >> 4)) + DECODER_DELAY_SAMPLES;
+  return samples > PRIMING_HARD_CAP ? 0 : samples;
+}
+
 function parseLamePriming(input: ArrayBuffer | Uint8Array): LamePriming {
-  const empty = NO_PRIMING;
+  let empty = NO_PRIMING;
   const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
   const frameOffset = findFirstMp3FrameOffset(bytes);
   if (frameOffset + 4 > bytes.length) return empty;
@@ -122,6 +138,8 @@ function parseLamePriming(input: ArrayBuffer | Uint8Array): LamePriming {
     String.fromCharCode(bytes[tagOffset + 2]) +
     String.fromCharCode(bytes[tagOffset + 3]);
   if (tag !== "Xing" && tag !== "Info") return empty;
+  const legacySamples = readLegacyPrimingSamples(bytes, tagOffset);
+  empty = { ...NO_PRIMING, sampleRate, legacySamples };
 
   const flags = readXingFlags(bytes, tagOffset);
   if (flags === null) return empty;
@@ -142,6 +160,7 @@ function parseLamePriming(input: ArrayBuffer | Uint8Array): LamePriming {
     padding: ((mixed & 0x0f) << 8) | bytes[lameOffset + 0x17],
     frameCount: readFrameCount(bytes, tagOffset, flags),
     samplesPerFrame: versionBits === MPEG_VERSION_1 ? SAMPLES_PER_FRAME_MPEG1 : SAMPLES_PER_FRAME_MPEG2,
+    legacySamples,
   };
 }
 
@@ -156,9 +175,11 @@ function lamePrimingDecode(priming: LamePriming, decoded: DecodedLength): LamePr
   return "unknown";
 }
 
-// The double-crop build cut the priming whenever a tag had it; this build cuts it only from an untrimmed decode.
-function primingCropChanged(priming: LamePriming, decoded: DecodedLength): boolean {
-  return priming.samples > 0 && priming.sampleRate > 0 && lamePrimingDecode(priming, decoded) !== "untrimmed";
+// The double-crop build cut its legacy reading whenever a tag had one; this build cuts only an untrimmed decode.
+function primingCrop(priming: LamePriming, decoded: DecodedLength): PrimingCrop {
+  if (priming.sampleRate <= 0) return { beforeSeconds: 0, nowSeconds: 0 };
+  const nowSamples = lamePrimingDecode(priming, decoded) === "untrimmed" ? priming.samples : 0;
+  return { beforeSeconds: priming.legacySamples / priming.sampleRate, nowSeconds: nowSamples / priming.sampleRate };
 }
 
 function primingToCrop(priming: LamePriming, decoded: DecodedLength, outputSampleRate = decoded.sampleRate): number {
@@ -201,7 +222,8 @@ export {
   findFirstMp3FrameOffset,
   lamePrimingDecode,
   parseLamePriming,
-  primingCropChanged,
+  primingCrop,
   primingToCrop,
   stripLeading,
 };
+export type { PrimingCrop };

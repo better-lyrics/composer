@@ -3,7 +3,7 @@ import {
   findFirstMp3FrameOffset,
   lamePrimingDecode,
   parseLamePriming,
-  primingCropChanged,
+  primingCrop,
   primingToCrop,
   stripLeading,
 } from "@/audio/lame-priming";
@@ -274,6 +274,7 @@ describe("parseLamePriming tag fields", () => {
       padding: 1260,
       frameCount: 193,
       samplesPerFrame: 1152,
+      legacySamples: 576 + 528,
     });
   });
 
@@ -368,26 +369,51 @@ describe("lamePrimingDecode and primingToCrop", () => {
   });
 });
 
-describe("primingCropChanged", () => {
+describe("primingCrop", () => {
   const priming = parseLamePriming(CBR_TAG);
+  const P = 1104 / 44_100;
 
-  it("is true when the old code cropped and the new code does not", () => {
-    expect(primingCropChanged(priming, { length: SOURCE_LENGTH, sampleRate: 44_100 })).toBe(true);
+  it("reads what the double-crop build cut and what this build cuts from a trimmed decode", () => {
+    expect(primingCrop(priming, { length: SOURCE_LENGTH, sampleRate: 44_100 })).toEqual({
+      beforeSeconds: P,
+      nowSeconds: 0,
+    });
   });
 
-  it("is false when both crop the same", () => {
-    expect(primingCropChanged(priming, { length: UNTRIMMED_LENGTH, sampleRate: 44_100 })).toBe(false);
-    expect(primingCropChanged(parseLamePriming(new Uint8Array(4)), { length: 1000, sampleRate: 44_100 })).toBe(false);
+  it("cuts the same from an untrimmed decode", () => {
+    expect(primingCrop(priming, { length: UNTRIMMED_LENGTH, sampleRate: 44_100 })).toEqual({
+      beforeSeconds: P,
+      nowSeconds: P,
+    });
   });
 
   describe("edge cases", () => {
-    it("regression: is true for a decode that matches neither length, which the old code cropped", () => {
+    it("cuts nothing either way without a tag", () => {
+      expect(primingCrop(parseLamePriming(new Uint8Array(4)), { length: 1000, sampleRate: 44_100 })).toEqual({
+        beforeSeconds: 0,
+        nowSeconds: 0,
+      });
+    });
+
+    it("regression: the old cut still counts for a decode that matches neither length", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-      expect(primingCropChanged(priming, { length: 200_000, sampleRate: 44_100 })).toBe(true);
-      expect(
-        primingCropChanged(parseLamePriming(buildLameTagFrame()), { length: SOURCE_LENGTH, sampleRate: 44_100 }),
-      ).toBe(true);
+      expect(primingCrop(priming, { length: 200_000, sampleRate: 44_100 })).toEqual({
+        beforeSeconds: P,
+        nowSeconds: 0,
+      });
       warn.mockRestore();
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: reads the old cut at the old fixed offset when the Xing header has only a frame count", () => {
+      const framesOnly = buildLameTagFrame({ flags: 0x01, frameCount: 193 });
+      const parsed = parseLamePriming(framesOnly);
+      expect(parsed.samples).toBe(1104);
+      expect(primingCrop(parsed, { length: SOURCE_LENGTH, sampleRate: 44_100 })).toEqual({
+        beforeSeconds: 528 / 44_100,
+        nowSeconds: 0,
+      });
     });
   });
 });

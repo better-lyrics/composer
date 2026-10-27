@@ -1,11 +1,17 @@
-import { cropAudioBufferHead, parseLamePriming, primingCropChanged, primingToCrop } from "@/audio/lame-priming";
+import {
+  type PrimingCrop,
+  cropAudioBufferHead,
+  parseLamePriming,
+  primingCrop,
+  primingToCrop,
+} from "@/audio/lame-priming";
 import { sharedAudioContext } from "@/audio/shared-audio-context";
 
 // -- Types --------------------------------------------------------------------
 
 interface DecodedSource {
   audio: AudioBuffer;
-  cropChanged: boolean;
+  crop: PrimingCrop;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -25,7 +31,7 @@ async function decodeWithoutPriming(source: Blob): Promise<DecodedSource> {
   const decoded = await ctx.decodeAudioData(bytes);
   return {
     audio: cropAudioBufferHead(decoded, primingToCrop(priming, decoded), ctx),
-    cropChanged: primingCropChanged(priming, decoded),
+    crop: primingCrop(priming, decoded),
   };
 }
 
@@ -44,16 +50,18 @@ async function decodeSourceAudio(source: Blob): Promise<AudioBuffer> {
   return (await decodeSource(source)).audio;
 }
 
-async function decodeCropChanged(source: Blob): Promise<boolean> {
-  if (parseLamePriming(await source.arrayBuffer()).samples <= 0) return false;
-  return (await decodeSource(source)).cropChanged;
+async function decodePrimingCrop(source: Blob): Promise<PrimingCrop> {
+  const priming = parseLamePriming(await source.arrayBuffer());
+  if (priming.samples <= 0 && priming.legacySamples <= 0) return { beforeSeconds: 0, nowSeconds: 0 };
+  return (await decodeSource(source)).crop;
 }
 
 // Data built from a decode that cropped LAME priming twice is keyed apart from data built from the corrected one.
 async function primingDecodeTag(source: Blob): Promise<string> {
-  return (await decodeCropChanged(source)) ? CROP_CHANGED_DECODE_TAG : "";
+  const crop = await decodePrimingCrop(source);
+  return crop.beforeSeconds !== crop.nowSeconds ? CROP_CHANGED_DECODE_TAG : "";
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { decodeCropChanged, decodeSourceAudio, primingDecodeTag };
+export { decodePrimingCrop, decodeSourceAudio, primingDecodeTag };

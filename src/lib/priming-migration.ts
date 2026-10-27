@@ -1,5 +1,5 @@
-import { decodeCropChanged } from "@/audio/decoded-source-audio";
-import { parseLamePriming } from "@/audio/lame-priming";
+import { decodePrimingCrop } from "@/audio/decoded-source-audio";
+import type { PrimingCrop } from "@/audio/lame-priming";
 import type { LyricLine } from "@/domain/line/model";
 import { shiftWords } from "@/domain/line/shift";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
@@ -54,11 +54,11 @@ interface PrimingFlags {
   primingCorrected?: boolean;
 }
 
-// Corrected implies stripped: a new project can be saved before the audio engine sets primingStripped.
-function primingMigrationShift(flags: PrimingFlags, primingSeconds: number, decoderTrims: boolean): number {
+// Times saved after #117 were synced against the old cut, older ones against no cut. Corrected implies stripped.
+function primingMigrationShift(flags: PrimingFlags, crop: PrimingCrop): number {
   if (flags.primingCorrected === true) return 0;
-  const stripShift = flags.primingStripped === true ? 0 : -primingSeconds;
-  return stripShift + (decoderTrims ? primingSeconds : 0);
+  const syncedCut = flags.primingStripped === true ? crop.beforeSeconds : 0;
+  return syncedCut - crop.nowSeconds;
 }
 
 function shiftedSongTimings(timings: SongTimings, deltaSec: number): ShiftedSongTimings {
@@ -81,9 +81,9 @@ function shiftSavedTimings(project: SavedProject, deltaSec: number): void {
   if (grid) project.beatGrid = shifted.beatGrid;
 }
 
-async function cropChangedFor(audio: File): Promise<boolean | null> {
+async function primingCropFor(audio: File): Promise<PrimingCrop | null> {
   try {
-    return await decodeCropChanged(audio);
+    return await decodePrimingCrop(audio);
   } catch (error) {
     console.warn(LOG_PREFIX, "could not decode the project audio; its timings stay as saved", error);
     return null;
@@ -107,12 +107,11 @@ async function primingCorrectionShift(
   audio: File | undefined,
 ): Promise<number | null> {
   if (!audio || (flags.primingStripped === true && flags.primingCorrected === true)) return null;
-  const { samples, sampleRate } = parseLamePriming(await audio.arrayBuffer());
-  const primingSeconds = samples > 0 && sampleRate > 0 ? samples / sampleRate : 0;
-  const cropChanged = flags.primingCorrected !== true && primingSeconds > 0 ? await cropChangedFor(audio) : false;
-  if (cropChanged === null) return null;
-  if (cropChanged) await correctProjectStems(id, primingSeconds);
-  return primingMigrationShift(flags, primingSeconds, cropChanged);
+  if (flags.primingCorrected === true) return 0;
+  const crop = await primingCropFor(audio);
+  if (!crop) return null;
+  if (crop.beforeSeconds !== crop.nowSeconds) await correctProjectStems(id, crop.beforeSeconds);
+  return primingMigrationShift(flags, crop);
 }
 
 async function migratePrimingTimings(id: string, project: SavedProject, audio: File | undefined): Promise<boolean> {

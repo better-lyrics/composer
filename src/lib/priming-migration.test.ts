@@ -258,22 +258,31 @@ describe("shiftAllTimings: positive shifts", () => {
 const P = 1104 / 44_100;
 
 describe("primingMigrationShift", () => {
+  const trimmed = { beforeSeconds: P, nowSeconds: 0 };
+  const untrimmed = { beforeSeconds: P, nowSeconds: P };
+
   it("moves a project timed against the double crop later", () => {
-    expect(primingMigrationShift({ primingStripped: true }, P, true)).toBe(P);
+    expect(primingMigrationShift({ primingStripped: true }, trimmed)).toBe(P);
   });
 
   it("regression: a project saved before #117 nets no shift", () => {
-    expect(primingMigrationShift({}, P, true)).toBe(0);
+    expect(primingMigrationShift({}, trimmed)).toBe(0);
   });
 
   it("keeps the #117 shift where the decoder does not trim", () => {
-    expect(primingMigrationShift({}, P, false)).toBe(-P);
-    expect(primingMigrationShift({ primingStripped: true }, P, false)).toBe(0);
+    expect(primingMigrationShift({}, untrimmed)).toBe(-P);
+    expect(primingMigrationShift({ primingStripped: true }, untrimmed)).toBe(0);
   });
 
   it("never shifts a corrected project", () => {
-    expect(primingMigrationShift({ primingCorrected: true }, P, true)).toBe(0);
-    expect(primingMigrationShift({ primingCorrected: true }, P, false)).toBe(0);
+    expect(primingMigrationShift({ primingCorrected: true }, trimmed)).toBe(0);
+    expect(primingMigrationShift({ primingCorrected: true }, untrimmed)).toBe(0);
+  });
+
+  it("regression: moves by what the old build cut, not by the newly parsed delay", () => {
+    expect(primingMigrationShift({ primingStripped: true }, { beforeSeconds: 528 / 44_100, nowSeconds: 0 })).toBe(
+      528 / 44_100,
+    );
   });
 });
 
