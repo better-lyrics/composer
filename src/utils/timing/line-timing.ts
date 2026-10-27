@@ -1,5 +1,6 @@
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
+import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { shiftLineTiming } from "@/domain/line/shift";
 
@@ -18,7 +19,7 @@ function nudgeLineBegin(
   duration = Number.POSITIVE_INFINITY,
 ) {
   const line = lines[lineIdx];
-  if (line?.begin === undefined) return;
+  if (!line || !effectiveBounds(line)) return;
 
   const range = timeRangeResolver(lines, groups, duration)(line);
   updateLineWithHistory(line.id, shiftLineTiming(line, delta, range), { propagateToSiblings: false });
@@ -32,10 +33,11 @@ function setLineBegin(
   groups: readonly LinkGroup[] = [],
   duration = Number.POSITIVE_INFINITY,
 ) {
-  const begin = lines[lineIdx]?.begin;
-  if (begin === undefined) return;
+  const line = lines[lineIdx];
+  const bounds = line && effectiveBounds(line);
+  if (!bounds) return;
 
-  nudgeLineBegin(lines, lineIdx, newBegin - begin, updateLineWithHistory, groups, duration);
+  nudgeLineBegin(lines, lineIdx, newBegin - bounds.begin, updateLineWithHistory, groups, duration);
 }
 
 export { nudgeLineBegin, setLineBegin };
