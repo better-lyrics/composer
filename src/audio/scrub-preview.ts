@@ -12,10 +12,10 @@ type BufferLoader = () => Promise<AudioBuffer>;
 
 // -- Constants ----------------------------------------------------------------
 
-const SNIPPET_S = 0.12;
-const CROSSFADE_S = 0.04;
-const GRAIN_HOP_S = SNIPPET_S - CROSSFADE_S;
-const ALIGN_SEARCH_S = 0.015;
+const GRAIN_S = 0.024;
+const CROSSFADE_S = 0.008;
+const GRAIN_HOP_S = GRAIN_S - CROSSFADE_S;
+const ALIGN_SEARCH_S = 0.008;
 const LOOKAHEAD_S = 0.05;
 const STOP_FADE_S = 0.01;
 const STOP_AFTER_MS = 100;
@@ -82,14 +82,14 @@ function nextGrainOffset(source: AudioBuffer): number {
 }
 
 function startGrain(ctx: AudioContext, source: AudioBuffer, at: number): void {
-  const offset = Math.max(0, Math.min(nextGrainOffset(source), source.duration - SNIPPET_S));
+  const offset = Math.max(0, Math.min(nextGrainOffset(source), source.duration - GRAIN_S));
   const grain = startScrubSound(ctx, {
     buffer: source,
     offset,
     at,
     volume: targetVolume(),
     fadeS: CROSSFADE_S,
-    lengthS: SNIPPET_S,
+    lengthS: GRAIN_S,
   });
   grain.source.addEventListener("ended", () => {
     grains = grains.filter((live) => live !== grain);
@@ -186,7 +186,7 @@ function play(time: number, velocity: number): void {
     return;
   }
 
-  targetTime = Math.max(0, Math.min(time, Math.max(0, buffer.duration - SNIPPET_S)));
+  targetTime = Math.max(0, Math.min(time, Math.max(0, buffer.duration - GRAIN_S)));
   lastEventMs = performance.now();
   activeSnippet = { time: targetTime, rate: velocity };
   if (!releaseScheduler) {
