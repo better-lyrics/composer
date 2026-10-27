@@ -1,5 +1,6 @@
 import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
+import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
 import type { Placement } from "@floating-ui/react";
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
@@ -107,18 +108,16 @@ const fieldTrigger = ({
 
 // -- Components ---------------------------------------------------------------
 
-const OptionBadge: React.FC<{ text: string }> = ({ text }) => (
-  <span className="ml-1.5 inline-flex h-[18px] items-center rounded-md px-1.5 align-[1px] text-[11px] font-semibold bg-composer-accent/15 text-composer-accent-text select-none">
-    {text}
-  </span>
-);
-
 const OptionLabel: React.FC<{ option: SelectOption }> = ({ option }) =>
   option.detail ? (
     <span className="flex flex-col gap-0.5 min-w-0">
       <span className="text-pretty">
         {option.label}
-        {option.badge && <OptionBadge text={option.badge} />}
+        {option.badge && (
+          <StatusChip tone="accent" className="ml-1.5 align-[1px]">
+            {option.badge}
+          </StatusChip>
+        )}
       </span>
       <span className="text-xs text-(--muted) tabular-nums">{option.detail}</span>
     </span>
