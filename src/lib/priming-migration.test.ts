@@ -16,14 +16,14 @@ function wordSynced(id: string, words: WordTiming[]): LyricLine {
 // -- Tests --------------------------------------------------------------------
 
 describe("shiftAllTimings", () => {
-  it("subtracts the shift from line begin and end", () => {
-    const out = shiftAllTimings([lineSynced("L", 1.0, 2.0)], 0.5);
+  it("moves line begin and end earlier for a negative shift", () => {
+    const out = shiftAllTimings([lineSynced("L", 1.0, 2.0)], -0.5);
     const line = out[0] as { begin: number; end: number };
     expect(line.begin).toBeCloseTo(0.5);
     expect(line.end).toBeCloseTo(1.5);
   });
 
-  it("subtracts the shift from every word begin and end", () => {
+  it("moves every word begin and end earlier for a negative shift", () => {
     const out = shiftAllTimings(
       [
         wordSynced("L", [
@@ -31,7 +31,7 @@ describe("shiftAllTimings", () => {
           { text: "you", begin: 1.5, end: 2.0 },
         ]),
       ],
-      0.5,
+      -0.5,
     );
     const words = (out[0] as { words: WordTiming[] }).words;
     expect(words[0].begin).toBeCloseTo(0.5);
@@ -40,7 +40,7 @@ describe("shiftAllTimings", () => {
     expect(words[1].end).toBeCloseTo(1.5);
   });
 
-  it("subtracts the shift from background words", () => {
+  it("moves background words earlier for a negative shift", () => {
     const lines: LyricLine[] = [
       {
         id: "L",
@@ -51,7 +51,7 @@ describe("shiftAllTimings", () => {
         backgroundWords: [{ text: "bg", begin: 1.2, end: 1.8 }],
       },
     ];
-    const out = shiftAllTimings(lines, 0.5);
+    const out = shiftAllTimings(lines, -0.5);
     const bg = (out[0] as { backgroundWords: WordTiming[] }).backgroundWords;
     expect(bg[0].begin).toBeCloseTo(0.7);
     expect(bg[0].end).toBeCloseTo(1.3);
@@ -59,7 +59,7 @@ describe("shiftAllTimings", () => {
 
   it("leaves untimed lines untouched", () => {
     const lines: LyricLine[] = [{ id: "L", text: "no timing", agentId: "a" }];
-    const out = shiftAllTimings(lines, 0.5);
+    const out = shiftAllTimings(lines, -0.5);
     expect(out[0]).toEqual(lines[0]);
   });
 
@@ -78,7 +78,7 @@ describe("shiftAllTimings", () => {
         words: [{ text: "x", begin: 1.0, end: 1.5, explicit: true, syllableGroupId: "g1" }],
       },
     ];
-    const shifted = shiftAllTimings(lines, 0.5);
+    const shifted = shiftAllTimings(lines, -0.5);
     const w = (shifted[0] as { words: WordTiming[] }).words[0];
     expect(w.explicit).toBe(true);
     expect(w.syllableGroupId).toBe("g1");
@@ -96,7 +96,7 @@ describe("shiftAllTimings", () => {
         backgroundWords: [{ text: "bg", begin: 1.0, end: 1.5, explicit: true, syllableGroupId: "g2" }],
       },
     ];
-    const out = shiftAllTimings(lines, 0.5);
+    const out = shiftAllTimings(lines, -0.5);
     const bg = (out[0] as { backgroundWords: WordTiming[] }).backgroundWords[0];
     expect(bg.explicit).toBe(true);
     expect(bg.syllableGroupId).toBe("g2");
@@ -124,7 +124,7 @@ describe("shiftAllTimings", () => {
         end: 3.0,
       },
     ];
-    const out = shiftAllTimings(lines, 0.5);
+    const out = shiftAllTimings(lines, -0.5);
     expect(out[0].agentId).toBe("v1");
     expect(out[0].groupId).toBe("g1");
     expect(out[0].instanceIdx).toBe(2);
@@ -138,7 +138,7 @@ describe("shiftAllTimings", () => {
 
 describe("shiftAllTimings: edge cases", () => {
   it("clamps negative line timings to 0", () => {
-    const out = shiftAllTimings([lineSynced("L", 0.1, 0.4)], 0.5);
+    const out = shiftAllTimings([lineSynced("L", 0.1, 0.4)], -0.5);
     const line = out[0] as { begin: number; end: number };
     expect(line.begin).toBe(0);
     expect(line.end).toBe(0);
@@ -152,7 +152,7 @@ describe("shiftAllTimings: edge cases", () => {
           { text: "later", begin: 0.6, end: 1.0 },
         ]),
       ],
-      0.5,
+      -0.5,
     );
     const words = (out[0] as { words: WordTiming[] }).words;
     expect(words[0].begin).toBe(0);
@@ -171,20 +171,20 @@ describe("shiftAllTimings: edge cases", () => {
         backgroundWords: [{ text: "bg", begin: 0.1, end: 0.3 }],
       },
     ];
-    const out = shiftAllTimings(lines, 0.5);
+    const out = shiftAllTimings(lines, -0.5);
     const bg = (out[0] as { backgroundWords: WordTiming[] }).backgroundWords[0];
     expect(bg.begin).toBe(0);
     expect(bg.end).toBe(0);
   });
 
   it("handles an empty lines array", () => {
-    const out = shiftAllTimings([], 0.5);
+    const out = shiftAllTimings([], -0.5);
     expect(out).toEqual([]);
   });
 
   it("handles a word-synced line with no words", () => {
     const lines: LyricLine[] = [{ id: "L", text: "", agentId: "a", words: [] }];
-    const out = shiftAllTimings(lines, 0.5);
+    const out = shiftAllTimings(lines, -0.5);
     expect((out[0] as { words: WordTiming[] }).words).toEqual([]);
   });
 });
@@ -203,7 +203,7 @@ describe("shiftAllTimings: invariants", () => {
       },
     ];
     const snapshot = JSON.parse(JSON.stringify(lines));
-    shiftAllTimings(lines, 0.5);
+    shiftAllTimings(lines, -0.5);
     expect(JSON.parse(JSON.stringify(lines))).toEqual(snapshot);
   });
 
@@ -213,13 +213,13 @@ describe("shiftAllTimings: invariants", () => {
       { id: "L2", text: "untimed", agentId: "a" },
       wordSynced("L3", [{ text: "x", begin: 1.0, end: 1.5 }]),
     ];
-    const out = shiftAllTimings(lines, 0.5);
+    const out = shiftAllTimings(lines, -0.5);
     expect(out.length).toBe(lines.length);
   });
 
   it("preserves line ids and order", () => {
     const lines: LyricLine[] = [lineSynced("L1", 1.0, 2.0), lineSynced("L2", 3.0, 4.0), lineSynced("L3", 5.0, 6.0)];
-    const out = shiftAllTimings(lines, 0.5);
+    const out = shiftAllTimings(lines, -0.5);
     expect(out.map((l) => l.id)).toEqual(["L1", "L2", "L3"]);
   });
 
@@ -227,5 +227,28 @@ describe("shiftAllTimings: invariants", () => {
     const lines = [lineSynced("L", 1.0, 2.0)];
     const out = shiftAllTimings(lines, 0);
     expect(out).toBe(lines);
+  });
+});
+
+describe("shiftAllTimings: positive shifts", () => {
+  it("moves line, word and background timings later with no upper clamp", () => {
+    const lines: LyricLine[] = [
+      lineSynced("L1", 1, 2),
+      {
+        id: "L2",
+        text: "a",
+        agentId: "a",
+        words: [{ text: "a", begin: 3, end: 4 }],
+        backgroundText: "b",
+        backgroundWords: [{ text: "b", begin: 3.5, end: 3.9 }],
+      },
+    ];
+    const out = shiftAllTimings(lines, 0.025);
+    const line = out[0] as { begin: number; end: number };
+    const word = out[1] as { words: WordTiming[]; backgroundWords: WordTiming[] };
+    expect(line.begin).toBeCloseTo(1.025, 9);
+    expect(line.end).toBeCloseTo(2.025, 9);
+    expect(word.words[0].begin).toBeCloseTo(3.025, 9);
+    expect(word.backgroundWords[0].end).toBeCloseTo(3.925, 9);
   });
 });
