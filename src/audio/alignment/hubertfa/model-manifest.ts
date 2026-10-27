@@ -55,7 +55,7 @@ function builtinModel(baseUrl: string): AlignmentModel {
 }
 
 // The base language of a code ("en_US" -> "en"), or null for one Intl can't
-// name: the picker labels its tabs with Intl.DisplayNames, which throws on those.
+// name: the picker names languages with Intl.DisplayNames, which throws on those.
 function baseLanguage(code: unknown): string | null {
   if (typeof code !== "string") return null;
   const base = code.trim().replaceAll("_", "-").split("-")[0].toLowerCase();
