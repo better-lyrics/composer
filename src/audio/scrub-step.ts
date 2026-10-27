@@ -35,4 +35,3 @@ function scrubStep(voice: ScrubVoiceState | null, time: number, previousTime: nu
 // -- Exports ------------------------------------------------------------------
 
 export { SCRUB_JUMP_S, scrubStep };
-export type { ScrubStep, ScrubVoiceState };

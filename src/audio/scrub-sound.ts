@@ -6,6 +6,7 @@ interface ScrubSound {
   source: AudioBufferSourceNode;
   gain: GainNode;
   envelope: EnvelopePoint[];
+  endsAt: number;
 }
 
 interface ScrubSoundOptions {
@@ -41,10 +42,9 @@ function scheduleEnvelope(gain: GainNode, envelope: EnvelopePoint[]): void {
 
 function startScrubSound(ctx: AudioContext, options: ScrubSoundOptions): ScrubSound {
   const { buffer, offset, at, volume, rate, fadeS, lengthS } = options;
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-  source.playbackRate.setValueAtTime(rate, at);
-  const gain = ctx.createGain();
+  const source = new AudioBufferSourceNode(ctx, { buffer, playbackRate: rate });
+  // Starting at 0, not the default 1, keeps a frame that rounds ahead of the first event silent.
+  const gain = new GainNode(ctx, { gain: 0 });
   const envelope: EnvelopePoint[] = [
     { at, value: 0 },
     { at: at + fadeS, value: volume },
@@ -56,20 +56,25 @@ function startScrubSound(ctx: AudioContext, options: ScrubSoundOptions): ScrubSo
   source.connect(gain);
   gain.connect(ctx.destination);
   source.start(at, offset);
-  if (lengthS !== undefined) source.stop(at + lengthS);
-  return { source, gain, envelope };
+  const endsAt = lengthS === undefined ? Number.POSITIVE_INFINITY : at + lengthS;
+  if (lengthS !== undefined) source.stop(endsAt);
+  return { source, gain, envelope, endsAt };
 }
 
-// Fades from the value the envelope holds at `at`, never from `gain.value`, which lags the render thread.
+// Fades from the value scheduled for `at`, since `gain.value` lags the render thread.
 function fadeOutScrubSound(sound: ScrubSound, at: number, fadeS: number): void {
+  if (at + fadeS >= sound.endsAt) return;
   const from = envelopeValueAt(sound.envelope, at);
-  sound.envelope = [
-    { at, value: from },
-    { at: at + fadeS, value: 0 },
-  ];
-  sound.gain.gain.cancelScheduledValues(at);
-  scheduleEnvelope(sound.gain, sound.envelope);
-  sound.source.stop(at + fadeS);
+  const earlier = sound.envelope.filter((point) => point.at < at);
+  const param = sound.gain.gain;
+  param.cancelScheduledValues(at);
+  // Ramping to the held value keeps a fade-in that the cancel cut short on its line.
+  if (earlier.length > 0) param.linearRampToValueAtTime(from, at);
+  else param.setValueAtTime(from, at);
+  param.linearRampToValueAtTime(0, at + fadeS);
+  sound.envelope = [...earlier, { at, value: from }, { at: at + fadeS, value: 0 }];
+  sound.endsAt = at + fadeS;
+  sound.source.stop(sound.endsAt);
 }
 
 // -- Exports ------------------------------------------------------------------

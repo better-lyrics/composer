@@ -53,6 +53,11 @@ function getContext(): AudioContext {
   return ctx;
 }
 
+// currentTime can trail the render thread by one callback, and a ramp that starts in the past jumps.
+function scheduleTime(ctx: AudioContext): number {
+  return ctx.currentTime + ctx.baseLatency;
+}
+
 function targetVolume(): number {
   const { isMuted, volume } = useAudioStore.getState();
   return isMuted ? 0 : volume;
@@ -129,7 +134,7 @@ function stopHeldVoice(nowMs: number): void {
     return;
   }
   if (nowMs - lastPlayAtMs <= stopAfterMs) return;
-  fadeOutScrubSound(voice.sound, sharedAudioContext().currentTime, CROSSFADE_S);
+  fadeOutScrubSound(voice.sound, scheduleTime(sharedAudioContext()), CROSSFADE_S);
   voice = null;
   activeSnippet = null;
   releaseWatchdogFrames();
@@ -200,7 +205,7 @@ function play(time: number, velocity: number): void {
   }
 
   const ctx = getContext();
-  const now = ctx.currentTime;
+  const now = scheduleTime(ctx);
   const nowMs = performance.now();
   const clampedTime = Math.max(0, Math.min(time, Math.max(0, buffer.duration - SNIPPET_S)));
   const intervalMs = nowMs - lastPlayAtMs;
@@ -221,7 +226,7 @@ function play(time: number, velocity: number): void {
 
 function stop(): void {
   pendingSnippet = null;
-  if (voice || clip) fadeOutAll(sharedAudioContext().currentTime);
+  if (voice || clip) fadeOutAll(scheduleTime(sharedAudioContext()));
   releaseWatchdogFrames();
   activeSnippet = null;
   previousTime = Number.NEGATIVE_INFINITY;
