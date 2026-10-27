@@ -9,7 +9,9 @@ import { loadProjectRecord } from "@/lib/project-storage";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { createMp3File } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
+import { createLine } from "@/test/factories";
 import { type FakeBridge, installFakeBridge } from "@/test/fake-bridge";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
@@ -111,5 +113,32 @@ describe("opening a YouTube project with Composer Bridge on", () => {
       await flushPendingSave();
       expect((await loadProjectRecord("p"))?.audioSource).toEqual({ kind: "file", name: "city.wav" });
     });
+  });
+});
+
+describe("an old YouTube project whose MP3 audio arrives", () => {
+  it("regression: moves the project's times before the audio is published", async () => {
+    bridge.serveAudio(VIDEO_ID, await createMp3File().arrayBuffer(), "audio/mpeg");
+    let beginWhenPublished: number | undefined;
+    const unsubscribe = useAudioStore.subscribe((state) => {
+      if (beginWhenPublished !== undefined || state.source?.type !== "youtube" || !state.source.file) return;
+      beginWhenPublished = (useProjectStore.getState().lines[0] as { begin: number }).begin;
+    });
+    await seedStoredProject("p", {
+      open: true,
+      project: {
+        ...songTitled("Song"),
+        audioSource: { kind: "youtube", videoId: VIDEO_ID },
+        lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+        primingStripped: true,
+        primingCorrected: false,
+      },
+    });
+    await render(<AppHost />);
+    await getPersistenceSettled();
+
+    await expect.poll(() => beginWhenPublished).toBeDefined();
+    unsubscribe();
+    expect(beginWhenPublished).toBeCloseTo(1 + 1104 / 44_100, 9);
   });
 });
