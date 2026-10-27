@@ -9,7 +9,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
 import { stripSplitCharacter } from "@/utils/split-character";
-import { createBgWordsFromTextAt, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { createTrackWordsFromTextAt, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { elementXToTime } from "@/views/timeline/coords";
 import { BG_DROP_ZONE_HEIGHT } from "@/views/timeline/row-geometry";
@@ -63,12 +63,16 @@ function openTrackContextMenu(e: React.MouseEvent, lineId: string, lineIndex: nu
 }
 
 function addWordAt(line: LyricLine, time: number): void {
-  const slot = insertionSlotAt(lineRangeOf(line), time);
+  const range = lineRangeOf(line);
+  const slot = insertionSlotAt(range, time);
   if (!slot) return;
-  const text = stripSplitCharacter(line.text).slice(0, MAIN_LABEL_MAX_CHARS) || "...";
-  useProjectStore
-    .getState()
-    .updateLineWithHistory(line.id, { words: [{ text, begin: slot.begin, end: slot.end }], text });
+  const { updateLineWithHistory } = useProjectStore.getState();
+  const timedText = createTrackWordsFromTextAt(line, "word", slot.begin, range.max);
+  if (timedText) {
+    updateLineWithHistory(line.id, { words: timedText });
+    return;
+  }
+  updateLineWithHistory(line.id, { words: [{ text: "...", begin: slot.begin, end: slot.end }] });
   useTimelineStore.getState().setEditingWord({ lineId: line.id, wordIndex: 0, type: "word" });
 }
 
@@ -77,7 +81,7 @@ function addBackgroundWordAt(line: LyricLine, time: number): void {
   const slot = insertionSlotAt(range, time);
   if (!slot) return;
   const { updateLineWithHistory } = useProjectStore.getState();
-  const timedText = createBgWordsFromTextAt(line, slot.begin, range.max);
+  const timedText = createTrackWordsFromTextAt(line, "bg", slot.begin, range.max);
   if (timedText) {
     updateLineWithHistory(line.id, manualBackgroundWordEdit(timedText));
     return;
