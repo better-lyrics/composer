@@ -33,6 +33,10 @@ describe("scrubStep", () => {
   });
 
   describe("edge cases", () => {
+    it("regression: treats a sub-millisecond step back as jitter, not a reversal", () => {
+      expect(scrubStep(voice, 9.9995, 10, 1).kind).toBe("steer");
+    });
+
     it("keeps the rate inside 0.05x to 4x", () => {
       const fast = scrubStep(voice, 10.14, 10, 4);
       const slow = scrubStep({ position: 10.01 }, 10.01, 10, 0.02);

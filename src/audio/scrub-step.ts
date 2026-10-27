@@ -9,6 +9,7 @@ type ScrubStep = { kind: "start"; rate: number } | { kind: "steer"; rate: number
 // -- Constants ----------------------------------------------------------------
 
 const SCRUB_JUMP_S = 0.15;
+const REVERSAL_TOLERANCE_S = 0.002;
 const MIN_VOICE_RATE = 0.05;
 const MAX_VOICE_RATE = 4;
 // Rate added per second of drift, so the voice closes a gap to the playhead in about 250 ms.
@@ -21,7 +22,7 @@ function clampRate(rate: number): number {
 }
 
 function scrubStep(voice: ScrubVoiceState | null, time: number, previousTime: number, speed: number): ScrubStep {
-  if (time < previousTime) return { kind: "clip" };
+  if (time < previousTime - REVERSAL_TOLERANCE_S) return { kind: "clip" };
   const start: ScrubStep = { kind: "start", rate: clampRate(speed) };
   if (!voice) return start;
   const drift = time - voice.position;
