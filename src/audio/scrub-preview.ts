@@ -70,19 +70,19 @@ function channelsOf(source: AudioBuffer): Float32Array[] {
   return channels;
 }
 
-// Grains continue the song at 1x for up to RUN_S past the playhead, so a slow scrub plays whole syllables.
-// Past that the run restarts at the playhead if it moved. Null means the run is over.
+// A playhead that moved starts a new run there; a still playhead plays its run out once, up to RUN_S.
+// Null means the run is over.
 function nextGrainOffset(source: AudioBuffer): number | null {
   const continuation = lastGrainOffset + GRAIN_HOP_S;
-  const runEnd = Math.min(targetTime + RUN_S, source.duration - GRAIN_S);
-  if (continuation >= targetTime && continuation <= runEnd) return continuation;
-  if (continuation > runEnd && targetTime === runTarget) return null;
+  if (targetTime === runTarget) {
+    return continuation <= Math.min(runTarget + RUN_S, source.duration - GRAIN_S) ? continuation : null;
+  }
   runTarget = targetTime;
   if (!Number.isFinite(lastGrainOffset)) return targetTime;
   return alignedGrainOffset(
     channelsOf(source),
     source.sampleRate,
-    lastGrainOffset + GRAIN_HOP_S,
+    continuation,
     targetTime,
     ALIGN_SEARCH_S,
     CROSSFADE_S,
