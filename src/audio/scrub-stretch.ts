@@ -48,11 +48,16 @@ function createStretch(): Promise<Stretch> {
       const gain = new GainNode(node.context, { gain: 0 });
       node.connect(gain).connect(node.context.destination);
       return { node, gain };
+    })
+    .catch((err: unknown) => {
+      stretchPromise = null;
+      throw err;
     });
   return stretchPromise;
 }
 
 // The node keeps its own copy of the samples, so it is loaded once per buffer and dropped when the buffer goes.
+// A failed load is logged and forgotten so the next call retries; `loading` itself never rejects.
 function loadInto(node: StretchNode, buffer: AudioBuffer | null): Promise<void> {
   if (loadedBuffer === buffer) return loading;
   loadedBuffer = buffer;
@@ -62,7 +67,13 @@ function loadInto(node: StretchNode, buffer: AudioBuffer | null): Promise<void> 
   loading = loading
     .then(() => node.dropBuffers())
     .then(() => (channels.length > 0 ? node.addBuffers(channels) : 0))
-    .then(() => undefined);
+    .then(
+      () => undefined,
+      (err: unknown) => {
+        if (loadedBuffer === buffer) loadedBuffer = null;
+        console.warn(LOG_PREFIX, "could not load audio for scrub preview", err);
+      },
+    );
   return loading;
 }
 
@@ -71,7 +82,7 @@ function useStretchBuffer(buffer: AudioBuffer | null): void {
   if (!buffer && !stretchPromise) return;
   createStretch()
     .then(({ node }) => loadInto(node, buffer))
-    .catch((err: unknown) => console.warn(LOG_PREFIX, "could not load audio for scrub preview", err));
+    .catch((err: unknown) => console.warn(LOG_PREFIX, "could not create the scrub preview node", err));
 }
 
 function fadeOut({ node, gain }: Stretch, at: number): void {
