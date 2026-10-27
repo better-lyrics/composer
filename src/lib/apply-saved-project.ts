@@ -36,8 +36,11 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
   state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
   state.setDismissedMetadataMatches(project.dismissedMetadataMatches ?? []);
-  // The flag describes stored timings against the stored audio, which a project file does not carry.
-  if (origin === "storage") state.setPrimingStripped(project.primingStripped ?? false);
+  // The flags describe stored timings against the stored audio, which a project file does not carry.
+  if (origin === "storage") {
+    state.setPrimingStripped(project.primingStripped ?? false);
+    state.setPrimingCorrected(project.primingCorrected ?? false);
+  }
   state.setCustomSnapPoints(project.customSnapPoints ?? []);
   state.setBeatGrid(readBeatGrid(project.beatGrid));
   if (origin === "file" || project.hasUnexportedImport) state.markSongDetailsImported();

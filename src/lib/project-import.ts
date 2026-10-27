@@ -89,6 +89,7 @@ async function replaceProjectFromFile(id: string, file: ProjectFile): Promise<vo
     audioFileName: existing.audioFileName ?? file.audioFileName,
     currentStem: existing.currentStem,
     primingStripped: existing.primingStripped,
+    primingCorrected: existing.primingCorrected,
   }));
   if (replacesOpenProject) await reloadOpenProject();
 }
