@@ -245,7 +245,7 @@ describe("project-restore", () => {
     });
 
     it("switching to Transliteration remembers it for the open project without saving the record", async () => {
-      await seedStoredProject("p1", { open: true, project: { savedAt: 333 } });
+      await seedStoredProject("p1", { open: true, project: { savedAt: 333, lines: [TRANSLITERATED_LINE] } });
       await render(<PersistenceHost />);
       await getPersistenceSettled();
       useTimelineStore.getState().toggleTextVariant();

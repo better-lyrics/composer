@@ -6,13 +6,11 @@ import { countAlignableLines } from "@/stores/alignment-plan";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { Button } from "@/ui/button";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { ShortcutTip } from "@/ui/shortcut-tip";
 import { SplitLatch } from "@/ui/split-latch";
-import { Tooltip } from "@/ui/tooltip";
-import { AutoAlignPanel, AutoAlignStatus } from "@/views/sync/auto-align-panel";
+import { AutoAlignPanel } from "@/views/sync/auto-align-panel";
+import { AutoAlignStatus } from "@/views/sync/auto-align-status";
+import { HeaderAction } from "@/views/timeline/header-action";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -70,38 +68,26 @@ const TimelineAutoAlign: React.FC = () => {
   if (!available) return null;
 
   return (
-    <div className="tray">
-      <SplitLatch
-        menuLabel="Auto-align options"
-        open={open}
-        onOpenChange={setOpen}
-        latch={
-          <Tooltip
-            content={
-              <ShortcutTip
-                label="Align line"
-                shortcut={SHORTCUT}
-                description="Times the words of the selected line, or the line at the playhead"
-              />
-            }
-            placement="bottom"
-          >
-            <Button
-              variant="ghost"
-              size="sm"
-              hasIcon
-              onClick={alignTarget}
-              className="h-7 gap-1.5 pl-2 pr-1.5 text-[13px] [&>svg]:size-4 [&>[data-inline-key-badge]]:ml-0"
-            >
-              <AutoAlignStatus idleLabel="Align line" />
-              {showHints && <InlineKeyBadge keys={getEffectiveKeysArray(SHORTCUT)} />}
-            </Button>
-          </Tooltip>
-        }
-      >
-        <AutoAlignPanel />
-      </SplitLatch>
-    </div>
+    <SplitLatch
+      variant="action"
+      menuLabel="Align whole song"
+      menuTip={<ShortcutTip label="Align whole song" description="Set up, run and cancel auto-align for every line" />}
+      open={open}
+      onOpenChange={setOpen}
+      latch={
+        <HeaderAction
+          onClick={alignTarget}
+          label="Align line"
+          shortcut={SHORTCUT}
+          showHint={showHints && !busy}
+          description="Times the words of the selected line, or the line at the playhead"
+        >
+          <AutoAlignStatus />
+        </HeaderAction>
+      }
+    >
+      <AutoAlignPanel />
+    </SplitLatch>
   );
 };
 

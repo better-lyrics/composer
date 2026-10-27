@@ -1,4 +1,5 @@
 import type { BeatDetectionStatus } from "@/stores/beat-detection";
+import { percent } from "@/utils/percent";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -18,7 +19,7 @@ function isDetectionRunning(status: BeatDetectionStatus): boolean {
 
 function detectionPercent({ status, loaded, total, done, chunks }: DetectionProgress): number {
   const [part, whole] = status === "downloading" ? [loaded, total] : [done, chunks];
-  return whole > 0 ? Math.round((part / whole) * 100) : 0;
+  return percent(part, whole);
 }
 
 // -- Exports -------------------------------------------------------------------

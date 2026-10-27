@@ -1,5 +1,6 @@
 import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
+import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
 import type { Placement } from "@floating-ui/react";
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
@@ -31,8 +32,8 @@ interface SelectProps {
   renderOption?: (option: SelectOption) => ReactNode;
   /** Controls above the list, such as filter tabs. */
   header?: ReactNode;
-  /** Names the value on the trigger when a filter has left it out of `options`. */
-  valueLabel?: string;
+  /** Shown on the trigger after the label, such as a status chip. */
+  triggerAdornment?: ReactNode;
 }
 
 type SelectAppearance = "field" | "pick";
@@ -68,6 +69,7 @@ interface FieldTriggerOptions {
   disabled: boolean;
   leadingColor?: string;
   className?: string;
+  triggerAdornment?: ReactNode;
 }
 
 // A plain element, not a component: the Popover clones its trigger to attach a ref and handlers.
@@ -80,6 +82,7 @@ const fieldTrigger = ({
   disabled,
   leadingColor,
   className,
+  triggerAdornment,
 }: FieldTriggerOptions) => (
   <button
     type="button"
@@ -96,6 +99,7 @@ const fieldTrigger = ({
       {leadingColor && <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: leadingColor }} />}
       <span className={cn("truncate", muted && appearance === "field" && "text-(--muted)")}>{label}</span>
     </span>
+    {triggerAdornment}
     <IconChevronDown
       className={cn(
         "shrink-0 opacity-50 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90",
@@ -107,18 +111,16 @@ const fieldTrigger = ({
 
 // -- Components ---------------------------------------------------------------
 
-const OptionBadge: React.FC<{ text: string }> = ({ text }) => (
-  <span className="ml-1.5 inline-flex h-[18px] items-center rounded-md px-1.5 align-[1px] text-[11px] font-semibold bg-composer-accent/15 text-composer-accent-text select-none">
-    {text}
-  </span>
-);
-
 const OptionLabel: React.FC<{ option: SelectOption }> = ({ option }) =>
   option.detail ? (
     <span className="flex flex-col gap-0.5 min-w-0">
       <span className="text-pretty">
         {option.label}
-        {option.badge && <OptionBadge text={option.badge} />}
+        {option.badge && (
+          <StatusChip tone="accent" className="ml-1.5 align-[1px]">
+            {option.badge}
+          </StatusChip>
+        )}
       </span>
       <span className="text-xs text-(--muted) tabular-nums">{option.detail}</span>
     </span>
@@ -183,27 +185,28 @@ const Select: React.FC<SelectProps> = ({
   appearance = "field",
   renderOption,
   header,
-  valueLabel,
+  triggerAdornment,
 }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const listRef = useRef<Array<HTMLElement | null>>([]);
   const selectedIndex = options.findIndex((option) => option.value === value);
   const selected = options[selectedIndex];
   const tabStopIndex = activeIndex ?? (selected ? selectedIndex : 0);
-  const showPlaceholder = !selected && !valueLabel && placeholder !== undefined;
-  const triggerLabel = selected?.label ?? valueLabel ?? placeholder ?? value;
+  const showPlaceholder = !selected && placeholder !== undefined;
+  const triggerLabel = selected?.label ?? placeholder ?? value;
 
   const triggerElement =
     (disabled && trigger ? cloneElement(trigger, { disabled }) : trigger) ??
     fieldTrigger({
       label: triggerLabel,
-      title: selected?.detail || valueLabel ? triggerLabel : undefined,
+      title: selected?.detail ? triggerLabel : undefined,
       muted: showPlaceholder,
       appearance,
       ariaLabel,
       disabled,
       leadingColor,
       className,
+      triggerAdornment,
     });
 
   return (

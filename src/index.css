@@ -518,8 +518,34 @@ braccato-lyrics .blyrics-container {
   }
 }
 
-@utility split-latch {
+/* The caret may sit inside a Tooltip span, so it is matched as a descendant. */
+@utility split-caret {
   --split-ease: 150ms cubic-bezier(0.22, 1, 0.36, 1);
+  & button[aria-haspopup] {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    color: var(--muted);
+    transition:
+      background-color var(--split-ease),
+      color var(--split-ease),
+      scale var(--split-ease);
+  }
+  & button[aria-haspopup]:hover,
+  & button[aria-haspopup][aria-expanded="true"] {
+    background: var(--layer-2);
+    color: var(--ink);
+  }
+  & button[aria-haspopup] > svg {
+    transition: rotate var(--split-ease);
+  }
+  & button[aria-haspopup][aria-expanded="true"] > svg {
+    rotate: 180deg;
+  }
+}
+
+@utility split-latch {
+  @apply split-caret;
   display: flex;
   align-items: center;
   height: 28px;
@@ -540,29 +566,28 @@ braccato-lyrics .blyrics-container {
     padding-right: 6px;
   }
   & > button[aria-haspopup] {
-    width: 20px;
-    height: 20px;
     margin-right: 4px;
-    border-radius: 6px;
-    color: var(--muted);
-    transition:
-      background-color var(--split-ease),
-      color var(--split-ease),
-      scale var(--split-ease);
-  }
-  & > button[aria-haspopup]:hover,
-  & > button[aria-haspopup][aria-expanded="true"] {
-    background: var(--layer-2);
-    color: var(--ink);
   }
   &:has([aria-pressed="true"]) > button[aria-haspopup] {
     color: var(--color-composer-accent-text);
   }
-  & > button[aria-haspopup] > svg {
-    transition: rotate var(--split-ease);
+}
+
+@utility split-action {
+  @apply split-caret;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  border-radius: 12px;
+  transition: background-color var(--split-ease);
+  &:has(> :first-child:hover) {
+    background: var(--layer-1);
   }
-  & > button[aria-haspopup][aria-expanded="true"] > svg {
-    rotate: 180deg;
+  & > :first-child > button {
+    background: none;
+  }
+  & button[aria-haspopup] {
+    margin-right: 6px;
   }
 }
 
