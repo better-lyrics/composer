@@ -123,7 +123,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
   const handleMergeWords = useCallback(() => {
     if (!mergeInfo) return;
-    mergeSelectedWords(mergeInfo.lineId, mergeInfo.type, mergeInfo.indices);
+    void mergeSelectedWords(mergeInfo.lineId, mergeInfo.type, mergeInfo.indices);
     clearContextMenu();
   }, [mergeInfo, clearContextMenu]);
 

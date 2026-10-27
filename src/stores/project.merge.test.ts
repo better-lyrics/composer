@@ -4,6 +4,7 @@
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import { useChoiceStore } from "@/stores/choice-store";
 import { mergeSelectedWords } from "@/views/timeline/merge-selected-words";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -682,5 +683,53 @@ describe("mergeSelectedWords", () => {
       { text: "onetwo ", begin: 10, end: 12.5 },
       { text: "three", begin: 12.5, end: 13 },
     ]);
+  });
+  describe("a linked copy whose blocks cross the merged text", () => {
+    function seedCrossingCopies(): void {
+      useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+      const linked = (id: string, instanceIdx: number, words: NonNullable<LyricLine["words"]>): LyricLine => ({
+        id,
+        text: "beautiful",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx,
+        templateLineIdx: 0,
+        words,
+      });
+      useProjectStore.getState().setLines([
+        linked("a0", 0, [
+          { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g" },
+          { text: "ti", begin: 0.3, end: 0.6, syllableGroupId: "g" },
+          { text: "ful", begin: 0.6, end: 0.9, syllableGroupId: "g" },
+        ]),
+        linked("a1", 1, [
+          { text: "be", begin: 10, end: 10.2, syllableGroupId: "h" },
+          { text: "aut", begin: 10.2, end: 10.5, syllableGroupId: "h" },
+          { text: "iful", begin: 10.5, end: 10.9, syllableGroupId: "h" },
+        ]),
+      ]);
+    }
+    const line = (id: string) => useProjectStore.getState().lines.find((l) => l.id === id);
+
+    it("asks, and Apply merges every block of the copy that touches the text", async () => {
+      seedCrossingCopies();
+      const merging = mergeSelectedWords("a0", "word", [0, 1]);
+      await expect.poll(() => useChoiceStore.getState().request?.title).toBe("Word structure changed");
+      useChoiceStore.getState().answer("apply");
+      await merging;
+      expect(line("a0")?.words?.map((w) => w.text)).toEqual(["beauti", "ful"]);
+      expect(line("a1")?.words?.map((w) => w.text)).toEqual(["beautiful"]);
+    });
+
+    it("Detach merges only the selected line and unlinks it", async () => {
+      seedCrossingCopies();
+      const merging = mergeSelectedWords("a0", "word", [0, 1]);
+      await expect.poll(() => useChoiceStore.getState().request?.title).toBe("Word structure changed");
+      useChoiceStore.getState().answer("detach");
+      await merging;
+      expect(line("a0")?.words?.map((w) => w.text)).toEqual(["beauti", "ful"]);
+      expect(line("a0")?.groupId).toBeUndefined();
+      expect(line("a1")?.words?.map((w) => w.text)).toEqual(["be", "aut", "iful"]);
+    });
   });
 });

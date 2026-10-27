@@ -3,6 +3,11 @@ import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
+interface CopyMergeCover {
+  inside: number[];
+  overlapping: number[];
+}
+
 interface IndexSpan {
   start: number;
   end: number;
@@ -105,23 +110,29 @@ function textOffsets(words: WordTiming[]): number[] {
   return offsets;
 }
 
-// Linked copies share their text, so a run maps onto the copy's words that lie inside the same characters, never wider.
-function indicesCoveringSameText(source: WordTiming[], sourceIndices: number[], target: WordTiming[]): number[] {
+// Linked copies share their text, so a run maps onto a copy by the characters it covers, not by word slots.
+function copyMergeCover(source: WordTiming[], sourceIndices: number[], target: WordTiming[]): CopyMergeCover {
   const span = mergedSpan(source, sourceIndices);
-  if (!span) return [];
+  if (!span) return { inside: [], overlapping: [] };
   const sourceOffsets = textOffsets(source);
   const start = sourceOffsets[span.start];
   const end = sourceOffsets[span.end + 1];
   const targetOffsets = textOffsets(target);
-  return target.flatMap((_, index) =>
-    targetOffsets[index] >= start && targetOffsets[index + 1] <= end ? [index] : [],
-  );
+  const inside: number[] = [];
+  const overlapping: number[] = [];
+  for (let index = 0; index < target.length; index++) {
+    const wordStart = targetOffsets[index];
+    const wordEnd = targetOffsets[index + 1];
+    if (wordStart < end && wordEnd > start) overlapping.push(index);
+    if (wordStart >= start && wordEnd <= end) inside.push(index);
+  }
+  return { inside, overlapping };
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export {
-  indicesCoveringSameText,
+  copyMergeCover,
   isPartialSyllableRun,
   isWholeSyllableGroupRun,
   mergeWordRun,

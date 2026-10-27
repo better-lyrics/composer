@@ -1,5 +1,5 @@
 import {
-  indicesCoveringSameText,
+  copyMergeCover,
   isPartialSyllableRun,
   isWholeSyllableGroupRun,
   mergeWordRun,
@@ -167,7 +167,7 @@ describe("isWholeSyllableGroupRun", () => {
   });
 });
 
-describe("indicesCoveringSameText", () => {
+describe("copyMergeCover", () => {
   const source: WordTiming[] = [
     { text: "one ", begin: 0, end: 1 },
     { text: "two ", begin: 1, end: 2 },
@@ -175,7 +175,7 @@ describe("indicesCoveringSameText", () => {
   ];
 
   it("maps a run onto a copy split the same way", () => {
-    expect(indicesCoveringSameText(source, [0, 1], source)).toEqual([0, 1]);
+    expect(copyMergeCover(source, [0, 1], source)).toEqual({ inside: [0, 1], overlapping: [0, 1] });
   });
 
   it("maps a run onto every word of a copy that covers the same text", () => {
@@ -185,7 +185,7 @@ describe("indicesCoveringSameText", () => {
       { text: "two ", begin: 11, end: 12 },
       { text: "three", begin: 12, end: 13 },
     ];
-    expect(indicesCoveringSameText(source, [0, 1], copy)).toEqual([0, 1, 2]);
+    expect(copyMergeCover(source, [0, 1], copy)).toEqual({ inside: [0, 1, 2], overlapping: [0, 1, 2] });
   });
 
   it("regression: maps the run after it grows to the whole split word", () => {
@@ -202,10 +202,10 @@ describe("indicesCoveringSameText", () => {
       { text: "ti", begin: 11.2, end: 11.4 },
       { text: "ful", begin: 11.4, end: 11.8 },
     ];
-    expect(indicesCoveringSameText(grouped, [0, 1], copy)).toEqual([0, 1, 2, 3, 4]);
+    expect(copyMergeCover(grouped, [0, 1], copy).inside).toEqual([0, 1, 2, 3, 4]);
   });
 
-  it("regression: never widens a copy past the merged text", () => {
+  it("regression: reports a copy whose blocks cross the merged text", () => {
     const grouped: WordTiming[] = [
       { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g" },
       { text: "ti", begin: 0.3, end: 0.6, syllableGroupId: "g" },
@@ -216,12 +216,15 @@ describe("indicesCoveringSameText", () => {
       { text: "aut", begin: 10.2, end: 10.5, syllableGroupId: "h" },
       { text: "iful", begin: 10.5, end: 10.9, syllableGroupId: "h" },
     ];
-    expect(indicesCoveringSameText(grouped, [0, 1], copy)).toEqual([0, 1]);
+    expect(copyMergeCover(grouped, [0, 1], copy)).toEqual({ inside: [0, 1], overlapping: [0, 1, 2] });
   });
 
   describe("edge cases", () => {
     it("returns no indices when the copy has not reached the run yet", () => {
-      expect(indicesCoveringSameText(source, [1, 2], [{ text: "one ", begin: 0, end: 1 }])).toEqual([]);
+      expect(copyMergeCover(source, [1, 2], [{ text: "one ", begin: 0, end: 1 }])).toEqual({
+        inside: [],
+        overlapping: [],
+      });
     });
   });
 });
