@@ -1,6 +1,7 @@
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
+import { adoptPrimingForNewAudio } from "@/lib/attach-audio-priming";
 import { deleteProject, openProject, startSongInNewProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
@@ -53,6 +54,7 @@ function useLoadYouTubeSource(): (videoId: string) => Promise<void> {
 
 function loadVideoInPlace(videoId: string, previous: AudioSource): Promise<void> {
   const prevVideoId = previous?.type === "youtube" ? previous.videoId : null;
+  if (prevVideoId !== videoId) adoptPrimingForNewAudio();
   useAudioStore.getState().setYouTubeSource(videoId);
 
   const project = useProjectStore.getState();

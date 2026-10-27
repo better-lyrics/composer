@@ -1,6 +1,7 @@
 import { probeAudioFile } from "@/audio/probe-audio-file";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
+import { adoptPrimingForNewAudio } from "@/lib/attach-audio-priming";
 import { startSongInNewProject } from "@/lib/open-project";
 import { relinkProjectAudioFile } from "@/lib/relink-audio";
 import { useAudioStore } from "@/stores/audio";
@@ -70,6 +71,7 @@ function readTagsInBackground(file: File): void {
 }
 
 function loadFileInPlace(file: File, replacesDifferentSong: boolean, title: string): void {
+  adoptPrimingForNewAudio();
   useAudioStore.getState().setSource({ type: "file", file });
   void settleSongDetails(file, replacesDifferentSong, title)
     .then((tagWrite) => (tagWrite === "apply" ? applyAudioTags(file) : undefined))

@@ -1,4 +1,6 @@
 import { useEnsureAuth } from "@/hooks/useEnsureAuth";
+import { correctPrimingForProjectAudio } from "@/lib/attach-audio-priming";
+import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { flushPendingSaveQuietly } from "@/lib/persistence-debounce";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { useAudioStore } from "@/stores/audio";
@@ -175,6 +177,12 @@ function useResolveYouTubeTunnel(): void {
       const current = useAudioStore.getState().source;
       if (current?.type !== "youtube" || current.videoId !== videoId) return;
       useAudioStore.getState().setYouTubeFile(data.file);
+      const projectId = openProjectIdSnapshot();
+      if (projectId) {
+        correctPrimingForProjectAudio(projectId, data.file).catch((error: unknown) => {
+          console.error(LOG_PREFIX, "could not correct the project's MP3 timings", error);
+        });
+      }
       useAudioStore.getState().setYouTubeLoadError(null);
 
       const project = useProjectStore.getState();

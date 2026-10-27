@@ -13,6 +13,8 @@ import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile, createMp3File, createUnplayableAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
+import { detectedGrid } from "@/domain/tempo/beat-grid";
+import { correctPrimingForProjectAudio } from "@/lib/attach-audio-priming";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
 import { Toaster } from "sonner";
@@ -213,5 +215,36 @@ describe("relinking LAME mp3 audio", () => {
     const saved = await loadProjectRecord("p");
     expect(saved?.primingCorrected).toBe(true);
     expect((saved?.lines[0] as { begin: number }).begin).toBeCloseTo(1 + P, 9);
+  });
+
+  it("regression: keeps edits made while the relinked audio decodes", async () => {
+    await openProject({
+      audioSource: { kind: "file", name: "silence.mp3" },
+      primingStripped: true,
+      primingCorrected: false,
+      lines: [createLine({ text: "Waiting in a car", begin: 1, end: 2 })],
+    });
+
+    const correcting = correctPrimingForProjectAudio("p", createMp3File());
+    useProjectStore.getState().setMetadata({ title: "Edited while decoding" });
+    await correcting;
+
+    expect(useProjectStore.getState().metadata.title).toBe("Edited while decoding");
+    expect((useProjectStore.getState().lines[0] as { begin: number }).begin).toBeCloseTo(1 + 1104 / 44_100, 9);
+  });
+
+  it("regression: keeps undo history when the relinked audio needs no shift", async () => {
+    await openProject({
+      audioSource: { kind: "file", name: "city.wav" },
+      primingStripped: true,
+      primingCorrected: false,
+    });
+    useProjectStore.getState().applyBeatGridWithHistory(detectedGrid({ beats: [1, 1.5, 2], downbeats: [1] }));
+    const history = useProjectStore.getState().history;
+
+    expect(await relinkProjectAudioFile(createAudioFile("city.wav"))).toBe(true);
+
+    expect(useProjectStore.getState().history).toEqual(history);
+    expect(useProjectStore.getState().primingCorrected).toBe(true);
   });
 });
