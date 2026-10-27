@@ -21,7 +21,7 @@ vi.mock("@/audio/alignment/hubertfa/model-registry", async (importOriginal) => (
     model: { url: "https://models.test/model.onnx", approxBytes: 1 },
     dictionary: { url: "https://models.test/dict.txt", approxBytes: 1 },
     japaneseDictionary: {},
-    approxMb: 399,
+    approxBytes: 399 * 1024 * 1024,
   }),
 }));
 

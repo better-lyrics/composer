@@ -2,10 +2,10 @@ import {
   type AlignmentModel,
   BUILTIN_ALIGNMENT_MODEL,
   RECOMMENDED_ALIGNMENT_MODEL,
-  loadAlignmentModels,
   pickAlignmentModel,
 } from "@/audio/alignment/hubertfa/model-manifest";
 import { coverageColumns, coversLanguage } from "@/domain/alignment/language";
+import { useAlignmentModels } from "@/hooks/useAlignmentModels";
 import { useSongLanguage } from "@/hooks/useSongLanguage";
 import { settingEntry } from "@/stores/settings-catalog";
 import { useSettingsStore } from "@/stores/settings";
@@ -16,7 +16,6 @@ import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
 import { StatusChip } from "@/ui/status-chip";
 import { IconAlertTriangle } from "@tabler/icons-react";
-import { useQuery } from "@tanstack/react-query";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -54,18 +53,11 @@ const TriggerCoverage: React.FC<{ languages: readonly string[]; song: string | n
     <CoverageCodes covered={languages} />
   );
 
-// The choices come from the hosted manifest, which loads once per page and is
-// shared with auto-align, so the query neither refetches nor cancels it.
 const AlignmentModelSetting: React.FC = () => {
   const stored = useSettingsStore((s) => s.alignmentModelId);
   const set = useSettingsStore((s) => s.set);
   const song = useSongLanguage();
-  const { data: models } = useQuery({
-    queryKey: ["alignment-models"],
-    queryFn: loadAlignmentModels,
-    staleTime: Number.POSITIVE_INFINITY,
-    gcTime: 0,
-  });
+  const models = useAlignmentModels();
 
   const ordered = models ? orderedModels(models, song) : [];
   const columns = coverageColumns(

@@ -54,7 +54,7 @@ interface AlignmentState {
   error: AlignmentError | null;
   modelCached: boolean;
   /** Download size of the selected model and its dictionary, once resolved. */
-  modelSizeMb: number | null;
+  modelSizeBytes: number | null;
 }
 
 interface AlignmentActions {
@@ -105,11 +105,11 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
   progress: { done: 0, total: 0 },
   error: null,
   modelCached: false,
-  modelSizeMb: null,
+  modelSizeBytes: null,
 
   refreshModelCached: async (modelId) => {
     const assets = await selectedAssets(modelId);
-    set({ modelCached: await areAlignmentAssetsCached(assets), modelSizeMb: assets?.approxMb ?? null });
+    set({ modelCached: await areAlignmentAssetsCached(assets), modelSizeBytes: assets?.approxBytes ?? null });
   },
 
   dismissError: () => {
@@ -293,3 +293,4 @@ useSettingsStore.subscribe((s, prev) => {
 // -- Exports ------------------------------------------------------------------
 
 export { isAutoAlignAvailable, useAlignmentStore };
+export type { AlignmentError, AlignmentErrorCode };

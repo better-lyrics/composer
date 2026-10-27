@@ -10,6 +10,7 @@ import { COMPACT_BUTTON } from "@/ui/stem-sources/compact-button";
 import { separationErrorCopy } from "@/ui/stem-sources/separation-error-copy";
 import { StemNotice } from "@/ui/stem-sources/stem-notice";
 import { formatMegabytesOf, formatWholeMegabytes } from "@/utils/format-file-size";
+import { percent } from "@/utils/percent";
 
 // -- Components ---------------------------------------------------------------
 
@@ -69,7 +70,7 @@ const StemModelBlock: React.FC = () => {
     const downloading = status === "downloading";
     const separating = fills ? `Separating ${fills}…` : "Separating…";
     const keepsImported = STEM_SLOTS.some((slot) => stemOrigins[slot] === "imported");
-    const pct = progress.total > 0 ? Math.round((progress.loaded / progress.total) * 100) : 0;
+    const pct = percent(progress.loaded, progress.total);
     return (
       <>
         <Separator />
