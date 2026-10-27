@@ -1,7 +1,5 @@
-import { alignedGrainOffset } from "@/audio/grain-alignment";
-import { type ScrubSound, fadeOutScrubSound, startScrubSound } from "@/audio/scrub-sound";
+import { SCRUB_HOLD_S, scrubTo, silenceStretch, useStretchBuffer } from "@/audio/scrub-stretch";
 import { sharedAudioContext } from "@/audio/shared-audio-context";
-import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -12,17 +10,8 @@ type BufferLoader = () => Promise<AudioBuffer>;
 
 // -- Constants ----------------------------------------------------------------
 
-const GRAIN_S = 0.024;
-const CROSSFADE_S = 0.008;
-const GRAIN_HOP_S = GRAIN_S - CROSSFADE_S;
-const ALIGN_SEARCH_S = 0.008;
-const LOOKAHEAD_S = 0.05;
-const STOP_FADE_S = 0.01;
-const RUN_S = 0.12;
-const IDLE_END_MS = 1000;
 const MIN_AUDIBLE_RATE = 0.1;
 const MAX_BUFFER_DURATION_S = 60 * 60;
-const FRAME_LABEL = "scrub-preview";
 const LOG_PREFIX = "[ScrubPreview]";
 
 // -- State --------------------------------------------------------------------
@@ -33,124 +22,18 @@ let bufferToken = 0;
 let loadingToken: number | null = null;
 let pendingSnippet: ActiveSnippet | null = null;
 let activeSnippet: ActiveSnippet | null = null;
-let grains: ScrubSound[] = [];
-let targetTime = 0;
-let runTarget = Number.NaN;
 let lastEventMs = Number.NEGATIVE_INFINITY;
-let nextGrainAt = 0;
-let lastGrainOffset = Number.NEGATIVE_INFINITY;
-let releaseScheduler: (() => void) | null = null;
 
 // -- Audio --------------------------------------------------------------------
 
-function getContext(): AudioContext {
+function resumeContext(): void {
   const ctx = sharedAudioContext();
   if (ctx.state === "suspended") void ctx.resume();
-  return ctx;
-}
-
-// currentTime can trail the render thread by one callback, and a ramp that starts in the past jumps.
-function scheduleTime(ctx: AudioContext): number {
-  return ctx.currentTime + (Number.isFinite(ctx.baseLatency) ? ctx.baseLatency : 0);
 }
 
 function targetVolume(): number {
   const { isMuted, volume } = useAudioStore.getState();
   return isMuted ? 0 : volume;
-}
-
-const channelCache = new WeakMap<AudioBuffer, Float32Array[]>();
-
-function channelsOf(source: AudioBuffer): Float32Array[] {
-  let channels = channelCache.get(source);
-  if (!channels) {
-    channels = Array.from({ length: source.numberOfChannels }, (_, index) => source.getChannelData(index));
-    channelCache.set(source, channels);
-  }
-  return channels;
-}
-
-// A playhead that moved starts a new run there; a still playhead plays its run out once, up to RUN_S.
-// Null means the run is over.
-function nextGrainOffset(source: AudioBuffer): number | null {
-  const continuation = lastGrainOffset + GRAIN_HOP_S;
-  if (targetTime === runTarget) {
-    return continuation <= Math.min(runTarget + RUN_S, source.duration - GRAIN_S) ? continuation : null;
-  }
-  runTarget = targetTime;
-  if (!Number.isFinite(lastGrainOffset)) return targetTime;
-  return alignedGrainOffset(
-    channelsOf(source),
-    source.sampleRate,
-    continuation,
-    targetTime,
-    ALIGN_SEARCH_S,
-    CROSSFADE_S,
-  );
-}
-
-function startGrain(ctx: AudioContext, source: AudioBuffer, at: number): boolean {
-  const next = nextGrainOffset(source);
-  if (next === null) return false;
-  const offset = Math.max(0, Math.min(next, source.duration - GRAIN_S));
-  const grain = startScrubSound(ctx, {
-    buffer: source,
-    offset,
-    at,
-    volume: targetVolume(),
-    fadeS: CROSSFADE_S,
-    lengthS: GRAIN_S,
-  });
-  grain.source.addEventListener("ended", () => {
-    grains = grains.filter((live) => live !== grain);
-  });
-  grains.push(grain);
-  lastGrainOffset = offset;
-  nextGrainAt = at + GRAIN_HOP_S;
-  return true;
-}
-
-// -- Scheduler ----------------------------------------------------------------
-
-function endSession(): void {
-  releaseScheduler?.();
-  releaseScheduler = null;
-  activeSnippet = null;
-  lastGrainOffset = Number.NEGATIVE_INFINITY;
-  runTarget = Number.NaN;
-  lastEventMs = Number.NEGATIVE_INFINITY;
-}
-
-// A frame callback must never write to a store: this one only touches audio nodes and module state.
-// Grains are scheduled only a few frames ahead, so a hidden tab, which pauses frames, falls silent on its own.
-// The idle limit ends a session whose grains never finish, such as on a suspended AudioContext.
-function scheduleGrains(nowMs: number): void {
-  if (!buffer || nowMs - lastEventMs > IDLE_END_MS) {
-    endSession();
-    return;
-  }
-  const running = fillLookahead(sharedAudioContext(), buffer);
-  if (!running && grains.length === 0) endSession();
-}
-
-// Returns false once the run is over.
-function fillLookahead(ctx: AudioContext, source: AudioBuffer): boolean {
-  const now = scheduleTime(ctx);
-  if (nextGrainAt < now) nextGrainAt = now;
-  while (nextGrainAt < now + LOOKAHEAD_S) {
-    if (!startGrain(ctx, source, nextGrainAt)) return false;
-  }
-  return true;
-}
-
-function ensureScheduler(): void {
-  if (releaseScheduler) return;
-  const releaseHold = holdFrames(FRAME_LABEL);
-  const unsubscribe = subscribeFrame(scheduleGrains, FRAME_LABEL);
-  releaseScheduler = () => {
-    unsubscribe();
-    releaseHold();
-  };
 }
 
 // -- Buffer -------------------------------------------------------------------
@@ -163,9 +46,10 @@ function useBuffer(next: AudioBuffer | null): void {
   if (next && next.duration > MAX_BUFFER_DURATION_S) {
     console.warn(LOG_PREFIX, `buffer exceeds ${MAX_BUFFER_DURATION_S}s cap; scrub preview disabled for this source`);
     buffer = null;
-    return;
+  } else {
+    buffer = next;
   }
-  buffer = next;
+  useStretchBuffer(buffer);
 }
 
 function useLazyBuffer(load: BufferLoader): void {
@@ -207,32 +91,21 @@ function play(time: number, velocity: number): void {
     return;
   }
 
-  targetTime = Math.max(0, Math.min(time, Math.max(0, buffer.duration - RUN_S)));
-  activeSnippet = { time: targetTime, rate: velocity };
+  const clampedTime = Math.max(0, Math.min(time, Math.max(0, buffer.duration - SCRUB_HOLD_S)));
+  activeSnippet = { time: clampedTime, rate: velocity };
   lastEventMs = performance.now();
-  if (!releaseScheduler) {
-    const ctx = getContext();
-    const at = scheduleTime(ctx);
-    fadeOutGrains(at, CROSSFADE_S);
-    nextGrainAt = at;
-    fillLookahead(ctx, buffer);
-    ensureScheduler();
-  }
-}
-
-function fadeOutGrains(at: number, fadeS: number): void {
-  for (const grain of grains) fadeOutScrubSound(grain, at, fadeS);
-  grains = [];
+  resumeContext();
+  scrubTo({ buffer, time: clampedTime, rate: velocity, volume: targetVolume() });
 }
 
 function stop(): void {
   pendingSnippet = null;
-  if (grains.length > 0) fadeOutGrains(scheduleTime(sharedAudioContext()), STOP_FADE_S);
-  endSession();
+  activeSnippet = null;
+  silenceStretch();
 }
 
 function getActiveSnippet(): ActiveSnippet | null {
-  return activeSnippet;
+  return performance.now() - lastEventMs > SCRUB_HOLD_S * 1000 ? null : activeSnippet;
 }
 
 // -- Exports ------------------------------------------------------------------
