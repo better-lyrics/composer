@@ -5,11 +5,12 @@ import {
   pickAlignmentModel,
 } from "@/audio/alignment/hubertfa/model-manifest";
 import { coverageColumns, coversLanguage } from "@/domain/alignment/language";
+import { languageName } from "@/domain/project/language";
 import { useAlignmentModels } from "@/hooks/useAlignmentModels";
 import { useSongLanguage } from "@/hooks/useSongLanguage";
 import { settingEntry } from "@/stores/settings-catalog";
 import { useSettingsStore } from "@/stores/settings";
-import { CoverageCodes, languageName } from "@/ui/language-coverage";
+import { CoverageCodes } from "@/ui/language-coverage";
 import { Select, type SelectOption } from "@/ui/select";
 import { AlignmentModelOption } from "@/ui/settings/alignment-model-option";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";

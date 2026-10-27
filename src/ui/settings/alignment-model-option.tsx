@@ -1,6 +1,7 @@
 import type { AlignmentModel } from "@/audio/alignment/hubertfa/model-manifest";
 import { coversLanguage } from "@/domain/alignment/language";
-import { LanguageCoverage, languageName } from "@/ui/language-coverage";
+import { languageName } from "@/domain/project/language";
+import { LanguageCoverage } from "@/ui/language-coverage";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
 import { formatWholeMegabytes } from "@/utils/format-file-size";

@@ -1,4 +1,5 @@
 import { coversLanguage } from "@/domain/alignment/language";
+import { languageName } from "@/domain/project/language";
 import { cn } from "@/utils/cn";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -10,13 +11,7 @@ interface LanguageCoverageProps {
   dimmed?: boolean;
 }
 
-// -- Constants -----------------------------------------------------------------
-
-const LANGUAGE_NAMES = new Intl.DisplayNames(["en"], { type: "language", fallback: "code" });
-
 // -- Helpers -------------------------------------------------------------------
-
-const languageName = (code: string) => LANGUAGE_NAMES.of(code) ?? code;
 
 function cellClass(isCovered: boolean, isSong: boolean): string {
   if (!isCovered) return "text-composer-text-faint shadow-[inset_0_0_0_1px_var(--divider)]";
@@ -61,4 +56,4 @@ const CoverageCodes: React.FC<{ covered: readonly string[] }> = ({ covered }) =>
 
 // -- Exports -------------------------------------------------------------------
 
-export { CoverageCodes, LanguageCoverage, languageName };
+export { CoverageCodes, LanguageCoverage };

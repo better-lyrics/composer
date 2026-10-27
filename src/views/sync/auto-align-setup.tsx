@@ -2,6 +2,7 @@ import { pickAlignmentModel } from "@/audio/alignment/hubertfa/model-manifest";
 import { VOCAL_MODEL_APPROX_BYTES } from "@/audio/separation/model-registry";
 import { coversLanguage } from "@/domain/alignment/language";
 import { hasMainLyrics, isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { languageName } from "@/domain/project/language";
 import { useAlignmentModels } from "@/hooks/useAlignmentModels";
 import { useSongLanguage } from "@/hooks/useSongLanguage";
 import { useAlignmentStore } from "@/stores/alignment";
@@ -10,7 +11,6 @@ import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
-import { languageName } from "@/ui/language-coverage";
 import { PopActions, PopButton, PopGroup, PopHead, PopRow, PopText } from "@/ui/pop-layout";
 import { StatusChip } from "@/ui/status-chip";
 import { formatWholeMegabytes } from "@/utils/format-file-size";
@@ -42,11 +42,7 @@ const LineTimingRow: React.FC<{ counts: LineCounts }> = ({ counts }) => {
   const total = timed + counts.untimed;
   if (timed === 0) {
     return (
-      <PopRow
-        label="Line timing"
-        icon={IconTimelineEventText}
-        hint="Tap each line's start and end. Rough is fine."
-      >
+      <PopRow label="Line timing" icon={IconTimelineEventText} hint="Tap each line's start and end. Rough is fine.">
         {granularity === "word" && (
           <PopButton onClick={() => useProjectStore.getState().setGranularity("line")}>Line mode</PopButton>
         )}
