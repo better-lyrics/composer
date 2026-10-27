@@ -5,7 +5,6 @@ interface ModelDescriptor {
   url: string;
   filename: string;
   approxBytes: number;
-  approxMb: number;
 }
 
 const MODEL_FILENAMES: Record<VocalModelVariant, string> = {
@@ -35,7 +34,6 @@ function getModelDescriptor(variant: VocalModelVariant): ModelDescriptor | null 
     url: `${base}/${filename}`,
     filename,
     approxBytes,
-    approxMb: Math.round(approxBytes / (1024 * 1024)),
   };
 }
 

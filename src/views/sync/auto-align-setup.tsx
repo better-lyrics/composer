@@ -145,7 +145,7 @@ const AutoAlignSetup: React.FC<{ run: (realign: boolean) => void }> = ({ run }) 
             onClick={() => run(true)}
             title="Redo word timing for every timed line, using each line's current span as the guide"
           >
-            Re-align all {timed}
+            {`Re-align all ${pluralize(timed, "line")}`}
           </PopButton>
         ) : (
           <span />

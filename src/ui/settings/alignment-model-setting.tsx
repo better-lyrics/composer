@@ -68,11 +68,10 @@ const AlignmentModelSetting: React.FC = () => {
   const byId = new Map(ordered.map((m) => [m.id, m]));
   const recommendedId = ordered.find((m) => m.recommended)?.id;
   const pending = !models && stored !== BUILTIN_OPTION.value ? [{ value: stored, label: "Loading…" }] : [];
-  const options: SelectOption[] = models
-    ? ordered.map((m) => ({ value: m.id, label: m.label }))
-    : [BUILTIN_OPTION, ...pending];
+  const options: SelectOption[] =
+    ordered.length > 0 ? ordered.map((m) => ({ value: m.id, label: m.label })) : [BUILTIN_OPTION, ...pending];
   const value = models ? (pickAlignmentModel(models, stored)?.id ?? BUILTIN_OPTION.value) : stored;
-  const selectedLanguages = models ? byId.get(value)?.languages : loadingLanguages(value);
+  const selectedLanguages = byId.get(value)?.languages ?? loadingLanguages(value);
 
   const renderOption = (option: SelectOption) => {
     const model = byId.get(option.value);

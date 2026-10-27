@@ -1,9 +1,11 @@
 import type { LanguageTextVariant } from "@/domain/language/display";
+import { hasTransliteration } from "@/domain/language/has-transliteration";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { LoopRegion } from "@/domain/selection/loop-region";
 import type { WordSelection } from "@/domain/selection/model";
 import { toggleWordSelection } from "@/domain/selection/set-ops";
 import type { Bounds } from "@/domain/word/bounds";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import type { GroupFocus } from "@/views/timeline/group-focus";
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
@@ -180,8 +182,12 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
     zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
     zoomOut: () => set((s) => ({ zoom: Math.max(MIN_ZOOM, s.zoom - ZOOM_STEP) })),
+    // Every toggle path lands here, including shortcuts whose button is not mounted.
     toggleTextVariant: () =>
-      set((s) => ({ textVariant: s.textVariant === "original" ? "transliteration" : "original" })),
+      set((s) => {
+        if (s.textVariant === "transliteration") return { textVariant: "original" };
+        return hasTransliteration(useProjectStore.getState().lines) ? { textVariant: "transliteration" } : s;
+      }),
     setTextVariant: (textVariant) => set({ textVariant }),
     setSelectedWords: (selectedWords) =>
       set(selectedWords.length > 0 ? { selectedWords, loopRegion: null } : { selectedWords }),
