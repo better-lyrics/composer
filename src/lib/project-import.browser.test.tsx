@@ -7,13 +7,15 @@ import { type ProjectFile, projectFileFrom } from "@/lib/project-file";
 import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { importProjectFile, replaceProjectFromFile } from "@/lib/project-import";
 import { listProjectIndex, removeProjectData } from "@/lib/project-repository";
+import { loadProjectForRestore } from "@/lib/project-restore";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { getSaveStatus } from "@/lib/save-status";
-import { SAVED_PROJECT_VERSION } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION, type SavedProject } from "@/lib/saved-project";
 import { useChoiceStore } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { createMp3File } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
 import { saveInputTitled, seedStoredProject, songTitled, storedProject } from "@/test/projects";
@@ -207,6 +209,40 @@ describe("replaceProjectFromFile", () => {
     expect((await loadProjectRecord("a"))?.lines[0]?.text).toBe("File line");
     await flushPendingSave();
     expect((await loadProjectRecord("a"))?.lines[0]?.text).toBe("File line");
+  });
+
+  describe("MP3 priming flags", () => {
+    const P = 1104 / 44_100;
+
+    async function replaceTimedLine(local: Partial<SavedProject>, file: Partial<ProjectFile>): Promise<number> {
+      await seedStoredProject("a", {
+        audio: createMp3File(),
+        project: { audioSource: { kind: "file", name: "silence.mp3" }, ...local },
+      });
+      await replaceProjectFromFile("a", {
+        ...fileWithLine("File line"),
+        ...file,
+        lines: [createLine({ text: "File line", begin: 1, end: 2 })],
+      });
+      const reloaded = (await loadProjectForRestore("a")).project;
+      return (reloaded?.lines[0] as { begin: number }).begin;
+    }
+
+    it("regression: an older export into a corrected project still moves to the corrected decode", async () => {
+      const begin = await replaceTimedLine(
+        { primingStripped: true, primingCorrected: true },
+        { primingStripped: true, primingCorrected: undefined },
+      );
+      expect(begin).toBeCloseTo(1 + P, 9);
+    });
+
+    it("regression: a corrected export into an old project is not moved again", async () => {
+      const begin = await replaceTimedLine(
+        { primingStripped: true, primingCorrected: false },
+        { primingStripped: true, primingCorrected: true },
+      );
+      expect(begin).toBeCloseTo(1, 9);
+    });
   });
 
   describe("regressions", () => {
