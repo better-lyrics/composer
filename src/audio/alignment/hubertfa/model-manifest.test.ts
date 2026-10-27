@@ -25,6 +25,8 @@ describe("parseAlignmentManifest", () => {
           { id: "ft-2", model: "https://cdn.example.com/ft2.onnx", dictionary: "../dict.txt" },
           { id: "broken", label: "No model file" },
           { id: BUILTIN_ALIGNMENT_MODEL.id, label: "Duplicate of the built-in", model: "dup.onnx" },
+          // The setting's own value for "follow the recommendation"; a checkpoint can't take it.
+          { id: RECOMMENDED_ALIGNMENT_MODEL, label: "Clashes with the setting", model: "clash.onnx" },
         ],
       },
       MANIFEST_URL,

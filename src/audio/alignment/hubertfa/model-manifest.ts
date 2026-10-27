@@ -78,6 +78,10 @@ function parseEntry(raw: unknown, manifestUrl: string, fallback: AlignmentModel)
   if (!raw || typeof raw !== "object") return null;
   const { id, label, model, dictionary, sizeMb, languages, recommended } = raw as Record<string, unknown>;
   if (typeof id !== "string" || !id || typeof model !== "string" || !model) return null;
+  if (id === RECOMMENDED_ALIGNMENT_MODEL) {
+    console.warn(`${LOG_PREFIX} skipping manifest entry ${id}: that id is reserved for following the recommendation`);
+    return null;
+  }
   try {
     return {
       id,
