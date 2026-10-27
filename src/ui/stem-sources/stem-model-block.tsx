@@ -4,11 +4,10 @@ import { STEM_SLOTS } from "@/domain/stems/stem-slot";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
+import { ModelErrorNotice } from "@/ui/model-error-notice";
 import { ModelProgress } from "@/ui/model-progress";
 import { STEM_LABELS } from "@/ui/stem-labels";
-import { COMPACT_BUTTON } from "@/ui/stem-sources/compact-button";
 import { separationErrorCopy } from "@/ui/stem-sources/separation-error-copy";
-import { StemNotice } from "@/ui/stem-sources/stem-notice";
 import { formatMegabytesOf, formatWholeMegabytes } from "@/utils/format-file-size";
 import { percent } from "@/utils/percent";
 
@@ -17,29 +16,15 @@ import { percent } from "@/utils/percent";
 const Separator: React.FC = () => <div className="h-px my-2.5 bg-(--divider)" />;
 
 const ModelError: React.FC<{ error: SeparationError }> = ({ error }) => {
-  const { title, next } = separationErrorCopy(error.code);
   const { retry, dismissError } = useSeparationStore.getState();
   return (
-    <StemNotice
-      tone="negative"
+    <ModelErrorNotice
+      {...separationErrorCopy(error.code)}
+      message={error.message}
+      onDismiss={dismissError}
+      onRetry={() => void retry()}
       className="-mx-1.5"
-      actions={
-        <>
-          <Button size="sm" variant="ghost" className={COMPACT_BUTTON} onClick={dismissError}>
-            Dismiss
-          </Button>
-          <Button size="sm" variant="primary" className={COMPACT_BUTTON} onClick={() => void retry()}>
-            Try again
-          </Button>
-        </>
-      }
-    >
-      <p className="text-[13px] font-medium leading-[1.35] text-composer-text text-pretty">{title}</p>
-      <p className="mt-0.5 text-xs leading-[1.45] text-(--label) text-pretty">{next}</p>
-      <p className="mt-1.5 text-xs leading-[1.45] text-(--muted) wrap-break-word select-text cursor-text">
-        {error.message}
-      </p>
-    </StemNotice>
+    />
   );
 };
 

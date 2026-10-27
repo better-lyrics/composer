@@ -1,9 +1,9 @@
 import { useAutoAlign } from "@/hooks/use-auto-align";
 import { type AlignmentError, useAlignmentStore } from "@/stores/alignment";
 import { useSettingsStore } from "@/stores/settings";
+import { ModelErrorNotice } from "@/ui/model-error-notice";
 import { ModelProgress } from "@/ui/model-progress";
-import { PopBody, PopButton } from "@/ui/pop-layout";
-import { StemNotice } from "@/ui/stem-sources/stem-notice";
+import { PopBody } from "@/ui/pop-layout";
 import { formatMegabytesOf } from "@/utils/format-file-size";
 import { percent } from "@/utils/percent";
 import { alignmentErrorCopy } from "@/ui/alignment-error-copy";
@@ -12,31 +12,15 @@ import { useEffect } from "react";
 
 // -- Components ---------------------------------------------------------------
 
-const AutoAlignError: React.FC<{ error: AlignmentError; onRetry: () => void }> = ({ error, onRetry }) => {
-  const { title, next } = alignmentErrorCopy(error.code);
-  return (
-    <StemNotice
-      tone="negative"
-      className="rounded-lg"
-      actions={
-        <>
-          <PopButton variant="ghost" onClick={() => useAlignmentStore.getState().dismissError()}>
-            Dismiss
-          </PopButton>
-          <PopButton variant="primary" onClick={onRetry}>
-            Try again
-          </PopButton>
-        </>
-      }
-    >
-      <p className="text-[13px] font-medium leading-[1.35] text-composer-text text-pretty">{title}</p>
-      <p className="mt-0.5 text-xs leading-[1.45] text-(--label) text-pretty">{next}</p>
-      <p className="mt-1.5 text-xs leading-[1.45] text-(--muted) wrap-break-word select-text cursor-text">
-        {error.message}
-      </p>
-    </StemNotice>
-  );
-};
+const AutoAlignError: React.FC<{ error: AlignmentError; onRetry: () => void }> = ({ error, onRetry }) => (
+  <ModelErrorNotice
+    {...alignmentErrorCopy(error.code)}
+    message={error.message}
+    onDismiss={() => useAlignmentStore.getState().dismissError()}
+    onRetry={onRetry}
+    className="rounded-lg"
+  />
+);
 
 const AutoAlignProgress: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
   const status = useAlignmentStore((s) => s.status);
