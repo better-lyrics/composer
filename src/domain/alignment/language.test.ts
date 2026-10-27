@@ -1,4 +1,10 @@
-import { coverageColumns, coversLanguage, songLanguage } from "@/domain/alignment/language";
+import {
+  canAlignLanguage,
+  coverageColumns,
+  coversLanguage,
+  isAlignableLanguage,
+  songLanguage,
+} from "@/domain/alignment/language";
 import { describe, expect, it } from "vitest";
 
 const lines = (...texts: string[]) => texts.map((text) => ({ text }));
@@ -56,5 +62,29 @@ describe("coverageColumns", () => {
         null,
       ),
     ).toEqual(["en", "zh", "ko"]);
+  });
+});
+
+describe("canAlignLanguage", () => {
+  it("allows a song language the model covers", () => expect(canAlignLanguage("ja-JP", ["en", "ja"])).toBe(true));
+
+  it("refuses a song language the chosen model doesn't cover", () =>
+    expect(canAlignLanguage("ja", ["en"])).toBe(false));
+
+  it("refuses a language auto-align can't run, even if a model lists it", () =>
+    expect(canAlignLanguage("ko", ["ko", "en"])).toBe(false));
+
+  describe("invariants", () => {
+    it("never blocks a song with no language set, whatever the model covers", () => {
+      expect(canAlignLanguage(undefined, [])).toBe(true);
+      expect(canAlignLanguage("", ["en"])).toBe(true);
+    });
+  });
+});
+
+describe("isAlignableLanguage", () => {
+  it("accepts English, Mandarin and Japanese tags and nothing else", () => {
+    expect(["en-US", "cmn", "zh-Hant", "ja"].every(isAlignableLanguage)).toBe(true);
+    expect(["ko", "fr", ""].some(isAlignableLanguage)).toBe(false);
   });
 });

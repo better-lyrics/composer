@@ -8,7 +8,6 @@ import { createGroup } from "@/test/factories";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const cached = vi.hoisted(() => ({ value: true }));
-const modelLanguages = vi.hoisted(() => ({ value: ["en", "zh", "ja"] }));
 const seen = vi.hoisted(() => ({
   segments: [] as { hanReading: string; parts: string[][] }[],
   japanese: [] as boolean[],
@@ -23,7 +22,7 @@ vi.mock("@/audio/alignment/hubertfa/model-registry", async (importOriginal) => (
     dictionary: { url: "https://models.test/dict.txt", approxBytes: 1 },
     japaneseDictionary: {},
     approxBytes: 399 * 1024 * 1024,
-    languages: modelLanguages.value,
+    languages: ["en", "zh", "ja"],
   }),
 }));
 
@@ -66,7 +65,6 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
 describe("alignment store", () => {
   beforeEach(() => {
     cached.value = true;
-    modelLanguages.value = ["en", "zh", "ja"];
     seen.segments = [];
     seen.japanese = [];
     seen.fallBackAfter = null;
@@ -343,21 +341,5 @@ describe("alignment store", () => {
 
     expect(await useAlignmentStore.getState().alignLines()).toBeNull();
     expect(useAlignmentStore.getState().error?.code).toBe("unsupported-language");
-  });
-
-  it("refuses a song language the chosen model doesn't cover", async () => {
-    modelLanguages.value = ["en"];
-    useProjectStore.setState({ metadata: { ...INITIAL_STATE.metadata, language: "ja" } });
-    useProjectStore.getState().setLines([{ id: "L1", text: "きみと", agentId: "v1", begin: 1, end: 2 }]);
-
-    expect(await useAlignmentStore.getState().alignLines()).toBeNull();
-    expect(useAlignmentStore.getState().error?.code).toBe("unsupported-language");
-  });
-
-  it("never blocks a song with no language set, whatever the model covers", async () => {
-    modelLanguages.value = ["en"];
-    useProjectStore.getState().setLines([{ id: "L1", text: "きみと", agentId: "v1", begin: 1, end: 2 }]);
-
-    expect(await useAlignmentStore.getState().alignLines()).not.toBeNull();
   });
 });
