@@ -5,7 +5,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createBgWordsFromTextAt } from "@/utils/sync-helpers";
+import { createTrackWordsFromTextAt } from "@/utils/sync-helpers";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
 import { mergeSelectedWords } from "@/views/timeline/merge-selected-words";
@@ -85,9 +85,9 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
       return;
     }
 
-    const timedText = type === "bg" ? createBgWordsFromTextAt(line, slot.begin, range.max) : null;
+    const timedText = createTrackWordsFromTextAt(line, type, slot.begin, range.max);
     if (timedText) {
-      updateLineWithHistory(lineId, manualBackgroundWordEdit(timedText));
+      updateLineWithHistory(lineId, type === "word" ? { words: timedText } : manualBackgroundWordEdit(timedText));
       clearContextMenu();
       return;
     }
