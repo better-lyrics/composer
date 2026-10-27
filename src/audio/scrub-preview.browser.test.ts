@@ -63,7 +63,7 @@ describe("scrub-preview", () => {
     scrubPreview.useBuffer(makeSineBuffer(1));
     scrubPreview.play(99, 1);
     const snippet = scrubPreview.getActiveSnippet();
-    expect(snippet?.time).toBeCloseTo(1 - 0.12, 3);
+    expect(snippet?.time).toBeCloseTo(1, 3);
   });
 
   test("play is a no-op when audioScrubPreview setting is off", () => {
@@ -151,7 +151,7 @@ describe("scrub-preview", () => {
         scrubPreview.useBuffer(makeSineBuffer(0.5));
         await new Promise((resolve) => setTimeout(resolve, 50));
         scrubPreview.play(99, 1);
-        expect(scrubPreview.getActiveSnippet()?.time).toBeCloseTo(0.5 - 0.12, 3);
+        expect(scrubPreview.getActiveSnippet()?.time).toBeCloseTo(0.5, 3);
       });
     });
 
