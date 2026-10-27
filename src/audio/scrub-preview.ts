@@ -1,5 +1,5 @@
 import { type ScrubSound, fadeOutScrubSound, retargetScrubSoundVolume, startScrubSound } from "@/audio/scrub-sound";
-import { scrubStep } from "@/audio/scrub-step";
+import { furthestTimeAfter, scrubStep } from "@/audio/scrub-step";
 import { sharedAudioContext } from "@/audio/shared-audio-context";
 import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
@@ -41,6 +41,7 @@ let activeSnippet: ActiveSnippet | null = null;
 let voice: Voice | null = null;
 let clip: ScrubSound | null = null;
 let previousTime = Number.NEGATIVE_INFINITY;
+let furthestTime = Number.NEGATIVE_INFINITY;
 let lastPlayAtMs = Number.NEGATIVE_INFINITY;
 let stopAfterMs = MIN_STOP_AFTER_MS;
 let releaseWatchdog: (() => void) | null = null;
@@ -145,7 +146,13 @@ function ensureWatchdog(): void {
   if (releaseWatchdog) return;
   const releaseHold = holdFrames(FRAME_LABEL);
   const unsubscribe = subscribeFrame(stopHeldVoice, FRAME_LABEL);
+  // Hidden tabs pause animation frames, so the watchdog alone would let a voice play on.
+  const stopWhenHidden = () => {
+    if (document.hidden) stop();
+  };
+  document.addEventListener("visibilitychange", stopWhenHidden);
   releaseWatchdog = () => {
+    document.removeEventListener("visibilitychange", stopWhenHidden);
     unsubscribe();
     releaseHold();
   };
@@ -214,12 +221,12 @@ function play(time: number, velocity: number): void {
   const speed = measured ? (clampedTime - previousTime) / (intervalMs / 1000) : velocity;
   stopAfterMs = measured ? Math.max(MIN_STOP_AFTER_MS, 2 * intervalMs) : MIN_STOP_AFTER_MS;
 
-  const running = voice ? { position: voicePosition(voice, now) } : null;
-  const step = scrubStep(running, clampedTime, previousTime, speed);
+  const step = scrubStep(voice ? voicePosition(voice, now) : null, clampedTime, furthestTime, speed);
   if (step.kind === "clip") playClip(ctx, buffer, clampedTime, now);
   else if (step.kind === "steer" && voice) steerVoice(voice, step.rate, now);
   else startVoice(ctx, buffer, clampedTime, step.rate, now);
 
+  furthestTime = furthestTimeAfter(step, furthestTime, clampedTime);
   previousTime = clampedTime;
   lastPlayAtMs = nowMs;
   activeSnippet = { time: clampedTime, rate: velocity };
@@ -231,6 +238,7 @@ function stop(): void {
   releaseWatchdogFrames();
   activeSnippet = null;
   previousTime = Number.NEGATIVE_INFINITY;
+  furthestTime = Number.NEGATIVE_INFINITY;
   lastPlayAtMs = Number.NEGATIVE_INFINITY;
 }
 
