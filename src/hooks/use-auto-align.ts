@@ -1,5 +1,7 @@
 import { useAlignmentStore } from "@/stores/alignment";
 import { useSeparationStore } from "@/stores/separation";
+import { alignmentErrorCopy } from "@/ui/alignment-error-copy";
+import { formatWholeMegabytes } from "@/utils/format-file-size";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { pluralWord, pluralize } from "@/utils/pluralize";
 import { useCallback } from "react";
@@ -52,19 +54,19 @@ function showAlignmentError(autoAlign: AutoAlign, lineIds?: readonly string[], r
     return;
   }
   if (error.code === "needs-model") {
-    const size = useAlignmentStore.getState().modelSizeMb;
+    const size = useAlignmentStore.getState().modelSizeBytes;
     toast(error.message, {
       description: "It's cached in this browser afterwards.",
       // A download this size is a decision; don't let the prompt time out under the user.
       duration: Number.POSITIVE_INFINITY,
       action: {
-        label: size ? `Download (${size} MB)` : "Download",
+        label: size ? `Download (${formatWholeMegabytes(size)})` : "Download",
         onClick: () => void autoAlign(lineIds, { allowDownload: true, realign }),
       },
     });
     return;
   }
-  toast.error(error.code === "failed" ? `Auto-align failed: ${error.message}` : error.message);
+  toast.error(alignmentErrorCopy(error.code).title, { description: error.message });
 }
 
 // -- Hook ---------------------------------------------------------------------
