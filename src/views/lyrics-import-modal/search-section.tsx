@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { useLyricsSearch } from "@/hooks/useLyricsSearch";
-import { useImportModalStore } from "@/stores/import-modal-store";
+import type { SearchInputs } from "@/stores/import-modal-store";
 import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 import { formatDuration, parseDurationInput } from "@/views/lyrics-import-modal/duration-input-utils";
+import { EMPTY_SEARCH_INPUTS, initialSearchInputs, saveSearchDraft } from "@/views/lyrics-import-modal/search-inputs";
 import { Button } from "@/ui/button";
 import { SearchField } from "@/views/lyrics-import-modal/search-field";
 import { SearchResults } from "@/views/lyrics-import-modal/search-results";
@@ -28,34 +29,16 @@ interface SearchSectionProps {
   onSwitchToUpload: () => void;
 }
 
-interface InputState {
-  track: string;
-  artist: string;
-  album: string;
-  duration: string;
-  videoId: string;
-}
-
 // -- Helpers ------------------------------------------------------------------
 
-function buildInitialInputState(prefill: LyricsSearchQuery | null): InputState {
-  return {
-    track: prefill?.track ?? "",
-    artist: prefill?.artist ?? "",
-    album: prefill?.album ?? "",
-    duration: typeof prefill?.durationSec === "number" ? formatDuration(prefill.durationSec) : "",
-    videoId: prefill?.videoId ?? "",
-  };
-}
-
-function buildQuery(inputs: InputState, isrc: string | undefined): LyricsSearchQuery {
+function buildQuery(inputs: SearchInputs): LyricsSearchQuery {
   return {
     track: inputs.track.trim() || undefined,
     artist: inputs.artist.trim() || undefined,
     album: inputs.album.trim() || undefined,
     durationSec: parseDurationInput(inputs.duration),
     videoId: inputs.videoId.trim() || undefined,
-    isrc,
+    isrc: inputs.isrc,
   };
 }
 
@@ -68,43 +51,46 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   onSwitchToPaste,
   onSwitchToUpload,
 }) => {
-  const [inputs, setInputs] = useState<InputState>(() => buildInitialInputState(initialPrefill));
+  const [inputs, setInputs] = useState<SearchInputs>(() => initialSearchInputs(initialPrefill));
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [hoveredIndex, setHoveredIndex] = useState(-1);
   const [selectingId, setSelectingId] = useState<string | null>(null);
   const trackInputRef = useRef<HTMLInputElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
-  const isrcRef = useRef(initialPrefill?.isrc);
 
-  const query = useMemo(() => buildQuery(inputs, isrcRef.current), [inputs]);
+  const query = useMemo(() => buildQuery(inputs), [inputs]);
   const effectiveExpectedDuration = expectedDurationSec ?? parseDurationInput(inputs.duration);
   const { results, isFetching } = useLyricsSearch(query, {
     expectedDurationSec: effectiveExpectedDuration,
   });
 
+  const updateInputs = useCallback((next: SearchInputs) => {
+    setInputs(next);
+    saveSearchDraft(next);
+  }, []);
+
   const handleDurationBlur = useCallback(() => {
     const parsed = parseDurationInput(inputs.duration);
     if (parsed === undefined) return;
     const formatted = formatDuration(parsed);
-    if (formatted !== inputs.duration) {
-      setInputs((prev) => ({ ...prev, duration: formatted }));
-    }
-  }, [inputs.duration]);
+    if (formatted !== inputs.duration) updateInputs({ ...inputs, duration: formatted });
+  }, [inputs, updateInputs]);
 
-  const handleInputChange = useCallback(<K extends keyof InputState>(key: K) => {
-    return (value: string) => {
-      setInputs((prev) => ({ ...prev, [key]: value }));
-      setFocusedIndex(-1);
-    };
-  }, []);
+  const handleInputChange = useCallback(
+    (key: Exclude<keyof SearchInputs, "isrc">) => {
+      return (value: string) => {
+        updateInputs({ ...inputs, [key]: value });
+        setFocusedIndex(-1);
+      };
+    },
+    [inputs, updateInputs],
+  );
 
   const handleClearAll = useCallback(() => {
-    setInputs({ track: "", artist: "", album: "", duration: "", videoId: "" });
-    isrcRef.current = undefined;
+    updateInputs(EMPTY_SEARCH_INPUTS);
     setFocusedIndex(-1);
-    useImportModalStore.getState().clearDefaultPrefill();
     trackInputRef.current?.focus();
-  }, []);
+  }, [updateInputs]);
 
   const hasAnyInput = Boolean(inputs.track || inputs.artist || inputs.album || inputs.duration || inputs.videoId);
 

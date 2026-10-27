@@ -10,7 +10,6 @@ function makeParseResult(overrides: Partial<ParseResult> = {}): ParseResult {
 
 beforeEach(() => {
   useImportModalStore.setState({ ...INITIAL_STATE });
-  window.localStorage.removeItem("composer-import-modal");
 });
 
 describe("import-modal-store", () => {
@@ -149,116 +148,23 @@ describe("import-modal-store", () => {
   });
 });
 
-describe("import-modal-store · defaultPrefill", () => {
-  it("starts with no defaultPrefill", () => {
-    expect(useImportModalStore.getState().defaultPrefill).toBeNull();
-  });
+describe("import-modal-store · searchDraft", () => {
+  const draft = {
+    projectId: "p1",
+    inputs: { track: "Typed", artist: "", album: "", duration: "3:4", videoId: "" },
+  };
 
-  it("setDefaultPrefill stashes the prefill without opening the modal", () => {
-    useImportModalStore.getState().setDefaultPrefill({ track: "Bohemian Rhapsody", artist: "Queen" });
-    const state = useImportModalStore.getState();
-    expect(state.isOpen).toBe(false);
-    expect(state.defaultPrefill).toEqual({ track: "Bohemian Rhapsody", artist: "Queen" });
-  });
-
-  it("clearDefaultPrefill resets defaultPrefill to null", () => {
-    useImportModalStore.getState().setDefaultPrefill({ track: "X" });
-    useImportModalStore.getState().clearDefaultPrefill();
-    expect(useImportModalStore.getState().defaultPrefill).toBeNull();
-  });
-
-  it("open() without args falls back to defaultPrefill as the modal's prefill", () => {
-    useImportModalStore.getState().setDefaultPrefill({ track: "Hello", videoId: "abc" });
+  it("close() keeps the search draft so reopening the modal restores it", () => {
     useImportModalStore.getState().open();
-    const state = useImportModalStore.getState();
-    expect(state.isOpen).toBe(true);
-    expect(state.prefill).toEqual({ track: "Hello", videoId: "abc" });
+    useImportModalStore.getState().setSearchDraft(draft);
+    useImportModalStore.getState().close();
+    useImportModalStore.getState().open();
+    expect(useImportModalStore.getState().searchDraft).toEqual(draft);
   });
 
-  it("open({ prefill }) overrides defaultPrefill for that session", () => {
-    useImportModalStore.getState().setDefaultPrefill({ track: "Default" });
+  it("open({ prefill }) discards the draft so the explicit prefill wins", () => {
+    useImportModalStore.getState().setSearchDraft(draft);
     useImportModalStore.getState().open({ prefill: { track: "Override" } });
-    const state = useImportModalStore.getState();
-    expect(state.prefill).toEqual({ track: "Override" });
-    expect(state.defaultPrefill).toEqual({ track: "Default" });
-  });
-
-  it("close() preserves defaultPrefill so a refresh or reopen still sees it", () => {
-    useImportModalStore.getState().setDefaultPrefill({ track: "Persists" });
-    useImportModalStore.getState().open();
-    useImportModalStore.getState().close();
-    expect(useImportModalStore.getState().defaultPrefill).toEqual({ track: "Persists" });
-  });
-
-  it("defaultPrefill survives a manual write through the persist key", () => {
-    window.localStorage.setItem(
-      "composer-import-modal",
-      JSON.stringify({ state: { defaultPrefill: { track: "Reloaded" } }, version: 0 }),
-    );
-    useImportModalStore.persist.rehydrate();
-    expect(useImportModalStore.getState().defaultPrefill).toEqual({ track: "Reloaded" });
-  });
-});
-
-describe("import-modal-store · slot coexistence", () => {
-  it("recordImportResult does not wipe defaultPrefill", () => {
-    useImportModalStore.getState().setDefaultPrefill({ track: "Persist", artist: "Stays" });
-    useImportModalStore.getState().recordImportResult(makeParseResult(), {
-      label: "Paste",
-      filename: "paste.txt",
-    });
-    const state = useImportModalStore.getState();
-    expect(state.defaultPrefill).toEqual({ track: "Persist", artist: "Stays" });
-    expect(state.lastImportResult).not.toBeNull();
-  });
-
-  it("clearDefaultPrefill does not wipe lastImportResult", () => {
-    useImportModalStore.getState().recordImportResult(makeParseResult(), {
-      label: "File",
-      filename: "song.lrc",
-    });
-    useImportModalStore.getState().setDefaultPrefill({ track: "Will be cleared" });
-    useImportModalStore.getState().clearDefaultPrefill();
-    const state = useImportModalStore.getState();
-    expect(state.defaultPrefill).toBeNull();
-    expect(state.lastImportResult?.source.filename).toBe("song.lrc");
-  });
-
-  it("clearImportResult does not wipe defaultPrefill", () => {
-    useImportModalStore.getState().setDefaultPrefill({ track: "Survives" });
-    useImportModalStore.getState().recordImportResult(makeParseResult(), {
-      label: "Paste",
-      filename: "p.txt",
-    });
-    useImportModalStore.getState().clearImportResult();
-    const state = useImportModalStore.getState();
-    expect(state.defaultPrefill).toEqual({ track: "Survives" });
-    expect(state.lastImportResult).toBeNull();
-  });
-
-  it("open() / close() do not touch lastImportResult or defaultPrefill", () => {
-    useImportModalStore.getState().setDefaultPrefill({ track: "Default" });
-    useImportModalStore.getState().recordImportResult(makeParseResult(), {
-      label: "File",
-      filename: "f.lrc",
-    });
-    useImportModalStore.getState().open({ prefill: { track: "Session" } });
-    useImportModalStore.getState().close();
-    const state = useImportModalStore.getState();
-    expect(state.defaultPrefill).toEqual({ track: "Default" });
-    expect(state.lastImportResult?.source.filename).toBe("f.lrc");
-  });
-
-  it("the persist partializer only persists defaultPrefill (not isOpen, prefill, or lastImportResult)", () => {
-    useImportModalStore.getState().setDefaultPrefill({ track: "Persist me" });
-    useImportModalStore.getState().open({ prefill: { track: "Session-only" }, section: "paste" });
-    useImportModalStore.getState().recordImportResult(makeParseResult(), {
-      label: "Paste",
-      filename: "p.txt",
-    });
-    const persisted = window.localStorage.getItem("composer-import-modal");
-    expect(persisted).not.toBeNull();
-    const parsed = JSON.parse(persisted!) as { state: Record<string, unknown> };
-    expect(parsed.state).toEqual({ defaultPrefill: { track: "Persist me" } });
+    expect(useImportModalStore.getState().searchDraft).toBeNull();
   });
 });
