@@ -7,7 +7,7 @@ import { shiftLineTiming } from "@/domain/line/shift";
 type UpdateLineWithHistory = (
   id: string,
   updates: Partial<LyricLine>,
-  options?: { propagateToSiblings?: boolean },
+  options?: { deriveText?: boolean; propagateToSiblings?: boolean },
 ) => void;
 
 function nudgeLineBegin(
@@ -22,7 +22,10 @@ function nudgeLineBegin(
   if (!line || !effectiveBounds(line)) return;
 
   const range = timeRangeResolver(lines, groups, duration)(line);
-  updateLineWithHistory(line.id, shiftLineTiming(line, delta, range), { propagateToSiblings: false });
+  updateLineWithHistory(line.id, shiftLineTiming(line, delta, range), {
+    deriveText: false,
+    propagateToSiblings: false,
+  });
 }
 
 function setLineBegin(

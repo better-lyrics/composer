@@ -58,6 +58,17 @@ describe("nudgeLineBegin", () => {
     ]);
   });
 
+  it("regression: keeps the untimed words of a partly timed line", () => {
+    useProjectStore.setState({
+      lines: [createLine({ id: "l1", text: "Hello world", words: [{ text: "Hello ", begin: 1, end: 1.5 }] })],
+    });
+
+    nudgeLineBegin(store().lines, 0, 0.5, store().updateLineWithHistory);
+
+    expect(lineAt(0).text).toBe("Hello world");
+    expect(lineAt(0).words).toMatchObject([{ text: "Hello ", begin: 1.5, end: 2 }]);
+  });
+
   describe("edge cases", () => {
     it("stops at zero as a whole, keeping the line duration and its background offset", () => {
       seedLine(0.5, 2);
