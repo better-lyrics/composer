@@ -1,7 +1,6 @@
 import {
   type AlignmentModel,
   BUILTIN_ALIGNMENT_MODEL,
-  RECOMMENDED_ALIGNMENT_MODEL,
   pickAlignmentModel,
 } from "@/audio/alignment/hubertfa/model-manifest";
 import { coverageColumns, coversLanguage } from "@/domain/alignment/language";
@@ -67,7 +66,6 @@ const AlignmentModelSetting: React.FC = () => {
     song,
   );
   const byId = new Map(ordered.map((m) => [m.id, m]));
-  const recommendedId = ordered.find((m) => m.recommended)?.id;
   const pending = !models && stored !== BUILTIN_OPTION.value ? [{ value: stored, label: "Loading…" }] : [];
   const options: SelectOption[] =
     ordered.length > 0
@@ -88,7 +86,7 @@ const AlignmentModelSetting: React.FC = () => {
       <Select
         aria-label={settingEntry("alignmentModelId").label}
         value={value}
-        onChange={(next) => set("alignmentModelId", next === recommendedId ? RECOMMENDED_ALIGNMENT_MODEL : next)}
+        onChange={(next) => set("alignmentModelId", next)}
         options={options}
         renderOption={renderOption}
         header={song && <SongLanguageHeader song={song} />}
