@@ -46,6 +46,12 @@ const CREDITS: Credit[] = [
     works: [{ name: "am-lyrics", href: "https://github.com/binimum/am-lyrics", by: "binimum" }],
   },
   { use: "Waveform", works: [{ name: "wavesurfer.js", href: "https://wavesurfer.xyz", by: "katspaugh" }] },
+  {
+    use: "Scrub audio",
+    works: [
+      { name: "Signalsmith Stretch", href: "https://signalsmith-audio.co.uk/code/stretch/", by: "Signalsmith Audio" },
+    ],
+  },
   { use: "Model runtime", works: [{ name: "ONNX Runtime", href: "https://onnxruntime.ai", by: "Microsoft" }] },
   { use: "Icons", works: [{ name: "Tabler Icons", href: "https://tabler.io/icons" }] },
 ];

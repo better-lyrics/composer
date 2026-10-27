@@ -247,9 +247,9 @@ describe("AudioEngine", () => {
         stemUrls: { vocals: vocalsUrl },
       });
       await waitFor(() => scrubStemRouter.getActiveStem() === "vocals", 5000);
-      scrubPreview.play(0.09, 1);
+      scrubPreview.play(0.05, 1);
       await waitFor(() => scrubPreview.getActiveSnippet() !== null, 5000);
-      expect(scrubPreview.getActiveSnippet()?.time).toBeCloseTo(0.1 - 0.024, 3);
+      expect(scrubPreview.getActiveSnippet()?.time).toBe(0.05);
 
       useSeparationStore.setState({ currentStem: "original" });
       await waitFor(() => scrubStemRouter.getActiveStem() === "original", 5000);

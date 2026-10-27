@@ -232,7 +232,7 @@ describe("scrub-stem-router", () => {
       scrubStemRouter.selectStem("instrumental", () => instrumentalUrl);
 
       expect(scrubStemRouter.getActiveStem()).toBe("instrumental");
-      expect((await scrubAt(4))?.time).toBeCloseTo(1 - 0.024, 3);
+      expect((await scrubAt(4))?.time).toBeCloseTo(1, 3);
 
       URL.revokeObjectURL(vocalsUrl);
       URL.revokeObjectURL(instrumentalUrl);
