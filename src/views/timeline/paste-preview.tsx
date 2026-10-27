@@ -70,14 +70,16 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
       void commitPaste(clipboard, container, e);
     };
 
-    container.addEventListener("pointerdown", holdPress, true);
-    container.addEventListener("mousedown", holdPress, true);
-    container.addEventListener("click", placePaste, true);
+    // The playhead and other overlays sit beside the scroll container, so presses are caught on their shared host.
+    const host = container.parentElement ?? container;
+    host.addEventListener("pointerdown", holdPress, true);
+    host.addEventListener("mousedown", holdPress, true);
+    host.addEventListener("click", placePaste, true);
     container.addEventListener("scroll", redrawOnScroll, { passive: true });
     return () => {
-      container.removeEventListener("pointerdown", holdPress, true);
-      container.removeEventListener("mousedown", holdPress, true);
-      container.removeEventListener("click", placePaste, true);
+      host.removeEventListener("pointerdown", holdPress, true);
+      host.removeEventListener("mousedown", holdPress, true);
+      host.removeEventListener("click", placePaste, true);
       container.removeEventListener("scroll", redrawOnScroll);
     };
   }, [clipboard, scrollContainerRef]);
