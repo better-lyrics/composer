@@ -3,7 +3,7 @@ import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { settingEntry } from "@/stores/settings-catalog";
-import { SNAP_DISTANCE_SETTING, SNAP_SWITCH_SETTING, type SnapSource } from "@/stores/settings-snap";
+import { SNAP_DEFAULTS, SNAP_DISTANCE_SETTING, SNAP_SWITCH_SETTING, type SnapSource } from "@/stores/settings-snap";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { BEAT_GRID_LINE_OPTIONS } from "@/ui/beat-grid-line-options";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
@@ -59,7 +59,9 @@ function useBeatsHint(): string {
 
 function useSnapDistanceSummary(): string {
   return useSettingsStore((s) => {
-    const distances = new Set(SNAP_SOURCES.map((source) => s[SNAP_DISTANCE_SETTING[source]]));
+    const keys = SNAP_SOURCES.map((source) => SNAP_DISTANCE_SETTING[source]);
+    if (keys.every((key) => s[key] === SNAP_DEFAULTS[key])) return "Default";
+    const distances = new Set(keys.map((key) => s[key]));
     return distances.size === 1 ? `${[...distances][0]} px` : "Mixed";
   });
 }
