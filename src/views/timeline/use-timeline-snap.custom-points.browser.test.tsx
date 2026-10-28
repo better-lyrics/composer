@@ -60,7 +60,7 @@ describe("useTimelineSnap · custom snap points", () => {
       snapWordsAndLines: false,
       snapMarkers: true,
       vocalOnsetSnap: false,
-      timelineSnapThreshold: THRESHOLD,
+      snapDistanceMarkers: THRESHOLD,
     });
   });
 

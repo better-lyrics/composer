@@ -2,36 +2,31 @@ import { tempoStats } from "@/domain/tempo/tempo-stats";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { settingEntry } from "@/stores/settings-catalog";
+import { SNAP_DISTANCE_SETTING, SNAP_SWITCH_SETTING, type SnapSource } from "@/stores/settings-snap";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { BEAT_GRID_LINE_OPTIONS } from "@/ui/beat-grid-line-options";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { Switch } from "@/ui/switch";
 import { describeOnsetStatus } from "@/ui/vocal-onset-status-copy";
 import { formatBpm } from "@/utils/format-bpm";
-import { PopGroup, PopHead, PopRow } from "@/ui/pop-layout";
+import { PopGroup, PopHead, PopNavButton, PopRow } from "@/ui/pop-layout";
 import { isDetectionRunning } from "@/views/timeline/beat-grid/detection-progress";
+import { SNAP_SOURCE_DISPLAY, SNAP_SOURCES } from "@/views/timeline/snap-source-display";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import {
-  type Icon,
-  IconAdjustmentsHorizontal,
-  IconChevronRight,
-  IconLoader2,
-  IconMapPin,
-  IconMetronome,
-  IconTextSize,
-  IconWaveSine,
-} from "@tabler/icons-react";
+import { IconAdjustmentsHorizontal, IconArrowsHorizontal, IconLoader2, IconRuler2 } from "@tabler/icons-react";
 
 // -- Types ---------------------------------------------------------------------
 
-type SnapSourceKey = "snapWordsAndLines" | "snapMarkers" | "vocalOnsetSnap" | "beatSnap";
-
 interface SnapSourceRowProps {
-  setting: SnapSourceKey;
-  label: string;
-  icon: Icon;
+  source: SnapSource;
   hint?: string;
   disabled?: boolean;
+}
+
+interface SnapMenuProps {
+  onOpenBeatGrid: () => void;
+  onOpenSnapDistance: () => void;
 }
 
 // -- Hooks ---------------------------------------------------------------------
@@ -62,9 +57,18 @@ function useBeatsHint(): string {
   return `${formatBpm(stats.bpm)} BPM ・ ${linesLabel} lines`;
 }
 
+function useSnapDistanceSummary(): string {
+  return useSettingsStore((s) => {
+    const distances = new Set(SNAP_SOURCES.map((source) => s[SNAP_DISTANCE_SETTING[source]]));
+    return distances.size === 1 ? `${[...distances][0]} px` : "Mixed";
+  });
+}
+
 // -- Components ----------------------------------------------------------------
 
-const SnapSourceRow: React.FC<SnapSourceRowProps> = ({ setting, label, icon, hint, disabled }) => {
+const SnapSourceRow: React.FC<SnapSourceRowProps> = ({ source, hint, disabled }) => {
+  const setting = SNAP_SWITCH_SETTING[source];
+  const { label, icon } = SNAP_SOURCE_DISPLAY[source];
   const checked = useSettingsStore((s) => s[setting]);
   const snapOn = useSettingsStore((s) => s.timelineSnap);
   return (
@@ -74,6 +78,22 @@ const SnapSourceRow: React.FC<SnapSourceRowProps> = ({ setting, label, icon, hin
         disabled={!snapOn || disabled}
         label={label}
         onCheckedChange={(next) => useSettingsStore.getState().set(setting, next)}
+      />
+    </PopRow>
+  );
+};
+
+const PlayheadToPointsRow: React.FC = () => {
+  const checked = useSettingsStore((s) => s.snapPlayheadToPoints);
+  const snapOn = useSettingsStore((s) => s.timelineSnap);
+  const { label } = settingEntry("snapPlayheadToPoints");
+  return (
+    <PopRow label={label} icon={IconArrowsHorizontal} hint="When you click or drag it" dimmed={!snapOn}>
+      <Switch
+        checked={checked}
+        disabled={!snapOn}
+        label={label}
+        onCheckedChange={(next) => useSettingsStore.getState().set("snapPlayheadToPoints", next)}
       />
     </PopRow>
   );
@@ -109,38 +129,41 @@ const BeatGridSummary: React.FC = () => {
   );
 };
 
-const SnapMenu: React.FC<{ onOpenBeatGrid: () => void }> = ({ onOpenBeatGrid }) => {
+const SnapMenu: React.FC<SnapMenuProps> = ({ onOpenBeatGrid, onOpenSnapDistance }) => {
   const hasGrid = useProjectStore((s) => s.beatGrid !== null);
   const markersHint = useMarkersHint();
   const vocalOnsetsHint = useVocalOnsetsHint();
   const beatsHint = useBeatsHint();
+  const distanceSummary = useSnapDistanceSummary();
   return (
     <>
       <PopHead title="Snap to" />
       <SnapOffNote />
       <PopGroup className="mt-1.5">
-        <SnapSourceRow setting="snapWordsAndLines" label="Words and lines" icon={IconTextSize} />
-        <SnapSourceRow setting="snapMarkers" label="Markers" icon={IconMapPin} hint={markersHint} />
-        <SnapSourceRow setting="vocalOnsetSnap" label="Vocal onsets" icon={IconWaveSine} hint={vocalOnsetsHint} />
-        <SnapSourceRow setting="beatSnap" label="Beats" icon={IconMetronome} disabled={!hasGrid} hint={beatsHint} />
+        <SnapSourceRow source="words" />
+        <SnapSourceRow source="markers" hint={markersHint} />
+        <SnapSourceRow source="onsets" hint={vocalOnsetsHint} />
+        <SnapSourceRow source="beats" disabled={!hasGrid} hint={beatsHint} />
+        <SnapSourceRow source="playhead" />
       </PopGroup>
       <div className="h-px my-1.5 -mx-1.5 bg-(--divider)" />
       <PopGroup className="mt-0">
-        <button
-          type="button"
+        <PlayheadToPointsRow />
+      </PopGroup>
+      <div className="h-px my-1.5 -mx-1.5 bg-(--divider)" />
+      <PopGroup className="mt-0">
+        <PopNavButton
+          label="Snap distance"
+          icon={IconRuler2}
+          summary={<span className="text-[12.5px] text-(--muted) tabular-nums">{distanceSummary}</span>}
+          onClick={onOpenSnapDistance}
+        />
+        <PopNavButton
+          label="Beat grid"
+          icon={IconAdjustmentsHorizontal}
+          summary={<BeatGridSummary />}
           onClick={onOpenBeatGrid}
-          className="group flex items-center gap-3 w-full min-h-9 pl-2.5 pr-1 rounded-lg text-left cursor-pointer transition-colors duration-150 hover:bg-(--layer-2)"
-        >
-          <IconAdjustmentsHorizontal aria-hidden="true" className="size-4 shrink-0 text-(--muted)" />
-          <span className="flex-1 min-w-0 text-[13px] font-medium text-(--label)">Beat grid</span>
-          <span className="flex items-center gap-2">
-            <BeatGridSummary />
-            <IconChevronRight
-              aria-hidden="true"
-              className="size-[15px] text-(--muted) transition-colors duration-150 group-hover:text-composer-text"
-            />
-          </span>
-        </button>
+        />
       </PopGroup>
     </>
   );

@@ -4,6 +4,7 @@ import type { GridLines } from "@/domain/tempo/grid-points";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { snapDistancePx } from "@/stores/settings-snap";
 import { snappableBeatPoints } from "@/views/timeline/point-snap-anchors";
 import {
   type SnapAnchor,
@@ -11,6 +12,7 @@ import {
   beatAnchors,
   collectSnapAnchors,
   findSnapShift,
+  snapSourceOf,
   vocalOnsetAnchors,
 } from "@/views/timeline/snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -96,6 +98,7 @@ function useTimelineSnap(): UseTimelineSnap {
   useSettingsStore((s) => s.beatGridLines);
   useSettingsStore((s) => s.snapWordsAndLines);
   useSettingsStore((s) => s.snapMarkers);
+  useSettingsStore((s) => s.snapToPlayhead);
   useTimelineStore((s) => s.zoom);
   useTimelineStore((s) => s.isBypassing);
   useTimelineStore((s) => s.vocalOnsetSnapPoints);
@@ -153,10 +156,19 @@ function useTimelineSnap(): UseTimelineSnap {
   const resolveSnap = useCallback((proposedDeltaPx: number, edgesAtStart: number[]): SnapResolution => {
     const ctx = ctxRef.current;
     const settings = useSettingsStore.getState();
-    const { timelineSnap, vocalOnsetSnap, beatSnap, beatGridVisible, snapWordsAndLines, snapMarkers } = settings;
+    const { timelineSnap, vocalOnsetSnap, beatSnap, beatGridVisible, snapWordsAndLines, snapMarkers, snapToPlayhead } =
+      settings;
     const { zoom, isBypassing, vocalOnsetSnapPoints } = useTimelineStore.getState();
     const key: ActiveAnchorsKey = {
-      sources: sourcesBits([timelineSnap, vocalOnsetSnap, beatSnap, beatGridVisible, snapWordsAndLines, snapMarkers]),
+      sources: sourcesBits([
+        timelineSnap,
+        vocalOnsetSnap,
+        beatSnap,
+        beatGridVisible,
+        snapWordsAndLines,
+        snapMarkers,
+        snapToPlayhead,
+      ]),
       onsetTimes: vocalOnsetSnapPoints,
       beatGrid: useProjectStore.getState().beatGrid,
       zoom,
@@ -173,10 +185,10 @@ function useTimelineSnap(): UseTimelineSnap {
         beatSnap,
         snapWordsAndLines,
         snapMarkers,
+        snapToPlayhead,
       });
       ctx.activeKey = key;
     }
-    const threshold = settings.timelineSnapThreshold;
     if (isBypassing || ctx.activeAnchors.length === 0) return { shiftPx: 0, anchorTime: null };
     const deltaT = proposedDeltaPx / zoom;
     const proposedEdges = edgesAtStart.map((edge) => edge + deltaT);
@@ -185,7 +197,7 @@ function useTimelineSnap(): UseTimelineSnap {
       edges: proposedEdges,
       anchors: ctx.activeAnchors,
       zoom,
-      threshold,
+      thresholdPx: (anchor) => snapDistancePx(settings, snapSourceOf(anchor.kind)),
       overlapCheck: overlapCheck ? (shift) => overlapCheck(shift) : undefined,
     });
     return { shiftPx: result.shift * zoom, anchorTime: result.anchor ? result.anchor.t : null };

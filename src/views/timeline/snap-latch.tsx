@@ -5,6 +5,7 @@ import { cn } from "@/utils/cn";
 import { MOD_KEY } from "@/utils/platform";
 import { PopBody } from "@/ui/pop-layout";
 import { BeatGridPopoverBody } from "@/views/timeline/beat-grid/beat-grid-popover";
+import { SnapDistanceMenu } from "@/views/timeline/snap-distance-menu";
 import { SnapMenu } from "@/views/timeline/snap-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconMagnet } from "@tabler/icons-react";
@@ -12,7 +13,7 @@ import { useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
-type SnapMenuView = "sources" | "beat-grid";
+type SnapMenuView = "sources" | "beat-grid" | "snap-distance";
 
 // -- Components ----------------------------------------------------------------
 
@@ -52,13 +53,19 @@ const SnapLatch: React.FC = () => {
         </ShortcutToggleButton>
       }
     >
-      {view === "sources" ? (
+      {view === "sources" && (
         <PopBody>
-          <SnapMenu onOpenBeatGrid={() => setView("beat-grid")} />
+          <SnapMenu onOpenBeatGrid={() => setView("beat-grid")} onOpenSnapDistance={() => setView("snap-distance")} />
         </PopBody>
-      ) : (
+      )}
+      {view === "beat-grid" && (
         <div onKeyDown={backOnEscape}>
           <BeatGridPopoverBody onBack={() => setView("sources")} />
+        </div>
+      )}
+      {view === "snap-distance" && (
+        <div onKeyDown={backOnEscape}>
+          <SnapDistanceMenu onBack={() => setView("sources")} />
         </div>
       )}
     </SplitLatch>

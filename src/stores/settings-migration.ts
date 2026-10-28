@@ -6,6 +6,7 @@ import { sanitizeSpectrumSettings } from "@/domain/spectrum/settings";
 import { isKeepYouTubeAudio } from "@/domain/storage/audio-retention";
 import { isStorageLimit } from "@/domain/storage/storage-limit";
 import type { SettingsState } from "@/stores/settings";
+import { SNAP_DISTANCE_SETTING } from "@/stores/settings-snap";
 
 // -- Types --------------------------------------------------------------------
 
@@ -13,11 +14,12 @@ interface RetiredSettings {
   confirmReplaceProjectFromHash?: boolean;
   defaultRollingEdit?: unknown;
   defaultPreviewSidebar?: unknown;
+  timelineSnapThreshold?: unknown;
 }
 
 // -- Constants ----------------------------------------------------------------
 
-const SETTINGS_PERSIST_VERSION = 14;
+const SETTINGS_PERSIST_VERSION = 15;
 
 // -- Migration ----------------------------------------------------------------
 
@@ -27,11 +29,15 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
     confirmReplaceProjectFromHash: _retired,
     defaultRollingEdit,
     defaultPreviewSidebar,
+    timelineSnapThreshold,
     ...state
   } = persistedState as Partial<SettingsState> & RetiredSettings;
   const next: Partial<SettingsState> = { ...state };
   if (typeof defaultRollingEdit === "boolean") next.rollingEdit = defaultRollingEdit;
   if (typeof defaultPreviewSidebar === "boolean") next.previewSidebar = defaultPreviewSidebar;
+  if (typeof timelineSnapThreshold === "number") {
+    for (const key of Object.values(SNAP_DISTANCE_SETTING)) next[key] ??= timelineSnapThreshold;
+  }
   if (next.rollingEdit === undefined) next.rollingEdit = false;
   if (next.previewSidebar === undefined) next.previewSidebar = false;
   if (version < 2 || next.vocalModelVariant === "fp16") {

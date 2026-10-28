@@ -4,13 +4,19 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { snapPoints } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
-import { pointSnapTimes } from "@/views/timeline/point-snap-anchors";
+import { pointSnapAnchors } from "@/views/timeline/point-snap-anchors";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { beforeEach, describe, expect, it } from "vitest";
 
 const EVERYTHING = { includeMarkers: true, includeOnsets: true, includeBeats: true };
 
-describe("pointSnapTimes", () => {
+function pointSnapTimes(sources: typeof EVERYTHING): number[] {
+  return pointSnapAnchors(sources)
+    .map((anchor) => anchor.t)
+    .toSorted((a, b) => a - b);
+}
+
+describe("pointSnapAnchors", () => {
   beforeEach(async () => {
     await resetAllStores();
     useAudioStore.setState({ duration: 10 });
@@ -41,6 +47,12 @@ describe("pointSnapTimes", () => {
     expect(pointSnapTimes(EVERYTHING)).toEqual([0.6, 0.9]);
     useSettingsStore.setState({ beatSnap: true, beatGridVisible: false });
     expect(pointSnapTimes(EVERYTHING)).toEqual([0.6, 0.9]);
+  });
+
+  it("gives each point its own source's snap distance", () => {
+    useSettingsStore.setState({ snapDistanceMarkers: 5, snapDistanceOnsets: 9, snapDistanceBeats: 20 });
+    const distanceAt = (t: number) => pointSnapAnchors(EVERYTHING).find((anchor) => anchor.t === t)?.thresholdPx;
+    expect([distanceAt(0.9), distanceAt(0.6), distanceAt(0.5)]).toEqual([5, 9, 20]);
   });
 
   it("drops grid lines thinned at the current zoom", () => {

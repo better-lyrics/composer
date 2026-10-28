@@ -2,7 +2,7 @@ import { Button, type ButtonProps } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
 import { keepSpaceForFocusedControl } from "@/ui/keep-space-for-focused-control";
-import { type Icon, IconChevronLeft, IconHandFinger } from "@tabler/icons-react";
+import { type Icon, IconChevronLeft, IconChevronRight, IconHandFinger } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -22,6 +22,19 @@ interface PopRowProps {
   icon?: Icon;
   hint?: React.ReactNode;
   dimmed?: boolean;
+  children: React.ReactNode;
+}
+
+interface PopNavButtonProps {
+  label: string;
+  icon: Icon;
+  summary: React.ReactNode;
+  onClick: () => void;
+}
+
+interface PopFieldLabelProps {
+  id: string;
+  value?: string;
   children: React.ReactNode;
 }
 
@@ -124,6 +137,31 @@ const PopRow: React.FC<PopRowProps> = ({ label, icon: RowIcon, hint, dimmed, chi
   </div>
 );
 
+const PopNavButton: React.FC<PopNavButtonProps> = ({ label, icon: NavIcon, summary, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="group flex items-center gap-3 w-full min-h-9 pl-2.5 pr-1 rounded-lg text-left cursor-pointer transition-colors duration-150 hover:bg-(--layer-2)"
+  >
+    <NavIcon aria-hidden="true" className="size-4 shrink-0 text-(--muted)" />
+    <span className="flex-1 min-w-0 text-[13px] font-medium text-(--label)">{label}</span>
+    <span className="flex items-center gap-2">
+      {summary}
+      <IconChevronRight
+        aria-hidden="true"
+        className="size-[15px] text-(--muted) transition-colors duration-150 group-hover:text-composer-text"
+      />
+    </span>
+  </button>
+);
+
+const PopFieldLabel: React.FC<PopFieldLabelProps> = ({ id, value, children }) => (
+  <div className="flex justify-between items-baseline text-[12.5px] font-medium text-(--label)">
+    <span id={id}>{children}</span>
+    {value && <span className="font-mono text-[11px] font-medium tabular-nums text-(--muted)">{value}</span>}
+  </div>
+);
+
 const PopButton: React.FC<PopButtonProps> = ({ icon: ButtonIcon, variant, className, children, ...props }) => (
   <Button
     size="sm"
@@ -145,4 +183,16 @@ const SetByHandButton: React.FC<{ variant?: ButtonProps["variant"]; onClick: () 
 
 // -- Exports -------------------------------------------------------------------
 
-export { PopActions, PopBody, PopButton, PopGroup, PopHead, PopIconButton, PopRow, PopText, SetByHandButton };
+export {
+  PopActions,
+  PopBody,
+  PopButton,
+  PopFieldLabel,
+  PopGroup,
+  PopHead,
+  PopIconButton,
+  PopNavButton,
+  PopRow,
+  PopText,
+  SetByHandButton,
+};

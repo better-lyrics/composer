@@ -43,7 +43,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
   const removeCustomSnapPoint = useProjectStore((s) => s.removeCustomSnapPoint);
   const markerMode = useTimelineStore((s) => s.markerMode);
   const showOnsets = useSettingsStore((s) => s.vocalOnsetSnap);
-  const thresholdPx = useSettingsStore((s) => s.timelineSnapThreshold);
+  const thresholdPx = useSettingsStore((s) => s.snapDistanceOnsets);
 
   const { draggingId, draggingTime, onHeadPointerDown } = useSnapMarkerDrag({ scrollContainerRef });
 

@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 describe("snapPlayheadTime", () => {
   beforeEach(() => {
-    useSettingsStore.setState({ snapPlayheadToPoints: true, vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+    useSettingsStore.setState({ snapPlayheadToPoints: true, vocalOnsetSnap: true, snapDistanceOnsets: 12 });
     useTimelineStore.setState({ zoom: 100, vocalOnsetSnapPoints: [] });
     useProjectStore.setState({ customSnapPoints: snapPoints([5]) });
   });

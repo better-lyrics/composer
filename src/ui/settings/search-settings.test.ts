@@ -13,7 +13,7 @@ function search(query: string, state: SettingsState = DEFAULTS) {
 describe("searchSettings", () => {
   it("finds every snap setting in the timeline", () => {
     expect(search("snap").settings).toEqual(
-      expect.arrayContaining(["timelineSnap", "vocalOnsetSnap", "timelineSnapThreshold", "snapPlayheadToPoints"]),
+      expect.arrayContaining(["timelineSnap", "vocalOnsetSnap", "snapDistanceWords", "snapPlayheadToPoints"]),
     );
   });
 
@@ -22,7 +22,7 @@ describe("searchSettings", () => {
   });
 
   it("requires every term to match", () => {
-    expect(search("snap playhead").settings).toEqual(["snapPlayheadToPoints"]);
+    expect(search("playhead points").settings).toEqual(["snapPlayheadToPoints"]);
   });
 
   it("matches keywords that are not in the copy", () => {
