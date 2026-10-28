@@ -85,7 +85,7 @@ const MetadataPanel: React.FC = () => {
             placeholder="Album name"
             onChange={(e) => setMetadata({ album: e.target.value })}
             suggestion={suggestions.album}
-            onUseSuggestion={(album) => setMetadata({ album })}
+            onUseSuggestion={(album) => musicBrainz.accept({ album })}
           />
 
           <SuggestedField
@@ -96,7 +96,7 @@ const MetadataPanel: React.FC = () => {
             placeholder="e.g. USQX91700001"
             onChange={(e) => handleIsrcChange(e.target.value)}
             suggestion={suggestions.isrc}
-            onUseSuggestion={handleIsrcChange}
+            onUseSuggestion={(isrc) => musicBrainz.accept({ isrc: normalizeIsrc(isrc) })}
           >
             {isrcInvalid && (
               <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
@@ -134,7 +134,7 @@ const MetadataPanel: React.FC = () => {
             values={metadata.artists}
             onChange={(next) => setMetadata({ artists: next })}
             suggestion={suggestions.artists}
-            onUseSuggestion={(artists) => setMetadata({ artists })}
+            onUseSuggestion={(artists) => musicBrainz.accept({ artists })}
           />
 
           <MetadataFieldList
@@ -144,7 +144,7 @@ const MetadataPanel: React.FC = () => {
             values={metadata.songwriters ?? []}
             onChange={(next) => setMetadata({ songwriters: next })}
             suggestion={suggestions.songwriters}
-            onUseSuggestion={(songwriters) => setMetadata({ songwriters })}
+            onUseSuggestion={(songwriters) => musicBrainz.accept({ songwriters })}
           />
 
           <ExtraFieldList values={metadata.extra ?? {}} onChange={(next) => setMetadata({ extra: next })} />
