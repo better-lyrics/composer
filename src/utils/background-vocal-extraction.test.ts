@@ -1929,6 +1929,17 @@ describe("regressions", () => {
     expect(extracted[0].backgroundWords?.map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
   });
 
+  it("regression: a timed standalone after an untimed one keeps its own timing", () => {
+    const lines = [
+      createLine({ id: "a", text: "hello", begin: 10, end: 14 }),
+      createLine({ id: "b", text: "(ooh)" }),
+      createLine({ id: "c", text: "(yeah)", begin: 15, end: 16 }),
+    ];
+    const [merged] = extractBackgroundVocals(lines, options);
+    expect(merged.backgroundText).toBe("ooh yeah");
+    expect(merged.backgroundWords?.at(-1)).toEqual({ text: "yeah", begin: 15, end: 16 });
+  });
+
   it("regression: an untimed standalone line after an inline word-synced extraction keeps the carried timing", () => {
     const lines = [
       createLine({

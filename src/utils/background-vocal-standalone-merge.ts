@@ -1,4 +1,4 @@
-import { applyBackground, type BackgroundSource } from "@/domain/line/background";
+import { applyBackground, type BackgroundSource, withSeededBackground } from "@/domain/line/background";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
@@ -61,13 +61,15 @@ function mergeStandaloneInto(
   const prevIsExtraction = prev.backgroundTextSource === "extraction";
   const prevIsStaleExtraction = prevIsExtraction && !prevTrailingBracketFromSamePass;
   const baseText = prevIsStaleExtraction ? undefined : prev.backgroundText;
-  const baseWords = prevIsStaleExtraction ? undefined : prev.backgroundWords;
+  const storedBaseWords = prevIsStaleExtraction ? undefined : prev.backgroundWords;
   const carried = carriedBackgroundWords(
     standalone,
     bgText,
     preserveBrackets,
-    prevTrailingBracketFromSamePass && baseWords?.length ? spanAfter(prev, baseWords) : null,
+    prevTrailingBracketFromSamePass && storedBaseWords?.length ? spanAfter(prev, storedBaseWords) : null,
   );
+  const baseWords =
+    carried?.length && !prevIsStaleExtraction ? withSeededBackground(prev).backgroundWords : storedBaseWords;
 
   // Source for a result that keeps the prev base: a surviving extraction base
   // is necessarily fresh same-pass output (stale extraction was dropped above),

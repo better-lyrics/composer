@@ -60,10 +60,6 @@ const EditPanel: React.FC = () => {
   const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
   const [rawText, setRawText] = useState(() => linesToEditText(lines));
-  const rawTextRef = useRef(rawText);
-  useEffect(() => {
-    rawTextRef.current = rawText;
-  });
   const { textareaRef, showEditText } = useEditTextCaret(rawText, setRawText);
   useFocusLyricsShortcut(textareaRef, activeTab === "edit");
   const linesSetByUs = useRef<LyricLine[] | null>(null);
@@ -295,8 +291,8 @@ const EditPanel: React.FC = () => {
       // textarea on a state-less return path and the user's keystrokes persist
       // visually even though the store rejected them.
       const snapBack = () => {
-        if (textarea.value !== rawTextRef.current) {
-          textarea.value = rawTextRef.current;
+        if (textarea.value !== rawText) {
+          textarea.value = rawText;
         }
       };
 
@@ -366,7 +362,17 @@ const EditPanel: React.FC = () => {
       useProjectStore.getState().setLines(finalLines);
       scheduleRunFinalize();
     },
-    [confirm, defaultAgentId, groups, lines, scheduleRunFinalize, commitLinesWithHistory, finalizeRun, showEditText],
+    [
+      confirm,
+      defaultAgentId,
+      groups,
+      lines,
+      rawText,
+      scheduleRunFinalize,
+      commitLinesWithHistory,
+      finalizeRun,
+      showEditText,
+    ],
   );
   const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText);
   const handlePaste = useSmartPaste({ typedPasteRef: pastedRef, onBeforeImport: finalizeRun });
