@@ -1929,6 +1929,20 @@ describe("regressions", () => {
     expect(extracted[0].backgroundWords?.map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
   });
 
+  it("regression: empty parentheses do not change the timing pulled from a word-synced line", () => {
+    const line = createLine({
+      id: "a",
+      text: "Hi () (ooh)",
+      words: [
+        { text: "Hi ", begin: 0, end: 1 },
+        { text: "() ", begin: 1, end: 2 },
+        { text: "(ooh)", begin: 5, end: 6 },
+      ],
+    });
+    const extracted = extractInlineFromLine(line, options);
+    expect(extracted.backgroundWords).toEqual([{ text: "ooh", begin: 5, end: 6 }]);
+  });
+
   it("regression: a timed standalone after an untimed one keeps its own timing", () => {
     const lines = [
       createLine({ id: "a", text: "hello", begin: 10, end: 14 }),

@@ -90,6 +90,10 @@ function classifyLine(text: string): LineClassification {
 
 // -- Extraction ---------------------------------------------------------------
 
+function hasSungContent(text: string, splitChar: string): boolean {
+  return [...text].some((char) => !"() ".includes(char) && char !== splitChar);
+}
+
 function extractInlineWordSynced(line: LyricLine, classified: LineClassification, options: ExtractOptions): LyricLine {
   const words = line.words;
   if (!words || words.length === 0) return line;
@@ -112,7 +116,7 @@ function extractInlineWordSynced(line: LyricLine, classified: LineClassification
       insideCount++;
     }
     if (insideCount === 0) survivors.push(words[i]);
-    else bracketed.push(words[i]);
+    else if (hasSungContent(words[i].text, splitChar)) bracketed.push(words[i]);
   }
   if (survivors.length === 0) return line;
   const trimmedSurvivors = survivors.map((word, i) =>
