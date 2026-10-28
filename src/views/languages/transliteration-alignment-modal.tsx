@@ -1,4 +1,5 @@
 import { planTransliterationAlignment } from "@/domain/language/align";
+import { confirmTransliterationAlignment } from "@/domain/language/review";
 import { splitTransliterationAtBoundaries, timingLexicalWordGroups } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -125,12 +126,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
       line.id,
       {
         [field]: nextWords,
-        transliteration: {
-          ...track,
-          ...(field === "words"
-            ? { alignmentStatus: "confirmed" as const }
-            : { backgroundAlignmentStatus: "confirmed" as const }),
-        },
+        transliteration: confirmTransliterationAlignment(line, field),
       },
       { deriveText: false },
     );
