@@ -1842,7 +1842,7 @@ describe("preserveBrackets: word-synced bg", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
     expect(result[0].backgroundWords).toEqual([
-      { text: "(clap)", begin: 1.0, end: 1.5 },
+      { text: "(clap) ", begin: 1.0, end: 1.5 },
       { text: "(ooh)", begin: 5.0, end: 5.5 },
     ]);
   });
@@ -1916,5 +1916,35 @@ describe("regressions", () => {
     const [merged] = extractBackgroundVocals(lines, options);
     expect(merged.backgroundText).toBe("ooh");
     expect(merged.backgroundWords?.[0].begin).toBe(12);
+  });
+
+  it("regression: several untimed standalone lines all merge into one synced line", () => {
+    const lines = [
+      createLine({ id: "a", text: "hello", begin: 10, end: 14 }),
+      createLine({ id: "b", text: "(ooh)" }),
+      createLine({ id: "c", text: "(yeah)" }),
+    ];
+    const extracted = extractBackgroundVocals(lines, options);
+    expect(extracted).toHaveLength(1);
+    expect(extracted[0].backgroundWords?.map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
+  });
+
+  it("regression: an untimed standalone line after an inline word-synced extraction keeps the carried timing", () => {
+    const lines = [
+      createLine({
+        id: "a",
+        text: "hello (ooh)",
+        words: [
+          { text: "hello ", begin: 0, end: 1 },
+          { text: "(ooh)", begin: 1, end: 2 },
+        ],
+      }),
+      createLine({ id: "b", text: "(yeah)" }),
+    ];
+    const extracted = extractBackgroundVocals(lines, options);
+    expect(extracted).toHaveLength(1);
+    expect(extracted[0].backgroundWords?.[0]).toEqual({ text: "ooh ", begin: 1, end: 2 });
+    expect(extracted[0].backgroundText).toBe("ooh yeah");
+    expect(extracted[0].backgroundWords?.map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
   });
 });

@@ -6,6 +6,7 @@ import { isWordSynced } from "@/domain/line/predicates";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { Bounds } from "@/domain/word/bounds";
 import type { WordTiming } from "@/domain/word/timing";
+import { withTrailingSpace } from "@/utils/word-spaces";
 
 // -- Types --------------------------------------------------------------------
 
@@ -37,12 +38,6 @@ function backgroundWordsOf(line: LyricLine, bounds: Bounds): WordTiming[] {
   if (line.backgroundWords?.length) return parenthesized(line.backgroundWords);
   const text = line.backgroundText?.trim();
   return text ? parenthesized([{ text, begin: bounds.begin, end: bounds.end }]) : [];
-}
-
-function withTrailingSpace(words: WordTiming[]): WordTiming[] {
-  const last = words.at(-1);
-  if (!last || last.text.endsWith(" ")) return words;
-  return [...words.slice(0, -1), { ...last, text: `${last.text} ` }];
 }
 
 // Background vocals follow the main words in parentheses: every target format

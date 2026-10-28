@@ -196,6 +196,17 @@ describe("importLyrics timing distribution", () => {
     expect(stored.length).toBe(1);
     expect(stored[0].words).toEqual([{ text: "Hi", begin: 1, end: 2 }]);
   });
+
+  it("regression: extracted background vocals on distributed lines are stored timed", async () => {
+    await importLyrics(
+      { filename: "test.txt", content: "Hello (ooh)\nWorld" },
+      buildContext({ audioDuration: 120, applyBackgroundExtraction: true }),
+    );
+    const [first] = useProjectStore.getState().lines;
+    expect(first.backgroundText).toBe("ooh");
+    expect(first.backgroundWords?.[0].begin).toBe(30);
+    expect(first.backgroundWords?.at(-1)?.end).toBe(60);
+  });
 });
 
 // -- Background extraction ----------------------------------------------------

@@ -142,6 +142,12 @@ describe("tap-word", () => {
     expect(updates?.backgroundWords?.[0].begin).toBe(1);
   });
 
+  it("regression: re-writing slot 0 of a timed line seeds background words it never stored", () => {
+    const lines = [createLine({ id: "l0", text: "a", words: [word("a", 20, 21)], backgroundText: "oh" })];
+    const updates = run(lines, "tap-word", [0, 0], 5)?.lineUpdates[0].updates;
+    expect(updates?.backgroundWords?.[0].begin).toBe(5);
+  });
+
   it("P3: re-writing slot 0 of a timed line shifts background words by the main delta", () => {
     const lines = [
       createLine({
@@ -204,6 +210,12 @@ describe("tap-line", () => {
         backgroundWords: [word("oh", 11, 12)],
       }),
     ];
+    const after = apply(lines, run(lines, "tap-line", [0, 0], 4));
+    expect(after[0]).toMatchObject({ begin: 4, end: 6, backgroundWords: [word("oh", 5, 6)] });
+  });
+
+  it("regression: moving a line-synced line seeds background words it never stored", () => {
+    const lines = [createLine({ id: "l0", text: "a", begin: 10, end: 12, backgroundText: "oh" })];
     const after = apply(lines, run(lines, "tap-line", [0, 0], 4));
     expect(after[0]).toMatchObject({ begin: 4, end: 6, backgroundWords: [word("oh", 5, 6)] });
   });
