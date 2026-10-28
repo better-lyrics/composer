@@ -39,7 +39,7 @@
     "diff": "^9.0.0",
     "driver.js": "^1.10.2",
     "lit": "^3.3.3",
-    "motion": "^14.4.0",
+    "motion": "^14.5.0",
     "music-metadata": "^12.2.3",
     "nanoid": "^6.0.2",
     "node-diff3": "^3.2.1",
@@ -58,7 +58,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.15",
+    "@biomejs/biome": "^2.6.2",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
