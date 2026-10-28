@@ -39,6 +39,14 @@ describe("songDetailsFrom", () => {
     it("regression: skips earlier compilations when picking the album", () => {
       expect(pickAlbumRelease(YOUR_POWER_ALBUM_RECORDING.releases ?? [])?.title).toBe("Happier Than Ever");
     });
+
+    it("regression: names the album when its release group has a secondary type", () => {
+      const picked = pickAlbumRelease([
+        release("Hits 2024", "Official", "2023", "Album", ["Compilation"]),
+        release("Film Soundtrack", "Official", "2024", "Album", ["Soundtrack"]),
+      ]);
+      expect(picked?.title).toBe("Film Soundtrack");
+    });
   });
 
   describe("edge cases", () => {
@@ -62,20 +70,29 @@ describe("songDetailsFrom", () => {
       expect(picked?.title).toBe("single");
     });
 
-    it("names a live take's release for display but never as its album", () => {
+    it("names a live take's live album as its album", () => {
       const details = songDetailsFrom({
         id: "r",
         title: "Your Power",
         releases: [release("Prime Day Show", "Official", "2021", "Album", ["Live"])],
       });
-      expect(details).toMatchObject({ album: null, releaseTitle: "Prime Day Show", releaseYear: "2021" });
+      expect(details).toMatchObject({ album: "Prime Day Show", releaseTitle: "Prime Day Show", releaseYear: "2021" });
       expect(details.coverReleaseGroupId).toBe("group-Prime Day Show");
     });
 
-    it("still names a live take's release for display", () => {
-      const live = release("Prime Day Show", "Official", "2021", "Album", ["Live"]);
-      expect(pickAlbumRelease([live])).toBeNull();
-      expect(pickDisplayRelease([live])?.title).toBe("Prime Day Show");
+    it("prefers a release without secondary types over an earlier one with them", () => {
+      const picked = pickAlbumRelease([
+        release("live", "Official", "2019", "Album", ["Live"]),
+        release("studio", "Official", "2020", "Album"),
+      ]);
+      expect(picked?.title).toBe("studio");
+    });
+
+    it("never names a compilation or DJ mix as the album, but still shows it", () => {
+      const compilation = release("Hits 2024", "Official", "2024", "Album", ["Compilation"]);
+      const mix = release("Club Mix", "Official", "2023", "Album", ["DJ-mix"]);
+      expect(pickAlbumRelease([compilation, mix])).toBeNull();
+      expect(pickDisplayRelease([compilation, mix])?.title).toBe("Club Mix");
     });
 
     it("ignores releases that are not official", () => {
