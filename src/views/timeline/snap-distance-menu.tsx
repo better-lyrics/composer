@@ -1,4 +1,5 @@
 import { useSettingsStore } from "@/stores/settings";
+import { settingEntry } from "@/stores/settings-catalog";
 import { SNAP_DISTANCE_RANGE_PX, SNAP_DISTANCE_SETTING, type SnapSource } from "@/stores/settings-snap";
 import { PopBody, PopFieldLabel, PopHead, PopText } from "@/ui/pop-layout";
 import { Slider } from "@/ui/slider";
@@ -18,7 +19,7 @@ const SnapDistanceField: React.FC<{ source: SnapSource }> = ({ source }) => {
         {label}
       </PopFieldLabel>
       <Slider
-        aria-label={`${label} snap distance`}
+        aria-label={settingEntry(key).label}
         value={distance}
         min={SNAP_DISTANCE_RANGE_PX.min}
         max={SNAP_DISTANCE_RANGE_PX.max}

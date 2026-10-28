@@ -220,7 +220,8 @@ const TimelineSection: React.FC = () => (
         </li>
         <li>
           Click the arrow next to the magnet to pick what snaps, including the playhead. <strong>Snap distance</strong>{" "}
-          in that menu sets how close an edge has to get to each one before it locks on.
+          in that menu sets how close an edge has to get to each one before it locks on. Settings has the same sliders,
+          starting with <SettingLink setting="snapDistanceWords" />.
         </li>
         <li>
           Snap won't push a block into a neighbor. If the closest anchor would cause overlap, it falls through to the

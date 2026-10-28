@@ -53,7 +53,7 @@ function pointSnapAnchors({ includeMarkers, includeOnsets, includeBeats }: Point
       snappableBeatPoints().map((point) => point.t),
       "beats",
     );
-  return anchors;
+  return anchors.toSorted((a, b) => a.t - b.t);
 }
 
 // -- Exports -------------------------------------------------------------------
