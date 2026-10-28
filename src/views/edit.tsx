@@ -61,7 +61,9 @@ const EditPanel: React.FC = () => {
 
   const [rawText, setRawText] = useState(() => linesToEditText(lines));
   const rawTextRef = useRef(rawText);
-  rawTextRef.current = rawText;
+  useEffect(() => {
+    rawTextRef.current = rawText;
+  });
   const { textareaRef, showEditText } = useEditTextCaret(rawText, setRawText);
   useFocusLyricsShortcut(textareaRef, activeTab === "edit");
   const linesSetByUs = useRef<LyricLine[] | null>(null);
