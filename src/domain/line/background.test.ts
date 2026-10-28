@@ -228,6 +228,9 @@ describe("withSeededBackground", () => {
     const withWords = { ...timed, backgroundWords: [bgWord] };
     const untimed = { ...timed, begin: undefined, end: undefined };
     const noText = { ...timed, backgroundText: undefined };
-    for (const candidate of [withWords, untimed, noText]) expect(withSeededBackground(candidate)).toBe(candidate);
+    const zeroLength = { ...timed, begin: 10, end: 10 };
+    const inverted = { ...timed, begin: 14, end: 10 };
+    for (const candidate of [withWords, untimed, noText, zeroLength, inverted])
+      expect(withSeededBackground(candidate)).toBe(candidate);
   });
 });

@@ -61,7 +61,7 @@ function manualBackgroundWordEdit(words: WordTiming[]): BackgroundFields {
 function withSeededBackground(line: LyricLine): LyricLine {
   if (!line.backgroundText || line.backgroundWords?.length) return line;
   const bounds = effectiveBounds(line);
-  if (!bounds) return line;
+  if (!bounds || !(bounds.end > bounds.begin)) return line;
   const words = createInitialBgWords(line.backgroundText, (bounds.begin + bounds.end) / 2, bounds.end);
   return words.length > 0 ? reconcileLine({ ...line, backgroundWords: words }) : line;
 }

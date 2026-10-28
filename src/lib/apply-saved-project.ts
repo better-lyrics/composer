@@ -1,4 +1,5 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { withSeededBackground } from "@/domain/line/background";
 import { savedExportTiming } from "@/domain/project/export-timing";
 import { isMetadataKey } from "@/domain/project/imported-metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
@@ -27,7 +28,7 @@ function malformedFieldsOf(project: SavedProject): string[] {
 function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): string[] {
   const state = useProjectStore.getState();
   state.setMetadata(normalizeLoadedMetadata(project.metadata));
-  state.setLines(project.lines ?? []);
+  state.setLines((project.lines ?? []).map(withSeededBackground));
   state.setGroups(project.groups ?? []);
   state.setGranularity(project.granularity ?? useSettingsStore.getState().defaultGranularity);
   state.setExportTiming(savedExportTiming(project.exportTiming));
