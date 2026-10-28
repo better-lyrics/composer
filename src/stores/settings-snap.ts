@@ -34,6 +34,8 @@ type SnapDistanceKey = keyof Pick<
 // -- Defaults ------------------------------------------------------------------
 
 const DEFAULT_SNAP_DISTANCE_PX = 12;
+// Beat lines are dense, so a 12 px reach would catch nearly every edge dragged between them.
+const DEFAULT_BEAT_SNAP_DISTANCE_PX = 6;
 const SNAP_DISTANCE_RANGE_PX = { min: 4, max: 24 } as const;
 
 const SNAP_DEFAULTS: SnapSettings = {
@@ -46,7 +48,7 @@ const SNAP_DEFAULTS: SnapSettings = {
   snapDistanceWords: DEFAULT_SNAP_DISTANCE_PX,
   snapDistanceMarkers: DEFAULT_SNAP_DISTANCE_PX,
   snapDistanceOnsets: DEFAULT_SNAP_DISTANCE_PX,
-  snapDistanceBeats: DEFAULT_SNAP_DISTANCE_PX,
+  snapDistanceBeats: DEFAULT_BEAT_SNAP_DISTANCE_PX,
   snapDistancePlayhead: DEFAULT_SNAP_DISTANCE_PX,
   beatGridVisible: true,
   beatGridLines: "2",
