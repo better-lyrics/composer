@@ -125,6 +125,13 @@ describe("parseQrc", () => {
       );
       expect(result.lines.map((line) => line.words?.map((word) => word.text).join(""))).toEqual(['Say "Come', "Ooh"]);
     });
+
+    it("regression: keeps reading past an unescaped quote followed by text that looks like an attribute", () => {
+      const result = parseQrc(
+        '<QrcInfos>\n<Lyric_1 LyricType="1" LyricContent="[1000,800]Say (1000,300)"E=mc²"(1300,500)\n[2000,500]Ooh(2000,500)\n"/>\n</QrcInfos>',
+      );
+      expect(result.lines.map((line) => line.words?.map((word) => word.text).join(""))).toEqual(['Say "E=mc²"', "Ooh"]);
+    });
   });
 
   describe("metadata", () => {

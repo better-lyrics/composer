@@ -4,8 +4,9 @@
 
 const QRC_LINE_HEADER_REGEX = /\[(\d+),(\d+)\]/;
 const QRC_WORD_TAG_REGEX = /\((\d+),(\d+)\)/;
-// QQ leaves quotes in the lyrics unescaped, so only a quote that closes the tag ends the body.
-const QRC_LYRIC_CONTENT_REGEX = /LyricContent="([\s\S]*?)"\s*(?:\/?>|[a-zA-Z]+=)/;
+// QQ leaves quotes in the lyrics unescaped, so only a quote that closes the tag or precedes the
+// next attribute ends the body.
+const QRC_LYRIC_CONTENT_REGEX = /LyricContent="([\s\S]*?)"(?=\s*\/?>|\s+[\w:]+=")/;
 
 // -- Derived ------------------------------------------------------------------
 
