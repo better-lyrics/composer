@@ -39,6 +39,7 @@ interface MusicBrainzPanel {
   choose: (recordingId: string) => void;
   reveal: () => void;
   fillAll: () => void;
+  accept: (patch: Partial<ProjectMetadata>) => void;
   dismiss: () => void;
 }
 
@@ -91,11 +92,11 @@ function useMusicBrainzPanel(): MusicBrainzPanel {
       ? { match: found, details: lookedUp ?? songDetailsFrom(found.chosen.recording) }
       : null;
 
-  const fillAll = () => {
-    if (Object.keys(fill).length === 0) return;
-    const previous = previousValues(fill, useProjectStore.getState().metadata);
+  const accept = (patch: Partial<ProjectMetadata>) => {
+    if (Object.keys(patch).length === 0) return;
+    const previous = previousValues(patch, useProjectStore.getState().metadata);
     if (found) updateSession({ chosenRecordingId: found.chosen.recording.id });
-    setMetadata(fill);
+    setMetadata(patch);
     showMusicBrainzFillToast(previous);
   };
 
@@ -115,7 +116,8 @@ function useMusicBrainzPanel(): MusicBrainzPanel {
     request: () => updateSession({ requested: true }),
     choose: (recordingId) => updateSession({ chosenRecordingId: recordingId }),
     reveal: () => updateSession({ revealed: true }),
-    fillAll,
+    fillAll: () => accept(fill),
+    accept,
     dismiss,
   };
 }
