@@ -4,7 +4,7 @@ import { agentIdAt, createPerformerAgents } from "@/domain/agent/performer-agent
 import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import { matchAllLineHeaders, matchAllWordTags, stripWordTags } from "@/domain/lyrics-file/qrc-syntax";
+import { matchAllLineHeaders, matchAllWordTags, rawLyricContent, stripWordTags } from "@/domain/lyrics-file/qrc-syntax";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { WordTiming } from "@/domain/word/timing";
 import {
@@ -55,10 +55,7 @@ function extractLyricContent(content: string): string {
   if (!content.includes("<QrcInfos")) return content;
 
   const parsed = parseXmlDocument(content);
-  if (!parsed.ok) {
-    console.warn("[Composer] QRC document is not well-formed XML, reading it as a raw body");
-    return content;
-  }
+  if (!parsed.ok) return rawLyricContent(content) ?? content;
 
   return parsed.doc.querySelector("[LyricContent]")?.getAttribute("LyricContent") ?? "";
 }
