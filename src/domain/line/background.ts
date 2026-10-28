@@ -1,8 +1,10 @@
+import { effectiveBounds } from "@/domain/line/bounds";
 import type { LineFields, LyricLine } from "@/domain/line/model";
 import { reconcileLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
+import { createInitialBgWords } from "@/utils/sync-helpers";
 
 // -- Types --------------------------------------------------------------------
 
@@ -56,7 +58,15 @@ function manualBackgroundWordEdit(words: WordTiming[]): BackgroundFields {
   });
 }
 
+function withSeededBackground(line: LyricLine): LyricLine {
+  if (!line.backgroundText || line.backgroundWords?.length) return line;
+  const bounds = effectiveBounds(line);
+  if (!bounds) return line;
+  const words = createInitialBgWords(line.backgroundText, (bounds.begin + bounds.end) / 2, bounds.end);
+  return words.length > 0 ? reconcileLine({ ...line, backgroundWords: words }) : line;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { applyBackground, backgroundFields, CLEARED_BACKGROUND, manualBackgroundWordEdit };
+export { applyBackground, backgroundFields, CLEARED_BACKGROUND, manualBackgroundWordEdit, withSeededBackground };
 export type { BackgroundSource };

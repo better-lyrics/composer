@@ -1,6 +1,6 @@
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
-import { backgroundFields } from "@/domain/line/background";
+import { backgroundFields, withSeededBackground } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
@@ -129,6 +129,8 @@ const EditPanel: React.FC = () => {
     let words: WordTiming[] | undefined;
     if (newBgText && target?.backgroundWords?.length) {
       words = remapWordTextsPreservingTiming(target.backgroundWords, newBgText);
+    } else if (newBgText && target) {
+      words = withSeededBackground({ ...target, backgroundText: newBgText }).backgroundWords;
     }
 
     useProjectStore

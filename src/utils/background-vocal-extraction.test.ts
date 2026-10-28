@@ -428,7 +428,7 @@ describe("extractInlineFromLine", () => {
     expect(result).not.toBe(line);
     expect(result.text).toBe("Hi there");
     expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundWords).toBeUndefined();
+    expect(result.backgroundWords).toEqual([{ text: "ooh", begin: 1, end: 2 }]);
     expect(result.words).toEqual([
       { text: "Hi ", begin: 0, end: 1 },
       { text: "there", begin: 2, end: 3 },
@@ -502,7 +502,7 @@ describe("extractInlineFromLine: word-synced extraction", () => {
     expect(result).not.toBe(line);
     expect(result.text).toBe("Hello world");
     expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundWords).toBeUndefined();
+    expect(result.backgroundWords).toEqual([{ text: "ooh", begin: 1.2, end: 1.9 }]);
     expect(result.words).toEqual([
       { text: "Hello ", begin: 0.5, end: 1.2 },
       { text: "world", begin: 1.9, end: 2.7 },
@@ -1898,5 +1898,23 @@ describe("preserveBrackets: word-synced invariants", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result[0].text).toBe("Real line");
+  });
+});
+
+describe("regressions", () => {
+  const options = { mergeStandaloneLines: true, preserveBrackets: false };
+
+  it("regression: background vocals extracted on a synced line are stored timed", () => {
+    const line = createLine({ id: "a", text: "hello (ooh)", begin: 10, end: 14 });
+    const [extracted] = extractBackgroundVocals([line], options);
+    expect(extracted.backgroundText).toBe("ooh");
+    expect(extracted.backgroundWords?.[0].begin).toBe(12);
+  });
+
+  it("regression: an untimed standalone line merged into a synced line is stored timed", () => {
+    const lines = [createLine({ id: "a", text: "hello", begin: 10, end: 14 }), createLine({ id: "b", text: "(ooh)" })];
+    const [merged] = extractBackgroundVocals(lines, options);
+    expect(merged.backgroundText).toBe("ooh");
+    expect(merged.backgroundWords?.[0].begin).toBe(12);
   });
 });

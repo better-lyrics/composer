@@ -3,6 +3,7 @@ import {
   applyBackground,
   backgroundFields,
   manualBackgroundWordEdit,
+  withSeededBackground,
 } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -210,5 +211,23 @@ describe("manualBackgroundWordEdit", () => {
       { text: "oh", begin: 0.5, end: 1 },
     ]);
     expect(fields.backgroundText).toBe("oh|oh");
+  });
+});
+
+describe("withSeededBackground", () => {
+  const timed: LyricLine = { id: "t", text: "hello", agentId: "v1", begin: 10, end: 14, backgroundText: "ooh ah" };
+
+  it("seeds background words over the second half of a timed line", () => {
+    const seeded = withSeededBackground(timed);
+    expect(seeded.backgroundWords?.map((word) => word.text.trim())).toEqual(["ooh", "ah"]);
+    expect(seeded.backgroundWords?.[0].begin).toBe(12);
+    expect(seeded.backgroundWords?.at(-1)?.end).toBe(14);
+  });
+
+  it("returns the same line when there is nothing to seed", () => {
+    const withWords = { ...timed, backgroundWords: [bgWord] };
+    const untimed = { ...timed, begin: undefined, end: undefined };
+    const noText = { ...timed, backgroundText: undefined };
+    for (const candidate of [withWords, untimed, noText]) expect(withSeededBackground(candidate)).toBe(candidate);
   });
 });

@@ -18,7 +18,7 @@ import { EmptyState } from "@/ui/empty-state";
 import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
 import { runHistoryShortcut } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
-import { type SyncState, getNudgeAmount, withSeededBackgroundWords } from "@/utils/sync-helpers";
+import { type SyncState, getNudgeAmount } from "@/utils/sync-helpers";
 import { readToken } from "@/utils/theme/read-token";
 import { ScrollableLine, type ScrollableLineLinkInfo } from "@/views/sync/scrollable-line";
 import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
@@ -35,8 +35,7 @@ import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useRef, useS
 // -- Components ---------------------------------------------------------------
 
 const SyncPanel: React.FC = () => {
-  const storeLines = useProjectStore((s) => s.lines);
-  const lines = useMemo(() => storeLines.map(withSeededBackgroundWords), [storeLines]);
+  const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
   const undo = useProjectStore((s) => s.undo);
   const redo = useProjectStore((s) => s.redo);
