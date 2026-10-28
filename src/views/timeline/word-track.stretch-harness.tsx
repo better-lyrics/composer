@@ -41,7 +41,7 @@ async function renderStretchTrack(
   useSettingsStore.setState({
     minWordDuration: 0.1,
     timelineSnap: opts.snap === true,
-    ...(opts.snap === true ? { timelineSnapThreshold: 8 } : {}),
+    ...(opts.snap === true ? { snapDistanceWords: 8 } : {}),
   });
 
   const screen = await render(

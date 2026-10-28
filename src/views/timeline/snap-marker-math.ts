@@ -1,13 +1,20 @@
+// -- Types ---------------------------------------------------------------------
+
+interface PointSnapAnchor {
+  t: number;
+  thresholdPx: number;
+}
+
 // -- Functions -----------------------------------------------------------------
 
-function snapTimeToOnset(time: number, onsets: number[], zoom: number, thresholdPx: number): number {
+function snapTimeToPoints(time: number, points: readonly PointSnapAnchor[], zoom: number): number {
   let best = time;
-  let bestDistPx = thresholdPx;
-  for (const onset of onsets) {
-    const distPx = Math.abs(onset - time) * zoom;
-    if (distPx <= bestDistPx) {
+  let bestDistPx = Number.POSITIVE_INFINITY;
+  for (const point of points) {
+    const distPx = Math.abs(point.t - time) * zoom;
+    if (distPx <= point.thresholdPx && distPx <= bestDistPx) {
       bestDistPx = distPx;
-      best = onset;
+      best = point.t;
     }
   }
   return best;
@@ -54,4 +61,5 @@ function adjacentSnapPoint(points: number[], current: number, direction: 1 | -1)
 
 // -- Exports -------------------------------------------------------------------
 
-export { snapTimeToOnset, isTimeOnOnset, computeCoveredOnsets, adjacentSnapPoint };
+export { snapTimeToPoints, isTimeOnOnset, computeCoveredOnsets, adjacentSnapPoint };
+export type { PointSnapAnchor };

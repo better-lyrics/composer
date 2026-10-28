@@ -4,6 +4,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { settingEntry } from "@/stores/settings-catalog";
 import { keepSpaceForFocusedControl } from "@/ui/keep-space-for-focused-control";
 import { SegmentedControl } from "@/ui/segmented-control";
+import { PopFieldLabel } from "@/ui/pop-layout";
 import { Slider } from "@/ui/slider";
 import { SPECTRUM_SOURCE_OPTIONS } from "@/ui/spectrum-options";
 import { PaletteThumbnails } from "@/views/timeline/spectrum/palette-thumbnails";
@@ -12,13 +13,6 @@ import { SpectrumStatusLine } from "@/views/timeline/spectrum/spectrum-status-li
 import { useId } from "react";
 
 // -- Components ----------------------------------------------------------------
-
-const FieldLabel: React.FC<{ id: string; children: React.ReactNode; value?: string }> = ({ id, children, value }) => (
-  <div className="flex justify-between items-baseline text-[12.5px] font-medium text-(--label)">
-    <span id={id}>{children}</span>
-    {value && <span className="font-mono text-[11px] font-medium tabular-nums text-(--muted)">{value}</span>}
-  </div>
-);
 
 const ResetLook: React.FC = () => {
   const isDefault = useSettingsStore(isDefaultSpectrumLook);
@@ -41,7 +35,7 @@ const SourceField: React.FC = () => {
   const label = settingEntry("spectrumSource").label;
   return (
     <section className="grid gap-2">
-      <FieldLabel id={id}>{label}</FieldLabel>
+      <PopFieldLabel id={id}>{label}</PopFieldLabel>
       <SegmentedControl
         aria-label={label}
         value={hasVocals ? source : "mix"}
@@ -66,7 +60,7 @@ const PaletteField: React.FC = () => {
   const palette = useSettingsStore((s) => s.spectrumPalette);
   return (
     <section className="grid gap-2">
-      <FieldLabel id={id}>{settingEntry("spectrumPalette").label}</FieldLabel>
+      <PopFieldLabel id={id}>{settingEntry("spectrumPalette").label}</PopFieldLabel>
       <PaletteThumbnails labelledBy={id} />
       {palette === "phase" && (
         <p className="text-xs leading-[1.45] text-(--muted) text-pretty">
@@ -83,9 +77,9 @@ const ContrastField: React.FC = () => {
   const label = settingEntry("spectrumContrast").label;
   return (
     <section className="grid gap-2">
-      <FieldLabel id={id} value={`${contrast} dB`}>
+      <PopFieldLabel id={id} value={`${contrast} dB`}>
         {label}
-      </FieldLabel>
+      </PopFieldLabel>
       <Slider
         aria-label={label}
         value={contrast}

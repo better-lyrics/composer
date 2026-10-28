@@ -112,7 +112,7 @@ describe("useUIStore", () => {
   describe("returning to a Help search", () => {
     it("reopens Help with the search it came from", () => {
       state().openSettings({
-        target: { setting: "timelineSnapThreshold" },
+        target: { setting: "snapDistanceWords" },
         returnTo: { section: "timeline", scrollTop: 40, query: "snap threshold" },
       });
       state().closeSettings();

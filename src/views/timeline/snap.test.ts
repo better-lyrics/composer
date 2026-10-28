@@ -20,6 +20,7 @@ const ALL_SOURCES = {
   beatSnap: true,
   snapWordsAndLines: true,
   snapMarkers: true,
+  snapToPlayhead: true,
 };
 
 // -- Fixtures ------------------------------------------------------------------
@@ -239,6 +240,7 @@ describe("activeSnapAnchors", () => {
     expect(kinds({ vocalOnsetSnap: false })).toEqual(without("vocal-onset"));
     expect(kinds({ beatSnap: false })).toEqual(without("beat"));
     expect(kinds({ snapWordsAndLines: false })).toEqual(without("word-begin", "word-end", "line-begin", "line-end"));
+    expect(kinds({ snapToPlayhead: false })).toEqual(without("playhead"));
   });
 });
 
@@ -271,8 +273,10 @@ describe("beatAnchors", () => {
     const nearBeat: SnapAnchor = { t: 0.97, kind: "beat", label: "Beat" };
     const farBeat: SnapAnchor = { t: 0.94, kind: "beat", label: "Beat" };
     const zoom = 100;
-    expect(findSnapShift({ edges: [1.0], anchors: [word, nearBeat], zoom, threshold: 8 }).anchor).toBe(nearBeat);
-    expect(findSnapShift({ edges: [1.0], anchors: [word, farBeat], zoom, threshold: 8 }).anchor).toBe(word);
+    expect(findSnapShift({ edges: [1.0], anchors: [word, nearBeat], zoom, thresholdPx: () => 8 }).anchor).toBe(
+      nearBeat,
+    );
+    expect(findSnapShift({ edges: [1.0], anchors: [word, farBeat], zoom, thresholdPx: () => 8 }).anchor).toBe(word);
   });
 });
 
@@ -280,19 +284,19 @@ describe("beatAnchors", () => {
 
 describe("findSnapShift", () => {
   it("returns no shift when anchors is empty", () => {
-    const result = findSnapShift({ edges: [1.0], anchors: [], zoom: 100, threshold: 8 });
+    const result = findSnapShift({ edges: [1.0], anchors: [], zoom: 100, thresholdPx: () => 8 });
     expect(result).toEqual({ shift: 0, anchor: null });
   });
 
   it("returns no shift when the nearest anchor is beyond threshold", () => {
     const anchors: SnapAnchor[] = [{ t: 0.0, kind: "word-begin", label: "w" }];
-    const result = findSnapShift({ edges: [1.0], anchors, zoom: 100, threshold: 8 });
+    const result = findSnapShift({ edges: [1.0], anchors, zoom: 100, thresholdPx: () => 8 });
     expect(result).toEqual({ shift: 0, anchor: null });
   });
 
   it("snaps to the nearest in-range anchor and returns shift + anchor reference", () => {
     const anchor: SnapAnchor = { t: 1.05, kind: "word-begin", label: "love" };
-    const result = findSnapShift({ edges: [1.0], anchors: [anchor], zoom: 100, threshold: 8 });
+    const result = findSnapShift({ edges: [1.0], anchors: [anchor], zoom: 100, thresholdPx: () => 8 });
     expect(result.anchor).toBe(anchor);
     expect(result.shift).toBeCloseTo(0.05, 6);
   });
@@ -300,7 +304,7 @@ describe("findSnapShift", () => {
   it("picks the nearest among multiple in-range anchors", () => {
     const near: SnapAnchor = { t: 1.02, kind: "word-end", label: "near" };
     const far: SnapAnchor = { t: 1.06, kind: "word-begin", label: "far" };
-    const result = findSnapShift({ edges: [1.0], anchors: [far, near], zoom: 100, threshold: 8 });
+    const result = findSnapShift({ edges: [1.0], anchors: [far, near], zoom: 100, thresholdPx: () => 8 });
     expect(result.anchor).toBe(near);
     expect(result.shift).toBeCloseTo(0.02, 6);
   });
@@ -308,14 +312,14 @@ describe("findSnapShift", () => {
   it("prefers playhead on a tie at equal pixel distance", () => {
     const word: SnapAnchor = { t: 1.05, kind: "word-begin", label: "word" };
     const playhead: SnapAnchor = { t: 1.05, kind: "playhead", label: "playhead" };
-    const result = findSnapShift({ edges: [1.0], anchors: [word, playhead], zoom: 100, threshold: 8 });
+    const result = findSnapShift({ edges: [1.0], anchors: [word, playhead], zoom: 100, thresholdPx: () => 8 });
     expect(result.anchor).toBe(playhead);
   });
 
   it("considers all candidate edges and picks the smallest pixel shift across them", () => {
     const a1: SnapAnchor = { t: 0.95, kind: "word-end", label: "left" };
     const a2: SnapAnchor = { t: 2.01, kind: "word-begin", label: "right" };
-    const result = findSnapShift({ edges: [1.0, 2.0], anchors: [a1, a2], zoom: 100, threshold: 8 });
+    const result = findSnapShift({ edges: [1.0, 2.0], anchors: [a1, a2], zoom: 100, thresholdPx: () => 8 });
     expect(result.anchor).toBe(a2);
     expect(result.shift).toBeCloseTo(0.01, 6);
   });
@@ -327,7 +331,7 @@ describe("findSnapShift", () => {
       edges: [1.0],
       anchors: [bad, good],
       zoom: 100,
-      threshold: 8,
+      thresholdPx: () => 8,
       overlapCheck: (shift) => Math.abs(shift - 0.06) < 1e-6,
     });
     expect(result.anchor).toBe(good);
@@ -341,7 +345,7 @@ describe("findSnapShift", () => {
       edges: [1.0],
       anchors: [a1, a2],
       zoom: 100,
-      threshold: 8,
+      thresholdPx: () => 8,
       overlapCheck: () => false,
     });
     expect(result).toEqual({ shift: 0, anchor: null });
@@ -354,10 +358,18 @@ describe("findSnapShift", () => {
       edges: [1.0],
       anchors: [bad, good],
       zoom: 100,
-      threshold: 8,
+      thresholdPx: () => 8,
       invertCheck: (shift) => Math.abs(shift - 0.06) < 1e-6,
     });
     expect(result.anchor).toBe(good);
     expect(result.shift).toBeCloseTo(0.06, 6);
+  });
+
+  it("reaches each anchor only within its own source's distance", () => {
+    const word: SnapAnchor = { t: 1.06, kind: "word-begin", label: "word" };
+    const beat: SnapAnchor = { t: 1.09, kind: "beat", label: "Beat" };
+    const thresholdPx = (anchor: SnapAnchor) => (anchor.kind === "beat" ? 12 : 4);
+    const result = findSnapShift({ edges: [1.0], anchors: [word, beat], zoom: 100, thresholdPx });
+    expect(result.anchor).toBe(beat);
   });
 });

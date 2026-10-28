@@ -219,7 +219,9 @@ const TimelineSection: React.FC = () => (
           Release the key and snap re-engages.
         </li>
         <li>
-          Adjust the snap distance with <SettingLink setting="timelineSnapThreshold" />.
+          Click the arrow next to the magnet to pick what snaps, including the playhead. <strong>Snap distance</strong>{" "}
+          in that menu sets how close an edge has to get to each one before it locks on. Settings has the same sliders,
+          starting with <SettingLink setting="snapDistanceWords" />.
         </li>
         <li>
           Snap won't push a block into a neighbor. If the closest anchor would cause overlap, it falls through to the

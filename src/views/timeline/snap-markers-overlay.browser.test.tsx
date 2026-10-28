@@ -265,7 +265,7 @@ describe("SnapMarkersOverlay", () => {
 
   describe("covered onsets", () => {
     it("covers a coincident onset so its line is suppressed", async () => {
-      useSettingsStore.setState({ vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+      useSettingsStore.setState({ vocalOnsetSnap: true, snapDistanceOnsets: 12 });
       useTimelineStore.setState({
         zoom: 100,
         scrollLeft: 0,
@@ -280,7 +280,7 @@ describe("SnapMarkersOverlay", () => {
     });
 
     it("leaves an onset visible when no custom point is within threshold", async () => {
-      useSettingsStore.setState({ vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+      useSettingsStore.setState({ vocalOnsetSnap: true, snapDistanceOnsets: 12 });
       useTimelineStore.setState({
         zoom: 100,
         scrollLeft: 0,
@@ -293,7 +293,7 @@ describe("SnapMarkersOverlay", () => {
     });
 
     it("reveals the onset again when the custom point moves away", async () => {
-      useSettingsStore.setState({ vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+      useSettingsStore.setState({ vocalOnsetSnap: true, snapDistanceOnsets: 12 });
       useTimelineStore.setState({
         zoom: 100,
         scrollLeft: 0,
@@ -310,7 +310,7 @@ describe("SnapMarkersOverlay", () => {
     });
 
     it("covers only the onset within threshold among several", async () => {
-      useSettingsStore.setState({ vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+      useSettingsStore.setState({ vocalOnsetSnap: true, snapDistanceOnsets: 12 });
       useTimelineStore.setState({
         zoom: 100,
         scrollLeft: 0,
@@ -329,7 +329,7 @@ describe("SnapMarkersOverlay", () => {
 
   describe("drag", () => {
     it("updates moveCustomSnapPoint as the head is dragged", async () => {
-      useSettingsStore.setState({ vocalOnsetSnap: false, timelineSnapThreshold: 12 });
+      useSettingsStore.setState({ vocalOnsetSnap: false, snapDistanceOnsets: 12 });
       useTimelineStore.setState({
         zoom: 100,
         scrollLeft: 0,
@@ -352,7 +352,7 @@ describe("SnapMarkersOverlay", () => {
     });
 
     it("snaps the dragged head onto an onset within threshold", async () => {
-      useSettingsStore.setState({ vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+      useSettingsStore.setState({ vocalOnsetSnap: true, snapDistanceOnsets: 12 });
       useTimelineStore.setState({
         zoom: 100,
         scrollLeft: 0,
@@ -375,7 +375,7 @@ describe("SnapMarkersOverlay", () => {
     });
 
     it("does not snap onto an onset outside threshold", async () => {
-      useSettingsStore.setState({ vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+      useSettingsStore.setState({ vocalOnsetSnap: true, snapDistanceOnsets: 12 });
       useTimelineStore.setState({
         zoom: 100,
         scrollLeft: 0,
@@ -400,7 +400,7 @@ describe("SnapMarkersOverlay", () => {
     });
 
     it("covers an onset live while a pin is dragged over it", async () => {
-      useSettingsStore.setState({ vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+      useSettingsStore.setState({ vocalOnsetSnap: true, snapDistanceOnsets: 12 });
       useTimelineStore.setState({
         zoom: 100,
         scrollLeft: 0,

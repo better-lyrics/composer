@@ -177,13 +177,13 @@ describe("App", () => {
 
     useUIStore.getState().openHelp();
     await untilDialogFocused();
-    await screen.getByRole("textbox", { name: "Search help" }).fill("snap threshold");
-    await expect.element(screen.getByRole("textbox", { name: "Search help" })).toHaveValue("snap threshold");
-    await screen.getByRole("button", { name: /^Open setting Snap threshold/ }).click();
-    await expect.element(screen.getByRole("button", { name: 'Back to Help ・ "snap threshold"' })).toBeInTheDocument();
+    await screen.getByRole("textbox", { name: "Search help" }).fill("snap distance");
+    await expect.element(screen.getByRole("textbox", { name: "Search help" })).toHaveValue("snap distance");
+    await screen.getByRole("button", { name: /^Open setting Words and lines snap distance/ }).click();
+    await expect.element(screen.getByRole("button", { name: 'Back to Help ・ "snap distance"' })).toBeInTheDocument();
 
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-    await expect.element(screen.getByRole("textbox", { name: "Search help" })).toHaveValue("snap threshold");
+    await expect.element(screen.getByRole("textbox", { name: "Search help" })).toHaveValue("snap distance");
     await expect.element(screen.getByRole("heading", { name: "Snap (magnet)", level: 4 })).toBeVisible();
   });
 });

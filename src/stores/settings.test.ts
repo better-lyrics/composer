@@ -273,6 +273,25 @@ describe("settings v4 -> v5 migration (snapPlayheadToPoints)", () => {
   });
 });
 
+describe("settings v14 -> v15 migration (snap distance per source)", () => {
+  it("seeds every source's distance from the old single threshold and drops it", () => {
+    const migrated = migrateSettings({ timelineSnapThreshold: 20 }, 14) as Record<string, unknown>;
+    expect(migrated).toMatchObject({
+      snapDistanceWords: 20,
+      snapDistanceMarkers: 20,
+      snapDistanceOnsets: 20,
+      snapDistanceBeats: 20,
+      snapDistancePlayhead: 20,
+    });
+    expect(migrated).not.toHaveProperty("timelineSnapThreshold");
+  });
+
+  it("leaves the defaults in place when no threshold was saved", () => {
+    const migrated = migrateSettings({ defaultZoom: 200 }, 14) as Record<string, unknown>;
+    expect(migrated).not.toHaveProperty("snapDistanceWords");
+  });
+});
+
 describe("re-record pre-roll setting", () => {
   beforeEach(() => {
     useSettingsStore.setState({ ...DEFAULTS });

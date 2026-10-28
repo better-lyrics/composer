@@ -2,6 +2,7 @@ import { VOCAL_MODEL_APPROX_BYTES } from "@/audio/separation/model-registry";
 import { SPECTRUM_CONTRAST } from "@/domain/spectrum/settings";
 import { useSettingsStore } from "@/stores/settings";
 import type { SettingId } from "@/stores/settings-catalog";
+import { SNAP_DISTANCE_RANGE_PX } from "@/stores/settings-snap";
 import { BEAT_GRID_LINE_OPTIONS } from "@/ui/beat-grid-line-options";
 import { LAUNCH_SCREEN_OPTIONS, LIBRARY_SORT_OPTIONS } from "@/ui/projects/library-options";
 import { AlignmentModelSetting } from "@/ui/settings/alignment-model-setting";
@@ -49,6 +50,7 @@ type SettingControl =
 // -- Formats -------------------------------------------------------------------
 
 const TOGGLE: SettingControl = { kind: "toggle" };
+const SNAP_DISTANCE: SettingControl = { kind: "slider", ...SNAP_DISTANCE_RANGE_PX, step: 1, format: (v) => `${v}px` };
 const asMilliseconds = (seconds: number) => `${(seconds * 1000).toFixed(0)}ms`;
 
 // -- Registry ------------------------------------------------------------------
@@ -125,12 +127,17 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   snapWordsAndLines: TOGGLE,
   snapMarkers: TOGGLE,
   beatSnap: TOGGLE,
+  snapToPlayhead: TOGGLE,
   beatGridVisible: TOGGLE,
   beatGridLines: { kind: "select", options: [...BEAT_GRID_LINE_OPTIONS] },
   shareTimingInNewGroups: TOGGLE,
   loopOpenGroup: TOGGLE,
   selectionLeadIn: { kind: "slider", min: 0, max: 1, step: 0.05, format: (v) => (v === 0 ? "Off" : asMilliseconds(v)) },
-  timelineSnapThreshold: { kind: "slider", min: 4, max: 24, step: 1, format: (v) => `${v}px` },
+  snapDistanceWords: SNAP_DISTANCE,
+  snapDistanceMarkers: SNAP_DISTANCE,
+  snapDistanceOnsets: SNAP_DISTANCE,
+  snapDistanceBeats: SNAP_DISTANCE,
+  snapDistancePlayhead: SNAP_DISTANCE,
   snapPlayheadToPoints: TOGGLE,
   followPlayhead: TOGGLE,
   rollingEdit: TOGGLE,
