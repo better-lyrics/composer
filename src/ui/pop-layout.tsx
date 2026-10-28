@@ -138,10 +138,12 @@ const PopRow: React.FC<PopRowProps> = ({ label, icon: RowIcon, hint, dimmed, chi
 );
 
 const PopNavButton: React.FC<PopNavButtonProps> = ({ label, icon: NavIcon, summary, onClick }) => (
-  <button
-    type="button"
+  <Button
+    variant="ghost"
+    size="lg"
+    hasIcon
     onClick={onClick}
-    className="group flex items-center gap-3 w-full min-h-9 pl-2.5 pr-1 rounded-lg text-left cursor-pointer transition-colors duration-150 hover:bg-(--layer-2)"
+    className="group justify-start gap-3 w-full h-auto min-h-9 pl-2.5 pr-1 rounded-lg text-left hover:bg-(--layer-2)"
   >
     <NavIcon aria-hidden="true" className="size-4 shrink-0 text-(--muted)" />
     <span className="flex-1 min-w-0 text-[13px] font-medium text-(--label)">{label}</span>
@@ -152,7 +154,7 @@ const PopNavButton: React.FC<PopNavButtonProps> = ({ label, icon: NavIcon, summa
         className="size-[15px] text-(--muted) transition-colors duration-150 group-hover:text-composer-text"
       />
     </span>
-  </button>
+  </Button>
 );
 
 const PopFieldLabel: React.FC<PopFieldLabelProps> = ({ id, value, children }) => (
