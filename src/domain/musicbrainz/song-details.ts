@@ -4,6 +4,7 @@ import type { MbRecording, MbRelease } from "@/domain/musicbrainz/types";
 
 const SONGWRITER_TYPES: ReadonlySet<string> = new Set(["writer", "composer", "lyricist"]);
 const UNDATED = "9999";
+const NEVER_ALBUM_TYPES: ReadonlySet<string> = new Set(["Compilation", "DJ-mix"]);
 
 // -- Types --------------------------------------------------------------------
 
@@ -23,14 +24,25 @@ interface SongDetails {
 
 // -- Releases -----------------------------------------------------------------
 
+const secondaryTypesOf = (release: MbRelease): string[] => release["release-group"]?.["secondary-types"] ?? [];
+
 const isOfficialStudioRelease = (release: MbRelease): boolean =>
-  release.status === "Official" && (release["release-group"]?.["secondary-types"]?.length ?? 0) === 0;
+  release.status === "Official" && secondaryTypesOf(release).length === 0;
+
+const isOfficialOwnRelease = (release: MbRelease): boolean =>
+  release.status === "Official" && !secondaryTypesOf(release).some((type) => NEVER_ALBUM_TYPES.has(type));
 
 const byReleaseDate = (a: MbRelease, b: MbRelease): number => (a.date || UNDATED).localeCompare(b.date || UNDATED);
 
-function pickAlbumRelease(releases: readonly MbRelease[]): MbRelease | null {
-  const candidates = releases.filter(isOfficialStudioRelease).toSorted(byReleaseDate);
+function earliestAlbumOf(releases: readonly MbRelease[]): MbRelease | null {
+  const candidates = releases.toSorted(byReleaseDate);
   return candidates.find((release) => release["release-group"]?.["primary-type"] === "Album") ?? candidates[0] ?? null;
+}
+
+function pickAlbumRelease(releases: readonly MbRelease[]): MbRelease | null {
+  return (
+    earliestAlbumOf(releases.filter(isOfficialStudioRelease)) ?? earliestAlbumOf(releases.filter(isOfficialOwnRelease))
+  );
 }
 
 function pickDisplayRelease(releases: readonly MbRelease[]): MbRelease | null {
