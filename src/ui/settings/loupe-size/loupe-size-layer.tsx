@@ -20,7 +20,7 @@ import { loupeCanvas } from "@/views/timeline/loupe/draw-loupe";
 import { LOUPE_CARD_SURFACE, LoupeCardBody } from "@/views/timeline/loupe/loupe-card-body";
 import { useSpectrumStatus } from "@/views/timeline/spectrum/spectrum-session";
 import { FloatingFocusManager, FloatingPortal, useFloating } from "@floating-ui/react";
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useId, useMemo, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -40,6 +40,8 @@ const BIG_STEP = 40;
 const BAR_HEIGHT = 44;
 // The bar, the hint line under it and the gaps above and below the hint.
 const BAR_BLOCK_HEIGHT = BAR_HEIGHT + 8 + 20 + 20;
+// Room for the pitch hint and the idle note under the canvas, which come and go.
+const NOTE_ROWS_HEIGHT = 2 * 28;
 const VIEWPORT_MARGIN = 32;
 const ANNOUNCE_DELAY_MS = 400;
 const LARGEST_SIZE: LoupeSize = { width: LOUPE_SIZE.width.max, height: LOUPE_SIZE.height.max };
@@ -58,7 +60,7 @@ function windowSize(): LoupeSize {
 }
 
 function cardHeightAt(size: LoupeSize): number {
-  return loupeCanvas(size).height + LOUPE_FIXED.cardY;
+  return loupeCanvas(size).height + LOUPE_FIXED.cardY + NOTE_ROWS_HEIGHT;
 }
 
 function useWindowSize(): LoupeSize {
@@ -74,9 +76,7 @@ function useWindowSize(): LoupeSize {
 // -- Components ---------------------------------------------------------------
 
 const LoupeSizeStage: React.FC<LoupeSizeStageProps> = ({ onClose }) => {
-  const layerRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const placeholderRef = useRef<HTMLDivElement>(null);
   const announceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleId = useId();
   const hintId = useId();
@@ -89,7 +89,7 @@ const LoupeSizeStage: React.FC<LoupeSizeStageProps> = ({ onClose }) => {
   const loupeHeight = useSettingsStore((s) => s.loupeHeight);
   const spectrumStatus = useSpectrumStatus().status;
 
-  const limits = useMemo(() => fitLoupeSize(LARGEST_SIZE, viewport, BAR_BLOCK_HEIGHT), [viewport]);
+  const limits = useMemo(() => fitLoupeSize(LARGEST_SIZE, viewport, BAR_BLOCK_HEIGHT + NOTE_ROWS_HEIGHT), [viewport]);
   const size = useMemo(() => {
     const stored = clampLoupeSize({ width: loupeWidth, height: loupeHeight });
     return { width: Math.min(stored.width, limits.width), height: Math.min(stored.height, limits.height) };
@@ -105,21 +105,14 @@ const LoupeSizeStage: React.FC<LoupeSizeStageProps> = ({ onClose }) => {
     [],
   );
 
-  // Positions follow the live size and window, so they are written to the DOM rather than styled in JSX.
-  useLayoutEffect(() => {
-    const groupHeight = BAR_BLOCK_HEIGHT + cardHeightAt(limits);
-    const barTop = Math.max(VIEWPORT_MARGIN, Math.round((viewport.height - groupHeight) / 2));
-    const canvas = loupeCanvas(size);
-    layerRef.current?.style.setProperty("--loupe-bar-top", `${barTop}px`);
-    if (cardRef.current) {
-      cardRef.current.style.left = `${Math.round((viewport.width - canvas.width - LOUPE_FIXED.cardX) / 2)}px`;
-      cardRef.current.style.top = `${barTop + BAR_BLOCK_HEIGHT}px`;
-    }
-    if (placeholderRef.current) {
-      placeholderRef.current.style.width = `${canvas.width}px`;
-      placeholderRef.current.style.height = `${canvas.height}px`;
-    }
-  }, [size, limits, viewport]);
+  const canvas = loupeCanvas(size);
+  const barTop = Math.max(VIEWPORT_MARGIN, Math.round((viewport.height - BAR_BLOCK_HEIGHT - cardHeightAt(limits)) / 2));
+  const layout: CSSProperties = {
+    "--loupe-bar-top": `${barTop}px`,
+    "--loupe-card-top": `${barTop + BAR_BLOCK_HEIGHT}px`,
+    "--loupe-canvas-w": `${canvas.width}px`,
+    "--loupe-canvas-h": `${canvas.height}px`,
+  };
 
   const writeSize = (next: LoupeSize) => {
     if (next.width === size.width && next.height === size.height) return;
@@ -158,7 +151,7 @@ const LoupeSizeStage: React.FC<LoupeSizeStageProps> = ({ onClose }) => {
   return (
     <FloatingPortal>
       <FloatingFocusManager context={context} modal returnFocus outsideElementsInert initialFocus={cardRef}>
-        <div ref={layerRef} className="fixed inset-0 layer-floating modal-scrim">
+        <div className="fixed inset-0 layer-floating modal-scrim" style={layout}>
           <div
             ref={refs.setFloating}
             role="dialog"
@@ -199,7 +192,7 @@ const LoupeSizeStage: React.FC<LoupeSizeStageProps> = ({ onClose }) => {
               onKeyDown={handleCardKeyDown}
               className={cn(
                 LOUPE_CARD_SURFACE,
-                "absolute select-none outline-none focus-visible:shadow-[inset_0_0_0_1px_var(--edge),0_0_0_2px_var(--color-composer-accent),0_22px_48px_-14px_rgb(var(--shade)/0.7)]",
+                "absolute left-1/2 -translate-x-1/2 top-(--loupe-card-top) select-none outline-none focus-visible:shadow-[inset_0_0_0_1px_var(--edge),0_0_0_2px_var(--color-composer-accent),0_22px_48px_-14px_rgb(var(--shade)/0.7)]",
               )}
             >
               {emptyMessage === null && target ? (
@@ -213,10 +206,7 @@ const LoupeSizeStage: React.FC<LoupeSizeStageProps> = ({ onClose }) => {
               ) : (
                 <>
                   <div className="h-8" />
-                  <div
-                    ref={placeholderRef}
-                    className="flex items-center justify-center px-6 rounded-[10px] bg-(--layer-1) text-center text-[12.5px] text-(--muted) text-pretty"
-                  >
+                  <div className="w-(--loupe-canvas-w) h-(--loupe-canvas-h) flex items-center justify-center px-6 rounded-[10px] bg-(--layer-1) text-center text-[12.5px] text-(--muted) text-pretty">
                     {emptyMessage}
                   </div>
                 </>
