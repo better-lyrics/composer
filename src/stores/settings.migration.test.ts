@@ -207,6 +207,20 @@ describe("spectrum and pitch settings", () => {
     expect(state.spectrumBandHeight).toBe(320);
   });
 
+  it("clamps a saved loupe size into its range", async () => {
+    await rehydrateAt(15, legacyBlob({ loupeWidth: 9999, loupeHeight: 1 }));
+    const state = useSettingsStore.getState();
+    expect(state.loupeWidth).toBe(720);
+    expect(state.loupeHeight).toBe(96);
+  });
+
+  it("fills the default loupe size for blobs written before it existed", async () => {
+    await rehydrateAt(15, legacyBlob({ loupeWidth: undefined, loupeHeight: undefined }));
+    const state = useSettingsStore.getState();
+    expect(state.loupeWidth).toBe(428);
+    expect(state.loupeHeight).toBe(124);
+  });
+
   it("turns off the pitch line saved by the old default, but keeps a picked mode", async () => {
     await rehydrateAt(11, legacyBlob({ pitchLine: "always" }));
     expect(useSettingsStore.getState().pitchLine).toBe("off");

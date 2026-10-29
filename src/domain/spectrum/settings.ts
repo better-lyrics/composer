@@ -1,3 +1,5 @@
+import { clampLoupeSize, LOUPE_SIZE } from "@/domain/spectrum/loupe-size";
+
 // -- Types --------------------------------------------------------------------
 
 type SpectrumSource = "vocals" | "mix";
@@ -20,6 +22,8 @@ interface SpectrumLook {
 interface SpectrumSettings extends SpectrumLook {
   showSpectrum: boolean;
   spectrumBandHeight: number;
+  loupeWidth: number;
+  loupeHeight: number;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -49,6 +53,8 @@ const SPECTRUM_LOOK_DEFAULTS: SpectrumLook = {
 const SPECTRUM_SETTING_DEFAULTS: SpectrumSettings = {
   showSpectrum: false,
   spectrumBandHeight: SPECTRUM_BAND_HEIGHT.default,
+  loupeWidth: LOUPE_SIZE.width.default,
+  loupeHeight: LOUPE_SIZE.height.default,
   ...SPECTRUM_LOOK_DEFAULTS,
 };
 
@@ -98,6 +104,11 @@ function sanitizeSpectrumSettings(persisted: Readonly<Record<string, unknown>>):
     valid.spectrumContrast = clampSpectrumContrast(persisted.spectrumContrast);
   if (typeof persisted.spectrumBandHeight === "number")
     valid.spectrumBandHeight = clampSpectrumBandHeight(persisted.spectrumBandHeight);
+  if (typeof persisted.loupeWidth === "number" && typeof persisted.loupeHeight === "number") {
+    const size = clampLoupeSize({ width: persisted.loupeWidth, height: persisted.loupeHeight });
+    valid.loupeWidth = size.width;
+    valid.loupeHeight = size.height;
+  }
   if (typeof persisted.showSpectrum === "boolean") valid.showSpectrum = persisted.showSpectrum;
   return valid;
 }
