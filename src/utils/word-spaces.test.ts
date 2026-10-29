@@ -111,28 +111,28 @@ describe("resolveOverlapsForward", () => {
 const WHOLE_SONG = { min: 0, max: 10 };
 
 describe("findInsertionSlot", () => {
-  it("centers a word in an empty track", () => {
+  it("regression: a placed word starts at the click, not half a word earlier", () => {
     const slot = findInsertionSlot([], 5, 1, WHOLE_SONG);
-    expect(slot).toEqual({ begin: 4.5, end: 5.5 });
+    expect(slot).toEqual({ begin: 5, end: 6 });
   });
 
-  it("centers in an open gap between words", () => {
+  it("starts at the click in an open gap between words", () => {
     const words: WordTiming[] = [
       { text: "a", begin: 0, end: 1 },
       { text: "b", begin: 5, end: 6 },
     ];
     const slot = findInsertionSlot(words, 3, 1, WHOLE_SONG);
-    expect(slot).toEqual({ begin: 2.5, end: 3.5 });
+    expect(slot).toEqual({ begin: 3, end: 4 });
   });
 
-  it("snaps right against the previous word when the click is near it", () => {
+  it("starts at the click just after the previous word", () => {
     const words: WordTiming[] = [
       { text: "a", begin: 0, end: 2 },
       { text: "b", begin: 5, end: 6 },
     ];
     const slot = findInsertionSlot(words, 2.1, 1, WHOLE_SONG);
-    expect(slot?.begin).toBe(2);
-    expect(slot?.end).toBe(3);
+    expect(slot?.begin).toBe(2.1);
+    expect(slot?.end).toBe(3.1);
   });
 
   it("snaps left against the next word when the click is near it", () => {
@@ -191,8 +191,12 @@ describe("findInsertionSlot", () => {
       expect(findInsertionSlot([], 6.9, 1, SHARED)).toEqual({ begin: 6, end: 7 });
     });
 
-    it("keeps a word placed near the range start inside it", () => {
-      expect(findInsertionSlot([], 3.1, 1, SHARED)).toEqual({ begin: 3, end: 4 });
+    it("starts a word placed near the range start at the click", () => {
+      expect(findInsertionSlot([], 3.1, 1, SHARED)).toEqual({ begin: 3.1, end: 4.1 });
+    });
+
+    it("moves a word placed before the range to its start", () => {
+      expect(findInsertionSlot([], 2.5, 1, SHARED)).toEqual({ begin: 3, end: 4 });
     });
 
     it("moves a word placed after the range back to its end", () => {
