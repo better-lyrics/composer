@@ -2,6 +2,7 @@ import { loopRegionBetween } from "@/domain/selection/loop-region";
 import { snapPointTimes } from "@/domain/snap-point/model";
 import { gridPointAt, gridPointLabel } from "@/domain/tempo/grid-points";
 import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
+import { notePlacement } from "@/lib/replay-cue";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -120,7 +121,10 @@ function startLoopRegionDrag(
     // A draw that ended without a region falls through to the click, which seeks.
     if (!edge && !draft) return;
     swallowTrailingClick();
-    if (draft) commitDrawnLoopRegion(draft);
+    if (draft) {
+      commitDrawnLoopRegion(draft);
+      notePlacement(draft.begin, "pointer");
+    }
   };
 
   const cancel = (): void => {

@@ -2,6 +2,7 @@ import { cueAfterPlacement, type PlacementKind, transportPosition } from "@/doma
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { isYouTubeSourceFor } from "@/utils/youtube-source";
 import { playPlain } from "@/views/timeline/selection-playback";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -13,8 +14,11 @@ type CueFlashListener = (time: number) => void;
 
 const flashListeners = new Set<CueFlashListener>();
 
-useAudioStore.subscribe((state, previous) => {
-  if (state.source !== previous.source) useTimelineStore.getState().setCue(null);
+// The YouTube file landing for the same video is the same song, so the cue survives it.
+useAudioStore.subscribe(({ source }, previous) => {
+  if (source === previous.source) return;
+  if (source?.type === "youtube" && isYouTubeSourceFor(previous.source, source.videoId)) return;
+  useTimelineStore.getState().setCue(null);
 });
 
 // -- Helpers ------------------------------------------------------------------

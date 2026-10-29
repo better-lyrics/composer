@@ -28,3 +28,19 @@ describe("startPositionForPlay", () => {
     expect(startPositionForPlay()).toBe(9);
   });
 });
+
+describe("cue reset on a song change", () => {
+  it("keeps the cue when the YouTube file for the same video lands", () => {
+    useAudioStore.setState({ source: { type: "youtube", videoId: "abc" } });
+    useTimelineStore.getState().setCue(2);
+    useAudioStore.getState().setYouTubeFile(new File(["x"], "abc.m4a"));
+    expect(useTimelineStore.getState().cue).toBe(2);
+  });
+
+  it("clears the cue for a different song", () => {
+    useAudioStore.setState({ source: { type: "youtube", videoId: "abc" } });
+    useTimelineStore.getState().setCue(2);
+    useAudioStore.setState({ source: { type: "youtube", videoId: "xyz" } });
+    expect(useTimelineStore.getState().cue).toBeNull();
+  });
+});
