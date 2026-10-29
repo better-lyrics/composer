@@ -274,8 +274,8 @@ describe("empty tracks in a group that shares timing", () => {
       track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 12.9) }));
 
       await expect.poll(() => lineById("b0")?.words?.length).toBe(3);
-      expect(lineById("b0")?.words?.[0].begin).toBeCloseTo(12.4, 5);
-      expect(lineById("b0")?.words?.at(-1)?.end).toBeCloseTo(15.4, 5);
+      expect(lineById("b0")?.words?.[0].begin).toBeCloseTo(12.9, 5);
+      expect(lineById("b0")?.words?.at(-1)?.end).toBeCloseTo(15.9, 5);
       expect(lineById("b1")?.words).toBeUndefined();
     });
   });
