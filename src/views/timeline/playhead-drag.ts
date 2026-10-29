@@ -1,6 +1,7 @@
 import { scrubPreview } from "@/audio/scrub-preview";
 import { computeScrubVelocity, DEFAULT_SCRUB_OPTS, type ScrubSample } from "@/audio/scrub-velocity";
 import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
+import { notePlacement } from "@/lib/replay-cue";
 import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
 import { GUTTER_WIDTH } from "@/views/timeline/timeline-store";
 
@@ -112,7 +113,11 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
 
     const handleMouseUp = (upEvent: MouseEvent): void => {
       const time = computeTimeFromPointer(upEvent.clientX);
-      if (time !== null) config.seekTo(config.snapTime(time, upEvent.metaKey));
+      if (time !== null) {
+        const target = config.snapTime(time, upEvent.metaKey);
+        config.seekTo(target);
+        notePlacement(target, "pointer");
+      }
       config.setDraggingPlayhead(false);
       cleanup();
     };

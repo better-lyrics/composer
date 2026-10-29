@@ -1,5 +1,6 @@
 import { scrubPreview } from "@/audio/scrub-preview";
 import { DEFAULT_SCRUB_OPTS, type ScrubSample, computeScrubVelocity } from "@/audio/scrub-velocity";
+import { notePlacement } from "@/lib/replay-cue";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { computeAnchoredScrollLeft } from "@/utils/timeline/zoom-anchor";
@@ -60,6 +61,7 @@ function useTimelineWheel(scrollContainerRef: RefObject<HTMLDivElement | null>, 
         const currentTime = livePlaybackTime();
         const newTime = computeScrubTime(currentTime, normalizeWheelDelta(e.deltaY, e.deltaMode), zoom, duration);
         useAudioStore.getState().seekTo(newTime);
+        notePlacement(newTime, "keyboard");
 
         const curr: ScrubSample = { time: newTime, wallClockMs: performance.now() };
         const velocity = computeScrubVelocity(prevScrubSampleRef.current, curr, DEFAULT_SCRUB_OPTS);

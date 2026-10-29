@@ -13,6 +13,15 @@ import { focusBounds } from "@/views/timeline/group-focus";
 import { soloPlayStart } from "@/views/timeline/solo-playback";
 import { type SelectionPlaybackMode, useTimelineStore } from "@/views/timeline/timeline-store";
 
+// -- State --------------------------------------------------------------------
+
+let skipRegionAdoption = false;
+
+// A play() that never starts reverts to paused, so the skip must not outlive it.
+useAudioStore.subscribe((state, previous) => {
+  if (previous.isPlaying && !state.isPlaying) skipRegionAdoption = false;
+});
+
 // -- Reads --------------------------------------------------------------------
 
 function currentSelectionBounds(): Bounds | null {
@@ -80,8 +89,21 @@ function playLoopRegion(mode: SelectionPlaybackMode): boolean {
   return true;
 }
 
+// Plain playback from a point: ends any selection playback and leaves a drawn region alone.
+function playPlain(from: number): void {
+  stopSelectionPlayback({ pause: false });
+  const audio = useAudioStore.getState();
+  skipRegionAdoption = !audio.isPlaying && useTimelineStore.getState().loopRegion !== null;
+  audio.seekTo(from);
+  audio.setIsPlaying(true);
+}
+
 // Transport Play on the Timeline plays a drawn region, looped or once as its Loop toggle says.
 function adoptLoopRegionForPlay(): void {
+  if (skipRegionAdoption) {
+    skipRegionAdoption = false;
+    return;
+  }
   const { loopRegion, selectionPlayback, setSelectionPlayback } = useTimelineStore.getState();
   if (!loopRegion || selectionPlayback !== null || useProjectStore.getState().activeTab !== "timeline") return;
   setSelectionPlayback(loopRegion.loops ? "loop" : "once");
@@ -166,6 +188,7 @@ export {
   loopsRange,
   loopSelection,
   playLoopRegion,
+  playPlain,
   playSelection,
   selectLine,
   selectWordUnlessSelected,

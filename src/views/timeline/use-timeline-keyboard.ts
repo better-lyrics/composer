@@ -11,6 +11,7 @@ import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import type { WordSelection } from "@/domain/selection/model";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
+import { notePlacement } from "@/lib/replay-cue";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
@@ -731,6 +732,7 @@ function useTimelineKeyboard(
             break;
           }
           useAudioStore.getState().seekTo(target);
+          notePlacement(target, "keyboard");
           break;
         }
       }

@@ -1,4 +1,5 @@
 import { barTimes } from "@/domain/tempo/beat-grid";
+import { notePlacement } from "@/lib/replay-cue";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { visibleBeatPoints } from "@/views/timeline/point-snap-anchors";
@@ -28,6 +29,7 @@ function jumpToAdjacentBar(direction: 1 | -1): void {
     return;
   }
   useAudioStore.getState().seekTo(target);
+  notePlacement(target, "keyboard");
 }
 
 function jumpToAdjacentGridLine(direction: 1 | -1): void {
@@ -46,6 +48,7 @@ function jumpToAdjacentGridLine(direction: 1 | -1): void {
     return;
   }
   useAudioStore.getState().seekTo(target);
+  notePlacement(target, "keyboard");
 }
 
 // -- Exports -------------------------------------------------------------------

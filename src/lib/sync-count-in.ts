@@ -1,3 +1,4 @@
+import { returnAfterStop, startPositionForPlay } from "@/lib/replay-cue";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -84,11 +85,14 @@ function togglePlayback(): void {
     cancelCountIn();
     return;
   }
-  const { isPlaying, setIsPlaying } = useAudioStore.getState();
+  const { isPlaying, setIsPlaying, seekTo } = useAudioStore.getState();
   if (isPlaying) {
     setIsPlaying(false);
+    returnAfterStop();
     return;
   }
+  const start = startPositionForPlay();
+  if (start !== livePlaybackTime()) seekTo(start);
   requestPlayback();
 }
 

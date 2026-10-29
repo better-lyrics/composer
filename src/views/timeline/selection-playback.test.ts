@@ -1,5 +1,7 @@
+import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { currentlyLoops } from "@/views/timeline/selection-playback";
+import { adoptLoopRegionForPlay, currentlyLoops, playPlain } from "@/views/timeline/selection-playback";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { describe, expect, it } from "vitest";
 
@@ -14,5 +16,35 @@ describe("currentlyLoops", () => {
     useSettingsStore.setState({ loopOpenGroup: false });
     useTimelineStore.setState({ selectionPlayback: "loop", loopRegion: { begin: 1, end: 2, loops: true } });
     expect(currentlyLoops()).toBe(true);
+  });
+});
+
+describe("playPlain", () => {
+  it("plays past a drawn loop region once, then transport Play adopts it again", () => {
+    useProjectStore.setState({ activeTab: "timeline" });
+    useTimelineStore.setState({ selectionPlayback: null, loopRegion: { begin: 1, end: 2, loops: true } });
+    playPlain(5);
+    expect(useAudioStore.getState().isPlaying).toBe(true);
+    adoptLoopRegionForPlay();
+    expect(useTimelineStore.getState().selectionPlayback).toBeNull();
+
+    useAudioStore.getState().setIsPlaying(false);
+    adoptLoopRegionForPlay();
+    expect(useTimelineStore.getState().selectionPlayback).toBe("loop");
+  });
+
+  it("does not hold back a later adoption when called while already playing", () => {
+    useProjectStore.setState({ activeTab: "timeline" });
+    useTimelineStore.setState({ selectionPlayback: null, loopRegion: { begin: 1, end: 2, loops: true } });
+    useAudioStore.setState({ isPlaying: true });
+    playPlain(5);
+    adoptLoopRegionForPlay();
+    expect(useTimelineStore.getState().selectionPlayback).toBe("loop");
+  });
+
+  it("ends a playing selection", () => {
+    useTimelineStore.setState({ selectionPlayback: "once" });
+    playPlain(5);
+    expect(useTimelineStore.getState().selectionPlayback).toBeNull();
   });
 });

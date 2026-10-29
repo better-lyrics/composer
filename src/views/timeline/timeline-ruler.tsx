@@ -1,3 +1,4 @@
+import { notePlacement } from "@/lib/replay-cue";
 import { useAudioStore } from "@/stores/audio";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
@@ -77,7 +78,10 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
     const x = event.clientX - event.currentTarget.getBoundingClientRect().left + container.scrollLeft;
     const time = Math.min(duration, Math.max(0, x / zoom));
     if (useTimelineStore.getState().markerMode || event.altKey) placeSnapPoint(time);
-    else seekTo(time);
+    else {
+      seekTo(time);
+      notePlacement(time, "pointer");
+    }
   };
 
   return (

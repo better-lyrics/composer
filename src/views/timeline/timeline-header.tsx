@@ -15,6 +15,7 @@ import { TimelineAutoAlign } from "@/views/timeline/timeline-auto-align";
 import { TimelineZoomControls } from "@/views/timeline/timeline-header-controls";
 import { TimelineNotices } from "@/views/timeline/timeline-notices";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useCueShortcuts } from "@/views/timeline/use-cue-shortcuts";
 import {
   IconArrowBarBoth,
   IconChevronsDown,
@@ -34,6 +35,7 @@ interface TimelineHeaderProps {
 }
 
 const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollContainerRef }) => {
+  useCueShortcuts();
   const followPlayhead = useSettingsStore((s) => s.followPlayhead);
   const previewSidebar = useSettingsStore((s) => s.previewSidebar);
   const rollingEdit = useSettingsStore((s) => s.rollingEdit);
