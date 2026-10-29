@@ -1284,14 +1284,6 @@ braccato-lyrics .blyrics-container {
   }
 }
 
-:root {
-  --toast-clearance: 24px;
-}
-
-:root:has([data-screen="editor"] [data-transport-deck]) {
-  --toast-clearance: 96px;
-}
-
 /* Toasts: content width up to a cap, on the floating surface. Sonner sets --width inline, so the override needs !important. */
 @media (min-width: 601px) {
   [data-sonner-toaster][data-x-position="center"] {

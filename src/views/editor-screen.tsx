@@ -1,7 +1,7 @@
 import { AudioPlayer } from "@/audio/audio-player";
 import type { ProjectTab } from "@/domain/project/tab";
 import { useMissingAudioNotice } from "@/hooks/useMissingAudioNotice";
-import { useAudioStore } from "@/stores/audio";
+import { useTransportDeckShown } from "@/hooks/use-transport-deck-shown";
 import { useProjectStore } from "@/stores/project";
 import { EditPanel } from "@/views/edit";
 import { ExportPanel } from "@/views/export";
@@ -14,8 +14,6 @@ import { cn } from "@/utils/cn";
 import { Activity } from "react";
 
 // -- Constants ----------------------------------------------------------------
-
-const TABS_WITH_PLAYER: readonly ProjectTab[] = ["import", "edit", "languages", "sync", "timeline", "preview"];
 
 const PANELS: readonly { tab: ProjectTab; Panel: React.FC }[] = [
   { tab: "import", Panel: ImportPanel },
@@ -32,8 +30,7 @@ const PANELS: readonly { tab: ProjectTab; Panel: React.FC }[] = [
 const EditorScreen: React.FC = () => {
   useMissingAudioNotice();
   const activeTab = useProjectStore((state) => state.activeTab);
-  const source = useAudioStore((state) => state.source);
-  const showPlayer = Boolean(source) && TABS_WITH_PLAYER.includes(activeTab);
+  const showPlayer = useTransportDeckShown();
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
