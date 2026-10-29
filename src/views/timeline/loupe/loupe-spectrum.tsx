@@ -3,6 +3,7 @@ import { effectiveBounds } from "@/domain/line/bounds";
 import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { PitchTrack } from "@/domain/pitch/track";
+import { type LoupeSize, clampLoupeSize } from "@/domain/spectrum/loupe-size";
 import { type SpectrumLook, spectrumLookOf } from "@/domain/spectrum/settings";
 import { TILE_WIDTH } from "@/domain/spectrum/tile-key";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
@@ -15,14 +16,15 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
 import {
-  LOUPE_CANVAS,
   LOUPE_ZOOM,
+  type LoupeCanvas,
   type LoupeFrame,
   drawLoupeBeats,
   drawLoupeEdge,
   drawLoupePitch,
   drawLoupePlayhead,
   drawLoupeRuler,
+  loupeCanvas,
 } from "@/views/timeline/loupe/draw-loupe";
 import { drawLoupeLanes } from "@/views/timeline/loupe/draw-loupe-lanes";
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
@@ -38,6 +40,7 @@ import { useEffect, useRef } from "react";
 
 interface LoupeSpectrumProps {
   target: LoupeTarget;
+  size?: LoupeSize;
 }
 
 interface DrawInputs extends SpectrumLook {
@@ -54,6 +57,8 @@ interface DrawInputs extends SpectrumLook {
   beatGridVisible: boolean;
   beatGridLines: GridLines;
   pitchTrack: PitchTrack | null;
+  loupeWidth: number;
+  loupeHeight: number;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -68,17 +73,23 @@ function withLiveEdge(words: readonly WordTiming[], target: LoupeTarget, track: 
   return words.map((word, index) => (index === target.wordIndex ? { ...word, [target.edge]: target.time } : word));
 }
 
-function drawLoupe(context: CanvasRenderingContext2D, target: LoupeTarget, inputs: DrawInputs): boolean {
+function drawLoupe(
+  context: CanvasRenderingContext2D,
+  canvas: LoupeCanvas,
+  target: LoupeTarget,
+  inputs: DrawInputs,
+): boolean {
   const pixelsPerSecond = inputs.zoom * LOUPE_ZOOM;
   const frame: LoupeFrame = {
     context,
+    canvas,
     styles: getComputedStyle(document.documentElement),
-    originX: target.time * pixelsPerSecond - LOUPE_CANVAS.width / 2,
+    originX: target.time * pixelsPerSecond - canvas.width / 2,
     pixelsPerSecond,
   };
   const look = spectrumLookOf(inputs);
   const palette = resolveSpectrumPalette(look.spectrumPalette);
-  context.clearRect(0, 0, LOUPE_CANVAS.width, LOUPE_CANVAS.height);
+  context.clearRect(0, 0, canvas.width, canvas.height);
   let settled = true;
   if (spectrumSession.magnitude) {
     const view = {
@@ -88,18 +99,18 @@ function drawLoupe(context: CanvasRenderingContext2D, target: LoupeTarget, input
       themeGeneration: palette.themeGeneration,
       pixelsPerSecond,
       pixelRatio: inputs.pixelRatio,
-      heightCss: LOUPE_CANVAS.spectrumHeight,
+      heightCss: canvas.spectrumHeight,
       scrollLeft: frame.originX,
-      viewportWidth: LOUPE_CANVAS.width,
+      viewportWidth: canvas.width,
     };
     settled = drawTiles(context, view, (tileContext, tile, _index, x) => {
-      tileContext.drawImage(tile, x, 0, TILE_WIDTH, LOUPE_CANVAS.spectrumHeight);
+      tileContext.drawImage(tile, x, 0, TILE_WIDTH, canvas.spectrumHeight);
       return false;
     }).settled;
   }
   context.globalCompositeOperation = "destination-over";
   context.fillStyle = "#000000";
-  context.fillRect(0, 0, LOUPE_CANVAS.width, LOUPE_CANVAS.spectrumHeight);
+  context.fillRect(0, 0, canvas.width, canvas.spectrumHeight);
   context.globalCompositeOperation = "source-over";
 
   drawLoupeRuler(frame);
@@ -124,7 +135,7 @@ function drawLoupe(context: CanvasRenderingContext2D, target: LoupeTarget, input
 
 // -- Component ----------------------------------------------------------------
 
-const LoupeSpectrum: React.FC<LoupeSpectrumProps> = ({ target }) => {
+const LoupeSpectrum: React.FC<LoupeSpectrumProps> = ({ target, size }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawnRef = useRef<DrawInputs | null>(null);
   const releaseRef = useRef<(() => void) | null>(null);
@@ -138,8 +149,8 @@ const LoupeSpectrum: React.FC<LoupeSpectrumProps> = ({ target }) => {
   );
 
   useFrameLoop(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const element = canvasRef.current;
+    if (!element) return;
     const settings = useSettingsStore.getState();
     const theme = useThemeStore.getState();
     const project = useProjectStore.getState();
@@ -158,14 +169,17 @@ const LoupeSpectrum: React.FC<LoupeSpectrumProps> = ({ target }) => {
       beatGridVisible: settings.beatGridVisible,
       beatGridLines: settings.beatGridLines,
       pitchTrack: pitchSession.track,
+      loupeWidth: size?.width ?? settings.loupeWidth,
+      loupeHeight: size?.height ?? settings.loupeHeight,
     };
     if (sameInputs(drawnRef.current, inputs)) return;
     const { pixelRatio } = inputs;
-    sizeCanvas(canvas, LOUPE_CANVAS.width, LOUPE_CANVAS.height, pixelRatio);
-    const context = canvas.getContext("2d");
+    const canvas = loupeCanvas(clampLoupeSize({ width: inputs.loupeWidth, height: inputs.loupeHeight }));
+    sizeCanvas(element, canvas.width, canvas.height, pixelRatio);
+    const context = element.getContext("2d");
     if (!context) return;
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    const settled = drawLoupe(context, target, inputs);
+    const settled = drawLoupe(context, canvas, target, inputs);
     drawnRef.current = settled ? inputs : null;
     if (settled) {
       releaseRef.current?.();

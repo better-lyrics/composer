@@ -1,12 +1,13 @@
 import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import { LOUPE_FIXED, type LoupeSize, clampLoupeSize, fitLoupeSize } from "@/domain/spectrum/loupe-size";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { loupeDeltaPopVariants, loupeReducedVariants, loupeVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
-import { LOUPE_ZOOM } from "@/views/timeline/loupe/draw-loupe";
+import { LOUPE_ZOOM, loupeCanvas } from "@/views/timeline/loupe/draw-loupe";
 import { LoupeSpectrum } from "@/views/timeline/loupe/loupe-spectrum";
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
 import { placeLoupe } from "@/views/timeline/loupe/place-loupe";
@@ -15,7 +16,7 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { FloatingPortal } from "@floating-ui/react";
 import { IconMicrophone2 } from "@tabler/icons-react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
-import { type RefObject, useCallback, useLayoutEffect, useRef } from "react";
+import { type RefObject, useCallback, useLayoutEffect, useMemo, useRef } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -42,7 +43,10 @@ function deltaLabel(deltaMs: number): string {
 }
 
 // Positions are DOM writes from the frame loop, so the card follows scrolling without re-rendering.
-function placeCard(card: HTMLDivElement, container: HTMLElement, target: LoupeTarget): void {
+function placeCard(card: HTMLDivElement, container: HTMLElement, target: LoupeTarget, size: LoupeSize): void {
+  if (card.firstElementChild instanceof HTMLElement) {
+    card.firstElementChild.style.width = `${loupeCanvas(size).width + LOUPE_FIXED.cardX}px`;
+  }
   const key = `${target.lineId}-${target.track}-${target.wordIndex}`;
   const block = container.querySelector<HTMLElement>(`[data-word-block][id="${CSS.escape(key)}"]`);
   const lane = block?.parentElement;
@@ -71,12 +75,22 @@ const LoupeCard: React.FC<LoupeCardProps> = ({ target, scrollContainerRef }) => 
   const word = useProjectStore((s) => editedWordText(s.lines, target));
   const hasPitch = useTimelineStore(() => pitchSession.track !== null);
   const deltaMs = Math.round((target.time - target.startTime) * 1000);
+  const loupeWidth = useSettingsStore((s) => s.loupeWidth);
+  const loupeHeight = useSettingsStore((s) => s.loupeHeight);
+  const size = useMemo(
+    () =>
+      fitLoupeSize(clampLoupeSize({ width: loupeWidth, height: loupeHeight }), {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }),
+    [loupeWidth, loupeHeight],
+  );
 
   const place = useCallback(() => {
     const card = cardRef.current;
     const container = scrollContainerRef.current;
-    if (card && container) placeCard(card, container, target);
-  }, [target, scrollContainerRef]);
+    if (card && container) placeCard(card, container, target, size);
+  }, [target, scrollContainerRef, size]);
   useLayoutEffect(place, [place]);
   useFrameLoop(place, "edit loupe placement");
 
@@ -91,7 +105,7 @@ const LoupeCard: React.FC<LoupeCardProps> = ({ target, scrollContainerRef }) => 
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="relative w-[440px] px-1.5 pb-1.5 rounded-2xl bg-composer-bg-elevated shadow-[inset_0_0_0_1px_var(--edge),inset_0_1px_0_var(--highlight),0_22px_48px_-14px_rgb(var(--shade)/0.7)] origin-[var(--tail-x)_100%] group-data-[side=below]:origin-[var(--tail-x)_0]"
+        className="relative px-1.5 pb-1.5 rounded-2xl bg-composer-bg-elevated shadow-[inset_0_0_0_1px_var(--edge),inset_0_1px_0_var(--highlight),0_22px_48px_-14px_rgb(var(--shade)/0.7)] origin-[var(--tail-x)_100%] group-data-[side=below]:origin-[var(--tail-x)_0]"
       >
         <div className="h-8 flex items-center gap-1.5 pl-1.5 pr-1 text-xs text-(--muted) whitespace-nowrap">
           <span>{target.edge === "begin" ? "Start of" : "End of"}</span>
@@ -116,7 +130,7 @@ const LoupeCard: React.FC<LoupeCardProps> = ({ target, scrollContainerRef }) => 
           </m.span>
           <span className="pl-1 font-mono text-[11px] font-medium tabular-nums">{LOUPE_ZOOM}x</span>
         </div>
-        <LoupeSpectrum target={target} />
+        <LoupeSpectrum target={target} size={size} />
         {!hasPitch && (
           <div className="flex items-center gap-1.5 px-1.5 pt-2 pb-0.5 text-[11.5px] text-(--muted)">
             <IconMicrophone2 size={14} />
