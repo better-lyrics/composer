@@ -144,7 +144,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["E"], description: "Edit selected word text", shortcutId: "timeline.editWord" },
       { keys: ["F2"], description: "Edit selected word text" },
       { keys: ["S"], description: "Split selected word into syllables", shortcutId: "timeline.splitSyllable" },
-      { keys: ["Shift", "S"], description: "Split word into words", shortcutId: "timeline.splitWord" },
+      { keys: ["Shift", "S"], description: "Split into separate words", shortcutId: "timeline.splitWord" },
       { keys: ["M"], description: "Merge adjacent selected words", shortcutId: "timeline.mergeWords" },
       { keys: ["Y"], description: "Merge syllables into one word", shortcutId: "timeline.mergeSyllablesIntoWord" },
       { keys: ["W"], description: "Split line into words", shortcutId: "timeline.splitIntoWords" },

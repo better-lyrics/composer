@@ -321,7 +321,7 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
   {
     id: "timeline.splitWord",
     scope: "timeline",
-    description: "Split word into words",
+    description: "Split into separate words",
     defaultBinding: { key: "s", shift: true },
   },
   {
