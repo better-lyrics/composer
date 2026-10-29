@@ -287,6 +287,25 @@ describe("frame-loop", () => {
       error.mockRestore();
     });
 
+    it("regression: logs a write that keeps failing once, even while its read succeeds", () => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const release = holdFrames("test");
+      const unsubscribe = subscribeFrame(
+        {
+          read: () => {},
+          write: () => {
+            throw new Error("write failed");
+          },
+        },
+        "broken-write",
+      );
+      advanceFrames(5);
+      expect(error).toHaveBeenCalledTimes(1);
+      unsubscribe();
+      release();
+      error.mockRestore();
+    });
+
     it("never runs a write whose read did not run in the same frame", () => {
       const log: string[] = [];
       const unsubscribes: Array<() => void> = [];

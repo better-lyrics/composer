@@ -12,7 +12,8 @@ interface FrameSubscriber {
   read: FrameCallback | null;
   write: FrameCallback;
   label: string;
-  failing: boolean;
+  readFailing: boolean;
+  writeFailing: boolean;
   readThisFrame: boolean;
 }
 
@@ -81,27 +82,33 @@ function schedule(): void {
   rafId = window.requestAnimationFrame(pump);
 }
 
-function runPhase(subscriber: FrameSubscriber, phase: FrameCallback, now: number): boolean {
+// Returns whether the phase ran clean; a phase that keeps failing logs once until it recovers.
+function runPhase(
+  subscriber: FrameSubscriber,
+  phase: FrameCallback,
+  failingKey: "readFailing" | "writeFailing",
+  now: number,
+): boolean {
   try {
     phase(now);
-    subscriber.failing = false;
+    subscriber[failingKey] = false;
     return true;
   } catch (error) {
-    if (subscriber.failing) return false;
-    subscriber.failing = true;
+    if (subscriber[failingKey]) return false;
+    subscriber[failingKey] = true;
     console.error(`${LOG_PREFIX} frame callback "${subscriber.label}" failed`, error);
     return false;
   }
 }
 
 function runRead(subscriber: FrameSubscriber, now: number): void {
-  if (subscriber.read) subscriber.readThisFrame = runPhase(subscriber, subscriber.read, now);
+  if (subscriber.read) subscriber.readThisFrame = runPhase(subscriber, subscriber.read, "readFailing", now);
 }
 
 function runWrite(subscriber: FrameSubscriber, now: number): void {
   if (subscriber.read && !subscriber.readThisFrame) return;
   subscriber.readThisFrame = false;
-  runPhase(subscriber, subscriber.write, now);
+  runPhase(subscriber, subscriber.write, "writeFailing", now);
 }
 
 function pump(now: number): void {
@@ -147,7 +154,13 @@ function animateFrames(label: string): () => void {
 
 function subscribeFrame(callback: FrameCallback | FramePhases, label: string): () => void {
   const phases = typeof callback === "function" ? { read: null, write: callback } : callback;
-  const subscriber: FrameSubscriber = { ...phases, label, failing: false, readThisFrame: false };
+  const subscriber: FrameSubscriber = {
+    ...phases,
+    label,
+    readFailing: false,
+    writeFailing: false,
+    readThisFrame: false,
+  };
   subscribers.add(subscriber);
   wake();
   return () => {
