@@ -74,7 +74,7 @@ function scrollContainerOf(screen: Awaited<ReturnType<typeof render>>) {
   return container;
 }
 
-function pointOnRow(container: HTMLElement, lineId: string, time: number) {
+function pointOnRow(container: HTMLElement, lineId: string, time: number, lane: "word" | "bg" = "word") {
   const { zoom, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
   const layout = computeRowLayout({
     lines: useProjectStore.getState().lines,
@@ -88,19 +88,30 @@ function pointOnRow(container: HTMLElement, lineId: string, time: number) {
   const row = layout.lineTops.get(lineId);
   if (!row) throw new Error(`row ${lineId} has no layout`);
   const rect = container.getBoundingClientRect();
-  return { clientX: rect.left + GUTTER_WIDTH + time * zoom, clientY: rect.top + row.top + 2 };
+  const laneTop = lane === "word" ? row.top : row.mainBottom;
+  return { clientX: rect.left + GUTTER_WIDTH + time * zoom, clientY: rect.top + laneTop + 2 };
 }
 
-async function hoverRow(screen: Awaited<ReturnType<typeof render>>, lineId: string, time: number) {
+async function hoverRow(
+  screen: Awaited<ReturnType<typeof render>>,
+  lineId: string,
+  time: number,
+  lane: "word" | "bg" = "word",
+) {
   const container = scrollContainerOf(screen);
-  const point = pointOnRow(container, lineId, time);
+  const point = pointOnRow(container, lineId, time, lane);
   document.dispatchEvent(new MouseEvent("mousemove", point));
   await expect.poll(() => screen.container.querySelector("[data-lane]")).not.toBeNull();
   return { container, point };
 }
 
-async function pasteOnRow(screen: Awaited<ReturnType<typeof render>>, lineId: string, time: number) {
-  const { container, point } = await hoverRow(screen, lineId, time);
+async function pasteOnRow(
+  screen: Awaited<ReturnType<typeof render>>,
+  lineId: string,
+  time: number,
+  lane: "word" | "bg" = "word",
+) {
+  const { container, point } = await hoverRow(screen, lineId, time, lane);
   container.dispatchEvent(new MouseEvent("click", { ...point, bubbles: true, button: 0 }));
 }
 
@@ -243,5 +254,21 @@ describe("PastePreview · paste words onto a line of a group that shares timing"
       await expect.poll(() => lineById("c0")?.words).toHaveLength(3);
       expect(lineById("c0")?.words?.[2].end).toBeCloseTo(13.5, 5);
     });
+  });
+});
+
+describe("PastePreview · paste into the hovered lane", () => {
+  it("pastes words copied from a main lane into the hovered background lane", async () => {
+    useAudioStore.setState({ duration: 60 });
+    useProjectStore.setState({ lines: [createLine({ id: "l", text: "go now", words: ownTimingChorus.words })] });
+    const clipboard: ClipboardData = {
+      entries: [{ word: createWord({ text: "you", begin: 0, end: 1 }), lineOffset: 0, trackType: "word" }],
+    };
+    const screen = await render(<Harness clipboard={clipboard} />);
+
+    await pasteOnRow(screen, "l", 10, "bg");
+
+    await expect.poll(() => lineById("l")?.backgroundWords?.map((word) => word.text)).toEqual(["you"]);
+    expect(lineById("l")?.words).toEqual(ownTimingChorus.words);
   });
 });

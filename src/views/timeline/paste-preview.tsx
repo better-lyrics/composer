@@ -5,7 +5,7 @@ import { boundsOverlap } from "@/domain/word/overlap";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen, openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
-import { pasteOverlaps, pastedWordBounds } from "@/views/timeline/apply-paste-to-lines";
+import { clipboardInLane, pasteOverlaps, pastedWordBounds } from "@/views/timeline/apply-paste-to-lines";
 import { commitPasteAt } from "@/views/timeline/commit-paste";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { lastKnownPointer } from "@/views/timeline/last-pointer";
@@ -13,7 +13,7 @@ import { currentOverviewBandHeight, useOverviewBandHeight } from "@/views/timeli
 import { bgTrackHeight, wordBlockWidth, wordInsetPx } from "@/views/timeline/row-geometry";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
-import { type RowLayout, computeRowLayout, getLineIndexAtY } from "@/views/timeline/utils";
+import { type RowLayout, computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
 import { type RefObject, useEffect, useMemo, useReducer, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -114,12 +114,12 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   const container = scrollContainerRef.current;
   const isInstancePaste = !!clipboard.sourceInstance;
   const pointer = container && mousePos && modalCount === 0 ? pointerInTimeline(container, mousePos, zoom) : null;
-  const hoveredLineIndex = pointer ? getLineIndexAtY(pointer.y, lines, layout) : -1;
-  const targetLineIndex =
-    hoveredLineIndex >= 0 ? hoveredLineIndex : isInstancePaste ? Math.max(0, lines.length - 1) : -1;
+  const hovered = pointer ? getLineAndTrackAtY(pointer.y, lines, layout) : null;
+  const targetLineIndex = hovered ? hovered.lineIndex : isInstancePaste ? Math.max(0, lines.length - 1) : -1;
+  const pasted = hovered && !isInstancePaste ? clipboardInLane(clipboard, hovered.track) : clipboard;
   const timeDelta = pointer ? pointer.time - clipboard.entries[0].word.begin : 0;
   const hasOverlap =
-    !isInstancePaste && targetLineIndex >= 0 && pasteOverlaps(clipboard, targetLineIndex, timeDelta, lines, rangeOf);
+    !isInstancePaste && targetLineIndex >= 0 && pasteOverlaps(pasted, targetLineIndex, timeDelta, lines, rangeOf);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -133,7 +133,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   if (!container || !pointer || targetLineIndex < 0) return null;
 
   const ghosts = computeGhosts(
-    clipboard,
+    pasted,
     targetLineIndex,
     timeDelta,
     lines,
@@ -195,7 +195,13 @@ async function commitPaste(clipboard: ClipboardData, container: HTMLElement, e: 
     groupHeaderHeight: GROUP_HEADER_HEIGHT,
   });
   const pointer = pointerInTimeline(container, e, zoom);
-  await commitPasteAt({ clipboard, cursorTime: pointer.time, lineIndex: getLineIndexAtY(pointer.y, lines, layout) });
+  const hovered = getLineAndTrackAtY(pointer.y, lines, layout);
+  await commitPasteAt({
+    clipboard,
+    cursorTime: pointer.time,
+    lineIndex: hovered?.lineIndex ?? -1,
+    lane: hovered?.track ?? "word",
+  });
 }
 
 function computeGhosts(

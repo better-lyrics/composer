@@ -1,4 +1,5 @@
 import type { ReadableLine } from "@/domain/line/effective-words";
+import type { WordTrack } from "@/domain/line/tracks";
 import type { WordSelection } from "@/domain/selection/model";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { MenuItem } from "@/ui/menu";
@@ -19,6 +20,7 @@ interface CopyCutMenuItemsProps {
 interface PasteHereMenuItemProps {
   time: number;
   lineIndex: number;
+  lane: WordTrack;
 }
 
 // -- Components ----------------------------------------------------------------
@@ -46,12 +48,12 @@ const CopyCutMenuItems: React.FC<CopyCutMenuItemsProps> = ({ lines, word, noun }
   );
 };
 
-const PasteHereMenuItem: React.FC<PasteHereMenuItemProps> = ({ time, lineIndex }) => {
+const PasteHereMenuItem: React.FC<PasteHereMenuItemProps> = ({ time, lineIndex, lane }) => {
   const clipboard = useTimelineStore((s) => s.clipboard);
   if (!clipboard || clipboard.entries.length === 0) return null;
 
   const pasteHere = async () => {
-    const outcome = await commitPasteAt({ clipboard, cursorTime: time, lineIndex });
+    const outcome = await commitPasteAt({ clipboard, cursorTime: time, lineIndex, lane });
     if (outcome === "overlap") toast.error("Not enough room to paste here");
   };
 

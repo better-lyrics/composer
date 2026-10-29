@@ -4,11 +4,12 @@ import type { LineTemplate } from "@/domain/group/template";
 import { pickedTemplateSource, templateSourceInstance } from "@/domain/group/template-source";
 import { instanceCount } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
+import type { WordTrack } from "@/domain/line/tracks";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { pluralize } from "@/utils/pluralize";
-import { applyPasteToLines, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
+import { applyPasteToLines, clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
 import type { ClipboardData } from "@/views/timeline/selection-types";
@@ -24,6 +25,7 @@ interface PasteTarget {
   clipboard: ClipboardData;
   cursorTime: number;
   lineIndex: number;
+  lane: WordTrack;
 }
 
 // -- Helpers -------------------------------------------------------------------
@@ -114,11 +116,12 @@ async function commitPasteAt(target: PasteTarget): Promise<PasteOutcome> {
 
   if (lineIndex < 0) return "no-line";
 
+  const wordsInLane = clipboardInLane(clipboard, target.lane);
   const timeDelta = cursorTime - clipboard.entries[0].word.begin;
   const rangeOf = timeRangeResolver(lines, useProjectStore.getState().groups, useAudioStore.getState().duration);
-  if (pasteOverlaps(clipboard, lineIndex, timeDelta, lines, rangeOf)) return "overlap";
+  if (pasteOverlaps(wordsInLane, lineIndex, timeDelta, lines, rangeOf)) return "overlap";
 
-  const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: lineIndex, timeDelta, rangeOf });
+  const updates = applyPasteToLines({ lines, clipboard: wordsInLane, targetLineIndex: lineIndex, timeDelta, rangeOf });
   if (!updates || updates.length === 0) return "no-change";
 
   useProjectStore.getState().updateLinesWithHistory(updates);

@@ -281,7 +281,7 @@ function TrackMenuSection({ targets, clearContextMenu, target }: SectionProps & 
         clearContextMenu={clearContextMenu}
       />
       <MenuItem label="Add word here" shortcut={["Double Click"]} onSelect={handleAddWordHere} />
-      <PasteHereMenuItem time={target.time} lineIndex={target.lineIndex} />
+      <PasteHereMenuItem time={target.time} lineIndex={target.lineIndex} lane={target.type} />
       {targets.placeLineHereInfo && <MenuItem label="Place line here" onSelect={handlePlaceLineHere} />}
       {targets.placeAtPlayheadInfo && <MenuItem label="Place at playhead" onSelect={handlePlaceAtPlayhead} />}
       <SelectionGrouping targets={targets} clearContextMenu={clearContextMenu} />
