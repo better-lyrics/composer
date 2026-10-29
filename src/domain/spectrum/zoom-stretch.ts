@@ -18,13 +18,16 @@ function stretchedBaseRect(source: StretchSource, target: StretchTarget): { x: n
   return { x: source.scrollLeft * scale - target.scrollLeft, width: source.widthCss * scale };
 }
 
-function refineAlpha(elapsedMs: number, durationMs: number): number {
-  if (elapsedMs >= durationMs) return 1;
-  const progress = Math.max(0, elapsedMs) / durationMs;
+function easeOutCubic(progress: number): number {
   return 1 - (1 - progress) ** 3;
+}
+
+function fadeInAlpha(elapsedMs: number, durationMs: number): number {
+  if (elapsedMs >= durationMs) return 1;
+  return easeOutCubic(Math.max(0, elapsedMs) / durationMs);
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export { refineAlpha, stretchedBaseRect };
+export { easeOutCubic, fadeInAlpha, stretchedBaseRect };
 export type { StretchSource };

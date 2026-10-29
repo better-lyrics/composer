@@ -24,7 +24,6 @@ let clearsOnFontLoad = false;
 
 // -- Functions -----------------------------------------------------------------
 
-// Widths are cached only once fonts have loaded, so a fallback-face measurement never sticks.
 function fontsSettled(): boolean {
   if (typeof document.fonts === "undefined") return false;
   if (!clearsOnFontLoad) {
@@ -44,7 +43,7 @@ function labelWidth(text: string, font: string): number {
   measureContext.font = `${font} ${fontFamily}`;
   const width = measureContext.measureText(text).width;
   if (!fontsSettled()) return width;
-  if (cachedWidths.size >= MAX_CACHED_WIDTHS) cachedWidths.clear();
+  if (cachedWidths.size >= MAX_CACHED_WIDTHS) cachedWidths.delete(cachedWidths.keys().next().value ?? key);
   cachedWidths.set(key, width);
   return width;
 }

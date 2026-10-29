@@ -43,6 +43,7 @@ type TileBlit = (context: CanvasRenderingContext2D, tile: OffscreenCanvas, index
 
 interface DrawResult {
   settled: boolean;
+  covered: boolean;
   animating: boolean;
 }
 
@@ -183,11 +184,11 @@ function drawTiles(
   const resolved: { index: number; canvas: OffscreenCanvas }[] = [];
   const complete: number[] = [];
   const incomplete: number[] = [];
-  let settled = true;
+  let covered = true;
   for (const index of buildOrder(first, last, refine !== undefined)) {
     const tile = tileAt(view, index, budget);
     if (!tile) {
-      settled = false;
+      covered = false;
       continue;
     }
     if (tile.complete) complete.push(index);
@@ -201,7 +202,7 @@ function drawTiles(
     const x = Math.round((index * TILE_WIDTH - view.scrollLeft) * view.pixelRatio) / view.pixelRatio;
     if (blit(context, canvas, index, x)) animating = true;
   }
-  return { settled: settled && incomplete.length === 0, animating };
+  return { settled: covered && incomplete.length === 0, covered, animating };
 }
 
 // -- Exports -------------------------------------------------------------------

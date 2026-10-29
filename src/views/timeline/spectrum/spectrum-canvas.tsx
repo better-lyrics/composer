@@ -10,6 +10,7 @@ import {
   beginWarmUp,
   blitWarming,
   createWarmUp,
+  isTileWarming,
   isWarming,
   noteDrawnTiles,
 } from "@/views/timeline/spectrum/spectrum-warm-up";
@@ -133,7 +134,7 @@ const SpectrumCanvas: React.FC = () => {
       view,
       refining
         ? (target, tile, index, x) =>
-            warmUp.starts.has(index)
+            isTileWarming(warmUp, index, now)
               ? blitWarming(warmUp, target, tile, index, x, view.heightCss, now)
               : blitRefining(refine, target, tile, index, x, view.heightCss, now)
         : (target, tile, index, x) => blitWarming(warmUp, target, tile, index, x, view.heightCss, now),
@@ -141,7 +142,7 @@ const SpectrumCanvas: React.FC = () => {
       refining,
     );
     refine.lastFrame = frame;
-    const settledRefine = refining !== undefined && result.settled && !result.animating;
+    const settledRefine = refining !== undefined && result.covered && !result.animating;
     // The last refine frame still has the stretched band under it, so one plain frame follows.
     if (settledRefine) endRefine(refine);
     const idle = result.settled && !result.animating && !settledRefine;

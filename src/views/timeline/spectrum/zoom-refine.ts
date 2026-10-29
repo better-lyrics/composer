@@ -1,5 +1,6 @@
 import { TILE_WIDTH } from "@/domain/spectrum/tile-key";
-import { type StretchSource, refineAlpha, stretchedBaseRect } from "@/domain/spectrum/zoom-stretch";
+import { type StretchSource, fadeInAlpha, stretchedBaseRect } from "@/domain/spectrum/zoom-stretch";
+import { prefersReducedMotion } from "@/utils/prefers-reduced-motion";
 import type { RefineDraw } from "@/views/timeline/spectrum/tile-cache";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -48,11 +49,11 @@ function sameBand(a: DrawnFrame, b: DrawnFrame): boolean {
 }
 
 function endRefine(refine: ZoomRefine): void {
+  refine.base = null;
   refine.baseFrame = null;
   refine.fades.clear();
 }
 
-// The band keeps what it showed, stretched to the new zoom, so it never blanks while sharp tiles build.
 function beginRefineIfZoomed(refine: ZoomRefine, canvas: HTMLCanvasElement, next: DrawnFrame, now: number): void {
   const last = refine.lastFrame;
   if (!last || last.pixelsPerSecond === next.pixelsPerSecond) return;
@@ -64,7 +65,7 @@ function beginRefineIfZoomed(refine: ZoomRefine, canvas: HTMLCanvasElement, next
   refine.baseFrame = refine.base ? last : null;
   refine.beganAt = now;
   refine.fades.clear();
-  refine.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  refine.reducedMotion = prefersReducedMotion();
 }
 
 function refineDraw(refine: ZoomRefine, frame: DrawnFrame, now: number): RefineDraw | undefined {
@@ -83,7 +84,6 @@ function refineDraw(refine: ZoomRefine, frame: DrawnFrame, now: number): RefineD
   };
 }
 
-// Tiles ready on the first frame show at once; tiles built later fade in over the stretched band.
 function blitRefining(
   refine: ZoomRefine,
   context: CanvasRenderingContext2D,
@@ -95,10 +95,11 @@ function blitRefining(
 ): boolean {
   let start = refine.fades.get(index);
   if (start === undefined) {
-    start = now === refine.beganAt ? Number.NEGATIVE_INFINITY : now;
+    const readyWhenRefineBegan = now === refine.beganAt;
+    start = readyWhenRefineBegan ? Number.NEGATIVE_INFINITY : now;
     refine.fades.set(index, start);
   }
-  const alpha = refineAlpha(now - start, refine.reducedMotion ? REFINE_FADE_REDUCED_MS : REFINE_FADE_MS);
+  const alpha = fadeInAlpha(now - start, refine.reducedMotion ? REFINE_FADE_REDUCED_MS : REFINE_FADE_MS);
   if (alpha >= 1) {
     context.drawImage(tile, x, 0, TILE_WIDTH, heightCss);
     return false;
