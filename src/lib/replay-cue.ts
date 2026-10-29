@@ -3,7 +3,7 @@ import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { isYouTubeSourceFor } from "@/utils/youtube-source";
-import { playPlain } from "@/views/timeline/selection-playback";
+import { playPlain, skipLoopRegionOnNextPlay } from "@/views/timeline/selection-playback";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types --------------------------------------------------------------------
@@ -31,14 +31,11 @@ function flashCue(time: number): void {
   for (const listener of flashListeners) listener(time);
 }
 
-function currentTransportPosition(): { target: number; playhead: number } {
+function currentTransportPosition(): { target: number; playhead: number; latched: boolean } {
   const playhead = livePlaybackTime();
-  const target = transportPosition({
-    latched: onTimeline() && useSettingsStore.getState().returnToCue,
-    cue: useTimelineStore.getState().cue,
-    playhead,
-  });
-  return { target, playhead };
+  const latched = onTimeline() && useSettingsStore.getState().returnToCue;
+  const target = transportPosition({ latched, cue: useTimelineStore.getState().cue, playhead });
+  return { target, playhead, latched };
 }
 
 // -- Actions ------------------------------------------------------------------
@@ -68,8 +65,12 @@ function playFromCue(): void {
   flashCue(from);
 }
 
-function startPositionForPlay(): number {
-  return currentTransportPosition().target;
+// Latched, Enter always plays from the cue, so a drawn region the cue sits outside is not adopted.
+function prepareTransportPlay(): void {
+  const { target, playhead, latched } = currentTransportPosition();
+  const region = useTimelineStore.getState().loopRegion;
+  if (latched && region && (target < region.begin || target >= region.end)) skipLoopRegionOnNextPlay();
+  if (target !== playhead) useAudioStore.getState().seekTo(target);
 }
 
 function returnAfterStop(): void {
@@ -81,4 +82,4 @@ function returnAfterStop(): void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { notePlacement, onCueFlash, playFromCue, returnAfterStop, startPositionForPlay };
+export { notePlacement, onCueFlash, playFromCue, prepareTransportPlay, returnAfterStop };

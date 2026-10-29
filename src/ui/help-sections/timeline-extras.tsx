@@ -131,7 +131,8 @@ const TimelineExtras: React.FC = () => (
         </li>
         <li>
           <strong>Return to cue</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleReturnToCue")} />
-          ): Enter plays from the cue and stops back on it.
+          ): <InlineKeyBadge keys={getEffectiveKeysArray("global.playPause")} /> plays from the cue and stops back on
+          it.
         </li>
         <li>
           <strong>Rolling</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleRollingEdit")} />

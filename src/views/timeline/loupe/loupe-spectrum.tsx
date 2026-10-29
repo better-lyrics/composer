@@ -3,7 +3,7 @@ import { effectiveBounds } from "@/domain/line/bounds";
 import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { PitchTrack } from "@/domain/pitch/track";
-import { type LoupeSize, clampLoupeSize } from "@/domain/spectrum/loupe-size";
+import type { LoupeSize } from "@/domain/spectrum/loupe-size";
 import { type SpectrumLook, spectrumLookOf } from "@/domain/spectrum/settings";
 import { TILE_WIDTH } from "@/domain/spectrum/tile-key";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
@@ -40,7 +40,7 @@ import { useEffect, useRef } from "react";
 
 interface LoupeSpectrumProps {
   target: LoupeTarget;
-  size?: LoupeSize;
+  size: LoupeSize;
 }
 
 interface DrawInputs extends SpectrumLook {
@@ -169,12 +169,12 @@ const LoupeSpectrum: React.FC<LoupeSpectrumProps> = ({ target, size }) => {
       beatGridVisible: settings.beatGridVisible,
       beatGridLines: settings.beatGridLines,
       pitchTrack: pitchSession.track,
-      loupeWidth: size?.width ?? settings.loupeWidth,
-      loupeHeight: size?.height ?? settings.loupeHeight,
+      loupeWidth: size.width,
+      loupeHeight: size.height,
     };
     if (sameInputs(drawnRef.current, inputs)) return;
     const { pixelRatio } = inputs;
-    const canvas = loupeCanvas(clampLoupeSize({ width: inputs.loupeWidth, height: inputs.loupeHeight }));
+    const canvas = loupeCanvas({ width: inputs.loupeWidth, height: inputs.loupeHeight });
     sizeCanvas(element, canvas.width, canvas.height, pixelRatio);
     const context = element.getContext("2d");
     if (!context) return;

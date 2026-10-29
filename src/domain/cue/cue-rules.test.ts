@@ -23,7 +23,7 @@ describe("cueAfterPlacement", () => {
   });
 });
 
-describe("transport with the Return to cue latch", () => {
+describe("transport play and stop with the Return to cue latch", () => {
   it("plays from the cue when latched, even if paused elsewhere", () => {
     expect(transportPosition({ latched: true, cue: 2, playhead: 9 })).toBe(2);
   });
@@ -33,14 +33,7 @@ describe("transport with the Return to cue latch", () => {
     expect(transportPosition({ latched: true, cue: null, playhead: 9 })).toBe(9);
   });
 
-  it("stops back on the cue only when latched, since play and stop share one rule", () => {
-    expect(transportPosition({ latched: true, cue: 2, playhead: 9 })).toBe(2);
-    expect(transportPosition({ latched: false, cue: 2, playhead: 9 })).toBe(9);
-    expect(transportPosition({ latched: true, cue: null, playhead: 9 })).toBe(9);
-  });
-
   it("treats a cue at 0 as a cue", () => {
-    expect(transportPosition({ latched: true, cue: 0, playhead: 9 })).toBe(0);
     expect(transportPosition({ latched: true, cue: 0, playhead: 9 })).toBe(0);
   });
 });

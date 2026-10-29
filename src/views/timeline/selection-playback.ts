@@ -90,10 +90,15 @@ function playLoopRegion(mode: SelectionPlaybackMode): boolean {
 }
 
 // Plain playback from a point: ends any selection playback and leaves a drawn region alone.
+// Only a play that starts from paused fires the adoption, so only that one may skip it.
+function skipLoopRegionOnNextPlay(): void {
+  skipRegionAdoption = !useAudioStore.getState().isPlaying && useTimelineStore.getState().loopRegion !== null;
+}
+
 function playPlain(from: number): void {
   stopSelectionPlayback({ pause: false });
+  skipLoopRegionOnNextPlay();
   const audio = useAudioStore.getState();
-  skipRegionAdoption = !audio.isPlaying && useTimelineStore.getState().loopRegion !== null;
   audio.seekTo(from);
   audio.setIsPlaying(true);
 }
@@ -189,6 +194,7 @@ export {
   loopSelection,
   playLoopRegion,
   playPlain,
+  skipLoopRegionOnNextPlay,
   playSelection,
   selectLine,
   selectWordUnlessSelected,

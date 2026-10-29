@@ -58,10 +58,11 @@ const LoupeCard: React.FC<LoupeCardProps> = ({ target, scrollContainerRef }) => 
   const loupeHeight = useSettingsStore((s) => s.loupeHeight);
   const size = useMemo(
     () =>
-      fitLoupeSize(clampLoupeSize({ width: loupeWidth, height: loupeHeight }), {
-        width: window.innerWidth,
-        height: window.innerHeight,
-      }),
+      fitLoupeSize(
+        clampLoupeSize({ width: loupeWidth, height: loupeHeight }),
+        { width: window.innerWidth, height: window.innerHeight },
+        LOUPE_FIXED.noteRowHeight,
+      ),
     [loupeWidth, loupeHeight],
   );
 

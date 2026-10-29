@@ -41,7 +41,7 @@ const BAR_HEIGHT = 44;
 // The bar, the hint line under it and the gaps above and below the hint.
 const BAR_BLOCK_HEIGHT = BAR_HEIGHT + 8 + 20 + 20;
 // Room for the pitch hint and the idle note under the canvas, which come and go.
-const NOTE_ROWS_HEIGHT = 2 * 28;
+const NOTE_ROWS_HEIGHT = 2 * LOUPE_FIXED.noteRowHeight;
 const VIEWPORT_MARGIN = 32;
 const ANNOUNCE_DELAY_MS = 400;
 const LARGEST_SIZE: LoupeSize = { width: LOUPE_SIZE.width.max, height: LOUPE_SIZE.height.max };
@@ -114,16 +114,22 @@ const LoupeSizeStage: React.FC<LoupeSizeStageProps> = ({ onClose }) => {
     "--loupe-canvas-h": `${canvas.height}px`,
   };
 
-  const writeSize = (next: LoupeSize) => {
-    if (next.width === size.width && next.height === size.height) return;
-    const { set } = useSettingsStore.getState();
-    set("loupeWidth", next.width);
-    set("loupeHeight", next.height);
+  const announce = (next: LoupeSize) => {
     if (announceTimerRef.current !== null) clearTimeout(announceTimerRef.current);
     announceTimerRef.current = setTimeout(
       () => setAnnouncement(`${next.width} by ${next.height} pixels`),
       ANNOUNCE_DELAY_MS,
     );
+  };
+
+  // Only the axis the user moved is saved, so a window cap never overwrites the other one.
+  const writeSize = (next: LoupeSize) => {
+    const update: { loupeWidth?: number; loupeHeight?: number } = {};
+    if (next.width !== size.width) update.loupeWidth = next.width;
+    if (next.height !== size.height) update.loupeHeight = next.height;
+    if (update.loupeWidth === undefined && update.loupeHeight === undefined) return;
+    useSettingsStore.setState(update);
+    announce(next);
   };
 
   const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -136,7 +142,8 @@ const LoupeSizeStage: React.FC<LoupeSizeStageProps> = ({ onClose }) => {
   };
 
   const resetSize = () => {
-    writeSize({ width: LOUPE_SIZE.width.default, height: LOUPE_SIZE.height.default });
+    useSettingsStore.setState({ loupeWidth: LOUPE_SIZE.width.default, loupeHeight: LOUPE_SIZE.height.default });
+    announce({ width: LOUPE_SIZE.width.default, height: LOUPE_SIZE.height.default });
     cardRef.current?.focus();
   };
 

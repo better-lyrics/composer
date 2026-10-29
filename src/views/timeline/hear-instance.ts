@@ -1,4 +1,5 @@
 import { instanceOffset } from "@/domain/group/shared-timing";
+import { notePlacement } from "@/lib/replay-cue";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -10,7 +11,10 @@ function hearInstance(groupId: string, fromInstanceIdx: number, toInstanceIdx: n
   const offset = instanceOffset(useProjectStore.getState().lines, groupId, fromInstanceIdx, toInstanceIdx);
   useTimelineStore.getState().openGroup(groupId, toInstanceIdx);
   const audio = useAudioStore.getState();
-  if (offset !== null) audio.seekTo(livePlaybackTime() + offset);
+  if (offset === null) return;
+  const target = livePlaybackTime() + offset;
+  audio.seekTo(target);
+  notePlacement(target, "keyboard");
 }
 
 // -- Exports ------------------------------------------------------------------

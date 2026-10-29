@@ -13,6 +13,7 @@ interface CueFlashProps {
 // -- Constants -----------------------------------------------------------------
 
 const FLASH_HOLD_MS = 450;
+const FLASH_FADE_MS = 400;
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -42,7 +43,12 @@ const CueFlash: React.FC<CueFlashProps> = ({ scrollContainerRef }) => {
       placeFlashLine(line, time, scrollContainerRef.current);
       line.setAttribute("data-flash", "");
       clearTimeout(clearTimer);
-      clearTimer = setTimeout(() => lineRef.current?.removeAttribute("data-flash"), FLASH_HOLD_MS);
+      clearTimer = setTimeout(() => {
+        lineRef.current?.removeAttribute("data-flash");
+        clearTimer = setTimeout(() => {
+          flashTimeRef.current = null;
+        }, FLASH_FADE_MS);
+      }, FLASH_HOLD_MS);
     });
     return () => {
       unsubscribe();
@@ -54,7 +60,7 @@ const CueFlash: React.FC<CueFlashProps> = ({ scrollContainerRef }) => {
     <div
       ref={lineRef}
       aria-hidden="true"
-      className="absolute top-0 left-0 w-px opacity-0 transition-opacity duration-[400ms] ease-out pointer-events-none bg-[color-mix(in_oklab,var(--color-composer-text)_55%,transparent)] data-[flash]:opacity-100 data-[flash]:duration-[60ms]"
+      className="absolute top-0 left-0 w-px opacity-0 transition-opacity duration-400 ease-out pointer-events-none bg-[color-mix(in_oklab,var(--color-composer-text)_55%,transparent)] data-[flash]:opacity-100 data-[flash]:duration-[60ms]"
     />
   );
 };

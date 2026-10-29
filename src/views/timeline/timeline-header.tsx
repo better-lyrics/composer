@@ -158,7 +158,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
             <ShortcutToggleButton
               active={returnToCue}
               label="Return to cue"
-              description="Enter plays from the cue and stops back on it"
+              description="Play starts from the cue, and stopping returns to it"
               shortcut="timeline.toggleReturnToCue"
               onClick={() => useSettingsStore.getState().toggle("returnToCue")}
               iconOnly

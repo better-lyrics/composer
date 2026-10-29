@@ -21,8 +21,8 @@ const LOUPE_SIZE = {
   step: 4,
 } as const;
 
-// The ruler and word lanes under the spectrum, and the card's padding and header.
-const LOUPE_FIXED = { rulerHeight: 18, lanesHeight: 60, cardX: 12, cardY: 38 } as const;
+// The ruler and word lanes under the spectrum, the card's padding and header, and one note row under the canvas.
+const LOUPE_FIXED = { rulerHeight: 18, lanesHeight: 60, cardX: 12, cardY: 38, noteRowHeight: 28 } as const;
 const VIEWPORT_MARGIN = 32;
 
 // -- Functions ----------------------------------------------------------------
