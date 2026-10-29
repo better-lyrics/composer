@@ -42,10 +42,6 @@ function copyOf(target: OffscreenCanvas | null, canvas: HTMLCanvasElement): Offs
   return copy;
 }
 
-function isRefining(refine: ZoomRefine): boolean {
-  return refine.baseFrame !== null;
-}
-
 function endRefine(refine: ZoomRefine): void {
   refine.baseFrame = null;
   refine.fades.clear();
@@ -111,5 +107,5 @@ function blitRefining(
 
 // -- Exports -------------------------------------------------------------------
 
-export type { DrawnFrame, ZoomRefine };
-export { beginRefineIfZoomed, blitRefining, createZoomRefine, endRefine, isRefining, refineDraw };
+export { beginRefineIfZoomed, blitRefining, createZoomRefine, endRefine, refineDraw };
+export type { DrawnFrame };

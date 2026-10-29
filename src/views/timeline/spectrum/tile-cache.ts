@@ -206,5 +206,5 @@ function drawTiles(
 
 // -- Exports -------------------------------------------------------------------
 
-export type { RefineDraw, TileView };
 export { drawTiles };
+export type { RefineDraw, TileView };

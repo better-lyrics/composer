@@ -26,5 +26,5 @@ function refineAlpha(elapsedMs: number, durationMs: number): number {
 
 // -- Exports -------------------------------------------------------------------
 
-export type { StretchSource };
 export { refineAlpha, stretchedBaseRect };
+export type { StretchSource };
