@@ -1,3 +1,4 @@
+import { withSeededBackground } from "@/domain/line/background";
 import type { RawLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
@@ -127,7 +128,7 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
     : parsed.lines;
 
   if (!parsed.hasTimingData && ctx.audioDuration > 0) {
-    workingLines = distributeLinesTiming(workingLines, ctx.audioDuration);
+    workingLines = distributeLinesTiming(workingLines, ctx.audioDuration).map(withSeededBackground);
   }
 
   const reported = replaceLyrics(parsed, workingLines, searchResultMetadata(input.searchResult));

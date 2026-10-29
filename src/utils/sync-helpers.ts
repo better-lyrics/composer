@@ -1,4 +1,3 @@
-import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
@@ -149,23 +148,9 @@ function createTrackWordsFromTextAt(
   return words.length > 0 ? words : null;
 }
 
-function createBgWordsFromLine(line: LyricLine): WordTiming[] | null {
-  if (!line.backgroundText) return null;
-  const timing = effectiveBounds(line);
-  if (!timing) return null;
-  return createInitialBgWords(line.backgroundText, (timing.begin + timing.end) / 2, timing.end);
-}
-
-function withSeededBackgroundWords(line: LyricLine): LyricLine {
-  if (!line.backgroundText || line.backgroundWords?.length) return line;
-  const backgroundWords = createBgWordsFromLine(line);
-  return backgroundWords ? { ...line, backgroundWords } : line;
-}
-
 // -- Exports ------------------------------------------------------------------
 
 export {
-  createBgWordsFromLine,
   createTrackWordsFromTextAt,
   createInitialBgWords,
   distributeWordsInLine,
@@ -175,6 +160,5 @@ export {
   parseTimeMs,
   splitIntoWords,
   splitIntoWordsWithMeta,
-  withSeededBackgroundWords,
 };
 export type { SyncReRecording, SyncState };

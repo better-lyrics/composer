@@ -1067,7 +1067,7 @@ describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
 });
 
 describe("sync-panel bg-init contract", () => {
-  it("shows seeded background words in the view without writing them to the store until the user edits one", async () => {
+  it("shows only stored background timing and never writes the store on render", async () => {
     const BG_TEXT = "ooh ahh";
     const ORIGINAL_LINE_TEXT = "Lead vocal melody line";
     useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 60, isPlaying: false });
@@ -1082,7 +1082,7 @@ describe("sync-panel bg-init contract", () => {
 
     const screen = await render(<SyncPanel />);
 
-    expect(screen.container.querySelector('button[title="Jump to this word"]')).not.toBeNull();
+    expect(screen.container.querySelector('button[title="Jump to this word"]')).toBeNull();
 
     expect(useProjectStore.getState().lines[0].backgroundText).toBe(BG_TEXT);
     expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_LINE_TEXT);

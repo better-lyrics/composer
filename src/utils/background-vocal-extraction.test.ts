@@ -428,7 +428,7 @@ describe("extractInlineFromLine", () => {
     expect(result).not.toBe(line);
     expect(result.text).toBe("Hi there");
     expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundWords).toBeUndefined();
+    expect(result.backgroundWords).toEqual([{ text: "ooh", begin: 1, end: 2 }]);
     expect(result.words).toEqual([
       { text: "Hi ", begin: 0, end: 1 },
       { text: "there", begin: 2, end: 3 },
@@ -502,7 +502,7 @@ describe("extractInlineFromLine: word-synced extraction", () => {
     expect(result).not.toBe(line);
     expect(result.text).toBe("Hello world");
     expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundWords).toBeUndefined();
+    expect(result.backgroundWords).toEqual([{ text: "ooh", begin: 1.2, end: 1.9 }]);
     expect(result.words).toEqual([
       { text: "Hello ", begin: 0.5, end: 1.2 },
       { text: "world", begin: 1.9, end: 2.7 },
@@ -1842,7 +1842,7 @@ describe("preserveBrackets: word-synced bg", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
     expect(result[0].backgroundWords).toEqual([
-      { text: "(clap)", begin: 1.0, end: 1.5 },
+      { text: "(clap) ", begin: 1.0, end: 1.5 },
       { text: "(ooh)", begin: 5.0, end: 5.5 },
     ]);
   });
@@ -1898,5 +1898,78 @@ describe("preserveBrackets: word-synced invariants", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result[0].text).toBe("Real line");
+  });
+});
+
+describe("regressions", () => {
+  const options = { mergeStandaloneLines: true, preserveBrackets: false };
+
+  it("regression: background vocals extracted on a synced line are stored timed", () => {
+    const line = createLine({ id: "a", text: "hello (ooh)", begin: 10, end: 14 });
+    const [extracted] = extractBackgroundVocals([line], options);
+    expect(extracted.backgroundText).toBe("ooh");
+    expect(extracted.backgroundWords?.[0].begin).toBe(12);
+  });
+
+  it("regression: an untimed standalone line merged into a synced line is stored timed", () => {
+    const lines = [createLine({ id: "a", text: "hello", begin: 10, end: 14 }), createLine({ id: "b", text: "(ooh)" })];
+    const [merged] = extractBackgroundVocals(lines, options);
+    expect(merged.backgroundText).toBe("ooh");
+    expect(merged.backgroundWords?.[0].begin).toBe(12);
+  });
+
+  it("regression: several untimed standalone lines all merge into one synced line", () => {
+    const lines = [
+      createLine({ id: "a", text: "hello", begin: 10, end: 14 }),
+      createLine({ id: "b", text: "(ooh)" }),
+      createLine({ id: "c", text: "(yeah)" }),
+    ];
+    const extracted = extractBackgroundVocals(lines, options);
+    expect(extracted).toHaveLength(1);
+    expect(extracted[0].backgroundWords?.map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
+  });
+
+  it("regression: empty parentheses do not change the timing pulled from a word-synced line", () => {
+    const line = createLine({
+      id: "a",
+      text: "Hi () (ooh)",
+      words: [
+        { text: "Hi ", begin: 0, end: 1 },
+        { text: "() ", begin: 1, end: 2 },
+        { text: "(ooh)", begin: 5, end: 6 },
+      ],
+    });
+    const extracted = extractInlineFromLine(line, options);
+    expect(extracted.backgroundWords).toEqual([{ text: "ooh", begin: 5, end: 6 }]);
+  });
+
+  it("regression: a timed standalone after an untimed one keeps its own timing", () => {
+    const lines = [
+      createLine({ id: "a", text: "hello", begin: 10, end: 14 }),
+      createLine({ id: "b", text: "(ooh)" }),
+      createLine({ id: "c", text: "(yeah)", begin: 15, end: 16 }),
+    ];
+    const [merged] = extractBackgroundVocals(lines, options);
+    expect(merged.backgroundText).toBe("ooh yeah");
+    expect(merged.backgroundWords?.at(-1)).toEqual({ text: "yeah", begin: 15, end: 16 });
+  });
+
+  it("regression: an untimed standalone line after an inline word-synced extraction keeps the carried timing", () => {
+    const lines = [
+      createLine({
+        id: "a",
+        text: "hello (ooh)",
+        words: [
+          { text: "hello ", begin: 0, end: 1 },
+          { text: "(ooh)", begin: 1, end: 2 },
+        ],
+      }),
+      createLine({ id: "b", text: "(yeah)" }),
+    ];
+    const extracted = extractBackgroundVocals(lines, options);
+    expect(extracted).toHaveLength(1);
+    expect(extracted[0].backgroundWords?.[0]).toEqual({ text: "ooh ", begin: 1, end: 2 });
+    expect(extracted[0].backgroundText).toBe("ooh yeah");
+    expect(extracted[0].backgroundWords?.map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
   });
 });

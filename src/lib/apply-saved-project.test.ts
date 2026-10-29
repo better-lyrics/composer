@@ -63,6 +63,18 @@ describe("applySavedProject", () => {
       expect(state.isDirtySinceHistory).toBe(false);
     });
 
+    it("regression: stores timing for background vocals saved on a synced line without words", () => {
+      const legacy = createLine({ id: "l1", text: "hello", begin: 10, end: 14, backgroundText: "ooh" });
+
+      for (const origin of ["storage", "file"] as const) {
+        applySavedProject(projectFile({ lines: [legacy] }), origin);
+
+        const state = useProjectStore.getState();
+        expect(state.lines[0].backgroundWords?.[0]).toMatchObject({ begin: 12, end: 14 });
+        expect(state.isDirty).toBe(false);
+      }
+    });
+
     it("regression: drops imported metadata keys a hand-edited file does not know", () => {
       const keys = JSON.parse('["isrc", "producer"]');
 
