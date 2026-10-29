@@ -190,4 +190,3 @@ function writePlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): v
 // -- Exports -------------------------------------------------------------------
 
 export { createPlayheadFrame, readPlayheadFrame, writePlayheadFrame };
-export type { PlayheadElements, PlayheadFrame };

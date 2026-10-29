@@ -2,6 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
 import { placeSnapPoint } from "@/views/timeline/place-snap-point";
+import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconClock } from "@tabler/icons-react";
 import { useEffect } from "react";
@@ -28,11 +29,6 @@ function rulerStep(zoom: number): readonly [number, number] {
   return (
     RULER_STEPS.find(([labelled]) => labelled * zoom >= MIN_LABEL_SPACING_PX) ?? RULER_STEPS[RULER_STEPS.length - 1]
   );
-}
-
-// The panel calls this from its scroll handler after reading the position, so the write never forces a style recalc.
-function followRulerScroll(track: HTMLElement, scrollLeft: number): void {
-  track.style.translate = `${-scrollLeft}px 0`;
 }
 
 function tickBackground(labelled: number, minor: number, zoom: number): React.CSSProperties {
@@ -120,4 +116,4 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, track
 
 // -- Exports -------------------------------------------------------------------
 
-export { TimelineRuler, followRulerScroll };
+export { TimelineRuler };
