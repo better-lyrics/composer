@@ -33,7 +33,6 @@ describe("importLyricsButtonStep", () => {
     }
   });
 
-  // The Edit panel mounts on its first visit, so the tab switch happens when driver.js resolves the element.
   it("switches to the Edit tab while it resolves its element", () => {
     useProjectStore.setState({ activeTab: "sync" });
     resolveElement(importLyricsButtonStep());

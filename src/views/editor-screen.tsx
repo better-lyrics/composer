@@ -40,7 +40,7 @@ const EditorScreen: React.FC = () => {
       <main className={cn("flex-1 min-h-0 workspace-card", !showPlayer && "mb-2")}>
         {PANELS.filter(({ tab }) => visitedTabs.has(tab)).map(({ tab, Panel }) => (
           <Activity key={tab} mode={activeTab === tab ? "visible" : "hidden"}>
-            <div className="absolute inset-0 flex flex-col">
+            <div data-tab-panel={tab} className="absolute inset-0 flex flex-col">
               <Panel />
             </div>
           </Activity>
