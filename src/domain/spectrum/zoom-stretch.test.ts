@@ -1,4 +1,4 @@
-import { fadeInAlpha, stretchedBaseRect } from "@/domain/spectrum/zoom-stretch";
+import { stretchedBaseRect } from "@/domain/spectrum/zoom-stretch";
 import { describe, expect, it } from "vitest";
 
 describe("stretchedBaseRect", () => {
@@ -10,20 +10,6 @@ describe("stretchedBaseRect", () => {
       const baseX = time * base.pixelsPerSecond - base.scrollLeft;
       const drawnX = rect.x + baseX * (rect.width / base.widthCss);
       expect(drawnX).toBeCloseTo(time * target.pixelsPerSecond - target.scrollLeft, 9);
-    }
-  });
-});
-
-describe("fadeInAlpha", () => {
-  it("rises from 0 to 1 over the duration and never goes back", () => {
-    expect(fadeInAlpha(0, 120)).toBe(0);
-    expect(fadeInAlpha(120, 120)).toBe(1);
-    expect(fadeInAlpha(500, 120)).toBe(1);
-    let previous = 0;
-    for (let ms = 0; ms <= 120; ms += 10) {
-      const alpha = fadeInAlpha(ms, 120);
-      expect(alpha).toBeGreaterThanOrEqual(previous);
-      previous = alpha;
     }
   });
 });

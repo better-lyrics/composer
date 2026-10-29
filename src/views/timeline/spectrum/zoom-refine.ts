@@ -1,5 +1,6 @@
 import { TILE_WIDTH } from "@/domain/spectrum/tile-key";
 import { type StretchSource, fadeInAlpha, stretchedBaseRect } from "@/domain/spectrum/zoom-stretch";
+import { spectrumRefineMotion } from "@/utils/animationVariants";
 import { prefersReducedMotion } from "@/utils/prefers-reduced-motion";
 import type { RefineDraw } from "@/views/timeline/spectrum/tile-cache";
 
@@ -22,8 +23,6 @@ interface ZoomRefine {
 
 // -- Constants -----------------------------------------------------------------
 
-const REFINE_FADE_MS = 120;
-const REFINE_FADE_REDUCED_MS = 80;
 const REFINE_BUILD_MS = 4;
 
 // -- Functions -----------------------------------------------------------------
@@ -99,7 +98,10 @@ function blitRefining(
     start = readyWhenRefineBegan ? Number.NEGATIVE_INFINITY : now;
     refine.fades.set(index, start);
   }
-  const alpha = fadeInAlpha(now - start, refine.reducedMotion ? REFINE_FADE_REDUCED_MS : REFINE_FADE_MS);
+  const alpha = fadeInAlpha(
+    now - start,
+    refine.reducedMotion ? spectrumRefineMotion.reducedFadeMs : spectrumRefineMotion.fadeMs,
+  );
   if (alpha >= 1) {
     context.drawImage(tile, x, 0, TILE_WIDTH, heightCss);
     return false;

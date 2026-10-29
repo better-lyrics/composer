@@ -145,6 +145,14 @@ const pitchLineKeyframes: Record<"wipe" | "reducedWipe" | "fadeOut", Keyframe[]>
   fadeOut: [{ opacity: 1 }, { opacity: 0 }],
 };
 
+// -- Spectrum Zoom ------------------------------------------------------------
+
+// Sharp tiles fade in over the stretched band on a canvas, so these are plain numbers.
+const spectrumRefineMotion = {
+  fadeMs: 120,
+  reducedFadeMs: 80,
+} as const;
+
 // -- Edit Loupe ---------------------------------------------------------------
 
 const loupeEnterTransition: Transition = { type: "spring", duration: 0.18, bounce: 0 };
@@ -192,4 +200,5 @@ export {
   inlineIconReducedVariants,
   pitchLineKeyframes,
   pitchLineMotion,
+  spectrumRefineMotion,
 };

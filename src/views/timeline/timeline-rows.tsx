@@ -15,25 +15,13 @@ import { PitchRowsScope } from "@/views/timeline/pitch/pitch-rows";
 import { emptyBgRowHeight, lineRowHeight } from "@/views/timeline/row-geometry";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/utils";
-import { type RefObject, useCallback, useMemo, useState } from "react";
+import { type RefObject, useCallback, useMemo } from "react";
 import { Virtuoso } from "react-virtuoso";
 
 // -- Types ---------------------------------------------------------------------
 
 interface TimelineRowsProps {
   scrollContainerRef: RefObject<HTMLDivElement | null>;
-}
-
-type WordUpdateHandler = (
-  wordIndex: number,
-  updates: Partial<WordTiming>,
-  adjacentIndex?: number,
-  adjacentUpdates?: Partial<WordTiming>,
-) => void;
-
-interface RowUpdateHandlers {
-  word: WordUpdateHandler;
-  bg: WordUpdateHandler;
 }
 
 // -- Functions -----------------------------------------------------------------
@@ -141,24 +129,6 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
     [],
   );
 
-  const [rowHandlers] = useState(() => new Map<string, RowUpdateHandlers>());
-  const handlersFor = useCallback(
-    (lineId: string): RowUpdateHandlers => {
-      let handlers = rowHandlers.get(lineId);
-      if (!handlers) {
-        handlers = {
-          word: (wordIndex, updates, adjacentIndex, adjacentUpdates) =>
-            handleUpdateWord(lineId, wordIndex, updates, adjacentIndex, adjacentUpdates),
-          bg: (wordIndex, updates, adjacentIndex, adjacentUpdates) =>
-            handleUpdateBgWord(lineId, wordIndex, updates, adjacentIndex, adjacentUpdates),
-        };
-        rowHandlers.set(lineId, handlers);
-      }
-      return handlers;
-    },
-    [rowHandlers, handleUpdateWord, handleUpdateBgWord],
-  );
-
   const renderRow = useCallback(
     (_: number, row: EffectiveRow) => {
       if (row.kind === "group-header") {
@@ -175,18 +145,17 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
           />
         );
       }
-      const handlers = handlersFor(row.line.id);
       return (
         <LineRow
           line={row.line}
           lineIndex={row.lineIndex}
           duration={duration}
-          onUpdateWord={handlers.word}
-          onUpdateBgWord={handlers.bg}
+          onUpdateWord={handleUpdateWord}
+          onUpdateBgWord={handleUpdateBgWord}
         />
       );
     },
-    [groupsById, lines, duration, handlersFor],
+    [groupsById, lines, duration, handleUpdateWord, handleUpdateBgWord],
   );
 
   const totalWidth = duration * zoom;
