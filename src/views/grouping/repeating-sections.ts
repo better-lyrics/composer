@@ -19,6 +19,7 @@ function findRepeatingStandaloneSections(lines: LyricLine[], splitChar: string):
   const keys = lines.map((line) => repeatKey(line, splitChar));
   const claimed = new Set<number>();
   const sections = claimSections(lines, keys, claimed, splitChar, MIN_SECTION_LINES);
+  for (const p of chantLoopLines(keys, SHORT_SECTION_LINES)) claimed.add(p);
   const shortSections = claimSections(lines, keys, claimed, splitChar, SHORT_SECTION_LINES, SHORT_SECTION_LINES);
   return [...sections, ...shortSections].toSorted((a, b) => a.starts[0] - b.starts[0]);
 }
@@ -43,8 +44,7 @@ function claimSections(
       const starts = repeatStarts(lines, keys, i, k, claimed);
       if (starts.length < 2 || (best && starts.length * k <= best.starts.length * best.k)) continue;
       const candidate = evenableStarts(lines, starts, k, splitChar);
-      if (!candidate || (k < MIN_SECTION_LINES && candidate.starts.some((s) => inLoop(keys, s, k)))) continue;
-      if (!best || candidate.starts.length * k > best.starts.length * best.k) best = { ...candidate, k };
+      if (candidate && (!best || candidate.starts.length * k > best.starts.length * best.k)) best = { ...candidate, k };
     }
 
     if (best) {
@@ -67,10 +67,14 @@ function claimSections(
   return results;
 }
 
-// A short block sung again right before or after itself is a chant loop, not a repeated section.
-function inLoop(keys: string[], start: number, k: number): boolean {
-  const repeatsBefore = start >= k && blocksRepeat(keys, start - k, start, k);
-  return repeatsBefore || (start + 2 * k <= keys.length && blocksRepeat(keys, start, start + k, k));
+// Lines of a short block sung again right after itself are a chant loop, not a repeated section.
+function chantLoopLines(keys: string[], k: number): number[] {
+  const loopLines: number[] = [];
+  for (let start = 0; start + 2 * k <= keys.length; start++) {
+    if (!blocksRepeat(keys, start, start + k, k)) continue;
+    for (let p = start; p < start + 2 * k; p++) loopLines.push(p);
+  }
+  return loopLines;
 }
 
 // A copy whose splits cross the others' is left out, so it cannot hide the copies that agree.

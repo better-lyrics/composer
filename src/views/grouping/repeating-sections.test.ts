@@ -50,6 +50,11 @@ describe("findRepeatingStandaloneSections", () => {
       expect(detect(texts.map((t, i) => line(`${i}`, t)))).toEqual([]);
     });
 
+    it("regression: ignores two lines that start inside a back-to-back loop", () => {
+      const texts = ["A", "B", "A", "B", "x", "B", "A"];
+      expect(detect(texts.map((t, i) => line(`${i}`, t)))).toEqual([]);
+    });
+
     it("never takes lines a longer repeat needs", () => {
       const texts = ["a", "b", "c", "d", "verse", "a", "b", "bridge", "b", "c", "d"];
       expect(spans(texts.map((t, i) => line(`${i}`, t)))).toEqual([{ starts: [1, 8], length: 3 }]);
