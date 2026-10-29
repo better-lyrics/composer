@@ -1,7 +1,7 @@
 {
   "name": "composer",
   "private": true,
-  "version": "2.21.4",
+  "version": "2.21.5",
   "type": "module",
   "scripts": {
     "dev": "vite-react-ssg dev",
