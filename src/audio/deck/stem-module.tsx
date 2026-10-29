@@ -1,9 +1,14 @@
+import { useState } from "react";
+import type { Stem } from "@/audio/separation/types";
 import { useAudioStore } from "@/stores/audio";
 import { useSeparationStore } from "@/stores/separation";
 import { Key } from "@/ui/key";
-import { STEMS, STEM_ICONS, STEM_LABELS } from "@/ui/stem-labels";
+import { STEM_ICONS, STEM_LABELS } from "@/ui/stem-labels";
 import { VocalSeparationDropdown } from "@/ui/vocal-separation-dropdown";
-import { useState } from "react";
+
+// -- Constants ----------------------------------------------------------------
+
+const DECK_STEMS: readonly Stem[] = ["original", "vocals"];
 
 // -- Component ----------------------------------------------------------------
 
@@ -21,7 +26,7 @@ const StemModule: React.FC = () => {
     <div ref={setModuleElement} className="flex items-center gap-2">
       <VocalSeparationDropdown open={open} onOpenChange={setOpen} positionAnchor={moduleElement} />
       <div role="group" aria-label="Playback source" className="flex gap-1">
-        {STEMS.map((stem) => {
+        {DECK_STEMS.map((stem) => {
           const Icon = STEM_ICONS[stem];
           const available = availableStems.includes(stem);
           return (

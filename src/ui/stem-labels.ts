@@ -1,9 +1,7 @@
-import type { Stem } from "@/audio/separation/types";
 import { type Icon, IconMicrophone, IconMusic, IconWaveSine } from "@tabler/icons-react";
+import type { Stem } from "@/audio/separation/types";
 
 // -- Constants ----------------------------------------------------------------
-
-const STEMS: readonly Stem[] = ["original", "vocals", "instrumental"];
 
 const STEM_LABELS: Record<Stem, string> = {
   original: "Original",
@@ -19,4 +17,4 @@ const STEM_ICONS: Record<Stem, Icon> = {
 
 // -- Exports ------------------------------------------------------------------
 
-export { STEMS, STEM_ICONS, STEM_LABELS };
+export { STEM_ICONS, STEM_LABELS };
