@@ -11,7 +11,7 @@ import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { cn } from "@/utils/cn";
-import { Activity } from "react";
+import { Activity, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -31,11 +31,14 @@ const EditorScreen: React.FC = () => {
   useMissingAudioNotice();
   const activeTab = useProjectStore((state) => state.activeTab);
   const showPlayer = useTransportDeckShown();
+  // A panel mounts on its tab's first visit, then Activity keeps its state across switches.
+  const [visitedTabs, setVisitedTabs] = useState<ReadonlySet<ProjectTab>>(() => new Set([activeTab]));
+  if (!visitedTabs.has(activeTab)) setVisitedTabs(new Set([...visitedTabs, activeTab]));
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <main className={cn("flex-1 min-h-0 workspace-card", !showPlayer && "mb-2")}>
-        {PANELS.map(({ tab, Panel }) => (
+        {PANELS.filter(({ tab }) => visitedTabs.has(tab)).map(({ tab, Panel }) => (
           <Activity key={tab} mode={activeTab === tab ? "visible" : "hidden"}>
             <div className="absolute inset-0 flex flex-col">
               <Panel />
