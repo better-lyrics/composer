@@ -140,21 +140,24 @@ function readPlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): vo
   frame.ready = true;
 }
 
+function bannerFill(banner: HTMLElement, currentTime: number): string | null {
+  const startStr = banner.dataset.instanceStart;
+  const endStr = banner.dataset.instanceEnd;
+  if (!startStr || !endStr) return null;
+  const startNum = Number.parseFloat(startStr);
+  const endNum = Number.parseFloat(endStr);
+  const span = endNum - startNum;
+  if (!Number.isFinite(span) || span <= 0) return "0%";
+  const ratio = (currentTime - startNum) / span;
+  const clamped = Math.max(0, Math.min(1, ratio));
+  return `${(clamped * 100).toFixed(2)}%`;
+}
+
 function writeBannerProgress(currentTime: number): void {
   for (const banner of getBannerNodes()) {
-    const startStr = banner.dataset.instanceStart;
-    const endStr = banner.dataset.instanceEnd;
-    if (!startStr || !endStr) continue;
-    const startNum = Number.parseFloat(startStr);
-    const endNum = Number.parseFloat(endStr);
-    const span = endNum - startNum;
-    if (!Number.isFinite(span) || span <= 0) {
-      banner.style.setProperty("--progress-fill", "0%");
-      continue;
-    }
-    const ratio = (currentTime - startNum) / span;
-    const clamped = Math.max(0, Math.min(1, ratio));
-    banner.style.setProperty("--progress-fill", `${(clamped * 100).toFixed(2)}%`);
+    const fill = bannerFill(banner, currentTime);
+    if (fill === null || banner.style.getPropertyValue("--progress-fill") === fill) continue;
+    banner.style.setProperty("--progress-fill", fill);
   }
 }
 
