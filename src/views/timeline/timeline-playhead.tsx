@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GUTTER_WIDTH, timeToX } from "@/views/timeline/coords";
+import { CueFlash } from "@/views/timeline/cue-flash";
 import { currentFocusScrollRange } from "@/views/timeline/effective-focus";
 import { createFollowInput, fillFollowInput } from "@/views/timeline/follow-input";
 import { clampScrollLeft } from "@/views/timeline/group-focus";
@@ -226,6 +227,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
       className="absolute inset-0 pointer-events-none overflow-hidden z-50"
       style={{ clipPath: `inset(0 0 0 ${GUTTER_WIDTH}px)` }}
     >
+      <CueFlash scrollContainerRef={scrollContainerRef} />
       <div
         ref={playheadRef}
         role="separator"

@@ -17,6 +17,7 @@ import { TimelineNotices } from "@/views/timeline/timeline-notices";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCueShortcuts } from "@/views/timeline/use-cue-shortcuts";
 import {
+  IconArrowBackUp,
   IconArrowBarBoth,
   IconChevronsDown,
   IconChevronsUp,
@@ -37,6 +38,7 @@ interface TimelineHeaderProps {
 const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollContainerRef }) => {
   useCueShortcuts();
   const followPlayhead = useSettingsStore((s) => s.followPlayhead);
+  const returnToCue = useSettingsStore((s) => s.returnToCue);
   const previewSidebar = useSettingsStore((s) => s.previewSidebar);
   const rollingEdit = useSettingsStore((s) => s.rollingEdit);
   const markerMode = useTimelineStore((s) => s.markerMode);
@@ -152,6 +154,16 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
               iconOnly
             >
               <IconFocusCentered />
+            </ShortcutToggleButton>
+            <ShortcutToggleButton
+              active={returnToCue}
+              label="Return to cue"
+              description="Enter plays from the cue and stops back on it"
+              shortcut="timeline.toggleReturnToCue"
+              onClick={() => useSettingsStore.getState().toggle("returnToCue")}
+              iconOnly
+            >
+              <IconArrowBackUp />
             </ShortcutToggleButton>
             <ShortcutToggleButton
               active={rollingEdit}

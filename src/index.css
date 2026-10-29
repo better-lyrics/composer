@@ -346,6 +346,23 @@ braccato-lyrics .blyrics-container {
   }
 }
 
+/* The cue: a ruler-coloured notch whose sharp point sits on the cue time. Its hit area is the parent. */
+@utility cue-notch {
+  width: 9px;
+  height: 6.75px;
+  background: var(--color-composer-text-tertiary);
+  clip-path: path("M 2.99 0 L 6.01 0 A 1.6 1.6 0 0 1 7.342 2.488 L 4.5 6.75 L 1.658 2.488 A 1.6 1.6 0 0 1 2.99 0 Z");
+  transition: background-color 150ms;
+  @media (hover: hover) {
+    :hover > & {
+      background: var(--color-composer-text);
+    }
+  }
+  &[data-latched] {
+    background: var(--color-composer-accent-text);
+  }
+}
+
 @utility snap-marker-flash {
   width: 2px;
   background: var(--ink);

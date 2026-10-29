@@ -1,5 +1,6 @@
 import { notePlacement } from "@/lib/replay-cue";
 import { useAudioStore } from "@/stores/audio";
+import { CueMarker } from "@/views/timeline/cue-marker";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
 import { placeSnapPoint } from "@/views/timeline/place-snap-point";
@@ -114,6 +115,7 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
             </span>
           ))}
           <div ref={markerHostRef} className="absolute inset-0 pointer-events-none" />
+          <CueMarker />
         </div>
       </div>
       {markerMode && (
