@@ -1,3 +1,4 @@
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { MarqueeRect } from "@/views/timeline/use-marquee";
 
 // -- Types ---------------------------------------------------------------------
@@ -10,6 +11,8 @@ interface MarqueeSelectionProps {
 // -- Component -----------------------------------------------------------------
 
 const MarqueeSelection: React.FC<MarqueeSelectionProps> = ({ rect, scrollContainerRef }) => {
+  // Zoom moves the scroll position this box is placed against.
+  useTimelineStore((s) => s.zoom);
   const container = scrollContainerRef.current;
   if (!container) return null;
 

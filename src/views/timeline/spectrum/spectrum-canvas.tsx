@@ -32,8 +32,20 @@ const BAND_BORDER = 1;
 
 // -- Helpers -------------------------------------------------------------------
 
-function drawingSignature(view: TileView): string {
-  const { look, session } = view;
+function lookKey(view: TileView): string {
+  const { look } = view;
+  return [
+    look.spectrumPalette,
+    look.spectrumContrast,
+    look.spectrumScale,
+    look.spectrumTop,
+    look.spectrumPhase,
+    view.themeGeneration,
+  ].join("|");
+}
+
+function drawingSignature(view: TileView, look: string): string {
+  const { session } = view;
   return [
     view.scrollLeft,
     view.pixelsPerSecond,
@@ -43,12 +55,7 @@ function drawingSignature(view: TileView): string {
     session.generation,
     session.readyChunks,
     session.rawChunks,
-    look.spectrumPalette,
-    look.spectrumContrast,
-    look.spectrumScale,
-    look.spectrumTop,
-    look.spectrumPhase,
-    view.themeGeneration,
+    look,
   ].join("|");
 }
 
@@ -88,7 +95,8 @@ const SpectrumCanvas: React.FC = () => {
       scrollLeft: container.scrollLeft,
       viewportWidth: Math.max(0, container.clientWidth - GUTTER_WIDTH),
     };
-    const signature = drawingSignature(view);
+    const lookId = lookKey(view);
+    const signature = drawingSignature(view, lookId);
     if (signature === drawnRef.current) return;
 
     const frame: DrawnFrame = {
@@ -97,10 +105,11 @@ const SpectrumCanvas: React.FC = () => {
       widthCss: view.viewportWidth,
       heightCss: view.heightCss,
       pixelRatio: view.pixelRatio,
+      lookKey: lookId,
     };
     const now = performance.now();
-    if (isWarming(warmUp, spectrumSession.generation, now)) endRefine(refine);
-    else beginRefineIfZoomed(refine, canvas, frame, now);
+    if (warmUp.generation !== spectrumSession.generation) endRefine(refine);
+    else if (!isWarming(warmUp, spectrumSession.generation, now)) beginRefineIfZoomed(refine, canvas, frame, now);
 
     sizeCanvas(canvas, view.viewportWidth, view.heightCss, view.pixelRatio);
     const context = canvas.getContext("2d");
@@ -123,7 +132,10 @@ const SpectrumCanvas: React.FC = () => {
       context,
       view,
       refining
-        ? (target, tile, index, x) => blitRefining(refine, target, tile, index, x, view.heightCss, now)
+        ? (target, tile, index, x) =>
+            warmUp.starts.has(index)
+              ? blitWarming(warmUp, target, tile, index, x, view.heightCss, now)
+              : blitRefining(refine, target, tile, index, x, view.heightCss, now)
         : (target, tile, index, x) => blitWarming(warmUp, target, tile, index, x, view.heightCss, now),
       (complete, incomplete) => noteDrawnTiles(warmUp, complete, incomplete, now),
       refining,

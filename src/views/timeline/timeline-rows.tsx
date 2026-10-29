@@ -48,7 +48,6 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const bandHeight = useOverviewBandHeight();
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
   const zoom = useTimelineStore((s) => s.zoom);
   const rowHeights = useTimelineStore((s) => s.rowHeights);
@@ -100,7 +99,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         const lineUpdates: Partial<LyricLine> = {};
         if (updates.begin !== undefined) lineUpdates.begin = updates.begin;
         if (updates.end !== undefined) lineUpdates.end = updates.end;
-        updateLineWithHistory(lineId, lineUpdates, { propagateToSiblings: false });
+        useProjectStore.getState().updateLineWithHistory(lineId, lineUpdates, { propagateToSiblings: false });
         return;
       }
 
@@ -112,9 +111,9 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
       );
       if (!updatedWords) return;
-      updateLineWithHistory(lineId, { words: updatedWords }, { propagateToSiblings: false });
+      useProjectStore.getState().updateLineWithHistory(lineId, { words: updatedWords }, { propagateToSiblings: false });
     },
-    [updateLineWithHistory],
+    [],
   );
 
   const handleUpdateBgWord = useCallback(
@@ -135,9 +134,11 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
       );
       if (!updatedWords) return;
-      updateLineWithHistory(lineId, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
+      useProjectStore
+        .getState()
+        .updateLineWithHistory(lineId, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
     },
-    [updateLineWithHistory],
+    [],
   );
 
   const [rowHandlers] = useState(() => new Map<string, RowUpdateHandlers>());

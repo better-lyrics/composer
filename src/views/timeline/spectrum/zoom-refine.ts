@@ -7,6 +7,7 @@ import type { RefineDraw } from "@/views/timeline/spectrum/tile-cache";
 interface DrawnFrame extends StretchSource {
   heightCss: number;
   pixelRatio: number;
+  lookKey: string;
 }
 
 interface ZoomRefine {
@@ -42,6 +43,10 @@ function copyOf(target: OffscreenCanvas | null, canvas: HTMLCanvasElement): Offs
   return copy;
 }
 
+function sameBand(a: DrawnFrame, b: DrawnFrame): boolean {
+  return a.heightCss === b.heightCss && a.pixelRatio === b.pixelRatio && a.lookKey === b.lookKey;
+}
+
 function endRefine(refine: ZoomRefine): void {
   refine.baseFrame = null;
   refine.fades.clear();
@@ -51,7 +56,7 @@ function endRefine(refine: ZoomRefine): void {
 function beginRefineIfZoomed(refine: ZoomRefine, canvas: HTMLCanvasElement, next: DrawnFrame, now: number): void {
   const last = refine.lastFrame;
   if (!last || last.pixelsPerSecond === next.pixelsPerSecond) return;
-  if (last.heightCss !== next.heightCss || last.pixelRatio !== next.pixelRatio || canvas.width === 0) {
+  if (!sameBand(last, next) || canvas.width === 0) {
     endRefine(refine);
     return;
   }
@@ -65,7 +70,7 @@ function beginRefineIfZoomed(refine: ZoomRefine, canvas: HTMLCanvasElement, next
 function refineDraw(refine: ZoomRefine, frame: DrawnFrame, now: number): RefineDraw | undefined {
   const { base, baseFrame } = refine;
   if (!base || !baseFrame) return undefined;
-  if (baseFrame.heightCss !== frame.heightCss || baseFrame.pixelRatio !== frame.pixelRatio) {
+  if (!sameBand(baseFrame, frame)) {
     endRefine(refine);
     return undefined;
   }
