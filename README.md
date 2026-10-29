@@ -70,7 +70,7 @@ Your work saves automatically in the browser as you go. Audio files you load sta
 
 Other TTML editors treat ease of use as optional. In [AMLL TTML Tool](https://tool.amll.dev/) you tap F, G and H through the whole song and fix words one at a time on a spectrogram. A singer is either the lead or the duet. Its forks add features on top and keep the same design underneath.
 
-Composer keeps every singer the song has, names included, and your TTML comes back out the way it went in. It shows in what people make. One in ten Composer syncs on Unison has three or more singers. In AMLL's own reviewed database, fewer than one in a hundred do.
+Composer keeps every singer the song has, names included, through import and export. It shows in what people make. One in ten Composer syncs on Unison has three or more singers. In AMLL's own reviewed database, fewer than one in a hundred do.
 
 | | Composer | AMLL TTML Tool |
 | --- | --- | --- |
@@ -89,7 +89,7 @@ Composer keeps every singer the song has, names included, and your TTML comes ba
 
 ### Good syncs by default
 
-We care about the details most editors skip. Sync snaps to vocal onsets and beats. Auto-align times each word from the separated vocals. Repeat a chorus and both copies share one timing, so the second can never drift from the first.
+We care about the details most editors skip. Sync snaps to vocal onsets and beats. Auto-align times each word from the separated vocals. Link a repeated chorus and every copy shares one timing, so the second can never drift from the first.
 
 That's why [Unison](https://unison.betterlyrics.org) publishes a sync the moment you submit it. Other lyric databases make every submission wait for a reviewer. We don't. When the Better Lyrics Council finds one it likes, it gets the BLCA seal, our version of an editor's pick. Two thirds of Unison was made in Composer, and Composer syncs are the ones the Council keeps sealing. Start with [Earrings](https://unison.betterlyrics.org/song/BI9HQCzpDgQ), [Touch The Sky](https://unison.betterlyrics.org/song/B95OUKk7alM) or [On My Way](https://unison.betterlyrics.org/song/ZM8rAsTT7yE).
 
