@@ -30,6 +30,7 @@ function chorusLines(prefix: string, begin: number, secondWordShift = 0): LyricL
   return [
     twoWordLine(`${prefix}-a`, ["go ", "now"], begin, secondWordShift),
     twoWordLine(`${prefix}-b`, ["stay ", "here"], begin + 3),
+    twoWordLine(`${prefix}-c`, ["come ", "home"], begin + 6),
   ];
 }
 
@@ -37,6 +38,7 @@ function bridgeLines(prefix: string, begin: number, secondWordShift = 0): LyricL
   return [
     twoWordLine(`${prefix}-a`, ["hold ", "on"], begin, secondWordShift),
     twoWordLine(`${prefix}-b`, ["let ", "go"], begin + 3),
+    twoWordLine(`${prefix}-c`, ["fall ", "down"], begin + 6),
   ];
 }
 
@@ -91,8 +93,10 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
       lines: [
         lineSynced("one-a", "go now", 10),
         lineSynced("one-b", "stay here", 13),
+        lineSynced("one-c", "come home", 16),
         lineSynced("two-a", "go now", 40),
         lineSynced("two-b", "stay here"),
+        lineSynced("two-c", "come home"),
       ],
     });
     const screen = await renderBanner();
@@ -101,8 +105,9 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
     await expect.poll(() => store().groups.length).toBe(1);
     expect(store().groups[0].ownTimingInstances).toBeUndefined();
     expect(lineById("two-b")?.begin).toBe(43);
+    expect(lineById("two-c")?.begin).toBe(46);
     expect(skippedSharedInstances(store().lines, store().groups).map((skipped) => skipped.lineIds)).toEqual([
-      ["two-a", "two-b"],
+      ["two-a", "two-b", "two-c"],
     ]);
     toast("Grouping settled");
     await expect.element(screen.getByText("Grouping settled")).toBeVisible();
@@ -164,8 +169,10 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
         lines: [
           lineSynced("one-a", "go now", 10),
           lineSynced("one-b", "stay here", 13),
+          lineSynced("one-c", "come home", 16),
           lineSynced("two-a", "go now"),
           lineSynced("two-b", "stay here", 1),
+          lineSynced("two-c", "come home"),
         ],
       });
       const screen = await renderBanner();
@@ -185,8 +192,10 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
         lines: [
           twoWordLine("one-a", ["go ", "now"], 10),
           createLine({ id: "one-b", text: "stay here" }),
+          createLine({ id: "one-c", text: "come home" }),
           twoWordLine("two-a", ["go ", "now"], 40, 0.5),
           createLine({ id: "two-b", text: "stay here" }),
+          createLine({ id: "two-c", text: "come home" }),
         ],
       });
       const screen = await renderBanner();
@@ -209,8 +218,10 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
         lines: [
           lineSynced("one-a", "go now", 10),
           lineSynced("one-b", "stay here", 60),
+          lineSynced("one-c", "come home", 63),
           lineSynced("two-a", "go now", 280),
           lineSynced("two-b", "stay here"),
+          lineSynced("two-c", "come home"),
         ],
       });
       const screen = await renderBanner();
@@ -230,12 +241,16 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
         lines: [
           lineSynced("one-a", "go now", 10),
           lineSynced("one-b", "stay here", 13),
+          lineSynced("one-c", "come home", 16),
           lineSynced("two-a", "go now"),
           lineSynced("two-b", "stay here", 1),
+          lineSynced("two-c", "come home"),
           twoWordLine("three-a", ["hold ", "on"], 60),
           createLine({ id: "three-b", text: "let go" }),
+          createLine({ id: "three-c", text: "fall down" }),
           twoWordLine("four-a", ["hold ", "on"], 80, 0.5),
           createLine({ id: "four-b", text: "let go" }),
+          createLine({ id: "four-c", text: "fall down" }),
         ],
       });
       const screen = await renderBanner();

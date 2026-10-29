@@ -38,7 +38,7 @@ function useGroupingNotice(enabled = true): NoticeKind | null {
       key: suggestionKey(section),
       fingerprints: [section.fingerprint],
       title: `${section.starts.length} runs · ${pluralize(section.length, "line")} each`,
-      detail: `At lines ${section.starts.map((start) => `${start + 1} to ${start + section.length}`).join(", ")}`,
+      detail: sectionDetail(section),
       preview: <BlockPreview lines={section.previewLines} />,
       accept: { label: "Group", icon: IconLink, run: () => acceptOne(section) },
       dismissedLabel: `${section.starts.length} runs of ${pluralize(section.length, "line")}`,
@@ -49,6 +49,12 @@ function useGroupingNotice(enabled = true): NoticeKind | null {
     dismissedFingerprints,
     modalTitle: "Grouping suggestions",
   };
+}
+
+function sectionDetail(section: RepeatingSection): string {
+  const at = `At lines ${section.starts.map((start) => `${start + 1} to ${start + section.length}`).join(", ")}`;
+  if (section.evenedSplitLines === 0) return at;
+  return `${at} · Evens out syllable splits in ${pluralize(section.evenedSplitLines, "line")}`;
 }
 
 function dismissFingerprints(fingerprints: readonly string[]): void {

@@ -122,6 +122,57 @@ describe("groupRepeatingSections", () => {
     expect(lineById("b")?.words).toBeUndefined();
   });
 
+  describe("syllable splits", () => {
+    const split = (id: string, begin: number) =>
+      createLine({
+        id,
+        text: "fal|ling too",
+        words: [
+          { text: "fal", begin, end: begin + 0.3 },
+          { text: "ling ", begin: begin + 0.3, end: begin + 0.6 },
+          { text: "too", begin: begin + 0.6, end: begin + 1 },
+        ],
+      });
+    const whole = (id: string, begin: number, text = "falling too") =>
+      createLine({
+        id,
+        text,
+        words: [
+          { text: "falling ", begin, end: begin + 0.6 },
+          { text: text.slice("falling ".length), begin: begin + 0.6, end: begin + 1 },
+        ],
+      });
+
+    beforeEach(() => useSettingsStore.setState({ shareTimingInNewGroups: false }));
+
+    it("splits every copy like its most finely split copy and keeps each copy's own timing", () => {
+      seed([], [whole("a", 10), split("b", 40)]);
+      store().groupRepeatingSections([0, 1], 1);
+      const a = lineById("a");
+      expect(a?.text).toBe("fal|ling too");
+      expect(a?.words?.map((word) => word.text)).toEqual(["fal", "ling ", "too"]);
+      expect(a?.words?.[0]?.begin).toBe(10);
+      expect(a?.words?.[1]?.end).toBeCloseTo(10.6, 6);
+      expect(a?.words?.[2]).toMatchObject({ begin: 10.6, end: 11 });
+      expect(lineById("b")?.words?.map((word) => word.begin)).toEqual([40, 40.3, 40.6]);
+    });
+
+    it("undoes the split together with the grouping", () => {
+      seed([], [whole("a", 10), split("b", 40)]);
+      store().groupRepeatingSections([0, 1], 1);
+      store().undo();
+      expect(lineById("a")?.text).toBe("falling too");
+      expect(lineById("a")?.words?.map((word) => word.text)).toEqual(["falling ", "too"]);
+    });
+
+    it("never changes text beyond the split character", () => {
+      seed([], [whole("a", 10, "falling too,"), split("b", 40)]);
+      store().groupRepeatingSections([0, 1], 1);
+      expect(lineById("a")?.text).toBe("falling too,");
+      expect(lineById("b")?.text).toBe("fal|ling too");
+    });
+  });
+
   describe("invariants", () => {
     it("keeps the text of a partly synced line outside the group", () => {
       const current = createLine({ id: "v", text: "walking home", words: [{ text: "walking ", begin: 50, end: 51 }] });
