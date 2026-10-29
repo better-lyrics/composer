@@ -60,6 +60,8 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
   const labels = Array.from({ length: Math.floor(duration / labelled) + 1 }, (_, index) => index * labelled);
 
   // A passive effect: the scroll container mounts after this sibling, so its ref is set only once layout effects ran.
+  // Following the store, which the panel's scroll handler writes after reading the position, keeps this write from
+  // forcing a style recalc in that read.
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -67,8 +69,9 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, laneR
       if (trackRef.current) trackRef.current.style.translate = `${-container.scrollLeft}px 0`;
     };
     follow();
-    container.addEventListener("scroll", follow, { passive: true });
-    return () => container.removeEventListener("scroll", follow);
+    return useTimelineStore.subscribe((state, previous) => {
+      if (state.scrollLeft !== previous.scrollLeft) follow();
+    });
   }, [scrollContainerRef]);
 
   const seekToPointer = (event: React.PointerEvent<HTMLDivElement>) => {
