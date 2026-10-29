@@ -56,12 +56,13 @@ function currentLineIndex(lights: TimelineLights, lines: readonly LyricLine[], t
 function paintTimelineLights(
   lights: TimelineLights,
   root: ParentNode,
+  blocks: readonly HTMLElement[],
   lines: readonly LyricLine[],
   time: number,
 ): void {
   const lit = lights.nextLit;
   lit.clear();
-  for (const word of root.querySelectorAll<HTMLElement>("[data-word-block][data-begin]")) {
+  for (const word of blocks) {
     const begin = Number(word.dataset.begin);
     const end = Number(word.dataset.end);
     if (time >= begin && time < Math.max(end, begin + MIN_LIT_SECONDS)) lit.add(word);

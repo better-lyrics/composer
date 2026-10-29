@@ -21,9 +21,9 @@ function unpin(label: HTMLElement): void {
 }
 
 // A word cut by the left edge of the lanes keeps its label in the visible part, as a lane header would.
-function pinCutWordLabels(root: ParentNode, scrollLeft: number, pinned: Set<HTMLElement>): void {
+function pinCutWordLabels(blocks: readonly HTMLElement[], scrollLeft: number, pinned: Set<HTMLElement>): void {
   stillPinned.clear();
-  for (const block of root.querySelectorAll<HTMLElement>("[data-word-block][data-begin]")) {
+  for (const block of blocks) {
     const label = block.querySelector<HTMLElement>(":scope > span");
     if (!label) continue;
     const left = Number.parseFloat(block.style.left);
