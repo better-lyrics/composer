@@ -116,7 +116,11 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   const pointer = container && mousePos && modalCount === 0 ? pointerInTimeline(container, mousePos, zoom) : null;
   const hovered = pointer ? getLineAndTrackAtY(pointer.y, lines, layout) : null;
   const targetLineIndex = hovered ? hovered.lineIndex : isInstancePaste ? Math.max(0, lines.length - 1) : -1;
-  const pasted = hovered && !isInstancePaste ? clipboardInLane(clipboard, hovered.track) : clipboard;
+  const hoveredTrack = hovered?.track;
+  const pasted = useMemo(
+    () => (hoveredTrack && !isInstancePaste ? clipboardInLane(clipboard, hoveredTrack) : clipboard),
+    [clipboard, hoveredTrack, isInstancePaste],
+  );
   const timeDelta = pointer ? pointer.time - clipboard.entries[0].word.begin : 0;
   const hasOverlap =
     !isInstancePaste && targetLineIndex >= 0 && pasteOverlaps(pasted, targetLineIndex, timeDelta, lines, rangeOf);
