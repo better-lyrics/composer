@@ -177,6 +177,8 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["Shift", "Enter"], description: "Open the selected group", shortcutId: "timeline.openGroup" },
       { keys: ["Escape"], description: "Close the open group", shortcutId: "timeline.closeGroup" },
       { keys: ["Alt", "Enter"], description: "Play the selection", shortcutId: "timeline.playSelection" },
+      { keys: ["Shift", "D"], description: "Play from the cue", shortcutId: "timeline.playFromCue" },
+      { keys: ["D"], description: "Toggle return to cue", shortcutId: "timeline.toggleReturnToCue" },
       { keys: ["Shift", "L"], description: "Loop the playback range", shortcutId: "global.toggleLoop" },
       { keys: ["ArrowLeft"], description: "Nudge selected words / instance earlier" },
       { keys: ["ArrowRight"], description: "Nudge selected words / instance later" },
