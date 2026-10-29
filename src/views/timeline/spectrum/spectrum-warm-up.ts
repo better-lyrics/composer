@@ -41,6 +41,13 @@ function beginWarmUp(warmUp: WarmUp, visible: readonly number[], generation: num
   scheduleFromCentre(warmUp, visible, now + (warmUp.reducedMotion ? 0 : WARM_SHOW_DELAY_MS));
 }
 
+function isWarming(warmUp: WarmUp, generation: number, now: number): boolean {
+  if (warmUp.generation !== generation) return true;
+  const duration = warmUp.reducedMotion ? WARM_REDUCED_MS : WARM_MS;
+  for (const start of warmUp.starts.values()) if (now - start < duration) return true;
+  return false;
+}
+
 // A tile first drawn as a placeholder powers on once its analysis lands.
 function noteDrawnTiles(warmUp: WarmUp, complete: readonly number[], incomplete: readonly number[], now: number): void {
   for (const index of incomplete) warmUp.pendingSeen.add(index);
@@ -83,4 +90,4 @@ function blitWarming(
 
 // -- Exports -------------------------------------------------------------------
 
-export { beginWarmUp, blitWarming, createWarmUp, noteDrawnTiles };
+export { beginWarmUp, blitWarming, createWarmUp, isWarming, noteDrawnTiles };
