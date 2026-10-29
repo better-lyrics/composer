@@ -122,6 +122,85 @@ describe("groupRepeatingSections", () => {
     expect(lineById("b")?.words).toBeUndefined();
   });
 
+  describe("syllable splits", () => {
+    const split = (id: string, begin: number) =>
+      createLine({
+        id,
+        text: "fal|ling too",
+        words: [
+          { text: "fal", begin, end: begin + 0.3 },
+          { text: "ling ", begin: begin + 0.3, end: begin + 0.6 },
+          { text: "too", begin: begin + 0.6, end: begin + 1 },
+        ],
+      });
+    const whole = (id: string, begin: number, text = "falling too") =>
+      createLine({
+        id,
+        text,
+        words: [
+          { text: "falling ", begin, end: begin + 0.6 },
+          { text: text.slice("falling ".length), begin: begin + 0.6, end: begin + 1 },
+        ],
+      });
+
+    beforeEach(() => useSettingsStore.setState({ shareTimingInNewGroups: false }));
+
+    it("splits every copy like its most finely split copy and keeps each copy's own timing", () => {
+      seed([], [whole("a", 10), split("b", 40)]);
+      store().groupRepeatingSections([0, 1], 1);
+      const a = lineById("a");
+      expect(a?.text).toBe("fal|ling too");
+      expect(a?.words?.map((word) => word.text)).toEqual(["fal", "ling ", "too"]);
+      expect(a?.words?.[0]?.begin).toBe(10);
+      expect(a?.words?.[1]?.end).toBe(10.6);
+      expect(a?.words?.[2]).toMatchObject({ begin: 10.6, end: 11 });
+      expect(lineById("b")?.words?.map((word) => word.begin)).toEqual([40, 40.3, 40.6]);
+    });
+
+    it("undoes the split together with the grouping", () => {
+      seed([], [whole("a", 10), split("b", 40)]);
+      store().groupRepeatingSections([0, 1], 1);
+      store().undo();
+      expect(lineById("a")?.text).toBe("falling too");
+      expect(lineById("a")?.words?.map((word) => word.text)).toEqual(["falling ", "too"]);
+    });
+
+    it("regression: keeps the trailing space of a line's last word when re-splitting it", () => {
+      const ending = (id: string, text: string, words: string[]) =>
+        createLine({ id, text, words: words.map((wordText, i) => ({ text: wordText, begin: 10 + i, end: 11 + i })) });
+      seed([], [ending("a", "the outside ", ["the ", "outside "]), ending("b", "the out|side ", ["the ", "out", "side "])]);
+      store().groupRepeatingSections([0, 1], 1);
+      expect(lineById("a")?.words?.map((word) => word.text)).toEqual(["the ", "out", "side "]);
+    });
+
+    it("regression: refuses to group copies that differ beyond syllable splits", () => {
+      seed([], [whole("a", 10, "falling too,"), split("b", 40)]);
+      const before = store().lines;
+      store().groupRepeatingSections([0, 1], 1);
+      expect(store().groups).toEqual([]);
+      expect(store().lines).toBe(before);
+    });
+
+    it("regression: keeps the untimed words of a partly synced copy untimed", () => {
+      const partial = createLine({ id: "a", text: "falling too", words: [{ text: "falling ", begin: 10, end: 10.3 }] });
+      seed([], [partial, createLine({ id: "b", text: "fal|ling t|oo" })]);
+      store().groupRepeatingSections([0, 1], 1);
+      expect(lineById("a")?.text).toBe("fal|ling t|oo");
+      expect(lineById("a")?.words?.map((word) => word.text)).toEqual(["fal", "ling "]);
+      expect(lineById("a")?.words?.[0]?.begin).toBe(10);
+      expect(lineById("a")?.words?.[1]?.end).toBe(10.3);
+    });
+
+    it("refuses to group when a partly synced copy's timing ends inside a re-split syllable", () => {
+      const partial = createLine({ id: "a", text: "fal|ling too", words: [{ text: "fal", begin: 10, end: 10.3 }] });
+      seed([], [partial, createLine({ id: "b", text: "fa|lli|ng too" })]);
+      const before = store().lines;
+      store().groupRepeatingSections([0, 1], 1);
+      expect(store().groups).toEqual([]);
+      expect(store().lines).toBe(before);
+    });
+  });
+
   describe("invariants", () => {
     it("keeps the text of a partly synced line outside the group", () => {
       const current = createLine({ id: "v", text: "walking home", words: [{ text: "walking ", begin: 50, end: 51 }] });

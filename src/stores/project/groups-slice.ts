@@ -3,6 +3,7 @@ import { unlinkLines } from "@/domain/group/linking";
 import { withNewInstance, withOwnTiming } from "@/domain/group/own-timing";
 import { type SharingOutcome, placeSharedInstance, realignSharedInstance } from "@/domain/group/shared-placement";
 import { wholeSongRange } from "@/domain/group/shared-timing";
+import { withEvenSyllableSplits } from "@/domain/group/syllable-splits";
 import { offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance, isAttachedToInstance } from "@/domain/instance/predicates";
@@ -13,6 +14,7 @@ import { commitHistory, commitSharedTimingHistory } from "@/stores/project/histo
 import type { GroupActions, GroupsState, ProjectStore } from "@/stores/project/types";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
+import { getSplitCharacter } from "@/utils/split-character";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import { songEndOrUnbounded } from "@/utils/timing/song-end";
 import type { StateCreator } from "zustand";
@@ -69,7 +71,9 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
     const sortedStarts = starts.toSorted((a, b) => a - b);
     sortedStarts.forEach((s, i) => startToInstanceIdx.set(s, i));
 
-    const updatedLines = state.lines.map((line, idx) => {
+    const evenedLines = withEvenSyllableSplits(state.lines, sortedStarts, length, getSplitCharacter());
+    if (!evenedLines) return NOTHING_SHARED;
+    const updatedLines = evenedLines.map((line, idx) => {
       for (const start of sortedStarts) {
         if (idx >= start && idx < start + length) {
           return {

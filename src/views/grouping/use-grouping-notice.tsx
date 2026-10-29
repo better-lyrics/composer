@@ -1,5 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { type NoticeKind, hiddenByDismissal } from "@/ui/notices/notice-model";
 import {
   replacedOwnTimingNote,
@@ -19,7 +20,12 @@ function useGroupingNotice(enabled = true): NoticeKind | null {
   const lines = useProjectStore((s) => s.lines);
   const dismissed = useProjectStore((s) => s.dismissedSuggestions);
 
-  const suggestions = useMemo(() => (enabled ? findRepeatingStandaloneSections(lines) : []), [enabled, lines]);
+  const splitChar = useSettingsStore((s) => s.splitCharacter);
+
+  const suggestions = useMemo(
+    () => (enabled ? findRepeatingStandaloneSections(lines, splitChar) : []),
+    [enabled, lines, splitChar],
+  );
   const { visible, dismissedFingerprints } = useMemo(
     () => hiddenByDismissal(suggestions, dismissed),
     [suggestions, dismissed],
@@ -38,7 +44,7 @@ function useGroupingNotice(enabled = true): NoticeKind | null {
       key: suggestionKey(section),
       fingerprints: [section.fingerprint],
       title: `${section.starts.length} runs · ${pluralize(section.length, "line")} each`,
-      detail: `At lines ${section.starts.map((start) => `${start + 1} to ${start + section.length}`).join(", ")}`,
+      detail: sectionDetail(section),
       preview: <BlockPreview lines={section.previewLines} />,
       accept: { label: "Group", icon: IconLink, run: () => acceptOne(section) },
       dismissedLabel: `${section.starts.length} runs of ${pluralize(section.length, "line")}`,
@@ -49,6 +55,12 @@ function useGroupingNotice(enabled = true): NoticeKind | null {
     dismissedFingerprints,
     modalTitle: "Grouping suggestions",
   };
+}
+
+function sectionDetail(section: RepeatingSection): string {
+  const at = `At lines ${section.starts.map((start) => `${start + 1} to ${start + section.length}`).join(", ")}`;
+  if (section.evenedSplitLines === 0) return at;
+  return `${at} · Evens out syllable splits in ${pluralize(section.evenedSplitLines, "line")}`;
 }
 
 function dismissFingerprints(fingerprints: readonly string[]): void {
