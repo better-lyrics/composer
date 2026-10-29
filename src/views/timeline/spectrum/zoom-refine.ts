@@ -1,5 +1,5 @@
 import { TILE_WIDTH } from "@/domain/spectrum/tile-key";
-import { type StretchSource, fadeInAlpha, stretchedBaseRect } from "@/domain/spectrum/zoom-stretch";
+import { type StretchSource, stretchedBaseRect } from "@/domain/spectrum/zoom-stretch";
 import { spectrumRefineMotion } from "@/utils/animationVariants";
 import { prefersReducedMotion } from "@/utils/prefers-reduced-motion";
 import type { RefineDraw } from "@/views/timeline/spectrum/tile-cache";
@@ -26,6 +26,11 @@ interface ZoomRefine {
 const REFINE_BUILD_MS = 4;
 
 // -- Functions -----------------------------------------------------------------
+
+function fadeInAlpha(elapsedMs: number, durationMs: number): number {
+  if (elapsedMs >= durationMs) return 1;
+  return spectrumRefineMotion.ease(Math.max(0, elapsedMs) / durationMs);
+}
 
 function createZoomRefine(): ZoomRefine {
   return { base: null, baseFrame: null, lastFrame: null, beganAt: -1, fades: new Map(), reducedMotion: false };

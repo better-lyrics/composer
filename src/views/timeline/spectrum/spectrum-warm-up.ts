@@ -1,5 +1,5 @@
 import { TILE_WIDTH } from "@/domain/spectrum/tile-key";
-import { easeOutCubic } from "@/domain/spectrum/zoom-stretch";
+import { easeOutCubic } from "@/utils/animationVariants";
 import { prefersReducedMotion } from "@/utils/prefers-reduced-motion";
 
 // -- Interfaces ----------------------------------------------------------------

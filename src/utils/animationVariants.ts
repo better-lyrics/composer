@@ -147,10 +147,13 @@ const pitchLineKeyframes: Record<"wipe" | "reducedWipe" | "fadeOut", Keyframe[]>
 
 // -- Spectrum Zoom ------------------------------------------------------------
 
-// Sharp tiles fade in over the stretched band on a canvas, so these are plain numbers.
+const easeOutCubic = (progress: number): number => 1 - (1 - progress) ** 3;
+
+// Sharp tiles fade in over the stretched band on a canvas, so these are plain numbers and a curve.
 const spectrumRefineMotion = {
   fadeMs: 120,
   reducedFadeMs: 80,
+  ease: easeOutCubic,
 } as const;
 
 // -- Edit Loupe ---------------------------------------------------------------
@@ -201,4 +204,5 @@ export {
   pitchLineKeyframes,
   pitchLineMotion,
   spectrumRefineMotion,
+  easeOutCubic,
 };
