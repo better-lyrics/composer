@@ -13,8 +13,9 @@ import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
 import { clearLoopRegion } from "@/views/timeline/selection-playback";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import { WaveformFocusShade } from "@/views/timeline/waveform-focus-shade";
+import { WAVEFORM_WINDOW_WIDTH, useWaveformWindow } from "@/views/timeline/waveform-window";
 import WavesurferPlayer from "@wavesurfer/react";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type WaveSurfer from "wavesurfer.js";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -25,6 +26,7 @@ interface WaveformBarsProps {
   shown: boolean;
   colors: { wave: string; progress: string };
   initialZoom: number;
+  hostRef: React.RefObject<HTMLDivElement | null>;
   onDestroy: () => void;
   onReady: (wavesurfer: WaveSurfer) => void;
 }
@@ -43,6 +45,7 @@ const WaveformBars: React.FC<WaveformBarsProps> = ({
   shown,
   colors,
   initialZoom,
+  hostRef,
   onDestroy,
   onReady,
 }) => (
@@ -51,7 +54,7 @@ const WaveformBars: React.FC<WaveformBarsProps> = ({
     className="pt-[13px] overflow-clip transition-opacity duration-150 ease-in"
     style={{ width, opacity: shown ? 1 : 0 }}
   >
-    <div className="w-max">
+    <div ref={hostRef} className="[&_div::part(scroll)]:overflow-x-hidden!" style={{ width: WAVEFORM_WINDOW_WIDTH }}>
       <WavesurferPlayer
         height={WAVEFORM_BARS_HEIGHT}
         waveColor={colors.wave}
@@ -64,6 +67,8 @@ const WaveformBars: React.FC<WaveformBarsProps> = ({
         interact={false}
         hideScrollbar={true}
         fillParent={false}
+        autoScroll={false}
+        autoCenter={false}
         minPxPerSec={initialZoom}
         onDestroy={onDestroy}
         onReady={onReady}
@@ -87,6 +92,8 @@ const TimelineWaveform: React.FC = () => {
   const [ws, setWs] = useState<WaveSurfer | null>(null);
   const [settledFor, setSettledFor] = useState<WaveSurfer | null>(null);
   const [altHeld, setAltHeld] = useState(false);
+  const waveformHostRef = useRef<HTMLDivElement>(null);
+  useWaveformWindow(ws, waveformHostRef, !showSpectrum);
 
   // Never move this into an effect: opacity and the sweep gate must land in the same commit.
   const sweeping = ws === null || settledFor !== ws;
@@ -198,6 +205,7 @@ const TimelineWaveform: React.FC = () => {
           shown={ws !== null && !showSpectrum}
           colors={initialColors}
           initialZoom={initialZoom}
+          hostRef={waveformHostRef}
           onDestroy={onDestroy}
           onReady={onReady}
         />
