@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
 import { createGroup, createLine, createWord } from "@/test/factories";
-import { applyPasteToLines, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
+import { applyPasteToLines, clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 
 // -- Helpers ------------------------------------------------------------------
@@ -293,6 +293,65 @@ describe("pasting onto a line of a group that shares timing", () => {
         end: 13.5,
       });
       expect(pasteOverlaps(clipboardAt(13.5, 14), 0, 0, chorusLines, rangeOf(false))).toBe(false);
+    });
+  });
+});
+
+describe("pasting into the hovered lane", () => {
+  const mainWord = (text: string, begin: number, lineOffset = 0) => ({
+    word: { text, begin, end: begin + 0.5 },
+    lineOffset,
+    trackType: "word" as const,
+  });
+  const bgWord = (text: string, begin: number, lineOffset = 0) => ({
+    ...mainWord(text, begin, lineOffset),
+    trackType: "bg" as const,
+  });
+  const target = () => [line("l1", [{ text: "a", begin: 0, end: 0.5 }], "a")];
+  const pasteInto = (clipboard: ClipboardData, lane: "word" | "bg") =>
+    applyPasteToLines({
+      lines: target(),
+      clipboard: clipboardInLane(clipboard, lane),
+      targetLineIndex: 0,
+      timeDelta: 0,
+      rangeOf: wholeSong(10),
+    });
+
+  it("regression: words copied from a main lane paste into the hovered background lane", () => {
+    const updates = pasteInto({ entries: [mainWord("you", 2)] }, "bg");
+    expect(updates?.[0].updates.backgroundWords).toEqual([{ text: "you", begin: 2, end: 2.5 }]);
+    expect(updates?.[0].updates.words).toBeUndefined();
+  });
+
+  it("words copied from a background lane paste into the hovered main lane", () => {
+    const updates = pasteInto({ entries: [bgWord("ooh", 2)] }, "word");
+    expect(updates?.[0].updates.words?.map((word) => word.text.trim())).toEqual(["a", "ooh"]);
+    expect(updates?.[0].updates.backgroundWords).toBeUndefined();
+  });
+
+  it("checks overlaps against the hovered lane", () => {
+    const clipboard = clipboardInLane({ entries: [mainWord("x", 0.2)] }, "bg");
+    expect(pasteOverlaps(clipboard, 0, 0, target(), wholeSong(10))).toBe(false);
+  });
+
+  describe("invariants", () => {
+    it("keeps each word's own lane when the copy spans both lanes", () => {
+      const clipboard: ClipboardData = { entries: [mainWord("x", 2), bgWord("y", 3)] };
+      expect(clipboardInLane(clipboard, "bg")).toBe(clipboard);
+    });
+
+    it("keeps line offsets and timing when moving words to another lane", () => {
+      const clipboard: ClipboardData = { entries: [mainWord("x", 2), mainWord("y", 3, 1)] };
+      const moved = clipboardInLane(clipboard, "bg");
+      expect(moved.entries.map(({ word, lineOffset, trackType }) => [word, lineOffset, trackType])).toEqual([
+        [clipboard.entries[0].word, 0, "bg"],
+        [clipboard.entries[1].word, 1, "bg"],
+      ]);
+    });
+
+    it("returns the same clipboard when the words already come from the hovered lane", () => {
+      const clipboard: ClipboardData = { entries: [bgWord("x", 2)] };
+      expect(clipboardInLane(clipboard, "bg")).toBe(clipboard);
     });
   });
 });

@@ -7,6 +7,7 @@ import {
   effectiveWords,
 } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import type { WordTrack } from "@/domain/line/tracks";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
@@ -28,6 +29,12 @@ interface LineUpdate {
 }
 
 // -- Functions ----------------------------------------------------------------
+
+function clipboardInLane(clipboard: ClipboardData, lane: WordTrack): ClipboardData {
+  const lanes = new Set(clipboard.entries.map((entry) => entry.trackType));
+  if (lanes.size !== 1 || lanes.has(lane)) return clipboard;
+  return { ...clipboard, entries: clipboard.entries.map((entry) => ({ ...entry, trackType: lane })) };
+}
 
 function pastedWordBounds(word: WordTiming, timeDelta: number, range: TimeRange): { begin: number; end: number } {
   return { begin: Math.max(range.min, word.begin + timeDelta), end: Math.min(range.max, word.end + timeDelta) };
@@ -94,4 +101,4 @@ function applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, range
 
 // -- Exports ------------------------------------------------------------------
 
-export { applyPasteToLines, pastedWordBounds, pasteOverlaps };
+export { applyPasteToLines, clipboardInLane, pastedWordBounds, pasteOverlaps };
