@@ -55,6 +55,7 @@ interface SettingsState extends SnapSettings, SpectrumSettings {
   defaultZoom: number;
   defaultRowHeight: number;
   followPlayhead: boolean;
+  returnToCue: boolean;
   rollingEdit: boolean;
   previewSidebar: boolean;
   previewSidebarWidth: number;
@@ -144,6 +145,7 @@ const DEFAULTS: SettingsState = {
   defaultZoom: 100,
   defaultRowHeight: 44,
   followPlayhead: true,
+  returnToCue: false,
   rollingEdit: false,
   previewSidebar: false,
   previewSidebarWidth: PREVIEW_SIDEBAR_WIDTH.default,

@@ -140,6 +140,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   snapDistancePlayhead: SNAP_DISTANCE,
   snapPlayheadToPoints: TOGGLE,
   followPlayhead: TOGGLE,
+  returnToCue: TOGGLE,
   rollingEdit: TOGGLE,
   syllablesFollowRolling: TOGGLE,
   previewSidebar: TOGGLE,

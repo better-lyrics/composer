@@ -52,6 +52,7 @@ interface TimelineState {
   selectionPlayback: SelectionPlaybackMode | null;
   loopRegion: LoopRegion | null;
   loopRegionDrag: LoopRegionDrag | null;
+  cue: number | null;
 
   clipboard: ClipboardData | null;
   pasteMode: PasteMode;
@@ -109,6 +110,7 @@ interface TimelineActions {
   setEditingWord: (editing: EditingWord | null) => void;
   clearEditingWord: () => void;
   resetProjectScope: () => void;
+  setCue: (cue: number | null) => void;
   toggleMarkerMode: () => void;
   setHoveredSnapPointId: (id: string | null) => void;
   setInstanceCollapsed: (key: string, isCollapsed: boolean) => void;
@@ -150,6 +152,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     selectionPlayback: null,
     loopRegion: null,
     loopRegionDrag: null,
+    cue: null,
 
     clipboard: null,
     pasteMode: { status: "idle" },
@@ -224,6 +227,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
         selectionPlayback: null,
         loopRegion: null,
         loopRegionDrag: null,
+        cue: null,
         contextMenu: null,
         editingWord: null,
         pasteMode: { status: "idle" },
@@ -233,6 +237,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
         focusedGroup: null,
         textVariant: "original",
       }),
+    setCue: (cue) => set({ cue }),
     toggleMarkerMode: () => set((s) => ({ markerMode: !s.markerMode })),
     setHoveredSnapPointId: (hoveredSnapPointId) => set({ hoveredSnapPointId }),
     setInstanceCollapsed: (key, isCollapsed) =>

@@ -409,6 +409,18 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "Enter", alt: true },
   },
   {
+    id: "timeline.playFromCue",
+    scope: "timeline",
+    description: "Play from the cue",
+    defaultBinding: { key: "d", shift: true },
+  },
+  {
+    id: "timeline.toggleReturnToCue",
+    scope: "timeline",
+    description: "Toggle return to cue",
+    defaultBinding: { key: "d" },
+  },
+  {
     id: "timeline.jumpPrevInstance",
     scope: "timeline",
     description: "Jump to previous instance of group",
