@@ -20,7 +20,20 @@ interface SettingsSection {
   label: string;
 }
 
-type SettingsGroupId = "Usage" | "Audio" | "Saving" | "Snap distance" | "Spectrum" | "Vocal separation" | "Auto-align";
+type SettingsGroupId =
+  | "Usage"
+  | "Audio"
+  | "Saving"
+  | "Lyrics"
+  | "Snap"
+  | "Snap distance"
+  | "Beat grid"
+  | "Playback"
+  | "Groups"
+  | "Editing"
+  | "Spectrum"
+  | "Vocal separation"
+  | "Auto-align";
 
 interface SettingEntryCommon {
   section: SettingsSectionId;

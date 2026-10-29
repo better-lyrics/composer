@@ -105,32 +105,8 @@ const SETTINGS_CATALOG = {
     keywords: ["fp16", "fp32", "stems", "separation", "precision"],
     settingKey: "vocalModelVariant",
   },
-  alignmentModelId: {
-    section: "playback",
-    group: "Auto-align",
-    label: "Alignment model",
-    description: "The model that times each word. Recommended follows the newest tested model.",
-    keywords: ["hubertfa", "auto-align", "forced alignment", "checkpoint", "manifest"],
-    settingKey: "alignmentModelId",
-  },
-  keepAlignmentModelLoaded: {
-    section: "playback",
-    group: "Auto-align",
-    label: "Keep alignment model loaded",
-    description:
-      "Aligning one line starts at once, and splitting a word times its syllables from the audio. Uses about 400 MB of memory.",
-    keywords: ["hubertfa", "auto-align", "memory", "gpu", "unload"],
-    settingKey: "keepAlignmentModelLoaded",
-  },
   ...TIMELINE_CATALOG_ENTRIES,
   ...SPECTRUM_CATALOG_ENTRIES,
-  splitCharacter: {
-    section: "sync",
-    label: "Split character",
-    description: "Character used to mark syllable boundaries in the edit view.",
-    keywords: ["syllable", "pipe", "separator"],
-    settingKey: "splitCharacter",
-  },
   nudgeAmount: {
     section: "sync",
     label: "Nudge amount",
@@ -168,6 +144,23 @@ const SETTINGS_CATALOG = {
     label: "Default granularity",
     description: "Whether new projects start in word or line timing mode.",
     settingKey: "defaultGranularity",
+  },
+  alignmentModelId: {
+    section: "sync",
+    group: "Auto-align",
+    label: "Alignment model",
+    description: "The model that times each word. Recommended follows the newest tested model.",
+    keywords: ["hubertfa", "auto-align", "forced alignment", "checkpoint", "manifest"],
+    settingKey: "alignmentModelId",
+  },
+  keepAlignmentModelLoaded: {
+    section: "sync",
+    group: "Auto-align",
+    label: "Keep alignment model loaded",
+    description:
+      "Aligning one line starts at once, and splitting a word times its syllables from the audio. Uses about 400 MB of memory.",
+    keywords: ["hubertfa", "auto-align", "memory", "gpu", "unload"],
+    settingKey: "keepAlignmentModelLoaded",
   },
   confirmReplaceLyrics: {
     section: "confirmations",
