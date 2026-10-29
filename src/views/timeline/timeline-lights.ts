@@ -8,6 +8,7 @@ interface TimelineLights {
   speaking: Set<HTMLElement>;
   nextLit: Set<HTMLElement>;
   nextSpeaking: Set<HTMLElement>;
+  hitRows: Set<HTMLElement>;
   current: HTMLElement | null;
   startsOf: readonly LyricLine[] | null;
   starts: number[];
@@ -28,6 +29,7 @@ function createTimelineLights(): TimelineLights {
     speaking: new Set(),
     nextLit: new Set(),
     nextSpeaking: new Set(),
+    hitRows: new Set(),
     current: null,
     startsOf: null,
     starts: [],
@@ -73,8 +75,11 @@ function paintTimelineLights(
     if (row) speaking.add(row);
     if (lights.lit.has(word)) continue;
     word.setAttribute("data-lit", "");
-    if (row) restartHit(row);
+    if (row) lights.hitRows.add(row);
   }
+  // Once per row: toggling twice in one frame lands on the same name and the flash would not restart.
+  for (const row of lights.hitRows) restartHit(row);
+  lights.hitRows.clear();
   for (const word of lights.lit) if (!lit.has(word)) word.removeAttribute("data-lit");
   for (const row of speaking) if (!lights.speaking.has(row)) row.setAttribute("data-speaking", "");
   for (const row of lights.speaking) if (!speaking.has(row)) row.removeAttribute("data-speaking");
