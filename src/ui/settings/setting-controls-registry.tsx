@@ -30,7 +30,7 @@ import {
   SPECTRUM_TOP_OPTIONS,
 } from "@/ui/spectrum-options";
 import { formatWholeMegabytes } from "@/utils/format-file-size";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { MAX_ZOOM, MIN_ZOOM, ZOOM_STEP, useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -102,9 +102,9 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   keepAlignmentModelLoaded: TOGGLE,
   defaultZoom: {
     kind: "slider",
-    min: 20,
-    max: 500,
-    step: 20,
+    min: MIN_ZOOM,
+    max: MAX_ZOOM,
+    step: ZOOM_STEP,
     format: (v) => `${v} px/s`,
     action: {
       label: "Use current",

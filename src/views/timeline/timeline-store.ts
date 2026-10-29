@@ -133,7 +133,8 @@ interface TimelineActions {
 const GUTTER_WIDTH = 48;
 const WAVEFORM_HEIGHT = 80;
 const MIN_ZOOM = 20;
-const MAX_ZOOM = 500;
+const ZOOM_AT_100_PERCENT = 500;
+const MAX_ZOOM = 980;
 const ZOOM_STEP = 20;
 const MIN_ROW_HEIGHT = 32;
 const MAX_ROW_HEIGHT = 120;
@@ -143,7 +144,7 @@ const MAX_ROW_HEIGHT = 120;
 const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
   const settings = useSettingsStore.getState();
   return {
-    zoom: settings.defaultZoom,
+    zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, settings.defaultZoom)),
     textVariant: "original",
     selectedWords: [],
     selectionPlayback: null,
@@ -274,5 +275,14 @@ function shownLoopRegion(state: TimelineState): Bounds | null {
 
 // -- Exports -------------------------------------------------------------------
 
-export { shownLoopRegion, useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP };
+export {
+  shownLoopRegion,
+  useTimelineStore,
+  GUTTER_WIDTH,
+  WAVEFORM_HEIGHT,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  ZOOM_AT_100_PERCENT,
+  ZOOM_STEP,
+};
 export type { ContextMenuTarget, LoopRegionDrag, SelectionPlaybackMode, TrackHit };
