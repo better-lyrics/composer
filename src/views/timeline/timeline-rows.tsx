@@ -15,13 +15,31 @@ import { PitchRowsScope } from "@/views/timeline/pitch/pitch-rows";
 import { emptyBgRowHeight, lineRowHeight } from "@/views/timeline/row-geometry";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/utils";
-import { type RefObject, useCallback, useMemo } from "react";
+import { type RefObject, useCallback, useMemo, useState } from "react";
 import { Virtuoso } from "react-virtuoso";
 
 // -- Types ---------------------------------------------------------------------
 
 interface TimelineRowsProps {
   scrollContainerRef: RefObject<HTMLDivElement | null>;
+}
+
+type WordUpdateHandler = (
+  wordIndex: number,
+  updates: Partial<WordTiming>,
+  adjacentIndex?: number,
+  adjacentUpdates?: Partial<WordTiming>,
+) => void;
+
+interface RowUpdateHandlers {
+  word: WordUpdateHandler;
+  bg: WordUpdateHandler;
+}
+
+// -- Functions -----------------------------------------------------------------
+
+function rowKey(_: number, row: EffectiveRow): string {
+  return row.kind === "group-header" ? `header:${row.firstLineId}` : row.line.id;
 }
 
 // -- Component -----------------------------------------------------------------
@@ -75,7 +93,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       adjacentIndex?: number,
       adjacentUpdates?: Partial<WordTiming>,
     ) => {
-      const realLine = lines.find((l) => l.id === lineId);
+      const realLine = useProjectStore.getState().lines.find((l) => l.id === lineId);
       if (!realLine) return;
 
       if (isLineSynced(realLine)) {
@@ -96,7 +114,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       if (!updatedWords) return;
       updateLineWithHistory(lineId, { words: updatedWords }, { propagateToSiblings: false });
     },
-    [lines, updateLineWithHistory],
+    [updateLineWithHistory],
   );
 
   const handleUpdateBgWord = useCallback(
@@ -107,7 +125,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       adjacentIndex?: number,
       adjacentUpdates?: Partial<WordTiming>,
     ) => {
-      const line = lines.find((l) => l.id === lineId);
+      const line = useProjectStore.getState().lines.find((l) => l.id === lineId);
       if (!line?.backgroundWords) return;
 
       const updatedWords = applyWordPatch(
@@ -119,7 +137,55 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       if (!updatedWords) return;
       updateLineWithHistory(lineId, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
     },
-    [lines, updateLineWithHistory],
+    [updateLineWithHistory],
+  );
+
+  const [rowHandlers] = useState(() => new Map<string, RowUpdateHandlers>());
+  const handlersFor = useCallback(
+    (lineId: string): RowUpdateHandlers => {
+      let handlers = rowHandlers.get(lineId);
+      if (!handlers) {
+        handlers = {
+          word: (wordIndex, updates, adjacentIndex, adjacentUpdates) =>
+            handleUpdateWord(lineId, wordIndex, updates, adjacentIndex, adjacentUpdates),
+          bg: (wordIndex, updates, adjacentIndex, adjacentUpdates) =>
+            handleUpdateBgWord(lineId, wordIndex, updates, adjacentIndex, adjacentUpdates),
+        };
+        rowHandlers.set(lineId, handlers);
+      }
+      return handlers;
+    },
+    [rowHandlers, handleUpdateWord, handleUpdateBgWord],
+  );
+
+  const renderRow = useCallback(
+    (_: number, row: EffectiveRow) => {
+      if (row.kind === "group-header") {
+        const group = groupsById.get(row.groupId);
+        if (!group) return <div style={{ height: GROUP_HEADER_HEIGHT }} />;
+        return (
+          <GroupHeaderRow
+            group={group}
+            instanceIdx={row.instanceIdx}
+            ordinal={instanceOrdinal(lines, row.groupId, row.instanceIdx)}
+            totalInstances={instanceCount(lines, row.groupId)}
+            instanceStart={row.instanceStart}
+            instanceEnd={row.instanceEnd}
+          />
+        );
+      }
+      const handlers = handlersFor(row.line.id);
+      return (
+        <LineRow
+          line={row.line}
+          lineIndex={row.lineIndex}
+          duration={duration}
+          onUpdateWord={handlers.word}
+          onUpdateBgWord={handlers.bg}
+        />
+      );
+    },
+    [groupsById, lines, duration, handlersFor],
   );
 
   const totalWidth = duration * zoom;
@@ -152,37 +218,8 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       <Virtuoso
         key={`${openProjectId}:${offscreenLayoutKey}`}
         data={visibleRows}
-        computeItemKey={(_, row) => (row.kind === "group-header" ? `header:${row.firstLineId}` : row.line.id)}
-        itemContent={(_, row) => {
-          if (row.kind === "group-header") {
-            const group = groupsById.get(row.groupId);
-            if (!group) return <div style={{ height: GROUP_HEADER_HEIGHT }} />;
-            return (
-              <GroupHeaderRow
-                group={group}
-                instanceIdx={row.instanceIdx}
-                ordinal={instanceOrdinal(lines, row.groupId, row.instanceIdx)}
-                totalInstances={instanceCount(lines, row.groupId)}
-                instanceStart={row.instanceStart}
-                instanceEnd={row.instanceEnd}
-              />
-            );
-          }
-          const line = row.line;
-          return (
-            <LineRow
-              line={line}
-              lineIndex={row.lineIndex}
-              duration={duration}
-              onUpdateWord={(wordIndex, updates, adjacentIndex, adjacentUpdates) =>
-                handleUpdateWord(line.id, wordIndex, updates, adjacentIndex, adjacentUpdates)
-              }
-              onUpdateBgWord={(wordIndex, updates, adjacentIndex, adjacentUpdates) =>
-                handleUpdateBgWord(line.id, wordIndex, updates, adjacentIndex, adjacentUpdates)
-              }
-            />
-          );
-        }}
+        computeItemKey={rowKey}
+        itemContent={renderRow}
         style={{ height: "100%", width: "100%" }}
         customScrollParent={scrollContainerRef.current ?? undefined}
         overscan={200}
