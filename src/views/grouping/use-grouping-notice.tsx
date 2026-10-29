@@ -1,5 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { type NoticeKind, hiddenByDismissal } from "@/ui/notices/notice-model";
 import {
   replacedOwnTimingNote,
@@ -19,7 +20,12 @@ function useGroupingNotice(enabled = true): NoticeKind | null {
   const lines = useProjectStore((s) => s.lines);
   const dismissed = useProjectStore((s) => s.dismissedSuggestions);
 
-  const suggestions = useMemo(() => (enabled ? findRepeatingStandaloneSections(lines) : []), [enabled, lines]);
+  const splitChar = useSettingsStore((s) => s.splitCharacter);
+
+  const suggestions = useMemo(
+    () => (enabled ? findRepeatingStandaloneSections(lines, splitChar) : []),
+    [enabled, lines, splitChar],
+  );
   const { visible, dismissedFingerprints } = useMemo(
     () => hiddenByDismissal(suggestions, dismissed),
     [suggestions, dismissed],

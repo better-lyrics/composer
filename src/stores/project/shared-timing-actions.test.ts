@@ -165,11 +165,39 @@ describe("groupRepeatingSections", () => {
       expect(lineById("a")?.words?.map((word) => word.text)).toEqual(["falling ", "too"]);
     });
 
-    it("never changes text beyond the split character", () => {
-      seed([], [whole("a", 10, "falling too,"), split("b", 40)]);
+    it("regression: keeps the trailing space of a line's last word when re-splitting it", () => {
+      const ending = (id: string, text: string, words: string[]) =>
+        createLine({ id, text, words: words.map((wordText, i) => ({ text: wordText, begin: 10 + i, end: 11 + i })) });
+      seed([], [ending("a", "the outside ", ["the ", "outside "]), ending("b", "the out|side ", ["the ", "out", "side "])]);
       store().groupRepeatingSections([0, 1], 1);
-      expect(lineById("a")?.text).toBe("falling too,");
-      expect(lineById("b")?.text).toBe("fal|ling too");
+      expect(lineById("a")?.words?.map((word) => word.text)).toEqual(["the ", "out", "side "]);
+    });
+
+    it("regression: refuses to group copies that differ beyond syllable splits", () => {
+      seed([], [whole("a", 10, "falling too,"), split("b", 40)]);
+      const before = store().lines;
+      store().groupRepeatingSections([0, 1], 1);
+      expect(store().groups).toEqual([]);
+      expect(store().lines).toBe(before);
+    });
+
+    it("regression: keeps the untimed words of a partly synced copy untimed", () => {
+      const partial = createLine({ id: "a", text: "falling too", words: [{ text: "falling ", begin: 10, end: 10.3 }] });
+      seed([], [partial, createLine({ id: "b", text: "fal|ling t|oo" })]);
+      store().groupRepeatingSections([0, 1], 1);
+      expect(lineById("a")?.text).toBe("fal|ling t|oo");
+      expect(lineById("a")?.words?.map((word) => word.text)).toEqual(["fal", "ling "]);
+      expect(lineById("a")?.words?.[0]?.begin).toBe(10);
+      expect(lineById("a")?.words?.[1]?.end).toBeCloseTo(10.3, 6);
+    });
+
+    it("refuses to group when a partly synced copy's timing ends inside a re-split syllable", () => {
+      const partial = createLine({ id: "a", text: "fal|ling too", words: [{ text: "fal", begin: 10, end: 10.3 }] });
+      seed([], [partial, createLine({ id: "b", text: "fa|lli|ng too" })]);
+      const before = store().lines;
+      store().groupRepeatingSections([0, 1], 1);
+      expect(store().groups).toEqual([]);
+      expect(store().lines).toBe(before);
     });
   });
 

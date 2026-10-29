@@ -72,6 +72,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
     sortedStarts.forEach((s, i) => startToInstanceIdx.set(s, i));
 
     const evenedLines = withEvenSyllableSplits(state.lines, sortedStarts, length, getSplitCharacter());
+    if (!evenedLines) return NOTHING_SHARED;
     const updatedLines = evenedLines.map((line, idx) => {
       for (const start of sortedStarts) {
         if (idx >= start && idx < start + length) {

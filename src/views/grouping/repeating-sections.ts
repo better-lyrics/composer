@@ -1,7 +1,6 @@
 import { repeatsApartFromSplits, withEvenSyllableSplits } from "@/domain/group/syllable-splits";
 import type { LyricLine } from "@/domain/line/model";
 import { hasMainLyrics } from "@/domain/line/predicates";
-import { getSplitCharacter } from "@/utils/split-character";
 
 interface RepeatingSection {
   starts: number[];
@@ -14,10 +13,9 @@ interface RepeatingSection {
 
 const MIN_SECTION_LINES = 3;
 
-function findRepeatingStandaloneSections(lines: LyricLine[]): RepeatingSection[] {
+function findRepeatingStandaloneSections(lines: LyricLine[], splitChar: string): RepeatingSection[] {
   const results: RepeatingSection[] = [];
   const claimed = new Set<number>();
-  const splitChar = getSplitCharacter();
 
   for (let i = 0; i < lines.length; i++) {
     if (claimed.has(i)) continue;
@@ -31,7 +29,8 @@ function findRepeatingStandaloneSections(lines: LyricLine[]): RepeatingSection[]
       if (starts.length >= 2 && (!best || starts.length * k > best.starts.length * best.k)) best = { starts, k };
     }
 
-    if (best) {
+    const evened = best && withEvenSyllableSplits(lines, best.starts, best.k, splitChar);
+    if (best && evened) {
       const { starts, k } = best;
       for (const s of starts) {
         for (let p = s; p < s + k; p++) claimed.add(p);
@@ -42,7 +41,7 @@ function findRepeatingStandaloneSections(lines: LyricLine[]): RepeatingSection[]
         preview: lines[i].text,
         previewLines: lines.slice(i, i + k).map((l) => l.text),
         fingerprint: fingerprintBlock(lines, i, k),
-        evenedSplitLines: evenedSplitLineCount(lines, starts, k, splitChar),
+        evenedSplitLines: changedLineCount(lines, evened, starts, k),
       });
       i = i + k - 1;
     }
@@ -72,8 +71,7 @@ function blocksRepeat(lines: LyricLine[], a: number, b: number, k: number, split
   return true;
 }
 
-function evenedSplitLineCount(lines: LyricLine[], starts: number[], k: number, splitChar: string): number {
-  const evened = withEvenSyllableSplits(lines, starts, k, splitChar);
+function changedLineCount(lines: LyricLine[], evened: LyricLine[], starts: number[], k: number): number {
   return starts.reduce((count, start) => {
     for (let p = start; p < start + k; p++) if (evened[p] !== lines[p]) count++;
     return count;

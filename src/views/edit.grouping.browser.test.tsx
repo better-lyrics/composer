@@ -3,6 +3,7 @@ import { useProjectStore } from "@/stores/project";
 import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { EditPanel } from "@/views/edit";
+import { getSplitCharacter } from "@/utils/split-character";
 import { findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
 import { describe, expect, it } from "vitest";
 
@@ -84,7 +85,7 @@ describe("EditPanel · grouping suggestions", () => {
       if (!textarea) throw new Error("textarea not rendered");
       const topWithSuggestion = textarea.getBoundingClientRect().top;
 
-      store().dismissSuggestion(findRepeatingStandaloneSections(store().lines)[0].fingerprint);
+      store().dismissSuggestion(findRepeatingStandaloneSections(store().lines, getSplitCharacter())[0].fingerprint);
 
       await expect.element(screen.getByRole("button", { name: "Group them" })).not.toBeInTheDocument();
       expect(textarea.getBoundingClientRect().top).toBe(topWithSuggestion);
