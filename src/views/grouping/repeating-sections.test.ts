@@ -165,7 +165,7 @@ describe("findRepeatingStandaloneSections", () => {
       expect(sections[0].evenedSplitLines).toBe(2);
     });
 
-    it("matches repeats whose timed words are split in different places", () => {
+    it("rejects pseudo-repeats whose word splits differ", () => {
       const lines: LyricLine[] = [
         {
           id: "1",
@@ -182,7 +182,7 @@ describe("findRepeatingStandaloneSections", () => {
         { id: "5", text: "you", agentId: "v1" },
         { id: "6", text: "so", agentId: "v1" },
       ];
-      expect(detect(lines).map((section) => section.starts)).toEqual([[0, 3]]);
+      expect(detect(lines)).toEqual([]);
     });
 
     it("does not match repeats that differ in punctuation, spacing or case", () => {
@@ -202,6 +202,11 @@ describe("findRepeatingStandaloneSections", () => {
       const partial = line("1-0", "fal|ling too", { words: [{ text: "fal", begin: 10, end: 10.3 }] });
       const lines = [partial, line("1-1", "x"), line("1-2", "y"), ...block("2-", ["fa|lli|ng too", "x", "y"])];
       expect(detect(lines)).toEqual([]);
+    });
+
+    it("regression: still suggests the lines of a block that can share one split", () => {
+      const lines = [...block("1-", ["a", "b", "c", "fa|lling"]), ...block("2-", ["a", "b", "c", "fal|ling"])];
+      expect(detect(lines).map((section) => [section.starts, section.length])).toEqual([[[0, 4], 3]]);
     });
 
     it("does not match background vocals that differ beyond syllable splits", () => {

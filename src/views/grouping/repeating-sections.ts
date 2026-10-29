@@ -1,4 +1,4 @@
-import { repeatsApartFromSplits, withEvenSyllableSplits } from "@/domain/group/syllable-splits";
+import { repeatKey, withEvenSyllableSplits } from "@/domain/group/syllable-splits";
 import type { LyricLine } from "@/domain/line/model";
 import { hasMainLyrics } from "@/domain/line/predicates";
 
@@ -16,22 +16,24 @@ const MIN_SECTION_LINES = 3;
 function findRepeatingStandaloneSections(lines: LyricLine[], splitChar: string): RepeatingSection[] {
   const results: RepeatingSection[] = [];
   const claimed = new Set<number>();
+  const keys = lines.map((line) => repeatKey(line, splitChar));
 
   for (let i = 0; i < lines.length; i++) {
     if (claimed.has(i)) continue;
     if (lines[i].groupId !== undefined) continue;
 
-    let best: { starts: number[]; k: number } | null = null;
+    let best: { starts: number[]; k: number; evened: LyricLine[] } | null = null;
     const maxK = Math.floor((lines.length - i) / 2);
     for (let k = maxK; k >= MIN_SECTION_LINES; k--) {
       if (!isStandaloneBlock(lines, i, k, claimed)) continue;
-      const starts = repeatStarts(lines, i, k, claimed, splitChar);
-      if (starts.length >= 2 && (!best || starts.length * k > best.starts.length * best.k)) best = { starts, k };
+      const starts = repeatStarts(lines, keys, i, k, claimed);
+      if (starts.length < 2 || (best && starts.length * k <= best.starts.length * best.k)) continue;
+      const evened = withEvenSyllableSplits(lines, starts, k, splitChar);
+      if (evened) best = { starts, k, evened };
     }
 
-    const evened = best && withEvenSyllableSplits(lines, best.starts, best.k, splitChar);
-    if (best && evened) {
-      const { starts, k } = best;
+    if (best) {
+      const { starts, k, evened } = best;
       for (const s of starts) {
         for (let p = s; p < s + k; p++) claimed.add(p);
       }
@@ -50,11 +52,11 @@ function findRepeatingStandaloneSections(lines: LyricLine[], splitChar: string):
   return results;
 }
 
-function repeatStarts(lines: LyricLine[], start: number, k: number, claimed: Set<number>, splitChar: string): number[] {
+function repeatStarts(lines: LyricLine[], keys: string[], start: number, k: number, claimed: Set<number>): number[] {
   const starts: number[] = [start];
   let j = start + k;
   while (j + k <= lines.length) {
-    if (isStandaloneBlock(lines, j, k, claimed) && blocksRepeat(lines, start, j, k, splitChar)) {
+    if (isStandaloneBlock(lines, j, k, claimed) && blocksRepeat(keys, start, j, k)) {
       starts.push(j);
       j += k;
     } else {
@@ -64,9 +66,9 @@ function repeatStarts(lines: LyricLine[], start: number, k: number, claimed: Set
   return starts;
 }
 
-function blocksRepeat(lines: LyricLine[], a: number, b: number, k: number, splitChar: string): boolean {
+function blocksRepeat(keys: string[], a: number, b: number, k: number): boolean {
   for (let p = 0; p < k; p++) {
-    if (!repeatsApartFromSplits(lines[a + p], lines[b + p], splitChar)) return false;
+    if (keys[a + p] !== keys[b + p]) return false;
   }
   return true;
 }

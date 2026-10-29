@@ -1,3 +1,4 @@
+import { withoutSplitCharacter } from "@/domain/group/syllable-splits";
 import { useSettingsStore } from "@/stores/settings";
 import { escapeRegex } from "@/utils/escape-regex";
 
@@ -26,8 +27,7 @@ function cleanSplitCharacters(text: string, char?: string): string {
 }
 
 function stripSplitCharacter(text: string): string {
-  const c = getSplitCharacter();
-  return text.replaceAll(c, "");
+  return withoutSplitCharacter(text, getSplitCharacter());
 }
 
 // -- Exports ------------------------------------------------------------------
