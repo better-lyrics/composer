@@ -83,7 +83,6 @@ const TimelinePanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const duration = useAudioStore((s) => s.duration);
   const lines = useProjectStore((s) => s.lines);
-  const zoom = useTimelineStore((s) => s.zoom);
   const setScrollLeft = useTimelineStore((s) => s.setScrollLeft);
   const setScrollTop = useTimelineStore((s) => s.setScrollTop);
   const previewSidebar = useSettingsStore((s) => s.previewSidebar);
@@ -120,6 +119,7 @@ const TimelinePanel: React.FC = () => {
 
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
   const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
+  const dragZoom = useTimelineStore((s) => (activeDrag ? s.zoom : null));
   const { dragSnapModifier, beginGesture, endGesture, syncDragSnap } = useTimelineSnap();
   const lastDragPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const getLastDragPointer = useCallback(() => lastDragPointerRef.current, []);
@@ -194,8 +194,8 @@ const TimelinePanel: React.FC = () => {
     : "#888";
 
   const dragCells = useMemo(
-    () => (activeDrag ? dragGhostCells(activeDrag, zoom, effectiveLines) : null),
-    [activeDrag, zoom, effectiveLines],
+    () => (activeDrag && dragZoom !== null ? dragGhostCells(activeDrag, dragZoom, effectiveLines) : null),
+    [activeDrag, dragZoom, effectiveLines],
   );
 
   if (!source) {
