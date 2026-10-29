@@ -209,6 +209,17 @@ describe("findRepeatingStandaloneSections", () => {
       expect(detect(lines).map((section) => [section.starts, section.length])).toEqual([[[0, 4], 3]]);
     });
 
+    it("regression: leaves out a copy whose splits cross so the other copies still group", () => {
+      const lines = [
+        ...block("1-", ["fa|lling", "b", "c"]),
+        line("v1", "verse one"),
+        ...block("2-", ["fa|lling", "b", "c"]),
+        line("v2", "verse two"),
+        ...block("3-", ["fal|ling", "b", "c"]),
+      ];
+      expect(detect(lines).map((section) => [section.starts, section.length])).toEqual([[[0, 4], 3]]);
+    });
+
     it("does not match background vocals that differ beyond syllable splits", () => {
       const lines = [
         ...block("1-", ["a", "b", "c"]),

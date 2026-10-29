@@ -28,8 +28,8 @@ function findRepeatingStandaloneSections(lines: LyricLine[], splitChar: string):
       if (!isStandaloneBlock(lines, i, k, claimed)) continue;
       const starts = repeatStarts(lines, keys, i, k, claimed);
       if (starts.length < 2 || (best && starts.length * k <= best.starts.length * best.k)) continue;
-      const evened = withEvenSyllableSplits(lines, starts, k, splitChar);
-      if (evened) best = { starts, k, evened };
+      const candidate = evenableStarts(lines, starts, k, splitChar);
+      if (candidate && (!best || candidate.starts.length * k > best.starts.length * best.k)) best = { ...candidate, k };
     }
 
     if (best) {
@@ -50,6 +50,26 @@ function findRepeatingStandaloneSections(lines: LyricLine[], splitChar: string):
   }
 
   return results;
+}
+
+// A copy whose splits cross the others' is left out, so it cannot hide the copies that agree.
+function evenableStarts(
+  lines: LyricLine[],
+  starts: number[],
+  k: number,
+  splitChar: string,
+): { starts: number[]; evened: LyricLine[] } | null {
+  const evened = withEvenSyllableSplits(lines, starts, k, splitChar);
+  if (evened) return { starts, evened };
+  const kept = [starts[0]];
+  let keptEvened: LyricLine[] | null = null;
+  for (const start of starts.slice(1)) {
+    const withStart = withEvenSyllableSplits(lines, [...kept, start], k, splitChar);
+    if (!withStart) continue;
+    kept.push(start);
+    keptEvened = withStart;
+  }
+  return keptEvened ? { starts: kept, evened: keptEvened } : null;
 }
 
 function repeatStarts(lines: LyricLine[], keys: string[], start: number, k: number, claimed: Set<number>): number[] {
