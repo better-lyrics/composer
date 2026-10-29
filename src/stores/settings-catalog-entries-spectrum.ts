@@ -66,6 +66,13 @@ const SPECTRUM_CATALOG_ENTRIES = {
     keywords: ["spectrogram", "fft", "resolution"],
     settingKey: "spectrumWindow",
   },
+  loupeSize: {
+    section: "timeline",
+    group: "Spectrum",
+    label: "Loupe size",
+    description: "The close-up that opens while you drag a word edge. Taller helps most at 18 kHz.",
+    keywords: ["loupe", "magnifier", "zoom", "size", "width", "height", "spectrogram"],
+  },
   spectrumPhase: {
     section: "timeline",
     group: "Spectrum",
