@@ -242,6 +242,70 @@ describe("frame-loop", () => {
     });
   });
 
+  describe("phases", () => {
+    it("runs every read before any write in one frame", () => {
+      const log: string[] = [];
+      const unsubscribes = [
+        subscribeFrame({ read: () => log.push("A.read"), write: () => log.push("A.write") }, "a"),
+        subscribeFrame(() => log.push("B"), "b"),
+        subscribeFrame({ read: () => log.push("C.read"), write: () => log.push("C.write") }, "c"),
+      ];
+      advanceFrames(1);
+      expect(log).toEqual(["A.read", "C.read", "A.write", "B", "C.write"]);
+      for (const unsubscribe of unsubscribes) unsubscribe();
+    });
+
+    it("keeps plain callbacks in subscription order", () => {
+      const log: string[] = [];
+      const unsubscribeFirst = subscribeFrame(() => log.push("first"), "first");
+      const unsubscribeSecond = subscribeFrame(() => log.push("second"), "second");
+      advanceFrames(1);
+      expect(log).toEqual(["first", "second"]);
+      unsubscribeFirst();
+      unsubscribeSecond();
+    });
+
+    it("skips the write of a read that threw, and still runs its siblings", () => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const log: string[] = [];
+      const unsubscribes = [
+        subscribeFrame(
+          {
+            read: () => {
+              throw new Error("read failed");
+            },
+            write: () => log.push("broken.write"),
+          },
+          "broken",
+        ),
+        subscribeFrame({ read: () => log.push("ok.read"), write: () => log.push("ok.write") }, "ok"),
+      ];
+      advanceFrames(1);
+      expect(log).toEqual(["ok.read", "ok.write"]);
+      expect(error).toHaveBeenCalledTimes(1);
+      for (const unsubscribe of unsubscribes) unsubscribe();
+      error.mockRestore();
+    });
+
+    it("never runs a write whose read did not run in the same frame", () => {
+      const log: string[] = [];
+      const unsubscribes: Array<() => void> = [];
+      unsubscribes.push(
+        subscribeFrame(() => {
+          if (unsubscribes.length > 1) return;
+          unsubscribes.push(
+            subscribeFrame({ read: () => log.push("late.read"), write: () => log.push("late.write") }, "late"),
+          );
+        }, "adder"),
+      );
+      advanceFrames(1);
+      expect(log).toEqual([]);
+      advanceFrames(1);
+      expect(log).toEqual(["late.read", "late.write"]);
+      for (const unsubscribe of unsubscribes) unsubscribe();
+    });
+  });
+
   describe("regressions", () => {
     it("regression #174: does not schedule a frame when idle with no hold", () => {
       const probe = countingSubscriber();

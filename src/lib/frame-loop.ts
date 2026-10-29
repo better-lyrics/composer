@@ -2,10 +2,18 @@
 
 type FrameCallback = (now: number) => void;
 
+// Every read of every subscriber runs before any write, so one frame forces at most one layout.
+interface FramePhases {
+  read: FrameCallback;
+  write: FrameCallback;
+}
+
 interface FrameSubscriber {
-  callback: FrameCallback;
+  read: FrameCallback | null;
+  write: FrameCallback;
   label: string;
   failing: boolean;
+  readThisFrame: boolean;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -73,15 +81,27 @@ function schedule(): void {
   rafId = window.requestAnimationFrame(pump);
 }
 
-function runSubscriber(subscriber: FrameSubscriber, now: number): void {
+function runPhase(subscriber: FrameSubscriber, phase: FrameCallback, now: number): boolean {
   try {
-    subscriber.callback(now);
+    phase(now);
     subscriber.failing = false;
+    return true;
   } catch (error) {
-    if (subscriber.failing) return;
+    if (subscriber.failing) return false;
     subscriber.failing = true;
     console.error(`${LOG_PREFIX} frame callback "${subscriber.label}" failed`, error);
+    return false;
   }
+}
+
+function runRead(subscriber: FrameSubscriber, now: number): void {
+  if (subscriber.read) subscriber.readThisFrame = runPhase(subscriber, subscriber.read, now);
+}
+
+function runWrite(subscriber: FrameSubscriber, now: number): void {
+  if (subscriber.read && !subscriber.readThisFrame) return;
+  subscriber.readThisFrame = false;
+  runPhase(subscriber, subscriber.write, now);
 }
 
 function pump(now: number): void {
@@ -92,7 +112,8 @@ function pump(now: number): void {
   const rescheduling = tailFrames > 0;
   // Queued before any callback runs, so nothing a subscriber does can stop the loop.
   if (rescheduling) schedule();
-  for (const subscriber of subscribers) runSubscriber(subscriber, now);
+  for (const subscriber of subscribers) runRead(subscriber, now);
+  for (const subscriber of subscribers) runWrite(subscriber, now);
   if (import.meta.env.DEV) reportRunawayFrames(rescheduling);
 }
 
@@ -124,8 +145,9 @@ function animateFrames(label: string): () => void {
   return retain(animations, label);
 }
 
-function subscribeFrame(callback: FrameCallback, label: string): () => void {
-  const subscriber: FrameSubscriber = { callback, label, failing: false };
+function subscribeFrame(callback: FrameCallback | FramePhases, label: string): () => void {
+  const phases = typeof callback === "function" ? { read: null, write: callback } : callback;
+  const subscriber: FrameSubscriber = { ...phases, label, failing: false, readThisFrame: false };
   subscribers.add(subscriber);
   wake();
   return () => {
@@ -148,4 +170,4 @@ function cancelNextFrame(handle: number): void {
 // -- Exports ------------------------------------------------------------------
 
 export { TAIL_FRAMES, animateFrames, cancelNextFrame, holdFrames, nextFrame, subscribeFrame, wake };
-export type { FrameCallback };
+export type { FrameCallback, FramePhases };
