@@ -34,6 +34,7 @@ import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
+import { isPlaybackStyleWrite } from "@/views/timeline/playback-style-mutation";
 import { TimelineRuler, followRulerScroll } from "@/views/timeline/timeline-ruler";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
@@ -59,23 +60,6 @@ import "overlayscrollbars/overlayscrollbars.css";
 import { Activity, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Helpers -------------------------------------------------------------------
-
-const PROGRESS_FILL_DECLARATION = /--progress-fill:[^;]*;?\s*/;
-
-function withoutProgressFill(style: string | null): string {
-  return (style ?? "").replace(PROGRESS_FILL_DECLARATION, "");
-}
-
-// Playback restyles pinned word labels and banner fills every frame; neither changes the scroll size.
-function isPlaybackStyleWrite(mutation: MutationRecord): boolean {
-  if (mutation.type !== "attributes" || mutation.attributeName !== "style") return false;
-  const target = mutation.target as HTMLElement;
-  if (target.parentElement?.hasAttribute("data-word-block")) return true;
-  return (
-    target.hasAttribute("data-instance-start") &&
-    withoutProgressFill(mutation.oldValue) === withoutProgressFill(target.getAttribute("style"))
-  );
-}
 
 function makeDragOverlapCheck(
   data: { lineId: string; wordIndex: number; trackType: "word" | "bg"; begin: number; end: number },

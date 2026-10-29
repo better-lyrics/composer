@@ -56,25 +56,16 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
   const capRef = useRef<HTMLDivElement>(null);
   const [frame] = useState(createPlayheadFrame);
 
-  useFrameLoop(
-    {
-      read: () =>
-        readPlayheadFrame(frame, {
-          playhead: playheadRef.current,
-          cap: capRef.current,
-          overlay: containerRef.current,
-          scrollContainer: scrollContainerRef.current,
-        }),
-      write: () =>
-        writePlayheadFrame(frame, {
-          playhead: playheadRef.current,
-          cap: capRef.current,
-          overlay: containerRef.current,
-          scrollContainer: scrollContainerRef.current,
-        }),
-    },
-    "timeline-playhead",
+  const elements = useMemo(
+    () => ({ playhead: playheadRef, cap: capRef, overlay: containerRef, scrollContainer: scrollContainerRef }),
+    [scrollContainerRef],
   );
+  const phases = useMemo(
+    () => ({ read: () => readPlayheadFrame(frame, elements), write: () => writePlayheadFrame(frame, elements) }),
+    [frame, elements],
+  );
+
+  useFrameLoop(phases, "timeline-playhead");
 
   useEffect(() => {
     let yielded = false;

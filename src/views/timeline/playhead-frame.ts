@@ -13,14 +13,15 @@ import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-p
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createFollowMemory, followScrollTop, followStep, resetFollowMemory } from "@/views/timeline/vertical-follow";
 import { pinCutWordLabels } from "@/views/timeline/word-label-pin";
+import type { RefObject } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
 interface PlayheadElements {
-  playhead: HTMLDivElement | null;
-  cap: HTMLDivElement | null;
-  overlay: HTMLDivElement | null;
-  scrollContainer: HTMLDivElement | null;
+  playhead: RefObject<HTMLDivElement | null>;
+  cap: RefObject<HTMLDivElement | null>;
+  overlay: RefObject<HTMLDivElement | null>;
+  scrollContainer: RefObject<HTMLDivElement | null>;
 }
 
 interface PlayheadFrame {
@@ -95,13 +96,13 @@ function followPlayback(frame: PlayheadFrame, container: HTMLDivElement, current
 // Follow scrolling happens here: a scroll write leaves layout clean, and every later read in the frame sees it.
 function readPlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): void {
   frame.ready = false;
-  if (!elements.playhead) return;
+  if (!elements.playhead.current) return;
 
   const isPlaying = useAudioStore.getState().isPlaying;
   const currentTime = livePlaybackTime();
   const { zoom, scrollLeft, isDraggingPlayhead, dragTime, loopRegionDrag } = useTimelineStore.getState();
   const { followPlayhead } = useSettingsStore.getState();
-  const container = elements.scrollContainer;
+  const container = elements.scrollContainer.current;
 
   // Follow would scroll the lanes under a region drag and stretch the region.
   if (followPlayhead && isPlaying && container && !isDraggingPlayhead && !loopRegionDrag) {
@@ -128,7 +129,7 @@ function readPlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): vo
   }
 
   frame.mask = null;
-  const overlayRect = elements.overlay?.getBoundingClientRect();
+  const overlayRect = elements.overlay.current?.getBoundingClientRect();
   if (overlayRect) {
     const playheadCenterXLocal = timeToX(frame.displayTime, zoom, actualScrollLeft);
     frame.playheadCenterXLocal = playheadCenterXLocal;
@@ -162,7 +163,9 @@ function writeBannerProgress(currentTime: number): void {
 }
 
 function writePlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): void {
-  const { playhead, cap, scrollContainer: container } = elements;
+  const playhead = elements.playhead.current;
+  const cap = elements.cap.current;
+  const container = elements.scrollContainer.current;
   if (!frame.ready || !playhead) return;
 
   container?.parentElement?.classList.toggle("scrollbar-hidden", frame.hideScrollbars);

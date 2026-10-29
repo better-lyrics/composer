@@ -2,7 +2,7 @@
 
 type FrameCallback = (now: number) => void;
 
-// Every read of every subscriber runs before any write, so one frame forces at most one layout.
+// Every read of every subscriber runs before any write, so phased reads never force a layout.
 interface FramePhases {
   read: FrameCallback;
   write: FrameCallback;
@@ -20,6 +20,8 @@ interface FrameSubscriber {
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[FrameLoop]";
+
+const phaseName = { readFailing: "read", writeFailing: "write" } as const;
 
 // 3 frames covers a React commit landing a DOM write on the frame after the store notify.
 const TAIL_FRAMES = 3;
@@ -96,7 +98,10 @@ function runPhase(
   } catch (error) {
     if (subscriber[failingKey]) return false;
     subscriber[failingKey] = true;
-    console.error(`${LOG_PREFIX} frame callback "${subscriber.label}" failed`, error);
+    console.error(
+      `${LOG_PREFIX} frame callback "${subscriber.label}" failed in its ${phaseName[failingKey]} phase`,
+      error,
+    );
     return false;
   }
 }
