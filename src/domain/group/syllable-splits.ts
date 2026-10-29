@@ -3,6 +3,7 @@ import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import { withoutSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -108,10 +109,21 @@ function trackTargets(copies: readonly LyricLine[], track: TrackFields, splitCha
   return targets;
 }
 
-function withSplitsAt(plain: string, offsets: ReadonlySet<number>, splitChar: string): string {
-  let text = "";
-  for (let i = 0; i < plain.length; i++) text += (offsets.has(i) ? splitChar : "") + plain[i];
-  return text;
+function withSplitsAdded(text: string, offsets: ReadonlySet<number>, splitChar: string): string {
+  let result = "";
+  let plainAt = 0;
+  for (let i = 0; i < text.length; ) {
+    if (text.startsWith(splitChar, i)) {
+      result += splitChar;
+      i += splitChar.length;
+      continue;
+    }
+    if (offsets.has(plainAt)) result += splitChar;
+    result += text[i];
+    plainAt++;
+    i++;
+  }
+  return result;
 }
 
 function wordSplitPoints(words: readonly WordTiming[], plain: string, offsets: ReadonlySet<number>): number[][] {
@@ -127,13 +139,14 @@ function wordSplitPoints(words: readonly WordTiming[], plain: string, offsets: R
 function evenedTrack(line: LyricLine, track: TrackFields, offsets: ReadonlySet<number>, splitChar: string): LyricLine {
   const text = track.text(line);
   if (!text) return line;
-  const plain = withoutSplitCharacter(text, splitChar);
-  const target = withSplitsAt(plain, offsets, splitChar);
-  if (text === target) return line;
+  const own = trackSplitOffsets(line, track, splitChar) ?? new Set<number>();
+  const added = new Set([...offsets].filter((offset) => !own.has(offset)));
+  if (added.size === 0) return line;
+  const target = withSplitsAdded(text, added, splitChar);
   const words = track.words(line);
   if (!words?.length) return track.write(line, target, words);
 
-  const points = wordSplitPoints(words, plain, offsets);
+  const points = wordSplitPoints(words, withoutSplitCharacter(text, splitChar), added);
   let current = line;
   for (let index = words.length - 1; index >= 0; index--) {
     if (points[index].length === 0) continue;
@@ -147,10 +160,6 @@ function evenedTrack(line: LyricLine, track: TrackFields, offsets: ReadonlySet<n
 }
 
 // -- Functions ----------------------------------------------------------------
-
-function withoutSplitCharacter(text: string, splitChar: string): string {
-  return text.replaceAll(splitChar, "");
-}
 
 function repeatKey(line: LyricLine, splitChar: string): string {
   return [
@@ -186,4 +195,4 @@ function withEvenSyllableSplits(
 
 // -- Exports ------------------------------------------------------------------
 
-export { repeatKey, withEvenSyllableSplits, withoutSplitCharacter };
+export { repeatKey, withEvenSyllableSplits };

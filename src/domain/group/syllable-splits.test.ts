@@ -99,7 +99,7 @@ describe("withEvenSyllableSplits", () => {
       const result = even(line("a", "fa|lling too"), timed);
       expect(result?.[1].text).toBe("fa|lling t|oo");
       expect(texts(result?.[1].words)).toEqual(["fa", "lling ", "t", "oo"]);
-      expect(result?.[1].words?.[1]?.end).toBeCloseTo(1, 9);
+      expect(result?.[1].words?.[1]?.end).toBe(1);
       expect(spans(result?.[1].words)?.slice(2)).toEqual([
         [1, 1.5],
         [1.5, 2],
@@ -113,7 +113,7 @@ describe("withEvenSyllableSplits", () => {
         { text: "too", begin: 1, end: 2 },
       ]);
       const result = even(line("a", "falling| too"), timed);
-      expect(result?.[0].text).toBe("fal|ling too");
+      expect(result?.[0].text).toBe("fal|ling| too");
       expect(result?.[1]).toBe(timed);
     });
 
@@ -123,6 +123,36 @@ describe("withEvenSyllableSplits", () => {
       const result = even(a, b);
       expect(result?.[0]).toBe(a);
       expect(result?.[1]).toBe(b);
+    });
+  });
+
+  describe("whitespace and split characters", () => {
+    it("regression: keeps a word's whole trailing whitespace when splitting it", () => {
+      const timed = line("a", "好きだよ\u3000君", [
+        { text: "好きだよ\u3000", begin: 0, end: 1 },
+        { text: "君", begin: 1, end: 2 },
+      ]);
+      const result = even(timed, line("b", "好|きだよ\u3000君"));
+      expect(texts(result?.[0].words)).toEqual(["好", "きだよ\u3000", "君"]);
+    });
+
+    it("regression: keeps a split character that splits nothing when the copies already agree", () => {
+      const a = line("a", "falling| too");
+      const b = line("b", "falling| too");
+      const result = even(a, b);
+      expect(result?.[0]).toBe(a);
+      expect(result?.[1]).toBe(b);
+    });
+
+    it("regression: only adds split characters, never removes one", () => {
+      const result = even(line("a", "|over and ov|er"), line("b", "over and over"));
+      expect(result?.map((copy) => copy.text)).toEqual(["|over and ov|er", "over and ov|er"]);
+    });
+
+    it("regression: the last syllable ends exactly where the old word ended", () => {
+      const timed = line("a", "falling", [{ text: "falling", begin: 10, end: 10.6 }]);
+      const result = even(timed, line("b", "fal|li|ng"));
+      expect(result?.[0].words?.at(-1)?.end).toBe(10.6);
     });
   });
 

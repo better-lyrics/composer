@@ -56,7 +56,7 @@ function repeatStarts(lines: LyricLine[], keys: string[], start: number, k: numb
   const starts: number[] = [start];
   let j = start + k;
   while (j + k <= lines.length) {
-    if (isStandaloneBlock(lines, j, k, claimed) && blocksRepeat(keys, start, j, k)) {
+    if (blocksRepeat(keys, start, j, k) && isStandaloneBlock(lines, j, k, claimed)) {
       starts.push(j);
       j += k;
     } else {

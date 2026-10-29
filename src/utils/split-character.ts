@@ -1,4 +1,3 @@
-import { withoutSplitCharacter } from "@/domain/group/syllable-splits";
 import { useSettingsStore } from "@/stores/settings";
 import { escapeRegex } from "@/utils/escape-regex";
 
@@ -26,10 +25,14 @@ function cleanSplitCharacters(text: string, char?: string): string {
     .join(" ");
 }
 
+function withoutSplitCharacter(text: string, splitChar: string): string {
+  return text.replaceAll(splitChar, "");
+}
+
 function stripSplitCharacter(text: string): string {
   return withoutSplitCharacter(text, getSplitCharacter());
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { getSplitCharacter, cleanSplitCharacters, stripSplitCharacter };
+export { getSplitCharacter, cleanSplitCharacters, stripSplitCharacter, withoutSplitCharacter };

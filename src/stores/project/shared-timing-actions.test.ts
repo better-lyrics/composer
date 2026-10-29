@@ -152,7 +152,7 @@ describe("groupRepeatingSections", () => {
       expect(a?.text).toBe("fal|ling too");
       expect(a?.words?.map((word) => word.text)).toEqual(["fal", "ling ", "too"]);
       expect(a?.words?.[0]?.begin).toBe(10);
-      expect(a?.words?.[1]?.end).toBeCloseTo(10.6, 6);
+      expect(a?.words?.[1]?.end).toBe(10.6);
       expect(a?.words?.[2]).toMatchObject({ begin: 10.6, end: 11 });
       expect(lineById("b")?.words?.map((word) => word.begin)).toEqual([40, 40.3, 40.6]);
     });
@@ -188,7 +188,7 @@ describe("groupRepeatingSections", () => {
       expect(lineById("a")?.text).toBe("fal|ling t|oo");
       expect(lineById("a")?.words?.map((word) => word.text)).toEqual(["fal", "ling "]);
       expect(lineById("a")?.words?.[0]?.begin).toBe(10);
-      expect(lineById("a")?.words?.[1]?.end).toBeCloseTo(10.3, 6);
+      expect(lineById("a")?.words?.[1]?.end).toBe(10.3);
     });
 
     it("refuses to group when a partly synced copy's timing ends inside a re-split syllable", () => {
