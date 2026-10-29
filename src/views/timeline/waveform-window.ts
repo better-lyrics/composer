@@ -18,6 +18,21 @@ function waveformWindowStart(current: number, visibleStart: number, visibleEnd: 
   return Math.round(Math.min(maxStart, Math.max(0, centred)));
 }
 
+function readWindowStart(wavesurfer: WaveSurfer, host: HTMLElement | null, current: number): number | null {
+  const container = host?.closest<HTMLElement>("[data-scroll-container]");
+  if (!container) return null;
+  const { scrollLeft, clientWidth } = container;
+  const visibleEnd = scrollLeft + Math.max(0, clientWidth - GUTTER_WIDTH);
+  return waveformWindowStart(current, scrollLeft, visibleEnd, wavesurfer.getWrapper().clientWidth);
+}
+
+function writeWindowStart(wavesurfer: WaveSurfer, host: HTMLElement, start: number): void {
+  host.style.translate = `${start}px 0`;
+  wavesurfer.setScroll(start);
+  // WaveSurfer draws newly visible canvases on its scroll event, which would otherwise land a frame late.
+  wavesurfer.getWrapper().parentElement?.dispatchEvent(new Event("scroll"));
+}
+
 // -- Hooks ---------------------------------------------------------------------
 
 // WaveSurfer draws only the canvases near its own scroll position, so the host is a window over the visible part
@@ -30,36 +45,19 @@ function useWaveformWindow(
   const startRef = useRef(0);
   const pendingRef = useRef(false);
 
-  const readStart = (): number | null => {
-    const host = hostRef.current;
-    const container = host?.closest<HTMLElement>("[data-scroll-container]");
-    if (!wavesurfer || !container) return null;
-    const { scrollLeft, clientWidth } = container;
-    const visibleEnd = scrollLeft + Math.max(0, clientWidth - GUTTER_WIDTH);
-    return waveformWindowStart(startRef.current, scrollLeft, visibleEnd, wavesurfer.getWrapper().clientWidth);
-  };
-
-  const writeStart = (start: number) => {
-    const host = hostRef.current;
-    if (!wavesurfer || !host) return;
-    startRef.current = start;
-    host.style.translate = `${start}px 0`;
-    wavesurfer.setScroll(start);
-    // WaveSurfer draws newly visible canvases on its scroll event, which would otherwise land a frame late.
-    wavesurfer.getWrapper().parentElement?.dispatchEvent(new Event("scroll"));
-  };
-
   useFrameLoop(
     {
       read: () => {
-        const start = readStart();
-        pendingRef.current = start !== null && (start !== startRef.current || wavesurfer?.getScroll() !== start);
+        if (!wavesurfer) return;
+        const start = readWindowStart(wavesurfer, hostRef.current, startRef.current);
+        pendingRef.current = start !== null && (start !== startRef.current || wavesurfer.getScroll() !== start);
         if (pendingRef.current && start !== null) startRef.current = start;
       },
       write: () => {
-        if (!pendingRef.current) return;
+        const host = hostRef.current;
+        if (!pendingRef.current || !wavesurfer || !host) return;
         pendingRef.current = false;
-        writeStart(startRef.current);
+        writeWindowStart(wavesurfer, host, startRef.current);
       },
     },
     "waveform window",
@@ -67,18 +65,21 @@ function useWaveformWindow(
   );
 
   // A redraw lays out the canvases at the scroll position it finds, then nudges it to keep its cursor in place.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: readStart and writeStart read refs and the instance only
   useEffect(() => {
     if (!wavesurfer || !enabled) return;
     const align = () => {
-      const start = readStart();
-      if (start !== null) writeStart(start);
+      const host = hostRef.current;
+      const start = readWindowStart(wavesurfer, host, startRef.current);
+      if (start === null || !host) return;
+      startRef.current = start;
+      writeWindowStart(wavesurfer, host, start);
     };
-    return wavesurfer.on("redraw", () => {
+    const unsubscribe = wavesurfer.on("redraw", () => {
       align();
       queueMicrotask(align);
     });
-  }, [wavesurfer, enabled]);
+    return () => unsubscribe();
+  }, [wavesurfer, enabled, hostRef]);
 }
 
 // -- Exports -------------------------------------------------------------------
