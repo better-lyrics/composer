@@ -149,6 +149,17 @@ describe("withEvenSyllableSplits", () => {
       expect(result?.map((copy) => copy.text)).toEqual(["|over and ov|er", "over and ov|er"]);
     });
 
+    it("regression: writes a split into the text when only the timed words had it", () => {
+      const timed = line("a", "lala la", [
+        { text: "la", begin: 10, end: 10.3 },
+        { text: "la ", begin: 10.3, end: 10.6 },
+        { text: "la", begin: 10.6, end: 11 },
+      ]);
+      const result = even(timed, line("b", "la|la la"));
+      expect(result?.map((copy) => copy.text)).toEqual(["la|la la", "la|la la"]);
+      expect(result?.[0].words).toBe(timed.words);
+    });
+
     it("regression: the last syllable ends exactly where the old word ended", () => {
       const timed = line("a", "falling", [{ text: "falling", begin: 10, end: 10.6 }]);
       const result = even(timed, line("b", "fal|li|ng"));

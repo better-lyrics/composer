@@ -139,14 +139,18 @@ function wordSplitPoints(words: readonly WordTiming[], plain: string, offsets: R
 function evenedTrack(line: LyricLine, track: TrackFields, offsets: ReadonlySet<number>, splitChar: string): LyricLine {
   const text = track.text(line);
   if (!text) return line;
-  const own = trackSplitOffsets(line, track, splitChar) ?? new Set<number>();
-  const added = new Set([...offsets].filter((offset) => !own.has(offset)));
-  if (added.size === 0) return line;
-  const target = withSplitsAdded(text, added, splitChar);
+  const plain = withoutSplitCharacter(text, splitChar);
   const words = track.words(line);
+  const textSplits = textSplitOffsets(text, splitChar);
+  const wordSplits = (words?.length && wordSplitOffsets(words, plain)) || new Set<number>();
+  const addedToText = new Set([...offsets].filter((offset) => !textSplits.has(offset)));
+  const addedToWords = new Set([...offsets].filter((offset) => !wordSplits.has(offset)));
+  if (addedToText.size === 0 && (!words?.length || addedToWords.size === 0)) return line;
+  const target = withSplitsAdded(text, addedToText, splitChar);
   if (!words?.length) return track.write(line, target, words);
 
-  const points = wordSplitPoints(words, withoutSplitCharacter(text, splitChar), added);
+  const points = wordSplitPoints(words, plain, addedToWords);
+  if (points.every((wordPoints) => wordPoints.length === 0)) return track.write(line, target, words);
   let current = line;
   for (let index = words.length - 1; index >= 0; index--) {
     if (points[index].length === 0) continue;
