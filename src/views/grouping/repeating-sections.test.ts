@@ -13,6 +13,10 @@ function detect(lines: LyricLine[], splitChar = "|") {
   return findRepeatingStandaloneSections(lines, splitChar);
 }
 
+function spans(lines: LyricLine[], splitChar = "|") {
+  return detect(lines, splitChar).map((section) => ({ starts: section.starts, length: section.length }));
+}
+
 function block(prefix: string, texts: readonly string[]): LyricLine[] {
   return texts.map((text, i) => line(`${prefix}${i}`, text));
 }
@@ -35,9 +39,29 @@ describe("findRepeatingStandaloneSections", () => {
     expect(result[0].fingerprint).toBeTruthy();
   });
 
-  it("ignores a section that repeats only two lines", () => {
-    const lines = [line("1", "hey"), line("2", "ho"), line("3", "verse"), line("4", "hey"), line("5", "ho")];
-    expect(detect(lines)).toEqual([]);
+  describe("two-line repeats", () => {
+    it("suggests two lines that repeat apart from each other", () => {
+      const texts = ["hey", "ho", "verse", "hey", "ho"];
+      expect(spans(texts.map((t, i) => line(`${i}`, t)))).toEqual([{ starts: [0, 3], length: 2 }]);
+    });
+
+    it("ignores two lines that repeat back to back", () => {
+      const texts = ["hey", "ho", "hey", "ho", "verse", "hey", "ho"];
+      expect(detect(texts.map((t, i) => line(`${i}`, t)))).toEqual([]);
+    });
+
+    it("never takes lines a longer repeat needs", () => {
+      const texts = ["a", "b", "c", "d", "verse", "a", "b", "bridge", "b", "c", "d"];
+      expect(spans(texts.map((t, i) => line(`${i}`, t)))).toEqual([{ starts: [1, 8], length: 3 }]);
+    });
+
+    it("lists two-line repeats in line order with the longer ones", () => {
+      const texts = ["x", "y", ...CHORUS, "verse", "x", "y", "bridge", ...CHORUS];
+      expect(spans(texts.map((t, i) => line(`${i}`, t)))).toEqual([
+        { starts: [0, 6], length: 2 },
+        { starts: [2, 9], length: 3 },
+      ]);
+    });
   });
 
   it("fingerprint is stable when surrounding lines change but block content doesn't", () => {
@@ -182,26 +206,26 @@ describe("findRepeatingStandaloneSections", () => {
         { id: "5", text: "you", agentId: "v1" },
         { id: "6", text: "so", agentId: "v1" },
       ];
-      expect(detect(lines)).toEqual([]);
+      expect(spans(lines)).toEqual([{ starts: [1, 4], length: 2 }]);
     });
 
     it("does not match repeats that differ in punctuation, spacing or case", () => {
       for (const variant of ["Falling too", "falling too,", "falling too ", "falling  too"]) {
         const lines = [...block("1-", ["falling too", "x", "y"]), ...block("2-", [variant, "x", "y"])];
-        expect(detect(lines), variant).toEqual([]);
+        expect(spans(lines), variant).toEqual([{ starts: [1, 4], length: 2 }]);
       }
     });
 
     it("regression: splits on the split character it is given", () => {
       const lines = [...block("1-", ["he/llo you", "me too", "ok then"]), ...block("2-", ["hello you", "me too", "ok then"])];
       expect(detect(lines, "/").map((section) => section.starts)).toEqual([[0, 3]]);
-      expect(detect(lines, "|")).toEqual([]);
+      expect(spans(lines, "|")).toEqual([{ starts: [1, 4], length: 2 }]);
     });
 
     it("does not suggest a section whose partly synced copy cannot take the finest split", () => {
       const partial = line("1-0", "fal|ling too", { words: [{ text: "fal", begin: 10, end: 10.3 }] });
       const lines = [partial, line("1-1", "x"), line("1-2", "y"), ...block("2-", ["fa|lli|ng too", "x", "y"])];
-      expect(detect(lines)).toEqual([]);
+      expect(spans(lines)).toEqual([{ starts: [1, 4], length: 2 }]);
     });
 
     it("regression: still suggests the lines of a block that can share one split", () => {
@@ -227,7 +251,7 @@ describe("findRepeatingStandaloneSections", () => {
         line("5", "b"),
         line("6", "c"),
       ];
-      expect(detect(lines)).toEqual([]);
+      expect(spans(lines)).toEqual([{ starts: [1, 4], length: 2 }]);
     });
   });
 
@@ -247,7 +271,7 @@ describe("findRepeatingStandaloneSections", () => {
   });
 
   it("never lets a block contain a blank line", () => {
-    const texts = ["a", "", "b", "c", "a", "", "b", "c"];
+    const texts = ["a", "", "b", "x", "a", "", "b", "y"];
     expect(detect(texts.map((t, i) => line(`${i}`, t)))).toEqual([]);
   });
 
