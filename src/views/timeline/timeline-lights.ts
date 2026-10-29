@@ -37,9 +37,7 @@ function createTimelineLights(): TimelineLights {
 function restartHit(row: HTMLElement): void {
   const cell = row.querySelector<HTMLElement>(":scope > .line-cell");
   if (!cell) return;
-  cell.removeAttribute("data-hit");
-  void cell.offsetWidth;
-  cell.setAttribute("data-hit", "");
+  cell.dataset.hit = cell.dataset.hit === "a" ? "b" : "a";
 }
 
 function currentLineIndex(lights: TimelineLights, lines: readonly LyricLine[], time: number): number | null {

@@ -1120,6 +1120,9 @@ braccato-lyrics .blyrics-container {
 @layer components {
   .line-cell {
     --cell-bg: var(--gutter-bg);
+    --line-cell-hit-from:
+      inset -2px 0 0 color-mix(in oklab, var(--agent) 65%, white),
+      inset 0 -1px 0 var(--divider);
     --rail: color-mix(in oklab, var(--agent) 45%, var(--cell-bg));
     background: color-mix(in oklab, var(--agent) 8%, var(--cell-bg));
     box-shadow:
@@ -1139,8 +1142,11 @@ braccato-lyrics .blyrics-container {
   [data-speaking] > .line-cell {
     --rail: var(--agent);
     transition-duration: 40ms;
-    &[data-hit] {
-      animation: line-cell-hit 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    &[data-hit="a"] {
+      animation: line-cell-hit-a 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    &[data-hit="b"] {
+      animation: line-cell-hit-b 260ms cubic-bezier(0.22, 1, 0.36, 1);
     }
   }
   [data-timeline-row] {
@@ -1152,11 +1158,16 @@ braccato-lyrics .blyrics-container {
   }
 }
 
-@keyframes line-cell-hit {
+/* Two names for one flash: switching names restarts it without a reflow. */
+@keyframes line-cell-hit-a {
   from {
-    box-shadow:
-      inset -2px 0 0 color-mix(in oklab, var(--agent) 65%, white),
-      inset 0 -1px 0 var(--divider);
+    box-shadow: var(--line-cell-hit-from);
+  }
+}
+
+@keyframes line-cell-hit-b {
+  from {
+    box-shadow: var(--line-cell-hit-from);
   }
 }
 
