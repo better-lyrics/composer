@@ -25,6 +25,7 @@ import {
   refineDraw,
 } from "@/views/timeline/spectrum/zoom-refine";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
 // -- Constants -----------------------------------------------------------------
@@ -68,6 +69,7 @@ const SpectrumCanvas: React.FC = () => {
   const releaseRef = useRef<(() => void) | null>(null);
   const [warmUp] = useState(createWarmUp);
   const [refine] = useState(createZoomRefine);
+  const reducedMotion = useReducedMotion() ?? false;
 
   useEffect(() => {
     warmUp.generation = -1;
@@ -110,7 +112,8 @@ const SpectrumCanvas: React.FC = () => {
     };
     const now = performance.now();
     if (warmUp.generation !== spectrumSession.generation) endRefine(refine);
-    else if (!isWarming(warmUp, spectrumSession.generation, now)) beginRefineIfZoomed(refine, canvas, frame, now);
+    else if (!isWarming(warmUp, spectrumSession.generation, now))
+      beginRefineIfZoomed(refine, canvas, frame, now, reducedMotion);
 
     sizeCanvas(canvas, view.viewportWidth, view.heightCss, view.pixelRatio);
     const context = canvas.getContext("2d");
@@ -126,7 +129,7 @@ const SpectrumCanvas: React.FC = () => {
     if (warmUp.generation !== spectrumSession.generation) {
       const { first, last } = visibleTileRange(view.scrollLeft, view.viewportWidth);
       const visible = Array.from({ length: last - first + 1 }, (_, offset) => first + offset);
-      beginWarmUp(warmUp, visible, spectrumSession.generation, now);
+      beginWarmUp(warmUp, visible, spectrumSession.generation, now, reducedMotion);
     }
     const refining = refineDraw(refine, frame, now);
     const result = drawTiles(

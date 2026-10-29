@@ -1,6 +1,5 @@
 import { TILE_WIDTH } from "@/domain/spectrum/tile-key";
 import { easeOutCubic } from "@/utils/animationVariants";
-import { prefersReducedMotion } from "@/utils/prefers-reduced-motion";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -35,9 +34,15 @@ function scheduleFromCentre(warmUp: WarmUp, indices: readonly number[], firstSta
 }
 
 // Every visible tile powers on together when the spectrum appears or its analysis starts over.
-function beginWarmUp(warmUp: WarmUp, visible: readonly number[], generation: number, now: number): void {
+function beginWarmUp(
+  warmUp: WarmUp,
+  visible: readonly number[],
+  generation: number,
+  now: number,
+  reducedMotion: boolean,
+): void {
   warmUp.generation = generation;
-  warmUp.reducedMotion = prefersReducedMotion();
+  warmUp.reducedMotion = reducedMotion;
   warmUp.starts.clear();
   warmUp.pendingSeen.clear();
   scheduleFromCentre(warmUp, visible, now + (warmUp.reducedMotion ? 0 : WARM_SHOW_DELAY_MS));

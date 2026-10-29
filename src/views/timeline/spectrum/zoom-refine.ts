@@ -1,7 +1,6 @@
 import { TILE_WIDTH } from "@/domain/spectrum/tile-key";
 import { type StretchSource, stretchedBaseRect } from "@/domain/spectrum/zoom-stretch";
 import { spectrumRefineMotion } from "@/utils/animationVariants";
-import { prefersReducedMotion } from "@/utils/prefers-reduced-motion";
 import type { RefineDraw } from "@/views/timeline/spectrum/tile-cache";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -58,7 +57,13 @@ function endRefine(refine: ZoomRefine): void {
   refine.fades.clear();
 }
 
-function beginRefineIfZoomed(refine: ZoomRefine, canvas: HTMLCanvasElement, next: DrawnFrame, now: number): void {
+function beginRefineIfZoomed(
+  refine: ZoomRefine,
+  canvas: HTMLCanvasElement,
+  next: DrawnFrame,
+  now: number,
+  reducedMotion: boolean,
+): void {
   const last = refine.lastFrame;
   if (!last || last.pixelsPerSecond === next.pixelsPerSecond) return;
   if (!sameBand(last, next) || canvas.width === 0) {
@@ -69,7 +74,7 @@ function beginRefineIfZoomed(refine: ZoomRefine, canvas: HTMLCanvasElement, next
   refine.baseFrame = refine.base ? last : null;
   refine.beganAt = now;
   refine.fades.clear();
-  refine.reducedMotion = prefersReducedMotion();
+  refine.reducedMotion = reducedMotion;
 }
 
 function refineDraw(refine: ZoomRefine, frame: DrawnFrame, now: number): RefineDraw | undefined {

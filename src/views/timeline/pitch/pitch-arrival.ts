@@ -1,7 +1,6 @@
 import type { PitchLineMode } from "@/domain/pitch/pitch-line-mode";
 import type { PitchTrack } from "@/domain/pitch/track";
 import { pitchLineKeyframes, pitchLineMotion } from "@/utils/animationVariants";
-import { prefersReducedMotion } from "@/utils/prefers-reduced-motion";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -10,6 +9,7 @@ interface PitchArrival {
   viewport: HTMLElement;
   zoom: number;
   mode: PitchLineMode;
+  reducedMotion: boolean;
 }
 
 // -- State ---------------------------------------------------------------------
@@ -62,8 +62,7 @@ function scheduleLabelRises(lane: HTMLCanvasElement, zoom: number, rowDelay: num
 }
 
 // Fresh pitch wipes in row by row over the visible rows; returns a cancel that restores the resting state.
-function playPitchArrival({ scope, viewport, zoom, mode }: PitchArrival): () => void {
-  const reducedMotion = prefersReducedMotion();
+function playPitchArrival({ scope, viewport, zoom, mode, reducedMotion }: PitchArrival): () => void {
   const labels = scope.querySelectorAll<HTMLElement>("[data-word-block] > span");
   for (const label of labels) label.style.removeProperty("--rise-delay");
   scope.dataset.pitchArriving = "prep";
