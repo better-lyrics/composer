@@ -19,7 +19,7 @@ function findRepeatingStandaloneSections(lines: LyricLine[], splitChar: string):
   const keys = lines.map((line) => repeatKey(line, splitChar));
   const claimed = new Set<number>();
   const sections = claimSections(lines, keys, claimed, splitChar, MIN_SECTION_LINES);
-  for (const p of chantLoopLines(keys, SHORT_SECTION_LINES)) claimed.add(p);
+  for (const p of chantLoopLines(lines, keys, SHORT_SECTION_LINES)) claimed.add(p);
   const shortSections = claimSections(lines, keys, claimed, splitChar, SHORT_SECTION_LINES, SHORT_SECTION_LINES);
   return [...sections, ...shortSections].toSorted((a, b) => a.starts[0] - b.starts[0]);
 }
@@ -68,10 +68,11 @@ function claimSections(
 }
 
 // Lines of a short block sung again right after itself are a chant loop, not a repeated section.
-function chantLoopLines(keys: string[], k: number): number[] {
+function chantLoopLines(lines: LyricLine[], keys: string[], k: number): number[] {
   const loopLines: number[] = [];
   for (let start = 0; start + 2 * k <= keys.length; start++) {
     if (!blocksRepeat(keys, start, start + k, k)) continue;
+    if (!lines.slice(start, start + 2 * k).every(hasMainLyrics)) continue;
     for (let p = start; p < start + 2 * k; p++) loopLines.push(p);
   }
   return loopLines;

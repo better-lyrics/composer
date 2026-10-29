@@ -55,6 +55,11 @@ describe("findRepeatingStandaloneSections", () => {
       expect(detect(texts.map((t, i) => line(`${i}`, t)))).toEqual([]);
     });
 
+    it("regression: does not count blank separators as a chant loop", () => {
+      const texts = ["B", "A", "", "A", "", "verse", "B", "A"];
+      expect(spans(texts.map((t, i) => line(`${i}`, t)))).toEqual([{ starts: [0, 6], length: 2 }]);
+    });
+
     it("never takes lines a longer repeat needs", () => {
       const texts = ["a", "b", "c", "d", "verse", "a", "b", "bridge", "b", "c", "d"];
       expect(spans(texts.map((t, i) => line(`${i}`, t)))).toEqual([{ starts: [1, 8], length: 3 }]);
