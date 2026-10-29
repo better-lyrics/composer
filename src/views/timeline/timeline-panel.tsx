@@ -34,7 +34,7 @@ import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
-import { TimelineRuler } from "@/views/timeline/timeline-ruler";
+import { TimelineRuler, followRulerScroll } from "@/views/timeline/timeline-ruler";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
@@ -109,6 +109,7 @@ const TimelinePanel: React.FC = () => {
 
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const rulerTrackRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState(400);
   const [rulerLane, setRulerLane] = useState<HTMLDivElement | null>(null);
   const [rulerMarkerHost, setRulerMarkerHost] = useState<HTMLDivElement | null>(null);
@@ -189,8 +190,10 @@ const TimelinePanel: React.FC = () => {
 
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
-      setScrollLeft(e.currentTarget.scrollLeft);
-      setScrollTop(e.currentTarget.scrollTop);
+      const { scrollLeft, scrollTop } = e.currentTarget;
+      setScrollLeft(scrollLeft);
+      setScrollTop(scrollTop);
+      if (rulerTrackRef.current) followRulerScroll(rulerTrackRef.current, scrollLeft);
     },
     [setScrollLeft, setScrollTop],
   );
@@ -295,6 +298,7 @@ const TimelinePanel: React.FC = () => {
             <div className="flex flex-col flex-1 overflow-hidden">
               <TimelineRuler
                 scrollContainerRef={scrollContainerRef}
+                trackRef={rulerTrackRef}
                 laneRef={setRulerLane}
                 markerHostRef={setRulerMarkerHost}
               />
