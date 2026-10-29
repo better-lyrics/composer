@@ -12,19 +12,34 @@ interface RepeatingSection {
 }
 
 const MIN_SECTION_LINES = 3;
+const SHORT_SECTION_LINES = 2;
 
+// Two-line repeats only fill lines the longer repeats left, so they never break up a chorus.
 function findRepeatingStandaloneSections(lines: LyricLine[], splitChar: string): RepeatingSection[] {
-  const results: RepeatingSection[] = [];
-  const claimed = new Set<number>();
   const keys = lines.map((line) => repeatKey(line, splitChar));
+  const claimed = new Set<number>();
+  const sections = claimSections(lines, keys, claimed, splitChar, MIN_SECTION_LINES);
+  for (const p of chantLoopLines(lines, keys, SHORT_SECTION_LINES)) claimed.add(p);
+  const shortSections = claimSections(lines, keys, claimed, splitChar, SHORT_SECTION_LINES, SHORT_SECTION_LINES);
+  return [...sections, ...shortSections].toSorted((a, b) => a.starts[0] - b.starts[0]);
+}
+
+function claimSections(
+  lines: LyricLine[],
+  keys: string[],
+  claimed: Set<number>,
+  splitChar: string,
+  minK: number,
+  maxK = Number.POSITIVE_INFINITY,
+): RepeatingSection[] {
+  const results: RepeatingSection[] = [];
 
   for (let i = 0; i < lines.length; i++) {
     if (claimed.has(i)) continue;
     if (lines[i].groupId !== undefined) continue;
 
     let best: { starts: number[]; k: number; evened: LyricLine[] } | null = null;
-    const maxK = Math.floor((lines.length - i) / 2);
-    for (let k = maxK; k >= MIN_SECTION_LINES; k--) {
+    for (let k = Math.min(maxK, Math.floor((lines.length - i) / 2)); k >= minK; k--) {
       if (!isStandaloneBlock(lines, i, k, claimed)) continue;
       const starts = repeatStarts(lines, keys, i, k, claimed);
       if (starts.length < 2 || (best && starts.length * k <= best.starts.length * best.k)) continue;
@@ -50,6 +65,17 @@ function findRepeatingStandaloneSections(lines: LyricLine[], splitChar: string):
   }
 
   return results;
+}
+
+// Lines of a short block sung again right after itself are a chant loop, not a repeated section.
+function chantLoopLines(lines: LyricLine[], keys: string[], k: number): number[] {
+  const loopLines: number[] = [];
+  for (let start = 0; start + 2 * k <= keys.length; start++) {
+    if (!blocksRepeat(keys, start, start + k, k)) continue;
+    if (!lines.slice(start, start + 2 * k).every(hasMainLyrics)) continue;
+    for (let p = start; p < start + 2 * k; p++) loopLines.push(p);
+  }
+  return loopLines;
 }
 
 // A copy whose splits cross the others' is left out, so it cannot hide the copies that agree.
