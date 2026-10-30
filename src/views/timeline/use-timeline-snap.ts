@@ -4,17 +4,8 @@ import type { GridLines } from "@/domain/tempo/grid-points";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { snapDistancePx } from "@/stores/settings-snap";
-import { snappableBeatPoints } from "@/views/timeline/point-snap-anchors";
-import {
-  type SnapAnchor,
-  activeSnapAnchors,
-  beatAnchors,
-  collectSnapAnchors,
-  findSnapShift,
-  snapSourceOf,
-  vocalOnsetAnchors,
-} from "@/views/timeline/snap";
+import { liveSnapAnchors, snapThresholdPx } from "@/views/timeline/point-snap-anchors";
+import { type SnapAnchor, collectSnapAnchors, findSnapShift } from "@/views/timeline/snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { Modifier } from "@dnd-kit/core";
 import { useCallback, useMemo, useRef } from "react";
@@ -176,17 +167,7 @@ function useTimelineSnap(): UseTimelineSnap {
       duration: useAudioStore.getState().duration,
     };
     if (!sameActiveKey(ctx.activeKey, key)) {
-      let anchors = ctx.allAnchors;
-      if (timelineSnap && vocalOnsetSnap) anchors = anchors.concat(vocalOnsetAnchors(vocalOnsetSnapPoints));
-      anchors = anchors.concat(beatAnchors(snappableBeatPoints()));
-      ctx.activeAnchors = activeSnapAnchors(anchors, {
-        timelineSnap,
-        vocalOnsetSnap,
-        beatSnap,
-        snapWordsAndLines,
-        snapMarkers,
-        snapToPlayhead,
-      });
+      ctx.activeAnchors = liveSnapAnchors(ctx.allAnchors);
       ctx.activeKey = key;
     }
     if (isBypassing || ctx.activeAnchors.length === 0) return { shiftPx: 0, anchorTime: null };
@@ -197,7 +178,7 @@ function useTimelineSnap(): UseTimelineSnap {
       edges: proposedEdges,
       anchors: ctx.activeAnchors,
       zoom,
-      thresholdPx: (anchor) => snapDistancePx(settings, snapSourceOf(anchor.kind)),
+      thresholdPx: snapThresholdPx,
       overlapCheck: overlapCheck ? (shift) => overlapCheck(shift) : undefined,
     });
     return { shiftPx: result.shift * zoom, anchorTime: result.anchor ? result.anchor.t : null };

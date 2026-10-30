@@ -4,6 +4,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { type SnapSource, snapDistancePx } from "@/stores/settings-snap";
+import { type SnapAnchor, activeSnapAnchors, beatAnchors, snapSourceOf, vocalOnsetAnchors } from "@/views/timeline/snap";
 import type { PointSnapAnchor } from "@/views/timeline/snap-marker-math";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -56,6 +57,19 @@ function pointSnapAnchors({ includeMarkers, includeOnsets, includeBeats }: Point
   return anchors.toSorted((a, b) => a.t - b.t);
 }
 
+function liveSnapAnchors(base: SnapAnchor[]): SnapAnchor[] {
+  const settings = useSettingsStore.getState();
+  let anchors = base;
+  if (settings.timelineSnap && settings.vocalOnsetSnap)
+    anchors = anchors.concat(vocalOnsetAnchors(useTimelineStore.getState().vocalOnsetSnapPoints));
+  anchors = anchors.concat(beatAnchors(snappableBeatPoints()));
+  return activeSnapAnchors(anchors, settings);
+}
+
+function snapThresholdPx(anchor: SnapAnchor): number {
+  return snapDistancePx(useSettingsStore.getState(), snapSourceOf(anchor.kind));
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { pointSnapAnchors, snappableBeatPoints, visibleBeatPoints };
+export { liveSnapAnchors, pointSnapAnchors, snappableBeatPoints, snapThresholdPx, visibleBeatPoints };
