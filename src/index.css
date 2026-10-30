@@ -134,7 +134,9 @@ html[data-scheme="light"] {
 }
 
 /* Base styles */
+/* An app, not a document: the page never rubber-bands, so a missed wheel outside a pane does nothing. */
 html {
+  overscroll-behavior: none;
   font-size: 16px;
   color-scheme: dark;
   -webkit-font-smoothing: antialiased;
