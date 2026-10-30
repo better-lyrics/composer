@@ -1,5 +1,6 @@
 import type { Bounds } from "@/domain/word/bounds";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
+import { frameTime } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { AUDIO_STORE_PLAYBACK } from "@/views/preview/renderer-playback";
 import { cn } from "@/utils/cn";
@@ -85,7 +86,7 @@ function useFrameClock(frameRef: RefObject<HTMLIFrameElement | null>, frameOrigi
         time: audio.currentTime,
         playing: !audio.paused,
         rate: audio.playbackRate,
-        sentAt: performance.timeOrigin + performance.now(),
+        sentAt: performance.timeOrigin + frameTime(),
       };
       if (sameClock(sentRef.current, clock)) return;
       sentRef.current = clock;

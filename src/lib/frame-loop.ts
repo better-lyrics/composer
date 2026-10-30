@@ -40,6 +40,7 @@ let unheldFrameRun = 0;
 let framesSinceWake = 0;
 let hasReportedRunawayWakes = false;
 let hasReportedStaleHold = false;
+let dispatchingFrameTime: number | null = null;
 
 // -- Diagnostics --------------------------------------------------------------
 
@@ -124,8 +125,10 @@ function pump(now: number): void {
   const rescheduling = tailFrames > 0;
   // Queued before any callback runs, so nothing a subscriber does can stop the loop.
   if (rescheduling) schedule();
+  dispatchingFrameTime = now;
   for (const subscriber of subscribers) runRead(subscriber, now);
   for (const subscriber of subscribers) runWrite(subscriber, now);
+  dispatchingFrameTime = null;
   if (import.meta.env.DEV) reportRunawayFrames(rescheduling);
 }
 
@@ -177,6 +180,11 @@ function subscribeFrame(callback: FrameCallback | FramePhases, label: string): (
   };
 }
 
+// Positions drawn in a frame follow its timestamp, not the moment their callback happens to run.
+function frameTime(): number {
+  return dispatchingFrameTime ?? performance.now();
+}
+
 function nextFrame(callback: FrameCallback): number {
   return window.requestAnimationFrame(callback);
 }
@@ -187,5 +195,5 @@ function cancelNextFrame(handle: number): void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { TAIL_FRAMES, animateFrames, cancelNextFrame, holdFrames, nextFrame, subscribeFrame, wake };
+export { TAIL_FRAMES, animateFrames, cancelNextFrame, frameTime, holdFrames, nextFrame, subscribeFrame, wake };
 export type { FrameCallback, FramePhases };

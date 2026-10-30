@@ -1,4 +1,4 @@
-import { holdFrames, wake } from "@/lib/frame-loop";
+import { frameTime, holdFrames, wake } from "@/lib/frame-loop";
 import type { FrameClock, FromFrameMessage } from "@/views/preview/frame/preview-frame-protocol";
 import type { PlaybackSample, RendererPlayback } from "@/views/preview/renderer-playback";
 
@@ -51,7 +51,7 @@ function createFramePlayback(post: (message: FromFrameMessage) => void): FramePl
     },
     sample: () => {
       if (!clock) return null;
-      sample.currentTime = currentTime(performance.now());
+      sample.currentTime = currentTime(frameTime());
       sample.paused = !clock.playing;
       sample.playbackRate = clock.rate;
       return sample;

@@ -1,4 +1,5 @@
 import type { SavedAudioSource } from "@/domain/project/audio-source";
+import { frameTime } from "@/lib/frame-loop";
 import { useSettingsStore } from "@/stores/settings";
 import { create } from "zustand";
 
@@ -206,7 +207,7 @@ function measuredElementTime(element: HTMLAudioElement, running: boolean, now: n
     lastSeenClock.seenAt = now;
     return time;
   }
-  const elapsedMs = Math.min(MAX_EXTRAPOLATION_MS, now - lastSeenClock.seenAt);
+  const elapsedMs = Math.min(MAX_EXTRAPOLATION_MS, Math.max(0, now - lastSeenClock.seenAt));
   return time + (elapsedMs / 1000) * element.playbackRate;
 }
 
@@ -215,11 +216,12 @@ function measuredElementTime(element: HTMLAudioElement, running: boolean, now: n
 function livePlaybackTime(): number {
   const { audioElement, currentTime } = useAudioStore.getState();
   if (!audioElement) return currentTime;
-  const now = performance.now();
+  const now = frameTime();
   const running = isClockRunning(audioElement);
   const measured = measuredElementTime(audioElement, running, now);
   const rate = audioElement.playbackRate;
-  const elapsedMs = now - smoothedClock.at;
+  // An event handled after a frame began stamps the clock later than that frame's time.
+  const elapsedMs = Math.max(0, now - smoothedClock.at);
   const predicted = smoothedClock.time + (elapsedMs / 1000) * smoothedClock.rate;
   const resync =
     !running ||
