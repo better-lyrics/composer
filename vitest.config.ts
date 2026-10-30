@@ -35,6 +35,7 @@ export default defineConfig({
       "react-router-dom",
       "node-diff3",
       "diff",
+      "react-dom/client",
     ],
   },
   test: {
