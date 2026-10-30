@@ -1,3 +1,4 @@
+import { notePlacement } from "@/lib/replay-cue";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
@@ -156,7 +157,9 @@ const TimelineWaveform: React.FC = () => {
         return;
       }
       clearLoopRegion();
-      seekTo(snapPlayheadTime(time, e.metaKey));
+      const target = snapPlayheadTime(time, e.metaKey);
+      seekTo(target);
+      notePlacement(target, "pointer");
     },
     [duration, totalWidth, timeFromClick, seekTo],
   );

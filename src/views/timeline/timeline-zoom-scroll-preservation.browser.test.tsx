@@ -7,7 +7,7 @@ import { render } from "@/test/render";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { MAX_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect, useRef } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -587,7 +587,7 @@ describe("Timeline zoom scrollTop preservation", () => {
 
     it("zoom-in button is disabled at MAX_ZOOM so users cannot trigger a no-op layout change", async () => {
       seedFullPanel(50, 4);
-      useTimelineStore.setState({ zoom: 500 });
+      useTimelineStore.setState({ zoom: MAX_ZOOM });
       const screen = await render(<TimelinePanel />);
       await expect.element(screen.getByRole("button", { name: "Zoom in" })).toBeDisabled();
     });

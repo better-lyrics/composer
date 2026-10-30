@@ -145,6 +145,14 @@ const TIMELINE_CATALOG_ENTRIES = {
     keywords: ["auto scroll"],
     settingKey: "followPlayhead",
   },
+  returnToCue: {
+    section: "timeline",
+    group: "Playback",
+    label: "Return to cue",
+    description: "Play starts from the cue, and stopping puts the playhead back on it.",
+    keywords: ["cue", "replay", "return", "stop", "onset", "latch"],
+    settingKey: "returnToCue",
+  },
   selectionLeadIn: {
     section: "timeline",
     group: "Playback",

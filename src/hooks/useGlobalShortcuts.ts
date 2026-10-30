@@ -1,7 +1,8 @@
 import type { ProjectTab } from "@/domain/project/tab";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { notePlacement } from "@/lib/replay-cue";
 import { togglePlayback } from "@/lib/sync-count-in";
-import { seekBy, toggledPlaybackRate, useAudioStore } from "@/stores/audio";
+import { livePlaybackTime, seekBy, toggledPlaybackRate, useAudioStore } from "@/stores/audio";
 import { toggledStem, useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { toggleLoopShortcut } from "@/views/timeline/selection-playback";
@@ -17,20 +18,25 @@ function togglePlaybackSpeed(): void {
   useAudioStore.getState().setPlaybackRate(toggledPlaybackRate());
 }
 
+function seekAndNote(seconds: number): void {
+  seekBy(seconds);
+  notePlacement(livePlaybackTime(), "keyboard");
+}
+
 function seekBackward(): void {
-  seekBy(-useSettingsStore.getState().seekStep);
+  seekAndNote(-useSettingsStore.getState().seekStep);
 }
 
 function seekForward(): void {
-  seekBy(useSettingsStore.getState().seekStep);
+  seekAndNote(useSettingsStore.getState().seekStep);
 }
 
 function fineSeekBackward(): void {
-  seekBy(-useSettingsStore.getState().fineSeekStep);
+  seekAndNote(-useSettingsStore.getState().fineSeekStep);
 }
 
 function fineSeekForward(): void {
-  seekBy(useSettingsStore.getState().fineSeekStep);
+  seekAndNote(useSettingsStore.getState().fineSeekStep);
 }
 
 function toggleStem(): void {

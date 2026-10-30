@@ -10,6 +10,7 @@ import { BridgeSection } from "@/ui/settings/bridge-section";
 import { CobaltInstancesSetting } from "@/ui/settings/cobalt-instances-setting";
 import { DefaultPlaybackRateSetting } from "@/ui/settings/default-playback-rate-setting";
 import { LibraryViewSetting } from "@/ui/settings/library-view-setting";
+import { LoupeSizeSetting } from "@/ui/settings/loupe-size/loupe-size-setting";
 import { ResetAllSettingsSetting, ResetTourSetting } from "@/ui/settings/reset-settings";
 import type { SelectOption } from "@/ui/select";
 import type { SliderAction } from "@/ui/settings/setting-controls";
@@ -30,7 +31,7 @@ import {
   SPECTRUM_TOP_OPTIONS,
 } from "@/ui/spectrum-options";
 import { formatWholeMegabytes } from "@/utils/format-file-size";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { MAX_ZOOM, MIN_ZOOM, ZOOM_STEP, useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -102,9 +103,9 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   keepAlignmentModelLoaded: TOGGLE,
   defaultZoom: {
     kind: "slider",
-    min: 20,
-    max: 500,
-    step: 20,
+    min: MIN_ZOOM,
+    max: MAX_ZOOM,
+    step: ZOOM_STEP,
     format: (v) => `${v} px/s`,
     action: {
       label: "Use current",
@@ -140,6 +141,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   snapDistancePlayhead: SNAP_DISTANCE,
   snapPlayheadToPoints: TOGGLE,
   followPlayhead: TOGGLE,
+  returnToCue: TOGGLE,
   rollingEdit: TOGGLE,
   syllablesFollowRolling: TOGGLE,
   previewSidebar: TOGGLE,
@@ -158,6 +160,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   spectrumScale: { kind: "select", options: [...FREQUENCY_SCALE_OPTIONS] },
   spectrumTop: { kind: "select", options: [...SPECTRUM_TOP_OPTIONS] },
   spectrumWindow: { kind: "select", options: [...ANALYSIS_WINDOW_OPTIONS] },
+  loupeSize: { kind: "custom", Component: LoupeSizeSetting },
   spectrumPhase: { kind: "select", options: [...PHASE_COLOUR_OPTIONS] },
   splitCharacter: { kind: "custom", Component: SplitCharacterSetting },
   nudgeAmount: { kind: "slider", min: 0.01, max: 0.2, step: 0.01, format: asMilliseconds },

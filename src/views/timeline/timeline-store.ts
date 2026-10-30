@@ -52,6 +52,7 @@ interface TimelineState {
   selectionPlayback: SelectionPlaybackMode | null;
   loopRegion: LoopRegion | null;
   loopRegionDrag: LoopRegionDrag | null;
+  cue: number | null;
   waveformReady: boolean;
 
   clipboard: ClipboardData | null;
@@ -111,6 +112,7 @@ interface TimelineActions {
   setEditingWord: (editing: EditingWord | null) => void;
   clearEditingWord: () => void;
   resetProjectScope: () => void;
+  setCue: (cue: number | null) => void;
   toggleMarkerMode: () => void;
   setHoveredSnapPointId: (id: string | null) => void;
   setInstanceCollapsed: (key: string, isCollapsed: boolean) => void;
@@ -135,7 +137,7 @@ interface TimelineActions {
 const GUTTER_WIDTH = 48;
 const WAVEFORM_HEIGHT = 80;
 const MIN_ZOOM = 20;
-const MAX_ZOOM = 500;
+const MAX_ZOOM = 980;
 const ZOOM_STEP = 20;
 const MIN_ROW_HEIGHT = 32;
 const MAX_ROW_HEIGHT = 120;
@@ -145,12 +147,13 @@ const MAX_ROW_HEIGHT = 120;
 const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
   const settings = useSettingsStore.getState();
   return {
-    zoom: settings.defaultZoom,
+    zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, settings.defaultZoom)),
     textVariant: "original",
     selectedWords: [],
     selectionPlayback: null,
     loopRegion: null,
     loopRegionDrag: null,
+    cue: null,
     waveformReady: false,
 
     clipboard: null,
@@ -231,6 +234,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
         selectionPlayback: null,
         loopRegion: null,
         loopRegionDrag: null,
+        cue: null,
         contextMenu: null,
         editingWord: null,
         pasteMode: { status: "idle" },
@@ -240,6 +244,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
         focusedGroup: null,
         textVariant: "original",
       }),
+    setCue: (cue) => set({ cue }),
     toggleMarkerMode: () => set((s) => ({ markerMode: !s.markerMode })),
     setHoveredSnapPointId: (hoveredSnapPointId) => set({ hoveredSnapPointId }),
     setInstanceCollapsed: (key, isCollapsed) =>

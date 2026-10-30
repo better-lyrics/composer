@@ -1,4 +1,6 @@
+import { notePlacement } from "@/lib/replay-cue";
 import { useAudioStore } from "@/stores/audio";
+import { CueMarker } from "@/views/timeline/cue-marker";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
 import { placeSnapPoint } from "@/views/timeline/place-snap-point";
@@ -72,7 +74,10 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, track
     const x = event.clientX - event.currentTarget.getBoundingClientRect().left + container.scrollLeft;
     const time = Math.min(duration, Math.max(0, x / zoom));
     if (useTimelineStore.getState().markerMode || event.altKey) placeSnapPoint(time);
-    else seekTo(time);
+    else {
+      seekTo(time);
+      notePlacement(time, "pointer");
+    }
   };
 
   return (
@@ -105,6 +110,7 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, track
             </span>
           ))}
           <div ref={markerHostRef} className="absolute inset-0 pointer-events-none" />
+          <CueMarker />
         </div>
       </div>
       {markerMode && (

@@ -5,6 +5,9 @@ import { useTimelineZoom } from "@/views/timeline/use-timeline-zoom";
 import { IconMinus, IconPlus } from "@tabler/icons-react";
 import { useRef } from "react";
 
+// The old zoom cap stays 100%, so the label keeps its meaning past it.
+const ZOOM_AT_100_PERCENT = 500;
+
 const TimelineZoomControls: React.FC<{ scrollContainerRef?: React.RefObject<HTMLDivElement | null> }> = ({
   scrollContainerRef,
 }) => {
@@ -16,7 +19,7 @@ const TimelineZoomControls: React.FC<{ scrollContainerRef?: React.RefObject<HTML
   const zoomIn = scrollContainerRef ? anchoredZoom.zoomIn : storeZoomIn;
   const zoomOut = scrollContainerRef ? anchoredZoom.zoomOut : storeZoomOut;
 
-  const zoomPercent = Math.round(((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100);
+  const zoomPercent = Math.round(((zoom - MIN_ZOOM) / (ZOOM_AT_100_PERCENT - MIN_ZOOM)) * 100);
   return (
     <div className="tray" {...KEEPS_POPOVERS_OPEN_PROPS}>
       <IconButton

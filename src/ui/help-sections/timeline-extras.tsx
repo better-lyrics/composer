@@ -94,11 +94,45 @@ const TimelineExtras: React.FC = () => (
       </p>
     </HelpTopic>
 
+    <HelpTopic title="Replay from a cue">
+      <p className={PROSE}>
+        The cue is the spot you keep coming back to, like the onset you are lining a word up with. Click or drag on the
+        ruler or the waveform to set it. While paused, moving the playhead with the keyboard moves the cue too. A small
+        notch on the ruler shows where it is.
+      </p>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
+        <li>
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.playFromCue")} /> to play from the cue. Press it
+          again while playing to start over from the cue.
+        </li>
+        <li>
+          Turn on Return to cue (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleReturnToCue")} />, or its
+          button in the header) and <InlineKeyBadge keys={getEffectiveKeysArray("global.playPause")} /> plays from the
+          cue every time. Stopping puts the playhead back on it. It stays on until you turn it off.
+        </li>
+        <li>
+          To line the cue up with an onset, pause and nudge with{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekBackwardFine")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekForwardFine")} />. While playing, the seek keys move
+          only the playhead, so the cue stays put.
+        </li>
+        <li>
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.playFromCue")} /> plays straight through a loop region
+          you drew. An open group still keeps playback inside it.
+        </li>
+      </ul>
+    </HelpTopic>
+
     <HelpTopic title="Header toolbar">
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           <strong>Follow</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleFollow")} />
           ): auto-scrolls the view to keep the playhead visible during playback.
+        </li>
+        <li>
+          <strong>Return to cue</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleReturnToCue")} />
+          ): <InlineKeyBadge keys={getEffectiveKeysArray("global.playPause")} /> plays from the cue and stops back on
+          it.
         </li>
         <li>
           <strong>Rolling</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleRollingEdit")} />
@@ -135,8 +169,8 @@ const TimelineExtras: React.FC = () => (
         </li>
       </ul>
       <p className={`${PROSE} mt-3`}>
-        Snap remembers its state across reloads. Follow, Rolling and Preview start each session from their defaults in{" "}
-        <SettingLink section="timeline" />.
+        Snap and Return to cue remember their state across reloads. Follow, Rolling and Preview start each session from
+        their defaults in <SettingLink section="timeline" />.
       </p>
     </HelpTopic>
 
@@ -196,7 +230,8 @@ const TimelineExtras: React.FC = () => (
           While the spectrum shows, dragging a word edge, nudging it or pressing{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordBegin")} /> or{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} /> opens a small magnifier with the
-          spectrum around that edge. Line the edge up with the sound.
+          spectrum around that edge. Line the edge up with the sound. <SettingLink setting="loupeSize" /> sets how big
+          it is.
         </li>
         <li>
           Once vocals are separated, press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.togglePitchLine")} />{" "}

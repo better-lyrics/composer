@@ -13,6 +13,15 @@ import { focusBounds } from "@/views/timeline/group-focus";
 import { soloPlayStart } from "@/views/timeline/solo-playback";
 import { type SelectionPlaybackMode, useTimelineStore } from "@/views/timeline/timeline-store";
 
+// -- State --------------------------------------------------------------------
+
+let skipRegionAdoption = false;
+
+// A play() that never starts reverts to paused, so the skip must not outlive it.
+useAudioStore.subscribe((state, previous) => {
+  if (previous.isPlaying && !state.isPlaying) skipRegionAdoption = false;
+});
+
 // -- Reads --------------------------------------------------------------------
 
 function currentSelectionBounds(): Bounds | null {
@@ -80,8 +89,30 @@ function playLoopRegion(mode: SelectionPlaybackMode): boolean {
   return true;
 }
 
+// Plain playback from a point: ends any selection playback and leaves a drawn region alone.
+// Only a play that starts from paused fires the adoption, so only that one may skip it.
+function skipLoopRegionOnNextPlay(): void {
+  skipRegionAdoption = !useAudioStore.getState().isPlaying && useTimelineStore.getState().loopRegion !== null;
+}
+
+// An open group still bounds plain playback; already-playing audio fires no play event to enforce it.
+function playPlain(from: number): number {
+  stopSelectionPlayback({ pause: false });
+  skipLoopRegionOnNextPlay();
+  const range = currentPlaybackRange();
+  const start = (range && soloPlayStart(from, range)) ?? from;
+  const audio = useAudioStore.getState();
+  audio.seekTo(start);
+  audio.setIsPlaying(true);
+  return start;
+}
+
 // Transport Play on the Timeline plays a drawn region, looped or once as its Loop toggle says.
 function adoptLoopRegionForPlay(): void {
+  if (skipRegionAdoption) {
+    skipRegionAdoption = false;
+    return;
+  }
   const { loopRegion, selectionPlayback, setSelectionPlayback } = useTimelineStore.getState();
   if (!loopRegion || selectionPlayback !== null || useProjectStore.getState().activeTab !== "timeline") return;
   setSelectionPlayback(loopRegion.loops ? "loop" : "once");
@@ -166,6 +197,8 @@ export {
   loopsRange,
   loopSelection,
   playLoopRegion,
+  playPlain,
+  skipLoopRegionOnNextPlay,
   playSelection,
   selectLine,
   selectWordUnlessSelected,

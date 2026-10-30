@@ -1,10 +1,11 @@
 import { scrubPreview } from "@/audio/scrub-preview";
 import { DEFAULT_SCRUB_OPTS, type ScrubSample, computeScrubVelocity } from "@/audio/scrub-velocity";
+import { notePlacement } from "@/lib/replay-cue";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { computeAnchoredScrollLeft } from "@/utils/timeline/zoom-anchor";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
-import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, ZOOM_STEP, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeScrubTime, decideWheelAction, normalizeWheelDelta } from "@/views/timeline/timeline-wheel";
 import { type RefObject, useCallback, useEffect, useRef } from "react";
 
@@ -48,7 +49,7 @@ function useTimelineWheel(scrollContainerRef: RefObject<HTMLDivElement | null>, 
       if (action.kind === "zoom") {
         const anchorViewportX = e.clientX - rect.left - GUTTER_WIDTH;
         const cursorTime = (anchorViewportX + container.scrollLeft) / zoom;
-        const delta = e.deltaY > 0 ? -20 : 20;
+        const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
         const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + delta));
         if (newZoom === zoom) return;
         useTimelineStore.getState().setZoom(newZoom);
@@ -60,6 +61,7 @@ function useTimelineWheel(scrollContainerRef: RefObject<HTMLDivElement | null>, 
         const currentTime = livePlaybackTime();
         const newTime = computeScrubTime(currentTime, normalizeWheelDelta(e.deltaY, e.deltaMode), zoom, duration);
         useAudioStore.getState().seekTo(newTime);
+        notePlacement(newTime, "keyboard");
 
         const curr: ScrubSample = { time: newTime, wallClockMs: performance.now() };
         const velocity = computeScrubVelocity(prevScrubSampleRef.current, curr, DEFAULT_SCRUB_OPTS);

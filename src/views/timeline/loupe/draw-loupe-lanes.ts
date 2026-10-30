@@ -1,5 +1,5 @@
 import type { WordTiming } from "@/domain/word/timing";
-import { LOUPE_CANVAS, type LoupeFrame, colour, xOf } from "@/views/timeline/loupe/draw-loupe";
+import { type LoupeCanvas, type LoupeFrame, colour, xOf } from "@/views/timeline/loupe/draw-loupe";
 
 // -- Types --------------------------------------------------------------------
 
@@ -31,8 +31,8 @@ const MIN_LABEL_WIDTH = 14;
 
 // -- Helpers ------------------------------------------------------------------
 
-function laneRows(fontFamily: string): Record<"word" | "bg", LaneRow> {
-  const top = LOUPE_CANVAS.spectrumHeight + LOUPE_CANVAS.rulerHeight;
+function laneRows(canvas: LoupeCanvas, fontFamily: string): Record<"word" | "bg", LaneRow> {
+  const top = canvas.spectrumHeight + canvas.rulerHeight;
   return {
     word: {
       y: top + LANE_PAD,
@@ -66,12 +66,12 @@ function blockFill(frame: LoupeFrame, agent: string, light: boolean, active: boo
 // A scaled copy of the edited line's main and background lanes, using the word block recipe.
 function drawLoupeLanes(frame: LoupeFrame, lanes: LoupeLaneWords): void {
   const { context } = frame;
-  const top = LOUPE_CANVAS.spectrumHeight + LOUPE_CANVAS.rulerHeight;
+  const top = frame.canvas.spectrumHeight + frame.canvas.rulerHeight;
   context.fillStyle = colour(frame, "--well");
-  context.fillRect(0, top, LOUPE_CANVAS.width, LOUPE_CANVAS.height - top);
+  context.fillRect(0, top, frame.canvas.width, frame.canvas.height - top);
   const light = document.documentElement.dataset.scheme === "light";
   const ink = colour(frame, "--color-composer-text");
-  const rows = laneRows(colour(frame, "--font-sans"));
+  const rows = laneRows(frame.canvas, colour(frame, "--font-sans"));
   context.textBaseline = "middle";
   context.textAlign = "center";
   for (const track of ["word", "bg"] as const) {
@@ -80,7 +80,7 @@ function drawLoupeLanes(frame: LoupeFrame, lanes: LoupeLaneWords): void {
     words.forEach((word, wordIndex) => {
       const x = xOf(frame, word.begin) + 0.5;
       const width = Math.max(xOf(frame, word.end) - xOf(frame, word.begin) - 1, MIN_BLOCK_WIDTH);
-      if (x > LOUPE_CANVAS.width || x + width < 0) return;
+      if (x > frame.canvas.width || x + width < 0) return;
       const active = lanes.playheadSeconds >= word.begin && lanes.playheadSeconds < word.end;
       const edited = lanes.edited.track === track && lanes.edited.wordIndex === wordIndex;
       context.save();
@@ -103,7 +103,7 @@ function drawLoupeLanes(frame: LoupeFrame, lanes: LoupeLaneWords): void {
       context.rect(x + LABEL_INSET, row.y, width - LABEL_INSET * 2, row.height);
       context.clip();
       const shownLeft = Math.max(x, 0);
-      const shownRight = Math.min(x + width, LOUPE_CANVAS.width);
+      const shownRight = Math.min(x + width, frame.canvas.width);
       if (shownRight - shownLeft > MIN_LABEL_WIDTH) {
         context.fillStyle = ink;
         context.globalAlpha = row.textAlpha;

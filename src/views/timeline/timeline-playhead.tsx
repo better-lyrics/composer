@@ -1,6 +1,7 @@
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { GUTTER_WIDTH } from "@/views/timeline/coords";
+import { CueFlash } from "@/views/timeline/cue-flash";
 import { createPlayheadFrame, readPlayheadFrame, writePlayheadFrame } from "@/views/timeline/playhead-frame";
 import { createPlayheadDrag } from "@/views/timeline/playhead-drag";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
@@ -130,6 +131,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
       className="absolute inset-0 pointer-events-none overflow-hidden z-50"
       style={{ clipPath: `inset(0 0 0 ${GUTTER_WIDTH}px)` }}
     >
+      <CueFlash scrollContainerRef={scrollContainerRef} />
       <div
         ref={playheadRef}
         role="separator"

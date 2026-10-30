@@ -19,7 +19,7 @@ interface RetiredSettings {
 
 // -- Constants ----------------------------------------------------------------
 
-const SETTINGS_PERSIST_VERSION = 15;
+const SETTINGS_PERSIST_VERSION = 16;
 
 // -- Migration ----------------------------------------------------------------
 
@@ -73,6 +73,8 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
     pitchLine,
     showSpectrum,
     spectrumBandHeight,
+    loupeWidth,
+    loupeHeight,
     spectrumSource,
     spectrumPalette,
     spectrumContrast,
@@ -87,6 +89,8 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
     ...sanitizeSpectrumSettings({
       showSpectrum,
       spectrumBandHeight,
+      loupeWidth,
+      loupeHeight,
       spectrumSource,
       spectrumPalette,
       spectrumContrast,

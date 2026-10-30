@@ -1,6 +1,7 @@
 import { pitchRangeBetween } from "@/domain/pitch/line-range";
 import type { PitchTrack } from "@/domain/pitch/track";
 import { voicedRuns } from "@/domain/pitch/voiced-runs";
+import { LOUPE_FIXED, type LoupeSize } from "@/domain/spectrum/loupe-size";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { type GridLines, gridPoints } from "@/domain/tempo/grid-points";
 import type { Bounds } from "@/domain/word/bounds";
@@ -9,8 +10,16 @@ import { CANVAS_MONO_LABEL_FONT } from "@/views/timeline/canvas-fonts";
 
 // -- Types --------------------------------------------------------------------
 
+interface LoupeCanvas {
+  width: number;
+  height: number;
+  spectrumHeight: number;
+  rulerHeight: number;
+}
+
 interface LoupeFrame {
   context: CanvasRenderingContext2D;
+  canvas: LoupeCanvas;
   styles: CSSStyleDeclaration;
   originX: number;
   pixelsPerSecond: number;
@@ -19,12 +28,20 @@ interface LoupeFrame {
 // -- Constants ----------------------------------------------------------------
 
 const LOUPE_ZOOM = 3;
-const LOUPE_CANVAS = { width: 428, height: 202, spectrumHeight: 124, rulerHeight: 18 } as const;
 const RULER_TICK_SECONDS = 0.05;
 const BEAT_STRENGTH = { bar: 0.4, beat: 0.2, sub: 0.09 } as const;
 const PITCH_INSET = 12;
 
 // -- Helpers ------------------------------------------------------------------
+
+function loupeCanvas(size: LoupeSize): LoupeCanvas {
+  return {
+    width: size.width,
+    spectrumHeight: size.height,
+    rulerHeight: LOUPE_FIXED.rulerHeight,
+    height: size.height + LOUPE_FIXED.rulerHeight + LOUPE_FIXED.lanesHeight,
+  };
+}
 
 function xOf(frame: LoupeFrame, seconds: number): number {
   return Math.round(seconds * frame.pixelsPerSecond - frame.originX);
@@ -33,7 +50,7 @@ function xOf(frame: LoupeFrame, seconds: number): number {
 function visibleSpan(frame: LoupeFrame): Bounds {
   return {
     begin: frame.originX / frame.pixelsPerSecond,
-    end: (frame.originX + LOUPE_CANVAS.width) / frame.pixelsPerSecond,
+    end: (frame.originX + frame.canvas.width) / frame.pixelsPerSecond,
   };
 }
 
@@ -45,12 +62,12 @@ function colour(frame: LoupeFrame, name: string): string {
 
 function drawLoupeRuler(frame: LoupeFrame): void {
   const { context } = frame;
-  const top = LOUPE_CANVAS.spectrumHeight;
-  const height = LOUPE_CANVAS.rulerHeight;
+  const top = frame.canvas.spectrumHeight;
+  const height = frame.canvas.rulerHeight;
   context.fillStyle = colour(frame, "--color-composer-bg-dark");
-  context.fillRect(0, top, LOUPE_CANVAS.width, height);
+  context.fillRect(0, top, frame.canvas.width, height);
   context.fillStyle = colour(frame, "--divider");
-  context.fillRect(0, top + height - 1, LOUPE_CANVAS.width, 1);
+  context.fillRect(0, top + height - 1, frame.canvas.width, 1);
   const span = visibleSpan(frame);
   const labelEvery = frame.pixelsPerSecond * 0.25 >= 64 ? 0.25 : 0.5;
   const faint = colour(frame, "--color-composer-text-faint");
@@ -75,7 +92,7 @@ function drawLoupeRuler(frame: LoupeFrame): void {
 function drawLoupeBeats(frame: LoupeFrame, grid: BeatGrid, lines: GridLines): void {
   const { context } = frame;
   const span = visibleSpan(frame);
-  const top = LOUPE_CANVAS.spectrumHeight;
+  const top = frame.canvas.spectrumHeight;
   const mark = colour(frame, "--color-composer-text-tertiary");
   for (const point of gridPoints(grid, span.begin, span.end, frame.pixelsPerSecond, lines)) {
     const x = xOf(frame, point.t);
@@ -96,7 +113,7 @@ function drawLoupePitch(frame: LoupeFrame, track: PitchTrack, lineSpan: Bounds):
   const span = visibleSpan(frame);
   const { low, high } = pitchRangeBetween(track, lineSpan.begin, lineSpan.end);
   const top = PITCH_INSET;
-  const bottom = LOUPE_CANVAS.spectrumHeight - PITCH_INSET;
+  const bottom = frame.canvas.spectrumHeight - PITCH_INSET;
   const yOf = (semitones: number) =>
     bottom - ((Math.min(high, Math.max(low, semitones)) - low) / (high - low)) * (bottom - top);
   context.save();
@@ -120,29 +137,28 @@ function drawLoupePitch(frame: LoupeFrame, track: PitchTrack, lineSpan: Bounds):
 
 function drawLoupePlayhead(frame: LoupeFrame, seconds: number): void {
   const x = xOf(frame, seconds);
-  if (x < -2 || x > LOUPE_CANVAS.width + 2) return;
+  if (x < -2 || x > frame.canvas.width + 2) return;
   frame.context.fillStyle = colour(frame, "--color-composer-accent");
-  frame.context.fillRect(x - 1, 0, 2, LOUPE_CANVAS.height);
+  frame.context.fillRect(x - 1, 0, 2, frame.canvas.height);
 }
 
 // The edited edge runs the full height: white over the spectrum, ink over the lanes.
 function drawLoupeEdge(frame: LoupeFrame, seconds: number): void {
   const { context } = frame;
   const x = xOf(frame, seconds);
-  const spectrumHeight = LOUPE_CANVAS.spectrumHeight;
+  const spectrumHeight = frame.canvas.spectrumHeight;
   context.fillStyle = "#ffffff";
   context.fillRect(x - 1, 0, 2, spectrumHeight);
   context.fillStyle = colour(frame, "--color-composer-text");
-  context.fillRect(x - 1, spectrumHeight, 2, LOUPE_CANVAS.height - spectrumHeight);
+  context.fillRect(x - 1, spectrumHeight, 2, frame.canvas.height - spectrumHeight);
   context.beginPath();
-  context.roundRect(x - 4, spectrumHeight + 3, 8, LOUPE_CANVAS.rulerHeight - 6, 2);
+  context.roundRect(x - 4, spectrumHeight + 3, 8, frame.canvas.rulerHeight - 6, 2);
   context.fill();
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export {
-  LOUPE_CANVAS,
   LOUPE_ZOOM,
   colour,
   drawLoupeBeats,
@@ -150,6 +166,7 @@ export {
   drawLoupePitch,
   drawLoupePlayhead,
   drawLoupeRuler,
+  loupeCanvas,
   xOf,
 };
-export type { LoupeFrame };
+export type { LoupeCanvas, LoupeFrame };

@@ -5,5 +5,10 @@ declare module "react" {
   interface CSSProperties {
     "--agent"?: string;
     "--group"?: string;
+    // Loupe size layer geometry, derived from the live size and window.
+    "--loupe-bar-top"?: string;
+    "--loupe-card-top"?: string;
+    "--loupe-canvas-w"?: string;
+    "--loupe-canvas-h"?: string;
   }
 }
