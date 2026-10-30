@@ -127,7 +127,7 @@ function collectSnapAnchors(
   }
 
   if (playheadTime !== null) {
-    anchors.push(playheadAnchor(playheadTime));
+    anchors.push({ t: playheadTime, kind: "playhead", label: "playhead" });
   }
 
   anchors.push(...vocalOnsetAnchors(vocalOnsetTimes));
@@ -138,10 +138,6 @@ function collectSnapAnchors(
 
   anchors.sort((a, b) => a.t - b.t);
   return anchors;
-}
-
-function playheadAnchor(t: number): SnapAnchor {
-  return { t, kind: "playhead", label: "playhead" };
 }
 
 function vocalOnsetAnchors(times: readonly number[]): SnapAnchor[] {
@@ -215,14 +211,5 @@ function findSnapShift(args: FindSnapShiftArgs): SnapResult {
 
 // -- Exports -------------------------------------------------------------------
 
-export {
-  activeSnapAnchors,
-  beatAnchors,
-  collectSnapAnchors,
-  findSnapShift,
-  playheadAnchor,
-  selfKey,
-  snapSourceOf,
-  vocalOnsetAnchors,
-};
+export { activeSnapAnchors, beatAnchors, collectSnapAnchors, findSnapShift, selfKey, snapSourceOf, vocalOnsetAnchors };
 export type { SnapAnchor };

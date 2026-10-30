@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -5,10 +6,13 @@ import { createLine, createWord } from "@/test/factories";
 import { snappedPasteTime } from "@/views/timeline/paste-snap";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { beforeEach, describe, expect, it } from "vitest";
 
 const clip = (...words: [number, number][]): ClipboardData => ({
-  entries: words.map(([begin, end]) => ({ word: createWord({ text: "x", begin, end }), lineOffset: 0, trackType: "word" })),
+  entries: words.map(([begin, end]) => ({
+    word: createWord({ text: "x", begin, end }),
+    lineOffset: 0,
+    trackType: "word",
+  })),
 });
 
 const wordTarget = { lineIndex: 0, lane: "word" as const, bypass: false };
@@ -17,14 +21,22 @@ function seed(targetWords: [number, number][], otherWords: [number, number][] = 
   const words = (pairs: [number, number][]) => pairs.map(([begin, end]) => ({ text: "w", begin, end }));
   useProjectStore.setState({
     lines: [
-      createLine({ id: "target", text: targetWords.length ? "w" : "", words: targetWords.length ? words(targetWords) : undefined }),
-      createLine({ id: "other", text: otherWords.length ? "w" : "", words: otherWords.length ? words(otherWords) : undefined }),
+      createLine({
+        id: "target",
+        text: targetWords.length ? "w" : "",
+        words: targetWords.length ? words(targetWords) : undefined,
+      }),
+      createLine({
+        id: "other",
+        text: otherWords.length ? "w" : "",
+        words: otherWords.length ? words(otherWords) : undefined,
+      }),
     ],
     groups: [],
     customSnapPoints: [],
     beatGrid: null,
   });
-  useAudioStore.setState({ duration: 60, currentTime: playhead, audioElement: null });
+  useAudioStore.setState({ duration: 60, currentTime: playhead, audioElement: null, isPlaying: false });
 }
 
 beforeEach(() => {
@@ -70,7 +82,10 @@ describe("snappedPasteTime", () => {
 
     it("returns the raw time while bypass is held", () => {
       seed([], [], 10);
-      expect(snappedPasteTime(clip([2, 2.5]), 10.05, { ...wordTarget, bypass: true })).toEqual({ time: 10.05, anchorTime: null });
+      expect(snappedPasteTime(clip([2, 2.5]), 10.05, { ...wordTarget, bypass: true })).toEqual({
+        time: 10.05,
+        anchorTime: null,
+      });
     });
 
     it("returns the raw time when Snap is off", () => {
@@ -82,6 +97,14 @@ describe("snappedPasteTime", () => {
     it("returns the raw time for an empty clipboard", () => {
       seed([], [], 10);
       expect(snappedPasteTime({ entries: [] }, 10.05, wordTarget)).toEqual({ time: 10.05, anchorTime: null });
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: ignores the playhead while audio plays, so the preview and the click agree", () => {
+      seed([], [], 10);
+      useAudioStore.setState({ isPlaying: true });
+      expect(snappedPasteTime(clip([2, 2.5]), 10.05, wordTarget)).toEqual({ time: 10.05, anchorTime: null });
     });
   });
 });

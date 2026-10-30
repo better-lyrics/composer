@@ -1,3 +1,4 @@
+import { type RefObject, useEffect, useMemo, useReducer, useState } from "react";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen, openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
@@ -5,16 +6,16 @@ import { useProjectStore } from "@/stores/project";
 import { clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import { commitPasteAt } from "@/views/timeline/commit-paste";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
+import { instancePasteClipboard } from "@/views/timeline/instance-paste-template";
 import { lastKnownPointer } from "@/views/timeline/last-pointer";
+import { currentOverviewBandHeight, useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { computeGhosts } from "@/views/timeline/paste-ghosts";
 import { snappedPasteTime } from "@/views/timeline/paste-snap";
-import { currentOverviewBandHeight, useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { wordInsetPx } from "@/views/timeline/row-geometry";
 import type { ClipboardData } from "@/views/timeline/selection-types";
-import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
+import { holdsSnapBypass, syncSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
-import { type RefObject, useEffect, useMemo, useReducer, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -22,7 +23,6 @@ interface PastePreviewProps {
   clipboard: ClipboardData;
   scrollContainerRef: RefObject<HTMLDivElement | null>;
 }
-
 
 // -- Constants -----------------------------------------------------------------
 
@@ -32,15 +32,14 @@ const WAVEFORM_BORDER = 1;
 
 const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerRef }) => {
   const [mousePos, setMousePos] = useState(lastKnownPointer);
-  const [bypassSnap, setBypassSnap] = useState(false);
   const [, redrawOnScroll] = useReducer((tick: number) => tick + 1, 0);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({ clientX: e.clientX, clientY: e.clientY });
-      setBypassSnap(holdsSnapBypass(e));
+      syncSnapBypass(e);
     };
-    const handleModifierChange = (e: KeyboardEvent) => setBypassSnap(holdsSnapBypass(e));
+    const handleModifierChange = (e: KeyboardEvent) => syncSnapBypass(e);
 
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("keydown", handleModifierChange);
@@ -49,6 +48,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("keydown", handleModifierChange);
       document.removeEventListener("keyup", handleModifierChange);
+      useTimelineStore.getState().setIsBypassing(false);
     };
   }, []);
 
@@ -83,6 +83,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   }, [clipboard, scrollContainerRef]);
 
   const modalCount = useEscapeLayerStackStore(openModalCount);
+  const bypassSnap = useTimelineStore((s) => s.isBypassing);
 
   const zoom = useTimelineStore((s) => s.zoom);
   const rowHeights = useTimelineStore((s) => s.rowHeights);
@@ -115,18 +116,16 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   const hovered = pointer ? getLineAndTrackAtY(pointer.y, lines, layout) : null;
   const targetLineIndex = hovered ? hovered.lineIndex : isInstancePaste ? Math.max(0, lines.length - 1) : -1;
   const hoveredTrack = hovered?.track;
+  const placed = useMemo(() => instancePasteClipboard(lines, groups, clipboard), [lines, groups, clipboard]);
   const pasted = useMemo(
-    () => (hoveredTrack && !isInstancePaste ? clipboardInLane(clipboard, hoveredTrack) : clipboard),
-    [clipboard, hoveredTrack, isInstancePaste],
+    () => (hoveredTrack && !isInstancePaste ? clipboardInLane(placed, hoveredTrack) : placed),
+    [placed, hoveredTrack, isInstancePaste],
   );
-  const snap = pointer
-    ? snappedPasteTime(clipboard, pointer.time, {
-        lineIndex: targetLineIndex,
-        lane: hoveredTrack ?? null,
-        bypass: bypassSnap,
-      })
-    : null;
-  const timeDelta = snap ? snap.time - clipboard.entries[0].word.begin : 0;
+  const snap =
+    pointer && hovered
+      ? snappedPasteTime(placed, pointer.time, { lineIndex: targetLineIndex, lane: hovered.track, bypass: bypassSnap })
+      : null;
+  const timeDelta = pointer ? (snap?.time ?? pointer.time) - placed.entries[0].word.begin : 0;
   const snappedAnchorTime = snap?.anchorTime ?? null;
   const hasOverlap =
     !isInstancePaste && targetLineIndex >= 0 && pasteOverlaps(pasted, targetLineIndex, timeDelta, lines, rangeOf);
@@ -200,7 +199,7 @@ function pointerInTimeline(container: HTMLElement, pointer: { clientX: number; c
 
 async function commitPaste(clipboard: ClipboardData, container: HTMLElement, e: MouseEvent): Promise<void> {
   const { zoom, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
-  const lines = useProjectStore.getState().lines;
+  const { lines, groups } = useProjectStore.getState();
   const layout = computeRowLayout({
     lines,
     rowHeights,
@@ -214,7 +213,10 @@ async function commitPaste(clipboard: ClipboardData, container: HTMLElement, e: 
   const hovered = getLineAndTrackAtY(pointer.y, lines, layout);
   const lineIndex = hovered?.lineIndex ?? -1;
   const lane = hovered?.track ?? "word";
-  const { time } = snappedPasteTime(clipboard, pointer.time, { lineIndex, lane, bypass: holdsSnapBypass(e) });
+  const placed = instancePasteClipboard(lines, groups, clipboard);
+  const time = hovered
+    ? snappedPasteTime(placed, pointer.time, { lineIndex, lane, bypass: holdsSnapBypass(e) }).time
+    : pointer.time;
   await commitPasteAt({ clipboard, cursorTime: time, lineIndex, lane });
 }
 
