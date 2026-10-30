@@ -1,15 +1,15 @@
+import { useCallback, useRef, useState } from "react";
 import { wholeSongRange } from "@/domain/group/shared-timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { selfKey } from "@/views/timeline/snap";
-import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
+import { syncSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { type LastPointer, useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { getWordsInInstance } from "@/views/timeline/utils";
-import { useCallback, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -29,13 +29,6 @@ interface DragState {
 // -- Constants -----------------------------------------------------------------
 
 const SONG_EDGE_EPSILON = 1e-6;
-
-// -- Helpers -------------------------------------------------------------------
-
-function syncSnapBypass(event: { metaKey: boolean; ctrlKey: boolean }): void {
-  const held = holdsSnapBypass(event);
-  if (useTimelineStore.getState().isBypassing !== held) useTimelineStore.getState().setIsBypassing(held);
-}
 
 // -- Hook ----------------------------------------------------------------------
 

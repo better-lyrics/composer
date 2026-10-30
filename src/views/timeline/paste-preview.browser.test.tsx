@@ -1,19 +1,20 @@
+import { useRef } from "react";
+import { beforeEach, describe, expect, it, onTestFinished } from "vitest";
+import { userEvent } from "vitest/browser";
 import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { PastePreview } from "@/views/timeline/paste-preview";
-import type { ClipboardData } from "@/views/timeline/selection-types";
-import { GUTTER_WIDTH, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
-import { computeRowLayout } from "@/views/timeline/utils";
-import { useRef } from "react";
-import { beforeEach, describe, expect, it, onTestFinished } from "vitest";
-import { userEvent } from "vitest/browser";
 import { wordBlockWidth } from "@/views/timeline/row-geometry";
+import type { ClipboardData } from "@/views/timeline/selection-types";
+import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { computeRowLayout } from "@/views/timeline/utils";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -207,6 +208,7 @@ describe("PastePreview · paste words onto a line of a group that shares timing"
 
   function seedChorus(sharesTiming: boolean) {
     useAudioStore.setState({ duration: 20 });
+    useSettingsStore.setState({ timelineSnap: false });
     useTimelineStore.setState({ zoom: ZOOM });
     useProjectStore.setState({
       groups: [createGroup({ id: "g1", ...(sharesTiming ? { sharesTiming: true } : {}) })],
@@ -270,5 +272,26 @@ describe("PastePreview · paste into the hovered lane", () => {
 
     await expect.poll(() => lineById("l")?.backgroundWords?.map((word) => word.text)).toEqual(["you"]);
     expect(lineById("l")?.words).toEqual(ownTimingChorus.words);
+  });
+});
+
+describe("PastePreview · paste an instance", () => {
+  it("regression: places a line-synced main line where its ghost shows when its background starts later", async () => {
+    useAudioStore.setState({ duration: 60 });
+    const chorus = createLine({ id: "c", text: "oh", begin: 10, end: 11, groupId: "g1", instanceIdx: 0 });
+    useProjectStore.setState({
+      groups: [createGroup({ id: "g1" })],
+      lines: [
+        { ...chorus, templateLineIdx: 0, backgroundWords: [createWord({ text: "ah", begin: 12, end: 13 })] },
+        createLine({ id: "e", text: "" }),
+      ],
+    });
+    const screen = await render(
+      <Harness clipboard={{ entries: [], sourceInstance: { groupId: "g1", instanceIdx: 0 } }} />,
+    );
+
+    await pasteOnEmptyRow(screen);
+
+    await expect.poll(() => lineById("e")?.begin).toBeCloseTo(PASTE_TIME, 5);
   });
 });
