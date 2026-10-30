@@ -69,9 +69,9 @@ const OverviewBand: React.FC<OverviewBandProps> = ({ children }) => {
   return (
     <div ref={bandRef} data-overview-band className={BAND_CLASS} style={{ minHeight: bandHeight }}>
       <Activity mode={showSpectrum ? "visible" : "hidden"}>
-        <BandViewport label="spectrum viewport" className="bottom-px overflow-clip">
+        <div className="absolute inset-0 bottom-px overflow-clip pointer-events-none">
           <SpectrumCanvas />
-        </BandViewport>
+        </div>
       </Activity>
       {children}
       <Activity mode={showSpectrum ? "visible" : "hidden"}>

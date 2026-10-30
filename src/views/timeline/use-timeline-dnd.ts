@@ -23,7 +23,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 function useTimelineDnd(lines: ReadableLine[]) {
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
-  const zoom = useTimelineStore((s) => s.zoom);
 
   const [activeDrag, setActiveDrag] = useState<DragData | null>(null);
   const dragShiftRef = useRef(false);
@@ -100,6 +99,7 @@ function useTimelineDnd(lines: ReadableLine[]) {
       const activeData = active.data.current as DragData | undefined;
       if (!activeData) return;
 
+      const { zoom } = useTimelineStore.getState();
       const { lines: rawLines, groups } = useProjectStore.getState();
       const rangeOf = timeRangeResolver(rawLines, groups, duration);
 
@@ -148,7 +148,7 @@ function useTimelineDnd(lines: ReadableLine[]) {
         rangeOf,
       });
     },
-    [updateLineWithHistory, zoom, duration, lines],
+    [updateLineWithHistory, duration, lines],
   );
 
   const handleDragCancel = useCallback(() => {

@@ -9,6 +9,7 @@ import { useThemeStore } from "@/stores/theme";
 import { claimArrival, forgetArrival, playPitchArrival } from "@/views/timeline/pitch/pitch-arrival";
 import { pitchSession } from "@/views/timeline/pitch/pitch-session";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useReducedMotion } from "motion/react";
 import { type RefObject, createContext, useContext, useEffect, useMemo, useRef } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -53,6 +54,7 @@ const PitchRowsScope: React.FC<PitchRowsScopeProps> = ({ style, viewportRef, chi
   );
 
   const scopeRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion() ?? false;
 
   useEffect(() => {
     if (!track || mode === "off") {
@@ -65,13 +67,13 @@ const PitchRowsScope: React.FC<PitchRowsScopeProps> = ({ style, viewportRef, chi
       const viewport = viewportRef.current;
       if (!scope || !viewport || !claimArrival(track)) return;
       const zoom = useTimelineStore.getState().zoom;
-      cancelArrival = playPitchArrival({ scope, viewport, zoom, mode });
+      cancelArrival = playPitchArrival({ scope, viewport, zoom, mode, reducedMotion });
     });
     return () => {
       cancelNextFrame(frame);
       cancelArrival?.();
     };
-  }, [track, mode, viewportRef]);
+  }, [track, mode, viewportRef, reducedMotion]);
 
   return (
     <div ref={scopeRef} data-pitch={shown ? mode : "off"} style={style}>

@@ -1,4 +1,9 @@
-import { type AlignmentModel, loadAlignmentModels } from "@/audio/alignment/hubertfa/model-manifest";
+import {
+  type AlignmentModel,
+  loadAlignmentModels,
+  pickAlignmentModel,
+} from "@/audio/alignment/hubertfa/model-manifest";
+import { useSettingsStore } from "@/stores/settings";
 import { useQuery } from "@tanstack/react-query";
 
 // -- Hooks ---------------------------------------------------------------------
@@ -13,6 +18,13 @@ const useAlignmentModels = (): AlignmentModel[] | undefined =>
     gcTime: 0,
   }).data;
 
+/** The model auto-align will use, once the manifest has loaded. */
+const useSelectedAlignmentModel = (): AlignmentModel | null => {
+  const modelId = useSettingsStore((s) => s.alignmentModelId);
+  const models = useAlignmentModels();
+  return models ? pickAlignmentModel(models, modelId) : null;
+};
+
 // -- Exports -------------------------------------------------------------------
 
-export { useAlignmentModels };
+export { useAlignmentModels, useSelectedAlignmentModel };

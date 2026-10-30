@@ -1,8 +1,9 @@
 {
   "name": "composer",
   "private": true,
-  "version": "2.24.3",
+  "version": "2.24.10",
   "type": "module",
+  "packageManager": "pnpm@10.26.2",
   "scripts": {
     "dev": "vite-react-ssg dev",
     "build": "tsc -b && vite-react-ssg build",
@@ -21,7 +22,7 @@
     "doctor": "npx --yes react-doctor@latest ."
   },
   "dependencies": {
-    "@braccato/core": "^1.16.13",
+    "@braccato/core": "^1.17.1",
     "@braccato/highlight": "^0.3.2",
     "@braccato/parsers": "^0.4.0",
     "@dnd-kit/core": "^6.3.1",

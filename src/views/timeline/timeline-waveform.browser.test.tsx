@@ -233,10 +233,10 @@ describe("TimelineWaveform redraw background", () => {
     expect(bgIdx).toBeLessThan(clickLayerIdx);
   });
 
-  it("background width is 0 when duration is unset so it never extends past the audio range", async () => {
+  it("covers the visible band while the song length is still unknown", async () => {
     setupWaveformAudio(0);
     await render(<TimelineWaveform />);
-    expect(getBackground()?.style.width).toBe("0px");
+    expect(getBackground()?.style.width).toBe("100%");
   });
 
   it("does not render the background when there is no audio source (component is null)", async () => {
@@ -331,10 +331,11 @@ describe("TimelineWaveform loading dots", () => {
     expect(fadeIdx).toBeGreaterThan(dotsIdx);
   });
 
-  it("width is 0 when duration is unset so it never extends past the audio range", async () => {
+  it("shows across the visible band while the song length is still unknown", async () => {
     setupWaveformAudio(0);
     await render(<TimelineWaveform />);
-    expect(getDots()?.style.width).toBe("0px");
+    expect(getDots()?.style.width).toBe("100%");
+    expect(getDots()?.style.opacity).toBe("1");
   });
 
   it("renders even when there is no audioElement yet (covers the brief pre-load gap)", async () => {

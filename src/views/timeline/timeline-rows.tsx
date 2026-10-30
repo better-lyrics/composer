@@ -24,13 +24,18 @@ interface TimelineRowsProps {
   scrollContainerRef: RefObject<HTMLDivElement | null>;
 }
 
+// -- Functions -----------------------------------------------------------------
+
+function rowKey(_: number, row: EffectiveRow): string {
+  return row.kind === "group-header" ? `header:${row.firstLineId}` : row.line.id;
+}
+
 // -- Component -----------------------------------------------------------------
 
 const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const bandHeight = useOverviewBandHeight();
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
   const zoom = useTimelineStore((s) => s.zoom);
   const rowHeights = useTimelineStore((s) => s.rowHeights);
@@ -75,14 +80,14 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       adjacentIndex?: number,
       adjacentUpdates?: Partial<WordTiming>,
     ) => {
-      const realLine = lines.find((l) => l.id === lineId);
+      const realLine = useProjectStore.getState().lines.find((l) => l.id === lineId);
       if (!realLine) return;
 
       if (isLineSynced(realLine)) {
         const lineUpdates: Partial<LyricLine> = {};
         if (updates.begin !== undefined) lineUpdates.begin = updates.begin;
         if (updates.end !== undefined) lineUpdates.end = updates.end;
-        updateLineWithHistory(lineId, lineUpdates, { propagateToSiblings: false });
+        useProjectStore.getState().updateLineWithHistory(lineId, lineUpdates, { propagateToSiblings: false });
         return;
       }
 
@@ -94,9 +99,9 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
       );
       if (!updatedWords) return;
-      updateLineWithHistory(lineId, { words: updatedWords }, { propagateToSiblings: false });
+      useProjectStore.getState().updateLineWithHistory(lineId, { words: updatedWords }, { propagateToSiblings: false });
     },
-    [lines, updateLineWithHistory],
+    [],
   );
 
   const handleUpdateBgWord = useCallback(
@@ -107,7 +112,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       adjacentIndex?: number,
       adjacentUpdates?: Partial<WordTiming>,
     ) => {
-      const line = lines.find((l) => l.id === lineId);
+      const line = useProjectStore.getState().lines.find((l) => l.id === lineId);
       if (!line?.backgroundWords) return;
 
       const updatedWords = applyWordPatch(
@@ -117,9 +122,40 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
       );
       if (!updatedWords) return;
-      updateLineWithHistory(lineId, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
+      useProjectStore
+        .getState()
+        .updateLineWithHistory(lineId, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
     },
-    [lines, updateLineWithHistory],
+    [],
+  );
+
+  const renderRow = useCallback(
+    (_: number, row: EffectiveRow) => {
+      if (row.kind === "group-header") {
+        const group = groupsById.get(row.groupId);
+        if (!group) return <div style={{ height: GROUP_HEADER_HEIGHT }} />;
+        return (
+          <GroupHeaderRow
+            group={group}
+            instanceIdx={row.instanceIdx}
+            ordinal={instanceOrdinal(lines, row.groupId, row.instanceIdx)}
+            totalInstances={instanceCount(lines, row.groupId)}
+            instanceStart={row.instanceStart}
+            instanceEnd={row.instanceEnd}
+          />
+        );
+      }
+      return (
+        <LineRow
+          line={row.line}
+          lineIndex={row.lineIndex}
+          duration={duration}
+          onUpdateWord={handleUpdateWord}
+          onUpdateBgWord={handleUpdateBgWord}
+        />
+      );
+    },
+    [groupsById, lines, duration, handleUpdateWord, handleUpdateBgWord],
   );
 
   const totalWidth = duration * zoom;
@@ -152,37 +188,8 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       <Virtuoso
         key={`${openProjectId}:${offscreenLayoutKey}`}
         data={visibleRows}
-        computeItemKey={(_, row) => (row.kind === "group-header" ? `header:${row.firstLineId}` : row.line.id)}
-        itemContent={(_, row) => {
-          if (row.kind === "group-header") {
-            const group = groupsById.get(row.groupId);
-            if (!group) return <div style={{ height: GROUP_HEADER_HEIGHT }} />;
-            return (
-              <GroupHeaderRow
-                group={group}
-                instanceIdx={row.instanceIdx}
-                ordinal={instanceOrdinal(lines, row.groupId, row.instanceIdx)}
-                totalInstances={instanceCount(lines, row.groupId)}
-                instanceStart={row.instanceStart}
-                instanceEnd={row.instanceEnd}
-              />
-            );
-          }
-          const line = row.line;
-          return (
-            <LineRow
-              line={line}
-              lineIndex={row.lineIndex}
-              duration={duration}
-              onUpdateWord={(wordIndex, updates, adjacentIndex, adjacentUpdates) =>
-                handleUpdateWord(line.id, wordIndex, updates, adjacentIndex, adjacentUpdates)
-              }
-              onUpdateBgWord={(wordIndex, updates, adjacentIndex, adjacentUpdates) =>
-                handleUpdateBgWord(line.id, wordIndex, updates, adjacentIndex, adjacentUpdates)
-              }
-            />
-          );
-        }}
+        computeItemKey={rowKey}
+        itemContent={renderRow}
         style={{ height: "100%", width: "100%" }}
         customScrollParent={scrollContainerRef.current ?? undefined}
         overscan={200}

@@ -9,6 +9,7 @@ interface PitchArrival {
   viewport: HTMLElement;
   zoom: number;
   mode: PitchLineMode;
+  reducedMotion: boolean;
 }
 
 // -- State ---------------------------------------------------------------------
@@ -61,8 +62,7 @@ function scheduleLabelRises(lane: HTMLCanvasElement, zoom: number, rowDelay: num
 }
 
 // Fresh pitch wipes in row by row over the visible rows; returns a cancel that restores the resting state.
-function playPitchArrival({ scope, viewport, zoom, mode }: PitchArrival): () => void {
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function playPitchArrival({ scope, viewport, zoom, mode, reducedMotion }: PitchArrival): () => void {
   const labels = scope.querySelectorAll<HTMLElement>("[data-word-block] > span");
   for (const label of labels) label.style.removeProperty("--rise-delay");
   scope.dataset.pitchArriving = "prep";

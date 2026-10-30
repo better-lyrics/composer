@@ -3,6 +3,7 @@
    alignment (lyrics.css already ships that). Passed to the element as a string. */
 
 /* blyrics-target-scroll-pos-ratio = 0.5; */
+/* blyrics-letter-wave = false; */
 
 .blyrics-container {
   --blyrics-font-weight: 600;

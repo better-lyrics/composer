@@ -4,13 +4,18 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  overlayscrollbars@2.17.0:
+    hash: 45b98d9427c57e134b12d361165130c08eca7167d563cca8d8cc661c945c4401
+    path: patches/overlayscrollbars@2.17.0.patch
+
 importers:
 
   .:
     dependencies:
       '@braccato/core':
-        specifier: ^1.16.13
-        version: 1.16.13
+        specifier: ^1.17.1
+        version: 1.17.1
       '@braccato/highlight':
         specifier: ^0.3.2
         version: 0.3.2
@@ -82,10 +87,10 @@ importers:
         version: 1.30.0
       overlayscrollbars:
         specifier: ^2.17.0
-        version: 2.17.0
+        version: 2.17.0(patch_hash=45b98d9427c57e134b12d361165130c08eca7167d563cca8d8cc661c945c4401)
       overlayscrollbars-react:
         specifier: ^0.5.7
-        version: 0.5.7(overlayscrollbars@2.17.0)(react@19.3.1)
+        version: 0.5.7(overlayscrollbars@2.17.0(patch_hash=45b98d9427c57e134b12d361165130c08eca7167d563cca8d8cc661c945c4401))(react@19.3.1)
       pinyin-pro:
         specifier: 3.29.5
         version: 3.29.5
@@ -383,8 +388,8 @@ packages:
   '@borewit/text-codec@0.2.2':
     resolution: {integrity: sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ==}
 
-  '@braccato/core@1.16.13':
-    resolution: {integrity: sha512-Wfk2H3wDP8HTp6vm3NW1S7ANr81zLg/PB6eT2tuqxAc84HMHiVoGh2oMA3FCIIW1ARVCP2XawAx6I7nG32dN8Q==}
+  '@braccato/core@1.17.1':
+    resolution: {integrity: sha512-dGmoLl0cy/5AcPW1C64hmyQJmqU5FQNFGRP1HIXUk6NwwPfr297vtKfvfAvdY9/LHXsbUi3nMSPiLrxvA82qrA==}
 
   '@braccato/highlight@0.3.2':
     resolution: {integrity: sha512-1ZbgvqOhp3jsNnFbduyZdJRGMy78qv8JJyu64Zq//vld7aE4pk9HssAhitrh9eK8ByItM1U0RGOAroN+AxWIjg==}
@@ -3065,7 +3070,7 @@ snapshots:
 
   '@borewit/text-codec@0.2.2': {}
 
-  '@braccato/core@1.16.13':
+  '@braccato/core@1.17.1':
     dependencies:
       '@braccato/types': 1.0.0
 
@@ -4603,12 +4608,12 @@ snapshots:
       platform: 1.3.6
       protobufjs: 7.6.6
 
-  overlayscrollbars-react@0.5.7(overlayscrollbars@2.17.0)(react@19.3.1):
+  overlayscrollbars-react@0.5.7(overlayscrollbars@2.17.0(patch_hash=45b98d9427c57e134b12d361165130c08eca7167d563cca8d8cc661c945c4401))(react@19.3.1):
     dependencies:
-      overlayscrollbars: 2.17.0
+      overlayscrollbars: 2.17.0(patch_hash=45b98d9427c57e134b12d361165130c08eca7167d563cca8d8cc661c945c4401)
       react: 19.3.1
 
-  overlayscrollbars@2.17.0: {}
+  overlayscrollbars@2.17.0(patch_hash=45b98d9427c57e134b12d361165130c08eca7167d563cca8d8cc661c945c4401): {}
 
   oxc-parser@0.154.0:
     dependencies:
