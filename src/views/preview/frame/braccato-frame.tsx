@@ -23,6 +23,7 @@ interface BraccatoFrameProps {
 // -- Constants -----------------------------------------------------------------
 
 const LOG_PREFIX = "[BraccatoFrame]";
+const PARENT_POINTER_ATTRIBUTE = "data-parent-pointer";
 
 // A page that loads but never answers (offline, blocked, an error page) falls back to the inline preview.
 const READY_AFTER_LOAD_MS = 2_000;
@@ -48,9 +49,22 @@ function replayKey({ key }: Extract<FromFrameMessage, { kind: "key" }>): void {
   document.dispatchEvent(new KeyboardEvent(type, { ...init, bubbles: true, cancelable: true }));
 }
 
+// Outside-press dismissal (popovers, menus) listens for presses and clicks in this document.
+function replayPointerDown(frame: HTMLIFrameElement): void {
+  frame.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, isPrimary: true }));
+  frame.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+}
+
+function replayClick(frame: HTMLIFrameElement): void {
+  frame.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true }));
+  frame.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+}
+
 // -- Hooks ---------------------------------------------------------------------
 
-function useFrameClock(frameRef: RefObject<HTMLIFrameElement | null>, frameOrigin: string, enabled: boolean): void {
+// `connection` changes on every ready, so a reloaded frame gets the clock again.
+function useFrameClock(frameRef: RefObject<HTMLIFrameElement | null>, frameOrigin: string, connection: number): void {
+  const enabled = connection > 0;
   const sentRef = useRef<FrameClock | null>(null);
   useFrameLoop(
     () => {
@@ -70,19 +84,39 @@ function useFrameClock(frameRef: RefObject<HTMLIFrameElement | null>, frameOrigi
     enabled,
   );
   useEffect(() => {
-    if (!enabled) sentRef.current = null;
-  }, [enabled]);
+    sentRef.current = null;
+  }, [connection]);
 }
 
-function useThemeMirror(frameRef: RefObject<HTMLIFrameElement | null>, frameOrigin: string, enabled: boolean): void {
+function useThemeMirror(frameRef: RefObject<HTMLIFrameElement | null>, frameOrigin: string, connection: number): void {
   useEffect(() => {
-    if (!enabled) return;
+    if (connection === 0) return;
     const send = () => postToFrame(frameRef.current, frameOrigin, themeMessage());
     send();
     const observer = new MutationObserver(send);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["style", "data-scheme"] });
     return () => observer.disconnect();
-  }, [frameRef, frameOrigin, enabled]);
+  }, [frameRef, frameOrigin, connection]);
+}
+
+// Pointer events over a cross-process frame go to the frame, so a drag that crosses it
+// (sidebar resize, marquee, word drags) would lose its moves and its release.
+function useParentPointerPassThrough(frameRef: RefObject<HTMLIFrameElement | null>): void {
+  useEffect(() => {
+    const press = (event: PointerEvent) => {
+      if (event.isTrusted) frameRef.current?.toggleAttribute(PARENT_POINTER_ATTRIBUTE, true);
+    };
+    const release = () => frameRef.current?.removeAttribute(PARENT_POINTER_ATTRIBUTE);
+    document.addEventListener("pointerdown", press, true);
+    window.addEventListener("pointerup", release, true);
+    window.addEventListener("pointercancel", release, true);
+    return () => {
+      document.removeEventListener("pointerdown", press, true);
+      window.removeEventListener("pointerup", release, true);
+      window.removeEventListener("pointercancel", release, true);
+      release();
+    };
+  }, [frameRef]);
 }
 
 // -- Component -----------------------------------------------------------------
@@ -90,37 +124,43 @@ function useThemeMirror(frameRef: RefObject<HTMLIFrameElement | null>, frameOrig
 const BraccatoFrame: React.FC<BraccatoFrameProps> = ({ ttmlString, focusRange, frameOrigin, onUnavailable }) => {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [src] = useState(() => previewFrameUrl(frameOrigin, window.location.origin));
-  const [isReady, setIsReady] = useState(false);
+  const [connection, setConnection] = useState(0);
+  const isReady = connection > 0;
   const [isShown, setIsShown] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const reportUnavailable = useEffectEvent(onUnavailable);
 
-  useFrameClock(frameRef, frameOrigin, isReady);
-  useThemeMirror(frameRef, frameOrigin, isReady);
+  useFrameClock(frameRef, frameOrigin, connection);
+  useThemeMirror(frameRef, frameOrigin, connection);
+  useParentPointerPassThrough(frameRef);
 
   useEffect(() => {
-    if (isReady) postToFrame(frameRef.current, frameOrigin, { kind: "lyrics", ttml: ttmlString });
-  }, [isReady, frameOrigin, ttmlString]);
+    if (connection > 0) postToFrame(frameRef.current, frameOrigin, { kind: "lyrics", ttml: ttmlString });
+  }, [connection, frameOrigin, ttmlString]);
 
   const begin = focusRange?.begin;
   const end = focusRange?.end;
   useEffect(() => {
-    if (!isReady) return;
+    if (connection === 0) return;
     const range = begin === undefined || end === undefined ? null : { begin, end };
     postToFrame(frameRef.current, frameOrigin, { kind: "focus", range });
-  }, [isReady, frameOrigin, begin, end]);
+  }, [connection, frameOrigin, begin, end]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== frameOrigin || event.source !== frameRef.current?.contentWindow) return;
       if (messageKind(event.data) === null) return;
       const message = event.data as FromFrameMessage;
-      if (message.kind === "ready") setIsReady(true);
+      const frame = frameRef.current;
+      if (message.kind === "ready") setConnection((count) => count + 1);
       else if (message.kind === "shown") setIsShown(true);
       else if (message.kind === "play") useAudioStore.getState().setIsPlaying(true);
       else if (message.kind === "seek" && Number.isFinite(message.seconds))
         useAudioStore.getState().seekTo(message.seconds);
       else if (message.kind === "key") replayKey(message);
+      else if (message.kind === "pointerdown" && frame) replayPointerDown(frame);
+      else if (message.kind === "click" && frame) replayClick(frame);
+      else if (message.kind === "release-focus" && document.activeElement === frame) frame?.blur();
     };
     window.addEventListener("message", handleMessage);
     // Activity runs no effects while the sidebar is hidden, so a frame that loaded then has its ready unheard.
@@ -145,8 +185,12 @@ const BraccatoFrame: React.FC<BraccatoFrameProps> = ({ ttmlString, focusRange, f
       ref={frameRef}
       src={src}
       title="Lyrics preview"
+      sandbox="allow-scripts allow-same-origin"
       onLoad={() => setIsLoaded(true)}
-      className={cn("block flex-1 min-h-0 w-full border-0 bg-transparent", !isShown && "opacity-0")}
+      className={cn(
+        "block flex-1 min-h-0 w-full border-0 bg-transparent data-parent-pointer:pointer-events-none",
+        !isShown && "opacity-0 pointer-events-none",
+      )}
     />
   );
 };

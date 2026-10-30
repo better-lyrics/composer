@@ -34,11 +34,14 @@ type FromFrameMessage =
   | { kind: "shown" }
   | { kind: "seek"; seconds: number }
   | { kind: "play" }
+  | { kind: "pointerdown" }
+  | { kind: "click" }
+  | { kind: "release-focus" }
   | { kind: "key"; key: FrameKey };
 
 // -- Constants -----------------------------------------------------------------
 
-const PREVIEW_FRAME_PATH = "/preview-frame.html";
+const PREVIEW_FRAME_PATH = "/preview-frame";
 const PARENT_ORIGIN_PARAM = "parent";
 
 // A cross-site origin serving the same deploy gets its own renderer process, so the

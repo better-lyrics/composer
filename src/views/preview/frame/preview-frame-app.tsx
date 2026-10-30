@@ -1,5 +1,5 @@
 import type { Bounds } from "@/domain/word/bounds";
-import { cancelNextFrame, nextFrame, wake } from "@/lib/frame-loop";
+import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
 import { createFramePlayback } from "@/views/preview/frame/frame-playback";
 import {
@@ -18,8 +18,9 @@ interface PreviewFrameAppProps {
 
 // -- Constants -----------------------------------------------------------------
 
-// Browser commands a page can block but the frame must leave alone: reload, find, address bar, zoom.
-const BROWSER_COMMAND_KEYS = new Set(["r", "f", "l", "+", "-", "=", "0"]);
+// Browser commands a page can block but the frame must leave alone: reload, find, address bar,
+// zoom, and copy or select-all of the lyrics text.
+const BROWSER_COMMAND_KEYS = new Set(["r", "f", "l", "+", "-", "=", "0", "a", "c"]);
 const BROWSER_KEYS = new Set(["Tab", "F5", "F11", "F12"]);
 
 // -- Functions -----------------------------------------------------------------
@@ -27,6 +28,14 @@ const BROWSER_KEYS = new Set(["Tab", "F5", "F11", "F12"]);
 function isBrowserKey(event: KeyboardEvent): boolean {
   if (BROWSER_KEYS.has(event.key)) return true;
   return (event.metaKey || event.ctrlKey) && BROWSER_COMMAND_KEYS.has(event.key.toLowerCase());
+}
+
+function isOnButton(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest("button") !== null;
+}
+
+function hasTextSelection(): boolean {
+  return (document.getSelection()?.toString() ?? "") !== "";
 }
 
 function frameKey(event: KeyboardEvent): FrameKey {
@@ -64,10 +73,8 @@ const PreviewFrameApp: React.FC<PreviewFrameAppProps> = ({ parentOrigin }) => {
       if (event.origin !== parentOrigin || event.source !== window.parent || messageKind(event.data) === null) return;
       const message = event.data as ToFrameMessage;
       if (message.kind === "connect") post({ kind: "ready" });
-      else if (message.kind === "clock") {
-        playback.receive(message.clock);
-        wake();
-      } else if (message.kind === "lyrics") setTtml(message.ttml);
+      else if (message.kind === "clock") playback.receive(message.clock);
+      else if (message.kind === "lyrics") setTtml(message.ttml);
       else if (message.kind === "focus") setFocusRange(message.range);
       else if (message.kind === "theme") {
         applyTheme(message.style, message.scheme);
@@ -76,18 +83,30 @@ const PreviewFrameApp: React.FC<PreviewFrameAppProps> = ({ parentOrigin }) => {
     };
     // The Timeline's shortcuts live in the parent document, so keys pressed here go there.
     const forwardKey = (event: KeyboardEvent) => {
-      if (isBrowserKey(event)) return;
+      if (isBrowserKey(event) || isOnButton(event.target)) return;
       event.preventDefault();
       post({ kind: "key", key: frameKey(event) });
+    };
+    // A click in the inline preview left focus, paste and outside-press dismissal with the app.
+    const notifyPointerDown = () => post({ kind: "pointerdown" });
+    const notifyClick = () => post({ kind: "click" });
+    const releaseFocus = (event: PointerEvent) => {
+      if (!isOnButton(event.target) && !hasTextSelection()) post({ kind: "release-focus" });
     };
     window.addEventListener("message", handleMessage);
     window.addEventListener("keydown", forwardKey);
     window.addEventListener("keyup", forwardKey);
+    window.addEventListener("pointerdown", notifyPointerDown);
+    window.addEventListener("pointerup", releaseFocus);
+    window.addEventListener("click", notifyClick);
     post({ kind: "ready" });
     return () => {
       window.removeEventListener("message", handleMessage);
       window.removeEventListener("keydown", forwardKey);
       window.removeEventListener("keyup", forwardKey);
+      window.removeEventListener("pointerdown", notifyPointerDown);
+      window.removeEventListener("pointerup", releaseFocus);
+      window.removeEventListener("click", notifyClick);
     };
   }, [parentOrigin, playback, post]);
 
