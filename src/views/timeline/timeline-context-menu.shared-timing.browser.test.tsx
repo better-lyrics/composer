@@ -202,8 +202,8 @@ describe("TimelineContextMenu · add word here in a group that shares timing", (
       await addWordHere("word", 12.9);
 
       await expect.poll(() => lineById("c0")?.words?.length).toBe(3);
-      expect(lineById("c0")?.words?.[2].begin).toBeCloseTo(12.4, 5);
-      expect(lineById("c0")?.words?.[2].end).toBeCloseTo(13.4, 5);
+      expect(lineById("c0")?.words?.[2].begin).toBeCloseTo(12.9, 5);
+      expect(lineById("c0")?.words?.[2].end).toBeCloseTo(13.9, 5);
     });
   });
 });

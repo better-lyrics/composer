@@ -73,7 +73,7 @@ function findInsertionSlot(
   if (gapSize < minDuration) return null;
 
   const actualDuration = Math.min(desiredDuration, gapSize);
-  let begin = preferredTime - actualDuration / 2;
+  let begin = preferredTime;
   let end = begin + actualDuration;
 
   if (begin < gapStart) {

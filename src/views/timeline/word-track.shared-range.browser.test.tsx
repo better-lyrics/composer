@@ -150,8 +150,8 @@ describe("WordTrack double-click insert in a shared group", () => {
       doubleClickAt(track, 13.9);
 
       await expect.poll(() => wordsOf("c1")).toHaveLength(3);
-      expect(wordsOf("c1")[2].begin).toBeCloseTo(13.4, 5);
-      expect(wordsOf("c1")[2].end).toBeCloseTo(14.4, 5);
+      expect(wordsOf("c1")[2].begin).toBeCloseTo(13.9, 5);
+      expect(wordsOf("c1")[2].end).toBeCloseTo(14.9, 5);
     });
   });
 });
