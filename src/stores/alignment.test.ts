@@ -111,7 +111,10 @@ describe("alignment store", () => {
       { id: "L3", text: "chosen", agentId: "v1", begin: 7, end: 8 },
     ]);
 
-    await useAlignmentStore.getState().alignLines(["L1", "L3"]);
+    await useAlignmentStore.getState().alignLines([
+      { lineId: "L1", track: "word" },
+      { lineId: "L3", track: "word" },
+    ]);
 
     const [first, second, third] = useProjectStore.getState().lines;
     expect(first.words).toEqual(words);
@@ -137,6 +140,61 @@ describe("alignment store", () => {
     expect(after[0].begin).toBe(1);
     expect(after[2].end).toBeCloseTo(3);
     expect(after[1].begin).not.toBe(1.1);
+  });
+
+  it("aligns a line's background vocals as their own run over the line's span", async () => {
+    // Tapping a line seeds its background words from the line's midpoint; alignment may move them anywhere in it.
+    const seeded = [
+      { text: "oh ", begin: 11, end: 11.5 },
+      { text: "yeah", begin: 11.5, end: 12 },
+    ];
+    useProjectStore.getState().setLines([
+      {
+        id: "L1",
+        text: "hello there",
+        agentId: "v1",
+        begin: 10,
+        end: 12,
+        backgroundText: "oh yeah",
+        backgroundWords: seeded,
+      },
+    ]);
+
+    const result = await useAlignmentStore.getState().alignLines();
+
+    expect(result).toMatchObject({ aligned: 1, skipped: 0 });
+    expect(seen.segments.map((s) => s.parts)).toEqual([
+      [["hello"], ["there"]],
+      [["oh"], ["yeah"]],
+    ]);
+    const bg = useProjectStore.getState().lines[0].backgroundWords!;
+    expect(bg.map((w) => w.text)).toEqual(["oh ", "yeah"]);
+    expect(bg[0].begin).toBeGreaterThanOrEqual(10);
+    expect(bg[0].begin).toBeLessThan(11);
+    expect(bg[1].end).toBeLessThanOrEqual(12);
+  });
+
+  it("aligns only the targeted track of a line, inside that track's own span", async () => {
+    const background = [
+      { text: "oh ", begin: 12.5, end: 12.6 },
+      { text: "yeah", begin: 12.6, end: 13.5 },
+    ];
+    const line = { id: "L1", text: "hello there", agentId: "v1", backgroundText: "oh yeah" };
+    useProjectStore.getState().setLines([{ ...line, begin: 10, end: 12, backgroundWords: background }]);
+
+    await useAlignmentStore.getState().alignLines([{ lineId: "L1", track: "bg" }], { realign: true });
+
+    const aligned = useProjectStore.getState().lines[0];
+    expect([aligned.begin, aligned.end, aligned.words]).toEqual([10, 12, undefined]);
+    expect(aligned.backgroundWords![0].begin).toBe(12.5);
+    expect(aligned.backgroundWords![0].end).not.toBe(12.6);
+    expect(aligned.backgroundWords![1].end).toBeCloseTo(13.5);
+
+    await useAlignmentStore.getState().alignLines([{ lineId: "L1", track: "word" }]);
+
+    const after = useProjectStore.getState().lines[0];
+    expect(after.words?.map((w) => w.text)).toEqual(["hello ", "there"]);
+    expect(after.backgroundWords).toBe(aligned.backgroundWords);
   });
 
   it("switches the Sync tab to word mode once lines have word timing", async () => {
@@ -224,7 +282,7 @@ describe("alignment store", () => {
       { id: "L2", text: "one more line", agentId: "v1", words: [{ text: "one ", begin: 3, end: 4 }] },
     ]);
 
-    await useAlignmentStore.getState().alignLines(["L1"]);
+    await useAlignmentStore.getState().alignLines([{ lineId: "L1", track: "word" }]);
 
     expect(useProjectStore.getState().lines[1].text).toBe("one more line");
   });

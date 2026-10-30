@@ -1,8 +1,8 @@
-import { mainBounds } from "@/domain/line/bounds";
+import { bgBounds, mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { useAutoAlign } from "@/hooks/use-auto-align";
 import { isAutoAlignAvailable, useAlignmentStore } from "@/stores/alignment";
-import { countAlignableLines } from "@/stores/alignment-plan";
+import { type AlignTarget, alignTargetsOf, countAlignableLines } from "@/stores/alignment-plan";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -22,16 +22,18 @@ const SHORTCUT = "timeline.autoAlign";
 
 // -- Helpers -------------------------------------------------------------------
 
-// The lines of the selected words, or else the line under the playhead.
-function targetLineIds(lines: readonly LyricLine[]): string[] {
-  const selected = useTimelineStore.getState().selectedWords.filter((w) => w.type === "word");
-  if (selected.length > 0) return [...new Set(selected.map((w) => w.lineId))];
+// The tracks of the selected words, or else the lyrics under the playhead, or
+// the background vocals there when no lyrics are.
+function alignTargets(lines: readonly LyricLine[]): AlignTarget[] {
+  const selected = useTimelineStore.getState().selectedWords;
+  if (selected.length > 0) return alignTargetsOf(selected);
   const time = livePlaybackTime();
-  const line = lines.find((l) => {
-    const bounds = mainBounds(l);
-    return bounds !== null && bounds.begin <= time && time < bounds.end;
-  });
-  return line ? [line.id] : [];
+  const under = (bounds: { begin: number; end: number } | null) =>
+    bounds !== null && bounds.begin <= time && time < bounds.end;
+  const main = lines.find((l) => under(mainBounds(l)));
+  if (main) return [{ lineId: main.id, track: "word" }];
+  const bg = lines.find((l) => under(bgBounds(l)));
+  return bg ? [{ lineId: bg.id, track: "bg" }] : [];
 }
 
 // -- Component -----------------------------------------------------------------
@@ -50,13 +52,13 @@ const TimelineAutoAlign: React.FC = () => {
     // A run is already going; show its progress and Cancel.
     if (busy) return setOpen(true);
     const lines = useProjectStore.getState().lines;
-    const lineIds = targetLineIds(lines);
-    const { lineTimed, wordTimed } = countAlignableLines(lines, lineIds);
+    const targets = alignTargets(lines);
+    const { lineTimed, wordTimed } = countAlignableLines(lines, targets);
     if (lineTimed + wordTimed === 0) {
       toast("Select a synced line's words, or move the playhead onto one, to align it.");
       return;
     }
-    void autoAlign(lineIds, { realign: wordTimed > 0 });
+    void autoAlign(targets, { realign: wordTimed > 0 });
   }, [busy, autoAlign]);
 
   useEffect(() => {
