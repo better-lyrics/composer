@@ -7,15 +7,17 @@ import { BeatGridCanvas } from "@/views/timeline/beat-grid/beat-grid-canvas";
 import { startLoopRegionDrag } from "@/views/timeline/loop-region-drag";
 import { LoopRegionEdges } from "@/views/timeline/loop-region-edges";
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
+import { BandViewport } from "@/views/timeline/overview/band-viewport";
 import { OverviewBand } from "@/views/timeline/overview/overview-band";
 import { placeSnapPoint } from "@/views/timeline/place-snap-point";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
+import { useSpectrumBlank } from "@/views/timeline/spectrum/spectrum-session";
 import { clearLoopRegion } from "@/views/timeline/selection-playback";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import { WaveformFocusShade } from "@/views/timeline/waveform-focus-shade";
 import { WAVEFORM_WINDOW_WIDTH, useWaveformWindow } from "@/views/timeline/waveform-window";
 import WavesurferPlayer from "@wavesurfer/react";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type WaveSurfer from "wavesurfer.js";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -38,6 +40,10 @@ const FADE_SETTLE_MS = 260;
 const WAVEFORM_BARS_HEIGHT = 54;
 
 // -- Component -----------------------------------------------------------------
+
+// Until the song length is known the band has no width, so its loading layers cover the visible part instead.
+const SongSpan: React.FC<{ known: boolean; label: string; children: ReactNode }> = ({ known, label, children }) =>
+  known ? children : <BandViewport label={label}>{children}</BandViewport>;
 
 const WaveformBars: React.FC<WaveformBarsProps> = ({
   media,
@@ -95,10 +101,13 @@ const TimelineWaveform: React.FC = () => {
   const waveformHostRef = useRef<HTMLDivElement>(null);
   useWaveformWindow(ws, waveformHostRef, !showSpectrum);
 
+  const spectrumBlank = useSpectrumBlank();
+  const bandEmpty = showSpectrum ? spectrumBlank : ws === null;
   // Never move this into an effect: opacity and the sweep gate must land in the same commit.
-  const sweeping = ws === null || settledFor !== ws;
+  const sweeping = bandEmpty || (!showSpectrum && settledFor !== ws);
 
   const totalWidth = duration > 0 ? duration * zoom : 0;
+  const spanWidth = totalWidth > 0 ? totalWidth : "100%";
   // Rebuild on loadstart, keyed on currentSrc: wavesurfer loads currentSrc, which lags src until then.
   const subscribeToMediaSource = useCallback(
     (onSourceChange: () => void) => {
@@ -181,22 +190,26 @@ const TimelineWaveform: React.FC = () => {
   // A bunch of heights here are -1 to account for the 1px border at the bottom of the waveform container.
   return (
     <OverviewBand>
-      <div
-        data-waveform-redraw-bg
-        className={cn(
-          "absolute top-0 left-0 bg-(--well) border-b border-(--divider) pointer-events-none transition-opacity duration-200",
-          showSpectrum && "opacity-0",
-        )}
-        style={{ width: totalWidth, height: WAVEFORM_HEIGHT }}
-      />
+      <SongSpan known={totalWidth > 0} label="waveform background viewport">
+        <div
+          data-waveform-redraw-bg
+          className={cn(
+            "absolute top-0 left-0 bg-(--well) border-b border-(--divider) pointer-events-none transition-opacity duration-200",
+            showSpectrum && "opacity-0",
+          )}
+          style={{ width: spanWidth, height: WAVEFORM_HEIGHT }}
+        />
+      </SongSpan>
       <BeatGridCanvas />
-      <div
-        data-waveform-loading-dots
-        data-sweeping={sweeping ? "" : undefined}
-        aria-hidden="true"
-        className="absolute top-0 left-0 waveform-loading-dots pointer-events-none transition-opacity duration-200 ease-out"
-        style={{ width: totalWidth, height: WAVEFORM_HEIGHT - 1, opacity: ws || showSpectrum ? 0 : 1 }}
-      />
+      <SongSpan known={totalWidth > 0} label="waveform loading viewport">
+        <div
+          data-waveform-loading-dots
+          data-sweeping={sweeping ? "" : undefined}
+          aria-hidden="true"
+          className="absolute top-0 left-0 waveform-loading-dots pointer-events-none transition-opacity duration-200 ease-out"
+          style={{ width: spanWidth, height: WAVEFORM_HEIGHT - 1, opacity: bandEmpty ? 1 : 0 }}
+        />
+      </SongSpan>
       {audioElement && (
         <WaveformBars
           key={waveformKey}
