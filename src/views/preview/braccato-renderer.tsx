@@ -1,6 +1,7 @@
 import { alternateMatchesMainText } from "@/domain/language/alternate-visibility";
 import type { Bounds } from "@/domain/word/bounds";
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
+import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
@@ -34,6 +35,9 @@ const LOG_PREFIX = "[BraccatoRenderer]";
 // Mirrors braccato's unexported USER_SCROLL_RESUME_DELAY_MS (25000); the margin lands the wake
 // on the far side of its deadline instead of racing it.
 const RESUME_AFFORDANCE_WAKE_MS = 25_500;
+
+// A project not yet saved has no id, but its edits are still one song to swap in place.
+const UNSAVED_SONG_KEY = "unsaved";
 
 // -- Element registration -----------------------------------------------------
 
@@ -87,14 +91,17 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
   const elementRef = useRef<BraccatoLyricsElement>(null);
   const lyrics = useMemo(() => TTMLParser.parse(ttmlString), [ttmlString]);
   const songwriters = useMemo(() => TTMLParser.metadata(ttmlString).songwriters, [ttmlString]);
+  const songKey = useOpenProjectId() ?? UNSAVED_SONG_KEY;
   const latestLyricsRef = useRef(lyrics);
   const latestSongwritersRef = useRef(songwriters);
+  const latestSongKeyRef = useRef(songKey);
   const latestFocusRangeRef = useRef(focusRange);
   useFocusFade(focusRange, latestFocusRangeRef, (range) => {
     if (elementRef.current) markLinesOutsideFocus(timedLines(elementRef.current), range);
   });
   const initializedElementRef = useRef<BraccatoLyricsElement | null>(null);
   const appliedLyricsRef = useRef<Lyric[] | null>(null);
+  const appliedSongKeyRef = useRef<string | null>(null);
   const rebuildScrollTopRef = useRef<number | null>(null);
   const appliedPlaybackRateRef = useRef(1);
   const [isAutoscrollPaused, setIsAutoscrollPaused] = useState(false);
@@ -149,23 +156,22 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
     markLinesOutsideFocus(timedLines(el), latestFocusRangeRef.current);
   }, []);
 
-  const applyLyrics = useCallback((el: BraccatoLyricsElement, next: Lyric[], songwriters: readonly string[]) => {
-    if (appliedLyricsRef.current === next) return;
-    const scrollTopBefore = el.scrollTop;
-    // Braccato's in-place lyrics swap keeps the old scroll geometry; a fresh renderer (writing host) positions from scratch.
-    if (appliedLyricsRef.current !== null) {
-      // Cleared first so the fresh renderer's own build of the old lyrics is an empty one.
-      el.lyrics = [];
-      el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
-    }
-    appliedLyricsRef.current = next;
-    el.lyricsOptions = { songwriters };
-    el.lyrics = next;
-    // A rebuild that moves the scroll position fires one scroll the reader never made.
-    rebuildScrollTopRef.current = el.scrollTop === scrollTopBefore ? null : el.scrollTop;
-    decorateAlternateTracks(el, next);
-    markLinesOutsideFocus(timedLines(el), latestFocusRangeRef.current);
-  }, []);
+  const applyLyrics = useCallback(
+    (el: BraccatoLyricsElement, next: Lyric[], songwriters: readonly string[], songKey: string) => {
+      if (appliedLyricsRef.current === next && appliedSongKeyRef.current === songKey) return;
+      const scrollTopBefore = el.scrollTop;
+      appliedLyricsRef.current = next;
+      appliedSongKeyRef.current = songKey;
+      // The same songKey swaps edits into the lines on screen; another project's key builds anew.
+      el.lyricsOptions = { songwriters, songKey };
+      el.lyrics = next;
+      // A rebuild or swap that moves the scroll position fires one scroll the reader never made.
+      rebuildScrollTopRef.current = el.scrollTop === scrollTopBefore ? null : el.scrollTop;
+      decorateAlternateTracks(el, next);
+      markLinesOutsideFocus(timedLines(el), latestFocusRangeRef.current);
+    },
+    [],
+  );
 
   // Activity re-attaches this ref on every reveal; re-initializing the same element rebuilds its lines.
   const setElement = useCallback(
@@ -174,8 +180,9 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
       if (!el || initializedElementRef.current === el) return;
       initializedElementRef.current = el;
       appliedLyricsRef.current = null;
+      appliedSongKeyRef.current = null;
       el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
-      applyLyrics(el, latestLyricsRef.current, latestSongwritersRef.current);
+      applyLyrics(el, latestLyricsRef.current, latestSongwritersRef.current, latestSongKeyRef.current);
     },
     [applyLyrics],
   );
@@ -206,15 +213,16 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
   useEffect(() => {
     latestLyricsRef.current = lyrics;
     latestSongwritersRef.current = songwriters;
+    latestSongKeyRef.current = songKey;
     const element = elementRef.current;
-    if (element) applyLyrics(element, lyrics, songwriters);
-  }, [lyrics, songwriters, applyLyrics]);
+    if (element) applyLyrics(element, lyrics, songwriters, songKey);
+  }, [lyrics, songwriters, songKey, applyLyrics]);
 
   // Binding `source` would make braccato own the clock, and it only polls during
   // playback, freezing the preview whenever the timeline is scrubbed paused.
   useRendererAudioSync(
     elementRef,
-    (el, audio) => {
+    (el, audio, timeSeconds) => {
       // Without the rate the word sweeps run on the wall clock and stutter at any
       // speed but 1x. Tracked here rather than read back off the element, which has
       // no properties to read until the registration import lands.
@@ -222,7 +230,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
         appliedPlaybackRateRef.current = audio.playbackRate;
         el.tickOptions = { playbackRate: audio.playbackRate, ...rateScaledOffsetTrims(el, audio.playbackRate) };
       }
-      el.currentTime = audio.currentTime;
+      el.currentTime = timeSeconds;
       el.playing = !audio.paused;
     },
     "braccato-renderer",
