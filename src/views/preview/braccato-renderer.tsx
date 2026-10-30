@@ -104,6 +104,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
   const appliedSongKeyRef = useRef<string | null>(null);
   const rebuildScrollTopRef = useRef<number | null>(null);
   const appliedPlaybackRateRef = useRef(1);
+  const appliedPlayingRef = useRef<{ element: BraccatoLyricsElement; playing: boolean } | null>(null);
   const [isAutoscrollPaused, setIsAutoscrollPaused] = useState(false);
   const [isElementUnavailable, setIsElementUnavailable] = useState(false);
   const resumeWakeRef = useRef<number | null>(null);
@@ -231,7 +232,11 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
         el.tickOptions = { playbackRate: audio.playbackRate, ...rateScaledOffsetTrims(el, audio.playbackRate) };
       }
       el.currentTime = timeSeconds;
-      el.playing = !audio.paused;
+      const playing = !audio.paused;
+      const applied = appliedPlayingRef.current;
+      if (applied?.element === el && applied.playing === playing) return;
+      appliedPlayingRef.current = { element: el, playing };
+      el.playing = playing;
     },
     "braccato-renderer",
   );
