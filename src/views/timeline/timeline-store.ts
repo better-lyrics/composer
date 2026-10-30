@@ -201,8 +201,12 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     clearSelection: () => set({ selectedWords: [] }),
     setClipboard: (clipboard) => set({ clipboard }),
     setPasteMode: (pasteMode) => set({ pasteMode }),
-    setScrollLeft: (scrollLeft) => set({ scrollLeft }),
-    setScrollTop: (scrollTop) => set({ scrollTop }),
+    setScrollLeft: (scrollLeft) => {
+      if (get().scrollLeft !== scrollLeft) set({ scrollLeft });
+    },
+    setScrollTop: (scrollTop) => {
+      if (get().scrollTop !== scrollTop) set({ scrollTop });
+    },
     setPendingResumeView: (pendingResumeView) => set({ pendingResumeView }),
     setRowHeight: (lineId, height) =>
       set((s) => ({
