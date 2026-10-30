@@ -222,7 +222,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
   // playback, freezing the preview whenever the timeline is scrubbed paused.
   useRendererAudioSync(
     elementRef,
-    (el, audio) => {
+    (el, audio, timeSeconds) => {
       // Without the rate the word sweeps run on the wall clock and stutter at any
       // speed but 1x. Tracked here rather than read back off the element, which has
       // no properties to read until the registration import lands.
@@ -230,7 +230,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
         appliedPlaybackRateRef.current = audio.playbackRate;
         el.tickOptions = { playbackRate: audio.playbackRate, ...rateScaledOffsetTrims(el, audio.playbackRate) };
       }
-      el.currentTime = audio.currentTime;
+      el.currentTime = timeSeconds;
       el.playing = !audio.paused;
     },
     "braccato-renderer",
