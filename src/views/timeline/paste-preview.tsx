@@ -4,6 +4,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen, openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
+import { cn } from "@/utils/cn";
 import { clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import { commitPasteAt } from "@/views/timeline/commit-paste";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
@@ -155,7 +156,10 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
           <div
             key={`${ghost.left}-${ghost.trackTop}-${ghost.text}-${ghost.isBg ? "bg" : "w"}`}
             data-lane={ghost.isBg ? "bg" : "word"}
-            className="word-face absolute flex items-center justify-center whitespace-nowrap pointer-events-none"
+            className={cn(
+              "word-face absolute flex items-center justify-center whitespace-nowrap pointer-events-none",
+              anchorTime !== null && "is-snapped",
+            )}
             style={{
               left: ghost.left - pointer.scrollLeft,
               top: ghost.trackTop - pointer.scrollTop + wordInsetPx(ghost.isBg ? "bg" : "word"),
