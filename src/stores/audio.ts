@@ -1,5 +1,5 @@
 import type { SavedAudioSource } from "@/domain/project/audio-source";
-import { frameTime } from "@/lib/frame-loop";
+import { currentFrameTime, isFrameScheduled } from "@/lib/frame-loop";
 import { useSettingsStore } from "@/stores/settings";
 import { create } from "zustand";
 
@@ -199,26 +199,27 @@ function isClockRunning(element: HTMLAudioElement): boolean {
 
 // Firefox advances `currentTime` once per audio buffer (~43 ms), so between updates
 // the time runs on from when it was first seen, never more than one buffer ahead.
-function measuredElementTime(element: HTMLAudioElement, running: boolean, now: number): number {
-  const time = element.currentTime;
-  if (element !== lastSeenClock.element || time !== lastSeenClock.time || !running) {
-    lastSeenClock.element = element;
-    lastSeenClock.time = time;
-    lastSeenClock.seenAt = now;
-    return time;
-  }
+function isNewElementTime(element: HTMLAudioElement, time: number, running: boolean): boolean {
+  return element !== lastSeenClock.element || time !== lastSeenClock.time || !running;
+}
+
+function measuredElementTime(element: HTMLAudioElement, time: number, running: boolean, now: number): number {
+  if (isNewElementTime(element, time, running)) return time;
   const elapsedMs = Math.min(MAX_EXTRAPOLATION_MS, Math.max(0, now - lastSeenClock.seenAt));
   return time + (elapsedMs / 1000) * element.playbackRate;
 }
 
 // Element time jitters by several ms per frame in every browser, so playback follows wall time
-// and eases toward the element instead of copying it.
+// and eases toward the element instead of copying it. While frames run, only frames move the
+// clock, so a read in between (a tap, WaveSurfer's own timer) never shifts the next frame.
 function livePlaybackTime(): number {
   const { audioElement, currentTime } = useAudioStore.getState();
   if (!audioElement) return currentTime;
-  const now = frameTime();
+  const frameNow = currentFrameTime();
+  const now = frameNow ?? performance.now();
   const running = isClockRunning(audioElement);
-  const measured = measuredElementTime(audioElement, running, now);
+  const elementTime = audioElement.currentTime;
+  const measured = measuredElementTime(audioElement, elementTime, running, now);
   const rate = audioElement.playbackRate;
   // An event handled after a frame began stamps the clock later than that frame's time.
   const elapsedMs = Math.max(0, now - smoothedClock.at);
@@ -229,14 +230,19 @@ function livePlaybackTime(): number {
     smoothedClock.element !== audioElement ||
     smoothedClock.rate !== rate ||
     Math.abs(measured - predicted) > CLOCK_RESYNC_SECONDS;
-  smoothedClock.time = resync
-    ? measured
-    : predicted + (measured - predicted) * (1 - Math.exp(-elapsedMs / CLOCK_SMOOTHING_MS));
+  const time = resync ? measured : predicted + (measured - predicted) * (1 - Math.exp(-elapsedMs / CLOCK_SMOOTHING_MS));
+  if (frameNow === null && isFrameScheduled()) return time;
+  if (isNewElementTime(audioElement, elementTime, running)) {
+    lastSeenClock.element = audioElement;
+    lastSeenClock.time = elementTime;
+    lastSeenClock.seenAt = now;
+  }
   smoothedClock.element = audioElement;
+  smoothedClock.time = time;
   smoothedClock.at = now;
   smoothedClock.rate = rate;
   smoothedClock.running = running;
-  return smoothedClock.time;
+  return time;
 }
 
 function seekBy(seconds: number): void {

@@ -181,6 +181,14 @@ function subscribeFrame(callback: FrameCallback | FramePhases, label: string): (
 }
 
 // Positions drawn in a frame follow its timestamp, not the moment their callback happens to run.
+function currentFrameTime(): number | null {
+  return dispatchingFrameTime;
+}
+
+function isFrameScheduled(): boolean {
+  return rafId !== null;
+}
+
 function frameTime(): number {
   return dispatchingFrameTime ?? performance.now();
 }
@@ -195,5 +203,16 @@ function cancelNextFrame(handle: number): void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { TAIL_FRAMES, animateFrames, cancelNextFrame, frameTime, holdFrames, nextFrame, subscribeFrame, wake };
+export {
+  TAIL_FRAMES,
+  animateFrames,
+  cancelNextFrame,
+  currentFrameTime,
+  frameTime,
+  holdFrames,
+  isFrameScheduled,
+  nextFrame,
+  subscribeFrame,
+  wake,
+};
 export type { FrameCallback, FramePhases };
