@@ -18,15 +18,34 @@ const NARROW_LABEL_FONT = "500 11px";
 
 let measureContext: CanvasRenderingContext2D | null | undefined;
 let fontFamily: string | undefined;
+const MAX_CACHED_WIDTHS = 4096;
+const cachedWidths = new Map<string, number>();
+let clearsOnFontLoad = false;
 
 // -- Functions -----------------------------------------------------------------
 
+function fontsSettled(): boolean {
+  if (typeof document.fonts === "undefined") return false;
+  if (!clearsOnFontLoad) {
+    clearsOnFontLoad = true;
+    document.fonts.addEventListener("loadingdone", () => cachedWidths.clear());
+  }
+  return document.fonts.status === "loaded";
+}
+
 function labelWidth(text: string, font: string): number {
+  const key = `${font}|${text}`;
+  const cached = cachedWidths.get(key);
+  if (cached !== undefined) return cached;
   if (measureContext === undefined) measureContext = document.createElement("canvas").getContext("2d");
   if (!measureContext) return 0;
   fontFamily ??= getComputedStyle(document.documentElement).getPropertyValue("--font-sans") || "sans-serif";
   measureContext.font = `${font} ${fontFamily}`;
-  return measureContext.measureText(text).width;
+  const width = measureContext.measureText(text).width;
+  if (!fontsSettled()) return width;
+  if (cachedWidths.size >= MAX_CACHED_WIDTHS) cachedWidths.delete(cachedWidths.keys().next().value ?? key);
+  cachedWidths.set(key, width);
+  return width;
 }
 
 // A label that does not fit drops to a smaller face; a block too thin for any text shows none.

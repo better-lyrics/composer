@@ -21,6 +21,17 @@ export default defineConfig({
     },
     conditions: ["onnxruntime-web-use-extern-wasm", "import", "module", "browser", "default"],
   },
+  // Listening on IPv4 serves both localhost and 127.0.0.1, which the local preview frame needs.
+  server: { host: "127.0.0.1" },
+  preview: { host: "127.0.0.1" },
+  build: {
+    rollupOptions: {
+      input: {
+        app: resolve(__dirname, "index.html"),
+        "preview-frame": resolve(__dirname, "preview-frame.html"),
+      },
+    },
+  },
   worker: {
     format: "es",
   },

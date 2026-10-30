@@ -196,8 +196,8 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({
 
   useRendererAudioSync(
     elementRef,
-    (el, audio) => {
-      el.currentTime = audio.currentTime * 1000;
+    (el, _audio, timeSeconds) => {
+      el.currentTime = timeSeconds * 1000;
     },
     "am-lyrics-renderer",
   );

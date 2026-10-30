@@ -2,15 +2,26 @@
 
 type FrameCallback = (now: number) => void;
 
+// Every read of every subscriber runs before any write, so phased reads never force a layout.
+interface FramePhases {
+  read: FrameCallback;
+  write: FrameCallback;
+}
+
 interface FrameSubscriber {
-  callback: FrameCallback;
+  read: FrameCallback | null;
+  write: FrameCallback;
   label: string;
-  failing: boolean;
+  readFailing: boolean;
+  writeFailing: boolean;
+  readThisFrame: boolean;
 }
 
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[FrameLoop]";
+
+const phaseName = { readFailing: "read", writeFailing: "write" } as const;
 
 // 3 frames covers a React commit landing a DOM write on the frame after the store notify.
 const TAIL_FRAMES = 3;
@@ -73,15 +84,36 @@ function schedule(): void {
   rafId = window.requestAnimationFrame(pump);
 }
 
-function runSubscriber(subscriber: FrameSubscriber, now: number): void {
+// Returns whether the phase ran clean; a phase that keeps failing logs once until it recovers.
+function runPhase(
+  subscriber: FrameSubscriber,
+  phase: FrameCallback,
+  failingKey: "readFailing" | "writeFailing",
+  now: number,
+): boolean {
   try {
-    subscriber.callback(now);
-    subscriber.failing = false;
+    phase(now);
+    subscriber[failingKey] = false;
+    return true;
   } catch (error) {
-    if (subscriber.failing) return;
-    subscriber.failing = true;
-    console.error(`${LOG_PREFIX} frame callback "${subscriber.label}" failed`, error);
+    if (subscriber[failingKey]) return false;
+    subscriber[failingKey] = true;
+    console.error(
+      `${LOG_PREFIX} frame callback "${subscriber.label}" failed in its ${phaseName[failingKey]} phase`,
+      error,
+    );
+    return false;
   }
+}
+
+function runRead(subscriber: FrameSubscriber, now: number): void {
+  if (subscriber.read) subscriber.readThisFrame = runPhase(subscriber, subscriber.read, "readFailing", now);
+}
+
+function runWrite(subscriber: FrameSubscriber, now: number): void {
+  if (subscriber.read && !subscriber.readThisFrame) return;
+  subscriber.readThisFrame = false;
+  runPhase(subscriber, subscriber.write, "writeFailing", now);
 }
 
 function pump(now: number): void {
@@ -92,7 +124,8 @@ function pump(now: number): void {
   const rescheduling = tailFrames > 0;
   // Queued before any callback runs, so nothing a subscriber does can stop the loop.
   if (rescheduling) schedule();
-  for (const subscriber of subscribers) runSubscriber(subscriber, now);
+  for (const subscriber of subscribers) runRead(subscriber, now);
+  for (const subscriber of subscribers) runWrite(subscriber, now);
   if (import.meta.env.DEV) reportRunawayFrames(rescheduling);
 }
 
@@ -124,8 +157,15 @@ function animateFrames(label: string): () => void {
   return retain(animations, label);
 }
 
-function subscribeFrame(callback: FrameCallback, label: string): () => void {
-  const subscriber: FrameSubscriber = { callback, label, failing: false };
+function subscribeFrame(callback: FrameCallback | FramePhases, label: string): () => void {
+  const phases = typeof callback === "function" ? { read: null, write: callback } : callback;
+  const subscriber: FrameSubscriber = {
+    ...phases,
+    label,
+    readFailing: false,
+    writeFailing: false,
+    readThisFrame: false,
+  };
   subscribers.add(subscriber);
   wake();
   return () => {
@@ -148,4 +188,4 @@ function cancelNextFrame(handle: number): void {
 // -- Exports ------------------------------------------------------------------
 
 export { TAIL_FRAMES, animateFrames, cancelNextFrame, holdFrames, nextFrame, subscribeFrame, wake };
-export type { FrameCallback };
+export type { FrameCallback, FramePhases };
