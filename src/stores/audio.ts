@@ -50,6 +50,7 @@ interface AudioActions {
 const NORMAL_PLAYBACK_RATE = 1;
 const FULL_VOLUME = 1;
 const FIRST_OTHER_PLAYBACK_RATE = 0.75;
+const MAX_EXTRAPOLATION_MS = 60;
 
 function createInitialState(): AudioState {
   const settings = useSettingsStore.getState();
@@ -186,9 +187,29 @@ function toggledPlaybackRate(): number {
   return playbackRate === NORMAL_PLAYBACK_RATE ? otherPlaybackRate : NORMAL_PLAYBACK_RATE;
 }
 
+const lastSeenClock = { element: null as HTMLAudioElement | null, time: 0, seenAt: 0 };
+
+// Firefox advances `currentTime` once per audio buffer (~43 ms), so between updates
+// the time runs on from when it was first seen, never more than one buffer ahead.
 function livePlaybackTime(): number {
   const { audioElement, currentTime } = useAudioStore.getState();
-  return audioElement?.currentTime ?? currentTime;
+  if (!audioElement) return currentTime;
+  const time = audioElement.currentTime;
+  const now = performance.now();
+  if (audioElement !== lastSeenClock.element || time !== lastSeenClock.time) {
+    lastSeenClock.element = audioElement;
+    lastSeenClock.time = time;
+    lastSeenClock.seenAt = now;
+    return time;
+  }
+  const running =
+    !audioElement.paused && !audioElement.seeking && audioElement.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA;
+  if (!running) {
+    lastSeenClock.seenAt = now;
+    return time;
+  }
+  const elapsedMs = Math.min(MAX_EXTRAPOLATION_MS, now - lastSeenClock.seenAt);
+  return time + (elapsedMs / 1000) * audioElement.playbackRate;
 }
 
 function seekBy(seconds: number): void {
