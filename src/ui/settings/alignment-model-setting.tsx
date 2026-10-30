@@ -12,6 +12,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { CoverageCodes } from "@/ui/language-coverage";
 import { Select, type SelectOption } from "@/ui/select";
 import { AlignmentModelOption } from "@/ui/settings/alignment-model-option";
+import { ModelTermsInfo } from "@/ui/model-terms-info";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
 import { StatusChip } from "@/ui/status-chip";
@@ -72,7 +73,8 @@ const AlignmentModelSetting: React.FC = () => {
       ? ordered.map((m) => ({ value: m.id, label: m.label, detail: formatWholeMegabytes(m.approxBytes) }))
       : [BUILTIN_OPTION, ...pending];
   const value = models ? (pickAlignmentModel(models, stored)?.id ?? BUILTIN_OPTION.value) : stored;
-  const selectedLanguages = byId.get(value)?.languages ?? loadingLanguages(value);
+  const selected = byId.get(value);
+  const selectedLanguages = selected?.languages ?? loadingLanguages(value);
 
   const renderOption = (option: SelectOption) => {
     const model = byId.get(option.value);
@@ -83,7 +85,9 @@ const AlignmentModelSetting: React.FC = () => {
   return (
     <SettingRowLayout>
       <SettingText id="alignmentModelId" />
-      <Select
+      <span className="flex items-center gap-1">
+        {selected?.terms && <ModelTermsInfo terms={selected.terms} />}
+        <Select
         aria-label={settingEntry("alignmentModelId").label}
         value={value}
         onChange={(next) => set("alignmentModelId", next)}
@@ -93,6 +97,7 @@ const AlignmentModelSetting: React.FC = () => {
         triggerAdornment={selectedLanguages && <TriggerCoverage languages={selectedLanguages} song={song} />}
         className="h-9 max-w-72 pl-3 pr-[5px] rounded-xl border-transparent hover:border-transparent btn-raised [&>svg]:size-3.5"
       />
+      </span>
     </SettingRowLayout>
   );
 };
