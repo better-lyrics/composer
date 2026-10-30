@@ -1,6 +1,7 @@
 import type { Bounds } from "@/domain/word/bounds";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useAudioStore } from "@/stores/audio";
+import { AUDIO_STORE_PLAYBACK } from "@/views/preview/renderer-playback";
 import { cn } from "@/utils/cn";
 import {
   type FrameClock,
@@ -70,7 +71,7 @@ function useFrameClock(frameRef: RefObject<HTMLIFrameElement | null>, frameOrigi
   const stoppedRef = useRef(false);
   useFrameLoop(
     () => {
-      const audio = useAudioStore.getState().audioElement;
+      const audio = AUDIO_STORE_PLAYBACK.sample();
       if (!audio) {
         // A song with no audio element stops the frame where it is instead of letting it run on.
         if (stoppedRef.current) return;
