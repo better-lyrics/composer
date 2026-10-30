@@ -1,5 +1,5 @@
 import { notePlacement } from "@/lib/replay-cue";
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
 import { cn } from "@/utils/cn";
@@ -173,6 +173,8 @@ const TimelineWaveform: React.FC = () => {
   useEffect(() => () => useTimelineStore.getState().setWaveformReady(false), []);
 
   const onReady = useCallback((wavesurfer: WaveSurfer) => {
+    // WaveSurfer paints its progress from raw media time, which steps unevenly (43 ms in Firefox).
+    wavesurfer.getCurrentTime = livePlaybackTime;
     setWs(wavesurfer);
     useTimelineStore.getState().setWaveformReady(true);
     const audio = useAudioStore.getState().audioElement;
