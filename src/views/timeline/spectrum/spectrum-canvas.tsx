@@ -136,7 +136,8 @@ const SpectrumCanvas: React.FC = () => {
       beginRefineIfZoomed(refine, canvas, frame, now, reducedMotion);
 
     sizeCanvas(canvas, view.viewportWidth, view.heightCss, view.pixelRatio);
-    canvas.style.translate = `${windowStart}px 0`;
+    const translate = `${windowStart}px 0`;
+    if (canvas.style.translate !== translate) canvas.style.translate = translate;
     const context = canvas.getContext("2d");
     if (!context) return;
     context.setTransform(view.pixelRatio, 0, 0, view.pixelRatio, 0, 0);
