@@ -5,6 +5,8 @@ import { livePlaybackTime } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
+import { cn } from "@/utils/cn";
+import { useBandEmpty } from "@/views/timeline/band-empty";
 import { CANVAS_MONO_LABEL_FONT } from "@/views/timeline/canvas-fonts";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRef } from "react";
@@ -167,6 +169,7 @@ const BeatGridCanvas: React.FC = () => {
   const drawnRef = useRef<DrawnState | null>(null);
   const coloursRef = useRef<ResolvedColours | null>(null);
   const enabled = visible && hasGrid;
+  const bandEmpty = useBandEmpty();
 
   useFrameLoop(
     () => {
@@ -223,7 +226,13 @@ const BeatGridCanvas: React.FC = () => {
   if (!enabled) return null;
 
   return (
-    <div aria-hidden="true" className="absolute inset-x-0 top-0 bottom-px z-3 overflow-hidden pointer-events-none">
+    <div
+      aria-hidden="true"
+      className={cn(
+        "absolute inset-x-0 top-0 bottom-px z-3 overflow-hidden pointer-events-none transition-opacity duration-200 ease-out",
+        bandEmpty && "opacity-0",
+      )}
+    >
       <canvas ref={canvasRef} data-beat-grid-canvas className="absolute top-0 left-0 beat-grid-past-dim" />
     </div>
   );

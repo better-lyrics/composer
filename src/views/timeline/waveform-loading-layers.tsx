@@ -1,8 +1,8 @@
 import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
+import { useBandEmpty } from "@/views/timeline/band-empty";
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { BandViewport } from "@/views/timeline/overview/band-viewport";
-import { useSpectrumBlank } from "@/views/timeline/spectrum/spectrum-session";
 import { WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import type { ReactNode } from "react";
 
@@ -16,7 +16,6 @@ interface SongSpanProps {
 
 interface WaveformSkeletonProps {
   width: number;
-  waveformReady: boolean;
   waveformSettled: boolean;
 }
 
@@ -45,11 +44,10 @@ const WaveformBackground: React.FC<{ width: number }> = ({ width }) => {
 };
 
 // Shown whenever the band has nothing drawn in it: no waveform yet, or no spectrum yet while the spectrum shows.
-const WaveformSkeleton: React.FC<WaveformSkeletonProps> = ({ width, waveformReady, waveformSettled }) => {
+const WaveformSkeleton: React.FC<WaveformSkeletonProps> = ({ width, waveformSettled }) => {
   const showSpectrum = useSettingsStore((s) => s.showSpectrum);
   const bandHeight = useOverviewBandHeight();
-  const spectrumBlank = useSpectrumBlank();
-  const empty = showSpectrum ? spectrumBlank : !waveformReady;
+  const empty = useBandEmpty();
   const sweeping = empty || (!showSpectrum && !waveformSettled);
   return (
     <SongSpan width={width} label="waveform loading viewport">

@@ -52,6 +52,7 @@ interface TimelineState {
   selectionPlayback: SelectionPlaybackMode | null;
   loopRegion: LoopRegion | null;
   loopRegionDrag: LoopRegionDrag | null;
+  waveformReady: boolean;
 
   clipboard: ClipboardData | null;
   pasteMode: PasteMode;
@@ -93,6 +94,7 @@ interface TimelineActions {
   setSelectionPlayback: (mode: SelectionPlaybackMode | null) => void;
   setLoopRegion: (region: LoopRegion | null) => void;
   setLoopRegionDrag: (drag: LoopRegionDrag | null) => void;
+  setWaveformReady: (ready: boolean) => void;
 
   toggleSelection: (selection: WordSelection) => void;
   clearSelection: () => void;
@@ -149,6 +151,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     selectionPlayback: null,
     loopRegion: null,
     loopRegionDrag: null,
+    waveformReady: false,
 
     clipboard: null,
     pasteMode: { status: "idle" },
@@ -195,6 +198,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setLoopRegion: (loopRegion) =>
       set((s) => (loopRegion && s.selectedWords.length > 0 ? { loopRegion, selectedWords: [] } : { loopRegion })),
     setLoopRegionDrag: (loopRegionDrag) => set({ loopRegionDrag }),
+    setWaveformReady: (waveformReady) => set({ waveformReady }),
 
     toggleSelection: (selection) =>
       set((s) => ({ selectedWords: toggleWordSelection(s.selectedWords, selection), loopRegion: null })),

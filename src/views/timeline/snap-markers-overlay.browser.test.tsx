@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
@@ -42,6 +42,11 @@ const headOf = (marker: HTMLElement): HTMLElement => {
 // -- Tests ---------------------------------------------------------------------
 
 describe("SnapMarkersOverlay", () => {
+  // Markers only show over a drawn band; the skeleton state is covered under visibility.
+  beforeEach(() => {
+    useTimelineStore.setState({ waveformReady: true });
+  });
+
   it("renders one onset marker per snap point at left = time * zoom", async () => {
     useSettingsStore.setState({ vocalOnsetSnap: true });
     useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [1, 2] });
@@ -103,6 +108,20 @@ describe("SnapMarkersOverlay", () => {
   });
 
   describe("visibility", () => {
+    it("hides every marker while the band shows the loading skeleton", async () => {
+      useSettingsStore.setState({ vocalOnsetSnap: true, showSpectrum: false });
+      useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [1, 2], waveformReady: false });
+      useProjectStore.setState({ customSnapPoints: snapPoints([3]) });
+
+      const screen = await render(<Harness />);
+      expect(screen.container.querySelector("[data-snap-markers-overlay]")).toBeNull();
+      expect(document.querySelector("[data-snap-marker-head-anchor]")).toBeNull();
+
+      useTimelineStore.setState({ waveformReady: true });
+      await expect.poll(() => onsetMarkers(screen.container).length).toBe(2);
+      expect(customMarkers(screen.container)).toHaveLength(1);
+    });
+
     it("renders no onset markers when vocalOnsetSnap is off", async () => {
       useSettingsStore.setState({ vocalOnsetSnap: false });
       useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [1, 2] });

@@ -164,10 +164,14 @@ const TimelineWaveform: React.FC = () => {
   const onDestroy = useCallback(() => {
     setWs(null);
     setSettledFor(null);
+    useTimelineStore.getState().setWaveformReady(false);
   }, []);
+
+  useEffect(() => () => useTimelineStore.getState().setWaveformReady(false), []);
 
   const onReady = useCallback((wavesurfer: WaveSurfer) => {
     setWs(wavesurfer);
+    useTimelineStore.getState().setWaveformReady(true);
     const audio = useAudioStore.getState().audioElement;
     if (audio && audio.currentTime > 0) {
       wavesurfer.setTime(audio.currentTime);
@@ -182,7 +186,7 @@ const TimelineWaveform: React.FC = () => {
       <WaveformBackground width={totalWidth} />
       <BeatGridCanvas />
       {/* Never derive these in an effect: opacity and the sweep gate must land in the same commit. */}
-      <WaveformSkeleton width={totalWidth} waveformReady={ws !== null} waveformSettled={settledFor === ws} />
+      <WaveformSkeleton width={totalWidth} waveformSettled={settledFor === ws} />
       {audioElement && (
         <WaveformBars
           key={waveformKey}

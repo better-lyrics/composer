@@ -2,6 +2,7 @@ import { snapPointTimes } from "@/domain/snap-point/model";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { useBandEmpty } from "@/views/timeline/band-empty";
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { computeCoveredOnsets, isTimeOnOnset } from "@/views/timeline/snap-marker-math";
 import { SnapMarkerPin } from "@/views/timeline/snap-marker-pin";
@@ -57,7 +58,8 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
   const layerRef = useRef<HTMLDivElement>(null);
 
   const visibleOnsetCount = showOnsets ? vocalOnsetSnapPoints.length : 0;
-  const isVisible = visibleOnsetCount > 0 || customSnapPoints.length > 0 || markerMode;
+  const bandEmpty = useBandEmpty();
+  const isVisible = !bandEmpty && (visibleOnsetCount > 0 || customSnapPoints.length > 0 || markerMode);
 
   useFrameLoop(
     () => {
@@ -105,7 +107,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
           </div>
         )}
         <div className="absolute inset-0 pointer-events-none z-20">
-          <AnimatePresence initial={false}>
+          <AnimatePresence>
             {customSnapPoints.map((point) => (
               <SnapMarkerPin
                 key={point.id}
