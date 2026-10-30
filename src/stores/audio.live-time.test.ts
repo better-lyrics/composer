@@ -1,5 +1,5 @@
-import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 
 interface ElementClock {
   currentTime: number;
@@ -37,7 +37,7 @@ describe("livePlaybackTime extrapolation", () => {
     expect(livePlaybackTime()).toBe(10);
     clock.currentTime = 10.016;
     vi.advanceTimersByTime(16);
-    expect(livePlaybackTime()).toBe(10.016);
+    expect(livePlaybackTime()).toBeCloseTo(10.016, 6);
   });
 
   it("regression: coarse Firefox steps advance with wall time between element updates", () => {
@@ -56,6 +56,43 @@ describe("livePlaybackTime extrapolation", () => {
     livePlaybackTime();
     vi.advanceTimersByTime(20);
     expect(livePlaybackTime()).toBeCloseTo(10.01, 6);
+  });
+
+  it("regression: smooths jittery element time steps into even frame steps", () => {
+    const clock = playingClock(10);
+    useAudioStore.setState({ audioElement: audioWithClock(clock) });
+    livePlaybackTime();
+    const jitterMs = [4, -6, 5, -3, 6, -5, 2, -4];
+    const errors: number[] = [];
+    for (let frame = 1; frame <= 120; frame++) {
+      vi.advanceTimersByTime(16);
+      const truth = 10 + frame * 0.016;
+      clock.currentTime = truth + jitterMs[frame % jitterMs.length] / 1000;
+      errors.push(Math.abs(livePlaybackTime() - truth));
+    }
+    expect(Math.max(...errors.slice(30))).toBeLessThan(0.0015);
+  });
+
+  it("never moves backwards while playing", () => {
+    const clock = playingClock(10);
+    useAudioStore.setState({ audioElement: audioWithClock(clock) });
+    let previous = livePlaybackTime();
+    for (let frame = 1; frame <= 60; frame++) {
+      vi.advanceTimersByTime(16);
+      if (frame % 3 === 0) clock.currentTime = 10 + frame * 0.016 - 0.012;
+      const now = livePlaybackTime();
+      expect(now).toBeGreaterThanOrEqual(previous);
+      previous = now;
+    }
+  });
+
+  it("jumps straight to a seek target while playing", () => {
+    const clock = playingClock(10);
+    useAudioStore.setState({ audioElement: audioWithClock(clock) });
+    livePlaybackTime();
+    vi.advanceTimersByTime(16);
+    clock.currentTime = 42;
+    expect(livePlaybackTime()).toBe(42);
   });
 
   describe("edge cases", () => {

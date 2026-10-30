@@ -51,6 +51,8 @@ const NORMAL_PLAYBACK_RATE = 1;
 const FULL_VOLUME = 1;
 const FIRST_OTHER_PLAYBACK_RATE = 0.75;
 const MAX_EXTRAPOLATION_MS = 60;
+const CLOCK_SMOOTHING_MS = 150;
+const CLOCK_RESYNC_SECONDS = 0.1;
 
 function createInitialState(): AudioState {
   const settings = useSettingsStore.getState();
@@ -188,28 +190,51 @@ function toggledPlaybackRate(): number {
 }
 
 const lastSeenClock = { element: null as HTMLAudioElement | null, time: 0, seenAt: 0 };
+const smoothedClock = { element: null as HTMLAudioElement | null, time: 0, at: 0, rate: 1, running: false };
+
+function isClockRunning(element: HTMLAudioElement): boolean {
+  return !element.paused && !element.seeking && element.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA;
+}
 
 // Firefox advances `currentTime` once per audio buffer (~43 ms), so between updates
 // the time runs on from when it was first seen, never more than one buffer ahead.
-function livePlaybackTime(): number {
-  const { audioElement, currentTime } = useAudioStore.getState();
-  if (!audioElement) return currentTime;
-  const time = audioElement.currentTime;
-  const now = performance.now();
-  if (audioElement !== lastSeenClock.element || time !== lastSeenClock.time) {
-    lastSeenClock.element = audioElement;
+function measuredElementTime(element: HTMLAudioElement, running: boolean, now: number): number {
+  const time = element.currentTime;
+  if (element !== lastSeenClock.element || time !== lastSeenClock.time || !running) {
+    lastSeenClock.element = element;
     lastSeenClock.time = time;
     lastSeenClock.seenAt = now;
     return time;
   }
-  const running =
-    !audioElement.paused && !audioElement.seeking && audioElement.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA;
-  if (!running) {
-    lastSeenClock.seenAt = now;
-    return time;
-  }
   const elapsedMs = Math.min(MAX_EXTRAPOLATION_MS, now - lastSeenClock.seenAt);
-  return time + (elapsedMs / 1000) * audioElement.playbackRate;
+  return time + (elapsedMs / 1000) * element.playbackRate;
+}
+
+// Element time jitters by several ms per frame in every browser, so playback follows wall time
+// and eases toward the element instead of copying it.
+function livePlaybackTime(): number {
+  const { audioElement, currentTime } = useAudioStore.getState();
+  if (!audioElement) return currentTime;
+  const now = performance.now();
+  const running = isClockRunning(audioElement);
+  const measured = measuredElementTime(audioElement, running, now);
+  const rate = audioElement.playbackRate;
+  const elapsedMs = now - smoothedClock.at;
+  const predicted = smoothedClock.time + (elapsedMs / 1000) * smoothedClock.rate;
+  const resync =
+    !running ||
+    !smoothedClock.running ||
+    smoothedClock.element !== audioElement ||
+    smoothedClock.rate !== rate ||
+    Math.abs(measured - predicted) > CLOCK_RESYNC_SECONDS;
+  smoothedClock.time = resync
+    ? measured
+    : predicted + (measured - predicted) * (1 - Math.exp(-elapsedMs / CLOCK_SMOOTHING_MS));
+  smoothedClock.element = audioElement;
+  smoothedClock.at = now;
+  smoothedClock.rate = rate;
+  smoothedClock.running = running;
+  return smoothedClock.time;
 }
 
 function seekBy(seconds: number): void {
@@ -229,13 +254,13 @@ function playableFile(source: AudioSource): File | null {
   return null;
 }
 
+export type { AudioSource };
 export {
   FULL_VOLUME,
-  NORMAL_PLAYBACK_RATE,
   livePlaybackTime,
+  NORMAL_PLAYBACK_RATE,
   playableFile,
   seekBy,
   toggledPlaybackRate,
   useAudioStore,
 };
-export type { AudioSource };
