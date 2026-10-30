@@ -146,12 +146,12 @@ const LoupeSizeStage: React.FC<LoupeSizeStageProps> = ({ onClose }) => {
     <FloatingPortal>
       <FloatingFocusManager context={context} modal returnFocus outsideElementsInert initialFocus={cardRef}>
         <div className="fixed inset-0 layer-floating modal-scrim" style={layout}>
-          <div
+          <dialog
             ref={refs.setFloating}
-            role="dialog"
+            open
             aria-modal="true"
             aria-labelledby={titleId}
-            className="absolute inset-0 outline-none"
+            className="absolute inset-0 size-full max-w-none max-h-none bg-transparent text-inherit outline-none"
           >
             <div className="absolute left-1/2 -translate-x-1/2 top-(--loupe-bar-top) h-11 flex items-center gap-2 pl-3.5 pr-1.5 rounded-[14px] whitespace-nowrap select-none surface-floating">
               <span id={titleId} className="text-[13.5px] font-semibold text-composer-text">
@@ -214,7 +214,7 @@ const LoupeSizeStage: React.FC<LoupeSizeStageProps> = ({ onClose }) => {
             <div role="status" className="sr-only">
               {announcement}
             </div>
-          </div>
+          </dialog>
         </div>
       </FloatingFocusManager>
     </FloatingPortal>
