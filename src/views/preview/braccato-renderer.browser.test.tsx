@@ -322,7 +322,7 @@ describe("BraccatoRenderer", () => {
     await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).not.toBeInTheDocument();
   });
 
-  it("regression: an edit rebuilds the view following the song again, so the way back goes away", async () => {
+  it("regression: an edit swaps into the lines on screen, leaving a reader who scrolled away where they are", async () => {
     const audio = new Audio();
     audio.currentTime = 14;
     useAudioStore.setState({ audioElement: audio, isPlaying: true });
@@ -333,11 +333,14 @@ describe("BraccatoRenderer", () => {
     for (let i = 0; i < 5; i++) el.dispatchEvent(new Event("scroll"));
     await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).toBeInTheDocument();
     const rendererBefore = el.renderer;
+    const firstLineBefore = el.renderer?.lines[0]?.lyricElement;
 
     await screen.rerender(<BraccatoRenderer ttmlString={buildSyncedTtml(120)} />);
 
-    expect(el.renderer).not.toBe(rendererBefore);
-    await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).not.toBeInTheDocument();
+    await expect.poll(() => el.lyrics?.at(-1)?.isInstrumental).toBe(true);
+    expect(el.renderer).toBe(rendererBefore);
+    expect(el.renderer?.lines[0]?.lyricElement).toBe(firstLineBefore);
+    await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).toBeInTheDocument();
   });
 });
 
