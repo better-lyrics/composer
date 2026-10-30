@@ -46,6 +46,7 @@ describe("parseAlignmentManifest", () => {
         approxBytes: 400 * 1024 * 1024,
         languages: ["en"],
         recommended: true,
+        terms: null,
       },
       expect.objectContaining({
         id: "ft-2",
@@ -95,6 +96,23 @@ describe("parseAlignmentManifest", () => {
     );
     expect(empty.languages).toEqual(BUILTIN_ALIGNMENT_MODEL.languages);
     expect(unreadable.languages).toEqual(BUILTIN_ALIGNMENT_MODEL.languages);
+  });
+
+  it("keeps a model's license terms, and drops a model whose terms can't be read rather than list it without them", () => {
+    const terms = { notice: "Derived from Base. Subject to License 1.0.", url: "LICENSE.txt" };
+    const models = parseAlignmentManifest(
+      {
+        models: [
+          { id: "termed", model: "termed.onnx", terms },
+          { id: "no-notice", model: "no-notice.onnx", terms: { ...terms, notice: "" } },
+          { id: "not-an-object", model: "not-an-object.onnx", terms: "Licence 1.0" },
+        ],
+      },
+      MANIFEST_URL,
+      BASE_URL,
+    );
+    expect(models.map((m) => m.id)).toEqual([BUILTIN_ALIGNMENT_MODEL.id, "termed"]);
+    expect(models[1].terms).toEqual({ ...terms, url: "https://models.example.com/hubertfa/LICENSE.txt" });
   });
 
   it("falls back to the built-in model alone for a malformed manifest", () => {

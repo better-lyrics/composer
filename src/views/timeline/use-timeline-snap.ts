@@ -90,7 +90,6 @@ function useTimelineSnap(): UseTimelineSnap {
   useSettingsStore((s) => s.snapWordsAndLines);
   useSettingsStore((s) => s.snapMarkers);
   useSettingsStore((s) => s.snapToPlayhead);
-  useTimelineStore((s) => s.zoom);
   useTimelineStore((s) => s.isBypassing);
   useTimelineStore((s) => s.vocalOnsetSnapPoints);
   // Deliberately NOT subscribing to customSnapPoints. This hook runs in every

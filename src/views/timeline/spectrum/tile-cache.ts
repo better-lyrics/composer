@@ -24,6 +24,13 @@ interface TileView {
 
 interface TileBudget {
   remaining: number;
+  deadline: number;
+  built: number;
+}
+
+interface RefineDraw {
+  deadline: number;
+  underlay: (context: CanvasRenderingContext2D) => void;
 }
 
 interface PendingTile {
@@ -36,6 +43,7 @@ type TileBlit = (context: CanvasRenderingContext2D, tile: OffscreenCanvas, index
 
 interface DrawResult {
   settled: boolean;
+  covered: boolean;
   animating: boolean;
 }
 
@@ -124,8 +132,10 @@ function tileAt(
   if (cached) return { canvas: cached, complete: true };
   const pending = pendingTiles.get(key);
   if (pending && pending.progress === tileProgress(view.session)) return { canvas: pending.canvas, complete: false };
-  if (budget.remaining <= 0) return pending ? { canvas: pending.canvas, complete: false } : null;
+  const overTime = budget.built > 0 && performance.now() >= budget.deadline;
+  if (budget.remaining <= 0 || overTime) return pending ? { canvas: pending.canvas, complete: false } : null;
   budget.remaining--;
+  budget.built++;
   const rendered = renderTile({
     session: view.session,
     table: rowTableFor(view, heightPx),
@@ -148,40 +158,54 @@ function tileAt(
   return { canvas: rendered.canvas, complete: rendered.complete };
 }
 
+// The strip is centred on the view when it is drawn afresh, so its middle tiles are the visible ones.
+function buildOrder(first: number, last: number): number[] {
+  const indices = Array.from({ length: last - first + 1 }, (_, offset) => first + offset);
+  const centre = (first + last) / 2;
+  return indices.toSorted((a, b) => Math.abs(a - centre) - Math.abs(b - centre));
+}
+
 function drawTiles(
   context: CanvasRenderingContext2D,
   view: TileView,
   blit: TileBlit,
   onResolved?: (complete: readonly number[], incomplete: readonly number[]) => void,
+  refine?: RefineDraw,
 ): DrawResult {
   context.clearRect(0, 0, view.viewportWidth, view.heightCss);
+  refine?.underlay(context);
   const { first, last } = visibleTileRange(view.scrollLeft, view.viewportWidth);
   requestRawPhaseForTiles(view, first, last);
-  const budget: TileBudget = { remaining: TILE_BUILD_BUDGET };
+  const budget: TileBudget = {
+    remaining: TILE_BUILD_BUDGET,
+    deadline: refine?.deadline ?? Number.POSITIVE_INFINITY,
+    built: 0,
+  };
   const resolved: { index: number; canvas: OffscreenCanvas }[] = [];
   const complete: number[] = [];
   const incomplete: number[] = [];
-  let settled = true;
-  for (let index = first; index <= last; index++) {
+  let covered = true;
+  for (const index of buildOrder(first, last)) {
     const tile = tileAt(view, index, budget);
     if (!tile) {
-      settled = false;
+      covered = false;
       continue;
     }
     if (tile.complete) complete.push(index);
     else incomplete.push(index);
     resolved.push({ index, canvas: tile.canvas });
   }
-  onResolved?.(complete, incomplete);
+  const ascending = (a: number, b: number) => a - b;
+  onResolved?.(refine ? complete.toSorted(ascending) : complete, refine ? incomplete.toSorted(ascending) : incomplete);
   let animating = false;
   for (const { index, canvas } of resolved) {
     const x = Math.round((index * TILE_WIDTH - view.scrollLeft) * view.pixelRatio) / view.pixelRatio;
     if (blit(context, canvas, index, x)) animating = true;
   }
-  return { settled: settled && incomplete.length === 0, animating };
+  return { settled: covered && incomplete.length === 0, covered, animating };
 }
 
 // -- Exports -------------------------------------------------------------------
 
 export { drawTiles };
-export type { TileView };
+export type { RefineDraw, TileView };

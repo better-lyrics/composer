@@ -107,13 +107,13 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
       releaseEdgeScrollFrames();
       controller.abort();
       scrubPreview.stop();
+      config.setDraggingPlayhead(false);
       activeCleanup = null;
     };
 
     const handleMouseUp = (upEvent: MouseEvent): void => {
       const time = computeTimeFromPointer(upEvent.clientX);
       if (time !== null) config.seekTo(config.snapTime(time, upEvent.metaKey));
-      config.setDraggingPlayhead(false);
       cleanup();
     };
 

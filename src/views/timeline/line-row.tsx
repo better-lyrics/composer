@@ -10,26 +10,24 @@ import { PitchLane } from "@/views/timeline/pitch/pitch-lane";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRowResize } from "@/views/timeline/use-row-resize";
 import { WordTrack } from "@/views/timeline/word-track";
-import { memo } from "react";
+import { memo, useCallback } from "react";
 
 // -- Types ---------------------------------------------------------------------
+
+type LineWordUpdate = (
+  lineId: string,
+  wordIndex: number,
+  updates: Partial<WordTiming>,
+  adjacentIndex?: number,
+  adjacentUpdates?: Partial<WordTiming>,
+) => void;
 
 interface LineRowProps {
   line: LyricLine;
   lineIndex: number;
   duration: number;
-  onUpdateWord: (
-    wordIndex: number,
-    updates: Partial<WordTiming>,
-    adjacentIndex?: number,
-    adjacentUpdates?: Partial<WordTiming>,
-  ) => void;
-  onUpdateBgWord: (
-    wordIndex: number,
-    updates: Partial<WordTiming>,
-    adjacentIndex?: number,
-    adjacentUpdates?: Partial<WordTiming>,
-  ) => void;
+  onUpdateWord: LineWordUpdate;
+  onUpdateBgWord: LineWordUpdate;
 }
 
 // -- Helpers -------------------------------------------------------------------
@@ -49,6 +47,17 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
   const dragShiftPx = useTimelineStore((s) => dragShiftPxFor(line, s.draggedGroupShift));
   const shiftTransform = dragShiftPx !== 0 ? `translateX(${dragShiftPx}px)` : undefined;
   const { isResizing, startResize, resetHeight } = useRowResize(line.id, rowHeight);
+  const lineId = line.id;
+  const updateWord = useCallback(
+    (wordIndex: number, updates: Partial<WordTiming>, adjacentIndex?: number, adjacentUpdates?: Partial<WordTiming>) =>
+      onUpdateWord(lineId, wordIndex, updates, adjacentIndex, adjacentUpdates),
+    [onUpdateWord, lineId],
+  );
+  const updateBgWord = useCallback(
+    (wordIndex: number, updates: Partial<WordTiming>, adjacentIndex?: number, adjacentUpdates?: Partial<WordTiming>) =>
+      onUpdateBgWord(lineId, wordIndex, updates, adjacentIndex, adjacentUpdates),
+    [onUpdateBgWord, lineId],
+  );
 
   const hoveredTrack = useTimelineStore((s) =>
     s.wordDragHover?.lineIndex === lineIndex ? s.wordDragHover.track : null,
@@ -95,7 +104,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               trackType="word"
               duration={duration}
               height={rowHeight}
-              onUpdateWord={onUpdateWord}
+              onUpdateWord={updateWord}
             />
           ) : (
             <EmptyWordTrack line={line} lineIndex={lineIndex} duration={duration} rowHeight={rowHeight} />
@@ -123,7 +132,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               trackType="bg"
               duration={duration}
               height={rowHeight}
-              onUpdateWord={onUpdateBgWord}
+              onUpdateWord={updateBgWord}
             />
           </div>
         ) : (
