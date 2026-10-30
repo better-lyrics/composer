@@ -15,6 +15,7 @@ const lastSeenClock = {
   seenAt: 0,
   running: false,
   advancing: false,
+  stepMs: MAX_EXTRAPOLATION_MS,
 };
 const smoothedClock = {
   element: null as HTMLAudioElement | null,
@@ -44,11 +45,17 @@ function isAdvancing(element: HTMLAudioElement, time: number, running: boolean):
   return running && running === lastSeenClock.running && !smoothedClock.seekPending;
 }
 
-// Firefox advances `currentTime` once per audio buffer (~43 ms), so it runs on from when it was first seen.
+// Firefox advances `currentTime` once per audio buffer (~43 ms), so it runs on for at most one such step.
 function measuredElementTime(element: HTMLAudioElement, time: number, running: boolean, now: number): number {
   if (isNewElementTime(element, time, running)) return time;
-  const elapsedMs = Math.min(MAX_EXTRAPOLATION_MS, Math.max(0, now - lastSeenClock.seenAt));
+  const elapsedMs = Math.min(lastSeenClock.stepMs, Math.max(0, now - lastSeenClock.seenAt));
   return time + (elapsedMs / 1000) * element.playbackRate;
+}
+
+function elementStepMs(element: HTMLAudioElement, time: number, advancing: boolean): number {
+  if (element !== lastSeenClock.element) return MAX_EXTRAPOLATION_MS;
+  if (!advancing || time <= lastSeenClock.time) return lastSeenClock.stepMs;
+  return Math.min(MAX_EXTRAPOLATION_MS, ((time - lastSeenClock.time) * 1000) / element.playbackRate);
 }
 
 // A seek can finish between two frames, so no frame ever sees `seeking`.
@@ -79,6 +86,7 @@ function readPlaybackClock(audioElement: HTMLAudioElement, at?: number): number 
   const time = resync ? measured : Math.max(smoothedClock.time, Math.min(eased, measured + CLOCK_MAX_LEAD_SECONDS));
   if (frameNow === null && isFrameScheduled()) return time;
   if (isNewElementTime(audioElement, elementTime, running)) {
+    lastSeenClock.stepMs = elementStepMs(audioElement, elementTime, advancing);
     lastSeenClock.advancing = advancing;
     lastSeenClock.element = audioElement;
     lastSeenClock.time = elementTime;

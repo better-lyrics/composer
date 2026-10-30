@@ -176,6 +176,20 @@ describe("livePlaybackTime extrapolation", () => {
       expect(Math.max(...lead)).toBeLessThanOrEqual(0.06 + 0.025 + 1e-9);
     });
 
+    it("regression: a creeping start-up time never lets the clock run far ahead", () => {
+      const clock = { ...playingClock(10), paused: true };
+      useAudioStore.setState({ audioElement: audioWithClock(clock) });
+      livePlaybackTime();
+      clock.paused = false;
+      const lead: number[] = [];
+      for (let frame = 1; frame <= 20; frame++) {
+        vi.advanceTimersByTime(16);
+        if (frame % 4 === 0) clock.currentTime += 0.002;
+        lead.push(livePlaybackTime() - clock.currentTime);
+      }
+      expect(Math.max(...lead)).toBeLessThanOrEqual(0.03);
+    });
+
     it("jumps to a short seek instead of easing toward it", () => {
       const clock = playingClock(10);
       useAudioStore.setState({ audioElement: audioWithClock(clock) });
