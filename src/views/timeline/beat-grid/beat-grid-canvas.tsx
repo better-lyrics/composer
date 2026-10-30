@@ -8,7 +8,7 @@ import { useThemeStore } from "@/stores/theme";
 import { cn } from "@/utils/cn";
 import { useBandEmpty } from "@/views/timeline/band-empty";
 import { CANVAS_MONO_LABEL_FONT } from "@/views/timeline/canvas-fonts";
-import { scrollWindowStart } from "@/views/timeline/scroll-window";
+import { STRIP_SCREENS, type Strip, stripFor } from "@/views/timeline/scroll-window";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRef } from "react";
 
@@ -57,8 +57,6 @@ const SPECTRUM_GRID_COLOURS: GridColours = {
 };
 const SPECTRUM_LINE_EDGE = "rgba(0, 0, 0, 0.55)";
 const NUMBER_SHADOW = { colour: "rgba(0, 0, 0, 0.85)", blur: 3 };
-// Like the spectrum, the canvas covers more than the view so a scroll moves it instead of redrawing it.
-const WINDOW_SCREENS = 2;
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -171,7 +169,7 @@ const BeatGridCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawnRef = useRef<DrawnState | null>(null);
   const coloursRef = useRef<ResolvedColours | null>(null);
-  const windowStartRef = useRef(0);
+  const stripRef = useRef<Strip | null>(null);
   const enabled = visible && hasGrid;
   const bandEmpty = useBandEmpty();
 
@@ -184,21 +182,19 @@ const BeatGridCanvas: React.FC = () => {
       const grid = useProjectStore.getState().beatGrid;
       const { activeThemeId, customThemes } = useThemeStore.getState();
       const zoom = useTimelineStore.getState().zoom;
-      const scrollLeft = Math.round(container.scrollLeft);
-      const viewportWidth = Math.max(0, container.clientWidth - GUTTER_WIDTH);
-      const width = viewportWidth * WINDOW_SCREENS;
-      windowStartRef.current = scrollWindowStart(
-        windowStartRef.current,
-        scrollLeft,
-        scrollLeft + viewportWidth,
+      const strip = stripFor(
+        stripRef.current,
+        container.scrollLeft,
+        Math.max(0, container.clientWidth - GUTTER_WIDTH),
         useAudioStore.getState().duration * zoom,
-        width,
+        STRIP_SCREENS,
       );
+      stripRef.current = strip;
       const next: DrawnState = {
         canvas,
-        scrollLeft: windowStartRef.current,
+        scrollLeft: strip.start,
         zoom,
-        width,
+        width: strip.width,
         height: band.clientHeight,
         pixelRatio: window.devicePixelRatio || 1,
         grid,

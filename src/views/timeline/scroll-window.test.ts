@@ -1,4 +1,4 @@
-import { scrollWindowStart } from "@/views/timeline/scroll-window";
+import { scrollWindowStart, stripFor } from "@/views/timeline/scroll-window";
 import { describe, expect, it } from "vitest";
 
 const SONG_WIDTH = 120_000;
@@ -12,7 +12,7 @@ function covers(start: number, visibleStart: number, visibleEnd: number): boolea
   return start <= visibleStart && start + WINDOW_WIDTH >= visibleEnd;
 }
 
-describe("waveformWindowStart", () => {
+describe("scrollWindowStart", () => {
   it("keeps the window while the view stays inside it", () => {
     expect(windowStart(4000, 5000, 6400, SONG_WIDTH)).toBe(4000);
   });
@@ -48,5 +48,24 @@ describe("waveformWindowStart", () => {
         }
       }
     });
+  });
+});
+
+describe("stripFor", () => {
+  it("regression: a view-wide strip covers a fractional scroll position on both edges", () => {
+    const strip = stripFor(null, 100.5, 1400, SONG_WIDTH, 1);
+    expect(strip.start).toBeLessThanOrEqual(100.5);
+    expect(strip.start + strip.width).toBeGreaterThanOrEqual(1500.5);
+  });
+
+  it("recentres when the strip width changes, so a zoom's narrow strip does not leave the wide one at an edge", () => {
+    const narrow = stripFor(null, 5000, 1400, SONG_WIDTH, 1);
+    const wide = stripFor(narrow, 5000, 1400, SONG_WIDTH, 2);
+    expect(5000 - wide.start).toBeCloseTo(wide.start + wide.width - 6400, -1);
+  });
+
+  it("keeps the same strip while the view moves inside it", () => {
+    const strip = stripFor(null, 5000, 1400, SONG_WIDTH, 2);
+    expect(stripFor(strip, 5300, 1400, SONG_WIDTH, 2)).toBe(strip);
   });
 });

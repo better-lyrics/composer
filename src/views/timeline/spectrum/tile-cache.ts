@@ -158,9 +158,9 @@ function tileAt(
   return { canvas: rendered.canvas, complete: rendered.complete };
 }
 
-function buildOrder(first: number, last: number, centreFirst: boolean): number[] {
+// The strip is centred on the view when it is drawn afresh, so its middle tiles are the visible ones.
+function buildOrder(first: number, last: number): number[] {
   const indices = Array.from({ length: last - first + 1 }, (_, offset) => first + offset);
-  if (!centreFirst) return indices;
   const centre = (first + last) / 2;
   return indices.toSorted((a, b) => Math.abs(a - centre) - Math.abs(b - centre));
 }
@@ -185,7 +185,7 @@ function drawTiles(
   const complete: number[] = [];
   const incomplete: number[] = [];
   let covered = true;
-  for (const index of buildOrder(first, last, refine !== undefined)) {
+  for (const index of buildOrder(first, last)) {
     const tile = tileAt(view, index, budget);
     if (!tile) {
       covered = false;

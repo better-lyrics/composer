@@ -5,7 +5,7 @@ import { animateFrames } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
-import { scrollWindowStart } from "@/views/timeline/scroll-window";
+import { STRIP_SCREENS, type Strip, stripFor } from "@/views/timeline/scroll-window";
 import { sizeCanvas } from "@/views/timeline/size-canvas";
 import { spectrumSession } from "@/views/timeline/spectrum/spectrum-session";
 import {
@@ -33,10 +33,6 @@ import { useEffect, useRef, useState } from "react";
 // -- Constants -----------------------------------------------------------------
 
 const BAND_BORDER = 1;
-
-// The canvas covers this many screens of song and only redraws when the view leaves it, so a scroll or follow
-// moves a still canvas instead of repainting and uploading the whole band every frame.
-const WINDOW_SCREENS = 2;
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -72,7 +68,7 @@ function drawingSignature(view: TileView, look: string): string {
 const SpectrumCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawnRef = useRef<string | null>(null);
-  const windowStartRef = useRef(0);
+  const stripRef = useRef<Strip | null>(null);
   const releaseRef = useRef<(() => void) | null>(null);
   const [warmUp] = useState(createWarmUp);
   const [refine] = useState(createZoomRefine);
@@ -97,16 +93,15 @@ const SpectrumCanvas: React.FC = () => {
     const pixelsPerSecond = useTimelineStore.getState().zoom;
     const scrollLeft = container.scrollLeft;
     const viewportWidth = Math.max(0, container.clientWidth - GUTTER_WIDTH);
-    // Every refine frame redraws the whole canvas, so a zoom keeps it as narrow as the view.
-    const windowWidth = refine.base ? viewportWidth : viewportWidth * WINDOW_SCREENS;
-    const windowStart = scrollWindowStart(
-      windowStartRef.current,
+    // Every refine frame redraws the whole canvas, so a zoom keeps it one view wide.
+    const strip = stripFor(
+      stripRef.current,
       scrollLeft,
-      scrollLeft + viewportWidth,
+      viewportWidth,
       useAudioStore.getState().duration * pixelsPerSecond,
-      windowWidth,
+      refine.base ? 1 : STRIP_SCREENS,
     );
-    windowStartRef.current = windowStart;
+    stripRef.current = strip;
     const view: TileView = {
       session: spectrumSession,
       look,
@@ -115,8 +110,8 @@ const SpectrumCanvas: React.FC = () => {
       pixelsPerSecond,
       pixelRatio: window.devicePixelRatio || 1,
       heightCss: currentOverviewBandHeight() - BAND_BORDER,
-      scrollLeft: windowStart,
-      viewportWidth: windowWidth,
+      scrollLeft: strip.start,
+      viewportWidth: strip.width,
     };
     const lookId = lookKey(view);
     const signature = drawingSignature(view, lookId);
@@ -136,7 +131,7 @@ const SpectrumCanvas: React.FC = () => {
       beginRefineIfZoomed(refine, canvas, frame, now, reducedMotion);
 
     sizeCanvas(canvas, view.viewportWidth, view.heightCss, view.pixelRatio);
-    const translate = `${windowStart}px 0`;
+    const translate = `${strip.start}px 0`;
     if (canvas.style.translate !== translate) canvas.style.translate = translate;
     const context = canvas.getContext("2d");
     if (!context) return;
