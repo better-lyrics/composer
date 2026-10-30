@@ -1,6 +1,7 @@
 import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
@@ -207,6 +208,7 @@ describe("PastePreview · paste words onto a line of a group that shares timing"
 
   function seedChorus(sharesTiming: boolean) {
     useAudioStore.setState({ duration: 20 });
+    useSettingsStore.setState({ timelineSnap: false });
     useTimelineStore.setState({ zoom: ZOOM });
     useProjectStore.setState({
       groups: [createGroup({ id: "g1", ...(sharesTiming ? { sharesTiming: true } : {}) })],
