@@ -207,7 +207,11 @@ const TimelineWaveform: React.FC = () => {
           data-sweeping={sweeping ? "" : undefined}
           aria-hidden="true"
           className="absolute top-0 left-0 waveform-loading-dots pointer-events-none transition-opacity duration-200 ease-out"
-          style={{ width: spanWidth, height: WAVEFORM_HEIGHT - 1, opacity: bandEmpty ? 1 : 0 }}
+          style={{
+            width: spanWidth,
+            height: (showSpectrum ? bandHeight : WAVEFORM_HEIGHT) - 1,
+            opacity: bandEmpty ? 1 : 0,
+          }}
         />
       </SongSpan>
       {audioElement && (
