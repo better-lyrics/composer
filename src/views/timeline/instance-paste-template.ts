@@ -35,7 +35,7 @@ function templateEntries(line: LineTemplate, lineOffset: number): ClipboardEntry
   return entries;
 }
 
-// The commit places the template with its start at the paste time, so the preview and snap must use the same words.
+// Relative to the instance start; a line-synced main line can start before it when background words set the start.
 function instancePasteClipboard(lines: LyricLine[], groups: readonly LinkGroup[], clipboard: ClipboardData) {
   if (!clipboard.sourceInstance) return clipboard;
   const entries = instancePasteTemplate(lines, groups, clipboard.sourceInstance)

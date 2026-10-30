@@ -94,6 +94,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
   const duration = useAudioStore((s) => s.duration);
+  useAudioStore((s) => (s.isPlaying ? null : s.currentTime));
   const rangeOf = useMemo(() => timeRangeResolver(lines, groups, duration), [lines, groups, duration]);
 
   const layout = useMemo(
@@ -217,7 +218,8 @@ async function commitPaste(clipboard: ClipboardData, container: HTMLElement, e: 
   const time = hovered
     ? snappedPasteTime(placed, pointer.time, { lineIndex, lane, bypass: holdsSnapBypass(e) }).time
     : pointer.time;
-  await commitPasteAt({ clipboard, cursorTime: time, lineIndex, lane });
+  const instanceStart = clipboard.sourceInstance ? time - placed.entries[0].word.begin : time;
+  await commitPasteAt({ clipboard, cursorTime: instanceStart, lineIndex, lane });
 }
 
 // -- Exports -------------------------------------------------------------------
