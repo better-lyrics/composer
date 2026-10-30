@@ -101,8 +101,9 @@ const TimelinePanel: React.FC = () => {
   const openImportModal = useImportModal();
 
   const effectiveLines = useMemo(() => getEffectiveLines(lines), [lines]);
+  const timelineShown = !!source && lines.length > 0;
 
-  const [initOverlayScrollbars] = useOverlayScrollbars({
+  const [initOverlayScrollbars, overlayScrollbars] = useOverlayScrollbars({
     defer: true,
     options: {
       scrollbars: {
@@ -117,9 +118,12 @@ const TimelinePanel: React.FC = () => {
   useEffect(() => {
     const target = contentRef.current;
     const viewport = scrollContainerRef.current;
-    if (!target || !viewport) return;
+    if (!timelineShown || !target || !viewport) return;
+    // The scroll container remounts when the lyrics are cleared and added back; init skips while the old instance lives.
+    const instance = overlayScrollbars();
+    if (instance && instance.elements().viewport !== viewport) instance.destroy();
     initOverlayScrollbars({ target, elements: { viewport } });
-  }, [initOverlayScrollbars]);
+  }, [initOverlayScrollbars, overlayScrollbars, timelineShown]);
 
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
   const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
@@ -144,7 +148,6 @@ const TimelinePanel: React.FC = () => {
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
   useGroupFocusShortcuts();
   useGroupFocusScroll(scrollContainerRef);
-  const timelineShown = !!source && lines.length > 0;
   useTimelineWheel(scrollContainerRef, timelineShown);
   useSeekReveal(scrollContainerRef, timelineShown);
   useTimelineFrameWake(scrollContainerRef, contentRef, timelineShown);
@@ -164,14 +167,14 @@ const TimelinePanel: React.FC = () => {
   }, [effectiveLines]);
 
   useEffect(() => {
-    if (!contentRef.current) return;
+    if (!timelineShown || !contentRef.current) return;
     const observer = new ResizeObserver((entries) => {
       setContentHeight(entries[0].contentRect.height);
     });
     // react-doctor-disable-next-line react-doctor/no-initialize-state
     observer.observe(contentRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [timelineShown]);
 
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
