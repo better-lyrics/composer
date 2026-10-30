@@ -34,7 +34,7 @@
     "@sglkc/kuromoji": "1.1.0",
     "@tabler/icons-react": "^3.49.0",
     "@tanstack/react-query": "^5.104.5",
-    "@uimaxbai/am-lyrics": "^1.8.7",
+    "@uimaxbai/am-lyrics": "^1.8.8",
     "@wavesurfer/react": "^1.0.12",
     "clsx": "^2.1.1",
     "diff": "^9.0.0",
