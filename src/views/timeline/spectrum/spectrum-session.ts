@@ -31,6 +31,7 @@ interface SpectrumStatusView {
   source: SpectrumSource;
   fftSize: number;
   percent: number;
+  drawn: boolean;
   error: string | null;
 }
 
@@ -80,6 +81,7 @@ function snapshotStatus(): SpectrumStatusView {
     source: spectrumSession.source,
     fftSize: spectrumSession.fftSize,
     percent: total > 0 ? Math.round((spectrumSession.readyChunks / total) * 100) : 0,
+    drawn: spectrumSession.readyChunks > 0,
     error: spectrumSession.error,
   };
 }
@@ -89,6 +91,7 @@ function notifyStatus(): void {
   if (
     next.status === statusView.status &&
     next.percent === statusView.percent &&
+    next.drawn === statusView.drawn &&
     next.source === statusView.source &&
     next.fftSize === statusView.fftSize &&
     next.error === statusView.error
@@ -174,6 +177,13 @@ function useSpectrumStatus(): SpectrumStatusView {
   return useSyncExternalStore(subscribeSpectrumStatus, () => statusView);
 }
 
+function useSpectrumBlank(): boolean {
+  return useSyncExternalStore(subscribeSpectrumStatus, () => {
+    const { status, drawn } = statusView;
+    return status === "idle" || status === "decoding" || (status === "analysing" && !drawn);
+  });
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
@@ -183,6 +193,7 @@ export {
   spectrumSession,
   storeSpectrumChunk,
   storeWorkerChunk,
+  useSpectrumBlank,
   useSpectrumStatus,
 };
 export type { SpectrumSessionState, SpectrumStatusView };

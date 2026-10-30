@@ -124,6 +124,31 @@ before writing a new one.
 - No em dashes in code, copy or commit messages.
 - Commit messages are one line: `type: brief description` (for example `fix: timing offset`).
 
+## Performance
+
+The Timeline renders hundreds of word blocks, several canvases and a playhead that moves every
+frame. Small mistakes there show up as lag on slower machines, so these rules hold for every change
+that touches it:
+
+- Subscribe to a store value only when the render output uses it. Fast values (`zoom`, playback
+  time, scroll position) are read with `getState()` inside handlers and frame callbacks.
+- Pass stable callbacks into memoized rows and blocks. An inline closure per row turns one zoom step
+  into a re-render of every row.
+- Never measure text or read layout during render.
+- Frame callbacks (`lib/frame-loop.ts`) do every layout read in the `read` phase and every write in
+  the `write` phase. Query the DOM once per frame, write a style only when its value changed, and
+  never force a reflow (`void el.offsetWidth`).
+- A new style written every frame inside the Timeline is listed in
+  `views/timeline/playback-style-mutation.ts`, or OverlayScrollbars re-measures layout every frame.
+- WaveSurfer must never redraw the whole song. `views/timeline/waveform-window.ts` owns its width
+  and scroll; change zoom with `ws.setOptions`, never by rebuilding the instance.
+- Heavy tab panels mount on their first visit. Do not pre-render long lists or code views in a
+  hidden `<Activity>`.
+
+To show a Timeline change is not slower, profile it at 4x CPU throttling: zoom with the buttons and
+with a fast Ctrl+wheel burst in both directions, scroll, and play. Compare against a master build.
+Profiling scripts and perf tooling stay local and are never committed.
+
 ## Pull requests
 
 If an AI agent wrote or substantially wrote the change, say so in the PR description, naming the
