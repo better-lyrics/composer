@@ -41,6 +41,15 @@ describe("prepareTransportPlay", () => {
     expect(useTimelineStore.getState().selectionPlayback).toBeNull();
   });
 
+  it("regression: latched without a cue, still adopts a drawn region", () => {
+    useSettingsStore.setState({ returnToCue: true });
+    useTimelineStore.getState().setCue(null);
+    useTimelineStore.setState({ loopRegion: { begin: 10, end: 12, loops: true } });
+    prepareTransportPlay();
+    adoptLoopRegionForPlay();
+    expect(useTimelineStore.getState().selectionPlayback).toBe("loop");
+  });
+
   it("latched, still adopts a drawn region the cue sits inside", () => {
     useSettingsStore.setState({ returnToCue: true });
     useTimelineStore.setState({ loopRegion: { begin: 1, end: 3, loops: true } });

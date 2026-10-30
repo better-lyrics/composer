@@ -66,8 +66,8 @@ function playFromCue(): void {
 // Latched, Enter always plays from the cue, so a drawn region the cue sits outside is not adopted.
 function prepareTransportPlay(): void {
   const { target, playhead, latched } = currentTransportPosition();
-  const region = useTimelineStore.getState().loopRegion;
-  if (latched && region && (target < region.begin || target >= region.end)) skipLoopRegionOnNextPlay();
+  const { loopRegion: region, cue } = useTimelineStore.getState();
+  if (latched && cue !== null && region && (cue < region.begin || cue >= region.end)) skipLoopRegionOnNextPlay();
   if (target !== playhead) useAudioStore.getState().seekTo(target);
 }
 
