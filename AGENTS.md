@@ -140,6 +140,9 @@ that touches it:
   never force a reflow (`void el.offsetWidth`).
 - A new style written every frame inside the Timeline is listed in
   `views/timeline/playback-style-mutation.ts`, or OverlayScrollbars re-measures layout every frame.
+- `patches/overlayscrollbars@2.17.0.patch` drops OverlayScrollbars' `noContent > *` rule. Chrome
+  restyles every Timeline row on each OverlayScrollbars update while that rule exists. Carry the
+  patch forward on every OverlayScrollbars upgrade.
 - WaveSurfer must never redraw the whole song. `views/timeline/waveform-window.ts` owns its width
   and scroll; change zoom with `ws.setOptions`, never by rebuilding the instance.
 - Heavy tab panels mount on their first visit. Do not pre-render long lists or code views in a
