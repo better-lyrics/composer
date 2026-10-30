@@ -27,7 +27,8 @@ type ToFrameMessage =
   | { kind: "lyrics"; ttml: string }
   | { kind: "focus"; range: Bounds | null }
   | { kind: "theme"; style: string; scheme: string | undefined }
-  | { kind: "clock"; clock: FrameClock };
+  | { kind: "clock"; clock: FrameClock }
+  | { kind: "stop" };
 
 type FromFrameMessage =
   | { kind: "ready" }

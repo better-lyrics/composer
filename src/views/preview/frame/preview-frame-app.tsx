@@ -78,6 +78,7 @@ const PreviewFrameApp: React.FC<PreviewFrameAppProps> = ({ parentOrigin }) => {
         // The parent may have missed the first one while its sidebar was hidden.
         if (shownRef.current) post({ kind: "shown" });
       } else if (message.kind === "clock") playback.receive(message.clock);
+      else if (message.kind === "stop") playback.stop();
       else if (message.kind === "lyrics") setTtml(message.ttml);
       else if (message.kind === "focus") setFocusRange(message.range);
       else if (message.kind === "theme") {

@@ -6,6 +6,7 @@ import type { PlaybackSample, RendererPlayback } from "@/views/preview/renderer-
 
 interface FramePlayback extends RendererPlayback {
   receive: (clock: FrameClock) => void;
+  stop: () => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -24,22 +25,33 @@ function createFramePlayback(post: (message: FromFrameMessage) => void): FramePl
   let transitMs = 0;
   let releasePlayback: (() => void) | null = null;
   const sample: PlaybackSample = { currentTime: 0, paused: true, playbackRate: 1 };
+  const releaseHold = () => {
+    releasePlayback?.();
+    releasePlayback = null;
+  };
+  const currentTime = (now: number) => {
+    if (!clock) return 0;
+    const elapsedMs = clock.playing ? now - receivedAt + transitMs : 0;
+    return clock.time + (elapsedMs / 1000) * clock.rate;
+  };
   return {
     receive: (next) => {
       clock = next;
       receivedAt = performance.now();
       transitMs = Math.min(MAX_TRANSIT_MS, Math.max(0, performance.timeOrigin + receivedAt - next.sentAt));
       if (next.playing) releasePlayback ??= holdFrames("preview frame playback");
-      else {
-        releasePlayback?.();
-        releasePlayback = null;
-      }
+      else releaseHold();
+      wake();
+    },
+    stop: () => {
+      if (!clock) return;
+      clock = { ...clock, time: currentTime(performance.now()), playing: false };
+      releaseHold();
       wake();
     },
     sample: () => {
       if (!clock) return null;
-      const elapsedMs = clock.playing ? performance.now() - receivedAt + transitMs : 0;
-      sample.currentTime = clock.time + (elapsedMs / 1000) * clock.rate;
+      sample.currentTime = currentTime(performance.now());
       sample.paused = !clock.playing;
       sample.playbackRate = clock.rate;
       return sample;

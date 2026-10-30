@@ -67,16 +67,23 @@ function replayClick(frame: HTMLIFrameElement): void {
 function useFrameClock(frameRef: RefObject<HTMLIFrameElement | null>, frameOrigin: string, connection: number): void {
   const enabled = connection > 0;
   const sentRef = useRef<FrameClock | null>(null);
+  const stoppedRef = useRef(false);
   useFrameLoop(
     () => {
       const audio = useAudioStore.getState().audioElement;
-      const last = sentRef.current;
-      // A song with no audio element stops the frame where it was instead of letting it run on.
-      if (!audio && !last?.playing) return;
+      if (!audio) {
+        // A song with no audio element stops the frame where it is instead of letting it run on.
+        if (stoppedRef.current) return;
+        stoppedRef.current = true;
+        sentRef.current = null;
+        postToFrame(frameRef.current, frameOrigin, { kind: "stop" });
+        return;
+      }
+      stoppedRef.current = false;
       const clock = {
-        time: audio?.currentTime ?? last?.time ?? 0,
-        playing: audio ? !audio.paused : false,
-        rate: audio?.playbackRate ?? last?.rate ?? 1,
+        time: audio.currentTime,
+        playing: !audio.paused,
+        rate: audio.playbackRate,
         sentAt: performance.timeOrigin + performance.now(),
       };
       if (sameClock(sentRef.current, clock)) return;
@@ -88,6 +95,7 @@ function useFrameClock(frameRef: RefObject<HTMLIFrameElement | null>, frameOrigi
   );
   useEffect(() => {
     sentRef.current = null;
+    stoppedRef.current = false;
   }, [connection]);
 }
 
