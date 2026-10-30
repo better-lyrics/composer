@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { snapPoints } from "@/test/factories";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
@@ -363,7 +364,7 @@ describe("SnapMarkersOverlay", () => {
       await expect.poll(() => useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(5, 5);
 
       useTimelineStore.setState({ waveformReady: false });
-      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await stepFrames(1);
       expect(head.isConnected).toBe(true);
       head.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
 
