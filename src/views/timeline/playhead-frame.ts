@@ -8,6 +8,7 @@ import { currentFocusScrollRange } from "@/views/timeline/effective-focus";
 import { createFollowInput, fillFollowInput } from "@/views/timeline/follow-input";
 import { clampScrollLeft } from "@/views/timeline/group-focus";
 import { createRowLayoutCache } from "@/views/timeline/row-layout-cache";
+import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { createTimelineLights, paintTimelineLights } from "@/views/timeline/timeline-lights";
 import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -22,6 +23,7 @@ interface PlayheadElements {
   cap: RefObject<HTMLDivElement | null>;
   overlay: RefObject<HTMLDivElement | null>;
   scrollContainer: RefObject<HTMLDivElement | null>;
+  rulerTrack?: RefObject<HTMLDivElement | null>;
 }
 
 interface PlayheadFrame {
@@ -176,6 +178,8 @@ function writePlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): v
     playhead.style.height = `${frame.contentHeight}px`;
     paintTimelineLights(frame.lights, container, frame.blocks, frame.lines, frame.displayTime);
     pinCutWordLabels(frame.blocks, frame.scrollLeft, frame.pinnedLabels);
+    const rulerTrack = elements.rulerTrack?.current;
+    if (rulerTrack) followRulerScroll(rulerTrack, frame.scrollLeft);
   }
 
   if (frame.mask !== null && frame.mask !== frame.lastMask) {
