@@ -8,6 +8,7 @@ interface ElementClock {
   seeking: boolean;
   readyState: number;
   playbackRate: number;
+  duration?: number;
 }
 
 function audioWithClock(clock: ElementClock): HTMLAudioElement {
@@ -188,6 +189,23 @@ describe("livePlaybackTime extrapolation", () => {
         lead.push(livePlaybackTime() - clock.currentTime);
       }
       expect(Math.max(...lead)).toBeLessThanOrEqual(0.03);
+    });
+
+    it("holds after a seek that lands exactly on the last element time", () => {
+      const clock = playingClock(10);
+      useAudioStore.setState({ audioElement: audioWithClock(clock) });
+      livePlaybackTime();
+      vi.advanceTimersByTime(30);
+      resyncPlaybackClock();
+      expect(livePlaybackTime()).toBe(10);
+    });
+
+    it("never runs past the end of the song", () => {
+      const clock = { ...playingClock(29.98), duration: 30 };
+      useAudioStore.setState({ audioElement: audioWithClock(clock) });
+      livePlaybackTime();
+      vi.advanceTimersByTime(50);
+      expect(livePlaybackTime()).toBe(30);
     });
 
     it("jumps to a short seek instead of easing toward it", () => {

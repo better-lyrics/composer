@@ -40,9 +40,10 @@ function isNewElementTime(element: HTMLAudioElement, time: number, running: bool
 
 // Output starts a while after play or a seek; until the element time moves, nothing runs on.
 function isAdvancing(element: HTMLAudioElement, time: number, running: boolean): boolean {
-  if (!isNewElementTime(element, time, running)) return lastSeenClock.advancing;
   if (element !== lastSeenClock.element) return running;
-  return running && running === lastSeenClock.running && !smoothedClock.seekPending;
+  if (smoothedClock.seekPending) return false;
+  if (!isNewElementTime(element, time, running)) return lastSeenClock.advancing;
+  return running && running === lastSeenClock.running;
 }
 
 // Firefox advances `currentTime` once per audio buffer (~43 ms), so it runs on for at most one such step.
@@ -83,7 +84,8 @@ function readPlaybackClock(audioElement: HTMLAudioElement, at?: number): number 
     smoothedClock.rate !== rate ||
     Math.abs(measured - predicted) > CLOCK_RESYNC_SECONDS;
   const eased = predicted + (measured - predicted) * (1 - Math.exp(-elapsedMs / CLOCK_SMOOTHING_MS));
-  const time = resync ? measured : Math.max(smoothedClock.time, Math.min(eased, measured + CLOCK_MAX_LEAD_SECONDS));
+  const smoothed = resync ? measured : Math.max(smoothedClock.time, Math.min(eased, measured + CLOCK_MAX_LEAD_SECONDS));
+  const time = Number.isFinite(audioElement.duration) ? Math.min(smoothed, audioElement.duration) : smoothed;
   if (frameNow === null && isFrameScheduled()) return time;
   if (isNewElementTime(audioElement, elementTime, running)) {
     lastSeenClock.stepMs = elementStepMs(audioElement, elementTime, advancing);
