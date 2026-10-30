@@ -42,7 +42,6 @@ const headOf = (marker: HTMLElement): HTMLElement => {
 // -- Tests ---------------------------------------------------------------------
 
 describe("SnapMarkersOverlay", () => {
-  // Markers only show over a drawn band; the skeleton state is covered under visibility.
   beforeEach(() => {
     useTimelineStore.setState({ waveformReady: true });
   });
@@ -365,7 +364,6 @@ describe("SnapMarkersOverlay", () => {
 
       useTimelineStore.setState({ waveformReady: false });
       await new Promise((resolve) => requestAnimationFrame(resolve));
-      // A real pointerup only reaches a head that is still in the document.
       expect(head.isConnected).toBe(true);
       head.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
 

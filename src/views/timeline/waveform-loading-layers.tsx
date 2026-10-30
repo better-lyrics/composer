@@ -21,7 +21,6 @@ interface WaveformSkeletonProps {
 
 // -- Components ----------------------------------------------------------------
 
-// Until the song length is known the band has no width, so its loading layers cover the visible part instead.
 const SongSpan: React.FC<SongSpanProps> = ({ width, label, children }) =>
   width > 0 ? children(width) : <BandViewport label={label}>{children("100%")}</BandViewport>;
 
@@ -43,7 +42,6 @@ const WaveformBackground: React.FC<{ width: number }> = ({ width }) => {
   );
 };
 
-// Shown whenever the band has nothing drawn in it: no waveform yet, or no spectrum yet while the spectrum shows.
 const WaveformSkeleton: React.FC<WaveformSkeletonProps> = ({ width, waveformSettled }) => {
   const showSpectrum = useSettingsStore((s) => s.showSpectrum);
   const bandHeight = useOverviewBandHeight();

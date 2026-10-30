@@ -134,7 +134,6 @@ html[data-scheme="light"] {
 }
 
 /* Base styles */
-/* An app, not a document: the page never rubber-bands, so a missed wheel outside a pane does nothing. */
 html {
   overscroll-behavior: none;
   font-size: 16px;
@@ -1122,9 +1121,7 @@ braccato-lyrics .blyrics-container {
 @layer components {
   .line-cell {
     --cell-bg: var(--gutter-bg);
-    --line-cell-hit-from:
-      inset -2px 0 0 color-mix(in oklab, var(--agent) 65%, white),
-      inset 0 -1px 0 var(--divider);
+    --line-cell-hit-from: inset -2px 0 0 color-mix(in oklab, var(--agent) 65%, white), inset 0 -1px 0 var(--divider);
     --rail: color-mix(in oklab, var(--agent) 45%, var(--cell-bg));
     background: color-mix(in oklab, var(--agent) 8%, var(--cell-bg));
     box-shadow:

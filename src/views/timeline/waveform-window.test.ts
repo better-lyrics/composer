@@ -22,7 +22,9 @@ describe("waveformWindowStart", () => {
     });
 
     it("stops at the song end, where WaveSurfer cannot scroll further", () => {
-      expect(waveformWindowStart(0, SONG_WIDTH - 1400, SONG_WIDTH, SONG_WIDTH)).toBe(SONG_WIDTH - WAVEFORM_WINDOW_WIDTH);
+      expect(waveformWindowStart(0, SONG_WIDTH - 1400, SONG_WIDTH, SONG_WIDTH)).toBe(
+        SONG_WIDTH - WAVEFORM_WINDOW_WIDTH,
+      );
     });
 
     it("moves a window left past the end of a song that got shorter after a zoom out", () => {

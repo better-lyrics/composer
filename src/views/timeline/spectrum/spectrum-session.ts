@@ -177,7 +177,6 @@ function useSpectrumStatus(): SpectrumStatusView {
   return useSyncExternalStore(subscribeSpectrumStatus, () => statusView);
 }
 
-// True until the first chunk is drawn: the band has nothing to show yet.
 function useSpectrumBlank(): boolean {
   return useSyncExternalStore(subscribeSpectrumStatus, () => {
     const { status, drawn } = statusView;

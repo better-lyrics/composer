@@ -5,12 +5,11 @@ import type WaveSurfer from "wavesurfer.js";
 
 // -- Constants -----------------------------------------------------------------
 
-// WaveSurfer's widest canvas. A window this wide keeps its canvas split, so the bars land on the same pixels.
+// WaveSurfer's widest canvas, so its canvas split and bar pixels stay the same.
 const WAVEFORM_WINDOW_WIDTH = 8000;
 
 // -- Functions -----------------------------------------------------------------
 
-// Where the window starts so it covers the visible span. It moves only when the view leaves it.
 function waveformWindowStart(current: number, visibleStart: number, visibleEnd: number, waveformWidth: number): number {
   const maxStart = Math.max(0, waveformWidth - WAVEFORM_WINDOW_WIDTH);
   if (current <= maxStart && current <= visibleStart && current + WAVEFORM_WINDOW_WIDTH >= visibleEnd) return current;
@@ -29,14 +28,12 @@ function readWindowStart(wavesurfer: WaveSurfer, host: HTMLElement | null, curre
 function writeWindowStart(wavesurfer: WaveSurfer, host: HTMLElement, start: number): void {
   host.style.translate = `${start}px 0`;
   wavesurfer.setScroll(start);
-  // WaveSurfer draws newly visible canvases on its scroll event, which would otherwise land a frame late.
+  // A programmatic scroll event lands a frame late, and WaveSurfer draws new canvases on it.
   wavesurfer.getWrapper().parentElement?.dispatchEvent(new Event("scroll"));
 }
 
 // -- Hooks ---------------------------------------------------------------------
 
-// WaveSurfer draws only the canvases near its own scroll position, so the host is a window over the visible part
-// of the song and WaveSurfer's scroll follows it.
 function useWaveformWindow(
   wavesurfer: WaveSurfer | null,
   hostRef: RefObject<HTMLDivElement | null>,
@@ -64,7 +61,7 @@ function useWaveformWindow(
     enabled && wavesurfer !== null,
   );
 
-  // A redraw lays out the canvases at the scroll position it finds, then nudges it to keep its cursor in place.
+  // reRender nudges the scroll after drawing to keep its cursor in place.
   useEffect(() => {
     if (!wavesurfer || !enabled) return;
     const align = () => {
