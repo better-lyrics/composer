@@ -173,8 +173,11 @@ const TimelineWaveform: React.FC = () => {
   useEffect(() => () => useTimelineStore.getState().setWaveformReady(false), []);
 
   const onReady = useCallback((wavesurfer: WaveSurfer) => {
-    // WaveSurfer paints its progress from raw media time, which steps unevenly (43 ms in Firefox).
-    wavesurfer.getCurrentTime = livePlaybackTime;
+    // WaveSurfer paints progress from its own timer on raw media time; give it the frame's smoothed time instead.
+    wavesurfer.getCurrentTime = () => {
+      const frameStart = document.timeline.currentTime;
+      return livePlaybackTime(typeof frameStart === "number" ? frameStart : undefined);
+    };
     setWs(wavesurfer);
     useTimelineStore.getState().setWaveformReady(true);
     const audio = useAudioStore.getState().audioElement;
