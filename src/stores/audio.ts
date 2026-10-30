@@ -190,43 +190,54 @@ function toggledPlaybackRate(): number {
   return playbackRate === NORMAL_PLAYBACK_RATE ? otherPlaybackRate : NORMAL_PLAYBACK_RATE;
 }
 
-const lastSeenClock = { element: null as HTMLAudioElement | null, time: 0, seenAt: 0 };
-const smoothedClock = { element: null as HTMLAudioElement | null, time: 0, at: 0, rate: 1, running: false };
+const lastSeenClock = { element: null as HTMLAudioElement | null, time: 0, seenAt: 0, running: false };
+const smoothedClock = {
+  element: null as HTMLAudioElement | null,
+  time: 0,
+  at: 0,
+  rate: 1,
+  running: false,
+  seekPending: false,
+};
 
 function isClockRunning(element: HTMLAudioElement): boolean {
   return !element.paused && !element.seeking && element.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA;
 }
 
-// Firefox advances `currentTime` once per audio buffer (~43 ms), so between updates
-// the time runs on from when it was first seen, never more than one buffer ahead.
 function isNewElementTime(element: HTMLAudioElement, time: number, running: boolean): boolean {
-  return element !== lastSeenClock.element || time !== lastSeenClock.time || !running;
+  return (
+    element !== lastSeenClock.element || time !== lastSeenClock.time || !running || running !== lastSeenClock.running
+  );
 }
 
+// Firefox advances `currentTime` once per audio buffer (~43 ms), so it runs on from when it was first seen.
 function measuredElementTime(element: HTMLAudioElement, time: number, running: boolean, now: number): number {
   if (isNewElementTime(element, time, running)) return time;
   const elapsedMs = Math.min(MAX_EXTRAPOLATION_MS, Math.max(0, now - lastSeenClock.seenAt));
   return time + (elapsedMs / 1000) * element.playbackRate;
 }
 
-// Element time jitters by several ms per frame in every browser, so playback follows wall time
-// and eases toward the element instead of copying it. While frames run, only frames move the
-// clock, so a read in between (a tap, WaveSurfer's own timer) never shifts the next frame.
-function livePlaybackTime(): number {
+// A seek can finish between two frames, so no frame ever sees `seeking`.
+function resyncPlaybackClock(): void {
+  smoothedClock.seekPending = true;
+}
+
+// Eases toward the jittery element time on frame time; only frames move it, so reads in between never shift a frame.
+function livePlaybackTime(at?: number): number {
   const { audioElement, currentTime } = useAudioStore.getState();
   if (!audioElement) return currentTime;
   const frameNow = currentFrameTime();
-  const now = frameNow ?? performance.now();
+  const now = frameNow ?? at ?? performance.now();
   const running = isClockRunning(audioElement);
   const elementTime = audioElement.currentTime;
   const measured = measuredElementTime(audioElement, elementTime, running, now);
   const rate = audioElement.playbackRate;
-  // An event handled after a frame began stamps the clock later than that frame's time.
   const elapsedMs = Math.max(0, now - smoothedClock.at);
   const predicted = smoothedClock.time + (elapsedMs / 1000) * smoothedClock.rate;
   const resync =
     !running ||
     !smoothedClock.running ||
+    smoothedClock.seekPending ||
     smoothedClock.element !== audioElement ||
     smoothedClock.rate !== rate ||
     Math.abs(measured - predicted) > CLOCK_RESYNC_SECONDS;
@@ -236,12 +247,14 @@ function livePlaybackTime(): number {
     lastSeenClock.element = audioElement;
     lastSeenClock.time = elementTime;
     lastSeenClock.seenAt = now;
+    lastSeenClock.running = running;
   }
   smoothedClock.element = audioElement;
   smoothedClock.time = time;
   smoothedClock.at = now;
   smoothedClock.rate = rate;
   smoothedClock.running = running;
+  smoothedClock.seekPending = false;
   return time;
 }
 
@@ -268,6 +281,7 @@ export {
   livePlaybackTime,
   NORMAL_PLAYBACK_RATE,
   playableFile,
+  resyncPlaybackClock,
   seekBy,
   toggledPlaybackRate,
   useAudioStore,

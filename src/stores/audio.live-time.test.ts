@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { livePlaybackTime, useAudioStore } from "@/stores/audio";
+import { livePlaybackTime, resyncPlaybackClock, useAudioStore } from "@/stores/audio";
 
 interface ElementClock {
   currentTime: number;
@@ -124,7 +124,33 @@ describe("livePlaybackTime extrapolation", () => {
       livePlaybackTime();
       clock.paused = false;
       vi.advanceTimersByTime(16);
+      expect(livePlaybackTime()).toBe(10);
+      vi.advanceTimersByTime(16);
       expect(livePlaybackTime()).toBeCloseTo(10.016, 6);
+    });
+
+    it("regression: resuming starts at the element time even when nothing read the clock while paused", () => {
+      const clock = { ...playingClock(10), paused: true };
+      useAudioStore.setState({ audioElement: audioWithClock(clock) });
+      livePlaybackTime();
+      vi.advanceTimersByTime(5000);
+      clock.paused = false;
+      expect(livePlaybackTime()).toBe(10);
+      vi.advanceTimersByTime(16);
+      expect(livePlaybackTime()).toBeCloseTo(10.016, 6);
+    });
+
+    it("jumps to a short seek instead of easing toward it", () => {
+      const clock = playingClock(10);
+      useAudioStore.setState({ audioElement: audioWithClock(clock) });
+      livePlaybackTime();
+      vi.advanceTimersByTime(16);
+      clock.currentTime = 10.016;
+      livePlaybackTime();
+      resyncPlaybackClock();
+      clock.currentTime = 10.08;
+      vi.advanceTimersByTime(16);
+      expect(livePlaybackTime()).toBe(10.08);
     });
 
     it("starts over when the audio engine swaps the element", () => {
