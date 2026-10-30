@@ -58,8 +58,9 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
   const layerRef = useRef<HTMLDivElement>(null);
 
   const visibleOnsetCount = showOnsets ? vocalOnsetSnapPoints.length : 0;
-  const bandEmpty = useBandEmpty();
-  const isVisible = !bandEmpty && (visibleOnsetCount > 0 || customSnapPoints.length > 0 || markerMode);
+  // A pin being dragged stays until it is released, or the drag never commits.
+  const hiddenWhileLoading = useBandEmpty() && draggingId === null;
+  const isVisible = !hiddenWhileLoading && (visibleOnsetCount > 0 || customSnapPoints.length > 0 || markerMode);
 
   useFrameLoop(
     () => {

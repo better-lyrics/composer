@@ -347,6 +347,33 @@ describe("SnapMarkersOverlay", () => {
   });
 
   describe("drag", () => {
+    it("regression: a drag still finishes as one undo step when the band empties mid-drag", async () => {
+      useSettingsStore.setState({ vocalOnsetSnap: false, snapDistanceOnsets: 12 });
+      useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [] });
+      useProjectStore.setState({ customSnapPoints: snapPoints([2]) });
+
+      const screen = await render(<Harness />);
+      const head = headOf(customMarkers(screen.container)[0]);
+      const rect = screen.container.firstElementChild?.getBoundingClientRect();
+      if (!rect) throw new Error("scroll container rect missing");
+
+      head.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0, pointerId: 1 }));
+      head.dispatchEvent(
+        new PointerEvent("pointermove", { bubbles: true, clientX: rect.left + GUTTER_WIDTH + 500, pointerId: 1 }),
+      );
+      await expect.poll(() => useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(5, 5);
+
+      useTimelineStore.setState({ waveformReady: false });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      // A real pointerup only reaches a head that is still in the document.
+      expect(head.isConnected).toBe(true);
+      head.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
+
+      await expect.poll(() => screen.container.querySelector("[data-snap-markers-overlay]")).toBeNull();
+      useProjectStore.getState().undo();
+      expect(useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(2, 5);
+    });
+
     it("updates moveCustomSnapPoint as the head is dragged", async () => {
       useSettingsStore.setState({ vocalOnsetSnap: false, snapDistanceOnsets: 12 });
       useTimelineStore.setState({
