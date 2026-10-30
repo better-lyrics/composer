@@ -1,6 +1,6 @@
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { useImportModalStore } from "@/stores/import-modal-store";
-import { useProjectStore } from "@/stores/project";
+import { TAB_PANEL_RENDER_WAIT_MS, elementOnTab, showTab } from "@/tour/tab-panel-step";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import type { DriveStep } from "driver.js";
 
@@ -16,10 +16,6 @@ let stopWatchingModal: (() => void) | null = null;
 let modalOpenedByTour = false;
 
 // -- Helpers ------------------------------------------------------------------
-
-function showEditTab() {
-  useProjectStore.getState().setActiveTab("edit");
-}
 
 // driver.js resolves a step's element before any hook runs, so the dialog is opened here and waitForElement covers the render.
 function revealImportLyricsDialog(): Element {
@@ -48,7 +44,8 @@ function leaveImportLyricsDialog() {
 
 function importLyricsButtonStep(): DriveStep {
   return {
-    element: () => document.querySelector(IMPORT_LYRICS_BUTTON_SELECTOR) as Element,
+    element: elementOnTab("edit", IMPORT_LYRICS_BUTTON_SELECTOR),
+    waitForElement: TAB_PANEL_RENDER_WAIT_MS,
     popover: {
       title: "Import lyrics you already have",
       description:
@@ -56,7 +53,6 @@ function importLyricsButtonStep(): DriveStep {
       side: "bottom",
       align: "end",
     },
-    onHighlightStarted: showEditTab,
   };
 }
 
@@ -71,7 +67,7 @@ function importLyricsDialogStep(): DriveStep {
       align: "start",
     },
     onHighlightStarted: (_element, _step, { driver }) => {
-      showEditTab();
+      showTab("edit");
       stopWatching();
       stopWatchingModal = useImportModalStore.subscribe((state, previous) => {
         if (previous.isOpen && !state.isOpen) driver.moveNext();

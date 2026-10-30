@@ -16,6 +16,7 @@ function useTimelineFrameWake(
     container.addEventListener("scroll", wake, { passive: true });
     const observer = new ResizeObserver(wake);
     observer.observe(content);
+    observer.observe(container);
 
     return () => {
       container.removeEventListener("scroll", wake);

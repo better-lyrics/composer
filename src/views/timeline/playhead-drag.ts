@@ -108,6 +108,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
       releaseEdgeScrollFrames();
       controller.abort();
       scrubPreview.stop();
+      config.setDraggingPlayhead(false);
       activeCleanup = null;
     };
 
@@ -118,7 +119,6 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
         config.seekTo(target);
         notePlacement(target, "pointer");
       }
-      config.setDraggingPlayhead(false);
       cleanup();
     };
 

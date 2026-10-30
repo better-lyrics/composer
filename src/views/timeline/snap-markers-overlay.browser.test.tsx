@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { snapPoints } from "@/test/factories";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
@@ -42,6 +43,10 @@ const headOf = (marker: HTMLElement): HTMLElement => {
 // -- Tests ---------------------------------------------------------------------
 
 describe("SnapMarkersOverlay", () => {
+  beforeEach(() => {
+    useTimelineStore.setState({ waveformReady: true });
+  });
+
   it("renders one onset marker per snap point at left = time * zoom", async () => {
     useSettingsStore.setState({ vocalOnsetSnap: true });
     useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [1, 2] });
@@ -103,6 +108,20 @@ describe("SnapMarkersOverlay", () => {
   });
 
   describe("visibility", () => {
+    it("hides every marker while the band shows the loading skeleton", async () => {
+      useSettingsStore.setState({ vocalOnsetSnap: true, showSpectrum: false });
+      useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [1, 2], waveformReady: false });
+      useProjectStore.setState({ customSnapPoints: snapPoints([3]) });
+
+      const screen = await render(<Harness />);
+      expect(screen.container.querySelector("[data-snap-markers-overlay]")).toBeNull();
+      expect(document.querySelector("[data-snap-marker-head-anchor]")).toBeNull();
+
+      useTimelineStore.setState({ waveformReady: true });
+      await expect.poll(() => onsetMarkers(screen.container).length).toBe(2);
+      expect(customMarkers(screen.container)).toHaveLength(1);
+    });
+
     it("renders no onset markers when vocalOnsetSnap is off", async () => {
       useSettingsStore.setState({ vocalOnsetSnap: false });
       useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [1, 2] });
@@ -328,6 +347,32 @@ describe("SnapMarkersOverlay", () => {
   });
 
   describe("drag", () => {
+    it("regression: a drag still finishes as one undo step when the band empties mid-drag", async () => {
+      useSettingsStore.setState({ vocalOnsetSnap: false, snapDistanceOnsets: 12 });
+      useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [] });
+      useProjectStore.setState({ customSnapPoints: snapPoints([2]) });
+
+      const screen = await render(<Harness />);
+      const head = headOf(customMarkers(screen.container)[0]);
+      const rect = screen.container.firstElementChild?.getBoundingClientRect();
+      if (!rect) throw new Error("scroll container rect missing");
+
+      head.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0, pointerId: 1 }));
+      head.dispatchEvent(
+        new PointerEvent("pointermove", { bubbles: true, clientX: rect.left + GUTTER_WIDTH + 500, pointerId: 1 }),
+      );
+      await expect.poll(() => useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(5, 5);
+
+      useTimelineStore.setState({ waveformReady: false });
+      await stepFrames(1);
+      expect(head.isConnected).toBe(true);
+      head.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
+
+      await expect.poll(() => screen.container.querySelector("[data-snap-markers-overlay]")).toBeNull();
+      useProjectStore.getState().undo();
+      expect(useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(2, 5);
+    });
+
     it("updates moveCustomSnapPoint as the head is dragged", async () => {
       useSettingsStore.setState({ vocalOnsetSnap: false, snapDistanceOnsets: 12 });
       useTimelineStore.setState({

@@ -53,6 +53,7 @@ interface TimelineState {
   loopRegion: LoopRegion | null;
   loopRegionDrag: LoopRegionDrag | null;
   cue: number | null;
+  waveformReady: boolean;
 
   clipboard: ClipboardData | null;
   pasteMode: PasteMode;
@@ -94,6 +95,7 @@ interface TimelineActions {
   setSelectionPlayback: (mode: SelectionPlaybackMode | null) => void;
   setLoopRegion: (region: LoopRegion | null) => void;
   setLoopRegionDrag: (drag: LoopRegionDrag | null) => void;
+  setWaveformReady: (ready: boolean) => void;
 
   toggleSelection: (selection: WordSelection) => void;
   clearSelection: () => void;
@@ -135,7 +137,6 @@ interface TimelineActions {
 const GUTTER_WIDTH = 48;
 const WAVEFORM_HEIGHT = 80;
 const MIN_ZOOM = 20;
-const ZOOM_AT_100_PERCENT = 500;
 const MAX_ZOOM = 980;
 const ZOOM_STEP = 20;
 const MIN_ROW_HEIGHT = 32;
@@ -153,6 +154,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     loopRegion: null,
     loopRegionDrag: null,
     cue: null,
+    waveformReady: false,
 
     clipboard: null,
     pasteMode: { status: "idle" },
@@ -199,14 +201,19 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setLoopRegion: (loopRegion) =>
       set((s) => (loopRegion && s.selectedWords.length > 0 ? { loopRegion, selectedWords: [] } : { loopRegion })),
     setLoopRegionDrag: (loopRegionDrag) => set({ loopRegionDrag }),
+    setWaveformReady: (waveformReady) => set({ waveformReady }),
 
     toggleSelection: (selection) =>
       set((s) => ({ selectedWords: toggleWordSelection(s.selectedWords, selection), loopRegion: null })),
     clearSelection: () => set({ selectedWords: [] }),
     setClipboard: (clipboard) => set({ clipboard }),
     setPasteMode: (pasteMode) => set({ pasteMode }),
-    setScrollLeft: (scrollLeft) => set({ scrollLeft }),
-    setScrollTop: (scrollTop) => set({ scrollTop }),
+    setScrollLeft: (scrollLeft) => {
+      if (get().scrollLeft !== scrollLeft) set({ scrollLeft });
+    },
+    setScrollTop: (scrollTop) => {
+      if (get().scrollTop !== scrollTop) set({ scrollTop });
+    },
     setPendingResumeView: (pendingResumeView) => set({ pendingResumeView }),
     setRowHeight: (lineId, height) =>
       set((s) => ({
@@ -280,14 +287,5 @@ function shownLoopRegion(state: TimelineState): Bounds | null {
 
 // -- Exports -------------------------------------------------------------------
 
-export {
-  shownLoopRegion,
-  useTimelineStore,
-  GUTTER_WIDTH,
-  WAVEFORM_HEIGHT,
-  MIN_ZOOM,
-  MAX_ZOOM,
-  ZOOM_AT_100_PERCENT,
-  ZOOM_STEP,
-};
+export { shownLoopRegion, useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP };
 export type { ContextMenuTarget, LoopRegionDrag, SelectionPlaybackMode, TrackHit };

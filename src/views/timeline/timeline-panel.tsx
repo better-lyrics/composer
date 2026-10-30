@@ -34,6 +34,8 @@ import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
+import { isPlaybackStyleWrite } from "@/views/timeline/playback-style-mutation";
+import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { TimelineRuler } from "@/views/timeline/timeline-ruler";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
@@ -83,7 +85,6 @@ const TimelinePanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const duration = useAudioStore((s) => s.duration);
   const lines = useProjectStore((s) => s.lines);
-  const zoom = useTimelineStore((s) => s.zoom);
   const setScrollLeft = useTimelineStore((s) => s.setScrollLeft);
   const setScrollTop = useTimelineStore((s) => s.setScrollTop);
   const previewSidebar = useSettingsStore((s) => s.previewSidebar);
@@ -93,14 +94,16 @@ const TimelinePanel: React.FC = () => {
 
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const rulerTrackRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState(400);
   const [rulerLane, setRulerLane] = useState<HTMLDivElement | null>(null);
   const [rulerMarkerHost, setRulerMarkerHost] = useState<HTMLDivElement | null>(null);
   const openImportModal = useImportModal();
 
   const effectiveLines = useMemo(() => getEffectiveLines(lines), [lines]);
+  const timelineShown = !!source && lines.length > 0;
 
-  const [initOverlayScrollbars] = useOverlayScrollbars({
+  const [initOverlayScrollbars, overlayScrollbars] = useOverlayScrollbars({
     defer: true,
     options: {
       scrollbars: {
@@ -108,18 +111,23 @@ const TimelinePanel: React.FC = () => {
         autoHide: "scroll",
         autoHideDelay: 800,
       },
+      update: { ignoreMutation: isPlaybackStyleWrite },
     },
   });
 
   useEffect(() => {
     const target = contentRef.current;
     const viewport = scrollContainerRef.current;
-    if (!target || !viewport) return;
+    if (!timelineShown || !target || !viewport) return;
+    // The scroll container remounts when the lyrics are cleared and added back; init skips while the old instance lives.
+    const instance = overlayScrollbars();
+    if (instance && instance.elements().viewport !== viewport) instance.destroy();
     initOverlayScrollbars({ target, elements: { viewport } });
-  }, [initOverlayScrollbars]);
+  }, [initOverlayScrollbars, overlayScrollbars, timelineShown]);
 
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
   const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
+  const dragZoom = useTimelineStore((s) => (activeDrag ? s.zoom : null));
   const { dragSnapModifier, beginGesture, endGesture, syncDragSnap } = useTimelineSnap();
   const lastDragPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const getLastDragPointer = useCallback(() => lastDragPointerRef.current, []);
@@ -140,7 +148,6 @@ const TimelinePanel: React.FC = () => {
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
   useGroupFocusShortcuts();
   useGroupFocusScroll(scrollContainerRef);
-  const timelineShown = !!source && lines.length > 0;
   useTimelineWheel(scrollContainerRef, timelineShown);
   useSeekReveal(scrollContainerRef, timelineShown);
   useTimelineFrameWake(scrollContainerRef, contentRef, timelineShown);
@@ -160,19 +167,21 @@ const TimelinePanel: React.FC = () => {
   }, [effectiveLines]);
 
   useEffect(() => {
-    if (!contentRef.current) return;
+    if (!timelineShown || !contentRef.current) return;
     const observer = new ResizeObserver((entries) => {
       setContentHeight(entries[0].contentRect.height);
     });
     // react-doctor-disable-next-line react-doctor/no-initialize-state
     observer.observe(contentRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [timelineShown]);
 
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
-      setScrollLeft(e.currentTarget.scrollLeft);
-      setScrollTop(e.currentTarget.scrollTop);
+      const { scrollLeft, scrollTop } = e.currentTarget;
+      setScrollLeft(scrollLeft);
+      setScrollTop(scrollTop);
+      if (rulerTrackRef.current) followRulerScroll(rulerTrackRef.current, scrollLeft);
     },
     [setScrollLeft, setScrollTop],
   );
@@ -194,8 +203,8 @@ const TimelinePanel: React.FC = () => {
     : "#888";
 
   const dragCells = useMemo(
-    () => (activeDrag ? dragGhostCells(activeDrag, zoom, effectiveLines) : null),
-    [activeDrag, zoom, effectiveLines],
+    () => (activeDrag && dragZoom !== null ? dragGhostCells(activeDrag, dragZoom, effectiveLines) : null),
+    [activeDrag, dragZoom, effectiveLines],
   );
 
   if (!source) {
@@ -277,6 +286,7 @@ const TimelinePanel: React.FC = () => {
             <div className="flex flex-col flex-1 overflow-hidden">
               <TimelineRuler
                 scrollContainerRef={scrollContainerRef}
+                trackRef={rulerTrackRef}
                 laneRef={setRulerLane}
                 markerHostRef={setRulerMarkerHost}
               />
