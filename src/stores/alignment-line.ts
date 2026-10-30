@@ -113,6 +113,29 @@ async function alignLine(plan: PlannedLine, ctx: LineContext, chain: AnchorChain
   return finish(plan, result, window, cooling);
 }
 
+/**
+ * Aligns one line's background vocals in their own window. They have no tap,
+ * so neither the anchor nor the CTC search applies, and they leave the anchor
+ * chain alone. A job that fails keeps the words as they were.
+ */
+async function alignBackground(plan: PlannedLine, ctx: LineContext): Promise<AlignedLine> {
+  const { pcm } = ctx;
+  const window = guideTaps(plan, pcm.samples.length / pcm.sampleRate);
+  const result = await ctx.aligner.align(segmentIn(plan, ctx.hanReading, pcm, window), ctx.signal);
+  const parts = plan.words.reduce((n, word) => n + word.parts.length, 0);
+  if (result.fellBack || result.intervals.length !== parts) return { result, timings: null, chain: null };
+  const intervals = sanitizeIntervals(result.intervals, window);
+  const { words, existing } = plan;
+  const timings = existing ? retimeWords(existing, intervals) : timingsFromParts(words, intervals, result.splits);
+  return { result, timings, chain: null };
+}
+
+/** Aligns one job. Background vocals pass the chain on untouched, so lines anchor only on lyrics. */
+async function alignJob(plan: PlannedLine, ctx: LineContext, chain: AnchorChain | null): Promise<AlignedLine> {
+  if (plan.track === "word") return alignLine(plan, ctx, chain);
+  return { ...(await alignBackground(plan, ctx)), chain };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { alignLine, isAbortError };
+export { alignJob, isAbortError };

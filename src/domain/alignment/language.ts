@@ -35,11 +35,12 @@ function canAlignLanguage(language: string | undefined, modelLanguages: readonly
 }
 
 // Han characters are kanji in a Japanese project, or when any line has kana
-// (an all-kanji line in a Japanese song would otherwise read as Mandarin).
+// (an all-kanji line in a Japanese song would otherwise read as Mandarin),
+// background vocals included.
 function hanReadingFor(language: string | undefined, lines: readonly LyricLine[]): HanReading {
   const base = baseLanguage(language);
   if (base === "ja" || base === "zh") return base;
-  return lines.some((line) => hasKana(line.text)) ? "ja" : "zh";
+  return lines.some((line) => hasKana(line.text) || hasKana(line.backgroundText ?? "")) ? "ja" : "zh";
 }
 
 // The project language when set, else a guess from the lyrics' script. Kana
@@ -68,6 +69,7 @@ function coverageColumns(languageLists: readonly (readonly string[])[], song: st
 
 // -- Exports ------------------------------------------------------------------
 
+export type { HanReading };
 export {
   baseLanguage,
   canAlignLanguage,
@@ -77,4 +79,3 @@ export {
   isAlignableLanguage,
   songLanguage,
 };
-export type { HanReading };

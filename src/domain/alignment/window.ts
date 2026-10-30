@@ -45,6 +45,13 @@ const MIN_REFINED_SECONDS = 0.1;
 // the benchmark's 626k are under 15 s with these margins.
 const MAX_WINDOW_SECONDS = 15;
 
+// Background vocals have no tap of their own: they echo or answer the line,
+// often running past its end. Their window opens a little before the line and
+// runs to the end of the next line, or this far past the line without one.
+// hubertfa-posttrain's BGVOCALS.md eval sets these.
+const BACKGROUND_LEAD_IN = 0.6;
+const BACKGROUND_TAIL = 4;
+
 // -- Functions ----------------------------------------------------------------
 
 function capWindow(window: AlignmentWindow): AlignmentWindow {
@@ -89,6 +96,20 @@ function refinedWindow(
   return end - begin < MIN_REFINED_SECONDS ? plain : { begin, end };
 }
 
+/**
+ * The window a line's background vocals are aligned in, from the line's sung
+ * span and its neighbours'. Never before the previous line's begin.
+ */
+function backgroundWindow(
+  line: LineTaps,
+  neighbours: { previous: LineTaps | null; next: LineTaps | null },
+): AlignmentWindow {
+  const { previous, next } = neighbours;
+  const begin = Math.max(0, line.begin - BACKGROUND_LEAD_IN, Math.min(line.begin, previous?.begin ?? 0));
+  const end = next ? Math.max(line.end, next.end) : line.end + BACKGROUND_TAIL;
+  return capWindow({ begin, end });
+}
+
 function sliceWindow(samples: Float32Array, sampleRate: number, window: AlignmentWindow): Float32Array {
   const from = Math.max(0, Math.floor(window.begin * sampleRate));
   const to = Math.min(samples.length, Math.ceil(window.end * sampleRate));
@@ -97,5 +118,5 @@ function sliceWindow(samples: Float32Array, sampleRate: number, window: Alignmen
 
 // -- Exports ------------------------------------------------------------------
 
-export { LEAD_IN, alignmentWindow, capWindow, refinedWindow, searchWindow, sliceWindow };
 export type { AlignmentWindow };
+export { LEAD_IN, alignmentWindow, backgroundWindow, capWindow, refinedWindow, searchWindow, sliceWindow };
