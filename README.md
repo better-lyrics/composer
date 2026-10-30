@@ -20,11 +20,9 @@
 
 ## Why Composer
 
-Tools like [AMLL TTML Tool](https://amll-ttml-tool.stevexmh.net/) are powerful, and if you already know TTML they're great. If you're new to syncing lyrics, the learning curve is steep. There's no obvious place to start, and the interface expects you to understand word-level timing and agent roles before you've synced a single line.
+You don't need to know TTML to use Composer. Import a song, paste the lyrics and sync them, by tapping along or by dragging words on the Timeline. Use the step-by-step tabs or the Timeline, whichever suits you. They edit the same project.
 
-Composer is built around one linear path: import, edit, sync, export. Each tab is one step. You don't need to know what TTML is. Paste your lyrics, tap along with the music, and you have a synced file.
-
-When you want more control, the Timeline does everything from one screen: load audio, add lyrics, drag word blocks on the waveform, split syllables, assign singers, and preview the result. Most people start with the tabs and move to the Timeline once they're comfortable.
+The heavy tools are there when a song asks for them. Composer can separate the vocals and align each word to the voice, which leaves you fixing what it missed instead of timing every syllable. A pitch line, a spectrogram, a beat grid and choruses that share timing are all built in.
 
 ## How it works
 
@@ -67,6 +65,45 @@ Your work saves automatically in the browser as you go. Audio files you load sta
 - Themes, with dark and light presets and a custom theme editor
 - Keyboard shortcuts for nearly everything, all of them remappable
 - Searchable help and settings, plus [written guides](https://composer.betterlyrics.org/guides) on TTML and syncing
+
+## Compared to other editors
+
+Other TTML editors treat ease of use as optional. In [AMLL TTML Tool](https://tool.amll.dev/) you tap F, G and H through the whole song and fix words one at a time on a spectrogram. A singer is either the lead or the duet. Its forks add features on top and keep the same design underneath.
+
+Composer keeps every singer the song has, names included, through import and export. It shows in what people make. One in ten Composer syncs on Unison has three or more singers. In AMLL's own reviewed database, fewer than one in a hundred do.
+
+| | Composer | AMLL TTML Tool |
+| --- | --- | --- |
+| Timeline | Full editor: select many words, stretch, split, copy and paste, snap to beats and vocal onsets | Move one word at a time on the spectrogram |
+| Auto-align to vocals | Yes | No |
+| Vocal separation | Yes | No |
+| Pitch line | Yes | No |
+| Hear audio while scrubbing | Yes, with pitch kept | No |
+| Spectrogram | Yes | Yes |
+| Sync | Auto-align, drag, or tap | Tap F, G and H |
+| Singers | Any number, named, plus groups | Lead or duet |
+| Sync non-Latin lyrics by their romanization | Yes, one key switches | No |
+| Romanization timed per word | Split from the line automatically | Typed word by word |
+| Word-level LRC import | Yes | No |
+| YouTube as audio source | Yes | No |
+
+### Good syncs by default
+
+We care about the details most editors skip. Sync snaps to vocal onsets and beats. Auto-align times each word from the separated vocals. Link a repeated chorus and every copy shares one timing, so the second can never drift from the first.
+
+That's why [Unison](https://unison.betterlyrics.org) publishes a sync the moment you submit it. Other lyric databases make every submission wait for a reviewer. We don't. When the Better Lyrics Council finds one it likes, it gets the BLCA seal, our version of an editor's pick. Two thirds of Unison was made in Composer, and Composer syncs are the ones the Council keeps sealing. Start with [Earrings](https://unison.betterlyrics.org/song/BI9HQCzpDgQ), [Touch The Sky](https://unison.betterlyrics.org/song/B95OUKk7alM) or [On My Way](https://unison.betterlyrics.org/song/ZM8rAsTT7yE).
+
+### It stays smooth
+
+The Timeline only redraws while something moves. Separation, pitch tracking, alignment and audio analysis all run in the background. Playback and dragging stay responsive on long songs and slower machines.
+
+### It's easy to learn
+
+The guided tour runs on your own song. Every screen has help, and you can search and remap every shortcut in Settings. You never face a wall of fields you can't use yet.
+
+### It keeps your work
+
+Projects save as you go and every edit can be undone. If the browser still holds something, the recovery page can bring it back. Singers, names, groups and background vocals all survive a round trip through TTML.
 
 ## Standards
 
@@ -165,6 +202,7 @@ Auto-align uses HubertFA v0.0.7 by default. To try other checkpoints with the sa
 - `model` and the optional `dictionary` (the English pronunciation dictionary, defaulting to the v0.0.7 one) are URLs, relative to the manifest.
 - `languages` lists the language codes a checkpoint was trained for. It defaults to the base model's English, Mandarin and Japanese. When the checkpoints cover different languages, the picker gets a tab per language.
 - `"recommended": true` tags a checkpoint as the one to use. The setting defaults to **Recommended**, which follows whichever checkpoint has the tag, so moving the tag moves everyone who hasn't picked a model by hand. With no tagged checkpoint, Recommended uses v0.0.7; with several, the first one listed. The id `recommended` is reserved for this, so an entry with it is skipped.
+- `terms` is for a checkpoint whose license asks that its users be told about it, such as one derived from weights under a restricted-use license: `"terms": {"notice": "Derived from Example. By using this model you agree to the Example License 1.0.", "url": "EXAMPLE_LICENSE.txt"}`. An info button with the notice and a link to the full license at `url` (relative to the manifest) then sits next to the model in the picker, the setting and the auto-align popover. An entry whose `terms` lacks either is skipped rather than listed without them.
 - The picker lists checkpoints in manifest order, after the built-in model, and can sort them by name instead. Numbers in names sort as numbers, so `step 900` comes before `step 5000`.
 - The phone vocabulary is bundled with the app (`src/audio/alignment/hubertfa/vocab.json`), so a checkpoint with a different phone set needs a code change, not a manifest entry.
 - The browser caches each model by URL, so give every export a new file name. Re-uploading under the same name keeps serving the old copy.
