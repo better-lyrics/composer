@@ -54,7 +54,13 @@ const TimelinePreviewSidebar: React.FC = () => {
           <span className="text-sm text-composer-text-muted">No synced content</span>
         </div>
       ) : (
-        <LyricsRenderer ttmlString={content} durationSeconds={duration} layout="sidebar" focusRange={focusRange} />
+        <LyricsRenderer
+          ttmlString={content}
+          durationSeconds={duration}
+          layout="sidebar"
+          focusRange={focusRange}
+          isolated
+        />
       )}
     </PreviewSidebarShell>
   );

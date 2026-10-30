@@ -1,8 +1,7 @@
 import { alternateMatchesMainText } from "@/domain/language/alternate-visibility";
 import type { Bounds } from "@/domain/word/bounds";
-import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
+import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { wake } from "@/lib/frame-loop";
-import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { centeredFadeVariants, centeredSlideUpVariants, springSnappy } from "@/utils/animationVariants";
@@ -12,6 +11,7 @@ import { type TimedLineElement, markLinesOutsideFocus, useFocusFade } from "@/vi
 import { LYRICS_ELEMENT_CLASS, type LyricsLayout } from "@/views/preview/lyrics-layout";
 import { PreviewLoadFailed } from "@/views/preview/preview-load-failed";
 import { rateScaledOffsetTrims } from "@/views/preview/rate-scaled-offsets";
+import { AUDIO_STORE_PLAYBACK, type RendererPlayback } from "@/views/preview/renderer-playback";
 import { type Lyric, injectRomanization, injectTranslation } from "@braccato/core";
 import type { BraccatoLyricsElement, LineClickDetail } from "@braccato/core/element";
 import { TTMLParser } from "@braccato/parsers";
@@ -25,6 +25,7 @@ interface BraccatoRendererProps {
   ttmlString: string;
   layout?: LyricsLayout;
   focusRange?: Bounds | null;
+  playback?: RendererPlayback;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -83,7 +84,12 @@ function timedLines(el: BraccatoLyricsElement): TimedLineElement[] {
 
 // -- Component ----------------------------------------------------------------
 
-const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout = "page", focusRange = null }) => {
+const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({
+  ttmlString,
+  layout = "page",
+  focusRange = null,
+  playback = AUDIO_STORE_PLAYBACK,
+}) => {
   const elementRef = useRef<BraccatoLyricsElement>(null);
   const lyrics = useMemo(() => TTMLParser.parse(ttmlString), [ttmlString]);
   const songwriters = useMemo(() => TTMLParser.metadata(ttmlString).songwriters, [ttmlString]);
@@ -128,20 +134,20 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
   const resumeAutoscroll = useCallback(() => {
     clearResumeWake();
     elementRef.current?.renderer?.resumeAutoscroll();
-    useAudioStore.getState().setIsPlaying(true);
+    playback.play();
     // Braccato clears the affordance and scrolls back on its next tick, which this
     // component drives, so a paused reader would otherwise see nothing happen.
     wake();
-  }, [clearResumeWake]);
+  }, [clearResumeWake, playback]);
 
   const handleLineClick = useCallback(
     (e: Event) => {
       const detail = (e as CustomEvent<LineClickDetail>).detail;
       if (detail?.timeS == null) return;
-      useAudioStore.getState().seekTo(detail.timeS);
+      playback.seekTo(detail.timeS);
       resumeAutoscroll();
     },
-    [resumeAutoscroll],
+    [resumeAutoscroll, playback],
   );
 
   const handleLyricsLoaded = useCallback((event: Event) => {
@@ -213,25 +219,24 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
 
   // Binding `source` would make braccato own the clock, and it only polls during
   // playback, freezing the preview whenever the timeline is scrubbed paused.
-  useRendererAudioSync(
-    elementRef,
-    (el, audio) => {
-      // Without the rate the word sweeps run on the wall clock and stutter at any
-      // speed but 1x. Tracked here rather than read back off the element, which has
-      // no properties to read until the registration import lands.
-      if (appliedPlaybackRateRef.current !== audio.playbackRate) {
-        appliedPlaybackRateRef.current = audio.playbackRate;
-        el.tickOptions = { playbackRate: audio.playbackRate, ...rateScaledOffsetTrims(el, audio.playbackRate) };
-      }
-      el.currentTime = audio.currentTime;
-      const playing = !audio.paused;
-      const applied = appliedPlayingRef.current;
-      if (applied?.element === el && applied.playing === playing) return;
-      appliedPlayingRef.current = { element: el, playing };
-      el.playing = playing;
-    },
-    "braccato-renderer",
-  );
+  useFrameLoop(() => {
+    const el = elementRef.current;
+    const audio = playback.sample();
+    if (!el || !audio) return;
+    // Without the rate the word sweeps run on the wall clock and stutter at any
+    // speed but 1x. Tracked here rather than read back off the element, which has
+    // no properties to read until the registration import lands.
+    if (appliedPlaybackRateRef.current !== audio.playbackRate) {
+      appliedPlaybackRateRef.current = audio.playbackRate;
+      el.tickOptions = { playbackRate: audio.playbackRate, ...rateScaledOffsetTrims(el, audio.playbackRate) };
+    }
+    el.currentTime = audio.currentTime;
+    const playing = !audio.paused;
+    const applied = appliedPlayingRef.current;
+    if (applied?.element === el && applied.playing === playing) return;
+    appliedPlayingRef.current = { element: el, playing };
+    el.playing = playing;
+  }, "braccato-renderer");
 
   return (
     <div data-lyrics-layout={layout} className="relative flex flex-col flex-1 min-h-0">
