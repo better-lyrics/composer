@@ -1,7 +1,7 @@
 import { readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
-const EXCLUDED_PATHS = new Set(["404", "editor"]);
+const EXCLUDED_PATHS = new Set(["404", "editor", "preview-frame"]);
 
 const SKIP_DIRS = new Set(["assets", "static-loader-data"]);
 
