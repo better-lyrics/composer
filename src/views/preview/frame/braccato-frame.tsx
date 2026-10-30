@@ -27,6 +27,7 @@ const PARENT_POINTER_ATTRIBUTE = "data-parent-pointer";
 
 // A page that loads but never answers (offline, blocked, an error page) falls back to the inline preview.
 const READY_AFTER_LOAD_MS = 2_000;
+const SHOWN_AFTER_READY_MS = 10_000;
 const READY_DEADLINE_MS = 15_000;
 
 // -- Functions -----------------------------------------------------------------
@@ -69,11 +70,13 @@ function useFrameClock(frameRef: RefObject<HTMLIFrameElement | null>, frameOrigi
   useFrameLoop(
     () => {
       const audio = useAudioStore.getState().audioElement;
-      if (!audio) return;
+      const last = sentRef.current;
+      // A song with no audio element stops the frame where it was instead of letting it run on.
+      if (!audio && !last?.playing) return;
       const clock = {
-        time: audio.currentTime,
-        playing: !audio.paused,
-        rate: audio.playbackRate,
+        time: audio?.currentTime ?? last?.time ?? 0,
+        playing: audio ? !audio.paused : false,
+        rate: audio?.playbackRate ?? last?.rate ?? 1,
         sentAt: performance.timeOrigin + performance.now(),
       };
       if (sameClock(sentRef.current, clock)) return;
@@ -169,16 +172,17 @@ const BraccatoFrame: React.FC<BraccatoFrameProps> = ({ ttmlString, focusRange, f
   }, [frameOrigin, isLoaded]);
 
   useEffect(() => {
-    if (isReady) return;
+    if (isShown) return;
+    const deadline = !isLoaded ? READY_DEADLINE_MS : isReady ? SHOWN_AFTER_READY_MS : READY_AFTER_LOAD_MS;
     const timeout = window.setTimeout(
       () => {
-        console.warn(LOG_PREFIX, "preview frame did not answer, showing the inline preview", src);
+        console.warn(LOG_PREFIX, "preview frame did not show the lyrics, showing the inline preview", src);
         reportUnavailable();
       },
-      isLoaded ? READY_AFTER_LOAD_MS : READY_DEADLINE_MS,
+      deadline,
     );
     return () => window.clearTimeout(timeout);
-  }, [isReady, isLoaded, src]);
+  }, [isShown, isReady, isLoaded, src]);
 
   return (
     <iframe

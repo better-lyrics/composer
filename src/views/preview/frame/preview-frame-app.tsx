@@ -8,7 +8,7 @@ import {
   type ToFrameMessage,
   messageKind,
 } from "@/views/preview/frame/preview-frame-protocol";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -67,13 +67,17 @@ const PreviewFrameApp: React.FC<PreviewFrameAppProps> = ({ parentOrigin }) => {
   const [ttml, setTtml] = useState<string | null>(null);
   const [focusRange, setFocusRange] = useState<Bounds | null>(null);
   const [hasTheme, setHasTheme] = useState(false);
+  const shownRef = useRef(false);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== parentOrigin || event.source !== window.parent || messageKind(event.data) === null) return;
       const message = event.data as ToFrameMessage;
-      if (message.kind === "connect") post({ kind: "ready" });
-      else if (message.kind === "clock") playback.receive(message.clock);
+      if (message.kind === "connect") {
+        post({ kind: "ready" });
+        // The parent may have missed the first one while its sidebar was hidden.
+        if (shownRef.current) post({ kind: "shown" });
+      } else if (message.kind === "clock") playback.receive(message.clock);
       else if (message.kind === "lyrics") setTtml(message.ttml);
       else if (message.kind === "focus") setFocusRange(message.range);
       else if (message.kind === "theme") {
@@ -115,7 +119,10 @@ const PreviewFrameApp: React.FC<PreviewFrameAppProps> = ({ parentOrigin }) => {
     if (!isPainted) return;
     // Two frames: the first paints the lyrics, the second is on screen.
     let handle = nextFrame(() => {
-      handle = nextFrame(() => post({ kind: "shown" }));
+      handle = nextFrame(() => {
+        shownRef.current = true;
+        post({ kind: "shown" });
+      });
     });
     return () => cancelNextFrame(handle);
   }, [isPainted, post]);
