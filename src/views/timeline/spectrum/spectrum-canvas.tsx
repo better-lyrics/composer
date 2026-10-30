@@ -2,8 +2,10 @@ import { spectrumLookOf } from "@/domain/spectrum/settings";
 import { visibleTileRange } from "@/domain/spectrum/tile-key";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { animateFrames } from "@/lib/frame-loop";
+import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
+import { STRIP_SCREENS, type Strip, stripFor } from "@/views/timeline/scroll-window";
 import { sizeCanvas } from "@/views/timeline/size-canvas";
 import { spectrumSession } from "@/views/timeline/spectrum/spectrum-session";
 import {
@@ -66,6 +68,7 @@ function drawingSignature(view: TileView, look: string): string {
 const SpectrumCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawnRef = useRef<string | null>(null);
+  const stripRef = useRef<Strip | null>(null);
   const releaseRef = useRef<(() => void) | null>(null);
   const [warmUp] = useState(createWarmUp);
   const [refine] = useState(createZoomRefine);
@@ -87,16 +90,28 @@ const SpectrumCanvas: React.FC = () => {
     if (!canvas || !container) return;
     const look = spectrumLookOf(useSettingsStore.getState());
     const palette = resolveSpectrumPalette(look.spectrumPalette);
+    const pixelsPerSecond = useTimelineStore.getState().zoom;
+    const scrollLeft = container.scrollLeft;
+    const viewportWidth = Math.max(0, container.clientWidth - GUTTER_WIDTH);
+    // Every refine frame redraws the whole canvas, so a zoom keeps it one view wide.
+    const strip = stripFor(
+      stripRef.current,
+      scrollLeft,
+      viewportWidth,
+      useAudioStore.getState().duration * pixelsPerSecond,
+      refine.base ? 1 : STRIP_SCREENS,
+    );
+    stripRef.current = strip;
     const view: TileView = {
       session: spectrumSession,
       look,
       lookup: palette.lookup,
       themeGeneration: palette.themeGeneration,
-      pixelsPerSecond: useTimelineStore.getState().zoom,
+      pixelsPerSecond,
       pixelRatio: window.devicePixelRatio || 1,
       heightCss: currentOverviewBandHeight() - BAND_BORDER,
-      scrollLeft: container.scrollLeft,
-      viewportWidth: Math.max(0, container.clientWidth - GUTTER_WIDTH),
+      scrollLeft: strip.start,
+      viewportWidth: strip.width,
     };
     const lookId = lookKey(view);
     const signature = drawingSignature(view, lookId);
@@ -116,6 +131,8 @@ const SpectrumCanvas: React.FC = () => {
       beginRefineIfZoomed(refine, canvas, frame, now, reducedMotion);
 
     sizeCanvas(canvas, view.viewportWidth, view.heightCss, view.pixelRatio);
+    const translate = `${strip.start}px 0`;
+    if (canvas.style.translate !== translate) canvas.style.translate = translate;
     const context = canvas.getContext("2d");
     if (!context) return;
     context.setTransform(view.pixelRatio, 0, 0, view.pixelRatio, 0, 0);
@@ -127,7 +144,7 @@ const SpectrumCanvas: React.FC = () => {
       return;
     }
     if (warmUp.generation !== spectrumSession.generation) {
-      const { first, last } = visibleTileRange(view.scrollLeft, view.viewportWidth);
+      const { first, last } = visibleTileRange(scrollLeft, viewportWidth);
       const visible = Array.from({ length: last - first + 1 }, (_, offset) => first + offset);
       beginWarmUp(warmUp, visible, spectrumSession.generation, now, reducedMotion);
     }

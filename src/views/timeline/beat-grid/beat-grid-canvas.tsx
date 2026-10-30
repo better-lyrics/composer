@@ -1,13 +1,14 @@
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { type GridLines, type GridPoint, gridPoints } from "@/domain/tempo/grid-points";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
-import { livePlaybackTime } from "@/stores/audio";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
 import { cn } from "@/utils/cn";
 import { useBandEmpty } from "@/views/timeline/band-empty";
 import { CANVAS_MONO_LABEL_FONT } from "@/views/timeline/canvas-fonts";
+import { STRIP_SCREENS, type Strip, stripFor } from "@/views/timeline/scroll-window";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRef } from "react";
 
@@ -168,6 +169,7 @@ const BeatGridCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawnRef = useRef<DrawnState | null>(null);
   const coloursRef = useRef<ResolvedColours | null>(null);
+  const stripRef = useRef<Strip | null>(null);
   const enabled = visible && hasGrid;
   const bandEmpty = useBandEmpty();
 
@@ -179,11 +181,20 @@ const BeatGridCanvas: React.FC = () => {
       if (!canvas || !container || !band) return;
       const grid = useProjectStore.getState().beatGrid;
       const { activeThemeId, customThemes } = useThemeStore.getState();
+      const zoom = useTimelineStore.getState().zoom;
+      const strip = stripFor(
+        stripRef.current,
+        container.scrollLeft,
+        Math.max(0, container.clientWidth - GUTTER_WIDTH),
+        useAudioStore.getState().duration * zoom,
+        STRIP_SCREENS,
+      );
+      stripRef.current = strip;
       const next: DrawnState = {
         canvas,
-        scrollLeft: Math.round(container.scrollLeft),
-        zoom: useTimelineStore.getState().zoom,
-        width: Math.max(0, container.clientWidth - GUTTER_WIDTH),
+        scrollLeft: strip.start,
+        zoom,
+        width: strip.width,
         height: band.clientHeight,
         pixelRatio: window.devicePixelRatio || 1,
         grid,
