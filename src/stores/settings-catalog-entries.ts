@@ -101,7 +101,7 @@ const SETTINGS_CATALOG = {
     section: "playback",
     group: "Vocal separation",
     label: "Vocal model",
-    description: "fp16 is half the size but needs WebGPU shader-f16.",
+    description: "fp16 is half the size and faster. Without WebGPU shader-f16, fp32 runs instead.",
     keywords: ["fp16", "fp32", "stems", "separation", "precision"],
     settingKey: "vocalModelVariant",
   },

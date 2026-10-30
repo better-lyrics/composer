@@ -193,7 +193,7 @@ const DEFAULTS: SettingsState = {
   previewRenderer: "braccato",
 
   autoSeparateOnImport: false,
-  vocalModelVariant: "fp32",
+  vocalModelVariant: "fp16",
   alignmentModelId: RECOMMENDED_ALIGNMENT_MODEL,
   keepAlignmentModelLoaded: false,
 

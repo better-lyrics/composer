@@ -55,12 +55,22 @@ async function chooseBackend(forceWasm: boolean | undefined): Promise<BackendCho
   };
 }
 
-// Without shader-f16 the fp16 session fails and fp16 on WASM is too slow, so refuse before the download.
-function describeUnsupportedVariant(variant: VocalModelVariant, choice: BackendChoice): string | null {
-  if (variant === "fp16" && choice.backend === "webgpu" && !choice.hasShaderF16) {
-    return `The fp16 model needs WebGPU shader-f16 support, which this browser/GPU (${choice.adapterLabel}) doesn't provide. Switch the Vocal model setting to fp32.`;
+// fp16 needs WebGPU shader-f16, and on WASM it is about 4x slower than fp32, so both cases run fp32 instead.
+function runnableVariant(
+  variant: VocalModelVariant,
+  choice: BackendChoice,
+): { variant: VocalModelVariant; fallbackReason: string | null } {
+  if (variant !== "fp16") return { variant, fallbackReason: null };
+  if (choice.backend === "wasm") {
+    return { variant: "fp32", fallbackReason: "the fp16 vocal model is slow on WASM (CPU), so using fp32" };
   }
-  return null;
+  if (!choice.hasShaderF16) {
+    return {
+      variant: "fp32",
+      fallbackReason: `this GPU (${choice.adapterLabel}) has no WebGPU shader-f16 support, so using the fp32 vocal model`,
+    };
+  }
+  return { variant, fallbackReason: null };
 }
 
-export { chooseBackend, describeUnsupportedVariant };
+export { chooseBackend, runnableVariant };

@@ -7,8 +7,10 @@ interface ModelDescriptor {
   approxBytes: number;
 }
 
+// Versioned so browsers that cached the old whole-graph fp16 model, which returns NaN on WebGPU, fetch the
+// mixed-precision rebuild. Keep in sync with scripts/upload-htdemucs.sh.
 const MODEL_FILENAMES: Record<VocalModelVariant, string> = {
-  fp16: "htdemucs_fp16.onnx",
+  fp16: "htdemucs_fp16_v2.onnx",
   fp32: "htdemucs_fp32.onnx",
 };
 
