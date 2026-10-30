@@ -9,6 +9,9 @@ trustPolicyExclude:
   - "semver@6.3.1"
 blockExoticSubdeps: true
 
+patchedDependencies:
+  overlayscrollbars@2.17.0: patches/overlayscrollbars@2.17.0.patch
+
 peerDependencyRules:
   allowedVersions:
     "react-helmet-async>react": "19"
