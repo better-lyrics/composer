@@ -95,12 +95,16 @@ function skipLoopRegionOnNextPlay(): void {
   skipRegionAdoption = !useAudioStore.getState().isPlaying && useTimelineStore.getState().loopRegion !== null;
 }
 
-function playPlain(from: number): void {
+// An open group still bounds plain playback; already-playing audio fires no play event to enforce it.
+function playPlain(from: number): number {
   stopSelectionPlayback({ pause: false });
   skipLoopRegionOnNextPlay();
+  const range = currentPlaybackRange();
+  const start = (range && soloPlayStart(from, range)) ?? from;
   const audio = useAudioStore.getState();
-  audio.seekTo(from);
+  audio.seekTo(start);
   audio.setIsPlaying(true);
+  return start;
 }
 
 // Transport Play on the Timeline plays a drawn region, looped or once as its Loop toggle says.

@@ -60,9 +60,7 @@ function playFromCue(): void {
     setCue(livePlaybackTime());
     if (useAudioStore.getState().isPlaying) return;
   }
-  const from = useTimelineStore.getState().cue ?? livePlaybackTime();
-  playPlain(from);
-  flashCue(from);
+  flashCue(playPlain(useTimelineStore.getState().cue ?? livePlaybackTime()));
 }
 
 // Latched, Enter always plays from the cue, so a drawn region the cue sits outside is not adopted.

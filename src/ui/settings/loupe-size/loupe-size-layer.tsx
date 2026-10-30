@@ -8,6 +8,7 @@ import {
   resizedLoupe,
 } from "@/domain/spectrum/loupe-size";
 import { useEscapeLayer } from "@/hooks/useEscapeLayer";
+import { useWindowSize } from "@/hooks/use-window-size";
 import { livePlaybackTime } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -55,22 +56,8 @@ const ARROW_DELTAS: Record<string, { x: number; y: number }> = {
 
 // -- Helpers ------------------------------------------------------------------
 
-function windowSize(): LoupeSize {
-  return { width: window.innerWidth, height: window.innerHeight };
-}
-
 function cardHeightAt(size: LoupeSize): number {
   return loupeCanvas(size).height + LOUPE_FIXED.cardY + NOTE_ROWS_HEIGHT;
-}
-
-function useWindowSize(): LoupeSize {
-  const [size, setSize] = useState(windowSize);
-  useEffect(() => {
-    const handleResize = () => setSize(windowSize());
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-  return size;
 }
 
 // -- Components ---------------------------------------------------------------
@@ -175,7 +162,11 @@ const LoupeSizeStage: React.FC<LoupeSizeStageProps> = ({ onClose }) => {
               </span>
               {atLimit && <span className="text-xs text-(--muted)">Largest that fits this window</span>}
               <span className="w-2" />
-              <Button variant="ghost" disabled={isDefaultLoupeSize(size)} onClick={resetSize}>
+              <Button
+                variant="ghost"
+                disabled={isDefaultLoupeSize({ width: loupeWidth, height: loupeHeight })}
+                onClick={resetSize}
+              >
                 Reset size
               </Button>
               <Button variant="primary" onClick={onClose}>

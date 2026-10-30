@@ -2,6 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { adoptLoopRegionForPlay, currentlyLoops, playPlain } from "@/views/timeline/selection-playback";
+import { createGroup, createLine } from "@/test/factories";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { describe, expect, it } from "vitest";
 
@@ -20,6 +21,22 @@ describe("currentlyLoops", () => {
 });
 
 describe("playPlain", () => {
+  it("regression: keeps an open group's bounds when called while already playing", () => {
+    useProjectStore.setState({
+      activeTab: "timeline",
+      groups: [createGroup({ id: "g1" })],
+      lines: [createLine({ id: "a", groupId: "g1", instanceIdx: 0, words: [{ text: "la ", begin: 10, end: 12 }] })],
+    });
+    useTimelineStore.setState({
+      selectionPlayback: null,
+      loopRegion: null,
+      focusedGroup: { groupId: "g1", hearInstanceIdx: 0 },
+    });
+    useAudioStore.setState({ isPlaying: true });
+    expect(playPlain(2)).toBe(10);
+    expect(useAudioStore.getState().currentTime).toBe(10);
+  });
+
   it("plays past a drawn loop region once, then transport Play adopts it again", () => {
     useProjectStore.setState({ activeTab: "timeline" });
     useTimelineStore.setState({ selectionPlayback: null, loopRegion: { begin: 1, end: 2, loops: true } });

@@ -1,5 +1,6 @@
 import { LOUPE_FIXED, type LoupeSize, clampLoupeSize, fitLoupeSize } from "@/domain/spectrum/loupe-size";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
+import { useWindowSize } from "@/hooks/use-window-size";
 import { useSettingsStore } from "@/stores/settings";
 import { loupeReducedVariants, loupeVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
@@ -54,16 +55,12 @@ function placeCard(card: HTMLDivElement, container: HTMLElement, target: LoupeTa
 const LoupeCard: React.FC<LoupeCardProps> = ({ target, scrollContainerRef }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
+  const viewport = useWindowSize();
   const loupeWidth = useSettingsStore((s) => s.loupeWidth);
   const loupeHeight = useSettingsStore((s) => s.loupeHeight);
   const size = useMemo(
-    () =>
-      fitLoupeSize(
-        clampLoupeSize({ width: loupeWidth, height: loupeHeight }),
-        { width: window.innerWidth, height: window.innerHeight },
-        LOUPE_FIXED.noteRowHeight,
-      ),
-    [loupeWidth, loupeHeight],
+    () => fitLoupeSize(clampLoupeSize({ width: loupeWidth, height: loupeHeight }), viewport, LOUPE_FIXED.noteRowHeight),
+    [loupeWidth, loupeHeight, viewport],
   );
 
   const place = useCallback(() => {
