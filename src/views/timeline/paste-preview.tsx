@@ -1,5 +1,6 @@
 import { type RefObject, useEffect, useMemo, useReducer, useState } from "react";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
+import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen, openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
@@ -14,6 +15,7 @@ import { snappedPasteTime } from "@/views/timeline/paste-snap";
 import { wordInsetPx } from "@/views/timeline/row-geometry";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { holdsSnapBypass, syncSnapBypass } from "@/views/timeline/snap-bypass-key";
+import { SnapGuidelineAt } from "@/views/timeline/snap-guideline";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
 
@@ -112,24 +114,15 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   );
 
   const container = scrollContainerRef.current;
-  const isInstancePaste = !!clipboard.sourceInstance;
+  const placed = useMemo(() => instancePasteClipboard(lines, groups, clipboard), [lines, groups, clipboard]);
   const pointer = container && mousePos && modalCount === 0 ? pointerInTimeline(container, mousePos, zoom) : null;
   const hovered = pointer ? getLineAndTrackAtY(pointer.y, lines, layout) : null;
-  const targetLineIndex = hovered ? hovered.lineIndex : isInstancePaste ? Math.max(0, lines.length - 1) : -1;
-  const hoveredTrack = hovered?.track;
-  const placed = useMemo(() => instancePasteClipboard(lines, groups, clipboard), [lines, groups, clipboard]);
-  const pasted = useMemo(
-    () => (hoveredTrack && !isInstancePaste ? clipboardInLane(placed, hoveredTrack) : placed),
-    [placed, hoveredTrack, isInstancePaste],
+  const { targetLineIndex, pasted, timeDelta, anchorTime, hasOverlap } = previewPlacement(
+    placed,
+    pointer?.time ?? null,
+    hovered,
+    { lines, rangeOf, bypass: bypassSnap },
   );
-  const snap =
-    pointer && hovered
-      ? snappedPasteTime(placed, pointer.time, { lineIndex: targetLineIndex, lane: hovered.track, bypass: bypassSnap })
-      : null;
-  const timeDelta = pointer ? (snap?.time ?? pointer.time) - placed.entries[0].word.begin : 0;
-  const snappedAnchorTime = snap?.anchorTime ?? null;
-  const hasOverlap =
-    !isInstancePaste && targetLineIndex >= 0 && pasteOverlaps(pasted, targetLineIndex, timeDelta, lines, rangeOf);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -139,12 +132,6 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
       delete container.dataset.pasteCursor;
     };
   }, [hasOverlap, scrollContainerRef]);
-
-  useEffect(() => {
-    useTimelineStore.getState().setSnappedAnchorTime(snappedAnchorTime);
-  }, [snappedAnchorTime]);
-
-  useEffect(() => () => useTimelineStore.getState().setSnappedAnchorTime(null), []);
 
   if (!container || !pointer || targetLineIndex < 0) return null;
 
@@ -161,31 +148,59 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   );
 
   return (
-    <div className="absolute inset-0 z-55 pointer-events-none">
-      {ghosts.map((ghost) => (
-        <div
-          key={`${ghost.left}-${ghost.trackTop}-${ghost.text}-${ghost.isBg ? "bg" : "w"}`}
-          data-lane={ghost.isBg ? "bg" : "word"}
-          className="word-face absolute flex items-center justify-center whitespace-nowrap pointer-events-none"
-          style={{
-            left: ghost.left - pointer.scrollLeft,
-            top: ghost.trackTop - pointer.scrollTop + wordInsetPx(ghost.isBg ? "bg" : "word"),
-            width: ghost.width,
-            height: ghost.trackHeight - wordInsetPx(ghost.isBg ? "bg" : "word") * 2,
-            "--agent":
-              ghost.overlaps || ghost.outOfBounds ? "var(--color-composer-error)" : "var(--color-composer-accent)",
-          }}
-        >
-          <span className="min-w-0 overflow-hidden whitespace-nowrap [text-overflow:inherit] opacity-70">
-            {ghost.text}
-          </span>
-        </div>
-      ))}
-    </div>
+    <>
+      {anchorTime !== null && <SnapGuidelineAt time={anchorTime} />}
+      <div className="absolute inset-0 z-55 pointer-events-none">
+        {ghosts.map((ghost) => (
+          <div
+            key={`${ghost.left}-${ghost.trackTop}-${ghost.text}-${ghost.isBg ? "bg" : "w"}`}
+            data-lane={ghost.isBg ? "bg" : "word"}
+            className="word-face absolute flex items-center justify-center whitespace-nowrap pointer-events-none"
+            style={{
+              left: ghost.left - pointer.scrollLeft,
+              top: ghost.trackTop - pointer.scrollTop + wordInsetPx(ghost.isBg ? "bg" : "word"),
+              width: ghost.width,
+              height: ghost.trackHeight - wordInsetPx(ghost.isBg ? "bg" : "word") * 2,
+              "--agent":
+                ghost.overlaps || ghost.outOfBounds ? "var(--color-composer-error)" : "var(--color-composer-accent)",
+            }}
+          >
+            <span className="min-w-0 overflow-hidden whitespace-nowrap [text-overflow:inherit] opacity-70">
+              {ghost.text}
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
   );
 };
 
 // -- Helpers -------------------------------------------------------------------
+
+interface PlacementContext {
+  lines: LyricLine[];
+  rangeOf: (line: LyricLine) => TimeRange;
+  bypass: boolean;
+}
+
+function previewPlacement(
+  placed: ClipboardData,
+  pointerTime: number | null,
+  hovered: ReturnType<typeof getLineAndTrackAtY>,
+  { lines, rangeOf, bypass }: PlacementContext,
+) {
+  const isInstancePaste = !!placed.sourceInstance;
+  const targetLineIndex = hovered ? hovered.lineIndex : isInstancePaste ? Math.max(0, lines.length - 1) : -1;
+  const pasted = hovered && !isInstancePaste ? clipboardInLane(placed, hovered.track) : placed;
+  const snap =
+    pointerTime !== null && hovered
+      ? snappedPasteTime(placed, pointerTime, { lineIndex: targetLineIndex, lane: hovered.track, bypass })
+      : null;
+  const timeDelta = pointerTime === null ? 0 : (snap?.time ?? pointerTime) - placed.entries[0].word.begin;
+  const hasOverlap =
+    !isInstancePaste && targetLineIndex >= 0 && pasteOverlaps(pasted, targetLineIndex, timeDelta, lines, rangeOf);
+  return { targetLineIndex, pasted, timeDelta, anchorTime: snap?.anchorTime ?? null, hasOverlap };
+}
 
 function pointerInTimeline(container: HTMLElement, pointer: { clientX: number; clientY: number }, zoom: number) {
   const containerRect = container.getBoundingClientRect();
