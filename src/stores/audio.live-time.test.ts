@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { livePlaybackTime, resyncPlaybackClock, useAudioStore } from "@/stores/audio";
+import { resyncPlaybackClock } from "@/audio/playback-clock";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 
 interface ElementClock {
   currentTime: number;
@@ -126,6 +127,7 @@ describe("livePlaybackTime extrapolation", () => {
       vi.advanceTimersByTime(16);
       expect(livePlaybackTime()).toBe(10);
       vi.advanceTimersByTime(16);
+      clock.currentTime = 10.016;
       expect(livePlaybackTime()).toBeCloseTo(10.016, 6);
     });
 
@@ -137,7 +139,41 @@ describe("livePlaybackTime extrapolation", () => {
       clock.paused = false;
       expect(livePlaybackTime()).toBe(10);
       vi.advanceTimersByTime(16);
+      clock.currentTime = 10.016;
       expect(livePlaybackTime()).toBeCloseTo(10.016, 6);
+    });
+
+    it("regression: holds at the element time until playback actually starts after play", () => {
+      const clock = { ...playingClock(10), paused: true };
+      useAudioStore.setState({ audioElement: audioWithClock(clock) });
+      livePlaybackTime();
+      clock.paused = false;
+      const held: number[] = [];
+      for (let frame = 0; frame < 14; frame++) {
+        vi.advanceTimersByTime(16);
+        held.push(livePlaybackTime());
+      }
+      expect(held.every((time) => time === 10)).toBe(true);
+      clock.currentTime = 10.005;
+      vi.advanceTimersByTime(16);
+      expect(livePlaybackTime()).toBe(10.005);
+    });
+
+    it("regression: stays close to the element when the audio stalls mid-play", () => {
+      const clock = playingClock(10);
+      useAudioStore.setState({ audioElement: audioWithClock(clock) });
+      livePlaybackTime();
+      const lead: number[] = [];
+      let previous = 10;
+      for (let frame = 1; frame <= 30; frame++) {
+        vi.advanceTimersByTime(16);
+        if (frame <= 5) clock.currentTime = 10 + frame * 0.016;
+        const time = livePlaybackTime();
+        expect(time).toBeGreaterThanOrEqual(previous);
+        previous = time;
+        lead.push(time - clock.currentTime);
+      }
+      expect(Math.max(...lead)).toBeLessThanOrEqual(0.06 + 0.025 + 1e-9);
     });
 
     it("jumps to a short seek instead of easing toward it", () => {
