@@ -168,7 +168,7 @@ HTDemucs is the official Facebook AI Research model (`facebookresearch/demucs`, 
 ./scripts/upload-htdemucs.sh composer-vocal-models
 ```
 
-`build-htdemucs-onnx.sh` clones `sevagh/demucs.onnx` into `/tmp/composer-htdemucs-build/`, sets up a Python venv, runs the official converter, then converts the fp32 export to fp16 with `onnxconverter-common`. At the end it prints the model's input and output names and its SHA-256. Check those against `src/audio/separation/worker.ts` and `src/audio/separation/model-registry.ts`.
+`build-htdemucs-onnx.sh` clones `sevagh/demucs.onnx` into `/tmp/composer-htdemucs-build/`, sets up a Python venv, runs the official converter, then converts the fp32 export to mixed-precision fp16 with `onnxconverter-common` (`scripts/convert-htdemucs-fp16.py` keeps the ops that break in fp16 on WebGPU in fp32). At the end it prints the model's input and output names and its SHA-256. Check those against `src/audio/separation/worker.ts` and `src/audio/separation/model-registry.ts`.
 
 ### One-time R2 setup
 

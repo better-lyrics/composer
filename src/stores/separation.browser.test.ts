@@ -54,9 +54,9 @@ describe("refreshForCurrentSource", () => {
   it("marks the job key in use while it reads cached stems and clears it once ready", async () => {
     const file = createAudioFile("song.wav");
     const audioHash = await hashFile(file);
-    await putStem(audioHash, "vocals", "fp32", new Blob([new Uint8Array(20_000_000)]));
-    await putStem(audioHash, "instrumental", "fp32", new Blob([new Uint8Array(20_000_000)]));
-    const jobKey = stemJobKey(audioHash, "fp32");
+    await putStem(audioHash, "vocals", "fp16", new Blob([new Uint8Array(20_000_000)]));
+    await putStem(audioHash, "instrumental", "fp16", new Blob([new Uint8Array(20_000_000)]));
+    const jobKey = stemJobKey(audioHash, "fp16");
 
     useAudioStore.getState().setSource({ type: "file", file });
     const refreshing = useSeparationStore.getState().refreshForCurrentSource();
@@ -73,7 +73,7 @@ describe("refreshForCurrentSource", () => {
     it("clears the marker even when no cached stems exist for the job", async () => {
       const file = createAudioFile("no-stems.wav");
       const audioHash = await hashFile(file);
-      const jobKey = stemJobKey(audioHash, "fp32");
+      const jobKey = stemJobKey(audioHash, "fp16");
 
       useAudioStore.getState().setSource({ type: "file", file });
       const refreshing = useSeparationStore.getState().refreshForCurrentSource();
