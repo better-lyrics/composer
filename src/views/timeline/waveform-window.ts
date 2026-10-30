@@ -1,4 +1,5 @@
 import { useFrameLoop } from "@/hooks/use-frame-loop";
+import { scrollWindowStart } from "@/views/timeline/scroll-window";
 import { GUTTER_WIDTH } from "@/views/timeline/timeline-store";
 import { type RefObject, useEffect, useRef } from "react";
 import type WaveSurfer from "wavesurfer.js";
@@ -10,19 +11,12 @@ const WAVEFORM_WINDOW_WIDTH = 8000;
 
 // -- Functions -----------------------------------------------------------------
 
-function waveformWindowStart(current: number, visibleStart: number, visibleEnd: number, waveformWidth: number): number {
-  const maxStart = Math.max(0, waveformWidth - WAVEFORM_WINDOW_WIDTH);
-  if (current <= maxStart && current <= visibleStart && current + WAVEFORM_WINDOW_WIDTH >= visibleEnd) return current;
-  const centred = visibleStart - (WAVEFORM_WINDOW_WIDTH - (visibleEnd - visibleStart)) / 2;
-  return Math.round(Math.min(maxStart, Math.max(0, centred)));
-}
-
 function readWindowStart(wavesurfer: WaveSurfer, host: HTMLElement | null, current: number): number | null {
   const container = host?.closest<HTMLElement>("[data-scroll-container]");
   if (!container) return null;
   const { scrollLeft, clientWidth } = container;
   const visibleEnd = scrollLeft + Math.max(0, clientWidth - GUTTER_WIDTH);
-  return waveformWindowStart(current, scrollLeft, visibleEnd, wavesurfer.getWrapper().clientWidth);
+  return scrollWindowStart(current, scrollLeft, visibleEnd, wavesurfer.getWrapper().clientWidth, WAVEFORM_WINDOW_WIDTH);
 }
 
 function writeWindowStart(wavesurfer: WaveSurfer, host: HTMLElement, start: number): void {
@@ -81,4 +75,4 @@ function useWaveformWindow(
 
 // -- Exports -------------------------------------------------------------------
 
-export { WAVEFORM_WINDOW_WIDTH, useWaveformWindow, waveformWindowStart };
+export { WAVEFORM_WINDOW_WIDTH, useWaveformWindow };
