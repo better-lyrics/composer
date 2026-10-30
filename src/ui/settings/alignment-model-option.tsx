@@ -2,6 +2,7 @@ import type { AlignmentModel } from "@/audio/alignment/hubertfa/model-manifest";
 import { coversLanguage } from "@/domain/alignment/language";
 import { languageName } from "@/domain/project/language";
 import { LanguageCoverage } from "@/ui/language-coverage";
+import { ModelTermsHint } from "@/ui/model-terms-info";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
 
@@ -35,6 +36,7 @@ const AlignmentModelOption: React.FC<AlignmentModelOptionProps> = ({ model, deta
           <span className="text-xs tabular-nums text-(--muted)">{detail}</span>
         )}
       </span>
+      {model.terms && <ModelTermsHint terms={model.terms} />}
       <LanguageCoverage columns={columns} covered={model.languages} song={song} dimmed={missed !== null} />
     </span>
   );
