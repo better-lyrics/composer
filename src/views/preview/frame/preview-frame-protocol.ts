@@ -51,6 +51,10 @@ const FRAME_ORIGIN_BY_APP_ORIGIN: Readonly<Record<string, string>> = {
   "https://composer.betterlyrics.org": "https://composer.boidushyabhattacharya.workers.dev",
 };
 
+// Branch previews: <alias>.dev.composer.betterlyrics.org is also served at <alias>-composer.<subdomain>.workers.dev.
+const PREVIEW_DEPLOYMENT_HOST_SUFFIX = ".dev.composer.betterlyrics.org";
+const PREVIEW_DEPLOYMENT_FRAME_HOST_SUFFIX = "-composer.boidushyabhattacharya.workers.dev";
+
 const SWAPPED_LOCAL_HOSTS: Readonly<Record<string, string>> = { localhost: "127.0.0.1", "127.0.0.1": "localhost" };
 
 // -- Functions -----------------------------------------------------------------
@@ -64,8 +68,17 @@ function swappedLocalOrigin(origin: string): string | null {
   return url.origin;
 }
 
+function previewDeploymentFrameOrigin(origin: string): string | null {
+  const { protocol, hostname } = new URL(origin);
+  if (protocol !== "https:" || !hostname.endsWith(PREVIEW_DEPLOYMENT_HOST_SUFFIX)) return null;
+  const alias = hostname.slice(0, -PREVIEW_DEPLOYMENT_HOST_SUFFIX.length);
+  return alias && !alias.includes(".") ? `https://${alias}${PREVIEW_DEPLOYMENT_FRAME_HOST_SUFFIX}` : null;
+}
+
 function previewFrameOrigin(appOrigin: string): string | null {
-  return FRAME_ORIGIN_BY_APP_ORIGIN[appOrigin] ?? swappedLocalOrigin(appOrigin);
+  return (
+    FRAME_ORIGIN_BY_APP_ORIGIN[appOrigin] ?? previewDeploymentFrameOrigin(appOrigin) ?? swappedLocalOrigin(appOrigin)
+  );
 }
 
 function isAllowedParentOrigin(frameOrigin: string, parentOrigin: string): boolean {
