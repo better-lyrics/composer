@@ -185,6 +185,7 @@ const BraccatoFrame: React.FC<BraccatoFrameProps> = ({ ttmlString, focusRange, f
       ref={frameRef}
       src={src}
       title="Lyrics preview"
+      // react-doctor-disable-next-line react-doctor/iframe-missing-sandbox -- the frame is cross-site, so allow-same-origin cannot lift the sandbox into this document; its module scripts and fonts need their own origin
       sandbox="allow-scripts allow-same-origin"
       onLoad={() => setIsLoaded(true)}
       className={cn(
