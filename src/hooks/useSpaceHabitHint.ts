@@ -1,8 +1,11 @@
+import type { ProjectTab } from "@/domain/project/tab";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { overridesAfterSwitch } from "@/stores/shortcut-preset-switch";
+import type { ShortcutScope } from "@/stores/shortcut-registry";
 import { shouldOfferSpaceHint } from "@/utils/space-habit-hint";
+import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { isTypingTarget } from "@/utils/typing-target";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -29,7 +32,7 @@ function answerSpaceHint(): void {
 
 function showSpaceHint(): void {
   toast("Want Space to play?", {
-    description: "The Editor preset swaps Space and Enter.",
+    description: "Right now Enter plays. The Editor preset swaps them.",
     duration: Number.POSITIVE_INFINITY,
     action: { label: "Use Editor", onClick: switchToEditorFromHint },
     cancel: { label: "Keep Enter", onClick: answerSpaceHint },
@@ -39,7 +42,19 @@ function showSpaceHint(): void {
 
 // -- Helpers ------------------------------------------------------------------
 
-function notePlayShortcut(): void {
+const ACTIVATES_ON_SPACE =
+  "button, a[href], summary, [role=button], [role=checkbox], [role=switch], [role=radio], [role=tab]";
+const TAB_SCOPES: Partial<Record<ProjectTab, ShortcutScope>> = { sync: "sync", timeline: "timeline" };
+
+function spaceDoesSomething(event: KeyboardEvent, activeTab: ProjectTab): boolean {
+  if (event.target instanceof Element && event.target.closest(ACTIVATES_ON_SPACE)) return true;
+  const tabScope = TAB_SCOPES[activeTab];
+  return (
+    findMatchingShortcut(event, "global") !== null || (!!tabScope && findMatchingShortcut(event, tabScope) !== null)
+  );
+}
+
+function offerIfHabit(spaceDidNothing: boolean, playAt?: number): void {
   if (offered) return;
   const { preset, overrides, spaceHintAnswered } = useShortcutBindingsStore.getState();
   const offer = shouldOfferSpaceHint({
@@ -48,18 +63,24 @@ function notePlayShortcut(): void {
     answered: spaceHintAnswered,
     activeTab: useProjectStore.getState().activeTab,
     hasAudio: useAudioStore.getState().source !== null,
+    spaceDidNothing,
     spaceAt,
-    playAt: performance.now(),
+    playAt,
   });
   if (!offer) return;
   offered = true;
   showSpaceHint();
 }
 
+function notePlayShortcut(): void {
+  offerIfHabit(false, performance.now());
+}
+
 function noteSpace(event: KeyboardEvent): void {
   const modified = event.shiftKey || event.altKey || event.ctrlKey || event.metaKey;
   if (event.key !== " " || event.repeat || modified || isTypingTarget(event.target)) return;
   spaceAt = performance.now();
+  offerIfHabit(!spaceDoesSomething(event, useProjectStore.getState().activeTab));
 }
 
 // -- Hook ---------------------------------------------------------------------

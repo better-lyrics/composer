@@ -9,8 +9,9 @@ interface SpaceHintMoment {
   answered: boolean;
   activeTab: ProjectTab;
   hasAudio: boolean;
-  spaceAt: number | undefined;
-  playAt: number;
+  spaceDidNothing: boolean;
+  spaceAt?: number;
+  playAt?: number;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -19,16 +20,17 @@ const SPACE_HINT_WINDOW_MS = 2000;
 
 // -- Helpers ------------------------------------------------------------------
 
-// Space pressed outside Sync, then play by its own key soon after, reads as someone who expects Space to play.
-function shouldOfferSpaceHint(moment: SpaceHintMoment) {
-  const { preset, playOverridden, answered, activeTab, hasAudio, spaceAt, playAt } = moment;
+// Space that does nothing, or Space followed soon by play on its own key, reads as someone who expects Space to play.
+function shouldOfferSpaceHint(moment: SpaceHintMoment): boolean {
+  const { preset, playOverridden, answered, activeTab, hasAudio, spaceDidNothing, spaceAt, playAt } = moment;
   if (preset !== "composer" || playOverridden || answered || activeTab === "sync" || !hasAudio) return false;
-  if (spaceAt === undefined) return false;
+  if (spaceDidNothing) return true;
+  if (spaceAt === undefined || playAt === undefined) return false;
   const gap = playAt - spaceAt;
   return gap >= 0 && gap <= SPACE_HINT_WINDOW_MS;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export type { SpaceHintMoment };
 export { shouldOfferSpaceHint };
+export type { SpaceHintMoment };
