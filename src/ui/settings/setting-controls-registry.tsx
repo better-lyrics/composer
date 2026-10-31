@@ -5,6 +5,7 @@ import type { SettingId } from "@/stores/settings-catalog";
 import { SNAP_DISTANCE_RANGE_PX } from "@/stores/settings-snap";
 import { BEAT_GRID_LINE_OPTIONS } from "@/ui/beat-grid-line-options";
 import { LAUNCH_SCREEN_OPTIONS, LIBRARY_SORT_OPTIONS } from "@/ui/projects/library-options";
+import type { SelectOption } from "@/ui/select";
 import { AlignmentModelSetting } from "@/ui/settings/alignment-model-setting";
 import { BridgeSection } from "@/ui/settings/bridge-section";
 import { CobaltInstancesSetting } from "@/ui/settings/cobalt-instances-setting";
@@ -12,8 +13,8 @@ import { DefaultPlaybackRateSetting } from "@/ui/settings/default-playback-rate-
 import { LibraryViewSetting } from "@/ui/settings/library-view-setting";
 import { LoupeSizeSetting } from "@/ui/settings/loupe-size/loupe-size-setting";
 import { ResetAllSettingsSetting, ResetTourSetting } from "@/ui/settings/reset-settings";
-import type { SelectOption } from "@/ui/select";
 import type { SliderAction } from "@/ui/settings/setting-controls";
+import { ShortcutPresetGallery } from "@/ui/settings/shortcuts/shortcut-preset-gallery";
 import { SplitCharacterSetting } from "@/ui/settings/split-character-setting";
 import { BackUpAllProjectsSetting, DeleteAllProjectsSetting } from "@/ui/settings/storage/backup-settings-setting";
 import { ProjectAudioListSetting } from "@/ui/settings/storage/project-audio-list-setting";
@@ -31,7 +32,7 @@ import {
   SPECTRUM_TOP_OPTIONS,
 } from "@/ui/spectrum-options";
 import { formatWholeMegabytes } from "@/utils/format-file-size";
-import { MAX_ZOOM, MIN_ZOOM, ZOOM_STEP, useTimelineStore } from "@/views/timeline/timeline-store";
+import { MAX_ZOOM, MIN_ZOOM, useTimelineStore, ZOOM_STEP } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -181,6 +182,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   confirmSyncReset: TOGGLE,
   confirmClearProject: TOGGLE,
   confirmResetSettings: TOGGLE,
+  shortcutPreset: { kind: "custom", Component: ShortcutPresetGallery },
   confirmResetShortcuts: TOGGLE,
   confirmApplyToAllSyllableSplit: TOGGLE,
   confirmConformToGroup: TOGGLE,
