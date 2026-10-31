@@ -4,10 +4,11 @@ import { clockRoundingMs, currentFrameTime } from "@/lib/frame-loop";
 
 const OBSERVATION_WINDOW_MS = 1000;
 const MAX_OBSERVATIONS = 256;
-const MAX_EXTRAPOLATION_MS = 60;
+// Media time, like the stall below: Firefox publishes every 40 ms of media, so a slow rate spreads its steps out.
+const MAX_EXTRAPOLATION_SECONDS = 0.06;
 const CONFLICT_TOLERANCE_SECONDS = 0.005;
-// No new element time for this long while playing means the audio stalled, so the clock waits at the element.
-const STALL_MS = 100;
+// No new element time for this much media while playing means the audio stalled, so the clock waits at the element.
+const STALL_SECONDS = 0.1;
 // An element time that holds still across frames is published in steps (Firefox), not computed at each read (Chrome).
 const STEPPED_EVIDENCE_MS = 12;
 const DISPLAY_SMOOTHING_MS = 150;
@@ -107,7 +108,7 @@ function observe(element: HTMLAudioElement, time: number, running: boolean, read
   } else {
     const heldMs = readAt - lastRead.changedAt;
     if (heldMs > STEPPED_EVIDENCE_MS) lastRead.steppedAt = readAt;
-    if (heldMs > STALL_MS) clearObservations();
+    if ((heldMs * rate) / 1000 > STALL_SECONDS) clearObservations();
   }
   resyncPending = false;
   lastRead.element = element;
@@ -150,8 +151,9 @@ function readPlaybackClock(element: HTMLAudioElement): number {
   }
   const rate = element.playbackRate;
   const lineOffset = frameNow === null ? offset : displayOffset(offset, now);
-  const maxExtrapolation = (rate * MAX_EXTRAPOLATION_MS) / 1000;
-  const stepCeiling = isStepped(readAt) ? Math.min(lastRead.stepSeconds * 1.5, maxExtrapolation) : maxExtrapolation;
+  const stepCeiling = isStepped(readAt)
+    ? Math.min(lastRead.stepSeconds * 1.5, MAX_EXTRAPOLATION_SECONDS)
+    : MAX_EXTRAPOLATION_SECONDS;
   let time = Math.min((rate * now) / 1000 + lineOffset, elementTime + stepCeiling);
   if (Number.isFinite(element.duration)) time = Math.min(time, element.duration);
   if (frameNow === null) return time;

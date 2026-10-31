@@ -5,7 +5,7 @@ import { type SimulatedAudio, simulatedAudio } from "@/test/simulated-audio";
 
 // -- Helpers -------------------------------------------------------------------
 
-// Firefox publishes the position every 40 ms; Chrome computes it at every read.
+// Firefox publishes the position every 40 ms of media time; Chrome computes it at every read.
 const FIREFOX_TICK_MS = 40;
 
 function playing(audio: SimulatedAudio): SimulatedAudio {
@@ -91,7 +91,7 @@ describe("livePlaybackTime", () => {
     expect(maxAbs(errors)).toBeLessThan(0.004);
   });
 
-  it.each([0.5, 1, 2])(
+  it.each([0.25, 0.5, 1, 2])(
     "regression: a read between frames lands within a few ms of what is heard with 40 ms element steps (Firefox) at %sx",
     (rate) => {
       const audio = playing(simulatedAudio({ start: 10, rate, tickMs: FIREFOX_TICK_MS, tickPhaseMs: 7 }));
