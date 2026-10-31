@@ -43,4 +43,4 @@ function alignmentReview(lines: readonly LyricLine[], alignedTimings: AlignedTim
 // -- Exports ------------------------------------------------------------------
 
 export { alignmentReview };
-export type { AlignmentReview, AlignmentReviewTier };
+export type { AlignmentReview };
