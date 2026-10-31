@@ -13,7 +13,7 @@ const SyncSection: React.FC = () => (
       synced. You sync with two keys, and you can combine them freely.
     </p>
 
-    <HelpTopic title="Tap (Space)">
+    <HelpTopic title="Tap">
       <p className={PROSE}>
         Press <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} /> to start playback and begin syncing. As the
         music plays, tap <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} /> on each word right when the singer
@@ -31,7 +31,7 @@ const SyncSection: React.FC = () => (
       </p>
     </HelpTopic>
 
-    <HelpTopic title="Hold (F)">
+    <HelpTopic title="Hold">
       <p className={PROSE}>
         Press and hold <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} /> for the duration of each word.
         The key-down marks the word's start, and key-up marks the end. That way you decide how long each word lasts, and
@@ -55,7 +55,7 @@ const SyncSection: React.FC = () => (
       </ul>
     </HelpTopic>
 
-    <HelpTopic title="Gapless syllables (Hold F + Tap Space)">
+    <HelpTopic title="Gapless syllables">
       <p className={PROSE}>
         For syllables that flow together without pauses, tap <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} />{" "}
         while holding <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} /> to create gapless boundaries.
