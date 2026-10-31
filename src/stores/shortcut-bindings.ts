@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { bindingsEqual, scopesConflict } from "@/stores/shortcut-binding-compare";
 import { migrateSavedOverrides, UNBOUND } from "@/stores/shortcut-bindings-migration";
+import { DEFAULT_SHORTCUT_PRESET, presetBinding, type ShortcutPresetId } from "@/stores/shortcut-presets";
 import {
   getShortcutById,
   SHORTCUT_REGISTRY,
@@ -13,6 +14,8 @@ import {
 
 interface ShortcutBindingsState {
   overrides: Record<string, ShortcutBinding>;
+  preset: ShortcutPresetId;
+  setPreset: (preset: ShortcutPresetId, overrides: Record<string, ShortcutBinding>) => void;
   resetBinding: (id: string) => void;
   resetAllBindings: () => void;
 }
@@ -27,6 +30,8 @@ const useShortcutBindingsStore = create<ShortcutBindingsState>()(
   persist(
     (set) => ({
       overrides: {},
+      preset: DEFAULT_SHORTCUT_PRESET,
+      setPreset: (preset, overrides) => set({ preset, overrides }),
       resetBinding: (id) =>
         set((state) => {
           const { [id]: _, ...rest } = state.overrides;
@@ -45,8 +50,11 @@ const useShortcutBindingsStore = create<ShortcutBindingsState>()(
 // -- Helpers ------------------------------------------------------------------
 
 function getEffectiveBinding(id: string): ShortcutBinding {
-  const override = useShortcutBindingsStore.getState().overrides[id];
+  const { overrides, preset } = useShortcutBindingsStore.getState();
+  const override = overrides[id];
   if (override) return override;
+  const fromPreset = presetBinding(preset, id);
+  if (fromPreset) return fromPreset;
   const def = getShortcutById(id);
   if (!def) throw new Error(`Unknown shortcut: ${id}`);
   return def.defaultBinding;
