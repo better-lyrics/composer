@@ -3,7 +3,7 @@
 interface SimulatedAudioOptions {
   start: number;
   rate?: number;
-  // Firefox publishes the position on a 40 ms timer; Chrome computes it at every read.
+  // Firefox publishes the position every 40 ms of media time (160 ms apart at 0.25x); Chrome computes it at every read.
   tickMs?: number;
   tickPhaseMs?: number;
   // A published step reaches the page this much later (Firefox hands it to the main thread).
@@ -48,7 +48,8 @@ function simulatedAudio({
     if (tickMs === 0)
       return heard() + jitterMs[(Math.imul(Math.floor(performance.now()), 2654435761) >>> 0) % jitterMs.length] / 1000;
     const now = performance.now() - visibleAfterMs;
-    const lastTick = Math.floor((now - tickPhaseMs) / tickMs) * tickMs + tickPhaseMs;
+    const tickWallMs = tickMs / rate;
+    const lastTick = Math.floor((now - tickPhaseMs) / tickWallMs) * tickWallMs + tickPhaseMs;
     return lastTick <= anchorAt ? anchorTime : anchorTime + (rate * (lastTick - anchorAt)) / 1000;
   };
   const freeze = () => {
