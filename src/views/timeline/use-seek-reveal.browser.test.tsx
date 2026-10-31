@@ -74,11 +74,31 @@ describe("useSeekReveal", () => {
     await expect.poll(() => seeks).toBe(1);
     container.scrollLeft = 0;
 
+    audio.muted = true;
     const pausedAt = audio.currentTime;
     audio.currentTime = pausedAt;
+    await audio.play();
 
     await expect.poll(() => seeks).toBe(2);
     expect(container.scrollLeft).toBe(0);
+    audio.pause();
+    container.remove();
+  });
+
+  it("regression: still reveals a seek made while paused that lands on the paused time", async () => {
+    const container = await revealSetup(300);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    let seeks = 0;
+    audio.addEventListener("seeked", () => {
+      seeks++;
+    });
+    useAudioStore.getState().seekTo(50);
+    await expect.poll(() => seeks).toBe(1);
+    container.scrollLeft = 0;
+
+    useAudioStore.getState().seekTo(50);
+
+    await expect.poll(() => container.scrollLeft).toBeGreaterThan(0);
     container.remove();
   });
 });
