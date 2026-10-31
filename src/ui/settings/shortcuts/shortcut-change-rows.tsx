@@ -25,7 +25,7 @@ const BindingList: React.FC<{ bindings: readonly ShortcutBinding[]; muted?: bool
 }) => (
   <span className={cn("flex items-center gap-1", muted && "opacity-55")}>
     {bindings.map((binding, index) => (
-      <span key={`${bindingToKeys(binding).join("+")}-${index}`} className="flex items-center gap-1">
+      <span key={bindingToKeys(binding).join("+")} className="flex items-center gap-1">
         {index > 0 && <span className="text-xs text-(--muted)">/</span>}
         <BindingKeys binding={binding} />
       </span>
