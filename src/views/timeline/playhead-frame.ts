@@ -12,7 +12,7 @@ import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { createTimelineLights, paintTimelineLights } from "@/views/timeline/timeline-lights";
 import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { scrollView, viewScrollLeft, viewScrollTop } from "@/views/timeline/view-scroll";
+import { readViewScroll, scrollView, viewScrollLeft, viewScrollTop } from "@/views/timeline/view-scroll";
 import { createFollowMemory, followScrollTop, followStep, resetFollowMemory } from "@/views/timeline/vertical-follow";
 import { pinCutWordLabels } from "@/views/timeline/word-label-pin";
 import type { RefObject } from "react";
@@ -118,7 +118,8 @@ function readPlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): vo
   frame.hideScrollbars = isPlaying && followPlayhead;
   frame.currentTime = currentTime;
   frame.displayTime = isDraggingPlayhead ? dragTime : currentTime;
-  const actualScrollLeft = viewScrollLeft();
+  // A zoom clamps the scroller during layout with no scroll event until next frame; write callbacks read this refresh.
+  const actualScrollLeft = container ? readViewScroll(container).left : viewScrollLeft();
   frame.position = timeToX(frame.displayTime, zoom, actualScrollLeft) - 1;
 
   frame.blocks.length = 0;

@@ -9,7 +9,12 @@ import { findProductionMatches } from "@/test/source-files";
 const OWNER = "views/timeline/view-scroll.ts";
 const SNAPSHOT_RECEIVERS = "s|state|prev|previous|view|frame|next|a|b|start|pointer";
 const RAW_SCROLL_ACCESS = new RegExp(
-  `(?<!\\b(?:${SNAPSHOT_RECEIVERS})\\??|(?:get|getState)\\(\\))\\.scroll(?:Left|Top)\\b|\\.scroll(?:To|By)\\(`,
+  [
+    `(?<!\\b(?:${SNAPSHOT_RECEIVERS})\\??|(?:get|getState)\\(\\))\\.scroll(?:Left|Top)\\b`,
+    `\\{[^{}]*\\bscroll(?:Left|Top)\\b[^{}]*\\}\\s*=\\s*(?!(?:${SNAPSHOT_RECEIVERS})\\s*;)[\\w.?]+\\s*;`,
+    "\\.scroll(?:To|By)?\\(",
+    "\\bscrollIntoView\\(",
+  ].join("|"),
 );
 
 // -- Tests --------------------------------------------------------------------

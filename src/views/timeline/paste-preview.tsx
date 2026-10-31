@@ -19,6 +19,7 @@ import { holdsSnapBypass, syncSnapBypass } from "@/views/timeline/snap-bypass-ke
 import { SnapGuidelineAt } from "@/views/timeline/snap-guideline";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
+import { readViewScroll } from "@/views/timeline/view-scroll";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -208,7 +209,7 @@ function previewPlacement(
 
 function pointerInTimeline(container: HTMLElement, pointer: { clientX: number; clientY: number }, zoom: number) {
   const containerRect = container.getBoundingClientRect();
-  const { scrollLeft, scrollTop } = container;
+  const { left: scrollLeft, top: scrollTop } = readViewScroll(container);
   return {
     time: (pointer.clientX - containerRect.left - GUTTER_WIDTH + scrollLeft) / zoom,
     y: pointer.clientY - containerRect.top + scrollTop,
