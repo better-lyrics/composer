@@ -1,4 +1,4 @@
-import { timingFingerprint, readAlignedTimings } from "@/domain/alignment/fingerprint";
+import { readAlignedTimings, timingChanged, timingFingerprint } from "@/domain/alignment/fingerprint";
 import { alignmentReview } from "@/domain/alignment/review-state";
 import type { LyricLine } from "@/domain/line/model";
 import { createLine } from "@/test/factories";
@@ -98,6 +98,21 @@ describe("alignmentReview", () => {
       const fingerprints = { ...fingerprintsOf(SONG), gone: "0.000-1.000" };
       expect(alignmentReview(SONG, fingerprints).tier).toBe("untouched");
     });
+  });
+});
+
+// -- timingChanged ------------------------------------------------------------
+
+describe("timingChanged", () => {
+  it("is true only when the timing differs", () => {
+    const line = SONG[0];
+    expect(timingChanged(line, nudged(line, 0.1))).toBe(true);
+    expect(timingChanged(undefined, line)).toBe(false);
+  });
+
+  it("regression: a linked sibling replaced with the same timing is not recorded as aligned", () => {
+    const line = SONG[0];
+    expect(timingChanged(line, { ...line, text: "Is this the real life?" })).toBe(false);
   });
 });
 
