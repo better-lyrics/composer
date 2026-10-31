@@ -6,7 +6,7 @@ const MIXED = {
   "global.toggleLoop": { key: "" },
   "timeline.toggleFollow": { key: ":" },
   "sync.tap": { key: ";", shift: true },
-  "global.playPause": { key: " " },
+  "global.playPause": { key: "F7" },
   "global.seekBackward": { key: "ArrowLeft", alt: true, mod: true },
 };
 
@@ -49,6 +49,24 @@ describe("shortcut codes", () => {
 
     it("rejects a preset Composer doesn't know", () => {
       expect(() => decodeShortcutCode("csk1:vim:8:")).toThrow("This code uses a preset Composer doesn't know.");
+    });
+
+    it("refuses a code that puts two actions on one key", () => {
+      expect(() => decodeShortcutCode("csk1:editor:8:global.toggleLoop=%20")).toThrow(
+        "This code puts Play / Pause and Loop the playback range on the same key.",
+      );
+    });
+
+    it("refuses a code from a newer Composer", () => {
+      expect(() => decodeShortcutCode("csk1:composer:99:")).toThrow(
+        "This code comes from a newer Composer. Update the app and try again.",
+      );
+    });
+
+    it("rejects a negative version as not a code", () => {
+      expect(() => decodeShortcutCode("csk1:composer:-1:")).toThrow(
+        "That isn't a shortcuts code. It should start with csk1:.",
+      );
     });
 
     it("names a shortcut Composer doesn't know", () => {

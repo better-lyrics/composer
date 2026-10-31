@@ -1,8 +1,10 @@
+import { getShortcutDescription } from "@/stores/shortcut-bindings";
 import {
   migrateSavedOverrides,
   type SavedBindings,
   SHORTCUT_BINDINGS_VERSION,
 } from "@/stores/shortcut-bindings-migration";
+import { layoutClash } from "@/stores/shortcut-preset-switch";
 import { isShortcutPresetId, type ShortcutPresetId } from "@/stores/shortcut-presets";
 import { getShortcutById, type ShortcutBinding } from "@/stores/shortcut-registry";
 
@@ -24,6 +26,7 @@ const MODIFIERS: readonly Modifier[] = ["mod", "meta", "ctrl", "shift", "alt"];
 
 const NOT_A_CODE = "That isn't a shortcuts code. It should start with csk1:.";
 const UNKNOWN_PRESET = "This code uses a preset Composer doesn't know.";
+const NEWER_CODE = "This code comes from a newer Composer. Update the app and try again.";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -75,12 +78,18 @@ function decodeShortcutCode(code: string): ShortcutCode {
   if (!text.startsWith(CODE_PREFIX)) throw new Error(NOT_A_CODE);
   const [preset, versionText, ...rest] = text.slice(CODE_PREFIX.length).split(":");
   const version = Number(versionText);
-  if (rest.length === 0 || !Number.isInteger(version)) throw new Error(NOT_A_CODE);
+  if (rest.length === 0 || !Number.isInteger(version) || version < 0) throw new Error(NOT_A_CODE);
+  if (version > SHORTCUT_BINDINGS_VERSION) throw new Error(NEWER_CODE);
   if (!isShortcutPresetId(preset)) throw new Error(UNKNOWN_PRESET);
   const saved = { overrides: decodeOverrides(rest.join(":")) };
   const { overrides = {} } = migrateSavedOverrides(saved, version) as SavedBindings;
   const unknownId = Object.keys(overrides).find((id) => !getShortcutById(id));
   if (unknownId) throw new Error(`This code has a shortcut Composer doesn't know: ${unknownId}.`);
+  const clash = layoutClash(preset, overrides);
+  if (clash) {
+    const [first, second] = clash.map(getShortcutDescription);
+    throw new Error(`This code puts ${first} and ${second} on the same key.`);
+  }
   return { preset, overrides };
 }
 

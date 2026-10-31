@@ -1,21 +1,23 @@
 import { bindingsEqual, isBound, scopesConflict } from "@/stores/shortcut-binding-compare";
-import { type ShortcutPresetId, shortcutPreset } from "@/stores/shortcut-presets";
-import { getShortcutById, type ShortcutBinding } from "@/stores/shortcut-registry";
+import { presetBinding, type ShortcutPresetId } from "@/stores/shortcut-presets";
+import { SHORTCUT_REGISTRY, type ShortcutBinding, getShortcutById } from "@/stores/shortcut-registry";
 
 // -- Helpers ------------------------------------------------------------------
 
+function layoutBinding(preset: ShortcutPresetId, overrides: Record<string, ShortcutBinding>, id: string) {
+  return overrides[id] ?? presetBinding(preset, id) ?? getShortcutById(id)?.defaultBinding;
+}
+
 // The preset wins a clash: the change that takes one of its keys is dropped, so nothing ends up unbound.
 function clashingOverrides(target: ShortcutPresetId, overrides: Record<string, ShortcutBinding>): string[] {
-  const presetEntries = Object.entries(shortcutPreset(target).bindings).filter(([id]) => !overrides[id]);
   return Object.entries(overrides).flatMap(([id, binding]) => {
     const scope = getShortcutById(id)?.scope;
-    const clashes =
-      isBound(binding) &&
-      scope !== undefined &&
-      presetEntries.some(([presetId, presetKey]) => {
-        const presetScope = getShortcutById(presetId)?.scope;
-        return presetScope !== undefined && scopesConflict(scope, presetScope) && bindingsEqual(binding, presetKey);
-      });
+    if (!isBound(binding) || !scope) return [];
+    const clashes = SHORTCUT_REGISTRY.some((definition) => {
+      if (definition.id === id || overrides[definition.id] || !scopesConflict(scope, definition.scope)) return false;
+      const targetKey = layoutBinding(target, {}, definition.id);
+      return isBound(targetKey) && bindingsEqual(binding, targetKey);
+    });
     return clashes ? [id] : [];
   });
 }
@@ -30,6 +32,20 @@ function overridesAfterSwitch(
   return Object.fromEntries(Object.entries(overrides).filter(([id]) => !clashing.has(id)));
 }
 
+// The first two actions a layout puts on the same key, if any.
+function layoutClash(preset: ShortcutPresetId, overrides: Record<string, ShortcutBinding>): [string, string] | null {
+  for (const [index, first] of SHORTCUT_REGISTRY.entries()) {
+    const firstKey = layoutBinding(preset, overrides, first.id);
+    if (!isBound(firstKey)) continue;
+    const second = SHORTCUT_REGISTRY.slice(index + 1).find((definition) => {
+      const secondKey = layoutBinding(preset, overrides, definition.id);
+      return scopesConflict(first.scope, definition.scope) && isBound(secondKey) && bindingsEqual(firstKey, secondKey);
+    });
+    if (second) return [first.id, second.id];
+  }
+  return null;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { clashingOverrides, overridesAfterSwitch };
+export { clashingOverrides, layoutClash, overridesAfterSwitch };

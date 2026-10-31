@@ -23,6 +23,13 @@ describe("clashingOverrides", () => {
   });
 });
 
+describe("clashingOverrides · regressions", () => {
+  it("regression: names a change that takes a Composer key the old preset had moved", () => {
+    const followOnSeekKey = { "timeline.toggleFollow": { key: ">", shift: true } };
+    expect(clashingOverrides("composer", followOnSeekKey)).toEqual(["timeline.toggleFollow"]);
+  });
+});
+
 describe("overridesAfterSwitch", () => {
   it("keeps changes on top of the preset, minus the ones that clash", () => {
     expect(overridesAfterSwitch("remastered", TAP_ON_SPACE, true)).toEqual(UNRELATED);
@@ -37,6 +44,7 @@ describe("overridesAfterSwitch · invariants", () => {
   const fixtures: [string, Record<string, ShortcutBinding>][] = [
     ["tap on Space", TAP_ON_SPACE],
     ["unrelated", UNRELATED],
+    ["follow on the Composer seek key", { "timeline.toggleFollow": { key: ">", shift: true } }],
   ];
 
   it.each(SHORTCUT_PRESETS.flatMap(({ id }) => fixtures.map(([name, overrides]) => [id, name, overrides] as const)))(
