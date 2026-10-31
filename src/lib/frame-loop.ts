@@ -29,6 +29,11 @@ const TAIL_FRAMES = 3;
 const RUNAWAY_WAKE_FRAMES = 600;
 const STALE_HOLD_FRAMES = 600;
 
+// Past this gap the loop slept, so pacing starts over from the stamp.
+const MAX_PACED_GAP_MS = 100;
+const PACING_CORRECTION = 0.02;
+const ROUNDING_TOLERANCE = 0.001;
+
 // -- State --------------------------------------------------------------------
 
 const subscribers = new Set<FrameSubscriber>();
@@ -41,6 +46,16 @@ let framesSinceWake = 0;
 let hasReportedRunawayWakes = false;
 let hasReportedStaleHold = false;
 let dispatchingFrameTime: number | null = null;
+// Firefox with privacy.resistFingerprinting rounds frame stamps to 16.67 ms, so two frames can share one.
+const pacing = {
+  stamp: Number.NEGATIVE_INFINITY,
+  time: 0,
+  since: 0,
+  frames: 0,
+  rounding: Number.POSITIVE_INFINITY,
+  repeated: false,
+  irregular: false,
+};
 
 // -- Diagnostics --------------------------------------------------------------
 
@@ -117,7 +132,51 @@ function runWrite(subscriber: FrameSubscriber, now: number): void {
   runPhase(subscriber, subscriber.write, "writeFailing", now);
 }
 
-function pump(now: number): void {
+function isWholeMultiple(larger: number, smaller: number): boolean {
+  const ratio = larger / smaller;
+  return Math.abs(ratio - Math.round(ratio)) < ROUNDING_TOLERANCE;
+}
+
+function noteElapsed(elapsed: number): void {
+  if (pacing.rounding !== Number.POSITIVE_INFINITY) {
+    const whole =
+      elapsed >= pacing.rounding
+        ? isWholeMultiple(elapsed, pacing.rounding)
+        : isWholeMultiple(pacing.rounding, elapsed);
+    if (!whole) pacing.irregular = true;
+  }
+  pacing.rounding = Math.min(pacing.rounding, elapsed);
+}
+
+function isClockRounded(): boolean {
+  return pacing.repeated && !pacing.irregular;
+}
+
+// A rounded clock repeats stamps and moves only in whole steps; its frames advance by the mean frame period instead.
+function pacedFrameTime(stamp: number): number {
+  const elapsed = stamp - pacing.stamp;
+  pacing.stamp = stamp;
+  if (elapsed < 0 || elapsed > MAX_PACED_GAP_MS) {
+    pacing.time = stamp;
+    pacing.since = stamp;
+    pacing.frames = 0;
+    return stamp;
+  }
+  pacing.frames += 1;
+  if (elapsed === 0) pacing.repeated = true;
+  else noteElapsed(elapsed);
+  if (!isClockRounded() || stamp === pacing.since) {
+    pacing.time = stamp;
+    return stamp;
+  }
+  const predicted = pacing.time + (stamp - pacing.since) / pacing.frames;
+  const corrected = predicted + (stamp + pacing.rounding / 2 - predicted) * PACING_CORRECTION;
+  pacing.time = Math.min(Math.max(corrected, stamp), stamp + pacing.rounding);
+  return pacing.time;
+}
+
+function pump(stamp: number): void {
+  const now = pacedFrameTime(stamp);
   rafId = null;
   framesSinceWake += 1;
   if (isHeldAwake()) tailFrames = TAIL_FRAMES;
@@ -185,8 +244,9 @@ function currentFrameTime(): number | null {
   return dispatchingFrameTime;
 }
 
-function isFrameScheduled(): boolean {
-  return rafId !== null;
+// How far the page clock rounds down; 0 until a repeated frame stamp proves it rounds.
+function clockRoundingMs(): number {
+  return isClockRounded() ? pacing.rounding : 0;
 }
 
 function frameTime(): number {
@@ -207,10 +267,10 @@ export {
   TAIL_FRAMES,
   animateFrames,
   cancelNextFrame,
+  clockRoundingMs,
   currentFrameTime,
   frameTime,
   holdFrames,
-  isFrameScheduled,
   nextFrame,
   subscribeFrame,
   wake,
