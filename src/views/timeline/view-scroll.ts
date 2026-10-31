@@ -46,6 +46,11 @@ function scrollViewBy(container: HTMLElement, deltaLeft: number, deltaTop: numbe
   scrollView(container, deltaLeft === 0 ? null : left + deltaLeft, deltaTop === 0 ? null : top + deltaTop);
 }
 
+// The animation's scroll events keep the cached position current.
+function smoothScrollView(container: HTMLElement, left: number | undefined, top?: number): void {
+  container.scrollTo({ left, top, behavior: "smooth" });
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { readViewScroll, scrollView, scrollViewBy, syncViewScroll, viewScrollLeft, viewScrollTop };
+export { readViewScroll, scrollView, scrollViewBy, smoothScrollView, syncViewScroll, viewScrollLeft, viewScrollTop };

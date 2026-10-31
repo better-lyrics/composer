@@ -8,6 +8,7 @@ import {
   focusScrollRange,
 } from "@/views/timeline/group-focus";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { scrollView } from "@/views/timeline/view-scroll";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -25,8 +26,7 @@ function currentFocusScrollRange(container: HTMLElement): ScrollRange | null {
 
 function scrollToFocusStart(container: HTMLElement): void {
   const range = currentFocusScrollRange(container);
-  container.scrollTop = 0;
-  if (range) container.scrollLeft = range.min;
+  scrollView(container, range ? range.min : null, 0);
 }
 
 // -- Hooks --------------------------------------------------------------------

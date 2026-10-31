@@ -5,6 +5,7 @@ import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
+import { readViewScroll, smoothScrollView } from "@/views/timeline/view-scroll";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -32,12 +33,12 @@ function scrollToInstanceHeader(groupId: string, instanceIdx: number): void {
   const viewportHeight = container.clientHeight;
   const scrollLeft = bounds
     ? Math.max(0, bounds.begin * zoom - viewportWidth / 2 + GUTTER_WIDTH)
-    : container.scrollLeft;
+    : readViewScroll(container).left;
 
   const rowCenter = target.top + target.height / 2;
   const scrollTop = Math.max(0, Math.min(container.scrollHeight - viewportHeight, rowCenter - viewportHeight / 2));
 
-  container.scrollTo({ left: scrollLeft, top: scrollTop, behavior: "smooth" });
+  smoothScrollView(container, scrollLeft, scrollTop);
 }
 
 // -- Exports -------------------------------------------------------------------

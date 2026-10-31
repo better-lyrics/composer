@@ -10,7 +10,6 @@ function makeConfig(overrides: Partial<PlayheadDragConfig> = {}): PlayheadDragCo
     getScrollContainer: () => null,
     getDuration: () => 10,
     getZoom: () => 100,
-    getStoreScrollLeft: () => 0,
     getCurrentTime: () => 1,
     setIsPlaying: () => undefined,
     setDraggingPlayhead: () => undefined,

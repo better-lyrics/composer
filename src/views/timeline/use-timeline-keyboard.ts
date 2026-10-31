@@ -52,6 +52,7 @@ import { computeRowLayout, partitionNudgeSelections, shiftSelectionsTogether } f
 import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
+import { readViewScroll, scrollView, smoothScrollView } from "@/views/timeline/view-scroll";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -126,19 +127,19 @@ function useTimelineKeyboard(
         });
         const pos = layout.lineTops.get(line.id);
         if (pos) {
-          const visibleTop = scrollContainer.scrollTop;
+          const visibleTop = readViewScroll(scrollContainer).top;
           const visibleBottom = visibleTop + scrollContainer.clientHeight;
           const rowBottom = pos.top + pos.height;
           const isRowVisible = pos.top >= visibleTop && rowBottom <= visibleBottom;
 
           if (!isRowVisible) {
-            scrollContainer.scrollTo({ top: pos.top - currentOverviewBandHeight(), behavior: "instant" });
+            scrollView(scrollContainer, null, pos.top - currentOverviewBandHeight());
           }
         }
 
         const wordLeft = word.begin * zoom;
         const wordRight = word.end * zoom;
-        const visibleLeft = scrollContainer.scrollLeft;
+        const visibleLeft = readViewScroll(scrollContainer).left;
         const visibleRight = visibleLeft + scrollContainer.clientWidth - GUTTER_WIDTH;
         const isWordHorizontallyVisible = wordLeft >= visibleLeft && wordRight <= visibleRight;
 
@@ -147,10 +148,7 @@ function useTimelineKeyboard(
             action: {
               label: "Jump to word",
               onClick: () => {
-                scrollContainer.scrollTo({
-                  left: Math.max(0, wordLeft - 50),
-                  behavior: "smooth",
-                });
+                smoothScrollView(scrollContainer, Math.max(0, wordLeft - 50));
               },
             },
           });
@@ -265,7 +263,7 @@ function useTimelineKeyboard(
           const currentTime = livePlaybackTime();
           const { zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
 
-          scrollContainer.scrollLeft = centerTimeScrollLeft(currentTime, zoom, scrollContainer.clientWidth);
+          scrollView(scrollContainer, centerTimeScrollLeft(currentTime, zoom, scrollContainer.clientWidth));
 
           let activeLineIndex = -1;
           for (let i = 0; i < lines.length; i++) {
@@ -301,7 +299,7 @@ function useTimelineKeyboard(
                 0,
                 Math.min(scrollContainer.scrollHeight - viewportHeight, rowCenter - viewportHeight / 2),
               );
-              scrollContainer.scrollTo({ top: targetTop, behavior: "instant" });
+              scrollView(scrollContainer, null, targetTop);
             }
           }
           break;

@@ -3,6 +3,7 @@ import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { type TrackHit, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
+import { readViewScroll } from "@/views/timeline/view-scroll";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -76,7 +77,7 @@ function resolveViaLayoutModel(
   const container = document.querySelector<HTMLDivElement>("[data-scroll-container]");
   if (!container) return null;
   const rect = container.getBoundingClientRect();
-  const cursorY = clientY - rect.top + container.scrollTop;
+  const cursorY = clientY - rect.top + readViewScroll(container).top;
 
   const { rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
   const layout = computeRowLayout({
