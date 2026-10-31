@@ -259,11 +259,21 @@ const MenuRadioItem: React.FC<MenuRadioItemProps> = ({ lead, label, description,
 
 const MenuSeparator: React.FC = () => <hr className="h-px mx-1.5 my-[5px] border-0 bg-(--divider)" />;
 
+const MenuHeader: React.FC<{ title: string; detail: string }> = ({ title, detail }) => (
+  <>
+    <div className="px-2 pt-1.5 pb-2">
+      <p className="text-[12.5px] font-medium text-composer-text wrap-anywhere select-text">{title}</p>
+      <p className="mt-0.5 text-xs tabular-nums text-(--muted) text-pretty select-text">{detail}</p>
+    </div>
+    <MenuSeparator />
+  </>
+);
+
 const MenuLabel: React.FC<{ children: ReactNode }> = ({ children }) => (
   <p className="px-2.5 pt-1.5 pb-1 text-[11.5px] font-semibold text-(--muted)">{children}</p>
 );
 
 // -- Exports ------------------------------------------------------------------
 
-export { Menu, MenuItem, MenuLabel, MenuRadioItem, MenuSeparator };
+export { Menu, MenuHeader, MenuItem, MenuLabel, MenuRadioItem, MenuSeparator };
 export type { MenuAnchor };

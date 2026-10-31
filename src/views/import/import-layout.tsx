@@ -8,6 +8,7 @@ interface SourceCardProps {
   subtitle: React.ReactNode;
   trailing?: React.ReactNode;
   tone?: "warning";
+  ref?: React.Ref<HTMLDivElement>;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -38,10 +39,11 @@ const ImportZone: React.FC<{ tone?: "warning"; children: React.ReactNode }> = ({
   </div>
 );
 
-const SourceCard: React.FC<SourceCardProps> = ({ art, title, subtitle, trailing, tone }) => (
+const SourceCard: React.FC<SourceCardProps> = ({ art, title, subtitle, trailing, tone, ref }) => (
   <div
+    ref={ref}
     className={cn(
-      "flex items-center gap-3.5 w-full p-2.5 pr-3.5 rounded-2xl border",
+      "flex items-center gap-3.5 w-full p-2.5 pr-3.5 rounded-[21px] border",
       tone === "warning" ? "bg-composer-warning/6 border-composer-warning/28" : "bg-composer-bg border-(--edge)",
     )}
   >
@@ -55,9 +57,14 @@ const SourceCard: React.FC<SourceCardProps> = ({ art, title, subtitle, trailing,
     >
       {art}
     </div>
-    <div className="flex flex-1 min-w-0 flex-col gap-[3px]">
+    <div className="flex flex-1 min-w-0 flex-col gap-1">
       <div className="text-[15px] font-semibold truncate text-composer-text select-text">{title}</div>
-      <div className={cn("text-[12.5px] select-text", tone === "warning" ? "text-composer-warning" : "text-(--muted)")}>
+      <div
+        className={cn(
+          "flex items-center gap-1.5 min-w-0 text-[12.5px] select-text",
+          tone === "warning" ? "text-composer-warning" : "text-(--muted)",
+        )}
+      >
         {subtitle}
       </div>
     </div>

@@ -3,7 +3,7 @@ import { useConfirm } from "@/stores/confirm-store";
 import { useSeparationStore } from "@/stores/separation";
 import { IconButton } from "@/ui/icon-button";
 import { KEEPS_POPOVERS_OPEN_PROPS } from "@/ui/keeps-popovers-open";
-import { Menu, type MenuAnchor, MenuItem, MenuSeparator } from "@/ui/menu";
+import { Menu, type MenuAnchor, MenuHeader, MenuItem } from "@/ui/menu";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
 import { STEM_LABELS } from "@/ui/stem-labels";
 import { formatFileSize } from "@/utils/format-file-size";
@@ -20,16 +20,6 @@ interface StemRowMenuProps {
 }
 
 // -- Components ---------------------------------------------------------------
-
-const MenuHeader: React.FC<{ title: string; detail: string }> = ({ title, detail }) => (
-  <>
-    <div className="px-2 pt-1.5 pb-2">
-      <p className="text-[12.5px] font-medium text-composer-text wrap-anywhere select-text">{title}</p>
-      <p className="mt-0.5 text-xs tabular-nums text-(--muted) select-text">{detail}</p>
-    </div>
-    <MenuSeparator />
-  </>
-);
 
 const StemRowMenu: React.FC<StemRowMenuProps> = ({ slot, origin, onImportFile }) => {
   const [anchor, setAnchor] = useState<MenuAnchor | null>(null);

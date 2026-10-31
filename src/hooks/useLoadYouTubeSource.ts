@@ -1,6 +1,7 @@
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
+import type { AudioLoadMode } from "@/hooks/useLoadAudioFile";
 import { adoptPrimingForNewAudio } from "@/lib/attach-audio-priming";
 import { deleteProject, openProject, startSongInNewProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
@@ -41,11 +42,12 @@ function isYouTubeLoadFailure(error: unknown): error is YouTubeLoadFailedError {
 
 // -- Hook ---------------------------------------------------------------------
 
-function useLoadYouTubeSource(): (videoId: string) => Promise<void> {
-  return useCallback((videoId: string) => {
+function useLoadYouTubeSource(): (videoId: string, mode?: AudioLoadMode) => Promise<void> {
+  return useCallback((videoId: string, mode: AudioLoadMode = "auto") => {
     const previous = useAudioStore.getState().source;
     const prevVideoId = previous?.type === "youtube" ? previous.videoId : null;
-    if (previous != null && prevVideoId !== videoId && hasLyricLines(useProjectStore.getState().lines)) {
+    const startsNewProject = mode === "auto" && previous != null && prevVideoId !== videoId;
+    if (startsNewProject && hasLyricLines(useProjectStore.getState().lines)) {
       return loadVideoInNewProject(videoId, previous);
     }
     return loadVideoInPlace(videoId, previous);

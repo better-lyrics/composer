@@ -22,6 +22,8 @@ const UNPLAYABLE_AUDIO_MESSAGE = "That file is not playable audio.";
 
 type TagWrite = "apply" | "skip";
 
+type AudioLoadMode = "auto" | "replace";
+
 // -- State --------------------------------------------------------------------
 
 let latestPick: File | null = null;
@@ -95,8 +97,8 @@ async function startFileInNewProject(file: File, title: string): Promise<void> {
 
 // -- Hook ---------------------------------------------------------------------
 
-function useLoadAudioFile(): (file: File) => Promise<void> {
-  return useCallback(async (file: File) => {
+function useLoadAudioFile(): (file: File, mode?: AudioLoadMode) => Promise<void> {
+  return useCallback(async (file: File, mode: AudioLoadMode = "auto") => {
     latestPick = file;
     const { source, expectedAudio } = useAudioStore.getState();
     if (source === null && expectedAudio !== null) {
@@ -115,7 +117,7 @@ function useLoadAudioFile(): (file: File) => Promise<void> {
     const replacesDifferentSong =
       previous != null && !(previous.type === "file" && fileIdentityKey(previous.file) === fileIdentityKey(file));
 
-    if (replacesDifferentSong && hasLyricLines(useProjectStore.getState().lines)) {
+    if (mode === "auto" && replacesDifferentSong && hasLyricLines(useProjectStore.getState().lines)) {
       void startFileInNewProject(file, title);
       return;
     }
@@ -127,3 +129,4 @@ function useLoadAudioFile(): (file: File) => Promise<void> {
 // -- Exports ------------------------------------------------------------------
 
 export { useLoadAudioFile };
+export type { AudioLoadMode };

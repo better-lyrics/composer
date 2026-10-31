@@ -50,7 +50,7 @@ async function openAlpha(options: { lyrics: boolean; audio: boolean }): Promise<
   return { screen, current: source?.type === "file" ? source.file : undefined };
 }
 
-async function loader(): Promise<(file: File) => Promise<void>> {
+async function loader(): Promise<ReturnType<typeof useLoadAudioFile>> {
   const { result } = await renderHook(() => useLoadAudioFile());
   return result.current;
 }
@@ -142,6 +142,19 @@ describe("useLoadAudioFile · projects", () => {
     const id = openProjectIdSnapshot() ?? "";
     await expect.poll(async () => (await loadProjectAudio(id))?.name).toBe("b-side.wav");
     expect((await loadProjectAudio("a"))?.name).toBe("alpha.wav");
+  });
+
+  it("replace swaps the audio of a project with lyrics in place and keeps its lyrics", async () => {
+    await openAlpha({ lyrics: true, audio: true });
+    const linesBefore = useProjectStore.getState().lines;
+    const load = await loader();
+    const replacement = createAudioFile("alpha-remaster.wav");
+    await load(replacement, "replace");
+    expect(openProjectIdSnapshot()).toBe("a");
+    expect(useProjectStore.getState().lines).toBe(linesBefore);
+    const source = useAudioStore.getState().source;
+    expect(source?.type === "file" && source.file).toBe(replacement);
+    await expect.poll(async () => (await loadProjectAudio("a"))?.name).toBe("alpha-remaster.wav");
   });
 
   describe("edge cases", () => {
