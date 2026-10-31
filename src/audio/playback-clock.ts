@@ -4,7 +4,7 @@ import { clockRoundingMs, currentFrameTime } from "@/lib/frame-loop";
 
 const OBSERVATION_WINDOW_MS = 1000;
 const MAX_OBSERVATIONS = 256;
-// Media time, like the stall below: Firefox publishes every 40 ms of media, so a slow rate spreads its steps out.
+// Media time: Firefox publishes every 40 ms of media, so slow rates spread its steps further apart.
 const MAX_EXTRAPOLATION_SECONDS = 0.06;
 const CONFLICT_TOLERANCE_SECONDS = 0.005;
 // No new element time for this much media while playing means the audio stalled, so the clock waits at the element.
