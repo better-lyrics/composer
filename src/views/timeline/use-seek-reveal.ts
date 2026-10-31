@@ -15,7 +15,13 @@ function useSeekReveal(scrollContainerRef: RefObject<HTMLDivElement | null>, ena
 
   useEffect(() => {
     if (!enabled || !audio) return;
+    let restingTime = audio.currentTime;
+    const handleRest = () => {
+      restingTime = audio.currentTime;
+    };
     const handleSeeking = () => {
+      // Play seeks in place to resume (see `playOrRevert`); a seek that moves nothing reveals nothing.
+      if (audio.currentTime === restingTime) return;
       const container = scrollContainerRef.current;
       if (!container || useProjectStore.getState().activeTab !== "timeline") return;
       const { zoom, isDraggingPlayhead, loopRegionDrag } = useTimelineStore.getState();
@@ -27,7 +33,13 @@ function useSeekReveal(scrollContainerRef: RefObject<HTMLDivElement | null>, ena
       scrollView(container, focusRange ? clampScrollLeft(next, focusRange) : next);
     };
     audio.addEventListener("seeking", handleSeeking);
-    return () => audio.removeEventListener("seeking", handleSeeking);
+    audio.addEventListener("seeked", handleRest);
+    audio.addEventListener("pause", handleRest);
+    return () => {
+      audio.removeEventListener("seeking", handleSeeking);
+      audio.removeEventListener("seeked", handleRest);
+      audio.removeEventListener("pause", handleRest);
+    };
   }, [audio, enabled, scrollContainerRef]);
 }
 

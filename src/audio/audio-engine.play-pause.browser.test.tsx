@@ -60,6 +60,19 @@ describe("AudioEngine play state", () => {
   });
 
   describe("regressions", () => {
+    it("regression: resumes where it paused instead of skipping the audio Chromium had buffered", async () => {
+      const audio = await playableAudio();
+      useAudioStore.getState().setIsPlaying(true);
+      await expect.poll(() => audio.currentTime).toBeGreaterThan(0.3);
+      useAudioStore.getState().setIsPlaying(false);
+      await expect.poll(() => audio.paused).toBe(true);
+      const pausedAt = audio.currentTime;
+      await settle(300);
+      useAudioStore.getState().setIsPlaying(true);
+      await expect.poll(() => audio.paused).toBe(false);
+      expect(audio.currentTime - pausedAt).toBeLessThan(0.01);
+    });
+
     it("regression: play then an immediate pause does not flip between playing and paused forever", async () => {
       const audio = await playableAudio();
       const writes = countPlayStateWrites();

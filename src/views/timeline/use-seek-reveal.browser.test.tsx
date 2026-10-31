@@ -62,4 +62,23 @@ describe("useSeekReveal", () => {
     expect(container.scrollLeft).toBe(0);
     container.remove();
   });
+
+  it("regression: leaves the view where the user scrolled it when play seeks in place to resume", async () => {
+    const container = await revealSetup(300);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    let seeks = 0;
+    audio.addEventListener("seeked", () => {
+      seeks++;
+    });
+    useAudioStore.getState().seekTo(50);
+    await expect.poll(() => seeks).toBe(1);
+    container.scrollLeft = 0;
+
+    const pausedAt = audio.currentTime;
+    audio.currentTime = pausedAt;
+
+    await expect.poll(() => seeks).toBe(2);
+    expect(container.scrollLeft).toBe(0);
+    container.remove();
+  });
 });

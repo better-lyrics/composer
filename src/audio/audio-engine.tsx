@@ -17,6 +17,11 @@ const SLOW_DECODE_MS = 800;
 
 // A rejected play() (autoplay policy, undecodable source) must not leave the UI showing Pause.
 function playOrRevert(audio: HTMLAudioElement, setIsPlaying: (playing: boolean) => void): void {
+  // Chromium drops the audio it had buffered when it paused; a seek in place resumes from the paused sample.
+  if (audio.paused && !audio.seeking) {
+    const pausedAt = audio.currentTime;
+    audio.currentTime = pausedAt;
+  }
   audio.play().catch(() => {
     if (audio.paused) setIsPlaying(false);
   });
