@@ -6,6 +6,7 @@ const HABIT: SpaceHintMoment = {
   playOverridden: false,
   answered: false,
   activeTab: "timeline",
+  hasAudio: true,
   spaceAt: 1000,
   playAt: 1800,
 };
@@ -21,6 +22,7 @@ describe("shouldOfferSpaceHint", () => {
     ["the user already answered", { answered: true }],
     ["Space taps in Sync", { activeTab: "sync" }],
     ["Space was never pressed", { spaceAt: undefined }],
+    ["no song is loaded, so play does nothing", { hasAudio: false }],
   ] as const)("does not offer when %s", (_, change) => {
     expect(shouldOfferSpaceHint({ ...HABIT, ...change })).toBe(false);
   });

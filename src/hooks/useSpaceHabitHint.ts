@@ -1,3 +1,4 @@
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { overridesAfterSwitch } from "@/stores/shortcut-preset-switch";
@@ -22,12 +23,17 @@ function switchToEditorFromHint(): void {
   });
 }
 
+function answerSpaceHint(): void {
+  useShortcutBindingsStore.getState().answerSpaceHint();
+}
+
 function showSpaceHint(): void {
   toast("Want Space to play?", {
     description: "The Editor preset swaps Space and Enter.",
     duration: Number.POSITIVE_INFINITY,
     action: { label: "Use Editor", onClick: switchToEditorFromHint },
-    cancel: { label: "Keep Enter", onClick: () => useShortcutBindingsStore.getState().answerSpaceHint() },
+    cancel: { label: "Keep Enter", onClick: answerSpaceHint },
+    onDismiss: answerSpaceHint,
   });
 }
 
@@ -41,6 +47,7 @@ function notePlayShortcut(): void {
     playOverridden: "global.playPause" in overrides,
     answered: spaceHintAnswered,
     activeTab: useProjectStore.getState().activeTab,
+    hasAudio: useAudioStore.getState().source !== null,
     spaceAt,
     playAt: performance.now(),
   });
