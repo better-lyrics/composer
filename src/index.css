@@ -1404,6 +1404,30 @@ braccato-lyrics .blyrics-container {
   scale: 0.96;
 }
 
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"]:has([data-cancel]) [data-button]:not([data-cancel]) {
+  color: var(--color-composer-on-accent);
+  background: var(--color-composer-accent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+[data-sonner-toaster]
+  [data-sonner-toast][data-styled="true"]:has([data-cancel])
+  [data-button]:not([data-cancel]):is(:hover, :focus-visible) {
+  color: var(--color-composer-on-accent);
+  background: color-mix(in oklab, var(--color-composer-accent) 90%, var(--ink));
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-cancel] {
+  color: var(--muted);
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-cancel]:is(:hover, :focus-visible) {
+  color: var(--label);
+  background: var(--layer-1);
+}
+
 [data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button] {
   position: static;
   order: 99;
