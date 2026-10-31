@@ -1,8 +1,8 @@
-import { IconCheck, IconCopy } from "@tabler/icons-react";
-import { useState } from "react";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { encodeShortcutCode } from "@/stores/shortcut-code";
 import { Button } from "@/ui/button";
+import { IconCheck, IconCopy } from "@tabler/icons-react";
+import { useState } from "react";
 
 // -- Constants -----------------------------------------------------------------
 

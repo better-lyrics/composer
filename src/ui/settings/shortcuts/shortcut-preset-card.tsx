@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { ownChanges, presetChanges } from "@/stores/shortcut-preset-changes";
 import type { ShortcutPreset } from "@/stores/shortcut-presets";
 import type { ShortcutBinding } from "@/stores/shortcut-registry";
@@ -6,6 +5,7 @@ import { CARD_ACTIVE, CARD_BASE, CARD_INACTIVE } from "@/ui/settings/preset-card
 import { ShortcutChangesPopover } from "@/ui/settings/shortcuts/shortcut-changes-popover";
 import { switchShortcutPreset } from "@/ui/settings/shortcuts/switch-shortcut-preset";
 import { cn } from "@/utils/cn";
+import { useMemo } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 

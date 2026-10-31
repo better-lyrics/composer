@@ -11,12 +11,12 @@ import { useMusicBrainzMatch } from "@/hooks/useMusicBrainzMatch";
 import { usePanicRecovery } from "@/hooks/usePanicRecovery";
 import { usePersistence } from "@/hooks/usePersistence";
 import { usePitchTrack } from "@/hooks/usePitchTrack";
+import { useShortcutPresetIntro } from "@/hooks/useShortcutPresetIntro";
+import { useSpaceHabitHint } from "@/hooks/useSpaceHabitHint";
 import { useProjectChannel } from "@/hooks/useProjectChannel";
 import { useProjectShortcuts } from "@/hooks/useProjectShortcuts";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
 import { useSaveShortcut } from "@/hooks/useSaveShortcut";
-import { useShortcutPresetIntro } from "@/hooks/useShortcutPresetIntro";
-import { useSpaceHabitHint } from "@/hooks/useSpaceHabitHint";
 import { useStorageMaintenance } from "@/hooks/useStorageMaintenance";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
 import { appQueryClient } from "@/lib/app-query-client";
@@ -29,10 +29,6 @@ import { GuideCard } from "@/tour/guide-card";
 import { useTour } from "@/tour/use-tour";
 import { useRangePlayback } from "@/views/timeline/use-range-playback";
 import "@/tour/tour-theme.css";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { domAnimation, LazyMotion } from "motion/react";
-import { Activity, useCallback, useEffect, useEffectEvent, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { AppHeader } from "@/ui/app-header";
 import { HelpModal } from "@/ui/help-modal";
 import { OverlayHosts } from "@/ui/overlay-hosts";
@@ -42,6 +38,10 @@ import { EDITOR_PATH, screenForPath } from "@/utils/app-routes";
 import { EditorScreen } from "@/views/editor-screen";
 import { LibraryScreen } from "@/views/library/library-screen";
 import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { LazyMotion, domAnimation } from "motion/react";
+import { Activity, useCallback, useEffect, useEffectEvent, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // -- Constants ----------------------------------------------------------------
 

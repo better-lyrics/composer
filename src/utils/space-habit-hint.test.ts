@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { type SpaceHintMoment, shouldOfferSpaceHint } from "@/utils/space-habit-hint";
+import { describe, expect, it } from "vitest";
 
 const HABIT: SpaceHintMoment = {
   preset: "composer",

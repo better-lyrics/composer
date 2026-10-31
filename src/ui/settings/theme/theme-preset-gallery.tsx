@@ -1,4 +1,3 @@
-import { IconPalette } from "@tabler/icons-react";
 import type { Theme } from "@/domain/theme/model";
 import { PRESETS } from "@/domain/theme/presets";
 import { useConfirm } from "@/stores/confirm-store";
@@ -6,6 +5,7 @@ import { useThemeStore } from "@/stores/theme";
 import { Button } from "@/ui/button";
 import { CARD_GROUP_LABEL } from "@/ui/settings/preset-card-styles";
 import { ThemePresetCard } from "@/ui/settings/theme/theme-preset-card";
+import { IconPalette } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 

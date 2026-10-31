@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import { detectConflicts, getEffectiveBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { presetBinding, SHORTCUT_PRESETS } from "@/stores/shortcut-presets";
 import { SHORTCUT_REGISTRY } from "@/stores/shortcut-registry";
+import { beforeEach, describe, expect, it } from "vitest";
 
 const knownIds = new Set(SHORTCUT_REGISTRY.map(({ id }) => id));
 

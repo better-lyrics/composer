@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
   assignBinding,
   bindingToKeys,
@@ -9,6 +8,7 @@ import {
 import { migrateSavedOverrides, migrateShortcutBindings } from "@/stores/shortcut-bindings-migration";
 import { SHORTCUT_REGISTRY } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
+import { describe, expect, it } from "vitest";
 
 describe("detectConflicts · layout keys", () => {
   it("regression: keeps two layout keys apart, such as German Cmd+Shift+7 for / and Cmd+Shift+ß for ?", () => {

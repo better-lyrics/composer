@@ -1,6 +1,6 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { withAlignedWords } from "@/domain/language/align";
-import { applyBackground, CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
+import { CLEARED_BACKGROUND, applyBackground, manualBackgroundWordEdit } from "@/domain/line/background";
 import { applyMainWordEdit } from "@/domain/line/main-words";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";

@@ -1,4 +1,4 @@
-import { getShortcutsByScope, SHORTCUT_SCOPE_GROUPS } from "@/stores/shortcut-registry";
+import { SHORTCUT_SCOPE_GROUPS, getShortcutsByScope } from "@/stores/shortcut-registry";
 import { SettingRow } from "@/ui/settings/setting-row";
 import { ShortcutRebindRow } from "@/ui/shortcut-rebind-row";
 

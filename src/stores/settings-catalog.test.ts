@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { DEFAULTS } from "@/stores/settings";
 import {
   isSettingVisible,
@@ -12,6 +11,7 @@ import {
   settingKeyOf,
   visibleSettingIds,
 } from "@/stores/settings-catalog";
+import { describe, expect, it } from "vitest";
 
 const SECTION_ORDER = SETTINGS_SECTIONS.map((section) => section.id);
 

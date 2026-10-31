@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { applySyllableSplitToLines } from "@/stores/project/syllable-split-helpers";
 import { createLine } from "@/test/factories";
+import { describe, expect, it } from "vitest";
 
 describe("applySyllableSplitToLines", () => {
   it("splits the source word", () => {

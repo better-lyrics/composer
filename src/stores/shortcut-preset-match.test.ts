@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, it } from "vitest";
 import { getEffectiveBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { presetForOverrides } from "@/stores/shortcut-preset-match";
 import { SHORTCUT_PRESETS, type ShortcutPresetId } from "@/stores/shortcut-presets";
 import { SHORTCUT_REGISTRY, type ShortcutBinding } from "@/stores/shortcut-registry";
+import { afterEach, describe, expect, it } from "vitest";
 
 const SWAPPER = {
   "global.playPause": { key: " " },

@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, it } from "vitest";
 import { detectConflicts, getEffectiveBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { clashingOverrides, overridesAfterSwitch } from "@/stores/shortcut-preset-switch";
 import { SHORTCUT_PRESETS } from "@/stores/shortcut-presets";
 import { SHORTCUT_REGISTRY, type ShortcutBinding } from "@/stores/shortcut-registry";
+import { afterEach, describe, expect, it } from "vitest";
 
 const TAP_ON_SPACE = { "sync.tap": { key: " " }, "global.toggleLoop": { key: "F9" } };
 const UNRELATED = { "global.toggleLoop": { key: "F9" } };

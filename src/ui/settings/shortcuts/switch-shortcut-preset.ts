@@ -1,10 +1,10 @@
-import { toast } from "sonner";
 import { askChoice } from "@/stores/choice-store";
 import { bindingToKeys, getShortcutDescription, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { clashingOverrides, overridesAfterSwitch } from "@/stores/shortcut-preset-switch";
 import { presetBinding, type ShortcutPresetId, shortcutPreset } from "@/stores/shortcut-presets";
 import { getShortcutById, type ShortcutBinding } from "@/stores/shortcut-registry";
 import { pluralize } from "@/utils/pluralize";
+import { toast } from "sonner";
 
 // -- Helpers -------------------------------------------------------------------
 

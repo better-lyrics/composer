@@ -1,4 +1,3 @@
-import { IconChevronDown, IconRefresh } from "@tabler/icons-react";
 import { useConfirm } from "@/stores/confirm-store";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import type { ShortcutChange } from "@/stores/shortcut-preset-changes";
@@ -9,6 +8,7 @@ import { Popover } from "@/ui/popover";
 import { ShortcutChangeRows } from "@/ui/settings/shortcuts/shortcut-change-rows";
 import { switchShortcutPreset } from "@/ui/settings/shortcuts/switch-shortcut-preset";
 import { pluralize } from "@/utils/pluralize";
+import { IconChevronDown, IconRefresh } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 

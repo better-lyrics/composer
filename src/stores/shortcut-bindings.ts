@@ -1,5 +1,3 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { bindingsEqual, scopesConflict } from "@/stores/shortcut-binding-compare";
 import { migrateShortcutBindings, SHORTCUT_BINDINGS_VERSION, UNBOUND } from "@/stores/shortcut-bindings-migration";
 import { DEFAULT_SHORTCUT_PRESET, presetBinding, type ShortcutPresetId } from "@/stores/shortcut-presets";
@@ -9,6 +7,8 @@ import {
   type ShortcutBinding,
   type ShortcutDefinition,
 } from "@/stores/shortcut-registry";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 // -- Types --------------------------------------------------------------------
 

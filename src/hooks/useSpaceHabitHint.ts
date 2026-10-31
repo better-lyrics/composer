@@ -1,10 +1,10 @@
-import { useEffect } from "react";
-import { toast } from "sonner";
 import { useProjectStore } from "@/stores/project";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { overridesAfterSwitch } from "@/stores/shortcut-preset-switch";
 import { shouldOfferSpaceHint } from "@/utils/space-habit-hint";
 import { isTypingTarget } from "@/utils/typing-target";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 // -- State --------------------------------------------------------------------
 

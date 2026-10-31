@@ -1,5 +1,3 @@
-import { IconDownload } from "@tabler/icons-react";
-import { useState } from "react";
 import { decodeShortcutCode } from "@/stores/shortcut-code";
 import { shortcutPreset } from "@/stores/shortcut-presets";
 import { INPUT_STYLES } from "@/ui/input-styles";
@@ -9,6 +7,8 @@ import { CARD_BASE, CARD_INACTIVE } from "@/ui/settings/preset-card-styles";
 import { applyShortcutsWithUndo } from "@/ui/settings/shortcuts/switch-shortcut-preset";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
+import { IconDownload } from "@tabler/icons-react";
+import { useState } from "react";
 
 // -- Helpers -------------------------------------------------------------------
 

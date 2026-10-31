@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { decodeShortcutCode, encodeShortcutCode } from "@/stores/shortcut-code";
 import { SHORTCUT_PRESETS } from "@/stores/shortcut-presets";
+import { describe, expect, it } from "vitest";
 
 const MIXED = {
   "global.toggleLoop": { key: "" },

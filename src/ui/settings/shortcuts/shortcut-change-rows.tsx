@@ -1,9 +1,9 @@
-import { IconArrowRight } from "@tabler/icons-react";
 import { bindingToKeys } from "@/stores/shortcut-bindings";
 import type { ShortcutChange } from "@/stores/shortcut-preset-changes";
 import type { ShortcutBinding } from "@/stores/shortcut-registry";
 import { KeyBadge } from "@/ui/shortcut-reference";
 import { cn } from "@/utils/cn";
+import { IconArrowRight } from "@tabler/icons-react";
 
 // -- Components ----------------------------------------------------------------
 

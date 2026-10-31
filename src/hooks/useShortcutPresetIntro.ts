@@ -1,9 +1,9 @@
-import { useEffect } from "react";
-import { toast } from "sonner";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { shortcutPreset } from "@/stores/shortcut-presets";
 import { useUIStore } from "@/stores/ui";
 import { pluralize, pluralWord } from "@/utils/pluralize";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 // -- Constants ----------------------------------------------------------------
 

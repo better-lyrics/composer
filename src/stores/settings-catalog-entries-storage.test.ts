@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { keepYouTubeAudioDescription } from "@/stores/settings-catalog-entries-storage";
+import { describe, expect, it } from "vitest";
 
 describe("keepYouTubeAudioDescription", () => {
   it("describes Never regardless of the bridge", () => {

@@ -2,7 +2,7 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
-import { findIdenticalWords, type IdenticalMatchSource } from "@/utils/identical-word-matcher";
+import { type IdenticalMatchSource, findIdenticalWords } from "@/utils/identical-word-matcher";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 
 // -- Types --------------------------------------------------------------------
