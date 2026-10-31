@@ -63,6 +63,8 @@ const AppShell: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const helpOpen = useUIStore((s) => s.helpOpen);
   const helpLocation = useUIStore((s) => s.helpLocation);
+  const helpSession = useUIStore((s) => s.helpSession);
+  const settingsSession = useUIStore((s) => s.settingsSession);
   const openHelp = useUIStore((s) => s.openHelp);
   const closeHelp = useUIStore((s) => s.closeHelp);
   const [tourRequested, setTourRequested] = useState(false);
@@ -157,11 +159,7 @@ const AppShell: React.FC = () => {
         onTourStart={startTourFromHeader}
       />
       <HelpModal
-        key={
-          helpOpen
-            ? `help-${helpLocation.section}-${helpLocation.scrollTop}-${helpLocation.query ?? ""}`
-            : "help-closed"
-        }
+        key={`help-${helpSession}`}
         isOpen={helpOpen}
         initialSection={helpLocation.section}
         initialScrollTop={helpLocation.scrollTop}
@@ -169,7 +167,7 @@ const AppShell: React.FC = () => {
         onClose={closeHelp}
       />
       <SettingsModal
-        key={settingsOpen ? "settings-open" : "settings-closed"}
+        key={`settings-${settingsSession}`}
         isOpen={settingsOpen}
         onClose={closeSettings}
       />

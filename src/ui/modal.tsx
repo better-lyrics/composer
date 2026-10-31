@@ -22,6 +22,10 @@ interface ModalProps {
   describedById?: string;
 }
 
+// -- Constants ----------------------------------------------------------------
+
+const MODAL_EXIT_FALLBACK_MS = 300;
+
 // -- Component ----------------------------------------------------------------
 
 const Modal: React.FC<ModalProps> = ({
@@ -59,11 +63,18 @@ const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen]);
 
-  // Frozen when the modal opens, so a later change never restarts the entry animation.
-  const [opening, setOpening] = useState({ isOpen, handoff: !animateIn });
-  if (opening.isOpen !== isOpen) setOpening({ isOpen, handoff: isOpen && !animateIn });
+  // Frozen when the modal opens or closes, so a later change never restarts an animation.
+  const [phase, setPhase] = useState({ isOpen, handoff: !animateIn, leaving: false });
+  if (phase.isOpen !== isOpen) setPhase({ isOpen, handoff: !animateIn, leaving: !isOpen && animateIn });
+  const finishLeaving = useCallback(() => setPhase((current) => ({ ...current, leaving: false })), []);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!phase.leaving) return;
+    const fallback = window.setTimeout(finishLeaving, MODAL_EXIT_FALLBACK_MS);
+    return () => window.clearTimeout(fallback);
+  }, [phase.leaving, finishLeaving]);
+
+  if (!isOpen && !phase.leaving) return null;
 
   return (
     <FloatingPortal>
@@ -72,11 +83,16 @@ const Modal: React.FC<ModalProps> = ({
           ref={overlayRef}
           role="presentation"
           onMouseDown={handleOverlayMouseDown}
-          data-handoff={opening.handoff ? "" : undefined}
+          data-handoff={isOpen && phase.handoff ? "" : undefined}
+          data-leaving={phase.leaving ? "" : undefined}
+          inert={phase.leaving}
           className="fixed inset-0 layer-floating flex items-center justify-center modal-scrim"
         >
           <dialog
             ref={refs.setFloating as unknown as React.Ref<HTMLDialogElement>}
+            onAnimationEnd={(e) => {
+              if (phase.leaving && e.target === e.currentTarget) finishLeaving();
+            }}
             open
             role={role}
             aria-labelledby={title ? titleId : undefined}
