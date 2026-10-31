@@ -117,11 +117,12 @@ function visibleSettingIds(ids: readonly SettingId[], state: SettingsState): Set
 
 // -- Exports ------------------------------------------------------------------
 
+export type { SettingEntry, SettingHint, SettingId, SettingsGroupId, SettingsSectionId };
 export {
-  SETTING_IDS,
-  SETTINGS_SECTIONS,
   isSettingVisible,
   readSettingOn,
+  SETTING_IDS,
+  SETTINGS_SECTIONS,
   sectionLabel,
   settingDescription,
   settingEntry,
@@ -129,4 +130,3 @@ export {
   settingKeyOf,
   visibleSettingIds,
 };
-export type { SettingEntry, SettingHint, SettingId, SettingsGroupId, SettingsSectionId };

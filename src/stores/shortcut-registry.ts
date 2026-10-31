@@ -26,5 +26,5 @@ const SHORTCUT_SCOPE_GROUPS: readonly { scope: ShortcutScope; title: string }[] 
 
 // -- Exports ------------------------------------------------------------------
 
-export { SHORTCUT_DEFINITIONS as SHORTCUT_REGISTRY, SHORTCUT_SCOPE_GROUPS, getShortcutById, getShortcutsByScope };
-export type { ShortcutBinding, ShortcutScope, ShortcutDefinition };
+export type { ShortcutBinding, ShortcutDefinition, ShortcutScope };
+export { getShortcutById, getShortcutsByScope, SHORTCUT_DEFINITIONS as SHORTCUT_REGISTRY, SHORTCUT_SCOPE_GROUPS };

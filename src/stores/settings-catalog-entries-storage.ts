@@ -86,4 +86,4 @@ const STORAGE_CATALOG_ENTRIES = {
 
 // -- Exports ------------------------------------------------------------------
 
-export { STORAGE_CATALOG_ENTRIES, keepYouTubeAudioDescription };
+export { keepYouTubeAudioDescription, STORAGE_CATALOG_ENTRIES };

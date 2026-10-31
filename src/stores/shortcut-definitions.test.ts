@@ -1,7 +1,7 @@
+import { describe, expect, it } from "vitest";
 import { getShortcutDescription } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS, type ShortcutBinding, type ShortcutScope } from "@/stores/shortcut-definitions";
 import { isMac } from "@/utils/platform";
-import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 

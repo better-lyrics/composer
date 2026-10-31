@@ -6,7 +6,7 @@ import {
   getEffectiveBinding,
   useShortcutBindingsStore,
 } from "@/stores/shortcut-bindings";
-import { migrateSavedOverrides } from "@/stores/shortcut-bindings-migration";
+import { migrateSavedOverrides, migrateShortcutBindings } from "@/stores/shortcut-bindings-migration";
 import { SHORTCUT_REGISTRY } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
 
@@ -252,6 +252,34 @@ describe("toggleLoop id migration", () => {
     const saved = { overrides: { "timeline.toggleGroupLoop": { key: "k" } } };
 
     expect(migrateSavedOverrides(saved, 2)).toEqual(saved);
+  });
+});
+
+describe("migrateShortcutBindings · presets", () => {
+  it("moves a hand swap of Space and Enter onto Editor and asks to tell the user once", () => {
+    const saved = {
+      overrides: {
+        "global.playPause": { key: " " },
+        "sync.tap": { key: "Enter" },
+        "timeline.jumpToPlayhead": { key: "" },
+      },
+    };
+
+    expect(migrateShortcutBindings(saved, 7)).toEqual({
+      preset: "editor",
+      overrides: { "timeline.jumpToPlayhead": { key: "" } },
+      presetIntroPending: true,
+      spaceHintAnswered: true,
+    });
+  });
+
+  it("keeps Composer and says nothing when no key was changed", () => {
+    expect(migrateShortcutBindings({ overrides: {} }, 7)).toEqual({
+      preset: "composer",
+      overrides: {},
+      presetIntroPending: false,
+      spaceHintAnswered: false,
+    });
   });
 });
 

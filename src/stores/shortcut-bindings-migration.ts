@@ -1,4 +1,5 @@
 import { bindingsEqual, isBound, scopesConflict } from "@/stores/shortcut-binding-compare";
+import { presetForOverrides } from "@/stores/shortcut-preset-match";
 import { getShortcutById, SHORTCUT_REGISTRY, type ShortcutBinding } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
 import { shiftedUsPunctuation } from "@/utils/us-punctuation";
@@ -146,7 +147,23 @@ function migrateSavedOverrides(persistedState: unknown, version: number): unknow
   return version < 7 ? unbindTakenFineSeekKeys(withSeekKeys) : withSeekKeys;
 }
 
+// Version 8 moves saved changes onto the preset they match, so no key moves.
+function migrateShortcutBindings(persistedState: unknown, version: number): unknown {
+  const state = migrateSavedOverrides(persistedState, version);
+  if (version >= 8 || !state || typeof state !== "object") return state;
+  const { overrides: saved } = state as SavedBindings;
+  const changed = saved && typeof saved === "object" ? saved : {};
+  const { preset, overrides } = presetForOverrides(changed);
+  return {
+    ...state,
+    preset,
+    overrides,
+    presetIntroPending: Object.keys(changed).length > 0,
+    spaceHintAnswered: "global.playPause" in changed,
+  };
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export type { SavedBindings };
-export { migrateSavedOverrides, UNBOUND };
+export { migrateSavedOverrides, migrateShortcutBindings, UNBOUND };
