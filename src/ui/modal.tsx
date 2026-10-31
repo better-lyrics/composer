@@ -3,7 +3,7 @@ import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
 import { FloatingFocusManager, FloatingPortal, useFloating } from "@floating-ui/react";
 import { IconX } from "@tabler/icons-react";
-import { useCallback, useEffect, useId, useRef } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -13,6 +13,7 @@ interface ModalProps {
   title?: string;
   headerAccessory?: React.ReactNode;
   headerActions?: React.ReactNode;
+  animateIn?: boolean;
   children: React.ReactNode;
   className?: string;
   bodyClassName?: string;
@@ -29,6 +30,7 @@ const Modal: React.FC<ModalProps> = ({
   title,
   headerAccessory,
   headerActions,
+  animateIn = true,
   children,
   className,
   bodyClassName,
@@ -57,6 +59,10 @@ const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen]);
 
+  // Frozen when the modal opens, so a later change never restarts the entry animation.
+  const [opening, setOpening] = useState({ isOpen, handoff: !animateIn });
+  if (opening.isOpen !== isOpen) setOpening({ isOpen, handoff: isOpen && !animateIn });
+
   if (!isOpen) return null;
 
   return (
@@ -66,6 +72,7 @@ const Modal: React.FC<ModalProps> = ({
           ref={overlayRef}
           role="presentation"
           onMouseDown={handleOverlayMouseDown}
+          data-handoff={opening.handoff ? "" : undefined}
           className="fixed inset-0 layer-floating flex items-center justify-center modal-scrim"
         >
           <dialog

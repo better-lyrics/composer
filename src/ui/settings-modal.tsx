@@ -118,18 +118,22 @@ const SettingsModalBody: React.FC = () => {
   );
 };
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => (
-  <Modal
-    isOpen={isOpen}
-    onClose={onClose}
-    title="Settings"
-    headerAccessory={<BackToHelpChip />}
-    className="max-w-3xl h-[min(70vh,640px)] flex flex-col"
-    bodyClassName="p-0 flex-1 min-h-0 flex flex-col"
-  >
-    <SettingsModalBody />
-  </Modal>
-);
+const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+  const modalHandoff = useUIStore((s) => s.modalHandoff);
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      animateIn={!modalHandoff}
+      title="Settings"
+      headerAccessory={<BackToHelpChip />}
+      className="max-w-3xl h-[min(70vh,640px)] flex flex-col"
+      bodyClassName="p-0 flex-1 min-h-0 flex flex-col"
+    >
+      <SettingsModalBody />
+    </Modal>
+  );
+};
 
 // -- Exports ------------------------------------------------------------------
 
