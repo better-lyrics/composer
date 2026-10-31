@@ -30,6 +30,20 @@ describe("clashingOverrides · regressions", () => {
   });
 });
 
+describe("overridesAfterSwitch · regressions", () => {
+  it("regression: a change dropped for a clash takes its key back from another kept change", () => {
+    const overrides = {
+      "timeline.toggleFollow": { key: ">", shift: true },
+      "timeline.createGroup": { key: "f" },
+    };
+    expect(overridesAfterSwitch("composer", overrides, true)).toEqual({});
+    expect(clashingOverrides("composer", overrides).toSorted()).toEqual([
+      "timeline.createGroup",
+      "timeline.toggleFollow",
+    ]);
+  });
+});
+
 describe("overridesAfterSwitch", () => {
   it("keeps changes on top of the preset, minus the ones that clash", () => {
     expect(overridesAfterSwitch("remastered", TAP_ON_SPACE, true)).toEqual(UNRELATED);
@@ -45,6 +59,10 @@ describe("overridesAfterSwitch · invariants", () => {
     ["tap on Space", TAP_ON_SPACE],
     ["unrelated", UNRELATED],
     ["follow on the Composer seek key", { "timeline.toggleFollow": { key: ">", shift: true } }],
+    [
+      "a chain of clashes",
+      { "timeline.toggleFollow": { key: ">", shift: true }, "timeline.createGroup": { key: "f" } },
+    ],
   ];
 
   it.each(SHORTCUT_PRESETS.flatMap(({ id }) => fixtures.map(([name, overrides]) => [id, name, overrides] as const)))(

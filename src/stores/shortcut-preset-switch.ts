@@ -8,28 +8,26 @@ function layoutBinding(preset: ShortcutPresetId, overrides: Record<string, Short
   return overrides[id] ?? presetBinding(preset, id) ?? getShortcutById(id)?.defaultBinding;
 }
 
-// The preset wins a clash: the change that takes one of its keys is dropped, so nothing ends up unbound.
-function clashingOverrides(target: ShortcutPresetId, overrides: Record<string, ShortcutBinding>): string[] {
-  return Object.entries(overrides).flatMap(([id, binding]) => {
-    const scope = getShortcutById(id)?.scope;
-    if (!isBound(binding) || !scope) return [];
-    const clashes = SHORTCUT_REGISTRY.some((definition) => {
-      if (definition.id === id || overrides[definition.id] || !scopesConflict(scope, definition.scope)) return false;
-      const targetKey = layoutBinding(target, {}, definition.id);
-      return isBound(targetKey) && bindingsEqual(binding, targetKey);
-    });
-    return clashes ? [id] : [];
-  });
-}
-
+// The preset wins a clash: a change that takes one of its keys is dropped, and that action's preset key can push
+// out another change in turn, so drop until the layout is clean. Nothing ends up unbound.
 function overridesAfterSwitch(
   target: ShortcutPresetId,
   overrides: Record<string, ShortcutBinding>,
   keep: boolean,
 ): Record<string, ShortcutBinding> {
   if (!keep) return {};
-  const clashing = new Set(clashingOverrides(target, overrides));
-  return Object.fromEntries(Object.entries(overrides).filter(([id]) => !clashing.has(id)));
+  const kept = { ...overrides };
+  for (let clash = layoutClash(target, kept); clash; clash = layoutClash(target, kept)) {
+    const dropped = clash.find((id) => id in kept);
+    if (!dropped) break;
+    delete kept[dropped];
+  }
+  return kept;
+}
+
+function clashingOverrides(target: ShortcutPresetId, overrides: Record<string, ShortcutBinding>): string[] {
+  const kept = overridesAfterSwitch(target, overrides, true);
+  return Object.keys(overrides).filter((id) => !(id in kept));
 }
 
 // The first two actions a layout puts on the same key, if any.
