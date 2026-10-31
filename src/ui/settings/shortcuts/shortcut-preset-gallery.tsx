@@ -5,6 +5,11 @@ import { CopyShortcutCodeButton } from "@/ui/settings/shortcuts/copy-shortcut-co
 import { ShortcutImportCard } from "@/ui/settings/shortcuts/shortcut-import-card";
 import { ShortcutPresetCard } from "@/ui/settings/shortcuts/shortcut-preset-card";
 
+// -- Constants ----------------------------------------------------------------
+
+// The change list is wider than a card, so it opens toward the middle of the grid and stays inside Settings.
+const CHANGES_PLACEMENT_BY_COLUMN = ["bottom-start", "bottom", "bottom-end"] as const;
+
 // -- Components ----------------------------------------------------------------
 
 const ShortcutPresetGallery: React.FC = () => {
@@ -18,10 +23,11 @@ const ShortcutPresetGallery: React.FC = () => {
         <CopyShortcutCodeButton />
       </div>
       <div role="radiogroup" aria-label="Shortcut preset" className="grid grid-cols-3 gap-2.5">
-        {SHORTCUT_PRESETS.map((preset) => (
+        {SHORTCUT_PRESETS.map((preset, index) => (
           <ShortcutPresetCard
             key={preset.id}
             preset={preset}
+            changesPlacement={CHANGES_PLACEMENT_BY_COLUMN[index % CHANGES_PLACEMENT_BY_COLUMN.length]}
             active={preset.id === activePreset}
             overrides={overrides}
           />

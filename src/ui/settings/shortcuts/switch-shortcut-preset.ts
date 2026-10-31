@@ -3,13 +3,14 @@ import { bindingToKeys, getShortcutDescription, useShortcutBindingsStore } from 
 import { clashingOverrides, overridesAfterSwitch } from "@/stores/shortcut-preset-switch";
 import { presetBinding, type ShortcutPresetId, shortcutPreset } from "@/stores/shortcut-presets";
 import { getShortcutById, type ShortcutBinding } from "@/stores/shortcut-registry";
-import { pluralize } from "@/utils/pluralize";
+import { formatShortcut } from "@/utils/format-key";
+import { pluralize, pluralWord } from "@/utils/pluralize";
 import { toast } from "sonner";
 
 // -- Helpers -------------------------------------------------------------------
 
 function keysText(binding: ShortcutBinding): string {
-  return bindingToKeys(binding).join("+");
+  return formatShortcut(bindingToKeys(binding));
 }
 
 function clashSentence(target: ShortcutPresetId, id: string, override: ShortcutBinding): string {
@@ -21,7 +22,8 @@ function clashSentence(target: ShortcutPresetId, id: string, override: ShortcutB
 function switchPromptBody(target: ShortcutPresetId, overrides: Record<string, ShortcutBinding>): string {
   const { name } = shortcutPreset(target);
   const clashes = clashingOverrides(target, overrides).map((id) => clashSentence(target, id, overrides[id]));
-  const intro = `You changed ${pluralize(Object.keys(overrides).length, "key")}. Keep them on top of ${name}, or use ${name} as it comes?`;
+  const count = Object.keys(overrides).length;
+  const intro = `You changed ${pluralize(count, "key")}. Keep ${pluralWord(count, "it", "them")} on top of ${name}, or use ${name} as it comes?`;
   return [intro, ...clashes].join(" ");
 }
 
@@ -62,7 +64,7 @@ async function switchShortcutPreset(target: ShortcutPresetId): Promise<void> {
     ],
   });
   if (answer === "cancel") return;
-  useShortcutBindingsStore.getState().setPreset(target, overridesAfterSwitch(target, overrides, answer === "keep"));
+  applyShortcutsWithUndo(target, overridesAfterSwitch(target, overrides, answer === "keep"), `Using ${name}`);
 }
 
 // -- Exports -------------------------------------------------------------------

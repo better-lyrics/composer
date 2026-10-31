@@ -5,6 +5,7 @@ import { CARD_ACTIVE, CARD_BASE, CARD_INACTIVE } from "@/ui/settings/preset-card
 import { ShortcutChangesPopover } from "@/ui/settings/shortcuts/shortcut-changes-popover";
 import { switchShortcutPreset } from "@/ui/settings/shortcuts/switch-shortcut-preset";
 import { cn } from "@/utils/cn";
+import type { Placement } from "@floating-ui/react";
 import { useMemo } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -13,11 +14,12 @@ interface ShortcutPresetCardProps {
   preset: ShortcutPreset;
   active: boolean;
   overrides: Record<string, ShortcutBinding>;
+  changesPlacement: Placement;
 }
 
 // -- Components ----------------------------------------------------------------
 
-const ShortcutPresetCard: React.FC<ShortcutPresetCardProps> = ({ preset, active, overrides }) => {
+const ShortcutPresetCard: React.FC<ShortcutPresetCardProps> = ({ preset, active, overrides, changesPlacement }) => {
   const changes = useMemo(() => presetChanges(preset.id), [preset.id]);
   const yours = useMemo(() => (active ? ownChanges(preset.id, overrides) : []), [active, preset.id, overrides]);
 
@@ -37,7 +39,13 @@ const ShortcutPresetCard: React.FC<ShortcutPresetCardProps> = ({ preset, active,
         {changes.length === 0 && yours.length === 0 ? (
           <span className="flex h-6 items-center px-1.5 text-[11.5px] text-(--muted) select-none">Default</span>
         ) : (
-          <ShortcutChangesPopover preset={preset} active={active} presetChanges={changes} yours={yours} />
+          <ShortcutChangesPopover
+            preset={preset}
+            active={active}
+            presetChanges={changes}
+            yours={yours}
+            placement={changesPlacement}
+          />
         )}
       </span>
     </div>

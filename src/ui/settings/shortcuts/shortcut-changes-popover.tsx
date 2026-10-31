@@ -8,6 +8,7 @@ import { Popover } from "@/ui/popover";
 import { ShortcutChangeRows } from "@/ui/settings/shortcuts/shortcut-change-rows";
 import { switchShortcutPreset } from "@/ui/settings/shortcuts/switch-shortcut-preset";
 import { pluralize } from "@/utils/pluralize";
+import type { Placement } from "@floating-ui/react";
 import { IconChevronDown, IconRefresh } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -17,6 +18,7 @@ interface ShortcutChangesPopoverProps {
   active: boolean;
   presetChanges: readonly ShortcutChange[];
   yours: readonly ShortcutChange[];
+  placement: Placement;
 }
 
 // -- Helpers -------------------------------------------------------------------
@@ -32,7 +34,13 @@ function footLabel(presetCount: number, yoursCount: number): string {
 
 // -- Components ----------------------------------------------------------------
 
-const ShortcutChangesPopover: React.FC<ShortcutChangesPopoverProps> = ({ preset, active, presetChanges, yours }) => {
+const ShortcutChangesPopover: React.FC<ShortcutChangesPopoverProps> = ({
+  preset,
+  active,
+  presetChanges,
+  yours,
+  placement,
+}) => {
   const confirm = useConfirm();
 
   const resetMyChanges = async (close: () => void) => {
@@ -49,7 +57,7 @@ const ShortcutChangesPopover: React.FC<ShortcutChangesPopoverProps> = ({ preset,
 
   return (
     <Popover
-      placement="bottom-start"
+      placement={placement}
       aria-label={`${preset.name} changes`}
       trigger={
         <Button size="sm" variant="ghost" hasIcon className="h-6 pl-1.5 pr-2 text-[11.5px] rounded-md">
