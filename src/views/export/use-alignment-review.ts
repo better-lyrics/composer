@@ -46,7 +46,7 @@ function useAlignmentReview() {
         body: UNREVIEWED_REASON,
         busyMessage: FINISH_OPEN_PROMPT_FIRST,
         options: [
-          { value: "export", label: ANYWAY_LABEL[kind], variant: "destructive" },
+          { value: "export", label: ANYWAY_LABEL[kind], variant: "secondary" },
           { value: "review", label: "Review in Timeline", variant: "primary" },
         ],
       });
