@@ -1,5 +1,6 @@
 import { deriveTheme } from "@/domain/theme/derive";
 import type { Theme } from "@/domain/theme/model";
+import { CARD_ACTIVE, CARD_BASE, CARD_INACTIVE } from "@/ui/settings/preset-card-styles";
 import { cn } from "@/utils/cn";
 import { IconMoonStars, IconPencil, IconStar, IconStarFilled, IconSun, IconTrash } from "@tabler/icons-react";
 
@@ -17,14 +18,6 @@ interface ThemePresetCardProps {
 }
 
 // -- Styles --------------------------------------------------------------------
-
-const CARD_BASE =
-  "relative flex flex-col items-start text-left rounded-xl px-2.5 pt-2.5 pb-3 cursor-pointer transition-[background-color,box-shadow] select-none";
-
-const CARD_INACTIVE = "bg-(--layer-1) shadow-[inset_0_0_0_1px_var(--edge)] hover:bg-(--layer-2)";
-
-const CARD_ACTIVE =
-  "bg-[color-mix(in_oklab,var(--color-composer-accent)_10%,var(--layer-1))] shadow-[inset_0_0_0_1.5px_var(--color-composer-accent),0_0_0_3px_var(--lit-ring)]";
 
 const CORNER_BUTTON =
   "grid size-6.5 place-items-center rounded-lg cursor-pointer select-none transition-[opacity,background-color,color]";

@@ -616,5 +616,5 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
 
 // -- Exports ------------------------------------------------------------------
 
+export type { ShortcutBinding, ShortcutDefinition, ShortcutScope };
 export { SHORTCUT_DEFINITIONS };
-export type { ShortcutBinding, ShortcutScope, ShortcutDefinition };

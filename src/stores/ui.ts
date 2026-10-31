@@ -25,6 +25,9 @@ interface UIState {
   settingsReturnTo: HelpLocation | null;
   helpOpen: boolean;
   helpLocation: HelpLocation;
+  modalHandoff: boolean;
+  helpSession: number;
+  settingsSession: number;
   projectSwitcherOpen: boolean;
 }
 
@@ -54,6 +57,9 @@ const UI_INITIAL_STATE: UIState = {
   settingsReturnTo: null,
   helpOpen: false,
   helpLocation: { section: DEFAULT_HELP_SECTION, scrollTop: 0 },
+  modalHandoff: false,
+  helpSession: 0,
+  settingsSession: 0,
   projectSwitcherOpen: false,
 };
 
@@ -75,6 +81,8 @@ const useUIStore = create<UIState & UIActions>((set, get) => ({
       settingsTarget: target ?? null,
       settingsReturnTo: returnTo ?? (state.settingsOpen ? state.settingsReturnTo : null),
       helpOpen: returnTo ? false : state.helpOpen,
+      modalHandoff: returnTo !== undefined && state.helpOpen,
+      settingsSession: state.settingsOpen ? state.settingsSession : state.settingsSession + 1,
     })),
   closeSettings: () =>
     set((state) =>
@@ -85,15 +93,23 @@ const useUIStore = create<UIState & UIActions>((set, get) => ({
             settingsReturnTo: null,
             helpOpen: true,
             helpLocation: state.settingsReturnTo,
+            modalHandoff: true,
+            helpSession: state.helpSession + 1,
           }
-        : { settingsOpen: false, settingsTarget: null },
+        : { settingsOpen: false, settingsTarget: null, modalHandoff: false },
     ),
   setSettingsSection: (settingsSection) => set({ settingsSection, settingsQuery: "" }),
   setSettingsQuery: (settingsQuery) => set({ settingsQuery }),
   consumeSettingsTarget: () => set({ settingsTarget: null }),
   rememberSettingsScrollTop: (settingsScrollTop) => set({ settingsScrollTop }),
-  openHelp: (section) => set({ helpOpen: true, ...(section ? { helpLocation: { section, scrollTop: 0 } } : {}) }),
-  closeHelp: () => set({ helpOpen: false }),
+  openHelp: (section) =>
+    set((state) => ({
+      helpOpen: true,
+      modalHandoff: state.helpOpen,
+      helpSession: state.helpOpen && !section ? state.helpSession : state.helpSession + 1,
+      ...(section ? { helpLocation: { section, scrollTop: 0 } } : {}),
+    })),
+  closeHelp: () => set({ helpOpen: false, modalHandoff: false }),
   rememberHelpLocation: (helpLocation) => {
     // Help also remounts while open when asked for another section; that request wins.
     if (!get().helpOpen) set({ helpLocation });

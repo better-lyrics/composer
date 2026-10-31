@@ -3,7 +3,10 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { importLyricsButtonStep, importLyricsDialogStep } from "@/tour/import-lyrics-steps";
 import { TAB_PANEL_RENDER_WAIT_MS, elementOnTab } from "@/tour/tab-panel-step";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { formatShortcut } from "@/utils/format-key";
 import { MOD_KEY } from "@/utils/platform";
+import { escapeXml } from "@/utils/ttml-markup";
 import type { DriveStep } from "driver.js";
 
 // -- Types --------------------------------------------------------------------
@@ -51,6 +54,9 @@ const gateLyricsExist = () => useProjectStore.getState().lines.length > 0;
 const gateFirstLineSynced = () => useProjectStore.getState().lines.some(isLineTimed);
 
 // -- Tour Steps ---------------------------------------------------------------
+
+// Steps are built when the tour starts, so they name the keys the user has right now.
+const keysOf = (id: string) => escapeXml(formatShortcut(getEffectiveKeysArray(id)));
 
 function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
   const stepsById: Record<TourStepId, DriveStep> = {
@@ -122,8 +128,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       waitForElement: TAB_PANEL_RENDER_WAIT_MS,
       popover: {
         title: "Sync your lyrics",
-        description:
-          "Press Start, then tap Space in time with each line or word. Use the granularity toggle for line vs word precision.",
+        description: `Press Start, then tap ${keysOf("sync.tap")} in time with each line or word. Use the granularity toggle for line vs word precision.`,
         side: "left",
         align: "start",
       },
@@ -133,7 +138,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       waitForElement: TAB_PANEL_RENDER_WAIT_MS,
       popover: {
         title: "Sync at least one line",
-        description: "Press Start, play the audio, then tap Space to set timing.",
+        description: `Press Start, play the audio, then tap ${keysOf("sync.tap")} to set timing.`,
         showButtons: [],
       },
     },
@@ -142,7 +147,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       waitForElement: TAB_PANEL_RENDER_WAIT_MS,
       popover: {
         title: "Fine-tune on the timeline",
-        description: `Drag words to adjust timing, or select words and nudge them with the arrow keys. ${MOD_KEY} + scroll to zoom, F to toggle playhead follow. Group repeating sections with ${MOD_KEY}+G, then duplicate them as linked instances with ${MOD_KEY}+D so edits propagate everywhere.`,
+        description: `Drag words to adjust timing, or select words and nudge them with ${keysOf("timeline.nudgeLeft")} and ${keysOf("timeline.nudgeRight")}. ${MOD_KEY} + scroll to zoom, ${keysOf("timeline.toggleFollow")} to toggle playhead follow. Group repeating sections with ${keysOf("timeline.createGroup")}, then duplicate them as linked instances with ${keysOf("timeline.duplicateAsLinked")} so edits propagate everywhere.`,
         side: "top",
         align: "center",
       },

@@ -3,9 +3,9 @@ import {
   bindingToKeys,
   detectConflicts,
   getEffectiveBinding,
-  migrateShortcutBindings,
   useShortcutBindingsStore,
 } from "@/stores/shortcut-bindings";
+import { migrateSavedOverrides, migrateShortcutBindings } from "@/stores/shortcut-bindings-migration";
 import { SHORTCUT_REGISTRY } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
 import { describe, expect, it } from "vitest";
@@ -74,11 +74,11 @@ describe("assignBinding", () => {
   });
 });
 
-describe("migrateShortcutBindings", () => {
+describe("migrateSavedOverrides", () => {
   const CTRL_Y = { key: "y", mod: true };
 
   it.skipIf(isMac)("unbinds the Ctrl+Y alternate redo when a saved binding already uses Ctrl+Y", () => {
-    const migrated = migrateShortcutBindings({ overrides: { "timeline.toggleFollow": CTRL_Y } }, 0);
+    const migrated = migrateSavedOverrides({ overrides: { "timeline.toggleFollow": CTRL_Y } }, 0);
 
     expect(migrated).toEqual({ overrides: { "timeline.toggleFollow": CTRL_Y, "global.redoAlternate": { key: "" } } });
   });
@@ -88,13 +88,13 @@ describe("migrateShortcutBindings", () => {
       overrides: { "global.goToSync": { key: "z", mod: true }, "sync.tap": { key: "z", mod: true, shift: true } },
     };
 
-    expect(migrateShortcutBindings(saved, 0)).toEqual(saved);
+    expect(migrateSavedOverrides(saved, 0)).toEqual(saved);
   });
 
   it("unbinds a timeline delete key when a saved timeline or global binding already uses it", () => {
     const saved = { overrides: { "timeline.mergeWords": { key: "Delete" }, "global.goToSync": { key: "Backspace" } } };
 
-    expect(migrateShortcutBindings(saved, 2)).toEqual({
+    expect(migrateSavedOverrides(saved, 2)).toEqual({
       overrides: {
         ...saved.overrides,
         "timeline.deleteSelection": { key: "" },
@@ -106,7 +106,7 @@ describe("migrateShortcutBindings", () => {
   it("unbinds a timeline clipboard shortcut when a saved timeline or global binding already uses its keys", () => {
     const saved = { overrides: { "timeline.mergeWords": { key: "c", mod: true } } };
 
-    expect(migrateShortcutBindings(saved, 3)).toEqual({
+    expect(migrateSavedOverrides(saved, 3)).toEqual({
       overrides: { ...saved.overrides, "timeline.copy": { key: "" } },
     });
   });
@@ -114,7 +114,7 @@ describe("migrateShortcutBindings", () => {
   it("leaves play/pause while typing unbound when a saved binding already uses Mod+Enter", () => {
     const saved = { overrides: { "global.goToTimeline": { key: "Enter", mod: true } } };
 
-    expect(migrateShortcutBindings(saved, 4)).toEqual({
+    expect(migrateSavedOverrides(saved, 4)).toEqual({
       overrides: { ...saved.overrides, "global.playPauseWhileTyping": { key: "" } },
     });
   });
@@ -122,7 +122,7 @@ describe("migrateShortcutBindings", () => {
   it("leaves a seek shortcut unbound when a saved binding already uses its keys", () => {
     const saved = { overrides: { "timeline.toggleFollow": { key: "<", shift: true } } };
 
-    expect(migrateShortcutBindings(saved, 5)).toEqual({
+    expect(migrateSavedOverrides(saved, 5)).toEqual({
       overrides: { ...saved.overrides, "global.seekBackward": { key: "" } },
     });
   });
@@ -130,7 +130,7 @@ describe("migrateShortcutBindings", () => {
   it("on macOS leaves a typing seek shortcut unbound when a saved Mod+Shift binding was stored unshifted", () => {
     const saved = { overrides: { "global.settings": { key: ".", shift: true, mod: true } } };
 
-    expect(migrateShortcutBindings(saved, 5)).toEqual(
+    expect(migrateSavedOverrides(saved, 5)).toEqual(
       isMac ? { overrides: { ...saved.overrides, "global.seekForwardWhileTyping": { key: "" } } } : saved,
     );
   });
@@ -138,7 +138,7 @@ describe("migrateShortcutBindings", () => {
   it("leaves a fine seek shortcut unbound when a saved binding already uses its keys", () => {
     const saved = { overrides: { "timeline.toggleFollow": { key: ">", shift: true, alt: true } } };
 
-    expect(migrateShortcutBindings(saved, 6)).toEqual({
+    expect(migrateSavedOverrides(saved, 6)).toEqual({
       overrides: { ...saved.overrides, "global.seekForwardFine": { key: "" } },
     });
   });
@@ -146,7 +146,7 @@ describe("migrateShortcutBindings", () => {
   it("regression: on macOS leaves fine seek unbound when a saved Option binding was stored as its glyph", () => {
     const saved = { overrides: { "global.togglePlaybackSpeed": { key: "\u00af", shift: true, alt: true } } };
 
-    expect(migrateShortcutBindings(saved, 6)).toEqual(
+    expect(migrateSavedOverrides(saved, 6)).toEqual(
       isMac ? { overrides: { ...saved.overrides, "global.seekBackwardFine": { key: "" } } } : saved,
     );
   });
@@ -154,20 +154,20 @@ describe("migrateShortcutBindings", () => {
   it("regression: keeps a Shift binding from another layout, such as German Shift+7 for /", () => {
     const saved = { overrides: { "global.settings": { key: "/", shift: true } } };
 
-    expect(migrateShortcutBindings(saved, 5)).toEqual(saved);
+    expect(migrateSavedOverrides(saved, 5)).toEqual(saved);
   });
 
   describe("edge cases", () => {
     it("keeps the timeline delete keys when only another scope uses them", () => {
       const saved = { overrides: { "sync.tap": { key: "Backspace" } } };
 
-      expect(migrateShortcutBindings(saved, 2)).toEqual(saved);
+      expect(migrateSavedOverrides(saved, 2)).toEqual(saved);
     });
 
     it("leaves saved bindings without a collision untouched", () => {
       const saved = { overrides: { "timeline.toggleFollow": { key: "q" } } };
 
-      expect(migrateShortcutBindings(saved, 0)).toEqual(saved);
+      expect(migrateSavedOverrides(saved, 0)).toEqual(saved);
     });
 
     it.skipIf(isMac)("keeps a saved choice for the alternate redo itself", () => {
@@ -175,17 +175,17 @@ describe("migrateShortcutBindings", () => {
         overrides: { "timeline.toggleFollow": CTRL_Y, "global.redoAlternate": { key: "y", mod: true, shift: true } },
       };
 
-      expect(migrateShortcutBindings(saved, 0)).toEqual(saved);
+      expect(migrateSavedOverrides(saved, 0)).toEqual(saved);
     });
 
     it("runs only for state saved before the alternate redo existed", () => {
       const saved = { overrides: { "timeline.toggleFollow": CTRL_Y } };
 
-      expect(migrateShortcutBindings(saved, 1)).toEqual(saved);
+      expect(migrateSavedOverrides(saved, 1)).toEqual(saved);
     });
 
     it.each([null, undefined, "garbage", {}])("passes malformed saved state %s through", (saved) => {
-      expect(migrateShortcutBindings(saved, 0)).toEqual(saved);
+      expect(migrateSavedOverrides(saved, 0)).toEqual(saved);
     });
   });
 });
@@ -193,7 +193,7 @@ describe("migrateShortcutBindings", () => {
 describe("toggleLoop id migration", () => {
   it("moves a rebinding from timeline.toggleGroupLoop to global.toggleLoop", () => {
     const binding = { key: "k", shift: true };
-    const migrated = migrateShortcutBindings({ overrides: { "timeline.toggleGroupLoop": binding } }, 1);
+    const migrated = migrateSavedOverrides({ overrides: { "timeline.toggleGroupLoop": binding } }, 1);
 
     expect(migrated).toEqual({ overrides: { "global.toggleLoop": binding } });
   });
@@ -201,12 +201,12 @@ describe("toggleLoop id migration", () => {
   it("leaves overrides without the old id alone", () => {
     const saved = { overrides: { "timeline.editWord": { key: "q" } } };
 
-    expect(migrateShortcutBindings(saved, 1)).toEqual(saved);
+    expect(migrateSavedOverrides(saved, 1)).toEqual(saved);
   });
 
   it("drops a renamed rebinding that now clashes with a binding in another scope", () => {
     const syncTextVariant = { key: "l" };
-    const migrated = migrateShortcutBindings(
+    const migrated = migrateSavedOverrides(
       { overrides: { "timeline.toggleGroupLoop": syncTextVariant, "timeline.toggleTextVariant": { key: "q" } } },
       1,
     );
@@ -217,7 +217,7 @@ describe("toggleLoop id migration", () => {
   it("regression: keeps a deliberately unbound group loop unbound", () => {
     const saved = { overrides: { "timeline.toggleGroupLoop": { key: "" }, "timeline.editWord": { key: "" } } };
 
-    expect(migrateShortcutBindings(saved, 1)).toEqual({
+    expect(migrateSavedOverrides(saved, 1)).toEqual({
       overrides: { "global.toggleLoop": { key: "" }, "timeline.editWord": { key: "" } },
     });
   });
@@ -225,7 +225,7 @@ describe("toggleLoop id migration", () => {
   it("regression: unbinds the loop when its default would clash with a binding in another scope", () => {
     const saved = { overrides: { "sync.tap": { key: "l", shift: true } } };
 
-    expect(migrateShortcutBindings(saved, 1)).toEqual({
+    expect(migrateSavedOverrides(saved, 1)).toEqual({
       overrides: { "sync.tap": { key: "l", shift: true }, "global.toggleLoop": { key: "" } },
     });
   });
@@ -239,7 +239,7 @@ describe("toggleLoop id migration", () => {
       },
     };
 
-    expect(migrateShortcutBindings(saved, 1)).toEqual({
+    expect(migrateSavedOverrides(saved, 1)).toEqual({
       overrides: {
         "global.toggleLoop": { key: "" },
         "timeline.toggleTextVariant": { key: "q" },
@@ -251,7 +251,35 @@ describe("toggleLoop id migration", () => {
   it("runs only for state saved before the rename", () => {
     const saved = { overrides: { "timeline.toggleGroupLoop": { key: "k" } } };
 
-    expect(migrateShortcutBindings(saved, 2)).toEqual(saved);
+    expect(migrateSavedOverrides(saved, 2)).toEqual(saved);
+  });
+});
+
+describe("migrateShortcutBindings · presets", () => {
+  it("moves a hand swap of Space and Enter onto Editor and asks to tell the user once", () => {
+    const saved = {
+      overrides: {
+        "global.playPause": { key: " " },
+        "sync.tap": { key: "Enter" },
+        "timeline.jumpToPlayhead": { key: "" },
+      },
+    };
+
+    expect(migrateShortcutBindings(saved, 7)).toEqual({
+      preset: "editor",
+      overrides: { "timeline.jumpToPlayhead": { key: "" } },
+      presetIntroPending: true,
+      spaceHintAnswered: true,
+    });
+  });
+
+  it("keeps Composer and says nothing when no key was changed", () => {
+    expect(migrateShortcutBindings({ overrides: {} }, 7)).toEqual({
+      preset: "composer",
+      overrides: {},
+      presetIntroPending: false,
+      spaceHintAnswered: false,
+    });
   });
 });
 

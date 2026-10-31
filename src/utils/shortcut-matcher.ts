@@ -1,6 +1,7 @@
 import { hasLatinLetter } from "@/domain/language/script-detection";
 import { isShortcutDisabled } from "@/lib/disabled-shortcuts";
-import { bindingsEqual, getEffectiveBinding } from "@/stores/shortcut-bindings";
+import { bindingsEqual } from "@/stores/shortcut-binding-compare";
+import { getEffectiveBinding } from "@/stores/shortcut-bindings";
 import { type ShortcutBinding, type ShortcutScope, getShortcutsByScope } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
 import { US_PUNCTUATION_BY_CODE } from "@/utils/us-punctuation";
@@ -188,10 +189,10 @@ function isReservedBrowserShortcut(binding: ShortcutBinding): boolean {
 // -- Exports ------------------------------------------------------------------
 
 export {
-  reportedBinding,
   bindingFromKeyboardEvent,
   findMatchingShortcut,
   isCommandBinding,
   isReservedBrowserShortcut,
   matchesShortcutBinding,
+  reportedBinding,
 };

@@ -1,9 +1,9 @@
 import { DEFAULTS } from "@/stores/settings";
 import {
-  SETTINGS_SECTIONS,
-  SETTING_IDS,
   isSettingVisible,
   readSettingOn,
+  SETTING_IDS,
+  SETTINGS_SECTIONS,
   sectionLabel,
   settingDescription,
   settingEntry,
@@ -77,8 +77,8 @@ describe("settingIdsInSection", () => {
     expect(all).toEqual([...SETTING_IDS]);
   });
 
-  it("returns nothing for shortcuts, which come from the shortcut registry", () => {
-    expect(settingIdsInSection("shortcuts")).toEqual([]);
+  it("lists only the preset gallery for shortcuts; the keys come from the shortcut registry", () => {
+    expect(settingIdsInSection("shortcuts")).toEqual(["shortcutPreset"]);
   });
 });
 

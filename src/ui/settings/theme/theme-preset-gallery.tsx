@@ -3,6 +3,7 @@ import { PRESETS } from "@/domain/theme/presets";
 import { useConfirm } from "@/stores/confirm-store";
 import { useThemeStore } from "@/stores/theme";
 import { Button } from "@/ui/button";
+import { CARD_GROUP_LABEL } from "@/ui/settings/preset-card-styles";
 import { ThemePresetCard } from "@/ui/settings/theme/theme-preset-card";
 import { IconPalette } from "@tabler/icons-react";
 
@@ -27,8 +28,6 @@ interface ThemeGroupProps {
 
 const GROUP_GRID = "grid grid-cols-[repeat(3,minmax(0,1fr))] gap-2.5";
 
-const GROUP_LABEL = "text-xs font-semibold text-(--muted) select-none";
-
 const COMPOSER_PRESETS = PRESETS.filter((theme) => theme.group === "Composer");
 
 const CLASSIC_PRESETS = PRESETS.filter((theme) => theme.group === "Classics");
@@ -47,7 +46,7 @@ const ThemeGroup: React.FC<ThemeGroupProps> = ({
   const favorites = new Set(favoriteThemeIds);
   return (
     <div className="flex flex-col gap-2.5 mt-[18px]">
-      <span className={GROUP_LABEL}>{label}</span>
+      <span className={CARD_GROUP_LABEL}>{label}</span>
       <div className={GROUP_GRID}>
         {themes.map((theme) => (
           <ThemePresetCard

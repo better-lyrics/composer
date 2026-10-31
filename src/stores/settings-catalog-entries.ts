@@ -162,6 +162,12 @@ const SETTINGS_CATALOG = {
     keywords: ["hubertfa", "auto-align", "memory", "gpu", "unload"],
     settingKey: "keepAlignmentModelLoaded",
   },
+  shortcutPreset: {
+    section: "shortcuts",
+    label: "Shortcut presets",
+    description: "Pick a whole layout, or import a shortcuts code.",
+    keywords: ["preset", "layout", "space", "enter", "amll", "osu", "remastered", "import", "code", "share"],
+  },
   confirmReplaceLyrics: {
     section: "confirmations",
     label: "Confirm replacing lyrics on import",

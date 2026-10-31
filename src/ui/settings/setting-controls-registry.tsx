@@ -14,6 +14,7 @@ import { LoupeSizeSetting } from "@/ui/settings/loupe-size/loupe-size-setting";
 import { ResetAllSettingsSetting, ResetTourSetting } from "@/ui/settings/reset-settings";
 import type { SelectOption } from "@/ui/select";
 import type { SliderAction } from "@/ui/settings/setting-controls";
+import { ShortcutPresetGallery } from "@/ui/settings/shortcuts/shortcut-preset-gallery";
 import { SplitCharacterSetting } from "@/ui/settings/split-character-setting";
 import { BackUpAllProjectsSetting, DeleteAllProjectsSetting } from "@/ui/settings/storage/backup-settings-setting";
 import { ProjectAudioListSetting } from "@/ui/settings/storage/project-audio-list-setting";
@@ -181,6 +182,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   confirmSyncReset: TOGGLE,
   confirmClearProject: TOGGLE,
   confirmResetSettings: TOGGLE,
+  shortcutPreset: { kind: "custom", Component: ShortcutPresetGallery },
   confirmResetShortcuts: TOGGLE,
   confirmApplyToAllSyllableSplit: TOGGLE,
   confirmConformToGroup: TOGGLE,
