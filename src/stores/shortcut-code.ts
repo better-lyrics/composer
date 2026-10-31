@@ -40,6 +40,10 @@ function encodeShortcutCode(preset: ShortcutPresetId, overrides: Record<string, 
   return `${CODE_PREFIX}${preset}:${SHORTCUT_BINDINGS_VERSION}:${entries.join(";")}`;
 }
 
+function isDigit(character: string): boolean {
+  return character >= "0" && character <= "9";
+}
+
 function isModifier(part: string): part is Modifier {
   return MODIFIERS.some((modifier) => modifier === part);
 }
@@ -77,8 +81,9 @@ function decodeShortcutCode(code: string): ShortcutCode {
   const text = code.trim();
   if (!text.startsWith(CODE_PREFIX)) throw new Error(NOT_A_CODE);
   const [preset, versionText, ...rest] = text.slice(CODE_PREFIX.length).split(":");
+  const isPlainNumber = versionText !== undefined && versionText !== "" && [...versionText].every(isDigit);
+  if (rest.length === 0 || !isPlainNumber) throw new Error(NOT_A_CODE);
   const version = Number(versionText);
-  if (rest.length === 0 || !Number.isInteger(version) || version < 0) throw new Error(NOT_A_CODE);
   if (version > SHORTCUT_BINDINGS_VERSION) throw new Error(NEWER_CODE);
   if (!isShortcutPresetId(preset)) throw new Error(UNKNOWN_PRESET);
   const saved = { overrides: decodeOverrides(rest.join(":")) };
