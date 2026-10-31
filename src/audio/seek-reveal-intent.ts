@@ -25,13 +25,14 @@ function seekInPlaceToResume(audio: HTMLMediaElement): void {
   seekWithReveal(audio, audio.currentTime, "none");
 }
 
-// Matched on the target, so a later seek that interrupts this one reveals as usual.
-function seekRevealOf(audio: HTMLMediaElement): SeekReveal | null {
+// Read once, and matched on the target, so a later seek that interrupts this one reveals as usual.
+function takeSeekReveal(audio: HTMLMediaElement): SeekReveal | null {
   const pending = pendingReveals.get(audio);
+  pendingReveals.delete(audio);
   return pending && Math.abs(pending.target - audio.currentTime) < SAME_TARGET_SECONDS ? pending.reveal : null;
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export { seekInPlaceToResume, seekRevealOf, seekWithReveal };
+export { seekInPlaceToResume, seekWithReveal, takeSeekReveal };
 export type { SeekReveal };

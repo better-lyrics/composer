@@ -1,4 +1,4 @@
-import { seekRevealOf } from "@/audio/seek-reveal-intent";
+import { takeSeekReveal } from "@/audio/seek-reveal-intent";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -17,7 +17,7 @@ function useSeekReveal(scrollContainerRef: RefObject<HTMLDivElement | null>, ena
   useEffect(() => {
     if (!enabled || !audio) return;
     const handleSeeking = () => {
-      const reveal = seekRevealOf(audio);
+      const reveal = takeSeekReveal(audio);
       if (reveal === "none") return;
       const container = scrollContainerRef.current;
       if (!container || useProjectStore.getState().activeTab !== "timeline") return;
