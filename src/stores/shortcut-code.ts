@@ -86,5 +86,4 @@ function decodeShortcutCode(code: string): ShortcutCode {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { ShortcutCode };
 export { decodeShortcutCode, encodeShortcutCode };

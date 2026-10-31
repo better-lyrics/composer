@@ -37,5 +37,4 @@ function presetForOverrides(overrides: Record<string, ShortcutBinding>): PresetM
 
 // -- Exports ------------------------------------------------------------------
 
-export type { PresetMatch };
 export { presetForOverrides };
