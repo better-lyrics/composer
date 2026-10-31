@@ -173,11 +173,15 @@ const HelpModal: React.FC<HelpModalProps> = ({
   const [query, setQuery] = useState(initialQuery);
   const locationRef = useRef<() => HelpLocation>(() => useUIStore.getState().helpLocation);
   const modalHandoff = useUIStore((s) => s.modalHandoff);
+  const closeAndRemember = () => {
+    onClose();
+    useUIStore.getState().rememberHelpLocation(locationRef.current());
+  };
   const showsShortcuts = activeSection === "keyboard-shortcuts" && splitSearchTerms(query).length === 0;
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={closeAndRemember}
       title="Help"
       animateIn={!modalHandoff}
       headerActions={showsShortcuts && <HelpShortcutPresetButton returnPoint={() => locationRef.current()} />}
