@@ -122,7 +122,6 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
         getScrollContainer: () => scrollContainerRef.current,
         getDuration: () => duration,
         getZoom: () => useTimelineStore.getState().zoom,
-        getStoreScrollLeft: () => useTimelineStore.getState().scrollLeft,
         getCurrentTime: livePlaybackTime,
         setIsPlaying,
         setDraggingPlayhead,

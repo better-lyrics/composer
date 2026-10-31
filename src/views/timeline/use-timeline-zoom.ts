@@ -2,6 +2,7 @@ import { livePlaybackTime } from "@/stores/audio";
 import { computeAnchoredScrollLeft } from "@/utils/timeline/zoom-anchor";
 import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, ZOOM_STEP, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type RefObject, useCallback } from "react";
+import { readViewScroll, scrollView } from "@/views/timeline/view-scroll";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -36,10 +37,10 @@ function useTimelineZoom(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       const { anchorTime, anchorViewportX } = pickAnchor(
         livePlaybackTime(),
         oldZoom,
-        container.scrollLeft,
+        readViewScroll(container).left,
         contentWidthInView,
       );
-      container.scrollLeft = computeAnchoredScrollLeft(anchorTime, anchorViewportX, newZoom);
+      scrollView(container, computeAnchoredScrollLeft(anchorTime, anchorViewportX, newZoom));
     },
     [scrollContainerRef],
   );

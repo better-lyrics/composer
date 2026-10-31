@@ -29,6 +29,7 @@ import {
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { viewScrollLeft } from "@/views/timeline/view-scroll";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -91,7 +92,7 @@ const SpectrumCanvas: React.FC = () => {
     const look = spectrumLookOf(useSettingsStore.getState());
     const palette = resolveSpectrumPalette(look.spectrumPalette);
     const pixelsPerSecond = useTimelineStore.getState().zoom;
-    const scrollLeft = container.scrollLeft;
+    const scrollLeft = viewScrollLeft();
     const viewportWidth = Math.max(0, container.clientWidth - GUTTER_WIDTH);
     // Every refine frame redraws the whole canvas, so a zoom keeps it one view wide.
     const strip = stripFor(

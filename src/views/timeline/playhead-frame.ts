@@ -12,6 +12,7 @@ import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { createTimelineLights, paintTimelineLights } from "@/views/timeline/timeline-lights";
 import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { readViewScroll, scrollView, viewScrollLeft, viewScrollTop } from "@/views/timeline/view-scroll";
 import { createFollowMemory, followScrollTop, followStep, resetFollowMemory } from "@/views/timeline/vertical-follow";
 import { pinCutWordLabels } from "@/views/timeline/word-label-pin";
 import type { RefObject } from "react";
@@ -79,18 +80,18 @@ function followPlayback(frame: PlayheadFrame, container: HTMLDivElement, current
   const centerOffset = viewportWidth / 2 - GUTTER_WIDTH;
   const targetScrollLeft = Math.max(0, currentTime * zoom - centerOffset);
   const focusRange = currentFocusScrollRange(container);
-  container.scrollLeft = focusRange ? clampScrollLeft(targetScrollLeft, focusRange) : targetScrollLeft;
+  scrollView(container, focusRange ? clampScrollLeft(targetScrollLeft, focusRange) : targetScrollLeft);
 
   fillFollowInput(frame.followInput, frame.rowLayoutFor, currentTime, container.clientHeight);
   const rows = followStep(frame.followMemory, frame.followInput);
   if (rows) frame.verticalTarget = followScrollTop(rows, frame.followInput, container.scrollHeight);
 
   if (frame.verticalTarget === null) return;
-  const diff = frame.verticalTarget - container.scrollTop;
+  const diff = frame.verticalTarget - viewScrollTop();
   if (Math.abs(diff) > 0.5) {
-    container.scrollTop += diff * 0.15;
+    scrollView(container, null, viewScrollTop() + diff * 0.15);
   } else {
-    container.scrollTop = frame.verticalTarget;
+    scrollView(container, null, frame.verticalTarget);
     frame.verticalTarget = null;
   }
 }
@@ -102,7 +103,7 @@ function readPlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): vo
 
   const isPlaying = useAudioStore.getState().isPlaying;
   const currentTime = livePlaybackTime();
-  const { zoom, scrollLeft, isDraggingPlayhead, dragTime, loopRegionDrag } = useTimelineStore.getState();
+  const { zoom, isDraggingPlayhead, dragTime, loopRegionDrag } = useTimelineStore.getState();
   const { followPlayhead } = useSettingsStore.getState();
   const container = elements.scrollContainer.current;
 
@@ -117,13 +118,14 @@ function readPlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): vo
   frame.hideScrollbars = isPlaying && followPlayhead;
   frame.currentTime = currentTime;
   frame.displayTime = isDraggingPlayhead ? dragTime : currentTime;
-  const actualScrollLeft = container?.scrollLeft ?? scrollLeft;
+  // A zoom clamps the scroller during layout with no scroll event until next frame; write callbacks read this refresh.
+  const actualScrollLeft = container ? readViewScroll(container).left : viewScrollLeft();
   frame.position = timeToX(frame.displayTime, zoom, actualScrollLeft) - 1;
 
   frame.blocks.length = 0;
   if (container) {
     frame.contentHeight = container.scrollHeight;
-    frame.scrollLeft = container.scrollLeft;
+    frame.scrollLeft = actualScrollLeft;
     frame.lines = useProjectStore.getState().lines;
     for (const block of container.querySelectorAll<HTMLElement>("[data-word-block][data-begin]")) {
       frame.blocks.push(block);

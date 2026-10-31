@@ -6,12 +6,14 @@ import { notePlacement } from "@/lib/replay-cue";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { xToTime } from "@/views/timeline/coords";
 import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
 import { snappableBeatPoints } from "@/views/timeline/point-snap-anchors";
 import { commitDrawnLoopRegion } from "@/views/timeline/selection-playback";
 import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { GUTTER_WIDTH, type LoopRegionDrag, useTimelineStore } from "@/views/timeline/timeline-store";
+import { readViewScroll, scrollViewBy } from "@/views/timeline/view-scroll";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -41,8 +43,11 @@ function startLoopRegionDrag(
   event.stopPropagation();
 
   const timeAt = (clientX: number): number => {
-    const x = clientX - scrollContainer.getBoundingClientRect().left - GUTTER_WIDTH + scrollContainer.scrollLeft;
-    return Math.max(0, Math.min(duration, x / useTimelineStore.getState().zoom));
+    const { zoom } = useTimelineStore.getState();
+    return Math.min(
+      duration,
+      xToTime(clientX, scrollContainer.getBoundingClientRect(), zoom, readViewScroll(scrollContainer).left),
+    );
   };
   const region = useTimelineStore.getState().loopRegion;
   if (edge && !region) return;
@@ -81,8 +86,7 @@ function startLoopRegionDrag(
       maxSpeed: EDGE_SCROLL_MAX_SPEED,
     });
     if (velocity === 0) return;
-    const maxScroll = scrollContainer.scrollWidth - scrollContainer.clientWidth;
-    scrollContainer.scrollLeft = Math.max(0, Math.min(maxScroll, scrollContainer.scrollLeft + velocity));
+    scrollViewBy(scrollContainer, velocity, 0);
   };
 
   const startMoving = (): void => {

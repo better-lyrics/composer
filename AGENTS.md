@@ -103,6 +103,8 @@ file to its allowlist without the maintainer's approval.
 - `frame-loop-ownership`, `frame-loop-wiring-complete`: animation frames go through
   `src/lib/frame-loop.ts`, never raw `requestAnimationFrame`. A new store must be wired into the
   frame loop.
+- `timeline-scroll-ownership`: the Timeline scroll position is read and written only through
+  `views/timeline/view-scroll.ts`.
 - `file-size-budget`: source files stay under 300 lines. Split the file instead of growing it.
 - `one-concept-one-regex`: a regex literal is declared in one file only.
 - `button-primitives`, `download-owner`, `pluralize-owner`, `no-raw-settings-references`: use the

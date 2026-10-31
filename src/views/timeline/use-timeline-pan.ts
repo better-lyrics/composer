@@ -1,4 +1,5 @@
 import { type RefObject, useCallback, useEffect, useRef } from "react";
+import { readViewScroll, scrollView } from "@/views/timeline/view-scroll";
 
 // -- Hook ----------------------------------------------------------------------
 
@@ -17,8 +18,10 @@ function useTimelinePan(scrollContainerRef: RefObject<HTMLDivElement | null>) {
         isPanningRef.current = true;
         panStartXRef.current = e.clientX;
         panStartYRef.current = e.clientY;
-        panStartScrollRef.current = scrollContainerRef.current?.scrollLeft ?? 0;
-        panStartScrollTopRef.current = scrollContainerRef.current?.scrollTop ?? 0;
+        const container = scrollContainerRef.current;
+        const start = container ? readViewScroll(container) : { left: 0, top: 0 };
+        panStartScrollRef.current = start.left;
+        panStartScrollTopRef.current = start.top;
         panAxisLockRef.current = null;
         scrollContainerRef.current?.classList.add("is-panning");
       }
@@ -28,7 +31,8 @@ function useTimelinePan(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isPanningRef.current || !scrollContainerRef.current) return;
+      const container = scrollContainerRef.current;
+      if (!isPanningRef.current || !container) return;
       const deltaX = panStartXRef.current - e.clientX;
       const deltaY = panStartYRef.current - e.clientY;
 
@@ -36,14 +40,12 @@ function useTimelinePan(scrollContainerRef: RefObject<HTMLDivElement | null>) {
         panAxisLockRef.current = Math.abs(deltaX) > Math.abs(deltaY) ? "x" : "y";
       }
 
-      if (e.shiftKey && panAxisLockRef.current === "x") {
-        scrollContainerRef.current.scrollLeft = panStartScrollRef.current + deltaX;
-      } else if (e.shiftKey && panAxisLockRef.current === "y") {
-        scrollContainerRef.current.scrollTop = panStartScrollTopRef.current + deltaY;
-      } else {
-        scrollContainerRef.current.scrollLeft = panStartScrollRef.current + deltaX;
-        scrollContainerRef.current.scrollTop = panStartScrollTopRef.current + deltaY;
-      }
+      const lock = e.shiftKey ? panAxisLockRef.current : null;
+      scrollView(
+        container,
+        lock === "y" ? null : panStartScrollRef.current + deltaX,
+        lock === "x" ? null : panStartScrollTopRef.current + deltaY,
+      );
     };
 
     const handleMouseUp = () => {

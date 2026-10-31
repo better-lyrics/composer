@@ -11,6 +11,7 @@ import { CANVAS_MONO_LABEL_FONT } from "@/views/timeline/canvas-fonts";
 import { STRIP_SCREENS, type Strip, stripFor } from "@/views/timeline/scroll-window";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRef } from "react";
+import { viewScrollLeft } from "@/views/timeline/view-scroll";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -184,7 +185,7 @@ const BeatGridCanvas: React.FC = () => {
       const zoom = useTimelineStore.getState().zoom;
       const strip = stripFor(
         stripRef.current,
-        container.scrollLeft,
+        viewScrollLeft(),
         Math.max(0, container.clientWidth - GUTTER_WIDTH),
         useAudioStore.getState().duration * zoom,
         STRIP_SCREENS,

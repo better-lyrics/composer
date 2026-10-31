@@ -6,6 +6,7 @@ import { currentFocusScrollRange } from "@/views/timeline/effective-focus";
 import { clampScrollLeft } from "@/views/timeline/group-focus";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { type RefObject, useEffect } from "react";
+import { readViewScroll, scrollView } from "@/views/timeline/view-scroll";
 
 // -- Hook ----------------------------------------------------------------------
 
@@ -20,10 +21,10 @@ function useSeekReveal(scrollContainerRef: RefObject<HTMLDivElement | null>, ena
       const { zoom, isDraggingPlayhead, loopRegionDrag } = useTimelineStore.getState();
       const { followPlayhead } = useSettingsStore.getState();
       if (isDraggingPlayhead || loopRegionDrag || (followPlayhead && !audio.paused)) return;
-      const next = revealTimeScrollLeft(audio.currentTime, zoom, container.scrollLeft, container.clientWidth);
+      const next = revealTimeScrollLeft(audio.currentTime, zoom, readViewScroll(container).left, container.clientWidth);
       if (next === null) return;
       const focusRange = currentFocusScrollRange(container);
-      container.scrollLeft = focusRange ? clampScrollLeft(next, focusRange) : next;
+      scrollView(container, focusRange ? clampScrollLeft(next, focusRange) : next);
     };
     audio.addEventListener("seeking", handleSeeking);
     return () => audio.removeEventListener("seeking", handleSeeking);
