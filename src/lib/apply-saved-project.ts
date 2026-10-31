@@ -1,4 +1,5 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { readAlignedTimings } from "@/domain/alignment/fingerprint";
 import { withSeededBackground } from "@/domain/line/background";
 import { savedExportTiming } from "@/domain/project/export-timing";
 import { isMetadataKey } from "@/domain/project/imported-metadata";
@@ -47,6 +48,7 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   if (origin === "file" || project.hasUnexportedImport) state.markSongDetailsImported();
   state.restoreImportedMetadataKeys((project.importedMetadataKeys ?? []).filter(isMetadataKey));
   state.setTtmlEditState(project.ttmlEditState ?? null);
+  state.restoreAlignmentReview(readAlignedTimings(project.alignedTimings), project.alignmentNoticeDismissed ?? false);
   if (origin === "file") state.clearHistory();
   state.markClean();
   return malformedFieldsOf(project);

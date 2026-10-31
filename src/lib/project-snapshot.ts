@@ -64,6 +64,8 @@ function currentSaveInput(): ProjectSaveInput {
     hasUnexportedImport: projectState.hasUnexportedImport,
     importedMetadataKeys: projectState.importedMetadataKeys,
     ttmlEditState: projectState.ttmlEditState,
+    alignedTimings: projectState.alignedTimings,
+    alignmentNoticeDismissed: projectState.alignmentNoticeDismissed,
   };
 }
 

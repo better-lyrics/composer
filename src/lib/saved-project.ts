@@ -37,6 +37,8 @@ interface SavedProject {
   hasUnexportedImport?: boolean;
   importedMetadataKeys?: MetadataKey[];
   ttmlEditState?: TtmlEditState;
+  alignedTimings?: unknown;
+  alignmentNoticeDismissed?: boolean;
 }
 
 interface SavedAudioFile {
