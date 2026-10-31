@@ -1,7 +1,7 @@
 import { decodeAudioToWav, needsWavConversion } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { resyncPlaybackClock } from "@/audio/playback-clock";
-import { seekInPlaceToResume } from "@/audio/resume-seek";
+import { seekInPlaceToResume } from "@/audio/seek-reveal-intent";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

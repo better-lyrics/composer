@@ -1,9 +1,11 @@
-import { seekInPlaceToResume } from "@/audio/resume-seek";
+import { seekInPlaceToResume } from "@/audio/seek-reveal-intent";
+import { playFromCue, returnAfterStop } from "@/lib/replay-cue";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { centerTimeScrollLeft } from "@/views/timeline/coords";
 import { useSeekReveal } from "@/views/timeline/use-seek-reveal";
 import { createRef } from "react";
 import { describe, expect, it } from "vitest";
@@ -119,6 +121,27 @@ describe("useSeekReveal", () => {
 
     await expect.poll(() => container.scrollLeft).toBeGreaterThan(0);
     audio.pause();
+    container.remove();
+  });
+
+  it.each([
+    ["returning to it after a stop", returnAfterStop],
+    ["playing from it", playFromCue],
+  ])("centres the cue like Jump to playhead when %s, even with the cue on screen", async (_label, toCue) => {
+    const container = await revealSetup(600);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    let seeks = 0;
+    audio.addEventListener("seeked", () => {
+      seeks++;
+    });
+    useAudioStore.getState().seekTo(2);
+    await expect.poll(() => seeks).toBe(1);
+    useSettingsStore.setState({ returnToCue: true });
+    useTimelineStore.getState().setCue(5.123456789);
+
+    toCue();
+
+    await expect.poll(() => container.scrollLeft).toBeCloseTo(centerTimeScrollLeft(5.123456789, 100, 600), 0);
     container.remove();
   });
 });

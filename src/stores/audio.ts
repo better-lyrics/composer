@@ -1,4 +1,5 @@
 import { readPlaybackClock } from "@/audio/playback-clock";
+import { type SeekReveal, seekWithReveal } from "@/audio/seek-reveal-intent";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { useSettingsStore } from "@/stores/settings";
 import { create } from "zustand";
@@ -42,7 +43,7 @@ interface AudioActions {
   setIsLoading: (isLoading: boolean) => void;
   setYouTubeLoadError: (error: string | null) => void;
   registerAudioElement: (element: HTMLAudioElement | null) => void;
-  seekTo: (time: number) => void;
+  seekTo: (time: number, reveal?: SeekReveal) => void;
   reset: () => void;
 }
 
@@ -169,12 +170,11 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   setIsLoading: (isLoading) => set({ isLoading }),
   setYouTubeLoadError: (youtubeLoadError) => set({ youtubeLoadError }),
   registerAudioElement: (audioElement) => set({ audioElement }),
-  seekTo: (time: number) => {
+  seekTo: (time, reveal) => {
     if (!Number.isFinite(time) || time < 0) return;
     const audio = get().audioElement;
-    if (audio) {
-      audio.currentTime = time;
-    }
+    if (audio && reveal) seekWithReveal(audio, time, reveal);
+    else if (audio) audio.currentTime = time;
     set({ currentTime: time });
   },
   reset: () => set(createInitialState()),

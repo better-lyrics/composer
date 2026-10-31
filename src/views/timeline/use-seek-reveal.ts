@@ -1,8 +1,8 @@
-import { isResumeSeek } from "@/audio/resume-seek";
+import { seekRevealOf } from "@/audio/seek-reveal-intent";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { revealTimeScrollLeft } from "@/views/timeline/coords";
+import { centerTimeScrollLeft, revealTimeScrollLeft } from "@/views/timeline/coords";
 import { currentFocusScrollRange } from "@/views/timeline/effective-focus";
 import { clampScrollLeft } from "@/views/timeline/group-focus";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -17,13 +17,17 @@ function useSeekReveal(scrollContainerRef: RefObject<HTMLDivElement | null>, ena
   useEffect(() => {
     if (!enabled || !audio) return;
     const handleSeeking = () => {
-      if (isResumeSeek(audio)) return;
+      const reveal = seekRevealOf(audio);
+      if (reveal === "none") return;
       const container = scrollContainerRef.current;
       if (!container || useProjectStore.getState().activeTab !== "timeline") return;
       const { zoom, isDraggingPlayhead, loopRegionDrag } = useTimelineStore.getState();
       const { followPlayhead } = useSettingsStore.getState();
       if (isDraggingPlayhead || loopRegionDrag || (followPlayhead && !audio.paused)) return;
-      const next = revealTimeScrollLeft(audio.currentTime, zoom, readViewScroll(container).left, container.clientWidth);
+      const next =
+        reveal === "centre"
+          ? centerTimeScrollLeft(audio.currentTime, zoom, container.clientWidth)
+          : revealTimeScrollLeft(audio.currentTime, zoom, readViewScroll(container).left, container.clientWidth);
       if (next === null) return;
       const focusRange = currentFocusScrollRange(container);
       scrollView(container, focusRange ? clampScrollLeft(next, focusRange) : next);
