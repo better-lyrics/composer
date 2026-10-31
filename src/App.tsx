@@ -15,6 +15,7 @@ import { useProjectChannel } from "@/hooks/useProjectChannel";
 import { useProjectShortcuts } from "@/hooks/useProjectShortcuts";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
 import { useSaveShortcut } from "@/hooks/useSaveShortcut";
+import { useShortcutPresetIntro } from "@/hooks/useShortcutPresetIntro";
 import { useSpaceHabitHint } from "@/hooks/useSpaceHabitHint";
 import { useStorageMaintenance } from "@/hooks/useStorageMaintenance";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
@@ -122,6 +123,7 @@ const AppShell: React.FC = () => {
   useVocalOnsetSnapPoints();
   usePitchTrack();
   useSpaceHabitHint(isEditor);
+  useShortcutPresetIntro(isEditor);
 
   const setHelpOpenCb = useCallback((open: boolean) => (open ? openHelp() : closeHelp()), [openHelp, closeHelp]);
   const setSettingsOpenCb = useCallback(
