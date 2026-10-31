@@ -1,7 +1,7 @@
 import { alignmentReview } from "@/domain/alignment/review-state";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { useAudioStore } from "@/stores/audio";
-import { askChoice } from "@/stores/choice-store";
+import { FINISH_OPEN_PROMPT_FIRST, askChoice } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { UNREVIEWED_REASON, UNREVIEWED_TITLE } from "@/views/export/alignment-review-copy";
 import { useCallback, useMemo } from "react";
@@ -12,8 +12,6 @@ type ExportKind = "copy" | "download";
 type AlignmentNotice = "unreviewed" | "mostly-unreviewed" | null;
 
 // -- Constants ----------------------------------------------------------------
-
-const ANSWER_FIRST = "Answer the open prompt first";
 
 const ANYWAY_LABEL: Record<ExportKind, string> = { copy: "Copy anyway", download: "Download anyway" };
 
@@ -46,7 +44,7 @@ function useAlignmentReview() {
       const answer = await askChoice({
         title: UNREVIEWED_TITLE,
         body: UNREVIEWED_REASON,
-        busyMessage: ANSWER_FIRST,
+        busyMessage: FINISH_OPEN_PROMPT_FIRST,
         options: [
           { value: "export", label: ANYWAY_LABEL[kind], variant: "destructive" },
           { value: "review", label: "Review in Timeline", variant: "primary" },
