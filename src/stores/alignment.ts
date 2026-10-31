@@ -4,6 +4,7 @@ import type { Aligner } from "@/audio/alignment/types";
 import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { isModelHostingConfigured } from "@/audio/separation/model-registry";
 import { hasCjk } from "@/domain/alignment/cjk";
+import { fingerprintChanged } from "@/domain/alignment/fingerprint";
 import { canAlignLanguage, hanReadingFor } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
@@ -179,6 +180,11 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       if (applicable.length > 0) {
         // Timing only: deriving text would drop the untimed words of partly synced lines.
         latest.updateLinesWithHistory(applicable, { deriveText: false });
+        // Shared group copies change in the same write; linked siblings may be replaced with their timing unchanged.
+        const after = useProjectStore.getState();
+        after.recordAlignedTimings(
+          after.lines.flatMap((line) => (fingerprintChanged(currentById.get(line.id), line) ? [line.id] : [])),
+        );
         // Lines are tapped in Line mode; once they have word timing, refine words.
         latest.setGranularity("word");
       }

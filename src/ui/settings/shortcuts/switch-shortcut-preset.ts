@@ -1,4 +1,4 @@
-import { askChoice } from "@/stores/choice-store";
+import { FINISH_OPEN_PROMPT_FIRST, askChoice } from "@/stores/choice-store";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { bindingToKeys, getShortcutDescription, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { clashingOverrides, overridesAfterSwitch } from "@/stores/shortcut-preset-switch";
@@ -58,7 +58,7 @@ async function switchShortcutPreset(target: ShortcutPresetId): Promise<void> {
   const answer = await askChoice({
     title: `Switch to ${name}?`,
     body: switchPromptBody(target, overrides),
-    busyMessage: "Answer the open prompt first",
+    busyMessage: FINISH_OPEN_PROMPT_FIRST,
     options: [
       { value: "clean", label: `Use ${name} as is`, variant: "secondary" },
       { value: "keep", label: "Keep my changes", variant: "primary" },

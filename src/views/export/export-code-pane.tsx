@@ -16,6 +16,7 @@ interface ExportCodePaneProps {
   onEditContent: (content: string) => void;
   onRegenerate: () => void;
   onKeepEdits: () => void;
+  notice?: React.ReactNode;
 }
 
 // -- Components ---------------------------------------------------------------
@@ -43,11 +44,13 @@ const ExportCodePane: React.FC<ExportCodePaneProps> = ({
   onEditContent,
   onRegenerate,
   onKeepEdits,
+  notice,
 }) => {
   const head = <FileHead fileName={fileName} content={content} exportTiming={exportTiming} />;
   return (
     <div className="flex flex-col gap-3.5 min-h-0 min-w-0 pt-3.5 px-4 pb-4">
       {hasConflict && <TtmlConflictNotice onRegenerate={onRegenerate} onKeepEdits={onKeepEdits} />}
+      {notice}
       {isEditing ? (
         <TtmlEditor value={content} generatedTtml={generatedTtml} onChange={onEditContent} head={head} />
       ) : (

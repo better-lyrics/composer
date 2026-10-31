@@ -1,3 +1,4 @@
+import { createAlignmentReviewSlice } from "@/stores/project/alignment-review-slice";
 import { createAgentsSlice } from "@/stores/project/agents-slice";
 import { createBeatGridSlice } from "@/stores/project/beat-grid-slice";
 import { createDismissalsSlice } from "@/stores/project/dismissals-slice";
@@ -30,6 +31,7 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
   ...createDismissalsSlice(set, get, api),
   ...createSnapPointsSlice(set, get, api),
   ...createBeatGridSlice(set, get, api),
+  ...createAlignmentReviewSlice(set, get, api),
 }));
 
 export { useProjectStore, INITIAL_STATE };

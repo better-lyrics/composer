@@ -46,6 +46,7 @@ interface ChoiceState {
 
 const LOG_PREFIX = "[Choice]";
 const CANCELLED = -1;
+const FINISH_OPEN_PROMPT_FIRST = "Finish the open prompt first";
 
 // -- Store --------------------------------------------------------------------
 
@@ -95,5 +96,5 @@ function askChoiceWithCheckbox<T extends string>(request: CheckboxChoiceRequest<
 
 // -- Exports ------------------------------------------------------------------
 
-export { askChoice, askChoiceWithCheckbox, useChoiceStore };
+export { FINISH_OPEN_PROMPT_FIRST, askChoice, askChoiceWithCheckbox, useChoiceStore };
 export type { ChoiceRequest };

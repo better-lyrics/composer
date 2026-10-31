@@ -1,3 +1,4 @@
+import type { AlignmentReviewActions, AlignmentReviewState } from "@/stores/project/alignment-review-slice";
 import type { Agent } from "@/domain/agent/model";
 import type { RealignRefusal, SharingOutcome } from "@/domain/group/shared-placement";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
@@ -247,6 +248,7 @@ type ProjectState = MetadataState &
   DismissalsState &
   SnapPointsState &
   BeatGridState &
+  AlignmentReviewState &
   HistoryState;
 
 type ProjectActions = MetadataActions &
@@ -257,7 +259,8 @@ type ProjectActions = MetadataActions &
   BeatGridActions &
   HistoryActions &
   LineActions &
-  GroupActions;
+  GroupActions &
+  AlignmentReviewActions;
 
 type ProjectStore = ProjectState & ProjectActions;
 

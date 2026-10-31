@@ -1,4 +1,4 @@
-import { askChoiceWithCheckbox } from "@/stores/choice-store";
+import { FINISH_OPEN_PROMPT_FIRST, askChoiceWithCheckbox } from "@/stores/choice-store";
 import { useSettingsStore } from "@/stores/settings";
 import { UndoHint } from "@/ui/undo-hint";
 import { pluralWord } from "@/utils/pluralize";
@@ -14,8 +14,6 @@ interface DivergenceOptions {
 }
 
 // -- Constants ----------------------------------------------------------------
-
-const FINISH_CHOOSING_FIRST = "Finish the open prompt first";
 
 // -- Components ---------------------------------------------------------------
 
@@ -49,7 +47,7 @@ async function askWordDivergence(options: DivergenceOptions): Promise<Divergence
   const { answer, checked } = await askChoiceWithCheckbox({
     title: "Word structure changed",
     body: <DivergenceBody {...options} />,
-    busyMessage: FINISH_CHOOSING_FIRST,
+    busyMessage: FINISH_OPEN_PROMPT_FIRST,
     checkbox: { label: "Don't ask again" },
     options: [
       { value: "detach", label: "Detach", variant: "secondary" },

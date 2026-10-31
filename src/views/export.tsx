@@ -4,11 +4,13 @@ import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
+import { AlignmentReviewNotice } from "@/views/export/alignment-review-notice";
 import { applyEditsToProject } from "@/views/export/apply-edits-feedback";
 import { ExportCodePane } from "@/views/export/export-code-pane";
 import { ExportHeader } from "@/views/export/export-header";
 import { MetadataPanel } from "@/views/export/metadata-panel";
 import { useProjectFileInput } from "@/views/export/project-menu-button";
+import { useAlignmentReview } from "@/views/export/use-alignment-review";
 import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
 import { IconFolderOpen } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
@@ -46,6 +48,7 @@ const ExportPanel: React.FC = () => {
   const session = editingSession?.projectSession === projectSession ? editingSession : null;
   const isEditing = session !== null;
   const projectFile = useProjectFileInput();
+  const alignment = useAlignmentReview();
 
   const hasSyncedContent = syncedLineCount > 0;
   const fileName = `${sanitizeFileName(title, "lyrics")}.ttml`;
@@ -58,21 +61,23 @@ const ExportPanel: React.FC = () => {
     return false;
   }, [editedContent]);
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     if (!exportContent || !isExportable()) return;
+    if (!(await alignment.confirmExport("download"))) return;
 
     downloadText(exportContent, fileName, "application/ttml+xml;charset=utf-8");
     useProjectStore.getState().clearUnexportedImport();
-  }, [exportContent, isExportable, fileName]);
+  }, [exportContent, isExportable, fileName, alignment.confirmExport]);
 
   const handleCopy = useCallback(async () => {
     if (!exportContent || !isExportable()) return;
+    if (!(await alignment.confirmExport("copy"))) return;
 
     await navigator.clipboard.writeText(exportContent);
     useProjectStore.getState().clearUnexportedImport();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [exportContent, isExportable]);
+  }, [exportContent, isExportable, alignment.confirmExport]);
 
   const handleEdit = useCallback(() => {
     if (!session) {
@@ -156,6 +161,14 @@ const ExportPanel: React.FC = () => {
           onEditContent={handleEditContent}
           onRegenerate={handleRegenerate}
           onKeepEdits={handleKeepEdits}
+          notice={
+            <AlignmentReviewNotice
+              notice={alignment.notice}
+              review={alignment.review}
+              onReview={alignment.reviewInTimeline}
+              onDismiss={alignment.dismiss}
+            />
+          }
         />
         <MetadataPanel />
       </div>

@@ -1,3 +1,4 @@
+import type { AlignedTimings } from "@/domain/alignment/fingerprint";
 import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
@@ -39,6 +40,8 @@ interface ProjectSaveInput {
   hasUnexportedImport: boolean;
   importedMetadataKeys: MetadataKey[];
   ttmlEditState: TtmlEditState;
+  alignedTimings: AlignedTimings;
+  alignmentNoticeDismissed: boolean;
 }
 
 // -- Records ------------------------------------------------------------------
