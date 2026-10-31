@@ -1,11 +1,13 @@
 import type { ProjectTab } from "@/domain/project/tab";
 import { useAudioStore } from "@/stores/audio";
+import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { overridesAfterSwitch } from "@/stores/shortcut-preset-switch";
 import type { ShortcutScope } from "@/stores/shortcut-registry";
-import { shouldOfferSpaceHint } from "@/utils/space-habit-hint";
+import { applyShortcutsWithUndo } from "@/ui/settings/shortcuts/switch-shortcut-preset";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { shouldOfferSpaceHint } from "@/utils/space-habit-hint";
 import { isTypingTarget } from "@/utils/typing-target";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -18,12 +20,13 @@ let offered = false;
 // -- Toasts -------------------------------------------------------------------
 
 function switchToEditorFromHint(): void {
-  const { preset, overrides, setPreset } = useShortcutBindingsStore.getState();
-  setPreset("editor", overridesAfterSwitch("editor", overrides, true));
-  toast("Space plays now", {
-    description: "Want arrows to seek too? Try Remastered.",
-    action: { label: "Undo", onClick: () => setPreset(preset, overrides) },
-  });
+  const { overrides } = useShortcutBindingsStore.getState();
+  applyShortcutsWithUndo(
+    "editor",
+    overridesAfterSwitch("editor", overrides, true),
+    "Space plays now",
+    "Want arrows to seek too? Try Remastered.",
+  );
 }
 
 function answerSpaceHint(): void {
@@ -78,7 +81,7 @@ function notePlayShortcut(): void {
 
 function noteSpace(event: KeyboardEvent): void {
   const modified = event.shiftKey || event.altKey || event.ctrlKey || event.metaKey;
-  if (event.key !== " " || event.repeat || modified || isTypingTarget(event.target)) return;
+  if (event.key !== " " || event.repeat || modified || isTypingTarget(event.target) || isAnyModalOpen()) return;
   spaceAt = performance.now();
   offerIfHabit(!spaceDoesSomething(event, useProjectStore.getState().activeTab));
 }
