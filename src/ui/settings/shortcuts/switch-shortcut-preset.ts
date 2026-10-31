@@ -1,4 +1,5 @@
 import { askChoice } from "@/stores/choice-store";
+import { useConfirmStore } from "@/stores/confirm-store";
 import { bindingToKeys, getShortcutDescription, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { clashingOverrides, overridesAfterSwitch } from "@/stores/shortcut-preset-switch";
 import { presetBinding, type ShortcutPresetId, shortcutPreset } from "@/stores/shortcut-presets";
@@ -67,6 +68,19 @@ async function switchShortcutPreset(target: ShortcutPresetId): Promise<void> {
   applyShortcutsWithUndo(target, overridesAfterSwitch(target, overrides, answer === "keep"), `Using ${name}`);
 }
 
+async function resetMyShortcutChanges(): Promise<void> {
+  const { preset } = useShortcutBindingsStore.getState();
+  const presetName = shortcutPreset(preset).name;
+  const ok = await useConfirmStore.getState().open({
+    title: "Reset your changes?",
+    description: `Clear the keys you changed and go back to ${presetName} as it comes.`,
+    confirmLabel: "Reset",
+    variant: "destructive",
+    settingsKey: "confirmResetShortcuts",
+  });
+  if (ok) applyShortcutsWithUndo(preset, {}, `Back to ${presetName} as it comes`);
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { applyShortcutsWithUndo, switchShortcutPreset };
+export { applyShortcutsWithUndo, resetMyShortcutChanges, switchShortcutPreset };

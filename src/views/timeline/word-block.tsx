@@ -1,4 +1,5 @@
 import { cn } from "@/utils/cn";
+import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import { wordBlockWidth } from "@/views/timeline/row-geometry";
 import { selfKey } from "@/views/timeline/snap";
@@ -137,7 +138,9 @@ const WordBlock: React.FC<WordBlockProps> = ({
       role="button"
       tabIndex={-1}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") onClick(e as unknown as React.MouseEvent);
+        if (e.repeat || (e.key !== "Enter" && e.key !== " ")) return;
+        if (findMatchingShortcut(e.nativeEvent, "global") || findMatchingShortcut(e.nativeEvent, "timeline")) return;
+        onClick(e as unknown as React.MouseEvent);
       }}
     >
       <WordEdgeHandle

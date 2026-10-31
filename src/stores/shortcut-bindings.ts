@@ -21,7 +21,6 @@ interface ShortcutBindingsState {
   spaceHintAnswered: boolean;
   answerSpaceHint: () => void;
   resetBinding: (id: string) => void;
-  resetAllBindings: () => void;
 }
 
 // -- Store --------------------------------------------------------------------
@@ -41,7 +40,6 @@ const useShortcutBindingsStore = create<ShortcutBindingsState>()(
           const { [id]: _, ...rest } = state.overrides;
           return { overrides: rest };
         }),
-      resetAllBindings: () => set({ overrides: {} }),
     }),
     {
       name: "composer-shortcut-bindings",

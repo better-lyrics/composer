@@ -1,6 +1,7 @@
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { encodeShortcutCode } from "@/stores/shortcut-code";
 import { Button } from "@/ui/button";
+import { HEADER_ACTION_BUTTON } from "@/ui/settings/preset-card-styles";
 import { IconCheck, IconCopy } from "@tabler/icons-react";
 import { useState } from "react";
 
@@ -35,13 +36,7 @@ const CopyShortcutCodeButton: React.FC = () => {
           {error}
         </span>
       )}
-      <Button
-        size="sm"
-        variant="ghost"
-        hasIcon
-        className="h-6 pl-1.5 pr-2 text-xs rounded-md"
-        onClick={() => void handleCopy()}
-      >
+      <Button size="sm" variant="ghost" hasIcon className={HEADER_ACTION_BUTTON} onClick={() => void handleCopy()}>
         {copied ? <IconCheck className="size-3.5" /> : <IconCopy className="size-3.5" />}
         {copied ? "Copied" : "Copy my code"}
       </Button>

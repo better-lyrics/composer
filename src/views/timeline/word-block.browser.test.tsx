@@ -49,6 +49,17 @@ describe("WordBlock", () => {
     expect(clicks).toBe(1);
   });
 
+  it("regression: a key that belongs to a shortcut does not also click the focused block", async () => {
+    let clicks = 0;
+    await render(<WordBlock {...DEFAULT_PROPS} onClick={() => clicks++} />, { dndContext: true });
+    const block = document.querySelector("[data-word-block]") as HTMLElement;
+    block.focus();
+    block.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    block.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+    block.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", repeat: true, bubbles: true }));
+    expect(clicks).toBe(0);
+  });
+
   it("fires onResizeStart with 'right' and the starting clientX when the right handle is mousedowned", async () => {
     let edge: string | null = null;
     let startX = -1;
