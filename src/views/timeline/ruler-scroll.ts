@@ -1,8 +1,9 @@
 // -- Functions -----------------------------------------------------------------
 
-// The panel calls this from its scroll handler after reading the position, so the write never forces a style recalc.
+// Follow calls it in its own frame because the scroll event lands a frame later; callers pass a position already read.
 function followRulerScroll(track: HTMLElement, scrollLeft: number): void {
-  track.style.translate = `${-scrollLeft}px 0`;
+  const translate = `${-scrollLeft}px`;
+  if (track.style.translate !== translate) track.style.translate = translate;
 }
 
 // -- Exports -------------------------------------------------------------------

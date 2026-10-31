@@ -1,3 +1,4 @@
+import { readPlaybackClock } from "@/audio/playback-clock";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { useSettingsStore } from "@/stores/settings";
 import { create } from "zustand";
@@ -188,7 +189,7 @@ function toggledPlaybackRate(): number {
 
 function livePlaybackTime(): number {
   const { audioElement, currentTime } = useAudioStore.getState();
-  return audioElement?.currentTime ?? currentTime;
+  return audioElement ? readPlaybackClock(audioElement) : currentTime;
 }
 
 function seekBy(seconds: number): void {

@@ -832,7 +832,6 @@ braccato-lyrics .blyrics-container {
   .timeline-playhead-bar,
   .timeline-playhead-cap {
     will-change: transform;
-    transition: transform 32ms linear;
   }
 
   .timeline-playhead-bar {

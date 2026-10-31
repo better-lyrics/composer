@@ -1,4 +1,4 @@
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -18,13 +18,17 @@ interface RendererPlayback {
 
 // -- Functions -----------------------------------------------------------------
 
+const liveSample: PlaybackSample = { currentTime: 0, paused: true, playbackRate: 1 };
+
 // A playhead drag only seeks on release, so renderers follow the dragged time meanwhile.
 function audioStoreSample(): PlaybackSample | null {
   const audio = useAudioStore.getState().audioElement;
   if (!audio) return null;
   const { isDraggingPlayhead, dragTime } = useTimelineStore.getState();
-  if (!isDraggingPlayhead) return audio;
-  return { currentTime: dragTime, paused: audio.paused, playbackRate: audio.playbackRate };
+  liveSample.currentTime = isDraggingPlayhead ? dragTime : livePlaybackTime();
+  liveSample.paused = audio.paused;
+  liveSample.playbackRate = audio.playbackRate;
+  return liveSample;
 }
 
 // -- Constants -----------------------------------------------------------------

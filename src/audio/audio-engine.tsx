@@ -1,5 +1,6 @@
 import { decodeAudioToWav, needsWavConversion } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
+import { resyncPlaybackClock } from "@/audio/playback-clock";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -145,6 +146,7 @@ const AudioEngine: React.FC = () => {
       audio.addEventListener("timeupdate", handleTimeUpdate);
       audio.addEventListener("ended", handleEnded);
       audio.addEventListener("error", handleError);
+      audio.addEventListener("seeking", resyncPlaybackClock);
       const unbindStateEvents = bindAudioStateEvents(audio, () => useAudioStore.getState().isPlaying, setIsPlaying);
 
       teardown = () => {
@@ -152,6 +154,7 @@ const AudioEngine: React.FC = () => {
         audio.removeEventListener("timeupdate", handleTimeUpdate);
         audio.removeEventListener("ended", handleEnded);
         audio.removeEventListener("error", handleError);
+        audio.removeEventListener("seeking", resyncPlaybackClock);
         unbindStateEvents();
         audio.pause();
         audio.src = "";

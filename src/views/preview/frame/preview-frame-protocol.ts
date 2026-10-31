@@ -6,7 +6,7 @@ interface FrameClock {
   time: number;
   playing: boolean;
   rate: number;
-  // performance.timeOrigin + performance.now() when the clock was read, so the frame can run it forward.
+  // performance.timeOrigin + the frame time the clock was read for, so the frame can run it forward.
   sentAt: number;
 }
 

@@ -15,6 +15,7 @@ interface TimelinePlayheadProps {
   containerHeight: number;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
   capHost?: HTMLElement | null;
+  rulerTrackRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -44,7 +45,12 @@ const PlayheadCap: React.FC<{ ref: React.Ref<HTMLDivElement>; onMouseDown: React
   </div>
 );
 
-const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, scrollContainerRef, capHost }) => {
+const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
+  containerHeight,
+  scrollContainerRef,
+  capHost,
+  rulerTrackRef,
+}) => {
   const duration = useAudioStore((s) => s.duration);
   const seekTo = useAudioStore((s) => s.seekTo);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
@@ -58,8 +64,14 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
   const [frame] = useState(createPlayheadFrame);
 
   const elements = useMemo(
-    () => ({ playhead: playheadRef, cap: capRef, overlay: containerRef, scrollContainer: scrollContainerRef }),
-    [scrollContainerRef],
+    () => ({
+      playhead: playheadRef,
+      cap: capRef,
+      overlay: containerRef,
+      scrollContainer: scrollContainerRef,
+      rulerTrack: rulerTrackRef,
+    }),
+    [scrollContainerRef, rulerTrackRef],
   );
   const phases = useMemo(
     () => ({ read: () => readPlayheadFrame(frame, elements), write: () => writePlayheadFrame(frame, elements) }),

@@ -321,6 +321,7 @@ const TimelinePanel: React.FC = () => {
                   containerHeight={contentHeight}
                   scrollContainerRef={scrollContainerRef}
                   capHost={rulerLane}
+                  rulerTrackRef={rulerTrackRef}
                 />
 
                 <SnapGuideline />
