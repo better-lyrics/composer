@@ -1,12 +1,10 @@
-import { useConfirm } from "@/stores/confirm-store";
-import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import type { ShortcutChange } from "@/stores/shortcut-preset-changes";
 import type { ShortcutPreset } from "@/stores/shortcut-presets";
 import { Button } from "@/ui/button";
 import { PopActions, PopBody, PopButton, PopGroup, PopHead, PopText } from "@/ui/pop-layout";
 import { Popover } from "@/ui/popover";
 import { ShortcutChangeRows } from "@/ui/settings/shortcuts/shortcut-change-rows";
-import { switchShortcutPreset } from "@/ui/settings/shortcuts/switch-shortcut-preset";
+import { resetMyShortcutChanges, switchShortcutPreset } from "@/ui/settings/shortcuts/switch-shortcut-preset";
 import { pluralize } from "@/utils/pluralize";
 import type { Placement } from "@floating-ui/react";
 import { IconChevronDown, IconRefresh } from "@tabler/icons-react";
@@ -28,8 +26,8 @@ function changesLabel(count: number): string {
 }
 
 function footLabel(presetCount: number, yoursCount: number): string {
-  if (presetCount === 0) return `${yoursCount} yours`;
-  return yoursCount === 0 ? changesLabel(presetCount) : `${changesLabel(presetCount)} ・ ${yoursCount} yours`;
+  if (presetCount === 0) return `${yoursCount} by you`;
+  return yoursCount === 0 ? changesLabel(presetCount) : `${changesLabel(presetCount)} ・ ${yoursCount} by you`;
 }
 
 // -- Components ----------------------------------------------------------------
@@ -41,20 +39,6 @@ const ShortcutChangesPopover: React.FC<ShortcutChangesPopoverProps> = ({
   yours,
   placement,
 }) => {
-  const confirm = useConfirm();
-
-  const resetMyChanges = async (close: () => void) => {
-    close();
-    const ok = await confirm({
-      title: "Reset your changes?",
-      description: `Clear the keys you changed and go back to ${preset.name} as it comes.`,
-      confirmLabel: "Reset",
-      variant: "destructive",
-      settingsKey: "confirmResetShortcuts",
-    });
-    if (ok) useShortcutBindingsStore.getState().resetAllBindings();
-  };
-
   return (
     <Popover
       placement={placement}
@@ -88,7 +72,13 @@ const ShortcutChangesPopover: React.FC<ShortcutChangesPopoverProps> = ({
           {(!active || yours.length > 0) && (
             <PopActions className="mt-3">
               {active ? (
-                <PopButton icon={IconRefresh} onClick={() => void resetMyChanges(close)}>
+                <PopButton
+                  icon={IconRefresh}
+                  onClick={() => {
+                    close();
+                    void resetMyShortcutChanges();
+                  }}
+                >
                   Reset my changes
                 </PopButton>
               ) : (
