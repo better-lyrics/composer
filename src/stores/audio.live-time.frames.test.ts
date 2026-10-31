@@ -1,53 +1,60 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadFrameLoop } from "@/test/frame-loop-harness";
+import { simulatedAudio } from "@/test/simulated-audio";
 
-const JITTER_MS = [4, -6, 5, -3, 6, -5, 2, -4];
+// -- Helpers -------------------------------------------------------------------
 
-function audioPlayingFrom(start: number): { element: HTMLAudioElement; advance: (frame: number) => void } {
-  const element = document.createElement("audio");
-  let currentTime = start;
-  Object.defineProperties(element, {
-    currentTime: { get: () => currentTime, configurable: true },
-    paused: { value: false, configurable: true },
-    seeking: { value: false, configurable: true },
-    readyState: { value: HTMLMediaElement.HAVE_ENOUGH_DATA, configurable: true },
-    playbackRate: { value: 1, configurable: true },
-  });
-  return {
-    element,
-    advance: (frame) => {
-      currentTime = start + frame * 0.016 + JITTER_MS[frame % JITTER_MS.length] / 1000;
-    },
-  };
+interface FrameRun {
+  times: number[];
+  heard: number[];
 }
 
-async function frameTimes(readBetweenFrames: boolean): Promise<number[]> {
+// Frames every 16 ms against Firefox's 40 ms element steps, optionally with a read between frames (a sync tap).
+async function frameRun(readBetweenFrames: boolean, visibleAfterMs = 0): Promise<FrameRun> {
   const frameLoop = await loadFrameLoop();
+  const { resyncPlaybackClock } = await import("@/audio/playback-clock");
   const { livePlaybackTime, useAudioStore } = await import("@/stores/audio");
-  const audio = audioPlayingFrom(10);
+  resyncPlaybackClock();
+  const audio = simulatedAudio({ start: 10, tickMs: 40, tickPhaseMs: 5, visibleAfterMs });
   useAudioStore.setState({ audioElement: audio.element });
-  const seen: number[] = [];
+  audio.play();
+  const run: FrameRun = { times: [], heard: [] };
   const release = frameLoop.holdFrames("playing");
-  const unsubscribe = frameLoop.subscribeFrame(() => seen.push(livePlaybackTime()), "probe");
-  for (let frame = 1; frame <= 60; frame++) {
-    audio.advance(frame);
-    vi.advanceTimersByTime(5);
+  const unsubscribe = frameLoop.subscribeFrame(() => {
+    run.times.push(livePlaybackTime());
+    run.heard.push(audio.heard());
+  }, "probe");
+  for (let frame = 0; frame < 180; frame++) {
+    vi.advanceTimersByTime(7);
     if (readBetweenFrames) livePlaybackTime();
-    vi.advanceTimersByTime(11);
+    vi.advanceTimersByTime(9);
   }
   unsubscribe();
   release();
-  return seen;
+  return run;
 }
 
 afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("livePlaybackTime between frames", () => {
-  it("a read outside a frame never changes where the next frame draws", async () => {
-    const quiet = await frameTimes(false);
-    const busy = await frameTimes(true);
-    expect(busy).toEqual(quiet);
-  });
+// -- Tests ---------------------------------------------------------------------
+
+describe("livePlaybackTime in frames", () => {
+  it.each([
+    [false, 0],
+    [true, 0],
+    [true, 6],
+  ])(
+    "moves evenly, never backwards, and stays on the audio (reads between frames: %s, steps visible after %i ms)",
+    async (busy, visibleAfterMs) => {
+      const { times, heard } = await frameRun(busy, visibleAfterMs);
+      const settled = times.slice(60);
+      const steps = settled.slice(1).map((time, index) => time - settled[index]);
+      expect(Math.min(...steps)).toBeGreaterThanOrEqual(0.016 - 0.002);
+      expect(Math.max(...steps)).toBeLessThanOrEqual(0.016 + 0.002);
+      const errors = settled.map((time, index) => Math.abs(time - heard[index + 60]));
+      expect(Math.max(...errors)).toBeLessThan(0.008 + visibleAfterMs / 1000);
+    },
+  );
 });
