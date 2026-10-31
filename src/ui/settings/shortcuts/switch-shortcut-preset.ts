@@ -68,10 +68,9 @@ async function switchShortcutPreset(target: ShortcutPresetId): Promise<void> {
   applyShortcutsWithUndo(target, overridesAfterSwitch(target, overrides, answer === "keep"), `Using ${name}`);
 }
 
-// -- Exports -------------------------------------------------------------------
-
 async function resetMyShortcutChanges(): Promise<void> {
-  const presetName = shortcutPreset(useShortcutBindingsStore.getState().preset).name;
+  const { preset } = useShortcutBindingsStore.getState();
+  const presetName = shortcutPreset(preset).name;
   const ok = await useConfirmStore.getState().open({
     title: "Reset your changes?",
     description: `Clear the keys you changed and go back to ${presetName} as it comes.`,
@@ -79,7 +78,9 @@ async function resetMyShortcutChanges(): Promise<void> {
     variant: "destructive",
     settingsKey: "confirmResetShortcuts",
   });
-  if (ok) useShortcutBindingsStore.getState().resetAllBindings();
+  if (ok) applyShortcutsWithUndo(preset, {}, `Back to ${presetName} as it comes`);
 }
+
+// -- Exports -------------------------------------------------------------------
 
 export { applyShortcutsWithUndo, resetMyShortcutChanges, switchShortcutPreset };

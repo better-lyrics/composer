@@ -10,6 +10,8 @@ const CARD_ACTIVE =
 
 const CARD_GROUP_LABEL = "text-xs font-semibold text-(--muted) select-none";
 
+const HEADER_ACTION_BUTTON = "h-6 pl-1.5 pr-2 text-xs rounded-md";
+
 // -- Exports -------------------------------------------------------------------
 
-export { CARD_ACTIVE, CARD_BASE, CARD_GROUP_LABEL, CARD_INACTIVE };
+export { CARD_ACTIVE, CARD_BASE, CARD_GROUP_LABEL, CARD_INACTIVE, HEADER_ACTION_BUTTON };

@@ -1,6 +1,6 @@
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { SHORTCUT_PRESETS } from "@/stores/shortcut-presets";
-import { CARD_GROUP_LABEL } from "@/ui/settings/preset-card-styles";
+import { CARD_GROUP_LABEL, HEADER_ACTION_BUTTON } from "@/ui/settings/preset-card-styles";
 import { CopyShortcutCodeButton } from "@/ui/settings/shortcuts/copy-shortcut-code-button";
 import { ShortcutImportCard } from "@/ui/settings/shortcuts/shortcut-import-card";
 import { ShortcutPresetCard } from "@/ui/settings/shortcuts/shortcut-preset-card";
@@ -29,7 +29,7 @@ const ShortcutPresetGallery: React.FC = () => {
               size="sm"
               variant="ghost"
               hasIcon
-              className="h-6 pl-1.5 pr-2 text-xs rounded-md"
+              className={HEADER_ACTION_BUTTON}
               onClick={() => void resetMyShortcutChanges()}
             >
               <IconRefresh className="size-3.5" />
