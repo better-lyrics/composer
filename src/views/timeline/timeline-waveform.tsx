@@ -1,3 +1,4 @@
+import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { notePlacement } from "@/lib/replay-cue";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
@@ -92,12 +93,31 @@ const TimelineWaveform: React.FC = () => {
   const showSpectrum = useSettingsStore((s) => s.showSpectrum);
 
   const [ws, setWs] = useState<WaveSurfer | null>(null);
+  const isPlaying = useAudioStore((s) => s.isPlaying);
+  const drawnProgressTime = useRef<number | null>(null);
   const [settledFor, setSettledFor] = useState<WaveSurfer | null>(null);
   const [altHeld, setAltHeld] = useState(false);
   const waveformHostRef = useRef<HTMLDivElement>(null);
   useWaveformWindow(ws, waveformHostRef, !showSpectrum);
 
   const totalWidth = duration > 0 ? duration * zoom : 0;
+
+  // Drawn in the frame loop so progress and playhead move on the same frame time.
+  useFrameLoop(
+    () => {
+      if (!ws) return;
+      const time = livePlaybackTime();
+      drawnProgressTime.current = time;
+      ws.getRenderer().renderProgress(time / ws.getDuration(), true);
+    },
+    "waveform-progress",
+    isPlaying && ws !== null,
+  );
+
+  useEffect(() => {
+    if (!isPlaying) drawnProgressTime.current = null;
+  }, [isPlaying]);
+
   // Rebuild on loadstart, keyed on currentSrc: wavesurfer loads currentSrc, which lags src until then.
   const subscribeToMediaSource = useCallback(
     (onSourceChange: () => void) => {
@@ -173,11 +193,9 @@ const TimelineWaveform: React.FC = () => {
   useEffect(() => () => useTimelineStore.getState().setWaveformReady(false), []);
 
   const onReady = useCallback((wavesurfer: WaveSurfer) => {
-    // WaveSurfer paints progress from its own timer on raw media time; give it the frame's smoothed time instead.
-    wavesurfer.getCurrentTime = () => {
-      const frameStart = document.timeline.currentTime;
-      return livePlaybackTime(typeof frameStart === "number" ? frameStart : undefined);
-    };
+    // WaveSurfer's own timer repaints progress every frame; keep it on the time the frame loop drew.
+    wavesurfer.getCurrentTime = () =>
+      (useAudioStore.getState().isPlaying ? drawnProgressTime.current : null) ?? livePlaybackTime();
     setWs(wavesurfer);
     useTimelineStore.getState().setWaveformReady(true);
     const audio = useAudioStore.getState().audioElement;
