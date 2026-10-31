@@ -7,7 +7,7 @@ import type { LinkGroup } from "@/domain/group/template";
 import { sharedTimingFanOut } from "@/domain/group/shared-timing";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "@/domain/line/bounds";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -64,6 +64,12 @@ function planLines(lines: readonly LyricLine[], lineIds: readonly string[] | und
     if (bounds) previous = bounds;
   }
   return planned;
+}
+
+/** A line a draft placed, planned as if the user had tapped it there. */
+function planDraftLine(line: LyricLine, taps: WordInterval, previous: WordInterval | null): PlannedLine | null {
+  const plan = planLine(reconcileLine({ ...line, words: undefined, begin: taps.begin, end: taps.end }), false);
+  return plan && { line, ...plan, previous };
 }
 
 function countAlignableLines(lines: readonly LyricLine[], lineIds?: readonly string[]): AlignableCounts {
@@ -124,5 +130,5 @@ function withSharedTiming(
 
 // -- Exports ------------------------------------------------------------------
 
-export { countAlignableLines, isUnchanged, planLine, planLines, segmentFor, withSharedTiming };
+export { countAlignableLines, isUnchanged, planDraftLine, planLine, planLines, segmentFor, withSharedTiming };
 export type { PlannedLine };

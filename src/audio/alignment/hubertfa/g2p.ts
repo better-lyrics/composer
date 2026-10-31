@@ -292,4 +292,4 @@ function lineToPhoneUnits(words: readonly string[][], context: G2pContext): G2pR
 // -- Exports ------------------------------------------------------------------
 
 export { lineToPhoneUnits };
-export type { G2pContext, PhoneUnit };
+export type { G2pContext, G2pResult, PhoneUnit };

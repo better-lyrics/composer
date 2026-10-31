@@ -11,6 +11,7 @@ import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { ModelTermsInfo } from "@/ui/model-terms-info";
 import { useUIStore } from "@/stores/ui";
+import { DraftTimingsGroup } from "@/views/sync/draft-timings-group";
 import { PopActions, PopButton, PopGroup, PopHead, PopRow, PopText } from "@/ui/pop-layout";
 import { StatusChip } from "@/ui/status-chip";
 import { formatWholeMegabytes } from "@/utils/format-file-size";
@@ -115,7 +116,7 @@ const SetupIntro: React.FC = () => {
 };
 
 // What's still needed before a whole-song run, and the buttons that start one.
-const AutoAlignSetup: React.FC<{ run: (realign: boolean) => void }> = ({ run }) => {
+const AutoAlignSetup: React.FC<{ run: (realign: boolean) => void; draft: () => void }> = ({ run, draft }) => {
   const lines = useProjectStore((s) => s.lines);
   const hasVocals = useSeparationStore((s) => !!s.stemUrls.vocals);
   const counts = useMemo<LineCounts>(() => {
@@ -158,6 +159,7 @@ const AutoAlignSetup: React.FC<{ run: (realign: boolean) => void }> = ({ run }) 
           {counts.lineTimed > 0 ? `Align ${pluralize(counts.lineTimed, "line")}` : "Align words"}
         </PopButton>
       </PopActions>
+      <DraftTimingsGroup onDraft={draft} />
     </>
   );
 };

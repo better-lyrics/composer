@@ -7,6 +7,9 @@ import { type G2pContext, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2
 import { createJapaneseReader } from "@/audio/alignment/hubertfa/japanese-tokenizer";
 import { type Pronunciations, parseDictionary } from "@/audio/alignment/hubertfa/lexicon";
 import type { AlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
+import { draftLines, draftPhones } from "@/audio/alignment/hubertfa/ctc-draft";
+import type { DraftLineRequest } from "@/audio/alignment/types";
+import type { InboundMessage, OutboundMessage } from "@/audio/alignment/hubertfa/worker-protocol";
 import {
   buildPhoneSequence,
   partIntervalsFromUnits,
@@ -19,35 +22,8 @@ import { type CachedModel, fetchAndCacheModel, readCachedModel } from "@/audio/s
 import { describeError, log } from "@/audio/separation/worker-log";
 import { hasHan } from "@/domain/alignment/cjk";
 import type { HanReading } from "@/domain/alignment/language";
-import type { PartSplit, WordInterval } from "@/domain/alignment/words";
 
 declare const self: DedicatedWorkerGlobalScope;
-
-// -- Types --------------------------------------------------------------------
-
-type AlignOutcome =
-  | { kind: "aligned"; intervals: WordInterval[]; guessed: string[]; splits: PartSplit[] }
-  | { kind: "unknown"; words: string[] }
-  | { kind: "no-path" };
-
-type InboundMessage =
-  | { type: "init"; assets: AlignmentAssets; forceWasm?: boolean; japanese?: boolean }
-  | {
-      type: "align";
-      samples: Float32Array;
-      sampleRate: number;
-      words: string[][];
-      hanReading: HanReading;
-      transliteration: string | null;
-    }
-  | { type: "cancel" };
-
-type OutboundMessage =
-  | { type: "init-progress"; loaded: number; total: number }
-  | { type: "init-done"; backend: Backend }
-  | { type: "align-done"; outcome: AlignOutcome }
-  | { type: "cancelled" }
-  | { type: "error"; code: string; message: string };
 
 // -- Constants ----------------------------------------------------------------
 
@@ -66,6 +42,7 @@ let pinyinOf: G2pContext["pinyinOf"] = null;
 const mandarinDictionary = parseDictionary(mandarinDictionaryText);
 const japaneseDictionary = parseDictionary(japaneseDictionaryText);
 let downloadAbort: AbortController | null = null;
+let draftCancelled = false;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -202,6 +179,22 @@ async function runModel(samples: Float32Array) {
   }
 }
 
+async function phoneUnits(
+  english: Pronunciations,
+  words: string[][],
+  hanReading: HanReading,
+  transliteration: string | null,
+) {
+  const lineText = words.flat().join("");
+  return lineToPhoneUnits(words, {
+    dictionaries: { en: english, zh: mandarinDictionary, ja: japaneseDictionary },
+    hanReading,
+    pinyinOf: hanReading === "zh" && hasHan(lineText) ? await loadPinyin() : null,
+    readJapanese,
+    transliteration,
+  });
+}
+
 async function handleAlign(
   samples: Float32Array,
   sampleRate: number,
@@ -221,14 +214,7 @@ async function handleAlign(
     });
     return;
   }
-  const lineText = words.flat().join("");
-  const g2p = lineToPhoneUnits(words, {
-    dictionaries: { en: dictionary, zh: mandarinDictionary, ja: japaneseDictionary },
-    hanReading,
-    pinyinOf: hanReading === "zh" && hasHan(lineText) ? await loadPinyin() : null,
-    readJapanese,
-    transliteration,
-  });
+  const g2p = await phoneUnits(dictionary, words, hanReading, transliteration);
   if (g2p.kind === "unknown") {
     post({ type: "align-done", outcome: { kind: "unknown", words: g2p.words } });
     return;
@@ -268,6 +254,29 @@ async function handleAlign(
   }
 }
 
+async function handleDraft(
+  samples: Float32Array,
+  sampleRate: number,
+  lines: DraftLineRequest[],
+  hanReading: HanReading,
+) {
+  const english = dictionary;
+  if (!session || !english) throw new Error("Alignment model is not loaded.");
+  if (sampleRate !== MODEL_SAMPLE_RATE)
+    throw new Error(`Expected ${MODEL_SAMPLE_RATE} Hz audio, got ${sampleRate} Hz.`);
+  draftCancelled = false;
+  const placements = await draftLines(lines, {
+    samples,
+    sampleRate,
+    hopSize: HOP_SIZE,
+    phonesOf: async (line) => draftPhones(await phoneUnits(english, line.words, hanReading, line.transliteration)),
+    run: async (audio) => (await runModel(audio)).ctc_logits,
+    onProgress: (done, total) => post({ type: "draft-progress", done, total }),
+    isCancelled: () => draftCancelled,
+  });
+  post(placements ? { type: "draft-done", placements } : { type: "cancelled" });
+}
+
 // -- Entry --------------------------------------------------------------------
 
 self.addEventListener("message", (ev: MessageEvent<InboundMessage>) => {
@@ -278,9 +287,12 @@ self.addEventListener("message", (ev: MessageEvent<InboundMessage>) => {
     handleAlign(msg.samples, msg.sampleRate, msg.words, msg.hanReading, msg.transliteration).catch((err) =>
       post({ type: "error", code: "align-failed", message: describeError(err) }),
     );
-  } else if (msg.type === "cancel") downloadAbort?.abort();
+  } else if (msg.type === "draft") {
+    handleDraft(msg.samples, msg.sampleRate, msg.lines, msg.hanReading).catch((err) =>
+      post({ type: "error", code: "draft-failed", message: describeError(err) }),
+    );
+  } else if (msg.type === "cancel") {
+    draftCancelled = true;
+    downloadAbort?.abort();
+  }
 });
-
-// -- Exports ------------------------------------------------------------------
-
-export type { AlignOutcome, InboundMessage, OutboundMessage };

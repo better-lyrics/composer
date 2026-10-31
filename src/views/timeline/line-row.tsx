@@ -4,6 +4,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { cn } from "@/utils/cn";
+import { DraftFlagIcon, DraftFlagTint } from "@/views/timeline/draft-flag";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tracks";
 import { PitchLane } from "@/views/timeline/pitch/pitch-lane";
@@ -76,7 +77,9 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
     >
       <div className="line-cell shrink-0 w-12 sticky left-0 z-60">
         <GutterAgentPicker lineId={line.id} lineIndex={lineIndex} agentId={line.agentId} numberHeight={rowHeight} />
+        <DraftFlagIcon line={line} />
       </div>
+      <DraftFlagTint line={line} />
 
       <div className={cn("flex-1 border-b border-(--divider) relative", mainWords && "overflow-hidden")}>
         <div className="absolute inset-0 pointer-events-none" style={{ transform: shiftTransform }}>

@@ -1,7 +1,9 @@
 /**
  * @vitest-environment node
  */
+import { isFlaggedDraft } from "@/domain/alignment/draft-timing";
 import { useAlignmentStore } from "@/stores/alignment";
+import { useDraftReviewStore } from "@/stores/draft-review";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { createGroup } from "@/test/factories";
@@ -13,6 +15,9 @@ const seen = vi.hoisted(() => ({
   japanese: [] as boolean[],
   // Lines whose window starts after this song time fall back, as if the model found no path.
   fallBackAfter: null as number | null,
+  // Where the fake CTC places each line it's asked to, by text, and the pins it was given.
+  placements: {} as Record<string, { begin: number; end: number; confidence: number }>,
+  pins: [] as ({ begin: number; end: number } | null)[][],
 }));
 
 // Real model resolution: hosting is configured, the manifest fetch finds none
@@ -40,6 +45,10 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
       },
       release: () => {},
       isLoaded: () => true,
+      draft: async (request: { lines: { words: string[][]; pin: { begin: number; end: number } | null }[] }) => {
+        seen.pins.push(request.lines.map((line) => line.pin));
+        return request.lines.map((line) => (line.pin ? null : (seen.placements[line.words.flat().join(" ")] ?? null)));
+      },
       align: async (segment: Segment) => {
         seen.segments.push({ hanReading: segment.hanReading, parts: segment.words.map((w) => w.parts) });
         const unknown =
@@ -63,6 +72,9 @@ describe("alignment store", () => {
     seen.segments = [];
     seen.japanese = [];
     seen.fallBackAfter = null;
+    seen.placements = {};
+    seen.pins = [];
+    useDraftReviewStore.setState({ marks: {}, lowConfidence: false });
     useProjectStore.setState({ groups: [] });
     useProjectStore.setState(INITIAL_STATE);
     useAlignmentStore.setState({ status: "idle", progress: { done: 0, total: 0 }, error: null });
@@ -336,5 +348,43 @@ describe("alignment store", () => {
 
     expect(await useAlignmentStore.getState().alignLines()).toBeNull();
     expect(useAlignmentStore.getState().error?.code).toBe("unsupported-language");
+  });
+
+  it("drafts the untimed lines between pins in one undo step, and keeps what the user edits", async () => {
+    useProjectStore.getState().setLinesWithHistory([
+      { id: "L1", text: "tapped", agentId: "v1", begin: 10, end: 12 },
+      { id: "L2", text: "placed here", agentId: "v1" },
+      { id: "L3", text: "too long", agentId: "v1" },
+      { id: "L4", text: "unsure", agentId: "v1" },
+    ]);
+    seen.placements = {
+      "placed here": { begin: 13, end: 14, confidence: -1 },
+      "too long": { begin: 15, end: 40, confidence: -1 },
+      unsure: { begin: 41, end: 42, confidence: -3 },
+    };
+
+    const result = await useAlignmentStore.getState().draftLines();
+
+    expect(result).toMatchObject({ placed: 2, flagged: 1, unplaced: 1, lowConfidence: false });
+    expect(seen.pins[0]).toEqual([{ begin: 10, end: 12 }, null, null, null]);
+    const [tapped, placed, long, unsure] = useProjectStore.getState().lines;
+    expect(tapped).toMatchObject({ begin: 10, end: 12 });
+    expect(placed.words?.[0].begin).toBeGreaterThanOrEqual(12.7);
+    expect(placed.words?.at(-1)?.end).toBeLessThanOrEqual(14.15);
+    expect(long.words).toBeUndefined();
+    const { marks } = useDraftReviewStore.getState();
+    expect([isFlaggedDraft(placed, marks.L2), isFlaggedDraft(unsure, marks.L4)]).toEqual([false, true]);
+
+    // Fixing a drafted line makes it a pin; the untouched draft is placed again.
+    const fixed = unsure.words!.map((w) => ({ ...w, begin: w.begin + 0.5, end: w.end + 0.5 }));
+    useProjectStore.getState().updateLinesWithHistory([{ id: "L4", updates: { words: fixed } }]);
+    await useAlignmentStore.getState().draftLines();
+    expect(seen.pins[1]).toEqual([{ begin: 10, end: 12 }, null, null, { begin: 41.5, end: 42.5 }]);
+    expect(isFlaggedDraft(useProjectStore.getState().lines[3], marks.L4)).toBe(false);
+
+    useProjectStore.getState().undo();
+    useProjectStore.getState().undo();
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines.map((l) => l.words)).toEqual([undefined, undefined, undefined, undefined]);
   });
 });

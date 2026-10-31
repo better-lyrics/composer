@@ -26,6 +26,7 @@ const AutoAlignProgress: React.FC<{ onCancel: () => void }> = ({ onCancel }) => 
   const status = useAlignmentStore((s) => s.status);
   const progress = useAlignmentStore((s) => s.progress);
   const modelCached = useAlignmentStore((s) => s.modelCached);
+  const task = useAlignmentStore((s) => s.task);
   const pct = percent(progress.done, progress.total);
   if (status === "downloading") {
     return (
@@ -34,6 +35,17 @@ const AutoAlignProgress: React.FC<{ onCancel: () => void }> = ({ onCancel }) => 
         meta={progress.total > 0 ? formatMegabytesOf(progress.done, progress.total) : `${pct}%`}
         pct={pct}
         note="Only the first run downloads. Later runs start at once."
+        onCancel={onCancel}
+      />
+    );
+  }
+  if (task === "placing") {
+    return (
+      <ModelProgress
+        title="Placing lines…"
+        meta={`${pct}%`}
+        pct={pct}
+        note="Listening to the whole song first. On integrated graphics this takes a few minutes."
         onCancel={onCancel}
       />
     );
@@ -56,7 +68,7 @@ const AutoAlignPanel: React.FC = () => {
   const error = useAlignmentStore((s) => s.error);
   const modelId = useSettingsStore((s) => s.alignmentModelId);
   const refreshModelCached = useAlignmentStore((s) => s.refreshModelCached);
-  const { autoAlign, cancel, retry } = useAutoAlign();
+  const { autoAlign, draft, cancel, retry } = useAutoAlign();
 
   useEffect(() => {
     void refreshModelCached(modelId);
@@ -69,7 +81,9 @@ const AutoAlignPanel: React.FC = () => {
     <PopBody>
       {status === "error" && error && <AutoAlignError error={error} onRetry={retry} />}
       {busy && <AutoAlignProgress onCancel={cancel} />}
-      {status === "idle" && <AutoAlignSetup run={run} />}
+      {status === "idle" && (
+        <AutoAlignSetup run={run} draft={() => void draft({ allowDownload: true, toastErrors: false })} />
+      )}
     </PopBody>
   );
 };

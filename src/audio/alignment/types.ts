@@ -1,4 +1,5 @@
 import type { HanReading } from "@/domain/alignment/language";
+import type { DraftPlacement } from "@/domain/alignment/draft-timing";
 import type { AlignmentWord, PartSplit, WordInterval } from "@/domain/alignment/words";
 
 // -- Types --------------------------------------------------------------------
@@ -33,6 +34,23 @@ interface SegmentAlignment {
   splits: PartSplit[];
 }
 
+/** One line of a draft: its text, and the timing to keep if the user set it. */
+interface DraftLineRequest {
+  words: string[][];
+  transliteration: string | null;
+  /** Timing to keep, or null for a line to place. */
+  pin: WordInterval | null;
+}
+
+/** The whole song, for placing the lines the user hasn't timed. */
+interface DraftRequest {
+  lines: DraftLineRequest[];
+  hanReading: HanReading;
+  /** Mono separated vocals for the whole song. */
+  samples: Float32Array;
+  sampleRate: number;
+}
+
 /**
  * Turns rough line timing into word timing. Implementations range from a
  * text-only split to a forced-alignment model.
@@ -52,6 +70,12 @@ interface Aligner {
     options: { japanese: boolean; modelId: string },
   ) => Promise<void>;
   align: (segment: AlignmentSegment, signal: AbortSignal) => Promise<SegmentAlignment>;
+  /** Per line, where it's sung, or null for pins and lines it couldn't place. */
+  draft: (
+    request: DraftRequest,
+    onProgress: (done: number, total: number) => void,
+    signal: AbortSignal,
+  ) => Promise<(DraftPlacement | null)[]>;
   /** Whether a model that fits these options is already in memory, so a run needs no load. */
   isLoaded: (options: { japanese: boolean; modelId: string }) => boolean;
   /** Frees the model. The next run prepares again from the download cache. */
@@ -60,4 +84,4 @@ interface Aligner {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { AlignmentSegment, Aligner };
+export type { AlignmentSegment, Aligner, DraftLineRequest };

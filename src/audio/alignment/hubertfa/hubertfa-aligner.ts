@@ -1,4 +1,4 @@
-import type { AlignOutcome } from "@/audio/alignment/hubertfa/worker";
+import type { AlignOutcome } from "@/audio/alignment/hubertfa/worker-protocol";
 import { resolveAlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import { AlignmentWorker } from "@/audio/alignment/hubertfa/worker-host";
 import { splitByCharacters } from "@/audio/alignment/split-by-characters";
@@ -79,6 +79,19 @@ const hubertfaAligner: Aligner = {
       guessedWords: [],
       splits: [],
     };
+  },
+
+  draft: async (request, onProgress, signal) => {
+    signal.throwIfAborted();
+    if (!worker) throw new Error("Alignment model is not loaded.");
+    const active = worker;
+    const onAbort = () => active.cancel();
+    signal.addEventListener("abort", onAbort);
+    try {
+      return await active.draft(request.samples, request.sampleRate, request.lines, request.hanReading, onProgress);
+    } finally {
+      signal.removeEventListener("abort", onAbort);
+    }
   },
 
   release: () => {
