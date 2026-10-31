@@ -80,17 +80,23 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({
     locationRef.current = currentLocation;
   }, [locationRef, currentLocation]);
 
-  const openSection = useCallback((section: string) => {
-    setQuery("");
-    setActiveSection(section);
-    viewportRef.current?.scrollTo({ top: 0 });
-  }, []);
+  const openSection = useCallback(
+    (section: string) => {
+      setQuery("");
+      setActiveSection(section);
+      viewportRef.current?.scrollTo({ top: 0 });
+    },
+    [setActiveSection, setQuery],
+  );
 
-  const openTopic = useCallback((section: string, title: string) => {
-    pendingTopicRef.current = { section, title };
-    setQuery("");
-    setActiveSection(section);
-  }, []);
+  const openTopic = useCallback(
+    (section: string, title: string) => {
+      pendingTopicRef.current = { section, title };
+      setQuery("");
+      setActiveSection(section);
+    },
+    [setQuery, setActiveSection],
+  );
 
   useScrollTopOnSearch(viewportRef, query);
 
