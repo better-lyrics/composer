@@ -7,10 +7,10 @@ import { cn } from "@/utils/cn";
 
 // -- Components ----------------------------------------------------------------
 
-const BindingKeys: React.FC<{ binding: ShortcutBinding; muted?: boolean }> = ({ binding, muted = false }) => {
+const BindingKeys: React.FC<{ binding: ShortcutBinding }> = ({ binding }) => {
   const keys = bindingToKeys(binding);
   return (
-    <span className={cn("flex items-center gap-0.5", muted && "opacity-55")}>
+    <span className="flex items-center gap-0.5">
       {keys.length === 0 && <span className="text-[11.5px] text-(--muted)">No key</span>}
       {keys.map((key) => (
         <KeyBadge key={key} keyName={key} />
@@ -19,16 +19,30 @@ const BindingKeys: React.FC<{ binding: ShortcutBinding; muted?: boolean }> = ({ 
   );
 };
 
+const BindingList: React.FC<{ bindings: readonly ShortcutBinding[]; muted?: boolean }> = ({
+  bindings,
+  muted = false,
+}) => (
+  <span className={cn("flex items-center gap-1", muted && "opacity-55")}>
+    {bindings.map((binding, index) => (
+      <span key={`${bindingToKeys(binding).join("+")}-${index}`} className="flex items-center gap-1">
+        {index > 0 && <span className="text-xs text-(--muted)">/</span>}
+        <BindingKeys binding={binding} />
+      </span>
+    ))}
+  </span>
+);
+
 const ShortcutChangeRows: React.FC<{ changes: readonly ShortcutChange[] }> = ({ changes }) => (
   <ul className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-2.5">
     {changes.map((change) => (
-      <li key={change.id} className="col-span-4 grid grid-cols-subgrid items-center min-h-8">
-        <span className="text-[12.5px] text-(--label)">{change.description}</span>
+      <li key={change.ids.join(" ")} className="col-span-4 grid grid-cols-subgrid items-center min-h-8">
+        <span className="text-[12.5px] text-(--label)">{change.label}</span>
         <span className="justify-self-end">
-          <BindingKeys binding={change.from} muted />
+          <BindingList bindings={change.from} muted />
         </span>
         <IconArrowRight aria-label="becomes" className="size-3 text-composer-text opacity-25" />
-        <BindingKeys binding={change.to} />
+        <BindingList bindings={change.to} />
       </li>
     ))}
   </ul>
