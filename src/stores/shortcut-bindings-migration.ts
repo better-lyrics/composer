@@ -12,6 +12,8 @@ interface SavedBindings {
 
 // -- Migration ----------------------------------------------------------------
 
+const SHORTCUT_BINDINGS_VERSION = 8;
+
 const UNBOUND: ShortcutBinding = { key: "" };
 
 const ALTERNATE_REDO_ID = "global.redoAlternate";
@@ -150,7 +152,7 @@ function migrateSavedOverrides(persistedState: unknown, version: number): unknow
 // Version 8 moves saved changes onto the preset they match, so no key moves.
 function migrateShortcutBindings(persistedState: unknown, version: number): unknown {
   const state = migrateSavedOverrides(persistedState, version);
-  if (version >= 8 || !state || typeof state !== "object") return state;
+  if (version >= SHORTCUT_BINDINGS_VERSION || !state || typeof state !== "object") return state;
   const { overrides: saved } = state as SavedBindings;
   const changed = saved && typeof saved === "object" ? saved : {};
   const { preset, overrides } = presetForOverrides(changed);
@@ -166,4 +168,4 @@ function migrateShortcutBindings(persistedState: unknown, version: number): unkn
 // -- Exports ------------------------------------------------------------------
 
 export type { SavedBindings };
-export { migrateSavedOverrides, migrateShortcutBindings, UNBOUND };
+export { migrateSavedOverrides, migrateShortcutBindings, SHORTCUT_BINDINGS_VERSION, UNBOUND };

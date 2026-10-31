@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { bindingsEqual, scopesConflict } from "@/stores/shortcut-binding-compare";
-import { migrateShortcutBindings, UNBOUND } from "@/stores/shortcut-bindings-migration";
+import { migrateShortcutBindings, SHORTCUT_BINDINGS_VERSION, UNBOUND } from "@/stores/shortcut-bindings-migration";
 import { DEFAULT_SHORTCUT_PRESET, presetBinding, type ShortcutPresetId } from "@/stores/shortcut-presets";
 import {
   getShortcutById,
@@ -24,10 +24,6 @@ interface ShortcutBindingsState {
   resetAllBindings: () => void;
 }
 
-// -- Constants ----------------------------------------------------------------
-
-const SHORTCUT_BINDINGS_PERSIST_VERSION = 8;
-
 // -- Store --------------------------------------------------------------------
 
 const useShortcutBindingsStore = create<ShortcutBindingsState>()(
@@ -49,7 +45,7 @@ const useShortcutBindingsStore = create<ShortcutBindingsState>()(
     }),
     {
       name: "composer-shortcut-bindings",
-      version: SHORTCUT_BINDINGS_PERSIST_VERSION,
+      version: SHORTCUT_BINDINGS_VERSION,
       migrate: migrateShortcutBindings,
     },
   ),
