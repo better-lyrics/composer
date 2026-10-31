@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { findProductionMatches } from "@/test/source-files";
 
-// A raw scroller read can force a layout mid-frame, and a raw write leaves the cached position stale until the
-// next scroll event. Timeline code reads and writes the scroll position through views/timeline/view-scroll.ts.
+// Raw scroller access forces layout mid-frame or leaves view-scroll.ts's cached position stale.
 
 // -- Constants ----------------------------------------------------------------
 
