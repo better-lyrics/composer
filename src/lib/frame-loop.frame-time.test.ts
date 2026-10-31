@@ -106,3 +106,24 @@ describe("frameTime with a repeated but unrounded stamp", () => {
     expect(paced).toEqual(stamps);
   });
 });
+
+describe("frameTime after uneven rounded gaps", () => {
+  it("regression: early frames that skip several rounding steps still prove the clock rounds", () => {
+    const step = 1000 / 60;
+    const stepsBetweenFrames = [1, 3, 2, 1, 1, 0, 1, 1, 0, 1];
+    let frame = 0;
+    let stamp = 1000;
+    window.requestAnimationFrame = (callback) =>
+      window.setTimeout(() => {
+        stamp += stepsBetweenFrames[frame++ % stepsBetweenFrames.length] * step;
+        callback(stamp);
+      }, 16);
+    window.cancelAnimationFrame = (handle) => window.clearTimeout(handle);
+    const release = frameLoop.holdFrames("playing");
+    const unsubscribe = frameLoop.subscribeFrame(() => {}, "probe");
+    vi.advanceTimersByTime(16 * 30);
+    unsubscribe();
+    release();
+    expect(frameLoop.clockRoundingMs()).toBeCloseTo(step, 6);
+  });
+});

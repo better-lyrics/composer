@@ -8,7 +8,7 @@ interface SimulatedAudioOptions {
   tickPhaseMs?: number;
   // A published step reaches the page this much later (Firefox hands it to the main thread).
   visibleAfterMs?: number;
-  // Chrome's exact time scatters around the heard position while it time-stretches (rates other than 1).
+  // Chrome's exact time scatters around the heard position while it time-stretches (rates other than 1); one value per task.
   jitterMs?: readonly number[];
   duration?: number;
 }
@@ -42,11 +42,11 @@ function simulatedAudio({
   let running = false;
   let paused = true;
   let seeking = false;
-  let reads = 0;
   const heard = () => (running ? anchorTime + (rate * (performance.now() - anchorAt)) / 1000 : anchorTime);
   const reported = () => {
     if (!running) return heard();
-    if (tickMs === 0) return heard() + jitterMs[reads++ % jitterMs.length] / 1000;
+    if (tickMs === 0)
+      return heard() + jitterMs[(Math.imul(Math.floor(performance.now()), 2654435761) >>> 0) % jitterMs.length] / 1000;
     const now = performance.now() - visibleAfterMs;
     const lastTick = Math.floor((now - tickPhaseMs) / tickMs) * tickMs + tickPhaseMs;
     return lastTick <= anchorAt ? anchorTime : anchorTime + (rate * (lastTick - anchorAt)) / 1000;

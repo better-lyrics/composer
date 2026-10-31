@@ -15,9 +15,7 @@ const DISPLAY_RESYNC_SECONDS = 0.1;
 
 // -- State ---------------------------------------------------------------------
 
-// Each new element value bounds the audio line `time = rate * now + offset` from below by `value - rate * readAt`:
-// it was published no later than the read that first saw it. A stepped clock is only ever behind, so the highest bound
-// is the line; an exact clock scatters around it while it time-stretches, so the mean is.
+// Each new element value is a lower bound on the audio line `rate * now + offset`; stepped clocks lag it, exact ones scatter.
 const observations = {
   offsets: new Float64Array(MAX_OBSERVATIONS),
   at: new Float64Array(MAX_OBSERVATIONS),
@@ -95,8 +93,10 @@ function observe(element: HTMLAudioElement, time: number, running: boolean, read
   const rate = element.playbackRate;
   const continuous =
     !resyncPending && element === lastRead.element && rate === lastRead.rate && running && lastRead.running;
-  if (!continuous) clearObservations();
-  else if (time !== lastRead.time) {
+  if (!continuous) {
+    clearObservations();
+    lastRead.changedAt = readAt;
+  } else if (time !== lastRead.time) {
     const latestReadAt = readAt + clockRoundingMs();
     const offset = time - (rate * latestReadAt) / 1000;
     const ceiling = time - (rate * lastRead.readAt) / 1000;
@@ -136,10 +136,10 @@ function resyncPlaybackClock(): void {
   resyncPending = true;
 }
 
-function readPlaybackClock(element: HTMLAudioElement, at?: number): number {
+function readPlaybackClock(element: HTMLAudioElement): number {
   const readAt = performance.now();
   const frameNow = currentFrameTime();
-  const now = frameNow ?? at ?? readAt + clockRoundingMs() / 2;
+  const now = frameNow ?? readAt + clockRoundingMs() / 2;
   const running = isClockRunning(element);
   const elementTime = element.currentTime;
   observe(element, elementTime, running, readAt);

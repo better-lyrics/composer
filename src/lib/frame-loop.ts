@@ -32,7 +32,8 @@ const STALE_HOLD_FRAMES = 600;
 // Past this gap the loop slept, so pacing starts over from the stamp.
 const MAX_PACED_GAP_MS = 100;
 const PACING_CORRECTION = 0.02;
-const ROUNDING_TOLERANCE = 0.001;
+const ROUNDING_TOLERANCE_MS = 0.01;
+const MIN_ROUNDING_MS = 1;
 
 // -- State --------------------------------------------------------------------
 
@@ -52,9 +53,8 @@ const pacing = {
   time: 0,
   since: 0,
   frames: 0,
-  rounding: Number.POSITIVE_INFINITY,
+  rounding: 0,
   repeated: false,
-  irregular: false,
 };
 
 // -- Diagnostics --------------------------------------------------------------
@@ -132,24 +132,19 @@ function runWrite(subscriber: FrameSubscriber, now: number): void {
   runPhase(subscriber, subscriber.write, "writeFailing", now);
 }
 
-function isWholeMultiple(larger: number, smaller: number): boolean {
-  const ratio = larger / smaller;
-  return Math.abs(ratio - Math.round(ratio)) < ROUNDING_TOLERANCE;
-}
-
-function noteElapsed(elapsed: number): void {
-  if (pacing.rounding !== Number.POSITIVE_INFINITY) {
-    const whole =
-      elapsed >= pacing.rounding
-        ? isWholeMultiple(elapsed, pacing.rounding)
-        : isWholeMultiple(pacing.rounding, elapsed);
-    if (!whole) pacing.irregular = true;
+// The largest step every gap so far is a whole multiple of; a jittery clock drives it toward zero.
+function commonStep(larger: number, smaller: number): number {
+  let a = larger;
+  let b = smaller;
+  while (b > ROUNDING_TOLERANCE_MS) {
+    const remainder = a % b;
+    [a, b] = [b, b - remainder < ROUNDING_TOLERANCE_MS ? 0 : remainder];
   }
-  pacing.rounding = Math.min(pacing.rounding, elapsed);
+  return a;
 }
 
 function isClockRounded(): boolean {
-  return pacing.repeated && !pacing.irregular;
+  return pacing.repeated && pacing.rounding >= MIN_ROUNDING_MS;
 }
 
 // A rounded clock repeats stamps and moves only in whole steps; its frames advance by the mean frame period instead.
@@ -164,7 +159,11 @@ function pacedFrameTime(stamp: number): number {
   }
   pacing.frames += 1;
   if (elapsed === 0) pacing.repeated = true;
-  else noteElapsed(elapsed);
+  else
+    pacing.rounding =
+      pacing.rounding === 0
+        ? elapsed
+        : commonStep(Math.max(pacing.rounding, elapsed), Math.min(pacing.rounding, elapsed));
   if (!isClockRounded() || stamp === pacing.since) {
     pacing.time = stamp;
     return stamp;

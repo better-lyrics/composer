@@ -72,6 +72,25 @@ describe("livePlaybackTime", () => {
     expect(maxAbs(errors)).toBeLessThan(0.006);
   });
 
+  it("regression: an exact clock that scatters stays on its mean after a resume", () => {
+    const jitterMs = [9, -12, 4, -7, 14, -3, -10, 6, 1, -2];
+    const audio = playing(simulatedAudio({ start: 10, rate: 2, jitterMs }));
+    tapErrors(audio, 60, 60);
+    audio.pause();
+    livePlaybackTime();
+    vi.advanceTimersByTime(500);
+    audio.play();
+    const errors: number[] = [];
+    for (let frame = 0; frame < 60; frame++) {
+      livePlaybackTime();
+      livePlaybackTime();
+      vi.advanceTimersByTime(7);
+      if (frame >= 10) errors.push(livePlaybackTime() - audio.heard());
+      vi.advanceTimersByTime(9);
+    }
+    expect(maxAbs(errors)).toBeLessThan(0.004);
+  });
+
   it.each([0.5, 1, 2])(
     "regression: a read between frames lands within a few ms of what is heard with 40 ms element steps (Firefox) at %sx",
     (rate) => {

@@ -187,9 +187,9 @@ function toggledPlaybackRate(): number {
   return playbackRate === NORMAL_PLAYBACK_RATE ? otherPlaybackRate : NORMAL_PLAYBACK_RATE;
 }
 
-function livePlaybackTime(at?: number): number {
+function livePlaybackTime(): number {
   const { audioElement, currentTime } = useAudioStore.getState();
-  return audioElement ? readPlaybackClock(audioElement, at) : currentTime;
+  return audioElement ? readPlaybackClock(audioElement) : currentTime;
 }
 
 function seekBy(seconds: number): void {
@@ -209,13 +209,13 @@ function playableFile(source: AudioSource): File | null {
   return null;
 }
 
-export type { AudioSource };
 export {
   FULL_VOLUME,
-  livePlaybackTime,
   NORMAL_PLAYBACK_RATE,
+  livePlaybackTime,
   playableFile,
   seekBy,
   toggledPlaybackRate,
   useAudioStore,
 };
+export type { AudioSource };
