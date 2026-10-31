@@ -20,7 +20,7 @@ function useSeekReveal(scrollContainerRef: RefObject<HTMLDivElement | null>, ena
       restingTime = audio.currentTime;
     };
     const handleSeeking = () => {
-      // Play seeks in place to resume (see `playOrRevert`), and play() has already run when seeking fires.
+      // Play seeks in place to resume in Chromium (see `playOrRevert`), and play() has already run when seeking fires.
       if (!audio.paused && audio.currentTime === restingTime) return;
       const container = scrollContainerRef.current;
       if (!container || useProjectStore.getState().activeTab !== "timeline") return;
