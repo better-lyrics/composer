@@ -7,6 +7,7 @@ import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height
 import { type SpectrumSessionState, spectrumSession } from "@/views/timeline/spectrum/spectrum-session";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect, useRef } from "react";
+import { readViewScroll } from "@/views/timeline/view-scroll";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -71,7 +72,7 @@ const SpectrumReadout: React.FC = () => {
       const x = e.clientX - box.left;
       const y = Math.min(height - 1, Math.max(0, e.clientY - box.top));
       const hz = frequencyAtRow(spectrumScale, spectrumTop, y, height);
-      const db = zoom > 0 ? levelAt(spectrumSession, (x + container.scrollLeft) / zoom, hz) : null;
+      const db = zoom > 0 ? levelAt(spectrumSession, (x + readViewScroll(container).left) / zoom, hz) : null;
       const note = noteOfFrequency(hz);
       if (db === null || !note || !hzRef.current || !noteRef.current || !centsRef.current || !dbRef.current) {
         hide();

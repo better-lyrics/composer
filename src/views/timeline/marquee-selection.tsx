@@ -1,5 +1,6 @@
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { MarqueeRect } from "@/views/timeline/use-marquee";
+import { viewScrollLeft, viewScrollTop } from "@/views/timeline/view-scroll";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -16,15 +17,12 @@ const MarqueeSelection: React.FC<MarqueeSelectionProps> = ({ rect, scrollContain
   const container = scrollContainerRef.current;
   if (!container) return null;
 
-  const scrollLeft = container.scrollLeft;
-  const scrollTop = container.scrollTop;
-
   return (
     <div
       className="absolute pointer-events-none z-35 border border-dashed border-composer-accent bg-composer-accent/10 rounded-lg"
       style={{
-        left: rect.x - scrollLeft,
-        top: rect.y - scrollTop,
+        left: rect.x - viewScrollLeft(),
+        top: rect.y - viewScrollTop(),
         width: rect.width,
         height: rect.height,
       }}

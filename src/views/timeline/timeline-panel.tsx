@@ -37,6 +37,7 @@ import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { isPlaybackStyleWrite } from "@/views/timeline/playback-style-mutation";
 import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { TimelineRuler } from "@/views/timeline/timeline-ruler";
+import { syncViewScroll, viewScrollLeft } from "@/views/timeline/view-scroll";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
@@ -85,8 +86,6 @@ const TimelinePanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const duration = useAudioStore((s) => s.duration);
   const lines = useProjectStore((s) => s.lines);
-  const setScrollLeft = useTimelineStore((s) => s.setScrollLeft);
-  const setScrollTop = useTimelineStore((s) => s.setScrollTop);
   const previewSidebar = useSettingsStore((s) => s.previewSidebar);
   const pasteMode = useTimelineStore((s) => s.pasteMode);
   const editingWord = useTimelineStore((s) => s.editingWord);
@@ -119,6 +118,7 @@ const TimelinePanel: React.FC = () => {
     const target = contentRef.current;
     const viewport = scrollContainerRef.current;
     if (!timelineShown || !target || !viewport) return;
+    syncViewScroll(viewport);
     // The scroll container remounts when the lyrics are cleared and added back; init skips while the old instance lives.
     const instance = overlayScrollbars();
     if (instance && instance.elements().viewport !== viewport) instance.destroy();
@@ -176,15 +176,10 @@ const TimelinePanel: React.FC = () => {
     return () => observer.disconnect();
   }, [timelineShown]);
 
-  const handleScroll = useCallback(
-    (e: React.UIEvent<HTMLDivElement>) => {
-      const { scrollLeft, scrollTop } = e.currentTarget;
-      setScrollLeft(scrollLeft);
-      setScrollTop(scrollTop);
-      if (rulerTrackRef.current) followRulerScroll(rulerTrackRef.current, scrollLeft);
-    },
-    [setScrollLeft, setScrollTop],
-  );
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    syncViewScroll(e.currentTarget);
+    if (rulerTrackRef.current) followRulerScroll(rulerTrackRef.current, viewScrollLeft());
+  }, []);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {

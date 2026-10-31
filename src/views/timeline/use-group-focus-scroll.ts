@@ -5,6 +5,7 @@ import { type GroupFocus, clampScrollLeft, fittedFocusZoom, focusBounds } from "
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type RefObject, useEffect, useRef } from "react";
+import { readViewScroll, scrollView } from "@/views/timeline/view-scroll";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -44,8 +45,9 @@ function useGroupFocusScroll(scrollContainerRef: RefObject<HTMLDivElement | null
     const keepInsideInstance = () => {
       const current = currentFocusScrollRange(container);
       if (!current) return;
-      const clamped = clampScrollLeft(container.scrollLeft, current);
-      if (clamped !== container.scrollLeft) container.scrollLeft = clamped;
+      const left = readViewScroll(container).left;
+      const clamped = clampScrollLeft(left, current);
+      if (clamped !== left) scrollView(container, clamped);
     };
     container.addEventListener("scroll", keepInsideInstance);
     return () => {

@@ -10,6 +10,7 @@ import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store"
 import { useSnapMarkerDrag } from "@/views/timeline/use-snap-marker-drag";
 import { AnimatePresence } from "motion/react";
 import { useMemo, useRef } from "react";
+import { viewScrollLeft } from "@/views/timeline/view-scroll";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -66,7 +67,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
     () => {
       const layer = layerRef.current;
       if (layer) {
-        const scrollLeft = scrollContainerRef.current?.scrollLeft ?? useTimelineStore.getState().scrollLeft;
+        const scrollLeft = viewScrollLeft();
         layer.style.transform = `translate3d(${GUTTER_WIDTH - scrollLeft}px, 0, 0)`;
       }
     },
