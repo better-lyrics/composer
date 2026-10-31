@@ -157,7 +157,9 @@ const TimelineExtras: React.FC = () => (
           <strong>Auto-align</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.autoAlign")} />
           ): times the words of the selected line, or the line at the playhead, from the separated vocals. The{" "}
           <strong>Align whole song</strong> menu next to it sets up and runs auto-align for every line. To align several
-          lines, select their words, right-click and choose Align.
+          lines, select their words, right-click and choose Align. Its <strong>Draft line timings</strong> places the
+          lines you haven't timed without taps, for you to check: lines it's unsure of are marked in the gutter, and any
+          line you fix stays put when you draft again.
         </li>
         <li>
           <strong>Import</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} />

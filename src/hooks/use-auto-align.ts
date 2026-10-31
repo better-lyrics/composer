@@ -1,4 +1,6 @@
 import { useAlignmentStore } from "@/stores/alignment";
+import type { DraftResult } from "@/stores/alignment-draft";
+import { useAudioStore } from "@/stores/audio";
 import { useSeparationStore } from "@/stores/separation";
 import { alignmentErrorCopy } from "@/ui/alignment-error-copy";
 import { formatWholeMegabytes } from "@/utils/format-file-size";
@@ -25,8 +27,8 @@ const UNKNOWN_WORDS_SHOWN = 8;
 // -- State ---------------------------------------------------------------------
 
 // The latest run, from any trigger, so Try again repeats it: the Timeline's one
-// line, or the Sync tab's whole song, with the same realign choice.
-let lastRequest: { lineIds?: readonly string[]; realign: boolean } = { realign: false };
+// line, the Sync tab's whole song with the same realign choice, or a draft.
+let lastRequest: { lineIds?: readonly string[]; realign: boolean; draft?: true } = { realign: false };
 
 // -- Functions -----------------------------------------------------------------
 
@@ -41,7 +43,7 @@ function listWords(words: string[]): string {
   return more > 0 ? `${shown} and ${more} more` : shown;
 }
 
-function showAlignmentError(autoAlign: AutoAlign, lineIds?: readonly string[], realign?: boolean): void {
+function showAlignmentError(downloadAndRetry: () => void): void {
   const error = useAlignmentStore.getState().error;
   if (!error) return;
   if (error.code === "needs-vocals") {
@@ -61,12 +63,40 @@ function showAlignmentError(autoAlign: AutoAlign, lineIds?: readonly string[], r
       duration: Number.POSITIVE_INFINITY,
       action: {
         label: size ? `Download (${formatWholeMegabytes(size)})` : "Download",
-        onClick: () => void autoAlign(lineIds, { allowDownload: true, realign }),
+        onClick: downloadAndRetry,
       },
     });
     return;
   }
   toast.error(alignmentErrorCopy(error.code).title, { description: error.message });
+}
+
+function showDraftResult(result: DraftResult): void {
+  if (result.placed > 0) {
+    const firstFlagged = result.firstFlagged;
+    toast.success(`Drafted ${pluralize(result.placed, "line")}`, {
+      description:
+        result.flagged > 0
+          ? `${pluralize(result.flagged, "line")} marked in the Timeline may be off. Check ${pluralWord(result.flagged, "it", "them")} first.`
+          : "Play it through and fix any line that's off.",
+      action:
+        firstFlagged !== null
+          ? { label: "Check first", onClick: () => useAudioStore.getState().seekTo(firstFlagged) }
+          : undefined,
+    });
+  }
+  if (result.unplaced > 0) {
+    toast.warning(`${pluralize(result.unplaced, "line")} couldn't be placed`, {
+      description: "Tap them by hand, then draft again to place the lines around them.",
+    });
+  }
+  if (result.lowConfidence) {
+    toast.warning("Tapping recommended for this song", {
+      description:
+        "The draft scored low across the song, so lines may be seconds off. Tap the first line after each break and draft again, or tap the song by hand.",
+      duration: Number.POSITIVE_INFINITY,
+    });
+  }
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -79,7 +109,9 @@ function useAutoAlign() {
     lastRequest = { lineIds, realign: options?.realign ?? false };
     const result = await useAlignmentStore.getState().alignLines(lineIds, options);
     if (!result) {
-      if (options?.toastErrors !== false) showAlignmentError(autoAlign, lineIds, options?.realign);
+      if (options?.toastErrors !== false) {
+        showAlignmentError(() => void autoAlign(lineIds, { allowDownload: true, realign: options?.realign }));
+      }
       return;
     }
     if (result.aligned > 0) showGroupActionToast(alignedMessage(result.aligned, result.skipped));
@@ -101,15 +133,22 @@ function useAutoAlign() {
     }
   }, []);
 
+  const draft = useCallback(async (options: { allowDownload?: boolean; toastErrors?: boolean } = {}) => {
+    lastRequest = { realign: false, draft: true };
+    const result = await useAlignmentStore.getState().draftLines(options);
+    if (result) showDraftResult(result);
+    else if (options.toastErrors !== false) showAlignmentError(() => void draft({ allowDownload: true }));
+  }, []);
+
   const cancel = useCallback(() => useAlignmentStore.getState().cancel(), []);
-  const retry = useCallback(
-    () =>
-      void autoAlign(lastRequest.lineIds, { allowDownload: true, realign: lastRequest.realign, toastErrors: false }),
-    [autoAlign],
-  );
+  const retry = useCallback(() => {
+    if (lastRequest.draft) return void draft({ allowDownload: true, toastErrors: false });
+    void autoAlign(lastRequest.lineIds, { allowDownload: true, realign: lastRequest.realign, toastErrors: false });
+  }, [autoAlign, draft]);
 
   return {
     autoAlign,
+    draft,
     cancel,
     retry,
     isDownloading: status === "downloading",
