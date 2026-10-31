@@ -13,6 +13,7 @@ interface AutoAlignStatusProps {
 const AutoAlignStatus: React.FC<AutoAlignStatusProps> = ({ idleLabel }) => {
   const status = useAlignmentStore((s) => s.status);
   const progress = useAlignmentStore((s) => s.progress);
+  const placing = useAlignmentStore((s) => s.task === "placing");
   if (status !== "downloading" && status !== "running") {
     return (
       <>
@@ -29,7 +30,9 @@ const AutoAlignStatus: React.FC<AutoAlignStatusProps> = ({ idleLabel }) => {
       />
       {idleLabel}
       <span className="font-mono tabular-nums">
-        {status === "downloading" ? `${percent(progress.done, progress.total)}%` : `${progress.done}/${progress.total}`}
+        {status === "downloading" || placing
+          ? `${percent(progress.done, progress.total)}%`
+          : `${progress.done}/${progress.total}`}
       </span>
     </>
   );

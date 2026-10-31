@@ -6,9 +6,11 @@ import { isModelHostingConfigured } from "@/audio/separation/model-registry";
 import { hasCjk } from "@/domain/alignment/cjk";
 import { canAlignLanguage, hanReadingFor } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
-import { retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
+import { sanitizeIntervals } from "@/domain/alignment/words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { type PlannedLine, isUnchanged, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
+import { type DraftPhase, type DraftResult, draftTimings } from "@/stores/alignment-draft";
+import { isUnchanged, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
+import { alignPlanned, applyAligned, prepareRun } from "@/stores/alignment-run";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
@@ -46,6 +48,8 @@ interface AlignOptions {
 
 interface AlignmentState {
   status: AlignmentStatus;
+  /** What the running job is doing: aligning words, or placing lines for a draft before aligning them. */
+  task: "align" | DraftPhase;
   progress: { done: number; total: number };
   error: AlignmentError | null;
   modelCached: boolean;
@@ -56,6 +60,8 @@ interface AlignmentState {
 interface AlignmentActions {
   /** Aligns the given lines, or every eligible line when omitted. */
   alignLines: (lineIds?: readonly string[], options?: AlignOptions) => Promise<AlignmentResult | null>;
+  /** Drafts timing for every line the user hasn't timed, placed between the ones they have. */
+  draftLines: (options?: { allowDownload?: boolean }) => Promise<DraftResult | null>;
   cancel: () => void;
   dismissError: () => void;
   refreshModelCached: (modelId?: string) => Promise<void>;
@@ -90,10 +96,41 @@ function isAbortError(err: unknown): boolean {
   return (err as Error)?.name === "AbortError";
 }
 
+type SetState = (partial: Partial<AlignmentState>) => void;
+
+// Claims a whole-song run, makes it cancellable before its first await, and
+// frees the model (and its GPU memory) afterwards unless asked to keep it; the
+// download stays cached.
+async function claimRun<T>(
+  set: SetState,
+  get: () => AlignmentState,
+  task: AlignmentState["task"],
+  body: (signal: AbortSignal) => Promise<T | null>,
+): Promise<T | null> {
+  set({ status: "downloading", task, error: null, progress: { done: 0, total: 0 } });
+  controller = new AbortController();
+  const { signal } = controller;
+  try {
+    const result = await body(signal);
+    if (get().status !== "error") set({ status: "idle", progress: { done: 0, total: 0 } });
+    return result;
+  } catch (err) {
+    if (isAbortError(err) || signal.aborted) {
+      set({ status: "idle", progress: { done: 0, total: 0 } });
+      return null;
+    }
+    return fail(set, "failed", (err as Error).message);
+  } finally {
+    if (get().status !== "idle" || !useSettingsStore.getState().keepAlignmentModelLoaded) hubertfaAligner.release();
+    if (controller?.signal === signal) controller = null;
+  }
+}
+
 // -- Store --------------------------------------------------------------------
 
 const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) => ({
   status: "idle",
+  task: "align",
   progress: { done: 0, total: 0 },
   error: null,
   modelCached: false,
@@ -111,96 +148,53 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
   alignLines: async (lineIds, options = {}) => {
     const status = get().status;
     if (status === "running" || status === "downloading") return null;
-    const aligner: Aligner = hubertfaAligner;
     const project = useProjectStore.getState();
     const planned = planLines(project.lines, lineIds, options.realign ?? false);
     if (planned.length === 0) return { aligned: 0, skipped: 0, fellBack: 0, unknownWords: [], guessedWords: [] };
-    // Claims the run and makes it cancellable before the first await.
-    set({ status: "downloading", error: null, progress: { done: 0, total: 0 } });
-    controller = new AbortController();
-    const { signal } = controller;
-    // One model for the whole run, even if the setting changes while it starts.
-    const modelId = useSettingsStore.getState().alignmentModelId;
-
-    try {
-      const assets = await resolveAlignmentAssets(modelId);
-      if (!assets) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
-      if (!canAlignLanguage(project.metadata.language, assets.languages)) {
-        return fail(set, "unsupported-language", "The alignment model doesn't cover this song's language.");
-      }
-      const hanReading = hanReadingFor(project.metadata.language, project.lines);
-      const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
-      const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
-      if (!vocalsUrl) {
-        return fail(
-          set,
-          "needs-vocals",
-          "Separate the vocals first. Alignment on the full mix is less accurate than tapping by hand.",
-        );
-      }
-      if (!options.allowDownload && !(await areAlignmentAssetsCached(assets))) {
-        return fail(set, "needs-model", "Auto-align needs a one-time model download.");
-      }
-      signal.throwIfAborted();
-      await aligner.prepare((loaded, total) => set({ progress: { done: loaded, total } }), signal, {
-        japanese,
-        modelId,
-      });
+    return claimRun(set, get, "align", async (signal) => {
+      const run = await prepareRun(
+        planned.map((p) => p.line),
+        {
+          allowDownload: options.allowDownload ?? false,
+          signal,
+          onLoading: (loaded, total) => set({ progress: { done: loaded, total } }),
+        },
+      );
+      if ("code" in run) return fail(set, run.code, run.message);
       set({ status: "running", modelCached: true, progress: { done: 0, total: planned.length } });
-      const pcm = await loadVocalsPcm(vocalsUrl);
-      const updates: LineUpdate[] = [];
-      const plannedById = new Map<string, PlannedLine>();
-      const unknownWords = new Set<string>();
-      const guessedWords = new Set<string>();
-      let fellBack = 0;
-
-      for (const plan of planned) {
-        signal.throwIfAborted();
-        const { line, words, existing } = plan;
-        const { segment, window } = segmentFor(plan, hanReading, pcm);
-        // react-doctor-disable-next-line react-doctor/async-await-in-loop -- the worker aligns one line at a time, and progress and cancel follow each line
-        const result = await aligner.align(segment, signal);
-        if (result.fellBack) fellBack++;
-        for (const word of result.unknownWords) unknownWords.add(word);
-        for (const word of result.guessedWords) guessedWords.add(word);
-        const safe = sanitizeIntervals(result.intervals, window);
-        const timings = existing ? retimeWords(existing, safe) : timingsFromParts(words, safe, result.splits);
-        updates.push({ id: line.id, updates: { words: timings } });
-        plannedById.set(line.id, plan);
-        set({ progress: { done: updates.length, total: planned.length } });
-      }
-
-      signal.throwIfAborted();
-      const latest = useProjectStore.getState();
-      // Another project can share line ids and text (a duplicate, a re-import); this run's timing isn't its.
-      if (latest.projectSession !== project.projectSession) throw new DOMException("Project changed", "AbortError");
-      const currentById = new Map(latest.lines.map((l) => [l.id, l]));
-      const applicable = updates.filter((u) => isUnchanged(currentById.get(u.id), plannedById.get(u.id)!));
-      if (applicable.length > 0) {
-        // Timing only: deriving text would drop the untimed words of partly synced lines.
-        latest.updateLinesWithHistory(applicable, { deriveText: false });
-        // Lines are tapped in Line mode; once they have word timing, refine words.
-        latest.setGranularity("word");
-      }
-      set({ status: "idle", progress: { done: 0, total: 0 } });
+      const aligned = await alignPlanned(run, planned, signal, (done) =>
+        set({ progress: { done, total: planned.length } }),
+      );
+      const applied = applyAligned(
+        project.projectSession,
+        aligned.updates,
+        (current, id) => isUnchanged(current, aligned.plannedById.get(id)!),
+        signal,
+      );
       return {
-        aligned: applicable.length,
-        skipped: updates.length - applicable.length,
-        fellBack,
-        unknownWords: [...unknownWords],
-        guessedWords: [...guessedWords],
+        aligned: applied.length,
+        skipped: aligned.updates.length - applied.length,
+        fellBack: aligned.fellBack.size,
+        unknownWords: [...aligned.unknownWords],
+        guessedWords: [...aligned.guessedWords],
       };
-    } catch (err) {
-      if (isAbortError(err) || signal.aborted) {
-        set({ status: "idle", progress: { done: 0, total: 0 } });
-        return null;
-      }
-      return fail(set, "failed", (err as Error).message);
-    } finally {
-      // Free the model (and its GPU memory) between runs unless asked to keep it; the download stays cached.
-      if (get().status !== "idle" || !useSettingsStore.getState().keepAlignmentModelLoaded) aligner.release();
-      if (controller?.signal === signal) controller = null;
-    }
+    });
+  },
+
+  draftLines: async (options = {}) => {
+    const status = get().status;
+    if (status === "running" || status === "downloading") return null;
+    const lines = useProjectStore.getState().lines;
+    return claimRun(set, get, "placing", async (signal) => {
+      const run = await prepareRun(lines, {
+        allowDownload: options.allowDownload ?? false,
+        signal,
+        onLoading: (loaded, total) => set({ progress: { done: loaded, total } }),
+      });
+      if ("code" in run) return fail(set, run.code, run.message);
+      set({ status: "running", modelCached: true, progress: { done: 0, total: 0 } });
+      return draftTimings(run, signal, (task, done, total) => set({ task, progress: { done, total } }));
+    });
   },
 
   retimeNewSyllables: async (before) => {
@@ -225,7 +219,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     const modelId = useSettingsStore.getState().alignmentModelId;
     // A split never starts a model load; this only runs with one kept in memory.
     if (planned.length === 0 || !vocalsUrl || !aligner.isLoaded({ japanese, modelId })) return;
-    set({ status: "running", error: null, progress: { done: 0, total: planned.length } });
+    set({ status: "running", task: "align", error: null, progress: { done: 0, total: planned.length } });
     controller = new AbortController();
     const { signal } = controller;
     try {

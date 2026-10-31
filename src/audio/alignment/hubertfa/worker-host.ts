@@ -1,6 +1,8 @@
 import type { HanReading } from "@/domain/alignment/language";
 import type { AlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
-import type { AlignOutcome, InboundMessage, OutboundMessage } from "@/audio/alignment/hubertfa/worker";
+import type { DraftLineRequest } from "@/audio/alignment/types";
+import type { AlignOutcome, InboundMessage, OutboundMessage } from "@/audio/alignment/hubertfa/worker-protocol";
+import type { DraftPlacement } from "@/domain/alignment/draft-timing";
 import type { Backend } from "@/audio/ort-runtime";
 
 // -- Types --------------------------------------------------------------------
@@ -51,6 +53,10 @@ class AlignmentWorker {
     if (msg.type === "init-progress") {
       this.armInitTimeout();
       pending.onProgress?.(msg.loaded, msg.total);
+      return;
+    }
+    if (msg.type === "draft-progress") {
+      pending.onProgress?.(msg.done, msg.total);
       return;
     }
     this.settle();
@@ -114,6 +120,23 @@ class AlignmentWorker {
     ]);
     if (msg.type !== "align-done") throw workerError("Unexpected reply to align.", "protocol");
     return msg.outcome;
+  }
+
+  async draft(
+    samples: Float32Array,
+    sampleRate: number,
+    lines: DraftLineRequest[],
+    hanReading: HanReading,
+    onProgress: (done: number, total: number) => void,
+  ): Promise<(DraftPlacement | null)[]> {
+    const copy = new Float32Array(samples);
+    const msg = await this.request(
+      { type: "draft", samples: copy, sampleRate, lines, hanReading },
+      [copy.buffer],
+      onProgress,
+    );
+    if (msg.type !== "draft-done") throw workerError("Unexpected reply to draft.", "protocol");
+    return msg.placements;
   }
 
   cancel(): void {
