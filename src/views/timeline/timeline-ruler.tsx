@@ -8,6 +8,7 @@ import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconClock } from "@tabler/icons-react";
 import { useEffect } from "react";
+import { readViewScroll } from "@/views/timeline/view-scroll";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -65,13 +66,13 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, track
   // A passive effect: the scroll container mounts after this sibling, so its ref is set only once layout effects ran.
   useEffect(() => {
     const container = scrollContainerRef.current;
-    if (container && trackRef.current) followRulerScroll(trackRef.current, container.scrollLeft);
+    if (container && trackRef.current) followRulerScroll(trackRef.current, readViewScroll(container).left);
   }, [scrollContainerRef, trackRef]);
 
   const seekToPointer = (event: React.PointerEvent<HTMLDivElement>) => {
     const container = scrollContainerRef.current;
     if (!container || duration <= 0 || event.button !== 0) return;
-    const x = event.clientX - event.currentTarget.getBoundingClientRect().left + container.scrollLeft;
+    const x = event.clientX - event.currentTarget.getBoundingClientRect().left + readViewScroll(container).left;
     const time = Math.min(duration, Math.max(0, x / zoom));
     if (useTimelineStore.getState().markerMode || event.altKey) placeSnapPoint(time);
     else {

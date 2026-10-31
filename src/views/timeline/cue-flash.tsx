@@ -2,6 +2,7 @@ import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { onCueFlash } from "@/lib/replay-cue";
 import { timeToX } from "@/views/timeline/coords";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { viewScrollLeft } from "@/views/timeline/view-scroll";
 import { useEffect, useRef } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -18,8 +19,7 @@ const FLASH_FADE_MS = 400;
 // -- Helpers -------------------------------------------------------------------
 
 function placeFlashLine(line: HTMLDivElement, time: number, container: HTMLDivElement | null): void {
-  const { zoom, scrollLeft } = useTimelineStore.getState();
-  line.style.transform = `translate3d(${timeToX(time, zoom, container?.scrollLeft ?? scrollLeft)}px, 0, 0)`;
+  line.style.transform = `translate3d(${timeToX(time, useTimelineStore.getState().zoom, viewScrollLeft())}px, 0, 0)`;
   if (container) line.style.height = `${container.scrollHeight}px`;
 }
 

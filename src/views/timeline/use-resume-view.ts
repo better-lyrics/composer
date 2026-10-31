@@ -3,6 +3,7 @@ import { centerTimeScrollLeft } from "@/views/timeline/coords";
 import { createFollowInput, fillFollowInput } from "@/views/timeline/follow-input";
 import { createRowLayoutCache } from "@/views/timeline/row-layout-cache";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { scrollView, syncViewScroll } from "@/views/timeline/view-scroll";
 import { createFollowMemory, followScrollTop, followStep } from "@/views/timeline/vertical-follow";
 import { type RefObject, useEffect } from "react";
 
@@ -11,14 +12,13 @@ import { type RefObject, useEffect } from "react";
 // Without a saved scroll, frame the playhead the way follow mode does when playback starts.
 function resumeScroll(container: HTMLElement, view: ResumePosition): void {
   if (view.scroll) {
-    container.scrollLeft = view.scroll.left;
-    container.scrollTop = view.scroll.top;
+    scrollView(container, view.scroll.left, view.scroll.top);
     return;
   }
-  container.scrollLeft = centerTimeScrollLeft(view.time, view.zoom, container.clientWidth);
+  scrollView(container, centerTimeScrollLeft(view.time, view.zoom, container.clientWidth));
   const input = fillFollowInput(createFollowInput(), createRowLayoutCache(), view.time, container.clientHeight);
   const rows = followStep(createFollowMemory(), input);
-  container.scrollTop = rows ? followScrollTop(rows, input, container.scrollHeight) : 0;
+  scrollView(container, null, rows ? followScrollTop(rows, input, container.scrollHeight) : 0);
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -37,9 +37,7 @@ function useResumeView(scrollContainerRef: RefObject<HTMLDivElement | null>, rea
         return;
       }
       // A view that never scrolls fires no scroll event, so record it once it is on screen.
-      const { setScrollLeft, setScrollTop } = useTimelineStore.getState();
-      setScrollLeft(container.scrollLeft);
-      setScrollTop(container.scrollTop);
+      syncViewScroll(container);
     };
     apply();
     const observer = new ResizeObserver(apply);
