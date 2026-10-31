@@ -1,5 +1,6 @@
 import type { ProjectTab } from "@/domain/project/tab";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { notePlayShortcut } from "@/hooks/useSpaceHabitHint";
 import { notePlacement } from "@/lib/replay-cue";
 import { togglePlayback } from "@/lib/sync-count-in";
 import { livePlaybackTime, seekBy, toggledPlaybackRate, useAudioStore } from "@/stores/audio";
@@ -43,6 +44,11 @@ function toggleStem(): void {
   useSeparationStore.getState().selectStem(toggledStem());
 }
 
+function playFromShortcut(): void {
+  notePlayShortcut();
+  togglePlayback();
+}
+
 function useGlobalShortcuts(actions: GlobalShortcutActions): void {
   const { setActiveTab, setHelpOpen, setSettingsOpen, editorActive = true } = actions;
   const general = {
@@ -60,7 +66,7 @@ function useGlobalShortcuts(actions: GlobalShortcutActions): void {
           "global.goToTimeline": () => setActiveTab("timeline"),
           "global.goToPreview": () => setActiveTab("preview"),
           "global.goToExport": () => setActiveTab("export"),
-          "global.playPause": togglePlayback,
+          "global.playPause": playFromShortcut,
           "global.playPauseWhileTyping": togglePlayback,
           "global.seekBackward": seekBackward,
           "global.seekForward": seekForward,
