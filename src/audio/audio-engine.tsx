@@ -1,6 +1,7 @@
 import { decodeAudioToWav, needsWavConversion } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { resyncPlaybackClock } from "@/audio/playback-clock";
+import { seekInPlaceToResume } from "@/audio/resume-seek";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -18,11 +19,7 @@ const SLOW_DECODE_MS = 800;
 
 // A rejected play() (autoplay policy, undecodable source) must not leave the UI showing Pause.
 function playOrRevert(audio: HTMLAudioElement, setIsPlaying: (playing: boolean) => void): void {
-  // Chromium drops the audio it had buffered when it paused; a seek in place resumes from the paused sample.
-  if (BROWSER_KIND === "chromium" && audio.paused && !audio.seeking) {
-    const pausedAt = audio.currentTime;
-    audio.currentTime = pausedAt;
-  }
+  if (BROWSER_KIND === "chromium" && audio.paused && !audio.seeking) seekInPlaceToResume(audio);
   audio.play().catch(() => {
     if (audio.paused) setIsPlaying(false);
   });

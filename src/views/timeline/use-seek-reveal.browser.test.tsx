@@ -1,3 +1,4 @@
+import { seekInPlaceToResume } from "@/audio/resume-seek";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -75,8 +76,7 @@ describe("useSeekReveal", () => {
     container.scrollLeft = 0;
 
     audio.muted = true;
-    const pausedAt = audio.currentTime;
-    audio.currentTime = pausedAt;
+    seekInPlaceToResume(audio);
     await audio.play();
 
     await expect.poll(() => seeks).toBe(2);
@@ -99,6 +99,26 @@ describe("useSeekReveal", () => {
     useAudioStore.getState().seekTo(50);
 
     await expect.poll(() => container.scrollLeft).toBeGreaterThan(0);
+    container.remove();
+  });
+
+  it("regression: reveals a seek during playback that lands where playback last rested, such as replay from cue", async () => {
+    const container = await revealSetup(300);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    let seeks = 0;
+    audio.addEventListener("seeked", () => {
+      seeks++;
+    });
+    useAudioStore.getState().seekTo(50);
+    await expect.poll(() => seeks).toBe(1);
+    audio.muted = true;
+    await audio.play();
+    container.scrollLeft = 0;
+
+    useAudioStore.getState().seekTo(50);
+
+    await expect.poll(() => container.scrollLeft).toBeGreaterThan(0);
+    audio.pause();
     container.remove();
   });
 });

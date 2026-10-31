@@ -1,3 +1,4 @@
+import { isResumeSeek } from "@/audio/resume-seek";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -15,13 +16,8 @@ function useSeekReveal(scrollContainerRef: RefObject<HTMLDivElement | null>, ena
 
   useEffect(() => {
     if (!enabled || !audio) return;
-    let restingTime = audio.currentTime;
-    const handleRest = () => {
-      restingTime = audio.currentTime;
-    };
     const handleSeeking = () => {
-      // Play seeks in place to resume in Chromium (see `playOrRevert`), and play() has already run when seeking fires.
-      if (!audio.paused && audio.currentTime === restingTime) return;
+      if (isResumeSeek(audio)) return;
       const container = scrollContainerRef.current;
       if (!container || useProjectStore.getState().activeTab !== "timeline") return;
       const { zoom, isDraggingPlayhead, loopRegionDrag } = useTimelineStore.getState();
@@ -33,13 +29,7 @@ function useSeekReveal(scrollContainerRef: RefObject<HTMLDivElement | null>, ena
       scrollView(container, focusRange ? clampScrollLeft(next, focusRange) : next);
     };
     audio.addEventListener("seeking", handleSeeking);
-    audio.addEventListener("seeked", handleRest);
-    audio.addEventListener("pause", handleRest);
-    return () => {
-      audio.removeEventListener("seeking", handleSeeking);
-      audio.removeEventListener("seeked", handleRest);
-      audio.removeEventListener("pause", handleRest);
-    };
+    return () => audio.removeEventListener("seeking", handleSeeking);
   }, [audio, enabled, scrollContainerRef]);
 }
 
