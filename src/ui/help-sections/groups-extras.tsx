@@ -119,10 +119,11 @@ const GroupsExtras: React.FC = () => (
 
     <HelpTopic title="Emptying an instance">
       <p className={PROSE}>
-        Click the banner to select every word in an instance, then press <strong>Delete</strong>. Composer clears the
-        timed content and notices the instance is now empty across all its lines, so it strips the group attrs from
-        those rows automatically. You're left with empty placeholders that the fill flow above can repopulate later. The
-        other instances of the group are untouched.
+        Click the banner to select every word in an instance, then press{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.deleteSelection")} />. Composer clears the timed content
+        and notices the instance is now empty across all its lines, so it strips the group attrs from those rows
+        automatically. You're left with empty placeholders that the fill flow above can repopulate later. The other
+        instances of the group are untouched.
       </p>
       <p className={`${PROSE} mt-2`}>
         Partial deletes don't trigger this: if one line of a multi-line instance still has timed words, the instance

@@ -39,11 +39,19 @@ const SyncSection: React.FC = () => (
       </p>
       <p className={`${PROSE} mt-2`}>For words with gaps between them, hold and release once per word:</p>
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) mt-1.5 space-y-1`}>
-        <li>Hold F: "hello" starts</li>
-        <li>Release F: "hello" ends</li>
+        <li>
+          Hold <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} />: "hello" starts
+        </li>
+        <li>
+          Release <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} />: "hello" ends
+        </li>
         <li>(wait for gap)</li>
-        <li>Hold F: "world" starts</li>
-        <li>Release F: "world" ends</li>
+        <li>
+          Hold <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} />: "world" starts
+        </li>
+        <li>
+          Release <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} />: "world" ends
+        </li>
       </ul>
     </HelpTopic>
 
@@ -55,21 +63,41 @@ const SyncSection: React.FC = () => (
         <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} /> to end the last one:
       </p>
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) mt-1.5 space-y-1`}>
-        <li>Hold F: "beau" starts</li>
-        <li>Tap Space (still holding F): "beau" ends, "ti" starts at the same moment</li>
-        <li>Tap Space (still holding F): "ti" ends, "ful" starts at the same moment</li>
-        <li>Release F: "ful" ends</li>
+        <li>
+          Hold <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} />: "beau" starts
+        </li>
+        <li>
+          Tap <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} /> (still holding{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} />
+          ): "beau" ends, "ti" starts at the same moment
+        </li>
+        <li>
+          Tap <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} /> (still holding{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} />
+          ): "ti" ends, "ful" starts at the same moment
+        </li>
+        <li>
+          Release <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} />: "ful" ends
+        </li>
       </ul>
       <p className={`${PROSE} mt-2`}>
         You can mix all three in the same line. Use hold-release for standalone words, tap for quick gapless words, and
         hold+tap for connected syllables:
       </p>
       <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) mt-1.5 space-y-1`}>
-        <li>Hold F, release F: "oh" gets its own timing</li>
+        <li>
+          Hold and release <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} />: "oh" gets its own timing
+        </li>
         <li>(gap)</li>
-        <li>Hold F: "beau" starts</li>
-        <li>Tap Space, tap Space: gapless boundaries for "ti" and "ful"</li>
-        <li>Release F: "ful" ends</li>
+        <li>
+          Hold <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} />: "beau" starts
+        </li>
+        <li>
+          Tap <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} /> twice: gapless boundaries for "ti" and "ful"
+        </li>
+        <li>
+          Release <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} />: "ful" ends
+        </li>
       </ul>
     </HelpTopic>
 
