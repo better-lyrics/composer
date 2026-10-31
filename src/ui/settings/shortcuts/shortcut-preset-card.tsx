@@ -33,7 +33,9 @@ const ShortcutPresetCard: React.FC<ShortcutPresetCardProps> = ({ preset, active,
         className={cn(CARD_BASE, "flex-1 px-3 pb-10", active ? CARD_ACTIVE : CARD_INACTIVE)}
       >
         <span className="text-[13px] font-bold text-composer-text">{preset.name}</span>
-        <span className="mt-0.5 text-[11.5px] leading-[1.4] text-(--muted) text-pretty">{preset.description}</span>
+        <span data-card-description className="mt-0.5 text-[11.5px] leading-[1.4] text-(--muted) text-pretty">
+          {preset.description}
+        </span>
       </button>
       <span className="absolute left-1.5 bottom-1.5">
         {changes.length === 0 && yours.length === 0 ? (
