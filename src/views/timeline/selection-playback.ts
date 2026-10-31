@@ -1,3 +1,4 @@
+import type { SeekReveal } from "@/audio/seek-reveal-intent";
 import { selectionBounds } from "@/domain/selection/bounds";
 import { isWordSelected } from "@/domain/selection/identity";
 import { lineWordSelections } from "@/domain/selection/line-selections";
@@ -96,13 +97,13 @@ function skipLoopRegionOnNextPlay(): void {
 }
 
 // An open group still bounds plain playback; already-playing audio fires no play event to enforce it.
-function playPlain(from: number): number {
+function playPlain(from: number, reveal?: SeekReveal): number {
   stopSelectionPlayback({ pause: false });
   skipLoopRegionOnNextPlay();
   const range = currentPlaybackRange();
   const start = (range && soloPlayStart(from, range)) ?? from;
   const audio = useAudioStore.getState();
-  audio.seekTo(start);
+  audio.seekTo(start, reveal);
   audio.setIsPlaying(true);
   return start;
 }

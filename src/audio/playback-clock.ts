@@ -13,6 +13,9 @@ const STALL_SECONDS = 0.1;
 const STEPPED_EVIDENCE_MS = 12;
 const DISPLAY_SMOOTHING_MS = 150;
 const DISPLAY_RESYNC_SECONDS = 0.1;
+// Chromium crawls its output for about 250 ms after play, so a line is followed only once the element kept pace with it this long.
+const MIN_OBSERVED_SPAN_MS = 30;
+const MIN_PACE = 0.5;
 
 // -- State ---------------------------------------------------------------------
 
@@ -34,7 +37,8 @@ const lastRead = {
   changedAt: 0,
   steppedAt: Number.NEGATIVE_INFINITY,
 };
-const display = { generation: -1, offset: 0, at: 0, time: 0 };
+// A run lasts from play, seek, rate change or element swap until the next one; frames never step back within it.
+const display = { generation: -1, run: 0, shownRun: -1, offset: 0, at: 0, time: 0 };
 let resyncPending = true;
 
 // -- Observations --------------------------------------------------------------
@@ -54,6 +58,14 @@ function addObservation(offset: number, at: number): void {
   observations.offsets[slot] = offset;
   observations.at[slot] = at;
   observations.count += 1;
+}
+
+function isLineProven(rate: number): boolean {
+  if (observations.count < 2) return false;
+  const last = (observations.first + observations.count - 1) % MAX_OBSERVATIONS;
+  const spanMs = observations.at[last] - observations.at[observations.first];
+  const lostSeconds = observations.offsets[observations.first] - observations.offsets[last];
+  return spanMs >= MIN_OBSERVED_SPAN_MS && lostSeconds <= ((1 - MIN_PACE) * rate * spanMs) / 1000;
 }
 
 function isStepped(now: number): boolean {
@@ -96,6 +108,7 @@ function observe(element: HTMLAudioElement, time: number, running: boolean, read
     !resyncPending && element === lastRead.element && rate === lastRead.rate && running && lastRead.running;
   if (!continuous) {
     clearObservations();
+    display.run += 1;
     lastRead.changedAt = readAt;
   } else if (time !== lastRead.time) {
     const latestReadAt = readAt + clockRoundingMs();
@@ -144,10 +157,11 @@ function readPlaybackClock(element: HTMLAudioElement): number {
   const running = isClockRunning(element);
   const elementTime = element.currentTime;
   observe(element, elementTime, running, readAt);
-  const offset = running ? bestOffset(readAt) : Number.NEGATIVE_INFINITY;
+  const best = running ? bestOffset(readAt) : Number.NEGATIVE_INFINITY;
+  const offset = isLineProven(element.playbackRate) ? best : Number.NEGATIVE_INFINITY;
   if (offset === Number.NEGATIVE_INFINITY) {
     display.generation = -1;
-    return elementTime;
+    return frameNow === null || !running ? elementTime : shownInRun(elementTime, now);
   }
   const rate = element.playbackRate;
   const lineOffset = frameNow === null ? offset : displayOffset(offset, now);
@@ -157,11 +171,19 @@ function readPlaybackClock(element: HTMLAudioElement): number {
   let time = Math.min((rate * now) / 1000 + lineOffset, elementTime + stepCeiling);
   if (Number.isFinite(element.duration)) time = Math.min(time, element.duration);
   if (frameNow === null) return time;
-  if (display.generation === observations.generation) time = Math.max(time, display.time);
   display.generation = observations.generation;
+  return shownInRun(time, now);
+}
+
+// Only a drop the clock itself could cause (one extrapolation) is held; a larger one is the audio moving.
+function shownInRun(time: number, now: number): number {
+  const heldBack =
+    display.shownRun === display.run && display.time - time <= MAX_EXTRAPOLATION_SECONDS + CONFLICT_TOLERANCE_SECONDS;
+  const shown = heldBack ? Math.max(time, display.time) : time;
+  display.shownRun = display.run;
   display.at = now;
-  display.time = time;
-  return time;
+  display.time = shown;
+  return shown;
 }
 
 // -- Exports -------------------------------------------------------------------

@@ -1,11 +1,13 @@
 import { decodeAudioToWav, needsWavConversion } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { resyncPlaybackClock } from "@/audio/playback-clock";
+import { seekInPlaceToResume } from "@/audio/seek-reveal-intent";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
+import { BROWSER_KIND } from "@/utils/platform";
 import { useEffect, useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
@@ -17,6 +19,7 @@ const SLOW_DECODE_MS = 800;
 
 // A rejected play() (autoplay policy, undecodable source) must not leave the UI showing Pause.
 function playOrRevert(audio: HTMLAudioElement, setIsPlaying: (playing: boolean) => void): void {
+  if (BROWSER_KIND === "chromium" && audio.paused && !audio.seeking) seekInPlaceToResume(audio);
   audio.play().catch(() => {
     if (audio.paused) setIsPlaying(false);
   });

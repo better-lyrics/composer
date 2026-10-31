@@ -60,7 +60,7 @@ function playFromCue(): void {
     setCue(livePlaybackTime());
     if (useAudioStore.getState().isPlaying) return;
   }
-  flashCue(playPlain(useTimelineStore.getState().cue ?? livePlaybackTime()));
+  flashCue(playPlain(useTimelineStore.getState().cue ?? livePlaybackTime(), "centre"));
 }
 
 // Latched, Enter always plays from the cue, so a drawn region the cue sits outside is not adopted.
@@ -68,13 +68,13 @@ function prepareTransportPlay(): void {
   const { target, playhead, latched } = currentTransportPosition();
   const { loopRegion: region, cue } = useTimelineStore.getState();
   if (latched && cue !== null && region && (cue < region.begin || cue >= region.end)) skipLoopRegionOnNextPlay();
-  if (target !== playhead) useAudioStore.getState().seekTo(target);
+  if (target !== playhead) useAudioStore.getState().seekTo(target, "centre");
 }
 
 function returnAfterStop(): void {
   const { target, playhead } = currentTransportPosition();
   if (target === playhead) return;
-  useAudioStore.getState().seekTo(target);
+  useAudioStore.getState().seekTo(target, "centre");
   flashCue(target);
 }
 

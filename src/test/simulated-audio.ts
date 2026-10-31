@@ -11,6 +11,8 @@ interface SimulatedAudioOptions {
   // Chrome's exact time scatters around the heard position while it time-stretches (rates other than 1); one value per task.
   jitterMs?: readonly number[];
   duration?: number;
+  // Chromium starts its output slowly after play: media crawls at this fraction of the rate and the time is published in held steps.
+  startup?: { crawlMs: number; crawlRate: number; publishEveryMs: number };
 }
 
 interface SimulatedAudio {
@@ -35,6 +37,7 @@ function simulatedAudio({
   visibleAfterMs = 0,
   jitterMs = [0],
   duration,
+  startup,
 }: SimulatedAudioOptions): SimulatedAudio {
   const element = document.createElement("audio");
   let anchorTime = start;
@@ -42,9 +45,19 @@ function simulatedAudio({
   let running = false;
   let paused = true;
   let seeking = false;
-  const heard = () => (running ? anchorTime + (rate * (performance.now() - anchorAt)) / 1000 : anchorTime);
+  let crawling = false;
+  const mediaElapsedMs = (elapsedMs: number) => {
+    if (!crawling || !startup) return elapsedMs;
+    const crawlMs = Math.min(elapsedMs, startup.crawlMs);
+    return crawlMs * startup.crawlRate + (elapsedMs - crawlMs);
+  };
+  const heardAt = (at: number) => (running ? anchorTime + (rate * mediaElapsedMs(at - anchorAt)) / 1000 : anchorTime);
+  const heard = () => heardAt(performance.now());
   const reported = () => {
     if (!running) return heard();
+    const elapsedMs = performance.now() - anchorAt;
+    if (crawling && startup && elapsedMs < startup.crawlMs)
+      return heardAt(anchorAt + Math.floor(elapsedMs / startup.publishEveryMs) * startup.publishEveryMs);
     if (tickMs === 0)
       return heard() + jitterMs[(Math.imul(Math.floor(performance.now()), 2654435761) >>> 0) % jitterMs.length] / 1000;
     const now = performance.now() - visibleAfterMs;
@@ -55,6 +68,7 @@ function simulatedAudio({
   const freeze = () => {
     anchorTime = heard();
     anchorAt = performance.now();
+    crawling = false;
   };
   Object.defineProperties(element, {
     currentTime: { get: reported, configurable: true },
@@ -71,6 +85,7 @@ function simulatedAudio({
       freeze();
       paused = false;
       running = true;
+      crawling = true;
     },
     pause: () => {
       freeze();

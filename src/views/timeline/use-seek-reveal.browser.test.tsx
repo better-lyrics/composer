@@ -1,8 +1,11 @@
+import { seekInPlaceToResume } from "@/audio/seek-reveal-intent";
+import { playFromCue, returnAfterStop } from "@/lib/replay-cue";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { centerTimeScrollLeft } from "@/views/timeline/coords";
 import { useSeekReveal } from "@/views/timeline/use-seek-reveal";
 import { createRef } from "react";
 import { describe, expect, it } from "vitest";
@@ -60,6 +63,85 @@ describe("useSeekReveal", () => {
 
     await expect.poll(() => seeked).toBe(true);
     expect(container.scrollLeft).toBe(0);
+    container.remove();
+  });
+
+  it("regression: leaves the view where the user scrolled it when play seeks in place to resume", async () => {
+    const container = await revealSetup(300);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    let seeks = 0;
+    audio.addEventListener("seeked", () => {
+      seeks++;
+    });
+    useAudioStore.getState().seekTo(50);
+    await expect.poll(() => seeks).toBe(1);
+    container.scrollLeft = 0;
+
+    audio.muted = true;
+    seekInPlaceToResume(audio);
+    await audio.play();
+
+    await expect.poll(() => seeks).toBe(2);
+    expect(container.scrollLeft).toBe(0);
+    audio.pause();
+    container.remove();
+  });
+
+  it("regression: still reveals a seek made while paused that lands on the paused time", async () => {
+    const container = await revealSetup(300);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    let seeks = 0;
+    audio.addEventListener("seeked", () => {
+      seeks++;
+    });
+    useAudioStore.getState().seekTo(50);
+    await expect.poll(() => seeks).toBe(1);
+    container.scrollLeft = 0;
+
+    useAudioStore.getState().seekTo(50);
+
+    await expect.poll(() => container.scrollLeft).toBeGreaterThan(0);
+    container.remove();
+  });
+
+  it("regression: reveals a seek during playback that lands where playback last rested, such as replay from cue", async () => {
+    const container = await revealSetup(300);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    let seeks = 0;
+    audio.addEventListener("seeked", () => {
+      seeks++;
+    });
+    useAudioStore.getState().seekTo(50);
+    await expect.poll(() => seeks).toBe(1);
+    audio.muted = true;
+    await audio.play();
+    container.scrollLeft = 0;
+
+    useAudioStore.getState().seekTo(50);
+
+    await expect.poll(() => container.scrollLeft).toBeGreaterThan(0);
+    audio.pause();
+    container.remove();
+  });
+
+  it.each([
+    ["returning to it after a stop", returnAfterStop],
+    ["playing from it", playFromCue],
+  ])("centres the cue like Jump to playhead when %s, even with the cue on screen", async (_label, toCue) => {
+    const container = await revealSetup(600);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    let seeks = 0;
+    audio.addEventListener("seeked", () => {
+      seeks++;
+    });
+    useAudioStore.getState().seekTo(2);
+    await expect.poll(() => seeks).toBe(1);
+    useSettingsStore.setState({ returnToCue: true });
+    useTimelineStore.getState().setCue(5.123456789);
+
+    toCue();
+
+    await expect.poll(() => container.scrollLeft).toBeCloseTo(centerTimeScrollLeft(5.123456789, 100, 600), 0);
     container.remove();
   });
 });
