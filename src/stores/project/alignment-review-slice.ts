@@ -31,10 +31,7 @@ const createAlignmentReviewSlice: StateCreator<ProjectStore, [], [], AlignmentRe
   recordAlignedTimings: (lineIds) =>
     set((state) => {
       const linesById = new Map(state.lines.map((line) => [line.id, line]));
-      const alignedTimings: AlignedTimings = {};
-      for (const [id, fingerprint] of Object.entries(state.alignedTimings)) {
-        if (linesById.has(id)) alignedTimings[id] = fingerprint;
-      }
+      const alignedTimings: AlignedTimings = { ...state.alignedTimings };
       for (const id of lineIds) {
         const line = linesById.get(id);
         if (line) alignedTimings[id] = timingFingerprint(line);

@@ -48,7 +48,7 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   if (origin === "file" || project.hasUnexportedImport) state.markSongDetailsImported();
   state.restoreImportedMetadataKeys((project.importedMetadataKeys ?? []).filter(isMetadataKey));
   state.setTtmlEditState(project.ttmlEditState ?? null);
-  state.restoreAlignmentReview(readAlignedTimings(project.alignedTimings), project.alignmentNoticeDismissed ?? false);
+  state.restoreAlignmentReview(readAlignedTimings(project.alignedTimings), project.alignmentNoticeDismissed === true);
   if (origin === "file") state.clearHistory();
   state.markClean();
   return malformedFieldsOf(project);
