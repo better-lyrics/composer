@@ -23,7 +23,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
   {
     title: "General",
     shortcuts: [
-      { keys: ["Shift", "?"], description: "Show keyboard shortcuts", shortcutId: "global.help" },
+      { keys: ["Shift", "?"], description: "Show help", shortcutId: "global.help" },
       { keys: ["Enter"], description: "Play / Pause audio", shortcutId: "global.playPause" },
       {
         keys: ["Mod", "Enter"],

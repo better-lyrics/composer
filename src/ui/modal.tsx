@@ -12,6 +12,7 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   headerAccessory?: React.ReactNode;
+  headerActions?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
   bodyClassName?: string;
@@ -27,6 +28,7 @@ const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   headerAccessory,
+  headerActions,
   children,
   className,
   bodyClassName,
@@ -84,13 +86,16 @@ const Modal: React.FC<ModalProps> = ({
                   {title}
                 </h2>
                 {headerAccessory}
-                <IconButton
-                  label="Close"
-                  icon={<IconX className="size-[18px]" />}
-                  variant="ghost"
-                  onClick={onClose}
-                  className="ml-auto size-9 rounded-[10px]"
-                />
+                <div className="ml-auto flex items-center gap-1">
+                  {headerActions}
+                  <IconButton
+                    label="Close"
+                    icon={<IconX className="size-[18px]" />}
+                    variant="ghost"
+                    onClick={onClose}
+                    className="size-9 rounded-[10px]"
+                  />
+                </div>
               </div>
             )}
             <div id={describedById} className={cn(title ? "pt-[18px] px-5 pb-5" : "p-5 pt-4", bodyClassName)}>

@@ -7,6 +7,7 @@ import { Button } from "@/ui/button";
 import { HELP_SECTIONS } from "@/ui/help-nav";
 import { HelpSearchResults } from "@/ui/help-search/help-search-results";
 import { HelpSectionContent } from "@/ui/help-sections";
+import { HelpShortcutPresetButton } from "@/ui/help-shortcut-preset-button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { Modal } from "@/ui/modal";
 import { ModalNavLayout } from "@/ui/modal-nav-layout";
@@ -29,7 +30,14 @@ interface HelpModalProps {
   onClose: () => void;
 }
 
-type HelpModalBodyProps = Omit<HelpModalProps, "isOpen" | "onClose">;
+interface HelpModalBodyProps {
+  initialScrollTop?: number;
+  activeSection: string;
+  setActiveSection: (section: string) => void;
+  query: string;
+  setQuery: (query: string) => void;
+  locationRef: React.RefObject<() => HelpLocation>;
+}
 
 interface PendingTopic {
   section: string;
@@ -38,9 +46,14 @@ interface PendingTopic {
 
 // -- Help Modal ---------------------------------------------------------------
 
-const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialScrollTop = 0, initialQuery = "" }) => {
-  const [activeSection, setActiveSection] = useState(initialSection ?? "getting-started");
-  const [query, setQuery] = useState(initialQuery);
+const HelpModalBody: React.FC<HelpModalBodyProps> = ({
+  initialScrollTop = 0,
+  activeSection,
+  setActiveSection,
+  query,
+  setQuery,
+  locationRef,
+}) => {
   const [counts, setCounts] = useState<Record<string, number> | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -63,6 +76,9 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
   const linkHost = useMemo<SettingLinkHost>(() => ({ returnPoint: currentLocation }), [currentLocation]);
 
   useLayoutEffect(() => () => useUIStore.getState().rememberHelpLocation(currentLocation()), [currentLocation]);
+  useLayoutEffect(() => {
+    locationRef.current = currentLocation;
+  }, [locationRef, currentLocation]);
 
   const openSection = useCallback((section: string) => {
     setQuery("");
@@ -140,21 +156,41 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
   );
 };
 
-const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, ...bodyProps }) => (
-  <Modal
-    isOpen={isOpen}
-    onClose={onClose}
-    title="Help"
-    className="max-w-4xl h-[min(80vh,760px)] flex flex-col"
-    bodyClassName="p-0 flex-1 min-h-0 flex flex-col"
-  >
-    <HelpModalBody {...bodyProps} />
+const HelpModal: React.FC<HelpModalProps> = ({
+  isOpen,
+  onClose,
+  initialSection,
+  initialScrollTop,
+  initialQuery = "",
+}) => {
+  const [activeSection, setActiveSection] = useState(initialSection ?? "getting-started");
+  const [query, setQuery] = useState(initialQuery);
+  const locationRef = useRef<() => HelpLocation>(() => useUIStore.getState().helpLocation);
+  const showsShortcuts = activeSection === "keyboard-shortcuts" && splitSearchTerms(query).length === 0;
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Help"
+      headerActions={showsShortcuts && <HelpShortcutPresetButton returnPoint={() => locationRef.current()} />}
+      className="max-w-4xl h-[min(80vh,760px)] flex flex-col"
+      bodyClassName="p-0 flex-1 min-h-0 flex flex-col"
+    >
+      <HelpModalBody
+        initialScrollTop={initialScrollTop}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+        query={query}
+        setQuery={setQuery}
+        locationRef={locationRef}
+      />
 
-    <div className="flex items-center justify-center gap-1.5 h-11 px-5 border-t border-(--divider) text-[12.5px] text-(--muted) shrink-0 select-none">
-      Press <InlineKeyBadge keys={getEffectiveKeysArray("global.help")} /> to open anytime
-    </div>
-  </Modal>
-);
+      <div className="flex items-center justify-center gap-1.5 h-11 px-5 border-t border-(--divider) text-[12.5px] text-(--muted) shrink-0 select-none">
+        Press <InlineKeyBadge keys={getEffectiveKeysArray("global.help")} /> to open anytime
+      </div>
+    </Modal>
+  );
+};
 
 // -- Exports ------------------------------------------------------------------
 
