@@ -80,7 +80,7 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
           size="lg"
           variant={editMode ? "primary" : "secondary"}
           onClick={handleToggleEdit}
-          className={showShortcutHints ? "pr-1.5 [&>[data-inline-key-badge]]:ml-0" : undefined}
+          className={showShortcutHints ? "pr-2.5 [&>[data-inline-key-badge]]:ml-0" : undefined}
           title={editMode ? "Done editing, back to syncing" : "Edit timings (pauses playback)"}
         >
           {editMode ? <IconLock className="size-4" /> : <IconLockOpen className="size-4" />}
