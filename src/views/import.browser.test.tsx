@@ -419,13 +419,13 @@ describe("ImportPanel: YouTube thumbnail", () => {
 // -- YouTube source: subtitle copy ---------------------------------------
 
 describe("ImportPanel: YouTube subtitle", () => {
-  it("says 'Downloading from YouTube' while downloading", async () => {
+  it("says 'Downloading' while downloading", async () => {
     useAudioStore.setState({
       source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
       isLoading: true,
     });
     const screen = await render(withQueryClient(<ImportPanel />));
-    await expect.element(screen.getByText(/Downloading from YouTube/)).toBeInTheDocument();
+    await expect.element(screen.getByText(/^dQw4w9WgXcQ ・ Downloading$/)).toBeInTheDocument();
   });
 
   it("says 'from YouTube' once the file has resolved", async () => {

@@ -98,15 +98,19 @@ interface SourceDurationProps {
 
 const SourceDuration: React.FC<SourceDurationProps> = ({ loading, duration }) =>
   loading ? (
-    <span className="flex items-center gap-[5px]">
+    <span className="flex shrink-0 items-center gap-[5px]">
       <IconLoader2 size={13} className="animate-spin text-composer-accent-text" />
-      <span className="font-mono tabular-nums">--:--</span>
+      <span className="font-mono tabular-nums whitespace-nowrap">--:--</span>
     </span>
   ) : (
-    <span className="font-mono tabular-nums">{formatDuration(duration)}</span>
+    <span className="shrink-0 font-mono tabular-nums whitespace-nowrap">{formatDuration(duration)}</span>
   );
 
-const DetailSeparator: React.FC = () => <span aria-hidden="true">・</span>;
+const DetailSeparator: React.FC = () => (
+  <span aria-hidden="true" className="shrink-0">
+    ・
+  </span>
+);
 
 interface LoadedSongPanelProps {
   art: React.ReactNode;
@@ -192,7 +196,7 @@ const ImportPanel: React.FC = () => {
         title={titleLoading ? <div className="h-4 w-40 rounded bg-(--layer-2) animate-pulse" /> : sourceTitle}
         subtitle={
           <>
-            <span className="truncate">{`${videoId} ・ ${downloading ? "Downloading from YouTube" : "from YouTube"}`}</span>
+            <span className="truncate">{`${videoId} ・ ${downloading ? "Downloading" : "from YouTube"}`}</span>
             <DetailSeparator />
             <SourceDuration loading={downloading} duration={duration} />
           </>
