@@ -2,7 +2,6 @@ import { AudioEngine } from "@/audio/audio-engine";
 import { useAutoSeparate } from "@/hooks/useAutoSeparate";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
-import { useImportFromAudioUrl } from "@/hooks/useImportFromAudioUrl";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
 import { useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
@@ -116,7 +115,6 @@ const AppShell: React.FC = () => {
   useProjectShortcuts(isEditor);
   useSaveShortcut(isEditor);
   useImportFromHash();
-  useImportFromAudioUrl();
   useResolveYouTubeTunnel();
   useImportFromQuery();
   useImportFromYouTube();

@@ -31,14 +31,12 @@ interface ImportModalState {
   prefill: LyricsSearchQuery | null;
   searchDraft: SearchDraft | null;
   initialSection: ImportModalSection | null;
-  body: string | null;
   lastImportResult: LastImportResult | null;
 }
 
 interface OpenArgs {
   prefill?: LyricsSearchQuery;
   section?: ImportModalSection;
-  body?: string;
 }
 
 interface ImportModalStore extends ImportModalState {
@@ -56,7 +54,6 @@ const INITIAL_STATE: ImportModalState = {
   prefill: null,
   searchDraft: null,
   initialSection: null,
-  body: null,
   lastImportResult: null,
 };
 
@@ -71,13 +68,12 @@ const useImportModalStore = create<ImportModalStore>()((set) => ({
       isOpen: true,
       prefill: explicit ?? null,
       initialSection: args?.section ?? null,
-      body: args?.body ?? null,
       ...(explicit ? { searchDraft: null } : {}),
     });
   },
 
   close: () => {
-    set({ isOpen: false, prefill: null, initialSection: null, body: null });
+    set({ isOpen: false, prefill: null, initialSection: null });
   },
 
   setSearchDraft: (draft) => {
@@ -103,8 +99,7 @@ function useImportModalState(): Omit<ImportModalState, "lastImportResult" | "sea
   const isOpen = useImportModalStore((s) => s.isOpen);
   const prefill = useImportModalStore((s) => s.prefill);
   const initialSection = useImportModalStore((s) => s.initialSection);
-  const body = useImportModalStore((s) => s.body);
-  return { isOpen, prefill, initialSection, body };
+  return { isOpen, prefill, initialSection };
 }
 
 function useLastImportResult(): LastImportResult | null {
