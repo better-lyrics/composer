@@ -1,8 +1,10 @@
+import { metadataForNewSource } from "@/domain/project/source-metadata";
 import { useEnsureAuth } from "@/hooks/useEnsureAuth";
 import { correctPrimingForProjectAudio } from "@/lib/attach-audio-priming";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { flushPendingSaveQuietly } from "@/lib/persistence-debounce";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
+import { YOUTUBE_TUNNEL_QUERY, videoSourceMetadata } from "@/lib/source-metadata";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import {
@@ -23,7 +25,6 @@ import {
   getAudioFromBridge,
   isBridgeUnreachable,
 } from "@/utils/composer-bridge-api";
-import { normalizeIsrc } from "@/utils/isrc";
 import { isYouTubeSourceFor } from "@/utils/youtube-source";
 import { useQuery } from "@tanstack/react-query";
 import { createElement, useEffect, useRef } from "react";
@@ -164,7 +165,7 @@ function useResolveYouTubeTunnel(): void {
   const videoId = source?.type === "youtube" && !source.file ? source.videoId : null;
 
   const query = useQuery<TunnelResult>({
-    queryKey: ["youtube-tunnel", videoId, bridgeEnabled, bridgeUrl],
+    queryKey: [YOUTUBE_TUNNEL_QUERY, videoId, bridgeEnabled, bridgeUrl],
     enabled: videoId !== null,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 0,
@@ -197,12 +198,11 @@ function useResolveYouTubeTunnel(): void {
         const project = useProjectStore.getState();
         const currentTitle = project.metadata.title;
         if (!currentTitle || currentTitle === videoId) {
-          const metadataPatch: Partial<typeof project.metadata> = { title: data.title || data.filename || videoId };
-          if (data.artist) metadataPatch.artists = [data.artist];
-          if (data.album) metadataPatch.album = data.album;
-          const bridgeIsrc = data.isrc ? normalizeIsrc(data.isrc) : undefined;
-          if (bridgeIsrc) metadataPatch.isrc = bridgeIsrc;
-          project.setMetadata(metadataPatch);
+          const placeholder = { title: currentTitle };
+          const provided = videoSourceMetadata(videoId, data);
+          project.setMetadata(
+            metadataForNewSource(project.metadata, project.importedMetadataKeys, placeholder, provided),
+          );
           flushPendingSaveQuietly();
         }
         if (

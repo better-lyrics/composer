@@ -4,9 +4,10 @@ import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
 import { adoptPrimingForNewAudio } from "@/lib/attach-audio-priming";
 import { startSongInNewProject } from "@/lib/open-project";
 import { relinkProjectAudioFile } from "@/lib/relink-audio";
-import { useAudioStore } from "@/stores/audio";
+import { metadataForNewSource } from "@/domain/project/source-metadata";
+import { fileSourceMetadata, readAudioTags, sourceMetadata } from "@/lib/source-metadata";
+import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { audioTagsToMetadata } from "@/utils/audio-tags";
 import { fileIdentityKey } from "@/utils/file-identity";
 import { fileNameWithoutExtension } from "@/utils/file-name";
 import { showNewProjectToast } from "@/utils/project-toast";
@@ -59,10 +60,8 @@ function settleSongDetails(file: File, replacesDifferentSong: boolean, title: st
 }
 
 async function applyAudioTags(file: File): Promise<void> {
-  const { parseBlob } = await import("music-metadata");
-  const { common } = await parseBlob(file);
+  const patch = await readAudioTags(file);
   if (!isActiveFile(file)) return;
-  const patch = audioTagsToMetadata(common);
   if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);
 }
 
@@ -80,6 +79,17 @@ function loadFileInPlace(file: File, replacesDifferentSong: boolean, title: stri
     .catch((error) => {
       console.warn(`${LOG_PREFIX} could not read audio tags`, error);
     });
+}
+
+async function swapFileInPlace(file: File, previous: AudioSource): Promise<void> {
+  const previousSource = sourceMetadata(previous);
+  adoptPrimingForNewAudio();
+  useAudioStore.getState().setSource({ type: "file", file });
+  const [before, next] = await Promise.all([previousSource, fileSourceMetadata(file)]);
+  if (!isActiveFile(file)) return;
+  const { metadata, importedMetadataKeys } = useProjectStore.getState();
+  const patch = metadataForNewSource(metadata, importedMetadataKeys, before, next);
+  if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);
 }
 
 async function startFileInNewProject(file: File, title: string): Promise<void> {
@@ -117,7 +127,11 @@ function useLoadAudioFile(): (file: File, mode?: AudioLoadMode) => Promise<void>
     const replacesDifferentSong =
       previous != null && !(previous.type === "file" && fileIdentityKey(previous.file) === fileIdentityKey(file));
 
-    if (mode === "auto" && replacesDifferentSong && hasLyricLines(useProjectStore.getState().lines)) {
+    if (mode === "replace" && replacesDifferentSong) {
+      void swapFileInPlace(file, previous);
+      return;
+    }
+    if (replacesDifferentSong && hasLyricLines(useProjectStore.getState().lines)) {
       void startFileInNewProject(file, title);
       return;
     }

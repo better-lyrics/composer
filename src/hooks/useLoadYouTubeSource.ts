@@ -1,10 +1,12 @@
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { metadataForNewSource } from "@/domain/project/source-metadata";
 import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
 import type { AudioLoadMode } from "@/hooks/useLoadAudioFile";
 import { adoptPrimingForNewAudio } from "@/lib/attach-audio-priming";
 import { deleteProject, openProject, startSongInNewProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
+import { sourceMetadata, videoSourceMetadata } from "@/lib/source-metadata";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { showNewProjectToast } from "@/utils/project-toast";
@@ -46,12 +48,35 @@ function useLoadYouTubeSource(): (videoId: string, mode?: AudioLoadMode) => Prom
   return useCallback((videoId: string, mode: AudioLoadMode = "auto") => {
     const previous = useAudioStore.getState().source;
     const prevVideoId = previous?.type === "youtube" ? previous.videoId : null;
-    const startsNewProject = mode === "auto" && previous != null && prevVideoId !== videoId;
-    if (startsNewProject && hasLyricLines(useProjectStore.getState().lines)) {
+    const replacesDifferentSong = previous != null && prevVideoId !== videoId;
+    if (mode === "replace" && replacesDifferentSong) return swapVideoInPlace(videoId, previous);
+    if (replacesDifferentSong && hasLyricLines(useProjectStore.getState().lines)) {
       return loadVideoInNewProject(videoId, previous);
     }
     return loadVideoInPlace(videoId, previous);
   }, []);
+}
+
+function swapVideoInPlace(videoId: string, previous: AudioSource): Promise<void> {
+  const previousSource = sourceMetadata(previous);
+  const metadataBefore = useProjectStore.getState().metadata;
+  adoptPrimingForNewAudio();
+  useAudioStore.getState().setYouTubeSource(videoId);
+  const swapped = previousSource.then((before) => {
+    if (!isYouTubeSourceFor(useAudioStore.getState().source, videoId)) return null;
+    const { metadata, importedMetadataKeys } = useProjectStore.getState();
+    const patch = metadataForNewSource(metadata, importedMetadataKeys, before, videoSourceMetadata(videoId));
+    if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);
+    return useProjectStore.getState().metadata;
+  });
+  return waitForYouTubeLoad(videoId).catch(async (error: unknown) => {
+    const metadataAfterSwap = await swapped;
+    const untouchedSinceSwap = useProjectStore.getState().metadata === metadataAfterSwap;
+    if (useAudioStore.getState().source === previous && untouchedSinceSwap) {
+      useProjectStore.getState().setMetadata(metadataBefore);
+    }
+    throw error;
+  });
 }
 
 function loadVideoInPlace(videoId: string, previous: AudioSource): Promise<void> {

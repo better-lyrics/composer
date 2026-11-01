@@ -157,6 +157,21 @@ describe("useLoadAudioFile · projects", () => {
     await expect.poll(async () => (await loadProjectAudio("a"))?.name).toBe("alpha-remaster.wav");
   });
 
+  it("replace keeps what the user typed and singer names, and swaps what the old file provided", async () => {
+    await openAlpha({ lyrics: true, audio: true });
+    useProjectStore.getState().setAgents([{ id: "v1", name: "Gonzalez", type: "person" }]);
+    const agentsBefore = useProjectStore.getState().agents;
+    const load = await loader();
+    await load(createAudioFile("alpha-remaster.wav"), "replace");
+    await expect.poll(() => useAudioStore.getState().source?.file?.name).toBe("alpha-remaster.wav");
+    expect(useProjectStore.getState().metadata.title).toBe("Alpha");
+    expect(useProjectStore.getState().agents).toBe(agentsBefore);
+
+    useProjectStore.getState().setMetadata({ title: "alpha-remaster" });
+    await load(createAudioFile("alpha-live.wav"), "replace");
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe("alpha-live");
+  });
+
   describe("edge cases", () => {
     it("a different song over a project without lyrics replaces it in place", async () => {
       await openAlpha({ lyrics: false, audio: true });

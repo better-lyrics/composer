@@ -86,6 +86,7 @@ describe("useLoadYouTubeSource · projects", () => {
     useAudioStore.getState().setYouTubeFile(videoFile(VIDEO_ID));
     await expect(loading).resolves.toBeUndefined();
     expect(isYouTubeSourceFor(useAudioStore.getState().source, VIDEO_ID)).toBe(true);
+    expect(useProjectStore.getState().metadata.title).toBe("Alpha");
   });
 
   it("a failed load returns to the previous project and removes the empty new one", async () => {
