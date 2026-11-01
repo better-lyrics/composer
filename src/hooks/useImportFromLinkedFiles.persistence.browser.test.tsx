@@ -118,6 +118,17 @@ describe("useImportFromLinkedFiles", () => {
     expect((await loadProjectRecord("a"))?.audioSource).toEqual({ kind: "file", name: "alpha.wav" });
   });
 
+  it("regression: opens a new project when the open project has lyrics but never had audio", async () => {
+    await seedStoredProject("a", { open: true, project: songTitled("Alpha") });
+    setQuery(linkQuery({ audioUrl: AUDIO_URL }));
+
+    await render(<LinkHost />);
+    await waitForLinkSettled();
+
+    expect(openProjectIdSnapshot()).not.toBe("a");
+    expect(loadedFileName()).toBe("linked-song.wav");
+  });
+
   it("leaves the open project alone when the audio download fails", async () => {
     allowConsole(/404/);
     await seedOpenAlpha(true);

@@ -84,6 +84,12 @@ async function fetchLinkedFile(url: string, fallbackName: string, signal: AbortS
   return new File([blob], name, { type: blob.type });
 }
 
+async function fetchLinkedLyrics(url: string, signal: AbortSignal): Promise<File> {
+  const file = await fetchLinkedFile(url, LYRICS_FALLBACK_NAME, signal);
+  if (file.type.startsWith("text/html")) throw new LinkedFileError(`${file.name} is a web page, not a lyrics file`);
+  return file;
+}
+
 function linkedFileErrorMessage(error: unknown): string {
   return error instanceof LinkedFileError ? error.message : "Couldn't download the linked file";
 }
@@ -110,7 +116,7 @@ async function applyLinkedFiles(
   const probe = lyrics ? await probeAudioFile(audio) : null;
   const before = openProjectIdSnapshot();
   await loadAudioFile(audio, "new-song");
-  if (!isActiveAudioFile(audio)) return "failed";
+  if (!isActiveAudioFile(audio)) return lyrics ? openLinkedLyricsAsProject(lyrics) : "failed";
 
   const placed = openProjectIdSnapshot();
   if (lyrics) await importLinkedLyrics(lyrics, { ...ctx, audioDuration: probe?.ok ? probe.duration : 0 });
@@ -143,7 +149,7 @@ function useImportFromLinkedFiles(): void {
     enabled: active && links.lyricsUrl !== null,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 0,
-    queryFn: ({ signal }) => fetchLinkedFile(links.lyricsUrl as string, LYRICS_FALLBACK_NAME, signal),
+    queryFn: ({ signal }) => fetchLinkedLyrics(links.lyricsUrl as string, signal),
   });
 
   useEffect(() => {
@@ -161,7 +167,7 @@ function useImportFromLinkedFiles(): void {
       toast.error(`The link's ${LINKED_FILE_NOUNS[name]} address isn't a web address`);
     }
     if (links.audioUrl === null && links.lyricsUrl === null) {
-      markLinkedFilesSettled("failed");
+      markLinkedFilesSettled("none");
       return;
     }
     if (links.audioUrl !== null) {

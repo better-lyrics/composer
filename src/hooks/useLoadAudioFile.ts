@@ -26,7 +26,7 @@ type TagWrite = "apply" | "skip";
 
 type AudioLoadMode = "auto" | "replace";
 
-// A song opened from a link: never relinks missing audio and never asks to clear imported details.
+// A song opened from a link: always a different song, never a relink of missing audio.
 type AudioFileLoadMode = AudioLoadMode | "new-song";
 
 // -- State --------------------------------------------------------------------
@@ -126,9 +126,10 @@ function useLoadAudioFile(): (file: File, mode?: AudioFileLoadMode) => Promise<v
     const previous = useAudioStore.getState().source;
     const title = fileNameWithoutExtension(file.name);
     const replacesDifferentSong =
-      previous == null
+      mode === "new-song" ||
+      (previous == null
         ? awaitsMissingAudio
-        : !(previous.type === "file" && fileIdentityKey(previous.file) === fileIdentityKey(file));
+        : !(previous.type === "file" && fileIdentityKey(previous.file) === fileIdentityKey(file)));
 
     if (mode === "replace") {
       if (replacesDifferentSong) void swapFileInPlace(file, previous);
