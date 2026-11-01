@@ -65,6 +65,11 @@ describe("SETTINGS_CATALOG", () => {
   });
 
   describe("regressions", () => {
+    it("regression: the word structure prompt can be turned back on from Confirmations", () => {
+      expect(settingIdsInSection("confirmations")).toContain("linkedDivergenceAction");
+      expect(settingKeyOf("linkedDivergenceAction")).toBe("linkedDivergenceAction");
+    });
+
     it("regression: lists the group deletion prompt under Confirmations", () => {
       expect(settingIdsInSection("confirmations")).toContain("confirmGroupDissolution");
     });

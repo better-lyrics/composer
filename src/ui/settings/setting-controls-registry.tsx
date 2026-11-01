@@ -74,6 +74,14 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   resetTour: { kind: "custom", Component: ResetTourSetting },
   resetAllSettings: { kind: "custom", Component: ResetAllSettingsSetting },
   libraryView: { kind: "custom", Component: LibraryViewSetting },
+  linkedDivergenceAction: {
+    kind: "select",
+    options: [
+      { value: "ask", label: "Ask every time" },
+      { value: "apply", label: "Apply to all" },
+      { value: "detach", label: "Detach" },
+    ],
+  },
   librarySort: { kind: "select", options: LIBRARY_SORT_OPTIONS },
   launchScreen: { kind: "select", options: LAUNCH_SCREEN_OPTIONS },
   theme: { kind: "custom", Component: ThemeSettings },

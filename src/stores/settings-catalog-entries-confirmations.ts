@@ -24,6 +24,14 @@ const CONFIRMATIONS_CATALOG_ENTRIES = {
     description: "Show a warning before a new song clears imported details you have not exported.",
     settingKey: "confirmClearImportedSongDetails",
   },
+  linkedDivergenceAction: {
+    section: "confirmations",
+    group: "Groups",
+    label: "When linked lines change words",
+    description: "What happens to a group's other lines when you add or remove words in one of them.",
+    keywords: ["word structure changed", "apply to all", "detach", "don't ask again", "linked"],
+    settingKey: "linkedDivergenceAction",
+  },
   confirmConformToGroup: {
     section: "confirmations",
     group: "Groups",
