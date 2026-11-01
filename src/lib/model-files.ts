@@ -1,11 +1,18 @@
 import { BEAT_MODEL } from "@/audio/beat/beat-model";
 import { MODEL_CACHE_NAME } from "@/audio/separation/model-cache";
-import { getModelDescriptor } from "@/audio/separation/model-registry";
-import { type KnownModelUrls, type ModelFile, type ModelKind, groupModelFiles } from "@/domain/models/model-files";
+import { VOCAL_MODEL_FILENAMES } from "@/audio/separation/model-registry";
+import {
+  type KnownModelUrls,
+  type ModelFile,
+  type ModelKind,
+  groupModelFiles,
+  modelFileName,
+} from "@/domain/models/model-files";
 import { notifyStorageSignal } from "@/lib/storage-signals";
 import { useAlignmentStore } from "@/stores/alignment";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useSeparationStore } from "@/stores/separation";
+import type { VocalModelVariant } from "@/stores/settings";
 
 // -- Errors -------------------------------------------------------------------
 
@@ -19,10 +26,14 @@ class ModelInUseError extends Error {
 // -- Helpers ------------------------------------------------------------------
 
 function knownModelUrls(): KnownModelUrls {
-  const vocalUrls = [getModelDescriptor("fp16"), getModelDescriptor("fp32")].flatMap((descriptor) =>
-    descriptor ? [descriptor.url] : [],
+  return { vocalFileNames: Object.values(VOCAL_MODEL_FILENAMES), beatUrl: BEAT_MODEL.url };
+}
+
+function vocalVariantOfFile(url: string): VocalModelVariant | undefined {
+  const name = modelFileName(url);
+  return (Object.keys(VOCAL_MODEL_FILENAMES) as VocalModelVariant[]).find(
+    (variant) => VOCAL_MODEL_FILENAMES[variant] === name,
   );
-  return { vocalUrls, beatUrl: BEAT_MODEL.url };
 }
 
 // -- Reads --------------------------------------------------------------------
@@ -55,12 +66,15 @@ function modelKindBusy(kind: ModelKind): boolean {
 
 // -- Writes -------------------------------------------------------------------
 
-async function removeModelFiles(kind: ModelKind): Promise<void> {
+async function removeModelFiles(kind: ModelKind, onlyUrls?: readonly string[]): Promise<void> {
   if (modelKindBusy(kind)) throw new ModelInUseError(kind);
   if (typeof caches === "undefined") return;
-  const files = groupModelFiles(await listModelFiles(), knownModelUrls())[kind];
+  const files = groupModelFiles(await listModelFiles(), knownModelUrls())[kind].filter(
+    (file) => !onlyUrls || onlyUrls.includes(file.url),
+  );
   if (files.length === 0) return;
   const cache = await caches.open(MODEL_CACHE_NAME);
+  if (modelKindBusy(kind)) throw new ModelInUseError(kind);
   await Promise.all(files.map((file) => cache.delete(file.url)));
   notifyStorageSignal("media-removed");
   await Promise.all([
@@ -71,4 +85,4 @@ async function removeModelFiles(kind: ModelKind): Promise<void> {
 
 // -- Exports ------------------------------------------------------------------
 
-export { ModelInUseError, knownModelUrls, listModelFiles, modelKindBusy, removeModelFiles };
+export { ModelInUseError, knownModelUrls, listModelFiles, modelKindBusy, removeModelFiles, vocalVariantOfFile };

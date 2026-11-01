@@ -10,15 +10,19 @@ type ModelKind = "vocal" | "alignment" | "beat";
 type GroupedModelFiles = Record<ModelKind, ModelFile[]>;
 
 interface KnownModelUrls {
-  vocalUrls: readonly string[];
+  vocalFileNames: readonly string[];
   beatUrl: string;
 }
 
 // -- Derivations --------------------------------------------------------------
 
 // Alignment is the fallback: it writes many files (model, dictionary, kuromoji), the others one each.
+function modelFileName(url: string): string {
+  return new URL(url).pathname.split("/").at(-1) ?? url;
+}
+
 function modelKindOf(url: string, known: KnownModelUrls): ModelKind {
-  if (known.vocalUrls.includes(url)) return "vocal";
+  if (known.vocalFileNames.includes(modelFileName(url))) return "vocal";
   if (url === known.beatUrl) return "beat";
   return "alignment";
 }
@@ -37,5 +41,5 @@ function modelFilesBytes(files: readonly ModelFile[]): number {
 
 // -- Exports ------------------------------------------------------------------
 
-export { groupModelFiles, modelFilesBytes };
+export { groupModelFiles, modelFileName, modelFilesBytes };
 export type { KnownModelUrls, ModelFile, ModelKind };

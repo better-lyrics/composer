@@ -1,10 +1,11 @@
-import { type ModelKind, groupModelFiles, modelFilesBytes } from "@/domain/models/model-files";
+import { type ModelFile, type ModelKind, groupModelFiles, modelFilesBytes } from "@/domain/models/model-files";
 import { useStorageReport } from "@/hooks/useStorageReport";
-import { knownModelUrls, modelKindBusy, removeModelFiles } from "@/lib/model-files";
+import { knownModelUrls, modelKindBusy, removeModelFiles, vocalVariantOfFile } from "@/lib/model-files";
 import { useAlignmentStore } from "@/stores/alignment";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { type SettingId, settingEntry } from "@/stores/settings-catalog";
 import { useSeparationStore } from "@/stores/separation";
+import { useSettingsStore } from "@/stores/settings";
 import { ModelFileRow } from "@/ui/settings/models/model-file-row";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
@@ -23,8 +24,8 @@ const KIND_DETAILS: Record<ModelKind, { settingId: SettingId; icon: Icon }> = {
 
 // -- Helpers ------------------------------------------------------------------
 
-function removeKind(kind: ModelKind): void {
-  removeModelFiles(kind).catch((error: unknown) => {
+function removeFiles(kind: ModelKind, onlyUrls?: readonly string[]): void {
+  removeModelFiles(kind, onlyUrls).catch((error: unknown) => {
     console.error(LOG_PREFIX, `could not remove the ${kind} model files`, error);
     toast.error("Couldn't remove the model files");
   });
@@ -39,6 +40,29 @@ function useModelKindBusy(kind: ModelKind): boolean {
 
 // -- Components ---------------------------------------------------------------
 
+const VocalModelRows: React.FC<{ files: readonly ModelFile[]; busy: boolean }> = ({ files, busy }) => {
+  const selectedVariant = useSettingsStore((s) => s.vocalModelVariant);
+  return files.map((file) => {
+    const variant = vocalVariantOfFile(file.url);
+    return (
+      <ModelFileRow
+        key={file.url}
+        icon={IconMicrophone2}
+        label={`${variant ?? "Vocal"} model file`}
+        files={[file]}
+        totalBytes={file.bytes}
+        busy={busy}
+        note={
+          variant === selectedVariant
+            ? "Downloaded"
+            : `Downloaded. Not used while ${settingEntry("vocalModelVariant").label} is ${selectedVariant}`
+        }
+        onRemove={() => removeFiles("vocal", [file.url])}
+      />
+    );
+  });
+};
+
 const ModelFileList: React.FC<{ kind: ModelKind }> = ({ kind }) => {
   const report = useStorageReport();
   const busy = useModelKindBusy(kind);
@@ -50,15 +74,19 @@ const ModelFileList: React.FC<{ kind: ModelKind }> = ({ kind }) => {
       <SettingRowLayout className="py-0">
         <SettingText id={settingId} />
       </SettingRowLayout>
-      {files.length > 0 && (
-        <ModelFileRow
-          icon={icon}
-          label={settingEntry(settingId).label}
-          files={files}
-          totalBytes={modelFilesBytes(files)}
-          busy={busy}
-          onRemove={() => removeKind(kind)}
-        />
+      {kind === "vocal" ? (
+        <VocalModelRows files={files} busy={busy} />
+      ) : (
+        files.length > 0 && (
+          <ModelFileRow
+            icon={icon}
+            label={settingEntry(settingId).label}
+            files={files}
+            totalBytes={modelFilesBytes(files)}
+            busy={busy}
+            onRemove={() => removeFiles(kind)}
+          />
+        )
       )}
     </div>
   );

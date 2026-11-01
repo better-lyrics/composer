@@ -41,5 +41,11 @@ function isModelHostingConfigured(): boolean {
   return getBaseUrl() !== null;
 }
 
-export { getBaseUrl as getModelBaseUrl, getModelDescriptor, isModelHostingConfigured, VOCAL_MODEL_APPROX_BYTES };
+export {
+  getBaseUrl as getModelBaseUrl,
+  getModelDescriptor,
+  isModelHostingConfigured,
+  MODEL_FILENAMES as VOCAL_MODEL_FILENAMES,
+  VOCAL_MODEL_APPROX_BYTES,
+};
 export type { ModelDescriptor };
