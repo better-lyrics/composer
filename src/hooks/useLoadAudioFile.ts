@@ -66,20 +66,16 @@ async function applyAudioTags(file: File): Promise<void> {
   if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);
 }
 
-function readTagsInBackground(file: File): void {
-  void applyAudioTags(file).catch((error) => {
-    console.warn(`${LOG_PREFIX} could not read audio tags`, error);
-  });
+function logTagReadFailure(error: unknown): void {
+  console.warn(`${LOG_PREFIX} could not read audio tags`, error);
 }
 
-function loadFileInPlace(file: File, replacesDifferentSong: boolean, title: string): void {
+function loadFileInPlace(file: File, replacesDifferentSong: boolean, title: string): Promise<void> {
   adoptPrimingForNewAudio();
   useAudioStore.getState().setSource({ type: "file", file });
-  void settleSongDetails(file, replacesDifferentSong, title)
+  return settleSongDetails(file, replacesDifferentSong, title)
     .then((tagWrite) => (tagWrite === "apply" ? applyAudioTags(file) : undefined))
-    .catch((error) => {
-      console.warn(`${LOG_PREFIX} could not read audio tags`, error);
-    });
+    .catch(logTagReadFailure);
 }
 
 async function swapFileInPlace(file: File, previous: AudioSource): Promise<void> {
@@ -101,11 +97,11 @@ async function startFileInNewProject(file: File, title: string): Promise<void> {
     return song;
   });
   if (!started) {
-    loadFileInPlace(file, true, title);
+    await loadFileInPlace(file, true, title);
     return;
   }
   showNewProjectToast(title, started.previousTitle, started.previousId, started.newId);
-  readTagsInBackground(file);
+  await applyAudioTags(file).catch(logTagReadFailure);
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -135,11 +131,11 @@ function useLoadAudioFile(): (file: File, mode?: AudioLoadMode) => Promise<void>
       return;
     }
     if (replacesDifferentSong && hasLyricLines(useProjectStore.getState().lines)) {
-      void startFileInNewProject(file, title);
+      await startFileInNewProject(file, title);
       return;
     }
 
-    loadFileInPlace(file, replacesDifferentSong, title);
+    await loadFileInPlace(file, replacesDifferentSong, title);
   }, []);
 }
 
