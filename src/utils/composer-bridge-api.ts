@@ -4,6 +4,7 @@
 
 import { composeAbortSignals } from "@/utils/abort-signals";
 import { stripTrailingSlashes } from "@/utils/url";
+import { settingEntry } from "@/stores/settings-catalog";
 
 const DEFAULT_BRIDGE_URL = "http://localhost:7777";
 const BRIDGE_REPO_URL = "https://github.com/better-lyrics/composer-bridge";
@@ -147,7 +148,7 @@ function formatBridgeErrorForToast(err: unknown): string {
   if (err instanceof BridgeError) {
     switch (err.code) {
       case "unreachable":
-        return "Composer Bridge is not running. Start the bridge or disable the YouTube Bridge setting.";
+        return `Composer Bridge is not running. Start the bridge or turn off ${settingEntry("youtubeBridge").label}.`;
       case "timeout":
         return "Composer Bridge timed out. Check that the bridge process is healthy.";
       case "empty":
