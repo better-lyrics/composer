@@ -17,7 +17,7 @@ const LINE_HEIGHT = 100;
 const SLOT_TEXT_CLASS: Record<Exclude<SlotState, "untimed">, string> = {
   next: "text-composer-text",
   lastTapped: "text-composer-accent-text",
-  timed: "text-[color-mix(in_oklab,var(--color-composer-accent-text)_55%,var(--color-composer-text-faint))]",
+  timed: "text-sync-timed",
 };
 
 // -- Interfaces ---------------------------------------------------------------
@@ -205,6 +205,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
                       isCurrent ? "next" : idx === lineIndex - 1 ? "lastTapped" : line.isTimed ? "timed" : "untimed"
                     }
                     onCurrentLine={isCurrent}
+                    isHeld={isHolding && isCurrent}
                   >
                     <span className="relative">{stripSplitCharacter(line.displayText ?? line.text)}</span>
                   </Slot>
