@@ -38,4 +38,4 @@ function modelFilesBytes(files: readonly ModelFile[]): number {
 // -- Exports ------------------------------------------------------------------
 
 export { groupModelFiles, modelFilesBytes };
-export type { GroupedModelFiles, KnownModelUrls, ModelFile, ModelKind };
+export type { KnownModelUrls, ModelFile, ModelKind };
