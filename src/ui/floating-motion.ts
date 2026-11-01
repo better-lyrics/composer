@@ -60,13 +60,7 @@ function useFloatingEntrance(context: FloatingContext, instant = false) {
     duration: { open: floatingEntrance.openMs, close: floatingEntrance.closeMs },
     initial: reduced ? floatingEntrance.reducedInitial : floatingEntrance.initial,
     close: ({ side }) =>
-      reduced
-        ? floatingEntrance.reducedInitial
-        : {
-            ...floatingEntrance.close,
-            translate: towardTrigger(side),
-            transitionTimingFunction: floatingEntrance.closeEase,
-          },
+      reduced ? floatingEntrance.reducedInitial : { ...floatingEntrance.close, translate: towardTrigger(side) },
     common: ({ placement }) => ({
       transformOrigin: entranceOrigin(placement),
       transitionTimingFunction: floatingEntrance.ease,

@@ -96,7 +96,6 @@ interface SourceDurationProps {
   duration: number;
 }
 
-// A download or an mp3 decode is still resolving the duration while it loads.
 const SourceDuration: React.FC<SourceDurationProps> = ({ loading, duration }) =>
   loading ? (
     <span className="flex items-center gap-[5px]">

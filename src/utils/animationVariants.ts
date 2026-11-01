@@ -121,9 +121,8 @@ const floatingEntrance = {
   openMs: 200,
   closeMs: 150,
   ease: "cubic-bezier(0.22, 1, 0.36, 1)",
-  closeEase: "ease-in",
   initial: { opacity: 0, scale: "0.97", filter: "blur(4px)" },
-  close: { opacity: 0, filter: "blur(4px)" },
+  close: { opacity: 0, filter: "blur(4px)", transitionTimingFunction: "ease-in" },
   closeShiftPx: 12,
   reducedInitial: { opacity: 0 },
 } as const;
