@@ -16,7 +16,6 @@ function buildHarness(snapTime: (time: number, bypass: boolean) => number = (t) 
     getScrollContainer: () => scrollContainer,
     getDuration: () => 60,
     getZoom: () => 50,
-    getStoreScrollLeft: () => 0,
     getCurrentTime: () => 3,
     setIsPlaying: (v) => calls.play.push(v),
     setDraggingPlayhead: (v) => calls.dragging.push(v),

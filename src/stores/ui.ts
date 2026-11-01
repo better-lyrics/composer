@@ -1,31 +1,123 @@
+import { type SettingId, type SettingsSectionId, settingEntry } from "@/stores/settings-catalog";
 import { create } from "zustand";
 
-// -- Types --------------------------------------------------------------------
+// -- Types ---------------------------------------------------------------------
 
-type SettingsHighlight = "bridge-section" | null;
+type SettingsTarget = { setting: SettingId } | { section: SettingsSectionId };
+
+interface HelpLocation {
+  section: string;
+  scrollTop: number;
+  query?: string;
+}
+
+interface OpenSettingsOptions {
+  target?: SettingsTarget;
+  returnTo?: HelpLocation;
+}
 
 interface UIState {
   settingsOpen: boolean;
-  settingsHighlight: SettingsHighlight;
+  settingsSection: SettingsSectionId;
+  settingsQuery: string;
+  settingsScrollTop: number;
+  settingsTarget: SettingsTarget | null;
+  settingsReturnTo: HelpLocation | null;
+  helpOpen: boolean;
+  helpLocation: HelpLocation;
+  modalHandoff: boolean;
+  helpSession: number;
+  settingsSession: number;
+  projectSwitcherOpen: boolean;
 }
 
 interface UIActions {
-  openSettings: (highlight?: SettingsHighlight) => void;
+  openSettings: (options?: OpenSettingsOptions) => void;
   closeSettings: () => void;
-  clearHighlight: () => void;
+  setSettingsSection: (section: SettingsSectionId) => void;
+  setSettingsQuery: (query: string) => void;
+  consumeSettingsTarget: () => void;
+  rememberSettingsScrollTop: (scrollTop: number) => void;
+  openHelp: (section?: string) => void;
+  closeHelp: () => void;
+  rememberHelpLocation: (location: HelpLocation) => void;
+  setProjectSwitcherOpen: (open: boolean) => void;
 }
 
-// -- Store --------------------------------------------------------------------
+// -- Constants -----------------------------------------------------------------
 
-const useUIStore = create<UIState & UIActions>((set) => ({
+const DEFAULT_HELP_SECTION = "getting-started";
+
+const UI_INITIAL_STATE: UIState = {
   settingsOpen: false,
-  settingsHighlight: null,
+  settingsSection: "general",
+  settingsQuery: "",
+  settingsScrollTop: 0,
+  settingsTarget: null,
+  settingsReturnTo: null,
+  helpOpen: false,
+  helpLocation: { section: DEFAULT_HELP_SECTION, scrollTop: 0 },
+  modalHandoff: false,
+  helpSession: 0,
+  settingsSession: 0,
+  projectSwitcherOpen: false,
+};
 
-  openSettings: (highlight = null) => set({ settingsOpen: true, settingsHighlight: highlight }),
-  closeSettings: () => set({ settingsOpen: false, settingsHighlight: null }),
-  clearHighlight: () => set({ settingsHighlight: null }),
+// -- Helpers -------------------------------------------------------------------
+
+function sectionOfTarget(target: SettingsTarget): SettingsSectionId {
+  return "setting" in target ? settingEntry(target.setting).section : target.section;
+}
+
+// -- Store ---------------------------------------------------------------------
+
+const useUIStore = create<UIState & UIActions>((set, get) => ({
+  ...UI_INITIAL_STATE,
+
+  openSettings: ({ target, returnTo } = {}) =>
+    set((state) => ({
+      settingsOpen: true,
+      ...(target ? { settingsSection: sectionOfTarget(target), settingsQuery: "", settingsScrollTop: 0 } : {}),
+      settingsTarget: target ?? null,
+      settingsReturnTo: returnTo ?? (state.settingsOpen ? state.settingsReturnTo : null),
+      helpOpen: returnTo ? false : state.helpOpen,
+      modalHandoff: returnTo !== undefined && state.helpOpen,
+      settingsSession: state.settingsOpen ? state.settingsSession : state.settingsSession + 1,
+    })),
+  closeSettings: () =>
+    set((state) =>
+      state.settingsReturnTo
+        ? {
+            settingsOpen: false,
+            settingsTarget: null,
+            settingsReturnTo: null,
+            helpOpen: true,
+            helpLocation: state.settingsReturnTo,
+            modalHandoff: true,
+            helpSession: state.helpSession + 1,
+          }
+        : { settingsOpen: false, settingsTarget: null, modalHandoff: false },
+    ),
+  setSettingsSection: (settingsSection) => set({ settingsSection, settingsQuery: "" }),
+  setSettingsQuery: (settingsQuery) => set({ settingsQuery }),
+  consumeSettingsTarget: () => set({ settingsTarget: null }),
+  rememberSettingsScrollTop: (settingsScrollTop) => set({ settingsScrollTop }),
+  openHelp: (section) =>
+    set((state) => ({
+      helpOpen: true,
+      modalHandoff: state.helpOpen,
+      helpSession: state.helpOpen && !section ? state.helpSession : state.helpSession + 1,
+      ...(section ? { helpLocation: { section, scrollTop: 0 } } : {}),
+    })),
+  closeHelp: () => set({ helpOpen: false, modalHandoff: false }),
+  rememberHelpLocation: (helpLocation) => {
+    // Help also remounts while open when asked for another section; that request wins.
+    if (!get().helpOpen) set({ helpLocation });
+  },
+  setProjectSwitcherOpen: (projectSwitcherOpen) => set({ projectSwitcherOpen }),
 }));
 
-// -- Exports ------------------------------------------------------------------
+// -- Exports -------------------------------------------------------------------
 
-export { useUIStore };
+export { UI_INITIAL_STATE, useUIStore };
+export type { HelpLocation, SettingsTarget };

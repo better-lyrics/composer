@@ -1,6 +1,7 @@
 import { deriveTheme } from "@/domain/theme/derive";
 import { QUICK_TOKENS, type Theme, type TokenKey } from "@/domain/theme/model";
 import { ThemeTokenInput } from "@/ui/settings/theme/theme-token-input";
+import { IconInfoCircle } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -16,30 +17,32 @@ const HINT =
 
 // -- Components ----------------------------------------------------------------
 
+const QuickModeNote: React.FC = () => (
+  <p className="flex gap-2 rounded-[10px] px-3 py-2.5 text-[12.5px] leading-[1.45] text-(--label) bg-composer-accent/8 shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--color-composer-accent)_22%,transparent)] select-none">
+    <IconInfoCircle aria-hidden="true" className="size-[15px] shrink-0 mt-px text-composer-accent-text" />
+    {HINT}
+  </p>
+);
+
 const ThemeEditorQuick: React.FC<ThemeEditorQuickProps> = ({ draft, onTokenChange }) => {
   const resolved = deriveTheme(draft);
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="rounded-lg border border-composer-accent/20 bg-composer-accent/10 px-2.5 py-2 text-xs text-composer-text-muted select-none">
-        {HINT}
-      </p>
-      <div className="divide-y divide-composer-border">
-        {QUICK_TOKENS.map((token) => (
-          <div key={token.key} className="py-2">
-            <ThemeTokenInput
-              tokenKey={token.key}
-              label={token.quick ?? token.label}
-              value={draft.tokens[token.key] ?? resolved[token.key]}
-              onChange={(value) => onTokenChange(token.key, value)}
-            />
-          </div>
-        ))}
-      </div>
+    <div className="divide-y divide-(--divider)">
+      {QUICK_TOKENS.map((token) => (
+        <div key={token.key} className="py-2">
+          <ThemeTokenInput
+            tokenKey={token.key}
+            label={token.quick ?? token.label}
+            value={draft.tokens[token.key] ?? resolved[token.key]}
+            onChange={(value) => onTokenChange(token.key, value)}
+          />
+        </div>
+      ))}
     </div>
   );
 };
 
 // -- Exports -------------------------------------------------------------------
 
-export { ThemeEditorQuick };
+export { QuickModeNote, ThemeEditorQuick };

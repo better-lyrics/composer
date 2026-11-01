@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
-import { snapTimeToOnset } from "@/views/timeline/snap-marker-math";
+import { pointSnapAnchors } from "@/views/timeline/point-snap-anchors";
+import { snapTimeToPoints } from "@/views/timeline/snap-marker-math";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { xToTime } from "@/views/timeline/coords";
 
@@ -52,11 +52,8 @@ function useSnapMarkerDrag({ scrollContainerRef }: SnapMarkerDragConfig): SnapMa
         if (!containerRect) return lastWrittenRef.current;
         const { zoom, scrollLeft } = useTimelineStore.getState();
         const raw = xToTime(clientX, containerRect, zoom, scrollLeft);
-        const onsets = useSettingsStore.getState().vocalOnsetSnap
-          ? useTimelineStore.getState().vocalOnsetSnapPoints
-          : [];
-        const thresholdPx = useSettingsStore.getState().timelineSnapThreshold;
-        return snapTimeToOnset(raw, onsets, zoom, thresholdPx);
+        const anchors = pointSnapAnchors({ includeMarkers: false, includeOnsets: true, includeBeats: true });
+        return snapTimeToPoints(raw, anchors, zoom);
       };
 
       const handlePointerMove = (moveEvent: PointerEvent): void => {

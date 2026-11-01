@@ -1,11 +1,16 @@
+import { getEffectiveLines } from "@/domain/line/effective-words";
+import type { WordSelection } from "@/domain/selection/model";
+import { mergeWordSelections } from "@/domain/selection/set-ops";
+import { useFrameLoop } from "@/hooks/use-frame-loop";
+import { holdFrames } from "@/lib/frame-loop";
+import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import type { WordSelection } from "@/domain/selection/model";
-import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
-import { getEffectiveLines } from "@/domain/line/effective-words";
-import { mergeWordSelections } from "@/domain/selection/set-ops";
+import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { readViewScroll, scrollViewBy } from "@/views/timeline/view-scroll";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -21,18 +26,18 @@ type MarqueeState = "idle" | "pending" | "active";
 // -- Constants -----------------------------------------------------------------
 
 const ACTIVATION_THRESHOLD = 5;
-const BG_DROP_ZONE_HEIGHT = 24;
 const AUTO_SCROLL_ZONE = 40;
 const AUTO_SCROLL_SPEED = 8;
+const AUTO_SCROLL_LABEL = "marquee-scroll";
 
 // -- Hook ----------------------------------------------------------------------
 
 function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
   const [marqueeRect, setMarqueeRect] = useState<MarqueeRect | null>(null);
+  const [autoScrolling, setAutoScrolling] = useState(false);
   const stateRef = useRef<MarqueeState>("idle");
   const startRef = useRef({ clientX: 0, clientY: 0, scrollLeft: 0, scrollTop: 0 });
   const currentRef = useRef({ clientX: 0, clientY: 0 });
-  const rafRef = useRef<number | null>(null);
   const shiftRef = useRef(false);
 
   const computeRect = useCallback((): MarqueeRect | null => {
@@ -45,8 +50,9 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
     const startX = start.clientX - containerRect.left + start.scrollLeft;
     const startY = start.clientY - containerRect.top + start.scrollTop;
-    const currentX = current.clientX - containerRect.left + container.scrollLeft;
-    const currentY = current.clientY - containerRect.top + container.scrollTop;
+    const { left, top } = readViewScroll(container);
+    const currentX = current.clientX - containerRect.left + left;
+    const currentY = current.clientY - containerRect.top + top;
 
     const x = Math.min(startX, currentX);
     const y = Math.min(startY, currentY);
@@ -56,16 +62,42 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
     return { x, y, width, height };
   }, [scrollContainerRef]);
 
+  const autoScroll = useCallback(() => {
+    const c = scrollContainerRef.current;
+    if (!c || stateRef.current !== "active") return;
+
+    const cRect = c.getBoundingClientRect();
+    const cy = currentRef.current.clientY - cRect.top;
+    const cx = currentRef.current.clientX - cRect.left;
+
+    const deltaTop =
+      cy < AUTO_SCROLL_ZONE ? -AUTO_SCROLL_SPEED : cy > cRect.height - AUTO_SCROLL_ZONE ? AUTO_SCROLL_SPEED : 0;
+    const deltaLeft =
+      cx < AUTO_SCROLL_ZONE ? -AUTO_SCROLL_SPEED : cx > cRect.width - AUTO_SCROLL_ZONE ? AUTO_SCROLL_SPEED : 0;
+    scrollViewBy(c, deltaLeft, deltaTop);
+
+    if (deltaLeft !== 0 || deltaTop !== 0) {
+      const updatedRect = computeRect();
+      if (updatedRect) setMarqueeRect(updatedRect);
+    }
+  }, [scrollContainerRef, computeRect]);
+
+  useFrameLoop(autoScroll, AUTO_SCROLL_LABEL, autoScrolling);
+
+  // Edge auto-scroll must keep running while the pointer is held still, so hold
+  // the loop awake and let effect cleanup guarantee the release.
+  useEffect(() => (autoScrolling ? holdFrames(AUTO_SCROLL_LABEL) : undefined), [autoScrolling]);
+
   const computeSelection = useCallback((rect: MarqueeRect): WordSelection[] => {
     const lines = getEffectiveLines(useProjectStore.getState().lines);
-    const { zoom, rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
+    const { zoom, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
     const layout = computeRowLayout({
       lines,
       rowHeights,
       defaultRowHeight,
       collapsedInstances,
-      waveformHeight: WAVEFORM_HEIGHT,
-      bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
+      focusedGroup,
+      waveformHeight: currentOverviewBandHeight(),
       groupHeaderHeight: GROUP_HEADER_HEIGHT,
     });
 
@@ -116,7 +148,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
   const handleMarqueeMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || e.defaultPrevented) return;
 
       const target = e.target as HTMLElement;
       if (target.closest("[data-word-block]")) return;
@@ -126,12 +158,8 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
       stateRef.current = "pending";
       shiftRef.current = e.shiftKey;
-      startRef.current = {
-        clientX: e.clientX,
-        clientY: e.clientY,
-        scrollLeft: container.scrollLeft,
-        scrollTop: container.scrollTop,
-      };
+      const { left, top } = readViewScroll(container);
+      startRef.current = { clientX: e.clientX, clientY: e.clientY, scrollLeft: left, scrollTop: top };
       currentRef.current = { clientX: e.clientX, clientY: e.clientY };
     },
     [scrollContainerRef],
@@ -155,52 +183,14 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
         setMarqueeRect(rect);
       }
 
-      if (rafRef.current === null) {
-        const autoScroll = () => {
-          const c = scrollContainerRef.current;
-          if (!c || stateRef.current !== "active") {
-            rafRef.current = null;
-            return;
-          }
-
-          const cRect = c.getBoundingClientRect();
-          const cy = currentRef.current.clientY - cRect.top;
-          const cx = currentRef.current.clientX - cRect.left;
-
-          let scrolled = false;
-          if (cy < AUTO_SCROLL_ZONE) {
-            c.scrollTop -= AUTO_SCROLL_SPEED;
-            scrolled = true;
-          } else if (cy > cRect.height - AUTO_SCROLL_ZONE) {
-            c.scrollTop += AUTO_SCROLL_SPEED;
-            scrolled = true;
-          }
-          if (cx < AUTO_SCROLL_ZONE) {
-            c.scrollLeft -= AUTO_SCROLL_SPEED;
-            scrolled = true;
-          } else if (cx > cRect.width - AUTO_SCROLL_ZONE) {
-            c.scrollLeft += AUTO_SCROLL_SPEED;
-            scrolled = true;
-          }
-
-          if (scrolled) {
-            const updatedRect = computeRect();
-            if (updatedRect) setMarqueeRect(updatedRect);
-          }
-
-          rafRef.current = requestAnimationFrame(autoScroll);
-        };
-        rafRef.current = requestAnimationFrame(autoScroll);
-      }
+      setAutoScrolling(true);
     };
 
     const handleMouseUp = () => {
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
+      setAutoScrolling(false);
 
       if (stateRef.current === "active") {
+        swallowTrailingClick();
         const rect = computeRect();
         if (rect) {
           const newSelections = computeSelection(rect);
@@ -226,11 +216,8 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-      }
     };
-  }, [scrollContainerRef, computeRect, computeSelection]);
+  }, [computeRect, computeSelection]);
 
   return { marqueeRect, handleMarqueeMouseDown };
 }

@@ -1,7 +1,9 @@
+import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { getEffectiveLines } from "@/domain/line/effective-words";
+import { effectiveWordTextEdit, getEffectiveLines } from "@/domain/line/effective-words";
+import { trackWords } from "@/domain/line/tracks";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
@@ -24,7 +26,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
 
   const effectiveLines = useMemo(() => getEffectiveLines(rawLines), [rawLines]);
   const line = effectiveLines.find((l) => l.id === lineId);
-  const wordsArray = type === "word" ? line?.words : line?.backgroundWords;
+  const wordsArray = line ? trackWords(line, type) : undefined;
   const word = wordsArray?.[wordIndex];
 
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -48,22 +50,30 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
       return true;
     };
 
-    if (findAndPosition()) return;
-
-    const raf = requestAnimationFrame(() => {
-      if (!findAndPosition()) clearEditingWord();
-    });
-    return () => cancelAnimationFrame(raf);
+    const followScroll = () => {
+      findAndPosition();
+    };
+    container.addEventListener("scroll", followScroll, { passive: true });
+    const frame = findAndPosition()
+      ? null
+      : nextFrame(() => {
+          if (!findAndPosition()) clearEditingWord();
+        });
+    return () => {
+      container.removeEventListener("scroll", followScroll);
+      if (frame !== null) cancelNextFrame(frame);
+    };
   }, [lineId, wordIndex, type, word, scrollContainerRef, clearEditingWord]);
 
+  const isPlaced = pos !== null;
   useEffect(() => {
-    if (!pos) return;
-    const raf = requestAnimationFrame(() => {
+    if (!isPlaced) return;
+    const frame = nextFrame(() => {
       inputRef.current?.focus();
       inputRef.current?.select();
     });
-    return () => cancelAnimationFrame(raf);
-  }, [pos]);
+    return () => cancelNextFrame(frame);
+  }, [isPlaced]);
 
   const handleCommit = useCallback(
     (value: string) => {
@@ -75,7 +85,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
         updatedWords[wordIndex] = { ...word, text: hadTrailingSpace ? `${trimmed} ` : trimmed };
         updateLineWithHistory(
           lineId,
-          type === "word" ? { words: updatedWords } : manualBackgroundWordEdit(updatedWords),
+          type === "word" ? effectiveWordTextEdit(line, updatedWords) : manualBackgroundWordEdit(updatedWords),
         );
       }
       clearEditingWord();
@@ -113,7 +123,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
         defaultValue={word.text.trimEnd()}
         onKeyDown={handleKeyDown}
         onBlur={commitWordEdit}
-        className="fixed z-100 px-2 py-1.5 text-sm text-composer-text bg-composer-bg border border-composer-border rounded-lg cursor-text focus:outline-none focus:border-composer-accent"
+        className="fixed layer-floating px-2 py-1.5 text-sm text-composer-text bg-composer-bg border border-composer-border rounded-lg cursor-text focus:outline-none focus:border-composer-accent"
         style={{ top: pos.top, left: pos.left, width: pos.width }}
       />
     </FloatingPortal>

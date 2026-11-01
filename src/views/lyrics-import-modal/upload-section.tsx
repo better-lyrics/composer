@@ -1,8 +1,14 @@
+import { Button } from "@/ui/button";
+import { cn } from "@/utils/cn";
+import {
+  LYRICS_IMPORT_ACCEPT_ATTRIBUTE,
+  LYRICS_IMPORT_FORMATS_COMPACT,
+  UNSUPPORTED_LYRICS_IMPORT_MESSAGE,
+  isLyricsImportFileName,
+} from "@/views/lyrics-import-modal/accepted-files";
 import { IconArrowLeft, IconClipboardText, IconMusic } from "@tabler/icons-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/ui/button";
-import { cn } from "@/utils/cn";
 
 // -- Types --------------------------------------------------------------------
 
@@ -12,12 +18,6 @@ interface UploadSectionProps {
   onSwitchToPaste: () => void;
 }
 
-// -- Constants ----------------------------------------------------------------
-
-const ACCEPTED_EXTENSIONS = /\.(txt|lrc|srt|ttml|xml)$/i;
-const ACCEPTED_FILE_INPUT = ".txt,.lrc,.srt,.ttml,.xml";
-const UNSUPPORTED_TYPE_MESSAGE = "Unsupported file type. Use .txt .lrc .srt .ttml";
-
 // -- Component ----------------------------------------------------------------
 
 const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch, onSwitchToPaste }) => {
@@ -26,8 +26,8 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
 
   const acceptFile = useCallback(
     (file: File) => {
-      if (!ACCEPTED_EXTENSIONS.test(file.name)) {
-        toast.error(UNSUPPORTED_TYPE_MESSAGE);
+      if (!isLyricsImportFileName(file.name)) {
+        toast.error(UNSUPPORTED_LYRICS_IMPORT_MESSAGE);
         return;
       }
       void onFile(file);
@@ -74,7 +74,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
   );
 
   return (
-    <div className={cn("flex flex-col gap-2.5 p-3 rounded-lg", "bg-composer-input border border-composer-border")}>
+    <div className={cn("flex flex-col gap-2.5 p-3 rounded-lg", "bg-(--layer-1) border border-(--edge)")}>
       <div className="flex items-center justify-between gap-2">
         <Button variant="secondary" size="sm" hasIcon onClick={onSwitchToSearch}>
           <IconArrowLeft size={14} stroke={2} />
@@ -100,10 +100,8 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
         onDrop={handleDrop}
         className={cn(
           "flex flex-col items-center justify-center gap-2 px-4 py-7 rounded-lg text-center cursor-pointer w-full",
-          "bg-composer-overlay border border-dashed transition-colors",
-          isDragOver
-            ? "border-composer-accent bg-composer-accent/8"
-            : "border-composer-border hover:border-composer-border-strong",
+          "bg-(--well) border border-dashed transition-colors",
+          isDragOver ? "border-composer-accent bg-composer-accent/8" : "border-(--edge-strong) hover:border-(--muted)",
         )}
       >
         <IconMusic size={32} stroke={1.5} className="text-composer-text opacity-50 mb-0.5" />
@@ -111,13 +109,15 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
         <div className="text-[11.5px] text-composer-text-muted">
           or <span className="text-composer-accent-text underline decoration-composer-accent/40">click to browse</span>
         </div>
-        <div className="mt-1 font-mono text-[10.5px] tracking-tight text-composer-text-muted">.txt .lrc .srt .ttml</div>
+        <div className="mt-1 font-mono text-[10.5px] tracking-tight text-composer-text-muted">
+          {LYRICS_IMPORT_FORMATS_COMPACT}
+        </div>
       </button>
       <input
         ref={fileInputRef}
         type="file"
         aria-label="Import lyrics file"
-        accept={ACCEPTED_FILE_INPUT}
+        accept={LYRICS_IMPORT_ACCEPT_ATTRIBUTE}
         onChange={handleInputChange}
         className="sr-only"
       />
@@ -127,4 +127,4 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
 
 // -- Exports ------------------------------------------------------------------
 
-export { ACCEPTED_EXTENSIONS, UNSUPPORTED_TYPE_MESSAGE, UploadSection };
+export { UploadSection };

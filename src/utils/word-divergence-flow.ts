@@ -1,7 +1,7 @@
-import { useDivergenceStore } from "@/stores/divergence-store";
-import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
+import { useProjectStore } from "@/stores/project";
+import { askWordDivergence } from "@/ui/divergence-prompt";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { wouldDivergenceCauseRetiming } from "@/utils/word-diff";
 
@@ -45,7 +45,7 @@ async function handleWordChangeWithDivergenceCheck(
   ).length;
   const groupLabel = useProjectStore.getState().groups.find((g) => g.id === groupId)?.label;
 
-  const resolution = await useDivergenceStore.getState().open({ affectedSiblingCount, groupLabel });
+  const resolution = await askWordDivergence({ affectedSiblingCount, groupLabel });
   useProjectStore.getState().applyWordCountChange(lineId, newWords, field, resolution, extraUpdates);
   if (resolution === "apply") showGroupActionToast("Word structure synced across instances");
   else if (resolution === "detach") showGroupActionToast("Line detached from group");

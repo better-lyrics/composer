@@ -4,6 +4,7 @@ import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
+import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
@@ -52,6 +53,10 @@ describe("AudioEngine", () => {
     useAudioStore.setState({ playbackRate: 1.5 });
     await waitFor(() => audio.playbackRate === 1.5);
     expect(audio.playbackRate).toBe(1.5);
+
+    useSettingsStore.getState().set("preservePitch", false);
+    await waitFor(() => audio.preservesPitch === false);
+    expect(audio.preservesPitch).toBe(false);
 
     useAudioStore.setState({ volume: 0.25 });
     await waitFor(() => audio.volume === 0.25);
@@ -243,7 +248,8 @@ describe("AudioEngine", () => {
       });
       await waitFor(() => scrubStemRouter.getActiveStem() === "vocals", 5000);
       scrubPreview.play(0.05, 1);
-      expect(scrubPreview.getActiveSnippet()?.time).toBe(0);
+      await waitFor(() => scrubPreview.getActiveSnippet() !== null, 5000);
+      expect(scrubPreview.getActiveSnippet()?.time).toBe(0.05);
 
       useSeparationStore.setState({ currentStem: "original" });
       await waitFor(() => scrubStemRouter.getActiveStem() === "original", 5000);
@@ -290,5 +296,17 @@ describe("AudioEngine", () => {
     useAudioStore.setState({ source: { type: "file", file: garbage } });
     await waitFor(() => useAudioStore.getState().audioElement !== null, 5000);
     expect(useProjectStore.getState().primingStripped).toBe(true);
+  });
+
+  it("regression T2: reverts isPlaying when the element refuses to play", async () => {
+    allowConsole(/audio decode failed|Audio error/);
+    allowConsole(/scrub-preview decode failed/);
+    await render(<AudioEngine />);
+    const broken = new File([new Uint8Array([1, 2, 3, 4])], "broken.mp3", { type: "audio/mpeg" });
+    useAudioStore.setState({ source: { type: "file", file: broken } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null, 3000);
+    useAudioStore.getState().setIsPlaying(true);
+    await waitFor(() => useAudioStore.getState().isPlaying === false, 3000);
+    expect(useAudioStore.getState().isPlaying).toBe(false);
   });
 });

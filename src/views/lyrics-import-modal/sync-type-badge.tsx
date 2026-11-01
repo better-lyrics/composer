@@ -20,24 +20,24 @@ interface SyncVariant {
 const SYNC_VARIANTS: Record<SyncType, SyncVariant> = {
   syllable: {
     label: "Syllable",
-    colorClasses: "text-[#fcd34d] bg-[#fcd34d]/15",
+    colorClasses: "text-composer-warning bg-composer-warning/15",
     fillStates: [1, 0.5, 0.5, 0.5],
   },
   word: {
     label: "Word",
-    colorClasses: "text-[#93c5fd] bg-[#93c5fd]/15",
+    colorClasses: "text-composer-link bg-composer-link/15",
     fillStates: [1, 1, 0.5, 0.5],
   },
   line: {
     label: "Line",
-    colorClasses: "text-[#86efac] bg-[#86efac]/15",
+    colorClasses: "text-composer-positive bg-composer-positive/15",
     fillStates: [1, 1, 1, 0.5],
   },
   // Intentional exception to the icon color rule: all four rects share the same
   // fillOpacity, so there are no overlapping paths with differing opacities to clip.
   unsynced: {
     label: "Unsynced",
-    colorClasses: "text-white/50 bg-white/5",
+    colorClasses: "text-(--muted) bg-(--layer-1)",
     fillStates: [0.5, 0.5, 0.5, 0.5],
   },
 };
@@ -83,7 +83,7 @@ const SyncTypeBadge: React.FC<SyncTypeBadgeProps> = ({ syncType, sourceLabel }) 
       <span
         data-sync-type={syncType}
         className={cn(
-          "inline-flex items-center gap-1 pl-1.5 pr-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide cursor-help shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]",
+          "inline-flex items-center gap-1 pl-1.5 pr-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide cursor-help shadow-[inset_0_1px_0_0_var(--highlight)]",
           variant.colorClasses,
         )}
       >

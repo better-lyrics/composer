@@ -1,3 +1,5 @@
+import { GuideCode } from "@/pages/guides/guide-code";
+
 const WhatIsTtmlContent: React.FC = () => (
   <>
     <p>
@@ -18,8 +20,9 @@ const WhatIsTtmlContent: React.FC = () => (
       <code className="font-mono text-composer-accent-text">&lt;body&gt;</code> with lyric lines. Each line is a{" "}
       <code className="font-mono text-composer-accent-text">&lt;p&gt;</code> element with a begin and end attribute.
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<tt xmlns="http://www.w3.org/ns/ttml"
+    <GuideCode
+      format="ttml"
+      code={`<tt xmlns="http://www.w3.org/ns/ttml"
     xmlns:ttm="http://www.w3.org/ns/ttml#metadata">
   <head>
     <metadata>
@@ -34,7 +37,7 @@ const WhatIsTtmlContent: React.FC = () => (
     </div>
   </body>
 </tt>`}
-    </pre>
+    />
     <p>
       That is a line-synced TTML file. The whole line appears at 12 seconds and disappears at 15.2 seconds. The platform
       renders it as one block.
@@ -46,15 +49,16 @@ const WhatIsTtmlContent: React.FC = () => (
       <code className="font-mono text-composer-accent-text">&lt;span&gt;</code> elements inside a line. Each span holds
       one word with its own begin and end attributes.
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<p begin="00:00:12.000" end="00:00:15.200">
+    <GuideCode
+      format="ttml"
+      code={`<p begin="00:00:12.000" end="00:00:15.200">
   <span begin="00:00:12.000" end="00:00:12.400">This</span>
   <span begin="00:00:12.400" end="00:00:12.800">is</span>
   <span begin="00:00:12.800" end="00:00:13.200">the</span>
   <span begin="00:00:13.200" end="00:00:14.000">first</span>
   <span begin="00:00:14.000" end="00:00:15.200">line</span>
 </p>`}
-    </pre>
+    />
     <p>
       The rendering platform reads the timing and animates each word as its begin time passes the playhead. That is how
       the bouncing-word effect on Apple Music is produced.

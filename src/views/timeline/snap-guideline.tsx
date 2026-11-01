@@ -3,14 +3,9 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Component ----------------------------------------------------------------
 
-const SnapGuideline: React.FC = () => {
-  const snappedAnchorTime = useTimelineStore((s) => s.snappedAnchorTime);
+const SnapGuidelineAt: React.FC<{ time: number }> = ({ time }) => {
   const zoom = useTimelineStore((s) => s.zoom);
   const scrollLeft = useTimelineStore((s) => s.scrollLeft);
-
-  if (snappedAnchorTime === null) return null;
-
-  const position = timeToX(snappedAnchorTime, zoom, scrollLeft);
 
   return (
     <div
@@ -20,7 +15,7 @@ const SnapGuideline: React.FC = () => {
       <div
         className="absolute top-0 bottom-0 pointer-events-none"
         style={{
-          left: position,
+          left: timeToX(time, zoom, scrollLeft),
           width: 0,
           borderLeft: "1px dashed color-mix(in srgb, var(--color-composer-snap) 70%, transparent)",
         }}
@@ -29,6 +24,11 @@ const SnapGuideline: React.FC = () => {
   );
 };
 
+const SnapGuideline: React.FC = () => {
+  const snappedAnchorTime = useTimelineStore((s) => s.snappedAnchorTime);
+  return snappedAnchorTime === null ? null : <SnapGuidelineAt time={snappedAnchorTime} />;
+};
+
 // -- Exports ------------------------------------------------------------------
 
-export { SnapGuideline };
+export { SnapGuideline, SnapGuidelineAt };

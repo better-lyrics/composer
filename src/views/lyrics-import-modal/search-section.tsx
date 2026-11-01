@@ -1,11 +1,15 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { useLyricsSearch } from "@/hooks/useLyricsSearch";
-import { useImportModalStore } from "@/stores/import-modal-store";
+import { openProjectIdSnapshot } from "@/lib/open-project-session";
+import type { SearchInputs } from "@/stores/import-modal-store";
 import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 import { formatDuration, parseDurationInput } from "@/views/lyrics-import-modal/duration-input-utils";
+import { EMPTY_SEARCH_INPUTS, initialSearchInputs, saveSearchDraft } from "@/views/lyrics-import-modal/search-inputs";
+import { Button } from "@/ui/button";
 import { SearchField } from "@/views/lyrics-import-modal/search-field";
 import { SearchResults } from "@/views/lyrics-import-modal/search-results";
+import { pluralize } from "@/utils/pluralize";
 import {
   IconAlbum,
   IconBrandYoutube,
@@ -26,47 +30,17 @@ interface SearchSectionProps {
   onSwitchToUpload: () => void;
 }
 
-interface InputState {
-  track: string;
-  artist: string;
-  album: string;
-  duration: string;
-  videoId: string;
-}
-
-// -- Constants ----------------------------------------------------------------
-
-const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
-  lrclib: "LRCLib",
-  binimum: "Binimum",
-  "boidu-lyrics": "Better Lyrics",
-};
-
 // -- Helpers ------------------------------------------------------------------
 
-function buildInitialInputState(prefill: LyricsSearchQuery | null): InputState {
-  return {
-    track: prefill?.track ?? "",
-    artist: prefill?.artist ?? "",
-    album: prefill?.album ?? "",
-    duration: typeof prefill?.durationSec === "number" ? formatDuration(prefill.durationSec) : "",
-    videoId: prefill?.videoId ?? "",
-  };
-}
-
-function buildQuery(inputs: InputState, isrc: string | undefined): LyricsSearchQuery {
+function buildQuery(inputs: SearchInputs): LyricsSearchQuery {
   return {
     track: inputs.track.trim() || undefined,
     artist: inputs.artist.trim() || undefined,
     album: inputs.album.trim() || undefined,
     durationSec: parseDurationInput(inputs.duration),
     videoId: inputs.videoId.trim() || undefined,
-    isrc,
+    isrc: inputs.isrc,
   };
-}
-
-function formatProviderName(name: string): string {
-  return PROVIDER_DISPLAY_NAMES[name] ?? name;
 }
 
 // -- Component ----------------------------------------------------------------
@@ -78,43 +52,50 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   onSwitchToPaste,
   onSwitchToUpload,
 }) => {
-  const [inputs, setInputs] = useState<InputState>(() => buildInitialInputState(initialPrefill));
+  const [projectId] = useState(openProjectIdSnapshot);
+  const [inputs, setInputs] = useState<SearchInputs>(() => initialSearchInputs(initialPrefill));
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [hoveredIndex, setHoveredIndex] = useState(-1);
   const [selectingId, setSelectingId] = useState<string | null>(null);
   const trackInputRef = useRef<HTMLInputElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
-  const isrcRef = useRef(initialPrefill?.isrc);
 
-  const query = useMemo(() => buildQuery(inputs, isrcRef.current), [inputs]);
+  const query = useMemo(() => buildQuery(inputs), [inputs]);
   const effectiveExpectedDuration = expectedDurationSec ?? parseDurationInput(inputs.duration);
-  const { results, isFetching, errors } = useLyricsSearch(query, {
+  const { results, isFetching } = useLyricsSearch(query, {
     expectedDurationSec: effectiveExpectedDuration,
   });
+
+  const updateInputs = useCallback(
+    (next: SearchInputs) => {
+      setInputs(next);
+      saveSearchDraft(projectId, next);
+    },
+    [projectId],
+  );
 
   const handleDurationBlur = useCallback(() => {
     const parsed = parseDurationInput(inputs.duration);
     if (parsed === undefined) return;
     const formatted = formatDuration(parsed);
-    if (formatted !== inputs.duration) {
-      setInputs((prev) => ({ ...prev, duration: formatted }));
-    }
-  }, [inputs.duration]);
+    if (formatted !== inputs.duration) updateInputs({ ...inputs, duration: formatted });
+  }, [inputs, updateInputs]);
 
-  const handleInputChange = useCallback(<K extends keyof InputState>(key: K) => {
-    return (value: string) => {
-      setInputs((prev) => ({ ...prev, [key]: value }));
-      setFocusedIndex(-1);
-    };
-  }, []);
+  const handleInputChange = useCallback(
+    (key: Exclude<keyof SearchInputs, "isrc">) => {
+      return (value: string) => {
+        updateInputs({ ...inputs, [key]: value });
+        setFocusedIndex(-1);
+      };
+    },
+    [inputs, updateInputs],
+  );
 
   const handleClearAll = useCallback(() => {
-    setInputs({ track: "", artist: "", album: "", duration: "", videoId: "" });
-    isrcRef.current = undefined;
+    updateInputs(EMPTY_SEARCH_INPUTS);
     setFocusedIndex(-1);
-    useImportModalStore.getState().clearDefaultPrefill();
     trackInputRef.current?.focus();
-  }, []);
+  }, [updateInputs]);
 
   const hasAnyInput = Boolean(inputs.track || inputs.artist || inputs.album || inputs.duration || inputs.videoId);
 
@@ -220,11 +201,9 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           <span className="text-[11px] text-composer-text-muted">
             {isFetching && results.length === 0
               ? "Searching"
-              : errors.size > 0 && results.length === 0
-                ? "Search failed"
-                : results.length === 0
-                  ? "No results"
-                  : `${results.length} result${results.length === 1 ? "" : "s"}`}
+              : results.length === 0
+                ? "No results"
+                : pluralize(results.length, "result")}
           </span>
           <button
             type="button"
@@ -236,10 +215,9 @@ const SearchSection: React.FC<SearchSectionProps> = ({
         </div>
       )}
 
-      <div className="flex flex-col gap-1.5 p-1.5 bg-composer-input border border-composer-border rounded-xl min-h-[192px] max-h-[256px] overflow-y-auto">
+      <div className="flex flex-col gap-1.5 p-1.5 bg-(--layer-1) border border-(--edge) rounded-xl min-h-[192px] max-h-[256px] overflow-y-auto overscroll-none">
         <SearchResults
           results={results}
-          errors={errors}
           isFetching={isFetching}
           hasQuery={Boolean(query.track || query.videoId || query.isrc)}
           focusedIndex={focusedIndex}
@@ -249,27 +227,18 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           listboxRef={listboxRef}
           onHover={setHoveredIndex}
           onSelect={handleSelectResult}
-          providerDisplayName={formatProviderName}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={onSwitchToPaste}
-          className="inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-composer-input rounded-xl text-composer-text-secondary text-xs font-medium cursor-pointer hover:bg-composer-button-hover hover:text-composer-text transition-colors"
-        >
-          <IconFileText size={14} stroke={1.75} className="text-composer-text opacity-50" />
+        <Button variant="secondary" size="lg" hasIcon onClick={onSwitchToPaste}>
+          <IconFileText aria-hidden="true" className="size-4" />
           Paste lyrics instead
-        </button>
-        <button
-          type="button"
-          onClick={onSwitchToUpload}
-          className="inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-composer-input rounded-xl text-composer-text-secondary text-xs font-medium cursor-pointer hover:bg-composer-button-hover hover:text-composer-text transition-colors"
-        >
-          <IconUpload size={14} stroke={1.75} className="text-composer-text opacity-50" />
+        </Button>
+        <Button variant="secondary" size="lg" hasIcon onClick={onSwitchToUpload}>
+          <IconUpload aria-hidden="true" className="size-4" />
           Upload file
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -1,285 +1,50 @@
-import { isLinked } from "@/domain/instance/predicates";
+import type { LinkGroup } from "@/domain/group/template";
+import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
+import { backgroundFields, withSeededBackground } from "@/domain/line/background";
+import type { LyricLine } from "@/domain/line/model";
+import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
+import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
+import type { WordTiming } from "@/domain/word/timing";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
-import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
+import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
-import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { getAgentColor } from "@/domain/agent/colors";
-import { backgroundFields } from "@/domain/line/background";
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
+import { historyShortcutAction } from "@/utils/history-shortcut";
 import { Button } from "@/ui/button";
-import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
-import { Select } from "@/ui/select";
-import { classifyLine, extractBackgroundVocals, extractInlineFromLine } from "@/utils/background-vocal-extraction";
-import { type ParseResult, parseLyricsFile } from "@/utils/lyrics-parsers";
-import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
-import { stripSplitCharacter } from "@/utils/split-character";
+import { extractBackgroundVocals, extractInlineFromLine } from "@/utils/background-vocal-extraction";
+import { pluralWord, pluralize } from "@/utils/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
+import { linesToEditText } from "@/views/edit/edit-text";
+import { EditNotices } from "@/views/edit/edit-notices";
+import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
+import { LinePreview, PreviewGroupHeader } from "@/views/edit/line-preview";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
-import type { ParsedLine } from "@/views/edit/parse-lyrics";
-import {
-  importParsedLyrics,
-  type ImportParsedLyricsContext,
-} from "@/views/lyrics-import-modal/use-import-modal-actions";
-import { IconAlertTriangle, IconFileImport, IconMicrophone, IconX } from "@tabler/icons-react";
+import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
+import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
+import { useSmartPaste } from "@/views/edit/use-smart-paste";
+import { PreviewSelectionBar } from "@/views/edit/preview-selection-bar";
+import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
+import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
+import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
+import { IconFileImport, IconMicrophone } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
 const RUN_DEBOUNCE_MS = 500;
 
+const LYRICS_TEXTAREA_PLACEHOLDER = `Paste your lyrics here, one line at a time...
+
+Or paste or drop a whole lyrics file (${LYRICS_FORMATS_PROSE}) or ${PROJECT_FILE_PROSE} to import it`;
+
 const preventDefaultDragOver = (e: React.DragEvent) => e.preventDefault();
 
 // -- Components ---------------------------------------------------------------
-
-const BracketWarning: React.FC<{ count: number }> = ({ count }) => {
-  if (count === 0) return null;
-
-  return (
-    <div className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-composer-error/10 text-composer-error">
-      <IconAlertTriangle className="size-4 shrink-0" />
-      <span>
-        {count} line{count > 1 ? "s" : ""} contain{count === 1 ? "s" : ""} [brackets]
-      </span>
-    </div>
-  );
-};
-
-const ImportSuccessBanner: React.FC<{
-  result: ParseResult;
-  filename: string;
-  onDismiss: () => void;
-}> = ({ result, filename, onDismiss }) => {
-  const lineCount = result.lines.length;
-  const timedLineCount = result.lines.filter((l) => l.begin !== undefined).length;
-  const wordTimedCount = result.lines.filter((l) => l.words?.length).length;
-
-  return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 text-sm rounded-lg bg-composer-accent/10 text-composer-accent-text">
-      <div className="flex items-center gap-2">
-        <IconFileImport className="size-4 shrink-0" />
-        <span>
-          Imported {lineCount} lines from {filename}
-          {result.hasTimingData && (
-            <> with {wordTimedCount > 0 ? `${wordTimedCount} word-timed` : `${timedLineCount} timed`} lines</>
-          )}
-        </span>
-      </div>
-      <Button size="icon" variant="ghost" onClick={onDismiss} className="size-6">
-        <IconX className="size-4" />
-      </Button>
-    </div>
-  );
-};
-
-const LinePreview: React.FC<{
-  line: ParsedLine;
-  agents: { id: string; name?: string }[];
-  isSelected: boolean;
-  hasMultipleSelected: boolean;
-  groupColor?: string;
-  groupTooltip?: string;
-  onSelect: (lineNumber: number, shiftKey: boolean) => void;
-  onAgentChange: (lineId: string, agentId: string) => void;
-  onBulkAgentChange: (agentId: string) => void;
-  onBackgroundChange: (lineId: string, text: string) => void;
-  onExtractLine: (lineId: string) => void;
-  onGutterMouseDown: (lineNumber: number, e: React.MouseEvent) => void;
-  onGutterMouseEnter: (lineNumber: number, e: React.MouseEvent) => void;
-  didDragRef: React.MutableRefObject<boolean>;
-}> = ({
-  line,
-  agents,
-  isSelected,
-  hasMultipleSelected,
-  groupColor,
-  groupTooltip,
-  onSelect,
-  onAgentChange,
-  onBulkAgentChange,
-  onBackgroundChange,
-  onExtractLine,
-  onGutterMouseDown,
-  onGutterMouseEnter,
-  didDragRef,
-}) => {
-  const [bgInput, setBgInput] = useState(line.backgroundText ?? "");
-  const agentColor = getAgentColor(line.agentId);
-
-  const handleBgBlur = useCallback(() => {
-    if (line.lineId) {
-      onBackgroundChange(line.lineId, bgInput);
-    }
-  }, [line.lineId, bgInput, onBackgroundChange]);
-
-  const selectLineForBulkEdit = useCallback(
-    (e: React.MouseEvent) => {
-      if ((e.target as HTMLElement).closest("select, button")) return;
-      if (e.shiftKey) window.getSelection()?.removeAllRanges();
-      onSelect(line.lineNumber, e.shiftKey);
-    },
-    [line.lineNumber, onSelect],
-  );
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (!e.shiftKey) return;
-    if ((e.target as HTMLElement).closest("select, button")) return;
-    e.preventDefault();
-  }, []);
-
-  const handleGutterClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (didDragRef.current) {
-        didDragRef.current = false;
-        e.stopPropagation();
-      }
-    },
-    [didDragRef],
-  );
-
-  if (line.isEmpty) {
-    return (
-      <div className="flex items-baseline gap-2 px-3 py-0.5 opacity-50">
-        <span
-          className="w-8 font-mono text-xs text-right shrink-0 text-composer-text-muted tabular-nums select-none"
-          onMouseEnter={(e) => onGutterMouseEnter(line.lineNumber, e)}
-        >
-          {line.lineNumber}
-        </span>
-        <span className="flex-1 text-sm italic text-composer-text-muted">(empty line)</span>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      role="button"
-      tabIndex={-1}
-      className={`relative flex items-center gap-2 px-3 py-0.5 group cursor-pointer ${
-        isSelected ? "bg-composer-accent/15" : line.hasBrackets ? "bg-composer-error/5" : "hover:bg-composer-button/30"
-      }`}
-      onMouseDown={handleMouseDown}
-      onClick={selectLineForBulkEdit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") onSelect(line.lineNumber, e.shiftKey);
-      }}
-      title={groupTooltip}
-    >
-      {groupColor && (
-        <span
-          aria-hidden
-          className="absolute top-0 bottom-0 left-0 w-0.5 pointer-events-none"
-          style={{ backgroundColor: groupColor }}
-        />
-      )}
-      <span
-        role="button"
-        tabIndex={-1}
-        className="w-8 font-mono text-xs text-right shrink-0 text-composer-text-muted tabular-nums select-none cursor-pointer"
-        onMouseDown={(e) => onGutterMouseDown(line.lineNumber, e)}
-        onMouseEnter={(e) => onGutterMouseEnter(line.lineNumber, e)}
-        onClick={handleGutterClick}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") handleGutterClick(e as unknown as React.MouseEvent);
-        }}
-      >
-        {line.lineNumber}
-      </span>
-
-      <span
-        data-testid="line-preview-text"
-        className={`text-sm ${line.hasBrackets ? "text-composer-error" : "text-composer-text"}`}
-        style={{ borderLeft: `2px solid ${agentColor}`, paddingLeft: "6px" }}
-      >
-        {stripSplitCharacter(line.text)}
-      </span>
-
-      {line.backgroundText && (
-        <span data-testid="line-preview-background" className="text-xs italic text-composer-text-muted">
-          {line.backgroundText}
-        </span>
-      )}
-
-      <div className="flex items-center gap-1.5 ml-auto transition-opacity opacity-0 group-hover:opacity-100">
-        {agents.length > 1 && line.lineId && (
-          <Select
-            aria-label="Line agent"
-            value={line.agentId}
-            onChange={(next) => {
-              if (isSelected && hasMultipleSelected) {
-                onBulkAgentChange(next);
-              } else {
-                onAgentChange(line.lineId, next);
-              }
-            }}
-            options={agents.map((agent) => ({ value: agent.id, label: agent.name || agent.id }))}
-            leadingColor={agentColor}
-            className="h-5 pl-2 pr-1 text-xs"
-          />
-        )}
-
-        {line.lineId && (
-          <Popover
-            placement="bottom-start"
-            trigger={
-              <button
-                type="button"
-                className="flex items-center gap-1 px-1.5 h-5 text-xs rounded cursor-pointer bg-composer-button hover:bg-composer-button-hover text-composer-text-muted hover:text-composer-text"
-              >
-                <IconMicrophone className="size-3" />
-                BG
-              </button>
-            }
-          >
-            {(close) => (
-              <div className="p-2 w-48">
-                <p className="mb-1 text-xs text-composer-text-secondary">Background vocals</p>
-                {classifyLine(line.text).kind === "inline" && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (line.lineId) onExtractLine(line.lineId);
-                      close();
-                    }}
-                    className="mb-1 flex w-full items-center gap-1 text-xs cursor-pointer text-composer-accent-text hover:text-composer-accent"
-                  >
-                    Pull from ( )
-                  </button>
-                )}
-                <input
-                  type="text"
-                  aria-label="Background vocals text"
-                  value={bgInput}
-                  onChange={(e) => setBgInput(e.target.value)}
-                  onBlur={handleBgBlur}
-                  onKeyDown={(e) => {
-                    e.stopPropagation();
-                    if (e.key === "Enter") {
-                      handleBgBlur();
-                      close();
-                    }
-                  }}
-                  placeholder="ooh, ah, etc."
-                  className="w-full px-2 py-1 text-sm border rounded bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent"
-                />
-              </div>
-            )}
-          </Popover>
-        )}
-
-        {line.hasTiming && <span className="text-xs text-composer-accent-text">synced</span>}
-        {line.hasBrackets && <IconAlertTriangle className="size-4 text-composer-error" />}
-      </div>
-    </div>
-  );
-};
 
 const EditPanel: React.FC = () => {
   const textareaId = useId();
@@ -287,23 +52,23 @@ const EditPanel: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
   const activeTab = useProjectStore((s) => s.activeTab);
-  const setLines = useProjectStore((s) => s.setLines);
   const confirm = useConfirm();
   const openImportModal = useImportModal();
   const lastImportResult = useLastImportResult();
-  const autoExtractBackgroundVocals = useSettingsStore((s) => s.autoExtractBackgroundVocals);
+  const dropImportContext = useImportContext("Drop");
   const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
   const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
-  const [rawText, setRawText] = useState(() => (lines.length > 0 ? lines.map((l) => l.text).join("\n") : ""));
-  const rawTextRef = useRef(rawText);
-  rawTextRef.current = rawText;
+  const [rawText, setRawText] = useState(() => linesToEditText(lines));
+  const { textareaRef, showEditText } = useEditTextCaret(rawText, setRawText);
+  useFocusLyricsShortcut(textareaRef, activeTab === "edit");
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const modalPendingRef = useRef(false);
   const pastedRef = useRef(false);
   const runBaselineRef = useRef<{ lines: LyricLine[]; wasDirty: boolean } | null>(null);
   const debounceRef = useRef<number | null>(null);
   const [selectedLines, setSelectedLines] = useState<Set<number>>(new Set());
+  const [isTypingLyrics, setIsTypingLyrics] = useState(false);
   const lastSelectedLineRef = useRef<number | null>(null);
   const dragAnchorRef = useRef<number | null>(null);
   const didDragRef = useRef(false);
@@ -314,29 +79,16 @@ const EditPanel: React.FC = () => {
       linesSetByUs.current = null;
       return;
     }
-    setRawText(lines.length > 0 ? lines.map((l) => l.text).join("\n") : "");
+    setRawText(linesToEditText(lines));
   }, [lines]);
 
   const defaultAgentId = agents?.[0]?.id ?? "v1";
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);
-  const bracketCount = useMemo(() => parsed.filter((p) => p.hasBrackets).length, [parsed]);
   const nonEmptyCount = useMemo(() => parsed.filter((p) => !p.isEmpty).length, [parsed]);
-  const instanceCountByGroup = useMemo(() => {
-    const indices = new Map<string, Set<number>>();
-    for (const l of lines) {
-      if (isLinked(l)) {
-        let set = indices.get(l.groupId);
-        if (!set) {
-          set = new Set();
-          indices.set(l.groupId, set);
-        }
-        set.add(l.instanceIdx);
-      }
-    }
-    const counts = new Map<string, number>();
-    for (const [k, v] of indices) counts.set(k, v.size);
-    return counts;
-  }, [lines]);
+  const instanceCountByGroup = useMemo(
+    () => new Map(groups.map((g) => [g.id, instanceCount(lines, g.id)])),
+    [groups, lines],
+  );
 
   const extractOptions = useMemo(
     () => ({
@@ -354,7 +106,7 @@ const EditPanel: React.FC = () => {
     useProjectStore.getState().setLinesWithHistory(nextLines, nextGroups);
     const committed = useProjectStore.getState().lines;
     linesSetByUs.current = committed;
-    setRawText(committed.map((line) => line.text).join("\n"));
+    setRawText(linesToEditText(committed));
   }, []);
 
   const handleExtractBackgroundVocals = useCallback(() => {
@@ -374,7 +126,9 @@ const EditPanel: React.FC = () => {
 
     let words: WordTiming[] | undefined;
     if (newBgText && target?.backgroundWords?.length) {
-      words = remapWordTextsPreservingTiming(target.backgroundWords, newBgText) ?? undefined;
+      words = remapWordTextsPreservingTiming(target.backgroundWords, newBgText);
+    } else if (newBgText && target) {
+      words = withSeededBackground({ ...target, backgroundText: newBgText }).backgroundWords;
     }
 
     useProjectStore
@@ -487,6 +241,7 @@ const EditPanel: React.FC = () => {
   }, [finalizeRun]);
 
   const handleTextareaBlur = useCallback(() => {
+    setIsTypingLyrics(false);
     finalizeRun();
     if (!useSettingsStore.getState().autoExtractBackgroundVocals) return;
     const current = useProjectStore.getState().lines;
@@ -502,17 +257,13 @@ const EditPanel: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "edit") return;
       if (isAnyModalOpen()) return;
-      if (!(e.metaKey || e.ctrlKey)) return;
       const target = e.target as HTMLElement;
       if ((target.tagName === "INPUT" || target.tagName === "TEXTAREA") && target.id !== textareaId) return;
-      const key = e.key.toLowerCase();
-      const isUndo = key === "z" && !e.shiftKey;
-      const isRedo = (key === "z" && e.shiftKey) || key === "y";
-      if (!isUndo && !isRedo) return;
+      const historyAction = historyShortcutAction(e, { redoOnY: true });
+      if (!historyAction) return;
       e.preventDefault();
       finalizeRun();
-      if (isUndo) useProjectStore.getState().undo();
-      else useProjectStore.getState().redo();
+      useProjectStore.getState()[historyAction]();
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -521,12 +272,12 @@ const EditPanel: React.FC = () => {
 
   useEffect(() => () => finalizeRun(), [finalizeRun]);
 
-  const handleTextChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const applyTextareaText = useCallback(
+    (textarea: HTMLTextAreaElement) => {
       const wasPaste = pastedRef.current;
       pastedRef.current = false;
 
-      const text = e.target.value;
+      const text = textarea.value;
       const action = decideEditTextAction({
         text,
         defaultAgentId,
@@ -540,8 +291,8 @@ const EditPanel: React.FC = () => {
       // textarea on a state-less return path and the user's keystrokes persist
       // visually even though the store rejected them.
       const snapBack = () => {
-        if (e.target.value !== rawTextRef.current) {
-          e.target.value = rawTextRef.current;
+        if (textarea.value !== rawText) {
+          textarea.value = rawText;
         }
       };
 
@@ -555,7 +306,7 @@ const EditPanel: React.FC = () => {
         modalPendingRef.current = true;
         const labelText =
           action.labels.length === 0
-            ? `${action.impacted.length} instance${action.impacted.length === 1 ? "" : "s"}`
+            ? pluralize(action.impacted.length, "instance")
             : action.labels.length === 1
               ? `[${action.labels[0]}]`
               : action.labels.map((l) => `[${l}]`).join(", ");
@@ -580,10 +331,12 @@ const EditPanel: React.FC = () => {
         return;
       }
 
-      setRawText(text);
       useImportModalStore.getState().clearImportResult();
 
-      if (action.kind === "noop") return;
+      if (action.kind === "noop") {
+        showEditText(text, text, textarea);
+        return;
+      }
 
       let finalLines = action.finalLines;
 
@@ -599,38 +352,30 @@ const EditPanel: React.FC = () => {
         return;
       }
 
+      showEditText(text, action.editText, textarea);
+
       if (runBaselineRef.current === null) {
         const projectState = useProjectStore.getState();
         runBaselineRef.current = { lines: projectState.lines, wasDirty: projectState.isDirtySinceHistory };
       }
       linesSetByUs.current = finalLines;
-      setLines(finalLines);
+      useProjectStore.getState().setLines(finalLines);
       scheduleRunFinalize();
     },
-    [confirm, defaultAgentId, groups, lines, setLines, scheduleRunFinalize, commitLinesWithHistory, finalizeRun],
+    [
+      confirm,
+      defaultAgentId,
+      groups,
+      lines,
+      rawText,
+      scheduleRunFinalize,
+      commitLinesWithHistory,
+      finalizeRun,
+      showEditText,
+    ],
   );
-
-  const handleDroppedFile = useCallback(
-    async (file: File) => {
-      const content = await file.text();
-      const audioDuration = useAudioStore.getState().duration;
-      const parsed = parseLyricsFile(file.name, content, audioDuration > 0 ? audioDuration : undefined);
-      const context: ImportParsedLyricsContext = {
-        confirm,
-        agents,
-        audioDuration,
-        applyBackgroundExtraction: autoExtractBackgroundVocals,
-        backgroundExtractionMergeStandalone: mergeStandaloneBackgroundLines,
-        backgroundExtractionPreserveBrackets: preserveBracketsOnExtraction,
-        source: { label: "Drop", filename: file.name },
-        onResult: (result, source) => {
-          useImportModalStore.getState().recordImportResult(result, source);
-        },
-      };
-      await importParsedLyrics(parsed, context);
-    },
-    [agents, autoExtractBackgroundVocals, confirm, mergeStandaloneBackgroundLines, preserveBracketsOnExtraction],
-  );
+  const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText);
+  const handlePaste = useSmartPaste({ typedPasteRef: pastedRef, onBeforeImport: finalizeRun });
 
   const importTriggers = useDualClickImport(openImportModal);
 
@@ -638,37 +383,43 @@ const EditPanel: React.FC = () => {
     (e: React.DragEvent) => {
       e.preventDefault();
       const file = e.dataTransfer.files[0];
-      if (file && /\.(txt|lrc|srt|ttml|xml)$/i.test(file.name)) {
-        handleDroppedFile(file);
-      }
+      if (file) void importLyricsFile(file, dropImportContext);
     },
-    [handleDroppedFile],
+    [dropImportContext],
   );
 
   return (
     <div
       data-tour="edit-panel"
-      className="flex flex-col flex-1 gap-4 p-4 overflow-hidden"
+      className="flex flex-col flex-1 overflow-hidden"
       onDrop={handleDrop}
       onDragOver={preventDefaultDragOver}
     >
-      <div className="flex items-center justify-between select-none">
-        <h2 className="text-lg font-medium">Lyrics Editor</h2>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-composer-text-muted">
-            {nonEmptyCount} line{nonEmptyCount !== 1 ? "s" : ""}
+      <div className="flex items-center justify-between gap-4 h-13 shrink-0 pl-5 pr-2 border-b border-(--divider) select-none">
+        <div className="flex items-center gap-3 shrink-0">
+          <h2 className="sr-only">Lyrics Editor</h2>
+          <span className="flex items-baseline gap-1.5 text-[13px] text-(--muted) tabular-nums">
+            <b className="font-mono text-[15px] font-bold text-composer-text">{nonEmptyCount}</b>{" "}
+            {pluralWord(nonEmptyCount, "line", "lines")}
           </span>
+          <AgentManager />
+        </div>
+        <div className="flex flex-1 min-w-0 items-center justify-end gap-3">
+          <EditNotices parsed={parsed} isTyping={isTypingLyrics} />
           <Button
             hasIcon
-            variant="secondary"
+            size="lg"
             onClick={handleExtractBackgroundVocals}
             disabled={!canExtractBackgroundVocals}
+            title={canExtractBackgroundVocals ? undefined : "No parentheses to extract"}
           >
             <IconMicrophone className="size-4" />
             Extract background vocals
           </Button>
           <Button
             hasIcon
+            size="lg"
+            data-tour="import-lyrics-button"
             onClick={importTriggers.onClick}
             onDoubleClick={importTriggers.onDoubleClick}
             title="Click to search, paste, or upload. Double-click to upload a file directly."
@@ -680,135 +431,100 @@ const EditPanel: React.FC = () => {
         </div>
       </div>
 
-      {lastImportResult && (
-        <ImportSuccessBanner
-          result={lastImportResult.parsed}
-          filename={lastImportResult.source.filename}
-          onDismiss={() => useImportModalStore.getState().clearImportResult()}
-        />
-      )}
-
-      <BracketWarning count={bracketCount} />
-
-      <AgentManager />
-
-      <div className="flex flex-1 min-h-0 gap-4">
-        {/* Input */}
-        <div className="flex flex-col flex-1 min-w-0">
-          <label htmlFor={textareaId} className="mb-2 text-sm font-medium select-none text-composer-text-secondary">
-            Paste or type lyrics
-          </label>
-          {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
-          <textarea
-            id={textareaId}
-            value={rawText}
-            onChange={handleTextChange}
-            onBlur={handleTextareaBlur}
-            onPaste={() => {
-              pastedRef.current = true;
-            }}
-            placeholder="Paste your lyrics here, one line at a time...
-
-Or drag and drop a lyrics file (.txt, .lrc, .srt, .ttml)"
-            className="flex-1 p-3 text-sm border rounded-lg resize-none bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent placeholder:text-composer-text-muted"
-            spellCheck={false}
+      <div className="flex flex-col flex-1 min-h-0 gap-3 p-4">
+        {lastImportResult && (
+          <ImportSuccessBanner
+            result={lastImportResult.parsed}
+            filename={lastImportResult.source.filename}
+            onDismiss={() => useImportModalStore.getState().clearImportResult()}
           />
-        </div>
+        )}
 
-        {/* Preview */}
-        <div className="flex flex-col flex-1 min-w-0">
-          <div className="flex items-center justify-between h-5 mb-2">
-            <span className="text-sm font-medium select-none text-composer-text-secondary">Preview</span>
-            <div
-              className={`flex items-center gap-2 transition-opacity ${selectedLines.size > 0 ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        <div className="flex flex-1 min-h-0 gap-4">
+          {/* Input */}
+          <div className="flex flex-col flex-1 min-w-0">
+            <label
+              htmlFor={textareaId}
+              className="flex items-center self-start h-7 mb-2 text-[13px] font-medium select-none text-(--label)"
             >
-              <span className="text-xs text-composer-text-muted">
-                {selectedLines.size} line{selectedLines.size !== 1 ? "s" : ""} selected
-              </span>
-              {agents.length > 1 && (
-                <Select
-                  aria-label="Assign agent"
-                  placeholder="Assign agent"
-                  value=""
-                  onChange={handleBulkAgentChange}
-                  options={agents.map((agent) => ({ value: agent.id, label: agent.name || agent.id }))}
-                  className="h-6 text-xs"
-                />
-              )}
-              <button
-                type="button"
-                onClick={handleClearSelection}
-                className="text-xs cursor-pointer text-composer-text-muted hover:text-composer-text"
-              >
-                Clear
-              </button>
-            </div>
+              Paste or type lyrics
+            </label>
+            {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
+            <textarea
+              id={textareaId}
+              ref={textareaRef}
+              value={rawText}
+              onChange={textareaChange.onChange}
+              onFocus={() => setIsTypingLyrics(true)}
+              onBlur={handleTextareaBlur}
+              onCompositionStart={textareaChange.onCompositionStart}
+              onCompositionEnd={textareaChange.onCompositionEnd}
+              onPaste={handlePaste}
+              placeholder={LYRICS_TEXTAREA_PLACEHOLDER}
+              className="flex-1 py-2 px-3.5 text-sm font-medium leading-7 border rounded-xl resize-none bg-(--well) border-(--edge) caret-composer-accent focus:outline-none focus:border-(--lit-ring) placeholder:text-(--muted)"
+              spellCheck={false}
+            />
           </div>
-          <Scroll className="flex-1 border rounded-lg border-composer-border bg-composer-bg-dark">
-            {parsed.length === 0 || (parsed.length === 1 && parsed[0].isEmpty) ? (
-              <div className="flex items-center justify-center h-full text-sm text-composer-text-muted">
-                Lyrics will appear here
-              </div>
-            ) : (
-              <div className="py-2">
-                {parsed.map((line, index) => {
-                  const prev = index > 0 ? parsed[index - 1] : null;
-                  const next = index < parsed.length - 1 ? parsed[index + 1] : null;
-                  const isFirstOfInstance =
-                    line.groupId !== undefined &&
-                    line.instanceIdx !== undefined &&
-                    (prev?.groupId !== line.groupId || prev?.instanceIdx !== line.instanceIdx);
-                  const isLastOfInstance =
-                    line.groupId !== undefined &&
-                    line.instanceIdx !== undefined &&
-                    (next?.groupId !== line.groupId || next?.instanceIdx !== line.instanceIdx);
-                  const group = line.groupId ? groups.find((g) => g.id === line.groupId) : undefined;
-                  const totalInstances = group ? (instanceCountByGroup.get(group.id) ?? 0) : 0;
-                  const groupTooltip =
-                    group && totalInstances > 1
-                      ? `Part of ${group.label} · linked to ${totalInstances - 1} other instance${totalInstances - 1 === 1 ? "" : "s"}. Edits propagate.`
-                      : undefined;
-                  return (
-                    <div key={line.lineNumber}>
-                      {isFirstOfInstance && group && (
-                        <div
-                          className="mx-3 mt-2 mb-1 flex items-center gap-2 text-xs text-composer-text-muted select-none"
-                          aria-hidden
-                        >
-                          <span className="font-medium text-composer-text">{group.label}</span>
-                          <span className="tabular-nums">
-                            · {(line.instanceIdx ?? 0) + 1} of {totalInstances}
-                          </span>
-                          <span className="flex-1 h-px" style={{ backgroundColor: group.color, opacity: 0.4 }} />
-                        </div>
-                      )}
-                      <LinePreview
-                        line={line}
-                        agents={agents}
-                        isSelected={selectedLines.has(line.lineNumber)}
-                        hasMultipleSelected={selectedLines.size > 1}
-                        groupColor={group?.color}
-                        groupTooltip={groupTooltip}
-                        onSelect={handleLineSelect}
-                        onAgentChange={handleAgentChange}
-                        onBulkAgentChange={handleBulkAgentChange}
-                        onBackgroundChange={handleBackgroundChange}
-                        onExtractLine={handleExtractLine}
-                        onGutterMouseDown={handleGutterMouseDown}
-                        onGutterMouseEnter={handleGutterMouseEnter}
-                        didDragRef={didDragRef}
-                      />
-                      {isLastOfInstance && group && (
-                        <div className="mx-3 mt-1 mb-2 flex items-center select-none" aria-hidden>
-                          <span className="flex-1 h-px" style={{ backgroundColor: group.color, opacity: 0.4 }} />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Scroll>
+
+          {/* Preview */}
+          <div className="flex flex-col flex-1 min-w-0">
+            <PreviewSelectionBar
+              selectedCount={selectedLines.size}
+              onAssignAgent={handleBulkAgentChange}
+              onClear={handleClearSelection}
+            />
+            <Scroll className="flex-1 border rounded-xl border-(--edge) bg-(--well)">
+              {parsed.length === 0 || (parsed.length === 1 && parsed[0].isEmpty) ? (
+                <div className="flex items-center justify-center h-full text-sm text-(--muted)">
+                  Lyrics will appear here
+                </div>
+              ) : (
+                <div>
+                  {parsed.map((line, index) => {
+                    const prev = index > 0 ? parsed[index - 1] : null;
+                    const isFirstOfInstance =
+                      line.groupId !== undefined &&
+                      line.instanceIdx !== undefined &&
+                      (prev?.groupId !== line.groupId || prev?.instanceIdx !== line.instanceIdx);
+                    const group = line.groupId ? groups.find((g) => g.id === line.groupId) : undefined;
+                    const totalInstances = group ? (instanceCountByGroup.get(group.id) ?? 0) : 0;
+                    const groupTooltip =
+                      group && totalInstances > 1
+                        ? `Part of ${group.label} · linked to ${pluralize(totalInstances - 1, "other instance")}. Edits propagate.`
+                        : undefined;
+                    return (
+                      <div key={line.lineNumber}>
+                        {isFirstOfInstance && group && line.instanceIdx !== undefined && (
+                          <PreviewGroupHeader
+                            label={group.label}
+                            ordinal={instanceOrdinal(lines, group.id, line.instanceIdx)}
+                            total={totalInstances}
+                            color={group.color}
+                          />
+                        )}
+                        <LinePreview
+                          line={line}
+                          agents={agents}
+                          isSelected={selectedLines.has(line.lineNumber)}
+                          hasMultipleSelected={selectedLines.size > 1}
+                          groupColor={group?.color}
+                          groupTooltip={groupTooltip}
+                          onSelect={handleLineSelect}
+                          onAgentChange={handleAgentChange}
+                          onBulkAgentChange={handleBulkAgentChange}
+                          onBackgroundChange={handleBackgroundChange}
+                          onExtractLine={handleExtractLine}
+                          onGutterMouseDown={handleGutterMouseDown}
+                          onGutterMouseEnter={handleGutterMouseEnter}
+                          didDragRef={didDragRef}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Scroll>
+          </div>
         </div>
       </div>
     </div>

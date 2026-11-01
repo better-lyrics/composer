@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import { useAuthStore } from "@/stores/auth";
+import { beforeEach, describe, expect, it } from "vitest";
 
 beforeEach(() => {
   useAuthStore.getState().clear();

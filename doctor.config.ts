@@ -50,6 +50,7 @@ export default {
       },
       {
         files: [
+          "src/best-practices/examples.tsx",
           "src/views/export.tsx",
           "src/views/sync/scrollable-line.tsx",
           "src/views/sync/split-mode-content.tsx",

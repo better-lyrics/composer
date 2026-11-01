@@ -1,0 +1,244 @@
+import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
+import { detectFileType } from "@/utils/lyrics-parsers/detect";
+import { describe, expect, it } from "vitest";
+
+// -- Constants ----------------------------------------------------------------
+
+const LRC_BODY = "[00:12.34]Hello world";
+const SRT_BODY = "1\n00:00:01,000 --> 00:00:02,000\nHello world";
+const TTML_BODY = '<tt xmlns="http://www.w3.org/ns/ttml"></tt>';
+const TTML_BODY_WITH_QRC_BRACKET =
+  '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="1s" end="2s">Meet me at [1000,500] tonight</p></div></body></tt>';
+const QRC_BODY = "[34059,2299]Is (34059,130)it (34189,120)";
+const SRT_BODY_WITH_QRC_BRACKET = "1\n00:00:01,000 --> 00:00:02,000\nMeet me at [1000,500] tonight";
+const PLAIN_BODY = "Is it so hard to say the same thing";
+const TITLED_LRC = `JHENRY
+
+[00:09.49]Say, John Henry what ya doing it for?
+[00:13.04]Showed you progress and you're calling it war
+[00:16.29]My, my
+[00:24.77]Twelve long hours didn't earn you a dime`;
+
+const LRCLIB_EXPORT = `Track Name: ZHIEND - Scar on Face (English)
+Artist Name: MarcusTheRocker
+Album Name:
+Duration (seconds): 361
+
+Plain Lyrics:
+劣性
+前髪が
+劣性
+また伸びた
+
+Synced Lyrics:
+[00:32.50] 劣性
+[00:35.86] 前髪が
+[00:39.69] 劣性
+[00:43.47] また伸びた`;
+
+const PROSE_WITH_STRAY_TIMESTAMP = `We met at the venue around eight.
+The opener ran long, so the band started late.
+[00:12.34] is where the chorus kicks in on the demo.
+Nobody minded, the crowd was great.`;
+
+const MOSTLY_PROSE_AFTER_TIMESTAMPS = `[00:01.00]Intro
+[00:05.00]Verse
+Notes on the take:
+The second verse drags a little.
+Try the bridge at a faster tempo.
+Ask about the backing vocals.`;
+
+const RTF_SAVED_LRC =
+  "{\\rtf1\\ansi\\ansicpg1252\\cocoartf2867\n\\f0\\fs24 \\cf0 [00:09.49]Say, John Henry\\\n[00:13.04]Showed you progress\\\n[00:16.29]My, my\\\n[00:24.77]Twelve long hours\\\n}";
+
+const LRCLIB_STYLE_PASTE = `
+
+  [ar: Queen]
+[al: A Night at the Opera]
+[ti: Bohemian Rhapsody]
+[length: 05:55]
+[by:]
+
+[00:00.63] Is this the real life?
+[00:04.21] Is this just fantasy?
+`;
+
+// -- Tests --------------------------------------------------------------------
+
+describe("detectFileType", () => {
+  describe("by extension", () => {
+    it("reads txt, lrc and srt straight off the extension", () => {
+      expect(detectFileType("song.txt", PLAIN_BODY)).toBe("txt");
+      expect(detectFileType("song.lrc", LRC_BODY)).toBe("lrc");
+      expect(detectFileType("song.srt", SRT_BODY)).toBe("srt");
+    });
+
+    it("reads ttml from a .ttml file carrying TTML content", () => {
+      expect(detectFileType("song.ttml", TTML_BODY)).toBe("ttml");
+    });
+
+    it("ignores the case of the extension", () => {
+      expect(detectFileType("SONG.LRC", LRC_BODY)).toBe("lrc");
+      expect(detectFileType("SONG.QRC", WANDERLUST_QRC)).toBe("qrc");
+    });
+
+    it("reads the last extension of a multi-dot filename", () => {
+      expect(detectFileType("my.song.v2.qrc", WANDERLUST_QRC)).toBe("qrc");
+    });
+  });
+
+  describe("qrc", () => {
+    it("detects a .qrc extension", () => {
+      expect(detectFileType("lyrics.qrc", WANDERLUST_QRC)).toBe("qrc");
+    });
+
+    it("trusts the .qrc extension on a body the content sniffer would read as plain text", () => {
+      expect(detectFileType("lyrics.qrc", PLAIN_BODY)).toBe("qrc");
+      expect(detectFileType("lyrics.qrc", "")).toBe("qrc");
+    });
+
+    it("detects QRC inside a .xml file by its QrcInfos root", () => {
+      expect(detectFileType("lyrics.xml", WANDERLUST_QRC)).toBe("qrc");
+    });
+
+    it("detects a bare QRC body by its bracketed millisecond header", () => {
+      expect(detectFileType("pasted", QRC_BODY)).toBe("qrc");
+    });
+
+    it("prefers a QrcInfos root over an element that merely starts with tt", () => {
+      const document = '<QrcInfos><LyricInfo LyricContent="[1000,500]Hi (1000,500)"/><ttInfo/></QrcInfos>';
+      expect(detectFileType("lyrics.xml", document)).toBe("qrc");
+    });
+
+    it("does not mistake LRC for QRC", () => {
+      expect(detectFileType("song.lrc", LRC_BODY)).toBe("lrc");
+      expect(detectFileType("pasted", LRC_BODY)).toBe("lrc");
+    });
+
+    it("does not mistake TTML for QRC", () => {
+      expect(detectFileType("song.xml", TTML_BODY)).toBe("ttml");
+      expect(detectFileType("pasted", TTML_BODY)).toBe("ttml");
+    });
+
+    it("reads TTML carrying a bracketed millisecond pair in its lyrics as TTML", () => {
+      expect(detectFileType("pasted", TTML_BODY_WITH_QRC_BRACKET)).toBe("ttml");
+      expect(detectFileType("song.xml", TTML_BODY_WITH_QRC_BRACKET)).toBe("ttml");
+      expect(detectFileType("song.ttml", TTML_BODY_WITH_QRC_BRACKET)).toBe("ttml");
+    });
+
+    it("reads a bare SRT body as SRT", () => {
+      expect(detectFileType("pasted", SRT_BODY)).toBe("srt");
+    });
+
+    it("reads an extension-less SRT body as SRT even when its text carries a bracketed pair", () => {
+      expect(detectFileType("pasted", SRT_BODY_WITH_QRC_BRACKET)).toBe("srt");
+      expect(detectFileType("subtitles.srt", SRT_BODY_WITH_QRC_BRACKET)).toBe("srt");
+    });
+
+    it("still reads an extension-less QRC body as QRC, since QRC cannot open like a cue", () => {
+      expect(detectFileType("pasted", QRC_BODY)).toBe("qrc");
+    });
+  });
+
+  describe("edge cases", () => {
+    it("treats a known extension as authoritative over the content it holds", () => {
+      expect(detectFileType("notes.txt", QRC_BODY)).toBe("txt");
+      expect(detectFileType("notes.txt", LRC_BODY)).toBe("txt");
+    });
+
+    it("falls back to the content when a .xml file is neither TTML nor QRC", () => {
+      expect(detectFileType("song.xml", LRC_BODY)).toBe("lrc");
+      expect(detectFileType("song.xml", QRC_BODY)).toBe("qrc");
+    });
+
+    it("falls back to txt for a filename with no extension and unrecognisable content", () => {
+      expect(detectFileType("pasted", PLAIN_BODY)).toBe("txt");
+    });
+
+    it("returns txt for an empty document and an empty filename", () => {
+      expect(detectFileType("", "")).toBe("txt");
+      expect(detectFileType("lyrics", "")).toBe("txt");
+    });
+  });
+
+  describe("invariants", () => {
+    it("returns the same type for the same input every time", () => {
+      const inputs: [string, string][] = [
+        ["lyrics.qrc", WANDERLUST_QRC],
+        ["pasted", QRC_BODY],
+        ["song.lrc", LRC_BODY],
+        ["song.xml", TTML_BODY],
+      ];
+      for (const [filename, content] of inputs) {
+        expect(detectFileType(filename, content)).toBe(detectFileType(filename, content));
+      }
+    });
+
+    it("never reports unknown, since every document falls back to txt", () => {
+      const contents = ["", PLAIN_BODY, QRC_BODY, LRC_BODY, SRT_BODY, TTML_BODY, WANDERLUST_QRC];
+      for (const content of contents) {
+        expect(detectFileType("pasted", content)).not.toBe("unknown");
+      }
+    });
+  });
+
+  describe("error paths", () => {
+    it("does not throw on control characters and stray brackets", () => {
+      expect(() => detectFileType("mystery.bin", "\u0000\u0001 [,] ")).not.toThrow();
+    });
+
+    it("does not throw on a truncated QRC document", () => {
+      expect(() => detectFileType("lyrics.qrc", "<QrcInfos><LyricInfo LyricContent=")).not.toThrow();
+    });
+  });
+
+  describe("pasted lrc", () => {
+    it("detects LRC that opens with blank lines, indentation and metadata tags", () => {
+      expect(detectFileType("pasted text", LRCLIB_STYLE_PASTE)).toBe("lrc");
+    });
+
+    it("detects LRC that opens with an indented timestamp", () => {
+      expect(detectFileType("pasted text", "   [00:12.34]Hello world")).toBe("lrc");
+    });
+
+    it("keeps plain text that only opens with metadata tags as plain text", () => {
+      expect(detectFileType("pasted text", "[ti: Song]\nIs it so hard")).toBe("txt");
+    });
+
+    it("keeps lyrics that open with a section label as plain text", () => {
+      expect(detectFileType("pasted text", "[Chorus]\n[00:12.34]Hello world")).toBe("txt");
+    });
+
+    it("detects LRC that opens with a bare title line", () => {
+      expect(detectFileType("pasted text", TITLED_LRC)).toBe("lrc");
+    });
+
+    it("detects LRC exported with a header and a plain lyrics block before the synced lines", () => {
+      expect(detectFileType("pasted text", LRCLIB_EXPORT)).toBe("lrc");
+    });
+
+    it("keeps prose with one stray timestamp as plain text", () => {
+      expect(detectFileType("pasted text", PROSE_WITH_STRAY_TIMESTAMP)).toBe("txt");
+      expect(detectFileType("pasted text", `${PROSE_WITH_STRAY_TIMESTAMP}\n[01:02.03]and that was it`)).toBe("txt");
+    });
+
+    it("keeps text where timed lines are a minority after the first timestamp as plain text", () => {
+      expect(detectFileType("pasted text", MOSTLY_PROSE_AFTER_TIMESTAMPS)).toBe("txt");
+    });
+
+    it("keeps an empty paste as plain text", () => {
+      expect(detectFileType("pasted text", "\n  \n")).toBe("txt");
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: reads an LRC saved as rich text as plain text, never as LRC", () => {
+      expect(detectFileType("pasted text", RTF_SAVED_LRC)).toBe("txt");
+      expect(detectFileType("pasted text", `\uFEFF\n\n${RTF_SAVED_LRC}`)).toBe("txt");
+    });
+
+    it("regression: reads a rich text file named .lrc as plain text", () => {
+      expect(detectFileType("song.lrc", RTF_SAVED_LRC)).toBe("txt");
+    });
+  });
+});

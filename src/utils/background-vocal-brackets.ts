@@ -1,4 +1,5 @@
 import type { WordTiming } from "@/domain/word/timing";
+import { withTrailingSpace } from "@/utils/word-spaces";
 
 // -- Trailing space accessors -------------------------------------------------
 
@@ -38,7 +39,7 @@ function joinBracketedCarriedWords(
   carried: WordTiming[],
   canSeamStrip: boolean,
 ): WordTiming[] {
-  if (!canSeamStrip) return [...baseWords, ...carried];
+  if (!canSeamStrip) return [...withTrailingSpace(baseWords), ...carried];
   if (baseWords.length === 0) return carried;
   if (carried.length === 0) return baseWords;
   const lastBase = baseWords[baseWords.length - 1];
@@ -47,7 +48,7 @@ function joinBracketedCarriedWords(
   const lastBaseTrail = trailingSpaceOf(lastBase.text);
   const lastEndsBracket = lastBaseStripped.endsWith(")");
   const firstStartsBracket = firstCarry.text.startsWith("(");
-  if (!lastEndsBracket || !firstStartsBracket) return [...baseWords, ...carried];
+  if (!lastEndsBracket || !firstStartsBracket) return [...withTrailingSpace(baseWords), ...carried];
   const lastBaseText = `${lastBaseStripped.slice(0, -1)}${lastBaseTrail.length > 0 ? lastBaseTrail : " "}`;
   const firstCarryText = firstCarry.text.slice(1);
   return [
@@ -58,6 +59,19 @@ function joinBracketedCarriedWords(
   ];
 }
 
+function joinBackgroundText(
+  existing: string | undefined,
+  addition: string,
+  preserveBrackets: boolean,
+  trailingBracketFromSamePass: boolean,
+): string {
+  const base = existing?.trim() ?? "";
+  if (!preserveBrackets) return base.length > 0 ? `${base} ${addition}` : addition;
+  if (base.length === 0) return `(${addition})`;
+  if (trailingBracketFromSamePass && base.endsWith(")")) return `${base.slice(0, -1)} ${addition})`;
+  return `${base} (${addition})`;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { bracketWordList, joinBracketedCarriedWords };
+export { bracketWordList, joinBackgroundText, joinBracketedCarriedWords };

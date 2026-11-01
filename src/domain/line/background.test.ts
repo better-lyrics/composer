@@ -1,12 +1,13 @@
-import { describe, expect, it } from "vitest";
 import {
+  CLEARED_BACKGROUND,
   applyBackground,
   backgroundFields,
-  CLEARED_BACKGROUND,
   manualBackgroundWordEdit,
+  withSeededBackground,
 } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
+import { describe, expect, it } from "vitest";
 
 const line: LyricLine = { id: "a", text: "hello", agentId: "v1" };
 
@@ -210,5 +211,26 @@ describe("manualBackgroundWordEdit", () => {
       { text: "oh", begin: 0.5, end: 1 },
     ]);
     expect(fields.backgroundText).toBe("oh|oh");
+  });
+});
+
+describe("withSeededBackground", () => {
+  const timed: LyricLine = { id: "t", text: "hello", agentId: "v1", begin: 10, end: 14, backgroundText: "ooh ah" };
+
+  it("seeds background words over the second half of a timed line", () => {
+    const seeded = withSeededBackground(timed);
+    expect(seeded.backgroundWords?.map((word) => word.text.trim())).toEqual(["ooh", "ah"]);
+    expect(seeded.backgroundWords?.[0].begin).toBe(12);
+    expect(seeded.backgroundWords?.at(-1)?.end).toBe(14);
+  });
+
+  it("returns the same line when there is nothing to seed", () => {
+    const withWords = { ...timed, backgroundWords: [bgWord] };
+    const untimed = { ...timed, begin: undefined, end: undefined };
+    const noText = { ...timed, backgroundText: undefined };
+    const zeroLength = { ...timed, begin: 10, end: 10 };
+    const inverted = { ...timed, begin: 14, end: 10 };
+    for (const candidate of [withWords, untimed, noText, zeroLength, inverted])
+      expect(withSeededBackground(candidate)).toBe(candidate);
   });
 });

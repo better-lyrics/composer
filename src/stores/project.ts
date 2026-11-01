@@ -1,4 +1,6 @@
+import { createAlignmentReviewSlice } from "@/stores/project/alignment-review-slice";
 import { createAgentsSlice } from "@/stores/project/agents-slice";
+import { createBeatGridSlice } from "@/stores/project/beat-grid-slice";
 import { createDismissalsSlice } from "@/stores/project/dismissals-slice";
 import { createGroupsSlice } from "@/stores/project/groups-slice";
 import { createHistorySlice } from "@/stores/project/history-slice";
@@ -28,8 +30,10 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
   ...createHistorySlice(set, get, api),
   ...createDismissalsSlice(set, get, api),
   ...createSnapPointsSlice(set, get, api),
+  ...createBeatGridSlice(set, get, api),
+  ...createAlignmentReviewSlice(set, get, api),
 }));
 
 export { useProjectStore, INITIAL_STATE };
 
-export type { GranularityMode, SimpleTab } from "@/stores/project/types";
+export type { GranularityMode } from "@/stores/project/types";

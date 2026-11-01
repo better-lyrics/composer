@@ -4,6 +4,7 @@
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
+import { createLine } from "@/test/factories";
 import { decideEditTextAction } from "./decide-edit-text-action";
 
 const groupChorus: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
@@ -59,6 +60,34 @@ describe("decideEditTextAction", () => {
     if (action.kind !== "apply") return;
     expect(action.finalLines.find((l) => l.id === "c1a")?.text).toBe("I luv you");
     expect(action.finalLines.find((l) => l.id === "c2a")?.text).toBe("I luv you");
+  });
+
+  it("returns the edit text with linked siblings rewritten and typed rows verbatim", () => {
+    const lines = chorusLines();
+    const text = baseText(lines).replace("I love you", "I luv you ").replace("verse line", "verse  line");
+    const action = decideEditTextAction({
+      text,
+      defaultAgentId: "v1",
+      lines,
+      groups: [groupChorus],
+      modalPending: false,
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    expect(action.editText).toBe("I luv you \nmore than words\nverse  line\nI luv you\nmore than words");
+  });
+
+  it("returns the typed text verbatim as the edit text for a structural apply", () => {
+    const lines = chorusLines();
+    const text = `${baseText(lines)}\n  brand new outro`;
+    const action = decideEditTextAction({
+      text,
+      defaultAgentId: "v1",
+      lines,
+      groups: [groupChorus],
+      modalPending: false,
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    expect(action.editText).toBe(text);
   });
 
   it("returns apply for structural changes outside any group (no confirm)", () => {
@@ -185,5 +214,44 @@ describe("decideEditTextAction", () => {
       modalPending: false,
     });
     expect(action.kind).toBe("apply");
+  });
+});
+
+describe("regressions", () => {
+  it("regression: restores the neighbour word timing after the added word is removed", () => {
+    const words = [
+      { text: "one ", begin: 0, end: 1 },
+      { text: "two ", begin: 1, end: 2 },
+      { text: "three", begin: 2, end: 3 },
+    ];
+    const lines = [
+      createLine({ id: "a", text: "one two three", words, groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+      createLine({
+        id: "b",
+        text: "one two three",
+        words: words.map((w) => ({ ...w, begin: w.begin + 10, end: w.end + 10 })),
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+      }),
+    ];
+    const step1 = decideEditTextAction({
+      text: "one extra two three\none two three",
+      defaultAgentId: "v1",
+      lines,
+      groups: [],
+      modalPending: false,
+    });
+    if (step1.kind !== "apply") throw new Error(step1.kind);
+    const step2 = decideEditTextAction({
+      text: "one two three\none extra two three",
+      defaultAgentId: "v1",
+      lines: step1.finalLines,
+      groups: [],
+      modalPending: false,
+    });
+    if (step2.kind !== "apply") throw new Error(step2.kind);
+    expect(step2.finalLines[0].words).toEqual(lines[0].words);
+    expect(step2.finalLines[1].words).toEqual(lines[1].words);
   });
 });

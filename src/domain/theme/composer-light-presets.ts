@@ -1,0 +1,80 @@
+import { definePresets } from "@/domain/theme/define-presets";
+
+// -- Composer light presets ----------------------------------------------------
+// Light presets pin accent-text: the derived shade is too pale on a light base.
+
+const COMPOSER_LIGHT_PRESETS = definePresets("Composer", [
+  {
+    id: "sakura",
+    name: "Sakura",
+    scheme: "light",
+    desc: "Blossom pink on white, written in plum.",
+    tokens: {
+      bg: "#fbf3f5",
+      "bg-dark": "#f3e4e9",
+      "bg-elevated": "#ffffff",
+      text: "#2a1f24",
+      "text-tertiary": "#6b5660",
+      "text-faint": "#b09aa4",
+      accent: "#d6457a",
+      "accent-warm": "#6b5ccc",
+      link: "#b8325f",
+      error: "#c2453f",
+      "error-text": "#7a1f1c",
+      warning: "#b9791a",
+      explicit: "#c23a6a",
+      wave: "#e6c9d3",
+      "accent-text": "#963055",
+    },
+  },
+  {
+    id: "daylight",
+    name: "Daylight",
+    scheme: "light",
+    desc: "High contrast for light mode. Black on white.",
+    tokens: {
+      bg: "#ffffff",
+      "bg-dark": "#f0f0f0",
+      "bg-elevated": "#ffffff",
+      text: "#000000",
+      "text-tertiary": "#2e2e2e",
+      "text-faint": "#5c5c5c",
+      accent: "#3a2fd6",
+      "accent-warm": "#a1380f",
+      link: "#2a1fc0",
+      error: "#b00020",
+      "error-text": "#5c0010",
+      warning: "#8a5a00",
+      explicit: "#a0104a",
+      wave: "#b8b8b8",
+      "accent-text": "#292196",
+    },
+  },
+  {
+    id: "light",
+    name: "Light",
+    scheme: "light",
+    desc: "Seek help",
+    tokens: {
+      bg: "#f7f7f8",
+      "bg-dark": "#ececef",
+      "bg-elevated": "#ffffff",
+      text: "#1b1c1f",
+      "text-tertiary": "#5b5d63",
+      "text-faint": "#9a9ca5",
+      accent: "#818cf8",
+      "accent-dark": "#a5b4fc",
+      "accent-darker": "#818cf8",
+      "accent-text": "#5b63e0",
+      "accent-warm": "#b06a6a",
+      link: "#4750d8",
+      error: "#c2453f",
+      "error-text": "#7a1f1c",
+      warning: "#b9791a",
+      explicit: "#d65560",
+      wave: "#c4c5ca",
+    },
+  },
+]);
+
+export { COMPOSER_LIGHT_PRESETS };

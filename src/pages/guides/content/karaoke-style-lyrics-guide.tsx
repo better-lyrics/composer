@@ -1,3 +1,5 @@
+import { GuideCode } from "@/pages/guides/guide-code";
+
 const KaraokeStyleLyricsContent: React.FC = () => (
   <>
     <p>
@@ -21,15 +23,16 @@ const KaraokeStyleLyricsContent: React.FC = () => (
       In Composer, use the split action on any word to break it into smaller timed units. The split distributes the
       word's duration proportionally based on syllable length. Fine tune the boundary in the timeline.
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<!-- Before: one word span -->
+    <GuideCode
+      format="ttml"
+      code={`<!-- Before: one word span -->
 <span begin="00:00:15.000" end="00:00:17.000">beautiful</span>
 
 <!-- After: three syllable spans -->
 <span begin="00:00:15.000" end="00:00:15.500">beau</span>
 <span begin="00:00:15.500" end="00:00:16.200">ti</span>
 <span begin="00:00:16.200" end="00:00:17.000">ful</span>`}
-    </pre>
+    />
     <p>
       Keep the total span of the original word intact. Starting at 15.0 and ending at 17.0 is the same total; you are
       just subdividing.

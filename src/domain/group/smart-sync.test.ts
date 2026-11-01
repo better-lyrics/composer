@@ -1,6 +1,6 @@
+import { propagateWordChanges } from "@/domain/group/smart-sync";
 import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
-import { propagateWordChanges } from "@/domain/group/smart-sync";
 
 // -- propagateWordChanges -----------------------------------------------------
 

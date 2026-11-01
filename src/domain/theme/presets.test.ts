@@ -5,11 +5,11 @@ import { describe, expect, it } from "vitest";
 import { contrastRatio } from "./color";
 import { deriveTheme } from "./derive";
 import { type ResolvedTheme, SEED_TOKENS } from "./model";
-import { DEFAULT_PRESET_ID, PRESET_BY_ID, PRESETS } from "./presets";
+import { DEFAULT_PRESET_ID, PRESETS, PRESET_BY_ID } from "./presets";
 
 describe("PRESETS shape", () => {
-  it("ships 18 presets", () => {
-    expect(PRESETS).toHaveLength(18);
+  it("ships 36 presets", () => {
+    expect(PRESETS).toHaveLength(36);
   });
 
   it("every preset has kind preset", () => {
@@ -118,6 +118,8 @@ describe("regression: default preset reproduces the current look", () => {
       "error-text": "#ffe5e5",
       warning: "#f5a623",
       explicit: "#ff7a85",
+      positive: "#4fd6c0",
+      negative: "#f2777a",
       wave: "#737476",
       "wave-progress": "#818cf8",
       snap: "#ffd66b",
@@ -189,6 +191,43 @@ describe("light presets", () => {
       if (preset.scheme === "dark") {
         expect(preset.tokens.onset).toBe("#4fd6c0");
       }
+    }
+  });
+
+  it("light presets carry the darker mark colors", () => {
+    for (const preset of PRESETS) {
+      if (preset.scheme === "light") {
+        expect(preset.tokens.positive).toBe("#2a9d8f");
+        expect(preset.tokens.negative).toBe("#c2453f");
+      }
+    }
+  });
+
+  it("dark presets use the bright mark colors", () => {
+    for (const preset of PRESETS) {
+      if (preset.scheme === "dark") {
+        expect(preset.tokens.positive).toBe("#4fd6c0");
+        expect(preset.tokens.negative).toBe("#f2777a");
+      }
+    }
+  });
+});
+
+describe("mark token legibility", () => {
+  it("keeps both mark colors at 3:1 against their own preset background", () => {
+    for (const preset of PRESETS) {
+      const resolved = deriveTheme(preset);
+      for (const key of ["positive", "negative"] as const) {
+        const ratio = contrastRatio(resolved[key], resolved.bg);
+        expect(ratio, `${preset.id} ${key} contrast ${ratio.toFixed(2)}`).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+
+  it("keeps the two marks distinguishable from each other", () => {
+    for (const preset of PRESETS) {
+      const resolved = deriveTheme(preset);
+      expect(resolved.positive).not.toBe(resolved.negative);
     }
   });
 });

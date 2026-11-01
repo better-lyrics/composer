@@ -2,9 +2,9 @@
  * @vitest-environment node
  */
 import type { LinkGroup } from "@/domain/group/template";
+import { commitGesture } from "@/domain/sync/commit-gesture";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
-import { commitTappedWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { nudgeLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, setWordBegin } from "@/utils/timing/word-timing";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -218,24 +218,28 @@ describe("updateLinesWithHistory · propagateToSiblings: false", () => {
 });
 
 describe("instance resync · issue #96 reproduction", () => {
-  // Replays the tap-by-tap word resync that useSyncHandlers.handleTapWord
-  // performs, using the real commitTappedWord helper.
-  function tapResync(lineId: string, wordIndex: number, begin: number, end: number) {
-    const line = getLine(lineId);
-    const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
-    const text = trailingSpace[wordIndex] ? `${parts[wordIndex]} ` : parts[wordIndex];
-    const updated = commitTappedWord(line.words ?? [], wordIndex, text, begin, end);
+  // Replays useSyncHandlers.handleTap through the real commitGesture owner.
+  function tapResync(lineId: string, wordIndex: number, begin: number) {
+    const lines = useProjectStore.getState().lines;
+    const lineIndex = lines.findIndex((l) => l.id === lineId);
+    const commit = commitGesture(lines, "tap-word", {
+      cursor: { lineIndex, wordIndex },
+      jumped: false,
+      time: begin,
+      defaultWordDuration: 0.3,
+    });
+    if (!commit) throw new Error("expected a commit");
     useProjectStore
       .getState()
-      .updateLineWithHistory(lineId, { words: updated }, { deriveText: false, propagateToSiblings: false });
+      .updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
   }
 
   it("resyncing instance A word-by-word leaves instance B's timing untouched", () => {
     seedTwoWordSyncedInstances();
 
-    tapResync("a0", 0, 0.5, 0.8);
-    tapResync("a0", 1, 1.0, 1.3);
-    tapResync("a0", 2, 1.5, 1.8);
+    tapResync("a0", 0, 0.5);
+    tapResync("a0", 1, 1.0);
+    tapResync("a0", 2, 1.5);
 
     expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
@@ -243,9 +247,9 @@ describe("instance resync · issue #96 reproduction", () => {
   it("the resynced instance A keeps its full word set with the new timing", () => {
     seedTwoWordSyncedInstances();
 
-    tapResync("a0", 0, 0.5, 0.8);
-    tapResync("a0", 1, 1.0, 1.3);
-    tapResync("a0", 2, 1.5, 1.8);
+    tapResync("a0", 0, 0.5);
+    tapResync("a0", 1, 1.0);
+    tapResync("a0", 2, 1.5);
 
     expect(getLine("a0").words).toEqual([
       { text: "I ", begin: 0.5, end: 1.0 },
@@ -293,40 +297,41 @@ describe("instance resync · issue #96 reproduction", () => {
       ],
     });
 
-    tapResync("a0", 0, 0.5, 0.8);
-    tapResync("a0", 1, 1.0, 1.3);
-    tapResync("a0", 2, 1.5, 1.8);
+    tapResync("a0", 0, 0.5);
+    tapResync("a0", 1, 1.0);
+    tapResync("a0", 2, 1.5);
 
     expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
     expect(getLine("a2").words).toEqual(cWords);
   });
 
-  it("a single partial tap (the worst-case squash state) leaves the sibling intact", () => {
+  it("a partial re-tap keeps the source's later words and leaves the sibling intact", () => {
     seedTwoWordSyncedInstances();
 
-    // Resync only word 0 and stop. Mid-resync the source array transiently
-    // holds one word: this is the state that previously collapsed the sibling.
-    tapResync("a0", 0, 0.5, 0.8);
+    tapResync("a0", 0, 0.5);
 
-    expect(getLine("a0").words).toHaveLength(1);
+    expect(getLine("a0").words).toHaveLength(3);
+    expect(getLine("a0").words?.[0].begin).toBe(0.5);
     expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
     expect(getLine("a1").words).toHaveLength(3);
   });
 
-  it("characterizes the bug: a resync left to propagate DOES squash the sibling", () => {
+  it("preserve-in-place keeps the word count stable, so a propagating re-tap no longer squashes the sibling", () => {
     seedTwoWordSyncedInstances();
 
-    // The pre-fix call signature: handleTapWord passed only { deriveText: false }
-    // with no opt-out, so propagation fired on the transient one-word array and
-    // collapsed the sibling. This is the behavior the opt-out must prevent.
-    const line = getLine("a0");
-    const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
-    const text = trailingSpace[0] ? `${parts[0]} ` : parts[0];
-    const updated = commitTappedWord(line.words ?? [], 0, text, 0.5, 0.8);
-    useProjectStore.getState().updateLineWithHistory("a0", { words: updated }, { deriveText: false });
+    // Regression guard for issue #96.
+    const lines = useProjectStore.getState().lines;
+    const commit = commitGesture(lines, "tap-word", {
+      cursor: { lineIndex: 0, wordIndex: 0 },
+      jumped: false,
+      time: 0.5,
+      defaultWordDuration: 0.3,
+    });
+    if (!commit) throw new Error("expected a commit");
+    useProjectStore.getState().updateLinesWithHistory(commit.lineUpdates, { deriveText: false });
 
-    expect(getLine("a1").words).toHaveLength(1);
-    expect(getLine("a1").words).not.toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a1").words).toHaveLength(3);
+    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
 });
 

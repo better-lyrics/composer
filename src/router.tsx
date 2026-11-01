@@ -1,16 +1,7 @@
 import { ErrorFallback } from "@/pages/error-fallback";
+import { GUIDE_SLUGS } from "@/pages/guides/slugs";
+import { EDITOR_SEGMENT } from "@/utils/app-routes";
 import type { RouteRecord } from "vite-react-ssg";
-
-const GUIDE_SLUGS = [
-  "what-is-ttml",
-  "ttml-vs-lrc",
-  "ttml-file-format-spec",
-  "how-to-make-apple-music-synced-lyrics",
-  "karaoke-style-lyrics-guide",
-  "background-vocals-in-ttml",
-  "multi-agent-lyrics-duets",
-  "lrc-to-ttml-conversion-guide",
-] as const;
 
 const errorElement = <ErrorFallback />;
 
@@ -20,6 +11,10 @@ const routes: RouteRecord[] = [
     lazy: async () => ({ Component: (await import("@/pages/home")).default }),
     entry: "src/pages/home.tsx",
     errorElement,
+    children: [
+      { index: true, element: null },
+      { path: EDITOR_SEGMENT, element: null },
+    ],
   },
   {
     path: "/ttml-maker",
@@ -68,6 +63,30 @@ const routes: RouteRecord[] = [
     errorElement,
   },
   {
+    path: "/qrc-to-ttml",
+    lazy: async () => ({ Component: (await import("@/pages/converters/qrc-to-ttml")).default }),
+    entry: "src/pages/converters/qrc-to-ttml.tsx",
+    errorElement,
+  },
+  {
+    path: "/ttml-to-lrc",
+    lazy: async () => ({ Component: (await import("@/pages/converters/ttml-to-lrc")).default }),
+    entry: "src/pages/converters/ttml-to-lrc.tsx",
+    errorElement,
+  },
+  {
+    path: "/ttml-to-srt",
+    lazy: async () => ({ Component: (await import("@/pages/converters/ttml-to-srt")).default }),
+    entry: "src/pages/converters/ttml-to-srt.tsx",
+    errorElement,
+  },
+  {
+    path: "/ttml-to-qrc",
+    lazy: async () => ({ Component: (await import("@/pages/converters/ttml-to-qrc")).default }),
+    entry: "src/pages/converters/ttml-to-qrc.tsx",
+    errorElement,
+  },
+  {
     path: "/guides",
     lazy: async () => ({ Component: (await import("@/pages/guides/guides-index")).default }),
     entry: "src/pages/guides/guides-index.tsx",
@@ -78,6 +97,12 @@ const routes: RouteRecord[] = [
     lazy: async () => ({ Component: (await import("@/pages/guides/guide-page")).default }),
     entry: "src/pages/guides/guide-page.tsx",
     getStaticPaths: () => GUIDE_SLUGS.map((slug) => `/guides/${slug}`),
+    errorElement,
+  },
+  {
+    path: "/design",
+    lazy: async () => ({ Component: (await import("@/pages/design/design-page")).default }),
+    entry: "src/pages/design/design-page.tsx",
     errorElement,
   },
   {

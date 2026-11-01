@@ -1,13 +1,17 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactNode } from "react";
-import { describe, expect, it } from "vitest";
+import { UNSUPPORTED_AUDIO_OR_PROJECT_FILE_MESSAGE } from "@/audio/use-file-drop";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createAudioFile } from "@/test/audio-fixtures";
+import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
+import { DRAGGED_LINK, dispatchDrag, dragFile, dragText } from "@/test/file-drag";
+import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
 import { ImportPanel } from "@/views/import";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -25,9 +29,54 @@ function withQueryClient(children: ReactNode) {
 const PNG_DATA_URL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
+function id3v2(frames: Array<[string, string]>): Uint8Array {
+  const enc = new TextEncoder();
+  const body: number[] = [];
+  for (const [id, text] of frames) {
+    const content = [0x03, ...enc.encode(text)];
+    const size = content.length;
+    body.push(
+      ...enc.encode(id),
+      (size >> 24) & 0xff,
+      (size >> 16) & 0xff,
+      (size >> 8) & 0xff,
+      size & 0xff,
+      0,
+      0,
+      ...content,
+    );
+  }
+  const synch = (n: number) => [(n >> 21) & 0x7f, (n >> 14) & 0x7f, (n >> 7) & 0x7f, n & 0x7f];
+  return new Uint8Array([0x49, 0x44, 0x33, 3, 0, 0, ...synch(body.length), ...body]);
+}
+
+function audioDropZone(container: Element): HTMLLabelElement | null {
+  return (
+    container.querySelector<HTMLInputElement>("input[aria-label='Upload audio or project file']")?.closest("label") ??
+    null
+  );
+}
+
+function playableWav(name: string, lastModified?: number): File {
+  return new File([createAudioFile()], name, { type: "audio/wav", lastModified });
+}
+
+function taggedMp3(frames: Array<[string, string]>, name: string): File {
+  return new File([id3v2(frames), createMp3File()], name, { type: "audio/mpeg" });
+}
+
+async function waitForLoadedFile(file: File): Promise<void> {
+  await expect
+    .poll(() => {
+      const source = useAudioStore.getState().source;
+      return source?.type === "file" && source.file === file;
+    })
+    .toBe(true);
+}
+
 // -- Empty state --------------------------------------------------------------
 
-describe("ImportPanel — no source", () => {
+describe("ImportPanel: no source", () => {
   it("renders the audio drop zone when no source is loaded", async () => {
     useAudioStore.setState({ source: null });
     useProjectStore.setState({ lines: [] });
@@ -37,14 +86,171 @@ describe("ImportPanel — no source", () => {
 
   it("shows the drop zone CTA copy", async () => {
     const screen = await render(withQueryClient(<ImportPanel />));
-    await expect.element(screen.getByText("Drop audio file here")).toBeInTheDocument();
+    await expect.element(screen.getByText("Drop an audio or project file here")).toBeInTheDocument();
     await expect.element(screen.getByText(/Supports MP3, WAV, M4A/)).toBeInTheDocument();
+  });
+});
+
+// -- Whole-screen drop ----------------------------------------------------------
+
+function dropBox(container: HTMLElement): HTMLLabelElement {
+  const label = container.querySelector<HTMLLabelElement>("label");
+  if (!label) throw new Error("Drop box not rendered");
+  return label;
+}
+
+function importArea(container: HTMLElement): Element {
+  const area = container.querySelector('[data-tour="import-dropzone"]');
+  if (!area) throw new Error("Import area not rendered");
+  return area;
+}
+
+describe("ImportPanel: drop anywhere", () => {
+  const overlay = (container: HTMLElement) => container.querySelector("[data-file-drop-overlay]");
+
+  const dragWith = (target: Element, type: "dragenter" | "dragleave" | "drop", relatedTarget: Element | null) =>
+    dispatchDrag(target, type, { files: [createAudioFile()], relatedTarget });
+
+  it("loads audio dropped outside the drop box", async () => {
+    useAudioStore.setState({ source: null });
+    const screen = await render(withQueryClient(<ImportPanel />));
+    dragFile(importArea(screen.container), "drop", createAudioFile("anywhere.wav"));
+    await expect.poll(() => useAudioStore.getState().source?.type).toBe("file");
+  });
+
+  it("covers the whole tab with a drop overlay while a file is over it", async () => {
+    useAudioStore.setState({ source: null });
+    const screen = await render(withQueryClient(<ImportPanel />));
+    dragFile(importArea(screen.container), "dragenter", createAudioFile("anywhere.wav"));
+    await expect.element(screen.getByText("Drop to load audio or open a project", { exact: true })).toBeInTheDocument();
+    expect(overlay(screen.container)?.parentElement).toBe(importArea(screen.container));
+  });
+
+  it("names the replace action while audio is loaded", async () => {
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile("first.wav") } });
+    const screen = await render(withQueryClient(<ImportPanel />));
+    dragFile(importArea(screen.container), "dragenter", createAudioFile("second.wav"));
+    await expect
+      .element(screen.getByText("Drop to replace the audio or open a project", { exact: true }))
+      .toBeInTheDocument();
+  });
+
+  it("replaces loaded audio dropped outside the replace box", async () => {
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile("first.wav") } });
+    const screen = await render(withQueryClient(<ImportPanel />));
+    dragFile(importArea(screen.container), "drop", createAudioFile("second.wav"));
+    await expect
+      .poll(() => {
+        const source = useAudioStore.getState().source;
+        return source?.type === "file" ? source.file.name : null;
+      })
+      .toBe("second.wav");
+  });
+
+  describe("regressions", () => {
+    it("regression: lets a dragged link drop into the YouTube field", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      const field = screen.getByPlaceholder(/YouTube/).element();
+      expect(dragText(field, "dragover").defaultPrevented).toBe(false);
+      expect(dragText(field, "drop").defaultPrevented).toBe(false);
+    });
+
+    it("regression: a dragged thumbnail link that also carries a file is a link drag", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      const thumbnailDrag = {
+        files: [new File(["x"], "hqdefault.jpg", { type: "image/jpeg" })],
+        data: { "text/uri-list": DRAGGED_LINK },
+      };
+      dispatchDrag(importArea(screen.container), "dragenter", thumbnailDrag);
+      const field = screen.getByPlaceholder(/YouTube/).element();
+      expect(dispatchDrag(field, "dragover", thumbnailDrag).defaultPrevented).toBe(false);
+      expect(dispatchDrag(field, "drop", thumbnailDrag).defaultPrevented).toBe(false);
+      await stepFrames(2);
+      expect(overlay(screen.container)).toBeNull();
+      expect(useAudioStore.getState().source).toBeNull();
+    });
+
+    it("regression: a text drag shows no overlay", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      dragText(importArea(screen.container), "dragenter");
+      await stepFrames(2);
+      expect(overlay(screen.container)).toBeNull();
+    });
+
+    it("regression: the overlay goes away after a drop on the box itself", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      const box = dropBox(screen.container);
+      dragWith(box, "dragenter", null);
+      await expect.poll(() => overlay(screen.container)).not.toBeNull();
+      dragWith(box, "drop", null);
+      await expect.poll(() => overlay(screen.container)).toBeNull();
+      await expect.poll(() => useAudioStore.getState().source?.type).toBe("file");
+    });
+
+    it("regression: the overlay goes away when the drag leaves the window over the box", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      const box = dropBox(screen.container);
+      dragWith(box, "dragenter", null);
+      await expect.poll(() => overlay(screen.container)).not.toBeNull();
+      dragWith(box, "dragleave", null);
+      await expect.poll(() => overlay(screen.container)).toBeNull();
+    });
+
+    it("regression: keeps the overlay while the drag moves between the tab and the box", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      const area = importArea(screen.container);
+      const box = dropBox(screen.container);
+      dragWith(area, "dragenter", null);
+      dragWith(box, "dragenter", area);
+      dragWith(area, "dragleave", box);
+      dragWith(box, "dragleave", area);
+      dragWith(area, "dragenter", box);
+      await stepFrames(2);
+      expect(overlay(screen.container)).not.toBeNull();
+    });
+  });
+
+  describe("edge cases", () => {
+    it("rejects an unsupported file dropped outside the box", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(
+        <>
+          {withQueryClient(<ImportPanel />)}
+          <Toaster />
+        </>,
+      );
+      dragFile(importArea(screen.container), "drop", new File(["x"], "notes.txt", { type: "text/plain" }));
+      await expect.element(screen.getByText(UNSUPPORTED_AUDIO_OR_PROJECT_FILE_MESSAGE)).toBeInTheDocument();
+      await stepFrames(2);
+      expect(useAudioStore.getState().source).toBeNull();
+    });
+
+    it("loads the file once when it lands on the box itself", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      const loads: string[] = [];
+      const unsubscribe = useAudioStore.subscribe((state, previous) => {
+        if (state.source !== previous.source && state.source?.type === "file") loads.push(state.source.file.name);
+      });
+      try {
+        dragFile(dropBox(screen.container), "drop", createAudioFile("box.wav"));
+        await expect.poll(() => loads).toEqual(["box.wav"]);
+      } finally {
+        unsubscribe();
+      }
+    });
   });
 });
 
 // -- File source --------------------------------------------------------------
 
-describe("ImportPanel — file source", () => {
+describe("ImportPanel: file source", () => {
   it("shows the loading spinner for a file source while it is loading", async () => {
     useAudioStore.setState({
       source: { type: "file", file: createAudioFile() },
@@ -77,9 +283,9 @@ describe("ImportPanel — file source", () => {
   });
 });
 
-// -- YouTube source — title -----------------------------------------------
+// -- YouTube source: title -----------------------------------------------
 
-describe("ImportPanel — YouTube title", () => {
+describe("ImportPanel: YouTube title", () => {
   it("shows the loading spinner while a YouTube source is downloading", async () => {
     useAudioStore.setState({
       source: { type: "youtube", videoId: "abc123" },
@@ -124,9 +330,9 @@ describe("ImportPanel — YouTube title", () => {
   });
 });
 
-// -- YouTube source — thumbnail -------------------------------------------
+// -- YouTube source: thumbnail -------------------------------------------
 
-describe("ImportPanel — YouTube thumbnail", () => {
+describe("ImportPanel: YouTube thumbnail", () => {
   it("renders the persisted thumbnail image when one is in project metadata", async () => {
     useAudioStore.setState({
       source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
@@ -210,9 +416,9 @@ describe("ImportPanel — YouTube thumbnail", () => {
   });
 });
 
-// -- YouTube source — subtitle copy ---------------------------------------
+// -- YouTube source: subtitle copy ---------------------------------------
 
-describe("ImportPanel — YouTube subtitle", () => {
+describe("ImportPanel: YouTube subtitle", () => {
   it("says 'Downloading from YouTube' while downloading", async () => {
     useAudioStore.setState({
       source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
@@ -308,5 +514,226 @@ describe("ImportPanel: videoId-gated thumb fallback", () => {
     const screen = await render(withQueryClient(<ImportPanel />));
     const liveBridgeImg = screen.container.querySelector(`img[src^='${DEFAULT_BRIDGE_URL}']`);
     expect(liveBridgeImg).toBeNull();
+  });
+});
+
+// -- File drop: embedded tag capture --------------------------------------
+
+describe("ImportPanel: audio tag capture", () => {
+  it("sets the filename as the title once the dropped file is verified as audio", async () => {
+    useAudioStore.setState({ source: null });
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    const file = playableWav("My Untagged Song.wav");
+    const dropZone = audioDropZone(screen.container);
+    expect(dropZone).not.toBeNull();
+    if (dropZone) dragFile(dropZone, "drop", file);
+    await waitForLoadedFile(file);
+
+    expect(useProjectStore.getState().metadata.title).toBe("My Untagged Song");
+  });
+
+  it("populates title/artists/album/isrc from a dropped file's embedded ID3 tags", async () => {
+    useAudioStore.setState({ source: null });
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    const file = taggedMp3(
+      [
+        ["TIT2", "Tagged Title"],
+        ["TPE1", "The Artist"],
+        ["TALB", "The Album"],
+        ["TSRC", "USQX91700001"],
+      ],
+      "filename-fallback.mp3",
+    );
+    const dropZone = audioDropZone(screen.container);
+    expect(dropZone).not.toBeNull();
+    if (dropZone) dragFile(dropZone, "drop", file);
+
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe("Tagged Title");
+    const metadata = useProjectStore.getState().metadata;
+    expect(metadata.artists).toEqual(["The Artist"]);
+    expect(metadata.album).toBe("The Album");
+    expect(metadata.isrc).toBe("USQX91700001");
+  });
+
+  it("keeps the filename title when the dropped file has no embedded tags", async () => {
+    useAudioStore.setState({ source: null });
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    const file = playableWav("No Tags Here.wav");
+    const dropZone = audioDropZone(screen.container);
+    if (dropZone) dragFile(dropZone, "drop", file);
+    await waitForLoadedFile(file);
+
+    expect(useProjectStore.getState().metadata.title).toBe("No Tags Here");
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe("No Tags Here");
+  });
+});
+
+// -- Stale tag writes ---------------------------------------------------------
+
+// Sound because the component started its parse first, so this one finishes later.
+async function waitForStaleParseToResolve(stale: File): Promise<void> {
+  const { parseBlob } = await import("music-metadata");
+  await parseBlob(stale);
+}
+
+describe("ImportPanel: stale audio tag writes", () => {
+  it("regression: a superseded file's tags never overwrite the current file's metadata", async () => {
+    useAudioStore.setState({ source: null });
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    const paddingThatMakesThisTheSlowerParse = new Uint8Array(4_000_000);
+    const stale = new File(
+      [
+        id3v2([
+          ["TIT2", "Stale Title"],
+          ["TPE1", "Stale Artist"],
+          ["TALB", "Stale Album"],
+        ]),
+        createMp3File(),
+        paddingThatMakesThisTheSlowerParse,
+      ],
+      "stale.mp3",
+      { type: "audio/mpeg" },
+    );
+    const current = taggedMp3([["TIT2", "Current Title"]], "current.mp3");
+
+    const emptyDropZone = audioDropZone(screen.container);
+    expect(emptyDropZone).not.toBeNull();
+    if (emptyDropZone) dragFile(emptyDropZone, "drop", stale);
+    await waitForLoadedFile(stale);
+
+    const loadedDropZone = audioDropZone(screen.container);
+    expect(loadedDropZone).not.toBeNull();
+    if (loadedDropZone) dragFile(loadedDropZone, "drop", current);
+    await waitForLoadedFile(current);
+
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe("Current Title");
+
+    await waitForStaleParseToResolve(stale);
+
+    expect(useProjectStore.getState().metadata.title).toBe("Current Title");
+    expect(useProjectStore.getState().metadata.artists).toEqual([]);
+    expect(useProjectStore.getState().metadata.album).toBe("");
+  });
+});
+
+// -- Replacing the song --------------------------------------------------------
+
+describe("ImportPanel: replacing the audio with a different song", () => {
+  const previousSong = {
+    title: "Lovefield",
+    artists: ["underscores"],
+    album: "U",
+    duration: 0,
+    isrc: "USQE92600028",
+    songwriters: ["April Harper Grey"],
+    extra: { producer: "someone" },
+    language: "en",
+  };
+
+  async function dropOnImportPanel(container: HTMLElement, file: File) {
+    const dropZone = audioDropZone(container);
+    expect(dropZone).not.toBeNull();
+    if (dropZone) dragFile(dropZone, "drop", file);
+    await waitForLoadedFile(file);
+  }
+
+  it("regression: an untagged replacement file clears the previous song's metadata", async () => {
+    useAudioStore.setState({ source: { type: "file", file: new File([new Uint8Array(8)], "Lovefield.wav") } });
+    useProjectStore.setState({ lines: [], metadata: previousSong });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    await dropOnImportPanel(screen.container, playableWav("Other Song.wav"));
+
+    const metadata = useProjectStore.getState().metadata;
+    expect(metadata.title).toBe("Other Song");
+    expect(metadata.artists).toEqual([]);
+    expect(metadata.album).toBe("");
+    expect(metadata.isrc).toBeUndefined();
+    expect(metadata.songwriters).toBeUndefined();
+    expect(metadata.extra).toBeUndefined();
+    expect(metadata.language).toBeUndefined();
+  });
+
+  it("fills the cleared metadata from the replacement file's tags", async () => {
+    useAudioStore.setState({ source: { type: "file", file: new File([new Uint8Array(8)], "Lovefield.wav") } });
+    useProjectStore.setState({ lines: [], metadata: previousSong });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    await dropOnImportPanel(
+      screen.container,
+      taggedMp3(
+        [
+          ["TIT2", "New Title"],
+          ["TPE1", "New Artist"],
+        ],
+        "new.mp3",
+      ),
+    );
+
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe("New Title");
+    const metadata = useProjectStore.getState().metadata;
+    expect(metadata.artists).toEqual(["New Artist"]);
+    expect(metadata.album).toBe("");
+    expect(metadata.isrc).toBeUndefined();
+    expect(metadata.songwriters).toBeUndefined();
+  });
+
+  it("regression: replacing the file resets the previous song's singer names", async () => {
+    useAudioStore.setState({ source: { type: "file", file: new File([new Uint8Array(8)], "Lovefield.wav") } });
+    useProjectStore.setState({
+      lines: [],
+      metadata: previousSong,
+      agents: [{ id: "v1", type: "person", name: "April Harper Grey" }],
+    });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    await dropOnImportPanel(screen.container, playableWav("Other Song.wav"));
+
+    expect(useProjectStore.getState().agents).toEqual([{ id: "v1", type: "person", name: "Lead" }]);
+  });
+
+  it("regression: dropping the same audio file again keeps the song's metadata and singer names", async () => {
+    const agents = [{ id: "v1", type: "person" as const, name: "April Harper Grey" }];
+    const sameFile = () => playableWav("Lovefield.wav", 1000);
+    useAudioStore.setState({ source: { type: "file", file: sameFile() } });
+    useProjectStore.setState({ lines: [], metadata: previousSong, agents });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    await dropOnImportPanel(screen.container, sameFile());
+
+    expect(useProjectStore.getState().metadata).toEqual(previousSong);
+    expect(useProjectStore.getState().agents).toEqual(agents);
+  });
+
+  it("keeps metadata entered before the first audio file is loaded", async () => {
+    useAudioStore.setState({ source: null });
+    useProjectStore.setState({ lines: [], metadata: previousSong });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    await dropOnImportPanel(screen.container, playableWav("Lovefield.wav"));
+
+    const metadata = useProjectStore.getState().metadata;
+    expect(metadata.artists).toEqual(["underscores"]);
+    expect(metadata.isrc).toBe("USQE92600028");
+    expect(metadata.songwriters).toEqual(["April Harper Grey"]);
+  });
+
+  it("clears the previous song's metadata when a file replaces a YouTube source", async () => {
+    useAudioStore.setState({ source: { type: "youtube", videoId: "dQw4w9WgXcQ" } });
+    useProjectStore.setState({ lines: [], metadata: previousSong });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    await dropOnImportPanel(screen.container, playableWav("Other Song.wav"));
+
+    expect(useProjectStore.getState().metadata.artists).toEqual([]);
+    expect(useProjectStore.getState().metadata.isrc).toBeUndefined();
   });
 });

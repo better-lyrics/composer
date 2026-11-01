@@ -1,13 +1,12 @@
-import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
-import { IconMusicExclamation, IconSearch } from "@tabler/icons-react";
+import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
+import { IconSearch } from "@tabler/icons-react";
+import { NoMatches } from "@/ui/no-matches";
 import { ResultRow } from "@/views/lyrics-import-modal/result-row";
-import type { LyricsSearchError } from "@/utils/lyrics-search/types";
 
 // -- Types --------------------------------------------------------------------
 
 interface SearchResultsProps {
   results: LyricsSearchResult[];
-  errors: Map<ProviderName, LyricsSearchError>;
   isFetching: boolean;
   hasQuery: boolean;
   focusedIndex: number;
@@ -17,7 +16,6 @@ interface SearchResultsProps {
   listboxRef?: React.Ref<HTMLDivElement>;
   onHover: (index: number) => void;
   onSelect: (result: LyricsSearchResult) => void;
-  providerDisplayName: (name: string) => string;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -28,7 +26,6 @@ const SKELETON_ROW_COUNT = 3;
 
 const SearchResults: React.FC<SearchResultsProps> = ({
   results,
-  errors,
   isFetching,
   hasQuery,
   focusedIndex,
@@ -38,18 +35,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   listboxRef,
   onHover,
   onSelect,
-  providerDisplayName,
 }) => {
-  if (errors.size > 0 && results.length === 0 && !isFetching) {
-    return (
-      <div className="flex flex-col items-center gap-1.5 py-8 text-center" role="alert">
-        <span className="text-xs text-composer-error-text">
-          {[...errors.values()].map((err) => `${providerDisplayName(err.provider)}: ${err.message}`).join(" ・ ")}
-        </span>
-        <span className="text-[11px] text-composer-text-muted">Try adjusting your search.</span>
-      </div>
-    );
-  }
   if (results.length > 0) {
     return (
       // react-doctor-disable-next-line react-doctor/prefer-tag-over-role
@@ -74,21 +60,20 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       <div className="flex flex-col gap-1.5" aria-busy="true">
         {Array.from({ length: SKELETON_ROW_COUNT }).map((_, i) => (
           <div
-            // biome-ignore lint/suspicious/noArrayIndexKey: fixed-count decorative skeleton
             key={i}
             data-testid="result-skeleton"
             className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-1.5 rounded-lg animate-pulse"
           >
             <span className="min-w-0 flex flex-col gap-0.5">
               <span className="flex items-center h-5">
-                <span className="block h-3 rounded bg-white/4 w-3/4" />
+                <span className="block h-3 rounded bg-(--layer-2) w-3/4" />
               </span>
               <span className="flex items-center h-4">
-                <span className="block h-2.5 rounded bg-white/4 w-1/2" />
+                <span className="block h-2.5 rounded bg-(--layer-2) w-1/2" />
               </span>
             </span>
             <span className="flex items-center h-5">
-              <span className="block h-3 rounded bg-white/4 w-20" />
+              <span className="block h-3 rounded bg-(--layer-2) w-20" />
             </span>
           </div>
         ))}
@@ -96,15 +81,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     );
   }
   if (hasQuery) {
-    return (
-      <output className="m-auto flex flex-col items-center px-4 text-center">
-        <IconMusicExclamation size={22} className="text-composer-text opacity-25 mb-2" aria-hidden="true" />
-        <span className="text-xs font-medium text-composer-text-secondary">No matches</span>
-        <span className="text-[11px] text-composer-text-muted mt-0.5">
-          Try a different track or artist, or check the spelling.
-        </span>
-      </output>
-    );
+    return <NoMatches message="No matches" hint="Try a different track or artist, or check the spelling." />;
   }
   return (
     <div className="m-auto flex flex-col items-center px-4 text-center">

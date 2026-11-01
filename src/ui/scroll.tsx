@@ -1,7 +1,7 @@
 import { cn } from "@/utils/cn";
 import "overlayscrollbars/overlayscrollbars.css";
-import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
-import type { MutableRefObject } from "react";
+import { OverlayScrollbarsComponent, type OverlayScrollbarsComponentRef } from "overlayscrollbars-react";
+import { type MutableRefObject, useLayoutEffect, useRef } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -12,7 +12,10 @@ interface ScrollProps {
   className?: string;
   autoHide?: AutoHide;
   autoHideDelay?: number;
+  initialScrollTop?: number;
   viewportRef?: MutableRefObject<HTMLDivElement | null>;
+  onInitialized?: (viewport: HTMLDivElement) => void;
+  onScrollTopChange?: (scrollTop: number) => void;
 }
 
 // -- Component ----------------------------------------------------------------
@@ -22,27 +25,48 @@ const Scroll: React.FC<ScrollProps> = ({
   className,
   autoHide = "leave",
   autoHideDelay = 800,
+  initialScrollTop,
   viewportRef,
-}) => (
-  <OverlayScrollbarsComponent
-    defer
-    className={cn("overflow-auto", className)}
-    options={{
-      scrollbars: { theme: "os-theme-light", autoHide, autoHideDelay },
-    }}
-    events={{
-      initialized: (instance) => {
-        if (!viewportRef) return;
-        viewportRef.current = instance.elements().viewport as HTMLDivElement;
-      },
-      destroyed: () => {
-        if (viewportRef) viewportRef.current = null;
-      },
-    }}
-  >
-    {children}
-  </OverlayScrollbarsComponent>
-);
+  onInitialized,
+  onScrollTopChange,
+}) => {
+  const componentRef = useRef<OverlayScrollbarsComponentRef>(null);
+  const scrollTopRef = useRef(initialScrollTop);
+
+  // OverlayScrollbars is deferred, so the host paints first; scrolling it now avoids a jump from the top.
+  // A hidden Activity destroys the instance, so this also restores the position when the panel shows again.
+  useLayoutEffect(() => {
+    const host = componentRef.current?.getElement();
+    if (host && scrollTopRef.current !== undefined) host.scrollTop = scrollTopRef.current;
+  }, []);
+
+  return (
+    <OverlayScrollbarsComponent
+      ref={componentRef}
+      defer
+      className={cn("overflow-auto overscroll-none", className)}
+      options={{
+        scrollbars: { theme: "os-theme-light", autoHide, autoHideDelay },
+      }}
+      events={{
+        initialized: (instance) => {
+          const viewport = instance.elements().viewport as HTMLDivElement;
+          if (viewportRef) viewportRef.current = viewport;
+          onInitialized?.(viewport);
+        },
+        scroll: (instance) => {
+          scrollTopRef.current = instance.elements().viewport.scrollTop;
+          onScrollTopChange?.(scrollTopRef.current);
+        },
+        destroyed: () => {
+          if (viewportRef) viewportRef.current = null;
+        },
+      }}
+    >
+      {children}
+    </OverlayScrollbarsComponent>
+  );
+};
 
 // -- Exports ------------------------------------------------------------------
 

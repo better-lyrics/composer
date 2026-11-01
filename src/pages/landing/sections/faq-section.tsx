@@ -13,11 +13,11 @@ const FaqSection: React.FC<FaqSectionProps> = ({ title, entries }) => {
         {entries.map((entry) => (
           <details
             key={entry.question}
-            className="group rounded-xl bg-composer-bg-elevated border border-composer-border p-5 open:pb-6"
+            className="group rounded-xl bg-(--layer-1) border border-(--edge) p-5 open:pb-6"
           >
             <summary className="cursor-pointer font-medium text-composer-text list-none flex items-center justify-between gap-4">
               <span>{entry.question}</span>
-              <span className="text-composer-text-muted text-xl leading-none group-open:rotate-45 transition-transform select-none">
+              <span className="text-(--muted) text-xl leading-none group-open:rotate-45 transition-transform select-none">
                 +
               </span>
             </summary>

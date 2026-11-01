@@ -1,6 +1,7 @@
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { textToLyricLines } from "@/utils/lyrics-text";
+import { editTextWithRewrittenRows } from "@/views/edit/edit-text";
 import {
   diffEditTextChange,
   findStructurallyImpactedInstances,
@@ -13,7 +14,7 @@ import {
 type EditTextAction =
   | { kind: "ignore-modal-pending" }
   | { kind: "noop" }
-  | { kind: "apply"; finalLines: LyricLine[] }
+  | { kind: "apply"; finalLines: LyricLine[]; editText: string }
   | { kind: "needs-confirm"; lyricLines: LyricLine[]; impacted: ImpactedInstance[]; labels: string[] };
 
 interface DecideOptions {
@@ -56,12 +57,12 @@ function decideEditTextAction({ text, defaultAgentId, lines, groups, modalPendin
         labels: uniqueImpactedLabels(impacted, groups),
       };
     }
-    return { kind: "apply", finalLines: lyricLines };
+    return { kind: "apply", finalLines: lyricLines, editText: text };
   }
 
   if (diff.contentUpdates.length === 0) return { kind: "noop" };
   const finalLines = propagateContentUpdates(lines, lyricLines, diff.contentUpdates);
-  return { kind: "apply", finalLines };
+  return { kind: "apply", finalLines, editText: editTextWithRewrittenRows(text, lyricLines, finalLines) };
 }
 
 // -- Exports ------------------------------------------------------------------

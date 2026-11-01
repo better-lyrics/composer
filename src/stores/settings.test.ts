@@ -5,7 +5,7 @@ import {
   isUsingDefaultCobaltInstance,
   useSettingsStore,
 } from "@/stores/settings";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { migrateSettings } from "@/stores/settings-migration";
 import { beforeEach, describe, expect, it } from "vitest";
 
 describe("preview renderer settings", () => {
@@ -30,6 +30,19 @@ describe("preview renderer settings", () => {
     useSettingsStore.getState().set("previewRenderer", "am-lyrics");
     useSettingsStore.getState().resetToDefaults();
     expect(useSettingsStore.getState().previewRenderer).toBe("braccato");
+  });
+});
+
+describe("audio pitch settings", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("preserves pitch by default and restores that default on reset", () => {
+    expect(useSettingsStore.getState().preservePitch).toBe(true);
+    useSettingsStore.getState().set("preservePitch", false);
+    useSettingsStore.getState().resetToDefaults();
+    expect(useSettingsStore.getState().preservePitch).toBe(true);
   });
 });
 
@@ -58,9 +71,9 @@ describe("background vocal extraction settings", () => {
     expect(useSettingsStore.getState().mergeStandaloneBackgroundLines).toBe(true);
   });
 
-  it("defaults preserveBracketsOnExtraction to false", () => {
-    expect(DEFAULTS.preserveBracketsOnExtraction).toBe(false);
-    expect(useSettingsStore.getState().preserveBracketsOnExtraction).toBe(false);
+  it("defaults preserveBracketsOnExtraction to true", () => {
+    expect(DEFAULTS.preserveBracketsOnExtraction).toBe(true);
+    expect(useSettingsStore.getState().preserveBracketsOnExtraction).toBe(true);
   });
 
   it("allows toggling preserveBracketsOnExtraction via set()", () => {
@@ -181,99 +194,156 @@ describe("timeline header toggle defaults", () => {
     useSettingsStore.setState({ ...DEFAULTS });
   });
 
-  it("defaults defaultRollingEdit to false", () => {
-    expect(DEFAULTS.defaultRollingEdit).toBe(false);
-    expect(useSettingsStore.getState().defaultRollingEdit).toBe(false);
+  it("defaults rollingEdit to false", () => {
+    expect(DEFAULTS.rollingEdit).toBe(false);
+    expect(useSettingsStore.getState().rollingEdit).toBe(false);
   });
 
-  it("defaults defaultPreviewSidebar to false", () => {
-    expect(DEFAULTS.defaultPreviewSidebar).toBe(false);
-    expect(useSettingsStore.getState().defaultPreviewSidebar).toBe(false);
+  it("defaults previewSidebar to false", () => {
+    expect(DEFAULTS.previewSidebar).toBe(false);
+    expect(useSettingsStore.getState().previewSidebar).toBe(false);
   });
 
-  it("set() persists defaultRollingEdit", () => {
-    useSettingsStore.getState().set("defaultRollingEdit", true);
-    expect(useSettingsStore.getState().defaultRollingEdit).toBe(true);
+  it("set() persists rollingEdit", () => {
+    useSettingsStore.getState().set("rollingEdit", true);
+    expect(useSettingsStore.getState().rollingEdit).toBe(true);
   });
 
-  it("set() persists defaultPreviewSidebar", () => {
-    useSettingsStore.getState().set("defaultPreviewSidebar", true);
-    expect(useSettingsStore.getState().defaultPreviewSidebar).toBe(true);
+  it("set() persists previewSidebar", () => {
+    useSettingsStore.getState().set("previewSidebar", true);
+    expect(useSettingsStore.getState().previewSidebar).toBe(true);
   });
 
   it("resetToDefaults restores both to false", () => {
-    useSettingsStore.getState().set("defaultRollingEdit", true);
-    useSettingsStore.getState().set("defaultPreviewSidebar", true);
+    useSettingsStore.getState().set("rollingEdit", true);
+    useSettingsStore.getState().set("previewSidebar", true);
     useSettingsStore.getState().resetToDefaults();
-    expect(useSettingsStore.getState().defaultRollingEdit).toBe(false);
-    expect(useSettingsStore.getState().defaultPreviewSidebar).toBe(false);
+    expect(useSettingsStore.getState().rollingEdit).toBe(false);
+    expect(useSettingsStore.getState().previewSidebar).toBe(false);
   });
 });
 
 describe("settings v2 -> v3 migration", () => {
-  it("fills missing defaultRollingEdit with false", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 2) as { defaultRollingEdit: boolean };
-    expect(migrated.defaultRollingEdit).toBe(false);
+  it("fills missing rollingEdit with false", async () => {
+    const migrated = migrateSettings({ defaultZoom: 200 }, 2) as { rollingEdit: boolean };
+    expect(migrated.rollingEdit).toBe(false);
   });
 
-  it("fills missing defaultPreviewSidebar with false", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 2) as { defaultPreviewSidebar: boolean };
-    expect(migrated.defaultPreviewSidebar).toBe(false);
+  it("fills missing previewSidebar with false", async () => {
+    const migrated = migrateSettings({ defaultZoom: 200 }, 2) as { previewSidebar: boolean };
+    expect(migrated.previewSidebar).toBe(false);
   });
 
   it("preserves user-set values when migrating from v3", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ defaultRollingEdit: true, defaultPreviewSidebar: true }, 3) as {
-      defaultRollingEdit: boolean;
-      defaultPreviewSidebar: boolean;
+    const migrated = migrateSettings({ defaultRollingEdit: true, defaultPreviewSidebar: true }, 3) as {
+      rollingEdit: boolean;
+      previewSidebar: boolean;
     };
-    expect(migrated.defaultRollingEdit).toBe(true);
-    expect(migrated.defaultPreviewSidebar).toBe(true);
+    expect(migrated.rollingEdit).toBe(true);
+    expect(migrated.previewSidebar).toBe(true);
   });
 
   it("still applies the vocalModelVariant fp16 -> fp32 rule", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ vocalModelVariant: "fp16" }, 2) as { vocalModelVariant: string };
+    const migrated = migrateSettings({ vocalModelVariant: "fp16" }, 2) as { vocalModelVariant: string };
     expect(migrated.vocalModelVariant).toBe("fp32");
   });
 });
 
 describe("settings v3 -> v4 migration (vocalOnsetSnap)", () => {
   it("fills missing vocalOnsetSnap with true", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 3) as { vocalOnsetSnap: boolean };
+    const migrated = migrateSettings({ defaultZoom: 200 }, 3) as { vocalOnsetSnap: boolean };
     expect(migrated.vocalOnsetSnap).toBe(true);
   });
 
   it("preserves an explicitly disabled vocalOnsetSnap", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ vocalOnsetSnap: false }, 3) as { vocalOnsetSnap: boolean };
+    const migrated = migrateSettings({ vocalOnsetSnap: false }, 3) as { vocalOnsetSnap: boolean };
     expect(migrated.vocalOnsetSnap).toBe(false);
   });
 });
 
 describe("settings v4 -> v5 migration (snapPlayheadToPoints)", () => {
   it("fills missing snapPlayheadToPoints with true", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 4) as { snapPlayheadToPoints: boolean };
+    const migrated = migrateSettings({ defaultZoom: 200 }, 4) as { snapPlayheadToPoints: boolean };
     expect(migrated.snapPlayheadToPoints).toBe(true);
   });
 
   it("preserves an explicitly disabled snapPlayheadToPoints", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ snapPlayheadToPoints: false }, 4) as { snapPlayheadToPoints: boolean };
+    const migrated = migrateSettings({ snapPlayheadToPoints: false }, 4) as { snapPlayheadToPoints: boolean };
     expect(migrated.snapPlayheadToPoints).toBe(false);
   });
 });
 
-describe("timeline store reads header-toggle defaults at init", () => {
-  it("initial previewSidebarOpen matches settings.defaultPreviewSidebar at the moment the store was created", () => {
-    expect(useTimelineStore.getState().previewSidebarOpen).toBe(useSettingsStore.getState().defaultPreviewSidebar);
+describe("settings v14 -> v15 migration (snap distance per source)", () => {
+  it("seeds every source's distance from the old single threshold and drops it", () => {
+    const migrated = migrateSettings({ timelineSnapThreshold: 20 }, 14) as Record<string, unknown>;
+    expect(migrated).toMatchObject({
+      snapDistanceWords: 20,
+      snapDistanceMarkers: 20,
+      snapDistanceOnsets: 20,
+      snapDistanceBeats: 20,
+      snapDistancePlayhead: 20,
+    });
+    expect(migrated).not.toHaveProperty("timelineSnapThreshold");
   });
 
-  it("initial rollingEditMode matches settings.defaultRollingEdit at the moment the store was created", () => {
-    expect(useTimelineStore.getState().rollingEditMode).toBe(useSettingsStore.getState().defaultRollingEdit);
+  it("leaves the defaults in place when no threshold was saved", () => {
+    const migrated = migrateSettings({ defaultZoom: 200 }, 14) as Record<string, unknown>;
+    expect(migrated).not.toHaveProperty("snapDistanceWords");
+  });
+});
+
+describe("re-record pre-roll setting", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("defaults to 1.5 seconds", () => {
+    expect(useSettingsStore.getState().redoPreroll).toBe(1.5);
+  });
+
+  it("can be changed via set()", () => {
+    useSettingsStore.getState().set("redoPreroll", 0.5);
+    expect(useSettingsStore.getState().redoPreroll).toBe(0.5);
+  });
+
+  it("allows zero for an exact-begin seek", () => {
+    useSettingsStore.getState().set("redoPreroll", 0);
+    expect(useSettingsStore.getState().redoPreroll).toBe(0);
+  });
+
+  it("resetToDefaults restores the default pre-roll", () => {
+    useSettingsStore.getState().set("redoPreroll", 3);
+    useSettingsStore.getState().resetToDefaults();
+    expect(useSettingsStore.getState().redoPreroll).toBe(1.5);
+  });
+
+  it("migration backfills a missing pre-roll to the default", async () => {
+    const migrated = migrateSettings({ defaultZoom: 200 }, 5) as { redoPreroll: number };
+    expect(migrated.redoPreroll).toBe(1.5);
+  });
+
+  it("migration preserves an explicitly set pre-roll", async () => {
+    const migrated = migrateSettings({ redoPreroll: 0.25 }, 5) as { redoPreroll: number };
+    expect(migrated.redoPreroll).toBe(0.25);
+  });
+});
+
+describe("count-in setting", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("defaults to 3 seconds", () => {
+    expect(useSettingsStore.getState().syncCountIn).toBe(3);
+  });
+
+  it("migrates a blob from before the setting existed to 3 seconds", () => {
+    const migrated = migrateSettings({ redoPreroll: 1.5 }, 8) as { syncCountIn: number };
+    expect(migrated.syncCountIn).toBe(3);
+  });
+
+  it("keeps an explicit 0 (off) through migration", () => {
+    const migrated = migrateSettings({ syncCountIn: 0 }, 8) as { syncCountIn: number };
+    expect(migrated.syncCountIn).toBe(0);
   });
 });

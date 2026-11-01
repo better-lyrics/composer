@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { describe, expect, it } from "vitest";
 
 function findButton(pattern: RegExp): HTMLButtonElement | undefined {
   return Array.from(document.querySelectorAll("button")).find((b) => pattern.test(b.textContent ?? ""));
@@ -45,7 +45,7 @@ describe("TimelineContextMenu", () => {
     openWordContextMenu(line.id);
     await render(<TimelineContextMenu />);
     expect(useTimelineStore.getState().contextMenu).not.toBeNull();
-    document.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
     expect(useTimelineStore.getState().contextMenu).toBeNull();
   });
 
@@ -298,5 +298,141 @@ describe("TimelineContextMenu background provenance", () => {
     findButton(/Delete word/i)?.click();
 
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+  });
+});
+
+describe("TimelineContextMenu · split into words on the bg track", () => {
+  function openBgWordContextMenu(lineId: string) {
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "word", lineId, lineIndex: 0, wordIndex: 0, type: "bg" },
+      },
+      selectedWords: [{ lineId, lineIndex: 0, wordIndex: 0, type: "bg" }],
+    });
+  }
+
+  it("regression: offers 'Split into words' on a sentence-long bg word and splits it", async () => {
+    const line = createLine({
+      text: "main line",
+      words: [createWord({ text: "main ", begin: 0, end: 2 }), createWord({ text: "line", begin: 2, end: 4 })],
+      backgroundText: "ooh yeah baby",
+      backgroundWords: [createWord({ text: "ooh yeah baby", begin: 1, end: 4 })],
+    });
+    useProjectStore.setState({ lines: [line] });
+    openBgWordContextMenu(line.id);
+    await render(<TimelineContextMenu />);
+
+    const splitButton = findButton(/^Split into words/);
+    expect(splitButton).toBeDefined();
+    splitButton?.click();
+
+    await expect
+      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text))
+      .toEqual(["ooh ", "yeah ", "baby"]);
+    expect(useProjectStore.getState().lines[0].words).toEqual(line.words);
+  });
+
+  it("hides 'Split into words' on a bg track that is already one word per word", async () => {
+    const line = createLine({
+      text: "main line",
+      words: [createWord({ text: "main ", begin: 0, end: 2 }), createWord({ text: "line", begin: 2, end: 4 })],
+      backgroundText: "ooh yeah",
+      backgroundWords: [createWord({ text: "ooh ", begin: 1, end: 2 }), createWord({ text: "yeah", begin: 2, end: 3 })],
+    });
+    useProjectStore.setState({ lines: [line] });
+    openBgWordContextMenu(line.id);
+    await render(<TimelineContextMenu />);
+
+    expect(findButton(/^Split into words/)).toBeUndefined();
+  });
+});
+
+describe("TimelineContextMenu · add word on a bg track with untimed text", () => {
+  it("regression: 'Add word here' times the existing untimed bg text instead of replacing it", async () => {
+    useAudioStore.setState({ duration: 10 });
+    const line = createLine({
+      id: "l1",
+      text: "main",
+      words: [createWord({ text: "main", begin: 0, end: 1 })],
+      backgroundText: "ooh yeah",
+    });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      contextMenu: { x: 100, y: 100, target: { kind: "track", lineId: "l1", lineIndex: 0, time: 5, type: "bg" } },
+    });
+    await render(<TimelineContextMenu />);
+
+    findButton(/Add word here/i)?.click();
+
+    await expect
+      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text))
+      .toEqual(["ooh ", "yeah"]);
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh yeah");
+    const firstBegin = useProjectStore.getState().lines[0].backgroundWords?.[0].begin ?? -1;
+    expect(firstBegin).toBeGreaterThan(4.5);
+    expect(firstBegin).toBeLessThanOrEqual(5);
+  });
+
+  describe("group label", () => {
+    function openGroupMenuOver(lineCount: number) {
+      const lines = Array.from({ length: lineCount }, (_, i) =>
+        createLine({ words: [createWord({ text: `w${i}`, begin: i, end: i + 0.5 })] }),
+      );
+      useProjectStore.setState({ lines, groups: [] });
+      const last = lines.length - 1;
+      useTimelineStore.setState({
+        contextMenu: {
+          x: 100,
+          y: 100,
+          target: { kind: "word", lineId: lines[last].id, lineIndex: last, wordIndex: 0, type: "word" },
+        },
+        selectedWords: [
+          { lineId: lines[0].id, lineIndex: 0, wordIndex: 0, type: "word" },
+          { lineId: lines[last].id, lineIndex: last, wordIndex: 0, type: "word" },
+        ],
+      });
+    }
+
+    it("counts a single filled gap in the singular", async () => {
+      openGroupMenuOver(3);
+      await render(<TimelineContextMenu />);
+      expect(findButton(/^Group/)?.textContent).toContain("Group 3 lines (incl. 1 gap)");
+    });
+
+    it("counts several filled gaps in the plural", async () => {
+      openGroupMenuOver(4);
+      await render(<TimelineContextMenu />);
+      expect(findButton(/^Group/)?.textContent).toContain("Group 4 lines (incl. 2 gaps)");
+    });
+  });
+
+  it("copies a word from its menu and pastes it where the empty track was right-clicked", async () => {
+    const source = createLine({ words: [createWord({ text: "hi", begin: 0, end: 1 })] });
+    const target = createLine({ text: "" });
+    useAudioStore.setState({ duration: 30 });
+    useProjectStore.setState({ lines: [source, target] });
+    useTimelineStore.setState({ clipboard: null, pasteMode: { status: "idle" } });
+    openWordContextMenu(source.id);
+    await render(<TimelineContextMenu />);
+
+    await expect.poll(() => findButton(/^Copy word/)).toBeDefined();
+    findButton(/^Copy word/)?.click();
+    await expect.poll(() => useTimelineStore.getState().clipboard?.entries.length).toBe(1);
+
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "track", lineId: target.id, lineIndex: 1, time: 5, type: "word" },
+      },
+    });
+    await expect.poll(() => findButton(/^Paste here/)).toBeDefined();
+    findButton(/^Paste here/)?.click();
+
+    await expect
+      .poll(() => useProjectStore.getState().lines[1].words?.[0])
+      .toMatchObject({ text: "hi", begin: 5, end: 6 });
   });
 });

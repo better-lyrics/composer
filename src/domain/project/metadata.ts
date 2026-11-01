@@ -2,9 +2,12 @@
 
 interface ProjectMetadata {
   title: string;
-  artist: string;
+  artists: string[];
   album: string;
   duration: number;
+  isrc?: string;
+  songwriters?: string[];
+  extra?: Record<string, string>;
   language?: string;
   thumbnailDataUrl?: string;
   thumbnailForVideoId?: string;

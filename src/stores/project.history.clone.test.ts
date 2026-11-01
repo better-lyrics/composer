@@ -1,8 +1,8 @@
+import { useProjectStore } from "@/stores/project";
 /**
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { useProjectStore } from "@/stores/project";
 
 // Pins the contract that history snapshots round-trip cleanly through whatever
 // deep-clone primitive project.ts uses. Pre-Task-3.3 the codebase used

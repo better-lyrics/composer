@@ -1,14 +1,19 @@
 import type { Agent, AgentType } from "@/domain/agent/model";
+import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { fromComposerMeta } from "@/domain/project/metadata-ttml";
 import { inferSyllableGroupIds } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
-import { getSplitCharacter } from "@/utils/split-character";
-import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
-import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
 import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
+import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
+import { parseTtmlAlternates } from "@/utils/lyrics-parsers/ttml-alternates";
+import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import { getSplitCharacter } from "@/utils/split-character";
+import { parseXmlDocument } from "@/utils/xml-document";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -22,22 +27,27 @@ function getComposerAttribute(el: Element, name: string): string | null {
   return null;
 }
 
+const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
+
+function elementRole(element: Element): string | null {
+  return element.getAttribute("ttm:role") || element.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
+}
+
 // -- TTML Parser --------------------------------------------------------------
 
 function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const metadata: Partial<ProjectMetadata> = {};
   const lines: LyricLine[] = [];
+  const lineIndexByKey = new Map<string, number>();
+  const lineKeys: (string | undefined)[] = [];
+  const paragraphByKey = new Map<string, Element>();
 
-  const parser = new DOMParser();
   const unescapedContent = content.replace(/\\"/g, '"').replace(/\\n/g, "\n");
-  const cleanedContent = declareMissingNamespaces(unescapedContent);
-  const doc = parser.parseFromString(cleanedContent, "text/xml");
-
-  // Check for parse errors
-  const parseError = doc.querySelector("parsererror");
-  if (parseError) {
-    return { lines: [], metadata: {}, hasTimingData: false };
+  const parsed = parseXmlDocument(declareMissingNamespaces(unescapedContent));
+  if (!parsed.ok) {
+    return { lines: [], metadata: {}, hasTimingData: false, issues: [{ line: 1, text: "", reason: "empty-document" }] };
   }
+  const doc = parsed.doc;
 
   // Extract metadata (use getElementsByTagName for namespace compatibility)
   const titleEl = doc.getElementsByTagName("title")[0];
@@ -47,11 +57,28 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const ttmTitleEl = doc.getElementsByTagName("ttm:title")[0];
   if (ttmTitleEl?.textContent && !metadata.title) metadata.title = ttmTitleEl.textContent;
 
+  const documentLanguage = normalizeLanguageTag(doc.documentElement.getAttribute("xml:lang") ?? "");
+  if (documentLanguage) metadata.language = documentLanguage;
+
+  const metaEls = Array.from(
+    new Set(
+      Array.from(doc.getElementsByTagName("composer:meta")).concat(
+        COMPOSER_NAMESPACES.flatMap((ns) => Array.from(doc.getElementsByTagNameNS(ns, "meta"))),
+      ),
+    ),
+  );
+  Object.assign(
+    metadata,
+    fromComposerMeta(
+      metaEls.map((el) => ({ key: el.getAttribute("key") ?? "", value: el.getAttribute("value") ?? "" })),
+    ),
+  );
+
   const artistEl = doc.querySelector('[type="artist"]');
-  if (artistEl?.textContent) metadata.artist = artistEl.textContent;
+  if (!metadata.artists && artistEl?.textContent) metadata.artists = [artistEl.textContent];
 
   const albumEl = doc.querySelector('[type="album"]');
-  if (albumEl?.textContent) metadata.album = albumEl.textContent;
+  if (!metadata.album && albumEl?.textContent) metadata.album = albumEl.textContent;
 
   // Extract agents from metadata
   const agents: Agent[] = [];
@@ -60,7 +87,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     const id = el.getAttribute("xml:id");
     const type = (el.getAttribute("type") as AgentType) || "person";
     const nameEl = el.getElementsByTagName("ttm:name")[0];
-    const name = nameEl?.textContent || `Voice ${agents.length + 1}`;
+    const name = nameEl?.textContent || placeholderAgentName(agents.length);
     if (id) {
       agents.push({ id, type, name });
     }
@@ -80,16 +107,30 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     const color = el.getAttribute("color") ?? "#9ca3af";
     const versionStr = el.getAttribute("templateVersion");
     const templateVersion = versionStr ? Number.parseInt(versionStr, 10) || 1 : 1;
-    groups.push({ id, label, color, templateVersion });
+    const ownTimingInstances = (el.getAttribute("ownTimingInstances") ?? "")
+      .split(",")
+      .filter((part) => part.trim() !== "")
+      .map(Number)
+      .filter((instanceIdx) => Number.isInteger(instanceIdx) && instanceIdx >= 0);
+    groups.push({
+      id,
+      label,
+      color,
+      templateVersion,
+      ...(el.getAttribute("sharesTiming") === "true" ? { sharesTiming: true as const } : {}),
+      ...(ownTimingInstances.length ? { ownTimingInstances } : {}),
+    });
   }
 
   // Parse lyrics - look for <p> elements with timing
   const paragraphs = doc.getElementsByTagName("p");
 
   for (const p of paragraphs) {
+    const lineCountBefore = lines.length;
     const begin = parseTtmlTimestamp(p.getAttribute("begin") ?? "");
     const end = parseTtmlTimestamp(p.getAttribute("end") ?? "");
     const agentId = p.getAttribute("ttm:agent")?.replace("#", "") ?? "v1";
+    const lineKey = p.getAttribute("itunes:key") ?? p.getAttributeNS(ITUNES_NS, "key");
 
     const rawGroupId = getComposerAttribute(p, "groupId");
     const knownGroupId = rawGroupId && seenGroupIds.has(rawGroupId) ? rawGroupId : null;
@@ -129,7 +170,14 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
       if (backgroundWords.length > 0) {
         backgroundText = reconstructLineText(backgroundWords, getSplitCharacter());
       } else {
-        backgroundText = bgContainer.textContent || undefined;
+        let baseBackground = "";
+        for (const node of bgContainer.childNodes) {
+          if (node.nodeType === Node.TEXT_NODE) baseBackground += node.textContent ?? "";
+          else if (node.nodeType === Node.ELEMENT_NODE && elementRole(node as Element) !== "x-translation") {
+            baseBackground += node.textContent ?? "";
+          }
+        }
+        backgroundText = baseBackground.trim() || undefined;
       }
     }
 
@@ -177,8 +225,8 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
             id: generateLineId(),
             text,
             agentId,
-            begin: begin || undefined,
-            end: end || undefined,
+            begin: p.hasAttribute("begin") && Number.isFinite(begin) ? begin : undefined,
+            end: p.hasAttribute("end") && Number.isFinite(end) ? end : undefined,
             backgroundText,
             backgroundWords,
             backgroundTextSource,
@@ -187,7 +235,14 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
         );
       }
     }
+    if (lines.length > lineCountBefore) lineKeys.push(lineKey ?? undefined);
+    if (lineKey && lines.length > lineCountBefore && !lineIndexByKey.has(lineKey)) {
+      lineIndexByKey.set(lineKey, lines.length - 1);
+      paragraphByKey.set(lineKey, p);
+    }
   }
+
+  parseTtmlAlternates(doc, lines, lineIndexByKey, paragraphByKey);
 
   return {
     lines,
@@ -195,6 +250,8 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     hasTimingData: lines.some((l) => l.begin !== undefined || l.words?.length),
     agents: agents.length > 0 ? agents : undefined,
     groups: groups.length > 0 ? groups : undefined,
+    lineKeys,
+    issues: [],
   };
 }
 

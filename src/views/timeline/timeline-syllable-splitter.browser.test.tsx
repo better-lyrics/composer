@@ -1,11 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
-import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
+import type { LyricLine } from "@/domain/line/model";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("TimelineSyllableSplitter", () => {
+  beforeEach(() => useAudioStore.getState().reset());
+
   it("renders nothing initially (no target word selected)", async () => {
     await render(<TimelineSyllableSplitter />);
     expect(document.querySelector("dialog")).toBeNull();
@@ -158,6 +162,67 @@ describe("TimelineSyllableSplitter", () => {
     expect(document.querySelector('input[type="checkbox"]')).toBeNull();
   });
 
+  describe("regressions", () => {
+    it("regression: opens the split-word dialog for a line-synced line with no words array", async () => {
+      const line = createLine({ text: "It hurts for me", begin: 107.9, end: 110.4 });
+      useProjectStore.setState({ lines: [line] });
+      useTimelineStore.setState({
+        selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      });
+      const screen = await render(<TimelineSyllableSplitter />);
+      window.dispatchEvent(new Event("timeline:split-word"));
+      await expect
+        .element(screen.getByRole("heading", { name: /Split "It hurts for me" into words/ }))
+        .toBeInTheDocument();
+    });
+
+    it("regression: splitting a line-synced line writes word timing inside the line bounds", async () => {
+      const line = createLine({ text: "It hurts", begin: 10, end: 12 });
+      useProjectStore.setState({ lines: [line] });
+      useTimelineStore.setState({
+        selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      });
+      const screen = await render(<TimelineSyllableSplitter />);
+      window.dispatchEvent(new Event("timeline:split-word"));
+      await expect.element(screen.getByRole("heading", { name: /Split "It hurts" into words/ })).toBeInTheDocument();
+
+      await screen.getByRole("button", { name: "Text pronunciation break 3" }).click();
+      await screen.getByRole("button", { name: "Split Word" }).click();
+
+      await vi.waitFor(() => {
+        expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
+      });
+      const after = useProjectStore.getState().lines[0];
+      expect(after.words?.map((w) => w.text.trim())).toEqual(["It", "hurts"]);
+      expect(after.words?.[0].begin).toBe(10);
+      expect(after.words?.[1].end).toBe(12);
+      expect(after.begin).toBeUndefined();
+      expect(after.end).toBeUndefined();
+    });
+
+    it("regression: opens the split-syllable dialog for a line-synced line with no words array", async () => {
+      const line = createLine({ text: "forever", begin: 1, end: 2 });
+      useProjectStore.setState({ lines: [line] });
+      useTimelineStore.setState({
+        selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      });
+      const screen = await render(<TimelineSyllableSplitter />);
+      window.dispatchEvent(new Event("timeline:split-syllable"));
+      await expect.element(screen.getByRole("heading", { name: /Split "forever"/ })).toBeInTheDocument();
+    });
+
+    it("regression: ignores the split-word event for an untimed line", async () => {
+      const line = createLine({ text: "no timing here" });
+      useProjectStore.setState({ lines: [line] });
+      useTimelineStore.setState({
+        selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      });
+      await render(<TimelineSyllableSplitter />);
+      window.dispatchEvent(new Event("timeline:split-word"));
+      expect(document.querySelector("dialog")).toBeNull();
+    });
+  });
+
   it("reconciles line.text from the new words array after a split", async () => {
     const line = createLine({
       text: "every",
@@ -189,5 +254,70 @@ describe("TimelineSyllableSplitter", () => {
     // text is reconciled via reconstructLineText: the split char marks the
     // syllable joints so line.text tokenizes 1:1 back to line.words.
     expect(lineAfter.text).toBe("ev|er|y");
+  });
+
+  it("writes manually selected transliteration boundaries back to the language track", async () => {
+    const line: LyricLine = {
+      id: "line-transliteration-split",
+      agentId: "v1",
+      text: "일단은",
+      words: [{ text: "일단은", begin: 0, end: 1, transliteration: "ildan eun" }],
+      transliteration: {
+        language: "ko-Latn",
+        text: "ildan eun",
+        segments: [{ original: "일단은", transliteration: "ildan eun" }],
+        origin: "google" as const,
+        sourceFingerprint: "source",
+      },
+    };
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    const screen = await render(<TimelineSyllableSplitter />);
+    window.dispatchEvent(new Event("timeline:split-syllable"));
+
+    await screen.getByRole("button", { name: "Original split point 1" }).click();
+    await screen.getByRole("button", { name: "Original split point 2" }).click();
+    await screen.getByRole("button", { name: "Transliteration split point 3" }).click();
+    await screen.getByRole("button", { name: "Transliteration split point 1" }).click();
+    await screen.getByRole("button", { name: "Split Word" }).click();
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(3);
+    const saved = useProjectStore.getState().lines[0];
+    expect(saved.transliteration?.text).toBe("ildan eun");
+    expect(saved.words?.map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
+    expect(saved.words?.map((word) => word.transliterationJoinerAfter)).toEqual(["", " ", undefined]);
+  });
+
+  it("preserves a literal transliteration dash when the playhead sets the timing boundary", async () => {
+    const line: LyricLine = {
+      id: "line-dash-split",
+      agentId: "v1",
+      text: "to-do",
+      words: [{ text: "to-do", begin: 0, end: 1, transliteration: "to-do" }],
+      transliteration: {
+        language: "en-Latn",
+        text: "to-do",
+        segments: [{ original: "to-do", transliteration: "to-do" }],
+        origin: "google",
+        sourceFingerprint: "source",
+      },
+    };
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    useAudioStore.getState().setCurrentTime(0.5);
+    const screen = await render(<TimelineSyllableSplitter />);
+    window.dispatchEvent(new Event("timeline:split-syllable"));
+
+    await screen.getByRole("button", { name: "Original dash 3" }).click();
+    await screen.getByRole("button", { name: "Split Word" }).click();
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
+    const result = useProjectStore.getState().lines[0];
+    expect(result.words?.map((word) => word.transliteration)).toEqual(["to", "do"]);
+    expect(result.transliteration?.text).toBe("to-do");
   });
 });

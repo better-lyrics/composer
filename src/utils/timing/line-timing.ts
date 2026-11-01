@@ -1,9 +1,13 @@
+import { timeRangeResolver } from "@/domain/group/shared-timing";
+import type { LinkGroup } from "@/domain/group/template";
+import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
+import { shiftLineTiming } from "@/domain/line/shift";
 
 type UpdateLineWithHistory = (
   id: string,
   updates: Partial<LyricLine>,
-  options?: { propagateToSiblings?: boolean },
+  options?: { deriveText?: boolean; propagateToSiblings?: boolean },
 ) => void;
 
 function nudgeLineBegin(
@@ -11,13 +15,17 @@ function nudgeLineBegin(
   lineIdx: number,
   delta: number,
   updateLineWithHistory: UpdateLineWithHistory,
+  groups: readonly LinkGroup[] = [],
+  duration = Number.POSITIVE_INFINITY,
 ) {
   const line = lines[lineIdx];
-  if (line?.begin === undefined) return;
+  if (!line || !effectiveBounds(line)) return;
 
-  const newBegin = Math.max(0, line.begin + delta);
-  const duration = line.end - line.begin;
-  updateLineWithHistory(line.id, { begin: newBegin, end: newBegin + duration }, { propagateToSiblings: false });
+  const range = timeRangeResolver(lines, groups, duration)(line);
+  updateLineWithHistory(line.id, shiftLineTiming(line, delta, range), {
+    deriveText: false,
+    propagateToSiblings: false,
+  });
 }
 
 function setLineBegin(
@@ -25,12 +33,14 @@ function setLineBegin(
   lineIdx: number,
   newBegin: number,
   updateLineWithHistory: UpdateLineWithHistory,
+  groups: readonly LinkGroup[] = [],
+  duration = Number.POSITIVE_INFINITY,
 ) {
   const line = lines[lineIdx];
-  if (line?.begin === undefined) return;
+  const bounds = line && effectiveBounds(line);
+  if (!bounds) return;
 
-  const duration = line.end - line.begin;
-  updateLineWithHistory(line.id, { begin: newBegin, end: newBegin + duration }, { propagateToSiblings: false });
+  nudgeLineBegin(lines, lineIdx, newBegin - bounds.begin, updateLineWithHistory, groups, duration);
 }
 
 export { nudgeLineBegin, setLineBegin };

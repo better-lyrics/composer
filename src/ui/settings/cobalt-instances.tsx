@@ -1,5 +1,5 @@
 import type { CobaltInstanceStatus } from "@/stores/settings";
-import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
 import { displayHostFromUrl } from "@/utils/url";
 import {
@@ -27,7 +27,7 @@ function formatRelativeTime(timestamp: number): string {
 // -- Cobalt Instances ---------------------------------------------------------
 
 const CobaltDirectoryLink: React.FC = () => (
-  <div className="flex flex-col gap-0.5 mt-4 pt-3 border-t border-composer-border">
+  <div className="flex flex-col gap-0.5 mt-4 pt-3 border-t border-(--divider)">
     <a
       href="https://cobalt.directory/service"
       target="_blank"
@@ -100,7 +100,7 @@ const CobaltInstanceRow: React.FC<{
         "group flex items-center gap-3 px-3 py-2 rounded-lg border transition-colors cursor-pointer text-left min-w-0",
         isSelected
           ? "bg-composer-accent/15 border-composer-accent/50"
-          : "bg-composer-input border-transparent hover:bg-composer-button",
+          : "bg-(--well) border-transparent hover:bg-(--layer-2)",
       )}
     >
       <span
@@ -129,18 +129,16 @@ const CobaltInstanceRow: React.FC<{
         {displayHostFromUrl(instance.url)}
       </span>
       {onRemove ? (
-        <Button
+        <IconButton
+          label="Remove instance"
+          icon={<IconTrash size={14} />}
           variant="ghost"
-          size="icon"
-          aria-label="Remove instance"
           onClick={(e) => {
             e.stopPropagation();
             onRemove();
           }}
           className="size-6 rounded text-composer-text-faint hover:text-composer-error hover:bg-transparent shrink-0"
-        >
-          <IconTrash size={14} />
-        </Button>
+        />
       ) : (
         <span aria-hidden className="size-6 shrink-0 flex items-center justify-center text-composer-text-faint">
           <IconLock size={13} />

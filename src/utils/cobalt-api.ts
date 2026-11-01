@@ -201,96 +201,10 @@ async function getAudioFromStandardCobalt(videoId: string): Promise<AudioRespons
   return parseStandardCobaltResponse(body);
 }
 
-// -- Toast formatter --------------------------------------------------------
-
-interface ToastErrorContext {
-  isDefault: boolean;
-  instanceLabel: string;
-}
-
-function switchSuffix(ctx: ToastErrorContext): string {
-  return ctx.isDefault ? "" : " Try a different cobalt instance from Settings → Advanced.";
-}
-
-function formatCobaltErrorForToast(err: unknown, ctx: ToastErrorContext): string {
-  if (!(err instanceof CobaltApiError)) return "Couldn't load YouTube audio.";
-
-  const { isDefault, instanceLabel } = ctx;
-  const switchHint = switchSuffix(ctx);
-
-  switch (err.code) {
-    case "empty_audio":
-      return isDefault
-        ? "Couldn't extract audio for this video. Try again in a bit."
-        : `${instanceLabel} returned an empty file for this video.${switchHint}`;
-
-    case "bad_response":
-      return `${instanceLabel} sent a malformed response.${switchHint}`;
-
-    case "cobalt_failed":
-      return `${instanceLabel} couldn't fetch the audio for this video.${switchHint}`;
-
-    case "bot_detection":
-      return isDefault
-        ? "YouTube is blocking Composer's default Cobalt instance. Open Settings → Advanced, add a working instance from cobalt.directory, and switch to it."
-        : `YouTube is blocking ${instanceLabel} as a bot.${switchHint}`;
-
-    case "geo_blocked":
-      return isDefault
-        ? "This video isn't available in this region."
-        : `${instanceLabel} can't access this video in its region.${switchHint}`;
-
-    case "rate_limited":
-      return isDefault
-        ? "Too many requests. Wait a minute and try again."
-        : `${instanceLabel} is rate-limiting you. Wait a minute or pick a different instance.`;
-
-    case "too_long":
-      return isDefault
-        ? "This video is too long to import."
-        : `${instanceLabel} won't process videos this long.${switchHint}`;
-
-    case "auth_required":
-      return `${instanceLabel} requires authentication that Composer doesn't support.${switchHint}`;
-
-    case "invalid_origin":
-      return `${instanceLabel} doesn't allow requests from this site.${switchHint}`;
-
-    case "video_unavailable":
-      return "YouTube marks this video as private, removed, or age-restricted.";
-
-    case "picker_unsupported":
-      return "This URL returns multiple items, which Composer can't import.";
-
-    case "invalid_video_id":
-      return "That doesn't look like a valid YouTube video.";
-
-    case "network_error":
-      return "Network error. Check your connection and try again.";
-
-    case "turnstile_failed":
-      return "Verification failed. Refresh the page and try again.";
-
-    case "turnstile_missing":
-      return "Verification didn't complete. Refresh the page.";
-
-    case "jwt_expired":
-    case "jwt_invalid":
-      return "Your session expired. Refresh the page.";
-
-    case "ip_mismatch":
-      return "Your network changed. Refresh the page to continue.";
-
-    default:
-      return err.message;
-  }
-}
-
 // -- Exports ------------------------------------------------------------------
 
 export {
   CobaltApiError,
-  formatCobaltErrorForToast,
   getAudio,
   getAudioFromStandardCobalt,
   getSession,

@@ -1,47 +1,31 @@
+import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
+import { type ImportModalSection, useImportModalState, useImportModalStore } from "@/stores/import-modal-store";
+import { Button } from "@/ui/button";
+import { Modal } from "@/ui/modal";
+import { isAbortError } from "@/utils/abort-error";
+import { cn } from "@/utils/cn";
+import { isFileDrag } from "@/utils/file-drag";
+import {
+  LYRICS_IMPORT_FORMATS_COMPACT,
+  UNSUPPORTED_LYRICS_IMPORT_MESSAGE,
+  isLyricsImportFileName,
+} from "@/views/lyrics-import-modal/accepted-files";
+import { importLyrics, useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
+import { importLyricsFile, importLyricsText } from "@/views/lyrics-import-modal/import-lyrics-source";
+import { PasteSection } from "@/views/lyrics-import-modal/paste-section";
+import { SearchSection } from "@/views/lyrics-import-modal/search-section";
+import { payloadToContent, syntheticFilenameForResult } from "@/views/lyrics-import-modal/shell-helpers";
+import { UploadSection } from "@/views/lyrics-import-modal/upload-section";
 import { IconFileImport, IconUpload } from "@tabler/icons-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useAudioStore } from "@/stores/audio";
-import { useConfirm } from "@/stores/confirm-store";
-import { type ImportModalSection, useImportModalState, useImportModalStore } from "@/stores/import-modal-store";
-import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
-import { Button } from "@/ui/button";
-import { Modal } from "@/ui/modal";
-import { cn } from "@/utils/cn";
-import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
-import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { textToLyricLines } from "@/utils/lyrics-text";
-import { PasteSection } from "@/views/lyrics-import-modal/paste-section";
-import { SearchSection } from "@/views/lyrics-import-modal/search-section";
-import {
-  isAbortError,
-  payloadToContent,
-  syntheticFilenameForResult,
-  wrapTextAsParseResult,
-} from "@/views/lyrics-import-modal/shell-helpers";
-import {
-  ACCEPTED_EXTENSIONS,
-  UNSUPPORTED_TYPE_MESSAGE,
-  UploadSection,
-} from "@/views/lyrics-import-modal/upload-section";
-import {
-  importParsedLyrics,
-  type ImportParsedLyricsContext,
-  type ImportSourceInfo,
-} from "@/views/lyrics-import-modal/use-import-modal-actions";
 
 // -- Component ----------------------------------------------------------------
 
 // react-doctor-disable-next-line react-doctor/prefer-useReducer
 const LyricsImportModalShell: React.FC = () => {
   const { prefill, initialSection } = useImportModalState();
-  const confirm = useConfirm();
-  const agents = useProjectStore((s) => s.agents);
-  const audioDuration = useAudioStore((s) => s.duration);
-  const autoExtractBackgroundVocals = useSettingsStore((s) => s.autoExtractBackgroundVocals);
-  const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
-  const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
+  const importContext = useImportContext("File");
 
   const [currentSection, setCurrentSection] = useState<ImportModalSection>(initialSection ?? "search");
   const [pasteText, setPasteText] = useState(initialSection === "paste" ? useImportModalStore.getState().body ?? "" : "");
@@ -64,45 +48,17 @@ const LyricsImportModalShell: React.FC = () => {
     setSelectingResultId(null);
   }, []);
 
-  const buildContext = useCallback(
-    (source: ImportSourceInfo): ImportParsedLyricsContext => ({
-      confirm,
-      agents,
-      audioDuration,
-      applyBackgroundExtraction: autoExtractBackgroundVocals,
-      backgroundExtractionMergeStandalone: mergeStandaloneBackgroundLines,
-      backgroundExtractionPreserveBrackets: preserveBracketsOnExtraction,
-      source,
-      onResult: (parsed, src) => {
-        useImportModalStore.getState().recordImportResult(parsed, src);
-      },
-    }),
-    [
-      agents,
-      audioDuration,
-      autoExtractBackgroundVocals,
-      confirm,
-      mergeStandaloneBackgroundLines,
-      preserveBracketsOnExtraction,
-    ],
-  );
-
   const handleImportPaste = useCallback(async () => {
     if (pasteText.trim().length === 0) return;
-    const defaultAgentId = agents?.[0]?.id ?? "v1";
-    const lyricLines = textToLyricLines(pasteText, defaultAgentId);
-    const parsed = wrapTextAsParseResult(lyricLines);
-    const ok = await importParsedLyrics(parsed, buildContext({ label: "Paste", filename: "paste.txt" }));
+    const ok = await importLyricsText(pasteText, { ...importContext, sourceLabel: "Paste" });
     if (ok) close();
-  }, [agents, buildContext, close, pasteText]);
+  }, [close, importContext, pasteText]);
 
   const handleImportUpload = useCallback(async () => {
     if (!pendingFile) return;
-    const content = await pendingFile.text();
-    const parsed = parseLyricsFile(pendingFile.name, content, audioDuration > 0 ? audioDuration : undefined);
-    const ok = await importParsedLyrics(parsed, buildContext({ label: "File", filename: pendingFile.name }));
+    const ok = await importLyricsFile(pendingFile, importContext);
     if (ok) close();
-  }, [audioDuration, buildContext, close, pendingFile]);
+  }, [close, importContext, pendingFile]);
 
   const handleSearchSelect = useCallback(
     async (result: LyricsSearchResult) => {
@@ -136,13 +92,12 @@ const LyricsImportModalShell: React.FC = () => {
       }
 
       const filename = syntheticFilenameForResult(result);
-      const parsed = parseLyricsFile(filename, content, audioDuration > 0 ? audioDuration : undefined);
-      const ok = await importParsedLyrics(parsed, buildContext({ label: result.sourceLabel, filename }));
+      const ok = await importLyrics({ filename, content, searchResult: result }, importContext);
       if (selectionAbortRef.current === controller) selectionAbortRef.current = null;
       setSelectingResultId((prev) => (prev === result.id ? null : prev));
       if (ok) close();
     },
-    [audioDuration, buildContext, close],
+    [close, importContext],
   );
 
   const handleFilePicked = useCallback((file: File) => {
@@ -153,27 +108,17 @@ const LyricsImportModalShell: React.FC = () => {
   const switchToPaste = useCallback(() => setCurrentSection("paste"), []);
   const switchToUpload = useCallback(() => setCurrentSection("upload"), []);
 
-  const isFileDrag = useCallback((e: React.DragEvent) => {
-    return Array.from(e.dataTransfer.types).includes("Files");
+  const handleModalDragEnter = useCallback((e: React.DragEvent) => {
+    if (!isFileDrag(e.dataTransfer)) return;
+    e.preventDefault();
+    dragCountRef.current++;
+    if (dragCountRef.current === 1) setIsModalDragOver(true);
   }, []);
 
-  const handleModalDragEnter = useCallback(
-    (e: React.DragEvent) => {
-      if (!isFileDrag(e)) return;
-      e.preventDefault();
-      dragCountRef.current++;
-      if (dragCountRef.current === 1) setIsModalDragOver(true);
-    },
-    [isFileDrag],
-  );
-
-  const handleModalDragOver = useCallback(
-    (e: React.DragEvent) => {
-      if (!isFileDrag(e)) return;
-      e.preventDefault();
-    },
-    [isFileDrag],
-  );
+  const handleModalDragOver = useCallback((e: React.DragEvent) => {
+    if (!isFileDrag(e.dataTransfer)) return;
+    e.preventDefault();
+  }, []);
 
   const handleModalDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -187,15 +132,15 @@ const LyricsImportModalShell: React.FC = () => {
     setIsModalDragOver(false);
     const file = e.dataTransfer.files[0];
     if (!file) return;
-    if (!ACCEPTED_EXTENSIONS.test(file.name)) {
-      toast.error(UNSUPPORTED_TYPE_MESSAGE);
+    if (!isLyricsImportFileName(file.name)) {
+      toast.error(UNSUPPORTED_LYRICS_IMPORT_MESSAGE);
       return;
     }
     setPendingFile(file);
     setCurrentSection("upload");
   }, []);
 
-  const expectedDurationSec = audioDuration > 0 ? audioDuration : undefined;
+  const expectedDurationSec = importContext.audioDuration > 0 ? importContext.audioDuration : undefined;
 
   const sectionBody = useMemo(() => {
     if (currentSection === "search") {
@@ -247,6 +192,7 @@ const LyricsImportModalShell: React.FC = () => {
   return (
     <Modal isOpen onClose={close} title="Import Lyrics" className="max-w-lg">
       <div
+        data-tour="lyrics-import-modal"
         className="relative flex flex-col gap-4"
         onDragEnter={handleModalDragEnter}
         onDragOver={handleModalDragOver}
@@ -284,7 +230,7 @@ const LyricsImportModalShell: React.FC = () => {
           <IconUpload size={32} stroke={1.5} className="text-composer-accent" />
           <div className="text-sm font-medium text-composer-text">Drop lyrics file to import</div>
           <div className="font-mono text-[10.5px] tracking-tight text-composer-text opacity-50">
-            .txt .lrc .srt .ttml
+            {LYRICS_IMPORT_FORMATS_COMPACT}
           </div>
         </div>
       </div>

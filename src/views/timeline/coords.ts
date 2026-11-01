@@ -7,6 +7,9 @@ const timeToX = (time: number, zoom: number, scrollLeft: number): number => time
 const xToTime = (clientX: number, rect: DOMRect, zoom: number, scrollLeft: number): number =>
   Math.max(0, (clientX - rect.left - GUTTER_WIDTH + scrollLeft) / zoom);
 
+const elementXToTime = (clientX: number, element: Element, zoom: number): number =>
+  (clientX - element.getBoundingClientRect().left) / zoom;
+
 const centerTimeScrollLeft = (time: number, zoom: number, clientWidth: number): number =>
   Math.max(0, time * zoom + GUTTER_WIDTH - clientWidth / 2);
 
@@ -18,10 +21,12 @@ const revealTimeScrollLeft = (
   margin = REVEAL_MARGIN_PX,
 ): number | null => {
   const x = time * zoom;
-  const visibleStart = scrollLeft;
-  const visibleEnd = scrollLeft + clientWidth - GUTTER_WIDTH;
-  if (x >= visibleStart + margin && x <= visibleEnd - margin) return null;
-  return centerTimeScrollLeft(time, zoom, clientWidth);
+  const visibleWidth = clientWidth - GUTTER_WIDTH;
+  const pastStart = x < scrollLeft + margin;
+  if (!pastStart && x <= scrollLeft + visibleWidth - margin) return null;
+  const edgeScrollLeft = pastStart ? x - margin : x - visibleWidth + margin;
+  if (Math.abs(edgeScrollLeft - scrollLeft) > visibleWidth / 2) return centerTimeScrollLeft(time, zoom, clientWidth);
+  return Math.max(0, edgeScrollLeft);
 };
 
-export { GUTTER_WIDTH, REVEAL_MARGIN_PX, centerTimeScrollLeft, revealTimeScrollLeft, timeToX, xToTime };
+export { GUTTER_WIDTH, REVEAL_MARGIN_PX, centerTimeScrollLeft, elementXToTime, revealTimeScrollLeft, timeToX, xToTime };

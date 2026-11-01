@@ -1,6 +1,9 @@
+import { toUsableDurationSec } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectLrcSyncType, type SyncType } from "@/domain/lyrics-search/sync-type";
-import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
+import { isAbortError } from "@/utils/abort-error";
+import { hasNonEmptyString } from "@/utils/lyrics-search/query-guards";
+import type { LyricsSearchProvider, LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -8,7 +11,7 @@ const LRCLIB_BASE_URL = "https://lrclib.net";
 const SEARCH_PATH = "/api/search";
 const GET_PATH = "/api/get";
 const ID_PREFIX = "lrclib-";
-const USER_AGENT = "Better Lyrics Composer (https://composer.betterlyrics.org)";
+const LOG_PREFIX = "[LRCLib]";
 
 // -- Types --------------------------------------------------------------------
 
@@ -26,14 +29,14 @@ interface LrcLibResponse {
 // -- Helpers ------------------------------------------------------------------
 
 function hasNonEmptyTrack(query: LyricsSearchQuery): boolean {
-  return typeof query.track === "string" && query.track.trim().length > 0;
+  return hasNonEmptyString(query.track);
 }
 
 function buildSearchUrl(query: LyricsSearchQuery): URL {
   const url = new URL(SEARCH_PATH, LRCLIB_BASE_URL);
   url.searchParams.set("track_name", (query.track ?? "").trim());
-  if (query.artist?.trim()) url.searchParams.set("artist_name", query.artist.trim());
-  if (query.album?.trim()) url.searchParams.set("album_name", query.album.trim());
+  if (hasNonEmptyString(query.artist)) url.searchParams.set("artist_name", query.artist.trim());
+  if (hasNonEmptyString(query.album)) url.searchParams.set("album_name", query.album.trim());
   if (typeof query.durationSec === "number" && Number.isFinite(query.durationSec)) {
     url.searchParams.set("duration", Math.round(query.durationSec).toString());
   }
@@ -51,12 +54,9 @@ function buildGetUrl(query: LyricsSearchQuery): URL {
 
 function canRunGet(query: LyricsSearchQuery): boolean {
   return (
-    typeof query.track === "string" &&
-    query.track.trim().length > 0 &&
-    typeof query.artist === "string" &&
-    query.artist.trim().length > 0 &&
-    typeof query.album === "string" &&
-    query.album.trim().length > 0 &&
+    hasNonEmptyString(query.track) &&
+    hasNonEmptyString(query.artist) &&
+    hasNonEmptyString(query.album) &&
     typeof query.durationSec === "number" &&
     Number.isFinite(query.durationSec)
   );
@@ -85,27 +85,18 @@ function mapResponseToResult(response: LrcLibResponse): LyricsSearchResult | nul
     track: response.trackName,
     artist: response.artistName,
     album,
-    durationSec: Math.round(response.duration),
+    durationSec: toUsableDurationSec(response.duration),
     payload,
   };
 }
 
-function isAbortError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError";
-}
-
 async function fetchSearch(query: LyricsSearchQuery, signal: AbortSignal): Promise<LrcLibResponse[]> {
   const url = buildSearchUrl(query);
-  const response = await fetch(url.toString(), {
-    signal,
-    headers: { "User-Agent": USER_AGENT },
-  });
+  const response = await fetch(url.toString(), { signal });
   if (response.status === 404) return [];
-  if (response.status >= 500) {
-    throw new LyricsSearchError("lrclib", `LRCLib /api/search returned ${response.status}`);
-  }
   if (!response.ok) {
-    throw new LyricsSearchError("lrclib", `LRCLib /api/search returned ${response.status}`);
+    console.warn(LOG_PREFIX, `/api/search returned ${response.status}, treating as no results`);
+    return [];
   }
   const body = (await response.json()) as LrcLibResponse[];
   return Array.isArray(body) ? body : [];
@@ -113,16 +104,11 @@ async function fetchSearch(query: LyricsSearchQuery, signal: AbortSignal): Promi
 
 async function fetchGet(query: LyricsSearchQuery, signal: AbortSignal): Promise<LrcLibResponse | null> {
   const url = buildGetUrl(query);
-  const response = await fetch(url.toString(), {
-    signal,
-    headers: { "User-Agent": USER_AGENT },
-  });
+  const response = await fetch(url.toString(), { signal });
   if (response.status === 404) return null;
-  if (response.status >= 500) {
-    throw new LyricsSearchError("lrclib", `LRCLib /api/get returned ${response.status}`);
-  }
   if (!response.ok) {
-    throw new LyricsSearchError("lrclib", `LRCLib /api/get returned ${response.status}`);
+    console.warn(LOG_PREFIX, `/api/get returned ${response.status}, treating as no results`);
+    return null;
   }
   const body = (await response.json()) as LrcLibResponse;
   return body;
@@ -177,8 +163,8 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
 
 function handleSearchRejection(reason: unknown): LrcLibResponse[] {
   if (isAbortError(reason)) return [];
-  if (reason instanceof LyricsSearchError) throw reason;
-  throw new LyricsSearchError("lrclib", "LRCLib /api/search request failed", reason);
+  console.warn(LOG_PREFIX, "/api/search request failed, treating as no results", reason);
+  return [];
 }
 
 function handleGetRejection(_reason: unknown): LrcLibResponse | null {

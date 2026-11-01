@@ -1,3 +1,6 @@
+import { QRC_LINE_HEADER_REGEX, QRC_WORD_TAG_REGEX } from "@/domain/lyrics-file/qrc-syntax";
+import { parseXmlDocument } from "@/utils/xml-document";
+
 // -- Types --------------------------------------------------------------------
 
 type SyncType = "syllable" | "word" | "line" | "unsynced";
@@ -48,11 +51,10 @@ function detectTtmlSyncType(xml: string): SyncType {
 
 function detectTtmlSyncTypeViaDom(xml: string): SyncType | null {
   try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xml, "text/xml");
-    if (doc.querySelector("parsererror")) return null;
+    const parsed = parseXmlDocument(xml);
+    if (!parsed.ok) return null;
 
-    const paragraphs = doc.getElementsByTagName("p");
+    const paragraphs = parsed.doc.getElementsByTagName("p");
     if (paragraphs.length === 0) return null;
 
     let sawLineLevel = false;
@@ -77,7 +79,15 @@ function detectTtmlSyncTypeViaRegex(xml: string): SyncType {
   return "unsynced";
 }
 
+// -- QRC ----------------------------------------------------------------------
+
+function detectQrcSyncType(content: string): SyncType {
+  if (!content || !content.trim()) return "unsynced";
+  if (!QRC_LINE_HEADER_REGEX.test(content)) return "unsynced";
+  return QRC_WORD_TAG_REGEX.test(content) ? "word" : "line";
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { detectLrcSyncType, detectTtmlSyncType };
+export { detectLrcSyncType, detectQrcSyncType, detectTtmlSyncType };
 export type { SyncType };

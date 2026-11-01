@@ -39,7 +39,11 @@ function normalizeSnapPoints(points: ReadonlyArray<SnapPoint | number>): SnapPoi
     .toSorted((a, b) => a.time - b.time);
 }
 
+function shiftedSnapPoints(points: ReadonlyArray<SnapPoint | number>, seconds: number): SnapPoint[] {
+  return normalizeSnapPoints(toSnapPoints(points).map((point) => ({ ...point, time: point.time + seconds })));
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { createSnapPoint, normalizeSnapPoints, normalizeTimes, snapPointTimes, toSnapPoints };
+export { createSnapPoint, normalizeSnapPoints, normalizeTimes, shiftedSnapPoints, snapPointTimes, toSnapPoints };
 export type { SnapPoint };

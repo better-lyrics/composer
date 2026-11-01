@@ -236,6 +236,22 @@ describe("timeline wheel behavior", () => {
     await expect.poll(() => container.scrollLeft).toBeGreaterThan(beforeLeft);
   });
 
+  it("regression: starts the overlay scrollbars each time the timeline appears", async () => {
+    const lateLines = [createLine({ text: "late lyric", words: [createWord({ text: "late", begin: 0, end: 1 })] })];
+    const scrollbarsStarted = () => getScrollContainer()?.hasAttribute("data-overlayscrollbars-viewport") ?? false;
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 60 });
+    useProjectStore.setState({ activeTab: "timeline", lines: [] });
+    await render(<TimelinePanel />);
+
+    useProjectStore.setState({ lines: lateLines });
+    await expect.poll(scrollbarsStarted).toBe(true);
+
+    useProjectStore.setState({ lines: [] });
+    await expect.poll(() => getScrollContainer()).toBeNull();
+    useProjectStore.setState({ lines: lateLines });
+    await expect.poll(scrollbarsStarted).toBe(true);
+  });
+
   it("scrubs the playhead forward and back when wheeling over the waveform strip", async () => {
     useSettingsStore.setState({ timelineHorizontalScroll: false });
     seedTimeline(10);

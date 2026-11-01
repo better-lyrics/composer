@@ -19,8 +19,8 @@ function distributeTiming(text: string, splitPoints: number[], begin: number, en
   const charDuration = duration / text.length;
 
   let currentBegin = begin;
-  return parts.map((part) => {
-    const partEnd = currentBegin + part.length * charDuration;
+  return parts.map((part, index) => {
+    const partEnd = index === parts.length - 1 ? end : currentBegin + part.length * charDuration;
     const timing: WordTiming = {
       text: part,
       begin: currentBegin,

@@ -357,3 +357,41 @@ describe("mergeWordsIntoTrack edge cases and invariants", () => {
     ]);
   });
 });
+
+describe("mergeWordsIntoTrack syllable groups", () => {
+  const incoming: WordTiming[] = [
+    { text: "Hel", begin: 0.3, end: 0.55, syllableGroupId: "g1" },
+    { text: "lo", begin: 0.55, end: 0.8, syllableGroupId: "g1" },
+  ];
+  const existing: WordTiming[] = [{ text: "there", begin: 0.5, end: 1.0 }];
+
+  it("regression T9: sorts an overlapping syllable group by its first begin", () => {
+    const result = mergeWordsIntoTrack(existing, incoming);
+    expect(result.map((w) => w.text.trim())).toEqual(["Hel", "lo", "there"]);
+  });
+
+  it("invariant: a syllable group stays contiguous in the result", () => {
+    const result = mergeWordsIntoTrack(existing, incoming);
+    const groupId = result[0].syllableGroupId;
+    const positions = result.flatMap((w, i) => (groupId !== undefined && w.syllableGroupId === groupId ? [i] : []));
+    expect(positions).toEqual([0, 1]);
+  });
+
+  it("keeps a group's internal order even when a later syllable begins first", () => {
+    const outOfOrder: WordTiming[] = [
+      { text: "a", begin: 2, end: 2.5, syllableGroupId: "g2" },
+      { text: "b", begin: 1.9, end: 2.2, syllableGroupId: "g2" },
+    ];
+    const result = mergeWordsIntoTrack([{ text: "x", begin: 0, end: 1 }], outOfOrder);
+    expect(result.map((w) => w.text.trim())).toEqual(["x", "a", "b"]);
+  });
+
+  it("an id-less trailing-space group is not atomic, so an incoming word in its gap splits it", () => {
+    const existing: WordTiming[] = [
+      { text: "ti", begin: 1, end: 1.4 },
+      { text: "tle", begin: 2, end: 2.4 },
+    ];
+    const result = mergeWordsIntoTrack(existing, [{ text: "x", begin: 1.5, end: 1.8 }]);
+    expect(result.map((w) => w.text)).toEqual(["ti ", "x ", "tle"]);
+  });
+});

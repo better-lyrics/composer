@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { Button } from "@/ui/button";
+import { Checkbox } from "@/ui/checkbox";
 import { Modal } from "@/ui/modal";
 import { cn } from "@/utils/cn";
-import { MOD_KEY } from "@/utils/platform";
+import { UndoHint } from "@/ui/undo-hint";
 
 // -- Component ----------------------------------------------------------------
 
@@ -12,6 +13,8 @@ const ConfirmModalHost: React.FC = () => {
   const options = useConfirmStore((s) => s.options);
   const resolveAndClose = useConfirmStore((s) => s.resolveAndClose);
   const [dontAskAgain, setDontAskAgain] = useState(false);
+  const confirmButtonRef = useRef<HTMLButtonElement>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleClose = () => {
     resolveAndClose(false, false);
@@ -38,39 +41,32 @@ const ConfirmModalHost: React.FC = () => {
   const showDontAskAgain = Boolean(settingsKey);
 
   return (
-    <Modal isOpen onClose={handleClose} title={title} className="max-w-md">
-      <div className="flex flex-col gap-4">
+    <Modal
+      isOpen
+      onClose={handleClose}
+      title={title}
+      className="max-w-md"
+      initialFocusRef={variant === "destructive" ? cancelButtonRef : confirmButtonRef}
+    >
+      <div className="flex flex-col gap-3">
         {description && (
-          <div className="text-sm text-composer-text-secondary leading-relaxed select-text">{description}</div>
+          <div className="text-sm text-(--label) leading-normal text-pretty wrap-break-word select-text">
+            {description}
+          </div>
         )}
-        {recoverable && <div className="text-xs text-composer-text-muted">This can be undone with {MOD_KEY}+Z.</div>}
+        {recoverable && <UndoHint />}
 
         <div className={cn("flex items-center pt-2", showDontAskAgain ? "justify-between" : "justify-end")}>
           {showDontAskAgain && (
-            <label className="flex items-center gap-2 text-xs text-composer-text-muted cursor-pointer select-none">
-              {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
-              <input
-                type="checkbox"
-                checked={dontAskAgain}
-                onChange={(e) => setDontAskAgain(e.target.checked)}
-                className="size-3.5 rounded accent-composer-accent cursor-pointer"
-              />
+            <Checkbox checked={dontAskAgain} onCheckedChange={setDontAskAgain}>
               Don't ask again
-            </label>
+            </Checkbox>
           )}
           <div className="flex gap-2 select-none">
-            <Button variant="secondary" size="sm" onClick={handleClose}>
+            <Button ref={cancelButtonRef} variant="secondary" size="lg" onClick={handleClose}>
               {cancelLabel}
             </Button>
-            <Button
-              size="sm"
-              onClick={handleConfirm}
-              className={cn(
-                variant === "destructive"
-                  ? "bg-red-600 hover:bg-red-500 text-white"
-                  : "bg-composer-accent-dark hover:bg-composer-accent text-white",
-              )}
-            >
+            <Button ref={confirmButtonRef} size="lg" variant={variant} onClick={handleConfirm}>
               {confirmLabel}
             </Button>
           </div>

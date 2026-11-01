@@ -280,3 +280,48 @@ describe("SyllableSplitter wiring", () => {
     await expect.poll(() => useProjectStore.getState().syllableSplitDefaults.applyToAll).toBe(true);
   });
 });
+
+describe("regressions: apply-to-all confirm stacking", () => {
+  it("regression U1: the confirm Split button is the topmost element at its own centre", async () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({ id: "l1", text: "running", words: [{ text: "running", begin: 0, end: 1 }] }),
+        createLine({ id: "l2", text: "running", words: [{ text: "running", begin: 2, end: 3 }] }),
+      ],
+      syllableSplitDefaults: { applyToAll: true, caseInsensitive: false },
+    });
+    const screen = await render(
+      <>
+        <SyllableSplitter
+          lineId="l1"
+          type="word"
+          word={{ text: "running", begin: 0, end: 1 }}
+          wordIndex={0}
+          onSplit={() => {}}
+        />
+        <ConfirmModalHost />
+      </>,
+    );
+    await screen.getByRole("button", { name: /Split into syllables/i }).click();
+    await screen.getByRole("button", { name: "Split point 3" }).click();
+    const popoverSplit = screen.getByRole("button", { name: "Split all" });
+    await popoverSplit.click();
+    const dialog = document.querySelector<HTMLDialogElement>("dialog[open]");
+    await expect
+      .poll(() => dialog?.textContent ?? document.querySelector("dialog[open]")?.textContent)
+      .toContain("matching");
+    const openDialog = document.querySelector<HTMLDialogElement>("dialog[open]");
+    if (!openDialog) throw new Error("no open confirm dialog");
+    const confirmButton = [...openDialog.querySelectorAll("button")].find((b) => b.textContent === "Split");
+    if (!confirmButton) throw new Error("no confirm Split button");
+    const rect = confirmButton.getBoundingClientRect();
+    const topmost = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    const popoverStillOpen = document.querySelector(".z-100") !== null;
+    expect({
+      popoverStillOpen,
+      topmostIsConfirm: topmost === confirmButton || confirmButton.contains(topmost),
+      topmostInPopover: !!topmost?.closest(".z-100"),
+      activeElement: document.activeElement?.textContent,
+    }).toEqual({ popoverStillOpen: false, topmostIsConfirm: true, topmostInPopover: false, activeElement: "Split" });
+  });
+});

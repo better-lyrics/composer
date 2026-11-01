@@ -1,9 +1,11 @@
+import { initialGroupSharing } from "@/domain/group/initial-sharing";
+import { type LineTemplate, type LinkGroup, wordsToTemplate } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { mainBounds } from "@/domain/line/bounds";
-import type { LineTemplate, LinkGroup, WordTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
+import { songEndOrUnbounded } from "@/utils/timing/song-end";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -73,7 +75,8 @@ function createGroupFromSelection(
   lines: LyricLine[],
   selectedLineIds: ReadonlySet<string>,
   existingGroups: LinkGroup[],
-  options: { label?: string } = {},
+  shareTimingInNewGroups: boolean,
+  options: { label?: string; duration?: number } = {},
 ): CreateGroupResult | null {
   if (!lineIdsAreContiguous(lines, selectedLineIds)) return null;
   if (selectionTouchesAnyGroup(lines, selectedLineIds)) return null;
@@ -82,8 +85,6 @@ function createGroupFromSelection(
   const usedColors = existingGroups.map((g) => g.color);
   const color = pickNextGroupColor(usedColors.length > 0 ? usedColors : GROUP_COLORS.slice(0, 0));
   const label = options.label ?? `Group ${existingGroups.length + 1}`;
-
-  const group: LinkGroup = { id: groupId, label, color, templateVersion: 1 };
 
   let templateLineIdx = 0;
   const updatedLines = lines.map((line) => {
@@ -98,7 +99,13 @@ function createGroupFromSelection(
     return updated;
   });
 
-  return { group, updatedLines };
+  const shared = initialGroupSharing(
+    updatedLines,
+    { id: groupId, label, color, templateVersion: 1 },
+    shareTimingInNewGroups,
+    songEndOrUnbounded(options.duration ?? 0),
+  );
+  return { group: shared.group, updatedLines: shared.lines };
 }
 
 // -- Duplicate as linked -------------------------------------------------------
@@ -112,16 +119,8 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
   const templates: LineTemplate[] = [];
 
   for (const line of matched) {
-    const tplWords: WordTemplate[] | undefined = line.words?.map((w) => ({
-      text: w.text,
-      relativeBegin: w.begin - startTime,
-      relativeEnd: w.end - startTime,
-    }));
-    const tplBgWords: WordTemplate[] | undefined = line.backgroundWords?.map((w) => ({
-      text: w.text,
-      relativeBegin: w.begin - startTime,
-      relativeEnd: w.end - startTime,
-    }));
+    const tplWords = line.words && wordsToTemplate(line.words, startTime);
+    const tplBgWords = line.backgroundWords && wordsToTemplate(line.backgroundWords, startTime);
 
     const lineBounds = mainBounds(line);
     templates.push({
@@ -133,6 +132,8 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
       backgroundText: line.backgroundText,
       backgroundWords: tplBgWords,
       backgroundTextSource: line.backgroundTextSource,
+      translations: line.translations && structuredClone(line.translations),
+      transliteration: line.transliteration && structuredClone(line.transliteration),
     });
   }
   return templates;

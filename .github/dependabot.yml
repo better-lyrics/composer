@@ -1,0 +1,37 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 3
+      exclude: ["@braccato/*"]
+    groups:
+      # First match wins, so braccato gets its own PR, which auto-merges once CI is green.
+      braccato:
+        patterns: ["@braccato/*"]
+        update-types: [minor, patch]
+      # vitest and its browser packages must move in lockstep.
+      vitest:
+        patterns: ["vitest", "@vitest/*", "vitest-browser-react"]
+      # Everything else non-breaking in one PR. Majors still come in
+      # individually so they can be reviewed on their own.
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      # vite-react-ssg imports react-router-dom/server.js and peers ^6.14.1.
+      # v7 removed that subpath, so any v7+ bump fails the SSG build.
+      - dependency-name: react-router-dom
+        versions: [">=7.0.0"]
+      # vitest 5 changes matcher types and browser test timing; migrate on purpose, not via Dependabot.
+      - dependency-name: vitest
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: vitest-browser-react
+        update-types: ["version-update:semver-major"]
+      # wavesurfer.js 8 only fixes surfaces Composer does not use (WebAudio backend, plugins, regions).
+      - dependency-name: wavesurfer.js
+        versions: [">=8.0.0"]

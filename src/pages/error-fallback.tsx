@@ -1,81 +1,21 @@
+import { appQueryClient } from "@/lib/app-query-client";
 import { downloadRecoveryFile } from "@/lib/recovery";
+import { isStaleBuildWithSavedWork } from "@/lib/stale-build";
 import { Button } from "@/ui/button";
 import { ClearRecoveryButton } from "@/ui/clear-recovery-button";
 import { Scroll } from "@/ui/scroll";
-import {
-  IconBug,
-  IconChevronDown,
-  IconChevronRight,
-  IconDiscOff,
-  IconDownload,
-  IconGhost2,
-  IconHome2,
-  IconRefresh,
-} from "@tabler/icons-react";
-import { useMemo, useState } from "react";
-import { isRouteErrorResponse, useRouteError } from "react-router-dom";
+import { describeError, describeStaleBuild, type ErrorPresentation, safeStringify } from "@/pages/error-presentation";
+import { PageHead } from "@/seo/page-head";
+import { IconChevronDown, IconChevronRight, IconDownload, IconHome2, IconRefresh } from "@tabler/icons-react";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useLocation, useRouteError } from "react-router-dom";
 
 // -- Constants -----------------------------------------------------------------
 
 const LOG_PREFIX = "[Composer]";
 
-const ERROR_ICONS = [IconDiscOff, IconGhost2, IconBug] as const;
-
 // -- Helpers -------------------------------------------------------------------
-
-interface ErrorDetails {
-  title: string;
-  subtitle: string;
-  errorName?: string;
-  status?: number;
-  statusText?: string;
-  stack?: string;
-  responseData?: unknown;
-}
-
-function describeError(error: unknown): ErrorDetails {
-  if (error === undefined || error === null) {
-    return {
-      title: "404",
-      subtitle: "We couldn't find that page.",
-      status: 404,
-    };
-  }
-
-  if (isRouteErrorResponse(error)) {
-    const is404 = error.status === 404;
-    return {
-      title: is404 ? "404" : `${error.status}`,
-      subtitle: is404 ? "We couldn't find that page." : error.statusText || "The route returned an error response.",
-      status: error.status,
-      statusText: error.statusText,
-      responseData: error.data,
-    };
-  }
-
-  if (error instanceof Error) {
-    return {
-      title: "Something broke",
-      subtitle: error.message || "The view threw without a message.",
-      errorName: error.name,
-      stack: error.stack,
-    };
-  }
-
-  return {
-    title: "Something broke",
-    subtitle: typeof error === "string" ? error : "The view threw a non-Error value.",
-    stack: safeStringify(error),
-  };
-}
-
-function safeStringify(value: unknown): string {
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
-}
 
 function handleReload(): void {
   window.location.reload();
@@ -87,14 +27,23 @@ function handleGoHome(): void {
 
 // -- Component -----------------------------------------------------------------
 
-const ErrorFallback: React.FC = () => {
-  const error = useRouteError();
-  const details = describeError(error);
-  const Icon = useMemo(() => ERROR_ICONS[Math.floor(Math.random() * ERROR_ICONS.length)], []);
-  const [showDetails, setShowDetails] = useState(false);
-  const [recoveryStatus, setRecoveryStatus] = useState<"idle" | "downloading" | "success" | "empty" | "failed">("idle");
+const GoHomeButton: React.FC<{ primary: boolean }> = ({ primary }) => (
+  <Button variant={primary ? "primary" : "secondary"} hasIcon onClick={handleGoHome}>
+    <IconHome2 size={16} />
+    Go home
+  </Button>
+);
 
-  console.error(LOG_PREFIX, "route error", error);
+type RecoveryStatus = "idle" | "downloading" | "success" | "empty" | "failed";
+
+const RECOVERY_MESSAGES: Partial<Record<RecoveryStatus, string>> = {
+  success: "Saved. Open Composer, head to the Export tab, and pick Import project from the Project menu to keep going.",
+  empty: "Nothing saved in this browser yet.",
+  failed: "Couldn't reach your save. Try opening /recover in a fresh tab.",
+};
+
+const ErrorActions: React.FC<{ homeIsPrimary: boolean }> = ({ homeIsPrimary }) => {
+  const [recoveryStatus, setRecoveryStatus] = useState<RecoveryStatus>("idle");
 
   const handleRecover = async () => {
     setRecoveryStatus("downloading");
@@ -107,18 +56,70 @@ const ErrorFallback: React.FC = () => {
     }
   };
 
-  const recoveryMessage =
-    recoveryStatus === "success"
-      ? "Saved. Open Composer, head to the Export tab, and click Import Project to keep going."
-      : recoveryStatus === "empty"
-        ? "Nothing saved in this browser yet."
-        : recoveryStatus === "failed"
-          ? "Couldn't reach your save. Try opening /recover in a fresh tab."
-          : null;
+  const recoveryMessage = RECOVERY_MESSAGES[recoveryStatus];
 
-  const responseDataString =
-    details.responseData !== undefined && details.responseData !== null ? safeStringify(details.responseData) : null;
-  const hasDetails = !!(details.stack || responseDataString);
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+        {homeIsPrimary && <GoHomeButton primary />}
+        <Button variant={homeIsPrimary ? "secondary" : "primary"} hasIcon onClick={handleReload}>
+          <IconRefresh size={16} />
+          Reload
+        </Button>
+        {!homeIsPrimary && <GoHomeButton primary={false} />}
+        <Button variant="secondary" hasIcon onClick={handleRecover} disabled={recoveryStatus === "downloading"}>
+          <IconDownload size={16} />
+          {recoveryStatus === "downloading" ? "Downloading…" : "Download my work"}
+        </Button>
+      </div>
+      {recoveryMessage && <p className="text-xs text-(--muted) select-text">{recoveryMessage}</p>}
+      {recoveryStatus === "success" && (
+        <ClearRecoveryButton clearedMessage="Cleared. Reload Composer to start fresh." />
+      )}
+    </>
+  );
+};
+
+const TechnicalDetails: React.FC<{ stack?: string; responseData?: unknown }> = ({ stack, responseData }) => {
+  const [showDetails, setShowDetails] = useState(false);
+  const responseDataString = responseData !== undefined && responseData !== null ? safeStringify(responseData) : null;
+  if (!stack && !responseDataString) return null;
+
+  return (
+    <div className="w-full mt-2 flex flex-col items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setShowDetails((v) => !v)}
+        className="inline-flex items-center gap-1 text-xs text-(--muted) hover:text-composer-text transition-colors cursor-pointer"
+        aria-expanded={showDetails}
+      >
+        {showDetails ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+        Technical details
+      </button>
+      {showDetails && (
+        <div className="w-full flex flex-col gap-2 text-left">
+          {responseDataString && (
+            <Scroll className="rounded-md bg-(--well) max-h-48">
+              <pre className="p-3 text-[11px] leading-relaxed text-composer-text-secondary select-text font-mono">
+                {responseDataString}
+              </pre>
+            </Scroll>
+          )}
+          {stack && (
+            <Scroll className="rounded-md bg-(--well) max-h-72">
+              <pre className="p-3 text-[11px] leading-relaxed text-composer-text-secondary select-text font-mono whitespace-pre-wrap">
+                {stack}
+              </pre>
+            </Scroll>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ErrorFallbackPanel: React.FC<{ details: ErrorPresentation }> = ({ details }) => {
+  const Icon = details.icon;
 
   return (
     <div className="min-h-screen bg-composer-bg text-composer-text flex items-center justify-center p-6 select-none">
@@ -128,67 +129,48 @@ const ErrorFallback: React.FC = () => {
         <div className="flex flex-col gap-1.5">
           <h1 className="text-2xl font-semibold text-composer-text">{details.title}</h1>
           {details.errorName && details.errorName !== "Error" && (
-            <p className="text-xs font-mono text-composer-text-muted select-text">{details.errorName}</p>
+            <p className="text-xs font-mono text-(--muted) select-text">{details.errorName}</p>
           )}
           <p className="text-sm text-composer-text-secondary leading-relaxed select-text break-words">
             {details.subtitle}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-          <Button variant="primary" hasIcon onClick={handleReload}>
-            <IconRefresh size={16} />
-            Reload
-          </Button>
-          <Button variant="secondary" hasIcon onClick={handleGoHome}>
-            <IconHome2 size={16} />
-            Go home
-          </Button>
-          <Button variant="secondary" hasIcon onClick={handleRecover} disabled={recoveryStatus === "downloading"}>
-            <IconDownload size={16} />
-            {recoveryStatus === "downloading" ? "Downloading…" : "Download my work"}
-          </Button>
-        </div>
-        {recoveryMessage && <p className="text-xs text-composer-text-muted select-text">{recoveryMessage}</p>}
-        {recoveryStatus === "success" && (
-          <ClearRecoveryButton clearedMessage="Cleared. Reload Composer to start fresh." />
-        )}
-
-        {hasDetails && (
-          <div className="w-full mt-2 flex flex-col items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowDetails((v) => !v)}
-              className="inline-flex items-center gap-1 text-xs text-composer-text-muted hover:text-composer-text transition-colors cursor-pointer"
-              aria-expanded={showDetails}
-            >
-              {showDetails ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
-              Technical details
-            </button>
-            {showDetails && (
-              <div className="w-full flex flex-col gap-2 text-left">
-                {responseDataString && (
-                  <Scroll className="rounded-md bg-composer-button max-h-48">
-                    <pre className="p-3 text-[11px] leading-relaxed text-composer-text-secondary select-text font-mono">
-                      {responseDataString}
-                    </pre>
-                  </Scroll>
-                )}
-                {details.stack && (
-                  <Scroll className="rounded-md bg-composer-button max-h-72">
-                    <pre className="p-3 text-[11px] leading-relaxed text-composer-text-secondary select-text font-mono whitespace-pre-wrap">
-                      {details.stack}
-                    </pre>
-                  </Scroll>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        <ErrorActions homeIsPrimary={details.primaryAction === "home"} />
+        <TechnicalDetails stack={details.stack} responseData={details.responseData} />
       </div>
     </div>
   );
 };
+
+const RouteErrorPage: React.FC = () => {
+  const error = useRouteError();
+  const { pathname } = useLocation();
+  const staleBuild = useQuery({
+    queryKey: ["stale-build-with-saved-work"],
+    queryFn: ({ signal }) => isStaleBuildWithSavedWork(signal),
+    staleTime: Number.POSITIVE_INFINITY,
+    gcTime: 0,
+  });
+
+  console.error(LOG_PREFIX, "route error", error);
+
+  if (staleBuild.isPending) return null;
+  const details = staleBuild.data ? describeStaleBuild(error) : describeError(error);
+
+  return (
+    <>
+      <PageHead title={`${details.title} ・ Composer`} description={details.subtitle} path={pathname} noindex />
+      <ErrorFallbackPanel details={details} />
+    </>
+  );
+};
+
+const ErrorFallback: React.FC = () => (
+  <QueryClientProvider client={appQueryClient}>
+    <RouteErrorPage />
+  </QueryClientProvider>
+);
 
 // -- Exports -------------------------------------------------------------------
 

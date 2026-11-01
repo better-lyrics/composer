@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useSettingsStore } from "@/stores/settings";
+import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { render } from "@/test/render";
 
 describe("ConfirmModalHost", () => {
@@ -28,6 +30,40 @@ describe("ConfirmModalHost", () => {
     const screen = await render(<ConfirmModalHost />);
     const result = useConfirmStore.getState().open({ title: "OK?" });
     await screen.getByRole("button", { name: "Cancel" }).click();
+    expect(await result).toBe(false);
+  });
+
+  // -- Initial focus ----------------------------------------------------------
+
+  it("focuses the confirm button of a primary confirm", async () => {
+    const screen = await render(<ConfirmModalHost />);
+    useConfirmStore.getState().open({ title: "Split all?", confirmLabel: "Split", variant: "primary" });
+    await expect.element(screen.getByRole("button", { name: "Split" })).toBeInTheDocument();
+    await expect.poll(() => document.activeElement?.textContent).toBe("Split");
+  });
+
+  it("focuses the cancel button of a destructive confirm", async () => {
+    const screen = await render(<ConfirmModalHost />);
+    useConfirmStore.getState().open({ title: "Delete?", confirmLabel: "Delete", cancelLabel: "Keep" });
+    await expect.element(screen.getByRole("button", { name: "Keep" })).toBeInTheDocument();
+    await expect.poll(() => document.activeElement?.textContent).toBe("Keep");
+  });
+
+  it("regression: Enter confirms a primary confirm instead of pressing the header close button", async () => {
+    const screen = await render(<ConfirmModalHost />);
+    const result = useConfirmStore.getState().open({ title: "Split all?", variant: "primary" });
+    await expect.element(screen.getByRole("button", { name: "Confirm" })).toBeInTheDocument();
+    await expect.poll(() => document.activeElement?.textContent).toBe("Confirm");
+    await userEvent.keyboard("{Enter}");
+    expect(await result).toBe(true);
+  });
+
+  it("Enter on a destructive confirm cancels through the cancel button", async () => {
+    const screen = await render(<ConfirmModalHost />);
+    const result = useConfirmStore.getState().open({ title: "Delete?" });
+    await expect.element(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+    await expect.poll(() => document.activeElement?.textContent).toBe("Cancel");
+    await userEvent.keyboard("{Enter}");
     expect(await result).toBe(false);
   });
 
@@ -72,5 +108,14 @@ describe("ConfirmModalHost", () => {
     useConfirmStore.getState().open({ title: "Delete?", confirmLabel: "Yes, delete", cancelLabel: "Keep it" });
     await expect.element(screen.getByRole("button", { name: "Yes, delete" })).toBeInTheDocument();
     await expect.element(screen.getByRole("button", { name: "Keep it" })).toBeInTheDocument();
+  });
+
+  it("names the user's undo binding on a recoverable confirm", async () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
+    const screen = await render(<ConfirmModalHost />);
+    useConfirmStore.getState().open({ title: "Delete line?", recoverable: true });
+
+    await expect.element(screen.getByText(/This can be undone with/)).toBeInTheDocument();
+    expect(document.querySelector("[data-inline-key-badge]")?.textContent).toMatch(/B$/);
   });
 });

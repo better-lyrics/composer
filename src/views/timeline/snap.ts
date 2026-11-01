@@ -1,9 +1,19 @@
 import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { type GridPoint, gridPointLabel } from "@/domain/tempo/grid-points";
+import { SNAP_SWITCH_SETTING, type SnapSettings, type SnapSource, type SnapSwitchKey } from "@/stores/settings-snap";
 
 // -- Types ---------------------------------------------------------------------
 
-type AnchorKind = "word-begin" | "word-end" | "line-begin" | "line-end" | "playhead" | "vocal-onset" | "custom";
+type AnchorKind =
+  | "word-begin"
+  | "word-end"
+  | "line-begin"
+  | "line-end"
+  | "playhead"
+  | "vocal-onset"
+  | "custom"
+  | "beat";
 
 interface SnapAnchor {
   t: number;
@@ -16,11 +26,13 @@ interface SnapAnchor {
 
 type SelfKey = string;
 
+type ActiveSnapSources = Pick<SnapSettings, "timelineSnap" | SnapSwitchKey>;
+
 interface FindSnapShiftArgs {
   edges: number[];
   anchors: SnapAnchor[];
   zoom: number;
-  threshold: number;
+  thresholdPx: (anchor: SnapAnchor) => number;
   overlapCheck?: (shift: number) => boolean;
   invertCheck?: (shift: number) => boolean;
 }
@@ -49,81 +61,76 @@ function collectSnapAnchors(
   selfIds: Set<SelfKey>,
   playheadTime: number | null,
   vocalOnsetTimes: number[] = [],
-  includeTimelineAnchors = true,
   customSnapTimes: number[] = [],
 ): SnapAnchor[] {
   const anchors: SnapAnchor[] = [];
 
-  if (includeTimelineAnchors) {
-    for (const line of lines) {
-      const words = line.words;
-      const wordCount = words?.length ?? 0;
-      const wordTimed = wordCount > 0;
+  for (const line of lines) {
+    const words = line.words;
+    const wordCount = words?.length ?? 0;
+    const wordTimed = wordCount > 0;
 
-      if (words && wordCount > 0) {
-        for (let i = 0; i < wordCount; i++) {
-          const word = words[i];
-          if (!selfIds.has(selfKey(line.id, i, "word"))) {
-            anchors.push({
-              t: word.begin,
-              kind: "word-begin",
-              label: word.text,
-              lineId: line.id,
-              wordIndex: i,
-              track: "word",
-            });
-            anchors.push({
-              t: word.end,
-              kind: "word-end",
-              label: word.text,
-              lineId: line.id,
-              wordIndex: i,
-              track: "word",
-            });
-          }
+    if (words && wordCount > 0) {
+      for (let i = 0; i < wordCount; i++) {
+        const word = words[i];
+        if (!selfIds.has(selfKey(line.id, i, "word"))) {
+          anchors.push({
+            t: word.begin,
+            kind: "word-begin",
+            label: word.text,
+            lineId: line.id,
+            wordIndex: i,
+            track: "word",
+          });
+          anchors.push({
+            t: word.end,
+            kind: "word-end",
+            label: word.text,
+            lineId: line.id,
+            wordIndex: i,
+            track: "word",
+          });
         }
-      }
-
-      const bgWords = line.backgroundWords;
-      const bgCount = bgWords?.length ?? 0;
-      if (bgWords && bgCount > 0) {
-        for (let i = 0; i < bgCount; i++) {
-          const word = bgWords[i];
-          if (!selfIds.has(selfKey(line.id, i, "bg"))) {
-            anchors.push({
-              t: word.begin,
-              kind: "word-begin",
-              label: word.text,
-              lineId: line.id,
-              wordIndex: i,
-              track: "bg",
-            });
-            anchors.push({
-              t: word.end,
-              kind: "word-end",
-              label: word.text,
-              lineId: line.id,
-              wordIndex: i,
-              track: "bg",
-            });
-          }
-        }
-      }
-
-      if (!wordTimed && isLineSynced(line)) {
-        anchors.push({ t: line.begin, kind: "line-begin", label: line.text, lineId: line.id });
-        anchors.push({ t: line.end, kind: "line-end", label: line.text, lineId: line.id });
       }
     }
 
-    if (playheadTime !== null) {
-      anchors.push({ t: playheadTime, kind: "playhead", label: "playhead" });
+    const bgWords = line.backgroundWords;
+    const bgCount = bgWords?.length ?? 0;
+    if (bgWords && bgCount > 0) {
+      for (let i = 0; i < bgCount; i++) {
+        const word = bgWords[i];
+        if (!selfIds.has(selfKey(line.id, i, "bg"))) {
+          anchors.push({
+            t: word.begin,
+            kind: "word-begin",
+            label: word.text,
+            lineId: line.id,
+            wordIndex: i,
+            track: "bg",
+          });
+          anchors.push({
+            t: word.end,
+            kind: "word-end",
+            label: word.text,
+            lineId: line.id,
+            wordIndex: i,
+            track: "bg",
+          });
+        }
+      }
+    }
+
+    if (!wordTimed && isLineSynced(line) && !selfIds.has(selfKey(line.id, 0, "word"))) {
+      anchors.push({ t: line.begin, kind: "line-begin", label: line.text, lineId: line.id });
+      anchors.push({ t: line.end, kind: "line-end", label: line.text, lineId: line.id });
     }
   }
 
-  for (const t of vocalOnsetTimes) {
-    if (Number.isFinite(t) && t >= 0) anchors.push({ t, kind: "vocal-onset", label: "vocal onset" });
+  if (playheadTime !== null) {
+    anchors.push({ t: playheadTime, kind: "playhead", label: "playhead" });
   }
+
+  anchors.push(...vocalOnsetAnchors(vocalOnsetTimes));
 
   for (const t of customSnapTimes) {
     if (Number.isFinite(t) && t >= 0) anchors.push({ t, kind: "custom", label: "custom" });
@@ -133,10 +140,44 @@ function collectSnapAnchors(
   return anchors;
 }
 
+function vocalOnsetAnchors(times: readonly number[]): SnapAnchor[] {
+  const anchors: SnapAnchor[] = [];
+  for (const t of times) {
+    if (Number.isFinite(t) && t >= 0) anchors.push({ t, kind: "vocal-onset", label: "vocal onset" });
+  }
+  return anchors;
+}
+
+function beatAnchors(points: readonly GridPoint[]): SnapAnchor[] {
+  return points.map((point) => ({ t: point.t, kind: "beat", label: gridPointLabel(point) }));
+}
+
+function snapSourceOf(kind: AnchorKind): SnapSource {
+  switch (kind) {
+    case "custom":
+      return "markers";
+    case "vocal-onset":
+      return "onsets";
+    case "beat":
+      return "beats";
+    case "playhead":
+      return "playhead";
+    default:
+      return "words";
+  }
+}
+
+function activeSnapAnchors(anchors: SnapAnchor[], sources: ActiveSnapSources): SnapAnchor[] {
+  if (!sources.timelineSnap) return [];
+  const switches = Object.values(SNAP_SWITCH_SETTING);
+  if (switches.every((key) => sources[key])) return anchors;
+  return anchors.filter((anchor) => sources[SNAP_SWITCH_SETTING[snapSourceOf(anchor.kind)]]);
+}
+
 // -- Snap resolution -----------------------------------------------------------
 
 function findSnapShift(args: FindSnapShiftArgs): SnapResult {
-  const { edges, anchors, zoom, threshold, overlapCheck, invertCheck } = args;
+  const { edges, anchors, zoom, thresholdPx, overlapCheck, invertCheck } = args;
   if (anchors.length === 0 || edges.length === 0) return { shift: 0, anchor: null };
 
   const candidates: CandidateSnap[] = [];
@@ -144,7 +185,7 @@ function findSnapShift(args: FindSnapShiftArgs): SnapResult {
     for (const anchor of anchors) {
       const shift = anchor.t - edge;
       const distPx = Math.abs(shift) * zoom;
-      if (distPx <= threshold) {
+      if (distPx <= thresholdPx(anchor)) {
         candidates.push({ shift, distPx, anchor });
       }
     }
@@ -170,5 +211,5 @@ function findSnapShift(args: FindSnapShiftArgs): SnapResult {
 
 // -- Exports -------------------------------------------------------------------
 
-export { collectSnapAnchors, findSnapShift, selfKey };
+export { activeSnapAnchors, beatAnchors, collectSnapAnchors, findSnapShift, selfKey, snapSourceOf, vocalOnsetAnchors };
 export type { SnapAnchor };

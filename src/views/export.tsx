@@ -1,111 +1,124 @@
-import { useProjectFileActions } from "@/hooks/useProjectFileActions";
-import { useAudioStore } from "@/stores/audio";
+import { useExportTtml } from "@/hooks/use-export-ttml";
+import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
-import { Scroll } from "@/ui/scroll";
-import { effectiveBounds } from "@/domain/line/bounds";
-import { generateTTML } from "@/utils/ttml";
-import {
-  IconCheck,
-  IconCopy,
-  IconDownload,
-  IconEdit,
-  IconFolderOpen,
-  IconRefresh,
-  IconTrash,
-  IconUpload,
-} from "@tabler/icons-react";
-import { Highlight, themes } from "prism-react-renderer";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
+import { AlignmentReviewNotice } from "@/views/export/alignment-review-notice";
+import { applyEditsToProject } from "@/views/export/apply-edits-feedback";
+import { ExportCodePane } from "@/views/export/export-code-pane";
+import { ExportHeader } from "@/views/export/export-header";
+import { MetadataPanel } from "@/views/export/metadata-panel";
+import { useProjectFileInput } from "@/views/export/project-menu-button";
+import { useAlignmentReview } from "@/views/export/use-alignment-review";
+import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
+import { IconFolderOpen } from "@tabler/icons-react";
+import { useCallback, useState } from "react";
+import { toast } from "sonner";
+
+// -- Types --------------------------------------------------------------------
+
+interface EditingSession {
+  projectSession: number;
+  startContent: string;
+}
 
 // -- Components ---------------------------------------------------------------
 
 const ExportPanel: React.FC = () => {
-  const metadata = useProjectStore((s) => s.metadata);
-  const agents = useProjectStore((s) => s.agents);
-  const lines = useProjectStore((s) => s.lines);
-  const groups = useProjectStore((s) => s.groups);
-  const granularity = useProjectStore((s) => s.granularity);
-  const duration = useAudioStore((s) => s.duration);
+  const {
+    content: exportContent,
+    duration,
+    editedContent,
+    editBlocksLineTiming,
+    exportTiming,
+    generatedContent: generatedTtml,
+    hasConflict,
+    lineCount,
+    setEditState,
+    setExportTiming,
+    syncedLineCount,
+    title,
+    youtubeVideoId,
+  } = useExportTtml();
 
+  const projectSession = useProjectStore((state) => state.projectSession);
   const [copied, setCopied] = useState(false);
-  const [editState, setEditState] = useState<{ source: string; content: string } | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { handleExportProject, handleImportProject, handleClearProject } = useProjectFileActions(fileInputRef);
+  const [editingSession, setEditingSession] = useState<EditingSession | null>(null);
+  const session = editingSession?.projectSession === projectSession ? editingSession : null;
+  const isEditing = session !== null;
+  const projectFile = useProjectFileInput();
+  const alignment = useAlignmentReview();
 
-  const syncedLineCount = useMemo(() => lines.filter((line) => effectiveBounds(line) !== null).length, [lines]);
   const hasSyncedContent = syncedLineCount > 0;
+  const fileName = `${sanitizeFileName(title, "lyrics")}.ttml`;
 
-  const generatedTtml = useMemo(() => {
-    if (!hasSyncedContent) return "";
-    return generateTTML({ metadata, agents, lines, groups, granularity, duration });
-  }, [metadata, agents, lines, groups, granularity, duration, hasSyncedContent]);
+  const isExportable = useCallback(() => {
+    if (editedContent === null) return true;
+    const validation = validateTtml(editedContent);
+    if (validation.ok) return true;
+    toast.error(`The TTML has an XML error: ${validation.message}`);
+    return false;
+  }, [editedContent]);
 
-  const minifiedTtml = useMemo(() => {
-    if (!hasSyncedContent) return "";
-    return generateTTML({ metadata, agents, lines, groups, granularity, minify: true, duration });
-  }, [metadata, agents, lines, groups, granularity, duration, hasSyncedContent]);
+  const handleDownload = useCallback(async () => {
+    if (!exportContent || !isExportable()) return;
+    if (!(await alignment.confirmExport("download"))) return;
 
-  const editedContent = editState && editState.source === generatedTtml ? editState.content : null;
-  const displayContent = editedContent ?? generatedTtml;
-  const exportContent = editedContent ?? minifiedTtml;
-
-  const handleDownload = useCallback(() => {
-    if (!exportContent) return;
-
-    const blob = new Blob([exportContent], {
-      type: "application/ttml+xml;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${metadata.title || "lyrics"}.ttml`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [exportContent, metadata.title]);
+    downloadText(exportContent, fileName, "application/ttml+xml;charset=utf-8");
+    useProjectStore.getState().clearUnexportedImport();
+  }, [exportContent, isExportable, fileName, alignment.confirmExport]);
 
   const handleCopy = useCallback(async () => {
-    if (!exportContent) return;
+    if (!exportContent || !isExportable()) return;
+    if (!(await alignment.confirmExport("copy"))) return;
 
     await navigator.clipboard.writeText(exportContent);
+    useProjectStore.getState().clearUnexportedImport();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [exportContent]);
+  }, [exportContent, isExportable, alignment.confirmExport]);
 
   const handleEdit = useCallback(() => {
-    setIsEditing((prev) => !prev);
-  }, []);
+    if (!session) {
+      setEditingSession({ projectSession, startContent: exportContent });
+      return;
+    }
+    const changedThisSession = editedContent !== null && editedContent !== session.startContent;
+    if (changedThisSession && !hasConflict) applyEditsToProject(editedContent, duration, youtubeVideoId);
+    setEditingSession(null);
+  }, [session, projectSession, exportContent, editedContent, hasConflict, duration, youtubeVideoId]);
 
   const handleRegenerate = useCallback(() => {
     setEditState(null);
-    setIsEditing(false);
-  }, []);
+    setEditingSession(null);
+  }, [setEditState]);
 
-  const projectFileInput = (
-    <input
-      ref={fileInputRef}
-      type="file"
-      aria-label="Import project file"
-      accept=".json,.ttml-project.json"
-      onChange={handleImportProject}
-      className="hidden"
-    />
+  // Resolving a conflict rebases the edit onto the current output, which is what
+  // makes the notice go away. It has to be a deliberate action: letting an
+  // incidental keystroke do it would silently drop the regenerated changes.
+  const handleKeepEdits = useCallback(() => {
+    setEditState((prev) => keptTtmlEdit(prev, generatedTtml));
+  }, [generatedTtml, setEditState]);
+
+  const handleEditContent = useCallback(
+    (content: string) => {
+      setEditState((prev) => typedTtmlEdit(prev, generatedTtml, content, hasConflict));
+    },
+    [generatedTtml, hasConflict, setEditState],
   );
+
   const importAction = (
     <>
-      {projectFileInput}
-      <Button hasIcon variant="secondary" onClick={() => fileInputRef.current?.click()} className="mt-2">
+      {projectFile.input}
+      <Button hasIcon variant="secondary" onClick={projectFile.pickFile} className="mt-2">
         <IconFolderOpen className="size-4 text-composer-text opacity-50" />
-        Import Project
+        Import project
       </Button>
     </>
   );
 
-  if (lines.length === 0) {
+  if (lineCount === 0) {
     return (
       <div className="flex flex-col flex-1 p-4">
         <EmptyState message="No lyrics to export" hint="Add lyrics in the Edit tab first" action={importAction} />
@@ -123,93 +136,42 @@ const ExportPanel: React.FC = () => {
 
   return (
     <div data-tour="export-panel" className="flex flex-col flex-1 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border">
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-lg font-medium">Export</h2>
-          <span className="text-sm text-composer-text-muted">
-            {syncedLineCount}/{lines.length} lines synced
-            {editedContent !== null && " · edited"}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          {editedContent !== null && (
-            <Button hasIcon onClick={handleRegenerate}>
-              <IconRefresh className="size-4" />
-              Regenerate
-            </Button>
-          )}
-          <Button hasIcon variant={isEditing ? "primary" : "secondary"} onClick={handleEdit}>
-            <IconEdit className="size-4" />
-            {isEditing ? "Done" : "Edit"}
-          </Button>
-          <Button hasIcon onClick={handleCopy}>
-            {copied ? <IconCheck className="size-4" /> : <IconCopy className="size-4" />}
-            {copied ? "Copied" : "Copy"}
-          </Button>
-          <Button hasIcon variant="primary" onClick={handleDownload}>
-            <IconDownload className="size-4" />
-            Download TTML
-          </Button>
-        </div>
+      <ExportHeader
+        syncedLineCount={syncedLineCount}
+        lineCount={lineCount}
+        isEdited={editedContent !== null}
+        isEditing={isEditing}
+        copied={copied}
+        exportTiming={exportTiming}
+        lineTimingLocked={isEditing || editBlocksLineTiming}
+        onExportTimingChange={setExportTiming}
+        onRegenerate={handleRegenerate}
+        onEdit={handleEdit}
+        onCopy={handleCopy}
+        onDownload={handleDownload}
+      />
+      <div className="grid flex-1 min-h-0 grid-cols-[minmax(0,1fr)_380px] grid-rows-[minmax(0,1fr)]">
+        <ExportCodePane
+          content={exportContent}
+          generatedTtml={generatedTtml}
+          fileName={fileName}
+          exportTiming={exportTiming}
+          isEditing={isEditing}
+          hasConflict={hasConflict}
+          onEditContent={handleEditContent}
+          onRegenerate={handleRegenerate}
+          onKeepEdits={handleKeepEdits}
+          notice={
+            <AlignmentReviewNotice
+              notice={alignment.notice}
+              review={alignment.review}
+              onReview={alignment.reviewInTimeline}
+              onDismiss={alignment.dismiss}
+            />
+          }
+        />
+        <MetadataPanel />
       </div>
-
-      {/* Project management */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-composer-border bg-composer-bg-elevated/50">
-        <span className="text-sm text-composer-text-muted">Project</span>
-        <div className="flex items-center gap-2">
-          {projectFileInput}
-          <Button hasIcon variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
-            <IconFolderOpen className="size-4 text-composer-text opacity-50" />
-            Import Project
-          </Button>
-          <Button hasIcon variant="ghost" size="sm" onClick={handleExportProject}>
-            <IconUpload className="size-4 text-composer-text opacity-50" />
-            Export Project
-          </Button>
-          <Button hasIcon variant="ghost" size="sm" onClick={handleClearProject}>
-            <IconTrash className="size-4 text-composer-text opacity-50" />
-            Clear
-          </Button>
-        </div>
-      </div>
-
-      {/* Preview / Editor */}
-      {isEditing ? (
-        <div className="flex flex-col flex-1 min-h-0 p-6">
-          <textarea
-            value={displayContent}
-            aria-label="Edit TTML content"
-            onChange={(e) => setEditState({ source: generatedTtml, content: e.target.value })}
-            className="w-full flex-1 p-4 rounded-lg font-mono text-xs bg-composer-bg-elevated text-composer-text resize-none focus:outline-none focus:ring-1 focus:ring-composer-accent"
-            spellCheck={false}
-          />
-        </div>
-      ) : (
-        <Scroll className="flex-1 p-6">
-          <Highlight theme={themes.nightOwl} code={displayContent} language="xml">
-            {({ style, tokens, getLineProps, getTokenProps }) => (
-              <pre
-                className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text"
-                style={{
-                  ...style,
-                  background: "var(--color-composer-bg-elevated)",
-                }}
-              >
-                {tokens.map((line, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: stable line indices
-                  <div key={i} {...getLineProps({ line })}>
-                    {line.map((token, j) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: stable token indices
-                      <span key={j} {...getTokenProps({ token })} />
-                    ))}
-                  </div>
-                ))}
-              </pre>
-            )}
-          </Highlight>
-        </Scroll>
-      )}
     </div>
   );
 };

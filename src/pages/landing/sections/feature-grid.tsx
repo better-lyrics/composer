@@ -22,7 +22,7 @@ const FeatureGrid: React.FC<FeatureGridProps> = ({ title, subtitle, features }) 
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {features.map((feature) => (
-          <div key={feature.title} className="rounded-xl bg-composer-bg-elevated border border-composer-border p-6">
+          <div key={feature.title} className="rounded-xl bg-(--layer-1) border border-(--edge) p-6">
             <div className="inline-flex items-center justify-center size-10 rounded-lg bg-composer-accent-dark/20 text-composer-accent-text mb-4">
               <feature.icon size={20} stroke={1.75} />
             </div>

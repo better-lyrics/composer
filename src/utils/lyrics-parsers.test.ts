@@ -49,7 +49,7 @@ describe("parseLyricsFile - plain LRC", () => {
     const result = parseLyricsFile("song.lrc", content);
 
     expect(result.metadata.title).toBe("Test Song");
-    expect(result.metadata.artist).toBe("Test Artist");
+    expect(result.metadata.artists).toEqual(["Test Artist"]);
     expect(result.metadata.album).toBe("Test Album");
   });
 
@@ -106,7 +106,7 @@ describe("parseLyricsFile - enhanced LRC (eLRC)", () => {
     const result = parseLyricsFile("song.lrc", content);
 
     expect(result.metadata.title).toBe("eLRC Test");
-    expect(result.metadata.artist).toBe("Artist");
+    expect(result.metadata.artists).toEqual(["Artist"]);
     expect(result.lines).toHaveLength(1);
     expect(result.lines[0].words).toHaveLength(2);
   });

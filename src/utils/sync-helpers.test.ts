@@ -1,118 +1,89 @@
-import type { WordTiming } from "@/domain/word/timing";
-import { commitHeldWord, commitTappedWord } from "@/utils/sync-helpers";
+import type { LyricLine } from "@/domain/line/model";
+import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { computeSyllableGroups } from "@/domain/word/syllable-groups";
+import { useSettingsStore } from "@/stores/settings";
+import { getSplitCharacter } from "@/utils/split-character";
+import { createTrackWordsFromTextAt } from "@/utils/sync-helpers";
 import { describe, expect, it } from "vitest";
 
-// -- commitTappedWord ---------------------------------------------------------
+describe("createTrackWordsFromTextAt", () => {
+  const base: LyricLine = { id: "l", agentId: "v1", text: "main", backgroundText: "ooh yeah" };
 
-describe("commitTappedWord", () => {
-  it("returns a single new word when there are no existing words", () => {
-    const result = commitTappedWord([], 0, "hello", 5, 6);
-    expect(result).toEqual([{ text: "hello", begin: 5, end: 6 }]);
+  it("times untimed bg text from the given start", () => {
+    const words = createTrackWordsFromTextAt(base, "bg", 5, 100);
+    expect(words?.map((w) => w.text)).toEqual(["ooh ", "yeah"]);
+    expect(words?.[0].begin).toBe(5);
   });
 
-  it("returns a single new word when there are no existing words and wordIndex is non-zero", () => {
-    const result = commitTappedWord([], 2, "hello", 5, 6);
-    expect(result).toEqual([{ text: "hello", begin: 5, end: 6 }]);
+  describe("edge cases", () => {
+    it("returns null when the bg track already has words", () => {
+      const timed: LyricLine = { ...base, backgroundWords: [{ text: "ooh yeah", begin: 1, end: 2 }] };
+      expect(createTrackWordsFromTextAt(timed, "bg", 5, 100)).toBeNull();
+    });
+
+    it("returns null when there is no bg text", () => {
+      expect(createTrackWordsFromTextAt({ ...base, backgroundText: undefined }, "bg", 5, 100)).toBeNull();
+    });
+
+    it("returns null for whitespace-only bg text", () => {
+      expect(createTrackWordsFromTextAt({ ...base, backgroundText: "   " }, "bg", 5, 100)).toBeNull();
+    });
+
+    it("never runs past the max end", () => {
+      const words = createTrackWordsFromTextAt(base, "bg", 9.9, 10);
+      expect(words?.[words.length - 1].end).toBeLessThanOrEqual(10);
+    });
   });
 
-  it("replaces the first word when wordIndex is 0", () => {
-    const existing: WordTiming[] = [
-      { text: "one ", begin: 0, end: 1 },
-      { text: "two", begin: 1, end: 2 },
-    ];
-    const result = commitTappedWord(existing, 0, "ONE", 5, 6);
-    expect(result).toEqual([{ text: "ONE", begin: 5, end: 6 }]);
+  describe("invariants", () => {
+    it("keeps the bg text unchanged word for word", () => {
+      const words = createTrackWordsFromTextAt({ ...base, backgroundText: "la la la" }, "bg", 0, 100) ?? [];
+      expect(words.map((w) => w.text).join("")).toBe("la la la");
+    });
   });
 
-  it("re-syncs from the middle: truncates and closes the prior word at begin", () => {
-    const existing: WordTiming[] = [
-      { text: "one ", begin: 0, end: 1 },
-      { text: "two ", begin: 1, end: 2 },
-      { text: "three", begin: 2, end: 3 },
-    ];
-    const result = commitTappedWord(existing, 1, "TWO", 5, 6);
-    expect(result).toEqual([
-      { text: "one ", begin: 0, end: 5 },
-      { text: "TWO", begin: 5, end: 6 },
-    ]);
-  });
+  describe("main track", () => {
+    const split = getSplitCharacter();
+    const untimed: LyricLine = { id: "m", agentId: "v1", text: `hel${split}lo world` };
 
-  it("forward tap at the end: closes the prior word and appends", () => {
-    const existing: WordTiming[] = [{ text: "one ", begin: 0, end: 1 }];
-    const result = commitTappedWord(existing, 1, "two", 5, 6);
-    expect(result).toEqual([
-      { text: "one ", begin: 0, end: 5 },
-      { text: "two", begin: 5, end: 6 },
-    ]);
-  });
+    it("lays out one block per syllable from the given start", () => {
+      const words = createTrackWordsFromTextAt(untimed, "word", 5, 100) ?? [];
+      expect(words.map((w) => w.text)).toEqual(["hel", "lo ", "world"]);
+      expect(words[0].begin).toBe(5);
+    });
 
-  it("drifted cursor (wordIndex past existing length) clamps to length and appends without holes", () => {
-    const existing: WordTiming[] = [{ text: "one ", begin: 0, end: 1 }];
-    const result = commitTappedWord(existing, 4, "two", 5, 6);
-    expect(result).toHaveLength(2);
-    for (const w of result) {
-      expect(typeof w.text).toBe("string");
-      expect(typeof w.begin).toBe("number");
-      expect(typeof w.end).toBe("number");
-    }
-    expect(result[0]).toEqual({ text: "one ", begin: 0, end: 5 });
-    expect(result[1]).toEqual({ text: "two", begin: 5, end: 6 });
-  });
+    it("keeps syllables grouped inside their word", () => {
+      const words = createTrackWordsFromTextAt(untimed, "word", 0, 100) ?? [];
+      expect(computeSyllableGroups(words).map((g) => [g.startIndex, g.endIndex])).toEqual([[0, 1]]);
+    });
 
-  it("drifted cursor result has no sparse holes", () => {
-    const existing: WordTiming[] = [{ text: "one ", begin: 0, end: 1 }];
-    const result = commitTappedWord(existing, 5, "next", 10, 11);
-    expect(Object.keys(result).length).toBe(result.length);
-    for (let i = 0; i < result.length; i++) {
-      expect(result[i]).toBeDefined();
-    }
-  });
-});
+    it("gives each part the default word duration", () => {
+      const { defaultWordDuration } = useSettingsStore.getState();
+      const words = createTrackWordsFromTextAt(untimed, "word", 0, 100) ?? [];
+      expect(words[words.length - 1].end).toBeCloseTo(3 * defaultWordDuration);
+    });
 
-// -- commitHeldWord -----------------------------------------------------------
+    describe("edge cases", () => {
+      it("returns null when the line already has words", () => {
+        const timed: LyricLine = { ...untimed, words: [{ text: "hello world", begin: 1, end: 2 }] };
+        expect(createTrackWordsFromTextAt(timed, "word", 5, 100)).toBeNull();
+      });
 
-describe("commitHeldWord", () => {
-  it("returns a single new word when there are no existing words", () => {
-    const result = commitHeldWord([], 0, "hello", 5);
-    expect(result).toEqual([{ text: "hello", begin: 5, end: 5 }]);
-  });
+      it("returns null for an empty line", () => {
+        expect(createTrackWordsFromTextAt({ ...untimed, text: "" }, "word", 5, 100)).toBeNull();
+      });
 
-  it("replaces the first word's text and begin but preserves its end when wordIndex is 0", () => {
-    const existing: WordTiming[] = [{ text: "one ", begin: 0, end: 1 }];
-    const result = commitHeldWord(existing, 0, "ONE", 5);
-    expect(result).toEqual([{ text: "ONE", begin: 5, end: 1 }]);
-  });
+      it("never runs past the max end", () => {
+        const words = createTrackWordsFromTextAt(untimed, "word", 9.9, 10) ?? [];
+        expect(words[words.length - 1].end).toBeLessThanOrEqual(10);
+      });
+    });
 
-  it("truncates to wordIndex and appends a held word", () => {
-    const existing: WordTiming[] = [
-      { text: "one ", begin: 0, end: 1 },
-      { text: "two ", begin: 1, end: 2 },
-      { text: "three", begin: 2, end: 3 },
-    ];
-    const result = commitHeldWord(existing, 1, "TWO", 5);
-    expect(result).toEqual([
-      { text: "one ", begin: 0, end: 1 },
-      { text: "TWO", begin: 5, end: 5 },
-    ]);
-  });
-
-  it("forward hold at the end: appends a held word without closing prior word's end", () => {
-    const existing: WordTiming[] = [{ text: "one ", begin: 0, end: 1 }];
-    const result = commitHeldWord(existing, 1, "two", 5);
-    expect(result).toEqual([
-      { text: "one ", begin: 0, end: 1 },
-      { text: "two", begin: 5, end: 5 },
-    ]);
-  });
-
-  it("drifted cursor (wordIndex past existing length) clamps and appends without holes", () => {
-    const existing: WordTiming[] = [{ text: "one ", begin: 0, end: 1 }];
-    const result = commitHeldWord(existing, 4, "two", 5);
-    expect(result).toHaveLength(2);
-    for (const w of result) {
-      expect(typeof w.text).toBe("string");
-    }
-    expect(result[0]).toEqual({ text: "one ", begin: 0, end: 1 });
-    expect(result[1]).toEqual({ text: "two", begin: 5, end: 5 });
+    describe("invariants", () => {
+      it("rebuilds the exact line text, split characters included", () => {
+        const words = createTrackWordsFromTextAt(untimed, "word", 0, 100) ?? [];
+        expect(reconstructLineText(words, split)).toBe(untimed.text);
+      });
+    });
   });
 });

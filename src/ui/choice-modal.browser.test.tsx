@@ -1,0 +1,243 @@
+import { askChoice, askChoiceWithCheckbox, useChoiceStore } from "@/stores/choice-store";
+import { isAnyModalOpen } from "@/stores/escape-layer-stack";
+import { allowConsole } from "@/test/console-guard";
+import { render } from "@/test/render";
+import { ChoiceModalHost } from "@/ui/choice-modal";
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+
+// -- Fixtures -----------------------------------------------------------------
+
+const USE_OR_OPEN = {
+  title: "Song.ttml-project.json is a project file",
+  body: "Use its lyrics in this project, or open it as its own project.",
+  busyMessage: "Finish the current import first",
+  options: [
+    { value: "open", label: "Open as its own project", variant: "secondary" },
+    { value: "use", label: "Use its lyrics here", variant: "primary" },
+  ],
+} as const;
+
+function askUseOrOpen() {
+  return askChoice(USE_OR_OPEN);
+}
+
+function askKeepOrReplace() {
+  return askChoice({
+    title: "Project already in your library",
+    body: "Alpha",
+    busyMessage: "Finish the current import first",
+    options: [
+      { value: "keep-both", label: "Keep both", variant: "secondary" },
+      { value: "replace", label: "Replace project", variant: "destructive" },
+    ],
+  });
+}
+
+function askWithRemember() {
+  return askChoiceWithCheckbox({
+    ...USE_OR_OPEN,
+    checkbox: { label: "Remember my choice" },
+  });
+}
+
+// -- Tests --------------------------------------------------------------------
+
+describe("ChoiceModalHost", () => {
+  it("renders nothing while no choice is asked", async () => {
+    const screen = await render(<ChoiceModalHost />);
+    expect(screen.container.textContent).toBe("");
+    expect(isAnyModalOpen()).toBe(false);
+  });
+
+  it("shows the title, the body and every option after Cancel", async () => {
+    const screen = await render(<ChoiceModalHost />);
+    const pending = askUseOrOpen();
+    const dialog = screen.getByRole("alertdialog", { name: "Song.ttml-project.json is a project file" });
+    await expect.element(dialog).toBeInTheDocument();
+    const labels = [...dialog.element().querySelectorAll("button")].map(
+      (button) => button.getAttribute("aria-label") ?? button.textContent,
+    );
+    expect(labels).toEqual(["Close", "Cancel", "Open as its own project", "Use its lyrics here"]);
+    await screen.getByRole("button", { name: "Cancel" }).click();
+    await expect(pending).resolves.toBe("cancel");
+  });
+
+  it("resolves the clicked option and closes", async () => {
+    const screen = await render(<ChoiceModalHost />);
+    const pending = askUseOrOpen();
+    await screen.getByRole("button", { name: "Open as its own project" }).click();
+    await expect(pending).resolves.toBe("open");
+    await expect.element(screen.getByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  it("wires the body as the dialog description", async () => {
+    const screen = await render(<ChoiceModalHost />);
+    const pending = askUseOrOpen();
+    const dialog = screen.getByRole("alertdialog");
+    await expect.element(dialog).toBeInTheDocument();
+    const describedById = dialog.element().getAttribute("aria-describedby");
+    expect(document.getElementById(describedById as string)?.textContent).toContain("open it as its own project");
+    useChoiceStore.getState().answer("cancel");
+    await pending;
+  });
+
+  describe("focus", () => {
+    it("focuses the primary option, so Enter takes it", async () => {
+      await render(<ChoiceModalHost />);
+      const pending = askUseOrOpen();
+      await expect.poll(() => document.activeElement?.textContent).toBe("Use its lyrics here");
+      await userEvent.keyboard("{Enter}");
+      await expect(pending).resolves.toBe("use");
+    });
+
+    it("focuses Cancel when no option is primary, so Enter never runs a destructive one", async () => {
+      await render(<ChoiceModalHost />);
+      const pending = askKeepOrReplace();
+      await expect.poll(() => document.activeElement?.textContent).toBe("Cancel");
+      await userEvent.keyboard("{Enter}");
+      await expect(pending).resolves.toBe("cancel");
+    });
+  });
+
+  describe("keyboard", () => {
+    it("Escape cancels", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askUseOrOpen();
+      await expect.element(screen.getByRole("alertdialog")).toBeInTheDocument();
+      await userEvent.keyboard("{Escape}");
+      await expect(pending).resolves.toBe("cancel");
+    });
+
+    it("Tab moves from the primary option to the next control inside the dialog", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askUseOrOpen();
+      await expect.poll(() => document.activeElement?.textContent).toBe("Use its lyrics here");
+      await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
+      expect(document.activeElement?.textContent).toBe("Open as its own project");
+      expect(screen.getByRole("alertdialog").element().contains(document.activeElement)).toBe(true);
+      useChoiceStore.getState().answer("cancel");
+      await pending;
+    });
+  });
+
+  describe("checkbox", () => {
+    it("returns the checked state with the clicked option", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askWithRemember();
+      await screen.getByLabelText("Remember my choice").click();
+      await screen.getByRole("button", { name: "Use its lyrics here" }).click();
+      await expect(pending).resolves.toEqual({ answer: "use", checked: true });
+    });
+
+    it("starts unchecked", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askWithRemember();
+      await expect.element(screen.getByLabelText("Remember my choice")).not.toBeChecked();
+      await screen.getByRole("button", { name: "Open as its own project" }).click();
+      await expect(pending).resolves.toEqual({ answer: "open", checked: false });
+    });
+
+    it("returns the checked state with every option", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      for (const option of USE_OR_OPEN.options) {
+        const pending = askWithRemember();
+        await screen.getByLabelText("Remember my choice").click();
+        await screen.getByRole("button", { name: option.label }).click();
+        await expect(pending).resolves.toEqual({ answer: option.value, checked: true });
+      }
+    });
+
+    it("returns the checked state with Cancel", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askWithRemember();
+      await screen.getByLabelText("Remember my choice").click();
+      await screen.getByRole("button", { name: "Cancel" }).click();
+      await expect(pending).resolves.toEqual({ answer: "cancel", checked: true });
+    });
+
+    it("returns the checked state when Escape cancels", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askWithRemember();
+      await screen.getByLabelText("Remember my choice").click();
+      await userEvent.keyboard("{Escape}");
+      await expect(pending).resolves.toEqual({ answer: "cancel", checked: true });
+    });
+
+    it("starts the next prompt unchecked after a checked answer", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const first = askWithRemember();
+      await screen.getByLabelText("Remember my choice").click();
+      await screen.getByRole("button", { name: "Use its lyrics here" }).click();
+      await first;
+      const second = askWithRemember();
+      await expect.element(screen.getByLabelText("Remember my choice")).not.toBeChecked();
+      useChoiceStore.getState().answer("cancel");
+      await expect(second).resolves.toEqual({ answer: "cancel", checked: false });
+    });
+
+    it("shows no checkbox on a plain choice", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askUseOrOpen();
+      await expect.element(screen.getByRole("alertdialog")).toBeInTheDocument();
+      expect(screen.getByRole("alertdialog").element().querySelector('input[type="checkbox"]')).toBeNull();
+      useChoiceStore.getState().answer("cancel");
+      await pending;
+    });
+
+    it("cancels a second checkbox prompt unchecked while one is open", async () => {
+      allowConsole(/a choice prompt is already open/);
+      await render(<ChoiceModalHost />);
+      const first = askUseOrOpen();
+      await expect(askWithRemember()).resolves.toEqual({ answer: "cancel", checked: false });
+      useChoiceStore.getState().answer("cancel");
+      await first;
+    });
+  });
+
+  describe("edge cases", () => {
+    it("holds one modal entry while open and releases it on answer", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askUseOrOpen();
+      await expect.element(screen.getByRole("alertdialog")).toBeInTheDocument();
+      expect(isAnyModalOpen()).toBe(true);
+      useChoiceStore.getState().answer("use");
+      await pending;
+      await expect.poll(isAnyModalOpen).toBe(false);
+    });
+
+    it("tells the user why a second prompt was refused, in the caller's words", async () => {
+      allowConsole(/a choice prompt is already open/);
+      const screen = await render(
+        <>
+          <ChoiceModalHost />
+          <Toaster />
+        </>,
+      );
+      const first = askUseOrOpen();
+      const second = askChoice({
+        title: "Another",
+        body: "Body",
+        busyMessage: "Finish choosing first",
+        options: [{ value: "go", label: "Go", variant: "primary" }],
+      });
+      await expect(second).resolves.toBe("cancel");
+      await expect.element(screen.getByText("Finish choosing first")).toBeInTheDocument();
+      useChoiceStore.getState().answer("cancel");
+      await first;
+    });
+
+    it("offers a single option with Cancel", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askChoice({
+        title: "Backup.json is a backup",
+        body: "Restore its 3 projects?",
+        busyMessage: "Finish the current import first",
+        options: [{ value: "restore", label: "Restore backup", variant: "primary" }],
+      });
+      await screen.getByRole("button", { name: "Restore backup" }).click();
+      await expect(pending).resolves.toBe("restore");
+    });
+  });
+});

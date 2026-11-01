@@ -1,16 +1,29 @@
 import { decodeAudioToWav, needsWavConversion } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
-import { scrubPreview } from "@/audio/scrub-preview";
+import { resyncPlaybackClock } from "@/audio/playback-clock";
+import { seekInPlaceToResume } from "@/audio/seek-reveal-intent";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
+import { useSettingsStore } from "@/stores/settings";
+import { BROWSER_KIND } from "@/utils/platform";
 import { useEffect, useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
 const LOG_PREFIX = "[AudioEngine]";
 const SLOW_DECODE_MS = 800;
+
+// -- Helpers -------------------------------------------------------------------
+
+// A rejected play() (autoplay policy, undecodable source) must not leave the UI showing Pause.
+function playOrRevert(audio: HTMLAudioElement, setIsPlaying: (playing: boolean) => void): void {
+  if (BROWSER_KIND === "chromium" && audio.paused && !audio.seeking) seekInPlaceToResume(audio);
+  audio.play().catch(() => {
+    if (audio.paused) setIsPlaying(false);
+  });
+}
 
 // -- Component -----------------------------------------------------------------
 
@@ -21,6 +34,7 @@ const AudioEngine: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const isPlaying = useAudioStore((s) => s.isPlaying);
   const playbackRate = useAudioStore((s) => s.playbackRate);
+  const preservePitch = useSettingsStore((s) => s.preservePitch);
   const volume = useAudioStore((s) => s.volume);
   const isMuted = useAudioStore((s) => s.isMuted);
   const audioElement = useAudioStore((s) => s.audioElement);
@@ -33,6 +47,7 @@ const AudioEngine: React.FC = () => {
   const currentStem = useSeparationStore((s) => s.currentStem);
   const stemUrls = useSeparationStore((s) => s.stemUrls);
 
+  // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- teardown/clearSlowLoading run from the returned cleanup and revoke every listener, timer and object URL; the async setup() indirection hides that from static analysis
   useEffect(() => {
     if (!source) {
       registerAudioElement(null);
@@ -85,20 +100,7 @@ const AudioEngine: React.FC = () => {
       }
     };
 
-    const loadScrubBuffer = async () => {
-      try {
-        const bytes = await playableFile.arrayBuffer();
-        if (aborted) return;
-        const audioBuffer = await scrubPreview.decode(bytes);
-        if (aborted) return;
-        scrubStemRouter.setOriginalBuffer(audioBuffer);
-      } catch (err) {
-        if (aborted) return;
-        console.warn(LOG_PREFIX, "scrub-preview decode failed", err);
-        scrubStemRouter.setOriginalBuffer(null);
-      }
-    };
-    void loadScrubBuffer();
+    scrubStemRouter.setOriginalSource(playableFile);
 
     const setup = async () => {
       let objectUrl: string;
@@ -121,17 +123,20 @@ const AudioEngine: React.FC = () => {
         volume: initialVolume,
         isMuted: initialIsMuted,
         isPlaying: initialIsPlaying,
+        currentTime: initialCurrentTime,
       } = useAudioStore.getState();
       audio.playbackRate = initialPlaybackRate;
+      audio.preservesPitch = useSettingsStore.getState().preservePitch;
       audio.volume = initialVolume;
       audio.muted = initialIsMuted;
+      if (initialCurrentTime > 0) audio.currentTime = initialCurrentTime;
       audio.style.display = "none";
       document.body.appendChild(audio);
       audioRef.current = audio;
       originalUrlRef.current = objectUrl;
       registerAudioElement(audio);
       if (stripped !== null) useProjectStore.getState().setPrimingStripped(stripped);
-      if (initialIsPlaying) audio.play().catch(() => undefined);
+      if (initialIsPlaying) playOrRevert(audio, setIsPlaying);
 
       const handleLoadedMetadata = () => setDuration(audio.duration);
       const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
@@ -144,6 +149,7 @@ const AudioEngine: React.FC = () => {
       audio.addEventListener("timeupdate", handleTimeUpdate);
       audio.addEventListener("ended", handleEnded);
       audio.addEventListener("error", handleError);
+      audio.addEventListener("seeking", resyncPlaybackClock);
       const unbindStateEvents = bindAudioStateEvents(audio, () => useAudioStore.getState().isPlaying, setIsPlaying);
 
       teardown = () => {
@@ -151,6 +157,7 @@ const AudioEngine: React.FC = () => {
         audio.removeEventListener("timeupdate", handleTimeUpdate);
         audio.removeEventListener("ended", handleEnded);
         audio.removeEventListener("error", handleError);
+        audio.removeEventListener("seeking", resyncPlaybackClock);
         unbindStateEvents();
         audio.pause();
         audio.src = "";
@@ -177,19 +184,20 @@ const AudioEngine: React.FC = () => {
     if (!audio) return;
 
     if (isPlaying) {
-      audio.play().catch(() => undefined);
+      playOrRevert(audio, setIsPlaying);
     } else {
       audio.pause();
     }
-  }, [isPlaying]);
+  }, [isPlaying, setIsPlaying]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     audio.playbackRate = playbackRate;
+    audio.preservesPitch = preservePitch;
     audio.volume = volume;
     audio.muted = isMuted;
-  }, [playbackRate, volume, isMuted]);
+  }, [playbackRate, preservePitch, volume, isMuted]);
 
   useEffect(() => {
     const audio = audioElement;
@@ -209,11 +217,11 @@ const AudioEngine: React.FC = () => {
     audio.playbackRate = currentPlaybackRate;
     audio.volume = currentVolume;
     audio.muted = currentIsMuted;
-    if (wasPlaying) audio.play().catch(() => {});
-  }, [currentStem, stemUrls, audioElement]);
+    if (wasPlaying) playOrRevert(audio, setIsPlaying);
+  }, [currentStem, stemUrls, audioElement, setIsPlaying]);
 
   useEffect(() => {
-    scrubStemRouter.selectStem(currentStem, () => stemUrls[currentStem]);
+    scrubStemRouter.selectStem(currentStem, (stem) => stemUrls[stem]);
   }, [currentStem, stemUrls]);
 
   return null;

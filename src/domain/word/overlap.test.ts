@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import type { Bounds } from "@/domain/word/bounds";
 import { boundsOverlap } from "@/domain/word/overlap";
+import { describe, expect, it } from "vitest";
 
 const b = (begin: number, end: number): Bounds => ({ begin, end });
 

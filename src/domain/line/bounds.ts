@@ -1,6 +1,6 @@
+import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { type Bounds, firstBegin, lastEnd } from "@/domain/word/bounds";
-import type { LyricLine } from "@/domain/line/model";
 
 // -- Functions ----------------------------------------------------------------
 

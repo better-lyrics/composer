@@ -25,15 +25,9 @@ const BASELINE_OVER_BUDGET = new Set<string>([
   "hooks/useSyncHandlers.ts",
   "views/timeline/utils.ts",
   "views/timeline/word-track.tsx",
-  "views/timeline/paste-preview.tsx",
-  // timeline-context-menu.tsx is intentionally exempt: it is a pure
-  // declarative menu JSX tree. Carving it into per-target sub-components is
-  // negative value (it would force four new .browser.test.tsx files for a
-  // zero-behaviour-change extraction).
+  // timeline-context-menu.tsx is intentionally exempt: its per-target sections share private menu primitives in one file.
   "views/timeline/timeline-context-menu.tsx",
-  "views/timeline/timeline-info-panel.tsx",
   "views/sync/scrollable-line.tsx",
-  "views/timeline/line-row.tsx",
   // shortcut-definitions.ts is intentionally exempt: it is a flat declarative
   // list of keyboard shortcut definitions. Splitting it per scope would need
   // a re-export module (barrel files are banned here), which is negative value.

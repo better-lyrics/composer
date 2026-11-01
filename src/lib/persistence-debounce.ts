@@ -1,100 +1,81 @@
-import type { Stem } from "@/audio/separation/types";
-import type { Agent } from "@/domain/agent/model";
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
-import type { ProjectMetadata } from "@/domain/project/metadata";
-import type { SnapPoint } from "@/domain/snap-point/model";
-import { type SavedAudioSource, saveCurrentProject } from "@/lib/persistence";
-import type { GranularityMode } from "@/stores/project";
-import type { SyllableSplitDefaults } from "@/stores/project/types";
+import { bindSaveTarget } from "@/lib/open-project-session";
+import { type ProjectSaveInput, saveProjectTo } from "@/lib/persistence";
+import { currentSaveInput, openProjectView } from "@/lib/project-snapshot";
+import { awaitInFlightSaves, setSavePending, trackSave } from "@/lib/save-status";
 import { useSettingsStore } from "@/stores/settings";
 
 // -- Constants ----------------------------------------------------------------
 
-const LOG_PREFIX = "[Persistence]";
+const LOG_PREFIX = "[SaveQueue]";
+
+// -- Types --------------------------------------------------------------------
+
+interface PendingSave {
+  target: Promise<string>;
+  input: ProjectSaveInput;
+}
 
 // -- Module state -------------------------------------------------------------
 
-type SaveArgs = [
-  ProjectMetadata,
-  Agent[],
-  LyricLine[],
-  LinkGroup[],
-  GranularityMode,
-  SyllableSplitDefaults,
-  SavedAudioSource | undefined,
-  string[],
-  string[],
-  Stem,
-  boolean,
-  SnapPoint[],
-];
-
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
-let pendingSaveArgs: SaveArgs | null = null;
+let pendingSave: PendingSave | null = null;
+
+// -- Helpers ------------------------------------------------------------------
+
+function clearSaveTimer(): void {
+  if (!saveTimeout) return;
+  clearTimeout(saveTimeout);
+  saveTimeout = null;
+}
+
+function takePendingSave(): Promise<void> {
+  const pending = pendingSave;
+  pendingSave = null;
+  if (!pending) {
+    setSavePending(false);
+    return Promise.resolve();
+  }
+  const written = trackSave("project", saveProjectTo(pending.target, pending.input, openProjectView()));
+  setSavePending(false);
+  return written;
+}
 
 // -- Public API ---------------------------------------------------------------
 
-function debouncedSave(
-  metadata: ProjectMetadata,
-  agents: Agent[],
-  lines: LyricLine[],
-  groups: LinkGroup[],
-  granularity: GranularityMode,
-  syllableSplitDefaults: SyllableSplitDefaults,
-  audioSource: SavedAudioSource | undefined,
-  dismissedSuggestions: string[],
-  dismissedExplicitSuggestions: string[],
-  currentStem: Stem,
-  primingStripped: boolean,
-  customSnapPoints: SnapPoint[],
-): void {
-  pendingSaveArgs = [
-    metadata,
-    agents,
-    lines,
-    groups,
-    granularity,
-    syllableSplitDefaults,
-    audioSource,
-    dismissedSuggestions,
-    dismissedExplicitSuggestions,
-    currentStem,
-    primingStripped,
-    customSnapPoints,
-  ];
-  if (saveTimeout) {
-    clearTimeout(saveTimeout);
-  }
-  const saveDelay = useSettingsStore.getState().autoSaveDelay;
+function debouncedSave(input: ProjectSaveInput): void {
+  pendingSave = { target: bindSaveTarget(), input };
+  setSavePending(true);
+  clearSaveTimer();
   saveTimeout = setTimeout(() => {
-    if (pendingSaveArgs) {
-      saveCurrentProject(...pendingSaveArgs).catch((err) => console.error(LOG_PREFIX, "Auto-save failed:", err));
-      pendingSaveArgs = null;
-    }
     saveTimeout = null;
-  }, saveDelay);
+    takePendingSave().catch((err: unknown) => console.error(LOG_PREFIX, "Auto-save failed:", err));
+  }, useSettingsStore.getState().autoSaveDelay);
 }
 
 function cancelPendingSave(): void {
-  if (saveTimeout) {
-    clearTimeout(saveTimeout);
-    saveTimeout = null;
-  }
-  pendingSaveArgs = null;
+  clearSaveTimer();
+  pendingSave = null;
+  setSavePending(false);
 }
 
-function flushPendingSave(): void {
-  if (saveTimeout) {
-    clearTimeout(saveTimeout);
-    saveTimeout = null;
-  }
-  if (pendingSaveArgs) {
-    saveCurrentProject(...pendingSaveArgs).catch((err) => console.error(LOG_PREFIX, "Flush save failed:", err));
-    pendingSaveArgs = null;
-  }
+function flushPendingSave(): Promise<void> {
+  clearSaveTimer();
+  return takePendingSave().then(() => awaitInFlightSaves());
+}
+
+function flushPendingSaveQuietly(): void {
+  flushPendingSave().catch((err: unknown) => console.error(LOG_PREFIX, "Flush save failed:", err));
+}
+
+function saveOpenProjectNow(): Promise<void> {
+  debouncedSave(currentSaveInput());
+  return flushPendingSave();
+}
+
+function saveNow(): Promise<void> {
+  return pendingSave ? flushPendingSave() : saveOpenProjectNow();
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { debouncedSave, cancelPendingSave, flushPendingSave };
+export { debouncedSave, cancelPendingSave, flushPendingSave, flushPendingSaveQuietly, saveNow, saveOpenProjectNow };

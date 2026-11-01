@@ -1,14 +1,16 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
-import { applyBackground, CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
+import { withAlignedWords } from "@/domain/language/align";
+import { CLEARED_BACKGROUND, applyBackground, manualBackgroundWordEdit } from "@/domain/line/background";
 import { applyMainWordEdit } from "@/domain/line/main-words";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { mergedWord } from "@/domain/word/merge-run";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
-import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { applySiblingWords } from "@/utils/word-diff";
+import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 
 // -- Types --------------------------------------------------------------------
 
@@ -138,7 +140,7 @@ function applyMergeSyllableGroup(
     const isSource = line.id === lineId;
     const isSibling = !isSource && isLinkedSibling(line, linkScope) && line[field]?.length === sourceCount;
     if (!isSource && !isSibling) return line;
-    const lineWords = line[field];
+    const lineWords = withAlignedWords(line)[field];
     if (!lineWords) return line;
 
     const runs = computeByGroupId(lineWords);
@@ -157,17 +159,7 @@ function applyMergeSyllableGroup(
       let touched = false;
       for (let k = run.startIndex; k <= run.endIndex; k++) if (selected.has(k)) touched = true;
       if (touched) {
-        const first = lineWords[run.startIndex];
-        const { syllableGroupId: _drop, ...rest } = first;
-        collapsed.push({
-          ...rest,
-          text: lineWords
-            .slice(run.startIndex, run.endIndex + 1)
-            .map((w) => w.text)
-            .join(""),
-          begin: first.begin,
-          end: lineWords[run.endIndex].end,
-        });
+        collapsed.push(mergedWord(lineWords.slice(run.startIndex, run.endIndex + 1), undefined));
         changed = true;
       } else {
         for (let k = run.startIndex; k <= run.endIndex; k++) collapsed.push(lineWords[k]);

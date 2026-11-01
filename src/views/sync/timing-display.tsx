@@ -1,6 +1,7 @@
-import { useAudioStore } from "@/stores/audio";
+import { useFrameLoop } from "@/hooks/use-frame-loop";
+import { livePlaybackTime } from "@/stores/audio";
 import { formatTimeMs } from "@/utils/sync-helpers";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -11,39 +12,30 @@ interface TimingDisplayProps {
 // -- Components ---------------------------------------------------------------
 
 const TimingDisplay: React.FC<TimingDisplayProps> = ({ lastSyncedTime }) => {
-  const currentTimeRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
+  const currentTimeRef = useRef<HTMLSpanElement>(null);
 
-  // RAF loop for real-time current time display
-  useEffect(() => {
-    const update = () => {
-      const el = currentTimeRef.current;
-      if (el) {
-        const audioEl = useAudioStore.getState().audioElement;
-        const time = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-        el.textContent = formatTimeMs(time);
-      }
-      rafRef.current = requestAnimationFrame(update);
-    };
-
-    rafRef.current = requestAnimationFrame(update);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
+  useFrameLoop(() => {
+    const el = currentTimeRef.current;
+    if (el) {
+      const time = livePlaybackTime();
+      el.textContent = formatTimeMs(time);
+    }
+  }, "timing-display");
 
   return (
-    <div className="flex items-center justify-center gap-8 font-mono text-sm select-text tabular-nums">
-      <div className="text-center">
-        <div className="mb-1 text-xs text-composer-text-muted">Current</div>
-        <div ref={currentTimeRef} className="text-xl text-composer-text">
+    <div className="flex gap-8 select-text">
+      <div className="flex flex-col gap-0.5">
+        <span className="text-xs text-(--muted) select-none">Current</span>
+        <span ref={currentTimeRef} className="font-mono text-xl leading-[26px] tabular-nums text-composer-text">
           0:00.000
-        </div>
+        </span>
       </div>
       {lastSyncedTime !== undefined && (
-        <div className="text-center">
-          <div className="mb-1 text-xs text-composer-text-muted">Last Synced</div>
-          <div className="text-xl text-composer-accent-text">{formatTimeMs(lastSyncedTime)}</div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs text-(--muted) select-none">Last synced</span>
+          <span className="font-mono text-xl leading-[26px] tabular-nums text-composer-accent-text">
+            {formatTimeMs(lastSyncedTime)}
+          </span>
         </div>
       )}
     </div>

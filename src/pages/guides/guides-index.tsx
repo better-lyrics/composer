@@ -1,3 +1,4 @@
+import type { GuideSlug } from "@/pages/guides/slugs";
 import { LandingLayout } from "@/pages/landing/landing-layout";
 import { BetterLyricsPromo } from "@/pages/landing/sections/better-lyrics-promo";
 import { PageHead } from "@/seo/page-head";
@@ -6,7 +7,7 @@ import { IconArrowRight } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
 
 interface GuideListing {
-  slug: string;
+  slug: GuideSlug;
   title: string;
   description: string;
 }
@@ -52,6 +53,12 @@ const GUIDES: GuideListing[] = [
     title: "LRC to TTML Conversion Guide",
     description: "Deep dive on converting plain LRC and enhanced LRC into clean TTML you can ship.",
   },
+  {
+    slug: "lyric-best-practices",
+    title: "Lyric Best Practices for TTML",
+    description:
+      "Line breaks, background vocals, voice assignment, syllable splits. What good lyric files do that the spec never mentions.",
+  },
 ];
 
 const PATH = "/guides";
@@ -85,12 +92,12 @@ const GuidesIndexPage: React.FC = () => {
         </p>
       </section>
       <section className="px-6 pb-20 max-w-4xl mx-auto">
-        <ul className="divide-y divide-composer-border border-y border-composer-border">
+        <ul className="divide-y divide-(--divider) border-y border-(--divider)">
           {GUIDES.map((guide) => (
             <li key={guide.slug}>
               <Link
                 to={`/guides/${guide.slug}`}
-                className="group flex items-center justify-between gap-5 py-5 hover:bg-composer-bg-elevated/50 transition-colors px-2 -mx-2 rounded-lg"
+                className="group flex items-center justify-between gap-5 py-5 hover:bg-(--layer-1) transition-colors px-2 -mx-2 rounded-lg"
               >
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-semibold text-composer-text mb-1">{guide.title}</h2>
@@ -98,7 +105,7 @@ const GuidesIndexPage: React.FC = () => {
                 </div>
                 <IconArrowRight
                   size={18}
-                  className="text-composer-text-muted group-hover:text-composer-accent-text transition-colors flex-shrink-0"
+                  className="text-(--muted) group-hover:text-composer-accent-text transition-colors flex-shrink-0"
                 />
               </Link>
             </li>

@@ -1,0 +1,266 @@
+import type { LyricLine } from "@/domain/line/model";
+import { usePersistence } from "@/hooks/usePersistence";
+import { createProject, restoreOpenProject } from "@/lib/open-project";
+import { PROJECT_INDEX_STORE_NAME, setInStore } from "@/lib/persistence-idb";
+import { flushPendingSave } from "@/lib/persistence-debounce";
+import { getPersistenceSettled } from "@/lib/persistence-settled";
+import {
+  loadProjectIndexEntry,
+  saveProjectRecord,
+  setProjectLastTab,
+  setProjectResumePosition,
+  setProjectTextVariant,
+} from "@/lib/project-repository";
+import {
+  EMPTY_RESTORE,
+  applyProjectToStores,
+  hasRestorableContent,
+  hasStoredProject,
+  isRestoringProject,
+  loadProjectForRestore,
+} from "@/lib/project-restore";
+import { loadProjectRecord } from "@/lib/project-storage";
+import { SAVED_PROJECT_VERSION } from "@/lib/saved-project";
+import { getSaveStatus } from "@/lib/save-status";
+import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
+import { useSeparationStore } from "@/stores/separation";
+import { useSettingsStore } from "@/stores/settings";
+import { createAudioFile } from "@/test/audio-fixtures";
+import { allowConsole } from "@/test/console-guard";
+import { createLine } from "@/test/factories";
+import { render } from "@/test/render";
+import { seedStoredProject } from "@/test/projects";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { describe, expect, it } from "vitest";
+
+// -- Helpers ------------------------------------------------------------------
+
+const TRANSLITERATED_LINE: LyricLine = {
+  ...createLine({ text: "今日" }),
+  transliteration: {
+    language: "ja-Latn",
+    text: "kyou",
+    segments: [{ original: "今日", transliteration: "kyou" }],
+    origin: "manual",
+    sourceFingerprint: "test",
+  },
+};
+
+const PersistenceHost: React.FC = () => {
+  usePersistence();
+  return null;
+};
+
+// -- Tests --------------------------------------------------------------------
+
+describe("project-restore", () => {
+  it("loadProjectForRestore returns the record, its audio and its last tab", async () => {
+    await seedStoredProject("p1", { audio: createAudioFile("city.wav") });
+    await setProjectLastTab("p1", "sync");
+    const payload = await loadProjectForRestore("p1");
+    expect(payload.project?.metadata.title).toBe("Midnight City");
+    expect(payload.audio?.name).toBe("city.wav");
+    expect(payload.lastTab).toBe("sync");
+  });
+
+  it("restores the playhead, zoom and Timeline view without changing the default zoom", async () => {
+    const position = { time: 42, zoom: 220, scroll: { left: 900, top: 60 } };
+    await seedStoredProject("p1", { audio: createAudioFile("city.wav") });
+    await setProjectResumePosition("p1", position);
+    const defaultZoom = useSettingsStore.getState().defaultZoom;
+    applyProjectToStores(await loadProjectForRestore("p1"));
+    expect(useAudioStore.getState().currentTime).toBe(42);
+    expect(useTimelineStore.getState().zoom).toBe(220);
+    expect(useTimelineStore.getState().pendingResumeView).toEqual(position);
+    expect(useSettingsStore.getState().defaultZoom).toBe(defaultZoom);
+  });
+
+  it("restores the project's Original or Transliteration choice", async () => {
+    await seedStoredProject("p1", { project: { lines: [TRANSLITERATED_LINE] } });
+    await setProjectTextVariant("p1", "transliteration");
+    applyProjectToStores(await loadProjectForRestore("p1"));
+    expect(useTimelineStore.getState().textVariant).toBe("transliteration");
+  });
+
+  it("regression: opens on Original when the saved Transliteration has nothing to show", async () => {
+    await seedStoredProject("p1");
+    await setProjectTextVariant("p1", "transliteration");
+    applyProjectToStores(await loadProjectForRestore("p1"));
+    expect(useTimelineStore.getState().textVariant).toBe("original");
+  });
+
+  it("opens a project without a saved choice on Original", async () => {
+    useTimelineStore.setState({ textVariant: "transliteration" });
+    await seedStoredProject("p1", { audio: createAudioFile("city.wav") });
+    applyProjectToStores(await loadProjectForRestore("p1"));
+    expect(useTimelineStore.getState().textVariant).toBe("original");
+  });
+
+  it("applyProjectToStores fills every store from the payload and leaves the project clean", async () => {
+    await seedStoredProject("p1", {
+      audio: createAudioFile("city.wav"),
+      project: { currentStem: "vocals", audioSource: { kind: "file", name: "city.wav" } },
+    });
+    await setProjectLastTab("p1", "timeline");
+    applyProjectToStores(await loadProjectForRestore("p1"));
+    const project = useProjectStore.getState();
+    expect(project.metadata.title).toBe("Midnight City");
+    expect(project.lines.map((line) => line.text)).toEqual(["Waiting in a car", "Waiting for a ride"]);
+    expect(project.activeTab).toBe("timeline");
+    expect(project.isDirty).toBe(false);
+    expect(useSeparationStore.getState().currentStem).toBe("vocals");
+    const source = useAudioStore.getState().source;
+    expect(source?.type === "file" ? source.file.name : null).toBe("city.wav");
+  });
+
+  it("applying EMPTY_RESTORE clears the previous project from every store", async () => {
+    await seedStoredProject("p1", {
+      audio: createAudioFile("city.wav"),
+      project: { audioSource: { kind: "file", name: "city.wav" } },
+    });
+    applyProjectToStores(await loadProjectForRestore("p1"));
+    useTimelineStore.getState().setSelectedWords([{ lineId: "x", lineIndex: 0, wordIndex: 0, type: "word" }]);
+    applyProjectToStores(EMPTY_RESTORE);
+    expect(useProjectStore.getState().lines).toEqual([]);
+    expect(useProjectStore.getState().metadata.title).toBe("");
+    expect(useProjectStore.getState().activeTab).toBe("import");
+    expect(useAudioStore.getState().source).toBeNull();
+    expect(useTimelineStore.getState().selectedWords).toEqual([]);
+  });
+
+  it("restoreOpenProject records when the project was opened", async () => {
+    await seedStoredProject("p1", { open: true, project: { savedAt: 100 } });
+    await restoreOpenProject();
+    await expect.poll(async () => (await loadProjectIndexEntry("p1"))?.openedAt ?? 0).toBeGreaterThan(100);
+    expect((await loadProjectIndexEntry("p1"))?.updatedAt).toBe(100);
+  });
+
+  describe("edge cases", () => {
+    it("loadProjectForRestore on an unknown id returns an empty payload", async () => {
+      expect(await loadProjectForRestore("missing")).toEqual(EMPTY_RESTORE);
+    });
+
+    it("ignores a stored last tab that is not a tab", async () => {
+      await seedStoredProject("p1");
+      await setProjectLastTab("p1", "sync");
+      expect((await loadProjectForRestore("p1")).lastTab).toBe("sync");
+      const entry = await loadProjectIndexEntry("p1");
+      await setInStore(PROJECT_INDEX_STORE_NAME, "p1", { ...entry, lastTab: "library" });
+      expect((await loadProjectForRestore("p1")).lastTab).toBeUndefined();
+    });
+
+    it("ignores a stored text variant that is not a variant", async () => {
+      await seedStoredProject("p1");
+      const entry = await loadProjectIndexEntry("p1");
+      await setInStore(PROJECT_INDEX_STORE_NAME, "p1", { ...entry, textVariant: "romaji" });
+      expect((await loadProjectForRestore("p1")).textVariant).toBeUndefined();
+    });
+
+    it("ignores a stored resume position that is malformed", async () => {
+      await seedStoredProject("p1");
+      const entry = await loadProjectIndexEntry("p1");
+      await setInStore(PROJECT_INDEX_STORE_NAME, "p1", { ...entry, resumePosition: { time: -1, zoom: 0 } });
+      expect((await loadProjectForRestore("p1")).resumePosition).toBeUndefined();
+      applyProjectToStores(await loadProjectForRestore("p1"));
+      const defaultZoom = useSettingsStore.getState().defaultZoom;
+      expect(useTimelineStore.getState().pendingResumeView).toEqual({ time: 0, zoom: defaultZoom });
+    });
+
+    it("falls back to safe defaults and warns on a malformed record", async () => {
+      allowConsole(/malformed fields/);
+      await seedStoredProject("p1", { project: { agents: [] } });
+      applyProjectToStores(await loadProjectForRestore("p1"));
+      expect(useProjectStore.getState().agents.length).toBeGreaterThan(0);
+    });
+
+    it("upgrades an old record without moving its edit time", async () => {
+      await seedStoredProject("p1", { project: { version: 1, lines: [createLine({ text: "hello" })] } });
+      await loadProjectForRestore("p1");
+      expect((await loadProjectRecord("p1"))?.version).toBe(SAVED_PROJECT_VERSION);
+      expect((await loadProjectRecord("p1"))?.savedAt).toBe(1_758_900_000_000);
+    });
+
+    it("hasStoredProject requires a project record; hasRestorableContent accepts audio alone", () => {
+      expect(hasStoredProject(EMPTY_RESTORE)).toBe(false);
+      expect(hasRestorableContent(EMPTY_RESTORE)).toBe(false);
+      const audioOnly = { ...EMPTY_RESTORE, audio: createAudioFile("a.wav") };
+      expect(hasStoredProject(audioOnly)).toBe(false);
+      expect(hasRestorableContent(audioOnly)).toBe(true);
+    });
+  });
+
+  describe("invariants", () => {
+    it("isRestoringProject is true inside store subscribers during a restore and false after", async () => {
+      await seedStoredProject("p1");
+      const seen: boolean[] = [];
+      const unsubscribe = useProjectStore.subscribe(() => seen.push(isRestoringProject()));
+      applyProjectToStores(await loadProjectForRestore("p1"));
+      unsubscribe();
+      expect(seen.length).toBeGreaterThan(0);
+      expect(seen.every(Boolean)).toBe(true);
+      expect(isRestoringProject()).toBe(false);
+    });
+
+    it("a full project save keeps the resume position", async () => {
+      await seedStoredProject("p1");
+      await setProjectResumePosition("p1", { time: 5, zoom: 120 });
+      const project = await loadProjectRecord("p1");
+      if (!project) throw new Error("seeded project missing");
+      await saveProjectRecord("p1", project);
+      expect((await loadProjectIndexEntry("p1"))?.resumePosition).toEqual({ time: 5, zoom: 120 });
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: a project without a saved position frames the playhead instead of keeping the last view", async () => {
+      await seedStoredProject("p1");
+      useTimelineStore.getState().setZoom(400);
+      useTimelineStore.getState().setScrollTop(500);
+      applyProjectToStores(await loadProjectForRestore("p1"));
+      const defaultZoom = useSettingsStore.getState().defaultZoom;
+      expect(useTimelineStore.getState().zoom).toBe(defaultZoom);
+      expect(useTimelineStore.getState().pendingResumeView).toEqual({ time: 0, zoom: defaultZoom });
+    });
+
+    it("regression: a boot restore does not save the project again or move its last edited time", async () => {
+      useSettingsStore.setState({ autoSaveDelay: 60_000 });
+      await seedStoredProject("p1", { open: true, project: { savedAt: 111, currentStem: "vocals" } });
+      await render(<PersistenceHost />);
+      await getPersistenceSettled();
+      expect(getSaveStatus()).toBe("saved");
+      await flushPendingSave();
+      expect((await loadProjectRecord("p1"))?.savedAt).toBe(111);
+      expect((await loadProjectIndexEntry("p1"))?.updatedAt).toBe(111);
+    });
+
+    it("regression: switching tabs after boot remembers the tab without saving the record", async () => {
+      useSettingsStore.setState({ autoSaveDelay: 20 });
+      await seedStoredProject("p1", { open: true, project: { savedAt: 222 } });
+      await render(<PersistenceHost />);
+      await getPersistenceSettled();
+      useProjectStore.getState().setActiveTab("sync");
+      await expect.poll(async () => (await loadProjectIndexEntry("p1"))?.lastTab).toBe("sync");
+      expect((await loadProjectRecord("p1"))?.savedAt).toBe(222);
+    });
+
+    it("switching to Transliteration remembers it for the open project without saving the record", async () => {
+      await seedStoredProject("p1", { open: true, project: { savedAt: 333, lines: [TRANSLITERATED_LINE] } });
+      await render(<PersistenceHost />);
+      await getPersistenceSettled();
+      useTimelineStore.getState().toggleTextVariant();
+      await expect.poll(async () => (await loadProjectIndexEntry("p1"))?.textVariant).toBe("transliteration");
+      expect((await loadProjectRecord("p1"))?.savedAt).toBe(333);
+    });
+
+    it("regression: a choice made before the first save is kept by that save", async () => {
+      useSettingsStore.setState({ autoSaveDelay: 20 });
+      await render(<PersistenceHost />);
+      await getPersistenceSettled();
+      const id = createProject();
+      useTimelineStore.getState().setTextVariant("transliteration");
+      useProjectStore.getState().setLines([TRANSLITERATED_LINE]);
+      await expect.poll(async () => (await loadProjectIndexEntry(id))?.textVariant).toBe("transliteration");
+    });
+  });
+});

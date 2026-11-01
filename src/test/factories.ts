@@ -1,7 +1,9 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { type SnapPoint, toSnapPoints } from "@/domain/snap-point/model";
 import type { WordTiming } from "@/domain/word/timing";
+import type { ProjectSaveInput } from "@/lib/persistence";
 
 interface FactoryLineOptions {
   id?: string;
@@ -15,6 +17,7 @@ interface FactoryLineOptions {
   backgroundTextSource?: "extraction" | "manual";
   groupId?: string;
   instanceIdx?: number;
+  templateLineIdx?: number;
 }
 
 interface FactoryWordOptions {
@@ -30,6 +33,8 @@ interface FactoryGroupOptions {
   label?: string;
   color?: string;
   templateVersion?: number;
+  sharesTiming?: true;
+  ownTimingInstances?: number[];
 }
 
 let lineCounter = 0;
@@ -61,6 +66,7 @@ function createLine(opts: FactoryLineOptions = {}): LyricLine {
     ...(opts.backgroundTextSource ? { backgroundTextSource: opts.backgroundTextSource } : {}),
     ...(opts.groupId ? { groupId: opts.groupId } : {}),
     ...(opts.instanceIdx !== undefined ? { instanceIdx: opts.instanceIdx } : {}),
+    ...(opts.templateLineIdx !== undefined ? { templateLineIdx: opts.templateLineIdx } : {}),
   });
 }
 
@@ -75,7 +81,36 @@ function createGroup(opts: FactoryGroupOptions = {}) {
     label: opts.label ?? `Group ${groupCounter}`,
     color: opts.color ?? "#a3c9ff",
     templateVersion: opts.templateVersion ?? 0,
+    ...(opts.sharesTiming ? { sharesTiming: opts.sharesTiming } : {}),
+    ...(opts.ownTimingInstances ? { ownTimingInstances: opts.ownTimingInstances } : {}),
   };
 }
 
-export { createLine, createWord, createGroup, snapPoints };
+function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): ProjectSaveInput {
+  return {
+    metadata: { title: "t", artists: [], album: "", duration: 0 },
+    agents: DEFAULT_AGENTS,
+    lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
+    groups: [],
+    granularity: "word",
+    exportTiming: "word",
+    syllableSplitDefaults: DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
+    audioSource: { kind: "file", name: "silence.mp3" },
+    dismissedSuggestions: [],
+    dismissedExplicitSuggestions: [],
+    dismissedMetadataMatches: [],
+    currentStem: "original",
+    primingStripped: false,
+    primingCorrected: true,
+    customSnapPoints: [],
+    beatGrid: null,
+    hasUnexportedImport: false,
+    importedMetadataKeys: [],
+    ttmlEditState: null,
+    alignedTimings: {},
+    alignmentNoticeDismissed: false,
+    ...overrides,
+  };
+}
+
+export { createLine, createWord, createGroup, createProjectSaveInput, snapPoints };

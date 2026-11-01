@@ -1,6 +1,8 @@
-import { effectiveBounds } from "@/domain/line/bounds";
-import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { trackWords } from "@/domain/line/tracks";
+import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
+import type { SyncCursor } from "@/domain/sync/cursor";
+import type { ReRecording } from "@/domain/sync/skipped-instances";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { formatTime } from "@/utils/format-time";
@@ -8,14 +10,20 @@ import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
-interface SyncPosition {
-  lineIndex: number;
-  wordIndex: number;
+interface SyncReRecording extends ReRecording {
+  projectId: string | undefined;
 }
 
 interface SyncState {
-  position: SyncPosition;
+  position: SyncCursor;
   isActive: boolean;
+  // True when the cursor was placed by a jump rather than by advancing through
+  // the song. Tapping the first word of a line closes the previous line so the
+  // two meet, which is right in a forward pass but stretches an already-correct
+  // line when the user jumped back to re-record this one.
+  jumpedToPosition?: boolean;
+  anchorUndo?: AnchorUndo;
+  reRecording?: SyncReRecording;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -63,18 +71,6 @@ function parseTimeMs(str: string): number | null {
   return mins * 60 + secs + ms / 1000;
 }
 
-function getTotalWords(lines: { text: string }[]): number {
-  return lines.reduce((acc, line) => acc + splitIntoWords(line.text).length, 0);
-}
-
-function getSyncedWordCount(lines: { words?: WordTiming[] }[]): number {
-  return lines.reduce((acc, line) => acc + (line.words?.length ?? 0), 0);
-}
-
-function getSyncedLineCount(lines: LyricLine[]): number {
-  return lines.filter((line) => effectiveBounds(line) !== null).length;
-}
-
 // -- Conversion Functions -----------------------------------------------------
 
 interface ConvertibleLine {
@@ -103,10 +99,6 @@ function convertLineToWord<T extends ConvertibleLine>(line: T): T {
   }));
 
   return { ...line, words, begin: undefined, end: undefined };
-}
-
-function hasLineTiming(lines: LyricLine[]): boolean {
-  return lines.some(isLineSynced);
 }
 
 // -- Word Distribution --------------------------------------------------------
@@ -142,58 +134,31 @@ function createInitialBgWords(backgroundText: string, begin: number, end?: numbe
   return distributeWordsInLine(backgroundText, begin, resolvedEnd);
 }
 
-function createBgWordsFromLine(line: LyricLine): WordTiming[] | null {
-  if (!line.backgroundText) return null;
-  const timing = effectiveBounds(line);
-  if (!timing) return null;
-  return createInitialBgWords(line.backgroundText, (timing.begin + timing.end) / 2, timing.end);
-}
-
-// -- Tap and hold commit ------------------------------------------------------
-
-function commitTappedWord(
-  existingWords: WordTiming[],
-  wordIndex: number,
-  text: string,
+function createTrackWordsFromTextAt(
+  line: LyricLine,
+  type: "word" | "bg",
   begin: number,
-  end: number,
-): WordTiming[] {
-  if (existingWords.length === 0) return [{ text, begin, end }];
-  if (wordIndex === 0) return [{ ...existingWords[0], text, begin, end }];
-  const keepCount = Math.min(wordIndex, existingWords.length);
-  const result = existingWords.slice(0, keepCount);
-  const lastIdx = result.length - 1;
-  result[lastIdx] = { ...result[lastIdx], end: begin };
-  result.push({ text, begin, end });
-  return result;
-}
-
-function commitHeldWord(existingWords: WordTiming[], wordIndex: number, text: string, begin: number): WordTiming[] {
-  if (existingWords.length === 0) return [{ text, begin, end: begin }];
-  if (wordIndex === 0) return [{ ...existingWords[0], text, begin }];
-  const keepCount = Math.min(wordIndex, existingWords.length);
-  const result = existingWords.slice(0, keepCount);
-  result.push({ text, begin, end: begin });
-  return result;
+  maxEnd: number,
+): WordTiming[] | null {
+  const text = type === "word" ? line.text : line.backgroundText;
+  if (!text || trackWords(line, type)?.length) return null;
+  const partDuration = type === "word" ? useSettingsStore.getState().defaultWordDuration : DEFAULT_BG_WORD_DURATION;
+  const naturalEnd = begin + splitIntoWords(text).length * partDuration;
+  const words = distributeWordsInLine(text, begin, Math.min(maxEnd, naturalEnd));
+  return words.length > 0 ? words : null;
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export {
-  commitHeldWord,
-  commitTappedWord,
-  createBgWordsFromLine,
+  createTrackWordsFromTextAt,
   createInitialBgWords,
   distributeWordsInLine,
   getNudgeAmount,
   convertLineToWord,
   formatTimeMs,
-  getSyncedLineCount,
-  getSyncedWordCount,
-  getTotalWords,
-  hasLineTiming,
   parseTimeMs,
   splitIntoWords,
   splitIntoWordsWithMeta,
 };
-export type { SyncState };
+export type { SyncReRecording, SyncState };

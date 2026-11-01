@@ -1,5 +1,6 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { detectTtmlSyncType } from "@/domain/lyrics-search/sync-type";
+import { buildSyncedTtml } from "@/test/ttml-fixtures";
 import { boiduLyricsProvider } from "@/utils/lyrics-search/providers/boidu-lyrics";
 import { LyricsSearchError } from "@/utils/lyrics-search/types";
 
@@ -193,6 +194,18 @@ describeOnline("boiduLyricsProvider", () => {
     );
 
     it(
+      "reports no duration, because the endpoint returns none",
+      async () => {
+        if (skipIfOffline()) return;
+        const controller = new AbortController();
+        const results = await boiduLyricsProvider.search(CACHED_QUERY, controller.signal);
+        if (results.length === 0) return;
+        expect(results[0].durationSec).toBeUndefined();
+      },
+      NETWORK_TEST_TIMEOUT_MS,
+    );
+
+    it(
       "leaves album undefined when not supplied",
       async () => {
         if (skipIfOffline()) return;
@@ -275,5 +288,71 @@ describeOnline("boiduLyricsProvider", () => {
       expect(error.message).toBe("boom");
       expect(error.name).toBe("LyricsSearchError");
     });
+  });
+});
+
+// -- Result mapping (stubbed transport, never reaches the network) ------------
+
+describe("boiduLyricsProvider result mapping", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("reports no duration even though the query and the document both carry one", async () => {
+    vi.stubGlobal(
+      "fetch",
+      async (): Promise<Response> =>
+        new Response(JSON.stringify({ ttml: buildSyncedTtml(CACHED_QUERY.durationSec) }), {
+          headers: { "content-type": "application/json" },
+        }),
+    );
+
+    const results = await boiduLyricsProvider.search(CACHED_QUERY, new AbortController().signal);
+
+    expect(results).toHaveLength(1);
+    expect(CACHED_QUERY.durationSec).toBe(355);
+    expect(results[0].durationSec).toBeUndefined();
+  });
+});
+
+// -- 4xx/5xx status handling (stubbed transport) ------------------------------
+
+describe("boiduLyricsProvider 4xx/5xx handling", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  function stubStatus(status: number): void {
+    vi.stubGlobal("fetch", async (): Promise<Response> => new Response("body", { status }));
+  }
+
+  it.each([400, 401, 403, 422, 429, 500, 503])("returns [] without throwing on %i", async (status) => {
+    stubStatus(status);
+    const results = await boiduLyricsProvider.search(CACHED_QUERY, new AbortController().signal);
+    expect(results).toEqual([]);
+  });
+
+  it("logs a warning on a non-404 4xx instead of surfacing an error", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    stubStatus(403);
+    await boiduLyricsProvider.search(CACHED_QUERY, new AbortController().signal);
+    expect(warn).toHaveBeenCalled();
+  });
+
+  it("stays silent on a plain 404 miss", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    stubStatus(404);
+    const results = await boiduLyricsProvider.search(CACHED_QUERY, new AbortController().signal);
+    expect(results).toEqual([]);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("returns [] and warns on 5xx instead of throwing", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    stubStatus(503);
+    const results = await boiduLyricsProvider.search(CACHED_QUERY, new AbortController().signal);
+    expect(results).toEqual([]);
+    expect(warn).toHaveBeenCalled();
   });
 });

@@ -1,3 +1,4 @@
+import type { TimeRange } from "@/domain/group/shared-timing";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import type { WordTiming } from "@/domain/word/timing";
 import { resolveOverlapsForward } from "@/utils/word-spaces";
@@ -13,20 +14,20 @@ function reorderWordTrack(
   track: WordTiming[],
   draggedIndices: ReadonlySet<number>,
   timeDelta: number,
-  duration: number,
+  range: TimeRange,
 ): WordTiming[] {
   const dragged: WordTiming[] = [];
   const rest: WordTiming[] = [];
   track.forEach((word, index) => {
     if (draggedIndices.has(index)) {
       const wordDuration = word.end - word.begin;
-      const newBegin = Math.max(0, Math.min(duration - wordDuration, word.begin + timeDelta));
+      const newBegin = Math.max(range.min, Math.min(range.max - wordDuration, word.begin + timeDelta));
       dragged.push({ ...word, begin: newBegin, end: newBegin + wordDuration });
     } else {
       rest.push({ ...word });
     }
   });
-  return resolveOverlapsForward(mergeWordsIntoTrack(rest, dragged), duration);
+  return resolveOverlapsForward(mergeWordsIntoTrack(rest, dragged), range.max);
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -1,28 +1,8 @@
-import type { LyricLine } from "@/domain/line/model";
+import { getEffectiveLines } from "@/domain/line/effective-words";
 import { createLine } from "@/test/factories";
-import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
+import { bgOps, captureUpdates, makeLine, wordsOps } from "@/test/word-timing-harness";
+import { nudgeWordEnd, setWordBegin, setWordBoundary } from "@/utils/timing/word-timing";
 import { describe, expect, it } from "vitest";
-
-interface CapturedUpdate {
-  id: string;
-  updates: Partial<LyricLine>;
-  options?: { propagateToSiblings?: boolean };
-}
-
-function captureUpdates() {
-  const calls: CapturedUpdate[] = [];
-  const updateLineWithHistory = (
-    id: string,
-    updates: Partial<LyricLine>,
-    options?: { propagateToSiblings?: boolean },
-  ) => {
-    calls.push({ id, updates, options });
-  };
-  return { calls, updateLineWithHistory };
-}
-
-const wordsOps = createWordTimingOps({ getWords: (line) => line.words, updateKey: "words" });
-const bgOps = createWordTimingOps({ getWords: (line) => line.backgroundWords, updateKey: "backgroundWords" });
 
 describe("createWordTimingOps: early returns", () => {
   it("nudgeBegin no-ops when line missing", () => {
@@ -47,17 +27,6 @@ describe("createWordTimingOps: early returns", () => {
 });
 
 describe("createWordTimingOps: nudgeBegin / setBegin clamp", () => {
-  function makeLine() {
-    return createLine({
-      text: "a b c",
-      words: [
-        { text: "a", begin: 0, end: 1 },
-        { text: "b", begin: 1, end: 2 },
-        { text: "c", begin: 2, end: 3 },
-      ],
-    });
-  }
-
   it("nudgeBegin caps at prev word's end", () => {
     const { calls, updateLineWithHistory } = captureUpdates();
     wordsOps.nudgeBegin([makeLine()], 0, 1, -5, updateLineWithHistory);
@@ -90,17 +59,6 @@ describe("createWordTimingOps: nudgeBegin / setBegin clamp", () => {
 });
 
 describe("createWordTimingOps: nudgeEnd / setEnd clamp", () => {
-  function makeLine() {
-    return createLine({
-      text: "a b c",
-      words: [
-        { text: "a", begin: 0, end: 1 },
-        { text: "b", begin: 1, end: 2 },
-        { text: "c", begin: 2, end: 3 },
-      ],
-    });
-  }
-
   it("nudgeEnd caps at next word's begin", () => {
     const { calls, updateLineWithHistory } = captureUpdates();
     wordsOps.nudgeEnd([makeLine()], 0, 1, +5, updateLineWithHistory);
@@ -169,17 +127,49 @@ describe("createWordTimingOps: write contract", () => {
 
   it("does not mutate untouched words in the resulting array", () => {
     const { calls, updateLineWithHistory } = captureUpdates();
-    const line = createLine({
-      text: "a b c",
-      words: [
-        { text: "a", begin: 0, end: 1 },
-        { text: "b", begin: 1, end: 2 },
-        { text: "c", begin: 2, end: 3 },
-      ],
-    });
+    const line = makeLine();
     wordsOps.setBegin([line], 0, 1, 1.5, updateLineWithHistory);
     const out = calls[0].updates.words ?? [];
-    expect(out[0]).toEqual({ text: "a", begin: 0, end: 1 });
+    expect(out[0]).toEqual({ text: "a ", begin: 0, end: 1 });
     expect(out[2]).toEqual({ text: "c", begin: 2, end: 3 });
+  });
+});
+
+describe("main-track ops on effective lines", () => {
+  it("regression [: set begin on a line-synced row writes begin/end, not words", () => {
+    const { calls, updateLineWithHistory } = captureUpdates();
+    const lines = getEffectiveLines([createLine({ text: "Line synced", begin: 17, end: 20 })]);
+    setWordBegin(lines, 0, 0, 18, updateLineWithHistory);
+    expect(calls[0].updates).toEqual({ begin: 18, end: 20 });
+  });
+
+  it("regression info panel: set boundary on a line-synced row writes begin/end, not words", () => {
+    const { calls, updateLineWithHistory } = captureUpdates();
+    const lines = getEffectiveLines([createLine({ text: "Line synced", begin: 17, end: 20 })]);
+    setWordBoundary({
+      lines,
+      lineIdx: 0,
+      wordIdx: 0,
+      edge: "end",
+      time: 21,
+      minDuration: 0.05,
+      rolling: false,
+      syllablesFollowRolling: false,
+      updateLineWithHistory,
+    });
+    expect(calls[0].updates).toEqual({ begin: 17, end: 21 });
+  });
+
+  it("writes words and never text for a partially synced line", () => {
+    const { calls, updateLineWithHistory } = captureUpdates();
+    const lines = getEffectiveLines([createLine({ text: "a b", words: [{ text: "a ", begin: 1, end: 2 }] })]);
+    nudgeWordEnd(lines, 0, 0, 0.5, updateLineWithHistory);
+    expect(calls[0].updates).toEqual({ words: [{ text: "a ", begin: 1, end: 2.5 }] });
+  });
+
+  it("leaves a raw line-synced row alone because it has no words to edit", () => {
+    const { calls, updateLineWithHistory } = captureUpdates();
+    setWordBegin([createLine({ text: "Line synced", begin: 17, end: 20 })], 0, 0, 18, updateLineWithHistory);
+    expect(calls).toHaveLength(0);
   });
 });

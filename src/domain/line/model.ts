@@ -1,3 +1,4 @@
+import type { TranslationTracks, TransliterationTrack } from "@/domain/language/model";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -13,6 +14,8 @@ interface LineFields {
   instanceIdx?: number;
   templateLineIdx?: number;
   detached?: boolean;
+  translations?: TranslationTracks;
+  transliteration?: TransliterationTrack;
 }
 
 // LyricLine is a discriminated union over its timing shape. The discriminant is
@@ -43,23 +46,32 @@ type LyricLine = WordSyncedLine | LineSyncedLine | UntimedLine;
 // combination of timing fields may be present. Used for merge scratch objects.
 type LooseLine = LineFields & { words?: WordTiming[]; begin?: number; end?: number };
 
+const effectiveLineBrand: unique symbol = Symbol("effectiveLine");
+
+type RawLine = LyricLine & { readonly [effectiveLineBrand]?: never };
+
+interface LineUpdate {
+  id: string;
+  updates: Partial<LyricLine>;
+}
+
 // -- Functions ----------------------------------------------------------------
 
 // The store builds lines by spreading `...line` (a union member) together with
 // Partial<LyricLine> updates or fresh timing fields. A generic spread widens
 // past the LyricLine union, so reconcileLine re-narrows a freshly merged line
 // into exactly one variant by its runtime shape. It enforces the core
-// invariant: a line is never both word-synced and line-synced. A `words` array
-// (even empty) wins and drops begin/end.
+// invariant: a line is never both word-synced and line-synced. A non-empty
+// `words` array wins and drops begin/end; an empty one counts as no words.
 function reconcileLine(line: LooseLine): LyricLine {
   const { words, begin, end, ...rest } = line;
-  if (words !== undefined) return { ...rest, words };
+  if (words?.length) return { ...rest, words };
   if (begin !== undefined && end !== undefined) return { ...rest, begin, end };
   return rest;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { reconcileLine };
+export { effectiveLineBrand, reconcileLine };
 
-export type { LineFields, LineSyncedLine, LyricLine, LooseLine };
+export type { LineFields, LineSyncedLine, LineUpdate, LyricLine, LooseLine, RawLine };

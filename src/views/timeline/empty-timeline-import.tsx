@@ -19,6 +19,7 @@ const EmptyTimelineImport: React.FC<EmptyTimelineImportProps> = ({ openLyricsMod
       <p className="text-sm text-composer-text-muted">Paste lyrics or import a file</p>
       <Button
         variant="primary"
+        size="lg"
         hasIcon
         onClick={importTriggers.onClick}
         onDoubleClick={importTriggers.onDoubleClick}

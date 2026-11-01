@@ -1,9 +1,16 @@
 // -- Constants -----------------------------------------------------------------
 
 const MASK_DIM_ALPHA = 0.5;
-const WORD_CORNER_RADIUS_PX = 12;
+const MASK_ROOT_SELECTOR = "[data-timeline-mask-root]";
 
 // -- Helpers -------------------------------------------------------------------
+
+// dnd-kit renders the drag ghost's word blocks into a DragOverlay that does not portal,
+// so the marked root wraps both it and the scroll container: the smallest root that still
+// holds every word block the document-scoped query used to find.
+function playheadMaskRoot(scrollContainer: Element): ParentNode {
+  return scrollContainer.closest(MASK_ROOT_SELECTOR) ?? scrollContainer.ownerDocument;
+}
 
 function cornerYInset(distFromEdge: number, radius: number): number {
   if (distFromEdge >= radius || distFromEdge < 0) return 0;
@@ -11,16 +18,16 @@ function cornerYInset(distFromEdge: number, radius: number): number {
   return radius - Math.sqrt(radius * radius - d * d);
 }
 
-function buildPlayheadMask(playheadCenterXViewport: number, containerTopViewport: number): string {
-  const wordBlocks = document.querySelectorAll("[data-word-block]");
+function buildPlayheadMask(root: ParentNode, playheadCenterXViewport: number, containerTopViewport: number): string {
+  const wordBlocks = root.querySelectorAll("[data-word-block]");
   const ranges: { top: number; bottom: number }[] = [];
   for (const wb of wordBlocks) {
     const el = wb as HTMLElement;
     const r = el.getBoundingClientRect();
     if (playheadCenterXViewport < r.left || playheadCenterXViewport > r.right) continue;
-    const sylPos = el.dataset.syllablePosition ?? "none";
-    const leftR = sylPos === "middle" || sylPos === "last" ? 0 : WORD_CORNER_RADIUS_PX;
-    const rightR = sylPos === "middle" || sylPos === "first" ? 0 : WORD_CORNER_RADIUS_PX;
+    const corners = getComputedStyle(el);
+    const leftR = Number.parseFloat(corners.borderTopLeftRadius) || 0;
+    const rightR = Number.parseFloat(corners.borderTopRightRadius) || 0;
     const yInset = Math.max(
       cornerYInset(playheadCenterXViewport - r.left, leftR),
       cornerYInset(r.right - playheadCenterXViewport, rightR),
@@ -50,4 +57,4 @@ function buildPlayheadMask(playheadCenterXViewport: number, containerTopViewport
 
 // -- Exports -------------------------------------------------------------------
 
-export { buildPlayheadMask };
+export { buildPlayheadMask, playheadMaskRoot };

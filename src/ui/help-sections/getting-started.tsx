@@ -1,90 +1,88 @@
+import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { HEADING, PROSE } from "@/ui/help-sections/shared";
+import { HelpTopic } from "@/ui/help-topic";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { MOD_KEY } from "@/utils/platform";
+import { PROSE, PROSE_LINK } from "@/ui/typography";
+import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 
 // -- Getting Started ----------------------------------------------------------
 
 const GettingStartedSection: React.FC = () => (
-  <div className="space-y-5">
-    <p className={PROSE}>
-      Composer is the lyrics editor for{" "}
-      <a
-        href="https://betterlyrics.org"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
-      >
-        Better Lyrics
-      </a>
-      . It guides you through four steps to create synced lyrics. Follow the tabs left-to-right for a guided experience,
-      or jump straight to the Timeline for a DAW-like workflow.
-      <br /> As of now, Composer is still in early access, so expect some rough edges. If you run into any issues or
-      have feedback, please reach out on{" "}
-      <a
-        href="https://discord.gg/UsHE3d5fWF"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
-      >
-        Discord
-      </a>{" "}
-      or submit an issue on{" "}
-      <a
-        href="https://github.com/better-lyrics/composer/issues/new/choose"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
-      >
-        GitHub
-      </a>
-      .
-    </p>
+  <div className="space-y-[22px] max-w-[68ch]">
+    <div className="space-y-3">
+      <p className={PROSE}>
+        Composer is the lyrics editor for{" "}
+        <a href="https://betterlyrics.org" target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
+          Better Lyrics
+        </a>
+        . It guides you through four steps to create synced lyrics. Work through the tabs from left to right, or go
+        straight to the Timeline if you prefer a DAW-style workflow.
+      </p>
+      <p className={PROSE}>
+        Composer is still in early access, so expect some rough edges. If something breaks or you have feedback, reach
+        out on{" "}
+        <a href="https://discord.gg/UsHE3d5fWF" target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
+          Discord
+        </a>{" "}
+        or submit an issue on{" "}
+        <a
+          href="https://github.com/better-lyrics/composer/issues/new/choose"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={PROSE_LINK}
+        >
+          GitHub
+        </a>
+        .
+      </p>
+    </div>
 
-    <div className="space-y-4">
-      <div>
-        <h4 className={HEADING}>1. Import your audio</h4>
+    <div className="space-y-[22px]">
+      <HelpTopic title="1. Import your audio">
         <p className={PROSE}>
           Drop an audio file (MP3, WAV, M4A, OGG, FLAC) into the Import tab, or paste a YouTube URL to pull the audio
           from a video. Local files can also be dropped straight onto the Timeline. The waveform appears once the audio
           loads.
         </p>
-      </div>
-      <div>
-        <h4 className={HEADING}>2. Add your lyrics</h4>
+      </HelpTopic>
+      <HelpTopic title="2. Add your lyrics">
         <p className={PROSE}>
-          Go to the Edit tab and type or paste your lyrics, one line per row. If you have a lyrics file (.lrc, .srt,
-          .ttml, .txt), drop it there instead. You can also use{" "}
+          Go to the Edit tab and type or paste your lyrics, one line per row. If you have a lyrics file (
+          {LYRICS_FORMATS_PROSE}) or {PROJECT_FILE_PROSE}, drop or paste it there instead. You can also use{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} /> in Timeline to import lyrics without
           leaving that view.
         </p>
-      </div>
-      <div>
-        <h4 className={HEADING}>3. Sync the timing</h4>
+      </HelpTopic>
+      <HelpTopic title="3. Sync the timing">
         <p className={PROSE}>
-          The Sync tab lets you sync words to the music using two keys: tap Space to mark gapless word boundaries, or
-          hold F to capture a word's full duration. You can also tap Space while holding F to create gapless syllable
-          boundaries. If you miss one, use the arrow keys to nudge the timing. For finer control, switch to Timeline and
-          drag word blocks directly on the waveform.
+          In the Sync tab you sync words to the music with two keys: tap{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} /> to mark gapless word boundaries, or hold{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} /> to capture a word's full duration. You can
+          also tap <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} /> while holding{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} /> to create gapless syllable boundaries. If you
+          miss one, press <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeLeft")} /> or{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeRight")} /> to nudge the timing. For finer control,
+          switch to Timeline and drag word blocks directly on the waveform.
         </p>
-      </div>
-      <div>
-        <h4 className={HEADING}>4. Preview and export</h4>
+      </HelpTopic>
+      <HelpTopic title="4. Preview and export">
         <p className={PROSE}>
           The Preview tab shows a live karaoke-style playback of your work. When you're happy with it, go to Export and
           download your TTML file. You can also copy the raw XML or export a project file to share with someone else.
         </p>
-      </div>
+      </HelpTopic>
     </div>
 
     <p className={PROSE}>
-      The tabs are meant to be followed left-to-right, but you can jump between them anytime using {MOD_KEY} + 1 through
-      6.
+      The tabs are meant to be followed left-to-right, but you can jump between them anytime using{" "}
+      <InlineKeyBadge keys={getEffectiveKeysArray("global.goToImport")} /> through{" "}
+      <InlineKeyBadge keys={getEffectiveKeysArray("global.goToExport")} />.
     </p>
 
     <div className="aspect-video w-full rounded-lg overflow-hidden border border-composer-border">
       <iframe
         src="https://www.youtube.com/embed/to138zXZ0nc?rel=0"
+        loading="lazy"
         title="Composer tutorial"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"

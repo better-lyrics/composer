@@ -1,22 +1,49 @@
-import type { DriveStep } from "driver.js";
+import { isLineTimed } from "@/domain/line/sync-progress";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { importLyricsButtonStep, importLyricsDialogStep } from "@/tour/import-lyrics-steps";
+import { TAB_PANEL_RENDER_WAIT_MS, elementOnTab } from "@/tour/tab-panel-step";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { formatShortcut } from "@/utils/format-key";
 import { MOD_KEY } from "@/utils/platform";
+import { escapeXml } from "@/utils/ttml-markup";
+import type { DriveStep } from "driver.js";
 
 // -- Types --------------------------------------------------------------------
 
+type TourStepId = (typeof TOUR_STEP_IDS)[number];
+
 interface GatedStep {
+  stepId: TourStepId;
   stepIndex: number;
   task: string;
   gateCheck: () => boolean;
   tabId: string;
 }
 
+// -- Step order ---------------------------------------------------------------
+
+const TOUR_STEP_IDS = [
+  "welcome",
+  "import",
+  "import-gate",
+  "edit",
+  "edit-import",
+  "edit-import-modal",
+  "edit-gate",
+  "languages",
+  "sync",
+  "sync-gate",
+  "timeline",
+  "preview",
+  "export",
+  "best-practices",
+  "outro",
+] as const;
+
 // -- Helpers ------------------------------------------------------------------
 
-function switchTab(tabId: string) {
-  useProjectStore.getState().setActiveTab(tabId as "import" | "edit" | "sync" | "timeline" | "preview" | "export");
-}
+const BEST_PRACTICES_STEP_TITLE = "One thing before you do this for real";
 
 const YOUTUBE_EMBED_HTML = `<div class="composer-tour-video-embed"><iframe src="https://www.youtube.com/embed/to138zXZ0nc?rel=0" title="Composer demo" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups" allowfullscreen></iframe></div>`;
 
@@ -24,17 +51,16 @@ const YOUTUBE_EMBED_HTML = `<div class="composer-tour-video-embed"><iframe src="
 
 const gateAudioLoaded = () => useAudioStore.getState().source !== null;
 const gateLyricsExist = () => useProjectStore.getState().lines.length > 0;
-const gateFirstLineSynced = () => {
-  const lines = useProjectStore.getState().lines;
-  return lines.length > 0 && lines[0]?.begin !== undefined;
-};
+const gateFirstLineSynced = () => useProjectStore.getState().lines.some(isLineTimed);
 
 // -- Tour Steps ---------------------------------------------------------------
 
-function createTourSteps(): DriveStep[] {
-  return [
-    // 0: Welcome
-    {
+// Steps are built when the tour starts, so they name the keys the user has right now.
+const keysOf = (id: string) => escapeXml(formatShortcut(getEffectiveKeysArray(id)));
+
+function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
+  const stepsById: Record<TourStepId, DriveStep> = {
+    welcome: {
       popover: {
         title: "Welcome to Composer",
         description:
@@ -44,9 +70,9 @@ function createTourSteps(): DriveStep[] {
         showProgress: false,
       },
     },
-    // 1: Import tab
-    {
-      element: () => document.querySelector('[data-tour="import-dropzone"]') as Element,
+    import: {
+      element: elementOnTab("import", '[data-tour="import-dropzone"]'),
+      waitForElement: TAB_PANEL_RENDER_WAIT_MS,
       popover: {
         title: "Bring in your audio",
         description:
@@ -54,96 +80,111 @@ function createTourSteps(): DriveStep[] {
         side: "bottom",
         align: "center",
       },
-      onHighlightStarted: () => switchTab("import"),
     },
-    // 2: GATED - wait for audio
-    {
-      element: () => document.querySelector('[data-tour="import-dropzone"]') as Element,
+    "import-gate": {
+      element: elementOnTab("import", '[data-tour="import-dropzone"]'),
+      waitForElement: TAB_PANEL_RENDER_WAIT_MS,
       popover: {
         title: "Import your audio",
         description: "Drop an audio file or paste a YouTube URL to continue.",
         showButtons: [],
       },
-      onHighlightStarted: () => switchTab("import"),
     },
-    // 3: Edit tab
-    {
-      element: () => document.querySelector('[data-tour="edit-panel"]') as Element,
+    edit: {
+      element: elementOnTab("edit", '[data-tour="edit-panel"]'),
+      waitForElement: TAB_PANEL_RENDER_WAIT_MS,
       popover: {
         title: "Type or paste lyrics",
-        description: "Enter your lyrics in the text area on the left. Each line becomes a sync target.",
+        description:
+          "Enter your lyrics in the text area on the left. Each line becomes a sync target. Paste a whole lyrics or project file to import it.",
         side: "right",
         align: "start",
       },
-      onHighlightStarted: () => switchTab("edit"),
     },
-    // 4: GATED - wait for lyrics
-    {
-      element: () => document.querySelector('[data-tour="edit-panel"]') as Element,
+    "edit-import": importLyricsButtonStep(),
+    "edit-import-modal": importLyricsDialogStep(),
+    "edit-gate": {
+      element: elementOnTab("edit", '[data-tour="edit-panel"]'),
+      waitForElement: TAB_PANEL_RENDER_WAIT_MS,
       popover: {
         title: "Add your lyrics",
         description: "Type or paste at least one line to continue.",
         showButtons: [],
       },
-      onHighlightStarted: () => switchTab("edit"),
     },
-    // 5: Sync tab
-    {
-      element: () => document.querySelector('[data-tour="sync-panel"]') as Element,
+    languages: {
+      element: elementOnTab("languages", '[data-tour="languages-panel"]'),
+      waitForElement: TAB_PANEL_RENDER_WAIT_MS,
+      popover: {
+        title: "Translate and transliterate",
+        description:
+          "Generate transliterations and translations, then edit them like any lyric. The arrow next to Regenerate all redoes only the languages you pick. If a line gets flagged, press Align and click where each syllable starts.",
+        side: "bottom",
+        align: "center",
+      },
+    },
+    sync: {
+      element: elementOnTab("sync", '[data-tour="sync-panel"]'),
+      waitForElement: TAB_PANEL_RENDER_WAIT_MS,
       popover: {
         title: "Sync your lyrics",
-        description:
-          "Press Start, then tap Space in time with each line or word. Use the granularity toggle for line vs word precision.",
+        description: `Press Start, then tap ${keysOf("sync.tap")} in time with each line or word. Use the granularity toggle for line vs word precision.`,
         side: "left",
         align: "start",
       },
-      onHighlightStarted: () => switchTab("sync"),
     },
-    // 6: GATED - wait for first line synced
-    {
-      element: () => document.querySelector('[data-tour="sync-panel"]') as Element,
+    "sync-gate": {
+      element: elementOnTab("sync", '[data-tour="sync-panel"]'),
+      waitForElement: TAB_PANEL_RENDER_WAIT_MS,
       popover: {
         title: "Sync at least one line",
-        description: "Press Start, play the audio, then tap Space to set timing.",
+        description: `Press Start, play the audio, then tap ${keysOf("sync.tap")} to set timing.`,
         showButtons: [],
       },
-      onHighlightStarted: () => switchTab("sync"),
     },
-    // 7: Timeline tab
-    {
-      element: () => document.querySelector('[data-tour="timeline-panel"]') as Element,
+    timeline: {
+      element: elementOnTab("timeline", '[data-tour="timeline-panel"]'),
+      waitForElement: TAB_PANEL_RENDER_WAIT_MS,
       popover: {
         title: "Fine-tune on the timeline",
-        description: `Drag words to adjust timing, or select words and nudge them with the arrow keys. ${MOD_KEY} + scroll to zoom, F to toggle playhead follow. Group repeating sections with ${MOD_KEY}+G, then duplicate them as linked instances with ${MOD_KEY}+D so edits propagate everywhere.`,
+        description: `Drag words to adjust timing, or select words and nudge them with ${keysOf("timeline.nudgeLeft")} and ${keysOf("timeline.nudgeRight")}. ${MOD_KEY} + scroll to zoom, ${keysOf("timeline.toggleFollow")} to toggle playhead follow. Group repeating sections with ${keysOf("timeline.createGroup")}, then duplicate them as linked instances with ${keysOf("timeline.duplicateAsLinked")} so edits propagate everywhere.`,
         side: "top",
         align: "center",
       },
-      onHighlightStarted: () => switchTab("timeline"),
     },
-    // 8: Preview tab
-    {
-      element: () => document.querySelector('[data-tour="preview-panel"]') as Element,
+    preview: {
+      element: elementOnTab("preview", '[data-tour="preview-panel"]'),
+      waitForElement: TAB_PANEL_RENDER_WAIT_MS,
       popover: {
         title: "Preview your work",
         description: "Watch lyrics play back in sync with the audio. Click any line to jump there.",
         side: "left",
         align: "start",
       },
-      onHighlightStarted: () => switchTab("preview"),
     },
-    // 9: Export tab
-    {
-      element: () => document.querySelector('[data-tour="export-panel"]') as Element,
+    export: {
+      element: elementOnTab("export", '[data-tour="export-panel"]'),
+      waitForElement: TAB_PANEL_RENDER_WAIT_MS,
       popover: {
         title: "Export your TTML",
         description: "Copy or download the finished TTML file. You can also export the full project as JSON.",
         side: "left",
         align: "start",
       },
-      onHighlightStarted: () => switchTab("export"),
     },
-    // 10: Outro with video
-    {
+    "best-practices": {
+      popover: {
+        title: BEST_PRACTICES_STEP_TITLE,
+        description:
+          "That's the tour. When you come back to sync an actual song, there's a short list of conventions worth reading first, mostly about where lines break and how backgrounds get written. Read them now, or carry on to the walkthrough video.",
+        popoverClass: "composer-tour composer-tour-modal",
+        showButtons: ["previous", "next", "close"],
+        nextBtnText: "Read them",
+        showProgress: false,
+        onNextClick: () => onOpenBestPractices(),
+      },
+    },
+    outro: {
       popover: {
         title: "See a full walkthrough",
         description: `You're all set! Here's a video of the full process.${YOUTUBE_EMBED_HTML}`,
@@ -153,33 +194,39 @@ function createTourSteps(): DriveStep[] {
         showProgress: false,
       },
     },
-  ];
+  };
+  return TOUR_STEP_IDS.map((id) => stepsById[id]);
 }
 
 // -- Gated Steps Config -------------------------------------------------------
 
-const TOUR_GATED_STEPS: GatedStep[] = [
+const TOUR_GATES: Omit<GatedStep, "stepIndex">[] = [
   {
-    stepIndex: 2,
+    stepId: "import-gate",
     task: "Drop an audio file",
     gateCheck: gateAudioLoaded,
     tabId: "import",
   },
   {
-    stepIndex: 4,
+    stepId: "edit-gate",
     task: "Type or paste lyrics",
     gateCheck: gateLyricsExist,
     tabId: "edit",
   },
   {
-    stepIndex: 6,
+    stepId: "sync-gate",
     task: "Sync at least one line",
     gateCheck: gateFirstLineSynced,
     tabId: "sync",
   },
 ];
 
+const TOUR_GATED_STEPS: GatedStep[] = TOUR_GATES.map((gate) => ({
+  ...gate,
+  stepIndex: TOUR_STEP_IDS.indexOf(gate.stepId),
+}));
+
 // -- Exports ------------------------------------------------------------------
 
-export { createTourSteps, TOUR_GATED_STEPS };
+export { BEST_PRACTICES_STEP_TITLE, createTourSteps, TOUR_GATED_STEPS, TOUR_STEP_IDS };
 export type { GatedStep };

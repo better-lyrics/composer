@@ -1,11 +1,11 @@
-import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
+import { extractLinkedFields, getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
-import { commitHistory } from "@/stores/project/history-helpers";
+import { commitHistory, commitSharedTimingHistory } from "@/stores/project/history-helpers";
 import {
   applyMarkWordsExplicit,
   applyMergeSyllableGroup,
@@ -13,6 +13,7 @@ import {
   applyMoveToBg,
 } from "@/stores/project/lines-slice-helpers";
 import { applySyllableSplitToLines } from "@/stores/project/syllable-split-helpers";
+import { markTransientLines } from "@/stores/project/transient-lines";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
 import { applySiblingWords } from "@/utils/word-diff";
@@ -33,7 +34,29 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
   setLines: (lines) => set({ lines, isDirty: true, isDirtySinceHistory: true }),
 
+  // Transient in-flight gesture preview: replaces lines WITHOUT touching
+  // history or dirty flags. The caller must hold the pre-gesture snapshot and
+  // either restore it or commit through an action with history before the
+  // gesture ends, and must verify (by array identity) that no other writer
+  // replaced lines mid-gesture. Reserved for drag previews (e.g. the timeline
+  // selection stretch) — never for durable edits.
+  setTransientLines: (lines) => {
+    markTransientLines(lines);
+    set({ lines });
+  },
+
+  restoreTransientLines: (lines) => set({ lines }),
+
   setLinesWithHistory: (lines, groups) => set((state) => commitHistory(state, groups ? { lines, groups } : { lines })),
+
+  insertEmptyLineWithHistory: (anchorLineId, position) =>
+    set((state) => {
+      const anchorIndex = state.lines.findIndex((l) => l.id === anchorLineId);
+      if (anchorIndex === -1) return state;
+      const newLine = { id: crypto.randomUUID(), text: "", agentId: state.agents?.[0]?.id ?? "v1" };
+      const lines = state.lines.toSpliced(position === "above" ? anchorIndex : anchorIndex + 1, 0, newLine);
+      return commitHistory(state, { lines });
+    }),
 
   updateLine: (id, updates, options = {}) =>
     set((state) => {
@@ -78,7 +101,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         return line;
       });
 
-      return commitHistory(state, { lines: newLines }, historyOptions);
+      return commitSharedTimingHistory(state, newLines, [id], historyOptions);
     }),
 
   updateLinesWithHistory: (updates, options = {}) =>
@@ -117,7 +140,12 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         }
       }
 
-      return commitHistory(state, { lines: newLines }, historyOptions);
+      return commitSharedTimingHistory(
+        state,
+        newLines,
+        updates.map((update) => update.id),
+        historyOptions,
+      );
     }),
 
   moveWordToBg: (lineId, wordIndices, timeDelta, duration) =>
@@ -140,7 +168,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       });
 
       if (!mutated) return state;
-      return commitHistory(state, { lines: newLines });
+      return commitSharedTimingHistory(state, newLines);
     }),
 
   moveWordFromBg: (lineId, wordIndices, timeDelta, duration) =>
@@ -164,7 +192,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       });
 
       if (!mutated) return state;
-      return commitHistory(state, { lines: newLines });
+      return commitSharedTimingHistory(state, newLines);
     }),
 
   applyWordCountChange: (lineId, newWords, field, resolution, extraUpdates = {}) =>
@@ -177,20 +205,13 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       const linkScope = getLinkScope(target);
 
       if (resolution === "detach") {
-        return commitHistory(state, {
-          lines: state.lines.map((line) => {
-            if (line.id !== lineId) return line;
-            return reconcileLine({
-              ...line,
-              ...extraUpdates,
-              [field]: newWords,
-              groupId: undefined,
-              instanceIdx: undefined,
-              templateLineIdx: undefined,
-              detached: undefined,
-            });
-          }),
-        });
+        const edited = state.lines.map((line) =>
+          line.id === lineId ? reconcileLine({ ...line, ...extraUpdates, [field]: newWords }) : line,
+        );
+        return commitSharedTimingHistory(
+          state,
+          unlinkLines(edited, (line) => line.id === lineId),
+        );
       }
 
       const linkedExtras = linkScope ? extractLinkedFields(extraUpdates) : null;
@@ -208,7 +229,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         return line;
       });
 
-      return commitHistory(state, { lines: newLines });
+      return commitSharedTimingHistory(state, newLines);
     }),
 
   toggleWordExplicit: (lineId, field, wordIndices) => {
@@ -242,7 +263,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
     set((state) => {
       const newLines = applyMergeSyllableGroup(state.lines, lineId, field, wordIndices);
       if (!newLines) return state;
-      return commitHistory(state, { lines: newLines });
+      return commitSharedTimingHistory(state, newLines);
     }),
 
   snapSyllablesFlush: (lineId, field) =>
@@ -255,7 +276,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       if (snapped === lineWords) return state;
       const lineUpdate = field === "backgroundWords" ? manualBackgroundWordEdit(snapped) : { [field]: snapped };
       const newLines = state.lines.map((l) => (l.id === lineId ? reconcileLine({ ...l, ...lineUpdate }) : l));
-      return commitHistory(state, { lines: newLines });
+      return commitSharedTimingHistory(state, newLines);
     }),
 
   markWordsExplicit: (targets, value) =>
@@ -270,7 +291,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       if (splitPoints.length === 0) return state;
       const newLines = applySyllableSplitToLines(state.lines, source, splitPoints, caseInsensitive);
       if (newLines === state.lines) return state;
-      return commitHistory(state, { lines: newLines });
+      return commitSharedTimingHistory(state, newLines);
     }),
 });
 

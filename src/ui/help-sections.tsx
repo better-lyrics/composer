@@ -1,4 +1,5 @@
 import { AboutSection } from "@/ui/help-sections/about";
+import { BestPracticesSection } from "@/ui/help-sections/best-practices";
 import { EditSection } from "@/ui/help-sections/editing";
 import { ExportSection } from "@/ui/help-sections/exporting";
 import { GettingStartedSection } from "@/ui/help-sections/getting-started";
@@ -10,11 +11,13 @@ import { RecoverySection } from "@/ui/help-sections/recovery";
 import { SyncSection } from "@/ui/help-sections/syncing";
 import { TimelineSection } from "@/ui/help-sections/timeline";
 import { TtmlStandardsSection } from "@/ui/help-sections/ttml-standards";
+import { HelpSectionContext } from "@/ui/help-topic";
 
 // -- Registry -----------------------------------------------------------------
 
 const HELP_SECTION_COMPONENTS: Record<string, React.FC> = {
   "getting-started": GettingStartedSection,
+  "best-practices": BestPracticesSection,
   "keyboard-shortcuts": KeyboardShortcutsSection,
   importing: ImportSection,
   editing: EditSection,
@@ -32,7 +35,11 @@ const HELP_SECTION_COMPONENTS: Record<string, React.FC> = {
 
 const HelpSectionContent: React.FC<{ section: string }> = ({ section }) => {
   const Section = HELP_SECTION_COMPONENTS[section] ?? GettingStartedSection;
-  return <Section />;
+  return (
+    <HelpSectionContext value={section}>
+      <Section />
+    </HelpSectionContext>
+  );
 };
 
 // -- Exports ------------------------------------------------------------------

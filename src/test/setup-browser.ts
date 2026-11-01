@@ -1,23 +1,44 @@
-import { beforeEach } from "vitest";
+import { appQueryClient } from "@/lib/app-query-client";
+import { forgetOpenProjectId } from "@/lib/open-project-session";
+import { __resetPendingDeletionsForTests } from "@/lib/pending-deletions";
 import { __resetPersistenceSettledForTests } from "@/lib/persistence-settled";
+import { resetMusicBrainzQueue } from "@/lib/musicbrainz-client";
+import { resetSaveStatus } from "@/lib/save-status";
+import { addGlobalAllowedConsolePattern, registerConsoleGuard } from "@/test/console-guard";
+import { deleteDatabase } from "@/test/idb";
+import { installPromptIdleCallbacks } from "@/test/idle-callbacks";
+import { useSettingsStore } from "@/stores/settings";
 import { resetAllStores } from "@/test/stores";
-import { registerConsoleGuard, addGlobalAllowedConsolePattern } from "@/test/console-guard";
+import { toast } from "sonner";
+import { beforeAll, beforeEach } from "vitest";
+import { cdp } from "vitest/browser";
+import { cleanup } from "vitest-browser-react/pure";
 
 const COMPOSER_DBS = ["ttml-composer"];
 
-async function deleteDB(name: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.deleteDatabase(name);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error ?? new Error(`deleteDatabase(${name}) failed`));
-    req.onblocked = () => resolve();
-  });
-}
+beforeAll(() => {
+  if (!globalThis.gc) throw new Error("Browser tests need Chromium launched with --js-flags=--expose-gc");
+  // Detached test-file iframes hold native handles V8 does not count as GC pressure; without this the renderer drops its sockets.
+  globalThis.gc();
+});
 
 beforeEach(async () => {
-  await Promise.all(COMPOSER_DBS.map(deleteDB));
+  // Unmount first so a previous test's live subscriptions cannot race the wipe.
+  await cleanup();
+  installPromptIdleCallbacks();
+  // The cursor otherwise rests where the last test left it and hovers whatever the next test renders there.
+  await cdp().send("Input.dispatchMouseEvent", { type: "mouseMoved", x: -1, y: -1 });
+  appQueryClient.clear();
+  await Promise.all(COMPOSER_DBS.map(deleteDatabase));
+  forgetOpenProjectId();
+  __resetPendingDeletionsForTests();
   await resetAllStores();
+  // Tests must never reach musicbrainz.org; the MusicBrainz flow test opts back in.
+  useSettingsStore.setState({ musicBrainzLookup: "off" });
+  resetMusicBrainzQueue();
   __resetPersistenceSettledForTests();
+  resetSaveStatus();
+  toast.dismiss();
 });
 
 addGlobalAllowedConsolePattern(/Reduced Motion enabled/);

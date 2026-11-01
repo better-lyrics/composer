@@ -1,7 +1,8 @@
 import { useQueries } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { hasUsableDuration } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
 import type { SyncType } from "@/domain/lyrics-search/sync-type";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { getProviders } from "@/utils/lyrics-search/registry";
 import { LyricsSearchError, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
@@ -35,25 +36,6 @@ interface UseLyricsSearchResult {
 
 function isQueryEmpty(query: LyricsSearchQuery): boolean {
   return !query.track && !query.videoId && !query.isrc;
-}
-
-function useDebouncedValue<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  const latestValueRef = useRef(value);
-  latestValueRef.current = value;
-
-  useEffect(() => {
-    if (delay <= 0) {
-      setDebounced(value);
-      return;
-    }
-    const timer = setTimeout(() => {
-      setDebounced(latestValueRef.current);
-    }, delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-
-  return debounced;
 }
 
 function toLyricsSearchError(provider: ProviderName, raw: unknown): LyricsSearchError {
@@ -115,7 +97,9 @@ function useLyricsSearch(query: LyricsSearchQuery, options?: UseLyricsSearchOpti
   const sorted = merged.toSorted((a, b) => {
     const syncDiff = SYNC_PRECISION_RANK[a.syncType] - SYNC_PRECISION_RANK[b.syncType];
     if (syncDiff !== 0) return syncDiff;
-    if (expected === undefined || !Number.isFinite(expected)) return 0;
+    if (!hasUsableDuration(expected)) return 0;
+    if (!hasUsableDuration(a.durationSec)) return hasUsableDuration(b.durationSec) ? 1 : 0;
+    if (!hasUsableDuration(b.durationSec)) return -1;
     return Math.abs(a.durationSec - expected) - Math.abs(b.durationSec - expected);
   });
 

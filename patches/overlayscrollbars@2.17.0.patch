@@ -1,0 +1,14 @@
+diff --git a/styles/overlayscrollbars.css b/styles/overlayscrollbars.css
+index 034cc74f00d37960d273a18f2487473884523b33..460ea9189bca0aaf4d2c04e3530102aaacec1324 100644
+--- a/styles/overlayscrollbars.css
++++ b/styles/overlayscrollbars.css
+@@ -271,8 +271,7 @@ html[data-overlayscrollbars-body] > body {
+ }
+ 
+ [data-overlayscrollbars-viewport~=noContent]:not(#osFakeId)::before,
+-[data-overlayscrollbars-viewport~=noContent]:not(#osFakeId)::after,
+-[data-overlayscrollbars-viewport~=noContent]:not(#osFakeId) > *:not(#osFakeId) {
++[data-overlayscrollbars-viewport~=noContent]:not(#osFakeId)::after {
+   display: none !important;
+   position: absolute !important;
+   width: 1px !important;

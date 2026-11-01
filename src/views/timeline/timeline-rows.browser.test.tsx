@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { useRef } from "react";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { useProjectStore } from "@/stores/project";
-import { createLine } from "@/test/factories";
+import { createGroup, createLine, createWord } from "@/test/factories";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { render } from "@/test/render";
 
 function Harness() {
@@ -32,5 +33,78 @@ describe("TimelineRows", () => {
     expect(wrapper).not.toBeNull();
     const heightPx = Number.parseInt(wrapper?.style.height ?? "0", 10);
     expect(heightPx).toBeGreaterThan(0);
+  });
+  describe("regressions", () => {
+    function splitInstanceLines() {
+      const linked = (id: string, instanceIdx: number, templateLineIdx: number, begin: number) =>
+        createLine({ id, text: id, groupId: "g1", instanceIdx, templateLineIdx, begin, end: begin + 1 });
+      return [
+        linked("a0", 0, 0, 0),
+        createLine({ id: "detached", text: "detached", begin: 1, end: 2 }),
+        linked("a2", 0, 2, 2),
+        linked("b0", 2, 0, 6),
+        linked("b2", 2, 2, 8),
+      ];
+    }
+
+    it("regression: renders one header per run of an instance split by a detached line", async () => {
+      useProjectStore.setState({ groups: [createGroup({ id: "g1", label: "Chorus" })], lines: splitInstanceLines() });
+      const screen = await render(<Harness />);
+      await expect.poll(() => screen.container.querySelectorAll('[data-group-header="g1:0"]').length).toBe(2);
+    });
+
+    it("regression: labels the surviving instances by rank, never past the count", async () => {
+      useProjectStore.setState({ groups: [createGroup({ id: "g1", label: "Chorus" })], lines: splitInstanceLines() });
+      const screen = await render(<Harness />);
+      await expect
+        .poll(() =>
+          [...screen.container.querySelectorAll("[data-group-header] [title]:not([aria-label])")].map((el) =>
+            el.getAttribute("title"),
+          ),
+        )
+        .toEqual(["Chorus · 1 of 2", "Chorus · 1 of 2", "Chorus · 2 of 2"]);
+    });
+
+    function sizerHeight(container: HTMLElement): string {
+      return container.querySelector<HTMLElement>("[style*='min-width']")?.style.height ?? "";
+    }
+
+    it("regression: sizes the rows container from the store's default row height, not the constant", async () => {
+      useTimelineStore.setState({ defaultRowHeight: 60, rowHeights: {} });
+      useProjectStore.setState({ lines: [createLine({ id: "a", text: "one" }), createLine({ id: "b", text: "two" })] });
+      const screen = await render(<Harness />);
+      expect(sizerHeight(screen.container)).toBe(`${2 * (60 + 24 + 1)}px`);
+    });
+
+    it("sizes a resized row with background words from its own main height", async () => {
+      useTimelineStore.setState({ defaultRowHeight: 44, rowHeights: { a: 80 } });
+      useProjectStore.setState({
+        lines: [createLine({ id: "a", text: "one", backgroundWords: [createWord({ text: "ooh", begin: 0, end: 1 })] })],
+      });
+      const screen = await render(<Harness />);
+      expect(sizerHeight(screen.container)).toBe(`${80 + 80 + 1}px`);
+    });
+
+    it("regression: places rows below rows that changed height before they were ever rendered", async () => {
+      useTimelineStore.setState({ defaultRowHeight: 44, rowHeights: {} });
+      const plain = Array.from({ length: 40 }, (_, i) => createLine({ id: `l${i}`, text: `line ${i}` }));
+      useProjectStore.setState({ lines: plain.slice(0, 1) });
+      const screen = await render(<Harness />);
+      const ooh = [createWord({ text: "ooh", begin: 0, end: 1 })];
+      useProjectStore.setState({ lines: plain.map((line, i) => (i < 30 ? { ...line, backgroundWords: ooh } : line)) });
+      await expect.poll(() => sizerHeight(screen.container)).toBe(`${30 * 89 + 10 * 69}px`);
+
+      const scroller = screen.container.firstElementChild as HTMLElement;
+      scroller.scrollTop = scroller.scrollHeight;
+
+      await expect
+        .poll(() => {
+          const first = Number(screen.container.querySelector("[data-item-index]")?.getAttribute("data-item-index"));
+          const list = screen.container.querySelector<HTMLElement>("[data-testid=virtuoso-item-list]");
+          const expectedTop = Math.min(first, 30) * 89 + Math.max(0, first - 30) * 69;
+          return first > 0 && list?.style.paddingTop === `${expectedTop}px`;
+        })
+        .toBe(true);
+    });
   });
 });

@@ -1,4 +1,11 @@
-import { commitPendingEdit } from "@/stores/project/history-helpers";
+import { applyLineUpdates } from "@/domain/line/apply-line-updates";
+import {
+  amendCurrentStep,
+  canUndoFrom,
+  commitPendingEdit,
+  redoState,
+  undoState,
+} from "@/stores/project/history-helpers";
 import type { HistoryActions, HistoryState, ProjectStore } from "@/stores/project/types";
 import type { StateCreator } from "zustand";
 
@@ -22,43 +29,21 @@ const createHistorySlice: StateCreator<ProjectStore, [], [], HistoryState & Hist
 
   markClean: () => set({ isDirty: false }),
 
-  undo: () =>
-    set((state) => {
-      // historyIndex points to current state, so we need > 0 to have something to undo to
-      if (state.historyIndex <= 0) return state;
-      const entry = state.history[state.historyIndex - 1];
-      return {
-        lines: structuredClone(entry.lines),
-        groups: structuredClone(entry.groups),
-        customSnapPoints: structuredClone(entry.customSnapPoints),
-        historyIndex: state.historyIndex - 1,
-        isDirty: true,
-        isDirtySinceHistory: false,
-      };
-    }),
+  undo: () => set(undoState),
 
-  redo: () =>
-    set((state) => {
-      if (state.historyIndex >= state.history.length - 1) return state;
-      const entry = state.history[state.historyIndex + 1];
-      return {
-        lines: structuredClone(entry.lines),
-        groups: structuredClone(entry.groups),
-        customSnapPoints: structuredClone(entry.customSnapPoints),
-        historyIndex: state.historyIndex + 1,
-        isDirty: true,
-        isDirtySinceHistory: false,
-      };
-    }),
+  redo: () => set(redoState),
 
   commitPendingLineEdit: (baseline, baselineWasDirty) =>
     set((state) => commitPendingEdit(state, baseline, baselineWasDirty)),
 
-  canUndo: () => get().historyIndex > 0,
+  applyLineUpdatesToCurrentStep: (updates) =>
+    set((state) => amendCurrentStep(state, applyLineUpdates(state.lines, updates))),
+
+  canUndo: () => canUndoFrom(get()),
 
   canRedo: () => get().historyIndex < get().history.length - 1,
 
-  clearHistory: () => set({ history: [], historyIndex: -1 }),
+  clearHistory: () => set({ history: [], historyIndex: -1, isDirtySinceHistory: false }),
 });
 
 // -- Exports ------------------------------------------------------------------

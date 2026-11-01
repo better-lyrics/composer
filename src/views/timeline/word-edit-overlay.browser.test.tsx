@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { useEffect, useRef, useState } from "react";
 import { WordEditOverlay } from "@/views/timeline/word-edit-overlay";
 import { useProjectStore } from "@/stores/project";
@@ -52,5 +53,21 @@ describe("WordEditOverlay", () => {
     useTimelineStore.setState({ zoom: 100 });
     const screen = await render(<PositionedHarness lineId={line.id} wordKey={`${line.id}-word-0`} />);
     await expect.element(screen.getByRole("textbox", { name: "Edit word" })).toBeInTheDocument();
+  });
+
+  it("regression: renaming the word of a line-synced row keeps it line-synced with the new text", async () => {
+    const line = createLine({ id: "ls", text: "Old words", begin: 0, end: 3 });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({ zoom: 100 });
+    const screen = await render(<PositionedHarness lineId={line.id} wordKey={`${line.id}-word-0`} />);
+
+    await screen.getByRole("textbox", { name: "Edit word" }).fill("New words");
+    await userEvent.keyboard("{Enter}");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("New words");
+    const after = useProjectStore.getState().lines[0];
+    expect(after.words).toBeUndefined();
+    expect(after.begin).toBe(0);
+    expect(after.end).toBe(3);
   });
 });

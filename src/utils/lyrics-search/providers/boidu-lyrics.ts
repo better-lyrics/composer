@@ -1,12 +1,15 @@
+import { hasUsableDuration } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectTtmlSyncType } from "@/domain/lyrics-search/sync-type";
-import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
+import { isAbortError } from "@/utils/abort-error";
+import { hasNonEmptyString } from "@/utils/lyrics-search/query-guards";
+import type { LyricsSearchProvider, LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
 
 const BOIDU_BASE_URL = "https://lyrics-api.boidu.dev/getLyrics";
 const ID_PREFIX = "boidu-lyrics-";
-const USER_AGENT = "Better Lyrics Composer (https://composer.betterlyrics.org)";
+const LOG_PREFIX = "[BetterLyrics]";
 
 // -- Types --------------------------------------------------------------------
 
@@ -16,17 +19,11 @@ interface BoiduLyricsResponse {
 
 // -- Helpers ------------------------------------------------------------------
 
-function hasNonEmptyString(value: string | undefined): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
 function canSearch(query: LyricsSearchQuery): boolean {
   return (
     hasNonEmptyString(query.track) &&
     hasNonEmptyString(query.artist) &&
-    typeof query.durationSec === "number" &&
-    Number.isFinite(query.durationSec) &&
-    query.durationSec > 0 &&
+    hasUsableDuration(query.durationSec) &&
     hasNonEmptyString(query.videoId)
   );
 }
@@ -41,12 +38,6 @@ function buildSearchUrl(query: LyricsSearchQuery): URL {
   return url;
 }
 
-function isAbortError(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === "AbortError") return true;
-  if (error instanceof Error && error.name === "AbortError") return true;
-  return false;
-}
-
 function buildResult(query: LyricsSearchQuery, ttml: string): LyricsSearchResult {
   const payload: LyricsSearchPayload = { kind: "ttml", xml: ttml };
   return {
@@ -57,7 +48,6 @@ function buildResult(query: LyricsSearchQuery, ttml: string): LyricsSearchResult
     track: (query.track ?? "").trim(),
     artist: (query.artist ?? "").trim(),
     album: hasNonEmptyString(query.album) ? query.album.trim() : undefined,
-    durationSec: Math.round(query.durationSec as number),
     payload,
   };
 }
@@ -70,19 +60,13 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
 
   try {
     const url = buildSearchUrl(query);
-    const response = await fetch(url.toString(), {
-      signal,
-      headers: { "User-Agent": USER_AGENT },
-    });
+    const response = await fetch(url.toString(), { signal });
 
     if (signal.aborted) return [];
-    if (response.status === 401) return [];
     if (response.status === 404) return [];
-    if (response.status >= 500) {
-      throw new LyricsSearchError("boidu-lyrics", `Better Lyrics returned ${response.status}`);
-    }
     if (!response.ok) {
-      throw new LyricsSearchError("boidu-lyrics", `Better Lyrics returned ${response.status}`);
+      console.warn(LOG_PREFIX, `getLyrics returned ${response.status}, treating as no results`);
+      return [];
     }
 
     const body = (await response.json()) as BoiduLyricsResponse;
@@ -91,8 +75,8 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
     return [buildResult(query, body.ttml)];
   } catch (error) {
     if (isAbortError(error)) return [];
-    if (error instanceof LyricsSearchError) throw error;
-    throw new LyricsSearchError("boidu-lyrics", "Better Lyrics request failed", error);
+    console.warn(LOG_PREFIX, "getLyrics request failed, treating as no results", error);
+    return [];
   }
 }
 

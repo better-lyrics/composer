@@ -1,0 +1,106 @@
+import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { usePersistence } from "@/hooks/usePersistence";
+import { getPersistenceSettled } from "@/lib/persistence-settled";
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
+import { seedProject } from "@/test/idb";
+import { loadOpenProjectRecord } from "@/test/projects";
+import { render } from "@/test/render";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+// -- Helpers -------------------------------------------------------------------
+
+const PersistenceHost: React.FC = () => {
+  usePersistence();
+  return null;
+};
+
+function savedProject(extra: Record<string, unknown> = {}) {
+  return {
+    version: 1,
+    savedAt: Date.now(),
+    metadata: { title: "Lovefield", artists: [], album: "", duration: 0 },
+    lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
+    agents: DEFAULT_AGENTS,
+    granularity: "word" as const,
+    ...extra,
+  };
+}
+
+// -- Tests ---------------------------------------------------------------------
+
+describe("usePersistence · unexported imported song details", () => {
+  const initialAutoSaveDelay = useSettingsStore.getState().autoSaveDelay;
+
+  beforeEach(() => {
+    useSettingsStore.setState({ autoSaveDelay: 30 });
+  });
+  afterEach(() => {
+    useSettingsStore.setState({ autoSaveDelay: initialAutoSaveDelay });
+  });
+
+  it("restores an unexported import across a reload", async () => {
+    await seedProject(savedProject({ hasUnexportedImport: true }));
+
+    await render(<PersistenceHost />);
+    await getPersistenceSettled();
+
+    expect(useProjectStore.getState().hasUnexportedImport).toBe(true);
+  });
+
+  it("saves the flag with the project", async () => {
+    await render(<PersistenceHost />);
+    await getPersistenceSettled();
+
+    useProjectStore.getState().setLines([{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }]);
+    useProjectStore.getState().markSongDetailsImported();
+
+    await expect.poll(async () => (await loadOpenProjectRecord())?.hasUnexportedImport, { timeout: 2000 }).toBe(true);
+  });
+
+  it("restores which song details the last lyrics import brought", async () => {
+    await seedProject(savedProject({ importedMetadataKeys: ["title"] }));
+
+    await render(<PersistenceHost />);
+    await getPersistenceSettled();
+
+    expect(useProjectStore.getState().importedMetadataKeys).toEqual(["title"]);
+  });
+
+  it("saves which song details the last lyrics import brought", async () => {
+    await render(<PersistenceHost />);
+    await getPersistenceSettled();
+
+    useProjectStore.getState().replaceLyricsWithHistory({
+      lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
+      groups: [],
+      agents: undefined,
+      metadata: { title: "Imported" },
+    });
+
+    await expect
+      .poll(async () => (await loadOpenProjectRecord())?.importedMetadataKeys, { timeout: 2000 })
+      .toEqual(["title"]);
+  });
+
+  describe("edge cases", () => {
+    it("keeps every song detail of a project saved before the record existed", async () => {
+      await seedProject(savedProject());
+
+      await render(<PersistenceHost />);
+      await getPersistenceSettled();
+
+      expect(useProjectStore.getState().importedMetadataKeys).toEqual([]);
+    });
+
+    it("treats a project saved before the flag existed as exported", async () => {
+      await seedProject(savedProject());
+
+      await render(<PersistenceHost />);
+      await getPersistenceSettled();
+
+      expect(useProjectStore.getState().lines).toHaveLength(1);
+      expect(useProjectStore.getState().hasUnexportedImport).toBe(false);
+    });
+  });
+});

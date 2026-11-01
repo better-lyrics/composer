@@ -12,6 +12,7 @@ interface WordHandlers {
   onNudgeEnd?: (idx: number, delta: number) => void;
   onSetEndTime?: (idx: number, newEnd: number) => void;
   onSplit?: (idx: number, newWords: WordTiming[]) => void;
+  onClickWord?: (idx: number) => void;
 }
 
 interface WordRendererProps {
@@ -31,8 +32,8 @@ interface WordRendererProps {
 function renderWordContent(word: string, timing: WordTiming | undefined, isBackground: boolean, editMode: boolean) {
   const isSynced = !!timing;
   const baseClass = isBackground ? "italic" : "";
-  const syncedClass = isBackground ? "text-composer-text-muted/70" : "text-composer-text-muted";
-  const unsyncedClass = isBackground ? "text-composer-text-muted/50" : "text-composer-text";
+  const syncedClass = isBackground ? "text-(--muted) opacity-75 text-[15px]" : "text-(--muted)";
+  const unsyncedClass = isBackground ? "text-(--muted) opacity-55 text-[15px]" : "text-composer-text";
   const activeClass = isBackground ? "text-composer-accent-text/80" : "text-composer-accent-text";
 
   if (editMode && isSynced) {
@@ -78,7 +79,21 @@ const WordRenderer: React.FC<WordRendererProps> = ({
   return (
     <span className={`inline-flex flex-col items-start ${isBackground ? "italic" : ""}`}>
       <span className="flex items-center gap-1 group/word">
-        {renderWordContent(word, timing, isBackground, editMode)}
+        {handlers.onClickWord && timing ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handlers.onClickWord?.(idx);
+            }}
+            title={isBackground ? "Jump to this word" : "Re-record from this word"}
+            className="appearance-none border-0 bg-transparent p-0 text-left cursor-pointer"
+          >
+            {renderWordContent(word, timing, isBackground, editMode)}
+          </button>
+        ) : (
+          renderWordContent(word, timing, isBackground, editMode)
+        )}
         {isSynced && timing && timing.end === timing.begin && (
           <Tooltip content="No duration - sync the next word to close this one or increase the end time">
             <span className="text-composer-warning">
@@ -87,7 +102,7 @@ const WordRenderer: React.FC<WordRendererProps> = ({
           </Tooltip>
         )}
         {isSynced && timing && !isBackground && (
-          <span className="transition-opacity opacity-0 group-hover/word:opacity-100">
+          <span className="transition-opacity opacity-0 group-hover/word:opacity-100 focus-within:opacity-100 has-[[aria-expanded=true]]:opacity-100">
             <SyllableSplitter
               lineId={lineId}
               type={isBackground ? "bg" : "word"}
@@ -99,7 +114,7 @@ const WordRenderer: React.FC<WordRendererProps> = ({
         )}
       </span>
       {isSynced && timing && (
-        <span className="flex items-center gap-1">
+        <span className="flex items-center not-italic">
           <TimeNudgeInput
             value={timing.begin}
             currentTime={currentTime}
@@ -108,7 +123,7 @@ const WordRenderer: React.FC<WordRendererProps> = ({
             onNudge={(delta) => handlers.onNudge?.(idx, delta)}
             onSetTime={(newBegin) => handlers.onSetTime?.(idx, newBegin)}
           />
-          <IconArrowRight className="size-2.5 text-composer-text opacity-25 mx-0.5" />
+          <IconArrowRight className="size-2.5 text-composer-text opacity-25 mx-px" />
           <TimeNudgeInput
             value={timing.end}
             currentTime={currentTime}

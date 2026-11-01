@@ -1,12 +1,13 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { MAX_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect, useRef } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -73,7 +74,8 @@ function seedManyLines(count: number) {
 describe("Timeline zoom scrollTop preservation", () => {
   beforeEach(() => {
     useAudioStore.setState({ duration: 120, currentTime: 0, isPlaying: false, audioElement: null });
-    useTimelineStore.setState({ zoom: 100, followEnabled: true, scrollLeft: 0 });
+    useSettingsStore.setState({ followPlayhead: true });
+    useTimelineStore.setState({ zoom: 100, scrollLeft: 0 });
   });
 
   describe("happy paths", () => {
@@ -161,7 +163,7 @@ describe("Timeline zoom scrollTop preservation", () => {
       expect(api.container.scrollTop).toBe(0);
     });
 
-    it("preserves scrollTop when scrolled past the active row (followEnabled, paused)", async () => {
+    it("preserves scrollTop when scrolled past the active row (followPlayhead, paused)", async () => {
       seedManyLines(50);
       useAudioStore.setState({ currentTime: 4 });
       let api!: HarnessApi;
@@ -210,9 +212,9 @@ describe("Timeline zoom scrollTop preservation", () => {
       expect(api.container.scrollTop).toBe(before);
     });
 
-    it("scrollTop preserved regardless of followEnabled toggle", async () => {
+    it("scrollTop preserved regardless of followPlayhead toggle", async () => {
       seedManyLines(50);
-      useTimelineStore.setState({ followEnabled: false });
+      useSettingsStore.setState({ followPlayhead: false });
       let api!: HarnessApi;
       await render(
         <RowsHarness
@@ -236,7 +238,7 @@ describe("Timeline zoom scrollTop preservation", () => {
     it("regression: zoom button click does not snap viewport back to the active row when paused", async () => {
       seedManyLines(50);
       useAudioStore.setState({ currentTime: 0 });
-      useTimelineStore.setState({ followEnabled: true });
+      useSettingsStore.setState({ followPlayhead: true });
       let api!: HarnessApi;
       await render(
         <RowsHarness
@@ -295,7 +297,8 @@ describe("Timeline zoom scrollTop preservation", () => {
           }),
         ),
       });
-      useTimelineStore.setState({ zoom: 100, followEnabled: true });
+      useSettingsStore.setState({ followPlayhead: true });
+      useTimelineStore.setState({ zoom: 100 });
     }
 
     function getScrollContainer(): HTMLDivElement {
@@ -422,7 +425,8 @@ describe("Timeline zoom scrollTop preservation", () => {
     it("scrollTop preserved when paused, Follow on, active row off-screen, zoom changes", async () => {
       seedManyLines(50);
       useAudioStore.setState({ duration: 120, currentTime: 4, isPlaying: false, audioElement: null });
-      useTimelineStore.setState({ followEnabled: true, zoom: 100 });
+      useSettingsStore.setState({ followPlayhead: true });
+      useTimelineStore.setState({ zoom: 100 });
       let api!: HarnessApi;
       await render(
         <RowsAndPlayheadHarness
@@ -448,7 +452,8 @@ describe("Timeline zoom scrollTop preservation", () => {
     it("scrollTop preserved when paused, Follow off, active row off-screen, zoom changes", async () => {
       seedManyLines(50);
       useAudioStore.setState({ duration: 120, currentTime: 4, isPlaying: false, audioElement: null });
-      useTimelineStore.setState({ followEnabled: false, zoom: 100 });
+      useSettingsStore.setState({ followPlayhead: false });
+      useTimelineStore.setState({ zoom: 100 });
       let api!: HarnessApi;
       await render(
         <RowsAndPlayheadHarness
@@ -488,7 +493,8 @@ describe("Timeline zoom scrollTop preservation", () => {
           }),
         ),
       });
-      useTimelineStore.setState({ zoom: 100, followEnabled: true });
+      useSettingsStore.setState({ followPlayhead: true });
+      useTimelineStore.setState({ zoom: 100 });
     }
 
     function getScrollContainer(): HTMLDivElement {
@@ -549,9 +555,9 @@ describe("Timeline zoom scrollTop preservation", () => {
       container.scrollTop = 600;
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-      useTimelineStore.getState().toggleFollow();
+      useSettingsStore.getState().toggle("followPlayhead");
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-      useTimelineStore.getState().toggleFollow();
+      useSettingsStore.getState().toggle("followPlayhead");
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
       expect(container.scrollTop).toBe(600);
@@ -566,7 +572,7 @@ describe("Timeline zoom scrollTop preservation", () => {
       container.scrollTop = 600;
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-      useTimelineStore.getState().togglePreviewSidebar();
+      useSettingsStore.getState().toggle("previewSidebar");
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
       expect(container.scrollTop).toBe(600);
@@ -581,7 +587,7 @@ describe("Timeline zoom scrollTop preservation", () => {
 
     it("zoom-in button is disabled at MAX_ZOOM so users cannot trigger a no-op layout change", async () => {
       seedFullPanel(50, 4);
-      useTimelineStore.setState({ zoom: 500 });
+      useTimelineStore.setState({ zoom: MAX_ZOOM });
       const screen = await render(<TimelinePanel />);
       await expect.element(screen.getByRole("button", { name: "Zoom in" })).toBeDisabled();
     });

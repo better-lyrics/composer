@@ -36,7 +36,10 @@ const createSnapPointsSlice: StateCreator<ProjectStore, [], [], SnapPointsState 
       };
     }),
   commitSnapPointDrag: (baseline) => set((state) => commitSnapPointEdit(state, normalizeSnapPoints(baseline))),
-  clearCustomSnapPoints: () => set({ customSnapPoints: [] }),
+  clearCustomSnapPoints: () =>
+    set((state) =>
+      state.customSnapPoints.length === 0 ? state : { customSnapPoints: [], isDirty: true, isDirtySinceHistory: true },
+    ),
 });
 
 // -- Exports ------------------------------------------------------------------

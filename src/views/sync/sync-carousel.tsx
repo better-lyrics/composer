@@ -1,31 +1,24 @@
-import type { WordTiming } from "@/domain/word/timing";
-import { useThemeStore } from "@/stores/theme";
 import { syncCarouselTransition } from "@/utils/animationVariants";
+import { cn } from "@/utils/cn";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
-import { readToken } from "@/utils/theme/read-token";
+import type { SharedSyncTag } from "@/views/sync/shared-sync-tags";
+import { IconLink } from "@tabler/icons-react";
 import { AnimatePresence, m } from "motion/react";
-import { useMemo } from "react";
 
-// -- Hooks --------------------------------------------------------------------
+// -- Types --------------------------------------------------------------------
 
-function useCarouselColors(): { accentColor: string; secondaryColor: string; disabledColor: string } {
-  const activeThemeId = useThemeStore((s) => s.activeThemeId);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: activeThemeId re-reads the DOM-resolved colors when the theme changes
-  return useMemo(
-    () => ({
-      accentColor: readToken("accent"),
-      secondaryColor: readToken("text-secondary"),
-      disabledColor: readToken("text-disabled"),
-    }),
-    // react-doctor-disable-next-line react-doctor/exhaustive-deps -- activeThemeId is the intended cache key: readToken reads DOM CSS vars non-reactively, so the memo must recompute when the theme changes
-    [activeThemeId],
-  );
-}
+type SlotState = "next" | "lastTapped" | "timed" | "untimed";
 
 // -- Constants ----------------------------------------------------------------
 
 const LINE_HEIGHT = 100;
+
+const SLOT_TEXT_CLASS: Record<Exclude<SlotState, "untimed">, string> = {
+  next: "text-composer-text",
+  lastTapped: "text-composer-accent-text",
+  timed: "text-sync-timed",
+};
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -39,8 +32,11 @@ interface SyncCarouselProps {
   lines: Array<{
     id: string;
     text: string;
-    words?: WordTiming[];
-    begin?: number;
+    displayText?: string;
+    displayWordTexts?: string[];
+    isTimed: boolean;
+    timedWords: number;
+    sharedTag?: SharedSyncTag;
   }>;
   lineIndex: number;
   wordIndex: number;
@@ -48,6 +44,7 @@ interface SyncCarouselProps {
   isHolding?: boolean;
   rippleTarget?: RippleTarget | null;
   onRippleComplete?: () => void;
+  aboveCurrent?: React.ReactNode;
 }
 
 // -- Components ---------------------------------------------------------------
@@ -60,6 +57,39 @@ const RippleRing: React.FC<{ onComplete: () => void }> = ({ onComplete }) => (
     transition={{ duration: 0.33, ease: "easeOut" }}
     onAnimationComplete={onComplete}
   />
+);
+
+interface SlotProps {
+  state: SlotState;
+  onCurrentLine: boolean;
+  isHeld?: boolean;
+  children: React.ReactNode;
+}
+
+const Slot: React.FC<SlotProps> = ({ state, onCurrentLine, isHeld = false, children }) => (
+  <m.span
+    initial={false}
+    animate={{ scale: isHeld ? 0.96 : 1 }}
+    transition={syncCarouselTransition}
+    className={cn(
+      "relative inline-flex items-center justify-center origin-center transition-colors duration-150 ease-out",
+      state === "untimed"
+        ? onCurrentLine
+          ? "text-composer-text-secondary"
+          : "text-composer-text-faint"
+        : SLOT_TEXT_CLASS[state],
+    )}
+  >
+    <span
+      aria-hidden
+      className={cn(
+        "absolute -inset-x-2 -inset-y-1 rounded-lg transition-opacity duration-150 ease-out",
+        isHeld ? "bg-composer-accent/25" : "bg-composer-accent/15",
+        state === "next" ? "opacity-100" : "opacity-0",
+      )}
+    />
+    {children}
+  </m.span>
 );
 
 interface WordGranularityLineProps {
@@ -83,35 +113,46 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
   rippleTarget,
   onRippleComplete,
 }) => {
-  const { accentColor, secondaryColor, disabledColor } = useCarouselColors();
-  const lineWords = splitIntoWords(line.text);
+  const lineWords = line.displayWordTexts ?? splitIntoWords(line.text);
   return lineWords.map((word, widx) => {
-    const isPrevLine = idx === lineIndex - 1;
-    const holdActive = isHolding;
-    const isCurrentHeld = holdActive && isCurrent && widx === wordIndex;
-    const isLastSyncedOnCurrent = !holdActive && isCurrent && wordIndex > 0 && widx === wordIndex - 1;
-    const isLastWordOfPrevLine = !holdActive && isPrevLine && wordIndex === 0 && widx === lineWords.length - 1;
-    const isLastSynced = isLastSyncedOnCurrent || isLastWordOfPrevLine;
-
-    const color = isCurrentHeld ? accentColor : isLastSynced ? accentColor : isCurrent ? secondaryColor : disabledColor;
+    const isNext = isCurrent && widx === wordIndex;
+    const isLastOnCurrent = isCurrent && wordIndex > 0 && widx === wordIndex - 1;
+    const isLastOfPrevLine = idx === lineIndex - 1 && wordIndex === 0 && widx === lineWords.length - 1;
+    const isLastTapped = !isHolding && (isLastOnCurrent || isLastOfPrevLine);
+    const state: SlotState = isNext
+      ? "next"
+      : isLastTapped
+        ? "lastTapped"
+        : widx < line.timedWords
+          ? "timed"
+          : "untimed";
 
     const hasRipple = rippleTarget !== null && rippleTarget.lineId === line.id && rippleTarget.wordIndex === widx;
 
     return (
-      <m.span
-        key={`${line.id}-${widx}`}
-        animate={{ color, scale: isCurrentHeld ? 0.95 : 1 }}
-        transition={syncCarouselTransition}
-        className="relative inline-flex items-center justify-center origin-center"
-      >
-        {word}
+      <Slot key={`${line.id}-${widx}`} state={state} onCurrentLine={isCurrent} isHeld={isHolding && isNext}>
+        <span className="relative">{word}</span>
         <AnimatePresence>
           {hasRipple && rippleTarget && <RippleRing key={rippleTarget.nonce} onComplete={onRippleComplete} />}
         </AnimatePresence>
-      </m.span>
+      </Slot>
     );
   });
 };
+
+const SharedTagSlot: React.FC<{ tag: SharedSyncTag | undefined }> = ({ tag }) => (
+  <span className="flex items-center h-4.5 select-none">
+    {tag && (
+      <span
+        className="inline-flex items-center gap-1 h-4.5 pl-1.5 pr-2 rounded-full text-[11px]"
+        style={{ color: tag.color, background: `color-mix(in srgb, ${tag.color} 16%, transparent)` }}
+      >
+        <IconLink className="size-2.5" />
+        <span className="max-w-32 truncate">{tag.label}</span>
+      </span>
+    )}
+  </span>
+);
 
 const SyncCarousel: React.FC<SyncCarouselProps> = ({
   lines,
@@ -121,9 +162,8 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
   isHolding = false,
   rippleTarget = null,
   onRippleComplete,
+  aboveCurrent,
 }) => {
-  const { accentColor, secondaryColor, disabledColor } = useCarouselColors();
-
   const containerHeight = LINE_HEIGHT * 3;
   const translateY = LINE_HEIGHT - lineIndex * LINE_HEIGHT;
 
@@ -150,18 +190,25 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
               animate={{ opacity, scale }}
               transition={syncCarouselTransition}
               style={{ height: LINE_HEIGHT }}
-              className="flex items-center justify-center w-full shrink-0"
+              className="flex flex-col items-center justify-center gap-1 w-full shrink-0"
             >
-              <div className="flex flex-wrap items-center justify-center text-4xl font-medium gap-x-4 gap-y-3">
+              <span className="relative flex justify-center">
+                {isCurrent && aboveCurrent && (
+                  <span className="absolute bottom-full flex justify-center pb-2">{aboveCurrent}</span>
+                )}
+                <SharedTagSlot tag={line.sharedTag?.placement === "above" ? line.sharedTag : undefined} />
+              </span>
+              <div className="flex flex-wrap items-center justify-center text-4xl font-semibold tracking-[-0.012em] leading-[1.1] gap-x-4 gap-y-1.5">
                 {granularity === "line" ? (
-                  <m.span
-                    animate={{
-                      color: idx === lineIndex - 1 ? accentColor : isCurrent ? secondaryColor : disabledColor,
-                    }}
-                    transition={syncCarouselTransition}
+                  <Slot
+                    state={
+                      isCurrent ? "next" : idx === lineIndex - 1 ? "lastTapped" : line.isTimed ? "timed" : "untimed"
+                    }
+                    onCurrentLine={isCurrent}
+                    isHeld={isHolding && isCurrent}
                   >
-                    {stripSplitCharacter(line.text)}
-                  </m.span>
+                    <span className="relative">{stripSplitCharacter(line.displayText ?? line.text)}</span>
+                  </Slot>
                 ) : (
                   <WordGranularityLine
                     line={line}
@@ -175,6 +222,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
                   />
                 )}
               </div>
+              <SharedTagSlot tag={line.sharedTag?.placement === "below" ? line.sharedTag : undefined} />
             </m.div>
           );
         })}
@@ -187,5 +235,5 @@ const noop = () => {};
 
 // -- Exports ------------------------------------------------------------------
 
-export { SyncCarousel };
 export type { RippleTarget };
+export { SyncCarousel };

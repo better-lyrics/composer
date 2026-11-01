@@ -1,15 +1,15 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { type ReactNode, act, createElement, useEffect } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
-import { useLyricsSearch, type UseLyricsSearchOptions, type UseLyricsSearchResult } from "@/hooks/useLyricsSearch";
+import { type UseLyricsSearchOptions, type UseLyricsSearchResult, useLyricsSearch } from "@/hooks/useLyricsSearch";
 import {
   registerProviderForTests,
   restoreProvidersForTests,
   snapshotProvidersForTests,
 } from "@/utils/lyrics-search/registry";
 import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { type ReactNode, act, createElement, useEffect } from "react";
+import { type Root, createRoot } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 // -- IS_REACT_ACT_ENVIRONMENT -----------------------------------------------
 
@@ -21,6 +21,7 @@ interface FakeProviderOptions {
   name: ProviderName;
   results?: LyricsSearchResult[];
   delayMs?: number;
+  settleAfter?: Promise<void>;
   throwError?: LyricsSearchError;
   canSearch?: (query: LyricsSearchQuery) => boolean;
 }
@@ -50,7 +51,9 @@ function fakeProviderFactory(options: FakeProviderOptions): FakeProviderHandle {
             resolve(options.results ?? []);
           }
         };
-        if (options.delayMs && options.delayMs > 0) {
+        if (options.settleAfter) {
+          void options.settleAfter.then(settle);
+        } else if (options.delayMs && options.delayMs > 0) {
           setTimeout(settle, options.delayMs);
         } else {
           queueMicrotask(settle);
@@ -215,27 +218,32 @@ describe("useLyricsSearch", () => {
   });
 
   it("merges results from multiple providers in registry order and runs them in parallel", async () => {
+    let releaseProviders = () => {};
+    const settleAfter = new Promise<void>((resolve) => {
+      releaseProviders = resolve;
+    });
     const a = track(
       fakeProviderFactory({
         name: "lrclib",
         results: [makeResult("lrclib-1", "lrclib"), makeResult("lrclib-2", "lrclib")],
-        delayMs: 30,
+        settleAfter,
       }),
     );
     const b = track(
       fakeProviderFactory({
         name: "binimum",
         results: [makeResult("binimum-1", "binimum"), makeResult("binimum-2", "binimum")],
-        delayMs: 30,
+        settleAfter,
       }),
     );
-    const start = Date.now();
     const h = createHarness({ query: { track: "hi" }, options: { debounceMs: 0 } });
+
+    await waitUntil(() => a.calls.length === 1 && b.calls.length === 1);
+    expect(a.signalAtSettle).toHaveLength(0);
+    releaseProviders();
     await waitUntil(() => (h.result.current?.results.length ?? 0) === 4);
-    const elapsed = Date.now() - start;
 
     expect(h.result.current?.results.map((r) => r.id)).toEqual(["lrclib-1", "lrclib-2", "binimum-1", "binimum-2"]);
-    expect(elapsed).toBeLessThan(120);
     expect(a.calls.length).toBe(1);
     expect(b.calls.length).toBe(1);
 
@@ -322,6 +330,10 @@ describe("useLyricsSearch", () => {
   });
 
   it("debounces rapid query changes so only the final query fires", async () => {
+    vi.useFakeTimers();
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const fake = track(fakeProviderFactory({ name: "lrclib", results: [makeResult("lrclib-final", "lrclib")] }));
 
     const h = createHarness({ query: {}, options: { debounceMs: 50 } });
@@ -336,8 +348,10 @@ describe("useLyricsSearch", () => {
     await advanceMicrotasks();
     expect(fake.calls.length).toBe(0);
 
-    await waitUntil(() => fake.calls.length >= 1, 1000);
-    expect(fake.calls.length).toBe(1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
+    });
+    await vi.waitFor(() => expect(fake.calls.length).toBe(1));
     expect(fake.calls[0]?.query.track).toBe("abcd");
 
     await h.unmount();
@@ -439,7 +453,7 @@ function makeResultFull(
   id: string,
   source: ProviderName,
   syncType: LyricsSearchResult["syncType"],
-  durationSec: number,
+  durationSec?: number,
 ): LyricsSearchResult {
   return {
     id,
@@ -530,6 +544,117 @@ describe("useLyricsSearch sort order", () => {
     await waitUntil(() => (h.result.current?.results.length ?? 0) === 2);
 
     expect(h.result.current?.results.map((r) => r.id)).toEqual(["a", "b"]);
+
+    await h.unmount();
+  });
+
+  it("sorts a result with no duration last within its sync-type bucket", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [
+          makeResultFull("unknown", "lrclib", "line"),
+          makeResultFull("far", "lrclib", "line", 400),
+          makeResultFull("exact", "lrclib", "line", 355),
+        ],
+      }),
+    );
+    const h = createHarness({
+      query: { track: "hi" },
+      options: { debounceMs: 0, expectedDurationSec: 355 },
+    });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 3);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["exact", "far", "unknown"]);
+
+    await h.unmount();
+  });
+
+  it("keeps two results with no duration in their natural order", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [makeResultFull("unknown-a", "lrclib", "line"), makeResultFull("unknown-b", "lrclib", "line")],
+      }),
+    );
+    const h = createHarness({
+      query: { track: "hi" },
+      options: { debounceMs: 0, expectedDurationSec: 355 },
+    });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 2);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["unknown-a", "unknown-b"]);
+
+    await h.unmount();
+  });
+
+  it("keeps a mixed list of known and unknown durations deterministic across buckets", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [
+          makeResultFull("line-unknown", "lrclib", "line"),
+          makeResultFull("syllable-far", "lrclib", "syllable", 200),
+          makeResultFull("line-exact", "lrclib", "line", 355),
+          makeResultFull("syllable-unknown", "lrclib", "syllable"),
+          makeResultFull("syllable-exact", "lrclib", "syllable", 355),
+        ],
+      }),
+    );
+    const h = createHarness({
+      query: { track: "hi" },
+      options: { debounceMs: 0, expectedDurationSec: 355 },
+    });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 5);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual([
+      "syllable-exact",
+      "syllable-far",
+      "syllable-unknown",
+      "line-exact",
+      "line-unknown",
+    ]);
+
+    await h.unmount();
+  });
+
+  it("sorts a non-finite duration last within its sync-type bucket", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [
+          makeResultFull("not-a-number", "lrclib", "line", Number.NaN),
+          makeResultFull("far", "lrclib", "line", 400),
+          makeResultFull("exact", "lrclib", "line", 355),
+        ],
+      }),
+    );
+    const h = createHarness({
+      query: { track: "hi" },
+      options: { debounceMs: 0, expectedDurationSec: 355 },
+    });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 3);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["exact", "far", "not-a-number"]);
+
+    await h.unmount();
+  });
+
+  it("does not reorder unknown-duration results when no expectedDurationSec is provided", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [
+          makeResultFull("a", "lrclib", "line"),
+          makeResultFull("b", "lrclib", "line", 200),
+          makeResultFull("c", "lrclib", "line"),
+        ],
+      }),
+    );
+    const h = createHarness({ query: { track: "hi" }, options: { debounceMs: 0 } });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 3);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["a", "b", "c"]);
 
     await h.unmount();
   });

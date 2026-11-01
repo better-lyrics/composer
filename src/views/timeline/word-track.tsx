@@ -1,17 +1,29 @@
-import { isWordSelected } from "@/domain/selection/identity";
+import { timedTransliterationSlice } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { useAudioStore } from "@/stores/audio";
-import type { WordTiming } from "@/domain/word/timing";
-import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
+import { isWordSelected } from "@/domain/selection/identity";
+import { overlapsLoopRegion } from "@/domain/selection/loop-region";
+import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
+import type { Bounds } from "@/domain/word/bounds";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
+import type { WordTiming } from "@/domain/word/timing";
+import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
+import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { findInsertionSlot } from "@/utils/word-spaces";
+import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
+import { settleLoupe, showLoupeEdit } from "@/views/timeline/loupe/loupe-target";
+import { setLiveWordEdit } from "@/views/timeline/pitch/live-word-edit";
+import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
+import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
+import { selectionGripEdges } from "@/views/timeline/stretch-grips";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
+import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
+import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { WordBlock } from "@/views/timeline/word-block";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -44,9 +56,22 @@ interface DragState {
   adjacentEnd?: number;
 }
 
-// -- Constants -----------------------------------------------------------------
+// -- Helpers -------------------------------------------------------------------
 
-const MIN_WORD_DURATION = 0.05;
+function liveWordBounds(state: DragState): Map<number, Bounds> {
+  const words = new Map<number, Bounds>([[state.wordIndex, { begin: state.begin, end: state.end }]]);
+  if (state.adjacentWordIndex !== undefined && state.adjacentBegin !== undefined && state.adjacentEnd !== undefined) {
+    words.set(state.adjacentWordIndex, { begin: state.adjacentBegin, end: state.adjacentEnd });
+  }
+  return words;
+}
+
+function resizeChangedTiming(initial: DragState, final: DragState, words: WordTiming[]): boolean {
+  if (final.begin !== initial.begin || final.end !== initial.end) return true;
+  if (final.adjacentWordIndex === undefined) return false;
+  const adjacent = words[final.adjacentWordIndex];
+  return final.adjacentBegin !== adjacent.begin || final.adjacentEnd !== adjacent.end;
+}
 
 // -- Component -----------------------------------------------------------------
 
@@ -64,8 +89,10 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
-  const rollingEditMode = useTimelineStore((s) => s.rollingEditMode);
+  const rollingEdit = useSettingsStore((s) => s.rollingEdit);
+  const textVariant = useTimelineStore((s) => s.textVariant);
 
+  const syllablesFollowRolling = useSettingsStore((s) => s.syllablesFollowRolling);
   const showSyllableIndicators = useSettingsStore((s) => s.showSyllableIndicators);
   const syllablePositions = useMemo(() => getSyllablePositions(words), [words]);
 
@@ -74,8 +101,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const [altPressed, setAltPressed] = useState(false);
   // react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [resizing, setResizing] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<DragState | null>(null);
-  const justResizedRef = useRef(false);
+  const draggedRef = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
   const lastPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const conjoinedRef = useRef<{ active: boolean; adjacentWordIndex: number | null }>({
@@ -85,7 +113,18 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   const snap = useTimelineSnap();
   const getLastPointer = useCallback(() => lastPointerRef.current, []);
-  useSnapBypass({ active: resizing, getLastPointer });
+  useGestureInputReplay({ active: resizing, getLastPointer });
+
+  // Multi-block selections: dragging the selection's boundary edge becomes a
+  // proportional stretch (anchored at the opposite side) instead of a resize.
+  // Destructure the stable callback: the hook returns a fresh object every
+  // render, and an object dep would needlessly invalidate this component's
+  // memoized handlers.
+  const { tryStart: tryStartStretch } = useSelectionStretchDrag({
+    onDragEnd: (dragged) => {
+      if (dragged) swallowTrailingClick();
+    },
+  });
 
   // react-doctor-disable-next-line react-doctor/exhaustive-deps
   useEffect(() => {
@@ -106,16 +145,23 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   const handleResizeStart = useCallback(
     (wordIndex: number, edge: "left" | "right", startX: number) => {
+      const track = trackRef.current;
+      if (!track) return;
+      if (tryStartStretch({ lineId, type: trackType, wordIndex, edge, startX, track })) return;
       const word = words[wordIndex];
       const initialState: DragState = { wordIndex, edge, begin: word.begin, end: word.end };
       dragStateRef.current = initialState;
       setDragState(initialState);
 
-      const rollingEdit = useTimelineStore.getState().rollingEditMode;
+      const syllablesFollowRollingAtStart = useSettingsStore.getState().syllablesFollowRolling;
+      const minWordDuration = useSettingsStore.getState().minWordDuration;
+      const boundaryEdge: BoundaryEdge = edge === "left" ? "begin" : "end";
+      const range = storedLineTimeRange(lineId, duration);
 
       setResizing(true);
       lastPointerRef.current = { clientX: startX, clientY: 0 };
       conjoinedRef.current = { active: false, adjacentWordIndex: null };
+      draggedRef.current = false;
       snap.beginGesture({
         selfIds: resizeGestureSelfIds(lineId, wordIndex, edge, words.length, trackType),
         leaderKey: selfKey(lineId, wordIndex, trackType),
@@ -132,90 +178,60 @@ const WordTrack: React.FC<WordTrackProps> = ({
         },
       });
 
-      const isSyllableBoundary = (idx: number, side: "left" | "right"): boolean => {
-        const pos = syllablePositions[idx];
-        if (side === "right") return pos === "first" || pos === "middle";
-        return pos === "middle" || pos === "last";
-      };
-
-      const boundaryHasGap = (idx: number, side: "left" | "right"): boolean => {
-        if (side === "right") return idx < words.length - 1 && words[idx].end < words[idx + 1].begin;
-        return idx > 0 && words[idx - 1].end < words[idx].begin;
-      };
+      const travelSeconds = pointerTravelSeconds(track, startX);
 
       const handleMouseMove = (e: PointerEvent) => {
+        const zoom = useTimelineStore.getState().zoom;
+        const rawDeltaPx = travelSeconds(e.clientX) * zoom;
+        if (Math.abs(rawDeltaPx) >= DRAG_THRESHOLD_PX) draggedRef.current = true;
         lastPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
+        if (!draggedRef.current) return;
         const originalWord = words[wordIndex];
-        const rawDeltaPx = e.clientX - startX;
-        const altHeld = e.altKey;
-        const conjoinedByDefault =
-          (rollingEdit || isSyllableBoundary(wordIndex, edge)) && !boundaryHasGap(wordIndex, edge);
-        const conjoined = altHeld ? !conjoinedByDefault : conjoinedByDefault;
+        const conjoined = shouldRollNeighbour({
+          words,
+          wordIndex,
+          edge: boundaryEdge,
+          rollingEdit: useSettingsStore.getState().rollingEdit,
+          syllablesFollowRolling: syllablesFollowRollingAtStart,
+          syllablePositions,
+          altHeld: e.altKey,
+        });
 
-        const adjacentWordIndex =
-          conjoined && edge === "left" && wordIndex > 0
-            ? wordIndex - 1
-            : conjoined && edge === "right" && wordIndex < words.length - 1
-              ? wordIndex + 1
-              : null;
-        conjoinedRef.current = { active: conjoined && adjacentWordIndex !== null, adjacentWordIndex };
+        const adjacentWordIndex = conjoined ? (edge === "left" ? wordIndex - 1 : wordIndex + 1) : null;
+        conjoinedRef.current = { active: adjacentWordIndex !== null, adjacentWordIndex };
 
-        const edgesAtStart = edge === "left" ? [originalWord.begin] : [originalWord.end];
-        const snapShiftPx = snap.computeShiftPx(rawDeltaPx, edgesAtStart);
-        const deltaTime = (rawDeltaPx + snapShiftPx) / zoom;
+        const edgeAtStart = edge === "left" ? originalWord.begin : originalWord.end;
+        const snapShiftPx = snap.computeShiftPx(rawDeltaPx, [edgeAtStart]);
+        const clamped = clampBoundaryTime({
+          words,
+          wordIndex,
+          edge: boundaryEdge,
+          time: edgeAtStart + (rawDeltaPx + snapShiftPx) / zoom,
+          minDuration: minWordDuration,
+          rollNeighbour: adjacentWordIndex !== null,
+          range,
+        });
 
-        let newState: DragState;
-
-        if (edge === "left") {
-          if (conjoined && wordIndex > 0) {
-            const prevWord = words[wordIndex - 1];
-            const newBoundary = originalWord.begin + deltaTime;
-            const min = prevWord.begin + MIN_WORD_DURATION;
-            const max = originalWord.end - MIN_WORD_DURATION;
-            const clamped = Math.max(min, Math.min(max, Math.max(0, newBoundary)));
-            newState = {
-              wordIndex,
-              edge,
-              begin: clamped,
-              end: originalWord.end,
-              adjacentWordIndex: wordIndex - 1,
-              adjacentBegin: prevWord.begin,
-              adjacentEnd: clamped,
-            };
-          } else {
-            const newBegin = originalWord.begin + deltaTime;
-            const maxBegin = originalWord.end - MIN_WORD_DURATION;
-            const prevEnd = wordIndex > 0 ? words[wordIndex - 1].end : 0;
-            const clampedBegin = Math.max(prevEnd, Math.min(maxBegin, Math.max(0, newBegin)));
-            newState = { wordIndex, edge, begin: clampedBegin, end: originalWord.end };
-          }
-        } else {
-          if (conjoined && wordIndex < words.length - 1) {
-            const nextWord = words[wordIndex + 1];
-            const newBoundary = originalWord.end + deltaTime;
-            const min = originalWord.begin + MIN_WORD_DURATION;
-            const max = nextWord.end - MIN_WORD_DURATION;
-            const clamped = Math.max(min, Math.min(max, Math.min(duration, newBoundary)));
-            newState = {
-              wordIndex,
-              edge,
-              begin: originalWord.begin,
-              end: clamped,
-              adjacentWordIndex: wordIndex + 1,
-              adjacentBegin: clamped,
-              adjacentEnd: nextWord.end,
-            };
-          } else {
-            const newEnd = originalWord.end + deltaTime;
-            const minEnd = originalWord.begin + MIN_WORD_DURATION;
-            const nextBegin = wordIndex < words.length - 1 ? words[wordIndex + 1].begin : duration;
-            const clampedEnd = Math.min(nextBegin, Math.max(minEnd, Math.min(duration, newEnd)));
-            newState = { wordIndex, edge, begin: originalWord.begin, end: clampedEnd };
-          }
-        }
+        const adjacent =
+          adjacentWordIndex === null
+            ? null
+            : {
+                adjacentWordIndex,
+                adjacentBegin: edge === "left" ? words[adjacentWordIndex].begin : clamped,
+                adjacentEnd: edge === "left" ? clamped : words[adjacentWordIndex].end,
+              };
+        const newState: DragState =
+          edge === "left"
+            ? { wordIndex, edge, begin: clamped, end: originalWord.end, ...adjacent }
+            : { wordIndex, edge, begin: originalWord.begin, end: clamped, ...adjacent };
 
         dragStateRef.current = newState;
         setDragState(newState);
+        setLiveWordEdit({ lineId, kind: trackType, words: liveWordBounds(newState) });
+        showLoupeEdit(
+          { lineId, track: trackType, wordIndex, edge: boundaryEdge, startTime: edgeAtStart, time: clamped },
+          false,
+        );
       };
 
       const handleMouseUp = () => {
@@ -223,14 +239,17 @@ const WordTrack: React.FC<WordTrackProps> = ({
         snap.endGesture();
 
         const finalState = dragStateRef.current;
+        const dragged = draggedRef.current;
         dragStateRef.current = null;
         setDragState(null);
-        justResizedRef.current = true;
-        requestAnimationFrame(() => {
-          justResizedRef.current = false;
-        });
+        setLiveWordEdit(null);
 
-        if (finalState) {
+        if (dragged) {
+          swallowTrailingClick();
+          settleLoupe();
+        }
+
+        if (dragged && finalState && resizeChangedTiming(initialState, finalState, words)) {
           if (finalState.adjacentWordIndex !== undefined) {
             const mainUpdate = edge === "left" ? { begin: finalState.begin } : { end: finalState.end };
             const adjUpdate = edge === "left" ? { end: finalState.adjacentEnd! } : { begin: finalState.adjacentBegin! };
@@ -249,7 +268,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
       cleanupRef.current = () => {
         setResizing(false);
+        setLiveWordEdit(null);
         snap.endGesture();
+        settleLoupe();
         document.removeEventListener("pointermove", handleMouseMove);
         document.removeEventListener("pointerup", handleMouseUp);
       };
@@ -257,19 +278,33 @@ const WordTrack: React.FC<WordTrackProps> = ({
       document.addEventListener("pointermove", handleMouseMove);
       document.addEventListener("pointerup", handleMouseUp);
     },
-    [words, zoom, duration, onUpdateWord, syllablePositions, snap, lineId, trackType],
+    [words, duration, onUpdateWord, syllablePositions, snap, lineId, trackType, tryStartStretch],
   );
 
-  const isBoundaryConjoined = (boundaryIndex: number): boolean => {
-    if (boundaryIndex < 0 || boundaryIndex >= words.length - 1) return false;
-    const pos = syllablePositions[boundaryIndex];
-    const isSyllable = pos === "first" || pos === "middle";
-    const hasGap = words[boundaryIndex].end < words[boundaryIndex + 1].begin;
-    const conjoinedByDefault = (rollingEditMode || isSyllable) && !hasGap;
-    return altPressed ? !conjoinedByDefault : conjoinedByDefault;
-  };
+  const isBoundaryConjoined = (boundaryIndex: number): boolean =>
+    shouldRollNeighbour({
+      words,
+      wordIndex: boundaryIndex,
+      edge: "end",
+      rollingEdit,
+      syllablesFollowRolling,
+      syllablePositions,
+      altHeld: altPressed,
+    });
 
   const hasSelection = selectedWords.length > 0;
+  const playingRegion = useTimelineStore((s) => (s.selectionPlayback !== null ? s.loopRegion : null));
+
+  // The two outer edges of a multi-block selection advertise the proportional
+  // stretch. Read lines non-reactively: the grip block identity is stable while
+  // a stretch drag rescales timings, so it only needs to follow selection changes.
+  const gripIndices = useMemo(() => {
+    const { left, right } = selectionGripEdges(useProjectStore.getState().lines, selectedWords);
+    return {
+      leftGrip: left && left.lineId === lineId && left.type === trackType ? left.wordIndex : -1,
+      rightGrip: right && right.lineId === lineId && right.type === trackType ? right.wordIndex : -1,
+    };
+  }, [selectedWords, lineId, trackType]);
 
   const getDisplay = (wordIndex: number) => {
     if (dragState) {
@@ -300,7 +335,6 @@ const WordTrack: React.FC<WordTrackProps> = ({
   };
 
   const handleSelect = (wordIndex: number, e: React.MouseEvent) => {
-    if (justResizedRef.current) return;
     if (e.shiftKey) {
       const pos = syllablePositions[wordIndex];
       if (pos !== "none") {
@@ -351,9 +385,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
     const clickX = e.clientX - rect.left;
     const time = clickX / zoom;
 
-    const audioDuration = useAudioStore.getState().duration;
-    const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const slot = findInsertionSlot(words, time, wordDuration, audioDuration);
+    const range = storedLineTimeRange(lineId, useAudioStore.getState().duration);
+    const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
+    const slot = findInsertionSlot(words, time, defaultWordDuration, range, minWordDuration);
     if (!slot) return;
 
     const newWord: WordTiming = { text: "... ", begin: slot.begin, end: slot.end };
@@ -367,7 +401,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
       updateLineWithHistory(lineId, manualBackgroundWordEdit(newWords));
     }
 
-    useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type: trackType });
+    const timeline = useTimelineStore.getState();
+    timeline.clearSelection();
+    timeline.setEditingWord({ lineId, wordIndex: newIndex, type: trackType });
   };
 
   const handleTrackContextMenu = (e: React.MouseEvent) => {
@@ -387,6 +423,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   return (
     <div
+      ref={trackRef}
       role="presentation"
       className="relative"
       style={{ height, width: duration * zoom }}
@@ -399,9 +436,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
         const display = getDisplay(wordIndex);
         const wordKey = `${lineId}-${trackType}-${wordIndex}`;
         const syllablePosition = showSyllableIndicators ? syllablePositions[wordIndex] : "none";
-        const gapBefore =
-          (syllablePosition === "middle" || syllablePosition === "last") &&
-          getDisplay(wordIndex - 1).end < display.begin;
+        const inGroup = syllablePosition !== "none";
+        const gapBefore = inGroup && syllablePosition !== "first" && getDisplay(wordIndex - 1).end < display.begin;
+        const gapAfter = inGroup && syllablePosition !== "last" && getDisplay(wordIndex + 1).begin > display.end;
         return (
           <WordBlock
             key={wordKey}
@@ -410,20 +447,34 @@ const WordTrack: React.FC<WordTrackProps> = ({
             lineIndex={lineIndex}
             wordIndex={wordIndex}
             trackType={trackType}
-            text={word.text}
+            text={
+              textVariant === "transliteration"
+                ? timedTransliterationSlice({
+                    text: word.transliteration || word.text,
+                    joinerAfter: wordIndex < words.length - 1 ? word.transliterationJoinerAfter : undefined,
+                  }).text
+                : word.text
+            }
             begin={display.begin}
             end={display.end}
             color={color}
             zoom={zoom}
-            isDimmed={hasSelection && !isWordSelected(selectedWords, lineId, wordIndex, trackType)}
+            isDimmed={
+              (hasSelection && !isWordSelected(selectedWords, lineId, wordIndex, trackType)) ||
+              (playingRegion !== null && !overlapsLoopRegion(display, playingRegion))
+            }
             isSelected={isWordSelected(selectedWords, lineId, wordIndex, trackType)}
             isExplicit={word.explicit === true}
             syllablePosition={syllablePosition}
+            syllableEdgesJoin={!syllablesFollowRolling}
             gapBefore={gapBefore}
+            gapAfter={gapAfter}
             leftHighlighted={hoveredBoundary === wordIndex - 1 && isBoundaryConjoined(wordIndex - 1)}
             rightHighlighted={hoveredBoundary === wordIndex && isBoundaryConjoined(wordIndex)}
             leftConjoined={isBoundaryConjoined(wordIndex - 1)}
             rightConjoined={isBoundaryConjoined(wordIndex)}
+            showLeftGrip={wordIndex === gripIndices.leftGrip}
+            showRightGrip={wordIndex === gripIndices.rightGrip}
             onClick={(e) => handleSelect(wordIndex, e)}
             onResizeStart={(edge, startX) => handleResizeStart(wordIndex, edge, startX)}
             onEdgeHover={(edge, hovering) => handleEdgeHover(wordIndex, edge, hovering)}

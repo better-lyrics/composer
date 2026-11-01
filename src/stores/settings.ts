@@ -1,6 +1,18 @@
+import { RECOMMENDED_ALIGNMENT_MODEL } from "@/audio/alignment/hubertfa/model-manifest";
+import type { MusicBrainzLookup } from "@/domain/musicbrainz/lookup-mode";
+import { DEFAULT_PITCH_LINE_MODE, type PitchLineMode } from "@/domain/pitch/pitch-line-mode";
+import type { LibrarySort } from "@/domain/project/library-order";
+import type { LaunchScreen, LibraryView } from "@/domain/project/library-preferences";
+import { SPECTRUM_SETTING_DEFAULTS, type SpectrumSettings } from "@/domain/spectrum/settings";
+import type { KeepYouTubeAudio } from "@/domain/storage/audio-retention";
+import type { StorageLimit } from "@/domain/storage/storage-limit";
+import { SETTINGS_PERSIST_VERSION, migrateSettings } from "@/stores/settings-migration";
+import { SNAP_DEFAULTS, type SnapSettings } from "@/stores/settings-snap";
+import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
+import { PREVIEW_SIDEBAR_WIDTH } from "@/utils/preview-sidebar-width";
+import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
 
 // -- Types --------------------------------------------------------------------
 
@@ -8,6 +20,9 @@ type GranularityDefault = "word" | "line";
 type LinkedDivergenceAction = "ask" | "apply" | "detach";
 type PreviewRenderer = "braccato" | "am-lyrics";
 type VocalModelVariant = "fp16" | "fp32";
+type BooleanSettingKey = {
+  [K in keyof SettingsState]: SettingsState[K] extends boolean ? K : never;
+}[keyof SettingsState];
 
 interface ExperimentFlags {
   youtubeBridge: boolean;
@@ -27,8 +42,12 @@ interface CobaltInstanceStatus {
 
 const DEFAULT_COBALT_INSTANCE_ID = "default";
 
-interface SettingsState {
+interface SettingsState extends SnapSettings, SpectrumSettings {
+  pitchLine: PitchLineMode;
   defaultPlaybackRate: number;
+  rememberPlaybackRate: boolean;
+  lastPlaybackRate: number;
+  preservePitch: boolean;
   rememberVolume: boolean;
   lastVolume: number;
   audioScrubPreview: boolean;
@@ -36,20 +55,34 @@ interface SettingsState {
   defaultZoom: number;
   defaultRowHeight: number;
   followPlayhead: boolean;
-  defaultRollingEdit: boolean;
-  defaultPreviewSidebar: boolean;
-  timelineSnap: boolean;
-  timelineSnapThreshold: number;
-  vocalOnsetSnap: boolean;
-  snapPlayheadToPoints: boolean;
+  returnToCue: boolean;
+  rollingEdit: boolean;
+  previewSidebar: boolean;
+  previewSidebarWidth: number;
+  shareTimingInNewGroups: boolean;
+  loopOpenGroup: boolean;
+  syllablesFollowRolling: boolean;
   timelineHorizontalScroll: boolean;
 
   nudgeAmount: number;
   defaultWordDuration: number;
   minWordDuration: number;
+  redoPreroll: number;
+  selectionLeadIn: number;
+  syncCountIn: number;
+  seekStep: number;
+  fineSeekStep: number;
   defaultGranularity: GranularityDefault;
 
   autoSaveDelay: number;
+  keepYouTubeAudio: KeepYouTubeAudio;
+  musicBrainzLookup: MusicBrainzLookup;
+  smartCleanup: boolean;
+  storageLimit: StorageLimit;
+
+  libraryView: LibraryView;
+  librarySort: LibrarySort;
+  launchScreen: LaunchScreen;
 
   showShortcutHints: boolean;
   showSyllableIndicators: boolean;
@@ -58,7 +91,6 @@ interface SettingsState {
   mergeStandaloneBackgroundLines: boolean;
   preserveBracketsOnExtraction: boolean;
 
-  confirmReplaceProjectFromHash: boolean;
   confirmReplaceLyrics: boolean;
   confirmSyncReset: boolean;
   confirmClearProject: boolean;
@@ -66,12 +98,16 @@ interface SettingsState {
   confirmResetShortcuts: boolean;
   confirmGroupDissolution: boolean;
   confirmApplyToAllSyllableSplit: boolean;
+  confirmConformToGroup: boolean;
+  confirmClearImportedSongDetails: boolean;
   linkedDivergenceAction: LinkedDivergenceAction;
 
   previewRenderer: PreviewRenderer;
 
   autoSeparateOnImport: boolean;
   vocalModelVariant: VocalModelVariant;
+  alignmentModelId: string;
+  keepAlignmentModelLoaded: boolean;
 
   cobaltInstances: CobaltInstance[];
   selectedCobaltInstanceId: string;
@@ -83,6 +119,7 @@ interface SettingsState {
 
 interface SettingsActions {
   set: <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => void;
+  toggle: (key: BooleanSettingKey) => void;
   resetToDefaults: () => void;
   addCobaltInstance: (instance: Omit<CobaltInstance, "id">) => void;
   updateCobaltInstance: (id: string, updates: Partial<Omit<CobaltInstance, "id">>) => void;
@@ -94,7 +131,13 @@ interface SettingsActions {
 // -- Defaults -----------------------------------------------------------------
 
 const DEFAULTS: SettingsState = {
+  ...SPECTRUM_SETTING_DEFAULTS,
+  pitchLine: DEFAULT_PITCH_LINE_MODE,
+  ...SNAP_DEFAULTS,
   defaultPlaybackRate: 0.75,
+  rememberPlaybackRate: true,
+  lastPlaybackRate: 0.75,
+  preservePitch: true,
   rememberVolume: true,
   lastVolume: 1,
   audioScrubPreview: true,
@@ -102,29 +145,42 @@ const DEFAULTS: SettingsState = {
   defaultZoom: 100,
   defaultRowHeight: 44,
   followPlayhead: true,
-  defaultRollingEdit: false,
-  defaultPreviewSidebar: false,
-  timelineSnap: true,
-  timelineSnapThreshold: 12,
-  vocalOnsetSnap: true,
-  snapPlayheadToPoints: true,
+  returnToCue: false,
+  rollingEdit: false,
+  previewSidebar: false,
+  previewSidebarWidth: PREVIEW_SIDEBAR_WIDTH.default,
+  shareTimingInNewGroups: true,
+  loopOpenGroup: false,
+  syllablesFollowRolling: false,
   timelineHorizontalScroll: false,
 
   nudgeAmount: 0.05,
   defaultWordDuration: 0.3,
-  minWordDuration: 0.05,
+  minWordDuration: DEFAULT_MIN_WORD_DURATION,
+  redoPreroll: 1.5,
+  selectionLeadIn: 0.3,
+  syncCountIn: 3,
+  seekStep: 0.5,
+  fineSeekStep: 0.05,
   defaultGranularity: "word",
 
   autoSaveDelay: 2000,
+  keepYouTubeAudio: "auto",
+  musicBrainzLookup: "auto",
+  smartCleanup: true,
+  storageLimit: "2gb",
+
+  libraryView: "list",
+  librarySort: "edited",
+  launchScreen: "projects",
 
   showShortcutHints: true,
   showSyllableIndicators: true,
   splitCharacter: "|",
   autoExtractBackgroundVocals: true,
   mergeStandaloneBackgroundLines: true,
-  preserveBracketsOnExtraction: false,
+  preserveBracketsOnExtraction: true,
 
-  confirmReplaceProjectFromHash: true,
   confirmReplaceLyrics: true,
   confirmSyncReset: true,
   confirmClearProject: true,
@@ -132,12 +188,16 @@ const DEFAULTS: SettingsState = {
   confirmResetShortcuts: true,
   confirmGroupDissolution: true,
   confirmApplyToAllSyllableSplit: true,
+  confirmConformToGroup: true,
+  confirmClearImportedSongDetails: true,
   linkedDivergenceAction: "ask",
 
   previewRenderer: "braccato",
 
   autoSeparateOnImport: false,
   vocalModelVariant: "fp32",
+  alignmentModelId: RECOMMENDED_ALIGNMENT_MODEL,
+  keepAlignmentModelLoaded: false,
 
   cobaltInstances: [],
   selectedCobaltInstanceId: DEFAULT_COBALT_INSTANCE_ID,
@@ -153,22 +213,6 @@ const BUILTIN_COBALT_INSTANCE: CobaltInstance = {
   url: "https://cobalt.boidu.dev",
 };
 
-const SETTINGS_PERSIST_VERSION = 5;
-
-function migrateSettings(persistedState: unknown, version: number): unknown {
-  if (!persistedState || typeof persistedState !== "object") return persistedState;
-  const state = persistedState as Partial<SettingsState>;
-  const next: Partial<SettingsState> = { ...state };
-  if (version < 2 || next.vocalModelVariant === "fp16") {
-    next.vocalModelVariant = "fp32";
-  }
-  if (next.defaultRollingEdit === undefined) next.defaultRollingEdit = false;
-  if (next.defaultPreviewSidebar === undefined) next.defaultPreviewSidebar = false;
-  if (next.vocalOnsetSnap === undefined) next.vocalOnsetSnap = true;
-  if (next.snapPlayheadToPoints === undefined) next.snapPlayheadToPoints = true;
-  return next;
-}
-
 // -- Store --------------------------------------------------------------------
 
 const useSettingsStore = create<SettingsState & SettingsActions>()(
@@ -177,10 +221,10 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
       ...DEFAULTS,
 
       set: (key, value) => set({ [key]: value }),
+      toggle: (key) => set((state) => ({ [key]: !state[key] })),
       resetToDefaults: () =>
         set((state) => ({
           ...DEFAULTS,
-          confirmReplaceProjectFromHash: state.confirmReplaceProjectFromHash,
           confirmReplaceLyrics: state.confirmReplaceLyrics,
           confirmSyncReset: state.confirmSyncReset,
           confirmClearProject: state.confirmClearProject,
@@ -188,6 +232,8 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           confirmResetShortcuts: state.confirmResetShortcuts,
           confirmGroupDissolution: state.confirmGroupDissolution,
           confirmApplyToAllSyllableSplit: state.confirmApplyToAllSyllableSplit,
+          confirmConformToGroup: state.confirmConformToGroup,
+          confirmClearImportedSongDetails: state.confirmClearImportedSongDetails,
           linkedDivergenceAction: state.linkedDivergenceAction,
           cobaltInstances: state.cobaltInstances,
           selectedCobaltInstanceId: state.selectedCobaltInstanceId,
@@ -250,6 +296,5 @@ export {
   DEFAULT_COBALT_INSTANCE_ID,
   getActiveCobaltInstance,
   isUsingDefaultCobaltInstance,
-  migrateSettings as migrateSettingsForTest,
 };
-export type { SettingsState, CobaltInstanceStatus, LinkedDivergenceAction, VocalModelVariant };
+export type { BooleanSettingKey, SettingsState, CobaltInstanceStatus, VocalModelVariant };

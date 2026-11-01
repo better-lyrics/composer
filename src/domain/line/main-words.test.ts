@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { applyMainWordEdit, mainWordEditFields } from "@/domain/line/main-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
+import { describe, expect, it } from "vitest";
 
 const baseLine = (overrides: Partial<LyricLine> = {}): LyricLine =>
   ({
@@ -36,7 +36,7 @@ describe("applyMainWordEdit", () => {
     it("clears words and begin/end when given an empty array (reconcileLine semantics)", () => {
       const line = baseLine();
       const result = applyMainWordEdit(line, []);
-      expect(result.words).toEqual([]);
+      expect(result.words).toBeUndefined();
     });
     it("preserves agentId, groupId, instanceIdx, and other non-timing fields", () => {
       const line = baseLine({ groupId: "g1", instanceIdx: 2, templateLineIdx: 0 });

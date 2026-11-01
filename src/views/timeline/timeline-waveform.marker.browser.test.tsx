@@ -54,7 +54,7 @@ describe("TimelineWaveform marker placement", () => {
 
   it("marker mode ON: clicking near an onset within threshold snaps the added point onto the onset", async () => {
     setupWaveformAudio(30);
-    useSettingsStore.setState({ vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+    useSettingsStore.setState({ vocalOnsetSnap: true, snapDistanceOnsets: 12 });
     useTimelineStore.setState({ zoom: 50, markerMode: true, vocalOnsetSnapPoints: [15.1] });
     useProjectStore.setState({ customSnapPoints: [] });
     const screen = await render(<TimelineWaveform />);
@@ -68,7 +68,7 @@ describe("TimelineWaveform marker placement", () => {
 
   it("marker mode ON: clicking with no onsets nearby adds the raw clicked time", async () => {
     setupWaveformAudio(30);
-    useSettingsStore.setState({ vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+    useSettingsStore.setState({ vocalOnsetSnap: true, snapDistanceOnsets: 12 });
     useTimelineStore.setState({ zoom: 50, markerMode: true, vocalOnsetSnapPoints: [2, 27] });
     useProjectStore.setState({ customSnapPoints: [] });
     const screen = await render(<TimelineWaveform />);
@@ -169,7 +169,7 @@ describe("TimelineWaveform marker placement", () => {
 
   it("marker mode OFF: Alt+click snaps the dropped point to a nearby onset within threshold", async () => {
     setupWaveformAudio(30);
-    useSettingsStore.setState({ vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+    useSettingsStore.setState({ vocalOnsetSnap: true, snapDistanceOnsets: 12 });
     useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [15.1] });
     useProjectStore.setState({ customSnapPoints: [] });
     const screen = await render(<TimelineWaveform />);
@@ -183,7 +183,7 @@ describe("TimelineWaveform marker placement", () => {
 
   it("onset snapping is suppressed when the vocalOnsetSnap setting is off, mirroring the drag", async () => {
     setupWaveformAudio(30);
-    useSettingsStore.setState({ vocalOnsetSnap: false, timelineSnapThreshold: 12 });
+    useSettingsStore.setState({ vocalOnsetSnap: false, snapDistanceOnsets: 12 });
     useTimelineStore.setState({ zoom: 50, markerMode: true, vocalOnsetSnapPoints: [15.1] });
     useProjectStore.setState({ customSnapPoints: [] });
     const screen = await render(<TimelineWaveform />);

@@ -1,15 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
-import { clearCurrentProject, type SavedProject, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
+import { saveAudioFile, saveCurrentProject } from "@/lib/persistence";
 import { PROJECT_STORE_NAME, setInStore } from "@/lib/persistence-idb";
+import type { SavedProject } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createMp3File } from "@/test/audio-fixtures";
-import { snapPoints } from "@/test/factories";
+import { createProjectSaveInput, snapPoints } from "@/test/factories";
 import { render } from "@/test/render";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -41,30 +42,20 @@ const LoadHarness: React.FC = () => {
 describe("usePersistence · customSnapPoints hydration", () => {
   const initialAutoSaveDelay = useSettingsStore.getState().autoSaveDelay;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     useSettingsStore.setState({ autoSaveDelay: 30 });
-    await clearCurrentProject();
   });
-  afterEach(async () => {
+  afterEach(() => {
     useSettingsStore.setState({ autoSaveDelay: initialAutoSaveDelay });
-    await clearCurrentProject();
   });
 
   it("regression: usePersistence hydrates saved customSnapPoints into the project store", async () => {
     await saveAudioFile(createMp3File());
     await saveCurrentProject(
-      { title: "with-markers", artist: "", album: "", duration: 0 },
-      DEFAULT_AGENTS,
-      [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
-      [],
-      "word",
-      { applyToAll: false, caseInsensitive: false },
-      { kind: "file", name: "silence.mp3" },
-      [],
-      [],
-      "original",
-      false,
-      snapPoints([4, 9]),
+      createProjectSaveInput({
+        metadata: { title: "with-markers", artists: [], album: "", duration: 0 },
+        customSnapPoints: snapPoints([4, 9]),
+      }),
     );
 
     await renderHook(() => usePersistence());
@@ -80,7 +71,7 @@ describe("usePersistence · customSnapPoints hydration", () => {
     const legacyRecord: SavedProject = {
       version: 1,
       savedAt: Date.now(),
-      metadata: { title: "legacy", artist: "", album: "", duration: 0 },
+      metadata: { title: "legacy", artists: [], album: "", duration: 0 },
       agents: DEFAULT_AGENTS,
       lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
       groups: [],
@@ -90,6 +81,7 @@ describe("usePersistence · customSnapPoints hydration", () => {
       audioSource: { kind: "file", name: "silence.mp3" },
       dismissedSuggestions: [],
       dismissedExplicitSuggestions: [],
+      dismissedMetadataMatches: [],
       currentStem: "original",
       primingStripped: false,
     };
@@ -106,18 +98,10 @@ describe("usePersistence · customSnapPoints hydration", () => {
   it("regression: a saved project's markers survive the audio-source clear fired during load", async () => {
     await saveAudioFile(createMp3File());
     await saveCurrentProject(
-      { title: "survives-load", artist: "", album: "", duration: 0 },
-      DEFAULT_AGENTS,
-      [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
-      [],
-      "word",
-      { applyToAll: false, caseInsensitive: false },
-      { kind: "file", name: "silence.mp3" },
-      [],
-      [],
-      "original",
-      false,
-      snapPoints([5, 12]),
+      createProjectSaveInput({
+        metadata: { title: "survives-load", artists: [], album: "", duration: 0 },
+        customSnapPoints: snapPoints([5, 12]),
+      }),
     );
 
     useProjectStore.setState({ customSnapPoints: [] });

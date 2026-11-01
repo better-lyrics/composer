@@ -1,22 +1,37 @@
+import { withNewInstance } from "@/domain/group/own-timing";
+import { instanceCount } from "@/domain/instance/enumerate";
+import { livePlaybackTime } from "@/stores/audio";
+import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
+import { showGroupActionToast, showGroupedToast } from "@/utils/group-toast";
+import { pluralize } from "@/utils/pluralize";
+import { type ConformFailure, conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import type { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
+import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
-// -- Interfaces ---------------------------------------------------------------
+// -- Constants ----------------------------------------------------------------
 
-type ContextMenuTargets = ReturnType<typeof useContextMenuTargets>;
+const CONFORM_FAILURE_MESSAGE: Record<ConformFailure, string> = {
+  empty_selection: "Select the lines you want to conform first",
+  no_template: "That group has no lines to copy from",
+  already_grouped: "Some of those lines already belong to a group",
+  unknown_line: "Those lines are no longer in the project",
+  not_contiguous: "Select one unbroken run of lines",
+  length_mismatch: "Select exactly as many lines as the group has",
+};
 
 // -- Hook ---------------------------------------------------------------------
 
 function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () => void) {
-  const { groupableSelection } = targets;
+  const { groupableSelection, conformableSelection } = targets;
   const contextMenu = useTimelineStore((s) => s.contextMenu);
   const setRenamingGroupId = useTimelineStore((s) => s.setRenamingGroupId);
   const groups = useProjectStore((s) => s.groups);
+  const confirm = useConfirm();
 
   const handleJumpToGroupFromBanner = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
@@ -29,22 +44,63 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
     if (!groupableSelection) return;
     const projectState = useProjectStore.getState();
     projectState.addGroupWithLines(groupableSelection.result.group, groupableSelection.result.updatedLines);
-    toast.success(`Grouped ${groupableSelection.count} line${groupableSelection.count === 1 ? "" : "s"}`);
+    showGroupedToast(groupableSelection.result.group, groupableSelection.count, groupableSelection.addedFromGaps);
     clearContextMenu();
   }, [groupableSelection, clearContextMenu]);
+
+  const handleConformToGroup = useCallback(
+    async (groupId: string) => {
+      if (!conformableSelection) return;
+      const option = conformableSelection.options.find((o) => o.group.id === groupId);
+      if (!option) return;
+      const { selectedLineIds, count } = conformableSelection;
+      clearContextMenu();
+
+      const ok = await confirm({
+        title: `Conform ${pluralize(count, "line")} to "${option.group.label}"?`,
+        description: "Their current text, timing, agent and background vocals are replaced by the group's.",
+        confirmLabel: "Conform",
+        variant: "destructive",
+        settingsKey: "confirmConformToGroup",
+        recoverable: true,
+      });
+      if (!ok) return;
+
+      const projectState = useProjectStore.getState();
+      if (!projectState.groups.some((g) => g.id === groupId)) {
+        toast.error("That group no longer exists");
+        return;
+      }
+      const playheadTime = livePlaybackTime();
+      const result = conformLinesToInstance({
+        lines: projectState.lines,
+        groupId,
+        template: option.template,
+        selectedLineIds,
+        playheadTime,
+      });
+      if (!result.ok || !result.updatedLines || result.instanceIdx === undefined) {
+        toast.error(result.reason ? CONFORM_FAILURE_MESSAGE[result.reason] : "Could not conform those lines");
+        return;
+      }
+      projectState.setLinesWithHistory(
+        result.updatedLines,
+        withNewInstance(projectState.groups, groupId, result.instanceIdx),
+      );
+      showGroupActionToast(`Conformed ${pluralize(count, "line")} to "${option.group.label}"`);
+    },
+    [conformableSelection, confirm, clearContextMenu],
+  );
 
   const handleDeleteGroup = useCallback(async () => {
     if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
     const { groupId } = contextMenu.target;
     const group = groups.find((g) => g.id === groupId);
     if (!group) return;
-    const projectLines = useProjectStore.getState().lines;
-    const instanceCount = new Set(
-      projectLines.flatMap((l) => (l.groupId === groupId && l.instanceIdx !== undefined ? [l.instanceIdx] : [])),
-    ).size;
+    const count = instanceCount(useProjectStore.getState().lines, groupId);
 
     clearContextMenu();
-    await deleteGroupWithConfirm({ groupId, groupLabel: group.label, instanceCount });
+    await deleteGroupWithConfirm({ groupId, groupLabel: group.label, instanceCount: count });
   }, [contextMenu, groups, clearContextMenu]);
 
   const handleRenameStart = useCallback(() => {
@@ -66,6 +122,7 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
   return {
     handleJumpToGroupFromBanner,
     handleCreateGroupFromSelection,
+    handleConformToGroup,
     handleDeleteGroup,
     handleRenameStart,
     handleRecolorGroup,

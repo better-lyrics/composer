@@ -1,20 +1,33 @@
-import { IconBrandYoutube, IconLoader2 } from "@tabler/icons-react";
-import { useCallback, useState } from "react";
-import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
+import { isYouTubeLoadError, isYouTubeLoadFailure, useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
-import { extractVideoId } from "@/utils/youtube-url";
+import { FLOATING_INPUT_STYLES, INPUT_STYLES } from "@/ui/input-styles";
+import { cn } from "@/utils/cn";
+import { focusOnMount } from "@/utils/focus-on-mount";
+import { INVALID_YOUTUBE_LINK_MESSAGE, extractVideoId } from "@/utils/youtube-url";
+import { IconBrandYoutube, IconLoader2 } from "@tabler/icons-react";
+import { useCallback, useState } from "react";
+
+// -- Constants ----------------------------------------------------------------
+
+const LOG_PREFIX = "[YouTubeUrlInput]";
 
 // -- Component ----------------------------------------------------------------
 
 interface YouTubeUrlInputProps {
   placeholder?: string;
   className?: string;
+  onLoadVideo?: (videoId: string) => Promise<void>;
+  surface?: "well" | "floating";
+  focusOnOpen?: boolean;
 }
 
 const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
   placeholder = "Paste YouTube URL or video ID",
   className,
+  onLoadVideo,
+  surface = "well",
+  focusOnOpen = false,
 }) => {
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,30 +38,34 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
   const handleSubmit = useCallback(async () => {
     const videoId = extractVideoId(value);
     if (!videoId) {
-      setError("That doesn't look like a valid YouTube URL or ID");
+      setError(INVALID_YOUTUBE_LINK_MESSAGE);
       return;
     }
     setError(null);
     try {
-      await loadYouTubeSource(videoId);
+      await (onLoadVideo ?? loadYouTubeSource)(videoId);
       setValue("");
-    } catch {
-      // Error is surfaced via the store's youtubeLoadError; keep the input populated for retry.
+    } catch (error) {
+      if (isYouTubeLoadError(error) && !isYouTubeLoadFailure(error)) {
+        console.info(LOG_PREFIX, "ignored a superseded video load", error);
+        return;
+      }
+      if (!isYouTubeLoadError(error)) console.error(LOG_PREFIX, "could not load the video", error);
     }
-  }, [value, loadYouTubeSource]);
+  }, [value, loadYouTubeSource, onLoadVideo]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       handleSubmit();
     }
-    e.stopPropagation();
+    if (e.key !== "Escape" || surface !== "floating") e.stopPropagation();
   };
 
   const trimmed = value.trim();
 
   return (
-    <div className={`flex flex-col gap-1.5 w-full max-w-md ${className ?? ""}`}>
+    <div className={cn("flex flex-col gap-1.5 w-full", className)}>
       <div className="flex gap-2">
         <input
           type="text"
@@ -65,14 +82,22 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
           spellCheck={false}
           autoCapitalize="off"
           autoComplete="off"
-          className="flex-1 h-8 px-3 text-sm rounded-md bg-composer-input border border-composer-border focus:outline-none focus:border-composer-accent cursor-text disabled:opacity-50 select-text"
+          ref={focusOnOpen ? focusOnMount : undefined}
+          className={cn(surface === "floating" ? FLOATING_INPUT_STYLES : INPUT_STYLES, "flex-1 h-9 select-text")}
         />
-        <Button variant="primary" hasIcon onClick={handleSubmit} disabled={isLoading || trimmed.length === 0}>
+        <Button
+          variant="primary"
+          size="lg"
+          hasIcon
+          onClick={handleSubmit}
+          disabled={isLoading || trimmed.length === 0}
+          className="rounded-lg"
+        >
           {isLoading ? <IconLoader2 size={16} className="animate-spin" /> : <IconBrandYoutube size={16} />}
           {isLoading ? "Loading" : "Load"}
         </Button>
       </div>
-      {error && <p className="text-xs text-red-400 select-text">{error}</p>}
+      {error && <p className="text-xs text-composer-negative select-text">{error}</p>}
     </div>
   );
 };

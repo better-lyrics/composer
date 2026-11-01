@@ -1,85 +1,28 @@
-import { clearCurrentProject, exportProjectToFile, importProjectFromFile } from "@/lib/persistence";
+import { createProject, deleteProject } from "@/lib/open-project";
+import { openProjectIdSnapshot } from "@/lib/open-project-session";
+import { buildSavedProject } from "@/lib/persistence";
 import { cancelPendingSave } from "@/lib/persistence-debounce";
-import { useAudioStore } from "@/stores/audio";
+import { downloadProjectFile, projectFileFrom } from "@/lib/project-file";
+import { importProjectFromInput } from "@/lib/project-import";
+import { currentSaveInput } from "@/lib/project-snapshot";
 import { useConfirm } from "@/stores/confirm-store";
-import { useProjectStore } from "@/stores/project";
-import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
 import { useCallback } from "react";
+import { toast } from "sonner";
+
+// -- Constants ----------------------------------------------------------------
+
+const LOG_PREFIX = "[ProjectFileActions]";
 
 // -- Hook ---------------------------------------------------------------------
 
-function useProjectFileActions(fileInputRef: React.RefObject<HTMLInputElement | null>) {
-  const metadata = useProjectStore((s) => s.metadata);
-  const agents = useProjectStore((s) => s.agents);
-  const lines = useProjectStore((s) => s.lines);
-  const groups = useProjectStore((s) => s.groups);
-  const granularity = useProjectStore((s) => s.granularity);
-  const setMetadata = useProjectStore((s) => s.setMetadata);
-  const setLines = useProjectStore((s) => s.setLines);
-  const setGranularity = useProjectStore((s) => s.setGranularity);
-  const setAgents = useProjectStore((s) => s.setAgents);
-  const reset = useProjectStore((s) => s.reset);
-  const markClean = useProjectStore((s) => s.markClean);
+function useProjectFileActions() {
   const confirm = useConfirm();
 
   const handleExportProject = useCallback(() => {
-    const audioSource = useAudioStore.getState().source;
-    const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
-    const { dismissedSuggestions, dismissedExplicitSuggestions, syllableSplitDefaults, customSnapPoints } =
-      useProjectStore.getState();
-    exportProjectToFile(
-      metadata,
-      agents,
-      lines,
-      groups,
-      granularity,
-      syllableSplitDefaults,
-      dismissedSuggestions,
-      dismissedExplicitSuggestions,
-      customSnapPoints,
-      audioFileName,
-    );
-  }, [metadata, agents, lines, groups, granularity]);
+    downloadProjectFile(projectFileFrom(openProjectIdSnapshot(), buildSavedProject(currentSaveInput())));
+  }, []);
 
-  const handleImportProject = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      const existingLineCount = useProjectStore.getState().lines.length;
-      if (existingLineCount > 0) {
-        const ok = await confirm({
-          title: "Replace current project?",
-          description: `Loading this project file will replace your ${existingLineCount} existing line${existingLineCount === 1 ? "" : "s"} and metadata. This cannot be undone.`,
-          confirmLabel: "Replace",
-          variant: "destructive",
-          settingsKey: "confirmReplaceLyrics",
-        });
-        if (!ok) {
-          if (fileInputRef.current) fileInputRef.current.value = "";
-          return;
-        }
-      }
-
-      const project = await importProjectFromFile(file);
-      const store = useProjectStore.getState();
-      setMetadata(project.metadata);
-      setLines(project.lines);
-      store.setGroups(project.groups ?? []);
-      store.setDismissedSuggestions(project.dismissedSuggestions ?? []);
-      store.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
-      setGranularity(project.granularity);
-      store.setSyllableSplitDefaults(project.syllableSplitDefaults ?? DEFAULT_SYLLABLE_SPLIT_DEFAULTS);
-      setAgents(project.agents);
-      store.setCustomSnapPoints(project.customSnapPoints ?? []);
-      markClean();
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    },
-    [setMetadata, setLines, setGranularity, setAgents, markClean, confirm, fileInputRef],
-  );
+  const handleImportProject = importProjectFromInput;
 
   const handleClearProject = useCallback(async () => {
     const ok = await confirm({
@@ -90,10 +33,17 @@ function useProjectFileActions(fileInputRef: React.RefObject<HTMLInputElement | 
       settingsKey: "confirmClearProject",
     });
     if (!ok) return;
-    cancelPendingSave();
-    reset();
-    await clearCurrentProject();
-  }, [reset, confirm]);
+    const id = openProjectIdSnapshot();
+    if (id) {
+      await deleteProject(id).catch((error: unknown) => {
+        console.error(LOG_PREFIX, "could not clear the project", error);
+        toast.error("Couldn't clear the project");
+      });
+    } else {
+      cancelPendingSave();
+      createProject();
+    }
+  }, [confirm]);
 
   return { handleExportProject, handleImportProject, handleClearProject };
 }

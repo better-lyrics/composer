@@ -10,7 +10,7 @@ const BetterLyricsPromo: React.FC = () => {
         href={BETTER_LYRICS_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="group relative block rounded-2xl bg-composer-bg-elevated border border-composer-border hover:border-composer-border-hover overflow-hidden transition-colors"
+        className="group relative block rounded-2xl bg-(--layer-1) border border-(--edge) hover:border-(--edge-strong) overflow-hidden transition-colors"
       >
         <BetterLyricsLogo
           size={320}

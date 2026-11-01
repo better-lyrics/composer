@@ -1,16 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 import { usePersistence } from "@/hooks/usePersistence";
+import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { useProjectStore } from "@/stores/project";
 import { allowConsole } from "@/test/console-guard";
 import { seedProject } from "@/test/idb";
-
-async function waitForLoad(): Promise<void> {
-  for (let i = 0; i < 50; i++) {
-    if (useProjectStore.getState().lines.length > 0 || useProjectStore.getState().agents.length > 0) return;
-    await new Promise((r) => setTimeout(r, 20));
-  }
-}
+import { describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
 
 describe("usePersistence malformed-project handling", () => {
   it("logs a warn and falls back to DEFAULT_AGENTS when agents is missing", async () => {
@@ -23,7 +17,8 @@ describe("usePersistence malformed-project handling", () => {
       granularity: "word",
     });
     await renderHook(() => usePersistence());
-    await waitForLoad();
+    await getPersistenceSettled();
+    expect(useProjectStore.getState().metadata.title).toBe("NoAgents");
     expect(useProjectStore.getState().agents.length).toBeGreaterThan(0);
     expect(useProjectStore.getState().agents[0].id).toBe("v1");
   });
@@ -38,7 +33,8 @@ describe("usePersistence malformed-project handling", () => {
       granularity: "word",
     });
     await renderHook(() => usePersistence());
-    await new Promise((r) => setTimeout(r, 100));
+    await getPersistenceSettled();
+    expect(useProjectStore.getState().metadata.title).toBe("NoLines");
     expect(useProjectStore.getState().lines).toEqual([]);
   });
 
@@ -52,7 +48,8 @@ describe("usePersistence malformed-project handling", () => {
       granularity: "word",
     });
     await renderHook(() => usePersistence());
-    await waitForLoad();
+    await getPersistenceSettled();
+    expect(useProjectStore.getState().metadata.title).toBe("AllGood");
     expect(useProjectStore.getState().agents[0].name).toBe("Lead");
   });
 
@@ -66,7 +63,8 @@ describe("usePersistence malformed-project handling", () => {
       agents: [{ id: "v1", type: "person", name: "Lead" }],
     });
     await renderHook(() => usePersistence());
-    await waitForLoad();
+    await getPersistenceSettled();
+    expect(useProjectStore.getState().metadata.title).toBe("NoGranularity");
     const granularity = useProjectStore.getState().granularity;
     expect(granularity).toBeDefined();
     expect(["line", "word"]).toContain(granularity);

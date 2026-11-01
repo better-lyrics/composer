@@ -4,17 +4,20 @@ import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { useAudioStore } from "@/stores/audio";
 import { useTimelineStore, GUTTER_WIDTH } from "@/views/timeline/timeline-store";
 import { render } from "@/test/render";
+import { syncViewScroll } from "@/views/timeline/view-scroll";
 
 function Harness({ containerHeight = 200 }: { containerHeight?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
+    if (ref.current) syncViewScroll(ref.current);
     setReady(true);
   }, []);
   return (
     <div
       ref={ref}
       data-test="scroll-container"
+      onScroll={(event) => syncViewScroll(event.currentTarget)}
       style={{
         overflow: "auto",
         width: 600,

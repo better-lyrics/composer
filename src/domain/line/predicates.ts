@@ -1,4 +1,5 @@
 import type { LineSyncedLine, LyricLine } from "@/domain/line/model";
+import { stripSplitCharacter } from "@/utils/split-character";
 
 // -- Predicates ---------------------------------------------------------------
 
@@ -14,6 +15,10 @@ function hasAnyTiming(line: LyricLine): boolean {
   return isWordSynced(line) || isLineSynced(line) || !!line.backgroundWords?.length;
 }
 
+function hasMainLyrics(line: LyricLine): boolean {
+  return stripSplitCharacter(line.text).trim().length > 0;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { hasAnyTiming, isLineSynced, isWordSynced };
+export { hasAnyTiming, hasMainLyrics, isLineSynced, isWordSynced };

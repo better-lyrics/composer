@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { useEffect, useRef, useState } from "react";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { render } from "@/test/render";
+import { scrollView } from "@/views/timeline/view-scroll";
 
 interface HarnessProps {
   rect: { x: number; y: number; width: number; height: number };
@@ -13,10 +14,7 @@ function Harness({ rect, scrollLeft = 0, scrollTop = 0 }: HarnessProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    if (ref.current) {
-      ref.current.scrollLeft = scrollLeft;
-      ref.current.scrollTop = scrollTop;
-    }
+    if (ref.current) scrollView(ref.current, scrollLeft, scrollTop);
     setReady(true);
   }, [scrollLeft, scrollTop]);
   return (

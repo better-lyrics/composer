@@ -32,6 +32,8 @@ function extractLinkedFields(updates: Partial<LyricLine>): Partial<LyricLine> {
   if ("agentId" in updates) linked.agentId = updates.agentId;
   if ("backgroundText" in updates) linked.backgroundText = updates.backgroundText;
   if ("backgroundTextSource" in updates) linked.backgroundTextSource = updates.backgroundTextSource;
+  if ("translations" in updates) linked.translations = updates.translations;
+  if ("transliteration" in updates) linked.transliteration = updates.transliteration;
   if ("words" in updates && updates.words === undefined) linked.words = undefined;
   if ("begin" in updates && updates.begin === undefined) linked.begin = undefined;
   if ("end" in updates && updates.end === undefined) linked.end = undefined;
@@ -39,6 +41,17 @@ function extractLinkedFields(updates: Partial<LyricLine>): Partial<LyricLine> {
   return linked;
 }
 
+// -- Unlinking ----------------------------------------------------------------
+
+function unlinkLines(lines: LyricLine[], shouldUnlink: (line: LyricLine) => boolean): LyricLine[] {
+  if (!lines.some(shouldUnlink)) return lines;
+  return lines.map((line) =>
+    shouldUnlink(line)
+      ? { ...line, groupId: undefined, instanceIdx: undefined, templateLineIdx: undefined, detached: undefined }
+      : line,
+  );
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { extractLinkedFields, getLinkScope, isLinkedSibling };
+export { extractLinkedFields, getLinkScope, isLinkedSibling, unlinkLines };

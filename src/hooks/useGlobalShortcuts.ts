@@ -1,66 +1,88 @@
+import type { ProjectTab } from "@/domain/project/tab";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import type { Shortcut } from "@/hooks/useKeyboardShortcuts";
-import { getEffectiveBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
-import { useAudioStore } from "@/stores/audio";
-import type { SimpleTab } from "@/stores/project";
-import { useMemo } from "react";
+import { notePlayShortcut } from "@/hooks/useSpaceHabitHint";
+import { notePlacement } from "@/lib/replay-cue";
+import { togglePlayback } from "@/lib/sync-count-in";
+import { livePlaybackTime, seekBy, toggledPlaybackRate, useAudioStore } from "@/stores/audio";
+import { toggledStem, useSeparationStore } from "@/stores/separation";
+import { useSettingsStore } from "@/stores/settings";
+import { toggleLoopShortcut } from "@/views/timeline/selection-playback";
 
 interface GlobalShortcutActions {
-  setActiveTab: (tab: SimpleTab) => void;
+  setActiveTab: (tab: ProjectTab) => void;
   setHelpOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
+  editorActive?: boolean;
+}
+
+function togglePlaybackSpeed(): void {
+  useAudioStore.getState().setPlaybackRate(toggledPlaybackRate());
+}
+
+function seekAndNote(seconds: number): void {
+  seekBy(seconds);
+  notePlacement(livePlaybackTime(), "keyboard");
+}
+
+function seekBackward(): void {
+  seekAndNote(-useSettingsStore.getState().seekStep);
+}
+
+function seekForward(): void {
+  seekAndNote(useSettingsStore.getState().seekStep);
+}
+
+function fineSeekBackward(): void {
+  seekAndNote(-useSettingsStore.getState().fineSeekStep);
+}
+
+function fineSeekForward(): void {
+  seekAndNote(useSettingsStore.getState().fineSeekStep);
+}
+
+function toggleStem(): void {
+  useSeparationStore.getState().selectStem(toggledStem());
+}
+
+function playFromShortcut(): void {
+  notePlayShortcut();
+  togglePlayback();
 }
 
 function useGlobalShortcuts(actions: GlobalShortcutActions): void {
-  const { setActiveTab, setHelpOpen, setSettingsOpen } = actions;
-  const overrides = useShortcutBindingsStore((s) => s.overrides);
+  const { setActiveTab, setHelpOpen, setSettingsOpen, editorActive = true } = actions;
+  const general = {
+    "global.help": () => setHelpOpen(true),
+    "global.settings": () => setSettingsOpen(true),
+  };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: overrides triggers recomputation when bindings change
-  const shortcuts: Shortcut[] = useMemo(() => {
-    const playPause = getEffectiveBinding("global.playPause");
-    const help = getEffectiveBinding("global.help");
-    const settings = getEffectiveBinding("global.settings");
-    const goToImport = getEffectiveBinding("global.goToImport");
-    const goToEdit = getEffectiveBinding("global.goToEdit");
-    const goToSync = getEffectiveBinding("global.goToSync");
-    const goToTimeline = getEffectiveBinding("global.goToTimeline");
-    const goToPreview = getEffectiveBinding("global.goToPreview");
-    const goToExport = getEffectiveBinding("global.goToExport");
-    return [
-      { ...goToImport, action: () => setActiveTab("import"), description: "Go to Import" },
-      { ...goToEdit, action: () => setActiveTab("edit"), description: "Go to Edit" },
-      { ...goToSync, action: () => setActiveTab("sync"), description: "Go to Sync" },
-      { ...goToTimeline, action: () => setActiveTab("timeline"), description: "Go to Timeline" },
-      { ...goToPreview, action: () => setActiveTab("preview"), description: "Go to Preview" },
-      { ...goToExport, action: () => setActiveTab("export"), description: "Go to Export" },
-      {
-        key: playPause.key,
-        shift: playPause.shift,
-        alt: playPause.alt,
-        action: () => {
-          const { isPlaying, setIsPlaying } = useAudioStore.getState();
-          setIsPlaying(!isPlaying);
-        },
-        description: "Play / Pause",
-      },
-      {
-        key: help.key,
-        shift: help.shift,
-        alt: help.alt,
-        action: () => setHelpOpen(true),
-        description: "Show keyboard shortcuts",
-      },
-      {
-        key: settings.key,
-        shift: settings.shift,
-        alt: settings.alt,
-        action: () => setSettingsOpen(true),
-        description: "Open settings",
-      },
-    ];
-  }, [setActiveTab, setHelpOpen, setSettingsOpen, overrides]);
-
-  useKeyboardShortcuts(shortcuts);
+  useKeyboardShortcuts(
+    editorActive
+      ? {
+          "global.goToImport": () => setActiveTab("import"),
+          "global.goToEdit": () => setActiveTab("edit"),
+          "global.goToLanguages": () => setActiveTab("languages"),
+          "global.goToSync": () => setActiveTab("sync"),
+          "global.goToTimeline": () => setActiveTab("timeline"),
+          "global.goToPreview": () => setActiveTab("preview"),
+          "global.goToExport": () => setActiveTab("export"),
+          "global.playPause": playFromShortcut,
+          "global.playPauseWhileTyping": togglePlayback,
+          "global.seekBackward": seekBackward,
+          "global.seekForward": seekForward,
+          "global.seekBackwardWhileTyping": seekBackward,
+          "global.seekForwardWhileTyping": seekForward,
+          "global.seekBackwardFine": fineSeekBackward,
+          "global.seekForwardFine": fineSeekForward,
+          "global.seekBackwardFineWhileTyping": fineSeekBackward,
+          "global.seekForwardFineWhileTyping": fineSeekForward,
+          "global.togglePlaybackSpeed": togglePlaybackSpeed,
+          "global.toggleStem": toggleStem,
+          "global.toggleLoop": toggleLoopShortcut,
+          ...general,
+        }
+      : general,
+  );
 }
 
 export { useGlobalShortcuts };

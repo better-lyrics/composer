@@ -1,5 +1,4 @@
 import { decodeAudioToWav } from "@/audio/audio-decode";
-import { parseLamePriming } from "@/audio/lame-priming";
 import { createMp3File } from "@/test/audio-fixtures";
 import { describe, expect, it } from "vitest";
 
@@ -31,13 +30,10 @@ describe("decodeAudioToWav", () => {
   });
 });
 
-describe("decodeAudioToWav LAME priming strip", () => {
-  it("returns a WAV blob whose sample count is reduced by the parsed LAME priming", async () => {
+describe("decodeAudioToWav LAME priming", () => {
+  it("regression: keeps every sample of an mp3 the browser already trimmed", async () => {
     const file = createMp3File();
     const bytes = await file.arrayBuffer();
-    const { samples, sampleRate } = parseLamePriming(bytes);
-    expect(samples).toBeGreaterThan(0);
-    expect(sampleRate).toBeGreaterThan(0);
 
     const blob = await decodeAudioToWav(file);
     const wav = await blob.arrayBuffer();
@@ -47,10 +43,9 @@ describe("decodeAudioToWav LAME priming strip", () => {
     const wavFrames = dataSize / (channels * 2);
 
     const ctx = new AudioContext();
-    const unstripped = await ctx.decodeAudioData(bytes.slice(0));
+    const raw = await ctx.decodeAudioData(bytes.slice(0));
     await ctx.close();
 
-    const expectedStrip = Math.round((samples * unstripped.sampleRate) / sampleRate);
-    expect(wavFrames).toBe(unstripped.length - expectedStrip);
+    expect(wavFrames).toBe(raw.length);
   });
 });

@@ -1,13 +1,11 @@
+import { type ParserConversion, convertViaParser } from "@/pages/converters/convert-via-parser";
+import { type ConvertArgs, ConverterView } from "@/pages/converters/converter-view";
+import { TTML_OUTPUT } from "@/pages/converters/output-formats";
 import { LandingLayout } from "@/pages/landing/landing-layout";
 import { BetterLyricsPromo } from "@/pages/landing/sections/better-lyrics-promo";
 import { FaqSection } from "@/pages/landing/sections/faq-section";
-import { ConverterView, type ConvertArgs } from "@/pages/converters/converter-view";
 import { PageHead } from "@/seo/page-head";
 import { breadcrumbListSchema, faqPageSchema, howToSchema, organizationSchema } from "@/seo/schemas";
-import type { Agent } from "@/domain/agent/model";
-import type { ProjectMetadata } from "@/domain/project/metadata";
-import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { generateTTML } from "@/utils/ttml";
 import { useCallback } from "react";
 
 const SAMPLE_SRT = `1
@@ -59,31 +57,16 @@ const HOW_TO_STEPS = [
   },
 ];
 
-function convertSrt({ input, filename }: ConvertArgs): { ttml: string; projectPayload: string } | { error: string } {
-  try {
-    const result = parseLyricsFile(filename.endsWith(".srt") ? filename : "input.srt", input);
-    if (result.lines.length === 0) {
-      return { error: "No subtitle cues found. Check that your input uses standard SRT formatting." };
-    }
-    const metadata: ProjectMetadata = {
-      title: result.metadata.title ?? "",
-      artist: result.metadata.artist ?? "",
-      album: result.metadata.album ?? "",
-      duration: 0,
-      language: result.metadata.language,
-    };
-    const agents: Agent[] = result.agents ?? [{ id: "v1", type: "person", name: "Voice 1" }];
-    const ttml = generateTTML({ metadata, agents, lines: result.lines, granularity: "line" });
-    const projectPayload = JSON.stringify({ metadata, agents, lines: result.lines, granularity: "line" });
-    return { ttml, projectPayload };
-  } catch (conversionError) {
-    console.error("[Composer] SRT conversion failed", conversionError);
-    return { error: "Could not parse SRT. Check the input format." };
-  }
-}
+const SRT_CONVERSION: ParserConversion = {
+  extension: "srt",
+  granularity: "line",
+  emptyMessage: "No subtitle cues found. Check that your input uses standard SRT formatting.",
+  failureMessage: "Could not parse SRT. Check the input format.",
+  logLabel: "SRT",
+};
 
 const SrtToTtmlPage: React.FC = () => {
-  const convert = useCallback(convertSrt, []);
+  const convert = useCallback((args: ConvertArgs) => convertViaParser(SRT_CONVERSION, args), []);
 
   return (
     <LandingLayout>
@@ -105,9 +88,10 @@ const SrtToTtmlPage: React.FC = () => {
         title="SRT to TTML Converter"
         inputLabel="Paste SRT"
         inputPlaceholder="1&#10;00:00:00,500 --> 00:00:03,000&#10;First cue text"
+        inputExtension={SRT_CONVERSION.extension}
         sampleInput={SAMPLE_SRT}
         convert={convert}
-        downloadFilename="lyrics.ttml"
+        outputFormat={TTML_OUTPUT}
       />
       <section className="px-6 py-14 max-w-3xl mx-auto text-composer-text-secondary leading-relaxed space-y-5">
         <h2 className="text-2xl font-semibold text-composer-text">About SRT and TTML</h2>

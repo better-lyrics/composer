@@ -1,6 +1,6 @@
+import { isWordSelected, sameWordSelection } from "@/domain/selection/identity";
 import type { WordSelection } from "@/domain/selection/model";
 import { describe, expect, it } from "vitest";
-import { isWordSelected, sameWordSelection } from "@/domain/selection/identity";
 
 // -- Helpers ------------------------------------------------------------------
 

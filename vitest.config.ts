@@ -1,13 +1,22 @@
+import { setDefaultResultOrder } from "node:dns";
 import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import ortPkg from "./node_modules/onnxruntime-web/package.json";
 import pkg from "./package.json";
+
+// Node 17+ returns `localhost` as ::1 (IPv6) first. When the browser server and
+// the headless-chrome tab land on mismatched loopback stacks the session never
+// connects ("Failed to connect to the browser session within the timeout"). Pin
+// IPv4 first so the handshake is deterministic; Linux/CI already resolve this way.
+setDefaultResultOrder("ipv4first");
 
 export default defineConfig({
   plugins: [react()],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    __ORT_VERSION__: JSON.stringify(ortPkg.version),
   },
   resolve: {
     alias: {
@@ -17,11 +26,16 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       "@tabler/icons-react",
+      "@braccato/core",
+      "@kawarp/core",
       "@floating-ui/react",
       "overlayscrollbars-react",
       "motion/react",
       "@dnd-kit/core",
       "react-router-dom",
+      "node-diff3",
+      "diff",
+      "react-dom/client",
     ],
   },
   test: {
@@ -57,7 +71,11 @@ export default defineConfig({
             enabled: true,
             provider: playwright({
               launchOptions: {
-                args: ["--autoplay-policy=no-user-gesture-required"],
+                args: [
+                  "--autoplay-policy=no-user-gesture-required",
+                  "--enable-unsafe-swiftshader",
+                  "--js-flags=--expose-gc",
+                ],
               },
             }),
             headless: true,

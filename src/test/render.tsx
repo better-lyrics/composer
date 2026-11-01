@@ -10,14 +10,8 @@ interface ComposerRenderOptions extends RenderOptions {
   withRouter?: boolean | { initialEntries?: string[]; initialIndex?: number };
 }
 
-function buildWrapper(dndContext: boolean, withRouter: ComposerRenderOptions["withRouter"]) {
+function buildWrapper(queryClient: QueryClient, dndContext: boolean, withRouter: ComposerRenderOptions["withRouter"]) {
   return function ComposerWrapper({ children }: { children: ReactNode }) {
-    // Fresh QueryClient per render so caches do not bleed between tests.
-    const queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false, gcTime: 0, staleTime: Number.POSITIVE_INFINITY },
-      },
-    });
     let tree: ReactNode = (
       <QueryClientProvider client={queryClient}>
         <MotionConfig reducedMotion="always">{children}</MotionConfig>
@@ -39,12 +33,20 @@ function buildWrapper(dndContext: boolean, withRouter: ComposerRenderOptions["wi
   };
 }
 
-function render(ui: ReactElement, options: ComposerRenderOptions = {}): Promise<RenderResult> {
+function render(
+  ui: ReactElement,
+  options: ComposerRenderOptions = {},
+): Promise<RenderResult & { queryClient: QueryClient }> {
   const { dndContext = false, withRouter = false, ...rest } = options;
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0, staleTime: Number.POSITIVE_INFINITY },
+    },
+  });
   return baseRender(ui, {
     ...rest,
-    wrapper: buildWrapper(dndContext, withRouter),
-  });
+    wrapper: buildWrapper(queryClient, dndContext, withRouter),
+  }).then((result) => Object.assign(result, { queryClient }));
 }
 
 export { render };

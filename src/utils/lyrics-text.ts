@@ -5,10 +5,14 @@ import { cleanSplitCharacters, stripSplitCharacter } from "@/utils/split-charact
 
 // -- Helpers ------------------------------------------------------------------
 
+function matchKey(text: string): string {
+  return stripSplitCharacter(cleanSplitCharacters(text.trim()));
+}
+
 function textToLyricLines(text: string, defaultAgentId: string, existingLines: LyricLine[] = []): LyricLine[] {
   const textToCandidates = new Map<string, LyricLine[]>();
   for (const line of existingLines) {
-    const key = stripSplitCharacter(line.text);
+    const key = matchKey(line.text);
     let bucket = textToCandidates.get(key);
     if (!bucket) {
       bucket = [];
@@ -25,21 +29,34 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
   // wrong existing line, so we generate a fresh id for any unmatched typed line.
   const allowPositionMatch = newLines.length === existingLines.length;
 
-  const mapped = newLines.map((lineText, index) => {
-    const trimmed = lineText.trim();
-    const cleanedText = cleanSplitCharacters(trimmed);
-    const matchText = stripSplitCharacter(cleanedText);
+  const cleanedTexts = newLines.map((lineText) => cleanSplitCharacters(lineText.trim()));
+  const claimed: Array<LyricLine | undefined> = new Array(newLines.length);
+  const claim = (index: number, line: LyricLine) => {
+    claimed[index] = line;
+    usedExistingIds.add(line.id);
+  };
 
-    const candidates = textToCandidates.get(matchText);
-    const exactMatch = candidates?.find((line) => !usedExistingIds.has(line.id));
-    if (exactMatch) {
-      usedExistingIds.add(exactMatch.id);
-      return reconcileMatchedTiming(exactMatch, cleanedText);
-    }
+  // Rows still showing their own line's text keep that line before any row can
+  // match it by text, so fixing a line into a later duplicate cannot steal it.
+  if (allowPositionMatch) {
+    cleanedTexts.forEach((cleanedText, index) => {
+      if (matchKey(existingLines[index].text) === matchKey(cleanedText)) claim(index, existingLines[index]);
+    });
+  }
+
+  cleanedTexts.forEach((cleanedText, index) => {
+    if (claimed[index]) return;
+    const exactMatch = textToCandidates.get(matchKey(cleanedText))?.find((line) => !usedExistingIds.has(line.id));
+    if (exactMatch) claim(index, exactMatch);
+  });
+
+  const mapped = cleanedTexts.map((cleanedText, index) => {
+    const matched = claimed[index];
+    if (matched) return reconcileMatchedTiming(matched, cleanedText);
 
     if (allowPositionMatch) {
       const positionMatch = existingLines[index];
-      if (positionMatch && !usedExistingIds.has(positionMatch.id)) {
+      if (!usedExistingIds.has(positionMatch.id)) {
         usedExistingIds.add(positionMatch.id);
         return reconcileMatchedTiming(positionMatch, cleanedText);
       }

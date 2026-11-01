@@ -45,7 +45,7 @@ describe("auto-extract background vocals on blur", () => {
     blurTextarea(textarea);
 
     await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("country roads");
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(country roads)");
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 
@@ -59,7 +59,7 @@ describe("auto-extract background vocals on blur", () => {
 
     await expect.poll(() => textarea.value).toBe("Take me home");
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Take me home"]);
-    await expect.poll(() => previewBackgroundTexts(screen.container)).toEqual(["country roads"]);
+    await expect.poll(() => previewBackgroundTexts(screen.container)).toEqual(["(country roads)"]);
   });
 
   it("leaves parentheses literal on blur when the setting is off", async () => {
@@ -88,7 +88,7 @@ describe("auto-extract background vocals on blur", () => {
 
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
     expect(useProjectStore.getState().lines[0].text).toBe("Real lyric line");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh yeah");
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(ooh yeah)");
     await expect.poll(() => textarea.value).toBe("Real lyric line");
   });
 
@@ -182,7 +182,7 @@ describe("undo after auto-extract on blur", () => {
 
     useProjectStore.getState().redo();
     await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Take me home");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("country roads");
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(country roads)");
   });
 });
 

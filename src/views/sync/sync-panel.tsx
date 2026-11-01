@@ -1,43 +1,42 @@
-import { useSyncHandlers } from "@/hooks/useSyncHandlers";
-import { useAudioStore } from "@/stores/audio";
-import { isAnyModalOpen } from "@/stores/modal-stack";
-import { useProjectStore } from "@/stores/project";
-import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { Button } from "@/ui/button";
-import { EmptyState } from "@/ui/empty-state";
-import { findMatchingShortcut } from "@/utils/shortcut-matcher";
-import { readToken } from "@/utils/theme/read-token";
-import {
-  shimmerTransition,
-  shimmerVariants,
-  syncCarouselTransition,
-  syncPulseVariants,
-} from "@/utils/animationVariants";
+import { instancePositionsByLineId } from "@/domain/instance/enumerate";
+import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { isLinked } from "@/domain/instance/predicates";
+import { getLanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
-import {
-  getNudgeAmount,
-  type SyncState,
-  convertLineToWord,
-  createBgWordsFromLine,
-  getSyncedLineCount,
-  getSyncedWordCount,
-  getTotalWords,
-  hasLineTiming,
-} from "@/utils/sync-helpers";
-import { ScrollableLine } from "@/views/sync/scrollable-line";
+import { isLineSynced } from "@/domain/line/predicates";
+import { isLineTimed, isSyncComplete, syncProgress, timedWordCount } from "@/domain/line/sync-progress";
+import { previousSlot, slotBounds } from "@/domain/sync/cursor";
+import { useFrameLoop } from "@/hooks/use-frame-loop";
+import { useSyncHandlers } from "@/hooks/useSyncHandlers";
+import { cancelCountIn, isCountingIn } from "@/lib/sync-count-in";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
+import { isAnyModalOpen } from "@/stores/escape-layer-stack";
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
+import { setSyncEditMode, useSyncEditModeStore } from "@/stores/sync-edit-mode";
+import { EmptyState } from "@/ui/empty-state";
+import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
+import { runHistoryShortcut } from "@/utils/history-shortcut";
+import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { type SyncState, getNudgeAmount } from "@/utils/sync-helpers";
+import { readToken } from "@/utils/theme/read-token";
+import { ScrollableLine, type ScrollableLineLinkInfo } from "@/views/sync/scrollable-line";
+import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
 import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
-import { TimingDisplay } from "@/views/sync/timing-display";
-import { IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
+import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
+import { SyncHeader } from "@/views/sync/sync-header";
+import { usePlacementPreroll } from "@/views/sync/use-placement-preroll";
+import { useSharedSyncView } from "@/views/sync/use-shared-sync-view";
+import { useSyncCountIn } from "@/views/sync/use-sync-count-in";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { m } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 
 // -- Components ---------------------------------------------------------------
 
 const SyncPanel: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
-  const setLinesWithHistory = useProjectStore((s) => s.setLinesWithHistory);
   const undo = useProjectStore((s) => s.undo);
   const redo = useProjectStore((s) => s.redo);
   const activeTab = useProjectStore((s) => s.activeTab);
@@ -46,54 +45,36 @@ const SyncPanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const currentTime = useAudioStore((s) => s.currentTime);
   const isPlaying = useAudioStore((s) => s.isPlaying);
+  const placementPreroll = usePlacementPreroll();
+  const clearPlacementPreroll = placementPreroll.clear;
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
-
-  const instanceCountByGroup = useMemo(() => {
-    const indices = new Map<string, Set<number>>();
-    for (const l of lines) {
-      if (isLinked(l)) {
-        let set = indices.get(l.groupId);
-        if (!set) {
-          set = new Set();
-          indices.set(l.groupId, set);
-        }
-        set.add(l.instanceIdx);
-      }
-    }
-    const counts = new Map<string, number>();
-    for (const [k, v] of indices) counts.set(k, v.size);
-    return counts;
-  }, [lines]);
+  const audioElement = useAudioStore((s) => s.audioElement);
+  const seekTo = useAudioStore((s) => s.seekTo);
+  const textVariant = useTimelineStore((s) => s.textVariant);
+  const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
+  const linesHaveTransliteration = useMemo(() => hasTransliteration(lines), [lines]);
+  const displayLines = useMemo(
+    () =>
+      lines.map((line) => ({
+        ...line,
+        ...getLanguageDisplayLine(line, textVariant),
+        isTimed: isLineTimed(line),
+        timedWords: timedWordCount(line),
+      })),
+    [lines, textVariant],
+  );
 
   const [syncState, setSyncState] = useState<SyncState>({
     position: { lineIndex: 0, wordIndex: 0 },
     isActive: false,
   });
   const [showPulse, setShowPulse] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const editMode = useSyncEditModeStore((s) => s.editMode);
   const [isHolding, setIsHolding] = useState(false);
   const [rippleTarget, setRippleTarget] = useState<RippleTarget | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
   const heldKeyCodeRef = useRef<string | null>(null);
-
-  const linesRef = useRef(lines);
-  linesRef.current = lines;
-  const syncStateRef = useRef(syncState);
-  syncStateRef.current = syncState;
-
-  const triggerRippleAtCurrentPosition = useCallback(() => {
-    const { lineIndex: committedLineIndex, wordIndex: committedWordIndex } = syncStateRef.current.position;
-    const lineId = linesRef.current[committedLineIndex]?.id;
-    if (!lineId) return;
-    setRippleTarget((prev) => ({
-      lineId,
-      wordIndex: committedWordIndex,
-      nonce: (prev?.nonce ?? 0) + 1,
-    }));
-  }, []);
-
-  const clearRippleTarget = useCallback(() => setRippleTarget(null), []);
+  const holdPointerIdRef = useRef<number | null>(null);
 
   const {
     handleTap,
@@ -103,6 +84,8 @@ const SyncPanel: React.FC = () => {
     handleReset,
     handleStartSync,
     handleJumpToLine,
+    handleJumpToWord,
+    handleJumpToBgWord,
     handleNudgeWord,
     handleSetWordTime,
     handleNudgeWordEnd,
@@ -115,53 +98,96 @@ const SyncPanel: React.FC = () => {
     handleSetBgWordTime,
     handleNudgeBgWordEnd,
     handleSetBgWordEndTime,
+    cursor,
     isComplete,
     currentWord,
+    skippedInstances,
   } = useSyncHandlers({
     lines,
     syncState,
     setSyncState,
-    currentTime,
     editMode,
     granularity,
     setShowPulse,
     setIsPlaying,
+    onPlacementSkip: placementPreroll.show,
   });
+  const countIn = useSyncCountIn();
+
+  const { skippedLineIds, skippedByLastLineId, sharedTags, placingName } = useSharedSyncView(
+    lines,
+    groups,
+    cursor,
+    skippedInstances,
+  );
+
+  const linkInfoByLineId = useMemo(() => {
+    const groupsById = new Map(groups.map((g) => [g.id, g]));
+    const positions = instancePositionsByLineId(lines);
+    const out = new Map<string, ScrollableLineLinkInfo>();
+    for (const line of lines) {
+      if (!isLinked(line)) continue;
+      const group = groupsById.get(line.groupId);
+      const position = positions.get(line.id);
+      if (!group || !position) continue;
+      out.set(line.id, {
+        color: group.color,
+        label: group.label,
+        ordinal: position.ordinal,
+        totalInstances: position.count,
+        shared: skippedLineIds.has(line.id),
+      });
+    }
+    return out;
+  }, [lines, groups, skippedLineIds]);
+
+  const carouselLines = useMemo(
+    () =>
+      displayLines.map((line) => {
+        const sharedTag = sharedTags.get(line.id);
+        return sharedTag ? { ...line, sharedTag } : line;
+      }),
+    [displayLines, sharedTags],
+  );
+
+  const stopSessionAtSongEnd = useEffectEvent(() => {
+    setSyncState((prev) => ({ ...prev, isActive: false }));
+    const slot = previousSlot(lines, cursor, granularity);
+    const bounds = slot ? slotBounds(lines, slot) : null;
+    if (bounds) seekTo(Math.max(0, bounds.begin - useSettingsStore.getState().redoPreroll));
+  });
+
+  useEffect(() => {
+    if (!audioElement) return;
+    const handleEnded = () => stopSessionAtSongEnd();
+    audioElement.addEventListener("ended", handleEnded);
+    return () => audioElement.removeEventListener("ended", handleEnded);
+  }, [audioElement]);
+
+  const triggerRippleAtCurrentPosition = useCallback(() => {
+    const { lineIndex: committedLineIndex, wordIndex: committedWordIndex } = cursor;
+    const lineId = lines[committedLineIndex]?.id;
+    if (!lineId) return;
+    setRippleTarget((prev) => ({
+      lineId,
+      wordIndex: committedWordIndex,
+      nonce: (prev?.nonce ?? 0) + 1,
+    }));
+  }, [cursor, lines]);
+
+  const clearRippleTarget = useCallback(() => setRippleTarget(null), []);
 
   const handleHoldEnd = useCallback(() => {
     triggerRippleAtCurrentPosition();
     handleHoldEndRaw();
   }, [handleHoldEndRaw, triggerRippleAtCurrentPosition]);
 
-  const updateLine = useProjectStore((s) => s.updateLine);
-
-  useEffect(() => {
-    for (const line of lines) {
-      if (line.backgroundText && !line.backgroundWords?.length) {
-        const bgWords = createBgWordsFromLine(line);
-        if (bgWords) {
-          updateLine(line.id, { backgroundWords: bgWords }, { deriveText: false });
-        }
-      }
-    }
-  }, [lines, updateLine]);
-
-  // RAF animation loop for smooth word progress updates (reads audioElement.currentTime directly)
-  useEffect(() => {
-    if (!editMode) {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      return;
-    }
-
-    const update = () => {
+  useFrameLoop(
+    () => {
       const container = scrollContainerRef.current;
-      if (!container) {
-        rafRef.current = requestAnimationFrame(update);
-        return;
-      }
+      if (!container) return;
 
-      const audioEl = useAudioStore.getState().audioElement;
-      const time = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+      const time = livePlaybackTime();
 
       const wordEls = container.querySelectorAll<HTMLElement>("[data-word-begin]");
       for (const el of wordEls) {
@@ -182,35 +208,28 @@ const SyncPanel: React.FC = () => {
 
         el.style.width = `${progress * 100}%`;
       }
+    },
+    "sync-panel",
+    editMode,
+  );
 
-      rafRef.current = requestAnimationFrame(update);
-    };
-
-    rafRef.current = requestAnimationFrame(update);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [editMode]);
-
-  const totalWords = useMemo(() => getTotalWords(lines), [lines]);
-  const syncedWords = useMemo(() => getSyncedWordCount(lines), [lines]);
-  const syncedLines = useMemo(() => getSyncedLineCount(lines), [lines]);
-
-  const progressText = granularity === "word" ? `${syncedWords}/${totalWords}` : `${syncedLines}/${lines.length}`;
+  const progress = useMemo(() => syncProgress(lines, granularity), [lines, granularity]);
+  const syncComplete = useMemo(() => isSyncComplete(lines), [lines]);
 
   const handleGranularityChange = useCallback(
     (newGranularity: "line" | "word") => {
       if (newGranularity === granularity) return;
-
-      if (newGranularity === "word" && hasLineTiming(lines)) {
-        const convertedLines = lines.map((line) => convertLineToWord(line));
-        setLinesWithHistory(convertedLines);
-      }
-
       setGranularity(newGranularity);
     },
-    [granularity, lines, setLinesWithHistory, setGranularity],
+    [granularity, setGranularity],
   );
+
+  const handleToggleEdit = useCallback(() => {
+    const entering = !editMode;
+    if (entering) cancelCountIn();
+    setSyncEditMode(entering);
+    if (entering && isPlaying) setIsPlaying(false);
+  }, [editMode, isPlaying, setIsPlaying]);
 
   const playingLineIndex = useMemo(() => {
     for (let i = 0; i < lines.length; i++) {
@@ -234,40 +253,115 @@ const SyncPanel: React.FC = () => {
     return -1;
   }, [lines, currentTime]);
 
-  const { lineIndex, wordIndex } = syncState.position;
-  const currentLine = lines[lineIndex];
-  const prevLine = lines[lineIndex - 1];
+  const { lineIndex, wordIndex } = cursor;
 
   const lastSyncedTime = useMemo(() => {
-    if (granularity === "line") {
-      if (prevLine?.begin !== undefined) return prevLine.begin;
-      return undefined;
+    const slot = previousSlot(lines, cursor, granularity);
+    return slot ? slotBounds(lines, slot)?.begin : undefined;
+  }, [lines, cursor, granularity]);
+
+  const performTap = useCallback(() => {
+    if (editMode || isCountingIn()) return;
+    clearPlacementPreroll();
+    if (isHolding && isPlaying) {
+      handleHoldTap();
+    } else if (isPlaying) {
+      if (!syncState.isActive) setSyncState((prev) => ({ ...prev, isActive: true }));
+      handleTap();
+    } else if (lines.length > 0) {
+      handleStartSync();
     }
-    if (!currentLine?.words?.length) {
-      if (prevLine?.words?.length) {
-        return prevLine.words[prevLine.words.length - 1]?.begin;
-      }
-      return undefined;
+  }, [
+    editMode,
+    isHolding,
+    isPlaying,
+    syncState.isActive,
+    lines.length,
+    handleHoldTap,
+    handleTap,
+    handleStartSync,
+    clearPlacementPreroll,
+  ]);
+
+  const beginHold = useCallback(() => {
+    if (editMode || isHolding || isCountingIn()) return;
+    clearPlacementPreroll();
+    if (!syncState.isActive && lines.length > 0) {
+      if (handleStartSync() === "counting") return;
+      handleHoldStart();
+      setIsHolding(true);
+    } else if (isPlaying) {
+      handleHoldStart();
+      setIsHolding(true);
     }
-    return currentLine.words[currentLine.words.length - 1]?.begin;
-  }, [granularity, currentLine?.words, prevLine?.words, prevLine?.begin]);
+  }, [
+    editMode,
+    isHolding,
+    isPlaying,
+    syncState.isActive,
+    lines.length,
+    handleStartSync,
+    handleHoldStart,
+    clearPlacementPreroll,
+  ]);
+
+  const endHold = useCallback(() => {
+    if (!isHolding) return;
+    handleHoldEnd();
+    setIsHolding(false);
+  }, [isHolding, handleHoldEnd]);
+
+  const performKeyboardTap = useEffectEvent(performTap);
+  const beginKeyboardHold = useEffectEvent(beginHold);
+  const endKeyboardHold = useEffectEvent(endHold);
+
+  const handleTapPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      performTap();
+    },
+    [performTap],
+  );
+
+  // Only the pointer that opened the hold may close it, otherwise a second
+  // finger brushing the circle would end the first finger's word early.
+  const handleHoldPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      if (isHolding) return;
+      beginHold();
+      holdPointerIdRef.current = e.pointerId;
+    },
+    [isHolding, beginHold],
+  );
+
+  const handleHoldPointerRelease = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      if (e.pointerId !== holdPointerIdRef.current) return;
+      holdPointerIdRef.current = null;
+      endHold();
+    },
+    [endHold],
+  );
+
+  const showGestureCircles = !isComplete && !editMode && isPlaying;
+
+  // The release handlers live on the hold circle, so a hold outliving that
+  // element (song ends, media-session pause, sync completes) would never close
+  // its word and would leave isHolding stuck true.
+  useEffect(() => {
+    if (!showGestureCircles && isHolding) {
+      holdPointerIdRef.current = null;
+      endHold();
+    }
+  }, [showGestureCircles, isHolding, endHold]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "sync") return;
       if (isAnyModalOpen()) return;
 
-      if (e.code === "KeyZ" && (e.metaKey || e.ctrlKey) && !e.repeat) {
-        e.preventDefault();
-        if (e.shiftKey) {
-          redo();
-        } else {
-          undo();
-        }
-        return;
-      }
-
-      if (e.repeat) return;
+      if (runHistoryShortcut(e, (action) => (action === "undo" ? undo() : redo()), { scope: "sync" })) return;
 
       const matched = findMatchingShortcut(e, "sync");
       if (!matched) return;
@@ -275,27 +369,13 @@ const SyncPanel: React.FC = () => {
       switch (matched) {
         case "sync.tap":
           e.preventDefault();
-          if (editMode) return;
-          if (isHolding && isPlaying) {
-            handleHoldTap();
-          } else if (!syncState.isActive && lines.length > 0) {
-            handleStartSync();
-          } else if (isPlaying) {
-            handleTap();
-          }
+          performKeyboardTap();
           break;
         case "sync.holdSync":
           e.preventDefault();
-          if (editMode) return;
+          if (editMode || isHolding) return;
           heldKeyCodeRef.current = e.code;
-          if (!syncState.isActive && lines.length > 0) {
-            handleStartSync();
-            handleHoldStart();
-            setIsHolding(true);
-          } else if (isPlaying) {
-            handleHoldStart();
-            setIsHolding(true);
-          }
+          beginKeyboardHold();
           break;
         case "sync.nudgeLeft":
           e.preventDefault();
@@ -304,6 +384,10 @@ const SyncPanel: React.FC = () => {
         case "sync.nudgeRight":
           e.preventDefault();
           handleNudgeLastSynced(getNudgeAmount());
+          break;
+        case "sync.toggleTextVariant":
+          e.preventDefault();
+          toggleTextVariant();
           break;
       }
     };
@@ -315,16 +399,14 @@ const SyncPanel: React.FC = () => {
       if (e.code === heldKeyCodeRef.current) {
         e.preventDefault();
         heldKeyCodeRef.current = null;
-        handleHoldEnd();
-        setIsHolding(false);
+        endKeyboardHold();
       }
     };
 
     const handleBlur = () => {
       if (isHolding) {
         heldKeyCodeRef.current = null;
-        handleHoldEnd();
-        setIsHolding(false);
+        endKeyboardHold();
       }
     };
 
@@ -336,24 +418,9 @@ const SyncPanel: React.FC = () => {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [
-    activeTab,
-    syncState.isActive,
-    lines.length,
-    handleStartSync,
-    handleTap,
-    handleHoldStart,
-    handleHoldEnd,
-    handleHoldTap,
-    isPlaying,
-    undo,
-    redo,
-    handleNudgeLastSynced,
-    editMode,
-    isHolding,
-  ]);
+  }, [activeTab, undo, redo, handleNudgeLastSynced, editMode, isHolding, toggleTextVariant]);
 
-  const showScrollableView = !isPlaying || editMode;
+  const showScrollableView = (!isPlaying && !countIn.countingIn) || editMode;
 
   if (!source) {
     return (
@@ -377,195 +444,150 @@ const SyncPanel: React.FC = () => {
 
   return (
     <div data-tour="sync-panel" className="flex flex-col flex-1 overflow-hidden select-none">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border">
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-lg font-medium">Sync</h2>
-          <span className="font-mono text-sm text-composer-text-muted tabular-nums">{progressText}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 rounded-lg bg-composer-bg-elevated p-0.5">
-            <button
-              type="button"
-              onClick={() => handleGranularityChange("line")}
-              className={`px-3 text-sm rounded-md transition-colors cursor-pointer ${
-                granularity === "line"
-                  ? "bg-composer-button text-composer-text"
-                  : "text-composer-text-muted hover:text-composer-text"
-              }`}
-            >
-              Line
-            </button>
-            <button
-              type="button"
-              onClick={() => handleGranularityChange("word")}
-              className={`px-3 text-sm rounded-md transition-colors cursor-pointer ${
-                granularity === "word"
-                  ? "bg-composer-button text-composer-text"
-                  : "text-composer-text-muted hover:text-composer-text"
-              }`}
-            >
-              Word
-            </button>
-          </div>
-          <Button
-            hasIcon
-            variant={editMode ? "primary" : "secondary"}
-            onClick={() => setEditMode(!editMode)}
-            title={editMode ? "Unlock sync mode" : "Lock to edit mode"}
-          >
-            {editMode ? <IconLock className="size-4" /> : <IconLockOpen className="size-4" />}
-            Edit
-          </Button>
-          {syncState.isActive && !editMode && (
-            <Button hasIcon onClick={handleReset}>
-              <IconRefresh className="size-4" />
-              Reset
-            </Button>
-          )}
-          {!syncState.isActive && !editMode && (
-            <Button hasIcon variant="primary" onClick={handleStartSync}>
-              <IconPlayerPlayFilled className="size-4" />
-              Start
-            </Button>
-          )}
-        </div>
-      </div>
+      <SyncHeader
+        progress={progress}
+        textVariant={textVariant}
+        hasTransliteration={linesHaveTransliteration}
+        toggleTextVariant={toggleTextVariant}
+        granularity={granularity}
+        handleGranularityChange={handleGranularityChange}
+        editMode={editMode}
+        handleToggleEdit={handleToggleEdit}
+        isActive={syncState.isActive}
+        handleReset={handleReset}
+        handleStartSync={handleStartSync}
+      />
 
       {/* Main sync area */}
       {showScrollableView ? (
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
-          <div className="py-2">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overscroll-none">
+          <div>
             {lines.map((line, index) => {
+              const displayLine = displayLines[index];
               const timing = effectiveBounds(line);
-              const linkedGroup = line.groupId ? groups.find((g) => g.id === line.groupId) : undefined;
-              const totalInstances = linkedGroup ? (instanceCountByGroup.get(linkedGroup.id) ?? 0) : 0;
-              const linkInfo =
-                linkedGroup && line.instanceIdx !== undefined
-                  ? {
-                      color: linkedGroup.color,
-                      label: linkedGroup.label,
-                      instanceIdx: line.instanceIdx,
-                      totalInstances,
-                    }
-                  : undefined;
+              const skipped = skippedByLastLineId.get(line.id);
+              const skippedGroup = skipped && groups.find((group) => group.id === skipped.groupId);
               return (
-                <ScrollableLine
-                  key={line.id}
-                  lineId={line.id}
-                  lineNumber={index + 1}
-                  text={line.text}
-                  isCurrent={editMode ? index === playingLineIndex : index === lineIndex}
-                  agentId={line.agentId}
-                  backgroundText={line.backgroundText}
-                  backgroundWords={line.backgroundWords}
-                  words={line.words}
-                  lineBegin={timing?.begin}
-                  lineEnd={timing?.end}
-                  granularity={granularity}
-                  currentTime={currentTime}
-                  editMode={editMode}
-                  linkInfo={linkInfo}
-                  onClick={() => handleJumpToLine(index)}
-                  onNudgeWord={(wordIdx, delta) => handleNudgeWord(index, wordIdx, delta)}
-                  onSetWordTime={(wordIdx, newBegin) => handleSetWordTime(index, wordIdx, newBegin)}
-                  onNudgeWordEnd={(wordIdx, delta) => handleNudgeWordEnd(index, wordIdx, delta)}
-                  onSetWordEndTime={(wordIdx, newEnd) => handleSetWordEndTime(index, wordIdx, newEnd)}
-                  onNudgeLine={(delta) => handleNudgeLine(index, delta)}
-                  onSetLineTime={(newBegin) => handleSetLineTime(index, newBegin)}
-                  onSplitWord={(wordIdx, newWords) => handleSplitWord(index, wordIdx, newWords)}
-                  onNudgeBgWord={(wordIdx, delta) => handleNudgeBgWord(index, wordIdx, delta)}
-                  onSetBgWordTime={(wordIdx, newBegin) => handleSetBgWordTime(index, wordIdx, newBegin)}
-                  onNudgeBgWordEnd={(wordIdx, delta) => handleNudgeBgWordEnd(index, wordIdx, delta)}
-                  onSetBgWordEndTime={(wordIdx, newEnd) => handleSetBgWordEndTime(index, wordIdx, newEnd)}
-                />
+                <Fragment key={line.id}>
+                  <ScrollableLine
+                    lineId={line.id}
+                    lineNumber={index + 1}
+                    text={line.text}
+                    displayText={displayLine.text}
+                    displayWordTexts={displayLine.wordTexts}
+                    isCurrent={editMode ? index === playingLineIndex : index === lineIndex}
+                    agentId={line.agentId}
+                    backgroundText={line.backgroundText}
+                    displayBackgroundText={displayLine.backgroundText}
+                    displayBackgroundWordTexts={displayLine.backgroundWordTexts}
+                    backgroundWords={displayLine.backgroundWords ?? line.backgroundWords}
+                    words={displayLine.words ?? line.words}
+                    lineBegin={timing?.begin}
+                    lineEnd={timing?.end}
+                    lineSynced={isLineSynced(line)}
+                    granularity={granularity}
+                    currentTime={currentTime}
+                    editMode={editMode}
+                    linkInfo={linkInfoByLineId.get(line.id)}
+                    onClick={() => handleJumpToLine(index)}
+                    onClickWord={(wordIdx) => handleJumpToWord(index, wordIdx)}
+                    onClickBgWord={(wordIdx) => handleJumpToBgWord(index, wordIdx)}
+                    onNudgeWord={(wordIdx, delta) => handleNudgeWord(index, wordIdx, delta)}
+                    onSetWordTime={(wordIdx, newBegin) => handleSetWordTime(index, wordIdx, newBegin)}
+                    onNudgeWordEnd={(wordIdx, delta) => handleNudgeWordEnd(index, wordIdx, delta)}
+                    onSetWordEndTime={(wordIdx, newEnd) => handleSetWordEndTime(index, wordIdx, newEnd)}
+                    onNudgeLine={(delta) => handleNudgeLine(index, delta)}
+                    onSetLineTime={(newBegin) => handleSetLineTime(index, newBegin)}
+                    onSplitWord={(wordIdx, newWords) => handleSplitWord(index, wordIdx, newWords)}
+                    onNudgeBgWord={(wordIdx, delta) => handleNudgeBgWord(index, wordIdx, delta)}
+                    onSetBgWordTime={(wordIdx, newBegin) => handleSetBgWordTime(index, wordIdx, newBegin)}
+                    onNudgeBgWordEnd={(wordIdx, delta) => handleNudgeBgWordEnd(index, wordIdx, delta)}
+                    onSetBgWordEndTime={(wordIdx, newEnd) => handleSetBgWordEndTime(index, wordIdx, newEnd)}
+                  />
+                  {skipped && skippedGroup && !isComplete && (
+                    <SkippedInstanceBand
+                      groupId={skipped.groupId}
+                      instanceIdx={skipped.instanceIdx}
+                      firstLineIndex={skipped.firstLineIndex}
+                      skippedCount={skipped.syncableLineCount}
+                      color={skippedGroup.color}
+                      onJumpToLine={handleJumpToLine}
+                    />
+                  )}
+                </Fragment>
               );
             })}
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center flex-1 px-8 py-12">
+        <div className="flex flex-col items-center justify-center flex-1 px-12 py-12">
           {isComplete ? (
-            <div className="text-center">
-              {/* react-doctor-disable-next-line react-doctor/no-gradient-text */}
-              <m.div
-                className="mb-2 text-2xl font-medium"
-                variants={shimmerVariants}
-                initial="initial"
-                animate="animate"
-                transition={shimmerTransition}
-                style={{
-                  background: completeGradient,
-                  backgroundSize: "200% 100%",
-                  backgroundClip: "text",
-                  WebkitBackgroundClip: "text",
-                  color: "transparent",
-                }}
-              >
-                Sync complete!
-              </m.div>
-              <div className="text-composer-text-muted">Proceed to Preview to review your work</div>
-            </div>
+            syncComplete ? (
+              <div className="text-center">
+                {/* react-doctor-disable-next-line react-doctor/no-gradient-text */}
+                <m.div
+                  className="mb-2 text-2xl font-medium"
+                  variants={shimmerVariants}
+                  initial="initial"
+                  animate="animate"
+                  transition={shimmerTransition}
+                  style={{
+                    background: completeGradient,
+                    backgroundSize: "200% 100%",
+                    backgroundClip: "text",
+                    WebkitBackgroundClip: "text",
+                    color: "transparent",
+                  }}
+                >
+                  Sync complete!
+                </m.div>
+                <div className="text-composer-text-muted">Proceed to Preview to review your work</div>
+              </div>
+            ) : (
+              <div className="text-center">
+                <div className="mb-2 text-2xl font-medium text-composer-text">End of lyrics</div>
+                <div className="text-composer-text-muted">Some lines still need timing. Click one to sync it.</div>
+              </div>
+            )
           ) : (
             <SyncCarousel
-              lines={lines}
+              lines={carouselLines}
               lineIndex={lineIndex}
               wordIndex={wordIndex}
               granularity={granularity}
               isHolding={isHolding}
               rippleTarget={rippleTarget}
               onRippleComplete={clearRippleTarget}
+              aboveCurrent={countIn.dots}
             />
           )}
         </div>
       )}
 
-      {/* Bottom panel */}
-      <div className="px-6 py-4 border-t border-composer-border bg-composer-bg-dark">
-        <div className="flex items-center justify-between h-14">
-          <TimingDisplay lastSyncedTime={lastSyncedTime} />
-
-          {!isComplete && isPlaying && (
-            <div className="flex items-center gap-4">
-              {currentWord && <span className="text-xl font-medium text-composer-text">{currentWord}</span>}
-              <div className="flex items-center gap-2">
-                <m.div
-                  variants={syncPulseVariants}
-                  initial={false}
-                  animate={isHolding ? "pulse" : "idle"}
-                  transition={syncCarouselTransition}
-                  className={`flex items-center justify-center border-2 rounded-full size-14 ${
-                    isHolding ? "bg-composer-accent/20 border-composer-accent" : "bg-composer-bg-elevated"
-                  }`}
-                >
-                  <span className="text-xs font-medium text-composer-text-muted">
-                    {getEffectiveKeysArray("sync.holdSync")
-                      .map((k) => k.toUpperCase())
-                      .join(" ")}
-                  </span>
-                </m.div>
-                <m.div
-                  variants={syncPulseVariants}
-                  initial={false}
-                  animate={showPulse ? "pulse" : "idle"}
-                  transition={syncCarouselTransition}
-                  className="flex items-center justify-center border-2 rounded-full size-14 bg-composer-bg-elevated"
-                >
-                  <span className="text-xs font-medium text-composer-text-muted">
-                    {getEffectiveKeysArray("sync.tap")
-                      .map((k) => k.toUpperCase())
-                      .join(" ")}
-                  </span>
-                </m.div>
-              </div>
-            </div>
-          )}
-
-          {!isComplete && !isPlaying && syncState.isActive && (
-            <div className="text-sm text-composer-text-muted">Paused ・ Click a line to jump, or play to continue</div>
-          )}
-        </div>
-      </div>
+      <SyncFooter
+        lastSyncedTime={lastSyncedTime}
+        isComplete={isComplete}
+        editMode={editMode}
+        isPlaying={isPlaying}
+        isActive={syncState.isActive}
+        status={
+          countIn.status ??
+          placementPreroll.statusFor({ isPlaying, isComplete, cursorLineIndex: lineIndex, playbackTime: currentTime })
+        }
+        gestureControls={
+          showGestureCircles && (
+            <SyncGestureControls
+              currentWord={currentWord}
+              displayWord={placingName ?? displayLines[lineIndex]?.wordTexts?.[wordIndex]}
+              isHolding={isHolding}
+              handleHoldPointerDown={handleHoldPointerDown}
+              handleHoldPointerRelease={handleHoldPointerRelease}
+              handleTapPointerDown={handleTapPointerDown}
+              showPulse={showPulse}
+            />
+          )
+        }
+      />
     </div>
   );
 };

@@ -28,3 +28,4 @@ function contiguousSelectionRun(selections: WordSelection[]): SelectionRun | nul
 // -- Exports ------------------------------------------------------------------
 
 export { contiguousSelectionRun };
+export type { SelectionRun };

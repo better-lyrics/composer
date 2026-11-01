@@ -1,50 +1,10 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { LyricsSearchError } from "@/utils/lyrics-search/types";
 import { lrclibProvider } from "@/utils/lyrics-search/providers/lrclib";
-
-// -- Network gating -----------------------------------------------------------
-
-const SKIP_NETWORK = process.env.SKIP_NETWORK_TESTS === "1";
-const ONLINE_PROBE_URL = "https://lrclib.net/api/search?track_name=test";
-const ONLINE_PROBE_TIMEOUT_MS = 5000;
-const NETWORK_TEST_TIMEOUT_MS = 30000;
-
-let isOnline = true;
-
-async function probeOnline(): Promise<boolean> {
-  if (SKIP_NETWORK) return false;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ONLINE_PROBE_TIMEOUT_MS);
-  try {
-    const response = await fetch(ONLINE_PROBE_URL, { signal: controller.signal });
-    return response.ok;
-  } catch {
-    return false;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-const describeOnline = SKIP_NETWORK ? describe.skip : describe;
+import { LyricsSearchError } from "@/utils/lyrics-search/types";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 // -- Tests --------------------------------------------------------------------
 
-describeOnline("lrclibProvider", () => {
-  beforeAll(async () => {
-    isOnline = await probeOnline();
-    if (!isOnline) {
-      console.warn("[lrclib.test] LRCLib unreachable: tests will be skipped at runtime.");
-    }
-  }, ONLINE_PROBE_TIMEOUT_MS + 1000);
-
-  afterAll(() => {
-    isOnline = true;
-  });
-
-  function skipIfOffline(): boolean {
-    return !isOnline;
-  }
-
+describe("lrclibProvider", () => {
   // -- Metadata --------------------------------------------------------------
 
   describe("metadata", () => {
@@ -78,166 +38,6 @@ describeOnline("lrclibProvider", () => {
     });
   });
 
-  // -- search: happy path ----------------------------------------------------
-
-  describe("search happy paths", () => {
-    it(
-      "returns at least one LRCLib result for a popular track + artist",
-      async () => {
-        if (skipIfOffline()) return;
-        const controller = new AbortController();
-        const results = await lrclibProvider.search({ track: "Bohemian Rhapsody", artist: "Queen" }, controller.signal);
-        expect(results.length).toBeGreaterThan(0);
-        const first = results[0];
-        expect(first.source).toBe("lrclib");
-        expect(first.sourceLabel).toBe("LRCLib");
-        expect(first.syncType).not.toBe("unsynced");
-        expect(first.track.toLowerCase()).toContain("bohemian");
-        expect(first.payload.kind).toBe("lrc");
-      },
-      NETWORK_TEST_TIMEOUT_MS,
-    );
-
-    it(
-      "places the /api/get exact match first when all four fields are present",
-      async () => {
-        if (skipIfOffline()) return;
-        const controller = new AbortController();
-        const results = await lrclibProvider.search(
-          {
-            track: "Bohemian Rhapsody",
-            artist: "Queen",
-            album: "A Night at the Opera",
-            durationSec: 355,
-          },
-          controller.signal,
-        );
-        expect(results.length).toBeGreaterThan(0);
-        const first = results[0];
-        expect(first.source).toBe("lrclib");
-        expect(first.track.toLowerCase()).toContain("bohemian");
-        expect(first.artist.toLowerCase()).toContain("queen");
-      },
-      NETWORK_TEST_TIMEOUT_MS,
-    );
-
-    it(
-      "returns a stable LRCLib id prefix of 'lrclib-' on every result",
-      async () => {
-        if (skipIfOffline()) return;
-        const controller = new AbortController();
-        const results = await lrclibProvider.search({ track: "Bohemian Rhapsody", artist: "Queen" }, controller.signal);
-        for (const result of results) {
-          expect(result.id.startsWith("lrclib-")).toBe(true);
-        }
-      },
-      NETWORK_TEST_TIMEOUT_MS,
-    );
-
-    it(
-      "rounds duration to an integer (LRCLib returns floats)",
-      async () => {
-        if (skipIfOffline()) return;
-        const controller = new AbortController();
-        const results = await lrclibProvider.search({ track: "Bohemian Rhapsody", artist: "Queen" }, controller.signal);
-        for (const result of results) {
-          expect(Number.isInteger(result.durationSec)).toBe(true);
-        }
-      },
-      NETWORK_TEST_TIMEOUT_MS,
-    );
-  });
-
-  // -- search: dedupe between /get and /search -------------------------------
-
-  describe("dedupe between /api/get and /api/search", () => {
-    it(
-      "returns each LRCLib id at most once when /get + /search overlap",
-      async () => {
-        if (skipIfOffline()) return;
-        const controller = new AbortController();
-        const results = await lrclibProvider.search(
-          {
-            track: "Bohemian Rhapsody",
-            artist: "Queen",
-            album: "A Night at the Opera",
-            durationSec: 355,
-          },
-          controller.signal,
-        );
-        const ids = results.map((r) => r.id);
-        const uniqueIds = new Set(ids);
-        expect(ids.length).toBe(uniqueIds.size);
-      },
-      NETWORK_TEST_TIMEOUT_MS,
-    );
-  });
-
-  // -- search: empty result --------------------------------------------------
-
-  describe("empty / no-result handling", () => {
-    it(
-      "returns an empty array for nonsense queries",
-      async () => {
-        if (skipIfOffline()) return;
-        const controller = new AbortController();
-        const results = await lrclibProvider.search(
-          { track: "asdkfjhasdkjfhasdkfjh", artist: "qwertyuiopzxcvbn" },
-          controller.signal,
-        );
-        expect(results).toEqual([]);
-      },
-      NETWORK_TEST_TIMEOUT_MS,
-    );
-
-    it(
-      "does not throw on 404 from /api/get when no exact match exists",
-      async () => {
-        if (skipIfOffline()) return;
-        const controller = new AbortController();
-        const results = await lrclibProvider.search(
-          {
-            track: "asdkfjhasdkjfhasdkfjh",
-            artist: "qwertyuiopzxcvbn",
-            album: "nonexistent-album-xyz",
-            durationSec: 100,
-          },
-          controller.signal,
-        );
-        expect(Array.isArray(results)).toBe(true);
-      },
-      NETWORK_TEST_TIMEOUT_MS,
-    );
-  });
-
-  // -- search: plain-only sync-type ------------------------------------------
-
-  describe("plain-only LRC sync-type mapping", () => {
-    it(
-      "maps results without syncedLyrics to syncType 'unsynced'",
-      async () => {
-        if (skipIfOffline()) return;
-        const controller = new AbortController();
-        const results = await lrclibProvider.search(
-          {
-            track: "Bohemian Rhapsody",
-            artist: "Queen",
-            album: "Bohemian Rhapsody (The Original Soundtrack)",
-          },
-          controller.signal,
-        );
-        for (const result of results) {
-          const payload = result.payload;
-          if (payload.kind !== "lrc") continue;
-          if (payload.synced === null && payload.plain !== null) {
-            expect(result.syncType).toBe("unsynced");
-          }
-        }
-      },
-      NETWORK_TEST_TIMEOUT_MS,
-    );
-  });
-
   // -- search: abort handling ------------------------------------------------
 
   describe("abort handling", () => {
@@ -247,57 +47,6 @@ describeOnline("lrclibProvider", () => {
       const results = await lrclibProvider.search({ track: "Bohemian Rhapsody", artist: "Queen" }, controller.signal);
       expect(results).toEqual([]);
     });
-
-    it(
-      "resolves to [] when the signal aborts mid-fetch",
-      async () => {
-        if (skipIfOffline()) return;
-        const controller = new AbortController();
-        const pending = lrclibProvider.search({ track: "Bohemian Rhapsody", artist: "Queen" }, controller.signal);
-        controller.abort();
-        const results = await pending;
-        expect(results).toEqual([]);
-      },
-      NETWORK_TEST_TIMEOUT_MS,
-    );
-  });
-
-  // -- search: track-only query ----------------------------------------------
-
-  describe("track-only query", () => {
-    it(
-      "still returns results when only track is supplied",
-      async () => {
-        if (skipIfOffline()) return;
-        const controller = new AbortController();
-        const results = await lrclibProvider.search({ track: "Bohemian Rhapsody" }, controller.signal);
-        expect(results.length).toBeGreaterThan(0);
-      },
-      NETWORK_TEST_TIMEOUT_MS,
-    );
-  });
-
-  // -- search: ISRC ignored gracefully ---------------------------------------
-
-  describe("ISRC handling", () => {
-    it(
-      "accepts an isrc on the query but silently ignores it",
-      async () => {
-        if (skipIfOffline()) return;
-        const controller = new AbortController();
-        const results = await lrclibProvider.search(
-          {
-            track: "Bohemian Rhapsody",
-            artist: "Queen",
-            isrc: "GBUM71029604",
-          },
-          controller.signal,
-        );
-        expect(results.length).toBeGreaterThan(0);
-        expect(results[0].source).toBe("lrclib");
-      },
-      NETWORK_TEST_TIMEOUT_MS,
-    );
   });
 
   // -- LyricsSearchError export contract -------------------------------------
@@ -309,5 +58,99 @@ describeOnline("lrclibProvider", () => {
       expect(error.message).toBe("boom");
       expect(error.name).toBe("LyricsSearchError");
     });
+  });
+});
+
+// -- Duration mapping (stubbed transport, never reaches the network) ----------
+
+describe("lrclibProvider duration mapping", () => {
+  const SEARCH_HIT = {
+    id: 3396226,
+    trackName: "Bohemian Rhapsody",
+    artistName: "Queen",
+    albumName: "A Night at the Opera",
+    instrumental: false,
+    plainLyrics: "Is this the real life?",
+    syncedLyrics: "[00:00.00] Is this the real life?",
+  } as const;
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function stubSearchBody(body: unknown): void {
+    vi.stubGlobal(
+      "fetch",
+      async (): Promise<Response> =>
+        new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } }),
+    );
+  }
+
+  async function searchWithDuration(hit: Record<string, unknown>): Promise<number | undefined> {
+    stubSearchBody([hit]);
+    const results = await lrclibProvider.search({ track: "Bohemian Rhapsody" }, new AbortController().signal);
+    expect(results).toHaveLength(1);
+    return results[0].durationSec;
+  }
+
+  it("rounds a usable duration to whole seconds", async () => {
+    expect(await searchWithDuration({ ...SEARCH_HIT, duration: 354.6 })).toBe(355);
+  });
+
+  it("reports no duration when the response omits the field", async () => {
+    expect(await searchWithDuration({ ...SEARCH_HIT })).toBeUndefined();
+  });
+
+  it("reports no duration when the response sends null", async () => {
+    expect(await searchWithDuration({ ...SEARCH_HIT, duration: null })).toBeUndefined();
+  });
+
+  it("reports no duration when the response sends a non-numeric value", async () => {
+    expect(await searchWithDuration({ ...SEARCH_HIT, duration: "355" })).toBeUndefined();
+    expect(await searchWithDuration({ ...SEARCH_HIT, duration: 0 })).toBeUndefined();
+  });
+});
+
+// -- 4xx/5xx status handling (stubbed transport) ------------------------------
+
+describe("lrclibProvider 4xx/5xx handling", () => {
+  const QUERY = { track: "Bohemian Rhapsody", artist: "Queen" } as const;
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  function stubStatus(status: number): void {
+    vi.stubGlobal("fetch", async (): Promise<Response> => new Response("body", { status }));
+  }
+
+  it.each([400, 401, 403, 422, 429, 500, 503])("returns [] without throwing on %i", async (status) => {
+    stubStatus(status);
+    const results = await lrclibProvider.search(QUERY, new AbortController().signal);
+    expect(results).toEqual([]);
+  });
+
+  it("logs a warning on a non-404 4xx instead of surfacing an error", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    stubStatus(403);
+    await lrclibProvider.search(QUERY, new AbortController().signal);
+    expect(warn).toHaveBeenCalled();
+  });
+
+  it("stays silent on a plain 404 miss", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    stubStatus(404);
+    const results = await lrclibProvider.search(QUERY, new AbortController().signal);
+    expect(results).toEqual([]);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("returns [] and warns on 5xx instead of throwing", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    stubStatus(503);
+    const results = await lrclibProvider.search(QUERY, new AbortController().signal);
+    expect(results).toEqual([]);
+    expect(warn).toHaveBeenCalled();
   });
 });

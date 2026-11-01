@@ -11,8 +11,8 @@ describe("getLineAndTrackAtY", () => {
     rowHeights: {},
     defaultRowHeight: 40,
     collapsedInstances: {},
+    focusedGroup: null,
     waveformHeight: 100,
-    bgDropZoneHeight: 24,
     groupHeaderHeight: 20,
   });
   const lines = [line("l1"), line("l2")];

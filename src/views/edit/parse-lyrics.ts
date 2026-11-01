@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 
 interface ParsedLine {
   lineNumber: number;
@@ -23,7 +24,7 @@ function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): 
     const trimmed = line.trim();
     const isEmpty = trimmed === "";
     const lyricLine = isEmpty ? undefined : nonEmptyStored[nonEmptyIndex++];
-    const hasTiming = lyricLine?.begin !== undefined || (lyricLine?.words?.length ?? 0) > 0;
+    const hasTiming = lyricLine !== undefined && (isLineSynced(lyricLine) || isWordSynced(lyricLine));
 
     return {
       lineNumber: index + 1,

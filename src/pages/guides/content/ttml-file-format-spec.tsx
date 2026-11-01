@@ -1,3 +1,5 @@
+import { GuideCode } from "@/pages/guides/guide-code";
+
 const TtmlFileFormatSpecContent: React.FC = () => (
   <>
     <p>
@@ -10,13 +12,14 @@ const TtmlFileFormatSpecContent: React.FC = () => (
       Every TTML file starts with a <code className="font-mono text-composer-accent-text">&lt;tt&gt;</code> element that
       declares the TTML and metadata namespaces:
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<tt xmlns="http://www.w3.org/ns/ttml"
+    <GuideCode
+      format="ttml"
+      code={`<tt xmlns="http://www.w3.org/ns/ttml"
     xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
     xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
     ttp:timeBase="media"
     xml:lang="en">`}
-    </pre>
+    />
     <p>
       The <code className="font-mono text-composer-accent-text">xmlns</code> attribute is required. The metadata and
       parameter namespaces are only needed if you use the features that live in them (agents, background vocals, timing
@@ -29,8 +32,9 @@ const TtmlFileFormatSpecContent: React.FC = () => (
       The <code className="font-mono text-composer-accent-text">&lt;head&gt;</code> section carries song metadata and
       agent declarations:
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<head>
+    <GuideCode
+      format="ttml"
+      code={`<head>
   <metadata>
     <ttm:title>Example song</ttm:title>
     <ttm:agent xml:id="v1" type="person">
@@ -41,7 +45,7 @@ const TtmlFileFormatSpecContent: React.FC = () => (
     </ttm:agent>
   </metadata>
 </head>`}
-    </pre>
+    />
     <p>
       Every agent gets an <code className="font-mono text-composer-accent-text">xml:id</code> you reference later. The{" "}
       <code className="font-mono text-composer-accent-text">type</code> is usually
@@ -57,15 +61,16 @@ const TtmlFileFormatSpecContent: React.FC = () => (
       <code className="font-mono text-composer-accent-text">&lt;div&gt;</code> with one{" "}
       <code className="font-mono text-composer-accent-text">&lt;p&gt;</code> per lyric line:
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<body>
+    <GuideCode
+      format="ttml"
+      code={`<body>
   <div>
     <p begin="00:00:12.000" end="00:00:15.200" ttm:agent="v1">
       First lyric line
     </p>
   </div>
 </body>`}
-    </pre>
+    />
     <p>
       The <code className="font-mono text-composer-accent-text">begin</code> and{" "}
       <code className="font-mono text-composer-accent-text">end</code> attributes are required. Time is in
@@ -79,13 +84,14 @@ const TtmlFileFormatSpecContent: React.FC = () => (
       Replace the plain text inside a paragraph with timed{" "}
       <code className="font-mono text-composer-accent-text">&lt;span&gt;</code> elements for per-word animation:
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<p begin="00:00:12.000" end="00:00:15.200" ttm:agent="v1">
+    <GuideCode
+      format="ttml"
+      code={`<p begin="00:00:12.000" end="00:00:15.200" ttm:agent="v1">
   <span begin="00:00:12.000" end="00:00:12.400">First</span>
   <span begin="00:00:12.400" end="00:00:13.000">lyric</span>
   <span begin="00:00:13.000" end="00:00:15.200">line</span>
 </p>`}
-    </pre>
+    />
     <p>
       Every word has its own begin and end. Whitespace between spans is preserved as the spacing you see in the output.
       If two words should not have a space between them, put them in the same span or skip the whitespace in the source.
@@ -96,14 +102,15 @@ const TtmlFileFormatSpecContent: React.FC = () => (
       Background vocals and ad libs use a wrapper span with{" "}
       <code className="font-mono text-composer-accent-text">ttm:role="x-bg"</code>:
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<p begin="00:00:12.000" end="00:00:15.200" ttm:agent="v1">
+    <GuideCode
+      format="ttml"
+      code={`<p begin="00:00:12.000" end="00:00:15.200" ttm:agent="v1">
   <span begin="00:00:12.000" end="00:00:13.500">Main lyric</span>
   <span ttm:role="x-bg">
     <span begin="00:00:13.000" end="00:00:14.000">oh yeah</span>
   </span>
 </p>`}
-    </pre>
+    />
     <p>
       The outer x-bg span carries no timing. Inner spans carry the timing. The platform renders the x-bg content as a
       smaller secondary lyric under the main line.

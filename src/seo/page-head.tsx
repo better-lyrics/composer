@@ -1,4 +1,5 @@
 import { AnalyticsScripts } from "@/seo/analytics";
+import { indexingTags } from "@/seo/indexing-tags";
 import { SITE_ORIGIN } from "@/seo/schemas";
 import { Head } from "vite-react-ssg";
 
@@ -8,12 +9,13 @@ interface PageHeadProps {
   path: string;
   ogImage?: string;
   jsonLd?: object | object[];
+  noindex?: boolean;
 }
 
 const DEFAULT_OG_IMAGE = "/og-image.png";
 
-const PageHead: React.FC<PageHeadProps> = ({ title, description, path, ogImage, jsonLd }) => {
-  const canonical = `${SITE_ORIGIN}${path}`;
+const PageHead: React.FC<PageHeadProps> = ({ title, description, path, ogImage, jsonLd, noindex = false }) => {
+  const { canonical, robots } = indexingTags(path, noindex);
   const image = `${SITE_ORIGIN}${ogImage ?? DEFAULT_OG_IMAGE}`;
   const structured = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 
@@ -23,9 +25,10 @@ const PageHead: React.FC<PageHeadProps> = ({ title, description, path, ogImage, 
       <Head>
         <title>{title}</title>
         <meta name="description" content={description} />
-        <link rel="canonical" href={canonical} />
+        {robots && <meta name="robots" content={robots} />}
+        {canonical && <link rel="canonical" href={canonical} />}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content={canonical} />
+        {canonical && <meta property="og:url" content={canonical} />}
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />
         <meta property="og:image" content={image} />

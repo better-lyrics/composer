@@ -1,6 +1,6 @@
 import type { WordSelection } from "@/domain/selection/model";
-import { describe, expect, it } from "vitest";
 import { mergeWordSelections, toggleWordSelection } from "@/domain/selection/set-ops";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 

@@ -1,12 +1,44 @@
-import type { LyricLine } from "@/domain/line/model";
+import {
+  instanceStart,
+  isInstanceFullyTimed,
+  isSharedLine,
+  sharedInstancesInLineOrder,
+} from "@/domain/group/shared-timing";
+import { templateSourceInstance } from "@/domain/group/template-source";
+import { instanceIndicesOf } from "@/domain/instance/enumerate";
+import { isLinked } from "@/domain/instance/predicates";
 import { getEffectiveLines } from "@/domain/line/effective-words";
-import { isLineSynced } from "@/domain/line/predicates";
+import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
+import { isWordSelected } from "@/domain/selection/identity";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
+import { isAutoAlignAvailable } from "@/stores/alignment";
+import { countAlignableLines } from "@/stores/alignment-plan";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { createGroupFromSelection, fillSelectionGaps } from "@/views/timeline/group-ops";
+import { useSettingsStore } from "@/stores/settings";
+import {
+  createGroupFromSelection,
+  fillSelectionGaps,
+  instanceToTemplate,
+  lineIdsAreContiguous,
+  selectionTouchesAnyGroup,
+} from "@/views/timeline/group-ops";
+import { mergeRunKind } from "@/views/timeline/merge-selected-words";
+import { computeSplitIntoWordsUpdates, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
+import type { ContextMenuTarget } from "@/views/timeline/timeline-store";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useMemo } from "react";
+
+// -- Selection ----------------------------------------------------------------
+
+// Auto-includes the right-clicked line for word/track/gutter targets so the user
+// can right-click a non-selected line and still act on it.
+function selectionLineIdsForTarget(target: ContextMenuTarget): Set<string> {
+  const ids = new Set<string>(useTimelineStore.getState().selectedWords.map((w) => w.lineId));
+  if (target.kind !== "group-banner") ids.add(target.lineId);
+  return ids;
+}
 
 // -- Hook ---------------------------------------------------------------------
 
@@ -22,22 +54,25 @@ function useContextMenuTargets() {
     const { lineId, wordIndex, type } = contextMenu.target;
     const line = rawLines.find((l) => l.id === lineId);
     if (!line) return null;
-    const field: "words" | "backgroundWords" = type === "word" ? "words" : "backgroundWords";
-    const wordsArray = line[field];
+    const field = trackField(type);
+    const wordsArray = trackWords(line, type);
     if (!wordsArray || wordsArray.length === 0) return null;
 
     const selectedWords = useTimelineStore.getState().selectedWords;
-    const selectionMatchesTarget = selectedWords.some(
-      (w) => w.lineId === lineId && w.type === type && w.wordIndex === wordIndex,
-    );
     const indices =
-      selectionMatchesTarget && selectedWords.length > 1
+      isWordSelected(selectedWords, lineId, wordIndex, type) && selectedWords.length > 1
         ? selectedWords.flatMap((w) => (w.lineId === lineId && w.type === type ? [w.wordIndex] : []))
         : [wordIndex];
 
     const allMarked = indices.every((i) => wordsArray[i]?.explicit === true);
     return { lineId, field, indices, allMarked };
   }, [contextMenu, rawLines]);
+
+  const clickedSelectionCount = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word") return null;
+    const { lineId, wordIndex, type } = contextMenu.target;
+    return isWordSelected(selectedWords, lineId, wordIndex, type) ? selectedWords.length : null;
+  }, [contextMenu, selectedWords]);
 
   const gutterLineGroupInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "gutter") return null;
@@ -49,24 +84,18 @@ function useContextMenuTargets() {
 
   const groupableSelection = useMemo(() => {
     if (!contextMenu) return null;
-    const target = contextMenu.target;
-    const selectedWords = useTimelineStore.getState().selectedWords;
-    const selectedLineIds = new Set<string>(selectedWords.map((w) => w.lineId));
-    // Auto-include the right-clicked line for word/track/gutter targets so the user can
-    // right-click on a non-selected line and still get "Group this line".
-    if (target.kind === "gutter" || target.kind === "track" || target.kind === "word") {
-      selectedLineIds.add(target.lineId);
-    }
+    const selectedLineIds = selectionLineIdsForTarget(contextMenu.target);
     if (selectedLineIds.size < 1) return null;
-    const rawLinesById = new Map<string, LyricLine>();
-    for (const l of rawLines) rawLinesById.set(l.id, l);
-    for (const id of selectedLineIds) {
-      const line = rawLinesById.get(id);
-      if (line?.groupId !== undefined) return null;
-    }
+    if (selectionTouchesAnyGroup(rawLines, selectedLineIds)) return null;
     const filled = fillSelectionGaps(rawLines, selectedLineIds);
     if (!filled) return null;
-    const result = createGroupFromSelection(rawLines, filled.expanded, useProjectStore.getState().groups);
+    const result = createGroupFromSelection(
+      rawLines,
+      filled.expanded,
+      useProjectStore.getState().groups,
+      useSettingsStore.getState().shareTimingInNewGroups,
+      { duration: useAudioStore.getState().duration },
+    );
     if (!result) return null;
     return {
       selectedLineIds: filled.expanded,
@@ -76,25 +105,46 @@ function useContextMenuTargets() {
     };
   }, [contextMenu, rawLines]);
 
+  const conformableSelection = useMemo(() => {
+    if (!contextMenu) return null;
+    const selectedLineIds = selectionLineIdsForTarget(contextMenu.target);
+    if (selectedLineIds.size < 1) return null;
+    if (selectionTouchesAnyGroup(rawLines, selectedLineIds)) return null;
+    if (!lineIdsAreContiguous(rawLines, selectedLineIds)) return null;
+
+    const options = useProjectStore.getState().groups.flatMap((group) => {
+      const firstInstanceIdx = instanceIndicesOf(rawLines, group.id)[0];
+      if (firstInstanceIdx === undefined) return [];
+      const template = instanceToTemplate(
+        rawLines,
+        group.id,
+        templateSourceInstance(rawLines, group, firstInstanceIdx),
+      );
+      return template.length === selectedLineIds.size ? [{ group, template }] : [];
+    });
+    if (options.length === 0) return null;
+    return { selectedLineIds, count: selectedLineIds.size, options };
+  }, [contextMenu, rawLines]);
+
   const mergeInfo = useMemo(() => {
     const run = contiguousSelectionRun(selectedWords);
     if (!run) return null;
 
     const line = lines.find((l) => l.id === run.lineId);
-    if (!line) return null;
-    const wordsArray = run.type === "word" ? line.words : line.backgroundWords;
-    if (!wordsArray) return null;
+    if (!line || !trackWords(line, run.type)) return null;
+    const rawLine = rawLines.find((l) => l.id === run.lineId);
+    const kind = rawLine ? mergeRunKind(rawLine, run) : "words";
 
-    return { indices: run.indices, lineId: run.lineId, type: run.type };
-  }, [selectedWords, lines]);
+    return { indices: run.indices, lineId: run.lineId, type: run.type, kind };
+  }, [selectedWords, lines, rawLines]);
 
   const groupedWordInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
     const { lineId, wordIndex, type } = contextMenu.target;
     const line = rawLines.find((l) => l.id === lineId);
     if (!line) return null;
-    const field: "words" | "backgroundWords" = type === "word" ? "words" : "backgroundWords";
-    const word = line[field]?.[wordIndex];
+    const field = trackField(type);
+    const word = trackWords(line, type)?.[wordIndex];
     if (!word || word.syllableGroupId === undefined) return null;
     return { lineId, field, wordIndex };
   }, [contextMenu, rawLines]);
@@ -116,37 +166,57 @@ function useContextMenuTargets() {
     return canPlace ? targetLine : null;
   }, [contextMenu, rawLines]);
 
+  const placeAtPlayheadInfo = useMemo(() => {
+    if (!contextMenu || (contextMenu.target.kind !== "gutter" && contextMenu.target.kind !== "track")) return null;
+    const { lineId } = contextMenu.target;
+    const line = rawLines.find((l) => l.id === lineId);
+    const groups = useProjectStore.getState().groups;
+    const group = groups.find((candidate) => candidate.id === line?.groupId);
+    if (!line || !group || !isLinked(line) || !isSharedLine(line, new Map([[group.id, group]]))) return null;
+    const { instanceIdx } = line;
+    if (instanceStart(rawLines, group.id, instanceIdx) !== null) return null;
+    const hasTimedSibling = sharedInstancesInLineOrder(rawLines, group).some(
+      (other) => other !== instanceIdx && isInstanceFullyTimed(rawLines, group.id, other),
+    );
+    return hasTimedSibling ? { groupId: group.id, instanceIdx } : null;
+  }, [contextMenu, rawLines]);
+
   const splitIntoWordsInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
-    const target = contextMenu.target;
+    const updates = computeSplitIntoWordsUpdates(splitTargetsForMenu(contextMenu.target, selectedWords), rawLines);
+    if (updates.length === 0) return null;
+    return { count: updates.length };
+  }, [contextMenu, selectedWords, rawLines]);
 
-    const selectedLineIds = new Set(selectedWords.map((w) => w.lineId));
-    const targetIds =
-      selectedLineIds.has(target.lineId) && selectedLineIds.size > 0 ? [...selectedLineIds] : [target.lineId];
-
-    const rawLinesById = new Map(rawLines.map((l) => [l.id, l] as const));
-    const lineSyncedIds = targetIds.filter((id) => {
-      const realLine = rawLinesById.get(id);
-      return realLine && isLineSynced(realLine);
-    });
-
-    if (lineSyncedIds.length === 0) return null;
-    return { count: lineSyncedIds.length };
+  const autoAlignInfo = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word" || !isAutoAlignAvailable()) return null;
+    const targets = splitTargetsForMenu(contextMenu.target, selectedWords).filter((t) => t.type === "word");
+    const lineIds = [...new Set(targets.map((t) => t.lineId))];
+    const { lineTimed, wordTimed } = countAlignableLines(rawLines, lineIds);
+    const count = lineTimed + wordTimed;
+    return count > 0 ? { count, lineIds, realign: wordTimed > 0 } : null;
   }, [contextMenu, selectedWords, rawLines]);
 
   return {
     lines,
+    autoAlignInfo,
     explicitToggleContext,
+    clickedSelectionCount,
     gutterLineGroupInfo,
     groupableSelection,
+    conformableSelection,
     mergeInfo,
     groupedWordInfo,
     snapNeededInfo,
     placeLineHereInfo,
+    placeAtPlayheadInfo,
     splitIntoWordsInfo,
   };
 }
 
+type ContextMenuTargets = ReturnType<typeof useContextMenuTargets>;
+
 // -- Exports ------------------------------------------------------------------
 
 export { useContextMenuTargets };
+export type { ContextMenuTargets };

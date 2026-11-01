@@ -17,7 +17,14 @@ function getShortcutsByScope(scope: ShortcutScope): ShortcutDefinition[] {
   return SHORTCUT_DEFINITIONS.filter((d) => d.scope === scope);
 }
 
+const SHORTCUT_SCOPE_GROUPS: readonly { scope: ShortcutScope; title: string }[] = [
+  { scope: "global", title: "General" },
+  { scope: "library", title: "Projects" },
+  { scope: "sync", title: "Sync Mode" },
+  { scope: "timeline", title: "Timeline Mode" },
+];
+
 // -- Exports ------------------------------------------------------------------
 
-export { SHORTCUT_DEFINITIONS as SHORTCUT_REGISTRY, getShortcutById, getShortcutsByScope };
-export type { ShortcutBinding, ShortcutScope, ShortcutDefinition };
+export type { ShortcutBinding, ShortcutDefinition, ShortcutScope };
+export { getShortcutById, getShortcutsByScope, SHORTCUT_DEFINITIONS as SHORTCUT_REGISTRY, SHORTCUT_SCOPE_GROUPS };

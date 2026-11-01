@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useAudioStore } from "@/stores/audio";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
+import { fileIdentityKey } from "@/utils/file-identity";
 
 function useAutoSeparate(): void {
   useEffect(() => {
@@ -9,7 +10,7 @@ function useAutoSeparate(): void {
     const unsub = useAudioStore.subscribe(async (state) => {
       const source = state.source;
       const file = source?.type === "file" ? source.file : source?.type === "youtube" ? source.file : null;
-      const key = file ? `${file.name}|${file.size}|${file.lastModified ?? 0}` : null;
+      const key = file ? fileIdentityKey(file) : null;
       if (key === prevKey) return;
       prevKey = key;
 

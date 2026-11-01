@@ -1,13 +1,11 @@
+import { type ParserConversion, convertViaParser } from "@/pages/converters/convert-via-parser";
+import { type ConvertArgs, ConverterView } from "@/pages/converters/converter-view";
+import { TTML_OUTPUT } from "@/pages/converters/output-formats";
 import { LandingLayout } from "@/pages/landing/landing-layout";
 import { BetterLyricsPromo } from "@/pages/landing/sections/better-lyrics-promo";
 import { FaqSection } from "@/pages/landing/sections/faq-section";
-import { ConverterView, type ConvertArgs } from "@/pages/converters/converter-view";
 import { PageHead } from "@/seo/page-head";
 import { breadcrumbListSchema, faqPageSchema, howToSchema, organizationSchema } from "@/seo/schemas";
-import type { Agent } from "@/domain/agent/model";
-import type { ProjectMetadata } from "@/domain/project/metadata";
-import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { generateTTML } from "@/utils/ttml";
 import { useCallback } from "react";
 
 const SAMPLE_LRC = `[ti:Sample Song]
@@ -56,32 +54,17 @@ const HOW_TO_STEPS = [
   },
 ];
 
-function convertLrc({ input, filename }: ConvertArgs): { ttml: string; projectPayload: string } | { error: string } {
-  try {
-    const result = parseLyricsFile(filename.endsWith(".lrc") ? filename : "input.lrc", input);
-    if (result.lines.length === 0) {
-      return { error: "No timed lines found. Make sure your LRC contains [mm:ss.xx] timestamps." };
-    }
-    const metadata: ProjectMetadata = {
-      title: result.metadata.title ?? "",
-      artist: result.metadata.artist ?? "",
-      album: result.metadata.album ?? "",
-      duration: 0,
-      language: result.metadata.language,
-    };
-    const agents: Agent[] = result.agents ?? [{ id: "v1", type: "person", name: "Voice 1" }];
-    const granularity = result.lines.some((line) => line.words?.length) ? "word" : "line";
-    const ttml = generateTTML({ metadata, agents, lines: result.lines, granularity });
-    const projectPayload = JSON.stringify({ metadata, agents, lines: result.lines, granularity });
-    return { ttml, projectPayload };
-  } catch (conversionError) {
-    console.error("[Composer] LRC conversion failed", conversionError);
-    return { error: "Could not parse LRC. Check the input format." };
-  }
-}
+const LRC_CONVERSION: ParserConversion = {
+  extension: "lrc",
+  granularity: "auto",
+  emptyMessage:
+    "No timed lines found. Make sure your LRC contains [mm:ss.xx] timestamps and the last line is followed by one more timestamp to end it.",
+  failureMessage: "Could not parse LRC. Check the input format.",
+  logLabel: "LRC",
+};
 
 const LrcToTtmlPage: React.FC = () => {
-  const convert = useCallback(convertLrc, []);
+  const convert = useCallback((args: ConvertArgs) => convertViaParser(LRC_CONVERSION, args), []);
 
   return (
     <LandingLayout>
@@ -103,9 +86,10 @@ const LrcToTtmlPage: React.FC = () => {
         title="LRC to TTML Converter"
         inputLabel="Paste LRC or eLRC"
         inputPlaceholder="[ti:Song title]&#10;[00:12.34]Sample lyric line"
+        inputExtension={LRC_CONVERSION.extension}
         sampleInput={SAMPLE_LRC}
         convert={convert}
-        downloadFilename="lyrics.ttml"
+        outputFormat={TTML_OUTPUT}
       />
       <section className="px-6 py-14 max-w-3xl mx-auto text-composer-text-secondary leading-relaxed space-y-5">
         <h2 className="text-2xl font-semibold text-composer-text">About LRC and eLRC</h2>
