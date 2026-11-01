@@ -1,12 +1,16 @@
 import { readPlaybackClock } from "@/audio/playback-clock";
 import { type SeekReveal, seekWithReveal } from "@/audio/seek-reveal-intent";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
+import type { SourceMetadata } from "@/domain/project/source-metadata";
 import { useSettingsStore } from "@/stores/settings";
 import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------
 
-type AudioSource = { type: "file"; file: File } | { type: "youtube"; videoId: string; file?: File } | null;
+type AudioSource =
+  | { type: "file"; file: File }
+  | { type: "youtube"; videoId: string; file?: File; details?: SourceMetadata }
+  | null;
 type YouTubeLoadFailure = "bridge-unreachable" | "fetch-failed";
 
 interface AudioState {
@@ -29,8 +33,8 @@ interface AudioState {
 
 interface AudioActions {
   setSource: (source: AudioSource) => void;
-  setYouTubeSource: (videoId: string, file?: File) => void;
-  setYouTubeFile: (file: File) => void;
+  setYouTubeSource: (videoId: string, file?: File, details?: SourceMetadata) => void;
+  setYouTubeFile: (file: File, details?: SourceMetadata) => void;
   expectProjectAudio: (saved: SavedAudioSource) => void;
   failYouTubeLoad: (error: string, failure?: YouTubeLoadFailure) => void;
   setIsPlaying: (isPlaying: boolean) => void;
@@ -105,9 +109,9 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
       youtubeFallbackExpectedAudio: null,
       expectedAudio: null,
     }),
-  setYouTubeSource: (videoId, file) =>
+  setYouTubeSource: (videoId, file, details) =>
     set((s) => ({
-      source: { type: "youtube", videoId, file },
+      source: { type: "youtube", videoId, file, details },
       currentTime: 0,
       duration: 0,
       isPlaying: false,
@@ -117,11 +121,11 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
       youtubeFallbackExpectedAudio: file ? null : fallbackExpectedAudioBeforeYouTubeLoad(s),
       expectedAudio: null,
     })),
-  setYouTubeFile: (file) =>
+  setYouTubeFile: (file, details) =>
     set((s) => {
       if (!s.source || s.source.type !== "youtube") return {};
       return {
-        source: { ...s.source, file },
+        source: { ...s.source, file, details: details ?? s.source.details },
         youtubeFallbackSource: null,
         youtubeFallbackExpectedAudio: null,
         youtubeLoadFailure: null,
@@ -130,7 +134,7 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
     }),
   expectProjectAudio: (saved) =>
     set({
-      source: saved.kind === "youtube" ? { type: "youtube", videoId: saved.videoId } : null,
+      source: saved.kind === "youtube" ? { type: "youtube", videoId: saved.videoId, details: saved.details } : null,
       currentTime: 0,
       duration: 0,
       isPlaying: false,

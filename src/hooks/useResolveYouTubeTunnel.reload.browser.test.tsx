@@ -5,6 +5,7 @@ import { useBridgeThumb } from "@/hooks/useBridgeThumb";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
 import { __resetPersistenceSettledForTests, getPersistenceSettled } from "@/lib/persistence-settled";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { seedAudioFile, seedProject } from "@/test/idb";
@@ -206,5 +207,48 @@ describe("post-reload survival", () => {
     } finally {
       unsubscribe();
     }
+  });
+
+  it("fills empty song details from a newly loaded video and keeps a typed title", async () => {
+    __resetPersistenceSettledForTests();
+    bridge.audio.set("fresh12345a", {
+      buffer: asBytes("opus"),
+      mimeType: "audio/opus",
+      titlePercentEncoded: encodeURIComponent("Never Gonna Give You Up"),
+      artistPercentEncoded: encodeURIComponent("Rick Astley"),
+    });
+    await render(withQueryClient(<ReloadHost />));
+    await getPersistenceSettled();
+    useProjectStore.getState().setMetadata({ title: "Typed title", artists: [] });
+    useAudioStore.getState().setYouTubeSource("fresh12345a");
+
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Rick Astley");
+    expect(useProjectStore.getState().metadata.title).toBe("Typed title");
+    const source = useAudioStore.getState().source;
+    expect(source?.type === "youtube" && source.details?.artists).toEqual(["Rick Astley"]);
+  });
+
+  it("regression: a reopened project never refills details the user cleared", async () => {
+    __resetPersistenceSettledForTests();
+    await seedProject({
+      version: 1,
+      savedAt: Date.now(),
+      metadata: { title: "User Edited Title", artists: [], album: "", duration: 0 },
+      lines: [],
+      agents: [{ id: "v1", type: "person", name: "Lead" }],
+      granularity: "word",
+      audioSource: { kind: "youtube", videoId: "cleared1234" },
+    });
+    bridge.audio.set("cleared1234", {
+      buffer: asBytes("opus"),
+      mimeType: "audio/opus",
+      artistPercentEncoded: encodeURIComponent("Rick Astley"),
+    });
+
+    await render(withQueryClient(<ReloadHost />));
+    await waitFor(() => bridge.audioCalls.includes("cleared1234"));
+    await waitFor(() => useAudioStore.getState().source?.file !== undefined);
+
+    expect(useProjectStore.getState().metadata.artists).toEqual([]);
   });
 });

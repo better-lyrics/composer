@@ -166,10 +166,26 @@ describe("useLoadAudioFile · projects", () => {
     await expect.poll(() => useAudioStore.getState().source?.file?.name).toBe("alpha-remaster.wav");
     expect(useProjectStore.getState().metadata.title).toBe("Alpha");
     expect(useProjectStore.getState().agents).toBe(agentsBefore);
+  });
 
-    useProjectStore.getState().setMetadata({ title: "alpha-remaster" });
+  it("replace swaps a title the old file provided", async () => {
+    await openAlpha({ lyrics: true, audio: true });
+    useProjectStore.getState().setMetadata({ title: "alpha" });
+    const load = await loader();
     await load(createAudioFile("alpha-live.wav"), "replace");
     await expect.poll(() => useProjectStore.getState().metadata.title).toBe("alpha-live");
+  });
+
+  it("replace over a YouTube video swaps the details that video provided", async () => {
+    await openAlpha({ lyrics: true, audio: false });
+    const video = new File([new Uint8Array([1, 2, 3])], "video.opus", { type: "audio/ogg" });
+    const details = { title: "Never Gonna Give You Up", artists: ["Rick Astley"] };
+    useAudioStore.getState().setYouTubeSource("dQw4w9WgXcQ", video, details);
+    useProjectStore.getState().setMetadata(details);
+    const load = await loader();
+    await load(createAudioFile("b-side.wav"), "replace");
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe("b-side");
+    expect(useProjectStore.getState().metadata.artists).toEqual([]);
   });
 
   describe("edge cases", () => {

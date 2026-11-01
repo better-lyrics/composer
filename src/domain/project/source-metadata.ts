@@ -32,7 +32,6 @@ function isUsersValue(
   return !isStructurallyEqual(current[key], previousSource[key]);
 }
 
-// A swapped audio source rewrites only what the old source wrote; values the user typed or the lyrics brought stay.
 function metadataForNewSource(
   current: ProjectMetadata,
   importedKeys: readonly MetadataKey[],

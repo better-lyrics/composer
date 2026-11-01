@@ -1,5 +1,4 @@
 import type { SourceMetadata } from "@/domain/project/source-metadata";
-import { appQueryClient } from "@/lib/app-query-client";
 import type { AudioSource } from "@/stores/audio";
 import { audioTagsToMetadata } from "@/utils/audio-tags";
 import { fileNameWithoutExtension } from "@/utils/file-name";
@@ -15,10 +14,18 @@ interface VideoSongDetails {
   isrc?: string;
 }
 
+interface PendingSwap {
+  target: AudioSource;
+  baseline: Promise<SourceMetadata>;
+}
+
 // -- Constants ----------------------------------------------------------------
 
-const YOUTUBE_TUNNEL_QUERY = "youtube-tunnel";
 const LOG_PREFIX = "[SourceMetadata]";
+
+// -- State --------------------------------------------------------------------
+
+let pendingSwap: PendingSwap | null = null;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -47,18 +54,23 @@ function videoSourceMetadata(videoId: string, details?: VideoSongDetails): Sourc
   return metadata;
 }
 
-function cachedVideoDetails(videoId: string): VideoSongDetails | undefined {
-  const cached = appQueryClient.getQueriesData<VideoSongDetails>({ queryKey: [YOUTUBE_TUNNEL_QUERY, videoId] });
-  return cached.find(([, details]) => details !== undefined)?.[1];
-}
-
 function sourceMetadata(source: AudioSource): Promise<SourceMetadata> {
   if (source?.type === "file") return fileSourceMetadata(source.file);
-  if (source?.type === "youtube")
-    return Promise.resolve(videoSourceMetadata(source.videoId, cachedVideoDetails(source.videoId)));
+  if (source?.type === "youtube") return Promise.resolve({ title: source.videoId, ...source.details });
   return Promise.resolve({});
+}
+
+// A replace that overtakes an unsettled one compares against the source the user started from.
+function beginSourceSwap(previous: AudioSource, target: AudioSource): Promise<SourceMetadata> {
+  const baseline = pendingSwap?.target === previous ? pendingSwap.baseline : sourceMetadata(previous);
+  pendingSwap = { target, baseline };
+  return baseline;
+}
+
+function settleSourceSwap(target: AudioSource): void {
+  if (pendingSwap?.target === target) pendingSwap = null;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { YOUTUBE_TUNNEL_QUERY, fileSourceMetadata, readAudioTags, sourceMetadata, videoSourceMetadata };
+export { beginSourceSwap, fileSourceMetadata, readAudioTags, settleSourceSwap, videoSourceMetadata };

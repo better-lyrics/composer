@@ -6,7 +6,7 @@ import type { AudioLoadMode } from "@/hooks/useLoadAudioFile";
 import { adoptPrimingForNewAudio } from "@/lib/attach-audio-priming";
 import { deleteProject, openProject, startSongInNewProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
-import { sourceMetadata, videoSourceMetadata } from "@/lib/source-metadata";
+import { beginSourceSwap, settleSourceSwap, videoSourceMetadata } from "@/lib/source-metadata";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { showNewProjectToast } from "@/utils/project-toast";
@@ -58,22 +58,28 @@ function useLoadYouTubeSource(): (videoId: string, mode?: AudioLoadMode) => Prom
 }
 
 function swapVideoInPlace(videoId: string, previous: AudioSource): Promise<void> {
-  const previousSource = sourceMetadata(previous);
-  const metadataBefore = useProjectStore.getState().metadata;
+  const { metadata, agents, hasUnexportedImport, importedMetadataKeys } = useProjectStore.getState();
   adoptPrimingForNewAudio();
   useAudioStore.getState().setYouTubeSource(videoId);
-  const swapped = previousSource.then((before) => {
+  const target = useAudioStore.getState().source;
+  const swapped = beginSourceSwap(previous, target).then((before) => {
     if (!isYouTubeSourceFor(useAudioStore.getState().source, videoId)) return null;
-    const { metadata, importedMetadataKeys } = useProjectStore.getState();
-    const patch = metadataForNewSource(metadata, importedMetadataKeys, before, videoSourceMetadata(videoId));
-    if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);
+    settleSourceSwap(target);
+    const project = useProjectStore.getState();
+    const patch = metadataForNewSource(
+      project.metadata,
+      project.importedMetadataKeys,
+      before,
+      videoSourceMetadata(videoId),
+    );
+    if (Object.keys(patch).length > 0) project.setMetadata(patch);
     return useProjectStore.getState().metadata;
   });
   return waitForYouTubeLoad(videoId).catch(async (error: unknown) => {
     const metadataAfterSwap = await swapped;
     const untouchedSinceSwap = useProjectStore.getState().metadata === metadataAfterSwap;
     if (useAudioStore.getState().source === previous && untouchedSinceSwap) {
-      useProjectStore.getState().setMetadata(metadataBefore);
+      useProjectStore.getState().restoreSongIdentity({ metadata, agents, hasUnexportedImport, importedMetadataKeys });
     }
     throw error;
   });
