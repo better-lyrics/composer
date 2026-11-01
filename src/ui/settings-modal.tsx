@@ -136,7 +136,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
       animateIn={!modalHandoff}
       title="Settings"
       headerAccessory={<BackToHelpChip />}
-      className="max-w-3xl h-[min(80vh,760px)] flex flex-col"
+      className="max-w-3xl h-[min(85vh,760px)] flex flex-col"
       bodyClassName="p-0 flex-1 min-h-0 flex flex-col"
     >
       <SettingsModalBody />

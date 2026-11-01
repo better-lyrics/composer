@@ -69,10 +69,10 @@ const StorageUsagePanel: React.FC<StorageUsagePanelProps> = ({ usage, freeBytes,
           />
         ))}
       </div>
-      <dl className="m-0 grid grid-cols-5 gap-3">
+      <dl className="m-0 flex flex-wrap justify-between gap-x-4 gap-y-3">
         {USAGE_CATEGORIES.map((category) => (
           <div key={category.key} className="flex flex-col gap-0.5 text-xs">
-            <dt className="flex items-center gap-1.5 text-composer-text-muted select-none">
+            <dt className="flex items-center gap-1.5 whitespace-nowrap text-composer-text-muted select-none">
               <span aria-hidden="true" className={cn("size-2 rounded-[2px]", category.swatch)} />
               {category.label}
             </dt>
