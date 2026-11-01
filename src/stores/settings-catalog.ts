@@ -1,5 +1,6 @@
-import type { SettingsState } from "@/stores/settings";
+import { DEFAULTS, type SettingsState } from "@/stores/settings";
 import { SETTINGS_CATALOG } from "@/stores/settings-catalog-entries";
+import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Types --------------------------------------------------------------------
 
@@ -132,10 +133,18 @@ function visibleSettingIds(ids: readonly SettingId[], state: SettingsState): Set
   return ids.filter((id) => isSettingVisible(id, state));
 }
 
+function changedSettingIds(state: SettingsState): SettingId[] {
+  return SETTING_IDS.filter((id) => {
+    const key = settingEntry(id).settingKey;
+    return key !== undefined && !isStructurallyEqual(state[key], DEFAULTS[key]);
+  });
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export type { SettingEntry, SettingHint, SettingId, SettingsGroupId, SettingsSectionId };
 export {
+  changedSettingIds,
   isSettingVisible,
   readSettingOn,
   SETTING_IDS,

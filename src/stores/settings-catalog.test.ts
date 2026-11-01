@@ -1,5 +1,6 @@
 import { DEFAULTS } from "@/stores/settings";
 import {
+  changedSettingIds,
   isSettingVisible,
   readSettingOn,
   SETTING_IDS,
@@ -213,5 +214,33 @@ describe("SETTINGS_SECTIONS", () => {
       ["models", undefined],
       ["advanced", undefined],
     ]);
+  });
+});
+
+describe("changedSettingIds", () => {
+  it("is empty at the defaults", () => {
+    expect(changedSettingIds(DEFAULTS)).toEqual([]);
+  });
+
+  it("lists settings whose stored value differs, in catalog order", () => {
+    const state = { ...DEFAULTS, followPlayhead: !DEFAULTS.followPlayhead, defaultPlaybackRate: 1 };
+    expect(changedSettingIds(state)).toEqual(["defaultPlaybackRate", "followPlayhead"]);
+  });
+
+  describe("invariants", () => {
+    it("compares structured values by content, not identity", () => {
+      expect(changedSettingIds({ ...DEFAULTS, experiments: { ...DEFAULTS.experiments } })).toEqual([]);
+    });
+  });
+
+  describe("edge cases", () => {
+    it("never counts rows without a store key", () => {
+      expect(
+        changedSettingIds({
+          ...DEFAULTS,
+          cobaltInstances: [{ id: "self-hosted", label: "Self-hosted", url: "https://cobalt.example.com" }],
+        }),
+      ).not.toContain("cobaltInstances");
+    });
   });
 });
