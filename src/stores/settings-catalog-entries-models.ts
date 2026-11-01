@@ -3,6 +3,13 @@ import type { SettingEntry } from "@/stores/settings-catalog";
 // -- Catalog ------------------------------------------------------------------
 
 const MODELS_CATALOG_ENTRIES = {
+  vocalModelFiles: {
+    section: "models",
+    group: "Vocal separation",
+    label: "Vocal model files",
+    description: "Downloaded the first time you separate vocals.",
+    keywords: ["htdemucs", "download", "disk"],
+  },
   vocalModelVariant: {
     section: "models",
     group: "Vocal separation",
@@ -18,6 +25,13 @@ const MODELS_CATALOG_ENTRIES = {
     description: "Runs the vocal model each time you load a new song.",
     keywords: ["stems", "isolate", "auto-separate", "automatically"],
     settingKey: "autoSeparateOnImport",
+  },
+  alignmentModelFiles: {
+    section: "models",
+    group: "Auto-align",
+    label: "Alignment model files",
+    description: "Downloaded the first time you auto-align.",
+    keywords: ["hubertfa", "dictionary", "download", "disk"],
   },
   alignmentModelId: {
     section: "models",
@@ -35,6 +49,13 @@ const MODELS_CATALOG_ENTRIES = {
       "Aligning one line starts at once, and splitting a word times its syllables from the audio. Uses about 400 MB of memory.",
     keywords: ["hubertfa", "auto-align", "memory", "gpu", "unload"],
     settingKey: "keepAlignmentModelLoaded",
+  },
+  beatModelFiles: {
+    section: "models",
+    group: "Beat detection",
+    label: "Beat model files",
+    description: "Downloaded the first time you detect beats.",
+    keywords: ["beat this", "download", "disk"],
   },
 } as const satisfies Record<string, SettingEntry>;
 

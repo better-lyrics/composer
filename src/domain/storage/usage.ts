@@ -16,6 +16,7 @@ interface StorageUsage {
   youtubeAudioBytes: number;
   stemBytes: number;
   lyricsBytes: number;
+  modelBytes: number;
   totalBytes: number;
 }
 
@@ -25,6 +26,7 @@ function storageUsage(
   entries: readonly UsageEntry[],
   stemJobs: readonly StemJobUsage[],
   unindexedAudioBytes = 0,
+  modelBytes = 0,
 ): StorageUsage {
   let localAudioBytes = unindexedAudioBytes;
   let youtubeAudioBytes = 0;
@@ -42,7 +44,8 @@ function storageUsage(
     youtubeAudioBytes,
     stemBytes,
     lyricsBytes,
-    totalBytes: localAudioBytes + youtubeAudioBytes + stemBytes + lyricsBytes,
+    modelBytes,
+    totalBytes: localAudioBytes + youtubeAudioBytes + stemBytes + lyricsBytes + modelBytes,
   };
 }
 

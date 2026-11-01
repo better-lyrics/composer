@@ -21,6 +21,7 @@ describe("storageUsage", () => {
       youtubeAudioBytes: 200,
       stemBytes: 75,
       lyricsBytes: 60,
+      modelBytes: 0,
       totalBytes: 735,
     });
   });
@@ -42,6 +43,7 @@ describe("storageUsage", () => {
         youtubeAudioBytes: 0,
         stemBytes: 0,
         lyricsBytes: 0,
+        modelBytes: 0,
         totalBytes: 0,
       });
     });
