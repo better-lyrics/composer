@@ -18,12 +18,17 @@ const INSTANT_COLOR_STATES: ReadonlySet<SlotState> = new Set(["next", "lastTappe
 
 // -- Interfaces ---------------------------------------------------------------
 
+type SyllableDot = "plain" | "soon";
+
 interface LaneWordProps {
   state: SlotState;
   onCurrentLine: boolean;
   isHeld?: boolean;
   onClick?: () => void;
   dimmed?: boolean;
+  joinedStart?: boolean;
+  joinedEnd?: boolean;
+  dot?: SyllableDot;
   children: React.ReactNode;
 }
 
@@ -51,12 +56,21 @@ function wordTextClass(state: SlotState, onCurrentLine: boolean, dimmed: boolean
   return onCurrentLine ? "text-composer-text-secondary" : "text-composer-text-faint";
 }
 
+function dotClass(dot: SyllableDot, state: SlotState, onCurrentLine: boolean): string {
+  if (state !== "untimed") return "bg-current";
+  if (dot === "soon") return "bg-composer-accent-text";
+  return cn("bg-current", onCurrentLine ? "opacity-80" : "opacity-55");
+}
+
 const LaneWord: React.FC<LaneWordProps> = ({
   state,
   onCurrentLine,
   isHeld = false,
   onClick,
   dimmed = false,
+  joinedStart = false,
+  joinedEnd = false,
+  dot,
   children,
 }) => (
   <span
@@ -75,16 +89,27 @@ const LaneWord: React.FC<LaneWordProps> = ({
       aria-hidden
       className={cn(
         "absolute -inset-x-2 -inset-y-1 rounded-lg transition-opacity duration-150 ease-out motion-reduce:transition-none",
+        joinedStart && "-left-0.5 rounded-l-sm",
+        joinedEnd && "-right-0.5 rounded-r-sm",
         isHeld ? "bg-composer-accent/25" : "bg-composer-accent/15",
         state === "next" ? "opacity-100" : "opacity-0",
         onClick && state !== "next" && "group-hover/word:opacity-60",
       )}
     />
     {children}
+    {dot && (
+      <span
+        aria-hidden
+        className={cn(
+          "absolute left-1/2 -bottom-4 size-1.5 -translate-x-1/2 rounded-full pointer-events-none transition-[opacity,background-color] duration-150 ease-out motion-reduce:transition-none",
+          dotClass(dot, state, onCurrentLine),
+        )}
+      />
+    )}
   </span>
 );
 
 // -- Exports ------------------------------------------------------------------
 
 export { LaneWord, TapRing };
-export type { SlotState };
+export type { SlotState, SyllableDot };

@@ -3,7 +3,7 @@ import type { SyncGranularity } from "@/domain/line/sync-progress";
 import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
 import { stripSplitCharacter } from "@/utils/split-character";
-import type { LaneRow } from "@/views/sync/lane-rows";
+import type { LaneRow, WordRun } from "@/views/sync/lane-rows";
 import { type LaneClickTarget, laneClickTarget } from "@/views/sync/lane-click-target";
 import { LaneWord, type SlotState, TapRing } from "@/views/sync/sync-lane-word";
 import { memo } from "react";
@@ -47,6 +47,7 @@ interface SyncLaneLineProps {
   ring: LaneRing | null;
   onRingDone: () => void;
   onJump: (lineIndex: number, target: LaneJumpTarget) => void;
+  firstSlotSoon: boolean;
   aboveCurrent?: React.ReactNode;
   className?: string;
 }
@@ -55,7 +56,13 @@ type LaneWordsProps = Omit<SyncLaneLineProps, "granularity" | "aboveCurrent" | "
 
 // -- Components ---------------------------------------------------------------
 
-const WordModeWords: React.FC<LaneWordsProps> = ({
+interface WordModeSlotProps extends LaneWordsProps {
+  widx: number;
+  run: WordRun;
+  soon: boolean;
+}
+
+const WordModeSlot: React.FC<WordModeSlotProps> = ({
   row,
   isCurrent,
   isLastLine,
@@ -66,35 +73,62 @@ const WordModeWords: React.FC<LaneWordsProps> = ({
   ring,
   onRingDone,
   onJump,
-}) =>
-  row.wordTexts.map((word, widx) => {
-    const isNext = isCurrent && widx === wordIndex;
-    const isLastOnCurrent = isCurrent && wordIndex > 0 && widx === wordIndex - 1;
-    const isLastOfPrevLine = isLastLine && wordIndex === 0 && widx === row.wordTexts.length - 1;
-    const isLastTapped = !isHolding && (isLastOnCurrent || isLastOfPrevLine);
-    const state: SlotState = isNext
-      ? "next"
-      : isLastTapped
-        ? "lastTapped"
-        : widx < row.timedWords
-          ? "timed"
-          : "untimed";
-    const target = paused ? laneClickTarget(row.line, widx, "word") : null;
+  widx,
+  run,
+  soon,
+}) => {
+  const isNext = isCurrent && widx === wordIndex;
+  const isLastOnCurrent = isCurrent && wordIndex > 0 && widx === wordIndex - 1;
+  const isLastOfPrevLine = isLastLine && wordIndex === 0 && widx === row.wordTexts.length - 1;
+  const isLastTapped = !isHolding && (isLastOnCurrent || isLastOfPrevLine);
+  const state: SlotState = isNext ? "next" : isLastTapped ? "lastTapped" : widx < row.timedWords ? "timed" : "untimed";
+  const target = paused ? laneClickTarget(row.line, widx, "word") : null;
+  const split = run.end > run.start;
 
+  return (
+    <LaneWord
+      state={state}
+      onCurrentLine={isCurrent}
+      isHeld={isHolding && isNext}
+      dimmed={isPlacing && widx > 0}
+      joinedStart={widx > run.start}
+      joinedEnd={widx < run.end}
+      dot={split ? (soon ? "soon" : "plain") : undefined}
+      onClick={target ? () => onJump(row.lineIndex, target) : undefined}
+    >
+      <span className="relative">{row.wordTexts[widx]}</span>
+      {ring?.wordIndex === widx && <TapRing key={ring.nonce} onComplete={onRingDone} />}
+    </LaneWord>
+  );
+};
+
+// A split word is one tap away when the cursor sits on the slot just before it, so its dots turn accent early.
+const WordModeWords: React.FC<LaneWordsProps> = (props) => {
+  const { row, isCurrent, wordIndex, firstSlotSoon } = props;
+  return row.wordRuns.map((run) => {
+    const split = run.end > run.start;
+    const holdsNext = isCurrent && wordIndex >= run.start && wordIndex <= run.end;
+    const soon =
+      split &&
+      ((isCurrent && wordIndex >= run.start - 1 && wordIndex <= run.end) || (run.start === 0 && firstSlotSoon));
     return (
-      <LaneWord
-        key={`${row.line.id}-${widx}`}
-        state={state}
-        onCurrentLine={isCurrent}
-        isHeld={isHolding && isNext}
-        dimmed={isPlacing && widx > 0}
-        onClick={target ? () => onJump(row.lineIndex, target) : undefined}
-      >
-        <span className="relative">{word}</span>
-        {ring?.wordIndex === widx && <TapRing key={ring.nonce} onComplete={onRingDone} />}
-      </LaneWord>
+      <span key={`${row.line.id}-${run.start}`} className="relative inline-flex">
+        {split && (
+          <span
+            aria-hidden
+            className={cn(
+              "absolute -inset-x-2 -inset-y-1 rounded-lg bg-composer-accent/7 pointer-events-none transition-opacity duration-150 ease-out motion-reduce:transition-none",
+              holdsNext ? "opacity-100" : "opacity-0",
+            )}
+          />
+        )}
+        {Array.from({ length: run.end - run.start + 1 }, (_, offset) => (
+          <WordModeSlot key={run.start + offset} {...props} widx={run.start + offset} run={run} soon={soon} />
+        ))}
+      </span>
     );
   });
+};
 
 const LineModeWord: React.FC<LaneWordsProps> = ({ row, isCurrent, isLastLine, isHolding, paused, onJump }) => (
   <LaneWord
@@ -110,6 +144,7 @@ const LineModeWord: React.FC<LaneWordsProps> = ({ row, isCurrent, isLastLine, is
 const SyncLaneLine: React.FC<SyncLaneLineProps> = memo(({ granularity, aboveCurrent, className, ...wordsProps }) => {
   const { row, isCurrent, isPlacing } = wordsProps;
   const hasMeta = row.singer !== undefined || row.groupTag !== undefined;
+  const showsDots = granularity === "word" && row.wordRuns.some((run) => run.end > run.start);
 
   return (
     <div
@@ -146,7 +181,8 @@ const SyncLaneLine: React.FC<SyncLaneLineProps> = memo(({ granularity, aboveCurr
         )}
         <div
           className={cn(
-            "relative flex flex-wrap gap-x-4 gap-y-1.5 text-4xl font-semibold tracking-[-0.012em] leading-[1.1]",
+            "relative flex flex-wrap gap-x-4 text-4xl font-semibold tracking-[-0.012em] leading-[1.1]",
+            showsDots ? "gap-y-5 pb-4" : "gap-y-1.5",
             WORDS_SIDE_CLASS[row.side],
             "rtl:justify-start",
           )}

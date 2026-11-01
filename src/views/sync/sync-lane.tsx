@@ -105,6 +105,11 @@ const SyncLane: React.FC<SyncLaneProps> = ({
     return atOrAfter === -1 ? visibleRows.length - 1 : atOrAfter;
   }, [visibleRows, lineIndex]);
 
+  const currentRow = visibleRows[anchorVisibleIndex];
+  const nextVisibleIndex = currentRow?.lineIndex === lineIndex ? anchorVisibleIndex + 1 : anchorVisibleIndex;
+  const atLastSlotOfCurrent =
+    currentRow?.lineIndex !== lineIndex || wordIndex === (currentRow?.wordTexts.length ?? 0) - 1;
+
   const laneRing = useMemo<LaneRing | null>(
     () => (ring && reducedMotion !== true ? { wordIndex: ring.wordIndex, nonce: ring.nonce } : null),
     [ring, reducedMotion],
@@ -179,6 +184,7 @@ const SyncLane: React.FC<SyncLaneProps> = ({
                 row={row}
                 isCurrent={row.lineIndex === lineIndex}
                 isLastLine={row.lineIndex === lineIndex - 1}
+                firstSlotSoon={visibleIndex === nextVisibleIndex && atLastSlotOfCurrent}
                 wordIndex={wordIndex}
                 granularity={granularity}
                 isHolding={isHolding}
