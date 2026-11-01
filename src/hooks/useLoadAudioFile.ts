@@ -24,7 +24,7 @@ const UNPLAYABLE_AUDIO_MESSAGE = "That file is not playable audio.";
 
 type TagWrite = "apply" | "skip";
 
-type AudioLoadMode = "auto" | "replace";
+type AudioLoadMode = "auto" | "replace" | "new-song";
 
 // -- State --------------------------------------------------------------------
 
@@ -113,7 +113,8 @@ function useLoadAudioFile(): (file: File, mode?: AudioLoadMode) => Promise<void>
   return useCallback(async (file: File, mode: AudioLoadMode = "auto") => {
     latestPick = file;
     const { source, expectedAudio } = useAudioStore.getState();
-    if (source === null && expectedAudio !== null) {
+    const awaitsMissingAudio = source === null && expectedAudio !== null;
+    if (awaitsMissingAudio && mode !== "new-song") {
       await relinkProjectAudioFile(file);
       return;
     }
@@ -127,7 +128,9 @@ function useLoadAudioFile(): (file: File, mode?: AudioLoadMode) => Promise<void>
     const previous = useAudioStore.getState().source;
     const title = fileNameWithoutExtension(file.name);
     const replacesDifferentSong =
-      previous != null && !(previous.type === "file" && fileIdentityKey(previous.file) === fileIdentityKey(file));
+      previous == null
+        ? awaitsMissingAudio
+        : !(previous.type === "file" && fileIdentityKey(previous.file) === fileIdentityKey(file));
 
     if (mode === "replace") {
       if (replacesDifferentSong) void swapFileInPlace(file, previous);

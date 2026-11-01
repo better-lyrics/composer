@@ -2,6 +2,7 @@ import { useImportFromLinkedFiles } from "@/hooks/useImportFromLinkedFiles";
 import { useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { usePersistence } from "@/hooks/usePersistence";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
+import { cancelPendingSave } from "@/lib/persistence-debounce";
 import { getLinkedFilesSettled, getPersistenceSettled, getQueryImportSettled } from "@/lib/persistence-settled";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { useAudioStore } from "@/stores/audio";
@@ -64,7 +65,10 @@ function loadedFileName(): string | null {
 
 describe("useImportFromLinkedFiles", () => {
   beforeEach(() => setQuery(""));
-  afterEach(() => setQuery(""));
+  afterEach(() => {
+    setQuery("");
+    cancelPendingSave();
+  });
 
   it("opens audio, lyrics and link details in a new project when the open one has lyrics", async () => {
     await seedOpenAlpha(true);
@@ -94,6 +98,21 @@ describe("useImportFromLinkedFiles", () => {
 
     expect(openProjectIdSnapshot()).toBe("a");
     expect(loadedFileName()).toBe("linked-song.wav");
+  });
+
+  it("regression: opens a new project instead of relinking when the open project's audio is missing", async () => {
+    await seedStoredProject("a", {
+      open: true,
+      project: { ...songTitled("Alpha"), audioSource: { kind: "file", name: "alpha.wav" } },
+    });
+    setQuery(linkQuery({ audioUrl: AUDIO_URL }));
+
+    await render(<LinkHost />);
+    await waitForLinkSettled();
+
+    expect(openProjectIdSnapshot()).not.toBe("a");
+    expect(loadedFileName()).toBe("linked-song.wav");
+    expect((await loadProjectRecord("a"))?.audioSource).toEqual({ kind: "file", name: "alpha.wav" });
   });
 
   it("leaves the open project alone when the audio download fails", async () => {

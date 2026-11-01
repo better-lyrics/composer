@@ -1,9 +1,17 @@
-import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
+import { probeAudioFile } from "@/audio/probe-audio-file";
+import { type AudioLoadMode, useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { type LinkProjectOutcome, getPersistenceSettled, markLinkedFilesSettled } from "@/lib/persistence-settled";
 import { useAudioStore } from "@/stores/audio";
-import { LINKED_FILE_PARAM_NAMES, hasLinkedFileParams, linkedFileName, readLinkedFileUrl } from "@/utils/incoming-link";
+import {
+  LINKED_FILE_PARAM_NAMES,
+  type LinkedFileParam,
+  hasLinkedFileParams,
+  linkedFileName,
+  readLinkedFileUrl,
+  readTrimmed,
+} from "@/utils/incoming-link";
 import { stripQueryParams } from "@/utils/url-params";
 import { readYouTubeParam } from "@/utils/youtube-link-params";
 import { isLyricsImportFileName } from "@/views/lyrics-import-modal/accepted-files";
@@ -20,6 +28,7 @@ interface BootLinkedFiles {
   skippedForVideo: boolean;
   audioUrl: string | null;
   lyricsUrl: string | null;
+  invalid: LinkedFileParam[];
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -27,7 +36,14 @@ interface BootLinkedFiles {
 const LOG_PREFIX = "[Boot]";
 const AUDIO_FALLBACK_NAME = "Linked audio";
 const LYRICS_FALLBACK_NAME = "Linked lyrics";
-const NO_LINKED_FILES: BootLinkedFiles = { present: false, skippedForVideo: false, audioUrl: null, lyricsUrl: null };
+const NO_LINKED_FILES: BootLinkedFiles = {
+  present: false,
+  skippedForVideo: false,
+  audioUrl: null,
+  lyricsUrl: null,
+  invalid: [],
+};
+const LINKED_FILE_NOUNS: Record<LinkedFileParam, string> = { audioUrl: "audio", lyricsUrl: "lyrics" };
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -42,6 +58,9 @@ function readBootLinkedFiles(): BootLinkedFiles {
     skippedForVideo: readYouTubeParam(params) !== null,
     audioUrl: readLinkedFileUrl(params, "audioUrl"),
     lyricsUrl: readLinkedFileUrl(params, "lyricsUrl"),
+    invalid: LINKED_FILE_PARAM_NAMES.filter(
+      (name) => readTrimmed(params, name) !== null && readLinkedFileUrl(params, name) === null,
+    ),
   };
 }
 
@@ -82,18 +101,22 @@ async function importLinkedLyrics(lyrics: File, ctx: ImportContext): Promise<voi
 async function applyLinkedFiles(
   audio: File | null,
   lyrics: File | null,
-  loadAudioFile: (file: File) => Promise<void>,
+  loadAudioFile: (file: File, mode: AudioLoadMode) => Promise<void>,
   ctx: ImportContext,
 ): Promise<LinkProjectOutcome> {
   await getPersistenceSettled();
   if (audio === null) return lyrics ? openLinkedLyricsAsProject(lyrics) : "failed";
 
   const before = openProjectIdSnapshot();
-  await loadAudioFile(audio);
+  await loadAudioFile(audio, "new-song");
   if (!isActiveFile(audio)) return lyrics ? openLinkedLyricsAsProject(lyrics) : "failed";
 
   const placed = openProjectIdSnapshot();
-  if (lyrics) await importLinkedLyrics(lyrics, ctx);
+  if (lyrics) {
+    // The store learns the duration only once the player loads; untimed lyrics are spread over it.
+    const probe = await probeAudioFile(audio);
+    await importLinkedLyrics(lyrics, { ...ctx, audioDuration: probe.ok ? probe.duration : 0 });
+  }
   return placed === before ? "current" : "created";
 }
 
@@ -137,8 +160,10 @@ function useImportFromLinkedFiles(): void {
       markLinkedFilesSettled("none");
       return;
     }
+    for (const name of links.invalid) {
+      toast.error(`The link's ${LINKED_FILE_NOUNS[name]} address isn't a web address`);
+    }
     if (links.audioUrl === null && links.lyricsUrl === null) {
-      toast.error("This link's audio or lyrics address isn't a web address");
       markLinkedFilesSettled("failed");
       return;
     }
