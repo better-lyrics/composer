@@ -1,5 +1,6 @@
 import { AudioPlayer } from "@/audio/audio-player";
 import type { ProjectTab } from "@/domain/project/tab";
+import { useHistoryShortcuts } from "@/hooks/useHistoryShortcuts";
 import { useMissingAudioNotice } from "@/hooks/useMissingAudioNotice";
 import { useTransportDeckShown } from "@/hooks/use-transport-deck-shown";
 import { useProjectStore } from "@/stores/project";
@@ -25,12 +26,15 @@ const PANELS: readonly { tab: ProjectTab; Panel: React.FC }[] = [
   { tab: "export", Panel: ExportPanel },
 ];
 
+const TABS_WITH_OWN_HISTORY_KEYS: ReadonlySet<ProjectTab> = new Set(["edit", "sync", "timeline"]);
+
 // -- Component ----------------------------------------------------------------
 
 const EditorScreen: React.FC = () => {
   useMissingAudioNotice();
   const activeTab = useProjectStore((state) => state.activeTab);
   const showPlayer = useTransportDeckShown();
+  useHistoryShortcuts(!TABS_WITH_OWN_HISTORY_KEYS.has(activeTab));
   // A panel mounts on its tab's first visit, then Activity keeps its state across switches.
   const [visitedTabs, setVisitedTabs] = useState<ReadonlySet<ProjectTab>>(() => new Set([activeTab]));
   if (!visitedTabs.has(activeTab)) setVisitedTabs(new Set([...visitedTabs, activeTab]));

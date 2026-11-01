@@ -1,6 +1,7 @@
 import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
+import { EditorScreen } from "@/views/editor-screen";
 import { LanguagesPanel } from "@/views/languages";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -45,7 +46,7 @@ describe("Languages undo history", () => {
   });
 
   it("redoes and undoes with the history shortcuts on the Languages tab", async () => {
-    const screen = await render(<LanguagesPanel />);
+    const screen = await render(<EditorScreen />, { withRouter: true });
     await expect.element(screen.getByRole("button", { name: "Add language", exact: true })).toBeInTheDocument();
 
     press(window, { key: "z", code: "KeyZ", shiftKey: true, ...MOD });
@@ -55,7 +56,7 @@ describe("Languages undo history", () => {
   });
 
   it("leaves held repeats and typing in a field to one step and the field", async () => {
-    const screen = await render(<LanguagesPanel />);
+    const screen = await render(<EditorScreen />, { withRouter: true });
     await expect.element(screen.getByRole("button", { name: "Add language", exact: true })).toBeInTheDocument();
 
     press(window, { key: "z", code: "KeyZ", shiftKey: true, repeat: true, ...MOD });

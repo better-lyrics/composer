@@ -1,5 +1,11 @@
 import { floatingEntrance } from "@/utils/animationVariants";
-import { type FloatingContext, type Placement, type VirtualElement, useTransitionStyles } from "@floating-ui/react";
+import {
+  type FloatingContext,
+  type Placement,
+  type Side,
+  type VirtualElement,
+  useTransitionStyles,
+} from "@floating-ui/react";
 import { useReducedMotion, useReducedMotionConfig } from "motion/react";
 import type { CSSProperties } from "react";
 
@@ -17,6 +23,13 @@ function entranceOrigin(placement: Placement): string {
   const vertical = side === "top" || side === "bottom";
   const across = align ? (vertical ? ORIGIN_ALIGN_X : ORIGIN_ALIGN_Y)[align] : "center";
   return vertical ? `${across} ${ORIGIN_SIDE[side]}` : `${ORIGIN_SIDE[side]} ${across}`;
+}
+
+function towardTrigger(side: Side): string {
+  const shift = floatingEntrance.closeShiftPx;
+  if (side === "bottom") return `0 -${shift}px`;
+  if (side === "top") return `0 ${shift}px`;
+  return side === "right" ? `-${shift}px 0` : `${shift}px 0`;
 }
 
 // Triggers shrink while pressed, so position against their layout box: the popover never drifts as the press springs back.
@@ -37,15 +50,17 @@ function unscaledReference(element: HTMLElement): VirtualElement {
 
 const NO_ENTRANCE_STYLES: CSSProperties = {};
 
-// Reduced motion keeps the fade but drops the scale, so the layer never moves under the pointer.
+// Reduced motion keeps the fade but drops the scale, blur and shift, so the layer never moves under the pointer.
 // Instant layers (the Timeline's) show and hide on the spot: a DAW never makes the user wait for a menu.
 function useFloatingEntrance(context: FloatingContext, instant = false) {
   const configReduced = useReducedMotionConfig();
   const systemReduced = useReducedMotion();
   const reduced = configReduced === true || systemReduced === true;
   const entrance = useTransitionStyles(context, {
-    duration: floatingEntrance.durationMs,
+    duration: { open: floatingEntrance.openMs, close: floatingEntrance.closeMs },
     initial: reduced ? floatingEntrance.reducedInitial : floatingEntrance.initial,
+    close: ({ side }) =>
+      reduced ? floatingEntrance.reducedInitial : { ...floatingEntrance.close, translate: towardTrigger(side) },
     common: ({ placement }) => ({
       transformOrigin: entranceOrigin(placement),
       transitionTimingFunction: floatingEntrance.ease,

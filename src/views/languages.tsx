@@ -1,5 +1,4 @@
 import { pastedRows } from "@/domain/language/paste-import";
-import { useLanguagesHistoryShortcuts } from "@/hooks/useLanguagesHistoryShortcuts";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
@@ -120,7 +119,6 @@ const LanguagesPanel: React.FC = () => {
     },
     [activeTab, project],
   );
-  useLanguagesHistoryShortcuts(activeTab === "languages");
   const languageName = useMemo(() => new Map<string, string>(LANGUAGE_OPTIONS), []);
   const availableLanguages = LANGUAGE_OPTIONS.filter(([code]) => !targets.includes(code));
   const removeTarget = (language: string) => {

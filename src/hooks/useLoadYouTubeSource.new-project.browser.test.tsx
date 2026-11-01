@@ -45,7 +45,7 @@ async function openAlpha(lyrics: boolean): Promise<void> {
   await restoreOpenProject();
 }
 
-async function loader(): Promise<(videoId: string) => Promise<void>> {
+async function loader(): Promise<ReturnType<typeof useLoadYouTubeSource>> {
   const { result } = await renderHook(() => useLoadYouTubeSource());
   return result.current;
 }
@@ -74,6 +74,65 @@ describe("useLoadYouTubeSource · projects", () => {
     await expect(loading).resolves.toBeUndefined();
     await expect.element(screen.getByText(`Opened “${VIDEO_ID}” in a new project`)).toBeInTheDocument();
     await expect.element(screen.getByText("“Alpha” is still in Projects.")).toBeInTheDocument();
+  });
+
+  it("replace loads a video into a project with lyrics in place", async () => {
+    await openAlpha(true);
+    const linesBefore = useProjectStore.getState().lines;
+    const load = await loader();
+    const loading = load(VIDEO_ID, "replace");
+    expect(openProjectIdSnapshot()).toBe("a");
+    expect(useProjectStore.getState().lines).toBe(linesBefore);
+    useAudioStore.getState().setYouTubeFile(videoFile(VIDEO_ID));
+    await expect(loading).resolves.toBeUndefined();
+    expect(isYouTubeSourceFor(useAudioStore.getState().source, VIDEO_ID)).toBe(true);
+    expect(useProjectStore.getState().metadata.title).toBe("Alpha");
+  });
+
+  it("regression: a failed replace undoes only its own changes and keeps a singer renamed meanwhile", async () => {
+    await openAlpha(true);
+    useProjectStore.getState().setMetadata({ title: "alpha" });
+    const load = await loader();
+    const loading = load(VIDEO_ID, "replace");
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe(VIDEO_ID);
+    useProjectStore
+      .getState()
+      .setMetadata({ thumbnailDataUrl: "data:image/png;base64,AA", thumbnailForVideoId: VIDEO_ID });
+    const singer = useProjectStore.getState().agents[0];
+    useProjectStore.getState().updateAgent(singer.id, { name: "Renamed meanwhile" });
+    failLoad();
+    await expect(loading).rejects.toThrow(LOAD_ERROR_MESSAGE);
+    expect(useProjectStore.getState().metadata.title).toBe("alpha");
+    expect(useProjectStore.getState().agents[0].name).toBe("Renamed meanwhile");
+  });
+
+  it("regression: a failed replace over a video still downloading undoes its title change", async () => {
+    await openAlpha(true);
+    useAudioStore.getState().setYouTubeSource(OTHER_VIDEO_ID);
+    useProjectStore.getState().setMetadata({ title: OTHER_VIDEO_ID });
+    const load = await loader();
+    const loading = load(VIDEO_ID, "replace");
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe(VIDEO_ID);
+    failLoad();
+    await expect(loading).rejects.toThrow(LOAD_ERROR_MESSAGE);
+    expect(useProjectStore.getState().metadata.title).toBe(OTHER_VIDEO_ID);
+  });
+
+  it("regression: a replace overtaken by a newer one keeps the newer details", async () => {
+    allowConsole(/superseded/);
+    await openAlpha(true);
+    useProjectStore
+      .getState()
+      .setMetadata({ title: "alpha", thumbnailDataUrl: "data:a", thumbnailForVideoId: "old0000000a" });
+    const load = await loader();
+    const first = load(VIDEO_ID, "replace");
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe(VIDEO_ID);
+    const second = load(OTHER_VIDEO_ID, "replace");
+    await expect(first).rejects.toThrow();
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe(OTHER_VIDEO_ID);
+    expect(useProjectStore.getState().metadata.thumbnailForVideoId).toBeUndefined();
+    useAudioStore.getState().setYouTubeFile(videoFile(OTHER_VIDEO_ID));
+    await expect(second).resolves.toBeUndefined();
   });
 
   it("a failed load returns to the previous project and removes the empty new one", async () => {

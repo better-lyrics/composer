@@ -6,7 +6,7 @@ import { useEffect } from "react";
 
 // -- Hook ---------------------------------------------------------------------
 
-function useLanguagesHistoryShortcuts(active: boolean): void {
+function useHistoryShortcuts(active: boolean): void {
   useEffect(() => {
     if (!active) return;
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -20,4 +20,4 @@ function useLanguagesHistoryShortcuts(active: boolean): void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { useLanguagesHistoryShortcuts };
+export { useHistoryShortcuts };

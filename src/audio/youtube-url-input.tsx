@@ -1,8 +1,9 @@
 import { isYouTubeLoadError, isYouTubeLoadFailure, useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
-import { INPUT_STYLES } from "@/ui/input-styles";
+import { FLOATING_INPUT_STYLES, INPUT_STYLES } from "@/ui/input-styles";
 import { cn } from "@/utils/cn";
+import { focusOnMount } from "@/utils/focus-on-mount";
 import { INVALID_YOUTUBE_LINK_MESSAGE, extractVideoId } from "@/utils/youtube-url";
 import { IconBrandYoutube, IconLoader2 } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
@@ -17,12 +18,16 @@ interface YouTubeUrlInputProps {
   placeholder?: string;
   className?: string;
   onLoadVideo?: (videoId: string) => Promise<void>;
+  surface?: "well" | "floating";
+  focusOnOpen?: boolean;
 }
 
 const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
   placeholder = "Paste YouTube URL or video ID",
   className,
   onLoadVideo,
+  surface = "well",
+  focusOnOpen = false,
 }) => {
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +59,7 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
       e.preventDefault();
       handleSubmit();
     }
-    e.stopPropagation();
+    if (e.key !== "Escape" || surface !== "floating") e.stopPropagation();
   };
 
   const trimmed = value.trim();
@@ -77,9 +82,17 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
           spellCheck={false}
           autoCapitalize="off"
           autoComplete="off"
-          className={cn(INPUT_STYLES, "flex-1 h-9 rounded-lg select-text")}
+          ref={focusOnOpen ? focusOnMount : undefined}
+          className={cn(surface === "floating" ? FLOATING_INPUT_STYLES : INPUT_STYLES, "flex-1 h-9 select-text")}
         />
-        <Button variant="primary" size="lg" hasIcon onClick={handleSubmit} disabled={isLoading || trimmed.length === 0}>
+        <Button
+          variant="primary"
+          size="lg"
+          hasIcon
+          onClick={handleSubmit}
+          disabled={isLoading || trimmed.length === 0}
+          className="rounded-lg"
+        >
           {isLoading ? <IconLoader2 size={16} className="animate-spin" /> : <IconBrandYoutube size={16} />}
           {isLoading ? "Loading" : "Load"}
         </Button>

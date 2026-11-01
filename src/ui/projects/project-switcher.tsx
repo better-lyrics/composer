@@ -52,11 +52,11 @@ const SwitcherRow: React.FC<SwitcherRowProps> = ({ project, optionId, isActive, 
     onMouseMove={onActivate}
     onClick={onChoose}
     className={cn(
-      "grid grid-cols-[36px_minmax(0,1fr)_56px_72px] items-center gap-3 w-full h-13 px-2 rounded-lg text-left cursor-pointer",
+      "grid grid-cols-[36px_minmax(0,1fr)_56px_72px] items-center gap-3 w-full h-12 px-1.5 rounded-[10px] text-left cursor-pointer",
       isActive && "bg-(--layer-2)",
     )}
   >
-    <ProjectArt src={project.thumbnailDataUrl} size="md" />
+    <ProjectArt src={project.thumbnailDataUrl} size="md" className="rounded-sm" />
     <span className="min-w-0">
       <span className="block truncate text-sm font-medium text-composer-text">{displayTitle(project.title)}</span>
       <span className={cn("block truncate text-[13px]", isActive ? "text-(--label)" : "text-(--muted)")}>
@@ -134,7 +134,7 @@ const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({ onClose }) => {
 
   return (
     <div className="w-[440px]">
-      <div className="flex items-center gap-2.5 h-12 px-3 border-b border-(--divider)">
+      <div className="flex items-center gap-2.5 h-12 px-2.5 border-b border-(--divider)">
         <IconSearch aria-hidden="true" className="size-[18px] shrink-0 text-composer-text opacity-50" />
         <input
           type="text"
@@ -162,7 +162,7 @@ const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({ onClose }) => {
           ) : (
             <>
               {projects.length > 0 && (
-                <div aria-hidden="true" className="px-2 pt-2 pb-1 text-xs font-medium text-composer-text-muted">
+                <div aria-hidden="true" className="px-1.5 pt-2 pb-1 text-xs font-medium text-composer-text-muted">
                   {query.trim() ? "Results" : "Recent"}
                 </div>
               )}
@@ -187,7 +187,13 @@ const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({ onClose }) => {
         </div>
       </Scroll>
       <div className="flex items-center justify-between p-1 border-t border-(--divider)">
-        <Button variant="ghost" size="sm" hasIcon onClick={startNewProject} className="text-[13px] text-(--label)">
+        <Button
+          variant="ghost"
+          size="sm"
+          hasIcon
+          onClick={startNewProject}
+          className="pl-1.5 rounded-[10px] text-[13px] text-(--label)"
+        >
           <IconPlus aria-hidden="true" className="size-[15px] text-composer-text opacity-50" />
           New project
           <InlineKeyBadge keys={getEffectiveKeysArray("global.newProject")} />
@@ -195,7 +201,10 @@ const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({ onClose }) => {
         <Link
           to={LIBRARY_PATH}
           onClick={onClose}
-          className={cn(buttonClassName({ variant: "ghost", size: "sm" }), "gap-2 text-[13px] text-(--label)")}
+          className={cn(
+            buttonClassName({ variant: "ghost", size: "sm" }),
+            "gap-2 pr-1.5 rounded-[10px] text-[13px] text-(--label)",
+          )}
         >
           All projects
           <IconArrowRight aria-hidden="true" className="size-[15px] text-composer-text opacity-50" />

@@ -3,10 +3,12 @@ import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
 import { adoptPrimingForNewAudio } from "@/lib/attach-audio-priming";
 import { startSongInNewProject } from "@/lib/open-project";
+import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { relinkProjectAudioFile } from "@/lib/relink-audio";
-import { useAudioStore } from "@/stores/audio";
+import { sourceSwapPatch } from "@/domain/project/source-metadata";
+import { beginSourceSwap, fileSourceMetadata, readAudioTags, settleSourceSwap } from "@/lib/source-metadata";
+import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { audioTagsToMetadata } from "@/utils/audio-tags";
 import { fileIdentityKey } from "@/utils/file-identity";
 import { fileNameWithoutExtension } from "@/utils/file-name";
 import { showNewProjectToast } from "@/utils/project-toast";
@@ -21,6 +23,8 @@ const UNPLAYABLE_AUDIO_MESSAGE = "That file is not playable audio.";
 // -- Types --------------------------------------------------------------------
 
 type TagWrite = "apply" | "skip";
+
+type AudioLoadMode = "auto" | "replace";
 
 // -- State --------------------------------------------------------------------
 
@@ -57,10 +61,8 @@ function settleSongDetails(file: File, replacesDifferentSong: boolean, title: st
 }
 
 async function applyAudioTags(file: File): Promise<void> {
-  const { parseBlob } = await import("music-metadata");
-  const { common } = await parseBlob(file);
+  const patch = await readAudioTags(file);
   if (!isActiveFile(file)) return;
-  const patch = audioTagsToMetadata(common);
   if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);
 }
 
@@ -80,6 +82,19 @@ function loadFileInPlace(file: File, replacesDifferentSong: boolean, title: stri
     });
 }
 
+async function swapFileInPlace(file: File, previous: AudioSource): Promise<void> {
+  const target: AudioSource = { type: "file", file };
+  const projectId = openProjectIdSnapshot();
+  const baseline = beginSourceSwap(previous, target);
+  adoptPrimingForNewAudio();
+  useAudioStore.getState().setSource(target);
+  const [before, next] = await Promise.all([baseline, fileSourceMetadata(file)]);
+  if (!isActiveFile(file) || openProjectIdSnapshot() !== projectId || !settleSourceSwap(target)) return;
+  const { metadata, importedMetadataKeys } = useProjectStore.getState();
+  const patch = sourceSwapPatch(metadata, importedMetadataKeys, before, next);
+  if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);
+}
+
 async function startFileInNewProject(file: File, title: string): Promise<void> {
   const started = await startSongInNewProject(title, (song) => {
     useAudioStore.getState().setSource({ type: "file", file });
@@ -95,8 +110,8 @@ async function startFileInNewProject(file: File, title: string): Promise<void> {
 
 // -- Hook ---------------------------------------------------------------------
 
-function useLoadAudioFile(): (file: File) => Promise<void> {
-  return useCallback(async (file: File) => {
+function useLoadAudioFile(): (file: File, mode?: AudioLoadMode) => Promise<void> {
+  return useCallback(async (file: File, mode: AudioLoadMode = "auto") => {
     latestPick = file;
     const { source, expectedAudio } = useAudioStore.getState();
     if (source === null && expectedAudio !== null) {
@@ -115,6 +130,10 @@ function useLoadAudioFile(): (file: File) => Promise<void> {
     const replacesDifferentSong =
       previous != null && !(previous.type === "file" && fileIdentityKey(previous.file) === fileIdentityKey(file));
 
+    if (mode === "replace") {
+      if (replacesDifferentSong) void swapFileInPlace(file, previous);
+      return;
+    }
     if (replacesDifferentSong && hasLyricLines(useProjectStore.getState().lines)) {
       void startFileInNewProject(file, title);
       return;
@@ -127,3 +146,4 @@ function useLoadAudioFile(): (file: File) => Promise<void> {
 // -- Exports ------------------------------------------------------------------
 
 export { useLoadAudioFile };
+export type { AudioLoadMode };

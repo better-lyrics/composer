@@ -101,6 +101,7 @@ export {
   filledMetadata,
   importableMetadata,
   importedKeysAfterWrite,
+  isEmptyMetadataValue,
   isMetadataKey,
   metadataAfterImport,
 };
