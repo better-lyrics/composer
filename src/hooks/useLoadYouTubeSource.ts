@@ -76,7 +76,8 @@ function swapVideoInPlace(videoId: string, previous: AudioSource): Promise<void>
   return waitForYouTubeLoad(videoId).catch(async (error: unknown) => {
     const swap = await swapped;
     const stillThisProject = openProjectIdSnapshot() === projectId;
-    if (swap && stillThisProject && !isYouTubeSourceFor(useAudioStore.getState().source, videoId)) {
+    const fellBack = !isYouTubeSourceFor(useAudioStore.getState().source, videoId);
+    if (swap && stillThisProject && fellBack && isYouTubeLoadFailure(error)) {
       const undo = undoSourceSwap(useProjectStore.getState().metadata, swap.beforeSwap, swap.patch);
       if (Object.keys(undo).length > 0) useProjectStore.getState().setMetadata(undo);
     }

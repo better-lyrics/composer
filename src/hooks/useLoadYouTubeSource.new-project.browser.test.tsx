@@ -118,6 +118,23 @@ describe("useLoadYouTubeSource · projects", () => {
     expect(useProjectStore.getState().metadata.title).toBe(OTHER_VIDEO_ID);
   });
 
+  it("regression: a replace overtaken by a newer one keeps the newer details", async () => {
+    allowConsole(/superseded/);
+    await openAlpha(true);
+    useProjectStore
+      .getState()
+      .setMetadata({ title: "alpha", thumbnailDataUrl: "data:a", thumbnailForVideoId: "old0000000a" });
+    const load = await loader();
+    const first = load(VIDEO_ID, "replace");
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe(VIDEO_ID);
+    const second = load(OTHER_VIDEO_ID, "replace");
+    await expect(first).rejects.toThrow();
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe(OTHER_VIDEO_ID);
+    expect(useProjectStore.getState().metadata.thumbnailForVideoId).toBeUndefined();
+    useAudioStore.getState().setYouTubeFile(videoFile(OTHER_VIDEO_ID));
+    await expect(second).resolves.toBeUndefined();
+  });
+
   it("a failed load returns to the previous project and removes the empty new one", async () => {
     await openAlpha(true);
     const load = await loader();

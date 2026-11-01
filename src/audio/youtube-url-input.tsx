@@ -59,7 +59,7 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
       e.preventDefault();
       handleSubmit();
     }
-    if (e.key !== "Escape") e.stopPropagation();
+    if (e.key !== "Escape" || surface !== "floating") e.stopPropagation();
   };
 
   const trimmed = value.trim();
