@@ -69,6 +69,11 @@ describe("SETTINGS_CATALOG", () => {
       expect(settingIdsInSection("confirmations")).toContain("confirmGroupDissolution");
     });
   });
+
+  it("files snap and spectrum settings in their own sections", () => {
+    expect(settingEntry("beatSnap").section).toBe("snap");
+    expect(settingEntry("pitchLine").section).toBe("spectrum");
+  });
 });
 
 describe("settingIdsInSection", () => {
@@ -182,5 +187,26 @@ describe("visibleSettingIds", () => {
     it("returns an empty list for an empty input", () => {
       expect(visibleSettingIds([], DEFAULTS)).toEqual([]);
     });
+  });
+});
+
+describe("SETTINGS_SECTIONS", () => {
+  it("orders sections as the sidebar shows them, under App, Editing and System", () => {
+    expect(SETTINGS_SECTIONS.map(({ id, heading }) => [id, heading])).toEqual([
+      ["changed", undefined],
+      ["general", "App"],
+      ["theme", undefined],
+      ["shortcuts", undefined],
+      ["confirmations", undefined],
+      ["lyrics", "Editing"],
+      ["playback", undefined],
+      ["sync", undefined],
+      ["timeline", undefined],
+      ["snap", undefined],
+      ["spectrum", undefined],
+      ["storage", "System"],
+      ["models", undefined],
+      ["advanced", undefined],
+    ]);
   });
 });

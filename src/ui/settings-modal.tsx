@@ -28,9 +28,10 @@ interface SettingsModalProps {
 
 // -- Sections -----------------------------------------------------------------
 
-const NAV_SECTIONS: readonly ModalNavSection<SettingsSectionId>[] = SETTINGS_SECTIONS.map(({ id, label }) => ({
+const NAV_SECTIONS: readonly ModalNavSection<SettingsSectionId>[] = SETTINGS_SECTIONS.map(({ id, label, heading }) => ({
   id,
   label,
+  heading,
   icon: SETTINGS_SECTION_ICONS[id],
 }));
 
