@@ -68,19 +68,19 @@ function readBootLinkedFiles(): BootLinkedFiles {
 async function fetchLinkedFile(url: string, fallbackName: string, signal: AbortSignal): Promise<File> {
   const name = linkedFileName(url, fallbackName);
   const timeout = AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS);
-  let response: Response;
+  let blob: Blob;
   try {
-    response = await fetch(url, { signal: AbortSignal.any([signal, timeout]) });
+    const response = await fetch(url, { signal: AbortSignal.any([signal, timeout]) });
+    if (!response.ok) throw new LinkedFileError(`Couldn't download ${name} (HTTP ${response.status})`);
+    blob = await response.blob();
   } catch (error) {
-    if (signal.aborted) throw error;
+    if (signal.aborted || error instanceof LinkedFileError) throw error;
     if (timeout.aborted)
       throw new LinkedFileError(`Couldn't download ${name}: the server took too long`, { cause: error });
     throw new LinkedFileError(`Couldn't download ${name}. The server might not allow downloads from other sites.`, {
       cause: error,
     });
   }
-  if (!response.ok) throw new LinkedFileError(`Couldn't download ${name} (HTTP ${response.status})`);
-  const blob = await response.blob();
   return new File([blob], name, { type: blob.type });
 }
 
@@ -112,11 +112,11 @@ async function applyLinkedFiles(
   await getPersistenceSettled();
   if (audio === null) return lyrics ? openLinkedLyricsAsProject(lyrics) : "failed";
 
-  // The store learns the duration only once the player loads; untimed lyrics are spread over it.
+  // The store learns the duration only once the player loads, and only the probe tells unplayable from superseded.
   const probe = lyrics ? await probeAudioFile(audio) : null;
   const before = openProjectIdSnapshot();
   await loadAudioFile(audio, "new-song");
-  if (!isActiveAudioFile(audio)) return lyrics ? openLinkedLyricsAsProject(lyrics) : "failed";
+  if (!isActiveAudioFile(audio)) return lyrics && probe?.ok === false ? openLinkedLyricsAsProject(lyrics) : "failed";
 
   const placed = openProjectIdSnapshot();
   if (lyrics) await importLinkedLyrics(lyrics, { ...ctx, audioDuration: probe?.ok ? probe.duration : 0 });
