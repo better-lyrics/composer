@@ -127,9 +127,7 @@ function useLoadAudioFile(): (file: File, mode?: AudioFileLoadMode) => Promise<v
     const title = fileNameWithoutExtension(file.name);
     const replacesDifferentSong =
       mode === "new-song" ||
-      (previous == null
-        ? awaitsMissingAudio
-        : !(previous.type === "file" && fileIdentityKey(previous.file) === fileIdentityKey(file)));
+      (previous != null && !(previous.type === "file" && fileIdentityKey(previous.file) === fileIdentityKey(file)));
 
     if (mode === "replace") {
       if (replacesDifferentSong) void swapFileInPlace(file, previous);

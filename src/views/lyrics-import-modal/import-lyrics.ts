@@ -7,10 +7,10 @@ import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { ProjectFile } from "@/lib/project-file";
 import { useAudioStore } from "@/stores/audio";
-import { type ConfirmOptions, useConfirm } from "@/stores/confirm-store";
+import { type ConfirmOptions, useConfirm, useConfirmStore } from "@/stores/confirm-store";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
+import { type SettingsState, useSettingsStore } from "@/stores/settings";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
 import { PARSERS, parseLyricsFile } from "@/utils/lyrics-parsers";
 import {
@@ -175,31 +175,56 @@ function importProjectLyrics(project: ProjectFile, filename: string, ctx: Import
   return true;
 }
 
+// -- Context ------------------------------------------------------------------
+
+type ExtractionSettings = Pick<
+  SettingsState,
+  "autoExtractBackgroundVocals" | "mergeStandaloneBackgroundLines" | "preserveBracketsOnExtraction"
+>;
+
+function buildImportContext(
+  sourceLabel: string,
+  audioDuration: number,
+  confirm: ConfirmFn,
+  settings: ExtractionSettings,
+): ImportContext {
+  return {
+    confirm,
+    audioDuration,
+    applyBackgroundExtraction: settings.autoExtractBackgroundVocals,
+    backgroundExtractionMergeStandalone: settings.mergeStandaloneBackgroundLines,
+    backgroundExtractionPreserveBrackets: settings.preserveBracketsOnExtraction,
+    sourceLabel,
+    onResult: (parsed, source) => useImportModalStore.getState().recordImportResult(parsed, source),
+  };
+}
+
+function currentImportContext(sourceLabel: string, audioDuration: number): ImportContext {
+  return buildImportContext(sourceLabel, audioDuration, useConfirmStore.getState().open, useSettingsStore.getState());
+}
+
 // -- Hook ---------------------------------------------------------------------
 
 function useImportContext(sourceLabel: string): ImportContext {
   const confirm = useConfirm();
   const audioDuration = useAudioStore((s) => s.duration);
-  const applyBackgroundExtraction = useSettingsStore((s) => s.autoExtractBackgroundVocals);
-  const backgroundExtractionMergeStandalone = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
-  const backgroundExtractionPreserveBrackets = useSettingsStore((s) => s.preserveBracketsOnExtraction);
+  const autoExtractBackgroundVocals = useSettingsStore((s) => s.autoExtractBackgroundVocals);
+  const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
+  const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
   return useMemo(
-    () => ({
-      confirm,
-      audioDuration,
-      applyBackgroundExtraction,
-      backgroundExtractionMergeStandalone,
-      backgroundExtractionPreserveBrackets,
-      sourceLabel,
-      onResult: (parsed, source) => useImportModalStore.getState().recordImportResult(parsed, source),
-    }),
+    () =>
+      buildImportContext(sourceLabel, audioDuration, confirm, {
+        autoExtractBackgroundVocals,
+        mergeStandaloneBackgroundLines,
+        preserveBracketsOnExtraction,
+      }),
     [
       confirm,
       audioDuration,
-      applyBackgroundExtraction,
-      backgroundExtractionMergeStandalone,
-      backgroundExtractionPreserveBrackets,
+      autoExtractBackgroundVocals,
+      mergeStandaloneBackgroundLines,
+      preserveBracketsOnExtraction,
       sourceLabel,
     ],
   );
@@ -207,5 +232,13 @@ function useImportContext(sourceLabel: string): ImportContext {
 
 // -- Exports ------------------------------------------------------------------
 
-export { importLyrics, importProjectLyrics, readLyricsFile, readTtmlLyrics, replaceWithParsedLyrics, useImportContext };
+export {
+  currentImportContext,
+  importLyrics,
+  importProjectLyrics,
+  readLyricsFile,
+  readTtmlLyrics,
+  replaceWithParsedLyrics,
+  useImportContext,
+};
 export type { ImportContext, ImportSourceInfo };

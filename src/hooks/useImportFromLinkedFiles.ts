@@ -23,7 +23,7 @@ import { showNewProjectToast } from "@/utils/project-toast";
 import { stripQueryParams } from "@/utils/url-params";
 import { readYouTubeParam } from "@/utils/youtube-link-params";
 import { isLyricsImportFileName } from "@/views/lyrics-import-modal/accepted-files";
-import { type ImportContext, useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
+import { type ImportContext, currentImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile, importLyricsText } from "@/views/lyrics-import-modal/import-lyrics-source";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -42,6 +42,7 @@ interface BootLinkedFiles {
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[Boot]";
+const LINK_SOURCE_LABEL = "Link";
 const AUDIO_FALLBACK_NAME = "Linked audio";
 const LYRICS_FALLBACK_NAME = "Linked lyrics";
 const RESPONSE_TIMEOUT_MS = 30_000;
@@ -125,7 +126,6 @@ async function applyLinkedFiles(
   audio: File | null,
   lyrics: File | null,
   loadAudioFile: (file: File, mode: AudioFileLoadMode) => Promise<void>,
-  ctx: ImportContext,
 ): Promise<LinkProjectOutcome> {
   await getPersistenceSettled();
   if (audio === null) return lyrics ? openLinkedLyricsAsProject(lyrics) : "failed";
@@ -138,7 +138,7 @@ async function applyLinkedFiles(
   if (!isActiveAudioFile(audio)) return lyrics && probe?.ok === false ? openLinkedLyricsAsProject(lyrics) : "failed";
 
   const placed = openProjectIdSnapshot();
-  if (lyrics) await importLinkedLyrics(lyrics, { ...ctx, audioDuration: probe?.ok ? probe.duration : 0 });
+  if (lyrics) await importLinkedLyrics(lyrics, currentImportContext(LINK_SOURCE_LABEL, probe?.ok ? probe.duration : 0));
   if (placed === before) return "replaced";
   if (before && placed) announceNewProject(previousTitle, before, placed);
   return "created";
@@ -152,9 +152,6 @@ function useImportFromLinkedFiles(): void {
   const active = links.present && !links.skippedForVideo;
 
   const loadAudioFile = useLoadAudioFile();
-  const ctx = useImportContext("Link");
-  const ctxRef = useRef(ctx);
-  ctxRef.current = ctx;
   const appliedRef = useRef(false);
   const progressToastRef = useRef<string | number | undefined>(undefined);
 
@@ -212,7 +209,7 @@ function useImportFromLinkedFiles(): void {
     else if (progressId !== undefined) toast.dismiss(progressId);
     if (lyricsQuery.error) toast.error(linkedFileErrorMessage(lyricsQuery.error));
 
-    applyLinkedFiles(audioQuery.data ?? null, lyricsQuery.data ?? null, loadAudioFile, ctxRef.current)
+    applyLinkedFiles(audioQuery.data ?? null, lyricsQuery.data ?? null, loadAudioFile)
       .then(markLinkedFilesSettled)
       .catch((error: unknown) => {
         console.error(`${LOG_PREFIX} could not open the linked files`, error);
