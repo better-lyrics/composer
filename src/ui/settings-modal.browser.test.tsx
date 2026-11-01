@@ -194,7 +194,7 @@ describe("SettingsModal search", () => {
   it("counts matches per section and dims the rest", async () => {
     const screen = await openModal();
     await searchBox(screen).fill("snap");
-    await expect.element(screen.getByRole("button", { name: /^Timeline\s*\d+$/ })).toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: /^Snap\s*\d+$/ })).toBeInTheDocument();
     await expect.element(screen.getByRole("button", { name: "General" })).toHaveAttribute("data-dimmed");
   });
 
@@ -220,9 +220,9 @@ describe("SettingsModal search", () => {
   it("leaves search when a section is opened from the results", async () => {
     const screen = await openModal();
     await searchBox(screen).fill("snap");
-    await screen.getByRole("button", { name: "Open Timeline section" }).click();
+    await screen.getByRole("button", { name: "Open Snap section" }).click();
     await expect.element(searchBox(screen)).toHaveValue("");
-    expect(useUIStore.getState().settingsSection).toBe("timeline");
+    expect(useUIStore.getState().settingsSection).toBe("snap");
   });
 
   it("shows no matches with a clear action", async () => {

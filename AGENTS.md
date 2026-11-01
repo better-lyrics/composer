@@ -126,6 +126,29 @@ before writing a new one.
 - No em dashes in code, copy or commit messages.
 - Commit messages are one line: `type: brief description` (for example `fix: timing offset`).
 
+## Settings
+
+A setting is a cost: one more decision for every user and one more state to test. Ship a good
+default first.
+
+- Add a setting only when people with real, different workflows need different behaviour and no
+  single default serves both. Prefer, in order: a default that fits most people; a control where the
+  feature lives (a header latch, a popover row), persisted from day one; a Settings row.
+- A control that lives on the feature does not also need a Settings row, unless the row sets the
+  default for new projects or sessions.
+- Never add a setting to avoid a design decision, or to keep a behaviour nobody asked to keep.
+- Every setting is a catalog entry in `src/stores/settings-catalog-entries-<section>.ts`. Labels,
+  descriptions, sections and groups are read from the catalog everywhere (`SettingLink`, search,
+  Changed). Never hand-write a setting label in copy. Labels describe the on state.
+- Sections, in sidebar order: App (General, Theme, Shortcuts, Confirmations), Editing (Lyrics,
+  Playback, Sync & Timing, Timeline, Snap, Spectrum), System (Save & Storage, Models, Advanced). Put
+  a setting in the section named after the feature it changes. Anything about a downloaded model
+  goes in Models.
+- Keep a section under 15 rows. Past that, split it by feature instead of adding more groups.
+- Every "Don't ask again" choice must be reversible from Confirmations.
+- Changed is derived (`changedSettingIds`), never stored. Model files are listed and removed only
+  through `src/lib/model-files.ts`.
+
 ## Performance
 
 The Timeline renders hundreds of word blocks, several canvases and a playhead that moves every

@@ -56,7 +56,7 @@ async function seedStems(hash: string): Promise<void> {
 }
 
 async function usedBytes(): Promise<number> {
-  return storageUsage(await listProjectIndex(), await listStemJobs()).totalBytes;
+  return storageUsage(await listProjectIndex(), await listStemJobs()).cleanableBytes;
 }
 
 // -- Tests --------------------------------------------------------------------

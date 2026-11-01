@@ -8,8 +8,8 @@ const ConfirmationsSection: React.FC = () => {
       <div className="flex flex-col gap-0.5 mb-3">
         <span className="text-sm font-medium text-composer-text">Confirmation prompts</span>
         <span className="text-xs text-composer-text-muted">
-          Toggle confirmation prompts for actions that can lose work. Turn one off to skip its warning until you
-          re-enable it here.
+          Choose which actions ask before they run. A prompt you turn off, or answer with "Don't ask again", stays off
+          until you change it here.
         </span>
       </div>
       <SettingsSectionRows section="confirmations" />

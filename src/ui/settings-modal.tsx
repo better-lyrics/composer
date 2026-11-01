@@ -2,14 +2,16 @@ import { useScrollTopOnSearch } from "@/hooks/useScrollTopOnSearch";
 import { useTrackedScrollTop } from "@/hooks/useTrackedScrollTop";
 import { useTypeToSearch } from "@/hooks/useTypeToSearch";
 import { useSettingsStore } from "@/stores/settings";
-import { SETTINGS_SECTIONS, type SettingsSectionId } from "@/stores/settings-catalog";
+import { changedSettingIds, SETTINGS_SECTIONS, type SettingsSectionId } from "@/stores/settings-catalog";
 import { useUIStore } from "@/stores/ui";
 import { Modal } from "@/ui/modal";
 import { ModalNavLayout, type ModalNavSection } from "@/ui/modal-nav-layout";
+import { MatchCount } from "@/ui/match-count";
 import { withMatchCounts } from "@/ui/nav-match-counts";
 import { revealElement } from "@/ui/reveal-element";
 import { SearchField } from "@/ui/search-field";
 import { BackToHelpChip } from "@/ui/settings/back-to-help-chip";
+import { ChangedSettings } from "@/ui/settings/changed-settings";
 import { ConfirmationsSection } from "@/ui/settings/confirmations-section";
 import { countMatchesBySection, searchSettings } from "@/ui/settings/search-settings";
 import { SettingsSearchQueryContext } from "@/ui/settings/settings-search-query";
@@ -28,14 +30,17 @@ interface SettingsModalProps {
 
 // -- Sections -----------------------------------------------------------------
 
-const NAV_SECTIONS: readonly ModalNavSection<SettingsSectionId>[] = SETTINGS_SECTIONS.map(({ id, label }) => ({
+const NAV_SECTIONS: readonly ModalNavSection<SettingsSectionId>[] = SETTINGS_SECTIONS.map(({ id, label, heading }) => ({
   id,
   label,
+  heading,
   icon: SETTINGS_SECTION_ICONS[id],
 }));
 
 const SectionContent: React.FC<{ section: SettingsSectionId }> = ({ section }) => {
   switch (section) {
+    case "changed":
+      return <ChangedSettings />;
     case "shortcuts":
       return <ShortcutsSettingsSection />;
     case "confirmations":
@@ -79,10 +84,14 @@ const SettingsModalBody: React.FC = () => {
   useLayoutEffect(() => () => useUIStore.getState().rememberSettingsScrollTop(scrollTopRef.current), [scrollTopRef]);
   useScrollTopOnSearch(viewportRef, settingsQuery);
 
-  const navSections = useMemo(
-    () => (results ? withMatchCounts(NAV_SECTIONS, countMatchesBySection(results)) : NAV_SECTIONS),
-    [results],
-  );
+  const navSections = useMemo(() => {
+    if (results) return withMatchCounts(NAV_SECTIONS, countMatchesBySection(results));
+    const changedCount = changedSettingIds(settingsState).length;
+    if (changedCount === 0) return NAV_SECTIONS;
+    return NAV_SECTIONS.map((section) =>
+      section.id === "changed" ? { ...section, trailing: <MatchCount count={changedCount} /> } : section,
+    );
+  }, [results, settingsState]);
 
   return (
     <>
@@ -127,7 +136,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
       animateIn={!modalHandoff}
       title="Settings"
       headerAccessory={<BackToHelpChip />}
-      className="max-w-3xl h-[min(70vh,640px)] flex flex-col"
+      className="max-w-3xl h-[min(85vh,760px)] flex flex-col"
       bodyClassName="p-0 flex-1 min-h-0 flex flex-col"
     >
       <SettingsModalBody />

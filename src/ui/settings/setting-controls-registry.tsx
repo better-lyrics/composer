@@ -11,6 +11,11 @@ import { CobaltInstancesSetting } from "@/ui/settings/cobalt-instances-setting";
 import { DefaultPlaybackRateSetting } from "@/ui/settings/default-playback-rate-setting";
 import { LibraryViewSetting } from "@/ui/settings/library-view-setting";
 import { LoupeSizeSetting } from "@/ui/settings/loupe-size/loupe-size-setting";
+import {
+  AlignmentModelFilesSetting,
+  BeatModelFilesSetting,
+  VocalModelFilesSetting,
+} from "@/ui/settings/models/model-file-list";
 import { ResetAllSettingsSetting, ResetTourSetting } from "@/ui/settings/reset-settings";
 import type { SelectOption } from "@/ui/select";
 import type { SliderAction } from "@/ui/settings/setting-controls";
@@ -74,6 +79,14 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   resetTour: { kind: "custom", Component: ResetTourSetting },
   resetAllSettings: { kind: "custom", Component: ResetAllSettingsSetting },
   libraryView: { kind: "custom", Component: LibraryViewSetting },
+  linkedDivergenceAction: {
+    kind: "select",
+    options: [
+      { value: "ask", label: "Ask every time" },
+      { value: "apply", label: "Apply to all" },
+      { value: "detach", label: "Detach" },
+    ],
+  },
   librarySort: { kind: "select", options: LIBRARY_SORT_OPTIONS },
   launchScreen: { kind: "select", options: LAUNCH_SCREEN_OPTIONS },
   theme: { kind: "custom", Component: ThemeSettings },
@@ -82,6 +95,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   rememberPlaybackRate: TOGGLE,
   rememberVolume: TOGGLE,
   audioScrubPreview: TOGGLE,
+  vocalModelFiles: { kind: "custom", Component: VocalModelFilesSetting },
   autoSeparateOnImport: TOGGLE,
   vocalModelVariant: {
     kind: "select",
@@ -100,8 +114,10 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
       },
     ],
   },
+  alignmentModelFiles: { kind: "custom", Component: AlignmentModelFilesSetting },
   alignmentModelId: { kind: "custom", Component: AlignmentModelSetting },
   keepAlignmentModelLoaded: TOGGLE,
+  beatModelFiles: { kind: "custom", Component: BeatModelFilesSetting },
   defaultZoom: {
     kind: "slider",
     min: MIN_ZOOM,
