@@ -1,5 +1,11 @@
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { Button } from "@/ui/button";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
 import { readToken } from "@/utils/theme/read-token";
+import { IconTimeline } from "@tabler/icons-react";
 import { m } from "motion/react";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -33,8 +39,27 @@ const SyncCompleteMessage: React.FC = () => {
       >
         Sync complete!
       </m.div>
-      <div className="text-composer-text-muted">Proceed to Preview to review your work</div>
+      <div className="text-composer-text-muted">
+        Every line has its timing. Open the Timeline to nudge anything that feels off.
+      </div>
+      <OpenTimelineButton />
     </div>
+  );
+};
+
+const OpenTimelineButton: React.FC = () => {
+  const showShortcutHints = useSettingsStore((s) => s.showShortcutHints);
+  return (
+    <Button
+      hasIcon
+      size="lg"
+      className={showShortcutHints ? "mt-5 pr-2.5 [&>[data-inline-key-badge]]:ml-0" : "mt-5"}
+      onClick={() => useProjectStore.getState().setActiveTab("timeline")}
+    >
+      <IconTimeline className="size-4" />
+      Open Timeline
+      {showShortcutHints && <InlineKeyBadge keys={getEffectiveKeysArray("global.goToTimeline")} />}
+    </Button>
   );
 };
 
@@ -44,8 +69,8 @@ const SyncEndScreen: React.FC<SyncEndScreenProps> = ({ syncComplete }) => (
       <SyncCompleteMessage />
     ) : (
       <div className="text-center">
-        <div className="mb-2 text-2xl font-medium text-composer-text">End of lyrics</div>
-        <div className="text-composer-text-muted">Some lines still need timing. Pause to pick one.</div>
+        <div className="mb-2 text-2xl font-medium text-composer-text">You've reached the end</div>
+        <div className="text-composer-text-muted">A few lines still need timing. Pause and click one to sync it.</div>
       </div>
     )}
   </div>
