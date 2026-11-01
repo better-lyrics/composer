@@ -188,6 +188,27 @@ describe("useLoadAudioFile · projects", () => {
     expect(useProjectStore.getState().metadata.artists).toEqual([]);
   });
 
+  it("replace with the file already loaded keeps a typed title", async () => {
+    const { current } = await openAlpha({ lyrics: true, audio: true });
+    if (!current) throw new Error("expected restored audio");
+    const load = await loader();
+    await load(current, "replace");
+    expect(useProjectStore.getState().metadata.title).toBe("Alpha");
+  });
+
+  it("replace drops the old video's thumbnail", async () => {
+    await openAlpha({ lyrics: true, audio: false });
+    const video = new File([new Uint8Array([1, 2, 3])], "video.opus", { type: "audio/ogg" });
+    useAudioStore.getState().setYouTubeSource("dQw4w9WgXcQ", video, { title: "Song" });
+    useProjectStore
+      .getState()
+      .setMetadata({ thumbnailDataUrl: "data:image/png;base64,AA", thumbnailForVideoId: "dQw4w9WgXcQ" });
+    const load = await loader();
+    await load(createAudioFile("b-side.wav"), "replace");
+    await expect.poll(() => useProjectStore.getState().metadata.thumbnailForVideoId).toBeUndefined();
+    expect(useProjectStore.getState().metadata.thumbnailDataUrl).toBeUndefined();
+  });
+
   describe("edge cases", () => {
     it("a different song over a project without lyrics replaces it in place", async () => {
       await openAlpha({ lyrics: false, audio: true });

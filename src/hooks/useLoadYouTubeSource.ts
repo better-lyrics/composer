@@ -1,6 +1,6 @@
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import { metadataForNewSource } from "@/domain/project/source-metadata";
+import { sourceSwapPatch, undoSourceSwap } from "@/domain/project/source-metadata";
 import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
 import type { AudioLoadMode } from "@/hooks/useLoadAudioFile";
 import { adoptPrimingForNewAudio } from "@/lib/attach-audio-priming";
@@ -49,7 +49,7 @@ function useLoadYouTubeSource(): (videoId: string, mode?: AudioLoadMode) => Prom
     const previous = useAudioStore.getState().source;
     const prevVideoId = previous?.type === "youtube" ? previous.videoId : null;
     const replacesDifferentSong = previous != null && prevVideoId !== videoId;
-    if (mode === "replace" && replacesDifferentSong) return swapVideoInPlace(videoId, previous);
+    if (mode === "replace") return replacesDifferentSong ? swapVideoInPlace(videoId, previous) : Promise.resolve();
     if (replacesDifferentSong && hasLyricLines(useProjectStore.getState().lines)) {
       return loadVideoInNewProject(videoId, previous);
     }
@@ -58,28 +58,25 @@ function useLoadYouTubeSource(): (videoId: string, mode?: AudioLoadMode) => Prom
 }
 
 function swapVideoInPlace(videoId: string, previous: AudioSource): Promise<void> {
-  const { metadata, agents, hasUnexportedImport, importedMetadataKeys } = useProjectStore.getState();
   adoptPrimingForNewAudio();
   useAudioStore.getState().setYouTubeSource(videoId);
   const target = useAudioStore.getState().source;
   const swapped = beginSourceSwap(previous, target).then((before) => {
-    if (!isYouTubeSourceFor(useAudioStore.getState().source, videoId)) return null;
+    const live = useAudioStore.getState().source;
+    if (!isYouTubeSourceFor(live, videoId)) return null;
     settleSourceSwap(target);
+    const next = live?.type === "youtube" && live.details ? live.details : videoSourceMetadata(videoId);
     const project = useProjectStore.getState();
-    const patch = metadataForNewSource(
-      project.metadata,
-      project.importedMetadataKeys,
-      before,
-      videoSourceMetadata(videoId),
-    );
+    const beforeSwap = project.metadata;
+    const patch = sourceSwapPatch(beforeSwap, project.importedMetadataKeys, before, next);
     if (Object.keys(patch).length > 0) project.setMetadata(patch);
-    return useProjectStore.getState().metadata;
+    return { beforeSwap, patch };
   });
   return waitForYouTubeLoad(videoId).catch(async (error: unknown) => {
-    const metadataAfterSwap = await swapped;
-    const untouchedSinceSwap = useProjectStore.getState().metadata === metadataAfterSwap;
-    if (useAudioStore.getState().source === previous && untouchedSinceSwap) {
-      useProjectStore.getState().restoreSongIdentity({ metadata, agents, hasUnexportedImport, importedMetadataKeys });
+    const swap = await swapped;
+    if (swap && useAudioStore.getState().source === previous) {
+      const undo = undoSourceSwap(useProjectStore.getState().metadata, swap.beforeSwap, swap.patch);
+      if (Object.keys(undo).length > 0) useProjectStore.getState().setMetadata(undo);
     }
     throw error;
   });

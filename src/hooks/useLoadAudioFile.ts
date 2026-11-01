@@ -4,7 +4,7 @@ import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
 import { adoptPrimingForNewAudio } from "@/lib/attach-audio-priming";
 import { startSongInNewProject } from "@/lib/open-project";
 import { relinkProjectAudioFile } from "@/lib/relink-audio";
-import { metadataForNewSource } from "@/domain/project/source-metadata";
+import { sourceSwapPatch } from "@/domain/project/source-metadata";
 import { beginSourceSwap, fileSourceMetadata, readAudioTags, settleSourceSwap } from "@/lib/source-metadata";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -90,7 +90,7 @@ async function swapFileInPlace(file: File, previous: AudioSource): Promise<void>
   if (!isActiveFile(file)) return;
   settleSourceSwap(target);
   const { metadata, importedMetadataKeys } = useProjectStore.getState();
-  const patch = metadataForNewSource(metadata, importedMetadataKeys, before, next);
+  const patch = sourceSwapPatch(metadata, importedMetadataKeys, before, next);
   if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);
 }
 
@@ -129,8 +129,8 @@ function useLoadAudioFile(): (file: File, mode?: AudioLoadMode) => Promise<void>
     const replacesDifferentSong =
       previous != null && !(previous.type === "file" && fileIdentityKey(previous.file) === fileIdentityKey(file));
 
-    if (mode === "replace" && replacesDifferentSong) {
-      void swapFileInPlace(file, previous);
+    if (mode === "replace") {
+      if (replacesDifferentSong) void swapFileInPlace(file, previous);
       return;
     }
     if (replacesDifferentSong && hasLyricLines(useProjectStore.getState().lines)) {

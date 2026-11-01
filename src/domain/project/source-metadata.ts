@@ -47,7 +47,36 @@ function metadataForNewSource(
   return patch;
 }
 
+function withoutVideoThumbnail(metadata: ProjectMetadata): Partial<ProjectMetadata> {
+  if (metadata.thumbnailForVideoId === undefined) return {};
+  return { thumbnailDataUrl: undefined, thumbnailForVideoId: undefined };
+}
+
+function sourceSwapPatch(
+  current: ProjectMetadata,
+  importedKeys: readonly MetadataKey[],
+  previousSource: SourceMetadata,
+  nextSource: SourceMetadata,
+): Partial<ProjectMetadata> {
+  return {
+    ...metadataForNewSource(current, importedKeys, previousSource, nextSource),
+    ...withoutVideoThumbnail(current),
+  };
+}
+
+function undoSourceSwap(
+  current: ProjectMetadata,
+  beforeSwap: ProjectMetadata,
+  patch: Partial<ProjectMetadata>,
+): Partial<ProjectMetadata> {
+  const undo: Partial<ProjectMetadata> = {};
+  for (const key of Object.keys(patch) as MetadataKey[]) {
+    if (isStructurallyEqual(current[key], patch[key])) Object.assign(undo, { [key]: beforeSwap[key] });
+  }
+  return undo;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { metadataForNewSource };
+export { metadataForNewSource, sourceSwapPatch, undoSourceSwap };
 export type { SourceMetadata };

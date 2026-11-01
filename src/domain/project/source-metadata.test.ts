@@ -1,5 +1,5 @@
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import { metadataForNewSource } from "@/domain/project/source-metadata";
+import { metadataForNewSource, sourceSwapPatch, undoSourceSwap } from "@/domain/project/source-metadata";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -52,6 +52,23 @@ describe("metadataForNewSource", () => {
       const current = metadata({ ...OLD_FILE, songwriters: ["Anthony Gonzalez"], language: "en", duration: 244 });
       const patch = metadataForNewSource(current, [], OLD_FILE, NEW_FILE);
       expect(Object.keys(patch).every((key) => ["title", "artists", "album", "isrc"].includes(key))).toBe(true);
+    });
+  });
+
+  describe("swaps", () => {
+    it("drops a video thumbnail but keeps art that no video owns", () => {
+      const fromVideo = metadata({ thumbnailDataUrl: "data:a", thumbnailForVideoId: "dQw4w9WgXcQ" });
+      expect(sourceSwapPatch(fromVideo, [], {}, {})).toMatchObject({ thumbnailForVideoId: undefined });
+      expect("thumbnailDataUrl" in sourceSwapPatch(metadata({ thumbnailDataUrl: "data:cover" }), [], {}, {})).toBe(
+        false,
+      );
+    });
+
+    it("undoes only fields that still hold the swap's value", () => {
+      const before = metadata({ ...OLD_FILE });
+      const patch = sourceSwapPatch(before, [], OLD_FILE, NEW_FILE);
+      const edited = metadata({ ...before, ...patch, album: "Typed meanwhile" });
+      expect(undoSourceSwap(edited, before, patch)).toEqual({ title: OLD_FILE.title });
     });
   });
 });

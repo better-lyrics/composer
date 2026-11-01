@@ -89,6 +89,23 @@ describe("useLoadYouTubeSource · projects", () => {
     expect(useProjectStore.getState().metadata.title).toBe("Alpha");
   });
 
+  it("regression: a failed replace undoes only its own changes and keeps a singer renamed meanwhile", async () => {
+    await openAlpha(true);
+    useProjectStore.getState().setMetadata({ title: "alpha" });
+    const load = await loader();
+    const loading = load(VIDEO_ID, "replace");
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe(VIDEO_ID);
+    useProjectStore
+      .getState()
+      .setMetadata({ thumbnailDataUrl: "data:image/png;base64,AA", thumbnailForVideoId: VIDEO_ID });
+    const singer = useProjectStore.getState().agents[0];
+    useProjectStore.getState().updateAgent(singer.id, { name: "Renamed meanwhile" });
+    failLoad();
+    await expect(loading).rejects.toThrow(LOAD_ERROR_MESSAGE);
+    expect(useProjectStore.getState().metadata.title).toBe("alpha");
+    expect(useProjectStore.getState().agents[0].name).toBe("Renamed meanwhile");
+  });
+
   it("a failed load returns to the previous project and removes the empty new one", async () => {
     await openAlpha(true);
     const load = await loader();

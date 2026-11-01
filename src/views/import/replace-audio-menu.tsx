@@ -1,4 +1,5 @@
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
+import { UNSUPPORTED_AUDIO_FILE_MESSAGE, isSupportedAudioFile } from "@/domain/audio-file/supported-formats";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { Button } from "@/ui/button";
@@ -6,6 +7,7 @@ import { Menu, type MenuAnchor, MenuHeader, MenuItem } from "@/ui/menu";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
 import { IconBrandYoutube, IconFileMusic, IconReplace } from "@tabler/icons-react";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 
@@ -37,7 +39,9 @@ const ReplaceAudioMenu: React.FC<ReplaceAudioMenuProps> = ({ card }) => {
   const replaceWithFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (file) void loadAudioFile(file, "replace");
+    if (!file) return;
+    if (isSupportedAudioFile(file)) void loadAudioFile(file, "replace");
+    else toast.error(UNSUPPORTED_AUDIO_FILE_MESSAGE);
   };
 
   const replaceWithVideo = async (videoId: string) => {
