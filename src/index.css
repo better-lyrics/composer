@@ -270,6 +270,10 @@ braccato-lyrics .blyrics-container {
 }
 
 /* Every portalled layer (modal, popover, menu, tooltip) shares one z-index so open order decides what is on top. */
+@utility text-sync-timed {
+  color: color-mix(in oklab, var(--color-composer-accent-text) 55%, var(--color-composer-text-faint));
+}
+
 @utility layer-floating {
   z-index: 100;
 }
