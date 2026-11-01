@@ -234,6 +234,11 @@ describe("changedSettingIds", () => {
   });
 
   describe("edge cases", () => {
+    it("leaves out a changed setting whose row is hidden", () => {
+      const state = { ...DEFAULTS, smartCleanup: false, storageLimit: "5gb" as const };
+      expect(changedSettingIds(state)).toEqual(["smartCleanup"]);
+    });
+
     it("never counts rows without a store key", () => {
       expect(
         changedSettingIds({

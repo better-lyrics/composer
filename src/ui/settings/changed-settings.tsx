@@ -2,13 +2,12 @@ import { useSettingsStore } from "@/stores/settings";
 import { changedSettingIds } from "@/stores/settings-catalog";
 import { EmptyState } from "@/ui/empty-state";
 import { SettingResultGroups } from "@/ui/settings/settings-search-results";
-import { useMemo } from "react";
+import { useState } from "react";
 
 // -- Component -----------------------------------------------------------------
 
 const ChangedSettings: React.FC = () => {
-  const settingsState = useSettingsStore((s) => s);
-  const settings = useMemo(() => changedSettingIds(settingsState), [settingsState]);
+  const [settings] = useState(() => changedSettingIds(useSettingsStore.getState()));
 
   if (settings.length === 0) {
     return (

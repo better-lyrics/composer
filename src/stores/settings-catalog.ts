@@ -136,7 +136,7 @@ function visibleSettingIds(ids: readonly SettingId[], state: SettingsState): Set
 function changedSettingIds(state: SettingsState): SettingId[] {
   return SETTING_IDS.filter((id) => {
     const key = settingEntry(id).settingKey;
-    return key !== undefined && !isStructurallyEqual(state[key], DEFAULTS[key]);
+    return key !== undefined && isSettingVisible(id, state) && !isStructurallyEqual(state[key], DEFAULTS[key]);
   });
 }
 
