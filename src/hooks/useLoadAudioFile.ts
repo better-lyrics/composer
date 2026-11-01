@@ -71,11 +71,14 @@ function logTagReadFailure(error: unknown): void {
 }
 
 function loadFileInPlace(file: File, replacesDifferentSong: boolean, title: string): Promise<void> {
+  const asksBeforeClearing = replacesDifferentSong && useProjectStore.getState().hasUnexportedImport;
   adoptPrimingForNewAudio();
   useAudioStore.getState().setSource({ type: "file", file });
-  return settleSongDetails(file, replacesDifferentSong, title)
+  const tagsWritten = settleSongDetails(file, replacesDifferentSong, title)
     .then((tagWrite) => (tagWrite === "apply" ? applyAudioTags(file) : undefined))
     .catch(logTagReadFailure);
+  // A drop resolves while the clear-details confirm is still open.
+  return asksBeforeClearing ? Promise.resolve() : tagsWritten;
 }
 
 async function swapFileInPlace(file: File, previous: AudioSource): Promise<void> {
