@@ -18,6 +18,7 @@ interface StorageUsage {
   lyricsBytes: number;
   modelBytes: number;
   totalBytes: number;
+  cleanableBytes: number;
 }
 
 // -- Derivations --------------------------------------------------------------
@@ -39,13 +40,15 @@ function storageUsage(
   }
   let stemBytes = 0;
   for (const job of stemJobs) stemBytes += job.bytes;
+  const cleanableBytes = localAudioBytes + youtubeAudioBytes + stemBytes + lyricsBytes;
   return {
     localAudioBytes,
     youtubeAudioBytes,
     stemBytes,
     lyricsBytes,
     modelBytes,
-    totalBytes: localAudioBytes + youtubeAudioBytes + stemBytes + lyricsBytes + modelBytes,
+    totalBytes: cleanableBytes + modelBytes,
+    cleanableBytes,
   };
 }
 
