@@ -6,7 +6,8 @@ import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createGroup, createLine } from "@/test/factories";
 import { render } from "@/test/render";
-import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
+import { jumpToRow } from "@/test/shared-timing-sync";
+import { setCurrentTime } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { describe, expect, it } from "vitest";
 
@@ -74,14 +75,6 @@ async function tapAt(time: number, changed: () => unknown): Promise<void> {
   setCurrentTime(time);
   window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, cancelable: true }));
   await expect.poll(changed).not.toEqual(before);
-}
-
-async function jumpToRow(screen: Awaited<ReturnType<typeof render>>, index: number): Promise<void> {
-  setIsPlaying(false);
-  const rows = () => screen.container.querySelectorAll<HTMLElement>('[role="button"][tabindex="-1"]');
-  await expect.poll(() => rows().length).toBeGreaterThan(index);
-  rows()[index].click();
-  setIsPlaying(true);
 }
 
 // -- Tests --------------------------------------------------------------------

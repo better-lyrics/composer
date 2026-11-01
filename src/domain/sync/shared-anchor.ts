@@ -59,4 +59,3 @@ function sharedAnchorAt(
 // -- Exports ------------------------------------------------------------------
 
 export { sharedAnchorAt };
-export type { SharedAnchor };

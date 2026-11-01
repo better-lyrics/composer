@@ -53,13 +53,14 @@ const inlineIconReducedVariants: Variants = {
   exit: { opacity: 0, width: 0, marginLeft: -6 },
 };
 
-// -- Sync Carousel (vertical, direction-aware, instant) ----------------------
+// -- Sync Tap Ring -------------------------------------------------------------
 
-const syncCarouselTransition: Transition = {
-  type: "spring",
-  stiffness: 400,
-  damping: 30,
+const syncTapRingVariants: Variants = {
+  initial: { scale: 0.92, opacity: 0.7 },
+  animate: { scale: 1.25, opacity: 0 },
 };
+
+const syncTapRingTransition: Transition = { duration: 0.26, ease: "easeOut" };
 
 function buildGroupPingVariants(color: string): Variants {
   const transparent = hexToRgba(color, 0);
@@ -191,7 +192,8 @@ export {
   slideUpVariants,
   centeredSlideUpVariants,
   centeredFadeVariants,
-  syncCarouselTransition,
+  syncTapRingTransition,
+  syncTapRingVariants,
   buildGroupPingVariants,
   shimmerTransition,
   shimmerVariants,
