@@ -62,6 +62,9 @@ function dotClass(dot: SyllableDot, state: SlotState, onCurrentLine: boolean): s
   return cn("bg-current", onCurrentLine ? "opacity-80" : "opacity-55");
 }
 
+// Clicking a word must not focus it, or the tap key (Space) would also press it.
+const keepFocus = (event: React.MouseEvent) => event.preventDefault();
+
 const LaneWord: React.FC<LaneWordProps> = ({
   state,
   onCurrentLine,
@@ -72,42 +75,46 @@ const LaneWord: React.FC<LaneWordProps> = ({
   joinedEnd = false,
   dot,
   children,
-}) => (
-  <span
-    role={onClick ? "button" : undefined}
-    tabIndex={onClick ? -1 : undefined}
-    onClick={onClick}
-    className={cn(
-      "group/word relative inline-flex items-center justify-center origin-center ease-out motion-reduce:transition-none",
-      INSTANT_COLOR_STATES.has(state) ? "transition-[scale] duration-150" : "transition-[color,scale] duration-400",
-      isHeld && "scale-96",
-      onClick && "cursor-pointer",
-      wordTextClass(state, onCurrentLine, dimmed),
-    )}
-  >
-    <span
-      aria-hidden
-      className={cn(
-        "absolute -inset-x-2 -inset-y-1 rounded-lg transition-opacity duration-150 ease-out motion-reduce:transition-none",
-        joinedStart && "-left-0.5 rounded-l-sm",
-        joinedEnd && "-right-0.5 rounded-r-sm",
-        isHeld ? "bg-composer-accent/25" : "bg-composer-accent/15",
-        state === "next" ? "opacity-100" : "opacity-0",
-        onClick && state !== "next" && "group-hover/word:opacity-60",
-      )}
-    />
-    {children}
-    {dot && (
+}) => {
+  const className = cn(
+    "group/word relative inline-flex items-center justify-center origin-center ease-out motion-reduce:transition-none",
+    INSTANT_COLOR_STATES.has(state) ? "transition-[scale] duration-150" : "transition-[color,scale] duration-400",
+    isHeld && "scale-96",
+    onClick && "cursor-pointer",
+    wordTextClass(state, onCurrentLine, dimmed),
+  );
+  const content = (
+    <>
       <span
         aria-hidden
         className={cn(
-          "absolute left-1/2 -bottom-4 size-1.5 -translate-x-1/2 rounded-full pointer-events-none transition-[opacity,background-color] duration-150 ease-out motion-reduce:transition-none",
-          dotClass(dot, state, onCurrentLine),
+          "absolute -inset-x-2 -inset-y-1 rounded-lg transition-opacity duration-150 ease-out motion-reduce:transition-none",
+          joinedStart && "-left-0.5 rounded-l-sm",
+          joinedEnd && "-right-0.5 rounded-r-sm",
+          isHeld ? "bg-composer-accent/25" : "bg-composer-accent/15",
+          state === "next" ? "opacity-100" : "opacity-0",
+          onClick && state !== "next" && "group-hover/word:opacity-60",
         )}
       />
-    )}
-  </span>
-);
+      {children}
+      {dot && (
+        <span
+          aria-hidden
+          className={cn(
+            "absolute left-1/2 -bottom-4 size-1.5 -translate-x-1/2 rounded-full pointer-events-none transition-[opacity,background-color] duration-150 ease-out motion-reduce:transition-none",
+            dotClass(dot, state, onCurrentLine),
+          )}
+        />
+      )}
+    </>
+  );
+  if (!onClick) return <span className={className}>{content}</span>;
+  return (
+    <button type="button" tabIndex={-1} onMouseDown={keepFocus} onClick={onClick} className={className}>
+      {content}
+    </button>
+  );
+};
 
 // -- Exports ------------------------------------------------------------------
 

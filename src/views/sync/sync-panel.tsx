@@ -1,6 +1,6 @@
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
-import { effectiveBounds } from "@/domain/line/bounds";
+import { playingLineIndex } from "@/domain/line/playing-line";
 import { isSyncComplete, syncProgress } from "@/domain/line/sync-progress";
 import { previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
@@ -12,15 +12,14 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { setSyncEditMode, useSyncEditModeStore } from "@/stores/sync-edit-mode";
 import { EmptyState } from "@/ui/empty-state";
-import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
 import { runHistoryShortcut } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { type SyncState, getNudgeAmount } from "@/utils/sync-helpers";
-import { readToken } from "@/utils/theme/read-token";
 import { isTypingTarget } from "@/utils/typing-target";
 import type { LaneClickTarget } from "@/views/sync/lane-click-target";
 import { buildLaneRows } from "@/views/sync/lane-rows";
 import { showFirstPauseToastOnce } from "@/views/sync/first-pause-toast";
+import { SyncEndScreen } from "@/views/sync/sync-end-screen";
 import { SyncEditList } from "@/views/sync/sync-edit-list";
 import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
 import { SyncHeader } from "@/views/sync/sync-header";
@@ -29,7 +28,6 @@ import { usePlacementPreroll } from "@/views/sync/use-placement-preroll";
 import { useSharedSyncView } from "@/views/sync/use-shared-sync-view";
 import { useSyncCountIn } from "@/views/sync/use-sync-count-in";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { m } from "motion/react";
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 
 // -- Components ---------------------------------------------------------------
@@ -213,27 +211,7 @@ const SyncPanel: React.FC = () => {
     [handleJumpToWord, handleJumpToLine],
   );
 
-  const playingLineIndex = useMemo(() => {
-    for (let i = 0; i < lines.length; i++) {
-      const timing = effectiveBounds(lines[i]);
-      if (timing && currentTime >= timing.begin && currentTime < timing.end) {
-        return i;
-      }
-    }
-    for (let i = lines.length - 1; i >= 0; i--) {
-      const timing = effectiveBounds(lines[i]);
-      if (timing && currentTime >= timing.end) {
-        return i;
-      }
-    }
-    for (let i = 0; i < lines.length; i++) {
-      const timing = effectiveBounds(lines[i]);
-      if (timing && currentTime < timing.begin) {
-        return i;
-      }
-    }
-    return -1;
-  }, [lines, currentTime]);
+  const playingLine = useMemo(() => playingLineIndex(lines, currentTime), [lines, currentTime]);
 
   const { lineIndex, wordIndex } = cursor;
 
@@ -424,10 +402,6 @@ const SyncPanel: React.FC = () => {
     );
   }
 
-  const shimmerBase = readToken("accent-text");
-  const shimmerHighlight = readToken("text");
-  const completeGradient = `linear-gradient(45deg, ${shimmerBase} 0%, ${shimmerBase} 40%, ${shimmerHighlight} 50%, ${shimmerBase} 60%, ${shimmerBase} 100%)`;
-
   return (
     <div data-tour="sync-panel" className="flex flex-col flex-1 overflow-hidden select-none">
       <SyncHeader
@@ -451,7 +425,7 @@ const SyncPanel: React.FC = () => {
           groups={groups}
           granularity={granularity}
           currentTime={currentTime}
-          playingLineIndex={playingLineIndex}
+          playingLineIndex={playingLine}
           isComplete={isComplete}
           skippedLineIds={skippedLineIds}
           skippedByLastLineId={skippedByLastLineId}
@@ -459,35 +433,7 @@ const SyncPanel: React.FC = () => {
           scrollContainerRef={scrollContainerRef}
         />
       ) : isComplete && !lanePaused ? (
-        <div className="flex flex-col items-center justify-center flex-1 px-12 py-12">
-          {syncComplete ? (
-            <div className="text-center">
-              {/* react-doctor-disable-next-line react-doctor/no-gradient-text */}
-              <m.div
-                className="mb-2 text-2xl font-medium"
-                variants={shimmerVariants}
-                initial="initial"
-                animate="animate"
-                transition={shimmerTransition}
-                style={{
-                  background: completeGradient,
-                  backgroundSize: "200% 100%",
-                  backgroundClip: "text",
-                  WebkitBackgroundClip: "text",
-                  color: "transparent",
-                }}
-              >
-                Sync complete!
-              </m.div>
-              <div className="text-composer-text-muted">Proceed to Preview to review your work</div>
-            </div>
-          ) : (
-            <div className="text-center">
-              <div className="mb-2 text-2xl font-medium text-composer-text">End of lyrics</div>
-              <div className="text-composer-text-muted">Some lines still need timing. Pause to pick one.</div>
-            </div>
-          )}
-        </div>
+        <SyncEndScreen syncComplete={syncComplete} />
       ) : (
         <SyncLane
           rows={laneRows}
