@@ -48,9 +48,10 @@ interface SyncLaneLineProps {
   onRingDone: () => void;
   onJump: (lineIndex: number, target: LaneJumpTarget) => void;
   aboveCurrent?: React.ReactNode;
+  className?: string;
 }
 
-type LaneWordsProps = Omit<SyncLaneLineProps, "granularity" | "aboveCurrent">;
+type LaneWordsProps = Omit<SyncLaneLineProps, "granularity" | "aboveCurrent" | "className">;
 
 // -- Components ---------------------------------------------------------------
 
@@ -106,7 +107,7 @@ const LineModeWord: React.FC<LaneWordsProps> = ({ row, isCurrent, isLastLine, is
   </LaneWord>
 );
 
-const SyncLaneLine: React.FC<SyncLaneLineProps> = memo(({ granularity, aboveCurrent, ...wordsProps }) => {
+const SyncLaneLine: React.FC<SyncLaneLineProps> = memo(({ granularity, aboveCurrent, className, ...wordsProps }) => {
   const { row, isCurrent, isPlacing } = wordsProps;
   const hasMeta = row.singer !== undefined || row.groupTag !== undefined;
 
@@ -119,6 +120,7 @@ const SyncLaneLine: React.FC<SyncLaneLineProps> = memo(({ granularity, aboveCurr
         "flex flex-col gap-1.5 w-fit max-w-full",
         ROW_SIDE_CLASS[row.side],
         "rtl:self-end rtl:items-start rtl:text-right rtl:origin-right",
+        className,
       )}
     >
       {hasMeta && (
