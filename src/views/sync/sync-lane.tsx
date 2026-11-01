@@ -174,7 +174,7 @@ const SyncLane: React.FC<SyncLaneProps> = ({
     >
       <div
         ref={trackRef}
-        className="relative mx-auto flex max-w-240 flex-col gap-6.5 px-3 transition-transform duration-220 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform motion-reduce:transition-none"
+        className="relative mx-auto flex max-w-240 flex-col gap-6.5 px-3 transition-transform duration-220 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none"
       >
         {visibleRows.map((row, visibleIndex) => {
           const distance = visibleIndex - anchorVisibleIndex;
