@@ -10,10 +10,8 @@ import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { setSyncEditMode, useSyncEditModeStore } from "@/stores/sync-edit-mode";
 import { EmptyState } from "@/ui/empty-state";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
 import { runHistoryShortcut } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
@@ -325,6 +323,7 @@ const SyncPanel: React.FC = () => {
     [endHold],
   );
 
+  const lanePaused = !isPlaying && !countIn.countingIn;
   const showGestureCircles = !isComplete && !editMode && isPlaying;
 
   // The release handlers live on the hold circle, so a hold outliving that
@@ -456,7 +455,7 @@ const SyncPanel: React.FC = () => {
           handlers={syncHandlers}
           scrollContainerRef={scrollContainerRef}
         />
-      ) : isComplete ? (
+      ) : isComplete && !lanePaused ? (
         <div className="flex flex-col items-center justify-center flex-1 px-12 py-12">
           {syncComplete ? (
             <div className="text-center">
@@ -482,16 +481,7 @@ const SyncPanel: React.FC = () => {
           ) : (
             <div className="text-center">
               <div className="mb-2 text-2xl font-medium text-composer-text">End of lyrics</div>
-              <div className="text-composer-text-muted">
-                {isPlaying ? (
-                  "Some lines still need timing. Click one to sync it."
-                ) : (
-                  <>
-                    Some lines still need timing. Find them under Edit{" "}
-                    <InlineKeyBadge keys={getEffectiveKeysArray("sync.toggleEdit")} />.
-                  </>
-                )}
-              </div>
+              <div className="text-composer-text-muted">Some lines still need timing. Pause to pick one.</div>
             </div>
           )}
         </div>
@@ -503,7 +493,7 @@ const SyncPanel: React.FC = () => {
           granularity={granularity}
           isHolding={isHolding}
           placingLineIndex={placingName !== null ? lineIndex : null}
-          paused={!isPlaying && !countIn.countingIn}
+          paused={lanePaused}
           ring={rippleTarget}
           onRingDone={clearRippleTarget}
           onJump={handleLaneJump}
