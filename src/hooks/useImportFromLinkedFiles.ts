@@ -36,7 +36,7 @@ interface BootLinkedFiles {
 const LOG_PREFIX = "[Boot]";
 const AUDIO_FALLBACK_NAME = "Linked audio";
 const LYRICS_FALLBACK_NAME = "Linked lyrics";
-const DOWNLOAD_TIMEOUT_MS = 120_000;
+const RESPONSE_TIMEOUT_MS = 30_000;
 const NO_LINKED_FILES: BootLinkedFiles = {
   present: false,
   skippedForVideo: false,
@@ -67,15 +67,19 @@ function readBootLinkedFiles(): BootLinkedFiles {
 
 async function fetchLinkedFile(url: string, fallbackName: string, signal: AbortSignal): Promise<File> {
   const name = linkedFileName(url, fallbackName);
-  const timeout = AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS);
+  // Only the wait for a response times out: a large file on a slow connection keeps downloading.
+  const timeout = new AbortController();
+  const timer = setTimeout(() => timeout.abort(), RESPONSE_TIMEOUT_MS);
   let blob: Blob;
   try {
-    const response = await fetch(url, { signal: AbortSignal.any([signal, timeout]) });
+    const response = await fetch(url, { signal: AbortSignal.any([signal, timeout.signal]) });
+    clearTimeout(timer);
     if (!response.ok) throw new LinkedFileError(`Couldn't download ${name} (HTTP ${response.status})`);
     blob = await response.blob();
   } catch (error) {
+    clearTimeout(timer);
     if (signal.aborted || error instanceof LinkedFileError) throw error;
-    if (timeout.aborted)
+    if (timeout.signal.aborted)
       throw new LinkedFileError(`Couldn't download ${name}: the server took too long`, { cause: error });
     throw new LinkedFileError(`Couldn't download ${name}. The server might not allow downloads from other sites.`, {
       cause: error,
