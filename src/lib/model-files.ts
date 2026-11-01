@@ -69,8 +69,9 @@ function modelKindBusy(kind: ModelKind): boolean {
 async function removeModelFiles(kind: ModelKind, onlyUrls?: readonly string[]): Promise<void> {
   if (modelKindBusy(kind)) throw new ModelInUseError(kind);
   if (typeof caches === "undefined") return;
+  const wanted = onlyUrls ? new Set(onlyUrls) : null;
   const files = groupModelFiles(await listModelFiles(), knownModelUrls())[kind].filter(
-    (file) => !onlyUrls || onlyUrls.includes(file.url),
+    (file) => !wanted || wanted.has(file.url),
   );
   if (files.length === 0) return;
   const cache = await caches.open(MODEL_CACHE_NAME);
