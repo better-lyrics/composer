@@ -53,13 +53,7 @@ const inlineIconReducedVariants: Variants = {
   exit: { opacity: 0, width: 0, marginLeft: -6 },
 };
 
-// -- Sync Carousel (vertical, direction-aware, instant) ----------------------
-
-const syncCarouselTransition: Transition = {
-  type: "spring",
-  stiffness: 400,
-  damping: 30,
-};
+// -- Sync Tap Ring -------------------------------------------------------------
 
 const syncTapRingVariants: Variants = {
   initial: { scale: 0.92, opacity: 0.7 },
@@ -198,7 +192,6 @@ export {
   slideUpVariants,
   centeredSlideUpVariants,
   centeredFadeVariants,
-  syncCarouselTransition,
   syncTapRingTransition,
   syncTapRingVariants,
   buildGroupPingVariants,
