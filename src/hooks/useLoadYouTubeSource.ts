@@ -58,23 +58,25 @@ function useLoadYouTubeSource(): (videoId: string, mode?: AudioLoadMode) => Prom
 }
 
 function swapVideoInPlace(videoId: string, previous: AudioSource): Promise<void> {
+  const projectId = openProjectIdSnapshot();
   adoptPrimingForNewAudio();
   useAudioStore.getState().setYouTubeSource(videoId);
   const target = useAudioStore.getState().source;
   const swapped = beginSourceSwap(previous, target).then((before) => {
     const live = useAudioStore.getState().source;
-    if (!isYouTubeSourceFor(live, videoId)) return null;
-    settleSourceSwap(target);
+    if (!isYouTubeSourceFor(live, videoId) || openProjectIdSnapshot() !== projectId) return null;
+    if (!settleSourceSwap(target)) return null;
     const next = live?.type === "youtube" && live.details ? live.details : videoSourceMetadata(videoId);
     const project = useProjectStore.getState();
     const beforeSwap = project.metadata;
-    const patch = sourceSwapPatch(beforeSwap, project.importedMetadataKeys, before, next);
+    const patch = sourceSwapPatch(beforeSwap, project.importedMetadataKeys, before, next, videoId);
     if (Object.keys(patch).length > 0) project.setMetadata(patch);
     return { beforeSwap, patch };
   });
   return waitForYouTubeLoad(videoId).catch(async (error: unknown) => {
     const swap = await swapped;
-    if (swap && useAudioStore.getState().source === previous) {
+    const stillThisProject = openProjectIdSnapshot() === projectId;
+    if (swap && stillThisProject && !isYouTubeSourceFor(useAudioStore.getState().source, videoId)) {
       const undo = undoSourceSwap(useProjectStore.getState().metadata, swap.beforeSwap, swap.patch);
       if (Object.keys(undo).length > 0) useProjectStore.getState().setMetadata(undo);
     }

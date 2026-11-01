@@ -6,7 +6,7 @@ import { Button } from "@/ui/button";
 import { Menu, type MenuAnchor, MenuHeader, MenuItem } from "@/ui/menu";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
 import { IconBrandYoutube, IconFileMusic, IconReplace } from "@tabler/icons-react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
@@ -29,7 +29,10 @@ const ReplaceAudioMenu: React.FC<ReplaceAudioMenuProps> = ({ card }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const loadAudioFile = useLoadAudioFile();
   const loadYouTubeSource = useLoadYouTubeSource();
-  const anchor: MenuAnchor | null = open && card ? { kind: "element", element: card } : null;
+  const anchor = useMemo<MenuAnchor | null>(
+    () => (open && card ? { kind: "element", element: card } : null),
+    [open, card],
+  );
 
   const toggleMenu = () => {
     if (!open) setPage("choose");

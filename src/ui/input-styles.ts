@@ -5,7 +5,6 @@ const INPUT_BASE_STYLES =
 
 const INPUT_STYLES = `${INPUT_BASE_STYLES} bg-(--well) focus:bg-[color-mix(in_oklab,var(--ink)_6%,var(--well))]`;
 
-// A well-coloured field on a lighter floating surface hides its border, so it reads shorter than the button beside it.
 const FLOATING_INPUT_STYLES = `${INPUT_BASE_STYLES} bg-transparent focus:bg-[color-mix(in_oklab,var(--ink)_6%,var(--pop))]`;
 
 // -- Exports ------------------------------------------------------------------

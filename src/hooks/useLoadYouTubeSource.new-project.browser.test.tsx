@@ -106,6 +106,18 @@ describe("useLoadYouTubeSource · projects", () => {
     expect(useProjectStore.getState().agents[0].name).toBe("Renamed meanwhile");
   });
 
+  it("regression: a failed replace over a video still downloading undoes its title change", async () => {
+    await openAlpha(true);
+    useAudioStore.getState().setYouTubeSource(OTHER_VIDEO_ID);
+    useProjectStore.getState().setMetadata({ title: OTHER_VIDEO_ID });
+    const load = await loader();
+    const loading = load(VIDEO_ID, "replace");
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe(VIDEO_ID);
+    failLoad();
+    await expect(loading).rejects.toThrow(LOAD_ERROR_MESSAGE);
+    expect(useProjectStore.getState().metadata.title).toBe(OTHER_VIDEO_ID);
+  });
+
   it("a failed load returns to the previous project and removes the empty new one", async () => {
     await openAlpha(true);
     const load = await loader();

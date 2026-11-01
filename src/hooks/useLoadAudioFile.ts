@@ -3,6 +3,7 @@ import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
 import { adoptPrimingForNewAudio } from "@/lib/attach-audio-priming";
 import { startSongInNewProject } from "@/lib/open-project";
+import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { relinkProjectAudioFile } from "@/lib/relink-audio";
 import { sourceSwapPatch } from "@/domain/project/source-metadata";
 import { beginSourceSwap, fileSourceMetadata, readAudioTags, settleSourceSwap } from "@/lib/source-metadata";
@@ -83,12 +84,12 @@ function loadFileInPlace(file: File, replacesDifferentSong: boolean, title: stri
 
 async function swapFileInPlace(file: File, previous: AudioSource): Promise<void> {
   const target: AudioSource = { type: "file", file };
+  const projectId = openProjectIdSnapshot();
   const baseline = beginSourceSwap(previous, target);
   adoptPrimingForNewAudio();
   useAudioStore.getState().setSource(target);
   const [before, next] = await Promise.all([baseline, fileSourceMetadata(file)]);
-  if (!isActiveFile(file)) return;
-  settleSourceSwap(target);
+  if (!isActiveFile(file) || openProjectIdSnapshot() !== projectId || !settleSourceSwap(target)) return;
   const { metadata, importedMetadataKeys } = useProjectStore.getState();
   const patch = sourceSwapPatch(metadata, importedMetadataKeys, before, next);
   if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);

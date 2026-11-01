@@ -60,15 +60,16 @@ function sourceMetadata(source: AudioSource): Promise<SourceMetadata> {
   return Promise.resolve({});
 }
 
-// A replace that overtakes an unsettled one compares against the source the user started from.
 function beginSourceSwap(previous: AudioSource, target: AudioSource): Promise<SourceMetadata> {
   const baseline = pendingSwap?.target === previous ? pendingSwap.baseline : sourceMetadata(previous);
   pendingSwap = { target, baseline };
   return baseline;
 }
 
-function settleSourceSwap(target: AudioSource): void {
-  if (pendingSwap?.target === target) pendingSwap = null;
+function settleSourceSwap(target: AudioSource): boolean {
+  if (pendingSwap?.target !== target) return false;
+  pendingSwap = null;
+  return true;
 }
 
 // -- Exports ------------------------------------------------------------------

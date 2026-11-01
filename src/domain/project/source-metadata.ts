@@ -47,8 +47,8 @@ function metadataForNewSource(
   return patch;
 }
 
-function withoutVideoThumbnail(metadata: ProjectMetadata): Partial<ProjectMetadata> {
-  if (metadata.thumbnailForVideoId === undefined) return {};
+function withoutVideoThumbnail(metadata: ProjectMetadata, nextVideoId?: string): Partial<ProjectMetadata> {
+  if (metadata.thumbnailForVideoId === undefined || metadata.thumbnailForVideoId === nextVideoId) return {};
   return { thumbnailDataUrl: undefined, thumbnailForVideoId: undefined };
 }
 
@@ -57,10 +57,11 @@ function sourceSwapPatch(
   importedKeys: readonly MetadataKey[],
   previousSource: SourceMetadata,
   nextSource: SourceMetadata,
+  nextVideoId?: string,
 ): Partial<ProjectMetadata> {
   return {
     ...metadataForNewSource(current, importedKeys, previousSource, nextSource),
-    ...withoutVideoThumbnail(current),
+    ...withoutVideoThumbnail(current, nextVideoId),
   };
 }
 
