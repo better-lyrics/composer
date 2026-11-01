@@ -1,6 +1,7 @@
 import { DeckKnob } from "@/audio/deck/deck-knob";
 import { NORMAL_PLAYBACK_RATE, useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
+import { settingEntry } from "@/stores/settings-catalog";
 import { Button } from "@/ui/button";
 import { Slider } from "@/ui/slider";
 import { Switch } from "@/ui/switch";
@@ -11,6 +12,7 @@ const RATE_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const RATE_MIN = 0.25;
 const RATE_MAX = 2;
 const RATE_STEP = 0.05;
+const PRESERVE_PITCH = settingEntry("preservePitch");
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -69,12 +71,12 @@ const RateKnob: React.FC = () => {
         </div>
         <div className="flex items-center justify-between gap-2.5 mt-3 pt-3 border-t border-(--divider)">
           <div className="flex flex-col gap-0.5 min-w-0">
-            <span className="text-sm text-composer-text">Preserve pitch</span>
-            <span className="text-xs text-composer-text-muted">Keeps pitch steady when speed changes.</span>
+            <span className="text-sm text-composer-text">{PRESERVE_PITCH.label}</span>
+            <span className="text-xs text-composer-text-muted">{PRESERVE_PITCH.description}</span>
           </div>
           <Switch
             checked={preservePitch}
-            label="Preserve pitch"
+            label={PRESERVE_PITCH.label}
             onCheckedChange={(value) => setSetting("preservePitch", value)}
           />
         </div>

@@ -3,11 +3,15 @@ import type { ModalNavSection } from "@/ui/modal-nav-layout";
 import {
   IconAlertTriangle,
   IconClock,
+  IconCpu,
   IconDeviceFloppy,
+  IconFileText,
+  IconGrain,
   IconKeyboard,
-  IconLayoutList,
   IconLayoutRows,
+  IconMagnet,
   IconPalette,
+  IconPencilCog,
   IconPlayerPlay,
   IconPlugConnected,
   IconSettings,
@@ -16,15 +20,19 @@ import {
 // -- Icons ---------------------------------------------------------------------
 
 const SETTINGS_SECTION_ICONS: Record<SettingsSectionId, ModalNavSection["icon"]> = {
+  changed: IconPencilCog,
   general: IconSettings,
-  projects: IconLayoutList,
   theme: IconPalette,
-  playback: IconPlayerPlay,
-  timeline: IconLayoutRows,
-  sync: IconClock,
   shortcuts: IconKeyboard,
   confirmations: IconAlertTriangle,
+  lyrics: IconFileText,
+  playback: IconPlayerPlay,
+  sync: IconClock,
+  timeline: IconLayoutRows,
+  snap: IconMagnet,
+  spectrum: IconGrain,
   storage: IconDeviceFloppy,
+  models: IconCpu,
   advanced: IconPlugConnected,
 };
 

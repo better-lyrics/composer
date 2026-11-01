@@ -1,6 +1,6 @@
 import { Scroll } from "@/ui/scroll";
 import { cn } from "@/utils/cn";
-import type { MutableRefObject } from "react";
+import { Fragment, type MutableRefObject } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -10,6 +10,7 @@ interface ModalNavSection<T extends string = string> {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   trailing?: React.ReactNode;
   dimmed?: boolean;
+  heading?: string;
 }
 
 interface ModalNavLayoutProps<T extends string> {
@@ -48,24 +49,28 @@ function ModalNavLayout<T extends string>({
             const Icon = section.icon;
             const isActive = activeSection === section.id;
             return (
-              <button
-                key={section.id}
-                type="button"
-                onClick={() => onSectionChange(section.id)}
-                aria-current={isActive ? "page" : undefined}
-                data-dimmed={section.dimmed ? "" : undefined}
-                className={cn(
-                  "flex items-center gap-2.5 w-full h-8.5 px-2.5 rounded-[9px] text-[13.5px] font-medium text-left cursor-pointer transition-[color,background-color,opacity]",
-                  isActive
-                    ? "bg-(--cap) shadow-(--raised-edge) text-composer-text [&>svg]:text-composer-accent-text"
-                    : "text-(--muted) hover:bg-(--layer-1) hover:text-(--label)",
-                  section.dimmed && !isActive && "opacity-40",
+              <Fragment key={section.id}>
+                {section.heading && (
+                  <h3 className="mt-2 mb-0.5 px-2.5 text-xs font-semibold text-(--muted)">{section.heading}</h3>
                 )}
-              >
-                <Icon size={17} className="shrink-0" />
-                {section.label}
-                {section.trailing && <span className="ml-auto">{section.trailing}</span>}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => onSectionChange(section.id)}
+                  aria-current={isActive ? "page" : undefined}
+                  data-dimmed={section.dimmed ? "" : undefined}
+                  className={cn(
+                    "flex items-center gap-2.5 w-full h-8.5 px-2.5 rounded-[9px] text-[13.5px] font-medium text-left cursor-pointer transition-[color,background-color,opacity]",
+                    isActive
+                      ? "bg-(--cap) shadow-(--raised-edge) text-composer-text [&>svg]:text-composer-accent-text"
+                      : "text-(--muted) hover:bg-(--layer-1) hover:text-(--label)",
+                    section.dimmed && !isActive && "opacity-40",
+                  )}
+                >
+                  <Icon size={17} className="shrink-0" />
+                  {section.label}
+                  {section.trailing && <span className="ml-auto">{section.trailing}</span>}
+                </button>
+              </Fragment>
             );
           })}
         </div>

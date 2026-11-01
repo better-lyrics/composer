@@ -1,5 +1,8 @@
 import type { LanguageTextVariant } from "@/domain/language/display";
+import { useSettingsStore } from "@/stores/settings";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SegmentedControl } from "@/ui/segmented-control";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { AutoAlignDropdown } from "@/views/sync/auto-align-dropdown";
@@ -43,6 +46,7 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
   handleReset,
   handleStartSync,
 }) => {
+  const showShortcutHints = useSettingsStore((s) => s.showShortcutHints);
   return (
     <div className="flex items-center justify-between gap-4 h-13 shrink-0 pl-5 pr-2 border-b border-(--divider)">
       <h2 className="sr-only">Sync</h2>
@@ -76,10 +80,12 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
           size="lg"
           variant={editMode ? "primary" : "secondary"}
           onClick={handleToggleEdit}
+          className={showShortcutHints ? "pr-2.5 [&>[data-inline-key-badge]]:ml-0" : undefined}
           title={editMode ? "Done editing, back to syncing" : "Edit timings (pauses playback)"}
         >
           {editMode ? <IconLock className="size-4" /> : <IconLockOpen className="size-4" />}
           {editMode ? "Done" : "Edit"}
+          {showShortcutHints && <InlineKeyBadge keys={getEffectiveKeysArray("sync.toggleEdit")} />}
         </Button>
         {isActive && !editMode && (
           <Button hasIcon size="lg" onClick={handleReset}>

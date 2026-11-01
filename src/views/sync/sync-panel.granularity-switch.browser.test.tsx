@@ -59,10 +59,11 @@ describe("SyncPanel granularity switch", () => {
       const screen = await render(<SyncPanel />);
 
       await screen.getByRole("button", { name: "Word" }).click();
+      await screen.getByRole("button", { name: "Edit" }).click();
 
-      await expect.element(screen.getByText("Hello world", { exact: true })).toBeInTheDocument();
-      await expect.element(screen.getByText("Good", { exact: true })).toBeInTheDocument();
-      await expect.element(screen.getByText("night", { exact: true })).toBeInTheDocument();
+      await expect.element(screen.getByText("Hello world", { exact: true }).first()).toBeInTheDocument();
+      await expect.element(screen.getByText("Good", { exact: true }).first()).toBeInTheDocument();
+      await expect.element(screen.getByText("night", { exact: true }).first()).toBeInTheDocument();
     });
 
     it("still splits an untimed line into word slots in Word mode", async () => {

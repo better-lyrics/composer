@@ -2,10 +2,10 @@
 // users run locally to extract YouTube audio through their residential IP.
 // See `experiments/composer-bridge/README.md` for what the binary is.
 
+import { settingEntry } from "@/stores/settings-catalog";
 import { composeAbortSignals } from "@/utils/abort-signals";
 import { stripTrailingSlashes } from "@/utils/url";
 
-const DEFAULT_BRIDGE_URL = "http://localhost:7777";
 const BRIDGE_REPO_URL = "https://github.com/better-lyrics/composer-bridge";
 const HEALTH_QUERY_KEY = "composer-bridge-health";
 const HEALTH_TIMEOUT_MS = 1500;
@@ -147,7 +147,7 @@ function formatBridgeErrorForToast(err: unknown): string {
   if (err instanceof BridgeError) {
     switch (err.code) {
       case "unreachable":
-        return "Composer Bridge is not running. Start the bridge or disable the YouTube Bridge setting.";
+        return `Composer Bridge is not running. Start the bridge or turn off ${settingEntry("youtubeBridge").label}.`;
       case "timeout":
         return "Composer Bridge timed out. Check that the bridge process is healthy.";
       case "empty":
@@ -161,7 +161,6 @@ function formatBridgeErrorForToast(err: unknown): string {
 
 export {
   BRIDGE_REPO_URL,
-  DEFAULT_BRIDGE_URL,
   HEALTH_QUERY_KEY,
   BridgeError,
   checkBridgeHealth,

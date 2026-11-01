@@ -1,3 +1,4 @@
+import { agentDisplayName } from "@/domain/agent/display-name";
 import { AGENT_PRESETS, getAgentColor } from "@/domain/agent/colors";
 import type { Agent, AgentType } from "@/domain/agent/model";
 import { useProjectStore } from "@/stores/project";
@@ -192,7 +193,7 @@ const AgentList: React.FC<{ onEdit: (agent: Agent) => void; onAdd: () => void }>
               className="grid grid-cols-subgrid col-span-full items-center gap-x-2.5 h-9 pl-2 pr-2.5 rounded-lg text-left cursor-pointer hover:bg-(--layer-1)"
             >
               <SingerTag color={getAgentColor(agent.id)} className="justify-self-start">
-                {agent.name || agent.id}
+                {agentDisplayName(agent)}
               </SingerTag>
               <span className="font-mono text-[11px] text-composer-text-muted">{agent.id}</span>
               <span className="text-xs text-right tabular-nums text-(--muted)">{pluralize(lineCount, "line")}</span>

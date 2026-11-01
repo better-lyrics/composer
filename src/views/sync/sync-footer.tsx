@@ -1,4 +1,5 @@
 import { getEffectiveKeysArray, getShortcutDescription } from "@/stores/shortcut-bindings";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { Key } from "@/ui/key";
 import { TimingDisplay } from "@/views/sync/timing-display";
 
@@ -81,12 +82,12 @@ const SyncFooter: React.FC<SyncFooterProps> = ({
     <div className="text-[13px] text-center text-(--muted)">
       {!isComplete && editMode && "Editing timings ・ click a word to re-record, or press Done to sync"}
       {status}
-      {!status &&
-        !isComplete &&
-        !editMode &&
-        !isPlaying &&
-        isActive &&
-        "Paused ・ Click a line to jump, or play to continue"}
+      {!status && !isComplete && !editMode && !isPlaying && isActive && (
+        <>
+          Paused ・ click a word to tap it again, or Edit{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("sync.toggleEdit")} /> for all timings
+        </>
+      )}
     </div>
 
     {gestureControls}

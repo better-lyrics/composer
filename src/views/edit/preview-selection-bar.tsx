@@ -1,3 +1,4 @@
+import { agentDisplayName } from "@/domain/agent/display-name";
 import { getAgentColor } from "@/domain/agent/colors";
 import { useProjectStore } from "@/stores/project";
 import { Select } from "@/ui/select";
@@ -34,7 +35,7 @@ const PreviewSelectionBar: React.FC<PreviewSelectionBarProps> = ({ selectedCount
             placeholder="Assign agent"
             value=""
             onChange={onAssignAgent}
-            options={agents.map((agent) => ({ value: agent.id, label: agent.name || agent.id }))}
+            options={agents.map((agent) => ({ value: agent.id, label: agentDisplayName(agent) }))}
             appearance="pick"
             renderOption={(option) => <SingerTag color={getAgentColor(option.value)}>{option.label}</SingerTag>}
           />

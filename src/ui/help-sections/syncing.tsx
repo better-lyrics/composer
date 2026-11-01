@@ -119,7 +119,10 @@ const SyncSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Re-syncing a line">
-      <p className={PROSE}>If a whole line went wrong, go back to it and sync again. New taps overwrite old timing.</p>
+      <p className={PROSE}>
+        Pause, click the word, then play and tap it again. New taps replace the old timing. To see every line with its
+        timings, press <InlineKeyBadge keys={getEffectiveKeysArray("sync.toggleEdit")} /> or Edit.
+      </p>
     </HelpTopic>
 
     <HelpTopic title="Splitting syllables">

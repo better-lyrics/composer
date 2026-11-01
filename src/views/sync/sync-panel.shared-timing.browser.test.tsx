@@ -1,7 +1,7 @@
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
-import { firstBegin, jumpToRow, key, lineById, load, song, tapAt, undo } from "@/test/shared-timing-sync";
+import { firstBegin, jumpToRow, key, lineById, load, song, tapAt, toggleEdit, undo } from "@/test/shared-timing-sync";
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -53,7 +53,7 @@ describe("SyncPanel · shared instance anchor", () => {
     await jumpToRow(screen, 3);
     await tapAt(40, () => firstBegin("c1-0"));
     setIsPlaying(false);
-    await expect.element(screen.getByText("2 skipped")).toBeInTheDocument();
+    await expect.element(screen.getByText(/Paused/)).toBeInTheDocument();
     await undo(() => firstBegin("c1-0"));
     expect(lineById("c1-1")?.words).toBeUndefined();
   });
@@ -137,15 +137,14 @@ describe("SyncPanel · shared instance anchor", () => {
   });
 
   describe("labels", () => {
-    it("asks for the placing tap, then marks the skipped lines as shared", async () => {
+    it("asks for the placing tap, then marks the instance placed", async () => {
       load(song({ first: "word", verse: "word" }));
       const screen = await render(<SyncPanel />);
       await jumpToRow(screen, 3);
-      await expect.element(screen.getByText("Tap to place")).toBeInTheDocument();
-      await expect.element(screen.getByText("Chorus 2", { exact: true })).toBeInTheDocument();
+      await expect.element(screen.getByText("Chorus 2 · tap to place")).toBeInTheDocument();
       await tapAt(40, () => firstBegin("c1-0"));
-      await expect.element(screen.getByText("Chorus 2 · shared").first()).toBeInTheDocument();
-      expect(screen.container.textContent).not.toContain("Tap to place");
+      await expect.element(screen.getByText("Chorus 2 · placed")).toBeInTheDocument();
+      expect(screen.container.textContent).not.toContain("tap to place");
     });
 
     it("drops the skipped band once the whole song is synced", async () => {
@@ -156,21 +155,24 @@ describe("SyncPanel · shared instance anchor", () => {
       await tapAt(50, () => firstBegin("v2"));
       await tapAt(50.5, () => lineById("v2")?.words?.length);
       setIsPlaying(false);
+      await toggleEdit(true);
       await expect.element(screen.getByText("Shared", { exact: true }).first()).toBeInTheDocument();
       expect(screen.container.textContent).not.toContain("2 skipped");
     });
 
-    it("lists the skipped lines in the paused list, and Sync anyway gives the instance its own timing", async () => {
+    it("lists the skipped lines under Edit, and Sync anyway gives the instance its own timing", async () => {
       load(song({ first: "word", verse: "word" }));
       const screen = await render(<SyncPanel />);
       await jumpToRow(screen, 3);
       await tapAt(40, () => firstBegin("c1-0"));
       setIsPlaying(false);
+      await toggleEdit(true);
       await expect.element(screen.getByText("2 skipped")).toBeInTheDocument();
       expect(screen.getByText("Shared", { exact: true }).elements()).toHaveLength(2);
       await screen.getByRole("button", { name: "Sync anyway" }).click();
       expect(useProjectStore.getState().groups[0].ownTimingInstances).toEqual([1]);
       await expect.element(screen.getByText("2 skipped")).not.toBeInTheDocument();
+      await toggleEdit(false);
       setIsPlaying(true);
       await tapAt(47, () => firstBegin("c1-0"));
       expect(firstBegin("c1-0")).toBe(47);

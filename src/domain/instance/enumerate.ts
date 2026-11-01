@@ -1,4 +1,4 @@
-import { type LinkedLine, belongsToInstance, isLinked } from "@/domain/instance/predicates";
+import { type LinkedLine, belongsToInstance, isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 
 // -- Types --------------------------------------------------------------------
@@ -12,6 +12,10 @@ interface InstancePosition {
 
 function linesOfInstance(lines: ReadonlyArray<LyricLine>, groupId: string, instanceIdx: number): LyricLine[] {
   return lines.filter((line) => belongsToInstance(line, groupId, instanceIdx));
+}
+
+function attachedLineIndices(lines: readonly LyricLine[], groupId: string, instanceIdx: number): number[] {
+  return lines.flatMap((line, index) => (isAttachedToInstance(line, groupId, instanceIdx) ? [index] : []));
 }
 
 function sortedIndices(indices: Set<number>): number[] {
@@ -69,6 +73,7 @@ function nextInstanceIdx(lines: ReadonlyArray<LyricLine>, groupId: string): numb
 // -- Exports ------------------------------------------------------------------
 
 export {
+  attachedLineIndices,
   instanceCount,
   instanceIndicesOf,
   instanceOrdinal,

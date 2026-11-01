@@ -1,39 +1,53 @@
-import type { SettingsState } from "@/stores/settings";
+import { DEFAULTS, type SettingsState } from "@/stores/settings";
 import { SETTINGS_CATALOG } from "@/stores/settings-catalog-entries";
+import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Types --------------------------------------------------------------------
 
 type SettingsSectionId =
+  | "changed"
   | "general"
-  | "projects"
   | "theme"
-  | "playback"
-  | "timeline"
-  | "sync"
   | "shortcuts"
   | "confirmations"
+  | "lyrics"
+  | "playback"
+  | "sync"
+  | "timeline"
+  | "snap"
+  | "spectrum"
   | "storage"
+  | "models"
   | "advanced";
 
 interface SettingsSection {
   id: SettingsSectionId;
   label: string;
+  heading?: string;
 }
 
 type SettingsGroupId =
+  | "Library"
+  | "Reset"
+  | "Lyrics"
+  | "Groups"
+  | "Resets"
+  | "Background vocals"
+  | "Seeking"
+  | "View"
+  | "Playhead"
+  | "Editing"
+  | "Snap to"
+  | "Snap distance"
+  | "Beat grid"
+  | "Look"
+  | "Analysis"
   | "Usage"
   | "Audio"
   | "Saving"
-  | "Lyrics"
-  | "Snap"
-  | "Snap distance"
-  | "Beat grid"
-  | "Playback"
-  | "Groups"
-  | "Editing"
-  | "Spectrum"
   | "Vocal separation"
-  | "Auto-align";
+  | "Auto-align"
+  | "Beat detection";
 
 interface SettingEntryCommon {
   section: SettingsSectionId;
@@ -52,15 +66,19 @@ type SettingEntry =
 // -- Sections -----------------------------------------------------------------
 
 const SETTINGS_SECTIONS: readonly SettingsSection[] = [
-  { id: "general", label: "General" },
-  { id: "projects", label: "Projects" },
+  { id: "changed", label: "Changed" },
+  { id: "general", label: "General", heading: "App" },
   { id: "theme", label: "Theme" },
-  { id: "playback", label: "Playback" },
-  { id: "timeline", label: "Timeline" },
-  { id: "sync", label: "Sync & Timing" },
   { id: "shortcuts", label: "Shortcuts" },
   { id: "confirmations", label: "Confirmations" },
-  { id: "storage", label: "Save & Storage" },
+  { id: "lyrics", label: "Lyrics", heading: "Editing" },
+  { id: "playback", label: "Playback" },
+  { id: "sync", label: "Sync & Timing" },
+  { id: "timeline", label: "Timeline" },
+  { id: "snap", label: "Snap" },
+  { id: "spectrum", label: "Spectrum" },
+  { id: "storage", label: "Save & Storage", heading: "System" },
+  { id: "models", label: "Models" },
   { id: "advanced", label: "Advanced" },
 ];
 
@@ -115,10 +133,18 @@ function visibleSettingIds(ids: readonly SettingId[], state: SettingsState): Set
   return ids.filter((id) => isSettingVisible(id, state));
 }
 
+function changedSettingIds(state: SettingsState): SettingId[] {
+  return SETTING_IDS.filter((id) => {
+    const key = settingEntry(id).settingKey;
+    return key !== undefined && isSettingVisible(id, state) && !isStructurallyEqual(state[key], DEFAULTS[key]);
+  });
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export type { SettingEntry, SettingHint, SettingId, SettingsGroupId, SettingsSectionId };
 export {
+  changedSettingIds,
   isSettingVisible,
   readSettingOn,
   SETTING_IDS,

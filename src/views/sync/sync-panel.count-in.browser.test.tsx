@@ -151,10 +151,9 @@ describe("Sync count-in", () => {
         3,
       );
       const screen = await render(<SyncPanel />);
-      const rows = () => screen.container.querySelectorAll<HTMLElement>('[role="button"][tabindex="-1"]');
-      await expect.poll(() => rows().length).toBe(2);
-      rows()[1].click();
-      await expect.poll(() => rows()[1].getAttribute("aria-current")).toBe("true");
+      const laneLine = () => screen.container.querySelectorAll<HTMLElement>("[data-lane-line]")[1];
+      await screen.getByRole("button", { name: "Hold", exact: true }).click();
+      await expect.poll(() => laneLine()?.getAttribute("aria-current")).toBe("true");
       useAudioStore.setState({ currentTime: 20 });
       space();
       expect(isCountingIn()).toBe(false);

@@ -13,7 +13,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { seedProject } from "@/test/idb";
 import { render } from "@/test/render";
-import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
+import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-url";
 
 // -- Test host ----------------------------------------------------------------
 

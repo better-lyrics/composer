@@ -1,3 +1,4 @@
+import { modelFilesBytes } from "@/domain/models/model-files";
 import { keepsYouTubeAudio } from "@/domain/storage/audio-retention";
 import { freeBytes } from "@/domain/storage/space";
 import { storageUsage } from "@/domain/storage/usage";
@@ -16,7 +17,7 @@ const StorageUsageSetting: React.FC = () => {
 
   if (entries === undefined || report === undefined) return null;
 
-  const usage = storageUsage(entries, report.stemJobs, report.unindexedAudioBytes);
+  const usage = storageUsage(entries, report.stemJobs, report.unindexedAudioBytes, modelFilesBytes(report.modelFiles));
 
   return (
     <div className="py-3">

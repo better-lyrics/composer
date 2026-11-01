@@ -1,3 +1,4 @@
+import { useSyncEditModeStore } from "@/stores/sync-edit-mode";
 import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -96,14 +97,22 @@ async function undo(expectChange: () => unknown): Promise<void> {
   await expect.poll(expectChange).not.toEqual(before);
 }
 
+async function toggleEdit(editMode: boolean): Promise<void> {
+  key({ key: "e", code: "KeyE" });
+  await expect.poll(() => useSyncEditModeStore.getState().editMode).toBe(editMode);
+}
+
+// The lane folds shared instances, so a jump to any row goes through the Edit list.
 async function jumpToRow(screen: Awaited<ReturnType<typeof render>>, index: number): Promise<void> {
   setIsPlaying(false);
+  await toggleEdit(true);
   const rows = () => screen.container.querySelectorAll<HTMLElement>('[role="button"][tabindex="-1"]');
   await expect.poll(() => rows().length).toBeGreaterThan(index);
   rows()[index].click();
+  await toggleEdit(false);
   setIsPlaying(true);
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { firstBegin, jumpToRow, key, lineById, load, song, tapAt, undo };
+export { firstBegin, jumpToRow, key, lineById, load, song, tapAt, toggleEdit, undo };

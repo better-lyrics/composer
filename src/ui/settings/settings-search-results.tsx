@@ -32,29 +32,9 @@ function groupResults(results: SettingsSearchResult): ResultGroup[] {
 
 // -- Components ----------------------------------------------------------------
 
-const SettingsSearchResults: React.FC<{ results: SettingsSearchResult }> = ({ results }) => {
-  const query = useSettingsSearchQuery();
-  const setSettingsQuery = useUIStore((s) => s.setSettingsQuery);
+const SettingResultGroups: React.FC<{ results: SettingsSearchResult }> = ({ results }) => {
   const setSettingsSection = useUIStore((s) => s.setSettingsSection);
-  const groups = groupResults(results);
-
-  if (groups.length === 0) {
-    return (
-      <div className="flex py-12">
-        <NoMatches
-          size="large"
-          message={<NoMatchMessage noun="settings" query={query} />}
-          action={
-            <Button size="sm" variant="secondary" onClick={() => setSettingsQuery("")}>
-              Clear search
-            </Button>
-          }
-        />
-      </div>
-    );
-  }
-
-  return groups.map((group) => (
+  return groupResults(results).map((group) => (
     <section key={group.section} aria-label={group.label}>
       <SearchResultGroupHeader
         icon={SETTINGS_SECTION_ICONS[group.section]}
@@ -73,6 +53,29 @@ const SettingsSearchResults: React.FC<{ results: SettingsSearchResult }> = ({ re
   ));
 };
 
+const SettingsSearchResults: React.FC<{ results: SettingsSearchResult }> = ({ results }) => {
+  const query = useSettingsSearchQuery();
+  const setSettingsQuery = useUIStore((s) => s.setSettingsQuery);
+
+  if (results.settings.length + results.shortcuts.length === 0) {
+    return (
+      <div className="flex py-12">
+        <NoMatches
+          size="large"
+          message={<NoMatchMessage noun="settings" query={query} />}
+          action={
+            <Button size="sm" variant="secondary" onClick={() => setSettingsQuery("")}>
+              Clear search
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
+  return <SettingResultGroups results={results} />;
+};
+
 // -- Exports -------------------------------------------------------------------
 
-export { SettingsSearchResults };
+export { SettingResultGroups, SettingsSearchResults };

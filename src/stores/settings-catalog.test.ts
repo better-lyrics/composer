@@ -1,5 +1,6 @@
 import { DEFAULTS } from "@/stores/settings";
 import {
+  changedSettingIds,
   isSettingVisible,
   readSettingOn,
   SETTING_IDS,
@@ -65,9 +66,19 @@ describe("SETTINGS_CATALOG", () => {
   });
 
   describe("regressions", () => {
+    it("regression: the word structure prompt can be turned back on from Confirmations", () => {
+      expect(settingIdsInSection("confirmations")).toContain("linkedDivergenceAction");
+      expect(settingKeyOf("linkedDivergenceAction")).toBe("linkedDivergenceAction");
+    });
+
     it("regression: lists the group deletion prompt under Confirmations", () => {
       expect(settingIdsInSection("confirmations")).toContain("confirmGroupDissolution");
     });
+  });
+
+  it("files snap and spectrum settings in their own sections", () => {
+    expect(settingEntry("beatSnap").section).toBe("snap");
+    expect(settingEntry("pitchLine").section).toBe("spectrum");
   });
 });
 
@@ -181,6 +192,60 @@ describe("visibleSettingIds", () => {
   describe("edge cases", () => {
     it("returns an empty list for an empty input", () => {
       expect(visibleSettingIds([], DEFAULTS)).toEqual([]);
+    });
+  });
+});
+
+describe("SETTINGS_SECTIONS", () => {
+  it("orders sections as the sidebar shows them, under App, Editing and System", () => {
+    expect(SETTINGS_SECTIONS.map(({ id, heading }) => [id, heading])).toEqual([
+      ["changed", undefined],
+      ["general", "App"],
+      ["theme", undefined],
+      ["shortcuts", undefined],
+      ["confirmations", undefined],
+      ["lyrics", "Editing"],
+      ["playback", undefined],
+      ["sync", undefined],
+      ["timeline", undefined],
+      ["snap", undefined],
+      ["spectrum", undefined],
+      ["storage", "System"],
+      ["models", undefined],
+      ["advanced", undefined],
+    ]);
+  });
+});
+
+describe("changedSettingIds", () => {
+  it("is empty at the defaults", () => {
+    expect(changedSettingIds(DEFAULTS)).toEqual([]);
+  });
+
+  it("lists settings whose stored value differs, in catalog order", () => {
+    const state = { ...DEFAULTS, followPlayhead: !DEFAULTS.followPlayhead, defaultPlaybackRate: 1 };
+    expect(changedSettingIds(state)).toEqual(["defaultPlaybackRate", "followPlayhead"]);
+  });
+
+  describe("invariants", () => {
+    it("compares structured values by content, not identity", () => {
+      expect(changedSettingIds({ ...DEFAULTS, experiments: { ...DEFAULTS.experiments } })).toEqual([]);
+    });
+  });
+
+  describe("edge cases", () => {
+    it("leaves out a changed setting whose row is hidden", () => {
+      const state = { ...DEFAULTS, smartCleanup: false, storageLimit: "5gb" as const };
+      expect(changedSettingIds(state)).toEqual(["smartCleanup"]);
+    });
+
+    it("never counts rows without a store key", () => {
+      expect(
+        changedSettingIds({
+          ...DEFAULTS,
+          cobaltInstances: [{ id: "self-hosted", label: "Self-hosted", url: "https://cobalt.example.com" }],
+        }),
+      ).not.toContain("cobaltInstances");
     });
   });
 });

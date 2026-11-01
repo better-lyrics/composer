@@ -11,7 +11,7 @@ function search(query: string, state: SettingsState = DEFAULTS) {
 }
 
 describe("searchSettings", () => {
-  it("finds every snap setting in the timeline", () => {
+  it("finds every snap setting in the snap section", () => {
     expect(search("snap").settings).toEqual(
       expect.arrayContaining(["timelineSnap", "vocalOnsetSnap", "snapDistanceWords", "snapPlayheadToPoints"]),
     );
@@ -98,7 +98,7 @@ describe("countMatchesBySection", () => {
   it("counts settings per section and shortcuts under shortcuts", () => {
     const result = search("snap");
     const counts = countMatchesBySection(result);
-    expect(counts.timeline).toBe(result.settings.length);
+    expect(counts.snap).toBe(result.settings.length);
     expect(counts.shortcuts).toBe(result.shortcuts.length);
     expect(counts.general).toBeUndefined();
   });

@@ -38,7 +38,7 @@ async function runSmartCleanup(context: CleanupContext): Promise<CleanupResult> 
     isProjectInUse,
     isStemJobInUse: context.isStemJobInUse,
     bytesToFree: bytesToFree({
-      usedBytes: usage.totalBytes,
+      usedBytes: usage.cleanableBytes,
       limitBytes: context.limitBytes,
       estimate,
       storageFull: context.storageFull,

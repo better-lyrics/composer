@@ -395,7 +395,7 @@ describe("end of lyrics", () => {
     await settle();
     await tapAt(11);
     expect(screen.container.textContent).not.toContain("Sync complete!");
-    expect(screen.container.textContent).toContain("Some lines still need timing");
+    expect(screen.container.textContent).toContain("A few lines still need timing");
   });
 });
 

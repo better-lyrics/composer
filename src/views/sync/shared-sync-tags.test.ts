@@ -1,6 +1,7 @@
-import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import type { LinkGroup } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
 import { createGroup, createLine } from "@/test/factories";
-import { placingInstanceName, sharedSyncTags } from "@/views/sync/shared-sync-tags";
+import { laneGroupTags, placingInstanceName } from "@/views/sync/shared-sync-tags";
 import { describe, expect, it } from "vitest";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
@@ -31,52 +32,44 @@ const song = (secondBegin?: number) => [
   verse("v2"),
 ];
 
-function tagsAt(lines: ReturnType<typeof song>, lineIndex: number, wordIndex = 0) {
-  const skipped = new Set(skippedSharedInstances(lines, groups).flatMap((instance) => instance.lineIds));
-  return Object.fromEntries(sharedSyncTags(lines, groups, { lineIndex, wordIndex }, skipped));
-}
+const tagsAt = (lines: LyricLine[], lineIndex: number, wordIndex = 0, gs: LinkGroup[] = groups) =>
+  Object.fromEntries(laneGroupTags(lines, gs, { lineIndex, wordIndex }));
 
-describe("sharedSyncTags", () => {
-  it("names the coming instance under the next line", () => {
-    expect(tagsAt(song(), 2, 1)).toEqual({ "c1-0": { label: "Chorus 2", color: "#ff0000", placement: "below" } });
-  });
-
-  it("asks for the placing tap above the anchor line", () => {
-    expect(tagsAt(song(), 3)).toEqual({ "c1-0": { label: "Tap to place", color: "#ff0000", placement: "above" } });
-  });
-
-  it("marks placed and skipped lines behind the cursor as shared", () => {
-    expect(tagsAt(song(40), 5)).toEqual({
-      "c1-0": { label: "Chorus 2 · shared", color: "#ff0000", placement: "below" },
-      "c1-1": { label: "Chorus 2 · shared", color: "#ff0000", placement: "below" },
+describe("laneGroupTags", () => {
+  it("names each instance on its first line", () => {
+    expect(tagsAt(song(), 0, 1)).toEqual({
+      "c0-0": { label: "Chorus 1", color: "#ff0000" },
+      "c1-0": { label: "Chorus 2 · shared", color: "#ff0000" },
     });
+  });
+
+  it("asks for the placing tap while the cursor waits on the anchor", () => {
+    expect(tagsAt(song(), 3)["c1-0"].label).toBe("Chorus 2 · tap to place");
+  });
+
+  it("marks a placed instance", () => {
+    expect(tagsAt(song(40), 5)["c1-0"].label).toBe("Chorus 2 · placed");
+  });
+
+  it("marks an instance with its own timing", () => {
+    const own = [
+      createGroup({ id: "g1", label: "Chorus", color: "#ff0000", sharesTiming: true, ownTimingInstances: [1] }),
+    ];
+    expect(tagsAt(song(), 0, 1, own)["c1-0"].label).toBe("Chorus 2 · own timing");
   });
 
   describe("edge cases", () => {
-    it("marks nothing ahead of the cursor as shared", () => {
-      expect(tagsAt(song(40), 0, 1)).toEqual({});
+    it("names instances of a group that does not share timing, without a suffix", () => {
+      const plain = [createGroup({ id: "g1", label: "Chorus", color: "#ff0000" })];
+      expect(tagsAt(song(), 0, 1, plain)["c1-0"].label).toBe("Chorus 2");
     });
 
-    it("gives no tags for an old group", () => {
-      const lines = song(40);
-      expect(
-        Object.fromEntries(
-          sharedSyncTags(lines, [createGroup({ id: "g1" })], { lineIndex: 3, wordIndex: 0 }, new Set()),
-        ),
-      ).toEqual({});
+    it("tags nothing for a line outside every group", () => {
+      expect(tagsAt(song(), 0, 1).v1).toBeUndefined();
     });
 
-    it("gives no placing tag past the first word", () => {
-      expect(tagsAt(song(), 3, 1)).toEqual({});
-    });
-
-    it("looks past a blank line for the next line", () => {
-      const lines = [...song().slice(0, 3), verse("blank", ""), ...song().slice(3)];
-      expect(tagsAt(lines, 2, 1)["c1-0"]?.label).toBe("Chorus 2");
-    });
-
-    it("keeps only the shared tags once the cursor is past the end", () => {
-      expect(tagsAt(song(40), 6)).toMatchObject({ "c1-0": { label: "Chorus 2 · shared" } });
+    it("asks for the placing tap only on the first word", () => {
+      expect(tagsAt(song(), 3, 1)["c1-0"].label).toBe("Chorus 2 · shared");
     });
   });
 });

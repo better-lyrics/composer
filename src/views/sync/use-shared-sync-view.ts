@@ -1,8 +1,9 @@
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { SyncCursor } from "@/domain/sync/cursor";
+import { foldedLineIds } from "@/domain/sync/folded-lines";
 import type { SkippedInstance } from "@/domain/sync/skipped-instances";
-import { placingInstanceName, sharedSyncTags } from "@/views/sync/shared-sync-tags";
+import { laneGroupTags, placingInstanceName } from "@/views/sync/shared-sync-tags";
 import { useMemo } from "react";
 
 // -- Hooks --------------------------------------------------------------------
@@ -24,12 +25,10 @@ function useSharedSyncView(
       ),
     [skippedInstances, lines],
   );
-  const sharedTags = useMemo(
-    () => sharedSyncTags(lines, groups, cursor, skippedLineIds),
-    [lines, groups, cursor, skippedLineIds],
-  );
+  const groupTags = useMemo(() => laneGroupTags(lines, groups, cursor), [lines, groups, cursor]);
   const placingName = useMemo(() => placingInstanceName(lines, groups, cursor), [lines, groups, cursor]);
-  return { skippedLineIds, skippedByLastLineId, sharedTags, placingName };
+  const folded = useMemo(() => foldedLineIds(lines, groups, cursor), [lines, groups, cursor]);
+  return { skippedLineIds, skippedByLastLineId, groupTags, folded, placingName };
 }
 
 // -- Exports ------------------------------------------------------------------

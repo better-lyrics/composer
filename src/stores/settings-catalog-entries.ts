@@ -1,166 +1,25 @@
 import type { SettingsState } from "@/stores/settings";
 import type { SettingEntry } from "@/stores/settings-catalog";
+import { CONFIRMATIONS_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-confirmations";
 import { GENERAL_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-general";
+import { LYRICS_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-lyrics";
+import { MODELS_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-models";
+import { PLAYBACK_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-playback";
+import { SNAP_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-snap";
 import { SPECTRUM_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-spectrum";
 import { STORAGE_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-storage";
+import { SYNC_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-sync";
 import { TIMELINE_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-timeline";
-import { pluralize } from "@/utils/pluralize";
-
-// -- Helpers ------------------------------------------------------------------
-
-function syncCountInDescription(seconds: number): string {
-  if (seconds === 0) return "Playback starts right away in Sync.";
-  return `Count down for ${pluralize(seconds, "second")} before Sync plays from the start of the song, so you are ready for the first word.`;
-}
 
 // -- Catalog ------------------------------------------------------------------
 
 const SETTINGS_CATALOG = {
   ...GENERAL_CATALOG_ENTRIES,
-  libraryView: {
-    section: "projects",
-    label: "Library view",
-    description: "How the Projects page shows your songs. The toggle on that page changes this too.",
-    settingKey: "libraryView",
-  },
-  librarySort: {
-    section: "projects",
-    label: "Default sort",
-    description: "The order projects appear in when you open Projects.",
-    settingKey: "librarySort",
-  },
-  launchScreen: {
-    section: "projects",
-    label: "On launch",
-    description: "What Composer shows when you open it.",
-    settingKey: "launchScreen",
-  },
   theme: {
     section: "theme",
     label: "Theme",
     description: "Pick a preset, customize colors, or import a theme code.",
     keywords: ["color", "colour", "palette", "dark", "light", "appearance", "preset", "import", "code"],
-  },
-  defaultPlaybackRate: {
-    section: "playback",
-    label: "Default playback rate",
-    description: "Starting playback speed while Remember playback speed is off.",
-    keywords: ["speed", "tempo"],
-    settingKey: "defaultPlaybackRate",
-  },
-  rememberPlaybackRate: {
-    section: "playback",
-    label: "Remember playback speed",
-    description: "Keep your playback speed between sessions.",
-    keywords: ["speed", "tempo"],
-    settingKey: "rememberPlaybackRate",
-  },
-  preservePitch: {
-    section: "playback",
-    label: "Preserve pitch",
-    description: "Keep pitch steady when the playback speed changes.",
-    keywords: ["speed"],
-    settingKey: "preservePitch",
-  },
-  rememberVolume: {
-    section: "playback",
-    label: "Remember volume",
-    description: "Keep your volume level between sessions.",
-    settingKey: "rememberVolume",
-  },
-  audioScrubPreview: {
-    section: "playback",
-    label: "Audio scrub preview",
-    description: "Play a short audio snippet while dragging or wheel-scrubbing the playhead.",
-    keywords: ["scrub", "sound"],
-    settingKey: "audioScrubPreview",
-  },
-  seekStep: {
-    section: "playback",
-    label: "Seek step",
-    description: "How far the seek back and seek forward shortcuts move the playhead.",
-    keywords: ["skip", "rewind", "forward", "jump"],
-    settingKey: "seekStep",
-  },
-  fineSeekStep: {
-    section: "playback",
-    label: "Fine seek step",
-    description: "How far the fine seek shortcuts move the playhead. Keep it small to land right before a word.",
-    keywords: ["skip", "rewind", "forward", "jump", "frame", "nudge"],
-    settingKey: "fineSeekStep",
-  },
-  autoSeparateOnImport: {
-    section: "playback",
-    group: "Vocal separation",
-    label: "Separate vocals on import",
-    description: "Runs the vocal model each time you load a new song.",
-    keywords: ["stems", "isolate", "auto-separate", "automatically"],
-    settingKey: "autoSeparateOnImport",
-  },
-  vocalModelVariant: {
-    section: "playback",
-    group: "Vocal separation",
-    label: "Vocal model",
-    description: "fp16 is half the size but needs WebGPU shader-f16.",
-    keywords: ["fp16", "fp32", "stems", "separation", "precision"],
-    settingKey: "vocalModelVariant",
-  },
-  ...TIMELINE_CATALOG_ENTRIES,
-  ...SPECTRUM_CATALOG_ENTRIES,
-  nudgeAmount: {
-    section: "sync",
-    label: "Nudge amount",
-    description: "How far timing shifts when using nudge controls.",
-    settingKey: "nudgeAmount",
-  },
-  defaultWordDuration: {
-    section: "sync",
-    label: "Default word duration",
-    description: "Length assigned to newly created words in the timeline.",
-    settingKey: "defaultWordDuration",
-  },
-  minWordDuration: {
-    section: "sync",
-    label: "Min word duration",
-    description: "Shortest allowed duration for a word.",
-    settingKey: "minWordDuration",
-  },
-  redoPreroll: {
-    section: "sync",
-    label: "Re-record pre-roll",
-    description:
-      "How far before the target line or word Sync starts playback after a jump, such as when you re-record a line or word, or when Sync skips past a repeat that already shares its timing.",
-    settingKey: "redoPreroll",
-  },
-  syncCountIn: {
-    section: "sync",
-    label: "Count-in",
-    descriptionFor: (state) => syncCountInDescription(state.syncCountIn),
-    keywords: ["countdown", "pre-roll", "start delay"],
-    settingKey: "syncCountIn",
-  },
-  defaultGranularity: {
-    section: "sync",
-    label: "Default granularity",
-    description: "Whether new projects start in word or line timing mode.",
-    settingKey: "defaultGranularity",
-  },
-  alignmentModelId: {
-    section: "sync",
-    group: "Auto-align",
-    label: "Alignment model",
-    description: "The model that times each word. Recommended follows the newest tested model.",
-    keywords: ["hubertfa", "auto-align", "forced alignment", "checkpoint", "manifest"],
-    settingKey: "alignmentModelId",
-  },
-  keepAlignmentModelLoaded: {
-    section: "sync",
-    group: "Auto-align",
-    label: "Keep alignment model loaded",
-    description:
-      "Aligning one line starts at once, and splitting a word times its syllables from the audio. Uses about 400 MB of memory.",
-    keywords: ["hubertfa", "auto-align", "memory", "gpu", "unload"],
-    settingKey: "keepAlignmentModelLoaded",
   },
   shortcutPreset: {
     section: "shortcuts",
@@ -168,61 +27,15 @@ const SETTINGS_CATALOG = {
     description: "Pick a whole layout, or import a shortcuts code.",
     keywords: ["preset", "layout", "space", "enter", "amll", "osu", "remastered", "import", "code", "share"],
   },
-  confirmReplaceLyrics: {
-    section: "confirmations",
-    label: "Confirm replacing lyrics on import",
-    description: "Show a warning when importing lyrics into a project that already has lines.",
-    settingKey: "confirmReplaceLyrics",
-  },
-  confirmSyncReset: {
-    section: "confirmations",
-    label: "Confirm resetting sync timing",
-    description: "Show a warning before clearing every word and line timing in the sync view.",
-    settingKey: "confirmSyncReset",
-  },
-  confirmClearProject: {
-    section: "confirmations",
-    label: "Confirm clearing project",
-    description: "Show a warning before discarding the current project, metadata, and audio file.",
-    settingKey: "confirmClearProject",
-  },
-  confirmResetSettings: {
-    section: "confirmations",
-    label: "Confirm resetting all settings",
-    description: "Show a warning before restoring all settings to their defaults.",
-    settingKey: "confirmResetSettings",
-  },
-  confirmResetShortcuts: {
-    section: "confirmations",
-    label: "Confirm resetting all shortcuts",
-    description: "Show a warning before clearing all custom keyboard bindings.",
-    settingKey: "confirmResetShortcuts",
-  },
-  confirmApplyToAllSyllableSplit: {
-    section: "confirmations",
-    label: "Confirm before splitting multiple identical words",
-    description: "Show a warning when a syllable split would also apply to other identical words across the project.",
-    settingKey: "confirmApplyToAllSyllableSplit",
-  },
-  confirmConformToGroup: {
-    section: "confirmations",
-    label: "Confirm conforming lines to a group",
-    description: "Show a warning before existing lines take on a group's text and timing.",
-    settingKey: "confirmConformToGroup",
-  },
-  confirmGroupDissolution: {
-    section: "confirmations",
-    label: "Confirm deleting a group",
-    description: "Show a warning before a group is deleted and its instances become standalone lines.",
-    settingKey: "confirmGroupDissolution",
-  },
-  confirmClearImportedSongDetails: {
-    section: "confirmations",
-    label: "Confirm clearing imported song details",
-    description: "Show a warning before a new song clears imported details you have not exported.",
-    settingKey: "confirmClearImportedSongDetails",
-  },
+  ...CONFIRMATIONS_CATALOG_ENTRIES,
+  ...LYRICS_CATALOG_ENTRIES,
+  ...PLAYBACK_CATALOG_ENTRIES,
+  ...SYNC_CATALOG_ENTRIES,
+  ...TIMELINE_CATALOG_ENTRIES,
+  ...SNAP_CATALOG_ENTRIES,
+  ...SPECTRUM_CATALOG_ENTRIES,
   ...STORAGE_CATALOG_ENTRIES,
+  ...MODELS_CATALOG_ENTRIES,
   previewRenderer: {
     section: "advanced",
     label: "Preview renderer",
