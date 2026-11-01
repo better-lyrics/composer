@@ -1,4 +1,4 @@
-import { describeUnsupportedVariant } from "@/audio/separation/backend-selection";
+import { runnableVariant } from "@/audio/separation/backend-selection";
 import { describe, expect, it } from "vitest";
 
 const webgpu = (hasShaderF16: boolean) => ({
@@ -9,24 +9,23 @@ const webgpu = (hasShaderF16: boolean) => ({
 });
 const wasm = { backend: "wasm" as const, reason: "test" };
 
-describe("describeUnsupportedVariant", () => {
-  it("rejects fp16 on a WebGPU device without shader-f16", () => {
-    const message = describeUnsupportedVariant("fp16", webgpu(false));
-    expect(message).toContain("shader-f16");
-    expect(message).toContain("test gpu");
-    expect(message).toContain("fp32");
+describe("runnableVariant", () => {
+  it("runs fp32 instead of fp16 on a WebGPU device without shader-f16", () => {
+    const runnable = runnableVariant("fp16", webgpu(false));
+    expect(runnable.variant).toBe("fp32");
+    expect(runnable.fallbackReason).toContain("test gpu");
   });
 
-  it("allows fp16 when the device supports shader-f16", () => {
-    expect(describeUnsupportedVariant("fp16", webgpu(true))).toBeNull();
+  it("runs fp32 instead of fp16 on WASM", () => {
+    expect(runnableVariant("fp16", wasm).variant).toBe("fp32");
   });
 
-  it("always allows fp32", () => {
-    expect(describeUnsupportedVariant("fp32", webgpu(false))).toBeNull();
-    expect(describeUnsupportedVariant("fp32", wasm)).toBeNull();
+  it("keeps fp16 when the device supports shader-f16", () => {
+    expect(runnableVariant("fp16", webgpu(true))).toEqual({ variant: "fp16", fallbackReason: null });
   });
 
-  it("leaves fp16 on the WASM path alone", () => {
-    expect(describeUnsupportedVariant("fp16", wasm)).toBeNull();
+  it("always keeps fp32", () => {
+    expect(runnableVariant("fp32", webgpu(false))).toEqual({ variant: "fp32", fallbackReason: null });
+    expect(runnableVariant("fp32", wasm)).toEqual({ variant: "fp32", fallbackReason: null });
   });
 });

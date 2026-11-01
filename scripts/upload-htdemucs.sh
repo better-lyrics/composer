@@ -61,14 +61,15 @@ cat > "${CORS_FILE}" <<'JSON'
 JSON
 pnpm dlx wrangler r2 bucket cors set "${BUCKET}" --file "${CORS_FILE}"
 
-for variant in fp16 fp32; do
-  file="${MODELS_DIR}/htdemucs_${variant}.onnx"
+# Keep these names in sync with MODEL_FILENAMES in src/audio/separation/model-registry.ts.
+for name in htdemucs_fp16_v2.onnx htdemucs_fp32.onnx; do
+  file="${MODELS_DIR}/${name}"
   if [[ ! -f "${file}" ]]; then
     echo "skip: ${file} not present"
     continue
   fi
-  echo "==> uploading htdemucs_${variant}.onnx ($(du -h "${file}" | cut -f1))"
-  pnpm dlx wrangler r2 object put --remote "${BUCKET}/htdemucs_${variant}.onnx" \
+  echo "==> uploading ${name} ($(du -h "${file}" | cut -f1))"
+  pnpm dlx wrangler r2 object put --remote "${BUCKET}/${name}" \
     --file="${file}" \
     --content-type=application/octet-stream \
     --cache-control='public, max-age=31536000, immutable'
@@ -76,4 +77,4 @@ done
 
 echo ""
 echo "Done. Verify the files are reachable via your bound custom domain, e.g.:"
-echo "  curl -I https://models.composer.betterlyrics.org/htdemucs_fp16.onnx"
+echo "  curl -I https://models.composer.betterlyrics.org/htdemucs_fp16_v2.onnx"

@@ -87,16 +87,15 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
     kind: "select",
     options: [
       {
-        value: "fp32",
-        label: "fp32",
-        badge: "Recommended",
-        detail: `${formatWholeMegabytes(VOCAL_MODEL_APPROX_BYTES.fp32)} · Runs on every GPU`,
-      },
-      {
         value: "fp16",
         label: "fp16",
-        badge: "Experimental",
-        detail: `${formatWholeMegabytes(VOCAL_MODEL_APPROX_BYTES.fp16)} · Needs WebGPU shader-f16`,
+        badge: "Recommended",
+        detail: `${formatWholeMegabytes(VOCAL_MODEL_APPROX_BYTES.fp16)} · Uses fp32 without WebGPU shader-f16`,
+      },
+      {
+        value: "fp32",
+        label: "fp32",
+        detail: `${formatWholeMegabytes(VOCAL_MODEL_APPROX_BYTES.fp32)} · Full precision`,
       },
     ],
   },
