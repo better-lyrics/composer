@@ -61,6 +61,13 @@ const syncCarouselTransition: Transition = {
   damping: 30,
 };
 
+const syncTapRingVariants: Variants = {
+  initial: { scale: 0.92, opacity: 0.7 },
+  animate: { scale: 1.25, opacity: 0 },
+};
+
+const syncTapRingTransition: Transition = { duration: 0.26, ease: "easeOut" };
+
 function buildGroupPingVariants(color: string): Variants {
   const transparent = hexToRgba(color, 0);
   const visible = hexToRgba(color, 0.55);
@@ -192,6 +199,8 @@ export {
   centeredSlideUpVariants,
   centeredFadeVariants,
   syncCarouselTransition,
+  syncTapRingTransition,
+  syncTapRingVariants,
   buildGroupPingVariants,
   shimmerTransition,
   shimmerVariants,
