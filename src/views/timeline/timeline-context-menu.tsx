@@ -1,3 +1,4 @@
+import { agentDisplayName } from "@/domain/agent/display-name";
 import { getAgentColor } from "@/domain/agent/colors";
 import type { LyricLine } from "@/domain/line/model";
 import { selectionBounds } from "@/domain/selection/bounds";
@@ -301,8 +302,8 @@ function AgentAssignment({ targets, clearContextMenu, lineIndex }: SectionProps 
       {agents.map((agent) => (
         <MenuRadioItem
           key={agent.id}
-          lead={<SingerTag color={getAgentColor(agent.id)}>{agent.name || agent.id}</SingerTag>}
-          label={agent.name || agent.id}
+          lead={<SingerTag color={getAgentColor(agent.id)}>{agentDisplayName(agent)}</SingerTag>}
+          label={agentDisplayName(agent)}
           hideLabel
           checked={activeAgentId === agent.id}
           onSelect={() => handleAssignAgent(agent.id)}

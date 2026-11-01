@@ -1,3 +1,4 @@
+import { agentDisplayName } from "@/domain/agent/display-name";
 import { getAgentColor } from "@/domain/agent/colors";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { Popover } from "@/ui/popover";
@@ -74,7 +75,7 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
           if (editsSelection) onBulkAgentChange(next);
           else onAgentChange(line.lineId, next);
         }}
-        options={agents.map((agent) => ({ value: agent.id, label: agent.name || agent.id }))}
+        options={agents.map((agent) => ({ value: agent.id, label: agentDisplayName(agent) }))}
         renderOption={(option) => <SingerTag color={getAgentColor(option.value)}>{option.label}</SingerTag>}
         trigger={
           <button
