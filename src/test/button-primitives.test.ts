@@ -1,5 +1,7 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { SRC_ROOT, findProductionMatches } from "@/test/source-files";
 import { describe, expect, it } from "vitest";
-import { findProductionMatches } from "@/test/source-files";
 
 // -- Rules --------------------------------------------------------------------
 
@@ -8,11 +10,11 @@ interface PrimitiveRule {
   pattern: RegExp;
   use: string;
   allowed: (relPath: string) => boolean;
+  exceptions?: ReadonlySet<string>;
   offendingExamples: string[];
 }
 
-// The sync header text toggle has no inactive dimming, and adding it would change how it looks.
-const TOGGLE_RECIPE_EXCEPTIONS = new Set(["views/sync/sync-header.tsx"]);
+const TOGGLE_RECIPE_EXCEPTIONS = new Set<string>();
 
 const RULES: PrimitiveRule[] = [
   {
@@ -23,10 +25,11 @@ const RULES: PrimitiveRule[] = [
     offendingExamples: ['<Button\n  variant="ghost"\n  size="icon"\n>'],
   },
   {
-    name: 'a hand-rolled toggle variant (? "primary" : "ghost")',
-    pattern: /\? "primary" : "ghost"/,
+    name: 'a hand-rolled toggle variant (? "latch" : "ghost")',
+    pattern: /\? "(?:primary|latch)" : "ghost"/,
     use: "ToggleButton from @/ui/toggle-button, which sets aria-pressed",
     allowed: (relPath) => relPath === "ui/toggle-button.tsx" || TOGGLE_RECIPE_EXCEPTIONS.has(relPath),
+    exceptions: TOGGLE_RECIPE_EXCEPTIONS,
     offendingExamples: ['variant={active ? "primary" : "ghost"}'],
   },
   {
@@ -54,5 +57,13 @@ describe("button recipes go through their primitives", () => {
     it(`recognises ${rule.name}`, () => {
       for (const example of rule.offendingExamples) expect(example).toMatch(rule.pattern);
     });
+
+    for (const exception of rule.exceptions ?? []) {
+      it(`regression: the ${exception} exception to ${rule.name} is still needed`, () => {
+        const path = join(SRC_ROOT, exception);
+        expect(existsSync(path)).toBe(true);
+        expect(readFileSync(path, "utf8")).toMatch(rule.pattern);
+      });
+    }
   }
 });

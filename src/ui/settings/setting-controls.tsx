@@ -1,19 +1,17 @@
+import { Slider } from "@/ui/slider";
 import { useSettingsStore } from "@/stores/settings";
 import { type SettingId, settingEntry, settingKeyOf } from "@/stores/settings-catalog";
-import { Select } from "@/ui/select";
+import { Select, type SelectOption } from "@/ui/select";
+import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
-import { cn } from "@/utils/cn";
+import { Switch } from "@/ui/switch";
+import { useId } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
 interface SliderAction {
   label: string;
   onClick: () => void;
-}
-
-interface SelectOption {
-  value: string;
-  label: string;
 }
 
 interface SliderSettingProps {
@@ -32,39 +30,34 @@ const SliderSetting: React.FC<SliderSettingProps> = ({ id, min, max, step, forma
   const stored = useSettingsStore((s) => s[settingKey]);
   const set = useSettingsStore((s) => s.set);
   const value = typeof stored === "number" ? stored : min;
-  const percent = ((value - min) / (max - min)) * 100;
 
   return (
-    <div className="flex flex-col gap-2 py-3">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-3 py-3.5 -mx-2.5 px-2.5 rounded-[10px] transition-colors has-[:not(input,textarea):focus-visible]:bg-(--focus-tint)">
+      <SettingRowLayout className="py-0 mx-0 px-0 has-[:not(input,textarea):focus-visible]:bg-transparent">
         <SettingText id={id} />
         <div className="flex items-center gap-2">
           {action && (
             <button
               type="button"
               onClick={action.onClick}
-              className="text-xs text-composer-accent-text hover:text-composer-accent cursor-pointer transition-colors"
+              className="text-[12.5px] text-composer-accent-text hover:underline cursor-pointer"
             >
               {action.label}
             </button>
           )}
-          <span className="text-sm font-mono text-composer-text-secondary tabular-nums min-w-12 text-right">
+          <span className="text-[13px] font-medium font-mono text-composer-text tabular-nums min-w-16 text-right">
             {format ? format(value) : value}
           </span>
         </div>
-      </div>
-      <input
-        type="range"
+      </SettingRowLayout>
+      <Slider
         aria-label={settingEntry(id).label}
         min={min}
         max={max}
         step={step}
         value={value}
-        onChange={(e) => set(settingKey, Number(e.target.value))}
-        className="settings-slider w-full cursor-pointer"
-        style={{
-          background: `linear-gradient(to right, var(--color-composer-accent) ${percent}%, var(--color-composer-button) ${percent}%)`,
-        }}
+        onChange={(next) => set(settingKey, next)}
+        className="w-full"
       />
     </div>
   );
@@ -76,27 +69,10 @@ const ToggleSetting: React.FC<{ id: SettingId }> = ({ id }) => {
   const set = useSettingsStore((s) => s.set);
 
   return (
-    <div className="flex items-center justify-between py-3">
+    <SettingRowLayout>
       <SettingText id={id} />
-      <button
-        type="button"
-        role="switch"
-        aria-checked={isOn}
-        aria-label={settingEntry(id).label}
-        onClick={() => set(settingKey, !isOn)}
-        className={cn(
-          "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors",
-          isOn ? "bg-composer-accent" : "bg-composer-button",
-        )}
-      >
-        <span
-          className={cn(
-            "pointer-events-none inline-block size-4 rounded-full bg-white shadow transform transition-transform mt-0.5",
-            isOn ? "translate-x-4.5" : "translate-x-0.5",
-          )}
-        />
-      </button>
-    </div>
+      <Switch checked={isOn} label={settingEntry(id).label} onCheckedChange={(checked) => set(settingKey, checked)} />
+    </SettingRowLayout>
   );
 };
 
@@ -106,19 +82,32 @@ const SelectSetting: React.FC<{ id: SettingId; options: SelectOption[] }> = ({ i
   const set = useSettingsStore((s) => s.set);
 
   return (
-    <div className="flex items-center justify-between py-3">
+    <SettingRowLayout>
       <SettingText id={id} />
       <Select
         aria-label={settingEntry(id).label}
         value={value}
         onChange={(next) => set(settingKey, next)}
         options={options}
+        className="h-9 pl-3 pr-[5px] rounded-xl border-transparent hover:border-transparent btn-raised [&>svg]:size-3.5"
       />
-    </div>
+    </SettingRowLayout>
+  );
+};
+
+const SettingsGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
+  const headingId = useId();
+  return (
+    <section aria-labelledby={headingId}>
+      <h3 id={headingId} className="mt-[18px] mb-0.5 text-xs font-semibold text-(--muted) select-none">
+        {title}
+      </h3>
+      <div className="divide-y divide-(--divider)">{children}</div>
+    </section>
   );
 };
 
 // -- Exports -------------------------------------------------------------------
 
-export { SelectSetting, SliderSetting, ToggleSetting };
-export type { SelectOption, SliderAction };
+export { SelectSetting, SettingsGroup, SliderSetting, ToggleSetting };
+export type { SliderAction };

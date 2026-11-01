@@ -1,10 +1,11 @@
 import type { SettingsState } from "@/stores/settings";
 import { SETTINGS_CATALOG } from "@/stores/settings-catalog-entries";
 
-// -- Types ---------------------------------------------------------------------
+// -- Types --------------------------------------------------------------------
 
 type SettingsSectionId =
   | "general"
+  | "projects"
   | "theme"
   | "playback"
   | "timeline"
@@ -19,19 +20,40 @@ interface SettingsSection {
   label: string;
 }
 
-interface SettingEntry {
+type SettingsGroupId =
+  | "Usage"
+  | "Audio"
+  | "Saving"
+  | "Lyrics"
+  | "Snap"
+  | "Snap distance"
+  | "Beat grid"
+  | "Playback"
+  | "Groups"
+  | "Editing"
+  | "Spectrum"
+  | "Vocal separation"
+  | "Auto-align";
+
+interface SettingEntryCommon {
   section: SettingsSectionId;
   label: string;
-  description: string;
   keywords?: readonly string[];
   settingKey?: keyof SettingsState;
   readOn?: (state: SettingsState) => boolean;
+  group?: SettingsGroupId;
+  visibleWhen?: (state: SettingsState) => boolean;
 }
 
-// -- Sections ------------------------------------------------------------------
+type SettingEntry =
+  | (SettingEntryCommon & { description: string; descriptionFor?: never })
+  | (SettingEntryCommon & { description?: never; descriptionFor: (state: SettingsState) => string });
+
+// -- Sections -----------------------------------------------------------------
 
 const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   { id: "general", label: "General" },
+  { id: "projects", label: "Projects" },
   { id: "theme", label: "Theme" },
   { id: "playback", label: "Playback" },
   { id: "timeline", label: "Timeline" },
@@ -51,7 +73,7 @@ interface SettingHint {
 
 const SETTING_IDS = Object.keys(SETTINGS_CATALOG) as readonly SettingId[];
 
-// -- Lookups -------------------------------------------------------------------
+// -- Lookups ------------------------------------------------------------------
 
 function settingEntry(id: SettingId): SettingEntry {
   return SETTINGS_CATALOG[id];
@@ -79,7 +101,32 @@ function readSettingOn(id: SettingId, state: SettingsState): boolean | null {
   return typeof value === "boolean" ? value : null;
 }
 
-// -- Exports -------------------------------------------------------------------
+function settingDescription(id: SettingId, state: SettingsState): string {
+  const entry = settingEntry(id);
+  return entry.descriptionFor ? entry.descriptionFor(state) : entry.description;
+}
 
-export { SETTING_IDS, SETTINGS_SECTIONS, readSettingOn, sectionLabel, settingEntry, settingIdsInSection, settingKeyOf };
-export type { SettingEntry, SettingHint, SettingId, SettingsSectionId };
+function isSettingVisible(id: SettingId, state: SettingsState): boolean {
+  const { visibleWhen } = settingEntry(id);
+  return visibleWhen ? visibleWhen(state) : true;
+}
+
+function visibleSettingIds(ids: readonly SettingId[], state: SettingsState): SettingId[] {
+  return ids.filter((id) => isSettingVisible(id, state));
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export type { SettingEntry, SettingHint, SettingId, SettingsGroupId, SettingsSectionId };
+export {
+  isSettingVisible,
+  readSettingOn,
+  SETTING_IDS,
+  SETTINGS_SECTIONS,
+  sectionLabel,
+  settingDescription,
+  settingEntry,
+  settingIdsInSection,
+  settingKeyOf,
+  visibleSettingIds,
+};

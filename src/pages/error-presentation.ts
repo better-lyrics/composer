@@ -1,4 +1,4 @@
-import { type Icon, IconBug, IconDiscOff, IconGhost2 } from "@tabler/icons-react";
+import { type Icon, IconBug, IconDiscOff, IconGhost2, IconTruckDelivery } from "@tabler/icons-react";
 import { isRouteErrorResponse } from "react-router-dom";
 
 // -- Types ---------------------------------------------------------------------
@@ -23,6 +23,14 @@ const NOT_FOUND: ErrorPresentation = {
   icon: IconDiscOff,
   primaryAction: "home",
   status: 404,
+};
+
+const STALE_BUILD: ErrorPresentation = {
+  title: "Special delivery",
+  subtitle:
+    "Okay, that one's on us. A new version of Composer shipped while you were working. Your project is saved, so no need to panic. Reload to unpack it.",
+  icon: IconTruckDelivery,
+  primaryAction: "reload",
 };
 
 // -- Helpers -------------------------------------------------------------------
@@ -71,7 +79,11 @@ function describeError(error: unknown): ErrorPresentation {
   };
 }
 
+function describeStaleBuild(error: unknown): ErrorPresentation {
+  return { ...STALE_BUILD, stack: error instanceof Error ? error.stack : safeStringify(error) };
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { describeError, safeStringify };
+export { describeError, describeStaleBuild, safeStringify };
 export type { ErrorPresentation };

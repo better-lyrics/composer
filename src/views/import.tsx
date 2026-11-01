@@ -1,14 +1,36 @@
+import { FileDropArea } from "@/audio/file-drop-area";
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
+import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
+import { youtubeSourceTitle } from "@/domain/project/display-title";
+import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { useBridgeThumb } from "@/hooks/useBridgeThumb";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
+import { PROJECT_FILE_EXTENSIONS_LABEL } from "@/lib/project-file-read";
+import { importProjectFile } from "@/lib/project-import";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { fileNameWithoutExtension } from "@/utils/file-name";
-import { IconBrandYoutube, IconClock, IconFile, IconLoader2, IconMusic } from "@tabler/icons-react";
+import { fileExtensionLabel, fileNameWithoutExtension } from "@/utils/file-name";
+import { formatFileSize } from "@/utils/format-file-size";
+import { IMPORT_AREA, ImportZone, OrDivider, SourceCard } from "@/views/import/import-layout";
+import { MissingAudioPanel } from "@/views/import/missing-audio-panel";
+import { ReplaceAudioMenu } from "@/views/import/replace-audio-menu";
+import { IconBrandYoutube, IconFileMusic, IconFileUpload, IconLoader2, IconMusic } from "@tabler/icons-react";
+import { useState } from "react";
+
+// -- Constants ----------------------------------------------------------------
+
+const LOAD_DROP_LABEL = "Drop to load audio or open a project";
+const REPLACE_DROP_LABEL = "Drop to replace the audio or open a project";
+const NEW_PROJECT_DROP_LABEL = "Drop to start a new project or open a project file";
+const SUPPORTED_FILES_PROSE = `Supports ${AUDIO_FORMATS_PROSE}, or a project file (${PROJECT_FILE_EXTENSIONS_LABEL})`;
 
 // -- Helpers ------------------------------------------------------------------
+
+function openProjectFile(file: File): void {
+  void importProjectFile(file);
+}
 
 function formatDuration(seconds: number): string {
   if (seconds <= 0) return "--:--";
@@ -16,21 +38,6 @@ function formatDuration(seconds: number): string {
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function getFileExtension(filename: string): string {
-  return filename.split(".").pop()?.toUpperCase() || "AUDIO";
-}
-
-// -- Constants ----------------------------------------------------------------
-
-const GUTTER_WIDTH = 56;
-const ROW_HEIGHT = 56;
 
 // -- Sub-components -----------------------------------------------------------
 
@@ -42,35 +49,45 @@ const YouTubeSourceThumb: React.FC<{ videoId: string; loading: boolean }> = ({ v
   const thumbQuery = useBridgeThumb();
 
   if (hasMatchingPersistedThumb) {
-    return <img src={persistedThumb} alt="" className="size-full object-cover" />;
+    return (
+      <img
+        src={persistedThumb}
+        alt=""
+        className="size-full object-cover outline outline-1 -outline-offset-1 outline-white/10 rounded-[10px]"
+      />
+    );
   }
   if (loading || (bridgeEnabled && thumbQuery.isFetching)) {
-    return <div className="size-full bg-composer-bg-elevated animate-pulse" />;
+    return <div className="size-full bg-(--layer-2) animate-pulse" />;
   }
-  return <IconBrandYoutube size={16} className="text-composer-accent" />;
+  return <IconBrandYoutube size={24} />;
 };
-
-const OrDivider: React.FC = () => (
-  <div className="flex items-center gap-3 w-full max-w-md select-none">
-    <div className="flex-1 h-px bg-composer-border" />
-    <span className="text-xs text-composer-text-muted">or</span>
-    <div className="flex-1 h-px bg-composer-border" />
-  </div>
-);
 
 interface ReplaceControlsProps {
   onFileDrop: (file: File) => void;
+  startsNewProject: boolean;
 }
 
-const ReplaceControls: React.FC<ReplaceControlsProps> = ({ onFileDrop }) => (
-  <div className="flex flex-col items-center gap-4 flex-1 p-6 w-full">
-    <div className="w-full max-w-md flex-1 min-h-32">
-      <FileDropZone accept="audio/*" onFileDrop={onFileDrop}>
-        <p className="text-sm text-composer-text-muted">Drop another file to replace</p>
-      </FileDropZone>
-    </div>
+const ReplaceControls: React.FC<ReplaceControlsProps> = ({ onFileDrop, startsNewProject }) => (
+  <div className="flex flex-col gap-4 w-full mt-6">
+    <FileDropZone
+      accept="audio/*"
+      onFileDrop={onFileDrop}
+      onProjectFileDrop={openProjectFile}
+      className="gap-1 px-0 py-2"
+    >
+      <IconFileUpload className="size-8 mb-2 text-composer-text-faint" stroke={1.5} />
+      <p className="text-base font-medium text-(--label)">
+        {startsNewProject ? "Drop another song to start a new project" : "Drop another file to replace"}
+      </p>
+      <p className="text-[13px] text-(--muted)">
+        or a project file to open it, or <span className="text-composer-accent-text">click to browse</span>
+      </p>
+    </FileDropZone>
     <OrDivider />
-    <YouTubeUrlInput placeholder="Or load a different YouTube URL" />
+    <YouTubeUrlInput
+      placeholder={startsNewProject ? "Or start a new project from a YouTube URL" : "Or load a different YouTube URL"}
+    />
   </div>
 );
 
@@ -79,26 +96,49 @@ interface SourceDurationProps {
   duration: number;
 }
 
-// Shown in the imported-source row. While the source is loading (a YouTube
-// download or an mp3 decode) it shows the spinner; once ready it shows the
-// clock and resolved duration.
-const SourceDuration: React.FC<SourceDurationProps> = ({ loading, duration }) => (
-  <div className="flex items-center gap-1.5">
-    {loading ? (
-      <>
-        <IconLoader2 size={14} className="animate-spin text-composer-accent" />
-        <span className="text-sm font-mono text-composer-text-muted tabular-nums">--:--</span>
-      </>
-    ) : (
-      <>
-        <IconClock size={14} className="text-composer-text opacity-50" />
-        <span className="text-sm font-mono text-composer-text tabular-nums select-text">
-          {formatDuration(duration)}
-        </span>
-      </>
-    )}
-  </div>
-);
+const SourceDuration: React.FC<SourceDurationProps> = ({ loading, duration }) =>
+  loading ? (
+    <span className="flex items-center gap-[5px]">
+      <IconLoader2 size={13} className="animate-spin text-composer-accent-text" />
+      <span className="font-mono tabular-nums">--:--</span>
+    </span>
+  ) : (
+    <span className="font-mono tabular-nums">{formatDuration(duration)}</span>
+  );
+
+const DetailSeparator: React.FC = () => <span aria-hidden="true">・</span>;
+
+interface LoadedSongPanelProps {
+  art: React.ReactNode;
+  title: React.ReactNode;
+  subtitle: React.ReactNode;
+  startsNewProject: boolean;
+  onFileDrop: (file: File) => void;
+}
+
+const LoadedSongPanel: React.FC<LoadedSongPanelProps> = ({ art, title, subtitle, startsNewProject, onFileDrop }) => {
+  const [card, setCard] = useState<HTMLDivElement | null>(null);
+  return (
+    <FileDropArea
+      data-tour="import-dropzone"
+      className={IMPORT_AREA}
+      onFileDrop={onFileDrop}
+      onProjectFileDrop={openProjectFile}
+      dropLabel={startsNewProject ? NEW_PROJECT_DROP_LABEL : REPLACE_DROP_LABEL}
+    >
+      <ImportZone>
+        <SourceCard
+          ref={setCard}
+          art={art}
+          title={title}
+          subtitle={subtitle}
+          trailing={<ReplaceAudioMenu card={card} />}
+        />
+        <ReplaceControls onFileDrop={onFileDrop} startsNewProject={startsNewProject} />
+      </ImportZone>
+    </FileDropArea>
+  );
+};
 
 // -- Component ----------------------------------------------------------------
 
@@ -107,101 +147,91 @@ const ImportPanel: React.FC = () => {
   const duration = useAudioStore((s) => s.duration);
   const isLoading = useAudioStore((s) => s.isLoading);
   const projectTitle = useProjectStore((s) => s.metadata.title);
+  const expectedAudio = useAudioStore((s) => s.expectedAudio);
+  const startsNewProject = useProjectStore((s) => hasLyricLines(s.lines));
 
   const handleFileDrop = useLoadAudioFile();
 
+  if (!source && expectedAudio) return <MissingAudioPanel expected={expectedAudio} />;
+
   if (source && source.type === "file") {
     const file = source.file;
-    const extension = getFileExtension(file.name);
+    const extension = fileExtensionLabel(file.name, "AUDIO");
     const fileName = fileNameWithoutExtension(file.name);
 
     return (
-      <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full">
-        <div className="flex border-t border-composer-border">
-          <div
-            className="shrink-0 flex items-center justify-center bg-composer-accent/10"
-            style={{ width: GUTTER_WIDTH, height: ROW_HEIGHT }}
-          >
-            <IconFile size={16} className="text-composer-accent" />
-          </div>
-
-          <div
-            className="flex-1 flex items-center gap-6 px-4 border-l border-composer-accent/25"
-            style={{ height: ROW_HEIGHT }}
-          >
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-composer-text select-text">{fileName}</p>
-              <p className="text-xs text-composer-text-muted">{extension}</p>
-            </div>
-
+      <LoadedSongPanel
+        key="file"
+        art={<IconFileMusic size={24} />}
+        title={fileName}
+        subtitle={
+          <>
+            {extension}
+            <DetailSeparator />
+            {formatFileSize(file.size)}
+            <DetailSeparator />
             <SourceDuration loading={isLoading} duration={duration} />
-
-            <div className="text-sm text-composer-text-muted">{formatFileSize(file.size)}</div>
-          </div>
-        </div>
-
-        <ReplaceControls onFileDrop={handleFileDrop} />
-      </div>
+          </>
+        }
+        startsNewProject={startsNewProject}
+        onFileDrop={handleFileDrop}
+      />
     );
   }
 
   if (source && source.type === "youtube") {
     const videoId = source.videoId;
-    const hasResolvedTitle = Boolean(projectTitle && projectTitle !== videoId);
+    const sourceTitle = youtubeSourceTitle(projectTitle, videoId);
     const downloading = isLoading && !source.file;
-    const titleLoading = downloading && !hasResolvedTitle;
+    const titleLoading = downloading && sourceTitle === videoId;
 
     return (
-      <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full">
-        <div className="flex border-t border-composer-border">
-          <div
-            className="shrink-0 flex items-center justify-center bg-composer-accent/10 overflow-hidden"
-            style={{ width: GUTTER_WIDTH, height: ROW_HEIGHT }}
-          >
-            <YouTubeSourceThumb videoId={videoId} loading={downloading} />
-          </div>
-
-          <div
-            className="flex-1 flex items-center gap-6 px-4 border-l border-composer-accent/25"
-            style={{ height: ROW_HEIGHT }}
-          >
-            <div className="flex-1 min-w-0">
-              {titleLoading ? (
-                <div className="h-4 w-40 rounded bg-composer-bg-elevated animate-pulse" />
-              ) : (
-                <p className="text-sm font-medium truncate text-composer-text select-text">
-                  {hasResolvedTitle ? projectTitle : videoId}
-                </p>
-              )}
-              <p className="text-xs text-composer-text-muted select-text">
-                {videoId} ・ {downloading ? "Downloading from YouTube" : "from YouTube"}
-              </p>
-            </div>
-
+      <LoadedSongPanel
+        key="youtube"
+        art={<YouTubeSourceThumb videoId={videoId} loading={downloading} />}
+        title={titleLoading ? <div className="h-4 w-40 rounded bg-(--layer-2) animate-pulse" /> : sourceTitle}
+        subtitle={
+          <>
+            <span className="truncate">{`${videoId} ・ ${downloading ? "Downloading from YouTube" : "from YouTube"}`}</span>
+            <DetailSeparator />
             <SourceDuration loading={downloading} duration={duration} />
-          </div>
-        </div>
-
-        <ReplaceControls onFileDrop={handleFileDrop} />
-      </div>
+          </>
+        }
+        startsNewProject={startsNewProject}
+        onFileDrop={handleFileDrop}
+      />
     );
   }
 
   return (
-    <div data-tour="import-dropzone" className="flex flex-col items-center justify-center gap-6 flex-1 size-full p-6">
-      <div className="w-full max-w-md flex-1 max-h-72 min-h-40">
-        <FileDropZone accept="audio/*" onFileDrop={handleFileDrop}>
-          <IconMusic className="size-12 mb-4 opacity-50 text-composer-text" stroke={1.5} />
-          <p className="text-composer-text-secondary">Drop audio file here</p>
-          <p className="mt-1 text-sm text-composer-text-muted">or click to browse</p>
-          <p className="mt-4 text-xs text-composer-text-muted">Supports MP3, WAV, M4A, OGG, FLAC</p>
+    <FileDropArea
+      key="empty"
+      data-tour="import-dropzone"
+      className={IMPORT_AREA}
+      onFileDrop={handleFileDrop}
+      onProjectFileDrop={openProjectFile}
+      dropLabel={LOAD_DROP_LABEL}
+    >
+      <ImportZone>
+        <FileDropZone
+          accept="audio/*"
+          onFileDrop={handleFileDrop}
+          onProjectFileDrop={openProjectFile}
+          className="gap-1 px-0 py-2"
+        >
+          <IconMusic className="size-11 mb-3 text-composer-text-faint" stroke={1.5} />
+          <p className="text-base font-medium text-(--label)">Drop an audio or project file here</p>
+          <p className="text-[13px] text-(--muted)">
+            or <span className="text-composer-accent-text">click to browse</span>
+          </p>
+          <p className="mt-2.5 text-xs text-composer-text-muted">{SUPPORTED_FILES_PROSE}</p>
         </FileDropZone>
-      </div>
 
-      <OrDivider />
+        <OrDivider />
 
-      <YouTubeUrlInput />
-    </div>
+        <YouTubeUrlInput />
+      </ImportZone>
+    </FileDropArea>
   );
 };
 

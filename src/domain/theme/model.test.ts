@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { QUICK_TOKENS, SEED_TOKENS, TOKEN_VAR, TOKENS, type TokenKey } from "./model";
+import { QUICK_TOKENS, SEED_TOKENS, TOKENS, TOKEN_VAR, type TokenKey } from "./model";
 
 const EXPECTED_KEYS: TokenKey[] = [
   "bg",

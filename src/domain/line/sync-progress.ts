@@ -27,6 +27,7 @@ function wordSlotCount(line: LyricLine): number {
 }
 
 function timedWordCount(line: LyricLine): number {
+  if (isLineSynced(line)) return wordSlotCount(line);
   return Math.min(line.words?.length ?? 0, wordSlotCount(line));
 }
 
@@ -55,7 +56,28 @@ function isSyncComplete(lines: readonly LyricLine[]): boolean {
   return syncable.length > 0 && syncable.every(isLineFullyTimed);
 }
 
+function isBackgroundFullyTimed(line: LyricLine): boolean {
+  const backgroundWords = line.backgroundWords ?? [];
+  if (!line.backgroundText?.trim() || backgroundWords.length === 0) return true;
+  return backgroundWords.length >= splitIntoWords(line.backgroundText).length;
+}
+
+function isProjectFullySynced(lines: readonly LyricLine[]): boolean {
+  return (
+    isSyncComplete(lines) &&
+    lines.every((line) => (hasMainLyrics(line) ? isBackgroundFullyTimed(line) : !line.backgroundText?.trim()))
+  );
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { isLineFullyTimed, isLineTimed, isSyncableLine, isSyncComplete, syncProgress, wordSlotCount };
+export {
+  isLineFullyTimed,
+  isLineTimed,
+  isProjectFullySynced,
+  isSyncableLine,
+  isSyncComplete,
+  syncProgress,
+  wordSlotCount,
+};
 export type { SyncGranularity };

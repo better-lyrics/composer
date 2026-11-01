@@ -1,4 +1,5 @@
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import type { LyricLine } from "@/domain/line/model";
 import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";
 import { generatedLanguageUpdates } from "@/views/languages/generated-language-updates";
@@ -125,5 +126,53 @@ describe("generated language updates", () => {
     expect(replaced.transliteration?.text).toBe("");
     expect(replaced.transliteration?.backgroundText).toBe("an nyeong");
     expect(replaced.translations?.en).toMatchObject({ text: "", backgroundText: "Hello", origin: "google" });
+  });
+
+  describe("regressions", () => {
+    it("regression: returns no update when every request failed", () => {
+      const updates = generatedLanguageUpdates(sourceLine(), {
+        force: false,
+        transliteration: { language: "ko-Latn", main: roman(null, true), background: roman(null, true) },
+        translations: [{ language: "en", main: translation(null, true), background: translation(null, true) }],
+      });
+
+      expect(updates).toEqual({});
+    });
+
+    it("regression: leaves a track already marked stale untouched when Google has no new text", () => {
+      const line = sourceLine();
+      line.translations!.en.stale = true;
+      const updates = generatedLanguageUpdates(line, {
+        force: false,
+        translations: [{ language: "en", main: translation(null), background: translation(null) }],
+      });
+
+      expect(updates).toEqual({});
+    });
+
+    it("regression: returns no update when Google repeats the results the line already holds", () => {
+      const generation = {
+        force: false,
+        transliteration: { language: "ko-Latn", main: roman("hello"), background: roman("an nyeong") },
+        translations: [{ language: "en", main: translation("Hello"), background: translation("Hi") }],
+      };
+      const [generated] = applyLineUpdates(
+        [sourceLine()],
+        [{ id: "line", updates: generatedLanguageUpdates(sourceLine(), generation) }],
+      );
+
+      expect(generatedLanguageUpdates(generated, generation)).toStrictEqual({});
+    });
+
+    it("regression: returns no update for a line without transliteration when Google has none", () => {
+      const { transliteration: _transliteration, ...line } = sourceLine();
+      const updates = generatedLanguageUpdates(line, {
+        force: false,
+        transliteration: { language: "en", main: roman(null), background: roman(null) },
+        translations: [],
+      });
+
+      expect(updates).toStrictEqual({});
+    });
   });
 });

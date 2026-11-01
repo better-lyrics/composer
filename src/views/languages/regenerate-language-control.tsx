@@ -15,6 +15,7 @@ interface LanguageGenerationSelection {
 
 interface RegenerateLanguageControlProps {
   isGenerating: boolean;
+  hasGenerated: boolean;
   translations: string[];
   languageNames: ReadonlyMap<string, string>;
   onRegenerateAll: () => void;
@@ -34,10 +35,13 @@ const CheckRow: React.FC<{ label: string; checked: boolean; onChange: (checked: 
   checked,
   onChange,
 }) => (
-  <label className="flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm text-composer-text cursor-pointer transition-colors hover:bg-composer-button has-[:focus-visible]:bg-composer-button">
+  <label className="flex items-center gap-2 w-full h-[34px] px-2 rounded-lg text-[13px] text-(--label) cursor-pointer transition-colors hover:bg-(--layer-1) hover:text-composer-text has-[:focus-visible]:bg-(--layer-1) has-[:focus-visible]:text-composer-text">
     <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="sr-only" />
     <span className="flex-1">{label}</span>
-    <IconCheck aria-hidden="true" className={cn("size-3.5 text-composer-accent shrink-0", !checked && "invisible")} />
+    <IconCheck
+      aria-hidden="true"
+      className={cn("size-[15px] text-composer-accent-text shrink-0", !checked && "invisible")}
+    />
   </label>
 );
 
@@ -60,12 +64,12 @@ const RegenerateSelectionMenu: React.FC<RegenerateSelectionMenuProps> = ({
   };
 
   return (
-    <div className="w-64 p-1 select-none">
-      <p className="px-2 pt-1.5 pb-1 text-xs text-composer-text-muted text-pretty">
+    <div className="w-62 p-1.5 select-none">
+      <p className="px-2 pt-1.5 pb-1 text-xs text-(--muted) text-pretty">
         Only checked tracks get replaced. Your other edits stay.
       </p>
       <CheckRow label="Transliteration" checked={includeTransliteration} onChange={setIncludeTransliteration} />
-      {translations.length > 0 && <div className="mx-2 my-1 border-t border-composer-border" />}
+      {translations.length > 0 && <div className="h-px mx-1.5 my-1 bg-(--divider)" />}
       {translations.map((language) => (
         <CheckRow
           key={language}
@@ -74,13 +78,12 @@ const RegenerateSelectionMenu: React.FC<RegenerateSelectionMenuProps> = ({
           onChange={(checked) => toggleTranslation(language, checked)}
         />
       ))}
-      <div className="p-1 pt-2 mt-1 border-t border-composer-border">
+      <div className="mt-1 px-0.5 pt-1.5 shadow-[inset_0_1px_0_var(--divider)]">
         <Button
-          size="sm"
           variant="primary"
           hasIcon
           disabled={selectedCount === 0}
-          className="w-full"
+          className="w-full h-[30px]"
           onClick={() =>
             onRegenerate({
               transliteration: includeTransliteration,
@@ -98,15 +101,23 @@ const RegenerateSelectionMenu: React.FC<RegenerateSelectionMenuProps> = ({
 
 const RegenerateLanguageControl: React.FC<RegenerateLanguageControlProps> = ({
   isGenerating,
+  hasGenerated,
   translations,
   languageNames,
   onRegenerateAll,
   onRegenerateSelection,
 }) => (
   <div className="flex items-center">
-    <Button hasIcon variant="primary" disabled={isGenerating} onClick={onRegenerateAll} className="rounded-r-none">
+    <Button
+      hasIcon
+      size="lg"
+      variant="primary"
+      disabled={isGenerating}
+      onClick={onRegenerateAll}
+      className="rounded-r-none"
+    >
       <IconRefresh className={cn("size-4", isGenerating && "animate-spin")} />
-      {isGenerating ? "Generating…" : "Regenerate all"}
+      {isGenerating ? "Generating…" : hasGenerated ? "Regenerate all" : "Generate all"}
     </Button>
     <Popover
       placement="bottom-end"
@@ -116,7 +127,7 @@ const RegenerateLanguageControl: React.FC<RegenerateLanguageControlProps> = ({
           icon={<IconChevronDown className="size-4" />}
           variant="primary"
           disabled={isGenerating}
-          className="rounded-l-none border-l border-composer-on-accent/20"
+          className="h-9 w-8 rounded-l-none rounded-r-xl shadow-[inset_1px_0_0_rgb(255_255_255/0.22)]"
         />
       }
     >
@@ -137,4 +148,3 @@ const RegenerateLanguageControl: React.FC<RegenerateLanguageControlProps> = ({
 // -- Exports ------------------------------------------------------------------
 
 export { RegenerateLanguageControl };
-export type { LanguageGenerationSelection };

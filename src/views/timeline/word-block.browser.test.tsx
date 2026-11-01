@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { WordBlock } from "@/views/timeline/word-block";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { render } from "@/test/render";
+import { installStyleSheet, installUtilitiesUsedIn } from "@/test/browser-css";
 
 const DEFAULT_PROPS = {
   id: "wb-1",
@@ -25,7 +26,8 @@ describe("WordBlock", () => {
     const screen = await render(<WordBlock {...DEFAULT_PROPS} />, { dndContext: true });
     const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
     expect(block.style.left).toBe("50px");
-    expect(block.style.width).toBe("100px");
+    // One pixel short of the span, so neighbouring words keep a 1px gap.
+    expect(block.style.width).toBe("99px");
   });
 
   it("hides the text label when natural width is below the threshold (20px)", async () => {
@@ -45,6 +47,17 @@ describe("WordBlock", () => {
     const block = document.querySelector("[data-word-block]") as HTMLElement;
     block.click();
     expect(clicks).toBe(1);
+  });
+
+  it("regression: a key that belongs to a shortcut does not also click the focused block", async () => {
+    let clicks = 0;
+    await render(<WordBlock {...DEFAULT_PROPS} onClick={() => clicks++} />, { dndContext: true });
+    const block = document.querySelector("[data-word-block]") as HTMLElement;
+    block.focus();
+    block.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    block.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+    block.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", repeat: true, bubbles: true }));
+    expect(clicks).toBe(0);
   });
 
   it("fires onResizeStart with 'right' and the starting clientX when the right handle is mousedowned", async () => {
@@ -152,21 +165,22 @@ describe("WordBlock", () => {
   it("applies first-syllable rounding (left rounded, right squared)", async () => {
     const screen = await render(<WordBlock {...DEFAULT_PROPS} syllablePosition="first" />, { dndContext: true });
     const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
-    expect(block.className).toContain("rounded-l-xl");
+    expect(block.className).not.toContain("rounded-l-none");
     expect(block.className).toContain("rounded-r-none");
   });
 
   it("applies last-syllable rounding (right rounded, left squared)", async () => {
     const screen = await render(<WordBlock {...DEFAULT_PROPS} syllablePosition="last" />, { dndContext: true });
     const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
-    expect(block.className).toContain("rounded-r-xl");
+    expect(block.className).not.toContain("rounded-r-none");
     expect(block.className).toContain("rounded-l-none");
   });
 
   it("applies middle-syllable rounding (both sides squared)", async () => {
     const screen = await render(<WordBlock {...DEFAULT_PROPS} syllablePosition="middle" />, { dndContext: true });
     const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
-    expect(block.className).toContain("rounded-none");
+    expect(block.className).toContain("rounded-l-none");
+    expect(block.className).toContain("rounded-r-none");
   });
 
   it("does not apply is-snapped when snappedBlockId is null", async () => {
@@ -197,18 +211,21 @@ describe("WordBlock", () => {
     expect(block.className).not.toContain("is-snapped");
   });
 
-  it("draws a dashed left border on a syllable that has a timing gap before it", async () => {
+  // A syllable split from its word by a timing gap stays square on that side and marks the cut, so it never reads as a separate word.
+  it("squares and marks the cut corner of a syllable that has a timing gap before it", async () => {
     const screen = await render(<WordBlock {...DEFAULT_PROPS} syllablePosition="last" gapBefore />, {
       dndContext: true,
     });
     const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
-    expect(block.style.borderLeftStyle).toBe("dashed");
+    expect(block.className).toContain("rounded-l-none");
+    expect(block.dataset.gapBefore).toBeDefined();
+    expect(block.dataset.gapAfter).toBeUndefined();
   });
 
-  it("hides the left border on a flush syllable with no gap before it", async () => {
+  it("squares the left corner of a flush syllable with no gap before it", async () => {
     const screen = await render(<WordBlock {...DEFAULT_PROPS} syllablePosition="last" />, { dndContext: true });
     const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
-    expect(block.style.borderLeftWidth).toBe("0px");
+    expect(block.className).toContain("rounded-l-none");
   });
 
   it("shows cursor-col-resize on the left handle when leftConjoined is true", async () => {
@@ -256,7 +273,8 @@ describe("WordBlock", () => {
   it("uses the theme-aware text color for the word label", async () => {
     const screen = await render(<WordBlock {...DEFAULT_PROPS} />, { dndContext: true });
     const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
-    expect(block.className).toContain("text-composer-text");
+    // The word face draws its label in the theme ink (`.word-face` in index.css).
+    expect(block.className).toContain("word-face");
     expect(block.className).not.toContain("text-white");
   });
 
@@ -269,5 +287,85 @@ describe("WordBlock", () => {
     expect(leftEdge.className).toContain("bg-composer-text/10");
     expect(rightEdge.className).toContain("bg-composer-text/10");
     expect(leftEdge.className).not.toContain("bg-white/10");
+  });
+
+  describe("edge hit areas", () => {
+    let styles: HTMLStyleElement[] = [];
+
+    afterEach(() => {
+      for (const style of styles) style.remove();
+      styles = [];
+    });
+
+    async function renderWithRealCss(ui: React.ReactElement) {
+      styles.push(installStyleSheet("*,::before,::after{box-sizing:border-box}"));
+      const screen = await render(<div className="relative h-10 w-200">{ui}</div>, { dndContext: true });
+      styles.push(await installUtilitiesUsedIn(screen.container));
+      return screen.container.querySelectorAll<HTMLElement>("[data-word-block]");
+    }
+
+    function edgeAt(x: number, y: number): Element | null | undefined {
+      return document.elementFromPoint(x, y)?.closest("[data-edge]");
+    }
+
+    function edgeOf(block: HTMLElement, side: "left" | "right"): HTMLElement {
+      return block.querySelector(`[data-edge="${side}"]`) as HTMLElement;
+    }
+
+    it("regression: the border and rounded corners of a word edge resize instead of grabbing the word", async () => {
+      const [first, second, firstSyllable, lastSyllable] = await renderWithRealCss(
+        <>
+          <WordBlock {...DEFAULT_PROPS} rightConjoined />
+          <WordBlock {...DEFAULT_PROPS} id="wb-2" wordIndex={1} begin={3} end={5} leftConjoined />
+          <WordBlock
+            {...DEFAULT_PROPS}
+            id="wb-3"
+            wordIndex={2}
+            begin={6}
+            end={7}
+            syllablePosition="first"
+            syllableEdgesJoin={false}
+          />
+          <WordBlock
+            {...DEFAULT_PROPS}
+            id="wb-4"
+            wordIndex={3}
+            begin={7}
+            end={8}
+            syllablePosition="last"
+            syllableEdgesJoin={false}
+          />
+        </>,
+      );
+      const edgeZones = [
+        { block: first, side: "left" },
+        { block: first, side: "right" },
+        { block: second, side: "left" },
+        { block: firstSyllable, side: "right" },
+        { block: lastSyllable, side: "left" },
+      ] as const;
+      const misses: string[] = [];
+      for (const { block, side } of edgeZones) {
+        const rect = block.getBoundingClientRect();
+        const handle = edgeOf(block, side);
+        for (let offset = 0; offset < handle.offsetWidth; offset++) {
+          const x = side === "left" ? rect.left + offset : rect.right - 1 - offset;
+          for (let y = rect.top; y < rect.bottom; y++) {
+            if (edgeAt(x, y) !== handle) misses.push(`${block.id} ${side} (${x}, ${y})`);
+          }
+        }
+      }
+      expect(misses).toEqual([]);
+    });
+
+    it("regression: a narrow word keeps its resize handles inside its own bounds", async () => {
+      const [narrow] = await renderWithRealCss(<WordBlock {...DEFAULT_PROPS} begin={1} end={1.04} />);
+      const rect = narrow.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      const outside = [rect.left - 4, rect.left - 2, rect.right + 1, rect.right + 3];
+      expect(outside.map((x) => edgeAt(x, midY) ?? null)).toEqual([null, null, null, null]);
+      expect(edgeAt(rect.left, midY)).toBe(edgeOf(narrow, "left"));
+      expect(edgeAt(rect.right - 1, midY)).toBe(edgeOf(narrow, "right"));
+    });
   });
 });

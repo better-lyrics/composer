@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { IconPlus } from "@tabler/icons-react";
+import type { TimeRange } from "@/domain/group/shared-timing";
 import { backgroundFields, manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -8,10 +9,11 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
 import { stripSplitCharacter } from "@/utils/split-character";
-import { createBgWordsFromTextAt, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { createTrackWordsFromTextAt, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { elementXToTime } from "@/views/timeline/coords";
 import { BG_DROP_ZONE_HEIGHT } from "@/views/timeline/row-geometry";
+import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
@@ -42,10 +44,13 @@ function pointerTime(e: React.MouseEvent): number {
   return elementXToTime(e.clientX, e.currentTarget, useTimelineStore.getState().zoom);
 }
 
-function insertionSlotAt(time: number) {
-  const audioDuration = useAudioStore.getState().duration;
+function insertionSlotAt(range: TimeRange, time: number) {
   const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
-  return findInsertionSlot([], time, defaultWordDuration, audioDuration, minWordDuration);
+  return findInsertionSlot([], time, defaultWordDuration, range, minWordDuration);
+}
+
+function lineRangeOf(line: LyricLine): TimeRange {
+  return storedLineTimeRange(line.id, useAudioStore.getState().duration);
 }
 
 function openTrackContextMenu(e: React.MouseEvent, lineId: string, lineIndex: number, type: TrackType): void {
@@ -58,20 +63,25 @@ function openTrackContextMenu(e: React.MouseEvent, lineId: string, lineIndex: nu
 }
 
 function addWordAt(line: LyricLine, time: number): void {
-  const slot = insertionSlotAt(time);
+  const range = lineRangeOf(line);
+  const slot = insertionSlotAt(range, time);
   if (!slot) return;
-  const text = stripSplitCharacter(line.text).slice(0, MAIN_LABEL_MAX_CHARS) || "...";
-  useProjectStore
-    .getState()
-    .updateLineWithHistory(line.id, { words: [{ text, begin: slot.begin, end: slot.end }], text });
+  const { updateLineWithHistory } = useProjectStore.getState();
+  const timedText = createTrackWordsFromTextAt(line, "word", slot.begin, range.max);
+  if (timedText) {
+    updateLineWithHistory(line.id, { words: timedText });
+    return;
+  }
+  updateLineWithHistory(line.id, { words: [{ text: "...", begin: slot.begin, end: slot.end }] });
   useTimelineStore.getState().setEditingWord({ lineId: line.id, wordIndex: 0, type: "word" });
 }
 
 function addBackgroundWordAt(line: LyricLine, time: number): void {
-  const slot = insertionSlotAt(time);
+  const range = lineRangeOf(line);
+  const slot = insertionSlotAt(range, time);
   if (!slot) return;
   const { updateLineWithHistory } = useProjectStore.getState();
-  const timedText = createBgWordsFromTextAt(line, slot.begin, useAudioStore.getState().duration);
+  const timedText = createTrackWordsFromTextAt(line, "bg", slot.begin, range.max);
   if (timedText) {
     updateLineWithHistory(line.id, manualBackgroundWordEdit(timedText));
     return;
@@ -107,7 +117,7 @@ const SyncLineButton: React.FC<{ lineId: string; wordCount: number }> = ({ lineI
     <button
       type="button"
       onClick={selectLineWords}
-      className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-composer-text-muted hover:text-composer-text hover:bg-composer-button cursor-pointer transition-colors not-italic"
+      className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-composer-text-muted hover:text-composer-text hover:bg-(--layer-2) cursor-pointer not-italic"
     >
       <IconPlus size={12} />
       Place
@@ -144,8 +154,10 @@ const EmptyBgTrack: React.FC<EmptyBgTrackProps> = ({ line, lineIndex, isOver }) 
     data-line-index={lineIndex}
     data-track="bg"
     className={cn(
-      "flex items-center px-2 text-xs font-mono truncate transition-colors border-t border-composer-border/30 cursor-pointer",
-      isOver ? "bg-composer-accent/20 text-composer-text" : "text-composer-text-muted/50 bg-composer-bg-elevated/25",
+      "flex items-center px-2 text-xs font-mono truncate border-t border-(--divider) cursor-pointer",
+      isOver
+        ? "bg-composer-accent/20 text-composer-text"
+        : "text-composer-text-muted/50 bg-[color-mix(in_oklab,var(--color-composer-bg-dark)_35%,transparent)]",
     )}
     style={{ height: BG_DROP_ZONE_HEIGHT }}
     onDoubleClick={(e) => addBackgroundWordAt(line, pointerTime(e))}

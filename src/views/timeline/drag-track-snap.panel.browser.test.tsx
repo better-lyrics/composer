@@ -13,6 +13,7 @@ import {
 } from "@/test/timeline-dnd-rows";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { wordInsetPx } from "@/views/timeline/row-geometry";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -58,8 +59,10 @@ describe("TimelinePanel drag ghost snapping", () => {
     const bg = trackRect(1, "bg");
     movePointer(bg.left + 400, bg.top + bg.height / 2);
 
-    await expect.poll(() => ghostBlock()?.getBoundingClientRect().height).toBeCloseTo(bg.height - 8, 0);
-    expect(ghostBlock()?.getBoundingClientRect().top).toBeCloseTo(bg.top + 4, 0);
+    await expect
+      .poll(() => ghostBlock()?.getBoundingClientRect().height)
+      .toBeCloseTo(bg.height - 2 * wordInsetPx("bg"), 0);
+    expect(ghostBlock()?.getBoundingClientRect().top).toBeCloseTo(bg.top + wordInsetPx("bg"), 0);
 
     releasePointer(bg.left + 400, bg.top + bg.height / 2);
     await expect
@@ -75,12 +78,17 @@ describe("TimelinePanel drag ghost snapping", () => {
   it("sizes the ghost to a resized row's main track", async () => {
     seedTimeline({ "line-1": 80 });
     await renderPanelAndGrab();
-    const main = trackRect(1, "word");
-    expect(main.height).toBe(80);
-    movePointer(main.left + 400, main.top + 60);
+    expect(trackRect(1, "word").height).toBe(80);
 
-    await expect.poll(() => ghostBlock()?.getBoundingClientRect().height).toBeCloseTo(72, 0);
-    expect(ghostBlock()?.getBoundingClientRect().top).toBeCloseTo(main.top + 4, 0);
+    // Near the track top stays clear of the bottom auto-scroll zone; one read keeps ghost and track in step.
+    await expect
+      .poll(() => {
+        const track = trackRect(1, "word");
+        movePointer(track.left + 400, track.top + 10);
+        const ghost = ghostBlock()?.getBoundingClientRect();
+        return ghost && { height: Math.round(ghost.height), offset: Math.round(ghost.top - track.top) };
+      })
+      .toEqual({ height: 80 - 2 * wordInsetPx("word"), offset: wordInsetPx("word") });
   });
 
   it("keeps the ghost unsnapped at its source height when no track is under the pointer", async () => {
@@ -89,6 +97,6 @@ describe("TimelinePanel drag ghost snapping", () => {
     movePointer(2, 2);
 
     await expect.poll(() => useTimelineStore.getState().wordDragHover).toBeNull();
-    expect(ghostBlock()?.getBoundingClientRect().height).toBeCloseTo(44 - 8, 0);
+    expect(ghostBlock()?.getBoundingClientRect().height).toBeCloseTo(44 - 2 * wordInsetPx("word"), 0);
   });
 });

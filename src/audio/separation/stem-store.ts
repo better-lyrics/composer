@@ -1,37 +1,73 @@
+import { primingDecodeTag } from "@/audio/decoded-source-audio";
+import {
+  type StemRecord,
+  derivedRecordKey,
+  getDerivedRecord,
+  putDerivedRecords,
+} from "@/audio/separation/stem-derived-records";
 import type { Stem } from "@/audio/separation/types";
-import { STEM_STORE_NAME, openDB } from "@/lib/persistence-idb";
+import { type StemJobUsage, oldestStemJobFirst } from "@/domain/storage/usage";
+import { STEM_STORE_NAME, getFromStore, runTransaction } from "@/lib/persistence-idb";
+import { notifyStorageSignal, reportStorageWriteError } from "@/lib/storage-signals";
 import type { VocalModelVariant } from "@/stores/settings";
+
+// -- Types --------------------------------------------------------------------
+
+interface StemRemoval {
+  jobs: number;
+  bytes: number;
+}
+
+// -- Constants ----------------------------------------------------------------
 
 const MAX_ENTRIES = 3;
 const STEM_CACHE_VERSION = 2;
+const ONSETS_CACHE_VERSION = 1;
 
-interface StemRecord {
-  blob: Blob;
-  createdAt: number;
-  jobKey: string;
+// -- Module state -------------------------------------------------------------
+
+const loadingStemJobs = new Map<string, number>();
+
+// -- Stem jobs in use ---------------------------------------------------------
+
+function beginLoadingStemJob(jobKey: string): void {
+  loadingStemJobs.set(jobKey, (loadingStemJobs.get(jobKey) ?? 0) + 1);
 }
+
+function endLoadingStemJob(jobKey: string): void {
+  const count = loadingStemJobs.get(jobKey) ?? 0;
+  if (count <= 1) loadingStemJobs.delete(jobKey);
+  else loadingStemJobs.set(jobKey, count - 1);
+}
+
+function isStemJobLoading(jobKey: string): boolean {
+  return loadingStemJobs.has(jobKey);
+}
+
+// -- Keys ---------------------------------------------------------------------
 
 function makeKey(audioHash: string, stem: Stem, variant: VocalModelVariant): string {
   return `${audioHash}|${stem}|${variant}|v${STEM_CACHE_VERSION}`;
 }
 
-function makeJobKey(audioHash: string, variant: VocalModelVariant): string {
+function stemJobKey(audioHash: string, variant: VocalModelVariant): string {
   return `${audioHash}|${variant}|v${STEM_CACHE_VERSION}`;
 }
 
+async function stemCacheHash(source: Blob, audioHash: string): Promise<string> {
+  const tag = await primingDecodeTag(source);
+  return tag ? `${audioHash}-${tag}` : audioHash;
+}
+
+function onsetsKey(jobKey: string): string {
+  return derivedRecordKey(jobKey, "onsets", `v${ONSETS_CACHE_VERSION}`);
+}
+
+// -- Reads --------------------------------------------------------------------
+
 async function getStem(audioHash: string, stem: Stem, variant: VocalModelVariant): Promise<Blob | null> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STEM_STORE_NAME, "readonly");
-    const store = tx.objectStore(STEM_STORE_NAME);
-    const req = store.get(makeKey(audioHash, stem, variant));
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => {
-      const record = req.result as StemRecord | undefined;
-      resolve(record?.blob ?? null);
-    };
-    tx.oncomplete = () => db.close();
-  });
+  const record = await getFromStore<StemRecord>(STEM_STORE_NAME, makeKey(audioHash, stem, variant));
+  return record?.blob ?? null;
 }
 
 async function hasStems(audioHash: string, variant: VocalModelVariant): Promise<boolean> {
@@ -41,68 +77,124 @@ async function hasStems(audioHash: string, variant: VocalModelVariant): Promise<
   return instrumental !== null;
 }
 
-async function putStem(audioHash: string, stem: Stem, variant: VocalModelVariant, blob: Blob): Promise<void> {
-  const db = await openDB();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STEM_STORE_NAME, "readwrite");
-    const store = tx.objectStore(STEM_STORE_NAME);
-    const record: StemRecord = {
-      blob,
-      createdAt: Date.now(),
-      jobKey: makeJobKey(audioHash, variant),
+function isOnsetList(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((point) => typeof point === "number");
+}
+
+async function getStemJobOnsets(jobKey: string): Promise<number[] | null> {
+  const blob = await getDerivedRecord(onsetsKey(jobKey));
+  if (!blob) return null;
+  const parsed: unknown = JSON.parse(await blob.text());
+  return isOnsetList(parsed) ? parsed : null;
+}
+
+async function readStemRecords(): Promise<StemRecord[]> {
+  const records: StemRecord[] = [];
+  await runTransaction([STEM_STORE_NAME], "readonly", (tx) => {
+    const request = tx.objectStore(STEM_STORE_NAME).openCursor();
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return;
+      records.push(cursor.value as StemRecord);
+      cursor.continue();
     };
-    const req = store.put(record, makeKey(audioHash, stem, variant));
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => resolve();
-    tx.oncomplete = () => db.close();
   });
+  return records;
+}
+
+function groupStemJobs(records: readonly StemRecord[]): StemJobUsage[] {
+  const jobs = new Map<string, StemJobUsage>();
+  for (const record of records) {
+    const job = jobs.get(record.jobKey) ?? { jobKey: record.jobKey, bytes: 0, createdAt: 0 };
+    job.bytes += record.blob.size;
+    job.createdAt = Math.max(job.createdAt, record.createdAt);
+    jobs.set(record.jobKey, job);
+  }
+  return [...jobs.values()];
+}
+
+async function listStemJobs(): Promise<StemJobUsage[]> {
+  return groupStemJobs(await readStemRecords());
+}
+
+// -- Writes -------------------------------------------------------------------
+
+async function putStem(audioHash: string, stem: Stem, variant: VocalModelVariant, blob: Blob): Promise<void> {
+  const record: StemRecord = { blob, createdAt: Date.now(), jobKey: stemJobKey(audioHash, variant) };
+  try {
+    await runTransaction([STEM_STORE_NAME], "readwrite", (tx) => {
+      tx.objectStore(STEM_STORE_NAME).put(record, makeKey(audioHash, stem, variant));
+    });
+  } catch (error) {
+    reportStorageWriteError(error);
+    throw error;
+  }
+  notifyStorageSignal("media-stored");
   await evictIfOverCapacity();
 }
 
-async function evictIfOverCapacity(): Promise<void> {
-  const db = await openDB();
-  const records = await new Promise<Array<{ key: IDBValidKey; record: StemRecord }>>((resolve, reject) => {
-    const tx = db.transaction(STEM_STORE_NAME, "readonly");
-    const store = tx.objectStore(STEM_STORE_NAME);
-    const out: Array<{ key: IDBValidKey; record: StemRecord }> = [];
-    const cursorReq = store.openCursor();
-    cursorReq.onerror = () => reject(cursorReq.error);
-    cursorReq.onsuccess = () => {
-      const cursor = cursorReq.result;
-      if (cursor) {
-        out.push({ key: cursor.key, record: cursor.value as StemRecord });
-        cursor.continue();
-      } else {
-        resolve(out);
-      }
-    };
-    tx.oncomplete = () => db.close();
-  });
-
-  const jobs = new Map<string, { newest: number; keys: IDBValidKey[] }>();
-  for (const { key, record } of records) {
-    const job = jobs.get(record.jobKey) ?? { newest: 0, keys: [] };
-    job.newest = Math.max(job.newest, record.createdAt);
-    job.keys.push(key);
-    jobs.set(record.jobKey, job);
-  }
-  if (jobs.size <= MAX_ENTRIES) return;
-
-  const sortedJobs = [...jobs.entries()].sort((a, b) => a[1].newest - b[1].newest);
-  const toEvict = sortedJobs.slice(0, sortedJobs.length - MAX_ENTRIES);
-  const keysToDelete = toEvict.flatMap(([, job]) => job.keys);
-
-  const dbDelete = await openDB();
-  await new Promise<void>((resolve, reject) => {
-    const tx = dbDelete.transaction(STEM_STORE_NAME, "readwrite");
-    const store = tx.objectStore(STEM_STORE_NAME);
-    for (const key of keysToDelete) store.delete(key);
-    tx.onerror = () => reject(tx.error);
-    tx.oncomplete = () => {
-      dbDelete.close();
-      resolve();
-    };
-  });
+function putStemJobOnsets(jobKey: string, onsets: readonly number[]): Promise<boolean> {
+  const blob = new Blob([JSON.stringify(onsets)], { type: "application/json" });
+  return putDerivedRecords(jobKey, new Map([[onsetsKey(jobKey), blob]]));
 }
 
-export { getStem, hasStems, putStem };
+// -- Removal ------------------------------------------------------------------
+
+async function deleteStemRecords(shouldDelete: (jobKey: string) => boolean): Promise<StemRemoval> {
+  const removedJobs = new Set<string>();
+  let bytes = 0;
+  await runTransaction([STEM_STORE_NAME], "readwrite", (tx) => {
+    const request = tx.objectStore(STEM_STORE_NAME).openCursor();
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return;
+      const record = cursor.value as StemRecord;
+      if (shouldDelete(record.jobKey)) {
+        removedJobs.add(record.jobKey);
+        bytes += record.blob.size;
+        cursor.delete();
+      }
+      cursor.continue();
+    };
+  });
+  if (removedJobs.size > 0) notifyStorageSignal("media-removed");
+  return { jobs: removedJobs.size, bytes };
+}
+
+function removeStemJobs(
+  jobKeys: readonly string[],
+  isInUse: (jobKey: string) => boolean = () => false,
+): Promise<StemRemoval> {
+  const doomed = new Set(jobKeys);
+  return deleteStemRecords((jobKey) => doomed.has(jobKey) && !isInUse(jobKey));
+}
+
+function clearStemCache(isInUse: (jobKey: string) => boolean): Promise<StemRemoval> {
+  return deleteStemRecords((jobKey) => !isInUse(jobKey));
+}
+
+async function evictIfOverCapacity(): Promise<void> {
+  const jobs = await listStemJobs();
+  if (jobs.length <= MAX_ENTRIES) return;
+  const oldest = jobs.toSorted(oldestStemJobFirst).slice(0, jobs.length - MAX_ENTRIES);
+  await removeStemJobs(oldest.map((job) => job.jobKey));
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export {
+  stemCacheHash,
+  stemJobKey,
+  getStem,
+  getStemJobOnsets,
+  hasStems,
+  putStem,
+  putStemJobOnsets,
+  listStemJobs,
+  removeStemJobs,
+  clearStemCache,
+  beginLoadingStemJob,
+  endLoadingStemJob,
+  isStemJobLoading,
+};
+export type { StemRemoval };

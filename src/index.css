@@ -4,6 +4,7 @@
 @import "@braccato/core/styles/variables.css" layer(braccato-defaults);
 @import "@braccato/core/styles/lyrics.css";
 @import "@braccato/core/styles/instrumental.css";
+@import "@braccato/highlight/highlight.css";
 
 @theme {
   /* Background Colors */
@@ -52,15 +53,89 @@
   --color-composer-onset: #4fd6c0;
 
   /* Typography */
-  --font-family-sans: "Satoshi", "Avenir", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-family-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-sans: "Satoshi", "Avenir", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
   /* Animation */
   --transition-timing-scroll: cubic-bezier(0.86, 0, 0.07, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Derived surface layer: mixes of the theme seeds, so every preset and custom theme works. Never part of TOKENS. */
+:root {
+  --ink: var(--color-composer-text);
+  --lift: 255 255 255;
+  --lift-top: 0.07;
+  --shade: 0 0 0;
+  --shade-strength: 0.45;
+  --pop: color-mix(in oklab, var(--ink) 4.5%, var(--color-composer-bg));
+  --layer-1: color-mix(in oklab, var(--ink) 4%, transparent);
+  --layer-2: color-mix(in oklab, var(--ink) 7%, transparent);
+  --layer-3: color-mix(in oklab, var(--ink) 11%, transparent);
+  --edge: color-mix(in oklab, var(--ink) 9%, transparent);
+  --edge-strong: color-mix(in oklab, var(--ink) 16%, transparent);
+  --divider: color-mix(in oklab, var(--ink) 5.5%, transparent);
+  --highlight: rgb(var(--lift) / var(--lift-top));
+  --muted: color-mix(in oklab, var(--ink) 55%, var(--color-composer-bg));
+  --label: color-mix(in oklab, var(--ink) 72%, var(--color-composer-bg));
+  --well: color-mix(in oklab, var(--color-composer-bg-dark) 55%, var(--color-composer-bg));
+  --well-edge:
+    inset 0 0 0 1px color-mix(in oklab, var(--ink) 6%, var(--well)),
+    inset 0 2px 0 rgb(var(--shade) / calc(var(--shade-strength) * 1.2)),
+    inset 0 3.5px 6px -3.5px rgb(var(--shade) / calc(var(--shade-strength) * 1.4)),
+    inset 0 -1px 0 rgb(var(--lift) / calc(var(--lift-top) * 0.8)), 0 1px 0 rgb(
+      var(--lift) /
+      calc(var(--lift-top) * 0.6)
+    );
+  --cap: color-mix(in oklab, var(--ink) 8%, var(--color-composer-bg));
+  --raised-edge: inset 0 0 0 1px var(--edge), inset 0 1px 0 var(--highlight);
+  --display: color-mix(in oklab, var(--color-composer-bg-dark) 75%, var(--color-composer-bg));
+  --on-display: color-mix(in oklab, var(--ink) 82%, transparent);
+  --on-display-dim: color-mix(in oklab, var(--ink) 38%, transparent);
+  --lamp-warm: color-mix(in oklab, var(--color-composer-warning) 9%, transparent);
+  --knob-hi: color-mix(in oklab, var(--ink) 18%, var(--color-composer-bg));
+  --knob-lo: var(--color-composer-bg-dark);
+  --raised-face: var(--layer-2);
+  --raised-face-hover: var(--layer-3);
+  --lit-ring: color-mix(in oklab, var(--color-composer-accent) 30%, transparent);
+  --gutter-bg: color-mix(in oklab, var(--color-composer-bg) 40%, var(--color-composer-bg-dark));
+  --float-shadow:
+    inset 0 0 0 1px var(--edge), inset 0 1px 0 var(--highlight), 0 18px 40px -12px rgb(var(--shade) / 0.55);
+  --word-face: color-mix(in oklab, var(--ink) 11%, var(--color-composer-bg));
+  --word-shadow: color-mix(in oklab, color-mix(in oklab, var(--color-composer-bg-dark) 45%, black) 28%, transparent);
+  --word-elev:
+    inset 0 1px 0 color-mix(in oklab, white 9%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, var(--ink) 6%, transparent), 0 1px 1px var(--word-shadow),
+    0 3px 8px -4px var(--word-shadow);
+  --focus-tint: color-mix(in oklab, var(--ink) 10%, transparent);
+  --radius-card: 16px;
+  --tray-pad: 4px;
+}
+
+html[data-scheme="light"] {
+  --lift-top: 0.95;
+  --shade: 40 40 60;
+  --shade-strength: 0.16;
+  --pop: color-mix(in oklab, var(--color-composer-bg-dark) 30%, white);
+  --well: color-mix(in oklab, var(--color-composer-bg-dark) 80%, var(--color-composer-bg));
+  --cap: var(--color-composer-bg-elevated);
+  --display: var(--color-composer-bg-dark);
+  --lamp-warm: color-mix(in oklab, var(--color-composer-warning) 7%, transparent);
+  --knob-hi: #fff;
+  --knob-lo: color-mix(in oklab, var(--ink) 8%, var(--color-composer-bg-dark));
+  --gutter-bg: color-mix(in oklab, var(--color-composer-bg-dark) 60%, var(--color-composer-bg));
+  --raised-edge: inset 0 1px 0 rgb(255 255 255 / 0.95), inset 0 0 0 1px var(--edge), 0 1px 2px rgb(var(--shade) / 0.12);
+  --raised-face: linear-gradient(to bottom, #fff, color-mix(in oklab, var(--ink) 3%, white));
+  --raised-face-hover: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--ink) 2%, white),
+    color-mix(in oklab, var(--ink) 6%, white)
+  );
 }
 
 /* Base styles */
 html {
+  overscroll-behavior: none;
   font-size: 16px;
   color-scheme: dark;
   -webkit-font-smoothing: antialiased;
@@ -70,7 +145,7 @@ html {
 body {
   background-color: var(--color-composer-bg);
   color: var(--color-composer-text);
-  font-family: var(--font-family-sans);
+  font-family: var(--font-sans);
 }
 
 /* Braccato preview. These must stay on :root: variables.css derives the active
@@ -80,6 +155,13 @@ body {
   --blyrics-inactive-opacity: 0.2;
   --blyrics-font-family: "Satoshi", sans-serif;
   --blyrics-font-size: 2.5rem;
+  --blyrics-translated-color: color-mix(in oklab, var(--color-composer-text) 60%, transparent);
+}
+
+/* lyrics.css paints the romanization pill in fixed white, which vanishes on light themes. */
+braccato-lyrics .blyrics--romanized {
+  background: color-mix(in oklab, var(--color-composer-text) 5%, transparent);
+  border-color: color-mix(in oklab, var(--color-composer-text) 10%, transparent);
 }
 
 /* The element is the scroller braccato autoscrolls, which is what centres the
@@ -127,6 +209,12 @@ braccato-lyrics .blyrics-container {
   --blyrics-padding: 0.625rem;
 }
 
+/* An open group in the Timeline fades the preview lines outside it. filter composes with the
+   renderer's own opacity instead of overriding it. */
+[data-lyrics-layout] [data-outside-focus] {
+  filter: opacity(0.3);
+}
+
 /* Text selection */
 ::selection {
   background-color: color-mix(in srgb, var(--color-composer-accent) 40%, transparent);
@@ -138,10 +226,46 @@ braccato-lyrics .blyrics-container {
   outline: none;
 }
 
+/* Forced colours drop background tints, so focus falls back to a system outline there. */
+@media (forced-colors: active) {
+  :focus-visible:not([tabindex="-1"]) {
+    outline: 2px solid CanvasText;
+    outline-offset: 2px;
+  }
+}
+
+/* Keyboard focus tints the control like hover; tabindex="-1" click surfaces (waveform, words) never tint. */
+@layer base {
+  :where(
+    a[href],
+    button,
+    summary,
+    [role="button"],
+    [role="tab"],
+    [role="option"],
+    [role="menuitem"],
+    [role="menuitemradio"],
+    [role="menuitemcheckbox"],
+    [role="switch"],
+    [role="slider"],
+    [role="radio"],
+    [role="checkbox"],
+    [tabindex="0"]
+  ):not([tabindex="-1"]):focus-visible {
+    background-image: linear-gradient(var(--focus-tint), var(--focus-tint));
+  }
+}
+
 /* Geist Mono base weight */
 @layer base {
   .font-mono {
     font-weight: 500;
+  }
+
+  /* Panes stop at their edges: no rubber band past the content, and no scroll chaining to the page. */
+  [data-overlayscrollbars-viewport],
+  textarea {
+    overscroll-behavior: none;
   }
 }
 
@@ -192,28 +316,68 @@ braccato-lyrics .blyrics-container {
 
 @utility snap-custom-line {
   width: 2px;
-  background: var(--color-composer-warning);
-  mask: linear-gradient(rgba(0, 0, 0, 0) 0px, rgb(0, 0, 0) 30%, rgb(0, 0, 0) 70%, rgba(0, 0, 0, 0) 100%);
+  background: var(--color-composer-snap);
+  mask: linear-gradient(#000 45%, transparent);
 }
 
+/* A small solid twin of the playhead cap; the ring in the ruler colour keeps close markers apart. */
 @utility snap-custom-head {
-  width: 14px;
+  display: flex;
+  justify-content: center;
+  width: 10px;
   height: 14px;
-  background: var(--color-composer-warning);
-  border-radius: 50% 50% 50% 0;
-  transform: translateX(-50%) rotate(45deg);
-  box-shadow: 0 2px 9px rgba(0, 0, 0, 0.5);
+  padding: 4px 0 0;
+  border-radius: 4px 4px 5px 5px;
+  background: var(--color-composer-snap);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 45%, transparent),
+    0 0 0 1.5px var(--color-composer-bg);
+  & > i {
+    width: 1.5px;
+    height: 6px;
+    border-radius: 1px;
+    background: color-mix(in oklab, black 45%, var(--color-composer-snap));
+  }
+  &:hover,
+  &[data-dragging] {
+    background: color-mix(in oklab, white 30%, var(--color-composer-snap));
+  }
+  &[data-dragging] {
+    translate: 0 1px;
+  }
+}
+
+/* The cue: a ruler-coloured notch whose sharp point sits on the cue time. Its hit area is the parent. */
+@utility cue-notch {
+  width: 9px;
+  height: 6.75px;
+  background: var(--color-composer-text-tertiary);
+  clip-path: path("M 2.99 0 L 6.01 0 A 1.6 1.6 0 0 1 7.342 2.488 L 4.5 6.75 L 1.658 2.488 A 1.6 1.6 0 0 1 2.99 0 Z");
+  transition: background-color 150ms;
+  @media (hover: hover) {
+    :hover > & {
+      background: var(--color-composer-text);
+    }
+  }
+  &[data-latched] {
+    background: var(--color-composer-accent-text);
+  }
 }
 
 @utility snap-marker-flash {
   width: 2px;
-  background: #fff;
+  background: var(--ink);
+  box-shadow: 0 0 var(--flash-glow, 0px) color-mix(in oklab, var(--ink) 90%, transparent);
 }
 
 @utility waveform-loading-dots {
-  background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 1px, transparent 1.5px);
+  background-image: radial-gradient(
+    circle at center,
+    color-mix(in oklab, var(--ink) 10%, transparent) 1px,
+    transparent 1.5px
+  );
   background-size: 8px 8px;
-  background-position: 4px 4px;
+  background-position: center;
   isolation: isolate;
 
   &::before {
@@ -226,7 +390,7 @@ braccato-lyrics .blyrics-container {
       transparent 1.7px
     );
     background-size: 8px 8px;
-    background-position: 4px 4px;
+    background-position: center;
     mask-image: linear-gradient(135deg, transparent 0%, transparent 35%, black 50%, transparent 65%, transparent 100%);
     -webkit-mask-image: linear-gradient(
       135deg,
@@ -259,13 +423,407 @@ braccato-lyrics .blyrics-container {
   }
 }
 
+@keyframes library-rise {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+@keyframes library-toast-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
 @utility waveform-armed {
   cursor: crosshair;
-  box-shadow: inset 0 0 20px -2px color-mix(in srgb, var(--color-composer-warning) 18%, transparent);
+}
+
+/* Word blocks set their own cursors, so the paste cursor must win over them. */
+@utility paste-cursor {
+  &[data-paste-cursor="copy"],
+  &[data-paste-cursor="copy"] * {
+    cursor: copy !important;
+  }
+  &[data-paste-cursor="blocked"],
+  &[data-paste-cursor="blocked"] * {
+    cursor: not-allowed !important;
+  }
+}
+
+/* Marker mode arms the ruler and the waveform as one drop zone. */
+@utility marker-zone-armed {
+  height: calc(var(--spacing) * 7 + 80px);
+  box-shadow: inset 0 0 20px -2px color-mix(in srgb, var(--color-composer-snap) 22%, transparent);
+}
+
+@utility range-lead-in {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-composer-accent) 14%, transparent) 0 4px,
+    transparent 4px 8px
+  );
+}
+
+@utility btn-raised {
+  background: var(--raised-face);
+  box-shadow: var(--raised-edge);
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: var(--raised-face-hover);
+  }
+}
+
+@utility btn-lit {
+  color: var(--color-composer-on-accent);
+  background: var(--color-composer-accent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: color-mix(in oklab, var(--color-composer-accent) 90%, var(--ink));
+  }
+}
+
+@utility btn-danger {
+  color: #fff;
+  background: color-mix(in oklab, var(--color-composer-error) 82%, var(--color-composer-negative));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: color-mix(in oklab, var(--color-composer-error) 70%, var(--color-composer-negative));
+  }
+}
+
+@utility tray {
+  display: flex;
+  align-items: center;
+  gap: var(--tray-pad);
+  height: var(--tray-height, 36px);
+  padding: var(--tray-pad);
+  border-radius: calc(var(--tray-inner-radius, 8px) + var(--tray-pad));
+  background: var(--well);
+  box-shadow: var(--well-edge);
+}
+
+@utility beat-grid-past-dim {
+  mask-image: linear-gradient(to right, rgb(0 0 0 / 0.4) var(--played-x, 0px), black var(--played-x, 0px));
+}
+
+@utility tray-compact {
+  --tray-pad: 2px;
+  --tray-height: 28px;
+  --tray-inner-radius: 6px;
+}
+
+@utility tap-key {
+  --face-top: color-mix(in oklab, var(--ink) 15%, var(--display));
+  --face-bottom: color-mix(in oklab, var(--ink) 9%, var(--display));
+  --side: color-mix(in oklab, var(--face-bottom) 55%, var(--display));
+  min-width: 88px;
+  html[data-scheme="light"] & {
+    --face-top: white;
+    --face-bottom: color-mix(in oklab, white 70%, var(--pop));
+    --side: color-mix(in oklab, var(--pop) 70%, var(--color-composer-text-faint));
+  }
+  & > .key-cap {
+    padding-inline: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--ink);
+  }
+  & > .key-cap > [data-inline-key-badge] {
+    margin-left: 0;
+  }
+}
+
+@utility latch-on {
+  color: var(--ink);
+  background: color-mix(in oklab, var(--color-composer-accent) 12%, var(--cap));
+  box-shadow: inset 0 0 0 1px var(--lit-ring);
+  &:focus-visible {
+    background: color-mix(in oklab, var(--color-composer-accent) 20%, var(--cap));
+  }
+}
+
+/* The caret may sit inside a Tooltip span, so it is matched as a descendant. */
+@utility split-caret {
+  --split-ease: 150ms cubic-bezier(0.22, 1, 0.36, 1);
+  & button[aria-haspopup] {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    color: var(--muted);
+    transition:
+      background-color var(--split-ease),
+      color var(--split-ease),
+      scale var(--split-ease);
+  }
+  & button[aria-haspopup]:hover,
+  & button[aria-haspopup][aria-expanded="true"] {
+    background: var(--layer-2);
+    color: var(--ink);
+  }
+  & button[aria-haspopup] > svg {
+    transition: rotate var(--split-ease);
+  }
+  & button[aria-haspopup][aria-expanded="true"] > svg {
+    rotate: 180deg;
+  }
+}
+
+@utility split-latch {
+  @apply split-caret;
+  display: flex;
+  align-items: center;
+  height: 28px;
+  border-radius: 8px;
+  transition:
+    background-color var(--split-ease),
+    box-shadow var(--split-ease);
+  &:has([aria-pressed="true"]) {
+    background: color-mix(in oklab, var(--color-composer-accent) 12%, var(--cap));
+    box-shadow: inset 0 0 0 1px var(--lit-ring);
+  }
+  &:has([aria-pressed="false"]:hover:not(:disabled)) {
+    background: var(--layer-1);
+  }
+  & button[aria-pressed] {
+    background: none;
+    box-shadow: none;
+    padding-right: 6px;
+  }
+  & > button[aria-haspopup] {
+    margin-right: 4px;
+  }
+  &:has([aria-pressed="true"]) > button[aria-haspopup] {
+    color: var(--color-composer-accent-text);
+  }
+}
+
+@utility split-action {
+  @apply split-caret;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  border-radius: 12px;
+  transition: background-color var(--split-ease);
+  &:has(> :first-child:hover) {
+    background: var(--layer-1);
+  }
+  & > :first-child > button {
+    background: none;
+  }
+  & button[aria-haspopup] {
+    margin-right: 6px;
+  }
+}
+
+@utility surface-modal {
+  animation: modal-pop-in 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  [data-handoff] > & {
+    animation: none;
+  }
+  [data-leaving] > & {
+    animation: modal-pop-out 150ms ease-out both;
+  }
+  background: var(--pop);
+  box-shadow:
+    inset 0 0 0 1px var(--edge),
+    inset 0 1px 0 var(--highlight),
+    0 32px 64px -16px rgb(var(--shade) / 0.6),
+    0 4px 12px rgb(var(--shade) / 0.25);
+}
+
+@utility modal-scrim {
+  animation: modal-scrim-in 250ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  &[data-handoff] {
+    animation: none;
+  }
+  &[data-leaving] {
+    animation: modal-scrim-out 150ms ease-out both;
+  }
+  background: rgb(0 0 0 / 0.55);
+  backdrop-filter: blur(4px);
+  html[data-scheme="light"] & {
+    background: rgb(var(--shade) / 0.28);
+  }
+}
+
+@keyframes modal-pop-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+    scale: 0.98;
+    filter: blur(4px);
+  }
+}
+
+@keyframes modal-pop-out {
+  to {
+    opacity: 0;
+    translate: 0 -12px;
+    filter: blur(4px);
+  }
+}
+
+@keyframes modal-scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-scrim-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@utility workspace-card {
+  position: relative;
+  isolation: isolate;
+  margin-inline: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--color-composer-bg);
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 200;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: var(--raised-edge);
+  }
+}
+
+/* A singer's name in the singer colour, the label form of the line column's tint. */
+@utility singer-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  min-width: 0;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 7px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: color-mix(in oklab, var(--agent) 62%, var(--ink));
+  background: color-mix(in oklab, var(--agent) 16%, transparent);
+}
+
+/* Elevation on a pseudo layer, so the ping ring motion animates on the element itself never overwrites it. */
+@utility banner-elevation {
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: var(--word-elev);
+    pointer-events: none;
+  }
+}
+
+@utility surface-floating {
+  background: var(--pop);
+  box-shadow: var(--float-shadow);
 }
 
 /* Timeline panning mode */
 @layer components {
+  /* Extruded key: the base paints the side, the cap is the face. Press sinks the cap into the side. */
+  .key {
+    --face-top: color-mix(in oklab, var(--ink) 14%, var(--color-composer-bg));
+    --face-bottom: color-mix(in oklab, var(--ink) 6%, var(--color-composer-bg));
+    --side: color-mix(in oklab, var(--face-bottom) 60%, var(--color-composer-bg-dark));
+    --key-height: 36px;
+    --key-depth: 3px;
+    --key-radius: 12px;
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    flex-direction: column;
+    height: var(--key-height);
+    padding-bottom: var(--key-depth);
+    border-radius: var(--key-radius);
+    cursor: pointer;
+    &::before {
+      content: "";
+      position: absolute;
+      inset: var(--key-depth) 0 0;
+      z-index: -1;
+      border-radius: inherit;
+      background: var(--side);
+    }
+    & > .key-cap {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: inherit;
+      background: linear-gradient(to bottom, var(--face-top), var(--face-bottom));
+      box-shadow:
+        inset 0 0 0 1px var(--edge),
+        inset 0 1px 0 var(--highlight);
+      transition: translate 160ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    &:hover > .key-cap {
+      background: linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--ink) 4%, var(--face-top)),
+        color-mix(in oklab, var(--ink) 4%, var(--face-bottom))
+      );
+    }
+    &:focus-visible > .key-cap {
+      background:
+        linear-gradient(var(--focus-tint), var(--focus-tint)),
+        linear-gradient(to bottom, var(--face-top), var(--face-bottom));
+    }
+    &:active > .key-cap,
+    &[data-pressed] > .key-cap {
+      translate: 0 calc(var(--key-depth) - 1px);
+      transition-duration: 40ms;
+      transition-timing-function: cubic-bezier(0.3, 0, 0.6, 1);
+    }
+    &[aria-pressed="true"],
+    &[data-lit] {
+      --face-top: color-mix(
+        in oklab,
+        var(--color-composer-accent) 16%,
+        color-mix(in oklab, var(--ink) 14%, var(--color-composer-bg))
+      );
+      --face-bottom: color-mix(
+        in oklab,
+        var(--color-composer-accent) 16%,
+        color-mix(in oklab, var(--ink) 6%, var(--color-composer-bg))
+      );
+    }
+    &[aria-pressed="true"] > .key-cap,
+    &[data-lit] > .key-cap {
+      box-shadow:
+        inset 0 0 0 1px var(--lit-ring),
+        inset 0 1px 0 var(--highlight);
+    }
+    &:disabled {
+      cursor: not-allowed;
+    }
+    &:disabled > .key-cap > *,
+    &[data-unavailable] > .key-cap > * {
+      opacity: 0.35;
+    }
+  }
+
+  html[data-scheme="light"] .key {
+    --side: color-mix(in oklab, var(--face-bottom) 76%, var(--color-composer-text-faint));
+  }
+
   .is-panning,
   .is-panning * {
     @apply cursor-grabbing!;
@@ -298,9 +856,12 @@ braccato-lyrics .blyrics-container {
     pointer-events: none !important;
   }
 
-  .timeline-playhead-bar {
+  .timeline-playhead-bar,
+  .timeline-playhead-cap {
     will-change: transform;
-    transition: transform 32ms linear;
+  }
+
+  .timeline-playhead-bar {
     mask-position: -16px 0;
     -webkit-mask-position: -16px 0;
     mask-size: calc(100% + 32px) 100%;
@@ -311,52 +872,6 @@ braccato-lyrics .blyrics-container {
 }
 
 /* Range input styling */
-input[type="range"].settings-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 3px;
-  outline: none;
-}
-
-input[type="range"].settings-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--color-composer-text);
-  cursor: pointer;
-  margin-top: -5px;
-  border: none;
-}
-
-input[type="range"].settings-slider::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 3px;
-}
-
-input[type="range"].settings-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--color-composer-text);
-  cursor: pointer;
-  border: none;
-}
-
-input[type="range"].settings-slider::-moz-range-track {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--color-composer-button);
-}
-
-input[type="range"].settings-slider::-moz-range-progress {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--color-composer-accent);
-}
-
 /* Help search matches, painted with the Custom Highlight API; mirrors HighlightMatches */
 ::highlight(help-match) {
   color: var(--color-composer-accent-text);
@@ -419,9 +934,9 @@ input[type="range"].settings-slider::-moz-range-progress {
 }
 
 .os-theme-light {
-  --os-handle-bg: rgba(255, 255, 255, 0.3);
-  --os-handle-bg-hover: rgba(255, 255, 255, 0.4);
-  --os-handle-bg-active: rgba(255, 255, 255, 0.5);
+  --os-handle-bg: color-mix(in oklab, var(--ink) 30%, transparent);
+  --os-handle-bg-hover: color-mix(in oklab, var(--ink) 40%, transparent);
+  --os-handle-bg-active: color-mix(in oklab, var(--ink) 50%, transparent);
 }
 
 /* Ensure Virtuoso wrappers don't break sticky gutters */
@@ -436,30 +951,360 @@ input[type="range"].settings-slider::-moz-range-progress {
   transition: opacity 0.15s ease;
 }
 
+/* Registered so the lit fade runs on the main thread: Chrome's composited background-color fade can repaint one stale lit frame as it ends. */
+@property --row-tint {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+
+@property --word-fill {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+
+/* Timeline word: an elevated face tinted with the singer colour (--agent). The lane, fit and lit states are data attributes. */
+@layer components {
+  .word-face {
+    --selection-ring: color-mix(in oklab, var(--agent) 80%, var(--ink));
+    padding: 0 8px;
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    color: color-mix(in oklab, var(--ink) 94%, transparent);
+    --word-fill: color-mix(in oklab, var(--agent) 30%, var(--word-face));
+    background-color: var(--word-fill);
+    background-image:
+      var(--hatch, none), linear-gradient(to bottom, color-mix(in oklab, var(--ink) 6%, transparent), transparent 60%);
+    box-shadow: var(--word-elev);
+    /* Only playback's light fades out; selection, hover and drag feedback land on the spot. */
+    transition-property: --word-fill;
+    transition-duration: 250ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    &:hover {
+      color: var(--ink);
+    }
+    &[data-fit="narrow"] {
+      padding: 0 3px;
+      font-size: 11px;
+    }
+    &[data-cut] > span,
+    & > span[data-pinned] {
+      mask-image: linear-gradient(to right, #000 calc(100% - 8px), transparent);
+    }
+    &[data-fit="tick"] {
+      padding: 0;
+      font-size: 0;
+      border-radius: 4px;
+    }
+    &[data-lane="bg"] {
+      opacity: 0.72;
+      &:not([data-lit], [data-selected]) {
+        background-image: var(--hatch, none);
+        box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink) 5%, transparent);
+      }
+      &[data-lit] {
+        opacity: 0.84;
+      }
+      &[data-selected] {
+        opacity: 1;
+      }
+    }
+    &[data-lit] {
+      color: var(--ink);
+      opacity: 1;
+      --word-fill: color-mix(in oklab, var(--agent) 58%, var(--word-face));
+      background-image:
+        var(--hatch, none), linear-gradient(to bottom, color-mix(in oklab, white 14%, transparent), transparent 70%);
+      box-shadow:
+        inset 0 1px 0 color-mix(in oklab, white 30%, transparent),
+        inset 0 0 0 1px color-mix(in oklab, var(--ink) 6%, transparent),
+        0 1px 1px var(--word-shadow),
+        0 3px 8px -4px var(--word-shadow);
+      transition-duration: 60ms;
+    }
+    &[data-selected] {
+      color: var(--ink);
+      opacity: 1;
+      --word-fill: color-mix(in oklab, var(--agent) 40%, var(--word-face));
+      box-shadow:
+        inset 0 0 0 2px var(--selection-ring),
+        inset 0 3px 0 -1px color-mix(in oklab, white 9%, transparent),
+        0 1px 1px var(--word-shadow),
+        0 3px 8px -4px var(--word-shadow);
+    }
+    &[data-selected][data-lit] {
+      --word-fill: color-mix(in oklab, var(--agent) 58%, var(--word-face));
+    }
+    /* A syllable split from its word by a timing gap keeps a cut line on the open end. */
+    --syllable-cut: color-mix(in oklab, var(--agent) 70%, var(--ink));
+    &[data-gap-before]::before,
+    &[data-gap-after]::after {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      width: 1px;
+      background: var(--syllable-cut);
+      pointer-events: none;
+    }
+    &[data-gap-before]::before {
+      left: 0;
+    }
+    &[data-gap-after]::after {
+      right: 0;
+    }
+    &[data-selected]::before,
+    &[data-selected]::after {
+      content: none;
+    }
+  }
+  html[data-scheme="light"] .word-face {
+    --syllable-cut: color-mix(in oklab, var(--agent) 75%, black);
+    background-image:
+      var(--hatch, none),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--agent) 6%, white),
+        color-mix(in oklab, var(--agent) 14%, color-mix(in oklab, white 70%, var(--color-composer-bg-dark)))
+      );
+    box-shadow:
+      inset 0 0 0 1px color-mix(in oklab, var(--agent) 30%, var(--edge)),
+      0 1px 2px rgb(var(--shade) / 0.14);
+    &[data-lit] {
+      color: #fff;
+      background-image: var(--hatch, none);
+      --word-fill: color-mix(in oklab, var(--agent) 80%, black);
+      --syllable-cut: color-mix(in oklab, var(--agent) 40%, black);
+    }
+    &[data-selected] {
+      background-image:
+        var(--hatch, none),
+        linear-gradient(
+          to bottom,
+          color-mix(in oklab, var(--agent) 10%, white),
+          color-mix(in oklab, var(--agent) 24%, color-mix(in oklab, white 70%, var(--color-composer-bg-dark)))
+        );
+      box-shadow:
+        inset 0 0 0 2px var(--selection-ring),
+        0 1px 2px rgb(var(--shade) / 0.14);
+    }
+    &[data-selected][data-lit] {
+      background-image: var(--hatch, none);
+      box-shadow:
+        inset 0 0 0 2px var(--ink),
+        0 1px 2px rgb(var(--shade) / 0.14);
+    }
+  }
+}
+
+/* Timeline pitch line: a canvas over each lane's words, shown by the mode the rows scope carries in data-pitch. Labels lift to make room. */
+@layer components {
+  .pitch-lane,
+  .pitch-lane-ghost {
+    position: absolute;
+    top: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .pitch-lane {
+    transition: opacity 150ms cubic-bezier(0.22, 1, 0.36, 1);
+    &[data-sung] {
+      z-index: 2;
+    }
+  }
+  .pitch-lane-ghost {
+    opacity: 0;
+  }
+  :is(
+      [data-pitch="always"],
+      [data-pitch="focus"] [data-timeline-row]:is([data-current], :has([data-word-block][data-selected]))
+    )
+    :is(.pitch-lane, .word-face > span) {
+    --pitch-shown: 1;
+  }
+  @media (hover: hover) {
+    [data-pitch="focus"] [data-timeline-row]:hover :is(.pitch-lane, .word-face > span) {
+      --pitch-shown: 1;
+      transition-delay: 80ms;
+    }
+  }
+  .pitch-lane {
+    opacity: var(--pitch-shown, 0);
+  }
+  .word-face > span {
+    translate: 0 calc(var(--pitch-shown, 0) * -5px);
+  }
+  .word-face:not([data-pitched]) > span {
+    translate: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .word-face > span {
+      transition: translate 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    [data-pitch-arriving="run"] .word-face > span {
+      transition-duration: var(--pitch-rise-ms);
+      transition-delay: var(--rise-delay, 0ms);
+    }
+  }
+  [data-pitch-arriving] .pitch-lane {
+    transition: none;
+    &[data-sung] {
+      opacity: 0;
+    }
+  }
+  [data-pitch-arriving="prep"] .word-face > span {
+    transition: none;
+  }
+}
+
+/* Timeline line cell: the singer tint (--agent) with a 2px edge that lights while a word of the line is sung and flashes on each new word. */
+@layer components {
+  .line-cell {
+    --cell-bg: var(--gutter-bg);
+    --line-cell-hit-from: inset -2px 0 0 color-mix(in oklab, var(--agent) 65%, white), inset 0 -1px 0 var(--divider);
+    --rail: color-mix(in oklab, var(--agent) 45%, var(--cell-bg));
+    background: color-mix(in oklab, var(--agent) 8%, var(--cell-bg));
+    box-shadow:
+      inset -2px 0 0 var(--rail),
+      inset 0 -1px 0 var(--divider);
+    /* Only the sung edge eases; hover tints land on the spot. */
+    transition-property: box-shadow;
+    transition-duration: 280ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    &:hover {
+      background: color-mix(in oklab, var(--agent) 12%, var(--cell-bg));
+    }
+  }
+  [data-in-group] > .line-cell {
+    --cell-bg: color-mix(in oklab, var(--group) 6%, var(--gutter-bg));
+  }
+  [data-speaking] > .line-cell {
+    --rail: var(--agent);
+    transition-duration: 40ms;
+    &[data-hit="a"] {
+      animation: line-cell-hit-a 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    &[data-hit="b"] {
+      animation: line-cell-hit-b 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  }
+  [data-timeline-row] {
+    background-color: var(--row-tint);
+    transition: --row-tint 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  [data-timeline-row][data-current] {
+    --row-tint: color-mix(in oklab, var(--color-composer-accent) 7%, transparent);
+  }
+}
+
+/* Two names for one flash: switching names restarts it without a reflow. */
+@keyframes line-cell-hit-a {
+  from {
+    box-shadow: var(--line-cell-hit-from);
+  }
+}
+
+@keyframes line-cell-hit-b {
+  from {
+    box-shadow: var(--line-cell-hit-from);
+  }
+}
+
 .is-explicit-word {
-  background-image: repeating-linear-gradient(
+  --hatch: repeating-linear-gradient(
     45deg,
-    color-mix(in srgb, var(--color-composer-explicit) 20%, transparent) 0 3px,
+    color-mix(in oklab, var(--color-composer-explicit) 18%, transparent) 0 3px,
     transparent 3px 8px
   );
 }
 
 [data-help-content] [data-inline-key-badge] {
-  margin-left: 0.25rem;
-  margin-right: 0.25rem;
+  color: var(--muted);
+  vertical-align: 1px;
 }
 
 .is-snapped {
-  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-composer-snap) 85%, transparent), 0 0 14px 2px
-    color-mix(in srgb, var(--color-composer-snap) 28%, transparent), 0 1px 2px rgba(0, 0, 0, 0.4);
-  transition: box-shadow 110ms cubic-bezier(0.25, 1.4, 0.5, 1);
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--color-composer-snap) 85%, transparent),
+    0 0 14px 2px color-mix(in srgb, var(--color-composer-snap) 28%, transparent),
+    var(--word-elev);
 }
 
 /* On a light surface a near-solid ring reads as a heavy dark outline, so soften
    the ring to a glow, lean on the halo for presence, and lighten the shadow. */
 [data-scheme="light"] .is-snapped {
-  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-composer-snap) 70%, transparent), 0 0 12px 2px
-    color-mix(in srgb, var(--color-composer-snap) 45%, transparent), 0 1px 2px rgba(0, 0, 0, 0.12);
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--color-composer-snap) 70%, transparent),
+    0 0 12px 2px color-mix(in srgb, var(--color-composer-snap) 45%, transparent),
+    0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.bh,
+.bh-edit {
+  --bh-text: var(--color-composer-text);
+  --bh-bgText: color-mix(in srgb, var(--color-composer-text) 80%, var(--color-composer-bg));
+  --bh-bgText-editor: color-mix(in srgb, var(--color-composer-text) 70%, var(--color-composer-bg));
+  --bh-timestamp: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-accent-text) 80%, var(--color-composer-text)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-wordTime: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-accent-text) 70%, var(--color-composer-text-tertiary)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-agent: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-warning) 80%, var(--color-composer-text)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-value: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-positive) 80%, var(--color-composer-text)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-meta: color-mix(in srgb, var(--color-composer-text-tertiary) 70%, var(--color-composer-bg));
+  --bh-tag: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-text-tertiary) 80%, var(--color-composer-text-faint)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-attr: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-text-tertiary) 55%, var(--color-composer-text-faint)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-punct: color-mix(in srgb, var(--color-composer-text-faint) 70%, var(--color-composer-bg));
+  --bh-comment: color-mix(in srgb, var(--color-composer-text-faint) 70%, var(--color-composer-bg));
+  --bh-caret: var(--color-composer-text);
+  --bh-selection: color-mix(in srgb, var(--color-composer-accent) 30%, transparent);
+  --bh-placeholder: var(--color-composer-text-muted);
+}
+
+@utility lyrics-code-surface {
+  box-sizing: border-box;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-composer-border);
+  border-radius: 12px;
+  background-color: color-mix(in srgb, var(--color-composer-bg-dark) 55%, var(--color-composer-bg));
+}
+
+@utility lyrics-code-frame {
+  display: grid;
+
+  &:focus-within {
+    border-color: var(--color-composer-accent);
+  }
+
+  & > .bh-edit {
+    display: grid;
+    min-height: 0;
+  }
 }
 
 /* Reduced motion */
@@ -476,29 +1321,161 @@ input[type="range"].settings-slider::-moz-range-progress {
     animation-duration: 1000ms !important;
     animation-timing-function: steps(1, end);
   }
-  .is-snapped {
-    transition: none;
-  }
   .snap-onset-enter {
     animation-delay: 0ms !important;
   }
 }
 
-@utility theme-swatch-input {
-  appearance: none;
-  -webkit-appearance: none;
-  padding: 0;
-  background: none;
+/* Toasts: content width up to a cap, on the floating surface. Sonner sets --width inline, so the override needs !important. */
+@media (min-width: 601px) {
+  [data-sonner-toaster][data-x-position="center"] {
+    --width: 0px !important;
+  }
 
-  &::-webkit-color-swatch-wrapper {
-    padding: 0;
+  [data-sonner-toaster][data-x-position="center"] [data-sonner-toast] {
+    left: 50%;
+    translate: -50% 0;
   }
-  &::-webkit-color-swatch {
-    border: none;
-    border-radius: 6px;
+
+  [data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+    width: max-content;
+    max-width: min(560px, calc(100vw - 32px));
   }
-  &::-moz-color-swatch {
-    border: none;
-    border-radius: 6px;
-  }
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+  gap: 12px;
+  padding: 12px 16px 12px 14px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--pop);
+  border: 0;
+  border-radius: 14px;
+  box-shadow: var(--float-shadow);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"]:has([data-button], [data-close-button]) {
+  padding-right: 10px;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-title] {
+  font-weight: 500;
+  line-height: 1.35;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-description] {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-icon] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  align-self: center;
+  color: var(--muted);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"]:has([data-description]) [data-icon] {
+  align-self: flex-start;
+  margin-top: 1px;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-icon] svg {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="success"] [data-icon] {
+  color: var(--color-composer-positive);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] [data-icon] {
+  color: var(--color-composer-negative);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] [data-icon] {
+  color: var(--color-composer-warning);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] :is([data-button], [data-cancel]) {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label);
+  background: var(--raised-face);
+  box-shadow: var(--raised-edge);
+  transition:
+    background-color 150ms,
+    color 150ms,
+    scale 150ms;
+  will-change: scale;
+}
+
+[data-sonner-toaster]
+  [data-sonner-toast][data-styled="true"]
+  :is([data-button], [data-cancel]):is(:hover, :focus-visible) {
+  color: var(--ink);
+  background: var(--raised-face-hover);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] :is([data-button], [data-cancel]):active {
+  scale: 0.96;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"]:has([data-cancel]) [data-button]:not([data-cancel]) {
+  color: var(--color-composer-on-accent);
+  background: var(--color-composer-accent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+[data-sonner-toaster]
+  [data-sonner-toast][data-styled="true"]:has([data-cancel])
+  [data-button]:not([data-cancel]):is(:hover, :focus-visible) {
+  color: var(--color-composer-on-accent);
+  background: color-mix(in oklab, var(--color-composer-accent) 90%, var(--ink));
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-cancel] {
+  color: var(--muted);
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-cancel]:is(:hover, :focus-visible) {
+  color: var(--label);
+  background: var(--layer-1);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button] {
+  position: static;
+  order: 99;
+  width: 24px;
+  height: 24px;
+  margin-left: -8px;
+  transform: none;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"]:hover [data-close-button]:hover,
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button]:focus-visible {
+  color: var(--ink);
+  background: var(--layer-2);
+  border: 0;
+}
+
+/* Background lanes with words sit a shade darker than the main lane. */
+[data-track="bg"]:has([data-word-block]) {
+  background: color-mix(in oklab, var(--color-composer-bg-dark) 40%, transparent);
 }

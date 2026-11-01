@@ -1,31 +1,34 @@
 import { LYRICS_FORMATS_DESCRIBED, LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { INLINE_CODE, PROSE } from "@/ui/typography";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { providerLabelsProse } from "@/utils/lyrics-search/provider-labels";
-import { SettingLink } from "@/ui/setting-link";
 import { HelpTopic } from "@/ui/help-topic";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { SettingLink } from "@/ui/setting-link";
+import { INLINE_CODE, PROSE, PROSE_LINK } from "@/ui/typography";
+import { BRIDGE_REPO_URL } from "@/utils/composer-bridge-api";
+import { providerLabelsProse } from "@/utils/lyrics-search/provider-labels";
+import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
+import { OPEN_PROJECT_LABEL, USE_PROJECT_LYRICS_LABEL } from "@/views/lyrics-import-modal/import-lyrics-source";
 
 // -- Importing ----------------------------------------------------------------
 
 const ImportSection: React.FC = () => (
-  <div className="space-y-5">
+  <div className="space-y-[22px] max-w-[68ch]">
     <HelpTopic title="Audio files">
       <p className={PROSE}>Supported formats: MP3, WAV, M4A, OGG, FLAC.</p>
-      <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) mt-1.5 space-y-1`}>
         <li>Use the Import tab's drop zone, or drop a file directly onto the Timeline empty state.</li>
         <li>Once loaded, the waveform renders across the top of Timeline.</li>
         <li>The file name auto-fills the project title in metadata.</li>
-        <li>To replace audio, just drop a new file on the Import tab.</li>
+        <li>To replace audio, drop a new file on the Import tab.</li>
       </ul>
     </HelpTopic>
 
     <HelpTopic title="YouTube URLs">
       <p className={PROSE}>
-        Paste any YouTube link (full URL, share link, or just the video ID) into the Import tab. Composer downloads the
+        Paste any YouTube link (full URL, share link, or the bare video ID) into the Import tab. Composer downloads the
         audio once and keeps it in memory, so seeking and waveform rendering stay instant after that.
       </p>
-      <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) mt-1.5 space-y-1`}>
         <li>The video title fills in as your project title.</li>
         <li>To swap videos, paste a new URL into the same input on the Import tab.</li>
         <li>If a download fails, check that the URL is right and that the video is public.</li>
@@ -44,9 +47,8 @@ const ImportSection: React.FC = () => (
       <p className={`${PROSE} mt-2`}>
         <strong>Cobalt</strong> is the default. Composer ships with a public instance that handles verification
         automatically, but YouTube is currently blocking it. To get unblocked, add a working instance from
-        cobalt.directory in <SettingLink setting="cobaltInstances" />, or self-host. Each custom instance shows a small
-        status icon next to its name reflecting the last attempt, with the actual error in the tooltip if anything went
-        wrong.
+        cobalt.directory in <SettingLink setting="cobaltInstances" />, or self-host. Each custom instance has a small
+        status icon for its last attempt. If that attempt failed, the tooltip shows the error.
       </p>
       <p className={`${PROSE} mt-3`}>
         <strong>Composer Bridge</strong>
@@ -56,7 +58,7 @@ const ImportSection: React.FC = () => (
         leaves your machine. Turn on <SettingLink setting="youtubeBridge" /> and every YouTube import routes through the
         bridge instead of Cobalt.
       </p>
-      <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) mt-1.5 space-y-1`}>
         <li>
           If the bridge isn't installed yet, an inline guide appears with a one-line install command for macOS and
           Linux, plus a link to the Windows download.
@@ -73,12 +75,7 @@ const ImportSection: React.FC = () => (
       </ul>
       <p className={`${PROSE} mt-3`}>
         Sources, releases, and self-build instructions live on{" "}
-        <a
-          href="https://github.com/better-lyrics/composer-bridge"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
-        >
+        <a href={BRIDGE_REPO_URL} target="_blank" rel="noopener noreferrer" className={PROSE_LINK}>
           GitHub
         </a>
         . The install script verifies the release checksum before unpacking.
@@ -90,23 +87,39 @@ const ImportSection: React.FC = () => (
         Open the lyrics modal from the import button in Edit or the Timeline header (or press{" "}
         <InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} /> in Timeline). It has three sections:
       </p>
-      <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) mt-1.5 space-y-1`}>
         <li>
           <strong>Search</strong>: queries {providerLabelsProse()} in parallel. Type a track or paste a video ID;
           artist, album, and duration narrow the results. Each row shows its sync precision (syllable, word, line, or
           unsynced) and how close its duration is to your project's.
         </li>
         <li>
-          <strong>Paste</strong>: drop in raw lyrics. Use <span className={INLINE_CODE}>|</span> to split syllables
-          (e.g. <span className={INLINE_CODE}>beau|ti|ful</span>).
+          <strong>Paste</strong>: drop in raw lyrics, or a whole lyrics or project file. Use{" "}
+          <span className={INLINE_CODE}>|</span> to split syllables (e.g.{" "}
+          <span className={INLINE_CODE}>beau|ti|ful</span>).
         </li>
         <li>
-          <strong>Upload</strong>: drag a file in, or click to browse. Accepts {LYRICS_FORMATS_PROSE}.
+          <strong>Upload</strong>: drag a file in, or click to browse. Accepts {LYRICS_FORMATS_PROSE}, or{" "}
+          {PROJECT_FILE_PROSE}.
         </li>
       </ul>
       <p className={`${PROSE} mt-3`}>
         In Edit, double-clicking the import button skips the modal and opens the file picker directly, like the old
-        flow.
+        flow. Pasting a whole lyrics file into the Edit text area imports it the same way, with its timing, and so does
+        dropping a file onto the editor. Plain lines still paste as typed text.
+      </p>
+      <p className={`${PROSE} mt-3`}>
+        You can paste lyrics straight from a Genius page. Composer drops the [Verse] and [Chorus] tags and the page
+        clutter around the lyrics (the contributor count, "You might also like", the Embed counter). A credit like
+        [Chorus: Drake &amp; Rihanna] gives those lines to that singer. Genius doesn't name who sings an uncredited
+        section, so those lines go to a Lead singer you can rename. A few tagged lines pasted into existing lyrics stay
+        as you pasted them, and the [brackets] notice can remove the tags.
+      </p>
+      <p className={`${PROSE} mt-3`}>
+        A project file can come in through any of these. Composer asks what to do with it:{" "}
+        <strong>{USE_PROJECT_LYRICS_LABEL}</strong> takes its lyrics, singers and song details into the open project as
+        one undoable step, and <strong>{OPEN_PROJECT_LABEL}</strong> adds it to your library and switches to it. A
+        backup of many projects only offers to restore it.
       </p>
       <p className={`${PROSE} mt-3`}>
         Supported formats: {LYRICS_FORMATS_DESCRIBED}. Imported timing is preserved; plain .txt files get none and you

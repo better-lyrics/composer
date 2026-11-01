@@ -1,6 +1,7 @@
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { PREVIEW_SIDEBAR_WIDTH } from "@/utils/preview-sidebar-width";
 import { LyricsRenderer } from "@/views/preview/lyrics-renderer";
+import { useFocusRange } from "@/views/timeline/use-focus-range";
 import { usePreviewSidebarResize } from "@/views/timeline/use-preview-sidebar-resize";
 import { useId } from "react";
 
@@ -21,7 +22,7 @@ const PreviewSidebarShell: React.FC<PreviewSidebarShellProps> = ({ children }) =
       id={sidebarId}
       aria-label="Lyrics preview"
       style={{ width }}
-      className="relative shrink-0 border-l border-composer-border bg-composer-bg-dark flex flex-col overflow-hidden"
+      className="relative shrink-0 border-l border-(--divider) bg-composer-bg-dark flex flex-col overflow-hidden"
     >
       <div
         role="separator"
@@ -37,9 +38,6 @@ const PreviewSidebarShell: React.FC<PreviewSidebarShellProps> = ({ children }) =
         onKeyDown={onKeyDown}
         className="absolute inset-y-0 left-0 z-20 w-1.5 cursor-ew-resize select-none hover:bg-composer-border focus-visible:bg-composer-border"
       />
-      <div className="px-3 py-2 border-b border-composer-border text-xs font-medium text-composer-text-muted select-none">
-        Preview
-      </div>
       {children}
     </aside>
   );
@@ -47,6 +45,7 @@ const PreviewSidebarShell: React.FC<PreviewSidebarShellProps> = ({ children }) =
 
 const TimelinePreviewSidebar: React.FC = () => {
   const { content, duration, syncedLineCount } = useExportTtml();
+  const focusRange = useFocusRange();
 
   return (
     <PreviewSidebarShell>
@@ -55,7 +54,13 @@ const TimelinePreviewSidebar: React.FC = () => {
           <span className="text-sm text-composer-text-muted">No synced content</span>
         </div>
       ) : (
-        <LyricsRenderer ttmlString={content} durationSeconds={duration} layout="sidebar" />
+        <LyricsRenderer
+          ttmlString={content}
+          durationSeconds={duration}
+          layout="sidebar"
+          focusRange={focusRange}
+          isolated
+        />
       )}
     </PreviewSidebarShell>
   );

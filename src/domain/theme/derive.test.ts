@@ -2,9 +2,9 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { deriveTheme } from "./derive";
 import { lighten } from "./color";
-import { type Theme, TOKENS, type TokenKey } from "./model";
+import { deriveTheme } from "./derive";
+import { TOKENS, type Theme, type TokenKey } from "./model";
 
 const SEED_KEYS: TokenKey[] = TOKENS.filter((t) => t.type === "seed").map((t) => t.key);
 

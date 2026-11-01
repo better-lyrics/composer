@@ -1,29 +1,46 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
-import { getPersistenceSettled } from "@/lib/persistence-settled";
+import { isYouTubeLoadError, loadVideoWithRollback, useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
+import { type VideoProjectOutcome, openProjectForVideo } from "@/lib/open-video-project";
+import { getPersistenceSettled, getQueryImportSettled, markLinkProjectSettled } from "@/lib/persistence-settled";
 import { useAudioStore } from "@/stores/audio";
-import { stripQueryParams } from "@/utils/url-params";
+import { useProjectStore } from "@/stores/project";
+import { showLinkedProjectToast } from "@/utils/project-toast";
+import { hasLoadedYouTubeSourceFor } from "@/utils/youtube-source";
+import { readYouTubeParam, stripYouTubeParams } from "@/utils/youtube-link-params";
 import { extractVideoId } from "@/utils/youtube-url";
 
 // -- Constants ----------------------------------------------------------------
 
-const YOUTUBE_PARAM_NAMES = ["youtube", "videoId", "v"] as const;
 const LOG_PREFIX = "[Boot]";
 
-// -- Functions ----------------------------------------------------------------
+// -- Helpers ------------------------------------------------------------------
 
-function readYouTubeParam(params: URLSearchParams): string | null {
-  for (const name of YOUTUBE_PARAM_NAMES) {
-    const value = params.get(name);
-    if (value) return value;
-  }
-  return null;
+type CreatedVideoProject = Extract<VideoProjectOutcome, { kind: "created" }>;
+
+function announceLinkedProject(outcome: CreatedVideoProject): void {
+  void getQueryImportSettled().then(() => {
+    showLinkedProjectToast(
+      useProjectStore.getState().metadata.title,
+      outcome.previousTitle,
+      outcome.previousId,
+      outcome.id,
+    );
+  });
 }
 
-function cleanYouTubeParamsFromUrl(): void {
-  stripQueryParams(YOUTUBE_PARAM_NAMES);
+function logLinkedVideoFailure(error: unknown): void {
+  if (isYouTubeLoadError(error)) console.warn(LOG_PREFIX, "the linked video did not load", error);
+  else console.error(LOG_PREFIX, "loading the linked video failed", error);
 }
+
+function loadCreatedProjectVideo(videoId: string, outcome: CreatedVideoProject): void {
+  loadVideoWithRollback(videoId, outcome.id, outcome.previousId)
+    .then(() => announceLinkedProject(outcome))
+    .catch(logLinkedVideoFailure);
+}
+
+// -- Hook ---------------------------------------------------------------------
 
 function useImportFromYouTube(): void {
   const loadYouTubeSource = useLoadYouTubeSource();
@@ -32,32 +49,41 @@ function useImportFromYouTube(): void {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const raw = readYouTubeParam(params);
-    if (!raw) return;
+    const raw = readYouTubeParam(new URLSearchParams(window.location.search));
+    if (!raw) {
+      markLinkProjectSettled("none");
+      return;
+    }
 
     const videoId = extractVideoId(raw);
-    cleanYouTubeParamsFromUrl();
-
+    stripYouTubeParams();
     if (!videoId) {
+      markLinkProjectSettled("none");
       toast.error("That URL doesn't look like a valid YouTube video");
       return;
     }
 
     let cancelled = false;
-    if (import.meta.env.DEV) console.log(`${LOG_PREFIX} useImportFromYouTube awaiting settled`, { videoId });
-    getPersistenceSettled().then(() => {
-      if (cancelled) return;
-      const current = useAudioStore.getState().source;
-      if (current?.type === "youtube" && current.videoId === videoId && current.file) {
-        if (import.meta.env.DEV) console.log(`${LOG_PREFIX} useImportFromYouTube cache hit`, { videoId });
-        return;
-      }
-      if (import.meta.env.DEV) console.log(`${LOG_PREFIX} useImportFromYouTube loading`, { videoId, current });
-      loadRef.current(videoId).catch(() => {
-        // Error is surfaced via useAudioStore.youtubeLoadError and the tunnel toast.
+    getPersistenceSettled()
+      .then(async () => {
+        if (cancelled) {
+          markLinkProjectSettled("none");
+          return;
+        }
+        const outcome = await openProjectForVideo(videoId);
+        markLinkProjectSettled(outcome.kind);
+        if (outcome.kind === "created") {
+          loadCreatedProjectVideo(videoId, outcome);
+          return;
+        }
+        if (hasLoadedYouTubeSourceFor(useAudioStore.getState().source, videoId)) return;
+        loadRef.current(videoId).catch(logLinkedVideoFailure);
+      })
+      .catch((error: unknown) => {
+        console.error(`${LOG_PREFIX} could not open the project for the link`, error);
+        markLinkProjectSettled("failed");
+        toast.error("Couldn't open the project for that link");
       });
-    });
 
     return () => {
       cancelled = true;

@@ -5,12 +5,14 @@ import { describe, expect, it } from "vitest";
 
 const SLICE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../stores/project");
 
-const HISTORY_WRITERS = /\b(commitHistory|commitSnapPointEdit|commitPendingEdit|undoState|redoState)\b/;
-const SNAPSHOT_FIELD_WRITE = /(?<![.\w])(lines|groups|agents|customSnapPoints)\s*[:,}]/;
+const HISTORY_WRITERS =
+  /\b(amendCurrentStep|commitHistory|commitSharedTimingHistory|commitSnapPointEdit|commitPendingEdit|undoState|redoState)\b/;
+const SNAPSHOT_FIELD_WRITE = /(?<![.\w])(lines|groups|agents|customSnapPoints|beatGrid)\s*[:,}]/;
 const OPAQUE_SPREAD = /\.\.\.(?!state\b)[A-Za-z_]\w*/;
 
 const ALLOWED: Record<string, string> = {
   setTransientLines: "gesture preview; the caller restores or commits through history before the gesture ends",
+  restoreTransientLines: "puts back the pre-gesture lines a preview replaced, which history already holds",
   moveCustomSnapPoint: "drag preview; commitSnapPointDrag records the drag as one entry",
   setCustomSnapPoints: "project load, which starts from an empty history",
   reset: "a fresh project starts from an empty history",

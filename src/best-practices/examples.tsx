@@ -38,7 +38,7 @@ const SILENCE_HATCH =
 // -- Components ----------------------------------------------------------------
 
 const MonoLabel: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
-  <p className={cn("font-mono text-[10px] text-composer-text-faint", className)}>{children}</p>
+  <p className={cn("font-mono text-[10px] text-composer-text-muted", className)}>{children}</p>
 );
 
 const LyricSample: React.FC<LyricSampleProps> = ({ lines }) => (
@@ -48,7 +48,7 @@ const LyricSample: React.FC<LyricSampleProps> = ({ lines }) => (
         {line.agent ? <MonoLabel className="mb-0.5">{line.agent}</MonoLabel> : null}
         {line.main ? <p className="font-medium text-composer-text">{line.main}</p> : null}
         {line.background ? <p className="mt-0.5 text-xs text-composer-text-muted">{line.background}</p> : null}
-        {line.rest ? <p className="text-xs text-composer-text-faint italic">{line.rest}</p> : null}
+        {line.rest ? <p className="text-xs text-composer-text-muted italic">{line.rest}</p> : null}
       </div>
     ))}
   </div>

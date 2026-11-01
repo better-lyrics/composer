@@ -1,3 +1,5 @@
+import { GuideCode } from "@/pages/guides/guide-code";
+
 const LrcToTtmlConversionContent: React.FC = () => (
   <>
     <p>
@@ -20,15 +22,15 @@ const LrcToTtmlConversionContent: React.FC = () => (
       <code className="font-mono text-composer-accent-text">&lt;p&gt;</code> in TTML with a begin attribute equal to the
       LRC timestamp. The end attribute is the next line's begin time.
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`[00:12.34]First line
+    <GuideCode
+      code={`[00:12.34]First line
 [00:15.67]Second line
 
 <!-- becomes -->
 
 <p begin="00:00:12.340" end="00:00:15.670">First line</p>
 <p begin="00:00:15.670" end="...">Second line</p>`}
-    </pre>
+    />
     <p>
       The last line's end time does not exist in LRC. Composer uses the audio duration if you have loaded audio, or
       leaves the end undefined.
@@ -36,8 +38,8 @@ const LrcToTtmlConversionContent: React.FC = () => (
 
     <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Enhanced LRC (eLRC) to TTML</h2>
     <p>eLRC has inline word timestamps in angle brackets. Each inline timestamp becomes a word boundary in TTML:</p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`[00:12.34]<00:12.34>Hello <00:12.80>world<00:13.20>
+    <GuideCode
+      code={`[00:12.34]<00:12.34>Hello <00:12.80>world<00:13.20>
 
 <!-- becomes -->
 
@@ -45,7 +47,7 @@ const LrcToTtmlConversionContent: React.FC = () => (
   <span begin="00:00:12.340" end="00:00:12.800">Hello</span>
   <span begin="00:00:12.800" end="00:00:13.200">world</span>
 </p>`}
-    </pre>
+    />
     <p>
       The trailing inline timestamp (the last angle-bracket before the end of the line) serves as the end time of the
       last word. If there is no trailing timestamp, the last word's end falls through to the next line's begin.
@@ -84,9 +86,7 @@ const LrcToTtmlConversionContent: React.FC = () => (
 
     <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Multi-timestamp LRC lines</h2>
     <p>Some LRC files use multiple timestamps per line for repeated choruses:</p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {"[00:30.00][01:30.00][02:30.00]Chorus line"}
-    </pre>
+    <GuideCode code={"[00:30.00][01:30.00][02:30.00]Chorus line"} />
     <p>
       The converter expands these into three separate{" "}
       <code className="font-mono text-composer-accent-text">&lt;p&gt;</code> elements in TTML, one per timestamp. If the

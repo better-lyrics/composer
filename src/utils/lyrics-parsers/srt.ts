@@ -1,5 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
-import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
+import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 
 // -- Helpers ------------------------------------------------------------------
 

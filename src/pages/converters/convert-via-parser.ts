@@ -7,7 +7,7 @@ import { timingGranularityOf } from "@/domain/project/timing-granularity";
 import type { ConvertArgs } from "@/pages/converters/converter-view";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import type { LyricsFileType } from "@/utils/lyrics-parsers/detect";
-import { skippedLineCount } from "@/utils/lyrics-parsers/shared";
+import { UNSUPPORTED_LRC_TAGS_MESSAGE, hasUnsupportedTags, skippedLineCount } from "@/utils/lyrics-parsers/shared";
 
 // -- Types --------------------------------------------------------------------
 
@@ -27,6 +27,7 @@ function convertViaParser(conversion: ParserConversion, { input, filename, forma
   try {
     const suffix = `.${conversion.extension}`;
     const result = parseLyricsFile(filename.endsWith(suffix) ? filename : `input${suffix}`, input);
+    if (hasUnsupportedTags(result.issues)) return { error: UNSUPPORTED_LRC_TAGS_MESSAGE };
     if (!result.lines.some(hasAnyTiming)) return { error: conversion.emptyMessage };
 
     // The converter page never reaches the project store, so this is the only

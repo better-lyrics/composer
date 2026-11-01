@@ -24,13 +24,19 @@ function fieldName(field: LanguageAlignmentErrorField): string {
 const LanguageStatusSummaries: React.FC<LanguageStatusSummariesProps> = ({ lines, languageNames }) => {
   const errorItems = getLanguageAlignmentErrorItems(lines);
   const reviewItems = getLanguageReviewItems(lines);
+  const reasons = new Set(reviewItems.flatMap((item) => item.tracks.flatMap((track) => track.reasons)));
+  const reviewHelper = reasons.has("source-changed")
+    ? reasons.has("alignment")
+      ? "Some lyrics changed, and some transliteration boundaries need checking."
+      : "The lyric changed after these were written."
+    : "Check the estimated transliteration boundaries with Align.";
   if (errorItems.length === 0 && reviewItems.length === 0) return null;
 
   const trackName = (track: LanguageReviewTrack) =>
     track.kind === "transliteration" ? "Transliteration" : (languageNames.get(track.language) ?? track.language);
 
   return (
-    <div className="flex flex-col gap-2 px-6 pt-4">
+    <div className="flex flex-col gap-2 px-4 pt-4 pb-3">
       <LanguageStatusBanner
         tone="error"
         aria-label="Language timing mismatches"
@@ -46,7 +52,7 @@ const LanguageStatusSummaries: React.FC<LanguageStatusSummariesProps> = ({ lines
         tone="warning"
         aria-label="Language content needing review"
         title={`${pluralize(reviewItems.length, "line needs", "lines need")} review`}
-        helper="The lyric changed after these were written."
+        helper={reviewHelper}
         items={reviewItems.map((item) => ({
           lineId: item.lineId,
           lineIndex: item.lineIndex,

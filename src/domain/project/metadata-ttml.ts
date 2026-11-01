@@ -9,6 +9,9 @@ interface MetaPair {
 
 // -- Reserved keys ------------------------------------------------------------
 
+// Written from the loaded audio on export, never read back into song details.
+const YOUTUBE_VIDEO_ID_KEY = "ytVideoId";
+
 const RESERVED_META_KEYS: ReadonlySet<string> = new Set([
   "artists",
   "album",
@@ -16,6 +19,7 @@ const RESERVED_META_KEYS: ReadonlySet<string> = new Set([
   "musicName",
   "songwriter",
   "songwriters",
+  YOUTUBE_VIDEO_ID_KEY,
 ]);
 
 // -- Mapping ------------------------------------------------------------------
@@ -57,6 +61,8 @@ function fromComposerMeta(pairs: MetaPair[]): Partial<ProjectMetadata> {
       case "songwriters":
         songwriters.push(value);
         break;
+      case YOUTUBE_VIDEO_ID_KEY:
+        break;
       default:
         extra[key] = value;
     }
@@ -69,4 +75,4 @@ function fromComposerMeta(pairs: MetaPair[]): Partial<ProjectMetadata> {
 
 // -- Exports ------------------------------------------------------------------
 
-export { RESERVED_META_KEYS, fromComposerMeta, toComposerMeta };
+export { RESERVED_META_KEYS, YOUTUBE_VIDEO_ID_KEY, fromComposerMeta, toComposerMeta };

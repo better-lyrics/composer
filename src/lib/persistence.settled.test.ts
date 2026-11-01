@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   __resetPersistenceSettledForTests,
   getHashImportSettled,
+  getLinkProjectSettled,
   getPersistenceSettled,
+  getQueryImportSettled,
   markHashImportSettled,
+  markLinkProjectSettled,
   markPersistenceSettled,
+  markQueryImportSettled,
 } from "@/lib/persistence-settled";
 
 // -- Helpers ------------------------------------------------------------------
@@ -197,5 +201,38 @@ describe("__resetPersistenceSettledForTests covers both signals", () => {
     await expect(getPersistenceSettled()).resolves.toBeUndefined();
     const racedH = await withinTimeout(getHashImportSettled(), SETTLE_TIMEOUT_MS);
     expect(racedH).toBe("timeout");
+  });
+});
+
+// -- Link and query handoff ---------------------------------------------------
+
+describe("link and query handoff signals", () => {
+  it("the link signal starts pending and resolves with the outcome", async () => {
+    __resetPersistenceSettledForTests();
+    expect(await withinTimeout(getLinkProjectSettled(), SETTLE_TIMEOUT_MS)).toBe("timeout");
+    markLinkProjectSettled("created");
+    await expect(getLinkProjectSettled()).resolves.toBe("created");
+  });
+
+  it("the first link outcome wins", async () => {
+    __resetPersistenceSettledForTests();
+    markLinkProjectSettled("reopened");
+    markLinkProjectSettled("none");
+    await expect(getLinkProjectSettled()).resolves.toBe("reopened");
+  });
+
+  it("the query signal starts pending and resolves once marked", async () => {
+    __resetPersistenceSettledForTests();
+    expect(await withinTimeout(getQueryImportSettled(), SETTLE_TIMEOUT_MS)).toBe("timeout");
+    markQueryImportSettled();
+    await expect(getQueryImportSettled()).resolves.toBeUndefined();
+  });
+
+  it("the reset makes both signals pending again", async () => {
+    markLinkProjectSettled("none");
+    markQueryImportSettled();
+    __resetPersistenceSettledForTests();
+    expect(await withinTimeout(getLinkProjectSettled(), SETTLE_TIMEOUT_MS)).toBe("timeout");
+    expect(await withinTimeout(getQueryImportSettled(), SETTLE_TIMEOUT_MS)).toBe("timeout");
   });
 });

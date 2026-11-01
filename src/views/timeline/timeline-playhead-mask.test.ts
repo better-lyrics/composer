@@ -5,6 +5,9 @@ import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-p
 
 const PLAYHEAD_X = 300;
 const CONTAINER_TOP = 100;
+// The mask reads each block's own corner radius, so the fixture paints corners like the word face does.
+const SQUARE_LEFT = new Set(["middle", "last"]);
+const SQUARE_RIGHT = new Set(["first", "middle"]);
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -19,6 +22,8 @@ function addWordBlock(parent: HTMLElement, rect: BlockRect, syllablePosition?: s
   const block = document.createElement("div");
   block.setAttribute("data-word-block", "");
   if (syllablePosition) block.dataset.syllablePosition = syllablePosition;
+  block.style.borderTopLeftRadius = SQUARE_LEFT.has(syllablePosition ?? "") ? "0" : "10px";
+  block.style.borderTopRightRadius = SQUARE_RIGHT.has(syllablePosition ?? "") ? "0" : "10px";
   block.getBoundingClientRect = () => new DOMRect(rect.left, rect.top, rect.width, rect.height);
   parent.appendChild(block);
   return block;

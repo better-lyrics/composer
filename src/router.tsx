@@ -1,5 +1,6 @@
 import { ErrorFallback } from "@/pages/error-fallback";
 import { GUIDE_SLUGS } from "@/pages/guides/slugs";
+import { EDITOR_SEGMENT } from "@/utils/app-routes";
 import type { RouteRecord } from "vite-react-ssg";
 
 const errorElement = <ErrorFallback />;
@@ -10,6 +11,10 @@ const routes: RouteRecord[] = [
     lazy: async () => ({ Component: (await import("@/pages/home")).default }),
     entry: "src/pages/home.tsx",
     errorElement,
+    children: [
+      { index: true, element: null },
+      { path: EDITOR_SEGMENT, element: null },
+    ],
   },
   {
     path: "/ttml-maker",
@@ -92,6 +97,12 @@ const routes: RouteRecord[] = [
     lazy: async () => ({ Component: (await import("@/pages/guides/guide-page")).default }),
     entry: "src/pages/guides/guide-page.tsx",
     getStaticPaths: () => GUIDE_SLUGS.map((slug) => `/guides/${slug}`),
+    errorElement,
+  },
+  {
+    path: "/design",
+    lazy: async () => ({ Component: (await import("@/pages/design/design-page")).default }),
+    entry: "src/pages/design/design-page.tsx",
     errorElement,
   },
   {

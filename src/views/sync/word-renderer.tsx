@@ -32,8 +32,8 @@ interface WordRendererProps {
 function renderWordContent(word: string, timing: WordTiming | undefined, isBackground: boolean, editMode: boolean) {
   const isSynced = !!timing;
   const baseClass = isBackground ? "italic" : "";
-  const syncedClass = isBackground ? "text-composer-text-muted/70" : "text-composer-text-muted";
-  const unsyncedClass = isBackground ? "text-composer-text-muted/50" : "text-composer-text";
+  const syncedClass = isBackground ? "text-(--muted) opacity-75 text-[15px]" : "text-(--muted)";
+  const unsyncedClass = isBackground ? "text-(--muted) opacity-55 text-[15px]" : "text-composer-text";
   const activeClass = isBackground ? "text-composer-accent-text/80" : "text-composer-accent-text";
 
   if (editMode && isSynced) {
@@ -102,7 +102,7 @@ const WordRenderer: React.FC<WordRendererProps> = ({
           </Tooltip>
         )}
         {isSynced && timing && !isBackground && (
-          <span className="transition-opacity opacity-0 group-hover/word:opacity-100">
+          <span className="transition-opacity opacity-0 group-hover/word:opacity-100 focus-within:opacity-100 has-[[aria-expanded=true]]:opacity-100">
             <SyllableSplitter
               lineId={lineId}
               type={isBackground ? "bg" : "word"}
@@ -114,7 +114,7 @@ const WordRenderer: React.FC<WordRendererProps> = ({
         )}
       </span>
       {isSynced && timing && (
-        <span className="flex items-center gap-1">
+        <span className="flex items-center not-italic">
           <TimeNudgeInput
             value={timing.begin}
             currentTime={currentTime}
@@ -123,7 +123,7 @@ const WordRenderer: React.FC<WordRendererProps> = ({
             onNudge={(delta) => handlers.onNudge?.(idx, delta)}
             onSetTime={(newBegin) => handlers.onSetTime?.(idx, newBegin)}
           />
-          <IconArrowRight className="size-2.5 text-composer-text opacity-25 mx-0.5" />
+          <IconArrowRight className="size-2.5 text-composer-text opacity-25 mx-px" />
           <TimeNudgeInput
             value={timing.end}
             currentTime={currentTime}

@@ -1,3 +1,4 @@
+import type { TimeRange } from "@/domain/group/shared-timing";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type ReadableLine, effectiveMainWordEdit } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
@@ -21,7 +22,12 @@ import { toast } from "sonner";
 
 // -- Alt duplicate -------------------------------------------------------------
 
-function handleAltDuplicate(event: DragEndEvent, lines: readonly ReadableLine[], zoom: number, duration: number) {
+function handleAltDuplicate(
+  event: DragEndEvent,
+  lines: readonly ReadableLine[],
+  zoom: number,
+  rangeOf: (line: LyricLine) => TimeRange,
+) {
   const { active, delta } = event;
   const activeData = active.data.current as DragData | undefined;
   if (!activeData) return;
@@ -44,14 +50,15 @@ function handleAltDuplicate(event: DragEndEvent, lines: readonly ReadableLine[],
 
     const wordDups: WordTiming[] = [];
     const bgDups: WordTiming[] = [];
+    const range = rangeOf(line);
 
     for (const sel of selections) {
       const wordsArray = trackWords(line, sel.type);
       const word = wordsArray?.[sel.wordIndex];
       if (!word) continue;
 
-      const newBegin = Math.max(0, word.begin + timeDelta);
-      const newEnd = Math.min(duration, word.end + timeDelta);
+      const newBegin = Math.max(range.min, word.begin + timeDelta);
+      const newEnd = Math.min(range.max, word.end + timeDelta);
       if (newEnd <= newBegin) continue;
 
       const dup = cloneWord(word, { begin: newBegin, end: newEnd });

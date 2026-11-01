@@ -69,9 +69,10 @@ function splitWordIntoSyllables({
     const last = newWords[newWords.length - 1];
     newWords[newWords.length - 1] = { ...last, transliterationJoinerAfter: outerTransliterationJoiner };
   }
-  if (word.text.endsWith(" ") && newWords.length > 0) {
+  const trailingWhitespace = word.text.slice(trimmed.length);
+  if (trailingWhitespace && newWords.length > 0) {
     const last = newWords[newWords.length - 1];
-    newWords[newWords.length - 1] = { ...last, text: `${last.text} ` };
+    newWords[newWords.length - 1] = { ...last, text: `${last.text}${trailingWhitespace}` };
   }
   return newWords;
 }

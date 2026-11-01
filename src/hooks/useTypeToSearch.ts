@@ -1,17 +1,6 @@
-import { useModalStackStore } from "@/stores/modal-stack";
+import { isPanelOnTop, openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
+import { isTypingTarget } from "@/utils/typing-target";
 import { type RefObject, useEffect } from "react";
-
-// -- Helpers -------------------------------------------------------------------
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return (
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.tagName === "SELECT" ||
-    target.isContentEditable
-  );
-}
 
 // -- Hook ----------------------------------------------------------------------
 
@@ -23,9 +12,9 @@ function useTypeToSearch(
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
-      if (useModalStackStore.getState().count > 1) return;
+      if (openModalCount(useEscapeLayerStackStore.getState()) > 1) return;
       if (event.key === "Escape") {
-        if (query === "") return;
+        if (query === "" || isPanelOnTop()) return;
         event.preventDefault();
         event.stopPropagation();
         setQuery("");

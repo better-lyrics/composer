@@ -1,10 +1,20 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { useModalStackStore } from "@/stores/modal-stack";
+import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
+import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
+import { isMac } from "@/utils/platform";
 import { EditPanel } from "@/views/edit";
+import { beforeEach, describe, expect, it } from "vitest";
+
+// -- Constants ----------------------------------------------------------------
+
+const MOD = { metaKey: isMac, ctrlKey: !isMac };
+const UNDO: KeyboardEventInit = { key: "z", code: "KeyZ", ...MOD };
+const REDO: KeyboardEventInit = { key: "z", code: "KeyZ", ...MOD, shiftKey: true };
+const ALTERNATE_REDO: KeyboardEventInit = { key: "y", code: "KeyY", ...MOD };
+const REMAPPED_UNDO: KeyboardEventInit = { key: "b", code: "KeyB", ...MOD };
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -28,50 +38,29 @@ function blurTextarea(textarea: HTMLTextAreaElement): void {
   textarea.blur();
 }
 
-function pressUndo(textarea: HTMLTextAreaElement, opts: { ctrl?: boolean } = {}): void {
-  textarea.dispatchEvent(
-    new KeyboardEvent("keydown", {
-      key: "z",
-      code: "KeyZ",
-      metaKey: !opts.ctrl,
-      ctrlKey: opts.ctrl ?? false,
-      bubbles: true,
-      cancelable: true,
-    }),
-  );
-}
-
-function pressRedo(textarea: HTMLTextAreaElement, opts: { ctrlY?: boolean } = {}): void {
-  const init: KeyboardEventInit = opts.ctrlY
-    ? { key: "y", code: "KeyY", ctrlKey: true }
-    : { key: "z", code: "KeyZ", metaKey: true, shiftKey: true };
+function pressUndo(textarea: HTMLTextAreaElement, init: KeyboardEventInit = UNDO): void {
   textarea.dispatchEvent(new KeyboardEvent("keydown", { ...init, bubbles: true, cancelable: true }));
 }
 
-function dispatchWindowUndo(opts: { ctrl?: boolean } = {}): KeyboardEvent {
-  const event = new KeyboardEvent("keydown", {
-    key: "z",
-    code: "KeyZ",
-    metaKey: !opts.ctrl,
-    ctrlKey: opts.ctrl ?? false,
-    bubbles: true,
-    cancelable: true,
-  });
+function pressRedo(textarea: HTMLTextAreaElement, init: KeyboardEventInit = REDO): void {
+  textarea.dispatchEvent(new KeyboardEvent("keydown", { ...init, bubbles: true, cancelable: true }));
+}
+
+function dispatchWindowUndo(init: KeyboardEventInit = UNDO): KeyboardEvent {
+  const event = new KeyboardEvent("keydown", { ...init, bubbles: true, cancelable: true });
   window.dispatchEvent(event);
   return event;
 }
 
-function dispatchWindowRedo(opts: { ctrlY?: boolean } = {}): KeyboardEvent {
-  const init: KeyboardEventInit = opts.ctrlY
-    ? { key: "y", code: "KeyY", ctrlKey: true }
-    : { key: "z", code: "KeyZ", metaKey: true, shiftKey: true };
+function dispatchWindowRedo(init: KeyboardEventInit = REDO): KeyboardEvent {
   const event = new KeyboardEvent("keydown", { ...init, bubbles: true, cancelable: true });
   window.dispatchEvent(event);
   return event;
 }
 
 async function openAgentNameInput(screen: Awaited<ReturnType<typeof render>>): Promise<HTMLInputElement> {
-  await screen.getByRole("button", { name: /Add/ }).click();
+  await screen.getByRole("button", { name: /^Agents/ }).click();
+  await screen.getByRole("button", { name: /Add agent/ }).click();
   const input = screen.getByPlaceholder("Agent name");
   await expect.element(input).toBeInTheDocument();
   return input.element() as HTMLInputElement;
@@ -118,7 +107,8 @@ describe("editor undo and redo", () => {
     await expect.poll(() => textarea.value).toBe("Hello");
   });
 
-  it("reverts a typing run on Ctrl+Z", async () => {
+  it("reverts a typing run on a remapped undo binding", async () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
     const screen = await render(<EditPanel />);
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
@@ -126,7 +116,7 @@ describe("editor undo and redo", () => {
     setTextareaValue(textarea, "Hello again");
     await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello again");
 
-    pressUndo(textarea, { ctrl: true });
+    pressUndo(textarea, REMAPPED_UNDO);
     await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello");
     await expect.poll(() => textarea.value).toBe("Hello");
   });
@@ -147,7 +137,7 @@ describe("editor undo and redo", () => {
     await expect.poll(() => textarea.value).toBe("Hello world");
   });
 
-  it("restores via Ctrl+Y after undo", async () => {
+  it.skipIf(isMac)("restores via the Ctrl+Y alternate redo after undo", async () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
     const screen = await render(<EditPanel />);
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
@@ -158,7 +148,7 @@ describe("editor undo and redo", () => {
     pressUndo(textarea);
     await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello");
 
-    pressRedo(textarea, { ctrlY: true });
+    pressRedo(textarea, ALTERNATE_REDO);
     await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
     await expect.poll(() => textarea.value).toBe("Hello world");
   });
@@ -241,7 +231,8 @@ describe("editor undo and redo without textarea focus", () => {
     await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe(undefined);
   });
 
-  it("undoes via Ctrl+Z on window when focus is outside the textarea", async () => {
+  it("undoes via a remapped binding on window when focus is outside the textarea", async () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
     const screen = await render(<EditPanel />);
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
@@ -251,7 +242,7 @@ describe("editor undo and redo without textarea focus", () => {
     useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
 
-    dispatchWindowUndo({ ctrl: true });
+    dispatchWindowUndo(REMAPPED_UNDO);
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
   });
 
@@ -285,7 +276,7 @@ describe("editor undo and redo without textarea focus", () => {
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
   });
 
-  it("redoes via Ctrl+Y on window when focus is outside the textarea", async () => {
+  it.skipIf(isMac)("redoes via the Ctrl+Y alternate redo on window when focus is outside the textarea", async () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
     const screen = await render(<EditPanel />);
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
@@ -298,7 +289,7 @@ describe("editor undo and redo without textarea focus", () => {
     dispatchWindowUndo();
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
 
-    dispatchWindowRedo({ ctrlY: true });
+    dispatchWindowRedo(ALTERNATE_REDO);
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
   });
 });
@@ -323,11 +314,11 @@ describe("editor window undo handler gating", () => {
     useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
 
-    useModalStackStore.getState().push();
+    const modalToken = useEscapeLayerStackStore.getState().push("modal");
     const event = dispatchWindowUndo();
     expect(event.defaultPrevented).toBe(false);
     expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
-    useModalStackStore.getState().pop();
+    useEscapeLayerStackStore.getState().pop(modalToken);
   });
 
   it("prevents the browser native undo on a matched Cmd+Z", async () => {
@@ -345,7 +336,7 @@ describe("editor window undo handler gating", () => {
     const event = new KeyboardEvent("keydown", {
       key: "a",
       code: "KeyA",
-      metaKey: true,
+      ...MOD,
       bubbles: true,
       cancelable: true,
     });
@@ -385,7 +376,7 @@ describe("editor undo handler input exemption", () => {
     const event = new KeyboardEvent("keydown", {
       key: "z",
       code: "KeyZ",
-      metaKey: true,
+      ...MOD,
       bubbles: true,
       cancelable: true,
     });
@@ -410,7 +401,7 @@ describe("editor undo handler input exemption", () => {
     const event = new KeyboardEvent("keydown", {
       key: "z",
       code: "KeyZ",
-      metaKey: true,
+      ...MOD,
       shiftKey: true,
       bubbles: true,
       cancelable: true,
@@ -434,7 +425,7 @@ describe("editor undo handler input exemption", () => {
     const event = new KeyboardEvent("keydown", {
       key: "z",
       code: "KeyZ",
-      metaKey: true,
+      ...MOD,
       bubbles: true,
       cancelable: true,
     });
@@ -496,7 +487,7 @@ describe("editor undo edge cases", () => {
     const event = new KeyboardEvent("keydown", {
       key: "a",
       code: "KeyA",
-      metaKey: true,
+      ...MOD,
       bubbles: true,
       cancelable: true,
     });
@@ -515,7 +506,7 @@ describe("editor undo edge cases", () => {
     const event = new KeyboardEvent("keydown", {
       key: "z",
       code: "KeyZ",
-      metaKey: true,
+      ...MOD,
       bubbles: true,
       cancelable: true,
     });

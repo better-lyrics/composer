@@ -104,7 +104,9 @@ const DndRows: React.FC<{ lines: LyricLine[] }> = ({ lines }) => {
       <TimelineDragOverlay>
         {activeDrag && (
           <DragGhost
-            cells={[{ text: activeDrag.text, left: 0, top: 0, width: 60, height: 36, syllablePosition: "none" }]}
+            cells={[
+              { text: activeDrag.text, left: 0, top: 0, width: 60, height: 36, syllablePosition: "none", lane: "word" },
+            ]}
             anchorWidth={60}
             anchorHeight={36}
             color="#60a5fa"

@@ -1,3 +1,4 @@
+import type { TimeRange } from "@/domain/group/shared-timing";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import {
   type ReadableLine,
@@ -6,6 +7,7 @@ import {
   effectiveWords,
 } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import type { WordTrack } from "@/domain/line/tracks";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
@@ -18,7 +20,7 @@ interface PasteInput {
   clipboard: ClipboardData;
   targetLineIndex: number;
   timeDelta: number;
-  duration: number;
+  rangeOf: (line: LyricLine) => TimeRange;
 }
 
 interface LineUpdate {
@@ -28,34 +30,37 @@ interface LineUpdate {
 
 // -- Functions ----------------------------------------------------------------
 
+function clipboardInLane(clipboard: ClipboardData, lane: WordTrack): ClipboardData {
+  const lanes = new Set(clipboard.entries.map((entry) => entry.trackType));
+  if (lanes.size !== 1 || lanes.has(lane)) return clipboard;
+  return { ...clipboard, entries: clipboard.entries.map((entry) => ({ ...entry, trackType: lane })) };
+}
+
+function pastedWordBounds(word: WordTiming, timeDelta: number, range: TimeRange): { begin: number; end: number } {
+  return { begin: Math.max(range.min, word.begin + timeDelta), end: Math.min(range.max, word.end + timeDelta) };
+}
+
 function pasteOverlaps(
   clipboard: ClipboardData,
   targetLineIndex: number,
   timeDelta: number,
   lines: readonly ReadableLine[],
-  duration: number,
+  rangeOf: (line: LyricLine) => TimeRange,
 ): boolean {
   for (const entry of clipboard.entries) {
     const lineIdx = targetLineIndex + entry.lineOffset;
     if (lineIdx < 0 || lineIdx >= lines.length) return true;
 
-    const newBegin = Math.max(0, entry.word.begin + timeDelta);
-    const newEnd = Math.min(duration, entry.word.end + timeDelta);
-    if (newEnd <= newBegin) return true;
+    const pasted = pastedWordBounds(entry.word, timeDelta, rangeOf(lines[lineIdx]));
+    if (pasted.end <= pasted.begin) return true;
 
     const existingWords = effectiveTrackWords(lines[lineIdx], entry.trackType) ?? [];
-    if (existingWords.some((existing) => boundsOverlap({ begin: newBegin, end: newEnd }, existing))) return true;
+    if (existingWords.some((existing) => boundsOverlap(pasted, existing))) return true;
   }
   return false;
 }
 
-function applyPasteToLines({
-  lines,
-  clipboard,
-  targetLineIndex,
-  timeDelta,
-  duration,
-}: PasteInput): LineUpdate[] | null {
+function applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, rangeOf }: PasteInput): LineUpdate[] | null {
   const grouped = new Map<number, ClipboardEntry[]>();
   for (const entry of clipboard.entries) {
     const lineIdx = targetLineIndex + entry.lineOffset;
@@ -69,13 +74,12 @@ function applyPasteToLines({
 
   for (const [lineIdx, entries] of grouped) {
     const line = lines[lineIdx];
+    const range = rangeOf(line);
     const newWords: WordTiming[] = [];
     const newBgWords: WordTiming[] = [];
 
     for (const entry of entries) {
-      const newBegin = Math.max(0, entry.word.begin + timeDelta);
-      const newEnd = Math.min(duration, entry.word.end + timeDelta);
-      const newWord = { ...entry.word, begin: newBegin, end: newEnd };
+      const newWord = { ...entry.word, ...pastedWordBounds(entry.word, timeDelta, range) };
       if (entry.trackType === "word") newWords.push(newWord);
       else newBgWords.push(newWord);
     }
@@ -97,4 +101,4 @@ function applyPasteToLines({
 
 // -- Exports ------------------------------------------------------------------
 
-export { applyPasteToLines, pasteOverlaps };
+export { applyPasteToLines, clipboardInLane, pastedWordBounds, pasteOverlaps };

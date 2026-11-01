@@ -30,7 +30,7 @@ describe("createWordTimingOps: setBoundary", () => {
       minDuration: boundaryCase.minDuration ?? 0.05,
       rolling: boundaryCase.rolling,
       syllablesFollowRolling: boundaryCase.syllablesFollowRolling ?? false,
-      ...(boundaryCase.duration !== undefined ? { duration: boundaryCase.duration } : {}),
+      ...(boundaryCase.duration !== undefined ? { range: { min: 0, max: boundaryCase.duration } } : {}),
       updateLineWithHistory,
     });
     return { calls, words: calls[0]?.updates.words ?? [] };

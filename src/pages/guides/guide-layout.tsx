@@ -42,7 +42,7 @@ const GuideLayout: React.FC<GuideLayoutProps> = ({ slug, title, description, dat
       <article className="px-6 py-14 max-w-3xl mx-auto">
         <Link
           to="/guides"
-          className="inline-flex items-center gap-1 text-sm text-composer-text-muted hover:text-composer-text mb-8 select-none"
+          className="inline-flex items-center gap-1 text-sm text-(--muted) hover:text-composer-text mb-8 select-none"
         >
           <IconChevronLeft size={14} />
           Back to all guides
@@ -52,8 +52,8 @@ const GuideLayout: React.FC<GuideLayoutProps> = ({ slug, title, description, dat
           <p className="text-lg text-composer-text-secondary leading-relaxed">{description}</p>
         </header>
         <div className="prose-guide text-composer-text-secondary leading-relaxed space-y-6 select-text">{children}</div>
-        <div className="mt-14 pt-10 border-t border-composer-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <span className="text-sm text-composer-text-muted">Ready to try it?</span>
+        <div className="mt-14 pt-10 border-t border-(--divider) flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <span className="text-sm text-(--muted)">Ready to try it?</span>
           <LinkButton to="/" variant="primary" size="md" hasIcon>
             Open Composer
             <IconArrowRight size={14} />

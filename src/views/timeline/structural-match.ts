@@ -4,14 +4,10 @@ import type { LyricLine } from "@/domain/line/model";
 
 // -- Helpers -------------------------------------------------------------------
 
-function wordTextsEqual(a: { text: string }[] | undefined, b: { text: string }[] | undefined): boolean {
-  const aLen = a?.length ?? 0;
-  const bLen = b?.length ?? 0;
-  if (aLen !== bLen) return false;
-  if (aLen === 0) return true;
-  for (let i = 0; i < aLen; i++) {
-    if ((a?.[i].text ?? "") !== (b?.[i].text ?? "")) return false;
-  }
+// Timing may cover only part of a line, so only the words both lines have timed must agree.
+function timedWordsAgree(a: readonly { text: string }[] = [], b: readonly { text: string }[] = []): boolean {
+  const shared = Math.min(a.length, b.length);
+  for (let i = 0; i < shared; i++) if (a[i].text !== b[i].text) return false;
   return true;
 }
 
@@ -21,9 +17,7 @@ function linesStructurallyEqual(a: LyricLine, b: LyricLine): boolean {
   if (a.text !== b.text) return false;
   if (a.agentId !== b.agentId) return false;
   if ((a.backgroundText ?? "") !== (b.backgroundText ?? "")) return false;
-  if (!wordTextsEqual(a.words, b.words)) return false;
-  if (!wordTextsEqual(a.backgroundWords, b.backgroundWords)) return false;
-  return true;
+  return timedWordsAgree(a.words, b.words) && timedWordsAgree(a.backgroundWords, b.backgroundWords);
 }
 
 function structurallyEqualLineSequences(a: readonly LyricLine[], b: readonly LyricLine[]): boolean {

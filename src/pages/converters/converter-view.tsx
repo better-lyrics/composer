@@ -3,10 +3,16 @@ import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import type { ConversionResult } from "@/pages/converters/convert-via-parser";
 import type { OutputFormat } from "@/pages/converters/output-formats";
 import { Button } from "@/ui/button";
+import { INPUT_STYLES } from "@/ui/input-styles";
 import { LinkButton } from "@/ui/link-button";
+import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
+import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import { StatusChip } from "@/ui/status-chip";
+import { EDITOR_PATH, LIBRARY_PATH } from "@/utils/app-routes";
 import { cn } from "@/utils/cn";
+import { isFileDrag } from "@/utils/file-drag";
 import { fileNameWithoutExtension } from "@/utils/file-name";
+import { IMPORT_HASH_PREFIX } from "@/utils/incoming-link";
 import type { LyricsFileType } from "@/utils/lyrics-parsers/detect";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { IconAlertTriangle, IconCopy, IconDownload, IconExternalLink } from "@tabler/icons-react";
@@ -29,7 +35,8 @@ interface ConverterViewProps {
   outputFormat: OutputFormat;
 }
 
-const OPEN_IN_COMPOSER_HASH_PREFIX = "#import=";
+const OUTPUT_PANE_CLASS =
+  "flex-1 min-h-[280px] md:min-h-[420px] overflow-auto overscroll-none font-mono text-xs p-3 select-text";
 
 const ConverterView: React.FC<ConverterViewProps> = ({
   title,
@@ -59,10 +66,8 @@ const ConverterView: React.FC<ConverterViewProps> = ({
     setFilename(`${fileNameWithoutExtension(file.name)}.${outputFormat.extension}`);
   };
 
-  const carriesFile = (event: React.DragEvent) => event.dataTransfer.types.includes("Files");
-
   const handleDragOver = (event: React.DragEvent) => {
-    if (!carriesFile(event)) return;
+    if (!isFileDrag(event.dataTransfer)) return;
     event.preventDefault();
     setIsDragOver(true);
   };
@@ -117,8 +122,8 @@ const ConverterView: React.FC<ConverterViewProps> = ({
   };
 
   const openInComposerHref = projectPayload
-    ? `/${OPEN_IN_COMPOSER_HASH_PREFIX}${encodeURIComponent(projectPayload)}`
-    : "/";
+    ? `${EDITOR_PATH}${IMPORT_HASH_PREFIX}${encodeURIComponent(projectPayload)}`
+    : LIBRARY_PATH;
 
   return (
     <section className="px-6 py-14 max-w-6xl mx-auto">
@@ -130,7 +135,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div
           className={cn(
-            "rounded-xl bg-composer-bg-elevated border border-composer-border p-4 flex flex-col",
+            "rounded-xl bg-(--layer-1) border border-(--edge) p-4 flex flex-col",
             isDragOver && "border-composer-accent",
           )}
           onDragOver={handleDragOver}
@@ -166,14 +171,15 @@ const ConverterView: React.FC<ConverterViewProps> = ({
               className="sr-only"
             />
           </div>
-          <textarea
+          <LyricsCodeEditor
             id="converter-input"
             aria-label="Converter input"
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder={inputPlaceholder}
             spellCheck={false}
-            className="flex-1 min-h-[280px] md:min-h-[420px] font-mono text-sm bg-composer-bg-dark border border-composer-border rounded-lg p-3 text-composer-text placeholder:text-composer-text-muted resize-y focus:outline-none focus:border-composer-accent cursor-text select-text"
+            frameClassName="flex-auto min-h-[280px] md:min-h-[420px] resize-y overflow-hidden"
+            className="font-mono text-sm p-3 focus:outline-none cursor-text select-text"
           />
           {fileError && (
             <p role="alert" className="mt-2 text-xs text-composer-error-text select-text cursor-text">
@@ -181,7 +187,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
             </p>
           )}
           <div className="mt-3 flex items-center gap-2">
-            <label htmlFor="converter-filename" className="text-xs text-composer-text-muted select-none">
+            <label htmlFor="converter-filename" className="text-xs text-(--muted) select-none">
               Filename
             </label>
             {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
@@ -190,11 +196,11 @@ const ConverterView: React.FC<ConverterViewProps> = ({
               type="text"
               value={filename}
               onChange={(event) => setFilename(event.target.value)}
-              className="flex-1 text-xs bg-composer-bg-dark border border-composer-border rounded-md px-2 py-1 text-composer-text focus:outline-none focus:border-composer-accent cursor-text select-text"
+              className={cn(INPUT_STYLES, "flex-1 h-8 text-xs select-text")}
             />
           </div>
         </div>
-        <div className="rounded-xl bg-composer-bg-elevated border border-composer-border p-4 flex flex-col">
+        <div className="rounded-xl bg-(--layer-1) border border-(--edge) p-4 flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium text-composer-text select-none">{outputFormat.label} output</span>
             <div className="flex items-center gap-1.5">
@@ -208,16 +214,20 @@ const ConverterView: React.FC<ConverterViewProps> = ({
               </Button>
             </div>
           </div>
-          <pre
-            className={cn(
-              "flex-1 min-h-[280px] md:min-h-[420px] overflow-auto font-mono text-xs rounded-lg p-3 border",
-              error
-                ? "bg-composer-error/10 border-composer-error/40 text-composer-error-text select-text whitespace-pre-wrap break-words"
-                : "bg-composer-bg-dark border-composer-border text-composer-text select-text",
-            )}
-          >
-            {error || output || `Paste input to see ${outputFormat.label} output`}
-          </pre>
+          {output ? (
+            <LyricsCode code={output} format={outputFormat.extension} className={OUTPUT_PANE_CLASS} />
+          ) : (
+            <pre
+              className={cn(
+                OUTPUT_PANE_CLASS,
+                error
+                  ? "rounded-lg border bg-composer-error/10 border-composer-error/40 text-composer-error-text whitespace-pre-wrap break-words"
+                  : "lyrics-code-surface text-composer-text",
+              )}
+            >
+              {error || `Paste input to see ${outputFormat.label} output`}
+            </pre>
+          )}
           <div role="status">
             {skippedLines > 0 && (
               <StatusChip tone="warning" icon={IconAlertTriangle} className="mt-3">
@@ -226,7 +236,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
             )}
           </div>
           <div className="mt-3 flex items-center justify-between gap-2">
-            <span className="text-xs text-composer-text-muted">Need to fine-tune timing against a waveform?</span>
+            <span className="text-xs text-(--muted)">Need to fine-tune timing against a waveform?</span>
             <LinkButton
               href={openInComposerHref}
               variant="primary"

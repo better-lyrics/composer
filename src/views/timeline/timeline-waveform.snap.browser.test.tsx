@@ -42,7 +42,7 @@ describe("TimelineWaveform click-seek snapping", () => {
     setupWaveformAudio(30);
     useProjectStore.setState({ customSnapPoints: snapPoints([15]) });
     useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
-    useSettingsStore.setState({ snapPlayheadToPoints: true, vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+    useSettingsStore.setState({ snapPlayheadToPoints: true, vocalOnsetSnap: true, snapDistanceOnsets: 12 });
     const seek = trackSeek();
     const screen = await render(<TimelineWaveform />);
     const layer = getClickLayer(screen.container, 1500);
@@ -56,7 +56,7 @@ describe("TimelineWaveform click-seek snapping", () => {
     setupWaveformAudio(30);
     useProjectStore.setState({ customSnapPoints: snapPoints([15]) });
     useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
-    useSettingsStore.setState({ snapPlayheadToPoints: true, vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+    useSettingsStore.setState({ snapPlayheadToPoints: true, vocalOnsetSnap: true, snapDistanceOnsets: 12 });
     const seek = trackSeek();
     const screen = await render(<TimelineWaveform />);
     const layer = getClickLayer(screen.container, 1500);
@@ -70,7 +70,7 @@ describe("TimelineWaveform click-seek snapping", () => {
     setupWaveformAudio(30);
     useProjectStore.setState({ customSnapPoints: snapPoints([15]) });
     useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
-    useSettingsStore.setState({ snapPlayheadToPoints: false, vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+    useSettingsStore.setState({ snapPlayheadToPoints: false, vocalOnsetSnap: true, snapDistanceOnsets: 12 });
     const seek = trackSeek();
     const screen = await render(<TimelineWaveform />);
     const layer = getClickLayer(screen.container, 1500);
@@ -84,7 +84,7 @@ describe("TimelineWaveform click-seek snapping", () => {
     setupWaveformAudio(30);
     useProjectStore.setState({ customSnapPoints: snapPoints([2, 27]) });
     useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
-    useSettingsStore.setState({ snapPlayheadToPoints: true, vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+    useSettingsStore.setState({ snapPlayheadToPoints: true, vocalOnsetSnap: true, snapDistanceOnsets: 12 });
     const seek = trackSeek();
     const screen = await render(<TimelineWaveform />);
     const layer = getClickLayer(screen.container, 1500);
@@ -98,7 +98,7 @@ describe("TimelineWaveform click-seek snapping", () => {
     setupWaveformAudio(30);
     useProjectStore.setState({ customSnapPoints: [] });
     useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
-    useSettingsStore.setState({ snapPlayheadToPoints: true, vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+    useSettingsStore.setState({ snapPlayheadToPoints: true, vocalOnsetSnap: true, snapDistanceOnsets: 12 });
     const seek = trackSeek();
     const screen = await render(<TimelineWaveform />);
     const layer = getClickLayer(screen.container, 1500);

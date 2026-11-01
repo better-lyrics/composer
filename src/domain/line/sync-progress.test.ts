@@ -1,13 +1,14 @@
-import { describe, expect, it } from "vitest";
 import {
   isLineFullyTimed,
   isLineTimed,
-  isSyncableLine,
+  isProjectFullySynced,
   isSyncComplete,
+  isSyncableLine,
   syncProgress,
   wordSlotCount,
 } from "@/domain/line/sync-progress";
 import { createLine } from "@/test/factories";
+import { describe, expect, it } from "vitest";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 
@@ -62,8 +63,12 @@ describe("syncProgress", () => {
   it("line granularity counts only syncable lines (regression U2: blank lines are not in the denominator)", () => {
     expect(syncProgress(lines, "line")).toEqual({ done: 2, total: 3 });
   });
-  it("word granularity counts word slots and timed words", () => {
-    expect(syncProgress(lines, "word")).toEqual({ done: 1, total: 5 });
+  it("word granularity counts word slots and timed words, with a line-synced line counting every slot", () => {
+    expect(syncProgress(lines, "word")).toEqual({ done: 2, total: 5 });
+  });
+  it("regression #290: line-synced lines stay done in word granularity", () => {
+    const lineSynced = [createLine({ text: "a b c", begin: 1, end: 2 }), createLine({ text: "d e", begin: 2, end: 3 })];
+    expect(syncProgress(lineSynced, "word")).toEqual({ done: 5, total: 5 });
   });
   it("is zero over zero for no lines", () => {
     expect(syncProgress([], "line")).toEqual({ done: 0, total: 0 });
@@ -86,5 +91,63 @@ describe("isSyncComplete", () => {
   it("is false with no syncable lines", () => {
     expect(isSyncComplete([])).toBe(false);
     expect(isSyncComplete([createLine({ text: "" })])).toBe(false);
+  });
+});
+
+describe("isProjectFullySynced", () => {
+  it("is true when every line with lyrics is fully timed, ignoring blank lines", () => {
+    const lines = [
+      createLine({ text: "a b", words: [word("a ", 1, 2), word("b", 2, 3)] }),
+      createLine({ text: "Line", begin: 3, end: 4 }),
+      createLine({ text: "" }),
+    ];
+    expect(isProjectFullySynced(lines)).toBe(true);
+  });
+
+  it("is true for a line-synced line whose background has no words of its own", () => {
+    expect(isProjectFullySynced([createLine({ text: "Main", begin: 1, end: 2, backgroundText: "ooh" })])).toBe(true);
+  });
+
+  describe("edge cases", () => {
+    it("is false with an untimed line", () => {
+      expect(
+        isProjectFullySynced([createLine({ text: "Timed", begin: 0, end: 1 }), createLine({ text: "Not yet" })]),
+      ).toBe(false);
+    });
+
+    it("is false with a partly word-synced line", () => {
+      expect(isProjectFullySynced([createLine({ text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 3)] })])).toBe(
+        false,
+      );
+    });
+
+    it("is false with a line that has background vocals but no main lyrics", () => {
+      const lines = [createLine({ text: "Main", begin: 0, end: 1 }), createLine({ text: "", backgroundText: "ooh" })];
+      expect(isProjectFullySynced(lines)).toBe(false);
+    });
+
+    it("is false when the background words do not cover the background text", () => {
+      const line = createLine({
+        text: "Main",
+        begin: 0,
+        end: 2,
+        backgroundText: "ooh aah",
+        backgroundWords: [word("ooh ", 0, 1)],
+      });
+      expect(isProjectFullySynced([line])).toBe(false);
+    });
+
+    it("is false with no lyrics at all", () => {
+      expect(isProjectFullySynced([])).toBe(false);
+      expect(isProjectFullySynced([createLine({ text: "" })])).toBe(false);
+    });
+  });
+
+  describe("invariants", () => {
+    it("never holds when the sync is not complete", () => {
+      const partial = [createLine({ text: "a b", words: [word("a ", 1, 2)] })];
+      expect(isSyncComplete(partial)).toBe(false);
+      expect(isProjectFullySynced(partial)).toBe(false);
+    });
   });
 });

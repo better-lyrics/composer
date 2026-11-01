@@ -1,8 +1,11 @@
 import { scrubPreview } from "@/audio/scrub-preview";
 import { computeScrubVelocity, DEFAULT_SCRUB_OPTS, type ScrubSample } from "@/audio/scrub-velocity";
 import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
+import { notePlacement } from "@/lib/replay-cue";
+import { xToTime } from "@/views/timeline/coords";
 import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
 import { GUTTER_WIDTH } from "@/views/timeline/timeline-store";
+import { readViewScroll, scrollViewBy, viewScrollLeft } from "@/views/timeline/view-scroll";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -11,7 +14,6 @@ interface PlayheadDragConfig {
   getScrollContainer: () => HTMLElement | null;
   getDuration: () => number;
   getZoom: () => number;
-  getStoreScrollLeft: () => number;
   getCurrentTime: () => number;
   setIsPlaying: (playing: boolean) => void;
   setDraggingPlayhead: (dragging: boolean, time?: number) => void;
@@ -39,9 +41,9 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
   const computeTimeFromPointer = (clientX: number): number | null => {
     const parentRect = config.getContainerRect();
     if (!parentRect) return null;
-    const scrollLeft = config.getScrollContainer()?.scrollLeft ?? config.getStoreScrollLeft();
-    const x = clientX - parentRect.left - GUTTER_WIDTH + scrollLeft;
-    return Math.max(0, Math.min(config.getDuration(), x / config.getZoom()));
+    const container = config.getScrollContainer();
+    const scrollLeft = container ? readViewScroll(container).left : viewScrollLeft();
+    return Math.min(config.getDuration(), xToTime(clientX, parentRect, config.getZoom(), scrollLeft));
   };
 
   const onMouseDown = (e: React.MouseEvent): void => {
@@ -80,8 +82,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
         maxSpeed: EDGE_SCROLL_MAX_SPEED,
       });
       if (velocity === 0) return;
-      const maxScroll = container.scrollWidth - container.clientWidth;
-      container.scrollLeft = Math.max(0, Math.min(maxScroll, container.scrollLeft + velocity));
+      scrollViewBy(container, velocity, 0);
       const time = computeTimeFromPointer(pointerX);
       if (time !== null) {
         const snapped = config.snapTime(time, metaHeld);
@@ -107,13 +108,17 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
       releaseEdgeScrollFrames();
       controller.abort();
       scrubPreview.stop();
+      config.setDraggingPlayhead(false);
       activeCleanup = null;
     };
 
     const handleMouseUp = (upEvent: MouseEvent): void => {
       const time = computeTimeFromPointer(upEvent.clientX);
-      if (time !== null) config.seekTo(config.snapTime(time, upEvent.metaKey));
-      config.setDraggingPlayhead(false);
+      if (time !== null) {
+        const target = config.snapTime(time, upEvent.metaKey);
+        config.seekTo(target);
+        notePlacement(target, "pointer");
+      }
       cleanup();
     };
 

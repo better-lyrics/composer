@@ -1,51 +1,57 @@
 import { useExportTtml } from "@/hooks/use-export-ttml";
-import { useProjectFileActions } from "@/hooks/useProjectFileActions";
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
-import { Scroll } from "@/ui/scroll";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
-import { useThemeStore } from "@/stores/theme";
-import { codeHighlightThemeFor } from "@/utils/theme/code-highlight-theme";
+import { AlignmentReviewNotice } from "@/views/export/alignment-review-notice";
+import { applyEditsToProject } from "@/views/export/apply-edits-feedback";
+import { ExportCodePane } from "@/views/export/export-code-pane";
+import { ExportHeader } from "@/views/export/export-header";
 import { MetadataPanel } from "@/views/export/metadata-panel";
-import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
-import { TtmlEditor } from "@/views/export/ttml-editor";
-import {
-  IconCheck,
-  IconCopy,
-  IconDownload,
-  IconEdit,
-  IconFolderOpen,
-  IconRefresh,
-  IconTrash,
-  IconUpload,
-} from "@tabler/icons-react";
-import { Highlight } from "prism-react-renderer";
-import { useCallback, useRef, useState } from "react";
+import { useProjectFileInput } from "@/views/export/project-menu-button";
+import { useAlignmentReview } from "@/views/export/use-alignment-review";
+import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
+import { IconFolderOpen } from "@tabler/icons-react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
+
+// -- Types --------------------------------------------------------------------
+
+interface EditingSession {
+  projectSession: number;
+  startContent: string;
+}
 
 // -- Components ---------------------------------------------------------------
 
 const ExportPanel: React.FC = () => {
-  const scheme = useThemeStore((s) => s.getThemeById(s.activeThemeId)?.scheme ?? "dark");
   const {
     content: exportContent,
+    duration,
     editedContent,
+    editBlocksLineTiming,
+    exportTiming,
     generatedContent: generatedTtml,
     hasConflict,
     lineCount,
     setEditState,
+    setExportTiming,
     syncedLineCount,
     title,
+    youtubeVideoId,
   } = useExportTtml();
 
+  const projectSession = useProjectStore((state) => state.projectSession);
   const [copied, setCopied] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { handleExportProject, handleImportProject, handleClearProject } = useProjectFileActions(fileInputRef);
+  const [editingSession, setEditingSession] = useState<EditingSession | null>(null);
+  const session = editingSession?.projectSession === projectSession ? editingSession : null;
+  const isEditing = session !== null;
+  const projectFile = useProjectFileInput();
+  const alignment = useAlignmentReview();
 
   const hasSyncedContent = syncedLineCount > 0;
+  const fileName = `${sanitizeFileName(title, "lyrics")}.ttml`;
 
   const isExportable = useCallback(() => {
     if (editedContent === null) return true;
@@ -55,64 +61,59 @@ const ExportPanel: React.FC = () => {
     return false;
   }, [editedContent]);
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     if (!exportContent || !isExportable()) return;
+    if (!(await alignment.confirmExport("download"))) return;
 
-    downloadText(exportContent, `${sanitizeFileName(title, "lyrics")}.ttml`, "application/ttml+xml;charset=utf-8");
+    downloadText(exportContent, fileName, "application/ttml+xml;charset=utf-8");
     useProjectStore.getState().clearUnexportedImport();
-  }, [exportContent, isExportable, title]);
+  }, [exportContent, isExportable, fileName, alignment.confirmExport]);
 
   const handleCopy = useCallback(async () => {
     if (!exportContent || !isExportable()) return;
+    if (!(await alignment.confirmExport("copy"))) return;
 
     await navigator.clipboard.writeText(exportContent);
     useProjectStore.getState().clearUnexportedImport();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [exportContent, isExportable]);
+  }, [exportContent, isExportable, alignment.confirmExport]);
 
   const handleEdit = useCallback(() => {
-    setIsEditing((prev) => !prev);
-  }, []);
+    if (!session) {
+      setEditingSession({ projectSession, startContent: exportContent });
+      return;
+    }
+    const changedThisSession = editedContent !== null && editedContent !== session.startContent;
+    if (changedThisSession && !hasConflict) applyEditsToProject(editedContent, duration, youtubeVideoId);
+    setEditingSession(null);
+  }, [session, projectSession, exportContent, editedContent, hasConflict, duration, youtubeVideoId]);
 
   const handleRegenerate = useCallback(() => {
     setEditState(null);
-    setIsEditing(false);
+    setEditingSession(null);
   }, [setEditState]);
 
   // Resolving a conflict rebases the edit onto the current output, which is what
   // makes the notice go away. It has to be a deliberate action: letting an
   // incidental keystroke do it would silently drop the regenerated changes.
   const handleKeepEdits = useCallback(() => {
-    setEditState((prev) => (prev === null ? prev : { source: generatedTtml, content: prev.content }));
+    setEditState((prev) => keptTtmlEdit(prev, generatedTtml));
   }, [generatedTtml, setEditState]);
 
   const handleEditContent = useCallback(
     (content: string) => {
-      setEditState((prev) => {
-        if (prev !== null && hasConflict) return { ...prev, content };
-        return { source: generatedTtml, content };
-      });
+      setEditState((prev) => typedTtmlEdit(prev, generatedTtml, content, hasConflict));
     },
     [generatedTtml, hasConflict, setEditState],
   );
 
-  const projectFileInput = (
-    <input
-      ref={fileInputRef}
-      type="file"
-      aria-label="Import project file"
-      accept=".json,.ttml-project.json"
-      onChange={handleImportProject}
-      className="hidden"
-    />
-  );
   const importAction = (
     <>
-      {projectFileInput}
-      <Button hasIcon variant="secondary" onClick={() => fileInputRef.current?.click()} className="mt-2">
+      {projectFile.input}
+      <Button hasIcon variant="secondary" onClick={projectFile.pickFile} className="mt-2">
         <IconFolderOpen className="size-4 text-composer-text opacity-50" />
-        Import Project
+        Import project
       </Button>
     </>
   );
@@ -135,83 +136,42 @@ const ExportPanel: React.FC = () => {
 
   return (
     <div data-tour="export-panel" className="flex flex-col flex-1 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border">
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-lg font-medium">Export</h2>
-          <span className="text-sm text-composer-text-muted">
-            {syncedLineCount}/{lineCount} lines synced
-            {editedContent !== null && " · edited"}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          {editedContent !== null && (
-            <Button hasIcon onClick={handleRegenerate}>
-              <IconRefresh className="size-4" />
-              Regenerate
-            </Button>
-          )}
-          <Button hasIcon variant={isEditing ? "primary" : "secondary"} onClick={handleEdit}>
-            <IconEdit className="size-4" />
-            {isEditing ? "Done" : "Edit"}
-          </Button>
-          <Button hasIcon onClick={handleCopy}>
-            {copied ? <IconCheck className="size-4" /> : <IconCopy className="size-4" />}
-            {copied ? "Copied" : "Copy"}
-          </Button>
-          <Button hasIcon variant="primary" onClick={handleDownload}>
-            <IconDownload className="size-4" />
-            Download TTML
-          </Button>
-        </div>
+      <ExportHeader
+        syncedLineCount={syncedLineCount}
+        lineCount={lineCount}
+        isEdited={editedContent !== null}
+        isEditing={isEditing}
+        copied={copied}
+        exportTiming={exportTiming}
+        lineTimingLocked={isEditing || editBlocksLineTiming}
+        onExportTimingChange={setExportTiming}
+        onRegenerate={handleRegenerate}
+        onEdit={handleEdit}
+        onCopy={handleCopy}
+        onDownload={handleDownload}
+      />
+      <div className="grid flex-1 min-h-0 grid-cols-[minmax(0,1fr)_380px] grid-rows-[minmax(0,1fr)]">
+        <ExportCodePane
+          content={exportContent}
+          generatedTtml={generatedTtml}
+          fileName={fileName}
+          exportTiming={exportTiming}
+          isEditing={isEditing}
+          hasConflict={hasConflict}
+          onEditContent={handleEditContent}
+          onRegenerate={handleRegenerate}
+          onKeepEdits={handleKeepEdits}
+          notice={
+            <AlignmentReviewNotice
+              notice={alignment.notice}
+              review={alignment.review}
+              onReview={alignment.reviewInTimeline}
+              onDismiss={alignment.dismiss}
+            />
+          }
+        />
+        <MetadataPanel />
       </div>
-
-      {/* Project management */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-composer-border bg-composer-bg-elevated/50">
-        <span className="text-sm text-composer-text-muted">Project</span>
-        <div className="flex items-center gap-2">
-          {projectFileInput}
-          <Button hasIcon variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
-            <IconFolderOpen className="size-4 text-composer-text opacity-50" />
-            Import Project
-          </Button>
-          <Button hasIcon variant="ghost" size="sm" onClick={handleExportProject}>
-            <IconUpload className="size-4 text-composer-text opacity-50" />
-            Export Project
-          </Button>
-          <Button hasIcon variant="ghost" size="sm" onClick={handleClearProject}>
-            <IconTrash className="size-4 text-composer-text opacity-50" />
-            Clear
-          </Button>
-        </div>
-      </div>
-
-      <MetadataPanel />
-
-      {hasConflict && <TtmlConflictNotice onRegenerate={handleRegenerate} onKeepEdits={handleKeepEdits} />}
-
-      {/* Preview / Editor */}
-      {isEditing ? (
-        <TtmlEditor value={exportContent} generatedTtml={generatedTtml} onChange={handleEditContent} />
-      ) : (
-        <Scroll className="flex-1 p-6">
-          <Highlight theme={codeHighlightThemeFor(scheme)} code={exportContent} language="xml">
-            {({ style, tokens, getLineProps, getTokenProps }) => (
-              <pre className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text" style={style}>
-                {tokens.map((line, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: stable line indices
-                  <div key={i} {...getLineProps({ line })}>
-                    {line.map((token, j) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: stable token indices
-                      <span key={j} {...getTokenProps({ token })} />
-                    ))}
-                  </div>
-                ))}
-              </pre>
-            )}
-          </Highlight>
-        </Scroll>
-      )}
     </div>
   );
 };

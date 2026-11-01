@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/domain/line/model";
+import { INITIAL_STATE, useProjectStore } from "@/stores/project";
+import { beforeEach, describe, expect, it } from "vitest";
 
 describe("setAgents", () => {
   beforeEach(() => useProjectStore.setState(INITIAL_STATE));

@@ -9,7 +9,7 @@ import { pluralize } from "@/utils/pluralize";
 interface ParseIssue {
   line: number;
   text: string;
-  reason: "invalid-timestamp" | "ignored-timestamp" | "unparsed" | "empty-document";
+  reason: "invalid-timestamp" | "ignored-timestamp" | "unparsed" | "empty-document" | "unsupported-tags";
 }
 
 interface ParseResult {
@@ -19,9 +19,15 @@ interface ParseResult {
   issues: ParseIssue[];
   agents?: Agent[];
   groups?: LinkGroup[];
+  lineKeys?: (string | undefined)[];
 }
 
 type ParserFn = (content: string, fallbackDuration?: number) => ParseResult;
+
+// -- Copy ---------------------------------------------------------------------
+
+const UNSUPPORTED_LRC_TAGS_MESSAGE =
+  "This LRC uses singer or background vocal tags (v1:, [bg:]) that are not part of LRC. Use a TTML or plain LRC version instead.";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -37,7 +43,11 @@ function skippedLinesMessage(skipped: number): string {
   return `${pluralize(skipped, "line")} could not be read.`;
 }
 
+function hasUnsupportedTags(issues: readonly ParseIssue[]): boolean {
+  return issues.some((issue) => issue.reason === "unsupported-tags");
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { generateLineId, skippedLineCount, skippedLinesMessage };
+export { UNSUPPORTED_LRC_TAGS_MESSAGE, generateLineId, hasUnsupportedTags, skippedLineCount, skippedLinesMessage };
 export type { ParseIssue, ParseResult, ParserFn };

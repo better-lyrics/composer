@@ -242,4 +242,13 @@ describe("useLoadYouTubeSource", () => {
       expect(useProjectStore.getState().metadata.isrc).toBe("USQE92600028");
     });
   });
+
+  it("regression: a video loaded in place into an old project marks its times as matching this decode", async () => {
+    useProjectStore.setState({ primingStripped: true, primingCorrected: false });
+
+    const { result } = await renderHook(() => useLoadYouTubeSource());
+    result.current(VIDEO_ID).catch(() => {});
+
+    expect(useProjectStore.getState().primingCorrected).toBe(true);
+  });
 });

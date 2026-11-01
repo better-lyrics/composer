@@ -1,4 +1,6 @@
 import { useSettingsStore } from "@/stores/settings";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { PROSE } from "@/ui/typography";
 import { SettingLink } from "@/ui/setting-link";
 import { HelpTopic } from "@/ui/help-topic";
@@ -9,16 +11,36 @@ const EditSection: React.FC = () => {
   const splitCharacter = useSettingsStore((s) => s.splitCharacter);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-[22px] max-w-[68ch]">
       <p className={PROSE}>
         Each row is one line of lyrics. Type normally, press Enter for a new line. To reorder lines, drag them using the
         handle on the left side.
       </p>
 
+      <HelpTopic title="Typing along with the song">
+        <p className={PROSE}>
+          You can control playback without leaving the lyrics box. Press{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.playPauseWhileTyping")} /> to play or pause, and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekBackwardWhileTyping")} /> or{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekForwardWhileTyping")} /> to seek back or forward by
+          the <SettingLink setting="seekStep" />. Outside a text field,{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekBackward")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekForward")} /> seek from any tab. If you click away,
+          press <InlineKeyBadge keys={getEffectiveKeysArray("global.goToEdit")} /> to jump back into the lyrics box.
+        </p>
+        <p className={PROSE}>
+          Need to land right before a word? Add Alt to move by the smaller <SettingLink setting="fineSeekStep" />:{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekBackwardFine")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekForwardFine")} />, or{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekBackwardFineWhileTyping")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("global.seekForwardFineWhileTyping")} /> while typing.
+        </p>
+      </HelpTopic>
+
       <HelpTopic title="Agents (singers)">
         <p className={PROSE}>
-          Click a line's agent dot to assign it to a different singer. Each agent gets a unique color. Add new agents
-          with the "+" button in the agent manager at the top.
+          Hover a line in the preview and click its agent tag to assign it to a different singer. Each agent gets a
+          unique color. Add, rename or remove agents from the Agents button at the top.
         </p>
       </HelpTopic>
 
@@ -33,8 +55,8 @@ const EditSection: React.FC = () => {
         <p className={PROSE}>
           Use the <span className="font-mono text-composer-text">{splitCharacter}</span> character to mark where you
           want words split. For example, typing beau{splitCharacter}ti{splitCharacter}ful creates three separate timed
-          blocks instead of one. This is useful when a word stretches across several beats. You can change this
-          character in <SettingLink setting="splitCharacter" />.
+          blocks instead of one. Handy when one word stretches across several beats. You can change this character in{" "}
+          <SettingLink setting="splitCharacter" />.
         </p>
       </HelpTopic>
 
@@ -48,17 +70,18 @@ const EditSection: React.FC = () => {
 
       <HelpTopic title="Editing grouped lines">
         <p className={PROSE}>
-          Lines that belong to a linked group show a thin colored stripe on their left edge, matching the group color.
-          Hover one to see which group it belongs to and how many other instances are linked.
+          Each instance of a linked group starts with a header row showing the group name and which instance it is, and
+          its lines get a light tint in the group color. Hover one to see which group it belongs to and how many other
+          instances are linked.
         </p>
         <p className={`${PROSE} mt-2`}>
           Edits you make to a grouped line's text, agent, or background vocals fan out to every other instance of the
-          same template line. Word-level timings survive when the new text has the same word count: existing word slots
-          keep their begin/end and just swap text. If the word count changes, sibling timings clear so you can re-sync
+          same template line. Word-level timings survive when the new text has the same word count: each word keeps its
+          begin and end, and only its text changes. If the word count changes, sibling timings clear so you can re-sync
           them in the Sync view.
         </p>
         <p className={`${PROSE} mt-2`}>
-          Adding or removing rows inside a grouped instance pops a confirmation: that one instance detaches from the
+          Adding or removing rows inside a grouped instance asks you to confirm: that one instance detaches from the
           group so the structural change can land, while every sibling instance stays linked. Decline to revert. Edits
           to non-grouped lines never prompt.
         </p>

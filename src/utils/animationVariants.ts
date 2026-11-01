@@ -37,25 +37,28 @@ const centeredFadeVariants: Variants = {
   exit: { opacity: 0, x: "-50%" },
 };
 
+// A tab's inline status icon grows in from nothing, so the label beside it slides instead of jumping.
+// The -6px margin cancels the parent's gap while the icon has no width.
+const inlineIconTransition: Transition = { type: "spring", duration: 0.3, bounce: 0 };
+
+const inlineIconVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.25, filter: "blur(4px)", width: 0, marginLeft: -6 },
+  visible: { opacity: 1, scale: 1, filter: "blur(0px)", width: "auto", marginLeft: -2 },
+  exit: { opacity: 0, scale: 0.25, filter: "blur(4px)", width: 0, marginLeft: -6 },
+};
+
+const inlineIconReducedVariants: Variants = {
+  hidden: { opacity: 0, width: 0, marginLeft: -6 },
+  visible: { opacity: 1, width: "auto", marginLeft: -2 },
+  exit: { opacity: 0, width: 0, marginLeft: -6 },
+};
+
 // -- Sync Carousel (vertical, direction-aware, instant) ----------------------
 
 const syncCarouselTransition: Transition = {
   type: "spring",
   stiffness: 400,
   damping: 30,
-};
-
-const syncPulseVariants: Variants = {
-  idle: {
-    boxShadow: "0 0 0px rgba(129, 140, 248, 0)",
-    borderColor: "rgba(255, 255, 255, 0.1)",
-    transition: { type: "spring", stiffness: 400, damping: 30 },
-  },
-  pulse: {
-    boxShadow: "0 0 16px rgba(255, 255, 255, 0.15)",
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    transition: { duration: 0 },
-  },
 };
 
 function buildGroupPingVariants(color: string): Variants {
@@ -103,25 +106,80 @@ const pinDropInVariants: Variants = {
 };
 
 const snapFlashVariants: Variants = {
-  initial: { opacity: 0, boxShadow: "0 0 0px rgba(255, 255, 255, 0)" },
+  initial: { opacity: 0, "--flash-glow": "0px" },
   animate: {
     opacity: [0.9, 0],
-    boxShadow: ["0 0 18px rgba(255, 255, 255, 0.9)", "0 0 0px rgba(255, 255, 255, 0)"],
+    "--flash-glow": ["18px", "0px"],
     transition: { type: "spring", stiffness: 120, damping: 22, mass: 0.7 },
   },
 };
 
-// -- Accordion ----------------------------------------------------------------
+// -- Floating Entrance --------------------------------------------------------
 
-const accordionTransition: Transition = {
-  type: "spring",
-  stiffness: 500,
-  damping: 40,
+// Popovers and menus grow out of their trigger and leave toward it; floating-ui runs both as CSS transitions.
+const floatingEntrance = {
+  openMs: 200,
+  closeMs: 150,
+  ease: "cubic-bezier(0.22, 1, 0.36, 1)",
+  initial: { opacity: 0, scale: "0.97", filter: "blur(4px)" },
+  close: { opacity: 0, filter: "blur(4px)", transitionTimingFunction: "ease-in" },
+  closeShiftPx: 12,
+  reducedInitial: { opacity: 0 },
+} as const;
+
+// -- Pitch Line ---------------------------------------------------------------
+
+// Canvas layers in the Timeline rows animate through the Web Animations API, so these are plain numbers.
+const pitchLineMotion = {
+  spillFadeMs: 150,
+  wipeMs: 560,
+  wipeEase: [0.45, 0, 0.25, 1],
+  rowLeadMs: 60,
+  rowStaggerMs: 80,
+  riseMs: 240,
+  labelLeadPx: 6,
+  reducedFadeMs: 150,
+  fadeEase: "ease-out",
+} as const;
+
+const pitchLineKeyframes: Record<"wipe" | "reducedWipe" | "fadeOut", Keyframe[]> = {
+  wipe: [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)" }],
+  reducedWipe: [{ opacity: 0 }, { opacity: 1 }],
+  fadeOut: [{ opacity: 1 }, { opacity: 0 }],
 };
 
-const accordionVariants: Variants = {
-  hidden: { height: 0, opacity: 0 },
-  visible: { height: "auto", opacity: 1 },
+// -- Spectrum Zoom ------------------------------------------------------------
+
+const easeOutCubic = (progress: number): number => 1 - (1 - progress) ** 3;
+
+// Sharp tiles fade in over the stretched band on a canvas, so these are plain numbers and a curve.
+const spectrumRefineMotion = {
+  fadeMs: 120,
+  reducedFadeMs: 80,
+  ease: easeOutCubic,
+} as const;
+
+// -- Edit Loupe ---------------------------------------------------------------
+
+const loupeEnterTransition: Transition = { type: "spring", duration: 0.18, bounce: 0 };
+const loupeExitTransition: Transition = { type: "spring", duration: 0.12, bounce: 0 };
+
+const loupeVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.96, filter: "blur(4px)" },
+  visible: { opacity: 1, scale: 1, filter: "blur(0px)", transition: loupeEnterTransition },
+  exit: { opacity: 0, scale: 0.96, filter: "blur(4px)", transition: loupeExitTransition },
+};
+
+const loupeReducedVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: loupeEnterTransition },
+  exit: { opacity: 0, transition: loupeExitTransition },
+};
+
+// Keyframes need a tween; a spring cannot run a three-step scale.
+const loupeDeltaPopVariants: Variants = {
+  rest: { scale: 1 },
+  pop: { scale: [1, 1.12, 1], transition: { duration: 0.16, ease: "easeOut" } },
 };
 
 // -- Stagger Container --------------------------------------------------------
@@ -134,12 +192,20 @@ export {
   centeredSlideUpVariants,
   centeredFadeVariants,
   syncCarouselTransition,
-  syncPulseVariants,
   buildGroupPingVariants,
   shimmerTransition,
   shimmerVariants,
   pinDropInVariants,
   snapFlashVariants,
-  accordionTransition,
-  accordionVariants,
+  floatingEntrance,
+  loupeDeltaPopVariants,
+  loupeReducedVariants,
+  loupeVariants,
+  inlineIconTransition,
+  inlineIconVariants,
+  inlineIconReducedVariants,
+  pitchLineKeyframes,
+  pitchLineMotion,
+  spectrumRefineMotion,
+  easeOutCubic,
 };

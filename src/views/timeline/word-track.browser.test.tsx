@@ -1,14 +1,15 @@
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
-import { WordTrack } from "@/views/timeline/word-track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { createLine, createWord } from "@/test/factories";
+import { stepFrames } from "@/test/frame-steps";
+import { render } from "@/test/render";
 import { applyWordPatch } from "@/utils/word-patch";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { createLine, createWord } from "@/test/factories";
-import { render } from "@/test/render";
+import { WordTrack } from "@/views/timeline/word-track";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 type UpdateWord = (
   index: number,
@@ -257,15 +258,18 @@ describe("WordTrack", () => {
     expect(blocks.map((b) => b.dataset.syllablePosition)).toEqual(["none", "first", "middle", "last", "none"]);
   });
 
-  it("dashes both facing syllable edges when the group has a timing gap", async () => {
+  // A timing gap inside a syllable group keeps both facing corners square and marks them as cut ends.
+  it("squares and marks both facing syllable edges when the group has a timing gap", async () => {
     const words = [
       createWord({ text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" }),
       createWord({ text: "er", begin: 0.8, end: 1.3, syllableGroupId: "g" }),
     ];
     const { screen } = await renderTrack(words);
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
-    expect(blocks[0].style.borderRightStyle).toBe("dashed");
-    expect(blocks[1].style.borderLeftStyle).toBe("dashed");
+    expect(blocks[0].className).toContain("rounded-r-none");
+    expect(blocks[1].className).toContain("rounded-l-none");
+    expect(blocks[0].dataset.gapAfter).toBeDefined();
+    expect(blocks[1].dataset.gapBefore).toBeDefined();
   });
 
   it("drags a flush syllable boundary conjoined, moving the shared edge as one", async () => {
@@ -337,7 +341,7 @@ describe("WordTrack", () => {
 
     async function renderFlushSyllables(rolling: boolean) {
       useSettingsStore.setState({ syllablesFollowRolling: true });
-      useTimelineStore.setState({ rollingEditMode: rolling });
+      useSettingsStore.setState({ rollingEdit: rolling });
       const calls: Array<{ index: number; updates: { end?: number }; adjacentIndex?: number }> = [];
       const { screen } = await renderTrack(flushSyllables(), (index, updates, adjacentIndex) =>
         calls.push({ index, updates, adjacentIndex }),
@@ -387,7 +391,8 @@ describe("WordTrack", () => {
   });
 
   it("conjoins a touching word boundary when rolling edit mode is on", async () => {
-    useTimelineStore.setState({ rollingEditMode: true, zoom: 100 });
+    useSettingsStore.setState({ rollingEdit: true });
+    useTimelineStore.setState({ zoom: 100 });
     const calls: Array<{
       index: number;
       updates: { begin?: number; end?: number };
@@ -415,8 +420,69 @@ describe("WordTrack", () => {
     expect(calls[0].adjacentUpdates?.end).toBeUndefined();
   });
 
+  it("regression: rolling edit toggled on mid-resize rolls the neighbour", async () => {
+    useSettingsStore.setState({ rollingEdit: false });
+    useTimelineStore.setState({ zoom: 100 });
+    const calls: Array<{ index: number; adjacentIndex?: number; adjacentUpdates?: { begin?: number } }> = [];
+    const words = [createWord({ text: "a ", begin: 1, end: 1.5 }), createWord({ text: "b", begin: 1.5, end: 2 })];
+    const { screen } = await renderTrack(words, (index, _updates, adjacentIndex, adjacentUpdates) =>
+      calls.push({ index, adjacentIndex, adjacentUpdates }),
+    );
+    const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+    const edge = edgeOf(blocks[0], "right");
+
+    edge.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 200 }));
+    document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 210 }));
+    useSettingsStore.setState({ rollingEdit: true });
+    document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 230 }));
+    document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+
+    await expect.poll(() => calls.length).toBe(1);
+    expect(calls[0].adjacentIndex).toBe(1);
+    expect(calls[0].adjacentUpdates?.begin).toBeCloseTo(1.8, 4);
+  });
+
+  it("regression: toggling rolling edit mid-resize applies without another pointer move", async () => {
+    useSettingsStore.setState({ rollingEdit: false });
+    useTimelineStore.setState({ zoom: 100 });
+    const calls: Array<{ adjacentIndex?: number; adjacentUpdates?: { begin?: number } }> = [];
+    const words = [createWord({ text: "a ", begin: 1, end: 1.5 }), createWord({ text: "b", begin: 1.5, end: 2 })];
+    const { screen } = await renderTrack(words, (_index, _updates, adjacentIndex, adjacentUpdates) =>
+      calls.push({ adjacentIndex, adjacentUpdates }),
+    );
+    const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+    edgeOf(blocks[0], "right").dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 200 }));
+    document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 230 }));
+    await stepFrames(2);
+    useSettingsStore.setState({ rollingEdit: true });
+    document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+
+    await expect.poll(() => calls.length).toBe(1);
+    expect(calls[0].adjacentIndex).toBe(1);
+    expect(calls[0].adjacentUpdates?.begin).toBeCloseTo(1.8, 4);
+  });
+
+  it("regression: a replayed move keeps Alt held, so the neighbour stays put", async () => {
+    useSettingsStore.setState({ rollingEdit: true });
+    useTimelineStore.setState({ zoom: 100 });
+    const calls: Array<{ adjacentIndex?: number }> = [];
+    const words = [createWord({ text: "a ", begin: 1, end: 1.5 }), createWord({ text: "b", begin: 1.5, end: 2 })];
+    const { screen } = await renderTrack(words, (_index, _updates, adjacentIndex) => calls.push({ adjacentIndex }));
+    const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+    edgeOf(blocks[0], "right").dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 200 }));
+    document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 230, altKey: true }));
+    await stepFrames(2);
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Meta", metaKey: true, altKey: true }));
+    document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+
+    expect(calls).toEqual([]);
+  });
+
   it("resizes one word independently when Alt is held in rolling edit mode", async () => {
-    useTimelineStore.setState({ rollingEditMode: true, zoom: 100 });
+    useSettingsStore.setState({ rollingEdit: true });
+    useTimelineStore.setState({ zoom: 100 });
     const calls: Array<{ index: number; adjacentIndex?: number }> = [];
     const words = [createWord({ text: "a ", begin: 1, end: 1.5 }), createWord({ text: "b", begin: 1.5, end: 2 })];
     const { screen } = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));

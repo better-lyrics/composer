@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -129,7 +129,7 @@ describe("TimelineInfoPanel cursor buttons · rolling edit", () => {
   it("moves the previous word's end with Set Begin when rolling over a flush boundary", async () => {
     useAudioStore.setState({ currentTime: 1.4, duration: 10 });
     useProjectStore.setState({ lines: [flushPairLine()] });
-    useTimelineStore.setState({ rollingEditMode: true });
+    useSettingsStore.setState({ rollingEdit: true });
     selectWordAt("l1", 1);
     const screen = await render(<TimelineInfoPanel />);
 
@@ -142,7 +142,7 @@ describe("TimelineInfoPanel cursor buttons · rolling edit", () => {
   it("moves the next word's begin with Set End when rolling over a flush boundary", async () => {
     useAudioStore.setState({ currentTime: 1.4, duration: 10 });
     useProjectStore.setState({ lines: [flushPairLine()] });
-    useTimelineStore.setState({ rollingEditMode: true });
+    useSettingsStore.setState({ rollingEdit: true });
     selectWordAt("l1", 0);
     const screen = await render(<TimelineInfoPanel />);
 
@@ -155,7 +155,7 @@ describe("TimelineInfoPanel cursor buttons · rolling edit", () => {
   it("moves only the selected word when rolling edit is off", async () => {
     useAudioStore.setState({ currentTime: 1.4, duration: 10 });
     useProjectStore.setState({ lines: [flushPairLine()] });
-    useTimelineStore.setState({ rollingEditMode: false });
+    useSettingsStore.setState({ rollingEdit: false });
     selectWordAt("l1", 1);
     const screen = await render(<TimelineInfoPanel />);
 
@@ -177,7 +177,7 @@ describe("TimelineInfoPanel cursor buttons · rolling edit", () => {
       ],
     });
     useSettingsStore.setState({ syllablesFollowRolling: true });
-    useTimelineStore.setState({ rollingEditMode: false });
+    useSettingsStore.setState({ rollingEdit: false });
     selectWordAt("l1", 1);
     const screen = await render(<TimelineInfoPanel />);
 
@@ -190,7 +190,7 @@ describe("TimelineInfoPanel cursor buttons · rolling edit", () => {
   it("records a rolling edit as a single undo entry", async () => {
     useAudioStore.setState({ currentTime: 1.4, duration: 10 });
     useProjectStore.setState({ lines: [flushPairLine()] });
-    useTimelineStore.setState({ rollingEditMode: true });
+    useSettingsStore.setState({ rollingEdit: true });
     selectWordAt("l1", 1);
     const screen = await render(<TimelineInfoPanel />);
 
@@ -208,7 +208,7 @@ describe("TimelineInfoPanel cursor buttons · rolling edit", () => {
     useSettingsStore.getState().set("minWordDuration", 0.2);
     useAudioStore.setState({ currentTime: 99, duration: 10 });
     useProjectStore.setState({ lines: [flushPairLine()] });
-    useTimelineStore.setState({ rollingEditMode: false });
+    useSettingsStore.setState({ rollingEdit: false });
     selectWordAt("l1", 1);
     const screen = await render(<TimelineInfoPanel />);
 
@@ -221,7 +221,7 @@ describe("TimelineInfoPanel cursor buttons · rolling edit", () => {
     useSettingsStore.getState().set("minWordDuration", 0.2);
     useAudioStore.setState({ currentTime: 0, duration: 10 });
     useProjectStore.setState({ lines: [flushPairLine()] });
-    useTimelineStore.setState({ rollingEditMode: false });
+    useSettingsStore.setState({ rollingEdit: false });
     selectWordAt("l1", 1);
     const screen = await render(<TimelineInfoPanel />);
 
@@ -254,5 +254,32 @@ describe("TimelineInfoPanel selection copy", () => {
     const screen = await render(<TimelineInfoPanel />);
     await expect.poll(() => screen.container.textContent ?? "").toContain("selected");
     expect(screen.container.textContent).toContain("2 words, 1 line selected");
+  });
+});
+
+describe("TimelineInfoPanel cursor buttons · shared time range", () => {
+  const chorus = (id: string, instanceIdx: number, begin: number) =>
+    createLine({
+      id,
+      text: "go",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx: 0,
+      words: [createWord({ text: "go", begin, end: begin + 1 })],
+    });
+
+  it("stops Set Begin where the earliest shared instance reaches zero", async () => {
+    useAudioStore.setState({ currentTime: 1, duration: 20 });
+    useProjectStore.setState({
+      lines: [chorus("c0", 0, 3), chorus("c1", 1, 10)],
+      groups: [createGroup({ id: "g1", sharesTiming: true })],
+    });
+    useTimelineStore.setState({ selectedWords: [{ lineId: "c1", lineIndex: 1, wordIndex: 0, type: "word" }] });
+    const screen = await render(<TimelineInfoPanel />);
+
+    await screen.getByRole("button", { name: /Set Begin/ }).click();
+
+    await expect.poll(() => useProjectStore.getState().lines[1].words?.[0].begin).toBe(7);
+    expect(useProjectStore.getState().lines[0].words?.[0].begin).toBe(0);
   });
 });

@@ -1,12 +1,13 @@
-import { describe, expect, it } from "vitest";
 import {
+  type SnapPoint,
   createSnapPoint,
   normalizeSnapPoints,
   normalizeTimes,
-  type SnapPoint,
+  shiftedSnapPoints,
   snapPointTimes,
   toSnapPoints,
 } from "@/domain/snap-point/model";
+import { describe, expect, it } from "vitest";
 
 // -- createSnapPoint ----------------------------------------------------------
 
@@ -231,5 +232,32 @@ describe("cross-type", () => {
     const result = normalizeSnapPoints([2, { id: "obj", time: 5 }, 1, { id: "neg", time: -4 }]);
     expect(result.map((p) => p.time)).toEqual([1, 2, 5]);
     expect(result.find((p) => p.time === 5)?.id).toBe("obj");
+  });
+});
+
+describe("shiftedSnapPoints", () => {
+  it("moves every point and keeps its id", () => {
+    expect(
+      shiftedSnapPoints(
+        [
+          { id: "a", time: 1 },
+          { id: "b", time: 2 },
+        ],
+        0.025,
+      ),
+    ).toEqual([
+      { id: "a", time: 1.025 },
+      { id: "b", time: 2.025 },
+    ]);
+  });
+
+  describe("edge cases", () => {
+    it("reads legacy number points", () => {
+      expect(shiftedSnapPoints([3], 0.5).map((point) => point.time)).toEqual([3.5]);
+    });
+
+    it("drops a point moved before the song start", () => {
+      expect(shiftedSnapPoints([{ id: "a", time: 0.01 }], -0.025)).toEqual([]);
+    });
   });
 });

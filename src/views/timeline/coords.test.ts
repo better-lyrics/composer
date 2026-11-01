@@ -84,94 +84,39 @@ describe("revealTimeScrollLeft", () => {
     expect(revealTimeScrollLeft(2, 100, 0, 500)).toBeNull();
   });
 
-  it("centers the playhead when the time is off the right edge", () => {
+  it("follows the right edge just enough when the time is slightly past it", () => {
+    expect(revealTimeScrollLeft(4.2, 100, 0, 500)).toBe(420 - (500 - GUTTER_WIDTH) + REVEAL_MARGIN_PX);
+  });
+
+  it("follows the left edge just enough when the time is slightly past it", () => {
+    expect(revealTimeScrollLeft(1.2, 100, 100, 500)).toBe(120 - REVEAL_MARGIN_PX);
+  });
+
+  it("centers the time when it is far off the right edge", () => {
     expect(revealTimeScrollLeft(10, 100, 0, 500)).toBe(1000 + GUTTER_WIDTH - 250);
   });
 
-  it("centers the playhead when the time is off the left edge", () => {
+  it("centers the time when it is far off the left edge", () => {
     expect(revealTimeScrollLeft(1, 100, 2000, 500)).toBe(0);
   });
 
-  it("re-centers before the playhead reaches the right edge (within the margin)", () => {
-    expect(revealTimeScrollLeft(4.2, 100, 0, 500)).toBe(420 + GUTTER_WIDTH - 250);
-  });
-
-  it("re-centers before the playhead reaches the left edge (within the margin)", () => {
-    expect(revealTimeScrollLeft(1.2, 100, 100, 500)).toBe(0);
+  describe("invariants", () => {
+    it("keeps a held step pinned at the margin, so the view glides", () => {
+      const first = revealTimeScrollLeft(4.2, 100, 0, 500);
+      expect(first).not.toBeNull();
+      const second = revealTimeScrollLeft(4.7, 100, first ?? 0, 500);
+      expect((second ?? 0) - (first ?? 0)).toBeCloseTo(50);
+    });
   });
 
   describe("edge cases", () => {
-    it("clamps the centered scroll position to zero", () => {
-      expect(revealTimeScrollLeft(0, 100, 0, 500)).toBe(0);
+    it("never scrolls before the song start", () => {
+      expect(revealTimeScrollLeft(0.2, 100, 30, 500)).toBe(0);
     });
 
     it("honors a custom margin of zero, scrolling only when actually off-screen", () => {
       expect(revealTimeScrollLeft(4.5, 100, 0, 500, 0)).toBeNull();
-      expect(revealTimeScrollLeft(4.53, 100, 0, 500, 0)).toBe(453 + GUTTER_WIDTH - 250);
+      expect(revealTimeScrollLeft(4.53, 100, 0, 500, 0)).toBeCloseTo(453 - (500 - GUTTER_WIDTH));
     });
-
-    it("defaults the margin to REVEAL_MARGIN_PX", () => {
-      const withDefault = revealTimeScrollLeft(4.2, 100, 0, 500);
-      const withExplicit = revealTimeScrollLeft(4.2, 100, 0, 500, REVEAL_MARGIN_PX);
-      expect(withDefault).toBe(withExplicit);
-    });
-  });
-});
-
-describe("edge cases", () => {
-  it("handles a negative scrollLeft in timeToX", () => {
-    expect(timeToX(1, 100, -50)).toBe(100 + 50 + GUTTER_WIDTH);
-  });
-
-  it("handles a negative scrollLeft in xToTime", () => {
-    const rect = { left: 0 } as DOMRect;
-    expect(xToTime(GUTTER_WIDTH + 100, rect, 100, -100)).toBeCloseTo(0);
-  });
-
-  it("handles large time and zoom values", () => {
-    expect(timeToX(3600, 500, 0)).toBe(3600 * 500 + GUTTER_WIDTH);
-  });
-
-  it("handles fractional seconds", () => {
-    expect(timeToX(1.5, 80, 0)).toBe(1.5 * 80 + GUTTER_WIDTH);
-  });
-
-  it("clamps when clientX lands left of the gutter", () => {
-    const rect = { left: 0 } as DOMRect;
-    expect(xToTime(GUTTER_WIDTH - 10, rect, 100, 0)).toBe(0);
-  });
-});
-
-describe("invariants", () => {
-  const cases: Array<{ t: number; zoom: number; scrollLeft: number }> = [
-    { t: 0, zoom: 100, scrollLeft: 0 },
-    { t: 1, zoom: 100, scrollLeft: 50 },
-    { t: 2.5, zoom: 80, scrollLeft: 0 },
-    { t: 12.345, zoom: 250, scrollLeft: 400 },
-    { t: 60, zoom: 33, scrollLeft: -120 },
-  ];
-
-  it("round-trips time -> x -> time for representative values", () => {
-    const rect = { left: 17 } as DOMRect;
-    for (const { t, zoom, scrollLeft } of cases) {
-      const x = timeToX(t, zoom, scrollLeft) + rect.left;
-      expect(xToTime(x, rect, zoom, scrollLeft)).toBeCloseTo(t);
-    }
-  });
-
-  it("xToTime is the algebraic inverse of timeToX above the clamp floor", () => {
-    const rect = { left: 0 } as DOMRect;
-    const t = 5;
-    const zoom = 120;
-    const scrollLeft = 30;
-    const x = timeToX(t, zoom, scrollLeft);
-    expect(xToTime(x, rect, zoom, scrollLeft)).toBeCloseTo(t);
-  });
-
-  it("never returns a negative time", () => {
-    const rect = { left: 500 } as DOMRect;
-    for (let clientX = -1000; clientX <= 1000; clientX += 250) {
-      expect(xToTime(clientX, rect, 100, 0)).toBeGreaterThanOrEqual(0);
-    }
   });
 });

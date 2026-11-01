@@ -1,4 +1,6 @@
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { sharedTimingFanOut, timeRangeResolver } from "@/domain/group/shared-timing";
+import { applyLineUpdates } from "@/domain/line/apply-line-updates";
+import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -8,7 +10,8 @@ import { planStretchDrag } from "@/views/timeline/stretch-drag";
 import { mapStretchTargets, stretchSelections } from "@/views/timeline/stretch-selection";
 import { STRETCH_EPS } from "@/views/timeline/stretch-targets";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
+import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
+import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -20,12 +23,11 @@ interface StretchDragArgs {
   wordIndex: number;
   edge: "left" | "right";
   startX: number;
+  track: Element;
 }
 
 interface UseSelectionStretchOptions {
-  // Mirrors word-track's justResized guard: invoked with dragged=true when a
-  // stretch gesture moved past the drag threshold, so the trailing click does
-  // not rewrite the selection.
+  // Called with dragged=true once the stretch moved past the drag threshold.
   onDragEnd?: (dragged: boolean) => void;
 }
 
@@ -52,18 +54,20 @@ function writePreviewLines(lines: LyricLine[]): void {
   useProjectStore.getState().setTransientLines(lines);
 }
 
-// Applies stretch updates to the pre-drag snapshot, mirroring how
-// updateLinesWithHistory reconciles each line (no sibling propagation — the
-// commit opts out of it too).
+// Applies stretch updates to the pre-drag snapshot the way updateLinesWithHistory will commit them: each line
+// reconciled, no sibling propagation, and shared group timing copied, so the preview matches the release.
 function applyStretchUpdates(
   snapshotLines: LyricLine[],
   updates: ReadonlyArray<{ id: string; updates: Partial<LyricLine> }>,
 ): LyricLine[] {
-  const updatesById = new Map(updates.map((u) => [u.id, u.updates]));
-  return snapshotLines.map((line) => {
-    const lineUpdates = updatesById.get(line.id);
-    return lineUpdates ? reconcileLine({ ...line, ...lineUpdates }) : line;
-  });
+  const applied = applyLineUpdates(snapshotLines, updates);
+  const shared = sharedTimingFanOut(
+    snapshotLines,
+    applied,
+    useProjectStore.getState().groups,
+    updates.map((update) => update.id),
+  );
+  return shared.rejected ? snapshotLines.slice() : shared.lines;
 }
 
 // -- Hook ----------------------------------------------------------------------
@@ -86,7 +90,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
   const snap = useTimelineSnap();
   const { beginGesture, computeShiftPx, endGesture } = snap;
   const getLastPointer = useCallback(() => lastPointerRef.current, []);
-  useSnapBypass({ active: isStretching, getLastPointer });
+  useGestureInputReplay({ active: isStretching, getLastPointer });
 
   // A drag cut short by unmount (undo rewrote lines, project cleared, tab
   // switched) must restore the snapshotted lines — otherwise the transient
@@ -102,23 +106,22 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
   }, [endGesture]);
 
   const tryStart = useCallback(
-    ({ lineId, type, wordIndex, edge, startX }: StretchDragArgs): boolean => {
+    ({ lineId, type, wordIndex, edge, startX, track }: StretchDragArgs): boolean => {
       // A second pointerdown before the first gesture finished (multi-touch,
       // stuck pointer) tears the first gesture down first, so the snapshot below
       // captures committed state, not the prior gesture's transient preview.
       cleanupRef.current?.();
       cleanupRef.current = null;
 
-      const snapshotLines = useProjectStore.getState().lines;
+      const { lines: snapshotLines, groups } = useProjectStore.getState();
       const selection = useTimelineStore.getState().selectedWords;
       const options = {
-        duration: useAudioStore.getState().duration,
+        rangeOf: timeRangeResolver(snapshotLines, groups, useAudioStore.getState().duration),
         minWordDuration: useSettingsStore.getState().minWordDuration,
       };
       const plan = planStretchDrag(snapshotLines, selection, { lineId, type, wordIndex, edge }, options);
       if (!plan) return false;
 
-      const zoom = useTimelineStore.getState().zoom;
       const { anchor, anchorTime, edgeTime, minFactor, maxFactor, targets } = plan;
       const selfIds = new Set(selection.map((s) => selfKey(s.lineId, s.wordIndex, s.type)));
 
@@ -128,6 +131,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
 
       setIsStretching(true);
       lastPointerRef.current = { clientX: startX, clientY: 0 };
+      const travelSeconds = pointerTravelSeconds(track, startX);
 
       beginGesture({
         selfIds,
@@ -165,9 +169,10 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
 
       function handleMove(ev: PointerEvent): void {
         lastPointerRef.current = { clientX: ev.clientX, clientY: ev.clientY };
-        if (Math.abs(ev.clientX - startX) >= DRAG_THRESHOLD_PX) dragged = true;
+        const zoom = useTimelineStore.getState().zoom;
+        const rawDeltaPx = travelSeconds(ev.clientX) * zoom;
+        if (Math.abs(rawDeltaPx) >= DRAG_THRESHOLD_PX) dragged = true;
         if (!dragged) return;
-        const rawDeltaPx = ev.clientX - startX;
         const snapShiftPx = computeShiftPx(rawDeltaPx, [edgeTime]);
         const proposedEdge = edgeTime + (rawDeltaPx + snapShiftPx) / zoom;
         const k = Math.min(Math.max(factorForEdgeTime(proposedEdge), minFactor), maxFactor);
@@ -208,7 +213,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
         if (stillOurs) {
           // Restore the snapshot first so the history entry below captures the
           // true pre-drag state (and a discarded drag leaves no trace at all).
-          writePreviewLines(snapshotLines);
+          useProjectStore.getState().restoreTransientLines(snapshotLines);
         }
         teardown();
         if (stillOurs && commit && dragged && Math.abs(currentFactor - 1) >= COMMIT_FACTOR_EPS) {

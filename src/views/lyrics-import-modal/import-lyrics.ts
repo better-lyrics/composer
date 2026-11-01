@@ -1,24 +1,30 @@
-import { useMemo } from "react";
-import { toast } from "sonner";
-import { isSupportedLyricsFile, UNSUPPORTED_LYRICS_FILE_MESSAGE } from "@/domain/lyrics-file/supported-formats";
+import { withSeededBackground } from "@/domain/line/background";
+import type { RawLine } from "@/domain/line/model";
+import { hasAnyTiming } from "@/domain/line/predicates";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
-import { filledMetadata } from "@/domain/project/imported-metadata";
+import { importableMetadata } from "@/domain/project/imported-metadata";
+import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectFile } from "@/lib/project-file";
 import { useAudioStore } from "@/stores/audio";
 import { type ConfirmOptions, useConfirm } from "@/stores/confirm-store";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
-import { parseLyricsFile } from "@/utils/lyrics-parsers";
+import { PARSERS, parseLyricsFile } from "@/utils/lyrics-parsers";
 import {
   type ParseIssue,
   type ParseResult,
+  UNSUPPORTED_LRC_TAGS_MESSAGE,
+  hasUnsupportedTags,
   skippedLineCount,
   skippedLinesMessage,
 } from "@/utils/lyrics-parsers/shared";
-import { distributeLinesTiming } from "@/views/timeline/utils";
 import { pluralize } from "@/utils/pluralize";
+import { distributeLinesTiming } from "@/views/timeline/utils";
+import { useMemo } from "react";
+import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 
@@ -39,16 +45,20 @@ interface ImportContext {
   onResult?: (parsed: ParseResult, source: ImportSourceInfo) => void;
 }
 
+type LyricsRead = { status: "readable"; parsed: ParseResult } | { status: "unreadable"; message: string };
+
 interface ImportLyricsInput {
   filename: string;
   content: string;
   searchResult?: LyricsSearchResult;
+  parsed?: ParseResult;
 }
 
 // -- Copy ---------------------------------------------------------------------
 
 function noLyricsMessage(filename: string, issues: ParseIssue[]): string {
   if (issues.some((issue) => issue.reason === "empty-document")) return `Could not read ${filename}.`;
+  if (hasUnsupportedTags(issues)) return `Could not import ${filename}. ${UNSUPPORTED_LRC_TAGS_MESSAGE}`;
   const skipped = skippedLineCount(issues);
   if (skipped === 0) return `No lyrics found in ${filename}.`;
   return `No lyrics could be read from ${filename}. ${skippedLinesMessage(skipped)}`;
@@ -82,10 +92,27 @@ function searchResultMetadata(result: LyricsSearchResult | undefined): Partial<P
   };
 }
 
+function replaceLyrics(
+  parsed: ParseResult,
+  lines: RawLine[] = parsed.lines,
+  fallbackMetadata: Partial<ProjectMetadata> = {},
+): ParseResult {
+  const metadata = importableMetadata(parsed.metadata);
+  useProjectStore.getState().replaceLyricsWithHistory({
+    lines,
+    groups: parsed.groups ?? [],
+    agents: parsed.agents,
+    metadata: { ...fallbackMetadata, ...metadata },
+  });
+  return { ...parsed, metadata };
+}
+
 // -- Action -------------------------------------------------------------------
 
 async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promise<boolean> {
-  const parsed = parseLyricsFile(input.filename, input.content, ctx.audioDuration > 0 ? ctx.audioDuration : undefined);
+  const parsed =
+    input.parsed ??
+    parseLyricsFile(input.filename, input.content, ctx.audioDuration > 0 ? ctx.audioDuration : undefined);
   if (parsed.lines.length === 0) {
     toast.error(noLyricsMessage(input.filename, parsed.issues));
     return false;
@@ -101,30 +128,51 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
     : parsed.lines;
 
   if (!parsed.hasTimingData && ctx.audioDuration > 0) {
-    workingLines = distributeLinesTiming(workingLines, ctx.audioDuration);
+    workingLines = distributeLinesTiming(workingLines, ctx.audioDuration).map(withSeededBackground);
   }
 
-  useProjectStore.getState().replaceLyricsWithHistory({
-    lines: workingLines,
-    groups: parsed.groups ?? [],
-    agents: parsed.agents,
-    metadata: { ...searchResultMetadata(input.searchResult), ...filledMetadata(parsed.metadata) },
-  });
+  const reported = replaceLyrics(parsed, workingLines, searchResultMetadata(input.searchResult));
 
   const skipped = skippedLineCount(parsed.issues);
   if (skipped > 0) toast.warning(partialImportMessage(workingLines.length, skipped));
 
-  ctx.onResult?.(parsed, { label: input.searchResult?.sourceLabel ?? ctx.sourceLabel, filename: input.filename });
+  ctx.onResult?.(reported, { label: input.searchResult?.sourceLabel ?? ctx.sourceLabel, filename: input.filename });
   return true;
 }
 
-async function importLyricsFile(file: File, ctx: ImportContext): Promise<boolean> {
-  // accept= is only a dialog hint: an OS picker set to all files or a drop reaches here.
-  if (!isSupportedLyricsFile(file.name)) {
-    toast.error(UNSUPPORTED_LYRICS_FILE_MESSAGE);
+function readParsedLyrics(parsed: ParseResult, sourceName: string): LyricsRead {
+  if (parsed.lines.length === 0) return { status: "unreadable", message: noLyricsMessage(sourceName, parsed.issues) };
+  return { status: "readable", parsed };
+}
+
+function readTtmlLyrics(content: string, sourceName: string, audioDuration: number): LyricsRead {
+  return readParsedLyrics(PARSERS.ttml(content, audioDuration > 0 ? audioDuration : undefined), sourceName);
+}
+
+function readLyricsFile(fileName: string, content: string): LyricsRead {
+  return readParsedLyrics(parseLyricsFile(fileName, content, undefined), fileName);
+}
+
+function replaceWithParsedLyrics(parsed: ParseResult): number {
+  replaceLyrics(parsed);
+  return skippedLineCount(parsed.issues);
+}
+
+function importProjectLyrics(project: ProjectFile, filename: string, ctx: ImportContext): boolean {
+  if (!hasLyricLines(project.lines)) {
+    toast.error(noLyricsMessage(filename, []));
     return false;
   }
-  return importLyrics({ filename: file.name, content: await file.text() }, ctx);
+  const reported = replaceLyrics({
+    lines: project.lines,
+    metadata: project.metadata,
+    hasTimingData: project.lines.some(hasAnyTiming),
+    issues: [],
+    agents: project.agents,
+    groups: project.groups ?? [],
+  });
+  ctx.onResult?.(reported, { label: ctx.sourceLabel, filename });
+  return true;
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -159,5 +207,5 @@ function useImportContext(sourceLabel: string): ImportContext {
 
 // -- Exports ------------------------------------------------------------------
 
-export { importLyrics, importLyricsFile, useImportContext };
+export { importLyrics, importProjectLyrics, readLyricsFile, readTtmlLyrics, replaceWithParsedLyrics, useImportContext };
 export type { ImportContext, ImportSourceInfo };

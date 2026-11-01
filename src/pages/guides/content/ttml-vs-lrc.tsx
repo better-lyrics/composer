@@ -1,3 +1,5 @@
+import { GuideCode } from "@/pages/guides/guide-code";
+
 const TtmlVsLrcContent: React.FC = () => (
   <>
     <p>
@@ -6,46 +8,42 @@ const TtmlVsLrcContent: React.FC = () => (
     </p>
 
     <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Quick comparison</h2>
-    <div className="overflow-x-auto my-6">
-      <table className="w-full text-sm border border-composer-border rounded-lg">
-        <thead className="bg-composer-bg-elevated">
+    <div className="overflow-x-auto overscroll-x-none my-6">
+      <table className="w-full text-sm border border-(--divider) rounded-lg">
+        <thead className="bg-(--layer-1)">
           <tr>
-            <th className="text-left px-4 py-3 font-semibold text-composer-text border-b border-composer-border">
+            <th className="text-left px-4 py-3 font-semibold text-composer-text border-b border-(--divider)">
               Feature
             </th>
-            <th className="text-left px-4 py-3 font-semibold text-composer-text border-b border-composer-border">
-              LRC
-            </th>
-            <th className="text-left px-4 py-3 font-semibold text-composer-text border-b border-composer-border">
-              TTML
-            </th>
+            <th className="text-left px-4 py-3 font-semibold text-composer-text border-b border-(--divider)">LRC</th>
+            <th className="text-left px-4 py-3 font-semibold text-composer-text border-b border-(--divider)">TTML</th>
           </tr>
         </thead>
         <tbody className="text-composer-text-secondary">
           <tr>
-            <td className="px-4 py-3 border-b border-composer-border">File format</td>
-            <td className="px-4 py-3 border-b border-composer-border">Plain text</td>
-            <td className="px-4 py-3 border-b border-composer-border">XML</td>
+            <td className="px-4 py-3 border-b border-(--divider)">File format</td>
+            <td className="px-4 py-3 border-b border-(--divider)">Plain text</td>
+            <td className="px-4 py-3 border-b border-(--divider)">XML</td>
           </tr>
           <tr>
-            <td className="px-4 py-3 border-b border-composer-border">Line timing</td>
-            <td className="px-4 py-3 border-b border-composer-border">Yes</td>
-            <td className="px-4 py-3 border-b border-composer-border">Yes</td>
+            <td className="px-4 py-3 border-b border-(--divider)">Line timing</td>
+            <td className="px-4 py-3 border-b border-(--divider)">Yes</td>
+            <td className="px-4 py-3 border-b border-(--divider)">Yes</td>
           </tr>
           <tr>
-            <td className="px-4 py-3 border-b border-composer-border">Word timing</td>
-            <td className="px-4 py-3 border-b border-composer-border">Only in enhanced LRC</td>
-            <td className="px-4 py-3 border-b border-composer-border">Yes, native</td>
+            <td className="px-4 py-3 border-b border-(--divider)">Word timing</td>
+            <td className="px-4 py-3 border-b border-(--divider)">Only in enhanced LRC</td>
+            <td className="px-4 py-3 border-b border-(--divider)">Yes, native</td>
           </tr>
           <tr>
-            <td className="px-4 py-3 border-b border-composer-border">Multiple singers</td>
-            <td className="px-4 py-3 border-b border-composer-border">No</td>
-            <td className="px-4 py-3 border-b border-composer-border">Yes, via ttm:agent</td>
+            <td className="px-4 py-3 border-b border-(--divider)">Multiple singers</td>
+            <td className="px-4 py-3 border-b border-(--divider)">No</td>
+            <td className="px-4 py-3 border-b border-(--divider)">Yes, via ttm:agent</td>
           </tr>
           <tr>
-            <td className="px-4 py-3 border-b border-composer-border">Background vocals</td>
-            <td className="px-4 py-3 border-b border-composer-border">No</td>
-            <td className="px-4 py-3 border-b border-composer-border">Yes, via ttm:role x-bg</td>
+            <td className="px-4 py-3 border-b border-(--divider)">Background vocals</td>
+            <td className="px-4 py-3 border-b border-(--divider)">No</td>
+            <td className="px-4 py-3 border-b border-(--divider)">Yes, via ttm:role x-bg</td>
           </tr>
           <tr>
             <td className="px-4 py-3">Used by</td>
@@ -58,29 +56,28 @@ const TtmlVsLrcContent: React.FC = () => (
 
     <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">What LRC looks like</h2>
     <p>LRC puts a timestamp in square brackets at the start of each line. That is almost all there is to it.</p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`[ti:Song title]
+    <GuideCode
+      code={`[ti:Song title]
 [ar:Artist]
 [00:12.34]First lyric line
 [00:15.67]Second lyric line`}
-    </pre>
+    />
     <p>
       Enhanced LRC (eLRC) adds inline per-word timestamps in angle brackets. The line-level timestamp stays, and each
       word gets a start time:
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {"[00:12.34]<00:12.34>First <00:12.80>lyric <00:13.20>line<00:13.80>"}
-    </pre>
+    <GuideCode code={"[00:12.34]<00:12.34>First <00:12.80>lyric <00:13.20>line<00:13.80>"} />
 
     <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">What TTML looks like</h2>
     <p>TTML is XML. The same two lines above become:</p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<p begin="00:00:12.340" end="00:00:15.670">
+    <GuideCode
+      format="ttml"
+      code={`<p begin="00:00:12.340" end="00:00:15.670">
   <span begin="00:00:12.340" end="00:00:12.800">First</span>
   <span begin="00:00:12.800" end="00:00:13.200">lyric</span>
   <span begin="00:00:13.200" end="00:00:13.800">line</span>
 </p>`}
-    </pre>
+    />
     <p>
       The structure is richer. TTML wraps each line in a{" "}
       <code className="font-mono text-composer-accent-text">&lt;p&gt;</code> element that can carry an agent, nest

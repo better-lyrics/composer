@@ -1,0 +1,157 @@
+import type { LyricLine } from "@/domain/line/model";
+import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
+import { createAudioFile } from "@/test/audio-fixtures";
+import { createLine } from "@/test/factories";
+import { render } from "@/test/render";
+import { setCurrentTime } from "@/test/sync-gesture-helpers";
+import { GroupingNotices } from "@/test/grouping-notices";
+import { SyncPanel } from "@/views/sync/sync-panel";
+import { beforeEach, describe, expect, it } from "vitest";
+
+// -- Fixtures -----------------------------------------------------------------
+
+function song(): LyricLine[] {
+  return [
+    createLine({ id: "one-a", text: "go now" }),
+    createLine({ id: "one-b", text: "stay here" }),
+    createLine({ id: "one-c", text: "come home" }),
+    createLine({ id: "two-a", text: "go now" }),
+    createLine({ id: "two-b", text: "stay here" }),
+    createLine({ id: "two-c", text: "come home" }),
+    createLine({ id: "verse", text: "walking home" }),
+  ];
+}
+
+// -- Helpers ------------------------------------------------------------------
+
+function load(granularity: "line" | "word") {
+  useSettingsStore.setState({ shareTimingInNewGroups: true });
+  useAudioStore.setState({
+    source: { type: "file", file: createAudioFile() },
+    duration: 120,
+    currentTime: 0,
+    isPlaying: true,
+  });
+  useProjectStore.setState({ lines: song(), groups: [], activeTab: "sync", granularity });
+  useProjectStore.getState().clearHistory();
+}
+
+const lineById = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id);
+const firstBegin = (id: string) => {
+  const line = lineById(id);
+  return line?.words?.[0]?.begin ?? line?.begin;
+};
+
+async function tapAt(time: number, changed: () => unknown): Promise<void> {
+  const before = changed();
+  setCurrentTime(time);
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, cancelable: true }));
+  await expect.poll(changed).not.toEqual(before);
+}
+
+// -- Tests --------------------------------------------------------------------
+
+describe("SyncPanel · grouping mid-sync", () => {
+  beforeEach(() => load("line"));
+
+  it("regression: the next tap after grouping lands past the shared instance and never moves the source", async () => {
+    await render(<SyncPanel />);
+    await tapAt(10, () => firstBegin("one-a"));
+    await tapAt(13, () => firstBegin("one-b"));
+    await tapAt(16, () => firstBegin("one-c"));
+    await tapAt(40, () => firstBegin("two-a"));
+
+    useProjectStore.getState().groupRepeatingSections([0, 3], 3);
+    expect(firstBegin("two-b")).toBe(43);
+    expect(firstBegin("two-c")).toBe(46);
+
+    await tapAt(47.5, () => firstBegin("verse"));
+    expect(firstBegin("verse")).toBe(47.5);
+    expect(firstBegin("one-b")).toBe(13);
+    expect(firstBegin("one-c")).toBe(16);
+    expect(firstBegin("two-b")).toBe(43);
+    expect(firstBegin("two-c")).toBe(46);
+  });
+
+  it("syncs one chorus and part of the next, groups from the Edit banner, and skips the grouped chorus", async () => {
+    const screen = await render(
+      <>
+        <GroupingNotices />
+        <SyncPanel />
+      </>,
+    );
+    await tapAt(10, () => firstBegin("one-a"));
+    await tapAt(13, () => firstBegin("one-b"));
+    await tapAt(16, () => firstBegin("one-c"));
+    await tapAt(40, () => firstBegin("two-a"));
+
+    await screen.getByRole("button", { name: "Group them" }).click();
+    await expect.poll(() => useProjectStore.getState().groups.length).toBe(1);
+
+    await tapAt(47.5, () => firstBegin("verse"));
+    expect(firstBegin("verse")).toBe(47.5);
+    expect(firstBegin("one-a")).toBe(10);
+    expect(firstBegin("one-b")).toBe(13);
+    expect(firstBegin("one-c")).toBe(16);
+    expect(firstBegin("two-b")).toBe(43);
+    expect(firstBegin("two-c")).toBe(46);
+  });
+
+  describe("word sync", () => {
+    beforeEach(() => load("word"));
+
+    const wordBegins = (id: string) => lineById(id)?.words?.map((word) => word.begin);
+
+    async function renderEditAndSync() {
+      return render(
+        <>
+          <GroupingNotices />
+          <SyncPanel />
+        </>,
+      );
+    }
+
+    async function syncFirstChorus() {
+      await tapAt(10, () => wordBegins("one-a"));
+      await tapAt(10.5, () => wordBegins("one-a"));
+      await tapAt(13, () => wordBegins("one-b"));
+      await tapAt(13.5, () => wordBegins("one-b"));
+      await tapAt(16, () => wordBegins("one-c"));
+      await tapAt(16.5, () => wordBegins("one-c"));
+    }
+
+    it("regression: groups a partly word-synced chorus from the Edit banner, fills it, and skips it", async () => {
+      const screen = await renderEditAndSync();
+      await syncFirstChorus();
+      await tapAt(40, () => wordBegins("two-a"));
+
+      await screen.getByRole("button", { name: "Group them" }).click();
+      await expect.poll(() => wordBegins("two-b")).toEqual([43, 43.5]);
+      expect(wordBegins("two-c")).toEqual([46, 46.5]);
+      expect(wordBegins("two-a")).toEqual([40, 40.5]);
+
+      await tapAt(48, () => wordBegins("verse"));
+      expect(wordBegins("verse")).toEqual([48]);
+      expect(wordBegins("one-a")).toEqual([10, 10.5]);
+      expect(wordBegins("one-b")).toEqual([13, 13.5]);
+      expect(wordBegins("one-c")).toEqual([16, 16.5]);
+    });
+
+    it("regression: groups an untimed chorus from the Edit banner, and one tap places it", async () => {
+      const screen = await renderEditAndSync();
+      await syncFirstChorus();
+
+      await screen.getByRole("button", { name: "Group them" }).click();
+      await expect.poll(() => useProjectStore.getState().groups.length).toBe(1);
+
+      await tapAt(40, () => wordBegins("two-a"));
+      expect(wordBegins("two-a")).toEqual([40, 40.5]);
+      expect(wordBegins("two-b")).toEqual([43, 43.5]);
+      expect(wordBegins("two-c")).toEqual([46, 46.5]);
+      await tapAt(48, () => wordBegins("verse"));
+      expect(wordBegins("verse")).toEqual([48]);
+    });
+  });
+});

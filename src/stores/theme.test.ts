@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import { encodeThemeCode } from "@/domain/theme/code";
 import { deriveTheme } from "@/domain/theme/derive";
 import { DARK_NEGATIVE, DARK_POSITIVE, LIGHT_NEGATIVE, LIGHT_POSITIVE } from "@/domain/theme/mark-constants";
 import type { Theme } from "@/domain/theme/model";
 import { initTheme, useThemeStore } from "@/stores/theme";
+import { beforeEach, describe, expect, it } from "vitest";
 
 const ACCENT_VAR = "--color-composer-accent";
 

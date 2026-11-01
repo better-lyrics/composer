@@ -11,7 +11,7 @@ const LOCAL_SCRATCH_DIR = "test/e2e-repro/";
 // These create object URLs to play or probe audio, not to download a file.
 const OBJECT_URL_WHITELIST = new Set([
   OWNER,
-  "stores/separation.ts",
+  "stores/stem-urls.ts",
   "audio/audio-engine.tsx",
   "audio/probe-audio-file.ts",
 ]);

@@ -9,7 +9,8 @@ interface LinkButtonBaseProps extends ButtonStyleOptions {
   disabled?: boolean;
 }
 
-type LinkButtonProps = LinkButtonBaseProps & ({ to: string; href?: undefined } | { href: string; to?: undefined });
+type LinkButtonProps = LinkButtonBaseProps &
+  ({ to: string; href?: undefined; external?: undefined } | { href: string; to?: undefined; external?: boolean });
 
 // -- Component ----------------------------------------------------------------
 
@@ -43,8 +44,14 @@ const LinkButton: React.FC<LinkButtonProps> = (props) => {
     );
   }
   return (
-    <a href={props.href} className={classes}>
+    <a
+      href={props.href}
+      target={props.external ? "_blank" : undefined}
+      rel={props.external ? "noopener noreferrer" : undefined}
+      className={classes}
+    >
       {children}
+      {props.external && <span className="sr-only"> (opens in a new tab)</span>}
     </a>
   );
 };

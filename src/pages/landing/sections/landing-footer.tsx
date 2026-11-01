@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 const LandingFooter: React.FC = () => {
   return (
-    <footer className="border-t border-composer-border px-6 py-12 mt-10">
+    <footer className="border-t border-(--divider) px-6 py-12 mt-10">
       <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
         <div>
           <h3 className="font-semibold text-composer-text mb-3">Composer</h3>
@@ -88,6 +88,11 @@ const LandingFooter: React.FC = () => {
               </Link>
             </li>
             <li>
+              <Link to="/design" className="hover:text-composer-text">
+                Design system
+              </Link>
+            </li>
+            <li>
               <a
                 href="https://better-lyrics.boidu.dev"
                 target="_blank"
@@ -100,7 +105,7 @@ const LandingFooter: React.FC = () => {
           </ul>
         </div>
       </div>
-      <div className="max-w-6xl mx-auto mt-10 pt-6 border-t border-composer-border text-xs text-composer-text-muted flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+      <div className="max-w-6xl mx-auto mt-10 pt-6 border-t border-(--divider) text-xs text-(--muted) flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
         <p>Composer by Better Lyrics ・ Free to use</p>
         <p>Open source ・ No tracking ・ No signup</p>
       </div>

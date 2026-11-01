@@ -1,15 +1,17 @@
+import { hasAnyTiming } from "@/domain/line/predicates";
+import { useImportModalStore } from "@/stores/import-modal-store";
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
+import { SINGER_TAGGED_LRC } from "@/test/lrc-fixtures";
+import { render } from "@/test/render";
+import { ConfirmModalHost } from "@/ui/confirm-modal";
+import { restoreProvidersForTests, snapshotProvidersForTests } from "@/utils/lyrics-search/registry";
+import type { LyricsSearchProvider } from "@/utils/lyrics-search/types";
+import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { useImportModalStore } from "@/stores/import-modal-store";
-import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
-import { render } from "@/test/render";
-import { restoreProvidersForTests, snapshotProvidersForTests } from "@/utils/lyrics-search/registry";
-import type { LyricsSearchProvider } from "@/utils/lyrics-search/types";
-import { ConfirmModalHost } from "@/ui/confirm-modal";
-import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
 
 const SRT = "1\n00:00:02,000 --> 00:00:04,500\nFirst subtitle line\n\n2\n00:00:05,000 --> 00:00:07,000\nSecond line";
 const TTML =
@@ -20,6 +22,9 @@ const WEIRD_LRC = "[00:99.99]Invalid time\n[aa:bb.cc]garbage\nplain line no time
 const LRC_WITH_IGNORED_TAG = "[00:01.00][00:75.00]Chorus\n[00:99.00]Broken\n[00:05.00]Next\n";
 const LRCLIB_STYLE_PASTE =
   "\n\n  [ar: Queen]\n[ti: Bohemian Rhapsody]\n[length: 05:55]\n\n[00:00.63] Is this the real life?\n[00:04.21] Is this just fantasy?\n";
+
+const RTF_SAVED_LRC =
+  "{\\rtf1\\ansi\\ansicpg1252\\cocoartf2867\n\\f0\\fs24 \\cf0 [00:09.49]Say, John Henry\\\n[00:13.04]Showed you progress\\\n[00:16.29]My, my\\\n[00:24.77]Twelve long hours\\\n}";
 
 let providerSnapshot: readonly LyricsSearchProvider[] = [];
 
@@ -114,6 +119,15 @@ describe("pasted LRC", () => {
     await pasteAndImport(screen, "First line\nSecond line");
     expect(useProjectStore.getState().lines.map((line) => line.agentId)).toEqual(["v2", "v2"]);
   });
+
+  it("regression: never imports a rich text paste as timed lines", async () => {
+    useSettingsStore.setState({ autoExtractBackgroundVocals: false });
+    const screen = await render(host());
+    await pasteAndImport(screen, RTF_SAVED_LRC);
+    const { lines } = useProjectStore.getState();
+    expect(lines.length).toBeGreaterThan(0);
+    expect(lines.some(hasAnyTiming)).toBe(false);
+  });
 });
 
 describe("I4 broken or empty lyrics files", () => {
@@ -153,6 +167,24 @@ describe("partially readable lyrics files", () => {
     await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
     expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Chorus", "Next"]);
     await expect.element(screen.getByText("Imported 2 lines. 1 line could not be read.")).toBeInTheDocument();
+  });
+});
+
+describe("LRC with singer or background vocal tags", () => {
+  it("refuses the file, says why and leaves the project unchanged", async () => {
+    const before = useProjectStore.getState();
+    const screen = await render(host());
+    await uploadAndImport(screen, "cry_babies.lrc", SINGER_TAGGED_LRC);
+    await expect
+      .element(
+        screen.getByText(
+          "Could not import cry_babies.lrc. This LRC uses singer or background vocal tags (v1:, [bg:]) that are not part of LRC. Use a TTML or plain LRC version instead.",
+        ),
+      )
+      .toBeInTheDocument();
+    const after = useProjectStore.getState();
+    expect(after.lines).toBe(before.lines);
+    expect(after.history).toBe(before.history);
   });
 });
 

@@ -1,6 +1,6 @@
-import { reconcileLine, type LooseLine } from "@/domain/line/model";
-import { describe, expect, it } from "vitest";
 import { bgBounds, effectiveBounds, mainBounds } from "@/domain/line/bounds";
+import { type LooseLine, reconcileLine } from "@/domain/line/model";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 

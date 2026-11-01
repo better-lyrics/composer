@@ -2,27 +2,15 @@
 // users run locally to extract YouTube audio through their residential IP.
 // See `experiments/composer-bridge/README.md` for what the binary is.
 
+import { composeAbortSignals } from "@/utils/abort-signals";
+import { stripTrailingSlashes } from "@/utils/url";
+
 const DEFAULT_BRIDGE_URL = "http://localhost:7777";
+const BRIDGE_REPO_URL = "https://github.com/better-lyrics/composer-bridge";
 const HEALTH_QUERY_KEY = "composer-bridge-health";
 const HEALTH_TIMEOUT_MS = 1500;
 const AUDIO_TIMEOUT_MS = 5 * 60 * 1000;
 const THUMB_TIMEOUT_MS = 15 * 1000;
-
-// composeAbortSignals returns an AbortSignal that aborts when EITHER input
-// aborts. Falls back to a manual listener pair when AbortSignal.any is missing
-// so a caller-provided signal still propagates to the underlying fetch.
-function composeAbortSignals(a: AbortSignal | undefined, b: AbortSignal): AbortSignal {
-  if (!a) return b;
-  const composed = AbortSignal.any?.([a, b]);
-  if (composed) return composed;
-  const local = new AbortController();
-  const abortLocal = () => local.abort();
-  if (a.aborted) local.abort();
-  else a.addEventListener("abort", abortLocal, { once: true });
-  if (b.aborted) local.abort();
-  else b.addEventListener("abort", abortLocal, { once: true });
-  return local.signal;
-}
 
 interface BridgeHealth {
   bridge: string;
@@ -52,7 +40,7 @@ class BridgeError extends Error {
 }
 
 function normalizeBaseUrl(url: string): string {
-  return url.replace(/\/+$/, "");
+  return stripTrailingSlashes(url);
 }
 
 // decodeHeader undoes the percent-encoding the bridge applies to UTF-8 header
@@ -151,6 +139,10 @@ function buildBridgeAudioFile(buffer: ArrayBuffer, mimeType: string, videoId: st
   return new File([buffer], `${videoId}.${extensionForBridgeMime(mimeType)}`, { type: mimeType });
 }
 
+function isBridgeUnreachable(error: unknown): boolean {
+  return error instanceof BridgeError && error.code === "unreachable";
+}
+
 function formatBridgeErrorForToast(err: unknown): string {
   if (err instanceof BridgeError) {
     switch (err.code) {
@@ -168,6 +160,7 @@ function formatBridgeErrorForToast(err: unknown): string {
 }
 
 export {
+  BRIDGE_REPO_URL,
   DEFAULT_BRIDGE_URL,
   HEALTH_QUERY_KEY,
   BridgeError,
@@ -175,7 +168,7 @@ export {
   getAudioFromBridge,
   getThumbFromBridge,
   formatBridgeErrorForToast,
-  composeAbortSignals,
+  isBridgeUnreachable,
   normalizeBaseUrl,
   decodeHeader,
   extensionForBridgeMime,

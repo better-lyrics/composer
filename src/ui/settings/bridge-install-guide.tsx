@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { IconCheck, IconCopy, IconExternalLink, IconRefresh } from "@tabler/icons-react";
 import { Button } from "@/ui/button";
 import { Scroll } from "@/ui/scroll";
+import { BRIDGE_REPO_URL } from "@/utils/composer-bridge-api";
+import { IconCheck, IconCopy, IconExternalLink, IconRefresh } from "@tabler/icons-react";
+import { useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
-const REPO_URL = "https://github.com/better-lyrics/composer-bridge";
-const RELEASES_URL = `${REPO_URL}/releases/latest`;
+const RELEASES_URL = `${BRIDGE_REPO_URL}/releases/latest`;
 const INSTALL_CMD = `curl -fsSL ${RELEASES_URL}/download/install.sh | sh`;
 const COPIED_RESET_MS = 1800;
 
@@ -33,7 +33,7 @@ const InstallCommand: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-composer-bg-dark border border-composer-border">
+    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-composer-bg-dark border border-(--edge)">
       <Scroll className="flex-1 min-w-0" autoHide="leave">
         <code className="block font-mono text-[11px] text-composer-text-secondary select-text whitespace-nowrap">
           {INSTALL_CMD}
@@ -60,7 +60,7 @@ const BridgeInstallGuide: React.FC<BridgeInstallGuideProps> = ({ onCheckNow }) =
       <p>
         Open Terminal (macOS or Linux) and paste the command below to install{" "}
         <a
-          href={REPO_URL}
+          href={BRIDGE_REPO_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="underline underline-offset-2 transition-colors hover:text-composer-text"

@@ -1,24 +1,24 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { Agent } from "@/domain/agent/model";
-import { reconcileLine, type LooseLine } from "@/domain/line/model";
+import { agentIdAt, createPerformerAgents } from "@/domain/agent/performer-agents";
+import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import { matchAllLineHeaders, matchAllWordTags, stripWordTags } from "@/domain/lyrics-file/qrc-syntax";
+import { matchAllLineHeaders, matchAllWordTags, rawLyricContent, stripWordTags } from "@/domain/lyrics-file/qrc-syntax";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { WordTiming } from "@/domain/word/timing";
 import {
+  MS_PER_SECOND,
   creditExtraKey,
   creditValue,
   decodeCredits,
   isCreditLine,
-  isGroupPerformerName,
   isQrcTitleLine,
   isWritingCreditKey,
-  MS_PER_SECOND,
   parseHeaderTags,
   readSingerMarker,
 } from "@/utils/lyrics-parsers/qrc-metadata";
-import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
+import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { getSplitCharacter } from "@/utils/split-character";
 import { parseXmlDocument } from "@/utils/xml-document";
 
@@ -55,10 +55,7 @@ function extractLyricContent(content: string): string {
   if (!content.includes("<QrcInfos")) return content;
 
   const parsed = parseXmlDocument(content);
-  if (!parsed.ok) {
-    console.warn("[Composer] QRC document is not well-formed XML, reading it as a raw body");
-    return content;
-  }
+  if (!parsed.ok) return rawLyricContent(content) ?? content;
 
   return parsed.doc.querySelector("[LyricContent]")?.getAttribute("LyricContent") ?? "";
 }
@@ -137,38 +134,13 @@ function shiftQrcLine(line: QrcLine, offsetSeconds: number): QrcLine {
 
 // -- QRC semantics ------------------------------------------------------------
 
-function agentIdAt(index: number): string {
-  return `v${index + 1}`;
-}
-
-// A line carries one agent id, so a combination is an agent of its own, keyed by its sorted
-// case-folded members joined on the slash no member can contain: casing drift and a reordering
-// both resolve to one agent, while the display name keeps the order the document first wrote.
-function ensureAgent(performers: string[], agents: Agent[], byKey: Map<string, Agent>): Agent {
-  const key = performers
-    .map((performer) => performer.toLowerCase())
-    .toSorted()
-    .join("/");
-  const existing = byKey.get(key);
-  if (existing) return existing;
-
-  const agent: Agent = {
-    id: agentIdAt(agents.length),
-    type: performers.length > 1 || isGroupPerformerName(performers[0]) ? "group" : "person",
-    name: performers.join(", "),
-  };
-  agents.push(agent);
-  byKey.set(key, agent);
-  return agent;
-}
-
 // Peels the non-lyric content QQ mixes into the lyrics off in one walk: the
 // credits block, the title line and the singer markers.
 function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMetadata>): QrcPartition {
   const lines: LooseLine[] = [];
   const creditsByKey = new Map<string, string>();
-  const agents: Agent[] = [];
-  const agentsByKey = new Map<string, Agent>();
+  const performerAgents = createPerformerAgents();
+  const agents = performerAgents.agents;
   let currentAgentId = agentIdAt(0);
 
   for (const line of parsed) {
@@ -191,9 +163,9 @@ function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMet
       // Lines already emitted predate every marker, so they belong to an unnamed
       // voice rather than to the first singer the document happens to announce.
       if (agents.length === 0 && lines.length > 0 && DEFAULT_AGENT_NAME) {
-        ensureAgent([DEFAULT_AGENT_NAME], agents, agentsByKey);
+        performerAgents.agentFor([DEFAULT_AGENT_NAME]);
       }
-      currentAgentId = ensureAgent(performers, agents, agentsByKey).id;
+      currentAgentId = performerAgents.agentFor(performers).id;
       continue;
     }
 

@@ -2,7 +2,8 @@ import { DragOverlay } from "@dnd-kit/core";
 import type { LyricLine } from "@/domain/line/model";
 import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import { cn } from "@/utils/cn";
-import { BLOCK_INSET_PX, bgTrackHeight } from "@/views/timeline/row-geometry";
+import { type WordTrackType, bgTrackHeight, wordInsetPx } from "@/views/timeline/row-geometry";
+import { SYLLABLE_RADIUS } from "@/views/timeline/syllable-radius";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
@@ -14,6 +15,7 @@ interface DragGhostCell {
   width: number;
   height: number;
   syllablePosition: SyllablePosition;
+  lane: WordTrackType;
 }
 
 interface DragGhostProps {
@@ -24,15 +26,6 @@ interface DragGhostProps {
   isSnapped: boolean;
 }
 
-// -- Constants -----------------------------------------------------------------
-
-const GHOST_SYLLABLE_RADIUS: Record<SyllablePosition, string> = {
-  none: "rounded-xl",
-  first: "rounded-l-xl rounded-r-none",
-  middle: "rounded-none",
-  last: "rounded-r-xl rounded-l-none",
-};
-
 // -- Components ----------------------------------------------------------------
 
 const DragGhost: React.FC<DragGhostProps> = ({ cells, anchorWidth, anchorHeight, color, isSnapped }) => (
@@ -42,9 +35,10 @@ const DragGhost: React.FC<DragGhostProps> = ({ cells, anchorWidth, anchorHeight,
         key={`${cell.left}-${cell.top}`}
         data-word-block
         data-syllable-position={cell.syllablePosition}
+        data-lane={cell.lane}
         className={cn(
-          "absolute flex items-center justify-center text-xs text-composer-text truncate border pointer-events-none",
-          GHOST_SYLLABLE_RADIUS[cell.syllablePosition],
+          "word-face absolute flex items-center justify-center whitespace-nowrap pointer-events-none",
+          SYLLABLE_RADIUS[cell.syllablePosition],
           isSnapped && "is-snapped",
         )}
         style={{
@@ -52,15 +46,10 @@ const DragGhost: React.FC<DragGhostProps> = ({ cells, anchorWidth, anchorHeight,
           top: cell.top,
           width: cell.width,
           height: cell.height,
-          backgroundColor: `${color}50`,
-          borderColor: `${color}90`,
-          ...(cell.syllablePosition === "first" || cell.syllablePosition === "middle"
-            ? { borderRightStyle: "dashed" }
-            : {}),
-          ...(cell.syllablePosition === "middle" || cell.syllablePosition === "last" ? { borderLeftWidth: 0 } : {}),
+          "--agent": color,
         }}
       >
-        <span className="px-1 truncate">{cell.text}</span>
+        <span className="min-w-0 overflow-hidden whitespace-nowrap [text-overflow:inherit]">{cell.text}</span>
       </div>
     ))}
   </div>
@@ -70,23 +59,23 @@ interface HoverSizedDragGhostProps extends DragGhostProps {
   lines: LyricLine[];
 }
 
-function useHoveredTrackHeight(lines: LyricLine[]): number | null {
+function useHoveredBlockHeight(lines: LyricLine[]): number | null {
   return useTimelineStore((s) => {
     const hover = s.wordDragHover;
     const line = hover ? lines[hover.lineIndex] : undefined;
     if (!hover || !line) return null;
     const mainHeight = s.rowHeights[line.id] ?? s.defaultRowHeight;
-    return hover.track === "word" ? mainHeight : bgTrackHeight(line, mainHeight);
+    const trackHeight = hover.track === "word" ? mainHeight : bgTrackHeight(line, mainHeight);
+    return trackHeight - wordInsetPx(hover.track) * 2;
   });
 }
 
 const HoverSizedDragGhost: React.FC<HoverSizedDragGhostProps> = ({ lines, cells, anchorHeight, ...rest }) => {
-  const hoveredTrackHeight = useHoveredTrackHeight(lines);
+  const height = useHoveredBlockHeight(lines);
   const onAnchorTrack = cells.every((cell) => cell.top === 0);
-  if (!onAnchorTrack || hoveredTrackHeight === null) {
+  if (!onAnchorTrack || height === null) {
     return <DragGhost cells={cells} anchorHeight={anchorHeight} {...rest} />;
   }
-  const height = hoveredTrackHeight - BLOCK_INSET_PX * 2;
   return <DragGhost cells={cells.map((cell) => ({ ...cell, height }))} anchorHeight={height} {...rest} />;
 };
 
@@ -99,5 +88,5 @@ const TimelineDragOverlay: React.FC<{ children?: React.ReactNode }> = ({ childre
 
 // -- Exports -------------------------------------------------------------------
 
-export { DragGhost, HoverSizedDragGhost, TimelineDragOverlay };
 export type { DragGhostCell };
+export { DragGhost, HoverSizedDragGhost, TimelineDragOverlay };

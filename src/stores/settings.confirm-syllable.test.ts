@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import { DEFAULTS, useSettingsStore } from "@/stores/settings";
+import { beforeEach, describe, expect, it } from "vitest";
 
 describe("settings.confirmApplyToAllSyllableSplit", () => {
   beforeEach(() => {

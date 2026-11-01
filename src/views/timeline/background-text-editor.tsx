@@ -1,6 +1,6 @@
-import { backgroundFields, CLEARED_BACKGROUND } from "@/domain/line/background";
+import { backgroundFields, CLEARED_BACKGROUND, withSeededBackground } from "@/domain/line/background";
 import { useProjectStore } from "@/stores/project";
-import { createBgWordsFromLine } from "@/utils/sync-helpers";
+import { focusOnMount } from "@/utils/focus-on-mount";
 import { useCallback, useState } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -11,8 +11,6 @@ interface BackgroundTextEditorProps {
 }
 
 // -- Helpers -------------------------------------------------------------------
-
-const focusOnMount = (el: HTMLInputElement | null) => el?.focus();
 
 // -- Components ----------------------------------------------------------------
 
@@ -25,8 +23,10 @@ const BackgroundTextEditor: React.FC<BackgroundTextEditorProps> = ({ lineId, bac
     const trimmed = value.trim() || undefined;
     if (trimmed) {
       const line = useProjectStore.getState().lines.find((l) => l.id === lineId);
-      const bgWords = line ? createBgWordsFromLine({ ...line, backgroundText: trimmed }) : null;
-      updateLineWithHistory(lineId, backgroundFields({ text: trimmed, words: bgWords ?? undefined, source: "manual" }));
+      const bgWords = line
+        ? withSeededBackground({ ...line, backgroundText: trimmed, backgroundWords: undefined }).backgroundWords
+        : undefined;
+      updateLineWithHistory(lineId, backgroundFields({ text: trimmed, words: bgWords, source: "manual" }));
     } else {
       updateLineWithHistory(lineId, CLEARED_BACKGROUND);
     }

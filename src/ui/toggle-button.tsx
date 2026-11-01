@@ -1,5 +1,4 @@
 import { Button, type ButtonProps } from "@/ui/button";
-import { cn } from "@/utils/cn";
 
 // -- Types --------------------------------------------------------------------
 
@@ -13,9 +12,9 @@ interface ToggleButtonProps extends Omit<ButtonProps, "variant"> {
 
 const ToggleButton: React.FC<ToggleButtonProps> = ({ pressed, stateInLabel = false, className, ...props }) => (
   <Button
-    variant={pressed ? "primary" : "ghost"}
+    variant={pressed ? "latch" : "ghost"}
     aria-pressed={stateInLabel ? undefined : pressed}
-    className={cn(!pressed && "opacity-60", className)}
+    className={className}
     {...props}
   />
 );

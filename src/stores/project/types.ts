@@ -1,33 +1,30 @@
+import type { AlignmentReviewActions, AlignmentReviewState } from "@/stores/project/alignment-review-slice";
 import type { Agent } from "@/domain/agent/model";
+import type { RealignRefusal, SharingOutcome } from "@/domain/group/shared-placement";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
 import type { LineUpdate, LyricLine, RawLine } from "@/domain/line/model";
+import type { EditedLyrics } from "@/domain/project/edited-lyrics";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
+import type { ProjectTab } from "@/domain/project/tab";
+import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SnapPoint } from "@/domain/snap-point/model";
+import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Store-local Types --------------------------------------------------------
 
 type GranularityMode = "line" | "word";
 type EditorMode = "simple" | "advanced";
-type SimpleTab = "import" | "edit" | "languages" | "sync" | "timeline" | "preview" | "export";
-type TtmlEditState = { source: string; content: string } | null;
-
-interface SyllableSplitDefaults {
-  applyToAll: boolean;
-  caseInsensitive: boolean;
-}
-
-const DEFAULT_SYLLABLE_SPLIT_DEFAULTS: SyllableSplitDefaults = {
-  applyToAll: false,
-  caseInsensitive: false,
-};
+type TtmlEditState = { source: string; content: string; lyricsChanged?: true } | null;
 
 interface HistoryEntry {
   lines: LyricLine[];
   groups: LinkGroup[];
   agents: Agent[];
   customSnapPoints: SnapPoint[];
+  beatGrid: BeatGrid | null;
   timestamp: number;
 }
 
@@ -63,19 +60,26 @@ interface GroupsState {
 
 interface UiState {
   granularity: GranularityMode;
+  exportTiming: TimingGranularity;
   editorMode: EditorMode;
-  activeTab: SimpleTab;
+  activeTab: ProjectTab;
   syllableSplitDefaults: SyllableSplitDefaults;
   primingStripped: boolean;
+  primingCorrected: boolean;
 }
 
 interface DismissalsState {
   dismissedSuggestions: string[];
   dismissedExplicitSuggestions: string[];
+  dismissedMetadataMatches: string[];
 }
 
 interface SnapPointsState {
   customSnapPoints: SnapPoint[];
+}
+
+interface BeatGridState {
+  beatGrid: BeatGrid | null;
 }
 
 interface HistoryState {
@@ -102,6 +106,7 @@ interface MetadataActions {
     agents: Agent[] | undefined;
     metadata: Partial<ProjectMetadata>;
   }) => void;
+  applyEditedLyricsWithHistory: (edited: EditedLyrics) => void;
   markSongDetailsImported: () => void;
   restoreImportedMetadataKeys: (keys: MetadataKey[]) => void;
   clearUnexportedImport: () => void;
@@ -118,19 +123,25 @@ interface AgentActions {
 
 interface UiActions {
   setGranularity: (mode: GranularityMode) => void;
+  setExportTiming: (timing: TimingGranularity) => void;
   setEditorMode: (mode: EditorMode) => void;
-  setActiveTab: (tab: SimpleTab) => void;
+  setActiveTab: (tab: ProjectTab) => void;
   setSyllableSplitDefaults: (defaults: SyllableSplitDefaults) => void;
   setPrimingStripped: (value: boolean) => void;
+  setPrimingCorrected: (value: boolean) => void;
 }
 
 interface DismissalActions {
   dismissSuggestion: (fingerprint: string) => void;
   setDismissedSuggestions: (fingerprints: string[]) => void;
   clearDismissedSuggestions: () => void;
+  restoreSuggestions: (fingerprints: readonly string[]) => void;
   dismissExplicitSuggestion: (fingerprint: string) => void;
   setDismissedExplicitSuggestions: (fingerprints: string[]) => void;
   clearDismissedExplicitSuggestions: () => void;
+  restoreExplicitSuggestions: (fingerprints: readonly string[]) => void;
+  dismissMetadataMatch: (recordingId: string) => void;
+  setDismissedMetadataMatches: (recordingIds: string[]) => void;
 }
 
 interface SnapPointActions {
@@ -142,6 +153,13 @@ interface SnapPointActions {
   clearCustomSnapPoints: () => void;
 }
 
+interface BeatGridActions {
+  setBeatGrid: (grid: BeatGrid | null) => void;
+  applyBeatGridWithHistory: (grid: BeatGrid | null) => void;
+  nudgeBeatGridOffsetWithHistory: (grid: BeatGrid) => void;
+  clearBeatGrid: () => void;
+}
+
 interface HistoryActions {
   undo: () => void;
   redo: () => void;
@@ -151,12 +169,14 @@ interface HistoryActions {
   markDirty: () => void;
   markClean: () => void;
   commitPendingLineEdit: (baseline: LyricLine[], baselineWasDirty?: boolean) => void;
+  applyLineUpdatesToCurrentStep: (updates: LineUpdate[]) => void;
 }
 
 interface LineActions {
   setLines: (lines: RawLine[]) => void;
   // See the JSDoc on the implementation in lines-slice.ts before using this.
   setTransientLines: (lines: RawLine[]) => void;
+  restoreTransientLines: (lines: RawLine[]) => void;
   setLinesWithHistory: (lines: RawLine[], groups?: LinkGroup[]) => void;
   insertEmptyLineWithHistory: (anchorLineId: string, position: "above" | "below") => void;
   updateLine: (id: string, updates: Partial<LyricLine>, options?: { deriveText?: boolean }) => void;
@@ -196,13 +216,26 @@ interface GroupActions {
   setGroups: (groups: LinkGroup[]) => void;
   addGroup: (group: LinkGroup) => void;
   addGroupWithLines: (group: LinkGroup, lines: LyricLine[]) => void;
-  groupRepeatingSections: (starts: number[], length: number, options?: { label?: string; color?: string }) => void;
+  groupRepeatingSections: (
+    starts: number[],
+    length: number,
+    options?: { label?: string; color?: string; duration?: number },
+  ) => SharingOutcome;
   updateGroup: (id: string, updates: Partial<LinkGroup>) => void;
   removeGroup: (id: string) => void;
   addInstance: (groupId: string, structure: LineTemplate[], instanceStart: number, insertAtIndex?: number) => void;
   removeInstance: (groupId: string, instanceIdx: number) => void;
   detachLine: (lineId: string) => void;
-  shiftInstance: (groupId: string, instanceIdx: number, deltaSeconds: number) => void;
+  shiftInstance: (groupId: string, instanceIdx: number, deltaSeconds: number, duration: number) => void;
+  setInstanceOwnTiming: (groupId: string, instanceIdx: number, own: boolean, duration: number) => RealignRefusal | null;
+  shareGroupTiming: (groupId: string, duration: number) => SharingOutcome;
+  placeInstance: (
+    groupId: string,
+    instanceIdx: number,
+    start: number,
+    duration: number,
+    precedingUpdates?: LineUpdate[],
+  ) => boolean;
 }
 
 // -- Composed Store -----------------------------------------------------------
@@ -214,6 +247,8 @@ type ProjectState = MetadataState &
   UiState &
   DismissalsState &
   SnapPointsState &
+  BeatGridState &
+  AlignmentReviewState &
   HistoryState;
 
 type ProjectActions = MetadataActions &
@@ -221,9 +256,11 @@ type ProjectActions = MetadataActions &
   UiActions &
   DismissalActions &
   SnapPointActions &
+  BeatGridActions &
   HistoryActions &
   LineActions &
-  GroupActions;
+  GroupActions &
+  AlignmentReviewActions;
 
 type ProjectStore = ProjectState & ProjectActions;
 
@@ -231,8 +268,6 @@ type ProjectStore = ProjectState & ProjectActions;
 
 export type {
   GranularityMode,
-  SimpleTab,
-  SyllableSplitDefaults,
   TtmlEditState,
   MetadataState,
   SongIdentity,
@@ -242,6 +277,7 @@ export type {
   UiState,
   DismissalsState,
   SnapPointsState,
+  BeatGridState,
   HistoryEntry,
   HistoryState,
   MetadataActions,
@@ -249,10 +285,10 @@ export type {
   UiActions,
   DismissalActions,
   SnapPointActions,
+  BeatGridActions,
   HistoryActions,
   LineActions,
   GroupActions,
   ProjectState,
   ProjectStore,
 };
-export { DEFAULT_SYLLABLE_SPLIT_DEFAULTS };

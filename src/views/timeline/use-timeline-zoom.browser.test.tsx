@@ -1,6 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { render } from "@/test/render";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, MAX_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineZoom } from "@/views/timeline/use-timeline-zoom";
 import { useEffect, useRef } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -169,7 +169,7 @@ describe("useTimelineZoom", () => {
       let api!: HarnessApi;
       await render(
         <Harness
-          initialZoom={500}
+          initialZoom={MAX_ZOOM}
           initialScrollLeft={123}
           currentTime={5}
           containerWidth={400}
@@ -181,7 +181,7 @@ describe("useTimelineZoom", () => {
       );
       await expect.poll(() => api).toBeDefined();
       api.zoomIn();
-      expect(useTimelineStore.getState().zoom).toBe(500);
+      expect(useTimelineStore.getState().zoom).toBe(MAX_ZOOM);
       expect(api.container.scrollLeft).toBe(123);
     });
 

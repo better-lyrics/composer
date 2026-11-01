@@ -4,12 +4,17 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
-import { createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import type { SyncState } from "@/utils/sync-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
+
+// These tests cover gestures and holds after playback starts, not the count-in before it.
+beforeEach(() => {
+  useSettingsStore.setState({ syncCountIn: 0 });
+});
 
 const ORIGINAL_TEXT = "Hello world how are you";
 
@@ -35,6 +40,7 @@ async function mountSyncHandlers(opts: MountOptions = {}) {
   const getSyncState = () => syncState;
   const startTime = opts.initialCurrentTime ?? 0;
   const playingCalls: boolean[] = [];
+  if (opts.initialCurrentTime !== undefined) useAudioStore.setState({ currentTime: opts.initialCurrentTime });
 
   const { result, rerender, act } = await renderHook(
     (props?: HookProps) => {
@@ -44,7 +50,6 @@ async function mountSyncHandlers(opts: MountOptions = {}) {
         lines,
         syncState: state,
         setSyncState,
-        currentTime: props?.currentTime ?? startTime,
         editMode: opts.editMode ?? false,
         granularity: opts.granularity ?? "word",
         setShowPulse: noopBool,
@@ -54,7 +59,12 @@ async function mountSyncHandlers(opts: MountOptions = {}) {
     { initialProps: { syncState, currentTime: startTime } },
   );
 
-  return { result, rerender, act, getSyncState, playingCalls };
+  const rerenderAt = async (props: HookProps) => {
+    useAudioStore.setState({ currentTime: props.currentTime });
+    await rerender(props);
+  };
+
+  return { result, rerender: rerenderAt, act, getSyncState, playingCalls };
 }
 
 describe("useSyncHandlers.handleTap (word granularity)", () => {
@@ -240,6 +250,47 @@ describe("useSyncHandlers.handleSplitWord", () => {
     expect(saved.transliteration?.text).toBe("ildan eun");
     expect(saved.words?.map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
     expect(saved.words?.map((word) => word.transliterationJoinerAfter)).toEqual(["", " ", undefined]);
+  });
+
+  it("regression: keeps the chosen roman split when stored words lost their pieces (#283)", async () => {
+    const line: LyricLine = {
+      id: "l0",
+      agentId: "v1",
+      text: "Uh 일단은 나",
+      words: [
+        { text: "Uh ", begin: 0, end: 0.5 },
+        { text: "일단은 ", begin: 0.5, end: 1.5 },
+        { text: "나", begin: 1.5, end: 2 },
+      ],
+      transliteration: {
+        language: "ko-Latn",
+        text: "Uh  ildan eun  na",
+        segments: [{ original: "Uh 일단은 나", transliteration: "Uh  ildan eun  na" }],
+        origin: "google" as const,
+        sourceFingerprint: "source",
+      },
+    };
+    useProjectStore.getState().setLines([line]);
+    const { result, act } = await mountSyncHandlers();
+
+    await act(() => {
+      result.current.handleSplitWord(0, 1, [
+        {
+          text: "일",
+          begin: 0.5,
+          end: 0.8,
+          transliteration: "il",
+          transliterationJoinerAfter: "",
+          syllableGroupId: "g",
+        },
+        { text: "단은 ", begin: 0.8, end: 1.5, transliteration: "dan eun", syllableGroupId: "g" },
+      ]);
+    });
+
+    const saved = useProjectStore.getState().lines[0];
+    expect(saved.words?.map((word) => word.transliteration)).toEqual(["Uh", "il", "dan eun", "na"]);
+    expect(saved.transliteration?.text).toBe("Uh  ildan eun  na");
+    expect(saved.transliteration?.alignmentStatus).toBe("inferred");
   });
 });
 
@@ -976,7 +1027,7 @@ describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
 
   it("regression: starts at the navigated line instead of resetting to the top", async () => {
     useProjectStore.getState().setLines(twoSyncedLines());
-    const { result, act, getSyncState, playingCalls } = await mountSyncHandlers({
+    const { result, act, getSyncState } = await mountSyncHandlers({
       initialSyncState: { position: { lineIndex: 1, wordIndex: 0 }, isActive: false },
     });
 
@@ -984,7 +1035,7 @@ describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
 
     expect(getSyncState().position.lineIndex).toBe(1);
     expect(getSyncState().isActive).toBe(true);
-    expect(playingCalls).toContain(true);
+    expect(useAudioStore.getState().isPlaying).toBe(true);
   });
 
   it("preserves the navigated word index when starting", async () => {
@@ -1016,7 +1067,7 @@ describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
 });
 
 describe("sync-panel bg-init contract", () => {
-  it("shows seeded background words in the view without writing them to the store until the user edits one", async () => {
+  it("shows only stored background timing and never writes the store on render", async () => {
     const BG_TEXT = "ooh ahh";
     const ORIGINAL_LINE_TEXT = "Lead vocal melody line";
     useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 60, isPlaying: false });
@@ -1031,10 +1082,118 @@ describe("sync-panel bg-init contract", () => {
 
     const screen = await render(<SyncPanel />);
 
-    expect(screen.container.querySelector('button[title="Jump to this word"]')).not.toBeNull();
+    expect(screen.container.querySelector('button[title="Jump to this word"]')).toBeNull();
 
     expect(useProjectStore.getState().lines[0].backgroundText).toBe(BG_TEXT);
     expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_LINE_TEXT);
     expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
+  });
+});
+
+describe("useSyncHandlers with shared timing", () => {
+  function seedSharedChorus(sharesTiming: boolean): void {
+    const chorus = (id: string, instanceIdx: number, begin: number) =>
+      createLine({ id, text: "chorus", groupId: "g1", instanceIdx, templateLineIdx: 0, begin, end: begin + 2 });
+    useProjectStore.setState({
+      lines: [chorus("c0", 0, 3), createLine({ id: "x", text: "verse", begin: 6, end: 7 }), chorus("c1", 1, 10)],
+      groups: [createGroup({ id: "g1", ...(sharesTiming ? { sharesTiming: true } : {}) })],
+    });
+  }
+
+  const lineById = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id);
+
+  it("stops a nudge of the last synced line where the earliest instance reaches zero", async () => {
+    seedSharedChorus(true);
+    const { result, act } = await mountSyncHandlers({
+      granularity: "line",
+      initialSyncState: { position: { lineIndex: 3, wordIndex: 0 }, isActive: true },
+    });
+
+    await act(() => {
+      result.current.handleNudgeLastSynced(-5);
+    });
+
+    expect(lineById("c1")).toMatchObject({ begin: 7, end: 9 });
+    expect(lineById("c0")).toMatchObject({ begin: 0, end: 2 });
+  });
+
+  it("stops a first word nudge where the earliest instance reaches zero", async () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "c0",
+          text: "go",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [createWord({ text: "go", begin: 3, end: 4 })],
+        }),
+        createLine({
+          id: "c1",
+          text: "go",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [createWord({ text: "go", begin: 10, end: 11 })],
+        }),
+      ],
+      groups: [createGroup({ id: "g1", sharesTiming: true })],
+    });
+    const { result, act } = await mountSyncHandlers();
+
+    await act(() => {
+      result.current.handleNudgeWord(1, 0, -5);
+    });
+
+    expect(lineById("c1")?.words?.[0].begin).toBe(7);
+    expect(lineById("c0")?.words?.[0].begin).toBe(0);
+  });
+
+  it("stops a word end nudge where the latest instance reaches the song end", async () => {
+    useAudioStore.setState({ duration: 12 });
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "c0",
+          text: "go",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [createWord({ text: "go", begin: 3, end: 4 })],
+        }),
+        createLine({
+          id: "c1",
+          text: "go",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [createWord({ text: "go", begin: 10, end: 11 })],
+        }),
+      ],
+      groups: [createGroup({ id: "g1", sharesTiming: true })],
+    });
+    const { result, act } = await mountSyncHandlers();
+
+    await act(() => {
+      result.current.handleNudgeWordEnd(0, 0, 5);
+    });
+
+    expect(lineById("c1")?.words?.[0].end).toBe(12);
+    expect(lineById("c0")?.words?.[0].end).toBe(5);
+  });
+
+  it("regression: nudges a line of an old group by the whole delta", async () => {
+    seedSharedChorus(false);
+    const { result, act } = await mountSyncHandlers({
+      granularity: "line",
+      initialSyncState: { position: { lineIndex: 3, wordIndex: 0 }, isActive: true },
+    });
+
+    await act(() => {
+      result.current.handleNudgeLastSynced(-5);
+    });
+
+    expect(lineById("c1")).toMatchObject({ begin: 5, end: 7 });
+    expect(lineById("c0")).toMatchObject({ begin: 3, end: 5 });
   });
 });

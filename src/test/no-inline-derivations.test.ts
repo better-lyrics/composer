@@ -146,6 +146,13 @@ const FORBIDDEN: ForbiddenPattern[] = [
     ownerFile: "domain/line/tracks.ts",
     includeDomain: true,
   },
+  {
+    name: "inline live playback time",
+    regex: /\.currentTime\s*\?\?/,
+    use: "livePlaybackTime from @/stores/audio",
+    ownerFile: "stores/audio.ts",
+    includeDomain: true,
+  },
 ];
 
 describe("no common inline domain derivations outside src/domain", () => {

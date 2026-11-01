@@ -10,8 +10,13 @@ import { Button } from "@/ui/button";
 import { KeyBadge } from "@/ui/shortcut-reference";
 import { Modal } from "@/ui/modal";
 import { MOD_KEY } from "@/utils/platform";
-import { bindingFromKeyboardEvent, isReservedBrowserShortcut } from "@/utils/shortcut-matcher";
-import { useCallback, useEffect, useState } from "react";
+import {
+  bindingFromKeyboardEvent,
+  isCommandBinding,
+  isReservedBrowserShortcut,
+  reportedBinding,
+} from "@/utils/shortcut-matcher";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { HighlightMatches } from "@/ui/highlight-matches";
 import { useSettingsSearchQuery } from "@/ui/settings/settings-search-query";
 
@@ -39,6 +44,7 @@ function spokenKeys(keys: string[]): string {
 const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => {
   const searchQuery = useSettingsSearchQuery();
   const [captureState, setCaptureState] = useState<CaptureState>({ status: "idle" });
+  const pressedAsRef = useRef<ShortcutBinding | undefined>(undefined);
   const resetBinding = useShortcutBindingsStore((s) => s.resetBinding);
   const overrides = useShortcutBindingsStore((s) => s.overrides);
   const isOverridden = definition.id in overrides;
@@ -55,7 +61,7 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
 
   const replaceConflicts = useCallback(
     (binding: ShortcutBinding) => {
-      assignBinding(definition.id, binding);
+      assignBinding(definition.id, binding, pressedAsRef.current);
       setCaptureState({ status: "idle" });
     },
     [definition.id],
@@ -63,11 +69,11 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
 
   const applyCapturedBinding = useCallback(
     (binding: ShortcutBinding) => {
-      const conflicts = detectConflicts(definition.id, binding);
+      const conflicts = detectConflicts(definition.id, binding, pressedAsRef.current);
       if (conflicts.length > 0) {
         setCaptureState({ status: "conflict", newBinding: binding, conflicts });
       } else {
-        assignBinding(definition.id, binding);
+        assignBinding(definition.id, binding, pressedAsRef.current);
         setCaptureState({ status: "idle" });
       }
     },
@@ -88,6 +94,8 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
 
       const newBinding = bindingFromKeyboardEvent(e);
       if (!newBinding) return;
+      if (definition.needsCommandKey && !isCommandBinding(newBinding)) return;
+      pressedAsRef.current = reportedBinding(e, newBinding);
 
       if (isReservedBrowserShortcut(newBinding)) {
         setCaptureState({ status: "warning", newBinding });
@@ -99,7 +107,7 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [captureState.status, cancelCapture, applyCapturedBinding]);
+  }, [captureState.status, cancelCapture, applyCapturedBinding, definition.needsCommandKey]);
 
   return (
     <>
@@ -134,7 +142,11 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
 
       <Modal isOpen={captureState.status === "listening"} onClose={cancelCapture} title="Rebind shortcut">
         <div className="text-center py-4">
-          <p className="text-sm text-composer-text-secondary mb-1">Press a new key combination</p>
+          <p className="text-sm text-composer-text-secondary mb-1">
+            {definition.needsCommandKey
+              ? `Press a new key combination with ${MOD_KEY}, so it works while typing`
+              : "Press a new key combination"}
+          </p>
           <p className="text-xs text-composer-text-muted">Press Escape to cancel</p>
         </div>
       </Modal>

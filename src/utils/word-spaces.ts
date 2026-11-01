@@ -1,3 +1,4 @@
+import type { TimeRange } from "@/domain/group/shared-timing";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Constants -----------------------------------------------------------------
@@ -13,6 +14,12 @@ function trimTrailingSpaceFromLast(words: WordTiming[]): WordTiming[] {
   const next = words.slice();
   next[next.length - 1] = { ...last, text: last.text.trimEnd() };
   return next;
+}
+
+function withTrailingSpace(words: WordTiming[]): WordTiming[] {
+  const last = words.at(-1);
+  if (!last || last.text.endsWith(" ")) return words;
+  return [...words.slice(0, -1), { ...last, text: `${last.text} ` }];
 }
 
 function resolveOverlapsForward(words: WordTiming[], duration: number): WordTiming[] {
@@ -36,20 +43,20 @@ function findInsertionSlot(
   existingWords: WordTiming[],
   preferredTime: number,
   desiredDuration: number,
-  audioDuration: number,
+  range: TimeRange,
   minDuration: number = DEFAULT_MIN_WORD_DURATION,
 ): { begin: number; end: number } | null {
   const sorted = existingWords.toSorted((a, b) => a.begin - b.begin);
 
-  let gapStart = 0;
-  let gapEnd = audioDuration;
+  let gapStart = range.min;
+  let gapEnd = range.max;
 
   for (let i = 0; i < sorted.length; i++) {
     const word = sorted[i];
     if (preferredTime >= word.begin && preferredTime < word.end) {
       gapStart = word.end;
       const next = sorted[i + 1];
-      gapEnd = next ? next.begin : audioDuration;
+      gapEnd = next ? next.begin : range.max;
       break;
     }
     if (preferredTime < word.begin) {
@@ -57,14 +64,16 @@ function findInsertionSlot(
       break;
     }
     gapStart = word.end;
-    gapEnd = audioDuration;
+    gapEnd = range.max;
   }
 
+  gapStart = Math.max(gapStart, range.min);
+  gapEnd = Math.min(gapEnd, range.max);
   const gapSize = gapEnd - gapStart;
   if (gapSize < minDuration) return null;
 
   const actualDuration = Math.min(desiredDuration, gapSize);
-  let begin = preferredTime - actualDuration / 2;
+  let begin = preferredTime;
   let end = begin + actualDuration;
 
   if (begin < gapStart) {
@@ -81,4 +90,10 @@ function findInsertionSlot(
 
 // -- Exports -------------------------------------------------------------------
 
-export { DEFAULT_MIN_WORD_DURATION, trimTrailingSpaceFromLast, resolveOverlapsForward, findInsertionSlot };
+export {
+  DEFAULT_MIN_WORD_DURATION,
+  trimTrailingSpaceFromLast,
+  resolveOverlapsForward,
+  findInsertionSlot,
+  withTrailingSpace,
+};

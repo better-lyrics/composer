@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { describe, expect, it } from "vitest";
 
 function findButton(pattern: RegExp): HTMLButtonElement | undefined {
   return Array.from(document.querySelectorAll("button")).find((b) => pattern.test(b.textContent ?? ""));
@@ -45,7 +45,7 @@ describe("TimelineContextMenu", () => {
     openWordContextMenu(line.id);
     await render(<TimelineContextMenu />);
     expect(useTimelineStore.getState().contextMenu).not.toBeNull();
-    document.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
     expect(useTimelineStore.getState().contextMenu).toBeNull();
   });
 
@@ -406,5 +406,33 @@ describe("TimelineContextMenu · add word on a bg track with untimed text", () =
       await render(<TimelineContextMenu />);
       expect(findButton(/^Group/)?.textContent).toContain("Group 4 lines (incl. 2 gaps)");
     });
+  });
+
+  it("copies a word from its menu and pastes it where the empty track was right-clicked", async () => {
+    const source = createLine({ words: [createWord({ text: "hi", begin: 0, end: 1 })] });
+    const target = createLine({ text: "" });
+    useAudioStore.setState({ duration: 30 });
+    useProjectStore.setState({ lines: [source, target] });
+    useTimelineStore.setState({ clipboard: null, pasteMode: { status: "idle" } });
+    openWordContextMenu(source.id);
+    await render(<TimelineContextMenu />);
+
+    await expect.poll(() => findButton(/^Copy word/)).toBeDefined();
+    findButton(/^Copy word/)?.click();
+    await expect.poll(() => useTimelineStore.getState().clipboard?.entries.length).toBe(1);
+
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "track", lineId: target.id, lineIndex: 1, time: 5, type: "word" },
+      },
+    });
+    await expect.poll(() => findButton(/^Paste here/)).toBeDefined();
+    findButton(/^Paste here/)?.click();
+
+    await expect
+      .poll(() => useProjectStore.getState().lines[1].words?.[0])
+      .toMatchObject({ text: "hi", begin: 5, end: 6 });
   });
 });

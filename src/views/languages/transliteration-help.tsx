@@ -10,21 +10,19 @@ const TransliterationHelp: React.FC = () => (
     trigger={
       <IconButton
         label="Transliteration formatting help"
-        icon={<IconInfoCircle className="size-3.5" />}
+        icon={<IconInfoCircle className="size-[13px]" />}
         variant="ghost"
         className="size-5 rounded-md"
       />
     }
   >
-    <div className="w-72 p-3 select-text">
-      <p className="mb-1.5 text-sm font-medium">Spacing in transliterations</p>
-      <p className="text-xs leading-5 text-composer-text-secondary text-pretty">
-        One space is a pronunciation break. Two spaces are a word break.
-      </p>
-      <code className="block p-2 mt-2 font-mono text-xs border rounded-md bg-composer-input border-composer-border">
+    <div className="flex w-72 flex-col gap-2 p-3.5 text-[12.5px] leading-[1.55] text-(--label) select-text">
+      <p className="text-[13.5px] font-bold text-composer-text">Spacing in transliterations</p>
+      <p className="text-pretty">One space is a pronunciation break. Two spaces are a word break.</p>
+      <code className="block px-2.5 py-2 font-mono text-xs font-medium leading-normal text-composer-text border rounded-lg bg-(--well) border-(--edge)">
         geol eum eun&nbsp;&nbsp;Like&nbsp;&nbsp;a&nbsp;&nbsp;dance
       </code>
-      <p className="mt-2 text-xs leading-5 text-composer-text-muted text-pretty">
+      <p className="text-(--muted) text-pretty">
         Spaces show but aren't timed. Dashes stay as text. Set timing with Align.
       </p>
     </div>

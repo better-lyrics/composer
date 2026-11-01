@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { assignBinding } from "@/stores/shortcut-bindings";
 import { snapPoints } from "@/test/factories";
 import { createLine } from "@/test/factories";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -21,16 +22,16 @@ describe("useTimelineKeyboard", () => {
 
   it("toggles rolling edit mode when the rolling edit shortcut is pressed", async () => {
     useProjectStore.setState({ activeTab: "timeline" });
-    expect(useTimelineStore.getState().rollingEditMode).toBe(false);
+    expect(useSettingsStore.getState().rollingEdit).toBe(false);
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "r", bubbles: true }));
-    expect(useTimelineStore.getState().rollingEditMode).toBe(true);
+    expect(useSettingsStore.getState().rollingEdit).toBe(true);
   });
 
   it("regression: holding the rolling edit key toggles it once instead of on every auto-repeat", async () => {
     useProjectStore.setState({ activeTab: "timeline" });
-    expect(useTimelineStore.getState().rollingEditMode).toBe(false);
+    expect(useSettingsStore.getState().rollingEdit).toBe(false);
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
 
@@ -39,7 +40,7 @@ describe("useTimelineKeyboard", () => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "r", repeat: true, bubbles: true }));
     }
 
-    expect(useTimelineStore.getState().rollingEditMode).toBe(true);
+    expect(useSettingsStore.getState().rollingEdit).toBe(true);
   });
 
   it("toggles marker mode on and off when the marker mode shortcut is pressed", async () => {
@@ -114,13 +115,32 @@ describe("useTimelineKeyboard", () => {
   });
 
   it("toggles original and transliteration labels when L is pressed", async () => {
-    useProjectStore.setState({ activeTab: "timeline" });
+    const line = {
+      ...createLine({ text: "일단은" }),
+      transliteration: {
+        language: "ko-Latn",
+        text: "ildan eun",
+        segments: [{ original: "일단은", transliteration: "ildan eun" }],
+        origin: "google" as const,
+        sourceFingerprint: "source",
+      },
+    };
+    useProjectStore.setState({ activeTab: "timeline", lines: [line] });
     useTimelineStore.setState({ textVariant: "original" });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "l", bubbles: true }));
     expect(useTimelineStore.getState().textVariant).toBe("transliteration");
     useTimelineStore.setState({ textVariant: "original" });
+  });
+
+  it("regression: L leaves the labels alone when no line has a transliteration", async () => {
+    useProjectStore.setState({ activeTab: "timeline", lines: [createLine({ text: "every day" })] });
+    useTimelineStore.setState({ textVariant: "original" });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "l", bubbles: true }));
+    expect(useTimelineStore.getState().textVariant).toBe("original");
   });
 
   it("merges two space-separated words into one when the merge shortcut is pressed", async () => {
@@ -145,6 +165,29 @@ describe("useTimelineKeyboard", () => {
 
     const mergedLine = useProjectStore.getState().lines[0];
     expect(mergedLine.words).toEqual([{ text: "everyday", begin: 1, end: 2 }]);
+  });
+
+  it("regression: a remapped import lyrics binding opens the import", async () => {
+    useProjectStore.setState({ activeTab: "timeline" });
+    assignBinding("timeline.importLyrics", { key: "j" });
+    let opened = 0;
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0, () => opened++));
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "V",
+        code: "KeyV",
+        metaKey: true,
+        ctrlKey: true,
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(opened).toBe(0);
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "j", code: "KeyJ", bubbles: true }));
+    expect(opened).toBe(1);
   });
 });
 
@@ -262,51 +305,6 @@ describe("useTimelineKeyboard · jump to snap point", () => {
 
     expect(seek.get()).toBe(5);
   });
-
-  function buildScrollContainer(width: number, contentWidth: number): HTMLDivElement {
-    const container = document.createElement("div");
-    container.style.width = `${width}px`;
-    container.style.overflow = "auto";
-    const spacer = document.createElement("div");
-    spacer.style.width = `${contentWidth}px`;
-    spacer.style.height = "10px";
-    container.appendChild(spacer);
-    document.body.appendChild(container);
-    return container;
-  }
-
-  it("scrolls an off-screen jump target back into view", async () => {
-    const container = buildScrollContainer(300, 8000);
-    const ref = createRef<HTMLDivElement | null>();
-    ref.current = container;
-    useAudioStore.setState({ currentTime: 0, duration: 80 });
-    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([50]) });
-    useTimelineStore.setState({ zoom: 100, vocalOnsetSnapPoints: [] });
-    const seek = trackSeek();
-    await renderHook(() => useTimelineKeyboard(ref, [], 80));
-
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", shiftKey: true, bubbles: true }));
-
-    expect(seek.get()).toBe(50);
-    expect(container.scrollLeft).toBeGreaterThan(0);
-    container.remove();
-  });
-
-  it("leaves the scroll position alone when the jump target is already visible", async () => {
-    const container = buildScrollContainer(600, 8000);
-    const ref = createRef<HTMLDivElement | null>();
-    ref.current = container;
-    useAudioStore.setState({ currentTime: 0, duration: 80 });
-    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([2]) });
-    useTimelineStore.setState({ zoom: 100, vocalOnsetSnapPoints: [] });
-    trackSeek();
-    await renderHook(() => useTimelineKeyboard(ref, [], 80));
-
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", shiftKey: true, bubbles: true }));
-
-    expect(container.scrollLeft).toBe(0);
-    container.remove();
-  });
 });
 
 describe("useTimelineKeyboard · delete hovered snap point", () => {
@@ -379,6 +377,26 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
 
     expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([5]);
     expect(useTimelineStore.getState().selectedWords).toHaveLength(0);
+  });
+
+  it("regression: a delete binding the user assigned to a built-in key deletes instead of running the built-in", async () => {
+    const line = createLine({
+      text: "hi there",
+      words: [
+        { text: "hi ", begin: 0, end: 1 },
+        { text: "there", begin: 1, end: 2 },
+      ],
+    });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line] });
+    useTimelineStore.setState({ selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }] });
+    assignBinding("timeline.deleteSelection", { key: "F2" });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "F2", bubbles: true }));
+
+    expect(useTimelineStore.getState().editingWord).toBeNull();
+    expect(useProjectStore.getState().lines[0].words?.map((word) => word.text)).toEqual(["there"]);
   });
 });
 

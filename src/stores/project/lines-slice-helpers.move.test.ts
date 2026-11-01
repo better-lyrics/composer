@@ -1,9 +1,9 @@
+import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { applyMoveFromBg, applyMoveToBg } from "@/stores/project/lines-slice-helpers";
 /**
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
-import { applyMoveFromBg, applyMoveToBg } from "@/stores/project/lines-slice-helpers";
 
 // -- Helpers -------------------------------------------------------------------
 

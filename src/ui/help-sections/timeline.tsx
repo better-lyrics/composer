@@ -1,20 +1,19 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { PROSE } from "@/ui/typography";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { TimelineExtras } from "@/ui/help-sections/timeline-extras";
-import { ALT_KEY, MOD_KEY } from "@/utils/platform";
-import { SettingLink } from "@/ui/setting-link";
 import { HelpTopic } from "@/ui/help-topic";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { SettingLink } from "@/ui/setting-link";
+import { PROSE } from "@/ui/typography";
+import { ALT_KEY, MOD_KEY } from "@/utils/platform";
 
 // -- Timeline -----------------------------------------------------------------
 
 const TimelineSection: React.FC = () => (
-  <div className="space-y-5">
+  <div className="space-y-[22px] max-w-[68ch]">
     <p className={PROSE}>
-      The Timeline is where you do the detailed work. While the Sync tab is great for tapping out rough timing, Timeline
-      gives you full control over every word. You can drag words to reposition them, resize their boundaries, split
-      words and syllables, merge blocks, mark explicit words, copy and paste across lines, and more. If you've used a
-      DAW or video editor before, this will feel familiar.
+      The Timeline is where you do the detailed work. Sync is for tapping out rough timing; here you edit every word.
+      Drag words to move them, resize their boundaries, split words and syllables, merge blocks, mark explicit words,
+      and copy and paste across lines. If you've used a DAW or video editor before, this will feel familiar.
     </p>
 
     <HelpTopic title="Layout">
@@ -26,7 +25,7 @@ const TimelineSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Navigation">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           A plain scroll wheel scrolls vertically through the lines. To move through time, scroll horizontally with a
           trackpad gesture.
@@ -37,7 +36,7 @@ const TimelineSection: React.FC = () => (
         </li>
         <li>
           Scroll the wheel while the cursor is over the waveform strip to scrub the playhead through time, and the view
-          follows it. This works whichever way the "Scroll wheel scrolls timeline" setting is set.
+          follows it. This works with either wheel setting.
         </li>
         <li>
           {MOD_KEY} + scroll wheel to zoom in and out. Zoom anchors under the cursor. The header zoom buttons (and the
@@ -58,20 +57,48 @@ const TimelineSection: React.FC = () => (
     <HelpTopic title="Audio scrub preview">
       <p className={PROSE}>
         When you scrub the playhead (drag it, or scroll the wheel over the waveform), Composer plays a short bit of
-        audio at the playhead position, at normal pitch. It helps you find a specific word by ear without having to
-        press play. Faster scrubs play more snippets, slower scrubs play fewer. The preview matches your main volume and
-        stays silent when the audio is muted. If it gets in the way, turn off{" "}
-        <SettingLink setting="audioScrubPreview" />.
+        audio at the playhead position, at normal pitch. Use it to find a word by ear without pressing play. Faster
+        scrubs play more snippets, slower scrubs play fewer. The preview matches your main volume and stays silent when
+        the audio is muted. If it gets in the way, turn off <SettingLink setting="audioScrubPreview" />.
       </p>
       <p className={`${PROSE} mt-2`}>
         If you've separated the song into stems, scrubbing follows the stem you have selected: pick "Vocals" from the
-        stem dropdown and the scrub previews vocals only, which makes it much easier to pin down a syllable boundary.
-        The full track plays back as normal regardless of the stem choice.
+        stem dropdown and the scrub previews vocals only, so syllable boundaries are easier to hear. Playback follows
+        the same stem, and <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleStem")} /> switches between the
+        original and the last stem you used.
+      </p>
+    </HelpTopic>
+
+    <HelpTopic title="Play a selection">
+      <p className={PROSE}>
+        Select words or a line and press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.playSelection")} /> to
+        hear only that part, or right-click it and use the <strong>Play</strong> item at the top of the menu. Press{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleLoop")} /> to loop it instead, or switch a play to a
+        loop and back with <strong>Loop</strong> in the strip. The loop reads the timing again on every pass, so a nudge
+        or a dragged edge is audible on the next one. It keeps looping when you switch tabs, so you can watch it in
+        Preview. The Timeline tab shows a loop icon while it runs, and{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("global.toggleLoop")} /> turns the loop on or off from any tab.
+      </p>
+      <p className={`${PROSE} mt-2`}>
+        A little audio before and after the selection plays too, so you hear whether a word runs into its neighbours.
+        Change the amount, or set it to 0, with <SettingLink setting="selectionLeadIn" />. Click <strong>Stop</strong>{" "}
+        in the strip, clear the selection, or seek outside the range to end it.
+      </p>
+    </HelpTopic>
+
+    <HelpTopic title="Loop a region">
+      <p className={PROSE}>
+        Drag across the waveform to mark a region. Loop turns on and the playhead moves to the start of the region, so{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("global.playPause")} /> loops it. If the song is already playing, it
+        jumps into the region and loops right away. The edges snap to pins and vocal onsets like the playhead; hold{" "}
+        {MOD_KEY} to place them freely. Drag an edge to change the region, or turn <strong>Loop</strong> off in the
+        strip to play it once. Click the waveform, press Esc, click <strong>Clear</strong>, or select words to remove
+        it.
       </p>
     </HelpTopic>
 
     <HelpTopic title="Selecting words">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>Click a word block to select it. {MOD_KEY} + Click to add or remove from selection.</li>
         <li>Shift + Click a syllable to select every syllable in that word's group at once.</li>
         <li>Click and drag on empty space to marquee-select multiple words.</li>
@@ -88,7 +115,7 @@ const TimelineSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Editing words">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>Double-click a word block to edit its text inline. Press Enter to confirm, Escape to cancel.</li>
         <li>Double-click on empty track space to create a new word at that position.</li>
         <li>
@@ -120,13 +147,18 @@ const TimelineSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Copy, cut, paste">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
-          {MOD_KEY} + C / X / V work as expected. When you paste, a ghost preview appears. Click to place the pasted
-          words.
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.copy")} />,{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.cut")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.paste")} /> copy, cut and paste words. When you paste, a
+          ghost preview appears. Click to place the pasted words.
         </li>
         <li>{ALT_KEY} + drag selected words to duplicate them.</li>
-        <li>Press Delete or Backspace to remove selected words.</li>
+        <li>
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.deleteSelection")} /> or{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.deleteSelectionAlternate")} /> to remove selected words.
+        </li>
       </ul>
     </HelpTopic>
 
@@ -136,7 +168,7 @@ const TimelineSection: React.FC = () => (
         background track, or on the background track of its own line. Multi-select moves the whole selection at once:
         each word keeps its offset from the one you grabbed, and linked syllables stay joined.
       </p>
-      <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) mt-1.5 space-y-1`}>
         <li>Keep the word on its own line and the same drag reorders it within that row instead.</li>
         <li>
           Dropping a word onto a background track converts its role, and the destination line gets <strong>x-bg</strong>{" "}
@@ -151,7 +183,7 @@ const TimelineSection: React.FC = () => (
     </HelpTopic>
 
     <HelpTopic title="Boundary dragging">
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           Two flush syllables share one boundary: drag either edge and both move, staying flush. Once a gap opens, each
           edge drags on its own. Turn on <SettingLink setting="syllablesFollowRolling" /> to join them only while
@@ -161,13 +193,12 @@ const TimelineSection: React.FC = () => (
           Hold <strong>{ALT_KEY}</strong> while dragging to flip the current mode: flush syllables open a gap, gapped
           syllables snap back together, and separate words move as one.
         </li>
-        <li>You can toggle {ALT_KEY} mid-drag to switch modes on the fly.</li>
+        <li>Press or release {ALT_KEY} mid-drag to switch modes.</li>
         <li>
           Turn on <strong>Rolling</strong> in the toolbar (or press{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleRollingEdit")} />) for rolling edits. When it's
           on, dragging a flush boundary between two words moves both words together: the shared boundary shifts, the
-          outer edges stay put, and the combined duration is preserved. {ALT_KEY} still inverts conjoin for that one
-          drag.
+          outer edges stay put, and the combined duration is preserved. {ALT_KEY} still flips conjoin for that one drag.
         </li>
       </ul>
     </HelpTopic>
@@ -175,10 +206,10 @@ const TimelineSection: React.FC = () => (
     <HelpTopic title="Snap (magnet)">
       <p className={PROSE}>
         Drag or resize a word and its edges lock onto nearby anchors: the begin and end of any other word (main or
-        background track), line edges for line-synced lines, and the playhead. A yellow halo appears on the moving block
-        while snapped, and a thin dashed line marks the anchor on the timeline.
+        background track), line edges for line-synced lines, and the playhead. A halo appears on the moving block while
+        snapped, and a thin dashed line marks the anchor on the timeline.
       </p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleSnap")} /> or click the magnet button in the
           toolbar to toggle snap. The setting persists across sessions.
@@ -188,8 +219,9 @@ const TimelineSection: React.FC = () => (
           Release the key and snap re-engages.
         </li>
         <li>
-          Adjust the snap distance with <SettingLink setting="timelineSnapThreshold" />. Range is 4 to 24 pixels,
-          default 12.
+          Click the arrow next to the magnet to pick what snaps, including the playhead. <strong>Snap distance</strong>{" "}
+          in that menu sets how close an edge has to get to each one before it locks on. Settings has the same sliders,
+          starting with <SettingLink setting="snapDistanceWords" />.
         </li>
         <li>
           Snap won't push a block into a neighbor. If the closest anchor would cause overlap, it falls through to the
@@ -202,10 +234,11 @@ const TimelineSection: React.FC = () => (
       <p className={PROSE}>
         Two kinds of snap marker can sit over the waveform. Dashed guide lines are vocal onsets, which Composer detects
         from the separated vocal stem, so they only show up once you have split out vocals and turned on "Snap to vocal
-        onsets" in the stem dropdown. Solid pins are custom snap points you place yourself. Both pull word edges in the
-        way the magnet does, and custom points keep snapping even when Snap and onset snapping are both off.
+        onsets" in the stem dropdown (or <SettingLink setting="vocalOnsetSnap" />
+        ). Solid pins are custom snap points you place yourself. Both pull word edges in the way the magnet does, and
+        custom points keep snapping even when Snap and onset snapping are both off.
       </p>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+      <ul className={`${PROSE} list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
         <li>
           Click the pin button in the toolbar or press{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleMarkerMode")} /> to enter marker mode. The
@@ -233,8 +266,8 @@ const TimelineSection: React.FC = () => (
           and the onset tucks behind the pin so you do not see two markers stacked.
         </li>
         <li>
-          Hover a pin to see its time. The trash icon to delete it sits under the head, or press Delete (or Backspace)
-          while hovering to remove it.
+          Hover a pin to see its time. The trash icon to delete it sits under the head, or press{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.deleteSelection")} /> while hovering to remove it.
         </li>
         <li>
           Turn on <SettingLink setting="snapPlayheadToPoints" /> (on by default), and clicking or dragging the playhead

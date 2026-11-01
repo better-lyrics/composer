@@ -1,4 +1,5 @@
 import type { WordTiming } from "@/domain/word/timing";
+import { useAlignmentStore } from "@/stores/alignment";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-options";
@@ -88,6 +89,9 @@ function useSyllableSplitterState({
     async (close: () => void) => {
       const store = useProjectStore.getState();
       store.setSyllableSplitDefaults({ applyToAll, caseInsensitive });
+      // With the alignment model kept in memory, the new syllables are timed from the audio.
+      const before = store.lines;
+      const retime = () => void useAlignmentStore.getState().retimeNewSyllables(before);
 
       if (applyToAll && identicalCount > 0) {
         const sourceText = word.text.trimEnd();
@@ -98,12 +102,14 @@ function useSyllableSplitterState({
           splitPoints,
           caseInsensitive,
         });
+        retime();
         setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
         close();
         return;
       }
 
       splitSingleWord();
+      retime();
       setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
       close();
     },

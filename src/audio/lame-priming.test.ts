@@ -35,6 +35,7 @@ function buildFrame(mode: Mode, encoderDelay: number, tag: "Xing" | "Info" = "In
   const tagOffset = tagOffsetFor(mode);
   const tagBytes = new TextEncoder().encode(tag);
   frame.set(tagBytes, tagOffset);
+  frame[tagOffset + 7] = 0x0f;
   const lameOffset = tagOffset + 0x78;
   const delayHigh = (encoderDelay >> 4) & 0xff;
   const mixed = ((encoderDelay & 0x0f) << 4) | 0;
@@ -71,59 +72,59 @@ function withId3v2Prefix(payload: Uint8Array, sizeBytes = 100): Uint8Array {
 describe("parseLamePriming", () => {
   it("returns samples 1105 + 528 and sampleRate 44100 for a CBR Info tag", () => {
     const frame = buildXingTagFrame(1105, "Info");
-    expect(parseLamePriming(frame.buffer)).toEqual({ samples: 1105 + 528, sampleRate: 44_100 });
+    expect(parseLamePriming(frame.buffer)).toMatchObject({ samples: 1105 + 528, sampleRate: 44_100 });
   });
 
   it("returns samples 2257 + 528 and sampleRate 44100 for a VBR Xing tag", () => {
     const frame = buildXingTagFrame(2257, "Xing");
-    expect(parseLamePriming(frame.buffer)).toEqual({ samples: 2257 + 528, sampleRate: 44_100 });
+    expect(parseLamePriming(frame.buffer)).toMatchObject({ samples: 2257 + 528, sampleRate: 44_100 });
   });
 
   it("skips an ID3v2 header before locating the frame", () => {
     const frame = buildXingTagFrame(1105, "Info");
     const withHeader = withId3v2Prefix(frame, 100);
-    expect(parseLamePriming(withHeader.buffer)).toEqual({ samples: 1105 + 528, sampleRate: 44_100 });
+    expect(parseLamePriming(withHeader.buffer)).toMatchObject({ samples: 1105 + 528, sampleRate: 44_100 });
   });
 });
 
 describe("parseLamePriming across MPEG versions and channel modes", () => {
   it("parses MPEG-1 mono with the Xing tag at offset 0x15", () => {
     const frame = buildFrame({ version: "mpeg1", channels: "mono" }, 576);
-    expect(parseLamePriming(frame.buffer)).toEqual({ samples: 576 + 528, sampleRate: 44_100 });
+    expect(parseLamePriming(frame.buffer)).toMatchObject({ samples: 576 + 528, sampleRate: 44_100 });
   });
 
   it("parses MPEG-2 stereo at 22050 Hz with the Xing tag at offset 0x15", () => {
     const frame = buildFrame({ version: "mpeg2", channels: "stereo" }, 480);
-    expect(parseLamePriming(frame.buffer)).toEqual({ samples: 480 + 528, sampleRate: 22_050 });
+    expect(parseLamePriming(frame.buffer)).toMatchObject({ samples: 480 + 528, sampleRate: 22_050 });
   });
 
   it("parses MPEG-2 mono at 22050 Hz with the Xing tag at offset 0x0D", () => {
     const frame = buildFrame({ version: "mpeg2", channels: "mono" }, 320);
-    expect(parseLamePriming(frame.buffer)).toEqual({ samples: 320 + 528, sampleRate: 22_050 });
+    expect(parseLamePriming(frame.buffer)).toMatchObject({ samples: 320 + 528, sampleRate: 22_050 });
   });
 
   it("parses MPEG-2.5 stereo at 11025 Hz with the Xing tag at offset 0x15", () => {
     const frame = buildFrame({ version: "mpeg25", channels: "stereo" }, 480);
-    expect(parseLamePriming(frame.buffer)).toEqual({ samples: 480 + 528, sampleRate: 11_025 });
+    expect(parseLamePriming(frame.buffer)).toMatchObject({ samples: 480 + 528, sampleRate: 11_025 });
   });
 });
 
 describe("parseLamePriming edge cases", () => {
   it("returns zero priming for non-MP3 bytes", () => {
     const bytes = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
-    expect(parseLamePriming(bytes.buffer)).toEqual({ samples: 0, sampleRate: 0 });
+    expect(parseLamePriming(bytes.buffer)).toMatchObject({ samples: 0, sampleRate: 0 });
   });
 
   it("returns zero priming when an MP3 frame header is present but no Xing/Info tag follows", () => {
     const frame = new Uint8Array(417);
     frame.set(buildMp3FrameHeader(), 0);
-    expect(parseLamePriming(frame.buffer)).toEqual({ samples: 0, sampleRate: 0 });
+    expect(parseLamePriming(frame.buffer)).toMatchObject({ samples: 0, sampleRate: 0 });
   });
 
   it("returns zero priming for a truncated buffer", () => {
     const frame = buildXingTagFrame(1105, "Info");
     const truncated = frame.slice(0, 20);
-    expect(parseLamePriming(truncated.buffer)).toEqual({ samples: 0, sampleRate: 0 });
+    expect(parseLamePriming(truncated.buffer)).toMatchObject({ samples: 0, sampleRate: 0 });
   });
 
   it("accepts the maximum valid 12-bit encoder delay without tripping the hard cap", () => {
@@ -132,16 +133,16 @@ describe("parseLamePriming edge cases", () => {
     const lameOffset = tagOffset + 0x78;
     frame[lameOffset + 0x15] = 0xff;
     frame[lameOffset + 0x16] = 0xf0;
-    expect(parseLamePriming(frame.buffer)).toEqual({ samples: 4095 + 528, sampleRate: 44_100 });
+    expect(parseLamePriming(frame.buffer)).toMatchObject({ samples: 4095 + 528, sampleRate: 44_100 });
   });
 
   it("accepts a Uint8Array directly", () => {
     const frame = buildXingTagFrame(1105, "Info");
-    expect(parseLamePriming(frame)).toEqual({ samples: 1105 + 528, sampleRate: 44_100 });
+    expect(parseLamePriming(frame)).toMatchObject({ samples: 1105 + 528, sampleRate: 44_100 });
   });
 
   it("returns zero priming for an empty buffer", () => {
-    expect(parseLamePriming(new ArrayBuffer(0))).toEqual({ samples: 0, sampleRate: 0 });
+    expect(parseLamePriming(new ArrayBuffer(0))).toMatchObject({ samples: 0, sampleRate: 0 });
   });
 });
 

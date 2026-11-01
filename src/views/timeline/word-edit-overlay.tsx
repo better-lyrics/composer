@@ -50,22 +50,30 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
       return true;
     };
 
-    if (findAndPosition()) return;
-
-    const frame = nextFrame(() => {
-      if (!findAndPosition()) clearEditingWord();
-    });
-    return () => cancelNextFrame(frame);
+    const followScroll = () => {
+      findAndPosition();
+    };
+    container.addEventListener("scroll", followScroll, { passive: true });
+    const frame = findAndPosition()
+      ? null
+      : nextFrame(() => {
+          if (!findAndPosition()) clearEditingWord();
+        });
+    return () => {
+      container.removeEventListener("scroll", followScroll);
+      if (frame !== null) cancelNextFrame(frame);
+    };
   }, [lineId, wordIndex, type, word, scrollContainerRef, clearEditingWord]);
 
+  const isPlaced = pos !== null;
   useEffect(() => {
-    if (!pos) return;
+    if (!isPlaced) return;
     const frame = nextFrame(() => {
       inputRef.current?.focus();
       inputRef.current?.select();
     });
     return () => cancelNextFrame(frame);
-  }, [pos]);
+  }, [isPlaced]);
 
   const handleCommit = useCallback(
     (value: string) => {

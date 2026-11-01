@@ -1,13 +1,13 @@
-import { createRef } from "react";
-import { describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
-import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
+import { createRef } from "react";
+import { describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -32,8 +32,8 @@ async function armTimeline(options: {
   const duration = options.duration ?? 10;
   useAudioStore.setState({ currentTime: options.currentTime, duration });
   useProjectStore.setState({ activeTab: "timeline", lines: [options.line] });
+  useSettingsStore.setState({ rollingEdit: options.rolling });
   useTimelineStore.setState({
-    rollingEditMode: options.rolling,
     selectedWords: [
       { lineId: options.line.id, lineIndex: 0, wordIndex: options.wordIndex, type: options.type ?? "word" },
     ],
@@ -42,16 +42,12 @@ async function armTimeline(options: {
   await renderHook(() => useTimelineKeyboard(scrollContainerRef, [options.line], duration));
 }
 
-async function armPlayhead(options: {
-  lines: LyricLine[];
-  currentTime: number;
-  rolling: boolean;
-  duration?: number;
-}) {
+async function armPlayhead(options: { lines: LyricLine[]; currentTime: number; rolling: boolean; duration?: number }) {
   const duration = options.duration ?? 10;
   useAudioStore.setState({ currentTime: options.currentTime, duration });
   useProjectStore.setState({ activeTab: "timeline", lines: options.lines });
-  useTimelineStore.setState({ rollingEditMode: options.rolling, selectedWords: [] });
+  useSettingsStore.setState({ rollingEdit: options.rolling });
+  useTimelineStore.setState({ selectedWords: [] });
   const scrollContainerRef = createRef<HTMLDivElement | null>();
   await renderHook(() =>
     useTimelineKeyboard(

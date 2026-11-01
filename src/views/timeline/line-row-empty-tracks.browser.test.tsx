@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tracks";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -53,18 +53,18 @@ describe("EmptyWordTrack", () => {
     expect(track.style.height).toBe("40px");
   });
 
-  it("creates a word spanning the pointer time on double-click and starts editing it", async () => {
+  it("lays out one block per word from the pointer time on double-click without opening the editor", async () => {
     useAudioStore.setState({ duration: 30 });
     useTimelineStore.setState({ zoom: 100 });
     const track = await renderWordTrack(createLine({ id: "l1", text: "hello world" }));
 
     track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 3) }));
 
-    const word = useProjectStore.getState().lines[0].words?.[0];
-    expect(word?.text).toBe("hello world");
-    expect(word?.begin).toBeLessThanOrEqual(3);
-    expect(word?.end).toBeGreaterThan(3);
-    expect(useTimelineStore.getState().editingWord).toEqual({ lineId: "l1", wordIndex: 0, type: "word" });
+    const after = useProjectStore.getState().lines[0];
+    expect(after.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
+    expect(after.words?.[0].begin).toBeLessThanOrEqual(3);
+    expect(after.text).toBe("hello world");
+    expect(useTimelineStore.getState().editingWord).toBeNull();
   });
 
   it("opens a word track context menu at the pointer time", async () => {
@@ -82,22 +82,24 @@ describe("EmptyWordTrack", () => {
   });
 
   describe("edge cases", () => {
-    it("strips split characters from the label and the created word", async () => {
+    it("strips split characters from the label and keeps syllables as their own blocks", async () => {
       useAudioStore.setState({ duration: 30 });
       const track = await renderWordTrack(createLine({ text: "hel|lo" }));
       expect(track.textContent).toContain("hello");
 
       track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 1) }));
-      expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("hello");
+      const after = useProjectStore.getState().lines[0];
+      expect(after.words?.map((w) => w.text)).toEqual(["hel", "lo"]);
+      expect(after.text).toBe("hel|lo");
     });
 
-    it("truncates labels longer than 60 characters and caps the created word text", async () => {
+    it("truncates labels longer than 60 characters but keeps the created word text whole", async () => {
       useAudioStore.setState({ duration: 30 });
       const track = await renderWordTrack(createLine({ text: "x".repeat(70) }));
       expect(track.textContent).toContain(`${"x".repeat(60)}...`);
 
       track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 1) }));
-      expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("x".repeat(60));
+      expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("x".repeat(70));
     });
 
     it("uses a placeholder word and hides Place for an empty line", async () => {
@@ -197,6 +199,84 @@ describe("EmptyBgTrack", () => {
       zone.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(zone, 2) }));
 
       expect(useProjectStore.getState().lines[0].words).toEqual(line.words);
+    });
+  });
+});
+
+describe("empty tracks in a group that shares timing", () => {
+  const verse = (id: string, instanceIdx: number, templateLineIdx: number, begin?: number) =>
+    createLine({
+      id,
+      text: templateLineIdx === 0 ? "go now" : "oh yeah no",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx,
+      ...(begin === undefined
+        ? {}
+        : {
+            words: [
+              createWord({ text: "go ", begin, end: begin + 1 }),
+              createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
+            ],
+          }),
+    });
+
+  async function renderEmpty(sharesTiming: boolean, track: "word" | "bg") {
+    useAudioStore.setState({ duration: 20 });
+    useTimelineStore.setState({ zoom: 100 });
+    useSettingsStore.setState({ defaultWordDuration: 1, minWordDuration: 0.05 });
+    const target = { ...verse("b0", 0, 1), ...(track === "bg" ? { backgroundText: "oh yeah no" } : {}) };
+    useProjectStore.setState({
+      lines: [verse("a0", 0, 0, 3), target, verse("a1", 1, 0, 10), verse("b1", 1, 1)],
+      groups: [createGroup({ id: "g1", ...(sharesTiming ? { sharesTiming: true } : {}) })],
+    });
+    const screen = await render(
+      <div style={{ paddingLeft: TRACK_OFFSET_PX }}>
+        {track === "word" ? (
+          <EmptyWordTrack line={target} lineIndex={1} duration={20} rowHeight={40} />
+        ) : (
+          <EmptyBgTrack line={target} lineIndex={1} isOver={false} />
+        )}
+      </div>,
+    );
+    return firstElement(screen.container);
+  }
+
+  const lineById = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id);
+
+  it("keeps the new word inside the range where the latest instance reaches the song end", async () => {
+    const track = await renderEmpty(true, "word");
+
+    track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 12.9) }));
+
+    await expect.poll(() => lineById("b0")?.words?.length).toBe(3);
+    expect(lineById("b0")?.words?.[0].begin).toBe(12);
+    expect(lineById("b0")?.words?.at(-1)?.end).toBeLessThanOrEqual(13);
+    expect(lineById("b1")?.words?.[0].begin).toBe(19);
+    expect(lineById("b1")?.words?.at(-1)?.end).toBeLessThanOrEqual(20);
+  });
+
+  it("ends timed background text where the latest instance reaches the song end", async () => {
+    const track = await renderEmpty(true, "bg");
+    useSettingsStore.setState({ defaultWordDuration: 0.2 });
+
+    track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 12.9) }));
+
+    await expect.poll(() => lineById("b0")?.backgroundWords?.length).toBe(3);
+    expect(lineById("b0")?.backgroundWords?.at(-1)?.end).toBeLessThanOrEqual(13);
+    expect(lineById("b1")?.backgroundWords?.at(-1)?.end).toBeLessThanOrEqual(20);
+  });
+
+  describe("regressions", () => {
+    it("regression: a line of an old group still places the word up to the song end", async () => {
+      const track = await renderEmpty(false, "word");
+
+      track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 12.9) }));
+
+      await expect.poll(() => lineById("b0")?.words?.length).toBe(3);
+      expect(lineById("b0")?.words?.[0].begin).toBeCloseTo(12.9, 5);
+      expect(lineById("b0")?.words?.at(-1)?.end).toBeCloseTo(15.9, 5);
+      expect(lineById("b1")?.words).toBeUndefined();
     });
   });
 });

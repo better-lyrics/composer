@@ -4,7 +4,7 @@
 // their already-resolved base. Explicit theme.tokens entries always win.
 
 import { contrastRatio, lighten } from "@/domain/theme/color";
-import { type ResolvedTheme, type Theme, TOKENS } from "@/domain/theme/model";
+import { type ResolvedTheme, TOKENS, type Theme } from "@/domain/theme/model";
 
 const SEED_FALLBACK = "#ff00ff";
 

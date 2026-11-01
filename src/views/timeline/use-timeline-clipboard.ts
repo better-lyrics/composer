@@ -1,13 +1,11 @@
 import type { ReadableLine } from "@/domain/line/effective-words";
-import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
-import { useProjectStore } from "@/stores/project";
-import { applyWordDeletion } from "@/views/timeline/apply-word-deletion";
+import { pluralize } from "@/utils/pluralize";
 import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";
+import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
+import { selectedBannerInstance } from "@/views/timeline/selected-banner";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { getWordsInInstance } from "@/views/timeline/utils";
-import { pluralize } from "@/utils/pluralize";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
@@ -40,7 +38,7 @@ function useTimelineClipboard(lines: readonly ReadableLine[]) {
     entries.sort((a, b) => a.lineOffset - b.lineOffset || a.word.begin - b.word.begin);
 
     const clipboard: ClipboardData = { entries };
-    const sourceInstance = detectFullInstance(lines, selectedWords);
+    const sourceInstance = selectedBannerInstance(lines, selectedWords);
     if (sourceInstance) {
       clipboard.sourceInstance = sourceInstance;
     } else {
@@ -56,22 +54,10 @@ function useTimelineClipboard(lines: readonly ReadableLine[]) {
     );
   }, [lines]);
 
-  const handleDelete = useCallback(() => {
-    const { selectedWords } = useTimelineStore.getState();
-    if (selectedWords.length === 0) return;
-
-    const rawLines = useProjectStore.getState().lines;
-    const newLines = applyWordDeletion(rawLines, selectedWords);
-    if (newLines === rawLines) return;
-
-    useProjectStore.getState().setLinesWithHistory(newLines);
-    useTimelineStore.getState().clearSelection();
-  }, []);
-
   const handleCut = useCallback(() => {
     handleCopy();
-    handleDelete();
-  }, [handleCopy, handleDelete]);
+    deleteSelectedWords();
+  }, [handleCopy]);
 
   const handlePaste = useCallback(() => {
     const { clipboard, pasteMode } = useTimelineStore.getState();
@@ -84,35 +70,7 @@ function useTimelineClipboard(lines: readonly ReadableLine[]) {
     }
   }, []);
 
-  return { handleCopy, handleDelete, handleCut, handlePaste };
-}
-
-// -- Helpers ------------------------------------------------------------------
-
-function detectFullInstance(
-  lines: readonly ReadableLine[],
-  selectedWords: ReadonlyArray<{ lineId: string; wordIndex: number; type: "word" | "bg" }>,
-): { groupId: string; instanceIdx: number } | undefined {
-  const linesById = new Map<string, LyricLine>();
-  for (const l of lines) linesById.set(l.id, l);
-  const firstLine = linesById.get(selectedWords[0].lineId);
-  if (!firstLine?.groupId || firstLine.instanceIdx === undefined) return undefined;
-  const { groupId, instanceIdx } = firstLine;
-
-  for (const sel of selectedWords) {
-    const line = linesById.get(sel.lineId);
-    if (!line || line.groupId !== groupId || line.instanceIdx !== instanceIdx) return undefined;
-  }
-
-  const expected = getWordsInInstance(lines, groupId, instanceIdx);
-  if (expected.length !== selectedWords.length) return undefined;
-
-  const selectedKeys = new Set(selectedWords.map((s) => `${s.lineId}:${s.type}:${s.wordIndex}`));
-  for (const ref of expected) {
-    if (!selectedKeys.has(`${ref.lineId}:${ref.type}:${ref.wordIndex}`)) return undefined;
-  }
-
-  return { groupId, instanceIdx };
+  return { handleCopy, handleCut, handlePaste };
 }
 
 // -- Exports ------------------------------------------------------------------

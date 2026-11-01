@@ -1,9 +1,22 @@
+import {
+  instanceStart,
+  isInstanceFullyTimed,
+  isSharedLine,
+  sharedInstancesInLineOrder,
+} from "@/domain/group/shared-timing";
+import { templateSourceInstance } from "@/domain/group/template-source";
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
+import { isLinked } from "@/domain/instance/predicates";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
+import { isWordSelected } from "@/domain/selection/identity";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
+import { isAutoAlignAvailable } from "@/stores/alignment";
+import { countAlignableLines } from "@/stores/alignment-plan";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import {
   createGroupFromSelection,
   fillSelectionGaps,
@@ -11,8 +24,9 @@ import {
   lineIdsAreContiguous,
   selectionTouchesAnyGroup,
 } from "@/views/timeline/group-ops";
-import type { ContextMenuTarget } from "@/views/timeline/timeline-store";
+import { mergeRunKind } from "@/views/timeline/merge-selected-words";
 import { computeSplitIntoWordsUpdates, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
+import type { ContextMenuTarget } from "@/views/timeline/timeline-store";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useMemo } from "react";
 
@@ -45,17 +59,20 @@ function useContextMenuTargets() {
     if (!wordsArray || wordsArray.length === 0) return null;
 
     const selectedWords = useTimelineStore.getState().selectedWords;
-    const selectionMatchesTarget = selectedWords.some(
-      (w) => w.lineId === lineId && w.type === type && w.wordIndex === wordIndex,
-    );
     const indices =
-      selectionMatchesTarget && selectedWords.length > 1
+      isWordSelected(selectedWords, lineId, wordIndex, type) && selectedWords.length > 1
         ? selectedWords.flatMap((w) => (w.lineId === lineId && w.type === type ? [w.wordIndex] : []))
         : [wordIndex];
 
     const allMarked = indices.every((i) => wordsArray[i]?.explicit === true);
     return { lineId, field, indices, allMarked };
   }, [contextMenu, rawLines]);
+
+  const clickedSelectionCount = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word") return null;
+    const { lineId, wordIndex, type } = contextMenu.target;
+    return isWordSelected(selectedWords, lineId, wordIndex, type) ? selectedWords.length : null;
+  }, [contextMenu, selectedWords]);
 
   const gutterLineGroupInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "gutter") return null;
@@ -72,7 +89,13 @@ function useContextMenuTargets() {
     if (selectionTouchesAnyGroup(rawLines, selectedLineIds)) return null;
     const filled = fillSelectionGaps(rawLines, selectedLineIds);
     if (!filled) return null;
-    const result = createGroupFromSelection(rawLines, filled.expanded, useProjectStore.getState().groups);
+    const result = createGroupFromSelection(
+      rawLines,
+      filled.expanded,
+      useProjectStore.getState().groups,
+      useSettingsStore.getState().shareTimingInNewGroups,
+      { duration: useAudioStore.getState().duration },
+    );
     if (!result) return null;
     return {
       selectedLineIds: filled.expanded,
@@ -92,7 +115,11 @@ function useContextMenuTargets() {
     const options = useProjectStore.getState().groups.flatMap((group) => {
       const firstInstanceIdx = instanceIndicesOf(rawLines, group.id)[0];
       if (firstInstanceIdx === undefined) return [];
-      const template = instanceToTemplate(rawLines, group.id, firstInstanceIdx);
+      const template = instanceToTemplate(
+        rawLines,
+        group.id,
+        templateSourceInstance(rawLines, group, firstInstanceIdx),
+      );
       return template.length === selectedLineIds.size ? [{ group, template }] : [];
     });
     if (options.length === 0) return null;
@@ -104,12 +131,12 @@ function useContextMenuTargets() {
     if (!run) return null;
 
     const line = lines.find((l) => l.id === run.lineId);
-    if (!line) return null;
-    const wordsArray = trackWords(line, run.type);
-    if (!wordsArray) return null;
+    if (!line || !trackWords(line, run.type)) return null;
+    const rawLine = rawLines.find((l) => l.id === run.lineId);
+    const kind = rawLine ? mergeRunKind(rawLine, run) : "words";
 
-    return { indices: run.indices, lineId: run.lineId, type: run.type };
-  }, [selectedWords, lines]);
+    return { indices: run.indices, lineId: run.lineId, type: run.type, kind };
+  }, [selectedWords, lines, rawLines]);
 
   const groupedWordInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
@@ -139,6 +166,21 @@ function useContextMenuTargets() {
     return canPlace ? targetLine : null;
   }, [contextMenu, rawLines]);
 
+  const placeAtPlayheadInfo = useMemo(() => {
+    if (!contextMenu || (contextMenu.target.kind !== "gutter" && contextMenu.target.kind !== "track")) return null;
+    const { lineId } = contextMenu.target;
+    const line = rawLines.find((l) => l.id === lineId);
+    const groups = useProjectStore.getState().groups;
+    const group = groups.find((candidate) => candidate.id === line?.groupId);
+    if (!line || !group || !isLinked(line) || !isSharedLine(line, new Map([[group.id, group]]))) return null;
+    const { instanceIdx } = line;
+    if (instanceStart(rawLines, group.id, instanceIdx) !== null) return null;
+    const hasTimedSibling = sharedInstancesInLineOrder(rawLines, group).some(
+      (other) => other !== instanceIdx && isInstanceFullyTimed(rawLines, group.id, other),
+    );
+    return hasTimedSibling ? { groupId: group.id, instanceIdx } : null;
+  }, [contextMenu, rawLines]);
+
   const splitIntoWordsInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
     const updates = computeSplitIntoWordsUpdates(splitTargetsForMenu(contextMenu.target, selectedWords), rawLines);
@@ -146,9 +188,20 @@ function useContextMenuTargets() {
     return { count: updates.length };
   }, [contextMenu, selectedWords, rawLines]);
 
+  const autoAlignInfo = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word" || !isAutoAlignAvailable()) return null;
+    const targets = splitTargetsForMenu(contextMenu.target, selectedWords).filter((t) => t.type === "word");
+    const lineIds = [...new Set(targets.map((t) => t.lineId))];
+    const { lineTimed, wordTimed } = countAlignableLines(rawLines, lineIds);
+    const count = lineTimed + wordTimed;
+    return count > 0 ? { count, lineIds, realign: wordTimed > 0 } : null;
+  }, [contextMenu, selectedWords, rawLines]);
+
   return {
     lines,
+    autoAlignInfo,
     explicitToggleContext,
+    clickedSelectionCount,
     gutterLineGroupInfo,
     groupableSelection,
     conformableSelection,
@@ -156,6 +209,7 @@ function useContextMenuTargets() {
     groupedWordInfo,
     snapNeededInfo,
     placeLineHereInfo,
+    placeAtPlayheadInfo,
     splitIntoWordsInfo,
   };
 }

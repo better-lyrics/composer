@@ -1,8 +1,8 @@
+import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 /**
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 
 // These tests pin the contract that nudging a line-synced row by writing
 // only `begin/end` (without `words`) keeps it line-synced. The previous bug

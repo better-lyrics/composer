@@ -1,67 +1,28 @@
-import { applySavedProject } from "@/lib/apply-saved-project";
-import { clearCurrentProject, exportProjectToFile, importProjectFromFile } from "@/lib/persistence";
+import { createProject, deleteProject } from "@/lib/open-project";
+import { openProjectIdSnapshot } from "@/lib/open-project-session";
+import { buildSavedProject } from "@/lib/persistence";
 import { cancelPendingSave } from "@/lib/persistence-debounce";
-import { useAudioStore } from "@/stores/audio";
+import { downloadProjectFile, projectFileFrom } from "@/lib/project-file";
+import { importProjectFromInput } from "@/lib/project-import";
+import { currentSaveInput } from "@/lib/project-snapshot";
 import { useConfirm } from "@/stores/confirm-store";
-import { useProjectStore } from "@/stores/project";
-import { pluralize } from "@/utils/pluralize";
 import { useCallback } from "react";
+import { toast } from "sonner";
+
+// -- Constants ----------------------------------------------------------------
+
+const LOG_PREFIX = "[ProjectFileActions]";
 
 // -- Hook ---------------------------------------------------------------------
 
-function useProjectFileActions(fileInputRef: React.RefObject<HTMLInputElement | null>) {
-  const reset = useProjectStore((s) => s.reset);
+function useProjectFileActions() {
   const confirm = useConfirm();
 
   const handleExportProject = useCallback(() => {
-    const audioSource = useAudioStore.getState().source;
-    const state = useProjectStore.getState();
-    exportProjectToFile({
-      metadata: state.metadata,
-      agents: state.agents,
-      lines: state.lines,
-      groups: state.groups,
-      granularity: state.granularity,
-      syllableSplitDefaults: state.syllableSplitDefaults,
-      dismissedSuggestions: state.dismissedSuggestions,
-      dismissedExplicitSuggestions: state.dismissedExplicitSuggestions,
-      customSnapPoints: state.customSnapPoints,
-      importedMetadataKeys: state.importedMetadataKeys,
-      ttmlEditState: state.ttmlEditState,
-      audioFileName: audioSource?.type === "file" ? audioSource.file.name : undefined,
-    });
+    downloadProjectFile(projectFileFrom(openProjectIdSnapshot(), buildSavedProject(currentSaveInput())));
   }, []);
 
-  const handleImportProject = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      const existingLineCount = useProjectStore.getState().lines.length;
-      if (existingLineCount > 0) {
-        const ok = await confirm({
-          title: "Replace current project?",
-          description: `Loading this project file will replace your ${pluralize(existingLineCount, "existing line")} and metadata. This cannot be undone.`,
-          confirmLabel: "Replace",
-          variant: "destructive",
-          settingsKey: "confirmReplaceLyrics",
-        });
-        if (!ok) {
-          if (fileInputRef.current) fileInputRef.current.value = "";
-          return;
-        }
-      }
-
-      const project = await importProjectFromFile(file);
-      useProjectStore.getState().startProjectSession();
-      applySavedProject(project, "file");
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    },
-    [confirm, fileInputRef],
-  );
+  const handleImportProject = importProjectFromInput;
 
   const handleClearProject = useCallback(async () => {
     const ok = await confirm({
@@ -72,10 +33,17 @@ function useProjectFileActions(fileInputRef: React.RefObject<HTMLInputElement | 
       settingsKey: "confirmClearProject",
     });
     if (!ok) return;
-    cancelPendingSave();
-    reset();
-    await clearCurrentProject();
-  }, [reset, confirm]);
+    const id = openProjectIdSnapshot();
+    if (id) {
+      await deleteProject(id).catch((error: unknown) => {
+        console.error(LOG_PREFIX, "could not clear the project", error);
+        toast.error("Couldn't clear the project");
+      });
+    } else {
+      cancelPendingSave();
+      createProject();
+    }
+  }, [confirm]);
 
   return { handleExportProject, handleImportProject, handleClearProject };
 }

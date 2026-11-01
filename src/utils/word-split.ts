@@ -6,7 +6,12 @@ import { distributeTiming } from "@/utils/syllable-utils";
 function splitWordIntoWords(word: WordTiming, splitPoints: number[]): WordTiming[] {
   const trimmed = word.text.trimEnd();
   const hadTrailingSpace = word.text.endsWith(" ");
-  const { syllableGroupId: _drop, ...base } = word;
+  const {
+    syllableGroupId: _group,
+    transliteration: _transliteration,
+    transliterationJoinerAfter: _joiner,
+    ...base
+  } = word;
 
   const parts: Array<{ text: string; begin: number; end: number }> = [];
   let orphanBegin: number | null = null;

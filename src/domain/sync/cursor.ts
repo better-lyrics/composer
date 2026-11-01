@@ -1,7 +1,7 @@
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
-import { isSyncableLine, type SyncGranularity } from "@/domain/line/sync-progress";
+import { type SyncGranularity, isSyncableLine } from "@/domain/line/sync-progress";
 import { splitIntoWords } from "@/utils/sync-helpers";
 
 // -- Types --------------------------------------------------------------------

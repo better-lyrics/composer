@@ -1,5 +1,3 @@
-import { reconcileLine, type LooseLine, type LyricLine, type RawLine } from "@/domain/line/model";
-import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   effectiveMainWordEdit,
   effectiveTimingWrite,
@@ -7,7 +5,9 @@ import {
   effectiveWords,
   getEffectiveLines,
 } from "@/domain/line/effective-words";
+import { type LooseLine, type LyricLine, type RawLine, reconcileLine } from "@/domain/line/model";
 import { createLine } from "@/test/factories";
+import { describe, expect, expectTypeOf, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 

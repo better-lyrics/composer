@@ -15,7 +15,7 @@ describe("reorderWordTrack", () => {
       { text: "three", begin: 4, end: 5 },
     ];
 
-    const result = reorderWordTrack(track, new Set([2]), -2.5, 10);
+    const result = reorderWordTrack(track, new Set([2]), -2.5, { min: 0, max: 10 });
 
     expect(result).toHaveLength(3);
     expect(computeSyllableGroups(result)).toEqual([]);
@@ -32,7 +32,7 @@ describe("reorderWordTrack", () => {
       { text: "gamma", begin: 4, end: 5 },
     ];
 
-    const result = reorderWordTrack(track, new Set([0]), 6, 12);
+    const result = reorderWordTrack(track, new Set([0]), 6, { min: 0, max: 12 });
 
     expect(result).toHaveLength(3);
     expect(computeSyllableGroups(result)).toEqual([]);
@@ -48,7 +48,7 @@ describe("reorderWordTrack", () => {
       { text: "third", begin: 4, end: 5 },
     ];
 
-    const result = reorderWordTrack(track, new Set([1]), 0.2, 10);
+    const result = reorderWordTrack(track, new Set([1]), 0.2, { min: 0, max: 10 });
 
     expect(result.map((w) => w.text.trimEnd())).toEqual(["first", "second", "third"]);
     expect(computeSyllableGroups(result)).toEqual([]);
@@ -63,7 +63,7 @@ describe("reorderWordTrack", () => {
       { text: "four", begin: 6, end: 7 },
     ];
 
-    const result = reorderWordTrack(track, new Set([0, 2]), 4, 20);
+    const result = reorderWordTrack(track, new Set([0, 2]), 4, { min: 0, max: 20 });
 
     expect(result).toHaveLength(4);
     expect(computeSyllableGroups(result)).toEqual([]);
@@ -78,7 +78,7 @@ describe("reorderWordTrack", () => {
       { text: "tail", begin: 8, end: 9 },
     ];
 
-    const result = reorderWordTrack(track, new Set([2]), -6, 12);
+    const result = reorderWordTrack(track, new Set([2]), -6, { min: 0, max: 12 });
 
     expect(result).toHaveLength(3);
     expect(reconstructLineText(result, "|")).not.toContain("|");
@@ -96,7 +96,7 @@ describe("reorderWordTrack", () => {
       { text: "three", begin: 5, end: 6 },
     ];
 
-    const result = reorderWordTrack(track, new Set([0, 1, 2]), 2, 20);
+    const result = reorderWordTrack(track, new Set([0, 1, 2]), 2, { min: 0, max: 20 });
 
     expect(result.map((w) => w.text)).toEqual(["one ", "two ", "three"]);
     expect(result.map((w) => w.begin)).toEqual([3, 5, 7]);
@@ -111,7 +111,7 @@ describe("reorderWordTrack", () => {
       { text: "bright", begin: 2, end: 3 },
     ];
 
-    const result = reorderWordTrack(track, new Set([0, 1]), 4, 12);
+    const result = reorderWordTrack(track, new Set([0, 1]), 4, { min: 0, max: 12 });
 
     const sunIdx = result.findIndex((w) => w.text.trimEnd() === "sun");
     const shineIdx = result.findIndex((w) => w.text.trimEnd() === "shine");
@@ -129,7 +129,7 @@ describe("reorderWordTrack", () => {
       { text: "late", begin: 8, end: 9 },
     ];
 
-    const result = reorderWordTrack(track, new Set([1]), -7.5, 20);
+    const result = reorderWordTrack(track, new Set([1]), -7.5, { min: 0, max: 20 });
 
     for (let i = 1; i < result.length; i++) {
       expect(result[i].begin).toBeGreaterThanOrEqual(result[i - 1].end);
@@ -142,7 +142,7 @@ describe("reorderWordTrack", () => {
       { text: "move", begin: 2, end: 3 },
     ];
 
-    const result = reorderWordTrack(track, new Set([1]), 100, 10);
+    const result = reorderWordTrack(track, new Set([1]), 100, { min: 0, max: 10 });
 
     const move = result.find((w) => w.text.trimEnd() === "move");
     expect(move?.end).toBeLessThanOrEqual(10);
@@ -154,7 +154,7 @@ describe("reorderWordTrack", () => {
       { text: "later", begin: 6, end: 7 },
     ];
 
-    const result = reorderWordTrack(track, new Set([0]), -100, 10);
+    const result = reorderWordTrack(track, new Set([0]), -100, { min: 0, max: 10 });
 
     for (const word of result) {
       expect(word.begin).toBeGreaterThanOrEqual(0);
@@ -164,7 +164,7 @@ describe("reorderWordTrack", () => {
   it("keeps begin non-negative when a single word is longer than the duration", () => {
     const track: WordTiming[] = [{ text: "long", begin: 0, end: 100 }];
 
-    const result = reorderWordTrack(track, new Set([0]), 5, 30);
+    const result = reorderWordTrack(track, new Set([0]), 5, { min: 0, max: 30 });
 
     expect(result).toHaveLength(1);
     expect(result[0].begin).toBeGreaterThanOrEqual(0);
@@ -176,7 +176,7 @@ describe("reorderWordTrack", () => {
       { text: "two", begin: 2, end: 3, explicit: true },
     ];
 
-    const result = reorderWordTrack(track, new Set([1]), -2, 10);
+    const result = reorderWordTrack(track, new Set([1]), -2, { min: 0, max: 10 });
 
     expect(result.every((w) => w.explicit === true)).toBe(true);
   });
@@ -184,13 +184,13 @@ describe("reorderWordTrack", () => {
 
 describe("reorderWordTrack edge cases and invariants", () => {
   it("returns an empty array for an empty track", () => {
-    expect(reorderWordTrack([], new Set([0]), 1, 10)).toEqual([]);
+    expect(reorderWordTrack([], new Set([0]), 1, { min: 0, max: 10 })).toEqual([]);
   });
 
   it("returns a single word for a single-word track that is dragged", () => {
     const track: WordTiming[] = [{ text: "solo", begin: 1, end: 2 }];
 
-    const result = reorderWordTrack(track, new Set([0]), 2, 20);
+    const result = reorderWordTrack(track, new Set([0]), 2, { min: 0, max: 20 });
 
     expect(result).toHaveLength(1);
     expect(result[0].text).toBe("solo");
@@ -204,7 +204,7 @@ describe("reorderWordTrack edge cases and invariants", () => {
     ];
     const trackBefore = track.map((w) => ({ ...w }));
 
-    reorderWordTrack(track, new Set([2]), -3, 10);
+    reorderWordTrack(track, new Set([2]), -3, { min: 0, max: 10 });
 
     expect(track).toEqual(trackBefore);
   });
@@ -215,7 +215,7 @@ describe("reorderWordTrack edge cases and invariants", () => {
       { text: "two", begin: 2, end: 3 },
     ];
 
-    const result = reorderWordTrack(track, new Set(), 5, 10);
+    const result = reorderWordTrack(track, new Set(), 5, { min: 0, max: 10 });
 
     expect(result.map((w) => w.text)).toEqual(["one ", "two"]);
     expect(result.map((w) => w.begin)).toEqual([0, 2]);
@@ -228,7 +228,7 @@ describe("reorderWordTrack edge cases and invariants", () => {
       { text: "three", begin: 4, end: 5 },
     ];
 
-    const result = reorderWordTrack(track, new Set([0]), 5, 12);
+    const result = reorderWordTrack(track, new Set([0]), 5, { min: 0, max: 12 });
 
     const begins = result.map((w) => w.begin);
     expect(begins).toEqual([...begins].toSorted((a, b) => a - b));
@@ -241,7 +241,7 @@ describe("reorderWordTrack edge cases and invariants", () => {
       { text: "next", begin: 2, end: 3 },
     ];
 
-    const result = reorderWordTrack(track, new Set([0, 1]), 4, 12);
+    const result = reorderWordTrack(track, new Set([0, 1]), 4, { min: 0, max: 12 });
 
     const tiIdx = result.findIndex((w) => w.text.trimEnd() === "ti");
     const tleIdx = result.findIndex((w) => w.text.trimEnd() === "tle");
@@ -255,7 +255,7 @@ describe("reorderWordTrack edge cases and invariants", () => {
       { text: "two", begin: 2, end: 3 },
     ];
 
-    const result = reorderWordTrack(track, new Set([5, 9]), 4, 10);
+    const result = reorderWordTrack(track, new Set([5, 9]), 4, { min: 0, max: 10 });
 
     expect(result.map((w) => w.text)).toEqual(["one ", "two"]);
     expect(result.map((w) => w.begin)).toEqual([0, 2]);
@@ -269,7 +269,7 @@ describe("reorderWordTrack edge cases and invariants", () => {
       { text: "shine", begin: 2.5, end: 3 },
     ];
 
-    const result = reorderWordTrack(track, new Set([2, 3]), -2, 12);
+    const result = reorderWordTrack(track, new Set([2, 3]), -2, { min: 0, max: 12 });
 
     expect(result).toHaveLength(4);
     for (let i = 0; i < result.length - 1; i++) {
@@ -293,13 +293,13 @@ describe("regressions: T9 syllable drag past a neighbor", () => {
   });
 
   it("the dragged syllable group stays contiguous when it partially overlaps 'there'", () => {
-    const result = reorderWordTrack(track, new Set([0, 1]), 0.3, 10);
+    const result = reorderWordTrack(track, new Set([0, 1]), 0.3, { min: 0, max: 10 });
     const order = result.map((w) => w.text.trim());
     expect(order).toEqual(["Hel", "lo", "there"]);
   });
 
   it("the whole group jumps as one block once it is past 'there'", () => {
-    const result = reorderWordTrack(track, new Set([0, 1]), 0.9, 10);
+    const result = reorderWordTrack(track, new Set([0, 1]), 0.9, { min: 0, max: 10 });
     expect(reconstructLineText(result, "|")).toBe("there Hel|lo");
   });
 });

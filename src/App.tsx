@@ -1,58 +1,73 @@
 import { AudioEngine } from "@/audio/audio-engine";
-import { AudioPlayer } from "@/audio/audio-player";
 import { useAutoSeparate } from "@/hooks/useAutoSeparate";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
 import { useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
+import { useLanguageAutoRefresh } from "@/hooks/useLanguageAutoRefresh";
+import { useLaunchQueue } from "@/hooks/useLaunchQueue";
+import { useMusicBrainzMatch } from "@/hooks/useMusicBrainzMatch";
 import { usePanicRecovery } from "@/hooks/usePanicRecovery";
 import { usePersistence } from "@/hooks/usePersistence";
+import { usePitchTrack } from "@/hooks/usePitchTrack";
+import { useShortcutPresetIntro } from "@/hooks/useShortcutPresetIntro";
+import { useSpaceHabitHint } from "@/hooks/useSpaceHabitHint";
+import { useProjectChannel } from "@/hooks/useProjectChannel";
+import { useProjectShortcuts } from "@/hooks/useProjectShortcuts";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
+import { useSaveShortcut } from "@/hooks/useSaveShortcut";
+import { useStorageMaintenance } from "@/hooks/useStorageMaintenance";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
+import { appQueryClient } from "@/lib/app-query-client";
 import { wireFrameLoop } from "@/lib/frame-loop-wiring";
+import { commitAllPendingDeletions } from "@/lib/pending-deletions";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { GuideCard } from "@/tour/guide-card";
-import { resetTour, useTour } from "@/tour/use-tour";
+import { useTour } from "@/tour/use-tour";
+import { useRangePlayback } from "@/views/timeline/use-range-playback";
 import "@/tour/tour-theme.css";
 import { AppHeader } from "@/ui/app-header";
-import { ConfirmModalHost } from "@/ui/confirm-modal";
-import { DivergenceModalHost } from "@/ui/divergence-modal";
 import { HelpModal } from "@/ui/help-modal";
-import { SettingsModal } from "@/ui/settings-modal";
+import { OverlayHosts } from "@/ui/overlay-hosts";
 import { APP_SETTING_LINK_HOST, SettingLinkContext } from "@/ui/setting-link-context";
-import { TabBar } from "@/ui/tab-bar";
-import { EditPanel } from "@/views/edit";
-import { ExportPanel } from "@/views/export";
-import { ImportPanel } from "@/views/import";
-import { LanguagesPanel } from "@/views/languages";
+import { SettingsModal } from "@/ui/settings-modal";
+import { EDITOR_PATH, screenForPath } from "@/utils/app-routes";
+import { EditorScreen } from "@/views/editor-screen";
+import { LibraryScreen } from "@/views/library/library-screen";
 import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
-import { PreviewPanel } from "@/views/preview";
-import { SyncPanel } from "@/views/sync/sync-panel";
-import { TimelinePanel } from "@/views/timeline/timeline-panel";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { LazyMotion, domAnimation } from "motion/react";
-import { Activity, useCallback, useEffect, useRef } from "react";
-import { Toaster } from "sonner";
+import { Activity, useCallback, useEffect, useEffectEvent, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-const TABS_WITH_PLAYER = ["import", "edit", "languages", "sync", "timeline", "preview"];
+// -- Constants ----------------------------------------------------------------
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { retry: false, refetchOnWindowFocus: false },
-  },
-});
+const TOUR_START_DELAY_MS = 500;
 
-const AppContent: React.FC = () => {
-  const activeTab = useProjectStore((s) => s.activeTab);
+// -- Shell --------------------------------------------------------------------
+
+const MusicBrainzWarmup: React.FC = () => {
+  useMusicBrainzMatch(null, false);
+  return null;
+};
+
+const AppShell: React.FC = () => {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const screen = screenForPath(pathname);
+  const isEditor = screen === "editor";
   const setActiveTab = useProjectStore((s) => s.setActiveTab);
   const source = useAudioStore((s) => s.source);
   const helpOpen = useUIStore((s) => s.helpOpen);
   const helpLocation = useUIStore((s) => s.helpLocation);
+  const helpSession = useUIStore((s) => s.helpSession);
+  const settingsSession = useUIStore((s) => s.settingsSession);
   const openHelp = useUIStore((s) => s.openHelp);
   const closeHelp = useUIStore((s) => s.closeHelp);
+  const [tourRequested, setTourRequested] = useState(false);
   const settingsOpen = useUIStore((s) => s.settingsOpen);
   const openSettings = useUIStore((s) => s.openSettings);
   const closeSettings = useUIStore((s) => s.closeSettings);
@@ -60,29 +75,57 @@ const AppContent: React.FC = () => {
   const { startTour, resumeOrStartTour, shouldShowTour, guideCard, skipGuideCard } = useTour({
     onOpenBestPractices: openBestPractices,
   });
-  const startTourRef = useRef(startTour);
-  startTourRef.current = startTour;
+  const startTourLater = useEffectEvent(() => startTour());
+  const resumeTourLater = useEffectEvent(() => resumeOrStartTour());
+  if (!isEditor && tourRequested) setTourRequested(false);
 
-  const showPlayer = source && TABS_WITH_PLAYER.includes(activeTab);
-
-  // Auto-start quick tour on first visit
   useEffect(() => {
-    if (!shouldShowTour) return;
-    const timer = setTimeout(() => startTourRef.current(), 500);
+    if (!isEditor || (!shouldShowTour && !tourRequested)) return;
+    const timer = setTimeout(() => {
+      if (!tourRequested) {
+        startTourLater();
+        return;
+      }
+      setTourRequested(false);
+      resumeTourLater();
+    }, TOUR_START_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [shouldShowTour]);
+  }, [isEditor, shouldShowTour, tourRequested]);
 
   useEffect(() => wireFrameLoop(), []);
 
+  useEffect(() => {
+    if (isEditor) return;
+    useAudioStore.getState().setIsPlaying(false);
+    useUIStore.getState().setProjectSwitcherOpen(false);
+  }, [isEditor]);
+
+  useEffect(
+    () => () => {
+      void commitAllPendingDeletions();
+    },
+    [],
+  );
+
   usePersistence();
+  useStorageMaintenance();
+  useLanguageAutoRefresh();
+  useRangePlayback();
+  useProjectChannel();
+  useProjectShortcuts(isEditor);
+  useSaveShortcut(isEditor);
   useImportFromHash();
   useResolveYouTubeTunnel();
   useImportFromQuery();
   useImportFromYouTube();
+  useLaunchQueue();
   usePanicRecovery();
   useAutoSeparate();
-  useDocumentTitle();
+  useDocumentTitle(screen);
   useVocalOnsetSnapPoints();
+  usePitchTrack();
+  useSpaceHabitHint(isEditor);
+  useShortcutPresetIntro(isEditor);
 
   const setHelpOpenCb = useCallback((open: boolean) => (open ? openHelp() : closeHelp()), [openHelp, closeHelp]);
   const setSettingsOpenCb = useCallback(
@@ -94,17 +137,29 @@ const AppContent: React.FC = () => {
     setActiveTab,
     setHelpOpen: setHelpOpenCb,
     setSettingsOpen: setSettingsOpenCb,
+    editorActive: isEditor,
   });
 
+  const startTourFromHeader = useCallback(() => {
+    if (isEditor) {
+      resumeOrStartTour();
+      return;
+    }
+    setTourRequested(true);
+    navigate(EDITOR_PATH);
+  }, [isEditor, resumeOrStartTour, navigate]);
+
   return (
-    <div className="flex flex-col h-screen bg-composer-bg text-composer-text">
-      <AppHeader onSettingsOpen={() => openSettings()} onHelpOpen={() => openHelp()} onTourStart={resumeOrStartTour} />
+    <div data-screen={screen} className="flex flex-col h-screen bg-composer-bg-dark text-composer-text">
+      <MusicBrainzWarmup />
+      <AppHeader
+        screen={screen}
+        onSettingsOpen={() => openSettings()}
+        onHelpOpen={() => openHelp()}
+        onTourStart={startTourFromHeader}
+      />
       <HelpModal
-        key={
-          helpOpen
-            ? `help-${helpLocation.section}-${helpLocation.scrollTop}-${helpLocation.query ?? ""}`
-            : "help-closed"
-        }
+        key={`help-${helpSession}`}
         isOpen={helpOpen}
         initialSection={helpLocation.section}
         initialScrollTop={helpLocation.scrollTop}
@@ -112,80 +167,38 @@ const AppContent: React.FC = () => {
         onClose={closeHelp}
       />
       <SettingsModal
-        key={settingsOpen ? "settings-open" : "settings-closed"}
+        key={`settings-${settingsSession}`}
         isOpen={settingsOpen}
         onClose={closeSettings}
-        onResetTour={resetTour}
       />
-      <TabBar />
-      <main className="relative flex-1 overflow-hidden">
-        <Activity mode={activeTab === "import" ? "visible" : "hidden"}>
-          <div className="absolute inset-0 flex flex-col">
-            <ImportPanel />
-          </div>
-        </Activity>
-        <Activity mode={activeTab === "edit" ? "visible" : "hidden"}>
-          <div className="absolute inset-0 flex flex-col">
-            <EditPanel />
-          </div>
-        </Activity>
-        <Activity mode={activeTab === "languages" ? "visible" : "hidden"}>
-          <div className="absolute inset-0 flex flex-col">
-            <LanguagesPanel />
-          </div>
-        </Activity>
-        <Activity mode={activeTab === "sync" ? "visible" : "hidden"}>
-          <div className="absolute inset-0 flex flex-col">
-            <SyncPanel />
-          </div>
-        </Activity>
-        <Activity mode={activeTab === "timeline" ? "visible" : "hidden"}>
-          <div className="absolute inset-0 flex flex-col">
-            <TimelinePanel />
-          </div>
-        </Activity>
-        <Activity mode={activeTab === "preview" ? "visible" : "hidden"}>
-          <div className="absolute inset-0 flex flex-col">
-            <PreviewPanel />
-          </div>
-        </Activity>
-        <Activity mode={activeTab === "export" ? "visible" : "hidden"}>
-          <div className="absolute inset-0 flex flex-col">
-            <ExportPanel />
-          </div>
-        </Activity>
-      </main>
+      <Activity mode={isEditor ? "hidden" : "visible"}>
+        <LibraryScreen />
+      </Activity>
+      <Activity mode={isEditor ? "visible" : "hidden"}>
+        <EditorScreen />
+      </Activity>
       {source && <AudioEngine />}
-      {showPlayer && <AudioPlayer />}
       <GuideCard state={guideCard} onSkip={skipGuideCard} />
     </div>
   );
 };
 
+// -- App ------------------------------------------------------------------------
+
 const App: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={appQueryClient}>
       <LazyMotion features={domAnimation} strict>
         <SettingLinkContext value={APP_SETTING_LINK_HOST}>
-          <AppContent />
-          <ConfirmModalHost />
-          <DivergenceModalHost />
+          <AppShell />
           <LyricsImportModalHost />
-          <Toaster
-            theme="dark"
-            position="bottom-center"
-            toastOptions={{
-              style: {
-                background: "var(--color-composer-bg-elevated)",
-                border: "1px solid var(--color-composer-border)",
-                color: "var(--color-composer-text)",
-              },
-            }}
-          />
+          <OverlayHosts />
         </SettingLinkContext>
       </LazyMotion>
     </QueryClientProvider>
   );
 };
+
+// -- Exports ------------------------------------------------------------------
 
 export { App };

@@ -1,13 +1,16 @@
+import { getEffectiveLines } from "@/domain/line/effective-words";
+import type { WordSelection } from "@/domain/selection/model";
+import { mergeWordSelections } from "@/domain/selection/set-ops";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { holdFrames } from "@/lib/frame-loop";
+import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import type { WordSelection } from "@/domain/selection/model";
-import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
-import { getEffectiveLines } from "@/domain/line/effective-words";
-import { mergeWordSelections } from "@/domain/selection/set-ops";
+import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { readViewScroll, scrollViewBy } from "@/views/timeline/view-scroll";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -47,8 +50,9 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
     const startX = start.clientX - containerRect.left + start.scrollLeft;
     const startY = start.clientY - containerRect.top + start.scrollTop;
-    const currentX = current.clientX - containerRect.left + container.scrollLeft;
-    const currentY = current.clientY - containerRect.top + container.scrollTop;
+    const { left, top } = readViewScroll(container);
+    const currentX = current.clientX - containerRect.left + left;
+    const currentY = current.clientY - containerRect.top + top;
 
     const x = Math.min(startX, currentX);
     const y = Math.min(startY, currentY);
@@ -66,23 +70,13 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
     const cy = currentRef.current.clientY - cRect.top;
     const cx = currentRef.current.clientX - cRect.left;
 
-    let scrolled = false;
-    if (cy < AUTO_SCROLL_ZONE) {
-      c.scrollTop -= AUTO_SCROLL_SPEED;
-      scrolled = true;
-    } else if (cy > cRect.height - AUTO_SCROLL_ZONE) {
-      c.scrollTop += AUTO_SCROLL_SPEED;
-      scrolled = true;
-    }
-    if (cx < AUTO_SCROLL_ZONE) {
-      c.scrollLeft -= AUTO_SCROLL_SPEED;
-      scrolled = true;
-    } else if (cx > cRect.width - AUTO_SCROLL_ZONE) {
-      c.scrollLeft += AUTO_SCROLL_SPEED;
-      scrolled = true;
-    }
+    const deltaTop =
+      cy < AUTO_SCROLL_ZONE ? -AUTO_SCROLL_SPEED : cy > cRect.height - AUTO_SCROLL_ZONE ? AUTO_SCROLL_SPEED : 0;
+    const deltaLeft =
+      cx < AUTO_SCROLL_ZONE ? -AUTO_SCROLL_SPEED : cx > cRect.width - AUTO_SCROLL_ZONE ? AUTO_SCROLL_SPEED : 0;
+    scrollViewBy(c, deltaLeft, deltaTop);
 
-    if (scrolled) {
+    if (deltaLeft !== 0 || deltaTop !== 0) {
       const updatedRect = computeRect();
       if (updatedRect) setMarqueeRect(updatedRect);
     }
@@ -96,13 +90,14 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
   const computeSelection = useCallback((rect: MarqueeRect): WordSelection[] => {
     const lines = getEffectiveLines(useProjectStore.getState().lines);
-    const { zoom, rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
+    const { zoom, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
     const layout = computeRowLayout({
       lines,
       rowHeights,
       defaultRowHeight,
       collapsedInstances,
-      waveformHeight: WAVEFORM_HEIGHT,
+      focusedGroup,
+      waveformHeight: currentOverviewBandHeight(),
       groupHeaderHeight: GROUP_HEADER_HEIGHT,
     });
 
@@ -153,7 +148,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
   const handleMarqueeMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || e.defaultPrevented) return;
 
       const target = e.target as HTMLElement;
       if (target.closest("[data-word-block]")) return;
@@ -163,12 +158,8 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
       stateRef.current = "pending";
       shiftRef.current = e.shiftKey;
-      startRef.current = {
-        clientX: e.clientX,
-        clientY: e.clientY,
-        scrollLeft: container.scrollLeft,
-        scrollTop: container.scrollTop,
-      };
+      const { left, top } = readViewScroll(container);
+      startRef.current = { clientX: e.clientX, clientY: e.clientY, scrollLeft: left, scrollTop: top };
       currentRef.current = { clientX: e.clientX, clientY: e.clientY };
     },
     [scrollContainerRef],
@@ -199,6 +190,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       setAutoScrolling(false);
 
       if (stateRef.current === "active") {
+        swallowTrailingClick();
         const rect = computeRect();
         if (rect) {
           const newSelections = computeSelection(rect);

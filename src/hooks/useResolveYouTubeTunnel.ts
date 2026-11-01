@@ -1,10 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { createElement, useEffect, useRef } from "react";
-import { toast } from "sonner";
-import { flushPendingSave } from "@/lib/persistence-debounce";
-import { getPersistenceSettled } from "@/lib/persistence-settled";
+import { metadataForNewSource } from "@/domain/project/source-metadata";
 import { useEnsureAuth } from "@/hooks/useEnsureAuth";
-import { type AudioSource, useAudioStore } from "@/stores/audio";
+import { correctPrimingForProjectAudio } from "@/lib/attach-audio-priming";
+import { openProjectIdSnapshot } from "@/lib/open-project-session";
+import { flushPendingSaveQuietly } from "@/lib/persistence-debounce";
+import { getPersistenceSettled } from "@/lib/persistence-settled";
+import { videoSourceMetadata } from "@/lib/source-metadata";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import {
   DEFAULT_COBALT_INSTANCE_ID,
@@ -22,8 +23,12 @@ import {
   buildBridgeAudioFile,
   formatBridgeErrorForToast,
   getAudioFromBridge,
+  isBridgeUnreachable,
 } from "@/utils/composer-bridge-api";
-import { normalizeIsrc } from "@/utils/isrc";
+import { isYouTubeSourceFor } from "@/utils/youtube-source";
+import { useQuery } from "@tanstack/react-query";
+import { createElement, useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -61,6 +66,17 @@ class TunnelError extends Error {
 }
 
 // -- Helpers ------------------------------------------------------------------
+
+// Times and stems are corrected before the file is published, so no stem loads before its repair.
+async function correctBeforePublishing(file: File): Promise<void> {
+  const projectId = openProjectIdSnapshot();
+  if (!projectId) return;
+  try {
+    await correctPrimingForProjectAudio(projectId, file);
+  } catch (error) {
+    console.error(LOG_PREFIX, "could not correct the project's MP3 timings", error);
+  }
+}
 
 function buildAudioFile(buffer: ArrayBuffer, filename: string | undefined, videoId: string): File {
   const safeName = (filename ?? videoId).replace(/[\\/:*?"<>|]/g, "").trim() || videoId;
@@ -144,13 +160,6 @@ function useResolveYouTubeTunnel(): void {
   ensureRef.current = ensureAuth;
 
   const source = useAudioStore((s) => s.source);
-  const previousSourceRef = useRef<AudioSource>(null);
-  useEffect(() => {
-    return () => {
-      previousSourceRef.current = source;
-    };
-  }, [source]);
-
   const bridgeEnabled = useSettingsStore((s) => s.experiments.youtubeBridge);
   const bridgeUrl = useSettingsStore((s) => s.composerBridgeUrl);
   const videoId = source?.type === "youtube" && !source.file ? source.videoId : null;
@@ -175,32 +184,37 @@ function useResolveYouTubeTunnel(): void {
     const data = query.data;
     if (!data || !videoId) return;
     let cancelled = false;
-    void getPersistenceSettled().then(() => {
-      if (cancelled) return;
+    const isStillWanted = () => {
       const current = useAudioStore.getState().source;
-      if (current?.type !== "youtube" || current.videoId !== videoId) return;
-      useAudioStore.getState().setYouTubeFile(data.file);
-      useAudioStore.getState().setYouTubeLoadError(null);
+      return !cancelled && current?.type === "youtube" && current.videoId === videoId;
+    };
+    void getPersistenceSettled()
+      .then(() => (isStillWanted() ? correctBeforePublishing(data.file) : undefined))
+      .then(() => {
+        if (!isStillWanted()) return;
+        const newlyLoaded = useAudioStore.getState().expectedAudio === null;
+        const provided = videoSourceMetadata(videoId, data);
+        useAudioStore.getState().setYouTubeFile(data.file, provided);
+        useAudioStore.getState().setYouTubeLoadError(null);
 
-      const project = useProjectStore.getState();
-      const currentTitle = project.metadata.title;
-      if (!currentTitle || currentTitle === videoId) {
-        const metadataPatch: Partial<typeof project.metadata> = { title: data.title || data.filename || videoId };
-        if (data.artist) metadataPatch.artists = [data.artist];
-        if (data.album) metadataPatch.album = data.album;
-        const bridgeIsrc = data.isrc ? normalizeIsrc(data.isrc) : undefined;
-        if (bridgeIsrc) metadataPatch.isrc = bridgeIsrc;
-        project.setMetadata(metadataPatch);
-        flushPendingSave();
-      }
-      if (
-        data.instanceId !== BRIDGE_INSTANCE_ID &&
-        !data.wasDefault &&
-        data.instanceId !== DEFAULT_COBALT_INSTANCE_ID
-      ) {
-        useSettingsStore.getState().recordCobaltInstanceResult(data.instanceId, "success");
-      }
-    });
+        const project = useProjectStore.getState();
+        const currentTitle = project.metadata.title;
+        if (newlyLoaded || !currentTitle || currentTitle === videoId) {
+          const placeholder = { title: videoId };
+          const patch = metadataForNewSource(project.metadata, project.importedMetadataKeys, placeholder, provided);
+          if (Object.keys(patch).length > 0) {
+            project.setMetadata(patch);
+            flushPendingSaveQuietly();
+          }
+        }
+        if (
+          data.instanceId !== BRIDGE_INSTANCE_ID &&
+          !data.wasDefault &&
+          data.instanceId !== DEFAULT_COBALT_INSTANCE_ID
+        ) {
+          useSettingsStore.getState().recordCobaltInstanceResult(data.instanceId, "success");
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -235,11 +249,13 @@ function useResolveYouTubeTunnel(): void {
     if (instanceId !== BRIDGE_INSTANCE_ID && !wasDefault && instanceId !== DEFAULT_COBALT_INSTANCE_ID) {
       useSettingsStore.getState().recordCobaltInstanceResult(instanceId, "error", message);
     }
-    const current = useAudioStore.getState().source;
-    if (current?.type === "youtube" && current.videoId === videoId) {
-      useAudioStore.getState().setSource(previousSourceRef.current);
+    if (isYouTubeSourceFor(useAudioStore.getState().source, videoId)) {
+      useAudioStore
+        .getState()
+        .failYouTubeLoad(message, isBridgeUnreachable(cause) ? "bridge-unreachable" : "fetch-failed");
+    } else {
+      useAudioStore.getState().setYouTubeLoadError(message);
     }
-    useAudioStore.getState().setYouTubeLoadError(message);
   }, [query.error, videoId]);
 }
 

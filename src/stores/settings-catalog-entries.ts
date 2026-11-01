@@ -1,45 +1,39 @@
 import type { SettingsState } from "@/stores/settings";
 import type { SettingEntry } from "@/stores/settings-catalog";
-import { MOD_KEY } from "@/utils/platform";
+import { GENERAL_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-general";
+import { SPECTRUM_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-spectrum";
+import { STORAGE_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-storage";
+import { TIMELINE_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-timeline";
+import { pluralize } from "@/utils/pluralize";
 
-// -- Catalog -------------------------------------------------------------------
+// -- Helpers ------------------------------------------------------------------
+
+function syncCountInDescription(seconds: number): string {
+  if (seconds === 0) return "Playback starts right away in Sync.";
+  return `Count down for ${pluralize(seconds, "second")} before Sync plays from the start of the song, so you are ready for the first word.`;
+}
+
+// -- Catalog ------------------------------------------------------------------
 
 const SETTINGS_CATALOG = {
-  showShortcutHints: {
-    section: "general",
-    label: "Show shortcut hints",
-    description: "Display keyboard shortcut badges on toolbar buttons.",
-    keywords: ["badges", "keys", "hotkeys"],
-    settingKey: "showShortcutHints",
+  ...GENERAL_CATALOG_ENTRIES,
+  libraryView: {
+    section: "projects",
+    label: "Library view",
+    description: "How the Projects page shows your songs. The toggle on that page changes this too.",
+    settingKey: "libraryView",
   },
-  showSyllableIndicators: {
-    section: "general",
-    label: "Show syllable indicators",
-    description: "Visually group syllables split from one word.",
-    keywords: ["split", "pipe"],
-    settingKey: "showSyllableIndicators",
+  librarySort: {
+    section: "projects",
+    label: "Default sort",
+    description: "The order projects appear in when you open Projects.",
+    settingKey: "librarySort",
   },
-  autoExtractBackgroundVocals: {
-    section: "general",
-    label: "Auto-extract background vocals",
-    description: "Move parenthesised text into background vocals when lyrics are pasted, imported, or edited.",
-    keywords: ["bg", "parentheses", "brackets"],
-    settingKey: "autoExtractBackgroundVocals",
-  },
-  mergeStandaloneBackgroundLines: {
-    section: "general",
-    label: "Merge standalone background lines",
-    description:
-      "When a whole line is in parentheses, attach it to the line above instead of keeping it as its own line.",
-    keywords: ["bg", "parentheses"],
-    settingKey: "mergeStandaloneBackgroundLines",
-  },
-  preserveBracketsOnExtraction: {
-    section: "general",
-    label: "Preserve brackets when extracting",
-    description: "Keep parentheses around extracted background vocals. Multiple snippets share one outer pair.",
-    keywords: ["bg", "parentheses"],
-    settingKey: "preserveBracketsOnExtraction",
+  launchScreen: {
+    section: "projects",
+    label: "On launch",
+    description: "What Composer shows when you open it.",
+    settingKey: "launchScreen",
   },
   theme: {
     section: "theme",
@@ -50,9 +44,16 @@ const SETTINGS_CATALOG = {
   defaultPlaybackRate: {
     section: "playback",
     label: "Default playback rate",
-    description: "Starting playback speed when audio is loaded.",
+    description: "Starting playback speed while Remember playback speed is off.",
     keywords: ["speed", "tempo"],
     settingKey: "defaultPlaybackRate",
+  },
+  rememberPlaybackRate: {
+    section: "playback",
+    label: "Remember playback speed",
+    description: "Keep your playback speed between sessions.",
+    keywords: ["speed", "tempo"],
+    settingKey: "rememberPlaybackRate",
   },
   preservePitch: {
     section: "playback",
@@ -74,97 +75,38 @@ const SETTINGS_CATALOG = {
     keywords: ["scrub", "sound"],
     settingKey: "audioScrubPreview",
   },
+  seekStep: {
+    section: "playback",
+    label: "Seek step",
+    description: "How far the seek back and seek forward shortcuts move the playhead.",
+    keywords: ["skip", "rewind", "forward", "jump"],
+    settingKey: "seekStep",
+  },
+  fineSeekStep: {
+    section: "playback",
+    label: "Fine seek step",
+    description: "How far the fine seek shortcuts move the playhead. Keep it small to land right before a word.",
+    keywords: ["skip", "rewind", "forward", "jump", "frame", "nudge"],
+    settingKey: "fineSeekStep",
+  },
   autoSeparateOnImport: {
     section: "playback",
-    label: "Auto-separate vocals on import",
-    description: "Run the vocal-separation model automatically each time a new audio file is loaded.",
-    keywords: ["stems", "isolate"],
+    group: "Vocal separation",
+    label: "Separate vocals on import",
+    description: "Runs the vocal model each time you load a new song.",
+    keywords: ["stems", "isolate", "auto-separate", "automatically"],
     settingKey: "autoSeparateOnImport",
   },
   vocalModelVariant: {
     section: "playback",
-    label: "Vocal model precision",
-    description: "fp32 is the stable default. fp16 is smaller but may produce invalid output in some browsers.",
-    keywords: ["fp16", "fp32", "stems", "separation"],
+    group: "Vocal separation",
+    label: "Vocal model",
+    description: "fp16 is half the size but needs WebGPU shader-f16.",
+    keywords: ["fp16", "fp32", "stems", "separation", "precision"],
     settingKey: "vocalModelVariant",
   },
-  defaultZoom: {
-    section: "timeline",
-    label: "Default zoom",
-    description: "Initial zoom level (px/sec) when opening the timeline.",
-    settingKey: "defaultZoom",
-  },
-  defaultRowHeight: {
-    section: "timeline",
-    label: "Default row height",
-    description: "Starting height of each lyric row in the timeline.",
-    settingKey: "defaultRowHeight",
-  },
-  timelineSnap: {
-    section: "timeline",
-    label: "Snap (magnet)",
-    description: "Word edges snap to nearby anchors when dragging or resizing.",
-    settingKey: "timelineSnap",
-  },
-  vocalOnsetSnap: {
-    section: "timeline",
-    label: "Vocal onset snap",
-    description: "Include detected vocal onset anchors as snap targets in the timeline.",
-    settingKey: "vocalOnsetSnap",
-  },
-  timelineSnapThreshold: {
-    section: "timeline",
-    label: "Snap threshold",
-    description: "Distance (in pixels) at which the moving block locks onto an anchor.",
-    keywords: ["distance"],
-    settingKey: "timelineSnapThreshold",
-  },
-  snapPlayheadToPoints: {
-    section: "timeline",
-    label: "Snap playhead to points",
-    description: `Clicking or dragging the playhead snaps it to nearby snap points and vocal onsets. Hold ${MOD_KEY} to bypass.`,
-    settingKey: "snapPlayheadToPoints",
-  },
-  followPlayhead: {
-    section: "timeline",
-    label: "Follow playhead",
-    description: "Auto-scroll the timeline to keep the playhead visible.",
-    keywords: ["auto scroll"],
-    settingKey: "followPlayhead",
-  },
-  defaultRollingEdit: {
-    section: "timeline",
-    label: "Default rolling edit mode",
-    description: "Start in rolling edit mode when opening a project.",
-    settingKey: "defaultRollingEdit",
-  },
-  syllablesFollowRolling: {
-    section: "timeline",
-    label: "Syllables follow rolling edit",
-    description:
-      "Syllables of one word move together only in rolling edit mode, like separate words. When off, they always move together.",
-    settingKey: "syllablesFollowRolling",
-  },
-  defaultPreviewSidebar: {
-    section: "timeline",
-    label: "Default preview sidebar",
-    description: "Open the preview sidebar by default.",
-    settingKey: "defaultPreviewSidebar",
-  },
-  timelineHorizontalScroll: {
-    section: "timeline",
-    label: "Scroll wheel scrolls timeline",
-    description: "Plain scroll moves the timeline horizontally. Hold Shift to scroll vertically.",
-    keywords: ["mouse", "wheel", "horizontal"],
-    settingKey: "timelineHorizontalScroll",
-  },
-  splitCharacter: {
-    section: "sync",
-    label: "Split character",
-    description: "Character used to mark syllable boundaries in the edit view.",
-    keywords: ["syllable", "pipe", "separator"],
-    settingKey: "splitCharacter",
-  },
+  ...TIMELINE_CATALOG_ENTRIES,
+  ...SPECTRUM_CATALOG_ENTRIES,
   nudgeAmount: {
     section: "sync",
     label: "Nudge amount",
@@ -186,8 +128,16 @@ const SETTINGS_CATALOG = {
   redoPreroll: {
     section: "sync",
     label: "Re-record pre-roll",
-    description: "How far before the selected line or word playback starts when re-recording in Sync.",
+    description:
+      "How far before the target line or word Sync starts playback after a jump, such as when you re-record a line or word, or when Sync skips past a repeat that already shares its timing.",
     settingKey: "redoPreroll",
+  },
+  syncCountIn: {
+    section: "sync",
+    label: "Count-in",
+    descriptionFor: (state) => syncCountInDescription(state.syncCountIn),
+    keywords: ["countdown", "pre-roll", "start delay"],
+    settingKey: "syncCountIn",
   },
   defaultGranularity: {
     section: "sync",
@@ -195,11 +145,28 @@ const SETTINGS_CATALOG = {
     description: "Whether new projects start in word or line timing mode.",
     settingKey: "defaultGranularity",
   },
-  confirmReplaceProjectFromHash: {
-    section: "confirmations",
-    label: "Confirm replacing project from URL",
-    description: "Show a warning when an import URL would replace your current project.",
-    settingKey: "confirmReplaceProjectFromHash",
+  alignmentModelId: {
+    section: "sync",
+    group: "Auto-align",
+    label: "Alignment model",
+    description: "The model that times each word. Recommended follows the newest tested model.",
+    keywords: ["hubertfa", "auto-align", "forced alignment", "checkpoint", "manifest"],
+    settingKey: "alignmentModelId",
+  },
+  keepAlignmentModelLoaded: {
+    section: "sync",
+    group: "Auto-align",
+    label: "Keep alignment model loaded",
+    description:
+      "Aligning one line starts at once, and splitting a word times its syllables from the audio. Uses about 400 MB of memory.",
+    keywords: ["hubertfa", "auto-align", "memory", "gpu", "unload"],
+    settingKey: "keepAlignmentModelLoaded",
+  },
+  shortcutPreset: {
+    section: "shortcuts",
+    label: "Shortcut presets",
+    description: "Pick a whole layout, or import a shortcuts code.",
+    keywords: ["preset", "layout", "space", "enter", "amll", "osu", "remastered", "import", "code", "share"],
   },
   confirmReplaceLyrics: {
     section: "confirmations",
@@ -255,12 +222,7 @@ const SETTINGS_CATALOG = {
     description: "Show a warning before a new song clears imported details you have not exported.",
     settingKey: "confirmClearImportedSongDetails",
   },
-  autoSaveDelay: {
-    section: "storage",
-    label: "Auto-save delay",
-    description: "How long to wait after your last edit before auto-saving.",
-    settingKey: "autoSaveDelay",
-  },
+  ...STORAGE_CATALOG_ENTRIES,
   previewRenderer: {
     section: "advanced",
     label: "Preview renderer",
@@ -283,6 +245,6 @@ const SETTINGS_CATALOG = {
   },
 } as const satisfies Record<string, SettingEntry>;
 
-// -- Exports -------------------------------------------------------------------
+// -- Exports ------------------------------------------------------------------
 
 export { SETTINGS_CATALOG };

@@ -1,15 +1,15 @@
-import { useProjectStore } from "@/stores/project";
+import { keepsOwnTiming, sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
+import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";
 import { buildGroupPingVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import { registerBanner } from "@/views/timeline/banner-progress-registry";
-import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { getWordsInInstance } from "@/views/timeline/utils";
-import { IconChevronDown, IconLink } from "@tabler/icons-react";
+import { useBannerDrag } from "@/views/timeline/use-banner-drag";
+import { IconChevronDown, IconClock, IconLink } from "@tabler/icons-react";
 import { m } from "motion/react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -43,12 +43,12 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
   const pingingGroupId = useTimelineStore((s) => s.pingingGroupId);
   const isPinging = pingingGroupId === group.id;
   const pingVariants = useMemo(() => buildGroupPingVariants(group.color), [group.color]);
-  const setDraggedGroupShift = useTimelineStore((s) => s.setDraggedGroupShift);
-  const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
-
-  const [dragOffsetPx, setDragOffsetPx] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStateRef = useRef<{ startX: number; moved: boolean; cleanup: () => void } | null>(null);
+  const { dragOffsetPx, isDragging, handlePointerDown } = useBannerDrag({
+    groupId: group.id,
+    instanceIdx,
+    instanceStart,
+    instanceEnd,
+  });
   const bannerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -57,62 +57,18 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
     return registerBanner(node);
   }, []);
 
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      if (e.button !== 0) return;
-      e.stopPropagation();
-      const startX = e.clientX;
-
-      const handleMove = (moveEvent: PointerEvent) => {
-        const dx = moveEvent.clientX - startX;
-        if (!dragStateRef.current) return;
-        if (!dragStateRef.current.moved && Math.abs(dx) >= DRAG_THRESHOLD_PX) {
-          dragStateRef.current.moved = true;
-          setIsDragging(true);
-        }
-        if (dragStateRef.current.moved) {
-          setDragOffsetPx(dx);
-          setDraggedGroupShift({ groupId: group.id, instanceIdx, offsetPx: dx });
-        }
-      };
-
-      const handleUp = (upEvent: PointerEvent) => {
-        const wasDrag = dragStateRef.current?.moved ?? false;
-        const dx = upEvent.clientX - startX;
-        const cleanup = dragStateRef.current?.cleanup;
-        dragStateRef.current = null;
-        cleanup?.();
-        setIsDragging(false);
-        setDragOffsetPx(0);
-        setDraggedGroupShift(null);
-
-        if (wasDrag && useProjectStore.getState().groups.find((g) => g.id === group.id)) {
-          const deltaSeconds = dx / zoom;
-          if (Math.abs(deltaSeconds) > 0.001) {
-            useProjectStore.getState().shiftInstance(group.id, instanceIdx, deltaSeconds);
-          }
-        } else {
-          // treat as click: select all words in this instance (so nudge works on it)
-          const lines = useProjectStore.getState().lines;
-          setSelectedWords(getWordsInInstance(lines, group.id, instanceIdx));
-        }
-      };
-
-      const cleanup = () => {
-        document.removeEventListener("pointermove", handleMove);
-        document.removeEventListener("pointerup", handleUp);
-      };
-
-      dragStateRef.current = { startX, moved: false, cleanup };
-      document.addEventListener("pointermove", handleMove);
-      document.addEventListener("pointerup", handleUp);
-    },
-    [group.id, instanceIdx, setSelectedWords, setDraggedGroupShift, zoom],
-  );
-
   const setPingingGroupId = useTimelineStore((s) => s.setPingingGroupId);
   const handleBadgeMouseEnter = useCallback(() => setPingingGroupId(group.id), [group.id, setPingingGroupId]);
   const handleBadgeMouseLeave = useCallback(() => setPingingGroupId(null), [setPingingGroupId]);
+
+  const openGroup = useTimelineStore((s) => s.openGroup);
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      openGroup(group.id, instanceIdx);
+    },
+    [group.id, instanceIdx, openGroup],
+  );
 
   const setContextMenu = useTimelineStore((s) => s.setContextMenu);
   const toggleInstanceCollapsed = useTimelineStore((s) => s.toggleInstanceCollapsed);
@@ -140,6 +96,8 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
     [group.id, instanceIdx, setContextMenu],
   );
 
+  const isShared = sharesTiming(group, instanceIdx);
+  const hasOwnTiming = keepsOwnTiming(group, instanceIdx);
   const left = instanceStart * zoom;
   const width = Math.max(BANNER_MIN_WIDTH, (instanceEnd - instanceStart) * zoom);
   const deltaSecondsLive = dragOffsetPx / Math.max(zoom, 1);
@@ -177,41 +135,43 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
       variants={pingVariants}
       animate={isPinging ? "ping" : "idle"}
       className={cn(
-        "absolute top-1 bottom-1 flex items-center gap-1 rounded-md select-none pl-1.5 pr-2.5",
-        "border text-[10px] font-medium text-composer-text z-[30]",
+        "absolute top-1 bottom-1 flex items-center gap-1.5 rounded-[7px] select-none pl-1 pr-2 z-[30]",
+        "text-[11.5px] font-semibold leading-none text-composer-text banner-elevation",
         isDragging ? "cursor-grabbing" : "cursor-grab",
       )}
       onPointerDown={handlePointerDown}
       onMouseDown={(e) => e.stopPropagation()}
       onContextMenu={handleContextMenu}
+      onDoubleClick={handleDoubleClick}
       style={{
         left,
         width,
-        background: `color-mix(in srgb, ${group.color} 18%, transparent)`,
-        borderColor: `color-mix(in srgb, ${group.color} 60%, transparent)`,
+        background: `linear-gradient(to bottom, color-mix(in oklab, var(--ink) 4%, transparent), transparent 60%), color-mix(in oklab, ${group.color} 24%, var(--word-face))`,
         transform: isDragging ? `translateX(${dragOffsetPx}px)` : undefined,
       }}
     >
       <IconButton
         label={isCollapsed ? "Expand instance" : "Collapse instance"}
-        icon={
-          <IconChevronDown
-            className={cn("size-3 transition-transform duration-200 ease-out", isCollapsed && "-rotate-90")}
-          />
-        }
+        icon={<IconChevronDown className={cn("size-[13px]", isCollapsed && "-rotate-90")} />}
         variant="ghost"
         onClick={handleChevronClick}
         onPointerDown={handleChevronPointerDown}
         onDoubleClick={(e) => e.stopPropagation()}
         className="shrink-0 w-auto h-auto p-0.5 opacity-70 hover:opacity-100 hover:bg-transparent text-current relative before:content-[''] before:absolute before:-inset-2"
       />
-      <span className="font-semibold whitespace-nowrap">{group.label}</span>
+      <span className="min-w-0 truncate">{group.label}</span>
+      {hasOwnTiming && (
+        <span className="flex min-w-0 items-center gap-0.5 overflow-hidden rounded-full border border-dashed border-composer-text-faint py-px pl-1 pr-1.5 text-composer-text-tertiary whitespace-nowrap">
+          <IconClock className="size-2.5 shrink-0" />
+          <span className="truncate">Own timing</span>
+        </span>
+      )}
       <span
-        className="flex items-center gap-1 text-composer-text-muted tabular-nums whitespace-nowrap ml-auto"
+        className="flex items-center gap-[3px] font-medium text-composer-text/65 tabular-nums whitespace-nowrap ml-auto"
         onMouseEnter={handleBadgeMouseEnter}
         onMouseLeave={handleBadgeMouseLeave}
       >
-        <IconLink className="size-2.5" />
+        <IconLink className="size-[13px]" style={isShared ? { color: group.color } : undefined} />
         {ordinal} of {totalInstances}
         {isDragging && (
           <span className="ml-1 text-composer-text">
@@ -224,7 +184,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
         <>
           <span
             aria-hidden
-            className="absolute inset-0 rounded-md pointer-events-none overflow-hidden"
+            className="absolute inset-0 rounded-[7px] pointer-events-none overflow-hidden"
             style={{
               background: `linear-gradient(to right, color-mix(in srgb, ${group.color} 35%, transparent) var(--progress-fill, 0%), transparent var(--progress-fill, 0%))`,
             }}

@@ -1,12 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { usePersistence } from "@/hooks/usePersistence";
-import { clearCurrentProject, loadCurrentProject } from "@/lib/persistence";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { seedProject } from "@/test/idb";
+import { loadOpenProjectRecord } from "@/test/projects";
 import { render } from "@/test/render";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const PersistenceHost: React.FC = () => {
   usePersistence();
@@ -35,13 +35,11 @@ async function mountPersistence(): Promise<void> {
 describe("usePersistence · hand-edited TTML", () => {
   const initialAutoSaveDelay = useSettingsStore.getState().autoSaveDelay;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     useSettingsStore.setState({ autoSaveDelay: 30 });
-    await clearCurrentProject();
   });
-  afterEach(async () => {
+  afterEach(() => {
     useSettingsStore.setState({ autoSaveDelay: initialAutoSaveDelay });
-    await clearCurrentProject();
   });
 
   it("saves the edit with the project", async () => {
@@ -50,7 +48,7 @@ describe("usePersistence · hand-edited TTML", () => {
     useProjectStore.getState().setLines([{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }]);
     useProjectStore.getState().setTtmlEditState(EDIT);
 
-    await expect.poll(async () => (await loadCurrentProject())?.ttmlEditState, { timeout: 2000 }).toEqual(EDIT);
+    await expect.poll(async () => (await loadOpenProjectRecord())?.ttmlEditState, { timeout: 2000 }).toEqual(EDIT);
   });
 
   it("restores the edit across a reload", async () => {
@@ -67,7 +65,31 @@ describe("usePersistence · hand-edited TTML", () => {
 
     useProjectStore.getState().setTtmlEditState(null);
 
-    await expect.poll(async () => (await loadCurrentProject())?.ttmlEditState, { timeout: 2000 }).toBeNull();
+    await expect.poll(async () => (await loadOpenProjectRecord())?.ttmlEditState, { timeout: 2000 }).toBeNull();
+  });
+
+  describe("regressions", () => {
+    it("regression: saves and restores that the lyrics changed under the edit", async () => {
+      const kept = { ...EDIT, lyricsChanged: true as const };
+      await seedProject(savedProject({ ttmlEditState: kept }));
+      await mountPersistence();
+
+      expect(useProjectStore.getState().ttmlEditState).toEqual(kept);
+
+      const typedAgain = { ...kept, content: "<tt>hand edited again</tt>" };
+      useProjectStore.getState().setTtmlEditState(typedAgain);
+      await expect
+        .poll(async () => (await loadOpenProjectRecord())?.ttmlEditState, { timeout: 2000 })
+        .toEqual(typedAgain);
+    });
+
+    it("regression: loads an edit saved with a line key map by an earlier build", async () => {
+      await seedProject(savedProject({ ttmlEditState: { ...EDIT, lineKeyIds: { L1: "L1" } } }));
+      await mountPersistence();
+
+      expect(useProjectStore.getState().ttmlEditState).toMatchObject(EDIT);
+      expect(useProjectStore.getState().lines).toHaveLength(1);
+    });
   });
 
   describe("edge cases", () => {

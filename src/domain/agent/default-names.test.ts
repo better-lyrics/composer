@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { withDefaultAgentNames } from "@/domain/agent/default-names";
 import type { Agent } from "@/domain/agent/model";
+import { describe, expect, it } from "vitest";
 
 describe("withDefaultAgentNames", () => {
   it("restores the preset name on a renamed preset agent", () => {

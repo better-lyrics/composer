@@ -1,6 +1,6 @@
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { mainWordEditFields } from "@/domain/line/main-words";
-import { effectiveLineBrand, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { type LyricLine, effectiveLineBrand, reconcileLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { trackWords } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";

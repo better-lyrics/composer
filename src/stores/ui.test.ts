@@ -45,6 +45,15 @@ describe("useUIStore", () => {
       expect(state().settingsReturnTo).toEqual({ section: "timeline", scrollTop: 240 });
     });
 
+    it("reopens where it was left without a target", () => {
+      state().openSettings({ target: { section: "timeline" } });
+      state().setSettingsQuery("snap");
+      state().closeSettings();
+      state().rememberSettingsScrollTop(320);
+      state().openSettings();
+      expect(state()).toMatchObject({ settingsSection: "timeline", settingsQuery: "snap", settingsScrollTop: 320 });
+    });
+
     it("clears a search query left from before", () => {
       state().openSettings();
       state().setSettingsQuery("snap");
@@ -83,10 +92,27 @@ describe("useUIStore", () => {
     });
   });
 
+  describe("reopening Help", () => {
+    it("resumes the location Help was closed at", () => {
+      state().openHelp("timeline");
+      state().closeHelp();
+      state().rememberHelpLocation({ section: "timeline", scrollTop: 180, query: "snap" });
+      state().openHelp();
+      expect(state().helpLocation).toEqual({ section: "timeline", scrollTop: 180, query: "snap" });
+    });
+
+    it("keeps a section requested while Help is open", () => {
+      state().openHelp("timeline");
+      state().openHelp("best-practices");
+      state().rememberHelpLocation({ section: "timeline", scrollTop: 180 });
+      expect(state().helpLocation).toEqual({ section: "best-practices", scrollTop: 0 });
+    });
+  });
+
   describe("returning to a Help search", () => {
     it("reopens Help with the search it came from", () => {
       state().openSettings({
-        target: { setting: "timelineSnapThreshold" },
+        target: { setting: "snapDistanceWords" },
         returnTo: { section: "timeline", scrollTop: 40, query: "snap threshold" },
       });
       state().closeSettings();

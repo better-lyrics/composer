@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
+import { describe, expect, it } from "vitest";
 
 const DUET_TTML = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:title>Duet</ttm:title><ttm:agent type="person" xml:id="v1"><ttm:name type="full">Alice</ttm:name></ttm:agent><ttm:agent type="person" xml:id="v2"><ttm:name type="full">Bob</ttm:name></ttm:agent></metadata></head><body><div><p begin="1.0" end="2.0" ttm:agent="v1">Line one</p><p begin="2.0" end="3.0" ttm:agent="v2">Line two</p></div></body></tt>`;
 
