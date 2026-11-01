@@ -2,6 +2,7 @@ import type { SyncGranularity } from "@/domain/line/sync-progress";
 import { cn } from "@/utils/cn";
 import type { LaneClickTarget } from "@/views/sync/lane-click-target";
 import type { LaneRow } from "@/views/sync/lane-rows";
+import { normalizeWheelDelta } from "@/views/timeline/timeline-wheel";
 import { type LaneRing, SyncLaneLine } from "@/views/sync/sync-lane-line";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
@@ -162,7 +163,10 @@ const SyncLane: React.FC<SyncLaneProps> = ({
     const centre = rowCentre(anchor);
     const minOffset = centre - rowCentre(lastElement);
     const maxOffset = centre - rowCentre(firstElement);
-    scrollOffset.current = Math.min(Math.max(scrollOffset.current - event.deltaY, minOffset), maxOffset);
+    scrollOffset.current = Math.min(
+      Math.max(scrollOffset.current - normalizeWheelDelta(event.deltaY, event.deltaMode), minOffset),
+      maxOffset,
+    );
     place();
   };
 

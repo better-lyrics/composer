@@ -121,6 +121,7 @@ const SyncPanel: React.FC = () => {
   });
 
   const noticePause = useEffectEvent(() => {
+    if (audioElement?.ended) return;
     if (activeTab === "sync" && syncState.isActive && !editMode) showFirstPauseToastOnce();
   });
 
@@ -202,7 +203,9 @@ const SyncPanel: React.FC = () => {
     setSyncEditMode(entering);
     if (entering && isPlaying) setIsPlaying(false);
   }, [editMode, isPlaying, setIsPlaying]);
-  const toggleEditFromKeyboard = useEffectEvent(handleToggleEdit);
+  const toggleEditFromKeyboard = useEffectEvent(() => {
+    if (source && lines.length > 0) handleToggleEdit();
+  });
 
   const handleLaneJump = useCallback(
     (targetLineIndex: number, target: NonNullable<LaneClickTarget>) =>
