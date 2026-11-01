@@ -259,6 +259,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "l" },
   },
   {
+    id: "sync.toggleEdit",
+    scope: "sync",
+    description: "Edit timings",
+    defaultBinding: { key: "e" },
+  },
+  {
     id: "timeline.toggleFollow",
     scope: "timeline",
     description: "Toggle follow",

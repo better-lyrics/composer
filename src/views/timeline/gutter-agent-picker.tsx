@@ -1,3 +1,4 @@
+import { agentDisplayName } from "@/domain/agent/display-name";
 import { getAgentColor } from "@/domain/agent/colors";
 import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";
@@ -100,7 +101,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
                       isActive && "bg-(--layer-1)",
                     )}
                   >
-                    <SingerTag color={getAgentColor(agent.id)}>{agent.name || agent.id}</SingerTag>
+                    <SingerTag color={getAgentColor(agent.id)}>{agentDisplayName(agent)}</SingerTag>
                     {isActive && <IconCheck aria-hidden="true" className="size-4 shrink-0 text-composer-accent-text" />}
                   </button>
                 );

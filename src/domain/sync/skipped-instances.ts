@@ -1,6 +1,6 @@
 import { instanceStart, sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
-import { isAttachedToInstance } from "@/domain/instance/predicates";
+import { attachedLineIndices } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { type SyncCursor, nextSyncableLineIndex } from "@/domain/sync/cursor";
@@ -27,10 +27,6 @@ interface SyncPosition {
 }
 
 // -- Functions ----------------------------------------------------------------
-
-function attachedLineIndices(lines: readonly LyricLine[], groupId: string, instanceIdx: number): number[] {
-  return lines.flatMap((line, index) => (isAttachedToInstance(line, groupId, instanceIdx) ? [index] : []));
-}
 
 function skippedInstanceOf(
   lines: readonly LyricLine[],
