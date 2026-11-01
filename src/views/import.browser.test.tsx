@@ -6,7 +6,7 @@ import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { DRAGGED_LINK, dispatchDrag, dragFile, dragText } from "@/test/file-drag";
 import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
-import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
+import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-url";
 import { ImportPanel } from "@/views/import";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";

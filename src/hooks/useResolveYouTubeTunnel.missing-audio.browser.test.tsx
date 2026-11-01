@@ -15,7 +15,7 @@ import { createLine } from "@/test/factories";
 import { type FakeBridge, installFakeBridge } from "@/test/fake-bridge";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
-import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
+import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "vitest-browser-react";
 
