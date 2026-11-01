@@ -7,7 +7,7 @@ import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { relinkProjectAudioFile } from "@/lib/relink-audio";
 import { sourceSwapPatch } from "@/domain/project/source-metadata";
 import { beginSourceSwap, fileSourceMetadata, readAudioTags, settleSourceSwap } from "@/lib/source-metadata";
-import { type AudioSource, useAudioStore } from "@/stores/audio";
+import { type AudioSource, isActiveAudioFile, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { fileIdentityKey } from "@/utils/file-identity";
 import { fileNameWithoutExtension } from "@/utils/file-name";
@@ -24,18 +24,16 @@ const UNPLAYABLE_AUDIO_MESSAGE = "That file is not playable audio.";
 
 type TagWrite = "apply" | "skip";
 
-type AudioLoadMode = "auto" | "replace" | "new-song";
+type AudioLoadMode = "auto" | "replace";
+
+// A song opened from a link: never relinks missing audio and never asks to clear imported details.
+type AudioFileLoadMode = AudioLoadMode | "new-song";
 
 // -- State --------------------------------------------------------------------
 
 let latestPick: File | null = null;
 
 // -- Helpers ------------------------------------------------------------------
-
-function isActiveFile(file: File): boolean {
-  const active = useAudioStore.getState().source;
-  return active?.type === "file" && active.file === file;
-}
 
 function settleSongDetails(file: File, replacesDifferentSong: boolean, title: string): Promise<TagWrite> {
   const project = useProjectStore.getState();
@@ -49,7 +47,7 @@ function settleSongDetails(file: File, replacesDifferentSong: boolean, title: st
     return Promise.resolve("apply");
   }
   return confirmClearImportedSongDetails().then((clear) => {
-    if (!isActiveFile(file)) return "skip";
+    if (!isActiveAudioFile(file)) return "skip";
     const current = useProjectStore.getState();
     if (clear) {
       current.resetSongIdentity(title);
@@ -62,7 +60,7 @@ function settleSongDetails(file: File, replacesDifferentSong: boolean, title: st
 
 async function applyAudioTags(file: File): Promise<void> {
   const patch = await readAudioTags(file);
-  if (!isActiveFile(file)) return;
+  if (!isActiveAudioFile(file)) return;
   if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);
 }
 
@@ -88,7 +86,7 @@ async function swapFileInPlace(file: File, previous: AudioSource): Promise<void>
   adoptPrimingForNewAudio();
   useAudioStore.getState().setSource(target);
   const [before, next] = await Promise.all([baseline, fileSourceMetadata(file)]);
-  if (!isActiveFile(file) || openProjectIdSnapshot() !== projectId || !settleSourceSwap(target)) return;
+  if (!isActiveAudioFile(file) || openProjectIdSnapshot() !== projectId || !settleSourceSwap(target)) return;
   const { metadata, importedMetadataKeys } = useProjectStore.getState();
   const patch = sourceSwapPatch(metadata, importedMetadataKeys, before, next);
   if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);
@@ -109,8 +107,8 @@ async function startFileInNewProject(file: File, title: string): Promise<void> {
 
 // -- Hook ---------------------------------------------------------------------
 
-function useLoadAudioFile(): (file: File, mode?: AudioLoadMode) => Promise<void> {
-  return useCallback(async (file: File, mode: AudioLoadMode = "auto") => {
+function useLoadAudioFile(): (file: File, mode?: AudioFileLoadMode) => Promise<void> {
+  return useCallback(async (file: File, mode: AudioFileLoadMode = "auto") => {
     latestPick = file;
     const { source, expectedAudio } = useAudioStore.getState();
     const awaitsMissingAudio = source === null && expectedAudio !== null;
@@ -136,7 +134,9 @@ function useLoadAudioFile(): (file: File, mode?: AudioLoadMode) => Promise<void>
       if (replacesDifferentSong) void swapFileInPlace(file, previous);
       return;
     }
-    if (replacesDifferentSong && hasLyricLines(useProjectStore.getState().lines)) {
+    const project = useProjectStore.getState();
+    const keepsOpenProject = !hasLyricLines(project.lines) && !(mode === "new-song" && project.hasUnexportedImport);
+    if (replacesDifferentSong && !keepsOpenProject) {
       await startFileInNewProject(file, title);
       return;
     }
@@ -148,4 +148,4 @@ function useLoadAudioFile(): (file: File, mode?: AudioLoadMode) => Promise<void>
 // -- Exports ------------------------------------------------------------------
 
 export { useLoadAudioFile };
-export type { AudioLoadMode };
+export type { AudioFileLoadMode, AudioLoadMode };

@@ -79,7 +79,7 @@ function useImportFromQuery(): void {
             : "none";
       if (cancelled || link === "reopened" || link === "failed") return;
 
-      if (link !== "created") {
+      if (link !== "created" && link !== "replaced") {
         // A saved project that fails to read has nothing to overwrite.
         const hasProjectToOverwrite = await isProjectNonEmpty().catch((error) => {
           console.warn(`${LOG_PREFIX} could not read the saved project`, error);

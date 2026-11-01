@@ -1,9 +1,9 @@
 import { probeAudioFile } from "@/audio/probe-audio-file";
-import { type AudioLoadMode, useLoadAudioFile } from "@/hooks/useLoadAudioFile";
+import { type AudioFileLoadMode, useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { type LinkProjectOutcome, getPersistenceSettled, markLinkedFilesSettled } from "@/lib/persistence-settled";
-import { useAudioStore } from "@/stores/audio";
+import { isActiveAudioFile } from "@/stores/audio";
 import {
   LINKED_FILE_PARAM_NAMES,
   type LinkedFileParam,
@@ -36,6 +36,7 @@ interface BootLinkedFiles {
 const LOG_PREFIX = "[Boot]";
 const AUDIO_FALLBACK_NAME = "Linked audio";
 const LYRICS_FALLBACK_NAME = "Linked lyrics";
+const DOWNLOAD_TIMEOUT_MS = 120_000;
 const NO_LINKED_FILES: BootLinkedFiles = {
   present: false,
   skippedForVideo: false,
@@ -66,11 +67,14 @@ function readBootLinkedFiles(): BootLinkedFiles {
 
 async function fetchLinkedFile(url: string, fallbackName: string, signal: AbortSignal): Promise<File> {
   const name = linkedFileName(url, fallbackName);
+  const timeout = AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS);
   let response: Response;
   try {
-    response = await fetch(url, { signal });
+    response = await fetch(url, { signal: AbortSignal.any([signal, timeout]) });
   } catch (error) {
     if (signal.aborted) throw error;
+    if (timeout.aborted)
+      throw new LinkedFileError(`Couldn't download ${name}: the server took too long`, { cause: error });
     throw new LinkedFileError(`Couldn't download ${name}. The server might not allow downloads from other sites.`, {
       cause: error,
     });
@@ -82,11 +86,6 @@ async function fetchLinkedFile(url: string, fallbackName: string, signal: AbortS
 
 function linkedFileErrorMessage(error: unknown): string {
   return error instanceof LinkedFileError ? error.message : "Couldn't download the linked file";
-}
-
-function isActiveFile(file: File): boolean {
-  const source = useAudioStore.getState().source;
-  return source?.type === "file" && source.file === file;
 }
 
 async function openLinkedLyricsAsProject(lyrics: File): Promise<LinkProjectOutcome> {
@@ -101,23 +100,21 @@ async function importLinkedLyrics(lyrics: File, ctx: ImportContext): Promise<voi
 async function applyLinkedFiles(
   audio: File | null,
   lyrics: File | null,
-  loadAudioFile: (file: File, mode: AudioLoadMode) => Promise<void>,
+  loadAudioFile: (file: File, mode: AudioFileLoadMode) => Promise<void>,
   ctx: ImportContext,
 ): Promise<LinkProjectOutcome> {
   await getPersistenceSettled();
   if (audio === null) return lyrics ? openLinkedLyricsAsProject(lyrics) : "failed";
 
+  // The store learns the duration only once the player loads; untimed lyrics are spread over it.
+  const probe = lyrics ? await probeAudioFile(audio) : null;
   const before = openProjectIdSnapshot();
   await loadAudioFile(audio, "new-song");
-  if (!isActiveFile(audio)) return lyrics ? openLinkedLyricsAsProject(lyrics) : "failed";
+  if (!isActiveAudioFile(audio)) return "failed";
 
   const placed = openProjectIdSnapshot();
-  if (lyrics) {
-    // The store learns the duration only once the player loads; untimed lyrics are spread over it.
-    const probe = await probeAudioFile(audio);
-    await importLinkedLyrics(lyrics, { ...ctx, audioDuration: probe.ok ? probe.duration : 0 });
-  }
-  return placed === before ? "current" : "created";
+  if (lyrics) await importLinkedLyrics(lyrics, { ...ctx, audioDuration: probe?.ok ? probe.duration : 0 });
+  return placed === before ? "replaced" : "created";
 }
 
 // -- Hook ---------------------------------------------------------------------

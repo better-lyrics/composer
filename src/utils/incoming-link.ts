@@ -10,6 +10,7 @@ interface LinkLocation {
 // -- Constants ----------------------------------------------------------------
 
 const SONG_QUERY_PARAM_NAMES = ["title", "artist", "album", "duration", "isrc"] as const;
+const LOG_PREFIX = "[IncomingLink]";
 const IMPORT_HASH_PREFIX = "#import=";
 const LINKED_FILE_PARAM_NAMES = ["audioUrl", "lyricsUrl"] as const;
 const WEB_PROTOCOLS = new Set(["http:", "https:"]);
@@ -41,7 +42,7 @@ function linkedFileName(url: string, fallback: string): string {
   try {
     return decodeURIComponent(segment) || fallback;
   } catch (error) {
-    console.warn("[Composer] could not decode the linked file name", error);
+    console.warn(LOG_PREFIX, "could not decode the linked file name", error);
     return fallback;
   }
 }

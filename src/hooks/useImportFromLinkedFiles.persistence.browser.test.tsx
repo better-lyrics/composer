@@ -6,6 +6,7 @@ import { cancelPendingSave } from "@/lib/persistence-debounce";
 import { getLinkedFilesSettled, getPersistenceSettled, getQueryImportSettled } from "@/lib/persistence-settled";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { useAudioStore } from "@/stores/audio";
+import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
@@ -89,15 +90,17 @@ describe("useImportFromLinkedFiles", () => {
     expect(window.location.search).toBe("");
   });
 
-  it("loads the audio in place when the open project has no lyrics", async () => {
+  it("loads the audio and link details in place when the open project has no lyrics", async () => {
     await seedOpenAlpha(false);
-    setQuery(linkQuery({ audioUrl: AUDIO_URL }));
+    setQuery(linkQuery({ audioUrl: AUDIO_URL, title: "Linked Title" }));
 
     await render(<LinkHost />);
     await waitForLinkSettled();
 
     expect(openProjectIdSnapshot()).toBe("a");
     expect(loadedFileName()).toBe("linked-song.wav");
+    expect(useProjectStore.getState().metadata.title).toBe("Linked Title");
+    expect(useConfirmStore.getState().isOpen).toBe(false);
   });
 
   it("regression: opens a new project instead of relinking when the open project's audio is missing", async () => {
