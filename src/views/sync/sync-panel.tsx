@@ -4,7 +4,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { isLineSynced } from "@/domain/line/predicates";
-import { isSyncComplete, syncProgress } from "@/domain/line/sync-progress";
+import { isLineTimed, isSyncComplete, syncProgress, timedWordCount } from "@/domain/line/sync-progress";
 import { previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
@@ -54,7 +54,13 @@ const SyncPanel: React.FC = () => {
   const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
   const linesHaveTransliteration = useMemo(() => hasTransliteration(lines), [lines]);
   const displayLines = useMemo(
-    () => lines.map((line) => ({ ...line, ...getLanguageDisplayLine(line, textVariant) })),
+    () =>
+      lines.map((line) => ({
+        ...line,
+        ...getLanguageDisplayLine(line, textVariant),
+        isTimed: isLineTimed(line),
+        timedWords: timedWordCount(line),
+      })),
     [lines, textVariant],
   );
 
