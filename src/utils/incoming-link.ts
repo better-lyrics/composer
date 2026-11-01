@@ -1,3 +1,4 @@
+import { parseHttpUrl } from "@/utils/url";
 import { readYouTubeParam } from "@/utils/youtube-link-params";
 
 // -- Types --------------------------------------------------------------------
@@ -13,7 +14,6 @@ const SONG_QUERY_PARAM_NAMES = ["title", "artist", "album", "duration", "isrc"] 
 const LOG_PREFIX = "[IncomingLink]";
 const IMPORT_HASH_PREFIX = "#import=";
 const LINKED_FILE_PARAM_NAMES = ["audioUrl", "lyricsUrl"] as const;
-const WEB_PROTOCOLS = new Set(["http:", "https:"]);
 
 type LinkedFileParam = (typeof LINKED_FILE_PARAM_NAMES)[number];
 
@@ -28,9 +28,7 @@ function readTrimmed(params: URLSearchParams, name: string): string | null {
 
 function readLinkedFileUrl(params: URLSearchParams, name: LinkedFileParam): string | null {
   const raw = readTrimmed(params, name);
-  if (raw === null || !URL.canParse(raw)) return null;
-  const url = new URL(raw);
-  return WEB_PROTOCOLS.has(url.protocol) ? url.href : null;
+  return raw === null ? null : (parseHttpUrl(raw)?.href ?? null);
 }
 
 function hasLinkedFileParams(params: URLSearchParams): boolean {

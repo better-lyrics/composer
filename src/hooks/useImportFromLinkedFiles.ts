@@ -138,7 +138,14 @@ async function applyLinkedFiles(
   if (!isActiveAudioFile(audio)) return lyrics && probe?.ok === false ? openLinkedLyricsAsProject(lyrics) : "failed";
 
   const placed = openProjectIdSnapshot();
-  if (lyrics) await importLinkedLyrics(lyrics, currentImportContext(LINK_SOURCE_LABEL, probe?.ok ? probe.duration : 0));
+  if (lyrics) {
+    await importLinkedLyrics(lyrics, currentImportContext(LINK_SOURCE_LABEL, probe?.ok ? probe.duration : 0)).catch(
+      (error: unknown) => {
+        console.error(`${LOG_PREFIX} could not import the linked lyrics`, error);
+        toast.error(`Couldn't import ${lyrics.name}`);
+      },
+    );
+  }
   if (placed === before) return "replaced";
   if (before && placed) announceNewProject(previousTitle, before, placed);
   return "created";
