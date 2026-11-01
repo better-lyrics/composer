@@ -2,8 +2,6 @@ import { syncCarouselTransition } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
-import type { SharedSyncTag } from "@/views/sync/shared-sync-tags";
-import { IconLink } from "@tabler/icons-react";
 import { AnimatePresence, m } from "motion/react";
 
 // -- Types --------------------------------------------------------------------
@@ -36,7 +34,6 @@ interface SyncCarouselProps {
     displayWordTexts?: string[];
     isTimed: boolean;
     timedWords: number;
-    sharedTag?: SharedSyncTag;
   }>;
   lineIndex: number;
   wordIndex: number;
@@ -140,20 +137,6 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
   });
 };
 
-const SharedTagSlot: React.FC<{ tag: SharedSyncTag | undefined }> = ({ tag }) => (
-  <span className="flex items-center h-4.5 select-none">
-    {tag && (
-      <span
-        className="inline-flex items-center gap-1 h-4.5 pl-1.5 pr-2 rounded-full text-[11px]"
-        style={{ color: tag.color, background: `color-mix(in srgb, ${tag.color} 16%, transparent)` }}
-      >
-        <IconLink className="size-2.5" />
-        <span className="max-w-32 truncate">{tag.label}</span>
-      </span>
-    )}
-  </span>
-);
-
 const SyncCarousel: React.FC<SyncCarouselProps> = ({
   lines,
   lineIndex,
@@ -196,7 +179,6 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
                 {isCurrent && aboveCurrent && (
                   <span className="absolute bottom-full flex justify-center pb-2">{aboveCurrent}</span>
                 )}
-                <SharedTagSlot tag={line.sharedTag?.placement === "above" ? line.sharedTag : undefined} />
               </span>
               <div className="flex flex-wrap items-center justify-center text-4xl font-semibold tracking-[-0.012em] leading-[1.1] gap-x-4 gap-y-1.5">
                 {granularity === "line" ? (
@@ -222,7 +204,6 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
                   />
                 )}
               </div>
-              <SharedTagSlot tag={line.sharedTag?.placement === "below" ? line.sharedTag : undefined} />
             </m.div>
           );
         })}

@@ -114,7 +114,7 @@ const SyncPanel: React.FC = () => {
   });
   const countIn = useSyncCountIn();
 
-  const { skippedLineIds, skippedByLastLineId, sharedTags, placingName } = useSharedSyncView(
+  const { skippedLineIds, skippedByLastLineId, placingName } = useSharedSyncView(
     lines,
     groups,
     cursor,
@@ -140,15 +140,6 @@ const SyncPanel: React.FC = () => {
     }
     return out;
   }, [lines, groups, skippedLineIds]);
-
-  const carouselLines = useMemo(
-    () =>
-      displayLines.map((line) => {
-        const sharedTag = sharedTags.get(line.id);
-        return sharedTag ? { ...line, sharedTag } : line;
-      }),
-    [displayLines, sharedTags],
-  );
 
   const stopSessionAtSongEnd = useEffectEvent(() => {
     setSyncState((prev) => ({ ...prev, isActive: false }));
@@ -551,7 +542,7 @@ const SyncPanel: React.FC = () => {
             )
           ) : (
             <SyncCarousel
-              lines={carouselLines}
+              lines={displayLines}
               lineIndex={lineIndex}
               wordIndex={wordIndex}
               granularity={granularity}
