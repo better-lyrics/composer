@@ -2,8 +2,14 @@ import { probeAudioFile } from "@/audio/probe-audio-file";
 import { type AudioFileLoadMode, useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
-import { type LinkProjectOutcome, getPersistenceSettled, markLinkedFilesSettled } from "@/lib/persistence-settled";
+import {
+  type LinkProjectOutcome,
+  getPersistenceSettled,
+  getQueryImportSettled,
+  markLinkedFilesSettled,
+} from "@/lib/persistence-settled";
 import { isActiveAudioFile } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import {
   LINKED_FILE_PARAM_NAMES,
   type LinkedFileParam,
@@ -12,6 +18,8 @@ import {
   readLinkedFileUrl,
   readTrimmed,
 } from "@/utils/incoming-link";
+import { composeAbortSignals } from "@/utils/abort-signals";
+import { showNewProjectToast } from "@/utils/project-toast";
 import { stripQueryParams } from "@/utils/url-params";
 import { readYouTubeParam } from "@/utils/youtube-link-params";
 import { isLyricsImportFileName } from "@/views/lyrics-import-modal/accepted-files";
@@ -72,7 +80,7 @@ async function fetchLinkedFile(url: string, fallbackName: string, signal: AbortS
   const timer = setTimeout(() => timeout.abort(), RESPONSE_TIMEOUT_MS);
   let blob: Blob;
   try {
-    const response = await fetch(url, { signal: AbortSignal.any([signal, timeout.signal]) });
+    const response = await fetch(url, { signal: composeAbortSignals(signal, timeout.signal) });
     clearTimeout(timer);
     if (!response.ok) throw new LinkedFileError(`Couldn't download ${name} (HTTP ${response.status})`);
     blob = await response.blob();
@@ -107,6 +115,12 @@ async function importLinkedLyrics(lyrics: File, ctx: ImportContext): Promise<voi
   else await importLyricsText(await lyrics.text(), ctx);
 }
 
+function announceNewProject(previousTitle: string, previousId: string, newId: string): void {
+  void getQueryImportSettled().then(() => {
+    showNewProjectToast(useProjectStore.getState().metadata.title, previousTitle, previousId, newId);
+  });
+}
+
 async function applyLinkedFiles(
   audio: File | null,
   lyrics: File | null,
@@ -118,13 +132,16 @@ async function applyLinkedFiles(
 
   // The store learns the duration only once the player loads, and only the probe tells unplayable from superseded.
   const probe = lyrics ? await probeAudioFile(audio) : null;
+  const previousTitle = useProjectStore.getState().metadata.title;
   const before = openProjectIdSnapshot();
   await loadAudioFile(audio, "new-song");
   if (!isActiveAudioFile(audio)) return lyrics && probe?.ok === false ? openLinkedLyricsAsProject(lyrics) : "failed";
 
   const placed = openProjectIdSnapshot();
   if (lyrics) await importLinkedLyrics(lyrics, { ...ctx, audioDuration: probe?.ok ? probe.duration : 0 });
-  return placed === before ? "replaced" : "created";
+  if (placed === before) return "replaced";
+  if (before && placed) announceNewProject(previousTitle, before, placed);
+  return "created";
 }
 
 // -- Hook ---------------------------------------------------------------------

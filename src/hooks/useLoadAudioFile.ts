@@ -26,7 +26,7 @@ type TagWrite = "apply" | "skip";
 
 type AudioLoadMode = "auto" | "replace";
 
-// A song opened from a link: always a different song, never a relink of missing audio.
+// A song opened from a link: always a different song, never a relink, announced by the link.
 type AudioFileLoadMode = AudioLoadMode | "new-song";
 
 // -- State --------------------------------------------------------------------
@@ -92,7 +92,7 @@ async function swapFileInPlace(file: File, previous: AudioSource): Promise<void>
   if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);
 }
 
-async function startFileInNewProject(file: File, title: string): Promise<void> {
+async function startFileInNewProject(file: File, title: string, announce: boolean): Promise<void> {
   const started = await startSongInNewProject(title, (song) => {
     useAudioStore.getState().setSource({ type: "file", file });
     return song;
@@ -101,7 +101,7 @@ async function startFileInNewProject(file: File, title: string): Promise<void> {
     await loadFileInPlace(file, true, title);
     return;
   }
-  showNewProjectToast(title, started.previousTitle, started.previousId, started.newId);
+  if (announce) showNewProjectToast(title, started.previousTitle, started.previousId, started.newId);
   await applyAudioTags(file).catch(logTagReadFailure);
 }
 
@@ -138,7 +138,7 @@ function useLoadAudioFile(): (file: File, mode?: AudioFileLoadMode) => Promise<v
     const project = useProjectStore.getState();
     const keepsOpenProject = !hasLyricLines(project.lines) && !(mode === "new-song" && project.hasUnexportedImport);
     if (replacesDifferentSong && !keepsOpenProject) {
-      await startFileInNewProject(file, title);
+      await startFileInNewProject(file, title, mode !== "new-song");
       return;
     }
 
