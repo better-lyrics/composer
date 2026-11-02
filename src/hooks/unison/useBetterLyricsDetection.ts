@@ -1,3 +1,4 @@
+import { unisonQueryKeys } from "@/hooks/unison/query-keys";
 import { findBetterLyricsExtension } from "@/lib/unison/extension-port";
 import { useQuery } from "@tanstack/react-query";
 
@@ -10,16 +11,12 @@ interface BetterLyricsDetection {
   extensionId: string | null;
 }
 
-// -- Constants -----------------------------------------------------------------
-
-const BETTER_LYRICS_DETECTION_KEY = ["unison", "better-lyrics-extension"] as const;
-
 // -- Hooks ---------------------------------------------------------------------
 
 // Installing the extension needs a reload, so one probe per page load is enough.
 function useBetterLyricsDetection(enabled: boolean): BetterLyricsDetection {
   const { data } = useQuery({
-    queryKey: BETTER_LYRICS_DETECTION_KEY,
+    queryKey: unisonQueryKeys.betterLyricsExtension(),
     queryFn: findBetterLyricsExtension,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: Number.POSITIVE_INFINITY,

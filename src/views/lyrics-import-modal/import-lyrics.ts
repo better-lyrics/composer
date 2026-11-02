@@ -241,4 +241,4 @@ export {
   replaceWithParsedLyrics,
   useImportContext,
 };
-export type { ImportContext, ImportSourceInfo };
+export type { ImportContext, ImportSourceInfo, LyricsRead };

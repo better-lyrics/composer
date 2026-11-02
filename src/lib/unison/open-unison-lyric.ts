@@ -6,7 +6,7 @@ import { useProjectStore } from "@/stores/project";
 import { normalizeIsrc } from "@/utils/isrc";
 import type { ParseResult } from "@/utils/lyrics-parsers";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
-import { readLyricsFile, replaceWithParsedLyrics } from "@/views/lyrics-import-modal/import-lyrics";
+import { type LyricsRead, readLyricsFile, replaceWithParsedLyrics } from "@/views/lyrics-import-modal/import-lyrics";
 import { toast } from "sonner";
 
 // -- Types ---------------------------------------------------------------------
@@ -37,10 +37,16 @@ function withUnisonDetails(parsed: ParseResult, lyric: UnisonLyric): ParseResult
   return { ...parsed, metadata: { ...parsed.metadata, ...unisonSongDetails(lyric) } };
 }
 
+// -- Reading -------------------------------------------------------------------
+
+function readUnisonLyric(lyric: Pick<UnisonLyric, "song" | "format" | "lyrics">): LyricsRead {
+  return readLyricsFile(`${lyric.song}.${FILE_EXTENSIONS[lyric.format]}`, lyric.lyrics);
+}
+
 // -- Opening -------------------------------------------------------------------
 
 async function openUnisonLyric(lyric: UnisonLyric, { link, navigate }: OpenUnisonLyricOptions): Promise<void> {
-  const read = readLyricsFile(`${lyric.song}.${FILE_EXTENSIONS[lyric.format]}`, lyric.lyrics);
+  const read = readUnisonLyric(lyric);
   if (read.status === "unreadable") {
     toast.error(read.message);
     return;
@@ -61,4 +67,4 @@ async function openUnisonLyric(lyric: UnisonLyric, { link, navigate }: OpenUniso
 
 // -- Exports -------------------------------------------------------------------
 
-export { openUnisonLyric };
+export { openUnisonLyric, readUnisonLyric };

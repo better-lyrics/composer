@@ -10,7 +10,7 @@ import { menuTriggerProps } from "@/ui/menu-trigger-props";
 import { BetterLyricsMark } from "@/ui/unison/better-lyrics-mark";
 import { ConnectPopover } from "@/ui/unison/connect-popover";
 import { UnisonAvatar } from "@/ui/unison/unison-avatar";
-import { UNISON_PATH } from "@/utils/app-routes";
+import { unisonViewPath } from "@/utils/app-routes";
 import { showDisconnectedToast } from "@/utils/unison-toast";
 import { IconCloudUpload, IconExternalLink, IconFlame, IconLogout } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
@@ -60,12 +60,8 @@ const AccountMenu: React.FC<{ session: StoredUnisonSession }> = ({ session }) =>
         className="w-[248px] rounded-[14px]"
       >
         <MenuHeader title={session.displayName} />
-        <MenuItem
-          icon={IconCloudUpload}
-          label="My Unison lyrics"
-          onSelect={() => navigate(`${UNISON_PATH}?view=mine`)}
-        />
-        <MenuItem icon={IconFlame} label="Most wanted" onSelect={() => navigate(`${UNISON_PATH}?view=wanted`)} />
+        <MenuItem icon={IconCloudUpload} label="My Unison lyrics" onSelect={() => navigate(unisonViewPath("mine"))} />
+        <MenuItem icon={IconFlame} label="Most wanted" onSelect={() => navigate(unisonViewPath("wanted"))} />
         <MenuItem
           icon={IconExternalLink}
           label="Profile on Unison"
