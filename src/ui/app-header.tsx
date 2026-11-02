@@ -1,7 +1,9 @@
+import { HEADER_ICON_STYLES } from "@/ui/header-icon-styles";
 import { IconButton } from "@/ui/icon-button";
 import { ProjectBreadcrumb } from "@/ui/projects/project-breadcrumb";
 import { TabBar } from "@/ui/tab-bar";
 import { ThemeMenu } from "@/ui/theme-menu";
+import { HeaderAccount } from "@/ui/unison/account-menu";
 import { type AppScreen, LIBRARY_PATH } from "@/utils/app-routes";
 import { IconHelp, IconRoute, IconSettings } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
@@ -43,8 +45,6 @@ const LibraryBrand: React.FC = () => (
 
 // -- Component ----------------------------------------------------------------
 
-const HEADER_ICON_STYLES = "size-9 rounded-[10px] text-(--muted) hover:text-composer-text hover:bg-(--layer-2)";
-
 const AppHeader: React.FC<AppHeaderProps> = ({ screen, onSettingsOpen, onHelpOpen, onTourStart }) => (
   <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 h-14 shrink-0 pl-4 pr-3 select-none">
     {screen === "editor" ? <EditorBrand /> : <LibraryBrand />}
@@ -72,6 +72,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ screen, onSettingsOpen, onHelpOpe
         onClick={onHelpOpen}
         className={HEADER_ICON_STYLES}
       />
+      <span aria-hidden="true" className="w-px h-5 mx-1.5 bg-(--divider)" />
+      <HeaderAccount />
     </div>
   </header>
 );
