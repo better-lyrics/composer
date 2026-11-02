@@ -1,4 +1,4 @@
-import { alignmentWindow, refinedWindow, searchWindow, sliceWindow } from "@/domain/alignment/window";
+import { alignmentWindow, backgroundWindow, refinedWindow, searchWindow, sliceWindow } from "@/domain/alignment/window";
 import { describe, expect, it } from "vitest";
 
 // -- alignmentWindow ----------------------------------------------------------
@@ -70,6 +70,18 @@ describe("refinedWindow", () => {
   it("keeps the plain window when the CTC found nothing, or left too little to align", () => {
     expect(refinedWindow(taps, plain, search, null)).toBe(plain);
     expect(refinedWindow(taps, plain, search, { begin: 10.55, end: 9.15 })).toBe(plain);
+  });
+});
+
+// -- backgroundWindow ---------------------------------------------------------
+
+describe("backgroundWindow", () => {
+  it("never starts before the previous line's begin, and stops 15 s in when the next line ends later", () => {
+    const window = backgroundWindow(
+      { begin: 10, end: 12 },
+      { previous: { begin: 9.8, end: 10 }, next: { begin: 12, end: 40 } },
+    );
+    expect(window).toEqual({ begin: 9.8, end: 24.8 });
   });
 });
 
