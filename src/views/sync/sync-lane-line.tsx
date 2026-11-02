@@ -4,14 +4,9 @@ import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
 import { stripSplitCharacter } from "@/utils/split-character";
 import type { LaneRow, WordRun } from "@/views/sync/lane-rows";
-import { type LaneClickTarget, laneClickTarget } from "@/views/sync/lane-click-target";
 import { laneSlotState } from "@/views/sync/lane-slot-state";
 import { LaneWord, type SyllableDot, TapRing } from "@/views/sync/sync-lane-word";
 import { memo } from "react";
-
-// -- Types --------------------------------------------------------------------
-
-type LaneJumpTarget = NonNullable<LaneClickTarget>;
 
 // -- Constants ----------------------------------------------------------------
 
@@ -26,8 +21,6 @@ const WORDS_SIDE_CLASS: Record<AgentSide, string> = {
   right: "justify-end",
   center: "justify-center",
 };
-
-const LINE_TARGET: LaneJumpTarget = { kind: "line" };
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -44,10 +37,8 @@ interface SyncLaneLineProps {
   granularity: SyncGranularity;
   isHolding: boolean;
   isPlacing: boolean;
-  paused: boolean;
   ring: LaneRing | null;
   onRingDone: () => void;
-  onJump: (lineIndex: number, target: LaneJumpTarget) => void;
   firstSlotSoon: boolean;
   aboveCurrent?: React.ReactNode;
   className?: string;
@@ -70,10 +61,8 @@ const WordModeSlot: React.FC<WordModeSlotProps> = ({
   wordIndex,
   isHolding,
   isPlacing,
-  paused,
   ring,
   onRingDone,
-  onJump,
   widx,
   run,
   dot,
@@ -88,7 +77,6 @@ const WordModeSlot: React.FC<WordModeSlotProps> = ({
     isHolding,
   });
   const isNext = state === "next";
-  const target = paused ? laneClickTarget(row.line, widx, "word") : null;
   return (
     <LaneWord
       state={state}
@@ -98,7 +86,6 @@ const WordModeSlot: React.FC<WordModeSlotProps> = ({
       joinedStart={widx > run.start}
       joinedEnd={widx < run.end}
       dot={dot}
-      onClick={target ? () => onJump(row.lineIndex, target) : undefined}
     >
       <span className="relative">{row.wordTexts[widx]}</span>
       {ring?.wordIndex === widx && <TapRing key={ring.nonce} onComplete={onRingDone} />}
@@ -135,12 +122,11 @@ const WordModeWords: React.FC<LaneWordsProps> = (props) => {
   });
 };
 
-const LineModeWord: React.FC<LaneWordsProps> = ({ row, isCurrent, isLastLine, isHolding, paused, onJump }) => (
+const LineModeWord: React.FC<LaneWordsProps> = ({ row, isCurrent, isLastLine, isHolding }) => (
   <LaneWord
     state={isCurrent ? "next" : isLastLine ? "lastTapped" : row.isTimed ? "timed" : "untimed"}
     onCurrentLine={isCurrent}
     isHeld={isHolding && isCurrent}
-    onClick={paused ? () => onJump(row.lineIndex, LINE_TARGET) : undefined}
   >
     <span className="relative">{stripSplitCharacter(row.text)}</span>
   </LaneWord>
@@ -154,7 +140,6 @@ const SyncLaneLine: React.FC<SyncLaneLineProps> = memo(({ granularity, aboveCurr
   return (
     <div
       dir="auto"
-      data-lane-line
       aria-current={isCurrent || undefined}
       className={cn(
         "flex flex-col gap-1.5 w-fit max-w-full",
