@@ -6,8 +6,6 @@
 /* blyrics-letter-wave = false; */
 
 .blyrics-container {
-  --blyrics-richsync-timing-offset: 0s;
-  --blyrics-timing-offset: 0s;
   --blyrics-font-weight: 600;
   --blyrics-padding: 1.25rem;
   --blyrics-wobble-duration: 1s;

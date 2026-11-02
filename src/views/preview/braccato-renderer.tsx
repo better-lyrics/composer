@@ -9,6 +9,7 @@ import { centeredFadeVariants, centeredSlideUpVariants, springSnappy } from "@/u
 import { cn } from "@/utils/cn";
 import braccatoTheme from "@/views/preview/braccato-theme.css?raw";
 import { type TimedLineElement, markLinesOutsideFocus, useFocusFade } from "@/views/preview/focus-fade";
+import { highlightLeadTrims, themeLeads } from "@/views/preview/highlight-lead";
 import { LYRICS_ELEMENT_CLASS, type LyricsLayout } from "@/views/preview/lyrics-layout";
 import { PreviewLoadFailed } from "@/views/preview/preview-load-failed";
 import { AUDIO_STORE_PLAYBACK, type RendererPlayback } from "@/views/preview/renderer-playback";
@@ -108,8 +109,9 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({
   const appliedLyricsRef = useRef<Lyric[] | null>(null);
   const appliedSongKeyRef = useRef<string | null>(null);
   const rebuildScrollTopRef = useRef<number | null>(null);
-  const appliedPlaybackRateRef = useRef(1);
-  const appliedPlayingRef = useRef<{ element: BraccatoLyricsElement; playing: boolean } | null>(null);
+  const appliedTickRef = useRef<{ element: BraccatoLyricsElement; playing: boolean; playbackRate: number } | null>(
+    null,
+  );
   const [isAutoscrollPaused, setIsAutoscrollPaused] = useState(false);
   const [isElementUnavailable, setIsElementUnavailable] = useState(false);
   const resumeWakeRef = useRef<number | null>(null);
@@ -233,15 +235,16 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({
     // Without the rate the word sweeps run on the wall clock and stutter at any
     // speed but 1x. Tracked here rather than read back off the element, which has
     // no properties to read until the registration import lands.
-    if (appliedPlaybackRateRef.current !== audio.playbackRate) {
-      appliedPlaybackRateRef.current = audio.playbackRate;
-      el.tickOptions = { playbackRate: audio.playbackRate };
-    }
-    el.currentTime = audio.currentTime;
     const playing = !audio.paused;
-    const applied = appliedPlayingRef.current;
-    if (applied?.element === el && applied.playing === playing) return;
-    appliedPlayingRef.current = { element: el, playing };
+    const { playbackRate } = audio;
+    const applied = appliedTickRef.current;
+    if (applied?.element === el && applied.playing === playing && applied.playbackRate === playbackRate) {
+      el.currentTime = audio.currentTime;
+      return;
+    }
+    appliedTickRef.current = { element: el, playing, playbackRate };
+    el.tickOptions = { playbackRate, ...highlightLeadTrims(themeLeads(el), playbackRate, playing) };
+    el.currentTime = audio.currentTime;
     el.playing = playing;
   }, "braccato-renderer");
 
