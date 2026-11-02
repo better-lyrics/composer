@@ -56,11 +56,11 @@ const inlineIconReducedVariants: Variants = {
 // -- Sync Tap Ring -------------------------------------------------------------
 
 const syncTapRingVariants: Variants = {
-  initial: { scale: 0.92, opacity: 0.7 },
-  animate: { scale: 1.25, opacity: 0 },
+  initial: { scale: 0.8, opacity: 0.5 },
+  animate: { scale: 2.2, opacity: 0 },
 };
 
-const syncTapRingTransition: Transition = { duration: 0.26, ease: "easeOut" };
+const syncTapRingTransition: Transition = { duration: 0.33, ease: "easeOut" };
 
 function buildGroupPingVariants(color: string): Variants {
   const transparent = hexToRgba(color, 0);

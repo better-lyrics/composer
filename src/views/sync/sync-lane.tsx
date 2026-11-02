@@ -29,38 +29,13 @@ type RowRef = (element: HTMLElement | null) => void;
 
 // -- Constants ----------------------------------------------------------------
 
-const OPACITY_PERCENT_BY_DISTANCE: Record<number, number> = {
-  [-2]: 20,
-  [-1]: 40,
-  0: 100,
-  1: 60,
-  2: 42,
-  3: 30,
-  4: 22,
-};
-
-const OPACITY_CLASS_BY_PERCENT: Record<number, string> = {
-  0: "opacity-0",
-  15: "opacity-15",
-  20: "opacity-20",
-  22: "opacity-22",
-  30: "opacity-30",
-  40: "opacity-40",
-  42: "opacity-42",
-  60: "opacity-60",
-  100: "opacity-100",
-};
-
-const FAR_AHEAD_OPACITY_PERCENT = 15;
-const FAR_BEHIND_DISTANCE = -2;
-const ANCHOR_HEIGHT_RATIO = 1 / 3;
+const ANCHOR_HEIGHT_RATIO = 1 / 2;
 
 // -- Functions ----------------------------------------------------------------
 
-function rowOpacityClass(distance: number): string {
-  const percent =
-    OPACITY_PERCENT_BY_DISTANCE[distance] ?? (distance < FAR_BEHIND_DISTANCE ? 0 : FAR_AHEAD_OPACITY_PERCENT);
-  return OPACITY_CLASS_BY_PERCENT[percent];
+function rowPresenceClass(distance: number): string {
+  if (distance === 0) return "opacity-100";
+  return Math.abs(distance) === 1 ? "opacity-40 scale-65" : "opacity-0 scale-65";
 }
 
 function rowCentre(element: HTMLElement): number {
@@ -92,11 +67,6 @@ const SyncLane: React.FC<SyncLaneProps> = ({
     const atOrAfter = visibleRows.findIndex((row) => row.lineIndex >= lineIndex);
     return atOrAfter === -1 ? visibleRows.length - 1 : atOrAfter;
   }, [visibleRows, lineIndex]);
-
-  const currentRow = visibleRows[anchorVisibleIndex];
-  const nextVisibleIndex = currentRow?.lineIndex === lineIndex ? anchorVisibleIndex + 1 : anchorVisibleIndex;
-  const atLastSlotOfCurrent =
-    currentRow?.lineIndex !== lineIndex || wordIndex === (currentRow?.wordTexts.length ?? 0) - 1;
 
   const laneRing = useMemo<LaneRing | null>(
     () => (ring && reducedMotion !== true ? { wordIndex: ring.wordIndex, nonce: ring.nonce } : null),
@@ -150,7 +120,6 @@ const SyncLane: React.FC<SyncLaneProps> = ({
                 row={row}
                 isCurrent={row.lineIndex === lineIndex}
                 isLastLine={row.lineIndex === lineIndex - 1}
-                firstSlotSoon={visibleIndex === nextVisibleIndex && atLastSlotOfCurrent}
                 wordIndex={wordIndex}
                 granularity={granularity}
                 isHolding={isHolding}
@@ -160,8 +129,7 @@ const SyncLane: React.FC<SyncLaneProps> = ({
                 aboveCurrent={aboveCurrent}
                 className={cn(
                   "transition-[opacity,scale] duration-220 ease-out motion-reduce:transition-none",
-                  rowOpacityClass(distance),
-                  distance < 0 && "scale-[0.82]",
+                  rowPresenceClass(distance),
                 )}
               />
             </div>

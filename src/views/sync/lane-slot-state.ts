@@ -5,7 +5,6 @@ import type { SlotState } from "@/views/sync/sync-lane-word";
 interface LaneSlotInput {
   slot: number;
   slotCount: number;
-  timedSlots: number;
   isCurrent: boolean;
   isLastLine: boolean;
   wordIndex: number;
@@ -22,7 +21,7 @@ function isLastTapped({ slot, slotCount, isCurrent, isLastLine, wordIndex }: Lan
 function laneSlotState(input: LaneSlotInput): SlotState {
   if (input.isCurrent && input.slot === input.wordIndex) return "next";
   if (!input.isHolding && isLastTapped(input)) return "lastTapped";
-  return input.slot < input.timedSlots ? "timed" : "untimed";
+  return "plain";
 }
 
 // -- Exports ------------------------------------------------------------------
