@@ -1,5 +1,5 @@
 import { quotedTitle } from "@/domain/project/display-title";
-import { type ChosenVideo, VIDEO_LINK_LIMIT } from "@/domain/unison/video-links";
+import { type ChosenVideo, suggestionLengthNote, VIDEO_LINK_LIMIT } from "@/domain/unison/video-links";
 import type { SuggestedVideo } from "@/lib/unison/api-types";
 import { useConfirm } from "@/stores/confirm-store";
 import { Button } from "@/ui/button";
@@ -25,6 +25,7 @@ interface VideoPickerProps {
   linked: readonly ChosenVideo[];
   more: readonly SuggestedVideo[];
   songTitle: string;
+  songSeconds: number;
   busy?: boolean;
   floating?: boolean;
   onLink: (suggestion: SuggestedVideo) => PickerResult;
@@ -55,6 +56,7 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
   linked,
   more,
   songTitle,
+  songSeconds,
   busy,
   floating,
   onLink,
@@ -129,33 +131,37 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
             More matches
           </span>
           <ul aria-labelledby={moreLabelId} className="flex min-w-0 flex-col gap-2">
-            {more.map((suggestion) => (
-              <VideoRow
-                key={suggestion.videoId}
-                videoId={suggestion.videoId}
-                title={suggestion.title}
-                artworkUrl={suggestion.artworkUrl}
-                facts={suggestionFacts(suggestion)}
-                error={errorFor(suggestion.videoId)}
-                trailing={
-                  <>
-                    {suggestion.match && <MatchMark level={suggestion.match.level} />}
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      hasIcon
-                      disabled={busy || atCap}
-                      aria-label={`Link ${suggestion.title}`}
-                      onClick={() => void link(suggestion)}
-                      className="shrink-0"
-                    >
-                      <IconPlus aria-hidden="true" className="size-4" />
-                      Link
-                    </Button>
-                  </>
-                }
-              />
-            ))}
+            {more.map((suggestion) => {
+              const lengthNote = suggestionLengthNote(suggestion, songSeconds);
+              return (
+                <VideoRow
+                  key={suggestion.videoId}
+                  videoId={suggestion.videoId}
+                  title={suggestion.title}
+                  artworkUrl={suggestion.artworkUrl}
+                  facts={lengthNote ? undefined : suggestionFacts(suggestion)}
+                  note={lengthNote ?? undefined}
+                  error={errorFor(suggestion.videoId)}
+                  trailing={
+                    <>
+                      {suggestion.match && <MatchMark level={suggestion.match.level} />}
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        hasIcon
+                        disabled={busy || atCap || lengthNote !== null}
+                        aria-label={`Link ${suggestion.title}`}
+                        onClick={() => void link(suggestion)}
+                        className="shrink-0"
+                      >
+                        <IconPlus aria-hidden="true" className="size-4" />
+                        Link
+                      </Button>
+                    </>
+                  }
+                />
+              );
+            })}
           </ul>
         </div>
       )}

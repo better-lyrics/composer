@@ -42,6 +42,12 @@ function lengthMismatchNote(videoSeconds: number, songSeconds: number): string {
   return `${formatTime(videoSeconds, 0)} long, ${gap} ${direction} than the song. Must be within ${VIDEO_LENGTH_TOLERANCE_SECONDS} s.`;
 }
 
+function suggestionLengthNote(suggestion: SuggestedVideo | undefined, songSeconds: number): string | null {
+  const seconds = suggestion?.durationSeconds;
+  if (seconds === null || seconds === undefined || fitsSongLength(seconds, songSeconds)) return null;
+  return lengthMismatchNote(seconds, songSeconds);
+}
+
 function uniqueSuggestions(suggestions: readonly SuggestedVideo[], mainVideoId: string): SuggestedVideo[] {
   const seen = new Set([mainVideoId]);
   return suggestions.filter((suggestion) => {
@@ -83,6 +89,7 @@ export {
   fitsSongLength,
   lengthMismatchNote,
   submitVideoChoices,
+  suggestionLengthNote,
   uniqueSuggestions,
   VIDEO_LENGTH_TOLERANCE_SECONDS,
   VIDEO_LINK_LIMIT,

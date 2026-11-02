@@ -3,9 +3,8 @@ import { submitDurationSeconds } from "@/domain/unison/submit-checks";
 import {
   type ChosenVideo,
   type ChosenVideoOrigin,
-  fitsSongLength,
-  lengthMismatchNote,
   submitVideoChoices,
+  suggestionLengthNote,
   type VideoChoices,
 } from "@/domain/unison/video-links";
 import { useSongVideoSuggestions } from "@/hooks/unison/useVideoSuggestions";
@@ -19,6 +18,7 @@ import { useMemo, useReducer, useState } from "react";
 
 interface SubmitVideos extends VideoChoices {
   main: MainVideo;
+  songSeconds: number;
   songTitle: string;
   videoIds: string[];
   link: (suggestion: SuggestedVideo) => string | null;
@@ -33,14 +33,6 @@ const dismissedSuggestions = new Set<string>();
 
 function dismissalKey(mainVideoId: string, videoId: string): string {
   return `${mainVideoId}:${videoId}`;
-}
-
-// -- Helpers -------------------------------------------------------------------
-
-function lengthProblem(suggestion: SuggestedVideo | undefined, songSeconds: number): string | null {
-  const seconds = suggestion?.durationSeconds;
-  if (seconds === null || seconds === undefined || fitsSongLength(seconds, songSeconds)) return null;
-  return lengthMismatchNote(seconds, songSeconds);
 }
 
 // -- Hook ----------------------------------------------------------------------
@@ -66,7 +58,7 @@ function useSubmitVideos(mainVideoId: string, durationSeconds: number): SubmitVi
   const choices = submitVideoChoices({ suggestions, mainVideoId, songSeconds, dismissed, chosen });
 
   const choose = (videoId: string, suggestion: SuggestedVideo | undefined, origin: ChosenVideoOrigin) => {
-    const problem = lengthProblem(suggestion, songSeconds);
+    const problem = suggestionLengthNote(suggestion, songSeconds);
     if (problem) return problem;
     setChosen((current) => [...current, { videoId, suggestion: suggestion ?? null, origin }]);
     return null;
@@ -80,6 +72,7 @@ function useSubmitVideos(mainVideoId: string, durationSeconds: number): SubmitVi
       artworkUrl: metadata.thumbnailDataUrl,
       facts: { artist: displayArtists(metadata.artists), kind: null, duration: formatTime(songSeconds, 0) },
     },
+    songSeconds,
     songTitle: metadata.title,
     videoIds: choices.linked.map((video) => video.videoId),
     link: (suggestion) => choose(suggestion.videoId, suggestion, "chosen"),

@@ -32,6 +32,7 @@ const SubmissionWithVideos: React.FC<NewSubmissionProps & { mainVideoId: string 
           linked={videos.linked}
           more={videos.more}
           songTitle={videos.songTitle}
+          songSeconds={videos.songSeconds}
           onLink={videos.link}
           onUnlink={videos.unlink}
           onAdd={videos.add}

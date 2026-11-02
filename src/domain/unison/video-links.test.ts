@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { SuggestedVideo } from "@/lib/unison/api-types";
-import { fitsSongLength, lengthMismatchNote, submitVideoChoices, VIDEO_LINK_LIMIT } from "@/domain/unison/video-links";
+import {
+  fitsSongLength,
+  lengthMismatchNote,
+  submitVideoChoices,
+  suggestionLengthNote,
+  VIDEO_LINK_LIMIT,
+} from "@/domain/unison/video-links";
 
 // -- Fixtures ------------------------------------------------------------------
 
@@ -62,6 +68,20 @@ describe("lengthMismatchNote", () => {
 
   it("says how much longer the video is", () => {
     expect(lengthMismatchNote(370, 355)).toBe("6:10 long, 0:15 longer than the song. Must be within 2 s.");
+  });
+});
+
+describe("suggestionLengthNote", () => {
+  it("explains a suggestion whose length is off", () => {
+    expect(suggestionLengthNote(suggestion("Long0000001", { durationSeconds: 370 }), SONG_SECONDS)).toBe(
+      lengthMismatchNote(370, SONG_SECONDS),
+    );
+  });
+
+  it("has nothing to say for a fitting, unknown or missing length", () => {
+    expect(suggestionLengthNote(SAME, SONG_SECONDS)).toBeNull();
+    expect(suggestionLengthNote(suggestion("NoLength001", { durationSeconds: null }), SONG_SECONDS)).toBeNull();
+    expect(suggestionLengthNote(undefined, SONG_SECONDS)).toBeNull();
   });
 });
 
