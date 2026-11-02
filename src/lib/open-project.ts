@@ -198,6 +198,7 @@ async function forkOpenProject(): Promise<string> {
   cancelPendingSave();
   const id = createProjectId();
   adoptOpenProjectId(id);
+  useProjectStore.getState().restoreUnisonLink(null);
   const args = buildSaveInput();
   if (args) await trackSave("project", saveProjectRecord(id, buildSavedProject(args), openProjectView()));
   const file = storedAudioFile(useAudioStore.getState().source);

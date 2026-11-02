@@ -108,6 +108,7 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
     importedMetadataKeys: [],
     ttmlEditState: null,
     alignedTimings: {},
+    unisonLyricId: null,
     alignmentNoticeDismissed: false,
     ...overrides,
   };

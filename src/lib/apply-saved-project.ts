@@ -6,6 +6,7 @@ import { isMetadataKey } from "@/domain/project/imported-metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { readBeatGrid } from "@/domain/tempo/read-beat-grid";
+import { readUnisonLyricId } from "@/domain/unison/lyric-id";
 import type { SavedProject } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -48,6 +49,7 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   if (origin === "file" || project.hasUnexportedImport) state.markSongDetailsImported();
   state.restoreImportedMetadataKeys((project.importedMetadataKeys ?? []).filter(isMetadataKey));
   state.setTtmlEditState(project.ttmlEditState ?? null);
+  state.restoreUnisonLink(readUnisonLyricId(project.unisonLyricId));
   state.restoreAlignmentReview(readAlignedTimings(project.alignedTimings), project.alignmentNoticeDismissed === true);
   if (origin === "file") state.clearHistory();
   state.markClean();

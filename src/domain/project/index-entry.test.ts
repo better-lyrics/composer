@@ -101,6 +101,18 @@ describe("buildIndexEntry", () => {
     });
   });
 
+  describe("unison lyric", () => {
+    it("records the linked unison lyric id", () => {
+      expect(buildIndexEntry(input({ unisonLyricId: "4821" })).unisonLyricId).toBe("4821");
+    });
+
+    it("omits the id for an unlinked project and for a malformed one", () => {
+      expect("unisonLyricId" in buildIndexEntry(input({ unisonLyricId: null }))).toBe(false);
+      expect("unisonLyricId" in buildIndexEntry(input())).toBe(false);
+      expect("unisonLyricId" in buildIndexEntry(input({ unisonLyricId: "12a" }))).toBe(false);
+    });
+  });
+
   describe("regressions", () => {
     it("regression: does not crash on a legacy record with a single artist field and missing lines", () => {
       const entry = buildIndexEntry(input({ metadata: { title: "Old", artist: "Someone" }, lines: undefined }));

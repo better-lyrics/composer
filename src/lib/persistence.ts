@@ -42,13 +42,21 @@ interface ProjectSaveInput {
   ttmlEditState: TtmlEditState;
   alignedTimings: AlignedTimings;
   alignmentNoticeDismissed: boolean;
+  unisonLyricId: string | null;
 }
 
 // -- Records ------------------------------------------------------------------
 
 function buildSavedProject(input: ProjectSaveInput): SavedProject {
+  const { unisonLyricId, ...fields } = input;
   const audioFileName = input.audioSource?.kind === "file" ? input.audioSource.name : undefined;
-  return { version: SAVED_PROJECT_VERSION, savedAt: Date.now(), ...input, audioFileName };
+  return {
+    version: SAVED_PROJECT_VERSION,
+    savedAt: Date.now(),
+    ...fields,
+    audioFileName,
+    ...(unisonLyricId ? { unisonLyricId } : {}),
+  };
 }
 
 async function saveProjectTo(target: Promise<string>, input: ProjectSaveInput, view?: IndexViewFields): Promise<void> {
