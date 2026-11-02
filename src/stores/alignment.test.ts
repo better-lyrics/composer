@@ -13,6 +13,10 @@ const seen = vi.hoisted(() => ({
   japanese: [] as boolean[],
   // Lines whose window starts after this song time fall back, as if the model found no path.
   fallBackAfter: null as number | null,
+  // Each call's line (its first word) and anchor word.
+  calls: [] as { line: string; anchor: string | null }[],
+  // How far the model moves a line's anchor word from where the line before put it, by the line's first word.
+  anchorMoves: {} as Record<string, number>,
 }));
 
 // Real model resolution: hosting is configured, the manifest fetch finds none
@@ -30,7 +34,11 @@ vi.mock("@/audio/alignment/vocals-pcm", () => ({
 // Stands in for the model: splits by characters, and can't pronounce "zzz".
 vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
   const { splitByCharacters } = await import("@/audio/alignment/split-by-characters");
-  type Segment = Parameters<typeof splitByCharacters>[0] & { hanReading: string; windowBegin: number };
+  type Segment = Parameters<typeof splitByCharacters>[0] & {
+    hanReading: string;
+    windowBegin: number;
+    anchor?: string[];
+  };
   return {
     hubertfaAligner: {
       id: "fake",
@@ -40,8 +48,14 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
       },
       release: () => {},
       isLoaded: () => true,
+      locate: async () => null,
       align: async (segment: Segment) => {
         seen.segments.push({ hanReading: segment.hanReading, parts: segment.words.map((w) => w.parts) });
+        const line = segment.words[0].text;
+        seen.calls.push({ line, anchor: segment.anchor?.join("") ?? null });
+        // An anchored window starts 0.1 s before the anchor word.
+        const placed = segment.windowBegin + 0.1 + (seen.anchorMoves[line] ?? 0);
+        const anchor = segment.anchor ? { begin: placed, end: placed + 0.2 } : null;
         const unknown =
           segment.words.some((w) => w.text === "zzz") ||
           (seen.fallBackAfter !== null && segment.windowBegin > seen.fallBackAfter);
@@ -51,7 +65,7 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
         const splits = parts.flatMap((part, i) =>
           part === "yellow" ? [{ part: i, at: [3], intervals: [intervals[i], intervals[i]] }] : [],
         );
-        return { intervals, fellBack: unknown, unknownWords: unknown ? ["zzz"] : [], guessedWords: [], splits };
+        return { intervals, fellBack: unknown, unknownWords: unknown ? ["zzz"] : [], guessedWords: [], splits, anchor };
       },
     },
   };
@@ -63,6 +77,8 @@ describe("alignment store", () => {
     seen.segments = [];
     seen.japanese = [];
     seen.fallBackAfter = null;
+    seen.calls = [];
+    seen.anchorMoves = {};
     useProjectStore.setState({ groups: [] });
     useProjectStore.setState(INITIAL_STATE);
     useAlignmentStore.setState({ status: "idle", progress: { done: 0, total: 0 }, error: null });
@@ -83,6 +99,74 @@ describe("alignment store", () => {
     expect(line.words?.[0].begin).toBeGreaterThanOrEqual(10);
     expect(line.words?.[1].end).toBeLessThanOrEqual(12);
     expect(empty.words).toBeUndefined();
+  });
+
+  it("regression: aligns the last line tapped in Line mode, which a tap never ended", async () => {
+    useProjectStore.getState().setLines([
+      { id: "L1", text: "first line", agentId: "v1", begin: 10, end: 12 },
+      { id: "L2", text: "last line", agentId: "v1", begin: 12, end: 12 },
+    ]);
+
+    const result = await useAlignmentStore.getState().alignLines();
+
+    expect(result).toMatchObject({ aligned: 2 });
+    const last = useProjectStore.getState().lines[1].words!;
+    expect(last.map((w) => w.text)).toEqual(["last ", "line"]);
+    expect(last[0].begin).toBeGreaterThanOrEqual(11.4);
+    expect(last[1].end).toBeGreaterThan(last[0].begin);
+  });
+
+  it("regression: aligns the line a jump left without an end, up to the line jumped to", async () => {
+    useProjectStore.getState().setLines([
+      { id: "L1", text: "before the jump", agentId: "v1", begin: 1, end: 1 },
+      { id: "L2", text: "skipped", agentId: "v1" },
+      { id: "L3", text: "jumped to", agentId: "v1", begin: 10, end: 12 },
+    ]);
+
+    await useAlignmentStore.getState().alignLines();
+
+    const [before, skipped] = useProjectStore.getState().lines;
+    expect(before.words?.[0].begin).toBeGreaterThanOrEqual(0.4);
+    expect(before.words?.at(-1)?.end).toBeLessThanOrEqual(10.15);
+    expect(skipped.words).toBeUndefined();
+  });
+
+  it("anchors each line on the one before, and after a rejected anchor leaves the next line unanchored", async () => {
+    const tapped = [
+      { id: "L1", text: "one two", agentId: "v1", begin: 10, end: 11.5 },
+      { id: "L2", text: "three four", agentId: "v1", begin: 11.5, end: 13 },
+      { id: "L3", text: "five six", agentId: "v1", begin: 13, end: 14.5 },
+      { id: "L4", text: "seven eight", agentId: "v1", begin: 14.5, end: 16 },
+    ];
+    useProjectStore.getState().setLines(tapped);
+    seen.anchorMoves = { three: 0.25 };
+
+    await useAlignmentStore.getState().alignLines();
+
+    expect(seen.calls).toEqual([
+      { line: "one", anchor: null },
+      { line: "three", anchor: "two" },
+      { line: "three", anchor: null },
+      { line: "five", anchor: null },
+      { line: "seven", anchor: "six" },
+    ]);
+    const firstLine = useProjectStore.getState().lines[0].words!;
+    expect(firstLine.map((w) => [w.begin, w.end])).toEqual([
+      [10, 10.75],
+      [10.75, 11.5],
+    ]);
+  });
+
+  it("anchors only English songs", async () => {
+    useProjectStore.setState({ metadata: { ...INITIAL_STATE.metadata, language: "zh" } });
+    useProjectStore.getState().setLines([
+      { id: "L1", text: "one two", agentId: "v1", begin: 10, end: 11.5 },
+      { id: "L2", text: "three four", agentId: "v1", begin: 11.5, end: 13 },
+    ]);
+
+    await useAlignmentStore.getState().alignLines();
+
+    expect(seen.calls.map((c) => c.anchor)).toEqual([null, null]);
   });
 
   it("keeps syllable splits from the lyrics", async () => {

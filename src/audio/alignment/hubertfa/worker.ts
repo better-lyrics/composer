@@ -3,51 +3,34 @@
 import { decodeAlignment } from "@/audio/alignment/hubertfa/decoder";
 import japaneseDictionaryText from "@/audio/alignment/hubertfa/dictionary-ja.txt?raw";
 import mandarinDictionaryText from "@/audio/alignment/hubertfa/dictionary-zh.txt?raw";
-import { type G2pContext, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
+import { type G2pContext, type PhoneUnit, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
 import { createJapaneseReader } from "@/audio/alignment/hubertfa/japanese-tokenizer";
 import { type Pronunciations, parseDictionary } from "@/audio/alignment/hubertfa/lexicon";
 import type { AlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
+import type {
+  AlignOutcome,
+  InboundMessage,
+  LineRequest,
+  OutboundMessage,
+} from "@/audio/alignment/hubertfa/worker-protocol";
+import { ctcLineBounds } from "@/audio/alignment/hubertfa/ctc-bounds";
+import { CTC_BLANK } from "@/audio/alignment/hubertfa/ctc-viterbi";
 import {
+  type PhoneSequence,
   buildPhoneSequence,
   partIntervalsFromUnits,
   phonesByUnit,
   unitIntervalsFromPhones,
 } from "@/audio/alignment/hubertfa/sequence";
-import { type Backend, type Ort, type OrtSession, createSession, loadOrt } from "@/audio/ort-runtime";
+import { type Backend, type Ort, type OrtSession, type OrtTensor, createSession, loadOrt } from "@/audio/ort-runtime";
 import { chooseBackend } from "@/audio/separation/backend-selection";
 import { type CachedModel, fetchAndCacheModel, readCachedModel } from "@/audio/separation/model-cache";
 import { describeError, log } from "@/audio/separation/worker-log";
+import { withoutAnchor } from "@/domain/alignment/anchor";
 import { hasHan } from "@/domain/alignment/cjk";
-import type { HanReading } from "@/domain/alignment/language";
-import type { PartSplit, WordInterval } from "@/domain/alignment/words";
+import type { WordInterval } from "@/domain/alignment/words";
 
 declare const self: DedicatedWorkerGlobalScope;
-
-// -- Types --------------------------------------------------------------------
-
-type AlignOutcome =
-  | { kind: "aligned"; intervals: WordInterval[]; guessed: string[]; splits: PartSplit[] }
-  | { kind: "unknown"; words: string[] }
-  | { kind: "no-path" };
-
-type InboundMessage =
-  | { type: "init"; assets: AlignmentAssets; forceWasm?: boolean; japanese?: boolean }
-  | {
-      type: "align";
-      samples: Float32Array;
-      sampleRate: number;
-      words: string[][];
-      hanReading: HanReading;
-      transliteration: string | null;
-    }
-  | { type: "cancel" };
-
-type OutboundMessage =
-  | { type: "init-progress"; loaded: number; total: number }
-  | { type: "init-done"; backend: Backend }
-  | { type: "align-done"; outcome: AlignOutcome }
-  | { type: "cancelled" }
-  | { type: "error"; code: string; message: string };
 
 // -- Constants ----------------------------------------------------------------
 
@@ -202,16 +185,15 @@ async function runModel(samples: Float32Array) {
   }
 }
 
-async function handleAlign(
-  samples: Float32Array,
-  sampleRate: number,
-  words: string[][],
-  hanReading: HanReading,
-  transliteration: string | null,
-) {
+type PreparedLine =
+  | { kind: "ready"; units: PhoneUnit[]; guessed: string[]; sequence: PhoneSequence }
+  | { kind: "done"; outcome: AlignOutcome };
+
+// The line's phones, or the outcome when it has none to align. Null after posting an error.
+async function prepareLine({ sampleRate, words, hanReading, transliteration }: Omit<LineRequest, "samples">) {
   if (!session || !ort || !dictionary) {
     post({ type: "error", code: "ort-failed", message: "Alignment model is not loaded." });
-    return;
+    return null;
   }
   if (sampleRate !== MODEL_SAMPLE_RATE) {
     post({
@@ -219,7 +201,7 @@ async function handleAlign(
       code: "bad-input",
       message: `Expected ${MODEL_SAMPLE_RATE} Hz audio, got ${sampleRate} Hz.`,
     });
-    return;
+    return null;
   }
   const lineText = words.flat().join("");
   const g2p = lineToPhoneUnits(words, {
@@ -229,19 +211,22 @@ async function handleAlign(
     readJapanese,
     transliteration,
   });
-  if (g2p.kind === "unknown") {
-    post({ type: "align-done", outcome: { kind: "unknown", words: g2p.words } });
-    return;
-  }
+  if (g2p.kind === "unknown") return { kind: "done", outcome: { kind: "unknown", words: g2p.words } } as const;
   const built = buildPhoneSequence(g2p.units);
-  if (built.kind === "unknown") {
-    post({ type: "align-done", outcome: { kind: "unknown", words: built.words } });
+  if (built.kind === "unknown") return { kind: "done", outcome: { kind: "unknown", words: built.words } } as const;
+  if (built.kind === "nothing-to-align") return { kind: "done", outcome: { kind: "no-path" } } as const;
+  return { kind: "ready", units: g2p.units, guessed: g2p.guessed, sequence: built.sequence } satisfies PreparedLine;
+}
+
+async function handleAlign(request: LineRequest, anchor: string[] | null) {
+  const words = anchor ? [anchor, ...request.words] : request.words;
+  const line = await prepareLine({ ...request, words });
+  if (!line) return;
+  if (line.kind === "done") {
+    post({ type: "align-done", outcome: line.outcome });
     return;
   }
-  if (built.kind === "nothing-to-align") {
-    post({ type: "align-done", outcome: { kind: "no-path" } });
-    return;
-  }
+  const { samples, sampleRate } = request;
   try {
     const outputs = await runModel(samples);
     const logits = outputs.ph_frame_logits;
@@ -253,34 +238,61 @@ async function handleAlign(
       numSamples: samples.length,
       sampleRate,
       hopSize: HOP_SIZE,
-      phoneIds: built.sequence.phoneIds,
+      phoneIds: line.sequence.phoneIds,
     });
     if (!phones) {
       post({ type: "align-done", outcome: { kind: "no-path" } });
       return;
     }
-    const unitIntervals = unitIntervalsFromPhones(phones, built.sequence, g2p.units.length);
-    const unitPhones = phonesByUnit(phones, built.sequence, g2p.units);
-    const { intervals, splits } = partIntervalsFromUnits(g2p.units, unitIntervals, words.flat(), unitPhones);
-    post({ type: "align-done", outcome: { kind: "aligned", intervals, guessed: g2p.guessed, splits } });
+    const unitIntervals = unitIntervalsFromPhones(phones, line.sequence, line.units.length);
+    const unitPhones = phonesByUnit(phones, line.sequence, line.units);
+    const parts = partIntervalsFromUnits(line.units, unitIntervals, words.flat(), unitPhones);
+    const { intervals, splits, anchor: placed } = withoutAnchor(parts, anchor?.length ?? 0);
+    post({
+      type: "align-done",
+      outcome: { kind: "aligned", intervals, guessed: line.guessed, splits, anchor: placed },
+    });
   } catch (err) {
     post({ type: "error", code: "ort-failed", message: describeError(err) });
   }
+}
+
+// Where the line's phones are in the window, by CTC Viterbi; null, without a model run, when it has no CTC output.
+async function handleLocate(request: LineRequest) {
+  const line = await prepareLine(request);
+  if (!line) return;
+  let bounds: WordInterval | null = null;
+  try {
+    if (line.kind === "ready" && session?.outputNames.includes("ctc_logits")) {
+      const ctc = (await runModel(request.samples)).ctc_logits as OrtTensor | undefined;
+      const found =
+        ctc &&
+        ctcLineBounds({
+          logits: ctc.data,
+          outputFrames: ctc.dims[2],
+          numSamples: request.samples.length,
+          hopSize: HOP_SIZE,
+          phoneIds: line.sequence.phoneIds.filter((id) => id !== CTC_BLANK),
+        });
+      const frame = HOP_SIZE / request.sampleRate;
+      if (found) bounds = { begin: found.first * frame, end: found.end * frame };
+    }
+  } catch (err) {
+    post({ type: "error", code: "ort-failed", message: describeError(err) });
+    return;
+  }
+  post({ type: "locate-done", bounds });
 }
 
 // -- Entry --------------------------------------------------------------------
 
 self.addEventListener("message", (ev: MessageEvent<InboundMessage>) => {
   const msg = ev.data;
+  // Anything that escapes (a lazily loaded chunk failing, say) must still answer, or the run waits forever.
+  const answer = (work: Promise<void>) =>
+    work.catch((err) => post({ type: "error", code: "align-failed", message: describeError(err) }));
   if (msg.type === "init") void handleInit(msg.assets, msg.forceWasm, msg.japanese);
-  else if (msg.type === "align") {
-    // Anything that escapes (a lazily loaded chunk failing, say) must still answer, or the run waits forever.
-    handleAlign(msg.samples, msg.sampleRate, msg.words, msg.hanReading, msg.transliteration).catch((err) =>
-      post({ type: "error", code: "align-failed", message: describeError(err) }),
-    );
-  } else if (msg.type === "cancel") downloadAbort?.abort();
+  else if (msg.type === "align") void answer(handleAlign(msg, msg.anchor));
+  else if (msg.type === "locate") void answer(handleLocate(msg));
+  else if (msg.type === "cancel") downloadAbort?.abort();
 });
-
-// -- Exports ------------------------------------------------------------------
-
-export type { AlignOutcome, InboundMessage, OutboundMessage };

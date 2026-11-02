@@ -1,8 +1,8 @@
-import type { AlignOutcome } from "@/audio/alignment/hubertfa/worker";
+import type { LineRequest } from "@/audio/alignment/hubertfa/worker-protocol";
 import { resolveAlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import { AlignmentWorker } from "@/audio/alignment/hubertfa/worker-host";
 import { splitByCharacters } from "@/audio/alignment/split-by-characters";
-import type { Aligner } from "@/audio/alignment/types";
+import type { AlignmentSegment, Aligner } from "@/audio/alignment/types";
 import type { WordInterval } from "@/domain/alignment/words";
 
 // -- State --------------------------------------------------------------------
@@ -10,6 +10,32 @@ import type { WordInterval } from "@/domain/alignment/words";
 let worker: AlignmentWorker | null = null;
 // What the loaded worker was set up with, so a kept model is only reused when it fits the run.
 let loaded: { modelId: string; japanese: boolean } | null = null;
+
+// -- Functions ----------------------------------------------------------------
+
+function lineRequest(segment: AlignmentSegment): LineRequest {
+  return {
+    samples: segment.samples,
+    sampleRate: segment.sampleRate,
+    words: segment.words.map((word) => word.parts),
+    hanReading: segment.hanReading,
+    transliteration: segment.transliteration,
+  };
+}
+
+// A WebGPU failure can start a fresh model download mid-run, which Cancel must stop.
+async function withWorker<T>(signal: AbortSignal, run: (active: AlignmentWorker) => Promise<T>): Promise<T> {
+  signal.throwIfAborted();
+  if (!worker) throw new Error("Alignment model is not loaded.");
+  const active = worker;
+  const onAbort = () => active.cancel();
+  signal.addEventListener("abort", onAbort);
+  try {
+    return await run(active);
+  } finally {
+    signal.removeEventListener("abort", onAbort);
+  }
+}
 
 // -- Aligner ------------------------------------------------------------------
 
@@ -44,25 +70,7 @@ const hubertfaAligner: Aligner = {
   },
 
   align: async (segment, signal) => {
-    signal.throwIfAborted();
-    if (!worker) throw new Error("Alignment model is not loaded.");
-    const parts = segment.words.map((word) => word.parts);
-    // A WebGPU failure can start a fresh model download mid-run, which Cancel must stop.
-    const active = worker;
-    const onAbort = () => active.cancel();
-    signal.addEventListener("abort", onAbort);
-    let outcome: AlignOutcome;
-    try {
-      outcome = await active.align(
-        segment.samples,
-        segment.sampleRate,
-        parts,
-        segment.hanReading,
-        segment.transliteration,
-      );
-    } finally {
-      signal.removeEventListener("abort", onAbort);
-    }
+    const outcome = await withWorker(signal, (active) => active.align(lineRequest(segment), segment.anchor ?? null));
     if (outcome.kind === "aligned") {
       const toSong = (iv: WordInterval) => ({
         begin: segment.windowBegin + iv.begin,
@@ -70,7 +78,8 @@ const hubertfaAligner: Aligner = {
       });
       const intervals = outcome.intervals.map(toSong);
       const splits = outcome.splits.map((split) => ({ ...split, intervals: split.intervals.map(toSong) }));
-      return { intervals, fellBack: false, unknownWords: [], guessedWords: outcome.guessed, splits };
+      const anchor = outcome.anchor && toSong(outcome.anchor);
+      return { intervals, fellBack: false, unknownWords: [], guessedWords: outcome.guessed, splits, anchor };
     }
     return {
       intervals: splitByCharacters(segment),
@@ -78,7 +87,13 @@ const hubertfaAligner: Aligner = {
       unknownWords: outcome.kind === "unknown" ? outcome.words : [],
       guessedWords: [],
       splits: [],
+      anchor: null,
     };
+  },
+
+  locate: async (segment, signal) => {
+    const bounds = await withWorker(signal, (active) => active.locate(lineRequest(segment)));
+    return bounds && { begin: segment.windowBegin + bounds.begin, end: segment.windowBegin + bounds.end };
   },
 
   release: () => {

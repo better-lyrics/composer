@@ -1,6 +1,11 @@
-import type { HanReading } from "@/domain/alignment/language";
+import type { WordInterval } from "@/domain/alignment/words";
 import type { AlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
-import type { AlignOutcome, InboundMessage, OutboundMessage } from "@/audio/alignment/hubertfa/worker";
+import type {
+  AlignOutcome,
+  InboundMessage,
+  LineRequest,
+  OutboundMessage,
+} from "@/audio/alignment/hubertfa/worker-protocol";
 import type { Backend } from "@/audio/ort-runtime";
 
 // -- Types --------------------------------------------------------------------
@@ -100,20 +105,23 @@ class AlignmentWorker {
     return msg.backend;
   }
 
-  async align(
-    samples: Float32Array,
-    sampleRate: number,
-    words: string[][],
-    hanReading: HanReading,
-    transliteration: string | null,
-  ): Promise<AlignOutcome> {
-    // Copy so the transfer doesn't detach the caller's view of the song.
-    const copy = new Float32Array(samples);
-    const msg = await this.request({ type: "align", samples: copy, sampleRate, words, hanReading, transliteration }, [
-      copy.buffer,
-    ]);
+  async align(request: LineRequest, anchor: string[] | null): Promise<AlignOutcome> {
+    const msg = await this.send({ type: "align", ...request, anchor });
     if (msg.type !== "align-done") throw workerError("Unexpected reply to align.", "protocol");
     return msg.outcome;
+  }
+
+  /** Where the line's phones are in the samples, in seconds from the first; null when the model can't tell. */
+  async locate(request: LineRequest): Promise<WordInterval | null> {
+    const msg = await this.send({ type: "locate", ...request });
+    if (msg.type !== "locate-done") throw workerError("Unexpected reply to locate.", "protocol");
+    return msg.bounds;
+  }
+
+  // Copies the samples so the transfer doesn't detach the caller's view of the song.
+  private send(message: Extract<InboundMessage, { samples: Float32Array }>) {
+    const samples = new Float32Array(message.samples);
+    return this.request({ ...message, samples }, [samples.buffer]);
   }
 
   cancel(): void {
