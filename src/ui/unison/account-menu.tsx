@@ -1,7 +1,7 @@
 import { useUnisonSession } from "@/hooks/useUnisonSession";
-import { UNISON_BASE_URL } from "@/lib/unison/client";
 import { logout } from "@/lib/unison/endpoints";
 import { type StoredUnisonSession, clearUnisonSession } from "@/lib/unison/session";
+import { unisonProfileUrl } from "@/lib/unison/web-urls";
 import { Button } from "@/ui/button";
 import { HEADER_ICON_STYLES } from "@/ui/header-icon-styles";
 import { IconButton } from "@/ui/icon-button";
@@ -21,10 +21,6 @@ import { useNavigate } from "react-router-dom";
 const LOG_PREFIX = "[UnisonAccount]";
 
 // -- Helpers -------------------------------------------------------------------
-
-function unisonProfileUrl(keyId: string): string {
-  return `${UNISON_BASE_URL}/curator/${keyId}`;
-}
 
 function disconnect(): void {
   // logout() reads the token before its first await, so clearing right after still signs this session out.

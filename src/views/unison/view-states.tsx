@@ -12,6 +12,7 @@ interface SkeletonRowsProps {
 interface InlineErrorProps {
   error: Error;
   onRetry: () => void;
+  className?: string;
 }
 
 interface LoadMoreProps {
@@ -50,8 +51,8 @@ const SkeletonBar: React.FC<{ className?: string }> = ({ className }) => (
   <span className={cn(SKELETON_BLOCK, "h-2.5", className)} />
 );
 
-const InlineError: React.FC<InlineErrorProps> = ({ error, onRetry }) => (
-  <div role="alert" className="flex items-center gap-3 px-3 py-4">
+const InlineError: React.FC<InlineErrorProps> = ({ error, onRetry, className }) => (
+  <div role="alert" className={cn("flex items-center gap-3 px-3 py-4", className)}>
     <p className="text-sm text-composer-text-secondary select-text cursor-text">{error.message}</p>
     <Button size="sm" variant="secondary" onClick={onRetry}>
       Retry
