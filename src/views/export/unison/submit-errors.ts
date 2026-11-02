@@ -32,5 +32,4 @@ function submitFailure(error: unknown): SubmitFailure {
 
 // -- Exports -------------------------------------------------------------------
 
-export type { SubmitFailure };
 export { isSessionEndedError, submitFailure };

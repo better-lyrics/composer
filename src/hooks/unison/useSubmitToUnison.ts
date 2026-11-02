@@ -107,5 +107,4 @@ function useSubmitToUnison(keyId: string, onError: (error: unknown) => void): Un
 
 // -- Exports -------------------------------------------------------------------
 
-export type { SendFailure, UnisonSendRequest };
 export { useSubmitToUnison };

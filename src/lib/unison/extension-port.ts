@@ -116,5 +116,5 @@ function requestSignedSession(extensionId: string, nonce: string): Promise<unkno
 
 // -- Exports -------------------------------------------------------------------
 
-export type { ExtensionPort, ExtensionRuntime };
+export type { ExtensionPort };
 export { ExtensionAuthError, findBetterLyricsExtension, requestSignedSession };

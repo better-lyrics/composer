@@ -28,4 +28,3 @@ function useLinkedLyric(unisonLyricId: string): LinkedLyric {
 // -- Exports -------------------------------------------------------------------
 
 export { useLinkedLyric };
-export type { LinkedLyric };

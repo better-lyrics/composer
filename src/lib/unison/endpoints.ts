@@ -5,7 +5,6 @@ import type {
   SuggestedVideo,
   UnisonChallenge,
   UnisonLyric,
-  UnisonMe,
   UnisonMineItem,
   UnisonPage,
   UnisonSearchResult,
@@ -46,10 +45,6 @@ function fetchChallenge(options: CallOptions = {}): Promise<UnisonChallenge> {
 
 function createSession(signedBody: UnisonSignedSessionBody, options: CallOptions = {}): Promise<UnisonSessionResponse> {
   return unisonFetch("/auth/session", { ...options, method: "POST", body: signedBody });
-}
-
-function fetchMe(options: CallOptions = {}): Promise<UnisonMe> {
-  return unisonFetch("/auth/me", { ...options, auth: true });
 }
 
 async function logout(options: CallOptions = {}): Promise<void> {
@@ -196,7 +191,6 @@ export {
   deleteLyrics,
   fetchChallenge,
   fetchLyric,
-  fetchMe,
   fetchMine,
   fetchMostWanted,
   fetchRevision,

@@ -56,5 +56,5 @@ function precheckUnisonTtml(content: string): UnisonTtmlPrecheck {
 
 // -- Exports -------------------------------------------------------------------
 
-export type { UnisonTtmlPrecheck, UnisonTtmlProblem };
+export type { UnisonTtmlProblem };
 export { precheckUnisonTtml };

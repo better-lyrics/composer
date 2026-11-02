@@ -30,4 +30,4 @@ function useBetterLyricsDetection(enabled: boolean): BetterLyricsDetection {
 // -- Exports -------------------------------------------------------------------
 
 export { useBetterLyricsDetection };
-export type { BetterLyricsDetection, BetterLyricsDetectionState };
+export type { BetterLyricsDetection };

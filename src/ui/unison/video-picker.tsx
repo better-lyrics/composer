@@ -173,4 +173,4 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
 // -- Exports -------------------------------------------------------------------
 
 export { linkedVideoCount, VideoPicker };
-export type { MainVideo, PickerResult };
+export type { MainVideo };

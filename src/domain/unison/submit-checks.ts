@@ -91,5 +91,5 @@ function submitChecks(input: SubmitCheckInput): SubmitChecks {
 
 // -- Exports -------------------------------------------------------------------
 
-export type { SongProblem, SubmitCheck, SubmitCheckInput, SubmitChecks, SubmitCheckStatus, SubmitMode, VideoProblem };
+export type { SubmitCheck, SubmitCheckInput, SubmitChecks, SubmitCheckStatus, SubmitMode };
 export { submitChecks, submitDurationSeconds };

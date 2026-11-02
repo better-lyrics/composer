@@ -192,10 +192,6 @@ interface UnisonIdentity {
   council: { admin: boolean } | null;
 }
 
-interface UnisonMe extends UnisonIdentity {
-  expiresAt: number;
-}
-
 interface UnisonChallenge {
   nonce: string;
   expiresAt: number;
@@ -225,26 +221,18 @@ export type {
   LyricsSubmission,
   LyricsSubmissionResult,
   PendingReason,
-  RevisionBar,
   SongForSuggestions,
   SuggestedVideo,
-  UnisonActor,
   UnisonChallenge,
   UnisonConfidence,
-  UnisonIdentity,
   UnisonLyric,
   UnisonLyricsFormat,
-  UnisonMark,
-  UnisonMe,
   UnisonMineItem,
   UnisonPage,
   UnisonSearchResult,
-  UnisonSessionPayload,
   UnisonSessionResponse,
   UnisonSignedSessionBody,
-  UnisonSyncType,
   UnisonVariant,
-  UnisonVote,
   VideoLink,
   WantedSong,
 };

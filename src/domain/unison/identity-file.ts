@@ -65,5 +65,5 @@ function parseIdentityFile(text: string): IdentityFile {
 
 // -- Exports -------------------------------------------------------------------
 
-export type { IdentityFile, IdentityFileErrorKind };
+export type { IdentityFile };
 export { IdentityFileError, parseIdentityFile };
