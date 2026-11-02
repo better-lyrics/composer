@@ -95,6 +95,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   rememberPlaybackRate: TOGGLE,
   rememberVolume: TOGGLE,
   audioScrubPreview: TOGGLE,
+  showLevelMeters: TOGGLE,
   vocalModelFiles: { kind: "custom", Component: VocalModelFilesSetting },
   autoSeparateOnImport: TOGGLE,
   vocalModelVariant: {

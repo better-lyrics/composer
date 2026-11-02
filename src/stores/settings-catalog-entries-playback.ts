@@ -30,6 +30,13 @@ const PLAYBACK_CATALOG_ENTRIES = {
     description: "Keep your volume level between sessions.",
     settingKey: "rememberVolume",
   },
+  showLevelMeters: {
+    section: "playback",
+    label: "Show level meters",
+    description: "Show the VU meters and LED strip in the player bar.",
+    keywords: ["vu", "led", "meter", "levels", "decibels", "player bar"],
+    settingKey: "showLevelMeters",
+  },
   seekStep: {
     section: "playback",
     group: "Seeking",
