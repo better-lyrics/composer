@@ -292,38 +292,23 @@ describe("TimelineSyllableSplitter", () => {
     expect(saved.words?.map((word) => word.transliterationJoinerAfter)).toEqual(["", " ", undefined]);
   });
 
-  it.each([
-    { label: "word-timed", text: "хорошо", timing: { words: [{ text: "хорошо", begin: 0, end: 1 }] }, wordIndex: 0 },
-    { label: "line-timed", text: "хорошо", timing: { begin: 0, end: 1 }, wordIndex: 0 },
-    {
-      label: "multi-word",
-      text: "да хорошо",
-      timing: {
-        words: [
-          { text: "да ", begin: 0, end: 0.5 },
-          { text: "хорошо", begin: 0.5, end: 1 },
-        ],
-      },
-      wordIndex: 1,
-    },
-  ])("re-stamps a manual transliteration after a word split on a $label line", async ({ text, timing, wordIndex }) => {
-    const prefix = wordIndex === 0 ? "" : "da  ";
+  it("re-stamps a manual transliteration after a word split", async () => {
     const line: LyricLine = {
       id: "line-word-split",
       agentId: "v1",
-      text,
-      ...timing,
+      text: "хорошо",
+      words: [{ text: "хорошо", begin: 0, end: 1 }],
       transliteration: {
         language: "ru-Latn",
-        text: `${prefix}khorosho`,
+        text: "khorosho",
         segments: [],
         origin: "manual",
-        sourceFingerprint: languageSourceFingerprint(text),
+        sourceFingerprint: languageSourceFingerprint("хорошо"),
       },
     };
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex, type: "word" }],
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
     });
     const screen = await render(<TimelineSyllableSplitter />);
     window.dispatchEvent(new Event("timeline:split-word"));
@@ -331,12 +316,11 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Original split point 3" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(wordIndex + 2);
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
     const saved = useProjectStore.getState().lines[0];
-    const splitText = text.replace("хорошо", "хор ошо");
-    expect(saved.text).toBe(splitText);
-    expect(saved.transliteration?.text).toBe(`${prefix}khorosho`);
-    expect(saved.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint(splitText));
+    expect(saved.text).toBe("хор ошо");
+    expect(saved.transliteration?.text).toBe("khorosho");
+    expect(saved.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint("хор ошо"));
     expect(getLanguageReviewTracks(saved)).toEqual([]);
   });
 

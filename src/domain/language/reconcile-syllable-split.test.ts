@@ -338,6 +338,52 @@ describe("splitWordIntoWordsKeepingTransliteration", () => {
     expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("хор ошо"));
   });
 
+  it("re-stamps the track of a line-timed line, whose words are derived", () => {
+    const { words: _words, ...lineTimed } = line(languageSourceFingerprint("хорошо"));
+    const result = splitWordIntoWordsKeepingTransliteration(
+      { ...lineTimed, begin: 0, end: 1 },
+      "word",
+      0,
+      pieces,
+      "|",
+    )?.transliteration;
+
+    expect(result?.text).toBe("khorosho");
+    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("хор ошо"));
+  });
+
+  it("keeps the other words' transliteration when one word of a line is split", () => {
+    const multiWord: LyricLine = {
+      id: "line",
+      agentId: "v1",
+      text: "да хорошо",
+      words: [
+        { text: "да ", begin: 0, end: 0.5 },
+        { text: "хорошо", begin: 0.5, end: 1 },
+      ],
+      transliteration: {
+        language: "ru-Latn",
+        text: "da  khorosho",
+        segments: [],
+        origin: "manual",
+        sourceFingerprint: languageSourceFingerprint("да хорошо"),
+      },
+    };
+    const result = splitWordIntoWordsKeepingTransliteration(
+      multiWord,
+      "word",
+      1,
+      [
+        { text: "хор ", begin: 0.5, end: 0.75, transliteration: "khor", transliterationJoinerAfter: "" },
+        { text: "ошо", begin: 0.75, end: 1, transliteration: "osho" },
+      ],
+      "|",
+    )?.transliteration;
+
+    expect(result?.text).toBe("da  khorosho");
+    expect(result?.sourceFingerprint).toBe(languageSourceFingerprint("да хор ошо"));
+  });
+
   it("keeps the track's origin", () => {
     const google = line(languageSourceFingerprint("хорошо"));
     google.transliteration!.origin = "google";
