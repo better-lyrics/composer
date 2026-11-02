@@ -220,17 +220,24 @@ interface IstftOptions {
   normalized?: boolean;
 }
 
-function istft(spec: Spectrogram, outputLength: number, opts: IstftOptions = {}): Float32Array {
+// The window is as long as the FFT, so `fftSize` sets both.
+function istft(
+  spec: Spectrogram,
+  outputLength: number,
+  opts: IstftOptions = {},
+  framing: Pick<StftFraming, "fftSize" | "hop"> = {},
+): Float32Array {
   const { normalized = false } = opts;
-  const window = hannWindow(WIN_LENGTH);
-  const halfWin = WIN_LENGTH / 2;
-  const paddedLength = outputLength + WIN_LENGTH;
+  const { fftSize = WIN_LENGTH, hop = HOP_LENGTH } = framing;
+  const window = hannWindow(fftSize);
+  const halfWin = fftSize / 2;
+  const paddedLength = outputLength + fftSize;
   const out = new Float32Array(paddedLength);
   const norm = new Float32Array(paddedLength);
 
-  const frameReal = new Float32Array(N_FFT);
-  const frameImag = new Float32Array(N_FFT);
-  const scale = normalized ? Math.sqrt(N_FFT) : 1;
+  const frameReal = new Float32Array(fftSize);
+  const frameImag = new Float32Array(fftSize);
+  const scale = normalized ? Math.sqrt(fftSize) : 1;
 
   for (let f = 0; f < spec.numFrames; f++) {
     frameReal.fill(0);
@@ -240,12 +247,12 @@ function istft(spec: Spectrogram, outputLength: number, opts: IstftOptions = {})
       frameImag[b] = spec.imag[f * spec.numBins + b];
     }
     for (let b = 1; b < spec.numBins - 1; b++) {
-      frameReal[N_FFT - b] = frameReal[b];
-      frameImag[N_FFT - b] = -frameImag[b];
+      frameReal[fftSize - b] = frameReal[b];
+      frameImag[fftSize - b] = -frameImag[b];
     }
     ifftRadix2(frameReal, frameImag);
-    const start = f * HOP_LENGTH;
-    for (let i = 0; i < WIN_LENGTH; i++) {
+    const start = f * hop;
+    for (let i = 0; i < fftSize; i++) {
       out[start + i] += frameReal[i] * scale * window[i];
       norm[start + i] += window[i] * window[i];
     }

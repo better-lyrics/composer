@@ -1,6 +1,7 @@
 import { VOCAL_MODEL_APPROX_BYTES } from "@/audio/separation/model-registry";
 import type { SeparationError } from "@/audio/separation/types";
 import { STEM_SLOTS } from "@/domain/stems/stem-slot";
+import { useRoformerSupport } from "@/hooks/useRoformerSupport";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
@@ -50,13 +51,23 @@ const StemProgress: React.FC<{ downloading: boolean; fills: string; approxBytes:
   );
 };
 
+// The RoFormer is much slower, so the offer says how much before it runs.
+function separateCopy(fills: string, highQuality: boolean, fromOtherModel: boolean): string {
+  if (fromOtherModel)
+    return "These stems are from the standard vocal model. High quality vocals take about 10x longer.";
+  return `Makes the ${fills} from this song.${highQuality ? " High quality vocals take about 10x longer." : ""}`;
+}
+
 const StemModelBlock: React.FC = () => {
   const status = useSeparationStore((s) => s.status);
   const error = useSeparationStore((s) => s.error);
   const stemUrls = useSeparationStore((s) => s.stemUrls);
   const modelCached = useSeparationStore((s) => s.modelCached);
   const hostingConfigured = useSeparationStore((s) => s.hostingConfigured);
-  const approxBytes = useSettingsStore((s) => VOCAL_MODEL_APPROX_BYTES[s.vocalModelVariant]);
+  const fromOtherModel = useSeparationStore((s) => s.stemsFromOtherModel);
+  const variant = useSettingsStore((s) => s.vocalModelVariant);
+  const support = useRoformerSupport();
+  const approxBytes = VOCAL_MODEL_APPROX_BYTES[variant];
 
   const emptySlots = STEM_SLOTS.filter((slot) => stemUrls[slot] === undefined);
   const fills = emptySlots.map((slot) => STEM_LABELS[slot].toLowerCase()).join(" and ");
@@ -79,16 +90,19 @@ const StemModelBlock: React.FC = () => {
       </>
     );
   }
-  if (emptySlots.length === 0) return null;
+  // The upgrade from another model's stems is offered only where the RoFormer can run.
+  if (emptySlots.length === 0 && !(fromOtherModel && support?.supported)) return null;
 
   return (
     <>
       <Separator />
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-medium text-composer-text">Separate with the vocal model</p>
+          <p className="text-[13px] font-medium text-composer-text">
+            {variant === "roformer" ? "Separate with high quality vocals" : "Separate with the vocal model"}
+          </p>
           <p className="mt-0.5 text-xs leading-[1.45] text-(--muted) text-pretty">
-            Makes the {fills} from this song.
+            {separateCopy(fills, variant === "roformer", fromOtherModel)}
             {!modelCached && ` Needs a one-time ${formatWholeMegabytes(approxBytes)} download.`}
           </p>
         </div>

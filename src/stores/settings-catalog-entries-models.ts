@@ -14,8 +14,9 @@ const MODELS_CATALOG_ENTRIES = {
     section: "models",
     group: "Vocal separation",
     label: "Vocal model",
-    description: "fp16 is half the size and faster. Without WebGPU shader-f16, fp32 runs instead.",
-    keywords: ["fp16", "fp32", "stems", "separation", "precision"],
+    description:
+      "fp16 is half the size and faster. Without WebGPU shader-f16, fp32 runs instead. High quality vocals use Mel-Band RoFormer: cleaner stems, but about 10x slower.",
+    keywords: ["fp16", "fp32", "stems", "separation", "precision", "roformer", "mel-band", "high quality"],
     settingKey: "vocalModelVariant",
   },
   autoSeparateOnImport: {

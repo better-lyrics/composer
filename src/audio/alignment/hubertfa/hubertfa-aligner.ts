@@ -1,6 +1,7 @@
 import type { LineRequest } from "@/audio/alignment/hubertfa/worker-protocol";
 import { resolveAlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import { AlignmentWorker } from "@/audio/alignment/hubertfa/worker-host";
+import { releaseIdleRoformer } from "@/audio/separation/shared-separation-worker";
 import { splitByCharacters } from "@/audio/alignment/split-by-characters";
 import type { AlignmentSegment, Aligner } from "@/audio/alignment/types";
 import type { WordInterval } from "@/domain/alignment/words";
@@ -52,6 +53,8 @@ const hubertfaAligner: Aligner = {
     if (hubertfaAligner.isLoaded(options)) return;
     const { japanese, modelId } = options;
     hubertfaAligner.release();
+    // An idle RoFormer holds GPU memory the aligner needs; it reloads for the next song that's separated.
+    await releaseIdleRoformer();
     const assets = await resolveAlignmentAssets(modelId);
     if (!assets) throw new Error("Auto-align isn't available on this deployment.");
     const next = new AlignmentWorker();

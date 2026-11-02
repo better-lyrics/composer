@@ -1,6 +1,11 @@
 import { BEAT_MODEL } from "@/audio/beat/beat-model";
 import { MODEL_CACHE_NAME } from "@/audio/separation/model-cache";
-import { RETIRED_VOCAL_MODEL_FILENAMES, VOCAL_MODEL_FILENAMES } from "@/audio/separation/model-registry";
+import {
+  type HtdemucsVariant,
+  RETIRED_VOCAL_MODEL_FILENAMES,
+  VOCAL_MODEL_FILENAMES,
+} from "@/audio/separation/model-registry";
+import { ROFORMER_FILE_NAMES } from "@/audio/separation/roformer/model-parts";
 import {
   type KnownModelUrls,
   type ModelFile,
@@ -27,14 +32,15 @@ class ModelInUseError extends Error {
 
 function knownModelUrls(): KnownModelUrls {
   return {
-    vocalFileNames: [...Object.values(VOCAL_MODEL_FILENAMES), ...RETIRED_VOCAL_MODEL_FILENAMES],
+    vocalFileNames: [...Object.values(VOCAL_MODEL_FILENAMES), ...RETIRED_VOCAL_MODEL_FILENAMES, ...ROFORMER_FILE_NAMES],
     beatUrl: BEAT_MODEL.url,
   };
 }
 
 function vocalVariantOfFile(url: string): VocalModelVariant | undefined {
   const name = modelFileName(url);
-  return (Object.keys(VOCAL_MODEL_FILENAMES) as VocalModelVariant[]).find(
+  if (ROFORMER_FILE_NAMES.includes(name)) return "roformer";
+  return (Object.keys(VOCAL_MODEL_FILENAMES) as HtdemucsVariant[]).find(
     (variant) => VOCAL_MODEL_FILENAMES[variant] === name,
   );
 }
