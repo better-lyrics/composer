@@ -244,8 +244,15 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({
     }
     appliedTickRef.current = { element: el, playing, playbackRate };
     el.tickOptions = { playbackRate, ...highlightLeadTrims(themeLeads(el), playbackRate, playing) };
+    if (playing) {
+      el.currentTime = audio.currentTime;
+      el.playing = true;
+      return;
+    }
+    // Braccato resyncs paused sweeps only on a paused seek, so pause first: the time write that
+    // follows then drops the playing lead instead of leaving the sweep frozen ahead.
+    el.playing = false;
     el.currentTime = audio.currentTime;
-    el.playing = playing;
   }, "braccato-renderer");
 
   return (
