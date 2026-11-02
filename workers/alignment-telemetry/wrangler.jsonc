@@ -1,0 +1,32 @@
+// Composer's alignment telemetry endpoint. Deployed on its own, separately from
+// Composer's static assets (the root wrangler.jsonc). See README.md here.
+{
+  "name": "composer-alignment-telemetry",
+  "account_id": "f5dbfc5cf299cd799bf49f258675f82b",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-01-09",
+  "workers_dev": true,
+  "preview_urls": false,
+  "r2_buckets": [
+    {
+      "binding": "TELEMETRY",
+      "bucket_name": "composer-alignment-telemetry"
+    }
+  ],
+  // Per IP for POST and DELETE, and per install id for POST. A user exports a
+  // song a few times at most; these only stop floods.
+  "ratelimits": [
+    {
+      "name": "POST_LIMITER",
+      "namespace_id": "4801",
+      "simple": { "limit": 20, "period": 60 }
+    },
+    {
+      "name": "DELETE_LIMITER",
+      "namespace_id": "4802",
+      "simple": { "limit": 5, "period": 60 }
+    }
+  ],
+  // Off so request URLs, which carry install ids on DELETE, are not kept in logs.
+  "observability": { "enabled": false }
+}

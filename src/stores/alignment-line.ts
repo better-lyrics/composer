@@ -33,6 +33,8 @@ interface AlignedLine {
   timings: WordTiming[] | null;
   /** What the next line may anchor on. */
   chain: AnchorChain | null;
+  /** The audio the final pass aligned. */
+  window: AlignmentWindow;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -59,6 +61,7 @@ function finish(plan: PlannedLine, result: SegmentAlignment, window: AlignmentWi
     result,
     timings: !result.fellBack || hasTappedEnd(plan) ? timings : null,
     chain: continues ? { lineId: plan.line.id, word: lastWord(words, intervals), cooling } : null,
+    window,
   };
 }
 

@@ -1,4 +1,5 @@
 import { cancelCountIn } from "@/lib/sync-count-in";
+import { alignmentTelemetryInitialState, useAlignmentTelemetryStore } from "@/stores/alignment-telemetry";
 import { useAudioStore } from "@/stores/audio";
 import { useAuthStore } from "@/stores/auth";
 import { useChoiceStore } from "@/stores/choice-store";
@@ -35,6 +36,9 @@ async function resetAllStores(): Promise<void> {
 
   await clearPersistedStorage(useShortcutBindingsStore);
   useShortcutBindingsStore.setState({ overrides: {} });
+
+  await clearPersistedStorage(useAlignmentTelemetryStore);
+  useAlignmentTelemetryStore.setState(alignmentTelemetryInitialState());
 
   await clearPersistedStorage(useThemeStore);
   useThemeStore.setState({ ...THEME_INITIAL_STATE });

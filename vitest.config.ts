@@ -17,6 +17,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __ORT_VERSION__: JSON.stringify(ortPkg.version),
+    __APP_COMMIT__: JSON.stringify("test"),
   },
   resolve: {
     alias: {
@@ -51,7 +52,7 @@ export default defineConfig({
           name: "unit",
           environment: "jsdom",
           globals: true,
-          include: ["src/**/*.test.{ts,tsx}"],
+          include: ["src/**/*.test.{ts,tsx}", "workers/**/*.test.ts"],
           exclude: ["src/**/*.browser.test.{ts,tsx}"],
           setupFiles: ["./src/test/setup-unit.ts"],
           testTimeout: 60000,

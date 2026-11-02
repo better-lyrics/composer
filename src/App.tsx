@@ -19,6 +19,7 @@ import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
 import { useSaveShortcut } from "@/hooks/useSaveShortcut";
 import { useStorageMaintenance } from "@/hooks/useStorageMaintenance";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
+import { settleAlignmentSharing } from "@/lib/alignment-telemetry-consent";
 import { appQueryClient } from "@/lib/app-query-client";
 import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { commitAllPendingDeletions } from "@/lib/pending-deletions";
@@ -93,6 +94,11 @@ const AppShell: React.FC = () => {
   }, [isEditor, shouldShowTour, tourRequested]);
 
   useEffect(() => wireFrameLoop(), []);
+
+  // Retries server deletes from an earlier opt-out, and clears anything a switch to off left behind.
+  useEffect(() => {
+    void settleAlignmentSharing();
+  }, []);
 
   useEffect(() => {
     if (isEditor) return;

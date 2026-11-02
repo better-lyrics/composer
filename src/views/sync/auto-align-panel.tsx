@@ -1,5 +1,6 @@
 import { useAutoAlign } from "@/hooks/use-auto-align";
-import { type AlignmentError, useAlignmentStore } from "@/stores/alignment";
+import { useAlignmentStore } from "@/stores/alignment";
+import type { AlignmentError } from "@/stores/alignment-types";
 import { useSettingsStore } from "@/stores/settings";
 import { ModelErrorNotice } from "@/ui/model-error-notice";
 import { ModelProgress } from "@/ui/model-progress";
