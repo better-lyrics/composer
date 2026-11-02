@@ -33,6 +33,7 @@ import { toast } from "sonner";
 
 interface BootLinkedFiles {
   present: boolean;
+  blankParams: boolean;
   skippedForVideo: boolean;
   audioUrl: string | null;
   lyricsUrl: string | null;
@@ -48,6 +49,7 @@ const LYRICS_FALLBACK_NAME = "Linked lyrics";
 const RESPONSE_TIMEOUT_MS = 30_000;
 const NO_LINKED_FILES: BootLinkedFiles = {
   present: false,
+  blankParams: false,
   skippedForVideo: false,
   audioUrl: null,
   lyricsUrl: null,
@@ -62,9 +64,12 @@ class LinkedFileError extends Error {}
 function readBootLinkedFiles(): BootLinkedFiles {
   if (typeof window === "undefined") return NO_LINKED_FILES;
   const params = new URLSearchParams(window.location.search);
-  if (!hasLinkedFileParams(params)) return NO_LINKED_FILES;
+  if (!hasLinkedFileParams(params)) {
+    return { ...NO_LINKED_FILES, blankParams: LINKED_FILE_PARAM_NAMES.some((name) => params.has(name)) };
+  }
   return {
     present: true,
+    blankParams: false,
     skippedForVideo: readYouTubeParam(params) !== null,
     audioUrl: readLinkedFileUrl(params, "audioUrl"),
     lyricsUrl: readLinkedFileUrl(params, "lyricsUrl"),
@@ -179,6 +184,7 @@ function useImportFromLinkedFiles(): void {
 
   useEffect(() => {
     if (!links.present) {
+      if (links.blankParams) stripQueryParams(LINKED_FILE_PARAM_NAMES);
       markLinkedFilesSettled("none");
       return;
     }
