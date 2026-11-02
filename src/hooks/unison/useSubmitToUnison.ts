@@ -62,6 +62,7 @@ function useSubmitToUnison(keyId: string, onError: (error: unknown) => void): Un
       queryClient.invalidateQueries({ queryKey: unisonQueryKeys.mine(keyId) }),
       queryClient.invalidateQueries({ queryKey: unisonQueryKeys.revisionPreviews(lyricId) }),
       queryClient.invalidateQueries({ queryKey: unisonQueryKeys.allVariants() }),
+      queryClient.invalidateQueries({ queryKey: unisonQueryKeys.videoLinks(lyricId) }),
     ]);
 
   const submitNew = async (submission: LyricsSubmission, videoIds: readonly string[]) => {

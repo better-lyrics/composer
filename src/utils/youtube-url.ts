@@ -8,18 +8,27 @@ const INVALID_YOUTUBE_LINK_MESSAGE = "That doesn't look like a valid YouTube URL
 
 // -- Functions ----------------------------------------------------------------
 
+function parseLink(input: string): URL | null {
+  try {
+    return new URL(input);
+  } catch {
+    // People paste links like "youtube.com/watch?v=..." without a scheme.
+    try {
+      return new URL(`https://${input}`);
+    } catch {
+      return null;
+    }
+  }
+}
+
 function extractVideoId(input: string): string | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
 
   if (VIDEO_ID_REGEX.test(trimmed)) return trimmed;
 
-  let url: URL;
-  try {
-    url = new URL(trimmed);
-  } catch {
-    return null;
-  }
+  const url = parseLink(trimmed);
+  if (!url) return null;
 
   if (url.protocol !== "http:" && url.protocol !== "https:") return null;
 

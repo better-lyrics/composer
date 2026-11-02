@@ -5,7 +5,9 @@ import { useProjectStore } from "@/stores/project";
 import { OnUnisonCard } from "@/views/export/unison/on-unison-card";
 import { SignedOutCard } from "@/views/export/unison/signed-out-card";
 import { SubmitCard } from "@/views/export/unison/submit-card";
+import { NewSubmission } from "@/views/export/unison/submit-videos";
 import type { UnisonExportSource } from "@/views/export/unison/submit-card-shell";
+import { VideosRow } from "@/views/export/unison/videos-row";
 import { useState } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -30,7 +32,19 @@ const LinkedCards: React.FC<SignedInCardsProps & { lyricId: string }> = ({ lyric
   const linked = useLinkedLyric(lyricId);
   return (
     <>
-      <OnUnisonCard lyricId={lyricId} keyId={props.session.keyId} />
+      <OnUnisonCard
+        lyricId={lyricId}
+        keyId={props.session.keyId}
+        videos={
+          linked.kind === "found" && (
+            <VideosRow
+              lyric={linked.lyric}
+              durationSeconds={props.source.durationSeconds}
+              canManage={linked.lyric.submitter?.keyId === props.session.keyId}
+            />
+          )
+        }
+      />
       {linked.kind === "found" && <SubmitCard key={lyricId} lyricId={linked.lyric.id} {...props} />}
     </>
   );
@@ -62,7 +76,7 @@ const UnisonPanel: React.FC<UnisonPanelProps> = ({ source }) => {
       {unisonLyricId ? (
         <LinkedCards key={unisonLyricId} lyricId={unisonLyricId} {...cardProps} />
       ) : (
-        <SubmitCard lyricId={null} {...cardProps} />
+        <NewSubmission {...cardProps} />
       )}
     </PanelCards>
   );
