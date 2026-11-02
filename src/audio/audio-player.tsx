@@ -6,6 +6,7 @@ import { TimeReadout } from "@/audio/deck/time-readout";
 import { VolumeKnob } from "@/audio/deck/volume-knob";
 import { togglePlayback } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
+import { useSettingsStore } from "@/stores/settings";
 import { selectIsCountingIn, useSyncCountInStore } from "@/stores/sync-count-in";
 import { KEEPS_POPOVERS_OPEN_PROPS } from "@/ui/keeps-popovers-open";
 import { Key } from "@/ui/key";
@@ -37,6 +38,7 @@ const PlayKey: React.FC = () => {
 
 const AudioPlayer: React.FC = () => {
   const hasSource = useAudioStore((state) => state.source !== null);
+  const showLevelMeters = useSettingsStore((state) => state.showLevelMeters);
   if (!hasSource) return null;
 
   return (
@@ -54,9 +56,11 @@ const AudioPlayer: React.FC = () => {
       <DeckModule className="min-w-[280px]">
         <OverviewScrub />
       </DeckModule>
-      <DeckModule className="max-[1279px]:hidden">
-        <MeterBridge />
-      </DeckModule>
+      {showLevelMeters && (
+        <DeckModule className="max-[1279px]:hidden">
+          <MeterBridge />
+        </DeckModule>
+      )}
       <DeckModule className="gap-3">
         <RateKnob />
         <VolumeKnob />

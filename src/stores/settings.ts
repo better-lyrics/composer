@@ -51,6 +51,7 @@ interface SettingsState extends SnapSettings, SpectrumSettings {
   rememberVolume: boolean;
   lastVolume: number;
   audioScrubPreview: boolean;
+  showLevelMeters: boolean;
 
   defaultZoom: number;
   defaultRowHeight: number;
@@ -141,6 +142,7 @@ const DEFAULTS: SettingsState = {
   rememberVolume: true,
   lastVolume: 1,
   audioScrubPreview: true,
+  showLevelMeters: true,
 
   defaultZoom: 100,
   defaultRowHeight: 44,
@@ -252,8 +254,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
         })),
       removeCobaltInstance: (id) =>
         set((state) => {
-          const nextStatus = { ...state.cobaltInstanceStatus };
-          delete nextStatus[id];
+          const { [id]: _removedStatus, ...nextStatus } = state.cobaltInstanceStatus;
           return {
             cobaltInstances: state.cobaltInstances.filter((i) => i.id !== id),
             selectedCobaltInstanceId:
@@ -277,8 +278,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
 function getActiveCobaltInstance(): CobaltInstance {
   const state = useSettingsStore.getState();
   if (state.selectedCobaltInstanceId === DEFAULT_COBALT_INSTANCE_ID) return BUILTIN_COBALT_INSTANCE;
-  const found = state.cobaltInstances.find((i) => i.id === state.selectedCobaltInstanceId);
-  return found ?? BUILTIN_COBALT_INSTANCE;
+  return state.cobaltInstances.find((i) => i.id === state.selectedCobaltInstanceId) ?? BUILTIN_COBALT_INSTANCE;
 }
 
 function isUsingDefaultCobaltInstance(): boolean {
