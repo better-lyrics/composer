@@ -5,7 +5,7 @@ interface UnisonMineSnapshot {
   hidden: boolean;
   revision: {
     revNo: number;
-    pending: unknown;
+    pending: { revNo: number } | null;
     lastRejected: { revNo: number; reviewNote: string | null } | null;
     updatedAt: number;
   };
@@ -13,6 +13,7 @@ interface UnisonMineSnapshot {
 
 interface LastSeenLyric {
   revNo: number;
+  pendingRevNo: number | null;
   rejectedRevNo: number | null;
   hidden: boolean;
 }
@@ -35,6 +36,7 @@ interface UnisonUpdate {
 function lastSeenLyric(lyric: UnisonMineSnapshot): LastSeenLyric {
   return {
     revNo: lyric.revision.revNo,
+    pendingRevNo: lyric.revision.pending?.revNo ?? null,
     rejectedRevNo: lyric.revision.lastRejected?.revNo ?? null,
     hidden: lyric.hidden,
   };
@@ -44,7 +46,8 @@ function lyricUpdates(seen: LastSeenLyric, lyric: UnisonMineSnapshot): UnisonUpd
   const { revision } = lyric;
   const base = { lyricId: String(lyric.id), at: revision.updatedAt, reviewNote: null };
   const updates: UnisonUpdate[] = [];
-  if (revision.revNo > seen.revNo) updates.push({ ...base, kind: "approved", revNo: revision.revNo });
+  if (seen.pendingRevNo !== null && revision.revNo >= seen.pendingRevNo)
+    updates.push({ ...base, kind: "approved", revNo: revision.revNo });
   if (revision.lastRejected && revision.lastRejected.revNo !== seen.rejectedRevNo) {
     updates.push({
       ...base,

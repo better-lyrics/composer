@@ -12,6 +12,7 @@ function isLastSeenLyric(value: unknown): value is LastSeenLyric {
   const candidate = value as Record<string, unknown>;
   return (
     typeof candidate.revNo === "number" &&
+    (candidate.pendingRevNo === null || typeof candidate.pendingRevNo === "number") &&
     (candidate.rejectedRevNo === null || typeof candidate.rejectedRevNo === "number") &&
     typeof candidate.hidden === "boolean"
   );

@@ -13,8 +13,8 @@ function mine(id: number, overrides: Partial<UnisonMineSnapshot["revision"]> & {
 }
 
 const SEEN: LastSeen = {
-  "1": { revNo: 1, rejectedRevNo: null, hidden: false },
-  "2": { revNo: 3, rejectedRevNo: 2, hidden: false },
+  "1": { revNo: 1, pendingRevNo: 2, rejectedRevNo: null, hidden: false },
+  "2": { revNo: 3, pendingRevNo: null, rejectedRevNo: 2, hidden: false },
 };
 
 // -- Tests --------------------------------------------------------------------
@@ -71,9 +71,19 @@ describe("updatesSince", () => {
     });
 
     it("does not report a lyric that stayed hidden or became visible again", () => {
-      const seen: LastSeen = { "1": { revNo: 1, rejectedRevNo: null, hidden: true } };
+      const seen: LastSeen = { "1": { revNo: 1, pendingRevNo: null, rejectedRevNo: null, hidden: true } };
       expect(updatesSince(seen, [mine(1, { hidden: true })])).toEqual([]);
       expect(updatesSince(seen, [mine(1)])).toEqual([]);
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: an edit that went live without review is not reported as approved", () => {
+      expect(updatesSince(SEEN, [mine(2, { revNo: 4, lastRejected: { revNo: 2, reviewNote: null } })])).toEqual([]);
+    });
+
+    it("regression: a pending edit replaced by a later one still reads as approved once live", () => {
+      expect(updatesSince(SEEN, [mine(1, { revNo: 3 })]).map((update) => update.kind)).toEqual(["approved"]);
     });
   });
 
@@ -91,14 +101,18 @@ describe("updatesSince", () => {
 
 describe("lastSeenFrom", () => {
   it("records the live revision, the last rejected revision and visibility", () => {
-    expect(lastSeenFrom([mine(4, { revNo: 7, lastRejected: { revNo: 8, reviewNote: null }, hidden: true })])).toEqual({
-      "4": { revNo: 7, rejectedRevNo: 8, hidden: true },
+    expect(
+      lastSeenFrom([
+        mine(4, { revNo: 7, pending: { revNo: 9 }, lastRejected: { revNo: 8, reviewNote: null }, hidden: true }),
+      ]),
+    ).toEqual({
+      "4": { revNo: 7, pendingRevNo: 9, rejectedRevNo: 8, hidden: true },
     });
   });
 
   it("keeps earlier entries for lyrics that were not loaded this time", () => {
     expect(lastSeenFrom([mine(1, { revNo: 2 })], SEEN)).toEqual({
-      "1": { revNo: 2, rejectedRevNo: null, hidden: false },
+      "1": { revNo: 2, pendingRevNo: null, rejectedRevNo: null, hidden: false },
       "2": SEEN["2"],
     });
   });
