@@ -1,7 +1,7 @@
 {
   "name": "composer",
   "private": true,
-  "version": "2.33.3",
+  "version": "2.33.4",
   "type": "module",
   "packageManager": "pnpm@10.26.2",
   "scripts": {
