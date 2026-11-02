@@ -8,8 +8,8 @@ import { IconButton } from "@/ui/icon-button";
 import { centeredFadeVariants, centeredSlideUpVariants, springSnappy } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import braccatoTheme from "@/views/preview/braccato-theme.css?raw";
+import { type AppliedTick, tickBraccato } from "@/views/preview/braccato-tick";
 import { type TimedLineElement, markLinesOutsideFocus, useFocusFade } from "@/views/preview/focus-fade";
-import { highlightLeadTrims, themeLeads } from "@/views/preview/highlight-lead";
 import { LYRICS_ELEMENT_CLASS, type LyricsLayout } from "@/views/preview/lyrics-layout";
 import { PreviewLoadFailed } from "@/views/preview/preview-load-failed";
 import { AUDIO_STORE_PLAYBACK, type RendererPlayback } from "@/views/preview/renderer-playback";
@@ -109,9 +109,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({
   const appliedLyricsRef = useRef<Lyric[] | null>(null);
   const appliedSongKeyRef = useRef<string | null>(null);
   const rebuildScrollTopRef = useRef<number | null>(null);
-  const appliedTickRef = useRef<{ element: BraccatoLyricsElement; playing: boolean; playbackRate: number } | null>(
-    null,
-  );
+  const appliedTickRef = useRef<AppliedTick | null>(null);
   const [isAutoscrollPaused, setIsAutoscrollPaused] = useState(false);
   const [isElementUnavailable, setIsElementUnavailable] = useState(false);
   const resumeWakeRef = useRef<number | null>(null);
@@ -232,27 +230,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({
     const el = elementRef.current;
     const audio = playback.sample();
     if (!el || !audio) return;
-    // Without the rate the word sweeps run on the wall clock and stutter at any
-    // speed but 1x. Tracked here rather than read back off the element, which has
-    // no properties to read until the registration import lands.
-    const playing = !audio.paused;
-    const { playbackRate } = audio;
-    const applied = appliedTickRef.current;
-    if (applied?.element === el && applied.playing === playing && applied.playbackRate === playbackRate) {
-      el.currentTime = audio.currentTime;
-      return;
-    }
-    appliedTickRef.current = { element: el, playing, playbackRate };
-    el.tickOptions = { playbackRate, ...highlightLeadTrims(themeLeads(el), playbackRate, playing) };
-    if (playing) {
-      el.currentTime = audio.currentTime;
-      el.playing = true;
-      return;
-    }
-    // Braccato resyncs paused sweeps only on a paused seek, so pause first: the time write that
-    // follows then drops the playing lead instead of leaving the sweep frozen ahead.
-    el.playing = false;
-    el.currentTime = audio.currentTime;
+    appliedTickRef.current = tickBraccato(el, audio, appliedTickRef.current);
   }, "braccato-renderer");
 
   return (

@@ -5,6 +5,7 @@ import type { Bounds } from "@/domain/word/bounds";
 interface FrameClock {
   time: number;
   playing: boolean;
+  followsAudio: boolean;
   rate: number;
   // performance.timeOrigin + the frame time the clock was read for, so the frame can run it forward.
   sentAt: number;

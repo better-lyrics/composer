@@ -16,6 +16,8 @@ const DISPLAY_RESYNC_SECONDS = 0.1;
 // Chromium crawls its output for about 250 ms after play, so a line is followed only once the element kept pace with it this long.
 const MIN_OBSERVED_SPAN_MS = 30;
 const MIN_PACE = 0.5;
+// A burst inside that crawl can prove a line for a few frames before it stalls again, so animation waits for this much proof.
+const SETTLED_LINE_MS = 150;
 
 // -- State ---------------------------------------------------------------------
 
@@ -40,6 +42,7 @@ const lastRead = {
 // A run lasts from play, seek, rate change or element swap until the next one; frames never step back within it.
 const display = { generation: -1, run: 0, shownRun: -1, offset: 0, at: 0, time: 0 };
 let resyncPending = true;
+let lineProvenSince = Number.NaN;
 
 // -- Observations --------------------------------------------------------------
 
@@ -159,6 +162,8 @@ function readPlaybackClock(element: HTMLAudioElement): number {
   observe(element, elementTime, running, readAt);
   const best = running ? bestOffset(readAt) : Number.NEGATIVE_INFINITY;
   const offset = isLineProven(element.playbackRate) ? best : Number.NEGATIVE_INFINITY;
+  if (offset === Number.NEGATIVE_INFINITY) lineProvenSince = Number.NaN;
+  else if (Number.isNaN(lineProvenSince)) lineProvenSince = readAt;
   if (offset === Number.NEGATIVE_INFINITY) {
     display.generation = -1;
     return frameNow === null || !running ? elementTime : shownInRun(elementTime, now);
@@ -175,6 +180,11 @@ function readPlaybackClock(element: HTMLAudioElement): number {
   return shownInRun(time, now);
 }
 
+// Whether the last read has run on the audio line long enough that time animated forward from it will hold.
+function isFollowingAudioLine(): boolean {
+  return lastRead.readAt - lineProvenSince >= SETTLED_LINE_MS;
+}
+
 // Only a drop the clock itself could cause (one extrapolation) is held; a larger one is the audio moving.
 function shownInRun(time: number, now: number): number {
   const heldBack =
@@ -188,4 +198,4 @@ function shownInRun(time: number, now: number): number {
 
 // -- Exports -------------------------------------------------------------------
 
-export { readPlaybackClock, resyncPlaybackClock };
+export { isFollowingAudioLine, readPlaybackClock, resyncPlaybackClock };

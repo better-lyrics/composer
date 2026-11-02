@@ -24,14 +24,14 @@ function createFramePlayback(post: (message: FromFrameMessage) => void): FramePl
   let receivedAt = 0;
   let transitMs = 0;
   let releasePlayback: (() => void) | null = null;
-  const sample: PlaybackSample = { currentTime: 0, paused: true, playbackRate: 1 };
+  const sample: PlaybackSample = { currentTime: 0, paused: true, followsAudio: false, playbackRate: 1 };
   const releaseHold = () => {
     releasePlayback?.();
     releasePlayback = null;
   };
   const currentTime = (now: number) => {
     if (!clock) return 0;
-    const elapsedMs = clock.playing ? now - receivedAt + transitMs : 0;
+    const elapsedMs = clock.playing && clock.followsAudio ? now - receivedAt + transitMs : 0;
     return clock.time + (elapsedMs / 1000) * clock.rate;
   };
   return {
@@ -53,6 +53,7 @@ function createFramePlayback(post: (message: FromFrameMessage) => void): FramePl
       if (!clock) return null;
       sample.currentTime = currentTime(frameTime());
       sample.paused = !clock.playing;
+      sample.followsAudio = clock.followsAudio;
       sample.playbackRate = clock.rate;
       return sample;
     },
