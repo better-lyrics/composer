@@ -16,7 +16,13 @@ import type {
   WantedSong,
 } from "@/lib/unison/api-types";
 import { unisonFetch, unisonFetchPage } from "@/lib/unison/client";
-import type { RevisionDiff, RevisionInput, RevisionPreview, RevisionSummary } from "@/lib/unison/revision-types";
+import type {
+  RevisionDetail,
+  RevisionDiff,
+  RevisionInput,
+  RevisionPreview,
+  RevisionSummary,
+} from "@/lib/unison/revision-types";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -87,8 +93,19 @@ async function fetchRevisions(id: number, options: CallOptions = {}): Promise<Re
   return revisions;
 }
 
-function fetchRevisionDiff(id: number, revId: number, options: CallOptions = {}): Promise<RevisionDiff> {
-  return unisonFetch(`/lyrics/${id}/revisions/${revId}/diff`, options);
+function fetchRevision(id: number, revId: number, options: CallOptions = {}): Promise<RevisionDetail> {
+  return unisonFetch(`/lyrics/${id}/revisions/${revId}`, options);
+}
+
+// Without `againstRevId`, Unison compares with the revision that was live before this one.
+function fetchRevisionDiff(
+  id: number,
+  revId: number,
+  againstRevId: number | null,
+  options: CallOptions = {},
+): Promise<RevisionDiff> {
+  const query = { against: againstRevId === null ? undefined : String(againstRevId) };
+  return unisonFetch(`/lyrics/${id}/revisions/${revId}/diff`, { ...options, query });
 }
 
 function previewRevision(id: number, input: RevisionInput, options: CallOptions = {}): Promise<RevisionPreview> {
@@ -182,6 +199,7 @@ export {
   fetchMe,
   fetchMine,
   fetchMostWanted,
+  fetchRevision,
   fetchRevisionDiff,
   fetchRevisions,
   fetchVariants,

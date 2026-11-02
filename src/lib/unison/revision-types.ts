@@ -54,6 +54,14 @@ interface RevisionDiff {
   againstRevNo: number | null;
 }
 
+interface RevisionDetail extends RevisionSummary {
+  lyrics: string;
+  format: UnisonLyricsFormat;
+  language: string | null;
+  isrc: string | null;
+  album: string | null;
+}
+
 interface RevisionInput {
   lyrics: string;
   format: UnisonLyricsFormat;
@@ -87,4 +95,12 @@ interface RevisionPreview {
 
 // -- Exports -------------------------------------------------------------------
 
-export type { RevisionDiff, RevisionDiffRow, RevisionInput, RevisionPreview, RevisionStatus, RevisionSummary };
+export type {
+  RevisionDetail,
+  RevisionDiff,
+  RevisionDiffRow,
+  RevisionInput,
+  RevisionPreview,
+  RevisionStatus,
+  RevisionSummary,
+};

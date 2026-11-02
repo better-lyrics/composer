@@ -1,4 +1,6 @@
 import { UnisonError } from "@/lib/unison/client";
+import { useProjectStore } from "@/stores/project";
+import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { toast } from "sonner";
 
 // -- Constants ----------------------------------------------------------------
@@ -49,6 +51,17 @@ function showUpdateSentToast(goesLive: boolean): void {
   toast.success(goesLive ? "Update is live on Unison." : "Edit sent to the council.");
 }
 
+function showRevisionLoadedToast(revNo: number, skippedLines: number): void {
+  toast.success(`Loaded revision ${revNo}`, {
+    description: skippedLines > 0 ? skippedLinesMessage(skippedLines) : undefined,
+    action: { label: "Undo", onClick: () => useProjectStore.getState().undo() },
+  });
+}
+
+function showRevisionRestoredToast(revNo: number, goesLive: boolean): void {
+  toast.success(goesLive ? `Revision ${revNo} is live again.` : `Revision ${revNo} sent to the council.`);
+}
+
 function showUnisonFailureToast(title: string, error: unknown): void {
   toast.error(title, { description: unisonFailureReason(error) });
 }
@@ -60,6 +73,8 @@ export {
   showDisconnectedToast,
   showEditWithdrawnToast,
   showRemovedFromUnisonToast,
+  showRevisionLoadedToast,
+  showRevisionRestoredToast,
   showSubmittedToast,
   showUnisonFailureToast,
   showUpdateSentToast,

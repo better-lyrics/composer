@@ -1,5 +1,5 @@
 import { quotedTitle } from "@/domain/project/display-title";
-import { unisonQueryKeys } from "@/hooks/unison/query-keys";
+import { invalidateLyricWrite } from "@/hooks/unison/query-keys";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { deleteLyrics, withdrawPendingRevision } from "@/lib/unison/endpoints";
 import { useConfirm } from "@/stores/confirm-store";
@@ -37,11 +37,7 @@ function useOnUnisonActions(lyric: UnisonLyric, keyId: string): OnUnisonActions 
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
 
-  const refresh = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: unisonQueryKeys.lyric(lyric.id) }),
-      queryClient.invalidateQueries({ queryKey: unisonQueryKeys.mine(keyId) }),
-    ]);
+  const refresh = () => invalidateLyricWrite(queryClient, lyric.id, keyId);
 
   const run = async (write: () => Promise<void>, failureTitle: string) => {
     setBusy(true);

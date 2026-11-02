@@ -1,4 +1,4 @@
-import { unisonQueryKeys } from "@/hooks/unison/query-keys";
+import { invalidateLyricWrite, unisonQueryKeys } from "@/hooks/unison/query-keys";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import type { LyricsSubmission } from "@/lib/unison/api-types";
 import { linkVideo, saveRevision, submitLyrics } from "@/lib/unison/endpoints";
@@ -58,8 +58,7 @@ function useSubmitToUnison(keyId: string, onError: (error: unknown) => void): Un
 
   const refresh = (lyricId: number) =>
     Promise.all([
-      queryClient.invalidateQueries({ queryKey: unisonQueryKeys.lyric(lyricId) }),
-      queryClient.invalidateQueries({ queryKey: unisonQueryKeys.mine(keyId) }),
+      invalidateLyricWrite(queryClient, lyricId, keyId),
       queryClient.invalidateQueries({ queryKey: unisonQueryKeys.revisionPreviews(lyricId) }),
       queryClient.invalidateQueries({ queryKey: unisonQueryKeys.allVariants() }),
       queryClient.invalidateQueries({ queryKey: unisonQueryKeys.videoLinks(lyricId) }),

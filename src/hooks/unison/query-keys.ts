@@ -1,4 +1,5 @@
 import type { SongForSuggestions } from "@/lib/unison/api-types";
+import type { QueryClient } from "@tanstack/react-query";
 
 // -- Keys ----------------------------------------------------------------------
 
@@ -14,6 +15,10 @@ const unisonQueryKeys = {
   lyric: (id: number) => [UNISON_QUERY_ROOT, "lyric", id] as const,
   allVariants: () => [UNISON_QUERY_ROOT, "variants"] as const,
   variants: (videoId: string) => [UNISON_QUERY_ROOT, "variants", videoId] as const,
+  revisions: (id: number) => [UNISON_QUERY_ROOT, "revisions", id] as const,
+  revisionDiff: (id: number, revId: number, againstRevId: number | null) =>
+    [UNISON_QUERY_ROOT, "revisions", id, "diff", revId, againstRevId] as const,
+  revision: (id: number, revId: number) => [UNISON_QUERY_ROOT, "revisions", id, "content", revId] as const,
   revisionPreviews: (id: number) => [UNISON_QUERY_ROOT, "revision-preview", id] as const,
   revisionPreview: (id: number, inputHash: string) => [UNISON_QUERY_ROOT, "revision-preview", id, inputHash] as const,
   videoLinks: (id: number) => [UNISON_QUERY_ROOT, "video-links", id] as const,
@@ -26,6 +31,17 @@ const unisonQueryKeys = {
 
 const UNISON_STALE_TIME_MS = 60_000;
 
+// -- Invalidation --------------------------------------------------------------
+
+// What every write to a lyric changes: the lyric itself, the account's list and its revisions.
+function invalidateLyricWrite(queryClient: QueryClient, lyricId: number, keyId: string): Promise<unknown> {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: unisonQueryKeys.lyric(lyricId) }),
+    queryClient.invalidateQueries({ queryKey: unisonQueryKeys.mine(keyId) }),
+    queryClient.invalidateQueries({ queryKey: unisonQueryKeys.revisions(lyricId), exact: true }),
+  ]);
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { UNISON_STALE_TIME_MS, unisonQueryKeys };
+export { UNISON_STALE_TIME_MS, invalidateLyricWrite, unisonQueryKeys };

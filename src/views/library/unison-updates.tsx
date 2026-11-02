@@ -9,6 +9,7 @@ import { IconButton } from "@/ui/icon-button";
 import { ProjectArt } from "@/ui/projects/project-art";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
+import { requestHistoryAt } from "@/views/export/unison/history-request";
 import { formatRelativeTime } from "@/utils/format-relative-time";
 import { type Icon, IconCircleCheck, IconCircleX, IconEyeOff, IconX } from "@tabler/icons-react";
 import { useEffect, useId, useMemo, useState } from "react";
@@ -84,7 +85,12 @@ const UnisonUpdates: React.FC<UnisonUpdatesProps> = ({ items, projectByLyric, no
 
   const act = (update: UnisonUpdate, project: ProjectIndexEntry) => {
     acknowledge();
-    onOpenProject(project.id, update.kind === "declined" ? "export" : undefined);
+    if (update.kind !== "declined") {
+      onOpenProject(project.id);
+      return;
+    }
+    requestHistoryAt(Number(update.lyricId), update.revNo);
+    onOpenProject(project.id, "export");
   };
 
   return (

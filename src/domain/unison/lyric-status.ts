@@ -10,12 +10,16 @@ interface UnisonLyricSnapshot {
 
 // -- Functions -----------------------------------------------------------------
 
+function isSealed(lyric: Pick<UnisonLyricSnapshot, "marks">): boolean {
+  return lyric.marks?.some((mark) => mark.type === "seal") ?? false;
+}
+
 function unisonStatus(lyric: UnisonLyricSnapshot | null): UnisonStatus {
   if (!lyric) return "removed";
   if (lyric.revision?.pending) return "pending";
   if (lyric.revision?.lastRejected) return "declined";
   if (lyric.hidden) return "hidden";
-  if (lyric.marks?.some((mark) => mark.type === "seal")) return "sealed";
+  if (isSealed(lyric)) return "sealed";
   return "live";
 }
 
@@ -26,4 +30,4 @@ function formatScore(score: number): string {
 // -- Exports -------------------------------------------------------------------
 
 export type { UnisonLyricSnapshot, UnisonStatus };
-export { formatScore, unisonStatus };
+export { formatScore, isSealed, unisonStatus };

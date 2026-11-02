@@ -6,6 +6,8 @@ import { Button } from "@/ui/button";
 import { ConfidenceMeter } from "@/ui/unison/confidence-meter";
 import { ScoreLabel } from "@/ui/unison/score-label";
 import { DescribedUnisonStatusChip } from "@/ui/unison/unison-status-chip";
+import { clearHistoryRequest, useHistoryRequest } from "@/views/export/unison/history-request";
+import { HistoryModal } from "@/views/export/unison/history-modal";
 import { OnUnisonMenu } from "@/views/export/unison/on-unison-menu";
 import {
   UNISON_CARD_HEADING_STYLES,
@@ -14,7 +16,8 @@ import {
 } from "@/views/export/unison/unison-card-styles";
 import { useOnUnisonActions } from "@/views/export/unison/use-on-unison-actions";
 import { InlineError, SkeletonBar } from "@/views/unison/view-states";
-import { useId } from "react";
+import { IconHistory } from "@tabler/icons-react";
+import { useId, useState } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -68,12 +71,6 @@ const ActionHint: React.FC<{ status: UnisonStatus }> = ({ status }) => {
   return hint ? <p className={UNISON_CARD_TEXT_STYLES}>{hint}</p> : null;
 };
 
-const CouncilNote: React.FC<{ note: string }> = ({ note }) => (
-  <p className={`${UNISON_CARD_TEXT_STYLES} line-clamp-2 select-text cursor-text`}>
-    <span className="font-medium text-composer-text">Council's note:</span> {note}
-  </p>
-);
-
 const LoadingCard: React.FC = () => (
   <CardShell busy>
     <div aria-hidden="true" className="flex items-center justify-between h-5 animate-pulse motion-reduce:animate-none">
@@ -96,7 +93,14 @@ const RemovedCard: React.FC = () => (
 
 const FoundCard: React.FC<FoundCardProps> = ({ lyric, status, keyId, videos }) => {
   const actions = useOnUnisonActions(lyric, keyId);
-  const councilNote = status === "declined" ? lyric.revision.lastRejected?.reviewNote : null;
+  const requestedRevNo = useHistoryRequest(lyric.id);
+  const [history, setHistory] = useState<{ revNo: number | null } | null>(null);
+  const shownHistory = history ?? (requestedRevNo === null ? null : { revNo: requestedRevNo });
+  const declinedRevNo = status === "declined" ? (lyric.revision.lastRejected?.revNo ?? null) : null;
+  const closeHistory = () => {
+    setHistory(null);
+    clearHistoryRequest();
+  };
   return (
     <CardShell
       status={status}
@@ -104,19 +108,30 @@ const FoundCard: React.FC<FoundCardProps> = ({ lyric, status, keyId, videos }) =
       trailing={<OnUnisonMenu lyric={lyric} disabled={actions.busy} onRemove={actions.remove} />}
     >
       <ActionHint status={status} />
-      {councilNote && <CouncilNote note={councilNote} />}
       <div className="flex items-center justify-between gap-3">
         <ScoreLabel score={lyric.score} voteCount={lyric.voteCount} />
         <ConfidenceMeter confidence={lyric.confidence} withLabel />
       </div>
       {videos}
-      {status === "pending" && (
-        <div className="flex gap-2">
+      <div className="flex gap-2">
+        <Button size="sm" variant="secondary" hasIcon onClick={() => setHistory({ revNo: declinedRevNo })}>
+          <IconHistory aria-hidden="true" className="size-4" />
+          {declinedRevNo === null ? "History" : "Read the council's note"}
+        </Button>
+        {status === "pending" && (
           <Button size="sm" variant="secondary" disabled={actions.busy} onClick={actions.withdraw}>
             Withdraw edit
           </Button>
-        </div>
-      )}
+        )}
+      </div>
+      <HistoryModal
+        isOpen={shownHistory !== null}
+        onClose={closeHistory}
+        lyric={lyric}
+        keyId={keyId}
+        canEdit={lyric.submitter?.keyId === keyId}
+        initialRevNo={shownHistory?.revNo ?? null}
+      />
     </CardShell>
   );
 };
