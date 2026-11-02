@@ -68,23 +68,34 @@ Your work saves automatically in the browser as you go. Audio files you load sta
 
 ## Compared to other editors
 
-Other TTML editors treat ease of use as optional. In [AMLL TTML Tool](https://tool.amll.dev/) you tap F, G and H through the whole song and fix words one at a time on a spectrogram. A singer is either the lead or the duet. Its forks add features on top and keep the same design underneath.
+Other TTML editors treat ease of use as optional. Composer is the best way to sync lyrics, and it isn't close.
 
-Composer keeps every singer the song has, names included, through import and export. It shows in what people make. One in ten Composer syncs on Unison has three or more singers. In AMLL's own reviewed database, fewer than one in a hundred do.
+Most TTML editors are [AMLL TTML Tool](https://tool.amll.dev/) or a fork of it. The forks add features on top but keep the same design underneath. You open it to a screen of twenty-odd fields you can't use yet. Then you sync by pressing F, G and H on every word, start to finish, and hunt down the misses on a spectrogram.
+
+If tapping along were good enough, nobody would edit audio in a DAW. Composer gives you one. Every word is a block on the waveform, so you put it where you see the voice start. Move a whole verse at once, loop the bit you're fixing, and hear the audio as you drag. Or let Composer separate the vocals and time every word, then fix what it missed. Group a chorus once and every repeat follows.
+
+At the time of writing, AMLL TTML Tool has 30 open issues, among them stuttering playback and a spectrogram that slips out of line with the audio. Those are the two things a sync tool can't get wrong.
+
+Composer keeps every singer the song has, names included, through import and export. You can see the difference in finished files. One in ten Composer syncs on Unison has three or more singers. In AMLL's own reviewed database, fewer than one in a hundred do.
 
 | | Composer | AMLL TTML Tool |
 | --- | --- | --- |
-| Timeline | Full editor: select many words, stretch, split, copy and paste, snap to beats and vocal onsets | Move one word at a time on the spectrogram |
-| Auto-align to vocals | Yes | No |
+| Sync | Auto-align, drag on the Timeline, or tap | Tap F, G and H |
+| Auto-align to the vocals | Yes | No |
 | Vocal separation | Yes | No |
+| Timeline | Select many words, stretch, split, copy and paste | Drag word and line edges on a spectrogram |
+| Snaps to | Vocal onsets, beats, your markers, nearby words, the playhead | Other lines and the playhead |
+| Hear the audio as you drag | Yes, with pitch kept | No |
 | Pitch line | Yes | No |
-| Hear audio while scrubbing | Yes, with pitch kept | No |
 | Spectrogram | Yes | Yes |
-| Sync | Auto-align, drag, or tap | Tap F, G and H |
+| Repeated sections | Groups: time one and every copy follows | Copy by hand |
+| Loop and cue | Loop a selection, a group or any range, and play from a cue | No |
 | Singers | Any number, named, plus groups | Lead or duet |
+| Singer names in the TTML | Kept | Dropped |
+| Translations and romanization | Generated or typed | Typed |
 | Sync non-Latin lyrics by their romanization | Yes, one key switches | No |
-| Romanization timed per word | Split from the line automatically | Typed word by word |
-| Word-level LRC import | Yes | No |
+| Keyboard | Nearly 100 remappable shortcuts, with presets that include AMLL's keys | 36, none for splitting, merging or nudging words |
+| Help | Searchable in the app, a tour on your own song, written guides | A link to docs in Chinese |
 | YouTube as audio source | Yes | No |
 
 ### Good syncs by default
@@ -96,10 +107,6 @@ That's why [Unison](https://unison.betterlyrics.org) publishes a sync the moment
 ### It stays smooth
 
 The Timeline only redraws while something moves. Separation, pitch tracking, alignment and audio analysis all run in the background. Playback and dragging stay responsive on long songs and slower machines.
-
-### It's easy to learn
-
-The guided tour runs on your own song. Every screen has help, and you can search and remap every shortcut in Settings. You never face a wall of fields you can't use yet.
 
 ### It keeps your work
 
