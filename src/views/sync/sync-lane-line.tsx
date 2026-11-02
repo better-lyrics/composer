@@ -88,7 +88,7 @@ const WordModeWords: React.FC<LaneWordsProps> = (props) => {
 
 const LineModeWord: React.FC<LaneWordsProps> = ({ row, isCurrent, isLastLine, isHolding }) => (
   <LaneWord
-    state={isCurrent ? "next" : isLastLine ? "lastTapped" : "plain"}
+    state={isCurrent ? "next" : isLastLine && !isHolding ? "lastTapped" : "plain"}
     onCurrentLine={isCurrent}
     isHeld={isHolding && isCurrent}
   >
