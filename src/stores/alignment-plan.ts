@@ -1,7 +1,7 @@
 import type { AlignmentSegment } from "@/audio/alignment/types";
 import type { HanReading } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
-import { DEFAULT_WINDOW_OPTIONS, alignmentWindow, sliceWindow } from "@/domain/alignment/window";
+import { alignmentWindow, sliceWindow } from "@/domain/alignment/window";
 import { groupAlignmentWords, groupTimedWords, type AlignmentWord, type WordInterval } from "@/domain/alignment/words";
 import type { LinkGroup } from "@/domain/group/template";
 import { sharedTimingFanOut } from "@/domain/group/shared-timing";
@@ -30,39 +30,62 @@ interface PlannedLine {
   /** The line's current word timing when re-aligning; its parts are kept and retimed. */
   existing: WordTiming[] | null;
   previous: WordInterval | null;
+  /** The line just before, when it has timing: the only line this one may anchor on. */
+  previousId: string | null;
+  /**
+   * The span the line's windows are built around: its taps, or for a line
+   * tapped in Line mode that no tap ended (the last one, or one a jump left
+   * behind), from its begin to the next line's, or on to the song's end.
+   */
+  guide: WordInterval;
 }
 
 // -- Functions ----------------------------------------------------------------
 
-function planLine(line: LyricLine, realign: boolean): Pick<PlannedLine, "taps" | "words" | "existing"> | null {
+// A Line mode tap opens a line at end == begin and the next tap closes it there; the last line, and the
+// line before a jump, are never closed.
+function planLine(
+  line: LyricLine,
+  realign: boolean,
+  nextBegin: number,
+): Pick<PlannedLine, "taps" | "words" | "existing" | "guide"> | null {
   if (isLineSynced(line)) {
-    if (line.end <= line.begin) return null;
+    const end = line.end === line.begin ? nextBegin : line.end;
+    if (end <= line.begin) return null;
     const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
     if (parts.length === 0) return null;
     return {
       taps: { begin: line.begin, end: line.end },
       words: groupAlignmentWords(parts, trailingSpace),
       existing: null,
+      guide: { begin: line.begin, end },
     };
   }
   if (realign && isWordSynced(line)) {
     const taps = mainBounds(line);
     if (!taps || taps.end <= taps.begin) return null;
-    return { taps, words: groupTimedWords(line.words!), existing: line.words! };
+    return { taps, words: groupTimedWords(line.words!), existing: line.words!, guide: taps };
   }
   return null;
 }
 
 function planLines(lines: readonly LyricLine[], lineIds: readonly string[] | undefined, realign: boolean) {
   const wanted = lineIds ? new Set(lineIds) : null;
+  const bounds = lines.map((line) => mainBounds(line));
+  const nextBegin: number[] = new Array(lines.length);
+  let next = Number.POSITIVE_INFINITY;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    nextBegin[i] = next;
+    if (bounds[i]) next = bounds[i]!.begin;
+  }
   const planned: PlannedLine[] = [];
   let previous: WordInterval | null = null;
-  for (const line of lines) {
-    const bounds = mainBounds(line);
-    const plan = !wanted || wanted.has(line.id) ? planLine(line, realign) : null;
-    if (plan) planned.push({ line, ...plan, previous });
-    if (bounds) previous = bounds;
-  }
+  lines.forEach((line, i) => {
+    const plan = !wanted || wanted.has(line.id) ? planLine(line, realign, nextBegin[i]) : null;
+    const previousId = i > 0 && bounds[i - 1] ? lines[i - 1].id : null;
+    if (plan) planned.push({ line, ...plan, previous, previousId });
+    if (bounds[i]) previous = bounds[i];
+  });
   return planned;
 }
 
@@ -80,24 +103,49 @@ function isUnchanged(current: LyricLine | undefined, planned: PlannedLine): bool
   return isLineSynced(current) && current.begin === planned.taps.begin && current.end === planned.taps.end;
 }
 
-/** The aligner's input for one planned line, cut from the song's vocals, and the window it was cut from. */
+/** The span a planned line's windows are built around, inside the song. */
+function guideTaps(plan: PlannedLine, duration: number): WordInterval {
+  return { begin: plan.guide.begin, end: Math.min(plan.guide.end, duration) };
+}
+
+/** The aligner's input for one planned line: the song's vocals in `window`. */
+function segmentIn(
+  plan: PlannedLine,
+  hanReading: HanReading,
+  pcm: { samples: Float32Array; sampleRate: number },
+  window: WordInterval,
+  anchor?: string[],
+): AlignmentSegment {
+  return {
+    words: plan.words,
+    hanReading,
+    transliteration: sungTransliteration(plan.line),
+    taps: guideTaps(plan, pcm.samples.length / pcm.sampleRate),
+    windowBegin: window.begin,
+    samples: sliceWindow(pcm.samples, pcm.sampleRate, window),
+    sampleRate: pcm.sampleRate,
+    ...(anchor ? { anchor } : {}),
+  };
+}
+
+/** The window a line is aligned in without the CTC search or an anchor. */
+function plainWindow(plan: PlannedLine, duration: number): WordInterval {
+  return alignmentWindow(guideTaps(plan, duration), { duration, previous: plan.previous });
+}
+
+/** The aligner's input for one planned line in its plain window, and that window. */
 function segmentFor(
   plan: PlannedLine,
   hanReading: HanReading,
   pcm: { samples: Float32Array; sampleRate: number },
 ): { segment: AlignmentSegment; window: WordInterval } {
-  const duration = pcm.samples.length / pcm.sampleRate;
-  const window = alignmentWindow(plan.taps, { ...DEFAULT_WINDOW_OPTIONS, duration, previous: plan.previous });
-  const segment: AlignmentSegment = {
-    words: plan.words,
-    hanReading,
-    transliteration: sungTransliteration(plan.line),
-    taps: plan.taps,
-    windowBegin: window.begin,
-    samples: sliceWindow(pcm.samples, pcm.sampleRate, window),
-    sampleRate: pcm.sampleRate,
-  };
-  return { segment, window };
+  const window = plainWindow(plan, pcm.samples.length / pcm.sampleRate);
+  return { segment: segmentIn(plan, hanReading, pcm, window), window };
+}
+
+/** False for a line Line mode never ended, which is aligned up to the next line instead. */
+function hasTappedEnd(plan: PlannedLine): boolean {
+  return plan.guide.end === plan.taps.end;
 }
 
 /**
@@ -124,5 +172,15 @@ function withSharedTiming(
 
 // -- Exports ------------------------------------------------------------------
 
-export { countAlignableLines, isUnchanged, planLine, planLines, segmentFor, withSharedTiming };
+export {
+  countAlignableLines,
+  guideTaps,
+  hasTappedEnd,
+  isUnchanged,
+  planLines,
+  plainWindow,
+  segmentFor,
+  segmentIn,
+  withSharedTiming,
+};
 export type { PlannedLine };

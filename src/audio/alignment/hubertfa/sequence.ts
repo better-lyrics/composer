@@ -150,3 +150,4 @@ function partIntervalsFromUnits(
 // -- Exports ------------------------------------------------------------------
 
 export { buildPhoneSequence, partIntervalsFromUnits, phonesByUnit, unitIntervalsFromPhones };
+export type { PhoneSequence };

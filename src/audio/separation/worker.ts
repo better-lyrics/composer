@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 import { type Backend, type Ort, type OrtSession, createSession, loadOrt } from "@/audio/ort-runtime";
-import { chooseBackend, describeUnsupportedVariant } from "@/audio/separation/backend-selection";
+import { chooseBackend, runnableVariant } from "@/audio/separation/backend-selection";
 import { runChunkPipeline } from "@/audio/separation/chunk-pipeline";
 import { type Chunk, chunkCount, stitchChunks } from "@/audio/separation/chunker";
 import { denormalizeDemucsOutput, normalizeForDemucs } from "@/audio/separation/demucs-postprocess";
@@ -36,60 +36,58 @@ function post(message: OutboundMessage, transfer?: Transferable[]) {
   self.postMessage(message, transfer ?? []);
 }
 
+const cancelHandlers = new Set<() => void>();
+
+// Resolves null once it has posted the error or the cancellation.
+async function loadModelBytes(descriptor: ModelDescriptor): Promise<ArrayBuffer | null> {
+  if (await hasCachedModel(descriptor)) {
+    const cached = await readCachedModel(descriptor);
+    if (!cached) {
+      post({ type: "error", code: "fetch-failed", message: "Model cache hit but read failed." });
+      return null;
+    }
+    post({ type: "init-progress", loaded: cached.byteLength, total: cached.byteLength });
+    return cached;
+  }
+  const ac = new AbortController();
+  const onCancel = () => ac.abort();
+  cancelHandlers.add(onCancel);
+  try {
+    return await fetchAndCacheModel(descriptor, ac.signal, (loaded, total) => {
+      post({ type: "init-progress", loaded, total });
+    });
+  } catch (err) {
+    if (cancelled || (err as Error)?.name === "AbortError") {
+      post({ type: "cancelled" });
+    } else {
+      post({ type: "error", code: "fetch-failed", message: (err as Error).message });
+    }
+    return null;
+  } finally {
+    cancelHandlers.delete(onCancel);
+  }
+}
+
 async function handleInit(variant: VocalModelVariant, forceWasm?: boolean, profile?: boolean) {
   cancelled = false;
   profileGpu = profile ?? false;
-  const descriptor = getModelDescriptor(variant);
-  if (!descriptor) {
-    post({ type: "error", code: "no-base-url", message: "VITE_VOCAL_MODEL_BASE_URL is not configured." });
-    return;
-  }
 
-  // Pick the backend before the download so an unsupported variant is refused early.
+  // Pick the backend before the download so a variant it can't run is swapped for fp32 first.
   const choice = await chooseBackend(forceWasm);
   if (choice.backend === "webgpu") {
     log(`using WebGPU (${choice.adapterLabel})`);
   } else {
     log(`using WASM (CPU): ${choice.reason}`);
   }
-  const unsupported = describeUnsupportedVariant(variant, choice);
-  if (unsupported) {
-    log(unsupported);
-    post({ type: "error", code: "ort-failed", message: unsupported });
+  const runnable = runnableVariant(variant, choice);
+  if (runnable.fallbackReason) log(runnable.fallbackReason);
+  let descriptor = getModelDescriptor(runnable.variant);
+  if (!descriptor) {
+    post({ type: "error", code: "no-base-url", message: "VITE_VOCAL_MODEL_BASE_URL is not configured." });
     return;
   }
-  if (variant === "fp16" && choice.backend === "wasm") {
-    log("fp16 on the WASM (CPU) path is about 4x slower than fp32; consider the fp32 vocal model");
-  }
-
-  let modelBytes: ArrayBuffer;
-  if (await hasCachedModel(descriptor)) {
-    const cached = await readCachedModel(descriptor);
-    if (!cached) {
-      post({ type: "error", code: "fetch-failed", message: "Model cache hit but read failed." });
-      return;
-    }
-    modelBytes = cached;
-    post({ type: "init-progress", loaded: cached.byteLength, total: cached.byteLength });
-  } else {
-    const ac = new AbortController();
-    const onCancel = () => ac.abort();
-    cancelHandlers.add(onCancel);
-    try {
-      modelBytes = await fetchAndCacheModel(descriptor, ac.signal, (loaded, total) => {
-        post({ type: "init-progress", loaded, total });
-      });
-    } catch (err) {
-      if (cancelled || (err as Error)?.name === "AbortError") {
-        post({ type: "cancelled" });
-        return;
-      }
-      post({ type: "error", code: "fetch-failed", message: (err as Error).message });
-      return;
-    } finally {
-      cancelHandlers.delete(onCancel);
-    }
-  }
+  let modelBytes = await loadModelBytes(descriptor);
+  if (!modelBytes) return;
 
   try {
     activeBackend = choice.backend;
@@ -103,12 +101,22 @@ async function handleInit(variant: VocalModelVariant, forceWasm?: boolean, profi
       activeBackend = "wasm";
       runtime = await loadOrt("wasm", profileGpu);
     }
-    try {
-      session = await createSession(runtime, modelBytes, activeBackend);
-    } catch (err) {
-      if (activeBackend === "wasm") throw err;
-      log(`WebGPU session creation failed (${describeError(err)}); falling back to WASM (CPU)`);
-      activeBackend = "wasm";
+    if (activeBackend === "webgpu") {
+      try {
+        session = await createSession(runtime, modelBytes, "webgpu");
+      } catch (err) {
+        log(`WebGPU session creation failed (${describeError(err)}); falling back to WASM (CPU)`);
+        activeBackend = "wasm";
+      }
+    }
+    if (activeBackend === "wasm") {
+      const onWasm = runnableVariant(descriptor.variant, { backend: "wasm", reason: "WebGPU fallback" });
+      if (onWasm.variant !== descriptor.variant) {
+        log(onWasm.fallbackReason);
+        descriptor = getModelDescriptor(onWasm.variant) ?? descriptor;
+        modelBytes = await loadModelBytes(descriptor);
+        if (!modelBytes) return;
+      }
       session = await createSession(runtime, modelBytes, "wasm");
     }
     ort = runtime;
@@ -120,9 +128,8 @@ async function handleInit(variant: VocalModelVariant, forceWasm?: boolean, profi
   }
 }
 
-const cancelHandlers = new Set<() => void>();
-
-// Resolves null when cancelled; each await is a point where a cancel can arrive.
+// Resolves null when cancelled; each await is a point where a cancel can arrive. This keeps the loaded
+// model even if it is fp16: switching to fp32 here would mean a download in the middle of the run.
 async function recreateSessionOnWasm(
   gpuSession: OrtSession,
   runtime: Ort,

@@ -1,6 +1,6 @@
 import { BEAT_MODEL } from "@/audio/beat/beat-model";
 import { MODEL_CACHE_NAME } from "@/audio/separation/model-cache";
-import { VOCAL_MODEL_FILENAMES } from "@/audio/separation/model-registry";
+import { RETIRED_VOCAL_MODEL_FILENAMES, VOCAL_MODEL_FILENAMES } from "@/audio/separation/model-registry";
 import {
   type KnownModelUrls,
   type ModelFile,
@@ -26,7 +26,10 @@ class ModelInUseError extends Error {
 // -- Helpers ------------------------------------------------------------------
 
 function knownModelUrls(): KnownModelUrls {
-  return { vocalFileNames: Object.values(VOCAL_MODEL_FILENAMES), beatUrl: BEAT_MODEL.url };
+  return {
+    vocalFileNames: [...Object.values(VOCAL_MODEL_FILENAMES), ...RETIRED_VOCAL_MODEL_FILENAMES],
+    beatUrl: BEAT_MODEL.url,
+  };
 }
 
 function vocalVariantOfFile(url: string): VocalModelVariant | undefined {

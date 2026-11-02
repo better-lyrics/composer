@@ -18,6 +18,11 @@ interface AlignmentSegment {
   /** Mono separated vocals for the window. */
   samples: Float32Array;
   sampleRate: number;
+  /**
+   * The parts of a word sung just before the line (the previous line's last),
+   * aligned ahead of the line's own words and left out of `intervals`.
+   */
+  anchor?: string[];
 }
 
 interface SegmentAlignment {
@@ -31,6 +36,8 @@ interface SegmentAlignment {
   guessedWords: string[];
   /** Unsplit parts worth splitting into syllables, in song time. Only applied to new word timing. */
   splits: PartSplit[];
+  /** Where the segment's anchor word landed, in song time; null without one or when the line fell back. */
+  anchor: WordInterval | null;
 }
 
 /**
@@ -52,6 +59,12 @@ interface Aligner {
     options: { japanese: boolean; modelId: string },
   ) => Promise<void>;
   align: (segment: AlignmentSegment, signal: AbortSignal) => Promise<SegmentAlignment>;
+  /**
+   * Where the line's phones are in the segment's audio, in song time: a fast
+   * first look the line's window is then narrowed to. Null when the aligner
+   * can't tell.
+   */
+  locate: (segment: AlignmentSegment, signal: AbortSignal) => Promise<WordInterval | null>;
   /** Whether a model that fits these options is already in memory, so a run needs no load. */
   isLoaded: (options: { japanese: boolean; modelId: string }) => boolean;
   /** Frees the model. The next run prepares again from the download cache. */
@@ -60,4 +73,4 @@ interface Aligner {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { AlignmentSegment, Aligner };
+export type { AlignmentSegment, Aligner, SegmentAlignment };
