@@ -213,9 +213,15 @@ function playableFile(source: AudioSource): File | null {
   return null;
 }
 
+function isActiveAudioFile(file: File): boolean {
+  const { source } = useAudioStore.getState();
+  return source?.type === "file" && source.file === file;
+}
+
 export {
   FULL_VOLUME,
   NORMAL_PLAYBACK_RATE,
+  isActiveAudioFile,
   livePlaybackTime,
   playableFile,
   seekBy,

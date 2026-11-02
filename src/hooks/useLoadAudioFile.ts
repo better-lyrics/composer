@@ -7,7 +7,7 @@ import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { relinkProjectAudioFile } from "@/lib/relink-audio";
 import { sourceSwapPatch } from "@/domain/project/source-metadata";
 import { beginSourceSwap, fileSourceMetadata, readAudioTags, settleSourceSwap } from "@/lib/source-metadata";
-import { type AudioSource, useAudioStore } from "@/stores/audio";
+import { type AudioSource, isActiveAudioFile, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { fileIdentityKey } from "@/utils/file-identity";
 import { fileNameWithoutExtension } from "@/utils/file-name";
@@ -26,16 +26,14 @@ type TagWrite = "apply" | "skip";
 
 type AudioLoadMode = "auto" | "replace";
 
+// A song opened from a link: always a different song, never a relink, announced by the link.
+type AudioFileLoadMode = AudioLoadMode | "new-song";
+
 // -- State --------------------------------------------------------------------
 
 let latestPick: File | null = null;
 
 // -- Helpers ------------------------------------------------------------------
-
-function isActiveFile(file: File): boolean {
-  const active = useAudioStore.getState().source;
-  return active?.type === "file" && active.file === file;
-}
 
 function settleSongDetails(file: File, replacesDifferentSong: boolean, title: string): Promise<TagWrite> {
   const project = useProjectStore.getState();
@@ -49,7 +47,7 @@ function settleSongDetails(file: File, replacesDifferentSong: boolean, title: st
     return Promise.resolve("apply");
   }
   return confirmClearImportedSongDetails().then((clear) => {
-    if (!isActiveFile(file)) return "skip";
+    if (!isActiveAudioFile(file)) return "skip";
     const current = useProjectStore.getState();
     if (clear) {
       current.resetSongIdentity(title);
@@ -62,24 +60,23 @@ function settleSongDetails(file: File, replacesDifferentSong: boolean, title: st
 
 async function applyAudioTags(file: File): Promise<void> {
   const patch = await readAudioTags(file);
-  if (!isActiveFile(file)) return;
+  if (!isActiveAudioFile(file)) return;
   if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);
 }
 
-function readTagsInBackground(file: File): void {
-  void applyAudioTags(file).catch((error) => {
-    console.warn(`${LOG_PREFIX} could not read audio tags`, error);
-  });
+function logTagReadFailure(error: unknown): void {
+  console.warn(`${LOG_PREFIX} could not read audio tags`, error);
 }
 
-function loadFileInPlace(file: File, replacesDifferentSong: boolean, title: string): void {
+function loadFileInPlace(file: File, replacesDifferentSong: boolean, title: string): Promise<void> {
+  const asksBeforeClearing = replacesDifferentSong && useProjectStore.getState().hasUnexportedImport;
   adoptPrimingForNewAudio();
   useAudioStore.getState().setSource({ type: "file", file });
-  void settleSongDetails(file, replacesDifferentSong, title)
+  const tagsWritten = settleSongDetails(file, replacesDifferentSong, title)
     .then((tagWrite) => (tagWrite === "apply" ? applyAudioTags(file) : undefined))
-    .catch((error) => {
-      console.warn(`${LOG_PREFIX} could not read audio tags`, error);
-    });
+    .catch(logTagReadFailure);
+  // A drop resolves while the clear-details confirm is still open.
+  return asksBeforeClearing ? Promise.resolve() : tagsWritten;
 }
 
 async function swapFileInPlace(file: File, previous: AudioSource): Promise<void> {
@@ -89,32 +86,33 @@ async function swapFileInPlace(file: File, previous: AudioSource): Promise<void>
   adoptPrimingForNewAudio();
   useAudioStore.getState().setSource(target);
   const [before, next] = await Promise.all([baseline, fileSourceMetadata(file)]);
-  if (!isActiveFile(file) || openProjectIdSnapshot() !== projectId || !settleSourceSwap(target)) return;
+  if (!isActiveAudioFile(file) || openProjectIdSnapshot() !== projectId || !settleSourceSwap(target)) return;
   const { metadata, importedMetadataKeys } = useProjectStore.getState();
   const patch = sourceSwapPatch(metadata, importedMetadataKeys, before, next);
   if (Object.keys(patch).length > 0) useProjectStore.getState().setMetadata(patch);
 }
 
-async function startFileInNewProject(file: File, title: string): Promise<void> {
+async function startFileInNewProject(file: File, title: string, announce: boolean): Promise<void> {
   const started = await startSongInNewProject(title, (song) => {
     useAudioStore.getState().setSource({ type: "file", file });
     return song;
   });
   if (!started) {
-    loadFileInPlace(file, true, title);
+    await loadFileInPlace(file, true, title);
     return;
   }
-  showNewProjectToast(title, started.previousTitle, started.previousId, started.newId);
-  readTagsInBackground(file);
+  if (announce) showNewProjectToast(title, started.previousTitle, started.previousId, started.newId);
+  await applyAudioTags(file).catch(logTagReadFailure);
 }
 
 // -- Hook ---------------------------------------------------------------------
 
-function useLoadAudioFile(): (file: File, mode?: AudioLoadMode) => Promise<void> {
-  return useCallback(async (file: File, mode: AudioLoadMode = "auto") => {
+function useLoadAudioFile(): (file: File, mode?: AudioFileLoadMode) => Promise<void> {
+  return useCallback(async (file: File, mode: AudioFileLoadMode = "auto") => {
     latestPick = file;
     const { source, expectedAudio } = useAudioStore.getState();
-    if (source === null && expectedAudio !== null) {
+    const awaitsMissingAudio = source === null && expectedAudio !== null;
+    if (awaitsMissingAudio && mode !== "new-song") {
       await relinkProjectAudioFile(file);
       return;
     }
@@ -128,22 +126,25 @@ function useLoadAudioFile(): (file: File, mode?: AudioLoadMode) => Promise<void>
     const previous = useAudioStore.getState().source;
     const title = fileNameWithoutExtension(file.name);
     const replacesDifferentSong =
-      previous != null && !(previous.type === "file" && fileIdentityKey(previous.file) === fileIdentityKey(file));
+      mode === "new-song" ||
+      (previous != null && !(previous.type === "file" && fileIdentityKey(previous.file) === fileIdentityKey(file)));
 
     if (mode === "replace") {
       if (replacesDifferentSong) void swapFileInPlace(file, previous);
       return;
     }
-    if (replacesDifferentSong && hasLyricLines(useProjectStore.getState().lines)) {
-      void startFileInNewProject(file, title);
+    const project = useProjectStore.getState();
+    const keepsOpenProject = !hasLyricLines(project.lines) && !(mode === "new-song" && project.hasUnexportedImport);
+    if (replacesDifferentSong && !keepsOpenProject) {
+      await startFileInNewProject(file, title, mode !== "new-song");
       return;
     }
 
-    loadFileInPlace(file, replacesDifferentSong, title);
+    await loadFileInPlace(file, replacesDifferentSong, title);
   }, []);
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export { useLoadAudioFile };
-export type { AudioLoadMode };
+export type { AudioFileLoadMode, AudioLoadMode };

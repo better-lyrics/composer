@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import { getLinkProjectSettled, getPersistenceSettled, markQueryImportSettled } from "@/lib/persistence-settled";
+import {
+  getLinkProjectSettled,
+  getLinkedFilesSettled,
+  getPersistenceSettled,
+  markQueryImportSettled,
+} from "@/lib/persistence-settled";
 import { isProjectNonEmpty } from "@/lib/project-non-empty";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { normalizeIsrc } from "@/utils/isrc";
-import { SONG_QUERY_PARAM_NAMES, readTrimmed } from "@/utils/incoming-link";
+import { SONG_QUERY_PARAM_NAMES, hasLinkedFileParams, readTrimmed } from "@/utils/incoming-link";
 import { stripQueryParams } from "@/utils/url-params";
 import { readYouTubeParam } from "@/utils/youtube-link-params";
 
@@ -40,13 +45,18 @@ function buildMetadataFromUrl(params: URLSearchParams): Partial<ProjectMetadata>
   return Object.keys(patch).length === 0 ? null : patch;
 }
 
-function hasBootYouTubeParam(): boolean {
-  return typeof window !== "undefined" && readYouTubeParam(new URLSearchParams(window.location.search)) !== null;
+type BootLink = "video" | "files" | "none";
+
+function readBootLink(): BootLink {
+  if (typeof window === "undefined") return "none";
+  const params = new URLSearchParams(window.location.search);
+  if (readYouTubeParam(params) !== null) return "video";
+  return hasLinkedFileParams(params) ? "files" : "none";
 }
 
 function useImportFromQuery(): void {
-  // Read at render: useImportFromYouTube's effect strips this param.
-  const [waitsForLink] = useState(hasBootYouTubeParam);
+  // Read at render: the link hooks' effects strip these params.
+  const [bootLink] = useState(readBootLink);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -61,10 +71,15 @@ function useImportFromQuery(): void {
     let cancelled = false;
     void (async () => {
       await getPersistenceSettled();
-      const link = waitsForLink ? await getLinkProjectSettled() : "none";
+      const link =
+        bootLink === "video"
+          ? await getLinkProjectSettled()
+          : bootLink === "files"
+            ? await getLinkedFilesSettled()
+            : "none";
       if (cancelled || link === "reopened" || link === "failed") return;
 
-      if (link !== "created") {
+      if (link !== "created" && link !== "replaced") {
         // A saved project that fails to read has nothing to overwrite.
         const hasProjectToOverwrite = await isProjectNonEmpty().catch((error) => {
           console.warn(`${LOG_PREFIX} could not read the saved project`, error);
@@ -87,7 +102,7 @@ function useImportFromQuery(): void {
     return () => {
       cancelled = true;
     };
-  }, [waitsForLink]);
+  }, [bootLink]);
 }
 
 // -- Exports ------------------------------------------------------------------

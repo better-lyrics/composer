@@ -11,11 +11,16 @@ let hashImportSettled: Promise<void> = new Promise<void>((resolve) => {
   _markHashImportSettled = resolve;
 });
 
-type LinkProjectOutcome = "none" | "current" | "reopened" | "created" | "failed";
+type LinkProjectOutcome = "none" | "current" | "replaced" | "reopened" | "created" | "failed";
 
 let _markLinkProjectSettled: (outcome: LinkProjectOutcome) => void = () => {};
 let linkProjectSettled: Promise<LinkProjectOutcome> = new Promise<LinkProjectOutcome>((resolve) => {
   _markLinkProjectSettled = resolve;
+});
+
+let _markLinkedFilesSettled: (outcome: LinkProjectOutcome) => void = () => {};
+let linkedFilesSettled: Promise<LinkProjectOutcome> = new Promise<LinkProjectOutcome>((resolve) => {
+  _markLinkedFilesSettled = resolve;
 });
 
 let _markQueryImportSettled: () => void = () => {};
@@ -47,6 +52,14 @@ function markLinkProjectSettled(outcome: LinkProjectOutcome): void {
   _markLinkProjectSettled(outcome);
 }
 
+function getLinkedFilesSettled(): Promise<LinkProjectOutcome> {
+  return linkedFilesSettled;
+}
+
+function markLinkedFilesSettled(outcome: LinkProjectOutcome): void {
+  _markLinkedFilesSettled(outcome);
+}
+
 function getQueryImportSettled(): Promise<void> {
   return queryImportSettled;
 }
@@ -65,6 +78,9 @@ function __resetPersistenceSettledForTests(): void {
   linkProjectSettled = new Promise<LinkProjectOutcome>((resolve) => {
     _markLinkProjectSettled = resolve;
   });
+  linkedFilesSettled = new Promise<LinkProjectOutcome>((resolve) => {
+    _markLinkedFilesSettled = resolve;
+  });
   queryImportSettled = new Promise<void>((resolve) => {
     _markQueryImportSettled = resolve;
   });
@@ -79,7 +95,10 @@ export {
   markHashImportSettled,
   getLinkProjectSettled,
   markLinkProjectSettled,
+  getLinkedFilesSettled,
+  markLinkedFilesSettled,
   getQueryImportSettled,
   markQueryImportSettled,
   __resetPersistenceSettledForTests,
 };
+export type { LinkProjectOutcome };
