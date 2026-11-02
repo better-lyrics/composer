@@ -10,7 +10,8 @@
 #      (The weights come from dl.fbaipublicfiles.com and are cached in
 #      ~/.cache/torch/hub/checkpoints/ — no manual download is required.)
 #   4. Exports htdemucs to ONNX (fp32).
-#   5. Quantizes the fp32 export to fp16 using onnxconverter-common.
+#   5. Converts the fp32 export to mixed-precision fp16 with onnxconverter-common
+#      (scripts/convert-htdemucs-fp16.py).
 #   6. Prints SHA-256 hashes and the wrangler commands you can run to upload to
 #      your R2 bucket (see scripts/upload-htdemucs.sh for the same, automated).
 #
@@ -27,10 +28,13 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUT_DIR="${1:-./htdemucs-onnx-out}"
 WORK_DIR="${WORK_DIR:-/tmp/composer-htdemucs-build}"
 DEMUCS_REPO="https://github.com/sevagh/demucs.onnx.git"
 DEMUCS_REPO_DIR="${WORK_DIR}/demucs.onnx"
+# Versioned so browsers that cached the broken whole-graph fp16 model fetch the new one.
+export FP16_FILE="htdemucs_fp16_v2.onnx"
 VENV_DIR="${WORK_DIR}/venv"
 
 mkdir -p "${OUT_DIR}" "${WORK_DIR}"
@@ -97,44 +101,31 @@ if [[ ! -f "${SRC_FP32}" ]]; then
   exit 1
 fi
 
-echo "==> Merging external data + quantizing to fp16"
+echo "==> Merging external data into a single fp32 file"
 export FP32_SRC="${SRC_FP32}"
 export OUT_DIR
 python - <<'PY'
 import os
 import onnx
-from onnxconverter_common import float16
 
 src = os.environ["FP32_SRC"]
-out_dir = os.environ["OUT_DIR"]
-
+fp32_out = os.path.join(os.environ["OUT_DIR"], "htdemucs_fp32.onnx")
 print(f"loading {src} (auto-resolves external data sidecar)…")
-model = onnx.load(src)
-
-fp32_out = os.path.join(out_dir, "htdemucs_fp32.onnx")
-print(f"writing single-file fp32 -> {fp32_out}")
-onnx.save_model(model, fp32_out, save_as_external_data=False)
-print(f"  size: {os.path.getsize(fp32_out):,} bytes")
-
-print("converting to fp16…")
-fp16 = float16.convert_float_to_float16(
-    model,
-    keep_io_types=True,  # keep float32 I/O so the worker doesn't need to convert
-    disable_shape_infer=False,
-)
-fp16_out = os.path.join(out_dir, "htdemucs_fp16.onnx")
-print(f"writing single-file fp16 -> {fp16_out}")
-onnx.save_model(fp16, fp16_out, save_as_external_data=False)
-print(f"  size: {os.path.getsize(fp16_out):,} bytes")
+onnx.save_model(onnx.load(src), fp32_out, save_as_external_data=False)
+print(f"  {fp32_out}: {os.path.getsize(fp32_out):,} bytes")
 PY
+
+# Mixed precision, not a whole-graph fp16 conversion: see the script's docstring for why.
+echo "==> Converting to mixed-precision fp16"
+python "${SCRIPT_DIR}/convert-htdemucs-fp16.py" "${OUT_DIR}/htdemucs_fp32.onnx" "${OUT_DIR}/${FP16_FILE}"
 
 echo "==> Inspecting model I/O (verify these against src/audio/separation/worker.ts)"
 python - <<'PY'
 import os
 import onnx
 
-for variant in ("fp16", "fp32"):
-    path = os.path.join(os.environ["OUT_DIR"], f"htdemucs_{variant}.onnx")
+for name in (os.environ["FP16_FILE"], "htdemucs_fp32.onnx"):
+    path = os.path.join(os.environ["OUT_DIR"], name)
     print(f"\n-- {path} ({os.path.getsize(path):,} bytes) --")
     m = onnx.load(path, load_external_data=False)
     print("inputs:")
@@ -148,7 +139,7 @@ for variant in ("fp16", "fp32"):
 PY
 
 echo "==> SHA-256"
-( cd "${OUT_DIR}" && sha256sum htdemucs_fp16.onnx htdemucs_fp32.onnx )
+( cd "${OUT_DIR}" && sha256sum "${FP16_FILE}" htdemucs_fp32.onnx )
 
 echo ""
 echo "Done. Models are in ${OUT_DIR}/"
