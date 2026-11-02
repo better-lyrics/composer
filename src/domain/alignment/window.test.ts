@@ -76,12 +76,26 @@ describe("refinedWindow", () => {
 // -- backgroundWindow ---------------------------------------------------------
 
 describe("backgroundWindow", () => {
-  it("never starts before the previous line's begin, and stops 15 s in when the next line ends later", () => {
-    const window = backgroundWindow(
-      { begin: 10, end: 12 },
-      { previous: { begin: 9.8, end: 10 }, next: { begin: 12, end: 40 } },
-    );
-    expect(window).toEqual({ begin: 9.8, end: 24.8 });
+  const duration = 60;
+
+  it("opens 0.3 s before the line and closes 0.15 s after it", () => {
+    expect(backgroundWindow({ begin: 10, end: 12 }, { duration })).toEqual({ begin: 9.7, end: 12.15 });
+  });
+
+  it("starts at the line when Line mode closed the previous line at its tap", () => {
+    const previous = { begin: 8, end: 10 };
+    expect(backgroundWindow({ begin: 10, end: 12 }, { duration, previous })).toEqual({ begin: 10, end: 12.15 });
+  });
+
+  it("stops the lead-in at the previous line's end", () => {
+    const window = backgroundWindow({ begin: 10, end: 12 }, { duration, previous: { begin: 8, end: 9.8 } });
+    expect(window.begin).toBeCloseTo(9.8);
+    expect(backgroundWindow({ begin: 10, end: 12 }, { duration, previous: { begin: 8, end: 9 } }).begin).toBe(9.7);
+  });
+
+  it("stays inside the song and 15 s long at most", () => {
+    expect(backgroundWindow({ begin: 0.1, end: 59.95 }, { duration })).toEqual({ begin: 0, end: 15 });
+    expect(backgroundWindow({ begin: 50, end: 59.95 }, { duration })).toEqual({ begin: 49.7, end: 60 });
   });
 });
 

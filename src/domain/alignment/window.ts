@@ -45,13 +45,6 @@ const MIN_REFINED_SECONDS = 0.1;
 // the benchmark's 626k are under 15 s with these margins.
 const MAX_WINDOW_SECONDS = 15;
 
-// Background vocals have no tap of their own: they echo or answer the line,
-// often running past its end. Their window opens a little before the line and
-// runs to the end of the next line, or this far past the line without one.
-// hubertfa-posttrain's BGVOCALS.md eval sets these.
-const BACKGROUND_LEAD_IN = 0.6;
-const BACKGROUND_TAIL = 4;
-
 // -- Functions ----------------------------------------------------------------
 
 function capWindow(window: AlignmentWindow): AlignmentWindow {
@@ -63,15 +56,21 @@ function hasOwnEnd(previous: LineTaps, taps: LineTaps): boolean {
   return previous.end > previous.begin && previous.end !== taps.begin;
 }
 
+// The lead-in Composer used before step 1: 0.3 s, stopped at the previous line's end.
+function clippedBegin(taps: LineTaps, previous: LineTaps | null | undefined): number {
+  const begin = taps.begin - CLIPPED_LEAD_IN;
+  return previous ? Math.max(begin, Math.min(taps.begin, previous.end)) : begin;
+}
+
+function tailedWindow(begin: number, taps: LineTaps, duration: number): AlignmentWindow {
+  const from = Math.max(0, begin);
+  return capWindow({ begin: from, end: Math.max(from, Math.min(duration, taps.end + TAIL)) });
+}
+
 function alignmentWindow(taps: LineTaps, options: WindowOptions): AlignmentWindow {
   const { previous } = options;
-  let begin = taps.begin - LEAD_IN;
-  if (previous && hasOwnEnd(previous, taps)) {
-    begin = Math.max(taps.begin - CLIPPED_LEAD_IN, Math.min(taps.begin, previous.end));
-  }
-  begin = Math.max(0, begin);
-  const end = Math.min(options.duration, taps.end + TAIL);
-  return capWindow({ begin, end: Math.max(begin, end) });
+  const begin = previous && hasOwnEnd(previous, taps) ? clippedBegin(taps, previous) : taps.begin - LEAD_IN;
+  return tailedWindow(begin, taps, options.duration);
 }
 
 function searchWindow(taps: LineTaps, duration: number): AlignmentWindow {
@@ -97,17 +96,15 @@ function refinedWindow(
 }
 
 /**
- * The window a line's background vocals are aligned in, from the line's sung
- * span and its neighbours'. Never before the previous line's begin.
+ * The window a line's background vocals are aligned in, around `taps`: the
+ * line's span joined with its background words'. They have no tap of their
+ * own, so they keep the window Composer used before step 1: 0.3 s before,
+ * stopped at the previous line's end, to 0.15 s after. On hubertfa-posttrain's
+ * BGVOCALS.md holdout that beat step 1's 0.6 s lead-in, a window running on to
+ * the next line's end, and the CTC search.
  */
-function backgroundWindow(
-  line: LineTaps,
-  neighbours: { previous: LineTaps | null; next: LineTaps | null },
-): AlignmentWindow {
-  const { previous, next } = neighbours;
-  const begin = Math.max(0, line.begin - BACKGROUND_LEAD_IN, Math.min(line.begin, previous?.begin ?? 0));
-  const end = next ? Math.max(line.end, next.end) : line.end + BACKGROUND_TAIL;
-  return capWindow({ begin, end });
+function backgroundWindow(taps: LineTaps, options: WindowOptions): AlignmentWindow {
+  return tailedWindow(clippedBegin(taps, options.previous), taps, options.duration);
 }
 
 function sliceWindow(samples: Float32Array, sampleRate: number, window: AlignmentWindow): Float32Array {

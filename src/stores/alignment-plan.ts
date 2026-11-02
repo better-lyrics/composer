@@ -2,7 +2,7 @@ import type { AlignmentSegment } from "@/audio/alignment/types";
 import { hasCjk } from "@/domain/alignment/cjk";
 import { type HanReading, hanReadingFor } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
-import { alignmentWindow, backgroundWindow, sliceWindow } from "@/domain/alignment/window";
+import { alignmentWindow, sliceWindow } from "@/domain/alignment/window";
 import { groupAlignmentWords, groupTimedWords, type AlignmentWord, type WordInterval } from "@/domain/alignment/words";
 import type { LinkGroup } from "@/domain/group/template";
 import { sharedTimingFanOut } from "@/domain/group/shared-timing";
@@ -44,7 +44,8 @@ interface PlannedLine {
    * The span the line's windows are built around: its taps, or for a line
    * tapped in Line mode that no tap ended (the last one, or one a jump left
    * behind), from its begin to the next line's, or on to the song's end.
-   * Background vocals have no tap, so theirs is their whole window.
+   * Background vocals have no tap, so theirs is that span joined with their
+   * words' own.
    */
   guide: WordInterval;
 }
@@ -91,18 +92,20 @@ function planLine(line: LyricLine, realign: boolean, nextBegin: number): TrackPl
 // A whole-song run aligns background vocals with their line, since tapping a
 // line seeds them with a guess; re-aligning also redoes timed ones whose line
 // isn't aligned. A Timeline pick aligns them whatever the line's timing.
-function planBackground(line: LyricLine, span: WordInterval | null, neighbours: Neighbours): TrackPlan | null {
-  if (!line.backgroundText || !span || span.end < span.begin) return null;
-  const guide = backgroundWindow(span, neighbours);
+function planBackground(line: LyricLine, span: WordInterval | null): TrackPlan | null {
+  if (!line.backgroundText) return null;
   const existing = line.backgroundWords?.length ? line.backgroundWords : null;
+  // The line's span joined with its words' (effectiveBounds), or theirs alone on a line with no timing.
+  const own = bgBounds(line);
+  const guide =
+    span && own ? { begin: Math.min(span.begin, own.begin), end: Math.max(span.end, own.end) } : (span ?? own);
+  if (!guide || guide.end < guide.begin) return null;
   if (existing) return { taps: guide, words: groupTimedWords(existing), existing, guide };
   const { parts, trailingSpace } = splitIntoWordsWithMeta(line.backgroundText);
   return parts.length > 0
     ? { taps: guide, words: groupAlignmentWords(parts, trailingSpace), existing: null, guide }
     : null;
 }
-
-type Neighbours = Parameters<typeof backgroundWindow>[1];
 
 /** Every line's lyrics and background vocals, or only the targeted tracks. */
 function planLines(lines: readonly LyricLine[], targets: readonly AlignTarget[] | undefined, realign: boolean) {
@@ -115,29 +118,20 @@ function planLines(lines: readonly LyricLine[], targets: readonly AlignTarget[] 
     nextBegin[i] = next;
     if (bounds[i]) next = bounds[i]!.begin;
   }
-  // Each line's sung span, with an unclosed Line mode line running to the next tap.
-  const spans = lines.map((line, i) => {
-    const own = bounds[i];
-    if (!own) return bgBounds(line);
-    const end = own.end === own.begin ? nextBegin[i] : own.end;
-    return Number.isFinite(end) ? { begin: own.begin, end } : own;
-  });
   const planned: PlannedLine[] = [];
   let previous: WordInterval | null = null;
-  let previousSpan: WordInterval | null = null;
   lines.forEach((line, i) => {
     const tracks = wanted?.get(line.id);
     const plan = !wanted || tracks?.includes("word") ? planLine(line, realign, nextBegin[i]) : null;
     const previousId = i > 0 && bounds[i - 1] ? lines[i - 1].id : null;
     if (plan) planned.push({ line, track: "word", ...plan, previous, previousId });
     const withLine = wanted ? !!tracks?.includes("bg") : plan !== null || (realign && !!line.backgroundWords?.length);
-    // The last line, which nothing closed, gives no end to run to.
-    const after = spans.slice(i + 1).find((span) => span !== null);
-    const neighbours = { previous: previousSpan, next: after && after.end > after.begin ? after : null };
-    const background = withLine ? planBackground(line, spans[i], neighbours) : null;
-    if (background) planned.push({ line, track: "bg", ...background, previous: null, previousId: null });
+    // A line Line mode never ended runs on to the next tap, or to the song's end.
+    const own = bounds[i];
+    const span = own && { begin: own.begin, end: own.end === own.begin ? nextBegin[i] : own.end };
+    const background = withLine ? planBackground(line, span) : null;
+    if (background) planned.push({ line, track: "bg", ...background, previous, previousId: null });
     if (bounds[i]) previous = bounds[i];
-    if (spans[i]) previousSpan = spans[i];
   });
   return planned;
 }

@@ -3,7 +3,7 @@ import { type AnchorChain, type AnchorWord, anchorWindow, keepsAnchored, lastWor
 import { hasCjk } from "@/domain/alignment/cjk";
 import type { HanReading } from "@/domain/alignment/language";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
-import { type AlignmentWindow, refinedWindow, searchWindow } from "@/domain/alignment/window";
+import { type AlignmentWindow, backgroundWindow, refinedWindow, searchWindow } from "@/domain/alignment/window";
 import { type WordInterval, retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
 import type { WordTiming } from "@/domain/word/timing";
 import { type PlannedLine, guideTaps, hasTappedEnd, plainWindow, segmentIn } from "@/stores/alignment-plan";
@@ -115,12 +115,13 @@ async function alignLine(plan: PlannedLine, ctx: LineContext, chain: AnchorChain
 
 /**
  * Aligns one line's background vocals in their own window. They have no tap,
- * so neither the anchor nor the CTC search applies, and they leave the anchor
- * chain alone. A job that fails keeps the words as they were.
+ * so neither the anchor, the CTC search nor step 1's longer lead-in applies,
+ * and they leave the anchor chain alone. A job that fails keeps the words as they were.
  */
 async function alignBackground(plan: PlannedLine, ctx: LineContext): Promise<AlignedLine> {
   const { pcm } = ctx;
-  const window = guideTaps(plan, pcm.samples.length / pcm.sampleRate);
+  const duration = pcm.samples.length / pcm.sampleRate;
+  const window = backgroundWindow(guideTaps(plan, duration), { duration, previous: plan.previous });
   const result = await ctx.aligner.align(segmentIn(plan, ctx.hanReading, pcm, window), ctx.signal);
   const parts = plan.words.reduce((n, word) => n + word.parts.length, 0);
   if (result.fellBack || result.intervals.length !== parts) return { result, timings: null, chain: null };
