@@ -1,3 +1,4 @@
+import { isFollowingAudioLine } from "@/audio/playback-clock";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -6,6 +7,8 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 interface PlaybackSample {
   currentTime: number;
   paused: boolean;
+  // False while the time still crawls after a play, so a renderer sets its sweep from it instead of running ahead.
+  followsAudio: boolean;
   playbackRate: number;
 }
 
@@ -18,7 +21,7 @@ interface RendererPlayback {
 
 // -- Functions -----------------------------------------------------------------
 
-const liveSample: PlaybackSample = { currentTime: 0, paused: true, playbackRate: 1 };
+const liveSample: PlaybackSample = { currentTime: 0, paused: true, followsAudio: false, playbackRate: 1 };
 
 // A playhead drag only seeks on release, so renderers follow the dragged time meanwhile.
 function audioStoreSample(): PlaybackSample | null {
@@ -27,6 +30,7 @@ function audioStoreSample(): PlaybackSample | null {
   const { isDraggingPlayhead, dragTime } = useTimelineStore.getState();
   liveSample.currentTime = isDraggingPlayhead ? dragTime : livePlaybackTime();
   liveSample.paused = audio.paused;
+  liveSample.followsAudio = !isDraggingPlayhead && isFollowingAudioLine();
   liveSample.playbackRate = audio.playbackRate;
   return liveSample;
 }

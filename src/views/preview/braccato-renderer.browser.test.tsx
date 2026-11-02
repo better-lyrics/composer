@@ -1,3 +1,4 @@
+import { holdFrames } from "@/lib/frame-loop";
 import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
 import { POSITION_UTILITIES_CSS, installStyleSheet } from "@/test/browser-css";
@@ -12,6 +13,7 @@ import {
   buildSyncedTtml,
 } from "@/test/ttml-fixtures";
 import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
+import type { RendererPlayback } from "@/views/preview/renderer-playback";
 import type { BraccatoLyricsElement } from "@braccato/core/element";
 import braccatoLyricsCss from "@braccato/core/styles/lyrics.css?raw";
 import braccatoVariablesCss from "@braccato/core/styles/variables.css?raw";
@@ -194,6 +196,26 @@ describe("BraccatoRenderer", () => {
     await waitForLyrics(el);
 
     await expect.poll(() => el.playing).toBe(false);
+  });
+
+  it("regression: sets the sweep from each frame's time until the clock follows the audio after a play", async () => {
+    const sample = { currentTime: 11.9, paused: false, followsAudio: false, playbackRate: 1 };
+    const playback: RendererPlayback = { sample: () => sample, seekTo: () => {}, play: () => {} };
+    onTestFinished(holdFrames("playing"));
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} playback={playback} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+    await expect.poll(() => el.currentTime).toBe(11.9);
+
+    sample.currentTime = 11.92;
+    await stepFrames(2);
+    expect(el.currentTime).toBe(11.92);
+    expect(el.playing).toBe(false);
+
+    sample.followsAudio = true;
+    await stepFrames(2);
+    expect(el.playing).toBe(true);
   });
 
   it("hands the playback rate over so word sweeps follow the song rather than the wall clock", async () => {
