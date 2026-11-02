@@ -1,12 +1,11 @@
 import { Scroll } from "@/ui/scroll";
 import { MetadataPanel } from "@/views/export/metadata-panel";
-import { UnisonPanel } from "@/views/export/unison/unison-panel";
 
 // -- Components ----------------------------------------------------------------
 
-const ExportSidePanel: React.FC = () => (
+const ExportSidePanel: React.FC<{ unison?: React.ReactNode }> = ({ unison }) => (
   <Scroll className="border-l border-(--divider)">
-    <UnisonPanel />
+    {unison}
     <MetadataPanel />
   </Scroll>
 );

@@ -37,6 +37,18 @@ function showEditWithdrawnToast(): void {
   toast("Edit withdrawn. Listeners keep the current version.");
 }
 
+function showSubmittedToast(unlinkedVideoIds: readonly string[]): void {
+  const description =
+    unlinkedVideoIds.length === 0
+      ? undefined
+      : `Could not link ${unlinkedVideoIds.length === 1 ? "this video" : "these videos"}: ${unlinkedVideoIds.join(", ")}`;
+  toast.success("Submitted to Unison. It's live now.", { description });
+}
+
+function showUpdateSentToast(goesLive: boolean): void {
+  toast.success(goesLive ? "Update is live on Unison." : "Edit sent to the council.");
+}
+
 function showUnisonFailureToast(title: string, error: unknown): void {
   toast.error(title, { description: unisonFailureReason(error) });
 }
@@ -48,5 +60,8 @@ export {
   showDisconnectedToast,
   showEditWithdrawnToast,
   showRemovedFromUnisonToast,
+  showSubmittedToast,
   showUnisonFailureToast,
+  showUpdateSentToast,
+  unisonFailureReason,
 };
