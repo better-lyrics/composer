@@ -3,12 +3,14 @@ import { areAlignmentAssetsCached, resolveAlignmentAssets } from "@/audio/alignm
 import type { Aligner } from "@/audio/alignment/types";
 import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { isModelHostingConfigured } from "@/audio/separation/model-registry";
+import type { AnchorChain } from "@/domain/alignment/anchor";
 import { hasCjk } from "@/domain/alignment/cjk";
 import { fingerprintChanged } from "@/domain/alignment/fingerprint";
-import { canAlignLanguage, hanReadingFor } from "@/domain/alignment/language";
+import { canAlignLanguage, hanReadingFor, songLanguage } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
-import { retimeWords, sanitizeIntervals, timingsFromParts } from "@/domain/alignment/words";
+import { sanitizeIntervals } from "@/domain/alignment/words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { alignLine, isAbortError } from "@/stores/alignment-line";
 import { type PlannedLine, isUnchanged, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
@@ -87,10 +89,6 @@ function fail(set: (partial: Partial<AlignmentState>) => void, code: AlignmentEr
   return null;
 }
 
-function isAbortError(err: unknown): boolean {
-  return (err as Error)?.name === "AbortError";
-}
-
 // -- Store --------------------------------------------------------------------
 
 const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) => ({
@@ -155,20 +153,25 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       const guessedWords = new Set<string>();
       let fellBack = 0;
 
-      for (const plan of planned) {
+      const anchors = songLanguage(project.metadata.language, project.lines) === "en";
+      let chain: AnchorChain | null = null;
+      for (const [index, plan] of planned.entries()) {
         signal.throwIfAborted();
-        const { line, words, existing } = plan;
-        const { segment, window } = segmentFor(plan, hanReading, pcm);
-        // react-doctor-disable-next-line react-doctor/async-await-in-loop -- the worker aligns one line at a time, and progress and cancel follow each line
-        const result = await aligner.align(segment, signal);
-        if (result.fellBack) fellBack++;
+        // react-doctor-disable-next-line react-doctor/async-await-in-loop -- lines align in order: each may anchor on the one before
+        const { result, timings, ...next } = await alignLine(
+          plan,
+          { aligner, pcm, hanReading, signal, anchors },
+          chain,
+        );
+        chain = next.chain;
         for (const word of result.unknownWords) unknownWords.add(word);
         for (const word of result.guessedWords) guessedWords.add(word);
-        const safe = sanitizeIntervals(result.intervals, window);
-        const timings = existing ? retimeWords(existing, safe) : timingsFromParts(words, safe, result.splits);
-        updates.push({ id: line.id, updates: { words: timings } });
-        plannedById.set(line.id, plan);
-        set({ progress: { done: updates.length, total: planned.length } });
+        if (timings) {
+          if (result.fellBack) fellBack++;
+          updates.push({ id: plan.line.id, updates: { words: timings } });
+          plannedById.set(plan.line.id, plan);
+        }
+        set({ progress: { done: index + 1, total: planned.length } });
       }
 
       signal.throwIfAborted();
