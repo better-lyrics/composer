@@ -28,6 +28,10 @@ interface PageOptions extends CallOptions {
   cursor?: string;
 }
 
+interface SizedPageOptions extends PageOptions {
+  limit?: number;
+}
+
 // -- Auth ----------------------------------------------------------------------
 
 function fetchChallenge(options: CallOptions = {}): Promise<UnisonChallenge> {
@@ -48,8 +52,12 @@ async function logout(options: CallOptions = {}): Promise<void> {
 
 // -- Lyrics --------------------------------------------------------------------
 
-function fetchMine({ cursor, signal }: PageOptions = {}): Promise<UnisonPage<UnisonMineItem>> {
-  return unisonFetchPage("/lyrics/mine", { signal, auth: true, query: { cursor } });
+function fetchMine({ cursor, limit, signal }: SizedPageOptions = {}): Promise<UnisonPage<UnisonMineItem>> {
+  return unisonFetchPage("/lyrics/mine", {
+    signal,
+    auth: true,
+    query: { cursor, limit: limit === undefined ? undefined : String(limit) },
+  });
 }
 
 function fetchLyric(id: number, options: CallOptions = {}): Promise<UnisonLyric> {

@@ -1,13 +1,12 @@
 import { useMostWanted } from "@/hooks/unison/useMostWanted";
+import { useStartWantedSong } from "@/hooks/unison/useStartWantedSong";
 import type { WantedSong } from "@/lib/unison/api-types";
-import { startWantedSong } from "@/lib/unison/start-wanted-song";
 import { Button } from "@/ui/button";
 import { UnisonSongArt } from "@/ui/unison/unison-song-art";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
 import { InlineError, LoadMore, SkeletonBar, SkeletonRows, SkeletonSong, ViewEmpty } from "@/views/unison/view-states";
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -18,7 +17,6 @@ interface WantedSection {
 
 // -- Constants -----------------------------------------------------------------
 
-const LOG_PREFIX = "[UnisonWanted]";
 const SKELETON_ROW_COUNT = 6;
 const WANTED_GRID = "grid grid-cols-[28px_40px_minmax(0,1fr)_120px_auto] items-center gap-4 h-14 px-3";
 const SECTION_TITLES: Record<WantedSong["section"], string> = {
@@ -78,16 +76,8 @@ const WantedSkeleton: React.FC = () => (
 
 const WantedView: React.FC = () => {
   const wanted = useMostWanted();
-  const navigate = useNavigate();
-  const [startingId, setStartingId] = useState<string | null>(null);
+  const { startingId, start } = useStartWantedSong();
   const sections = useMemo(() => wantedSections(wanted.data?.pages.flatMap((page) => page.items) ?? []), [wanted.data]);
-
-  const start = (song: WantedSong) => {
-    setStartingId(song.videoId);
-    startWantedSong(song, { navigate })
-      .catch((error: unknown) => console.error(LOG_PREFIX, "could not start a project", error))
-      .finally(() => setStartingId(null));
-  };
 
   if (wanted.isPending) return <WantedSkeleton />;
   if (wanted.isError) return <InlineError error={wanted.error} onRetry={() => void wanted.refetch()} />;

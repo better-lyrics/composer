@@ -9,6 +9,7 @@ import { SyncedBadge } from "@/ui/projects/synced-badge";
 import { SelectCheckbox } from "@/ui/select-checkbox";
 import { cn } from "@/utils/cn";
 import { AudioStatusLabel } from "@/views/library/audio-status-label";
+import { UnisonCardChip } from "@/views/library/unison-cell";
 import type { ProjectItemProps } from "@/views/library/project-row";
 import { IconDots } from "@tabler/icons-react";
 import { memo } from "react";
@@ -27,9 +28,10 @@ const REVEAL_ON_CARD = cn(
 
 // -- Sub-components -------------------------------------------------------------
 
-const CardProgressLabel: React.FC<{ project: ProjectIndexEntry }> = ({ project }) => {
+const CardProgressLabel: React.FC<{ project: ProjectIndexEntry; compact: boolean }> = ({ project, compact }) => {
   if (!hasLyrics(project)) return <span>No lyrics</span>;
-  if (projectStage(project) === "synced") return <SyncedBadge withLabel />;
+  if (projectStage(project) === "synced")
+    return <SyncedBadge withLabel={!compact} className={cn(compact && "size-4")} />;
   return <span className="tabular-nums">{syncedPercent(project)}%</span>;
 };
 
@@ -39,6 +41,7 @@ const ProjectCardContent: React.FC<ProjectItemProps> = ({
   project,
   isSelected,
   isMenuOpen,
+  unison,
   onOpen,
   onToggleSelect,
   onOpenMenu,
@@ -99,8 +102,13 @@ const ProjectCardContent: React.FC<ProjectItemProps> = ({
       </div>
       <ProgressBar percent={syncedPercent(project)} label={progressDescription(project)} />
       <div className="flex items-center justify-between gap-2 text-xs text-composer-text-muted">
-        <AudioStatusLabel project={project} compact />
-        <CardProgressLabel project={project} />
+        <span className="min-w-0 truncate">
+          <AudioStatusLabel project={project} compact />
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          {unison && <UnisonCardChip project={project} lyrics={unison.lyrics} />}
+          <CardProgressLabel project={project} compact={Boolean(unison && project.unisonLyricId)} />
+        </span>
       </div>
     </li>
   );

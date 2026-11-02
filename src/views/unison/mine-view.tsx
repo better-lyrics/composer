@@ -1,3 +1,4 @@
+import { projectsByLyricId } from "@/domain/unison/linked-projects";
 import { useMyUnisonLyrics } from "@/hooks/unison/useMyUnisonLyrics";
 import { fetchUnisonLyric } from "@/hooks/unison/useUnisonLyric";
 import { useProjectIndex } from "@/hooks/useProjectIndex";
@@ -64,10 +65,7 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
   const navigate = useNavigate();
   const [openingId, setOpeningId] = useState<number | null>(null);
 
-  const projectByLyric = useMemo(
-    () => new Map(entries?.flatMap((entry) => (entry.unisonLyricId ? [[entry.unisonLyricId, entry.id]] : []))),
-    [entries],
-  );
+  const projectByLyric = useMemo(() => projectsByLyricId(entries ?? []), [entries]);
   const items = useMemo(() => mine.data?.pages.flatMap((page) => page.items) ?? [], [mine.data]);
 
   const openAsProject = useCallback(
@@ -111,7 +109,7 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
           <MineRow
             key={item.id}
             item={item}
-            projectId={projectByLyric.get(String(item.id))}
+            projectId={projectByLyric.get(String(item.id))?.id}
             opening={openingId === item.id}
             onOpenProject={libraryActions.open}
             onOpenAsProject={openAsProject}

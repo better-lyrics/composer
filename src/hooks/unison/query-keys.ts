@@ -5,6 +5,8 @@ const UNISON_QUERY_ROOT = "unison";
 const unisonQueryKeys = {
   betterLyricsExtension: () => [UNISON_QUERY_ROOT, "better-lyrics-extension"] as const,
   mine: (keyId: string) => [UNISON_QUERY_ROOT, "mine", keyId] as const,
+  mineForLibrary: (keyId: string, linkedIds: readonly string[]) =>
+    [UNISON_QUERY_ROOT, "mine", keyId, "library", linkedIds] as const,
   mostWanted: () => [UNISON_QUERY_ROOT, "most-wanted"] as const,
   search: (query: string) => [UNISON_QUERY_ROOT, "search", query] as const,
   lyric: (id: number) => [UNISON_QUERY_ROOT, "lyric", id] as const,

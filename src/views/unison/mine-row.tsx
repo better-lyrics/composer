@@ -1,11 +1,10 @@
 import { unisonStatus } from "@/domain/unison/lyric-status";
 import type { UnisonMineItem } from "@/lib/unison/api-types";
 import { Button } from "@/ui/button";
-import { Tooltip } from "@/ui/tooltip";
 import { ConfidenceMeter } from "@/ui/unison/confidence-meter";
 import { ScoreLabel } from "@/ui/unison/score-label";
 import { unisonSyncLabel } from "@/ui/unison/sync-type-label";
-import { UNISON_STATUS_DESCRIPTIONS, UnisonStatusChip } from "@/ui/unison/unison-status-chip";
+import { DescribedUnisonStatusChip } from "@/ui/unison/unison-status-chip";
 import { UnisonSongArt } from "@/ui/unison/unison-song-art";
 import { cn } from "@/utils/cn";
 import { IconFileImport } from "@tabler/icons-react";
@@ -54,12 +53,7 @@ const MineRowContent: React.FC<MineRowProps> = ({ item, projectId, opening, onOp
           {item.artist} ・ {unisonSyncLabel(item.syncType)}
         </p>
       </div>
-      <Tooltip content={UNISON_STATUS_DESCRIPTIONS[status]}>
-        <span className="cursor-help">
-          <UnisonStatusChip status={status} />
-          <span className="sr-only">, {UNISON_STATUS_DESCRIPTIONS[status]}</span>
-        </span>
-      </Tooltip>
+      <DescribedUnisonStatusChip status={status} className="justify-self-start" />
       <ScoreLabel score={item.score} voteCount={item.voteCount} />
       <ConfidenceMeter confidence={item.confidence} />
       {projectId ? (

@@ -1,5 +1,7 @@
 import type { UnisonStatus } from "@/domain/unison/lyric-status";
 import { StatusChip } from "@/ui/status-chip";
+import { Tooltip } from "@/ui/tooltip";
+import { cn } from "@/utils/cn";
 import {
   type Icon,
   IconCircleCheck,
@@ -54,6 +56,15 @@ const UnisonStatusChip: React.FC<UnisonStatusChipProps> = ({ status, className }
   );
 };
 
+const DescribedUnisonStatusChip: React.FC<UnisonStatusChipProps> = ({ status, className }) => (
+  <Tooltip content={UNISON_STATUS_DESCRIPTIONS[status]}>
+    <span className={cn("inline-flex cursor-help", className)}>
+      <UnisonStatusChip status={status} />
+      <span className="sr-only">, {UNISON_STATUS_DESCRIPTIONS[status]}</span>
+    </span>
+  </Tooltip>
+);
+
 // -- Exports -------------------------------------------------------------------
 
-export { UNISON_STATUS_DESCRIPTIONS, UnisonStatusChip };
+export { DescribedUnisonStatusChip };

@@ -1,7 +1,7 @@
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import type { MenuAnchor } from "@/ui/menu";
 import { cn } from "@/utils/cn";
-import { ALBUM_COLUMN, ProjectRow, ROW_GRID } from "@/views/library/project-row";
+import { type LibraryUnison, ProjectRow, ROW_LAYOUTS, UNISON_COLUMN } from "@/views/library/project-row";
 
 // -- Types --------------------------------------------------------------------
 
@@ -10,6 +10,7 @@ interface ProjectCollectionProps {
   now: number;
   selectedIds: ReadonlySet<string>;
   menuProjectId: string | null;
+  unison: LibraryUnison | null;
   onOpen: (id: string) => void;
   onToggleSelect: (id: string, range: boolean) => void;
   onOpenMenu: (id: string, anchor: MenuAnchor) => void;
@@ -22,6 +23,7 @@ const ProjectList: React.FC<ProjectCollectionProps> = ({
   now,
   selectedIds,
   menuProjectId,
+  unison,
   onOpen,
   onToggleSelect,
   onOpenMenu,
@@ -34,6 +36,7 @@ const ProjectList: React.FC<ProjectCollectionProps> = ({
         now={now}
         isSelected={selectedIds.has(project.id)}
         isMenuOpen={menuProjectId === project.id}
+        unison={unison}
         onOpen={onOpen}
         onToggleSelect={onToggleSelect}
         onOpenMenu={onOpenMenu}
@@ -42,18 +45,22 @@ const ProjectList: React.FC<ProjectCollectionProps> = ({
   </ul>
 );
 
-const ProjectListColumns: React.FC = () => (
-  <div
-    aria-hidden="true"
-    className={cn(ROW_GRID, "h-8 shadow-[inset_0_-1px_0_var(--divider)] text-xs font-medium text-(--muted)")}
-  >
-    <span className="col-span-2">Title</span>
-    <span className={ALBUM_COLUMN}>Album</span>
-    <span>Progress</span>
-    <span>Audio</span>
-    <span className="text-right">Edited</span>
-  </div>
-);
+const ProjectListColumns: React.FC<{ showUnison: boolean }> = ({ showUnison }) => {
+  const layout = showUnison ? ROW_LAYOUTS.unison : ROW_LAYOUTS.plain;
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(layout.grid, "h-8 shadow-[inset_0_-1px_0_var(--divider)] text-xs font-medium text-(--muted)")}
+    >
+      <span className="col-span-2">Title</span>
+      <span className={layout.album}>Album</span>
+      <span>Progress</span>
+      {showUnison && <span className={UNISON_COLUMN}>Unison</span>}
+      <span>Audio</span>
+      <span className="text-right">Edited</span>
+    </div>
+  );
+};
 
 // -- Exports ------------------------------------------------------------------
 
