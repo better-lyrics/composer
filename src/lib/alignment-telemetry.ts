@@ -60,8 +60,9 @@ function modelFile(url: string | undefined): string | null {
 }
 
 async function collect(run: AlignedRun): Promise<void> {
-  const model = await resolveAlignmentModel(run.modelId);
+  // Bound first, so switching projects while the model resolves can't file these lines under the next one.
   const projectId = await bindSaveTarget();
+  const model = await resolveAlignmentModel(run.modelId);
   const alignedAt = Date.now();
   const records = run.lines.map(
     ({ line, taps, window, result, timings }): AlignedLineRecord => ({
