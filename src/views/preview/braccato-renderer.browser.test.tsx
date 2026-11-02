@@ -14,7 +14,8 @@ import {
 import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
 import type { BraccatoLyricsElement } from "@braccato/core/element";
 import braccatoLyricsCss from "@braccato/core/styles/lyrics.css?raw";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import braccatoVariablesCss from "@braccato/core/styles/variables.css?raw";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished } from "vitest";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -62,6 +63,10 @@ function activeLineText(el: BraccatoLyricsElement): string {
   return el.querySelector(".blyrics--line.blyrics--active")?.textContent ?? "";
 }
 
+function sungWordText(el: BraccatoLyricsElement): string {
+  return el.querySelector('.blyrics--word[data-word-state="active"]:not(.blyrics-word-highlight)')?.textContent ?? "";
+}
+
 function lineTexts(el: BraccatoLyricsElement): string[] {
   return [...el.querySelectorAll(".blyrics--line")].map((line) => line.textContent ?? "");
 }
@@ -100,6 +105,25 @@ describe("BraccatoRenderer", () => {
     await waitForLyrics(el);
 
     await expect.poll(() => activeLineText(el)).toContain("second line");
+  });
+
+  it("regression: sweeps a word at its own time, with no lead ahead of the playhead", async () => {
+    const variables = installStyleSheet(braccatoVariablesCss);
+    onTestFinished(() => variables.remove());
+    const audio = new Audio();
+    audio.currentTime = 11.9;
+    useAudioStore.setState({ audioElement: audio, isPlaying: false });
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+    await expect.poll(() => el.currentTime).toBe(11.9);
+    await stepFrames(5);
+
+    expect(sungWordText(el)).not.toContain("second");
+
+    useAudioStore.getState().seekTo(12.01);
+    await expect.poll(() => sungWordText(el)).toContain("second");
   });
 
   it("moves the highlight as the audio time advances", async () => {
