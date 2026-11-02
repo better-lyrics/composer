@@ -3,6 +3,7 @@ import { useAutoSeparate } from "@/hooks/useAutoSeparate";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
+import { useImportFromLinkedFiles } from "@/hooks/useImportFromLinkedFiles";
 import { useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
 import { useLanguageAutoRefresh } from "@/hooks/useLanguageAutoRefresh";
@@ -115,6 +116,7 @@ const AppShell: React.FC = () => {
   useProjectShortcuts(isEditor);
   useSaveShortcut(isEditor);
   useImportFromHash();
+  useImportFromLinkedFiles();
   useResolveYouTubeTunnel();
   useImportFromQuery();
   useImportFromYouTube();

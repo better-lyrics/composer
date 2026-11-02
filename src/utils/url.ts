@@ -11,12 +11,15 @@ function ensureHttpScheme(input: string): string {
   return `https://${trimmed}`;
 }
 
+function parseHttpUrl(value: string): URL | null {
+  if (!URL.canParse(value)) return null;
+  const parsed = new URL(value);
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+  return parsed.hostname.length > 0 ? parsed : null;
+}
+
 function isValidHttpUrl(value: string): boolean {
-  const candidate = ensureHttpScheme(value);
-  if (!URL.canParse(candidate)) return false;
-  const parsed = new URL(candidate);
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
-  return parsed.hostname.length > 0;
+  return parseHttpUrl(ensureHttpScheme(value)) !== null;
 }
 
 function displayHostFromUrl(url: string): string {
@@ -25,4 +28,4 @@ function displayHostFromUrl(url: string): string {
 
 // -- Exports -------------------------------------------------------------------
 
-export { stripTrailingSlashes, ensureHttpScheme, isValidHttpUrl, displayHostFromUrl };
+export { stripTrailingSlashes, ensureHttpScheme, isValidHttpUrl, parseHttpUrl, displayHostFromUrl };
