@@ -1,10 +1,8 @@
 import { getAgentColor } from "@/domain/agent/colors";
 import { agentDisplayName } from "@/domain/agent/display-name";
 import type { Agent } from "@/domain/agent/model";
-import { type AgentSide, agentSide } from "@/domain/agent/side";
 import type { LanguageDisplayLine } from "@/domain/language/display";
 import type { LyricLine } from "@/domain/line/model";
-import { isLineTimed, timedWordCount } from "@/domain/line/sync-progress";
 import { splitIntoWords, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import type { LaneGroupTag } from "@/views/sync/shared-sync-tags";
 
@@ -27,12 +25,9 @@ interface LaneRow {
   wordTexts: string[];
   wordRuns: WordRun[];
   backgroundText?: string;
-  side: AgentSide;
   singer?: LaneSinger;
   groupTag?: LaneGroupTag;
   folded: boolean;
-  isTimed: boolean;
-  timedWords: number;
 }
 
 interface LaneRowsInput {
@@ -80,12 +75,9 @@ function buildLaneRows({ lines, displayLines, agents, groupTags, folded }: LaneR
       wordTexts,
       wordRuns: wordRunsOf(line.text, wordTexts.length),
       backgroundText: display.backgroundText,
-      side: agentSide(line.agentId),
       singer: showsSingers && singerChanged ? laneSinger(line.agentId, agents) : undefined,
       groupTag: groupTags.get(line.id),
       folded: isFolded,
-      isTimed: isLineTimed(line),
-      timedWords: timedWordCount(line),
     };
   });
 }
@@ -93,4 +85,4 @@ function buildLaneRows({ lines, displayLines, agents, groupTags, folded }: LaneR
 // -- Exports ------------------------------------------------------------------
 
 export { buildLaneRows };
-export type { LaneRow, WordRun };
+export type { LaneRow };
