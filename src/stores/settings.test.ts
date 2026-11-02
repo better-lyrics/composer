@@ -243,11 +243,11 @@ describe("settings v2 -> v3 migration", () => {
     expect(migrated.previewSidebar).toBe(true);
   });
 
-  it("moves the old fp32 default to fp16 but keeps an fp32 chosen since v16", async () => {
-    const fromV15 = migrateSettings({ vocalModelVariant: "fp32" }, 15) as { vocalModelVariant: string };
-    expect(fromV15.vocalModelVariant).toBe("fp16");
+  it("moves the old fp32 default to fp16 but keeps an fp32 chosen since v17", async () => {
     const fromV16 = migrateSettings({ vocalModelVariant: "fp32" }, 16) as { vocalModelVariant: string };
-    expect(fromV16.vocalModelVariant).toBe("fp32");
+    expect(fromV16.vocalModelVariant).toBe("fp16");
+    const fromV17 = migrateSettings({ vocalModelVariant: "fp32" }, 17) as { vocalModelVariant: string };
+    expect(fromV17.vocalModelVariant).toBe("fp32");
   });
 });
 

@@ -19,7 +19,7 @@ interface RetiredSettings {
 
 // -- Constants ----------------------------------------------------------------
 
-const SETTINGS_PERSIST_VERSION = 16;
+const SETTINGS_PERSIST_VERSION = 17;
 
 // -- Migration ----------------------------------------------------------------
 
@@ -60,8 +60,8 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   if (version < 13 && next.alignmentModelId === BUILTIN_ALIGNMENT_MODEL.id) {
     next.alignmentModelId = RECOMMENDED_ALIGNMENT_MODEL;
   }
-  // Before 16 every saved fp16 was forced back to fp32, the default, so a saved fp32 is the old default, not a choice.
-  if (version < 16) next.vocalModelVariant = "fp16";
+  // Before 17 every saved fp16 was forced back to fp32, the default, so a saved fp32 is the old default, not a choice.
+  if (version < 17) next.vocalModelVariant = "fp16";
   const {
     librarySort,
     libraryView,

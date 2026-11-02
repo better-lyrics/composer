@@ -14,6 +14,9 @@ const MODEL_FILENAMES: Record<VocalModelVariant, string> = {
   fp32: "htdemucs_fp32.onnx",
 };
 
+// Still in some browsers' model cache, so Settings lists them as vocal files the user can remove.
+const RETIRED_VOCAL_MODEL_FILENAMES = ["htdemucs_fp16.onnx"] as const;
+
 const VOCAL_MODEL_APPROX_BYTES: Record<VocalModelVariant, number> = {
   fp16: 85 * 1024 * 1024,
   fp32: 171 * 1024 * 1024,
@@ -48,6 +51,7 @@ export {
   getModelDescriptor,
   isModelHostingConfigured,
   MODEL_FILENAMES as VOCAL_MODEL_FILENAMES,
+  RETIRED_VOCAL_MODEL_FILENAMES,
   VOCAL_MODEL_APPROX_BYTES,
 };
 export type { ModelDescriptor };
