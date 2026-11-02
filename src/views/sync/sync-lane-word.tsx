@@ -24,7 +24,6 @@ interface LaneWordProps {
   state: SlotState;
   onCurrentLine: boolean;
   isHeld?: boolean;
-  onClick?: () => void;
   dimmed?: boolean;
   joinedStart?: boolean;
   joinedEnd?: boolean;
@@ -62,14 +61,10 @@ function dotClass(dot: SyllableDot, state: SlotState, onCurrentLine: boolean): s
   return cn("bg-current", onCurrentLine ? "opacity-80" : "opacity-55");
 }
 
-// Clicking a word must not focus it, or the tap key (Space) would also press it.
-const keepFocus = (event: React.MouseEvent) => event.preventDefault();
-
 const LaneWord: React.FC<LaneWordProps> = ({
   state,
   onCurrentLine,
   isHeld = false,
-  onClick,
   dimmed = false,
   joinedStart = false,
   joinedEnd = false,
@@ -77,10 +72,9 @@ const LaneWord: React.FC<LaneWordProps> = ({
   children,
 }) => {
   const className = cn(
-    "group/word relative inline-flex items-center justify-center origin-center ease-out motion-reduce:transition-none",
+    "relative inline-flex items-center justify-center origin-center ease-out motion-reduce:transition-none",
     INSTANT_COLOR_STATES.has(state) ? "transition-[scale] duration-150" : "transition-[color,scale] duration-400",
     isHeld && "scale-96",
-    onClick && "cursor-pointer",
     wordTextClass(state, onCurrentLine, dimmed),
   );
   const content = (
@@ -93,7 +87,6 @@ const LaneWord: React.FC<LaneWordProps> = ({
           joinedEnd && "-right-0.5 rounded-r-sm",
           isHeld ? "bg-composer-accent/25" : "bg-composer-accent/15",
           state === "next" ? "opacity-100" : "opacity-0",
-          onClick && state !== "next" && "group-hover/word:opacity-60",
         )}
       />
       {children}
@@ -108,12 +101,7 @@ const LaneWord: React.FC<LaneWordProps> = ({
       )}
     </>
   );
-  if (!onClick) return <span className={className}>{content}</span>;
-  return (
-    <button type="button" tabIndex={-1} onMouseDown={keepFocus} onClick={onClick} className={className}>
-      {content}
-    </button>
-  );
+  return <span className={className}>{content}</span>;
 };
 
 // -- Exports ------------------------------------------------------------------

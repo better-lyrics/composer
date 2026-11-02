@@ -13,7 +13,7 @@ import { Fragment, useMemo } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
-type SyncEditHandlers = Pick<
+type SyncLineListHandlers = Pick<
   ReturnType<typeof useSyncHandlers>,
   | "handleJumpToLine"
   | "handleJumpToWord"
@@ -31,29 +31,33 @@ type SyncEditHandlers = Pick<
   | "handleSetBgWordEndTime"
 >;
 
-interface SyncEditListProps {
+interface SyncLineListProps {
   lines: readonly LyricLine[];
   displayLines: readonly LanguageDisplayLine[];
   groups: readonly LinkGroup[];
   granularity: "line" | "word";
   currentTime: number;
   playingLineIndex: number;
+  cursorLineIndex: number;
+  editMode: boolean;
   isComplete: boolean;
   skippedLineIds: ReadonlySet<string>;
   skippedByLastLineId: ReadonlyMap<string, SkippedInstance>;
-  handlers: SyncEditHandlers;
+  handlers: SyncLineListHandlers;
   scrollContainerRef: React.Ref<HTMLDivElement>;
 }
 
 // -- Components ---------------------------------------------------------------
 
-const SyncEditList: React.FC<SyncEditListProps> = ({
+const SyncLineList: React.FC<SyncLineListProps> = ({
   lines,
   displayLines,
   groups,
   granularity,
   currentTime,
   playingLineIndex,
+  cursorLineIndex,
+  editMode,
   isComplete,
   skippedLineIds,
   skippedByLastLineId,
@@ -113,7 +117,7 @@ const SyncEditList: React.FC<SyncEditListProps> = ({
                 text={line.text}
                 displayText={displayLine.text}
                 displayWordTexts={displayLine.wordTexts}
-                isCurrent={index === playingLineIndex}
+                isCurrent={index === (editMode ? playingLineIndex : cursorLineIndex)}
                 agentId={line.agentId}
                 backgroundText={line.backgroundText}
                 displayBackgroundText={displayLine.backgroundText}
@@ -125,7 +129,7 @@ const SyncEditList: React.FC<SyncEditListProps> = ({
                 lineSynced={isLineSynced(line)}
                 granularity={granularity}
                 currentTime={currentTime}
-                editMode
+                editMode={editMode}
                 linkInfo={linkInfoByLineId.get(line.id)}
                 onClick={() => handleJumpToLine(index)}
                 onClickWord={(wordIdx) => handleJumpToWord(index, wordIdx)}
@@ -162,4 +166,4 @@ const SyncEditList: React.FC<SyncEditListProps> = ({
 
 // -- Exports ------------------------------------------------------------------
 
-export { SyncEditList };
+export { SyncLineList };

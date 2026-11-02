@@ -5,6 +5,7 @@ import { getShortcutDescription } from "@/stores/shortcut-bindings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { firstBegin, tapAt } from "@/test/shared-timing-sync";
 import { firePointer, loadPlayingProject, setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -116,6 +117,30 @@ describe("SyncPanel", () => {
     const screen = await render(<SyncPanel />);
     await screen.getByRole("button", { name: "Edit" }).click();
     await expect.element(screen.getByText(/Editing timings/)).toBeInTheDocument();
+  });
+
+  it("regression: pausing a finished sync shows the line list, and a clicked line re-syncs on play", async () => {
+    useAudioStore.setState({
+      source: { type: "file", file: createAudioFile() },
+      duration: 10,
+      currentTime: 0,
+      isPlaying: true,
+    });
+    useProjectStore.setState({
+      activeTab: "sync",
+      granularity: "line",
+      lines: [createLine({ id: "one", text: "One" }), createLine({ id: "two", text: "Two" })],
+    });
+    const screen = await render(<SyncPanel />);
+    await tapAt(1, () => firstBegin("one"));
+    await tapAt(3, () => firstBegin("two"));
+    setIsPlaying(false);
+    const rows = () => screen.container.querySelectorAll<HTMLElement>('[role="button"][tabindex="-1"]');
+    await expect.poll(() => rows().length).toBe(2);
+    rows()[0].click();
+    setIsPlaying(true);
+    await tapAt(1.5, () => firstBegin("one"));
+    expect(firstBegin("one")).toBe(1.5);
   });
 });
 

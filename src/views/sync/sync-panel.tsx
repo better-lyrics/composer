@@ -16,11 +16,9 @@ import { runHistoryShortcut } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { type SyncState, getNudgeAmount } from "@/utils/sync-helpers";
 import { isTypingTarget } from "@/utils/typing-target";
-import type { LaneClickTarget } from "@/views/sync/lane-click-target";
 import { buildLaneRows } from "@/views/sync/lane-rows";
-import { showFirstPauseToastOnce } from "@/views/sync/first-pause-toast";
 import { SyncEndScreen } from "@/views/sync/sync-end-screen";
-import { SyncEditList } from "@/views/sync/sync-edit-list";
+import { SyncLineList } from "@/views/sync/sync-line-list";
 import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
 import { SyncHeader } from "@/views/sync/sync-header";
 import { type RippleTarget, SyncLane } from "@/views/sync/sync-lane";
@@ -90,8 +88,6 @@ const SyncPanel: React.FC = () => {
     handleHoldTap,
     handleReset,
     handleStartSync,
-    handleJumpToLine,
-    handleJumpToWord,
     handleNudgeLastSynced,
     cursor,
     isComplete,
@@ -118,21 +114,11 @@ const SyncPanel: React.FC = () => {
     if (bounds) seekTo(Math.max(0, bounds.begin - useSettingsStore.getState().redoPreroll));
   });
 
-  const noticePause = useEffectEvent(() => {
-    if (audioElement?.ended) return;
-    if (activeTab === "sync" && syncState.isActive && !editMode) showFirstPauseToastOnce();
-  });
-
   useEffect(() => {
     if (!audioElement) return;
     const handleEnded = () => stopSessionAtSongEnd();
-    const handlePause = () => noticePause();
     audioElement.addEventListener("ended", handleEnded);
-    audioElement.addEventListener("pause", handlePause);
-    return () => {
-      audioElement.removeEventListener("ended", handleEnded);
-      audioElement.removeEventListener("pause", handlePause);
-    };
+    return () => audioElement.removeEventListener("ended", handleEnded);
   }, [audioElement]);
 
   const triggerRippleAtCurrentPosition = useCallback(() => {
@@ -204,12 +190,6 @@ const SyncPanel: React.FC = () => {
   const toggleEditFromKeyboard = useEffectEvent(() => {
     if (source && lines.length > 0) handleToggleEdit();
   });
-
-  const handleLaneJump = useCallback(
-    (targetLineIndex: number, target: NonNullable<LaneClickTarget>) =>
-      target.kind === "word" ? handleJumpToWord(targetLineIndex, target.wordIndex) : handleJumpToLine(targetLineIndex),
-    [handleJumpToWord, handleJumpToLine],
-  );
 
   const playingLine = useMemo(() => playingLineIndex(lines, currentTime), [lines, currentTime]);
 
@@ -304,7 +284,7 @@ const SyncPanel: React.FC = () => {
     [endHold],
   );
 
-  const lanePaused = !isPlaying && !countIn.countingIn;
+  const showLineList = (!isPlaying && !countIn.countingIn) || editMode;
   const showGestureCircles = !isComplete && !editMode && isPlaying;
 
   // The release handlers live on the hold circle, so a hold outliving that
@@ -418,21 +398,23 @@ const SyncPanel: React.FC = () => {
         handleStartSync={handleStartSync}
       />
 
-      {editMode ? (
-        <SyncEditList
+      {showLineList ? (
+        <SyncLineList
           lines={lines}
           displayLines={displayLines}
           groups={groups}
           granularity={granularity}
           currentTime={currentTime}
           playingLineIndex={playingLine}
+          cursorLineIndex={lineIndex}
+          editMode={editMode}
           isComplete={isComplete}
           skippedLineIds={skippedLineIds}
           skippedByLastLineId={skippedByLastLineId}
           handlers={syncHandlers}
           scrollContainerRef={scrollContainerRef}
         />
-      ) : isComplete && !lanePaused ? (
+      ) : isComplete ? (
         <SyncEndScreen syncComplete={syncComplete} />
       ) : (
         <SyncLane
@@ -442,10 +424,8 @@ const SyncPanel: React.FC = () => {
           granularity={granularity}
           isHolding={isHolding}
           placingLineIndex={placingName !== null ? lineIndex : null}
-          paused={lanePaused}
           ring={rippleTarget}
           onRingDone={clearRippleTarget}
-          onJump={handleLaneJump}
           aboveCurrent={countIn.dots}
         />
       )}

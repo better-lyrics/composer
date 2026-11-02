@@ -1,8 +1,6 @@
 import type { SyncGranularity } from "@/domain/line/sync-progress";
 import { cn } from "@/utils/cn";
-import type { LaneClickTarget } from "@/views/sync/lane-click-target";
 import type { LaneRow } from "@/views/sync/lane-rows";
-import { normalizeWheelDelta } from "@/views/timeline/timeline-wheel";
 import { type LaneRing, SyncLaneLine } from "@/views/sync/sync-lane-line";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
@@ -22,10 +20,8 @@ interface SyncLaneProps {
   granularity: SyncGranularity;
   isHolding: boolean;
   placingLineIndex: number | null;
-  paused: boolean;
   ring: RippleTarget | null;
   onRingDone: () => void;
-  onJump: (lineIndex: number, target: NonNullable<LaneClickTarget>) => void;
   aboveCurrent?: React.ReactNode;
 }
 
@@ -51,25 +47,20 @@ const OPACITY_CLASS_BY_PERCENT: Record<number, string> = {
   30: "opacity-30",
   40: "opacity-40",
   42: "opacity-42",
-  45: "opacity-45",
   60: "opacity-60",
   100: "opacity-100",
 };
 
 const FAR_AHEAD_OPACITY_PERCENT = 15;
 const FAR_BEHIND_DISTANCE = -2;
-const PAUSED_MIN_OPACITY_PERCENT = 45;
-const PAUSED_LIFT_MIN_DISTANCE = -6;
-const PAUSED_LIFT_MAX_DISTANCE = 8;
 const ANCHOR_HEIGHT_RATIO = 1 / 3;
 
 // -- Functions ----------------------------------------------------------------
 
-function rowOpacityClass(distance: number, paused: boolean): string {
+function rowOpacityClass(distance: number): string {
   const percent =
     OPACITY_PERCENT_BY_DISTANCE[distance] ?? (distance < FAR_BEHIND_DISTANCE ? 0 : FAR_AHEAD_OPACITY_PERCENT);
-  const liftsWhilePaused = paused && distance >= PAUSED_LIFT_MIN_DISTANCE && distance <= PAUSED_LIFT_MAX_DISTANCE;
-  return OPACITY_CLASS_BY_PERCENT[liftsWhilePaused ? Math.max(percent, PAUSED_MIN_OPACITY_PERCENT) : percent];
+  return OPACITY_CLASS_BY_PERCENT[percent];
 }
 
 function rowCentre(element: HTMLElement): number {
@@ -85,10 +76,8 @@ const SyncLane: React.FC<SyncLaneProps> = ({
   granularity,
   isHolding,
   placingLineIndex,
-  paused,
   ring,
   onRingDone,
-  onJump,
   aboveCurrent,
 }) => {
   const reducedMotion = useReducedMotion();
@@ -97,8 +86,6 @@ const SyncLane: React.FC<SyncLaneProps> = ({
   const rowElements = useRef(new Map<number, HTMLElement>());
   const rowRefs = useRef(new Map<number, RowRef>());
   const anchorLineIndex = useRef<number | null>(null);
-  const scrollOffset = useRef(0);
-  const previous = useRef({ lineIndex, paused });
 
   const visibleRows = useMemo(() => rows.filter((row) => !row.folded), [rows]);
   const anchorVisibleIndex = useMemo(() => {
@@ -132,18 +119,14 @@ const SyncLane: React.FC<SyncLaneProps> = ({
     const track = trackRef.current;
     const anchor = anchorLineIndex.current === null ? undefined : rowElements.current.get(anchorLineIndex.current);
     if (!host || !track || !anchor) return;
-    const y = host.clientHeight * ANCHOR_HEIGHT_RATIO - rowCentre(anchor) + scrollOffset.current;
+    const y = host.clientHeight * ANCHOR_HEIGHT_RATIO - rowCentre(anchor);
     track.style.transform = `translate3d(0, ${y}px, 0)`;
   }, []);
 
   useLayoutEffect(() => {
-    if (previous.current.lineIndex !== lineIndex || previous.current.paused !== paused) {
-      scrollOffset.current = 0;
-      previous.current = { lineIndex, paused };
-    }
     anchorLineIndex.current = visibleRows[anchorVisibleIndex]?.lineIndex ?? null;
     place();
-  }, [lineIndex, paused, visibleRows, anchorVisibleIndex, place]);
+  }, [visibleRows, anchorVisibleIndex, place]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -153,29 +136,8 @@ const SyncLane: React.FC<SyncLaneProps> = ({
     return () => observer.disconnect();
   }, [place]);
 
-  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-    const first = visibleRows[0];
-    const last = visibleRows.at(-1);
-    const firstElement = first && rowElements.current.get(first.lineIndex);
-    const lastElement = last && rowElements.current.get(last.lineIndex);
-    const anchor = anchorLineIndex.current === null ? undefined : rowElements.current.get(anchorLineIndex.current);
-    if (!firstElement || !lastElement || !anchor) return;
-    const centre = rowCentre(anchor);
-    const minOffset = centre - rowCentre(lastElement);
-    const maxOffset = centre - rowCentre(firstElement);
-    scrollOffset.current = Math.min(
-      Math.max(scrollOffset.current - normalizeWheelDelta(event.deltaY, event.deltaMode), minOffset),
-      maxOffset,
-    );
-    place();
-  };
-
   return (
-    <div
-      ref={hostRef}
-      className="relative flex-1 min-h-0 w-full overflow-hidden px-16"
-      onWheel={paused ? handleWheel : undefined}
-    >
+    <div ref={hostRef} className="relative flex-1 min-h-0 w-full overflow-hidden px-16">
       <div
         ref={trackRef}
         className="relative mx-auto flex max-w-240 flex-col gap-6.5 px-3 transition-transform duration-220 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none"
@@ -193,15 +155,12 @@ const SyncLane: React.FC<SyncLaneProps> = ({
                 granularity={granularity}
                 isHolding={isHolding}
                 isPlacing={row.lineIndex === placingLineIndex}
-                paused={paused}
                 ring={ring?.lineId === row.line.id ? laneRing : null}
                 onRingDone={onRingDone}
-                onJump={onJump}
                 aboveCurrent={aboveCurrent}
                 className={cn(
-                  "transition-[opacity,scale] ease-out motion-reduce:transition-none",
-                  paused ? "duration-150" : "duration-220",
-                  rowOpacityClass(distance, paused),
+                  "transition-[opacity,scale] duration-220 ease-out motion-reduce:transition-none",
+                  rowOpacityClass(distance),
                   distance < 0 && "scale-[0.82]",
                 )}
               />
