@@ -235,6 +235,9 @@ async function importProjectContents(contents: ProjectFileContents): Promise<str
         console.warn(LOG_PREFIX, "the project to replace no longer exists; importing as a new project instead", error);
         id = await importProjectAsNew(projectFile);
       }
+    } else if (conflict) {
+      const { unisonLyricId: _copyIsNotTheUnisonLyric, ...copy } = projectFile;
+      id = await importProjectAsNew(copy);
     } else {
       id = await importProjectAsNew(projectFile);
     }

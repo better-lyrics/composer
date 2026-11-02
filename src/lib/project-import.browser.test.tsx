@@ -88,6 +88,18 @@ describe("importProjectFile", () => {
     expect((await loadProjectRecord("a"))?.metadata.title).toBe("Alpha");
   });
 
+  it("keeps both without a second link to the same unison lyric", async () => {
+    await seedStoredProject("a", { project: { ...songTitled("Alpha"), unisonLyricId: "4821" } });
+    const project = storedProject({ ...songTitled("Alpha"), unisonLyricId: "4821" });
+    const file = new File([JSON.stringify(projectFileFrom("a", project))], "Alpha.composer");
+    const pending = importProjectFile(file);
+    await expect.poll(() => useChoiceStore.getState().request).not.toBeNull();
+    useChoiceStore.getState().answer("keep-both");
+    const id = await pending;
+    expect((await loadProjectRecord(id as string))?.unisonLyricId).toBeUndefined();
+    expect((await loadProjectRecord("a"))?.unisonLyricId).toBe("4821");
+  });
+
   describe("regressions", () => {
     it("regression: a file whose project was deleted imports as a new project, never under the deleted id", async () => {
       await seedStoredProject("gone", { project: songTitled("Gone") });

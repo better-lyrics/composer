@@ -227,13 +227,12 @@ describe("openProject", () => {
       expect((await loadProjectRecord("b"))?.metadata.title).toBe("Bravo");
     });
 
-    it("drops the unison link from the kept copy", async () => {
+    it("keeps the unison link on the kept copy, which replaces the deleted project", async () => {
       await seedStoredProject("a", { open: true, project: { ...songTitled("Alpha"), unisonLyricId: "4821" } });
       await restoreOpenProject();
       const keptId = await forkOpenProject();
-      expect((await loadProjectRecord(keptId))?.unisonLyricId).toBeUndefined();
-      expect((await loadProjectRecord("a"))?.unisonLyricId).toBe("4821");
-      expect(useProjectStore.getState().unisonLyricId).toBeNull();
+      expect((await loadProjectRecord(keptId))?.unisonLyricId).toBe("4821");
+      expect(useProjectStore.getState().unisonLyricId).toBe("4821");
     });
 
     it("moves the save status while it writes the kept copy", async () => {
