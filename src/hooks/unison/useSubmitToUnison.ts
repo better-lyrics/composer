@@ -1,9 +1,8 @@
 import { invalidateLyricWrite, unisonQueryKeys } from "@/hooks/unison/query-keys";
-import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import type { LyricsSubmission } from "@/lib/unison/api-types";
 import { linkVideo, saveRevision, submitLyrics } from "@/lib/unison/endpoints";
+import { captureLinkTarget, linkProjectToLyric } from "@/lib/unison/project-link";
 import type { RevisionInput } from "@/lib/unison/revision-types";
-import { useProjectStore } from "@/stores/project";
 import { showSubmittedToast, showUpdateSentToast } from "@/utils/unison-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
@@ -30,10 +29,6 @@ interface UnisonSend {
 const LOG_PREFIX = "[UnisonSubmit]";
 
 // -- Helpers -------------------------------------------------------------------
-
-function openProjectIdentity(): string {
-  return `${openProjectIdSnapshot() ?? ""}:${useProjectStore.getState().projectSession}`;
-}
 
 async function linkExtraVideos(lyricId: number, videoIds: readonly string[]): Promise<string[]> {
   const unlinked: string[] = [];
@@ -63,10 +58,10 @@ function useSubmitToUnison(keyId: string, onError: (error: unknown) => void): Un
     ]);
 
   const submitNew = async (submission: LyricsSubmission, videoIds: readonly string[]) => {
-    const startedIn = openProjectIdentity();
+    const linkTarget = captureLinkTarget();
     const { id } = await submitLyrics(submission);
-    // The request can outlive a project switch; only the project that sent it gets the link.
-    if (openProjectIdentity() === startedIn) useProjectStore.getState().linkUnisonLyric(String(id));
+    // The request can outlive a project switch; the link goes to the project that sent it.
+    await linkProjectToLyric(linkTarget, String(id));
     const unlinked = await linkExtraVideos(id, videoIds);
     showSubmittedToast(unlinked);
     await refresh(id);

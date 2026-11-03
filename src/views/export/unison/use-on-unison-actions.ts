@@ -4,6 +4,7 @@ import type { UnisonLyric } from "@/lib/unison/api-types";
 import { deleteLyrics, withdrawPendingRevision } from "@/lib/unison/endpoints";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
+import { unlinkProjectsFromLyric } from "@/lib/unison/project-link";
 import { pluralize } from "@/utils/pluralize";
 import { showEditWithdrawnToast, showRemovedFromUnisonToast, showUnisonFailureToast } from "@/utils/unison-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -62,9 +63,7 @@ function useOnUnisonActions(lyric: UnisonLyric, keyId: string): OnUnisonActions 
     if (!confirmed) return;
     await run(async () => {
       await deleteLyrics(lyric.id);
-      const project = useProjectStore.getState();
-      // The request can outlive a project switch; only the project that is still linked loses its link.
-      if (project.unisonLyricId === String(lyric.id)) project.unlinkUnisonLyric();
+      await unlinkProjectsFromLyric(String(lyric.id));
       showRemovedFromUnisonToast();
       await refresh();
     }, "Could not remove from Unison");
