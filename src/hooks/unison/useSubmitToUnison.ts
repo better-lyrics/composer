@@ -59,7 +59,6 @@ function useSubmitToUnison(keyId: string, onError: (error: unknown) => void): Un
   const refresh = (lyricId: number) =>
     Promise.all([
       invalidateLyricWrite(queryClient, lyricId, keyId),
-      queryClient.invalidateQueries({ queryKey: unisonQueryKeys.allVariants() }),
       queryClient.invalidateQueries({ queryKey: unisonQueryKeys.videoLinks(lyricId) }),
     ]);
 
