@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { openProject, restoreOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { loadProjectIndexEntry } from "@/lib/project-repository";
@@ -5,7 +6,6 @@ import { loadProjectRecord } from "@/lib/project-storage";
 import { captureLinkTarget, linkProjectToLyric, unlinkProjectsFromLyric } from "@/lib/unison/project-link";
 import { useProjectStore } from "@/stores/project";
 import { seedStoredProject, songTitled } from "@/test/projects";
-import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -33,6 +33,16 @@ describe("linkProjectToLyric", () => {
     expect((await loadProjectIndexEntry("a"))?.unisonLyricId).toBe("4217");
     expect(useProjectStore.getState().unisonLyricId).toBeNull();
     expect(openProjectIdSnapshot()).toBe("b");
+  });
+
+  it("regression: a submit that lands after switching away and back links the reopened project", async () => {
+    await seedTwoProjects();
+    const target = captureLinkTarget();
+    await openProject("b");
+    await openProject("a");
+    await linkProjectToLyric(target, "4217");
+    expect(useProjectStore.getState().unisonLyricId).toBe("4217");
+    expect((await loadProjectRecord("a"))?.unisonLyricId).toBe("4217");
   });
 });
 

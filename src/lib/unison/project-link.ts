@@ -34,15 +34,24 @@ async function linkProjectToLyric(target: LinkTarget, lyricId: string): Promise<
     useProjectStore.getState().linkUnisonLyric(lyricId);
     return;
   }
-  if (target.projectId) await writeSavedLink(target.projectId, lyricId);
+  if (!target.projectId) {
+    console.warn(LOG_PREFIX, `The project that sent lyric ${lyricId} closed before it was saved`);
+    return;
+  }
+  await writeSavedLink(target.projectId, lyricId);
+  if (openProjectIdSnapshot() === target.projectId) useProjectStore.getState().linkUnisonLyric(lyricId);
 }
 
 async function unlinkProjectsFromLyric(lyricId: string): Promise<void> {
   const openId = openProjectIdSnapshot();
   const project = useProjectStore.getState();
   if (project.unisonLyricId === lyricId) project.unlinkUnisonLyric();
-  const linked = (await listProjectIndex()).filter((entry) => entry.unisonLyricId === lyricId && entry.id !== openId);
-  await Promise.all(linked.map((entry) => writeSavedLink(entry.id, null)));
+  try {
+    const linked = (await listProjectIndex()).filter((entry) => entry.unisonLyricId === lyricId && entry.id !== openId);
+    await Promise.all(linked.map((entry) => writeSavedLink(entry.id, null)));
+  } catch (error) {
+    console.warn(LOG_PREFIX, `Could not unlink saved projects from lyric ${lyricId}`, error);
+  }
 }
 
 // -- Exports -------------------------------------------------------------------
