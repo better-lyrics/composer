@@ -23,12 +23,14 @@ const FILE_EXTENSIONS: Record<UnisonLyricsFormat, string> = { ttml: "ttml", lrc:
 // -- Helpers -------------------------------------------------------------------
 
 function unisonSongDetails(lyric: UnisonLyric): Partial<ProjectMetadata> {
+  const isrc = lyric.isrc ? normalizeIsrc(lyric.isrc) : undefined;
+  const language = lyric.language ? normalizeLanguageTag(lyric.language) : undefined;
   return {
     title: lyric.song,
-    artists: lyric.artist ? [lyric.artist] : [],
-    album: lyric.album ?? "",
-    isrc: lyric.isrc ? normalizeIsrc(lyric.isrc) : undefined,
-    language: lyric.language ? normalizeLanguageTag(lyric.language) : undefined,
+    ...(lyric.artist && { artists: [lyric.artist] }),
+    ...(lyric.album && { album: lyric.album }),
+    ...(isrc && { isrc }),
+    ...(language && { language }),
   };
 }
 
