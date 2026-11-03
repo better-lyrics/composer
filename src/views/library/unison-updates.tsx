@@ -72,8 +72,7 @@ const UpdateRow: React.FC<UpdateRowProps> = ({ update, project, now, onAct }) =>
 
 const UnisonUpdates: React.FC<UnisonUpdatesProps> = ({ items, projectByLyric, now, onOpenProject, className }) => {
   const headingId = useId();
-  const [previous] = useState(readLastSeen);
-  const [dismissed, setDismissed] = useState(false);
+  const [previous, setPrevious] = useState(readLastSeen);
   const updates = useMemo(
     () => (items ? updatesSince(previous, items).filter((update) => projectByLyric.has(update.lyricId)) : []),
     [items, previous, projectByLyric],
@@ -83,14 +82,18 @@ const UnisonUpdates: React.FC<UnisonUpdatesProps> = ({ items, projectByLyric, no
     if (items) writeLastSeen(settledLastSeen(previous, items));
   }, [previous, items]);
 
-  if (dismissed || updates.length === 0) return null;
+  if (updates.length === 0) return null;
 
-  const acknowledge = () => {
-    if (items) writeLastSeen(lastSeenFrom(items, previous));
+  const acknowledge = (lyricId?: string) => {
+    if (!items) return;
+    const seen = lyricId ? items.filter((item) => String(item.id) === lyricId) : items;
+    const next = lastSeenFrom(seen, previous);
+    setPrevious(next);
+    writeLastSeen(next);
   };
 
   const act = (update: UnisonUpdate, project: ProjectIndexEntry) => {
-    acknowledge();
+    acknowledge(update.lyricId);
     if (update.kind !== "declined") {
       onOpenProject(project.id);
       return;
@@ -115,10 +118,7 @@ const UnisonUpdates: React.FC<UnisonUpdatesProps> = ({ items, projectByLyric, no
           variant="ghost"
           label="Dismiss Unison updates"
           icon={<IconX aria-hidden="true" className="size-4" />}
-          onClick={() => {
-            acknowledge();
-            setDismissed(true);
-          }}
+          onClick={() => acknowledge()}
           className="ml-auto size-7"
         />
       </div>
