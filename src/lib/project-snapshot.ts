@@ -66,6 +66,7 @@ function currentSaveInput(): ProjectSaveInput {
     ttmlEditState: projectState.ttmlEditState,
     alignedTimings: projectState.alignedTimings,
     alignmentNoticeDismissed: projectState.alignmentNoticeDismissed,
+    unisonLyricId: projectState.unisonLyricId,
   };
 }
 

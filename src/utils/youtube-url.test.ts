@@ -52,6 +52,12 @@ describe("extractVideoId - valid inputs", () => {
     expect(extractVideoId(`https://www.youtube.com/live/${VALID_ID}`)).toBe(VALID_ID);
   });
 
+  it("extracts from a link pasted without a scheme", () => {
+    expect(extractVideoId(`youtube.com/watch?v=${VALID_ID}`)).toBe(VALID_ID);
+    expect(extractVideoId(`music.youtube.com/watch?v=${VALID_ID}&si=abc`)).toBe(VALID_ID);
+    expect(extractVideoId(`youtu.be/${VALID_ID}`)).toBe(VALID_ID);
+  });
+
   it("trims surrounding whitespace", () => {
     expect(extractVideoId(`  ${VALID_ID}  `)).toBe(VALID_ID);
     expect(extractVideoId(`\nhttps://youtu.be/${VALID_ID}\n`)).toBe(VALID_ID);

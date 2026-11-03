@@ -101,6 +101,14 @@ describe("duplicateProject", () => {
     expect((await loadProjectRecord("a"))?.metadata.title).toBe("Alpha");
   });
 
+  it("drops the unison link from the copy", async () => {
+    await seedStoredProject("a", { project: { ...songTitled("Alpha"), unisonLyricId: "4821" } });
+    const copyId = await duplicateProject("a");
+    expect((await loadProjectRecord(copyId))?.unisonLyricId).toBeUndefined();
+    expect((await loadProjectIndexEntry(copyId))?.unisonLyricId).toBeUndefined();
+    expect((await loadProjectRecord("a"))?.unisonLyricId).toBe("4821");
+  });
+
   describe("edge cases", () => {
     it("names the copy of an untitled project after the fallback", async () => {
       await seedStoredProject("a", { project: songTitled("") });

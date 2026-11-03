@@ -12,6 +12,7 @@ import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import type { WordTiming } from "@/domain/word/timing";
+import type { UnisonLinkActions, UnisonLinkState } from "@/stores/project/unison-link-slice";
 
 // -- Store-local Types --------------------------------------------------------
 
@@ -249,6 +250,7 @@ type ProjectState = MetadataState &
   SnapPointsState &
   BeatGridState &
   AlignmentReviewState &
+  UnisonLinkState &
   HistoryState;
 
 type ProjectActions = MetadataActions &
@@ -260,7 +262,8 @@ type ProjectActions = MetadataActions &
   HistoryActions &
   LineActions &
   GroupActions &
-  AlignmentReviewActions;
+  AlignmentReviewActions &
+  UnisonLinkActions;
 
 type ProjectStore = ProjectState & ProjectActions;
 

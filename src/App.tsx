@@ -39,6 +39,7 @@ import { EDITOR_PATH, screenForPath } from "@/utils/app-routes";
 import { EditorScreen } from "@/views/editor-screen";
 import { LibraryScreen } from "@/views/library/library-screen";
 import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
+import { UnisonScreen } from "@/views/unison/unison-screen";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { LazyMotion, domAnimation } from "motion/react";
 import { Activity, useCallback, useEffect, useEffectEvent, useState } from "react";
@@ -60,6 +61,8 @@ const AppShell: React.FC = () => {
   const navigate = useNavigate();
   const screen = screenForPath(pathname);
   const isEditor = screen === "editor";
+  const [unisonVisited, setUnisonVisited] = useState(screen === "unison");
+  if (screen === "unison" && !unisonVisited) setUnisonVisited(true);
   const setActiveTab = useProjectStore((s) => s.setActiveTab);
   const source = useAudioStore((s) => s.source);
   const helpOpen = useUIStore((s) => s.helpOpen);
@@ -168,14 +171,15 @@ const AppShell: React.FC = () => {
         initialQuery={helpLocation.query}
         onClose={closeHelp}
       />
-      <SettingsModal
-        key={`settings-${settingsSession}`}
-        isOpen={settingsOpen}
-        onClose={closeSettings}
-      />
-      <Activity mode={isEditor ? "hidden" : "visible"}>
+      <SettingsModal key={`settings-${settingsSession}`} isOpen={settingsOpen} onClose={closeSettings} />
+      <Activity mode={screen === "library" ? "visible" : "hidden"}>
         <LibraryScreen />
       </Activity>
+      {unisonVisited && (
+        <Activity mode={screen === "unison" ? "visible" : "hidden"}>
+          <UnisonScreen />
+        </Activity>
+      )}
       <Activity mode={isEditor ? "visible" : "hidden"}>
         <EditorScreen />
       </Activity>

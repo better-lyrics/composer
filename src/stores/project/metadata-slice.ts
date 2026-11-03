@@ -14,6 +14,7 @@ import { createLinesInitialState } from "@/stores/project/lines-slice";
 import { createSnapPointsInitialState } from "@/stores/project/snap-points-slice";
 import type { MetadataActions, MetadataState, ProjectState, ProjectStore } from "@/stores/project/types";
 import { createUiInitialState } from "@/stores/project/ui-slice";
+import { createUnisonLinkInitialState } from "@/stores/project/unison-link-slice";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import type { StateCreator } from "zustand";
 
@@ -45,6 +46,7 @@ function createProjectInitialState(): ProjectState {
     ...createSnapPointsInitialState(),
     ...createBeatGridInitialState(),
     ...createAlignmentReviewInitialState(),
+    ...createUnisonLinkInitialState(),
     ...createHistoryInitialState(),
   };
 }

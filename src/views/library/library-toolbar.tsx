@@ -23,6 +23,7 @@ interface LibraryToolbarProps {
   count: number;
   filter: LibraryFilter;
   counts: Record<LibraryFilter, number>;
+  showUnisonFilter: boolean;
   onFilterChange: (filter: LibraryFilter) => void;
   query: string;
   onQueryChange: (query: string) => void;
@@ -43,6 +44,7 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({
   count,
   filter,
   counts,
+  showUnisonFilter,
   onFilterChange,
   query,
   onQueryChange,
@@ -54,8 +56,13 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({
 }) => {
   const searchShortcut = useShortcutBindingsStore(() => formatShortcut(getEffectiveKeysArray(SEARCH_SHORTCUT_ID)));
   const filterOptions = useMemo(
-    () => LIBRARY_FILTERS.map((value) => ({ value, label: LIBRARY_FILTER_LABELS[value], count: counts[value] })),
-    [counts],
+    () =>
+      LIBRARY_FILTERS.flatMap((value) =>
+        value === "unison" && !showUnisonFilter
+          ? []
+          : [{ value, label: LIBRARY_FILTER_LABELS[value], count: counts[value] }],
+      ),
+    [counts, showUnisonFilter],
   );
   const sortLabel = LIBRARY_SORT_LABELS[sort];
 

@@ -1,4 +1,5 @@
 import { parseLamePriming, primingToCrop, stripLeading } from "@/audio/lame-priming";
+import { sha256Hex } from "@/utils/sha256-hex";
 
 const TARGET_SAMPLE_RATE = 44_100;
 const TARGET_CHANNELS = 2;
@@ -62,14 +63,6 @@ async function decodeFileToFloat32(file: File | Blob, opts: DecodeOptions = {}):
   }
   const stripped = applyStrip(channels);
   return { channels: stripped, sampleRate, numFrames: stripped[0]?.length ?? 0 };
-}
-
-async function sha256Hex(bytes: ArrayBuffer | Uint8Array): Promise<string> {
-  const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
 }
 
 async function hashFile(file: File | Blob): Promise<string> {

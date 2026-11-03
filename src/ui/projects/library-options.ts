@@ -18,6 +18,7 @@ const LIBRARY_FILTER_LABELS: Record<LibraryFilter, string> = {
   "not-synced": "Not synced",
   syncing: "Syncing",
   synced: "Synced",
+  unison: "On Unison",
 };
 
 // -- Options ------------------------------------------------------------------

@@ -1,5 +1,6 @@
 import { displayArtists, displayTitle, hasArtists } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
+import type { UnisonLibraryLyrics } from "@/domain/unison/project-unison-state";
 import { hasLyrics, progressDescription, projectStage, syncedPercent } from "@/domain/project/progress";
 import { IconButton } from "@/ui/icon-button";
 import type { MenuAnchor } from "@/ui/menu";
@@ -11,16 +12,22 @@ import { SelectCheckbox } from "@/ui/select-checkbox";
 import { cn } from "@/utils/cn";
 import { formatRelativeTime } from "@/utils/format-relative-time";
 import { AudioStatusLabel } from "@/views/library/audio-status-label";
+import { UnisonCell } from "@/views/library/unison-cell";
 import { IconDots } from "@tabler/icons-react";
 import { memo } from "react";
 
 // -- Types --------------------------------------------------------------------
+
+interface LibraryUnison {
+  lyrics: UnisonLibraryLyrics | null;
+}
 
 interface ProjectItemProps {
   project: ProjectIndexEntry;
   now: number;
   isSelected: boolean;
   isMenuOpen: boolean;
+  unison: LibraryUnison | null;
   onOpen: (id: string) => void;
   onToggleSelect: (id: string, range: boolean) => void;
   onOpenMenu: (id: string, anchor: MenuAnchor) => void;
@@ -28,16 +35,30 @@ interface ProjectItemProps {
 
 // -- Constants ----------------------------------------------------------------
 
-const ROW_GRID = cn(
-  "grid items-center gap-x-4",
-  "grid-cols-[40px_minmax(0,2fr)_minmax(0,1.2fr)_188px_136px_96px]",
-  "max-[1100px]:grid-cols-[40px_minmax(0,2fr)_172px_128px_96px]",
-);
-const ALBUM_COLUMN = "max-[1100px]:hidden";
+const NARROW_ROW_COLUMNS = "max-[1100px]:grid-cols-[40px_minmax(0,2fr)_172px_128px_96px]";
+const ROW_LAYOUTS = {
+  plain: {
+    grid: cn(
+      "grid items-center gap-x-4",
+      "grid-cols-[40px_minmax(0,2fr)_minmax(0,1.2fr)_188px_136px_96px]",
+      NARROW_ROW_COLUMNS,
+    ),
+    album: "max-[1100px]:hidden",
+  },
+  unison: {
+    grid: cn(
+      "grid items-center gap-x-4",
+      "grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_188px_minmax(0,1.5fr)_136px_96px]",
+      "max-[1280px]:grid-cols-[40px_minmax(0,2fr)_188px_minmax(0,1.5fr)_136px_96px]",
+      NARROW_ROW_COLUMNS,
+    ),
+    album: "max-[1280px]:hidden",
+  },
+} as const;
+const UNISON_COLUMN = "max-[1100px]:hidden";
 const ROW_MUTED = "text-(--muted)";
 const ROW_PLACEHOLDER = "text-composer-text-faint";
 const ROW_STYLES = cn(
-  ROW_GRID,
   "group/row relative h-14 pl-3 pr-13 rounded-[10px] select-none transition-colors duration-100",
   "[content-visibility:auto] [contain-intrinsic-size:auto_56px]",
   "hover:bg-(--layer-1) data-menu:bg-(--layer-1) data-selected:bg-composer-accent/14",
@@ -73,11 +94,13 @@ const ProjectRowContent: React.FC<ProjectItemProps> = ({
   now,
   isSelected,
   isMenuOpen,
+  unison,
   onOpen,
   onToggleSelect,
   onOpenMenu,
 }) => {
   const title = displayTitle(project.title);
+  const layout = unison ? ROW_LAYOUTS.unison : ROW_LAYOUTS.plain;
   return (
     <li
       data-project-id={project.id}
@@ -87,7 +110,7 @@ const ProjectRowContent: React.FC<ProjectItemProps> = ({
         event.preventDefault();
         onOpenMenu(project.id, { kind: "point", x: event.clientX, y: event.clientY, within: event.currentTarget });
       }}
-      className={ROW_STYLES}
+      className={cn(layout.grid, ROW_STYLES)}
     >
       <div className="relative size-10">
         <ProjectArt
@@ -126,10 +149,11 @@ const ProjectRowContent: React.FC<ProjectItemProps> = ({
           {displayArtists(project.artists)}
         </div>
       </div>
-      <div className={cn("truncate text-[13px]", project.album ? ROW_MUTED : ROW_PLACEHOLDER, ALBUM_COLUMN)}>
+      <div className={cn("truncate text-[13px]", project.album ? ROW_MUTED : ROW_PLACEHOLDER, layout.album)}>
         {project.album || "No album"}
       </div>
       <RowProgress project={project} />
+      {unison && <UnisonCell project={project} lyrics={unison.lyrics} className={UNISON_COLUMN} />}
       <div className="min-w-0">
         <AudioStatusLabel project={project} />
       </div>
@@ -152,5 +176,5 @@ const ProjectRow = memo(ProjectRowContent);
 
 // -- Exports ------------------------------------------------------------------
 
-export { ProjectRow, ROW_GRID, ALBUM_COLUMN };
-export type { ProjectItemProps };
+export { ProjectRow, ROW_LAYOUTS, UNISON_COLUMN };
+export type { LibraryUnison, ProjectItemProps };

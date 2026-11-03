@@ -2,6 +2,7 @@ import type { Agent } from "@/domain/agent/model";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { withOffset } from "@/domain/tempo/grid-edits";
 import { applySavedProject } from "@/lib/apply-saved-project";
+import { buildSavedProject } from "@/lib/persistence";
 import { buildSaveInput, currentSaveInput } from "@/lib/project-snapshot";
 import type { SavedProject } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
@@ -16,13 +17,14 @@ const FILE_AGENTS: Agent[] = [
 
 function projectFile(overrides: Partial<SavedProject> = {}): SavedProject {
   return {
-    version: 3,
+    ...buildSavedProject(
+      createProjectSaveInput({
+        agents: FILE_AGENTS,
+        lines: [createLine({ id: "b1", text: "file line", groupId: "gb", instanceIdx: 0, templateLineIdx: 0 })],
+        groups: [createGroup({ id: "gb", label: "File group" })],
+      }),
+    ),
     savedAt: 0,
-    ...createProjectSaveInput({
-      agents: FILE_AGENTS,
-      lines: [createLine({ id: "b1", text: "file line", groupId: "gb", instanceIdx: 0, templateLineIdx: 0 })],
-      groups: [createGroup({ id: "gb", label: "File group" })],
-    }),
     ...overrides,
   };
 }
@@ -153,6 +155,48 @@ describe("applySavedProject", () => {
 
       expect(useProjectStore.getState().beatGrid).toBeNull();
     });
+  });
+});
+
+describe("unison link", () => {
+  beforeEach(resetAllStores);
+
+  it("round-trips through save and restore", async () => {
+    useProjectStore.getState().setLinesWithHistory([createLine({ id: "a1", text: "line" })]);
+    useProjectStore.getState().linkUnisonLyric("4821");
+    expect(useProjectStore.getState().isDirty).toBe(true);
+    const saved = buildSaveInput();
+    if (!saved) throw new Error("expected a save input");
+    await resetAllStores();
+
+    applySavedProject(JSON.parse(JSON.stringify(buildSavedProject(saved))), "storage");
+
+    expect(useProjectStore.getState().unisonLyricId).toBe("4821");
+    expect(useProjectStore.getState().isDirty).toBe(false);
+  });
+
+  it("keeps the link when the project opens from a file", () => {
+    applySavedProject(projectFile({ unisonLyricId: "4821" }), "file");
+    expect(useProjectStore.getState().unisonLyricId).toBe("4821");
+  });
+
+  it("saves no field for an unlinked project", () => {
+    useProjectStore.getState().linkUnisonLyric("4821");
+    useProjectStore.getState().unlinkUnisonLyric();
+    expect("unisonLyricId" in buildSavedProject(currentSaveInput())).toBe(false);
+  });
+
+  it("opens an older project with no link unlinked", () => {
+    useProjectStore.getState().linkUnisonLyric("4821");
+    applySavedProject(projectFile(), "storage");
+    expect(useProjectStore.getState().unisonLyricId).toBeNull();
+  });
+
+  it("reads a malformed id as no link", () => {
+    for (const junk of ["12a", "", " 12", 42]) {
+      applySavedProject(JSON.parse(JSON.stringify({ ...projectFile(), unisonLyricId: junk })), "file");
+      expect(useProjectStore.getState().unisonLyricId).toBeNull();
+    }
   });
 });
 

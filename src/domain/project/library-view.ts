@@ -5,7 +5,7 @@ import { normalizeProjectQuery, projectMatchesQuery } from "@/domain/project/sea
 
 // -- Types --------------------------------------------------------------------
 
-type LibraryFilter = "all" | ProjectStage;
+type LibraryFilter = "all" | ProjectStage | "unison";
 
 interface LibraryViewOptions {
   filter: LibraryFilter;
@@ -15,12 +15,19 @@ interface LibraryViewOptions {
 
 // -- Constants ----------------------------------------------------------------
 
-const LIBRARY_FILTERS: readonly LibraryFilter[] = ["all", "not-synced", "syncing", "synced"];
+const LIBRARY_FILTERS: readonly LibraryFilter[] = ["all", "not-synced", "syncing", "synced", "unison"];
 
 // -- Derivations --------------------------------------------------------------
 
 function matchesFilter(entry: ProjectIndexEntry, filter: LibraryFilter): boolean {
-  return filter === "all" || projectStage(entry) === filter;
+  if (filter === "all") return true;
+  if (filter === "unison") return entry.unisonLyricId !== undefined;
+  return projectStage(entry) === filter;
+}
+
+// The Unison filter only exists while signed in to Unison.
+function shownLibraryFilter(chosen: LibraryFilter, signedInToUnison: boolean): LibraryFilter {
+  return chosen === "unison" && !signedInToUnison ? "all" : chosen;
 }
 
 function libraryProjects(entries: readonly ProjectIndexEntry[], options: LibraryViewOptions): ProjectIndexEntry[] {
@@ -31,10 +38,11 @@ function libraryProjects(entries: readonly ProjectIndexEntry[], options: Library
 }
 
 function filterCounts(entries: readonly ProjectIndexEntry[]): Record<LibraryFilter, number> {
-  const counts: Record<LibraryFilter, number> = { all: 0, "not-synced": 0, syncing: 0, synced: 0 };
+  const counts: Record<LibraryFilter, number> = { all: 0, "not-synced": 0, syncing: 0, synced: 0, unison: 0 };
   for (const entry of entries) {
     counts.all += 1;
     counts[projectStage(entry)] += 1;
+    if (entry.unisonLyricId !== undefined) counts.unison += 1;
   }
   return counts;
 }
@@ -49,5 +57,5 @@ function resumeProject(entries: readonly ProjectIndexEntry[]): ProjectIndexEntry
 
 // -- Exports ------------------------------------------------------------------
 
-export { LIBRARY_FILTERS, filterCounts, libraryProjects, resumeProject };
+export { LIBRARY_FILTERS, filterCounts, libraryProjects, resumeProject, shownLibraryFilter };
 export type { LibraryFilter };

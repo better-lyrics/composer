@@ -8,6 +8,7 @@ const ProjectGrid: React.FC<ProjectCollectionProps> = ({
   now,
   selectedIds,
   menuProjectId,
+  unison,
   onOpen,
   onToggleSelect,
   onOpenMenu,
@@ -24,6 +25,7 @@ const ProjectGrid: React.FC<ProjectCollectionProps> = ({
         now={now}
         isSelected={selectedIds.has(project.id)}
         isMenuOpen={menuProjectId === project.id}
+        unison={unison}
         onOpen={onOpen}
         onToggleSelect={onToggleSelect}
         onOpenMenu={onOpenMenu}

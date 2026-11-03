@@ -1,4 +1,5 @@
 import { useExportTtml } from "@/hooks/use-export-ttml";
+import { useUnisonSession } from "@/hooks/useUnisonSession";
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -8,12 +9,14 @@ import { AlignmentReviewNotice } from "@/views/export/alignment-review-notice";
 import { applyEditsToProject } from "@/views/export/apply-edits-feedback";
 import { ExportCodePane } from "@/views/export/export-code-pane";
 import { ExportHeader } from "@/views/export/export-header";
-import { MetadataPanel } from "@/views/export/metadata-panel";
+import { ExportSidePanel } from "@/views/export/export-side-panel";
 import { useProjectFileInput } from "@/views/export/project-menu-button";
 import { useAlignmentReview } from "@/views/export/use-alignment-review";
 import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
 import { IconFolderOpen } from "@tabler/icons-react";
-import { useCallback, useState } from "react";
+import type { UnisonExportSource } from "@/views/export/unison/submit-card-shell";
+import { UnisonPanel } from "@/views/export/unison/unison-panel";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
@@ -43,6 +46,7 @@ const ExportPanel: React.FC = () => {
   } = useExportTtml();
 
   const projectSession = useProjectStore((state) => state.projectSession);
+  const signedInToUnison = useUnisonSession() !== null;
   const [copied, setCopied] = useState(false);
   const [editingSession, setEditingSession] = useState<EditingSession | null>(null);
   const session = editingSession?.projectSession === projectSession ? editingSession : null;
@@ -108,6 +112,31 @@ const ExportPanel: React.FC = () => {
     [generatedTtml, hasConflict, setEditState],
   );
 
+  const unisonSource = useMemo(
+    (): UnisonExportSource => ({
+      content: exportContent,
+      isEdited: editedContent !== null,
+      videoId: youtubeVideoId,
+      durationSeconds: duration,
+      lineCount,
+      syncedLineCount,
+      review: alignment.review,
+      reviewInTimeline: alignment.reviewInTimeline,
+      regenerate: handleRegenerate,
+    }),
+    [
+      exportContent,
+      editedContent,
+      youtubeVideoId,
+      duration,
+      lineCount,
+      syncedLineCount,
+      alignment.review,
+      alignment.reviewInTimeline,
+      handleRegenerate,
+    ],
+  );
+
   const importAction = (
     <>
       {projectFile.input}
@@ -149,8 +178,9 @@ const ExportPanel: React.FC = () => {
         onEdit={handleEdit}
         onCopy={handleCopy}
         onDownload={handleDownload}
+        downloadIsPrimary={!signedInToUnison}
       />
-      <div className="grid flex-1 min-h-0 grid-cols-[minmax(0,1fr)_380px] grid-rows-[minmax(0,1fr)]">
+      <div className="grid flex-1 min-h-0 grid-cols-[minmax(0,1fr)_400px] grid-rows-[minmax(0,1fr)]">
         <ExportCodePane
           content={exportContent}
           generatedTtml={generatedTtml}
@@ -170,7 +200,7 @@ const ExportPanel: React.FC = () => {
             />
           }
         />
-        <MetadataPanel />
+        <ExportSidePanel unison={<UnisonPanel source={unisonSource} />} />
       </div>
     </div>
   );

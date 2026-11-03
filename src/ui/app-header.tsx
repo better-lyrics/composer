@@ -1,10 +1,13 @@
+import { HEADER_ICON_STYLES } from "@/ui/header-icon-styles";
 import { IconButton } from "@/ui/icon-button";
 import { ProjectBreadcrumb } from "@/ui/projects/project-breadcrumb";
 import { TabBar } from "@/ui/tab-bar";
+import { TabStrip } from "@/ui/tab-strip";
 import { ThemeMenu } from "@/ui/theme-menu";
-import { type AppScreen, LIBRARY_PATH } from "@/utils/app-routes";
+import { HeaderAccount } from "@/ui/unison/account-menu";
+import { type AppScreen, LIBRARY_PATH, UNISON_PATH } from "@/utils/app-routes";
 import { IconHelp, IconRoute, IconSettings } from "@tabler/icons-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 // -- Types --------------------------------------------------------------------
 
@@ -17,6 +20,19 @@ interface AppHeaderActions {
 interface AppHeaderProps extends AppHeaderActions {
   screen: AppScreen;
 }
+
+type BrowseScreen = Exclude<AppScreen, "editor">;
+
+// -- Constants ----------------------------------------------------------------
+
+const BROWSE_TABS = [
+  { id: "library", label: "Projects" },
+  { id: "unison", label: "Unison" },
+] as const satisfies readonly { id: BrowseScreen; label: string }[];
+
+const BROWSE_PATHS: Record<BrowseScreen, string> = { library: LIBRARY_PATH, unison: UNISON_PATH };
+
+const BROWSE_NAV_ATTRIBUTES = { "aria-label": "Projects and Unison" };
 
 // -- Sub-components -------------------------------------------------------------
 
@@ -41,14 +57,26 @@ const LibraryBrand: React.FC = () => (
   </Link>
 );
 
-// -- Component ----------------------------------------------------------------
+const BrowseSwitcher: React.FC<{ screen: BrowseScreen }> = ({ screen }) => {
+  const navigate = useNavigate();
+  return (
+    <TabStrip
+      tabs={BROWSE_TABS}
+      active={screen}
+      onSelect={(next) => {
+        if (next !== screen) navigate(BROWSE_PATHS[next]);
+      }}
+      navAttributes={BROWSE_NAV_ATTRIBUTES}
+    />
+  );
+};
 
-const HEADER_ICON_STYLES = "size-9 rounded-[10px] text-(--muted) hover:text-composer-text hover:bg-(--layer-2)";
+// -- Component ----------------------------------------------------------------
 
 const AppHeader: React.FC<AppHeaderProps> = ({ screen, onSettingsOpen, onHelpOpen, onTourStart }) => (
   <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 h-14 shrink-0 pl-4 pr-3 select-none">
     {screen === "editor" ? <EditorBrand /> : <LibraryBrand />}
-    {screen === "editor" ? <TabBar /> : <span />}
+    {screen === "editor" ? <TabBar /> : <BrowseSwitcher screen={screen} />}
     <div className="flex items-center justify-end gap-1 min-w-0">
       <ThemeMenu />
       <IconButton
@@ -72,6 +100,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ screen, onSettingsOpen, onHelpOpe
         onClick={onHelpOpen}
         className={HEADER_ICON_STYLES}
       />
+      <span aria-hidden="true" className="w-px h-5 mx-1.5 bg-(--divider)" />
+      <HeaderAccount />
     </div>
   </header>
 );

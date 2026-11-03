@@ -59,12 +59,12 @@ const SnapLatch: React.FC = () => {
         </PopBody>
       )}
       {view === "beat-grid" && (
-        <div onKeyDown={backOnEscape}>
+        <div onKeyDown={backOnEscape} className="flex flex-col min-h-0">
           <BeatGridPopoverBody onBack={() => setView("sources")} />
         </div>
       )}
       {view === "snap-distance" && (
-        <div onKeyDown={backOnEscape}>
+        <div onKeyDown={backOnEscape} className="flex flex-col min-h-0">
           <SnapDistanceMenu onBack={() => setView("sources")} />
         </div>
       )}

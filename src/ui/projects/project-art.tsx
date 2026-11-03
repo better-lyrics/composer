@@ -1,5 +1,6 @@
 import { cn } from "@/utils/cn";
 import { IconMusic } from "@tabler/icons-react";
+import { useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -9,6 +10,7 @@ interface ProjectArtProps {
   src?: string;
   size: ProjectArtSize;
   className?: string;
+  rejectNaturalWidth?: number;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -37,27 +39,42 @@ const ICON_SIZES: Record<ProjectArtSize, string> = {
 
 // -- Component ----------------------------------------------------------------
 
-const ProjectArt: React.FC<ProjectArtProps> = ({ src, size, className }) => (
-  <span
-    className={cn(
-      "relative grid place-items-center shrink-0 overflow-hidden bg-(--layer-2)",
-      "after:absolute after:inset-0 after:rounded-[inherit] after:shadow-[inset_0_0_0_1px_var(--edge)] after:pointer-events-none",
-      FRAME_SIZES[size],
-      className,
-    )}
-  >
-    {src ? (
-      <img src={src} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
-    ) : (
-      <IconMusic
-        aria-hidden="true"
-        stroke={LIGHT_STROKE_SIZES.has(size) ? 1.5 : 2}
-        className={cn("text-composer-text opacity-50", ICON_SIZES[size])}
-      />
-    )}
-  </span>
-);
+const ProjectArt: React.FC<ProjectArtProps> = ({ src, size, className, rejectNaturalWidth }) => {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const shownSrc = src && src !== failedSrc ? src : undefined;
+  return (
+    <span
+      className={cn(
+        "relative grid place-items-center shrink-0 overflow-hidden bg-(--layer-2)",
+        "after:absolute after:inset-0 after:rounded-[inherit] after:shadow-[inset_0_0_0_1px_var(--edge)] after:pointer-events-none",
+        FRAME_SIZES[size],
+        className,
+      )}
+    >
+      {shownSrc ? (
+        <img
+          src={shownSrc}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailedSrc(shownSrc)}
+          onLoad={(event) => {
+            if (event.currentTarget.naturalWidth === rejectNaturalWidth) setFailedSrc(shownSrc);
+          }}
+          className="size-full object-cover"
+        />
+      ) : (
+        <IconMusic
+          aria-hidden="true"
+          stroke={LIGHT_STROKE_SIZES.has(size) ? 1.5 : 2}
+          className={cn("text-composer-text opacity-50", ICON_SIZES[size])}
+        />
+      )}
+    </span>
+  );
+};
 
 // -- Exports ------------------------------------------------------------------
 
 export { ProjectArt };
+export type { ProjectArtSize };

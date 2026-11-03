@@ -19,6 +19,7 @@ const EMPTY_FILTER_MESSAGES: Record<Exclude<LibraryFilter, "all">, string> = {
   "not-synced": "Every project has some timing",
   syncing: "No projects in progress",
   synced: "No synced projects yet",
+  unison: "No projects on Unison yet",
 };
 
 // -- Component ----------------------------------------------------------------
@@ -43,7 +44,7 @@ const LibraryEmpty: React.FC<LibraryEmptyProps> = ({ query, filter, onClearSearc
     content = (
       <EmptyState
         message={EMPTY_FILTER_MESSAGES[filter]}
-        hint="Try another filter."
+        hint={filter === "unison" ? "Submit a synced project from its Export tab." : "Try another filter."}
         action={
           <Button size="sm" onClick={onShowAll} className="mt-3">
             Show all

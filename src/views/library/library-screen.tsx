@@ -1,6 +1,12 @@
 import { storedAudioBytesTotal } from "@/domain/project/audio-status";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
-import { type LibraryFilter, filterCounts, libraryProjects, resumeProject } from "@/domain/project/library-view";
+import {
+  type LibraryFilter,
+  filterCounts,
+  libraryProjects,
+  resumeProject,
+  shownLibraryFilter,
+} from "@/domain/project/library-view";
 import { useProjectIndex } from "@/hooks/useProjectIndex";
 import { createProject } from "@/lib/open-project";
 import { useSettingsStore } from "@/stores/settings";
@@ -12,6 +18,7 @@ import { BulkBar } from "@/views/library/bulk-bar";
 import { LibraryBody, type LibraryIndexState } from "@/views/library/library-body";
 import { LibraryFooter } from "@/views/library/library-footer";
 import { LibraryToolbar } from "@/views/library/library-toolbar";
+import { MostWantedShelf } from "@/views/library/most-wanted-shelf";
 import { NewSongPanel } from "@/views/library/new-song-panel";
 import { type ProjectCollectionProps, ProjectListColumns } from "@/views/library/project-list";
 import { ProjectMenu } from "@/views/library/project-menu";
@@ -21,6 +28,8 @@ import { ResumeCard } from "@/views/library/resume-card";
 import { useLibraryActions } from "@/views/library/use-library-actions";
 import { useLibrarySelection } from "@/views/library/use-library-selection";
 import { useLibraryShortcuts } from "@/views/library/use-library-shortcuts";
+import { useLibraryUnison } from "@/views/library/use-library-unison";
+import { SignedInUnisonUpdates } from "@/views/library/unison-updates";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
@@ -72,7 +81,7 @@ const LibraryScreen: React.FC = () => {
   const view = useSettingsStore((state) => state.libraryView);
   const setSetting = useSettingsStore((state) => state.set);
   const [sort, setSort] = useState(() => useSettingsStore.getState().librarySort);
-  const [filter, setFilter] = useState<LibraryFilter>("all");
+  const [chosenFilter, setFilter] = useState<LibraryFilter>("all");
   const [query, setQuery] = useState("");
   const [menu, setMenu] = useState<OpenMenu | null>(null);
   const shownMenu = useLastPresent(menu);
@@ -84,6 +93,8 @@ const LibraryScreen: React.FC = () => {
   const actions = useLibraryActions();
 
   const live = entries ?? NO_PROJECTS;
+  const unison = useLibraryUnison(live);
+  const filter = shownLibraryFilter(chosenFilter, unison.signedIn);
   const visible = useMemo(() => libraryProjects(live, { filter, query, sort }), [live, filter, query, sort]);
   const visibleIds = useMemo(() => visible.map((project) => project.id), [visible]);
   const counts = useMemo(() => filterCounts(live), [live]);
@@ -168,6 +179,7 @@ const LibraryScreen: React.FC = () => {
     now: fetchedAt,
     selectedIds,
     menuProjectId: menu?.project.id ?? null,
+    unison: unison.unison,
     onOpen: handleOpen,
     onToggleSelect: toggle,
     onOpenMenu: openMenu,
@@ -186,6 +198,15 @@ const LibraryScreen: React.FC = () => {
             {resume && <ResumeCard project={resume} now={fetchedAt} onOpen={actions.open} className={RISE} />}
             <NewSongPanel className={cn(RISE, "[animation-delay:60ms]")} />
           </div>
+          <SignedInUnisonUpdates
+            signedIn={unison.signedIn}
+            items={unison.items}
+            projectByLyric={unison.projectByLyric}
+            now={fetchedAt}
+            onOpenProject={actions.open}
+            className={cn(RISE, "[animation-delay:90ms]")}
+          />
+          <MostWantedShelf className={cn(RISE, "[animation-delay:90ms]")} />
           <section
             aria-label="All projects"
             className={cn(RISE, "[animation-delay:120ms] flex flex-col flex-1 min-h-90 select-none")}
@@ -194,6 +215,7 @@ const LibraryScreen: React.FC = () => {
               count={live.length}
               filter={filter}
               counts={counts}
+              showUnisonFilter={unison.signedIn}
               onFilterChange={setFilter}
               query={query}
               onQueryChange={setQuery}
@@ -203,7 +225,7 @@ const LibraryScreen: React.FC = () => {
               view={view}
               onViewChange={(next) => setSetting("libraryView", next)}
             />
-            {view === "list" && <ProjectListColumns />}
+            {view === "list" && <ProjectListColumns showUnison={unison.signedIn} />}
             <Scroll className="flex-1 min-h-0 -ml-3 -mr-13">
               <div className="pl-3 pr-13 pb-4">
                 <LibraryBody

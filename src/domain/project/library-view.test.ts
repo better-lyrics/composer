@@ -13,7 +13,7 @@ const LIBRARY = [
   entry("empty", { lineCount: 0, updatedAt: 1 }),
   entry("unsynced", { updatedAt: 2 }),
   entry("syncing", { syncedLineCount: 2, updatedAt: 3, artists: ["M83"] }),
-  entry("synced", { syncedLineCount: 4, updatedAt: 4 }),
+  entry("synced", { syncedLineCount: 4, updatedAt: 4, unisonLyricId: "42" }),
 ];
 
 function ids(entries: ProjectIndexEntry[]): string[] {
@@ -34,6 +34,14 @@ describe("libraryProjects", () => {
     expect(ids(libraryProjects(LIBRARY, { ...options, filter: "not-synced" }))).toEqual(["unsynced", "empty"]);
     expect(ids(libraryProjects(LIBRARY, { ...options, filter: "syncing" }))).toEqual(["syncing"]);
     expect(ids(libraryProjects(LIBRARY, { ...options, filter: "synced" }))).toEqual(["synced"]);
+  });
+
+  it("filters to projects linked to Unison", () => {
+    const linked = [...LIBRARY, entry("linked-draft", { updatedAt: 5, unisonLyricId: "7" })];
+    expect(ids(libraryProjects(linked, { filter: "unison", query: "", sort: "edited" }))).toEqual([
+      "linked-draft",
+      "synced",
+    ]);
   });
 
   it("combines the filter with the search", () => {
@@ -58,11 +66,11 @@ describe("libraryProjects", () => {
 
 describe("filterCounts", () => {
   it("counts each stage and the total in one pass", () => {
-    expect(filterCounts(LIBRARY)).toEqual({ all: 4, "not-synced": 2, syncing: 1, synced: 1 });
+    expect(filterCounts(LIBRARY)).toEqual({ all: 4, "not-synced": 2, syncing: 1, synced: 1, unison: 1 });
   });
 
   describe("invariants", () => {
-    it("the stage counts always add up to all", () => {
+    it("the stage counts always add up to all, with Unison counted on top", () => {
       const counts = filterCounts(LIBRARY);
       expect(counts["not-synced"] + counts.syncing + counts.synced).toBe(counts.all);
       expect(Object.keys(counts).toSorted()).toEqual([...LIBRARY_FILTERS].toSorted());
