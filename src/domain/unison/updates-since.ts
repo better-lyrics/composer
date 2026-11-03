@@ -76,7 +76,17 @@ function lastSeenFrom(current: readonly UnisonMineSnapshot[], previous: LastSeen
   return next;
 }
 
+// A lyric with an update keeps its old entry until the notice is acted on; the rest advance.
+function settledLastSeen(previous: LastSeen | null, current: readonly UnisonMineSnapshot[]): LastSeen {
+  const next: LastSeen = { ...previous };
+  for (const lyric of current) {
+    const seen = previous?.[String(lyric.id)];
+    if (!seen || lyricUpdates(seen, lyric).length === 0) next[String(lyric.id)] = lastSeenLyric(lyric);
+  }
+  return next;
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { lastSeenFrom, updatesSince };
+export { lastSeenFrom, settledLastSeen, updatesSince };
 export type { LastSeen, LastSeenLyric, UnisonMineSnapshot, UnisonUpdate, UnisonUpdateKind };

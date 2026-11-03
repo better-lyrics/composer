@@ -1,7 +1,13 @@
 import { displayTitle } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import type { ProjectTab } from "@/domain/project/tab";
-import { type UnisonUpdate, type UnisonUpdateKind, lastSeenFrom, updatesSince } from "@/domain/unison/updates-since";
+import {
+  type UnisonUpdate,
+  type UnisonUpdateKind,
+  lastSeenFrom,
+  settledLastSeen,
+  updatesSince,
+} from "@/domain/unison/updates-since";
 import type { UnisonMineItem } from "@/lib/unison/api-types";
 import { readLastSeen, writeLastSeen } from "@/lib/unison/last-seen";
 import { Button } from "@/ui/button";
@@ -74,7 +80,7 @@ const UnisonUpdates: React.FC<UnisonUpdatesProps> = ({ items, projectByLyric, no
   );
 
   useEffect(() => {
-    if (previous === null && items) writeLastSeen(lastSeenFrom(items));
+    if (items) writeLastSeen(settledLastSeen(previous, items));
   }, [previous, items]);
 
   if (dismissed || updates.length === 0) return null;

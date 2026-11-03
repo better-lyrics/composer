@@ -1,4 +1,10 @@
-import { type LastSeen, type UnisonMineSnapshot, lastSeenFrom, updatesSince } from "@/domain/unison/updates-since";
+import {
+  type LastSeen,
+  type UnisonMineSnapshot,
+  lastSeenFrom,
+  settledLastSeen,
+  updatesSince,
+} from "@/domain/unison/updates-since";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -121,5 +127,33 @@ describe("lastSeenFrom", () => {
     const previous = structuredClone(SEEN);
     lastSeenFrom([mine(1, { revNo: 9 })], previous);
     expect(previous).toEqual(SEEN);
+  });
+});
+
+describe("settledLastSeen", () => {
+  it("records every lyric on a first visit", () => {
+    expect(settledLastSeen(null, [mine(1, { revNo: 2 })])).toEqual(lastSeenFrom([mine(1, { revNo: 2 })]));
+  });
+
+  it("keeps the old entry of a lyric with an update to report", () => {
+    const settled = settledLastSeen(SEEN, [mine(1, { revNo: 2 })]);
+    expect(settled["1"]).toEqual(SEEN["1"]);
+    expect(updatesSince(settled, [mine(1, { revNo: 2 })]).map((update) => update.kind)).toEqual(["approved"]);
+  });
+
+  describe("regressions", () => {
+    it("regression: a lyric submitted after the first visit reports its later approval", () => {
+      const pending = mine(9, { revNo: 1, pending: { revNo: 2 } });
+      const settled = settledLastSeen(SEEN, [pending]);
+      expect(updatesSince(settled, [mine(9, { revNo: 2 })]).map((update) => update.kind)).toEqual(["approved"]);
+    });
+
+    it("regression: an edit sent for review after the first visit reports its approval", () => {
+      const settled = settledLastSeen(SEEN, [
+        mine(2, { revNo: 3, pending: { revNo: 5 }, lastRejected: { revNo: 2, reviewNote: null } }),
+      ]);
+      const approved = mine(2, { revNo: 5, lastRejected: { revNo: 2, reviewNote: null } });
+      expect(updatesSince(settled, [approved]).map((update) => update.kind)).toEqual(["approved"]);
+    });
   });
 });
