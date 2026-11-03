@@ -1,3 +1,4 @@
+import { UNISON_VARIANT_CAP } from "@/domain/unison/submit-checks";
 import { useRevisionPreview } from "@/hooks/unison/useRevisionPreview";
 import { useSubmitToUnison } from "@/hooks/unison/useSubmitToUnison";
 import { useUnisonLyric } from "@/hooks/unison/useUnisonLyric";
@@ -16,7 +17,7 @@ import {
 } from "@/views/export/unison/submit-card-shell";
 import { isSessionEndedError, submitFailure } from "@/views/export/unison/submit-errors";
 import { type SubmitIdentity, SubmitFooter } from "@/views/export/unison/submit-footer";
-import { UNISON_VARIANT_CAP, YourVersions } from "@/views/export/unison/your-versions";
+import { YourVersions } from "@/views/export/unison/your-versions";
 import { IconBolt, IconHourglassHigh, IconStack2 } from "@tabler/icons-react";
 import { useCallback, useId, useMemo } from "react";
 

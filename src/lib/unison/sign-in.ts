@@ -4,6 +4,7 @@ import type { UnisonSessionResponse, UnisonSignedSessionBody } from "@/lib/uniso
 import { createSession, fetchChallenge } from "@/lib/unison/endpoints";
 import { ExtensionAuthError, requestSignedSession } from "@/lib/unison/extension-port";
 import { type StoredUnisonSession, saveUnisonSession } from "@/lib/unison/session";
+import { sha256Hex } from "@/utils/sha256-hex";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -42,8 +43,7 @@ function toBase64(buffer: ArrayBuffer): string {
 
 async function publicKeyId(jwk: JsonWebKey): Promise<string> {
   const canonical = canonicalJson({ crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y });
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical));
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return sha256Hex(new TextEncoder().encode(canonical));
 }
 
 async function importSigningKey(identity: IdentityFile): Promise<CryptoKey> {

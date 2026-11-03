@@ -1,3 +1,4 @@
+import { UNISON_VARIANT_CAP } from "@/domain/unison/submit-checks";
 import { UnisonError } from "@/lib/unison/client";
 import { unisonFailureReason } from "@/utils/unison-toast";
 
@@ -8,7 +9,7 @@ type SubmitFailure = { kind: "session-ended" } | { kind: "message"; text: string
 // -- Constants -----------------------------------------------------------------
 
 const SUBMIT_ERROR_COPY: Record<string, string> = {
-  VARIANT_CAP_REACHED: "You already have 3 versions of this song. Update one instead.",
+  VARIANT_CAP_REACHED: `You already have ${UNISON_VARIANT_CAP} versions of this song. Update one instead.`,
   TTML_FORMATTED: "Unison takes TTML without line breaks or padding between words. Regenerate, then try again.",
   TTML_MALFORMED: "Unison could not read this TTML. Regenerate, then try again.",
   TTML_ZERO_DURATION_WORDS: "Most words start and end at the same time. Give each word its own timing, then try again.",

@@ -44,6 +44,8 @@ interface SubmitChecks {
 
 // Unison's `config.validation.duration`, in whole seconds.
 const UNISON_DURATION_RANGE = { min: 1, max: 60 * 60 };
+// Unison's `submission.maxVariantsPerUserPerVideo`.
+const UNISON_VARIANT_CAP = 3;
 
 // -- Functions -----------------------------------------------------------------
 
@@ -92,4 +94,4 @@ function submitChecks(input: SubmitCheckInput): SubmitChecks {
 // -- Exports -------------------------------------------------------------------
 
 export type { SubmitCheck, SubmitCheckInput, SubmitChecks, SubmitCheckStatus, SubmitMode };
-export { submitChecks, submitDurationSeconds };
+export { submitChecks, submitDurationSeconds, UNISON_VARIANT_CAP };

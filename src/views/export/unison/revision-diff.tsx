@@ -2,6 +2,7 @@ import { revisionDiffLines } from "@/domain/unison/revision-changes";
 import { useRevisionDiff } from "@/hooks/unison/useRevisions";
 import type { RevisionDiff } from "@/lib/unison/revision-types";
 import { DiffList } from "@/ui/unison/diff-list";
+import { cn } from "@/utils/cn";
 import { InlineError, SkeletonBar, SkeletonRows } from "@/views/unison/view-states";
 import { useMemo } from "react";
 
@@ -36,7 +37,7 @@ function emptyDiffMessage(diff: RevisionDiff, isLive: boolean): string {
 // -- Components ----------------------------------------------------------------
 
 const DiffSkeleton: React.FC = () => (
-  <div className={`${DIFF_FRAME_STYLES} py-1.5`}>
+  <div className={cn(DIFF_FRAME_STYLES, "py-1.5")}>
     <SkeletonRows count={6} rowClassName="flex px-3 py-1.5">
       <SkeletonBar className="w-3/4" />
     </SkeletonRows>
@@ -59,7 +60,7 @@ const RevisionDiffSection: React.FC<RevisionDiffSectionProps> = ({ lyricId, revI
         (lines.length > 0 ? (
           <DiffList lines={lines} className="flex-1 min-h-0" />
         ) : (
-          <p className={`${DIFF_FRAME_STYLES} px-3 py-4 text-sm text-composer-text-secondary`}>
+          <p className={cn(DIFF_FRAME_STYLES, "px-3 py-4 text-sm text-composer-text-secondary")}>
             {emptyDiffMessage(query.data, isLive)}
           </p>
         ))}

@@ -1,4 +1,5 @@
 import { formatScore } from "@/domain/unison/lyric-status";
+import { UNISON_VARIANT_CAP } from "@/domain/unison/submit-checks";
 import type { UnisonVariant } from "@/lib/unison/api-types";
 import { Button } from "@/ui/button";
 import { unisonSyncLabel } from "@/ui/unison/sync-type-label";
@@ -14,11 +15,6 @@ interface YourVersionsProps {
   reasonId: string;
   onUpdate: (lyricId: number) => void;
 }
-
-// -- Constants -----------------------------------------------------------------
-
-// Unison's `submission.maxVariantsPerUserPerVideo`.
-const UNISON_VARIANT_CAP = 3;
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -86,4 +82,4 @@ const YourVersions: React.FC<YourVersionsProps> = ({ versions, capReached, reaso
 
 // -- Exports -------------------------------------------------------------------
 
-export { UNISON_VARIANT_CAP, YourVersions };
+export { YourVersions };
