@@ -64,6 +64,7 @@ function useManageVideos(lyric: UnisonLyric, songSeconds: number): ManageVideos 
     } finally {
       setBusy(false);
       void queryClient.invalidateQueries({ queryKey: unisonQueryKeys.videoLinks(lyric.id) });
+      void queryClient.invalidateQueries({ queryKey: unisonQueryKeys.lyricVideoSuggestions(lyric.id) });
     }
   };
 
