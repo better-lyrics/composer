@@ -2,6 +2,7 @@ import { Button, type ButtonProps } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
 import { keepSpaceForFocusedControl } from "@/ui/keep-space-for-focused-control";
+import { Scroll } from "@/ui/scroll";
 import { type Icon, IconChevronLeft, IconChevronRight, IconHandFinger } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -99,13 +100,15 @@ const PopBody: React.FC<{ focusOnEnter?: keyof typeof FOCUS_ON_ENTER; children: 
   focusOnEnter = "first-control",
   children,
 }) => (
-  <div
-    ref={FOCUS_ON_ENTER[focusOnEnter]}
-    onKeyDown={keepSpaceForFocusedControl}
-    className="w-95 p-1.5 text-[13px] leading-[1.3] text-(--label)"
-  >
-    {children}
-  </div>
+  <Scroll className="min-h-0">
+    <div
+      ref={FOCUS_ON_ENTER[focusOnEnter]}
+      onKeyDown={keepSpaceForFocusedControl}
+      className="w-95 p-1.5 text-[13px] leading-[1.3] text-(--label)"
+    >
+      {children}
+    </div>
+  </Scroll>
 );
 
 const PopGroup: React.FC<{ label?: string; className?: string; children: React.ReactNode }> = ({
