@@ -1,4 +1,4 @@
-import { openProject, restoreOpenProject } from "@/lib/open-project";
+import { forkOpenProject, openProject, restoreOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { loadProjectIndexEntry } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
@@ -43,6 +43,16 @@ describe("linkProjectToLyric", () => {
     await linkProjectToLyric(target, "4217");
     expect(useProjectStore.getState().unisonLyricId).toBe("4217");
     expect((await loadProjectRecord("a"))?.unisonLyricId).toBe("4217");
+  });
+
+  it("regression: a submit that lands after a fork links the project it came from, not the fork", async () => {
+    await seedTwoProjects();
+    const target = captureLinkTarget();
+    const forkId = await forkOpenProject();
+    await linkProjectToLyric(target, "4217");
+    expect((await loadProjectRecord("a"))?.unisonLyricId).toBe("4217");
+    expect(openProjectIdSnapshot()).toBe(forkId);
+    expect(useProjectStore.getState().unisonLyricId).toBeNull();
   });
 });
 

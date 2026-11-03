@@ -30,7 +30,8 @@ function captureLinkTarget(): LinkTarget {
 }
 
 async function linkProjectToLyric(target: LinkTarget, lyricId: string): Promise<void> {
-  if (useProjectStore.getState().projectSession === target.session) {
+  const sameProject = target.projectId === undefined || openProjectIdSnapshot() === target.projectId;
+  if (sameProject && useProjectStore.getState().projectSession === target.session) {
     useProjectStore.getState().linkUnisonLyric(lyricId);
     return;
   }

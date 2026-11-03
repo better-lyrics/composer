@@ -11,6 +11,7 @@ const unisonQueryKeys = {
   mineForLibrary: (keyId: string, linkedIds: readonly string[]) =>
     [UNISON_QUERY_ROOT, "mine", keyId, "library", linkedIds] as const,
   mostWanted: () => [UNISON_QUERY_ROOT, "most-wanted"] as const,
+  allSearches: () => [UNISON_QUERY_ROOT, "search"] as const,
   search: (query: string) => [UNISON_QUERY_ROOT, "search", query] as const,
   lyric: (id: number) => [UNISON_QUERY_ROOT, "lyric", id] as const,
   allVariants: () => [UNISON_QUERY_ROOT, "variants"] as const,
@@ -33,7 +34,7 @@ const UNISON_STALE_TIME_MS = 60_000;
 
 // -- Invalidation --------------------------------------------------------------
 
-// Every write to a lyric changes it, the account's list, the song's variants, revisions, update preview and wanted list.
+// Every write to a lyric changes it, the account's list, the song's variants, revisions, update preview, wanted list and search.
 function invalidateLyricWrite(queryClient: QueryClient, lyricId: number, keyId: string): Promise<unknown> {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: unisonQueryKeys.lyric(lyricId) }),
@@ -42,6 +43,7 @@ function invalidateLyricWrite(queryClient: QueryClient, lyricId: number, keyId: 
     queryClient.invalidateQueries({ queryKey: unisonQueryKeys.revisionPreviews(lyricId) }),
     queryClient.invalidateQueries({ queryKey: unisonQueryKeys.allVariants() }),
     queryClient.invalidateQueries({ queryKey: unisonQueryKeys.mostWanted() }),
+    queryClient.invalidateQueries({ queryKey: unisonQueryKeys.allSearches() }),
   ]);
 }
 

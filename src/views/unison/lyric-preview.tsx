@@ -120,7 +120,7 @@ const LyricPreview: React.FC<LyricPreviewProps> = ({ result, ownKeyId }) => {
           variant="primary"
           size="lg"
           hasIcon
-          disabled={!lyric.data || preview?.status !== "readable" || opening}
+          disabled={!lyric.data || !entries || preview?.status !== "readable" || opening}
           onClick={() => lyric.data && open(lyric.data)}
         >
           <IconFileImport aria-hidden="true" className="size-4" />

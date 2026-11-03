@@ -19,8 +19,8 @@ const NOT_FOUND_STATUS = 404;
 
 function useLinkedLyric(unisonLyricId: string): LinkedLyric {
   const query = useUnisonLyric(Number(unisonLyricId));
-  if (query.data) return { kind: "found", lyric: query.data, status: unisonStatus(query.data) };
   if (query.error instanceof UnisonError && query.error.status === NOT_FOUND_STATUS) return { kind: "removed" };
+  if (query.data) return { kind: "found", lyric: query.data, status: unisonStatus(query.data) };
   if (query.error) return { kind: "failed", error: query.error, retry: () => void query.refetch() };
   return { kind: "loading" };
 }

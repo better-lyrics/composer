@@ -71,7 +71,7 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
 
   const openAsProject = useCallback(
     (item: UnisonMineItem) => {
-      if (opening.current) return;
+      if (opening.current || !entries) return;
       opening.current = true;
       setOpeningId(item.id);
       fetchUnisonLyric(queryClient, item.id)
@@ -85,7 +85,7 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
           setOpeningId(null);
         });
     },
-    [queryClient, navigate],
+    [queryClient, navigate, entries],
   );
 
   if (mine.isError) return <InlineError error={mine.error} onRetry={() => void mine.refetch()} />;
