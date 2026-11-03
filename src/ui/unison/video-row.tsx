@@ -1,4 +1,3 @@
-import { IconCircleCheck, IconHelpCircle, IconStack2 } from "@tabler/icons-react";
 import { type ChosenVideo, suggestionFacts, type VideoFacts } from "@/domain/unison/video-links";
 import type { SuggestedVideo } from "@/lib/unison/api-types";
 import { ProjectArt } from "@/ui/projects/project-art";
@@ -6,6 +5,7 @@ import { Tooltip } from "@/ui/tooltip";
 import { YouTubeMusicLink } from "@/ui/unison/youtube-music-link";
 import { cn } from "@/utils/cn";
 import { YOUTUBE_PLACEHOLDER_THUMBNAIL_WIDTH, youTubeThumbnailUrl } from "@/utils/youtube-music-url";
+import { IconCircleCheck, IconHelpCircle, IconStack2 } from "@tabler/icons-react";
 
 // -- Types ---------------------------------------------------------------------
 

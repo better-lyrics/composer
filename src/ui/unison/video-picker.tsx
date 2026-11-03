@@ -1,5 +1,3 @@
-import { IconPlus, IconX } from "@tabler/icons-react";
-import { useId, useRef, useState } from "react";
 import { quotedTitle } from "@/domain/project/display-title";
 import {
   type ChosenVideo,
@@ -15,6 +13,8 @@ import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { AddVideoField } from "@/ui/unison/add-video-field";
 import { ChosenVideoRow, MatchMark, VideoRow } from "@/ui/unison/video-row";
+import { IconPlus, IconX } from "@tabler/icons-react";
+import { useId, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -173,5 +173,5 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
 
 // -- Exports -------------------------------------------------------------------
 
-export type { MainVideo };
 export { VideoPicker };
+export type { MainVideo };

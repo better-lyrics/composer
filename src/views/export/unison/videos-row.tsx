@@ -1,4 +1,3 @@
-import { IconBrandYoutube } from "@tabler/icons-react";
 import { displayArtists } from "@/domain/project/display-title";
 import { submitDurationSeconds } from "@/domain/unison/submit-checks";
 import { linkedVideoCount, VIDEO_LENGTH_TOLERANCE_SECONDS, VIDEO_LINK_LIMIT } from "@/domain/unison/video-links";
@@ -12,6 +11,7 @@ import { VideoPicker } from "@/ui/unison/video-picker";
 import { formatTime } from "@/utils/format-time";
 import { pluralize } from "@/utils/pluralize";
 import { useManageVideos } from "@/views/export/unison/use-manage-videos";
+import { IconBrandYoutube } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 

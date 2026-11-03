@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { openProject, restoreOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { loadProjectIndexEntry } from "@/lib/project-repository";
@@ -6,6 +5,7 @@ import { loadProjectRecord } from "@/lib/project-storage";
 import { captureLinkTarget, linkProjectToLyric, unlinkProjectsFromLyric } from "@/lib/unison/project-link";
 import { useProjectStore } from "@/stores/project";
 import { seedStoredProject, songTitled } from "@/test/projects";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 

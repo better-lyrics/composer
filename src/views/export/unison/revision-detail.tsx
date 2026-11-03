@@ -1,4 +1,3 @@
-import { useId } from "react";
 import { isSealed } from "@/domain/unison/lyric-status";
 import {
   type MakeLiveRefusal,
@@ -12,6 +11,7 @@ import { Button } from "@/ui/button";
 import { RevisionDiffSection } from "@/views/export/unison/revision-diff";
 import { RevisionStatusLabel } from "@/views/export/unison/revision-list";
 import type { RevisionActions } from "@/views/export/unison/use-revision-actions";
+import { useId } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 

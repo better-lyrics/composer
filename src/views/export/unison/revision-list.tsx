@@ -1,10 +1,10 @@
-import { type Icon, IconCircleCheck, IconCircleX, IconHourglassHigh } from "@tabler/icons-react";
-import { useRef } from "react";
 import { type HistoryStatus, historyStatus, revisionDate, revisionSummaryLine } from "@/domain/unison/revision-history";
 import type { RevisionSummary } from "@/lib/unison/revision-types";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
 import { SkeletonBar, SkeletonRows } from "@/views/unison/view-states";
+import { type Icon, IconCircleCheck, IconCircleX, IconHourglassHigh } from "@tabler/icons-react";
+import { useRef } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 
