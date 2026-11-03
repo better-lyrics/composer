@@ -33,10 +33,7 @@ function syllableLabel(moved: number): string {
 }
 
 function textWithout(parts: readonly [string, string][], skipped: "+" | "-"): string {
-  return parts
-    .filter(([op]) => op !== skipped)
-    .map(([, text]) => text)
-    .join("");
+  return parts.flatMap(([op, text]) => (op === skipped ? [] : [text])).join("");
 }
 
 function diffLinesOfRow(row: RevisionDiffRow): DiffLine[] {

@@ -78,9 +78,10 @@ const UnisonUpdates: React.FC<UnisonUpdatesProps> = ({ items, projectByLyric, no
     [items, previous, projectByLyric],
   );
 
+  // Another tab may have acted on a notice since this one mounted, so settle against what is stored now.
   useEffect(() => {
-    if (items) writeLastSeen(settledLastSeen(previous, items));
-  }, [previous, items]);
+    if (items) writeLastSeen(settledLastSeen(readLastSeen(), items));
+  }, [items]);
 
   if (updates.length === 0) return null;
 

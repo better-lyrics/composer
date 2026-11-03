@@ -1,4 +1,4 @@
-import { ProjectArt } from "@/ui/projects/project-art";
+import { ProjectArt, type ProjectArtSize } from "@/ui/projects/project-art";
 import { YOUTUBE_PLACEHOLDER_THUMBNAIL_WIDTH, youTubeThumbnailUrl } from "@/utils/youtube-music-url";
 
 // -- Types ---------------------------------------------------------------------
@@ -6,7 +6,7 @@ import { YOUTUBE_PLACEHOLDER_THUMBNAIL_WIDTH, youTubeThumbnailUrl } from "@/util
 interface UnisonSongArtProps {
   videoId: string;
   artworkUrl?: string | null;
-  size: "row" | "dialog";
+  size: ProjectArtSize;
 }
 
 // -- Component -----------------------------------------------------------------

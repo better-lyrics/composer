@@ -22,8 +22,7 @@ const MAX_ZERO_LENGTH_RATIO = 0.2;
 
 function directText(element: Element): string {
   return [...element.childNodes]
-    .filter((node) => node.nodeType === node.TEXT_NODE)
-    .map((node) => node.textContent ?? "")
+    .flatMap((node) => (node.nodeType === node.TEXT_NODE ? [node.textContent ?? ""] : []))
     .join("");
 }
 

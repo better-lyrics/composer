@@ -4,8 +4,6 @@ import { isUnisonNotFound } from "@/lib/unison/client";
 import { fetchVariants } from "@/lib/unison/endpoints";
 import { useQuery } from "@tanstack/react-query";
 
-// -- Constants -----------------------------------------------------------------
-
 // -- Functions -----------------------------------------------------------------
 
 // Unison answers 404 when a video has no lyrics yet.

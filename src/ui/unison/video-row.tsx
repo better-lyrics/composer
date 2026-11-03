@@ -1,10 +1,9 @@
 import { type ChosenVideo, suggestionFacts, type VideoFacts } from "@/domain/unison/video-links";
 import type { SuggestedVideo } from "@/lib/unison/api-types";
-import { ProjectArt } from "@/ui/projects/project-art";
 import { Tooltip } from "@/ui/tooltip";
+import { UnisonSongArt } from "@/ui/unison/unison-song-art";
 import { YouTubeMusicLink } from "@/ui/unison/youtube-music-link";
 import { cn } from "@/utils/cn";
-import { YOUTUBE_PLACEHOLDER_THUMBNAIL_WIDTH, youTubeThumbnailUrl } from "@/utils/youtube-music-url";
 import { IconCircleCheck, IconHelpCircle, IconStack2 } from "@tabler/icons-react";
 
 // -- Types ---------------------------------------------------------------------
@@ -56,18 +55,6 @@ const MatchMark: React.FC<{ level: MatchLevel }> = ({ level }) => {
   );
 };
 
-const VideoArt: React.FC<{ videoId: string; artworkUrl?: string | null }> = ({ videoId, artworkUrl }) =>
-  artworkUrl ? (
-    <ProjectArt key={artworkUrl} src={artworkUrl} size="md" />
-  ) : (
-    <ProjectArt
-      key={videoId}
-      src={youTubeThumbnailUrl(videoId)}
-      size="md"
-      rejectNaturalWidth={YOUTUBE_PLACEHOLDER_THUMBNAIL_WIDTH}
-    />
-  );
-
 const FactsLine: React.FC<{ facts: VideoFacts }> = ({ facts }) => (
   <>
     {[facts.artist, facts.kind].filter(Boolean).join(" ・ ")}
@@ -82,7 +69,7 @@ const FactsLine: React.FC<{ facts: VideoFacts }> = ({ facts }) => (
 
 const VideoRow: React.FC<VideoRowProps> = ({ videoId, title, artworkUrl, tag, facts, note, error, trailing }) => (
   <li className="flex min-w-0 items-center gap-2.5 min-h-9 px-1 rounded-lg">
-    <VideoArt videoId={videoId} artworkUrl={artworkUrl} />
+    <UnisonSongArt videoId={videoId} artworkUrl={artworkUrl} size="md" />
     <div className="flex min-w-0 flex-1 flex-col">
       <YouTubeMusicLink videoId={videoId} label={title} />
       {error ? (

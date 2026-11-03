@@ -77,3 +77,4 @@ const ProjectArt: React.FC<ProjectArtProps> = ({ src, size, className, rejectNat
 // -- Exports ------------------------------------------------------------------
 
 export { ProjectArt };
+export type { ProjectArtSize };

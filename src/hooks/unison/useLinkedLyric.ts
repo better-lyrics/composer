@@ -11,8 +11,6 @@ type LinkedLyric =
   | { kind: "removed" }
   | { kind: "found"; lyric: UnisonLyric; status: UnisonStatus };
 
-// -- Constants -----------------------------------------------------------------
-
 // -- Hook ----------------------------------------------------------------------
 
 function useLinkedLyric(unisonLyricId: string): LinkedLyric {
