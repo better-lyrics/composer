@@ -19,7 +19,7 @@ import { persist } from "zustand/middleware";
 type GranularityDefault = "word" | "line";
 type LinkedDivergenceAction = "ask" | "apply" | "detach";
 type PreviewRenderer = "braccato" | "am-lyrics";
-type VocalModelVariant = "fp16" | "fp32";
+type VocalModelVariant = "fp16" | "fp32" | "roformer";
 type BooleanSettingKey = {
   [K in keyof SettingsState]: SettingsState[K] extends boolean ? K : never;
 }[keyof SettingsState];

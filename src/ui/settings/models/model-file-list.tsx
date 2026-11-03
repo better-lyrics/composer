@@ -5,10 +5,11 @@ import { useAlignmentStore } from "@/stores/alignment";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { type SettingId, settingEntry } from "@/stores/settings-catalog";
 import { useSeparationStore } from "@/stores/separation";
-import { useSettingsStore } from "@/stores/settings";
+import { type VocalModelVariant, useSettingsStore } from "@/stores/settings";
 import { ModelFileRow } from "@/ui/settings/models/model-file-row";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
+import { VOCAL_MODEL_LABELS } from "@/ui/settings/vocal-model-setting";
 import { type Icon, IconMetronome, IconMicrophone2, IconWand } from "@tabler/icons-react";
 import { toast } from "sonner";
 
@@ -40,27 +41,42 @@ function useModelKindBusy(kind: ModelKind): boolean {
 
 // -- Components ---------------------------------------------------------------
 
+// The RoFormer's graphs are one model, so they share a row.
+function groupByVariant(files: readonly ModelFile[]): [VocalModelVariant | undefined, ModelFile[]][] {
+  const groups = new Map<string, [VocalModelVariant | undefined, ModelFile[]]>();
+  for (const file of files) {
+    const variant = vocalVariantOfFile(file.url);
+    const key = variant ?? file.url;
+    const group = groups.get(key) ?? [variant, []];
+    group[1].push(file);
+    groups.set(key, group);
+  }
+  return [...groups.values()];
+}
+
 const VocalModelRows: React.FC<{ files: readonly ModelFile[]; busy: boolean }> = ({ files, busy }) => {
   const selectedVariant = useSettingsStore((s) => s.vocalModelVariant);
-  return files.map((file) => {
-    const variant = vocalVariantOfFile(file.url);
-    return (
-      <ModelFileRow
-        key={file.url}
-        icon={IconMicrophone2}
-        label={`${variant ?? "Vocal"} model file`}
-        files={[file]}
-        totalBytes={file.bytes}
-        busy={busy}
-        note={
-          variant === selectedVariant
-            ? "Downloaded"
-            : `Downloaded. Not used while ${settingEntry("vocalModelVariant").label} is ${selectedVariant}`
-        }
-        onRemove={() => removeFiles("vocal", [file.url])}
-      />
-    );
-  });
+  return groupByVariant(files).map(([variant, group]) => (
+    <ModelFileRow
+      key={group[0].url}
+      icon={IconMicrophone2}
+      label={variant === "roformer" ? `${VOCAL_MODEL_LABELS.roformer} model` : `${variant ?? "Vocal"} model file`}
+      files={group}
+      totalBytes={modelFilesBytes(group)}
+      busy={busy}
+      note={
+        variant === selectedVariant
+          ? "Downloaded"
+          : `Downloaded. Not used while ${settingEntry("vocalModelVariant").label} is ${VOCAL_MODEL_LABELS[selectedVariant]}`
+      }
+      onRemove={() =>
+        removeFiles(
+          "vocal",
+          group.map((file) => file.url),
+        )
+      }
+    />
+  ));
 };
 
 const ModelFileList: React.FC<{ kind: ModelKind }> = ({ kind }) => {

@@ -1,4 +1,3 @@
-import { VOCAL_MODEL_APPROX_BYTES } from "@/audio/separation/model-registry";
 import { SPECTRUM_CONTRAST } from "@/domain/spectrum/settings";
 import { useSettingsStore } from "@/stores/settings";
 import type { SettingId } from "@/stores/settings-catalog";
@@ -27,6 +26,7 @@ import { KEEP_YOUTUBE_AUDIO_OPTIONS, STORAGE_LIMIT_OPTIONS } from "@/ui/settings
 import { StorageProtectionSetting } from "@/ui/settings/storage/storage-protection-setting";
 import { StorageUsageSetting } from "@/ui/settings/storage/storage-usage-setting";
 import { ThemeSettings } from "@/ui/settings/theme/theme-settings";
+import { VocalModelSetting } from "@/ui/settings/vocal-model-setting";
 import {
   ANALYSIS_WINDOW_OPTIONS,
   FREQUENCY_SCALE_OPTIONS,
@@ -36,7 +36,6 @@ import {
   SPECTRUM_SOURCE_OPTIONS,
   SPECTRUM_TOP_OPTIONS,
 } from "@/ui/spectrum-options";
-import { formatWholeMegabytes } from "@/utils/format-file-size";
 import { MAX_ZOOM, MIN_ZOOM, ZOOM_STEP, useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
@@ -98,22 +97,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   showLevelMeters: TOGGLE,
   vocalModelFiles: { kind: "custom", Component: VocalModelFilesSetting },
   autoSeparateOnImport: TOGGLE,
-  vocalModelVariant: {
-    kind: "select",
-    options: [
-      {
-        value: "fp16",
-        label: "fp16",
-        badge: "Recommended",
-        detail: `${formatWholeMegabytes(VOCAL_MODEL_APPROX_BYTES.fp16)} · Uses fp32 without WebGPU shader-f16`,
-      },
-      {
-        value: "fp32",
-        label: "fp32",
-        detail: `${formatWholeMegabytes(VOCAL_MODEL_APPROX_BYTES.fp32)} · Full precision`,
-      },
-    ],
-  },
+  vocalModelVariant: { kind: "custom", Component: VocalModelSetting },
   alignmentModelFiles: { kind: "custom", Component: AlignmentModelFilesSetting },
   alignmentModelId: { kind: "custom", Component: AlignmentModelSetting },
   keepAlignmentModelLoaded: TOGGLE,

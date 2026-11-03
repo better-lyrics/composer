@@ -5,14 +5,13 @@ import { runChunkPipeline } from "@/audio/separation/chunk-pipeline";
 import { type Chunk, chunkCount, stitchChunks } from "@/audio/separation/chunker";
 import { denormalizeDemucsOutput, normalizeForDemucs } from "@/audio/separation/demucs-postprocess";
 import { fetchAndCacheModel, hasCachedModel, readCachedModel } from "@/audio/separation/model-cache";
-import { type ModelDescriptor, getModelDescriptor } from "@/audio/separation/model-registry";
+import { type HtdemucsVariant, type ModelDescriptor, getModelDescriptor } from "@/audio/separation/model-registry";
 import { describeError, log } from "@/audio/separation/worker-log";
-import type { VocalModelVariant } from "@/stores/settings";
 
 declare const self: DedicatedWorkerGlobalScope;
 
 type InboundMessage =
-  | { type: "init"; variant: VocalModelVariant; forceWasm?: boolean; profile?: boolean }
+  | { type: "init"; variant: HtdemucsVariant; forceWasm?: boolean; profile?: boolean }
   | { type: "process"; channels: Float32Array[]; totalFrames: number }
   | { type: "cancel" };
 
@@ -68,7 +67,7 @@ async function loadModelBytes(descriptor: ModelDescriptor): Promise<ArrayBuffer 
   }
 }
 
-async function handleInit(variant: VocalModelVariant, forceWasm?: boolean, profile?: boolean) {
+async function handleInit(variant: HtdemucsVariant, forceWasm?: boolean, profile?: boolean) {
   cancelled = false;
   profileGpu = profile ?? false;
 

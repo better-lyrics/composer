@@ -15,6 +15,8 @@ interface SelectOption {
   detail?: string;
   /** A short tag after the label, such as "Recommended". */
   badge?: string;
+  /** Listed but not pickable; the detail line says why. */
+  disabled?: boolean;
 }
 
 interface SelectProps {
@@ -153,14 +155,15 @@ const OptionRow: React.FC<OptionRowProps> = ({
     role="option"
     aria-selected={selected}
     tabIndex={tabStop ? 0 : -1}
+    aria-disabled={option.disabled || undefined}
     data-active={active || undefined}
     {...itemProps}
     className={cn(
       "flex items-center gap-2 w-full px-2 rounded-lg text-[13px] text-left transition-colors data-active:bg-(--layer-1) data-active:text-composer-text",
       option.detail ? "min-h-8.5 py-1.5" : "h-8.5",
-      selected
-        ? "bg-(--layer-2) text-composer-text"
-        : "cursor-pointer text-(--label) hover:bg-(--layer-1) hover:text-composer-text",
+      selected && "bg-(--layer-2) text-composer-text",
+      !selected && option.disabled && "cursor-not-allowed text-(--muted)",
+      !selected && !option.disabled && "cursor-pointer text-(--label) hover:bg-(--layer-1) hover:text-composer-text",
     )}
   >
     <span className="flex flex-1 min-w-0">{renderOption ? renderOption(option) : <OptionLabel option={option} />}</span>
@@ -239,6 +242,7 @@ const Select: React.FC<SelectProps> = ({
                   }}
                   itemProps={getItemProps({
                     onClick: () => {
+                      if (option.disabled) return;
                       onChange(option.value);
                       close();
                     },
@@ -256,5 +260,5 @@ const Select: React.FC<SelectProps> = ({
 
 // -- Exports ------------------------------------------------------------------
 
-export { Select };
+export { OptionLabel, Select };
 export type { SelectOption };

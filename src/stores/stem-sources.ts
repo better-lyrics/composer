@@ -1,5 +1,5 @@
 import { projectStemJobKey } from "@/audio/separation/stem-job-liveness";
-import { getStem, hasStems, stemJobKey } from "@/audio/separation/stem-store";
+import { getStem, hasStems, stemJobKey, stemLookupOrder } from "@/audio/separation/stem-store";
 import { STEM_SLOTS, type StemOrigin, type StemSlot } from "@/domain/stems/stem-slot";
 import { loadProjectStems, stemFile } from "@/lib/project-stems";
 import type { AudioSource } from "@/stores/audio";
@@ -34,10 +34,18 @@ function songKeyFor(source: AudioSource, audioHash: string): string {
 
 // -- Resolution ---------------------------------------------------------------
 
-async function cachedStems(cacheHash: string, variant: VocalModelVariant): Promise<ResolvedStems> {
-  const jobKey = stemJobKey(cacheHash, variant);
+async function cachedStems(cacheHash: string, selected: VocalModelVariant): Promise<ResolvedStems> {
+  let variant: VocalModelVariant | null = null;
+  for (const candidate of stemLookupOrder(selected)) {
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- the first model with stems wins
+    if (await hasStems(cacheHash, candidate)) {
+      variant = candidate;
+      break;
+    }
+  }
+  const jobKey = stemJobKey(cacheHash, variant ?? selected);
   const slots: ResolvedStems["slots"] = {};
-  if (!(await hasStems(cacheHash, variant))) return { jobKey, slots };
+  if (!variant) return { jobKey, slots };
   const blobs = await Promise.all(STEM_SLOTS.map((slot) => getStem(cacheHash, slot, variant)));
   STEM_SLOTS.forEach((slot, index) => {
     const blob = blobs[index];
