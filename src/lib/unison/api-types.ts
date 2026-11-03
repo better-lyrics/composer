@@ -165,6 +165,11 @@ interface SuggestedVideo {
   match: { level: "same" | "related" | "different"; score: number } | null;
 }
 
+interface LyricVideoSuggestions {
+  suggestions: SuggestedVideo[];
+  linked: SuggestedVideo[];
+}
+
 interface SongForSuggestions {
   song: string;
   artist: string;
@@ -221,6 +226,7 @@ interface UnisonSessionResponse extends UnisonIdentity {
 export type {
   LyricsSubmission,
   LyricsSubmissionResult,
+  LyricVideoSuggestions,
   PendingReason,
   SongForSuggestions,
   SuggestedVideo,

@@ -38,7 +38,9 @@ function linkFailure(error: unknown, candidateSeconds: number | null, songSecond
 function useManageVideos(lyric: UnisonLyric, songSeconds: number): ManageVideos {
   const queryClient = useQueryClient();
   const links = useVideoLinks(lyric.id).data;
-  const suggestions = useLyricVideoSuggestions(lyric.id).data ?? [];
+  const suggestionData = useLyricVideoSuggestions(lyric.id).data;
+  const suggestions = suggestionData?.suggestions ?? [];
+  const known = [...suggestions, ...(suggestionData?.linked ?? [])];
   const [busy, setBusy] = useState(false);
 
   const primaryVideoId = links?.find((video) => video.isPrimary)?.videoId ?? lyric.videoId;
@@ -46,7 +48,7 @@ function useManageVideos(lyric: UnisonLyric, songSeconds: number): ManageVideos 
   const linked = (links ?? [])
     .filter((video) => !video.isPrimary)
     .map((video): ChosenVideo => {
-      const suggestion = suggestions.find((candidate) => candidate.videoId === video.videoId) ?? null;
+      const suggestion = known.find((candidate) => candidate.videoId === video.videoId) ?? null;
       return { videoId: video.videoId, suggestion, origin: "linked" };
     });
   const more = uniqueSuggestions(suggestions, primaryVideoId).filter((candidate) => !linkedIds.has(candidate.videoId));
@@ -66,7 +68,7 @@ function useManageVideos(lyric: UnisonLyric, songSeconds: number): ManageVideos 
   };
 
   const add = (videoId: string) => {
-    const candidateSeconds = suggestions.find((candidate) => candidate.videoId === videoId)?.durationSeconds ?? null;
+    const candidateSeconds = known.find((candidate) => candidate.videoId === videoId)?.durationSeconds ?? null;
     return write(`link video ${videoId}`, () => linkVideo(lyric.id, videoId), candidateSeconds);
   };
 

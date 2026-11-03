@@ -1,6 +1,7 @@
 import type {
   LyricsSubmission,
   LyricsSubmissionResult,
+  LyricVideoSuggestions,
   SongForSuggestions,
   SuggestedVideo,
   UnisonChallenge,
@@ -168,13 +169,13 @@ async function suggestVideosForSong(song: SongForSuggestions, options: CallOptio
   return suggestions;
 }
 
-async function suggestVideosForLyric(id: number, options: CallOptions = {}): Promise<SuggestedVideo[]> {
-  const { suggestions } = await unisonFetch<{ suggestions: SuggestedVideo[] }>(`/lyrics/${id}/suggested-videos`, {
+async function suggestVideosForLyric(id: number, options: CallOptions = {}): Promise<LyricVideoSuggestions> {
+  const { suggestions, linked } = await unisonFetch<Partial<LyricVideoSuggestions>>(`/lyrics/${id}/suggested-videos`, {
     ...options,
     method: "POST",
     auth: true,
   });
-  return suggestions;
+  return { suggestions: suggestions ?? [], linked: linked ?? [] };
 }
 
 // -- Leaderboard ---------------------------------------------------------------
