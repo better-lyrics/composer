@@ -117,3 +117,4 @@ function finishDemix(acc: DemixSum, pad: number, frames: number): Float32Array[]
 // -- Exports ------------------------------------------------------------------
 
 export { addChunk, chunkAt, demixPlan, demixSum, finishDemix, padSong };
+export type { DemixPlan, DemixSum };

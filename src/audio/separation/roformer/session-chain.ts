@@ -87,8 +87,14 @@ async function runSessionChain(
     } finally {
       if (index > 0) input.dispose?.();
     }
-    await chain.device.queue.onSubmittedWorkDone();
     input = outputs[session.outputNames[0]];
+    try {
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop -- see above
+      await chain.device.queue.onSubmittedWorkDone();
+    } catch (err) {
+      input.dispose?.();
+      throw err;
+    }
     if (index < chain.sessions.length - 1 && isCancelled()) {
       input.dispose?.();
       return null;
