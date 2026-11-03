@@ -33,7 +33,7 @@ const UNISON_STALE_TIME_MS = 60_000;
 
 // -- Invalidation --------------------------------------------------------------
 
-// Every write to a lyric changes it, the account's list, the song's variants, revisions and update preview.
+// Every write to a lyric changes it, the account's list, the song's variants, revisions, update preview and wanted list.
 function invalidateLyricWrite(queryClient: QueryClient, lyricId: number, keyId: string): Promise<unknown> {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: unisonQueryKeys.lyric(lyricId) }),
@@ -41,6 +41,7 @@ function invalidateLyricWrite(queryClient: QueryClient, lyricId: number, keyId: 
     queryClient.invalidateQueries({ queryKey: unisonQueryKeys.revisions(lyricId), exact: true }),
     queryClient.invalidateQueries({ queryKey: unisonQueryKeys.revisionPreviews(lyricId) }),
     queryClient.invalidateQueries({ queryKey: unisonQueryKeys.allVariants() }),
+    queryClient.invalidateQueries({ queryKey: unisonQueryKeys.mostWanted() }),
   ]);
 }
 
