@@ -52,7 +52,7 @@ function getModelDescriptor(variant: HtdemucsVariant): ModelDescriptor | null {
 function vocalModelFiles(variant: VocalModelVariant): CachedModel[] | null {
   const base = getBaseUrl();
   if (!base) return null;
-  if (variant === "roformer") return roformerParts(base).flatMap((part) => part.pieces);
+  if (variant === "roformer") return roformerParts(base);
   const descriptor = getModelDescriptor(variant);
   return descriptor ? [descriptor] : null;
 }

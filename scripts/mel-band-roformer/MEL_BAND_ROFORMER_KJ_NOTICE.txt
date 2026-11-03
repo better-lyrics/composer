@@ -27,8 +27,7 @@ Conversion
   The checkpoint above was traced to ONNX (band features to masks; the STFT,
   band split and inverse STFT run in JavaScript), converted to mixed-precision
   fp16 (RMSNorm kept in fp32) and cut into 14 consecutive graphs so it fits in
-  browser GPU memory. The last graph is stored in two byte ranges
-  (part13.onnx.001 and .002) that are joined before loading. Files, in order:
+  browser GPU memory. Files, in order:
 
   mbr_kj_fp16_v1_part00.onnx       6335233  2e061e8fb14c5a996ac251a2de9e48d6d07a9332ab8723f6267c968cb68f1a43
   mbr_kj_fp16_v1_part01.onnx       4387711  b2befff82db52cb9cf2597b577f54e41479870bbf9e562750c71f1ae891d36ae
@@ -43,9 +42,7 @@ Conversion
   mbr_kj_fp16_v1_part10.onnx       3980832  c82e5ed40bf76a17116c7ff5306ea8b168b130d34d468955134da0afa8bea166
   mbr_kj_fp16_v1_part11.onnx       4182581  8831e2f8b2901d6c9c9ab0442f2df49c542ac0bcbe8df2cd98cd8a4789491dcf
   mbr_kj_fp16_v1_part12.onnx       3980507  39c6988a6cb1748c9d01256e8c754edae83159e57e782f256516e2401565e6ee
-  mbr_kj_fp16_v1_part13.onnx.001 201595855  90f300a2d7ddf8cfefad6c91196dc2056776a141a11b9d921daefc87eb703f2f
-  mbr_kj_fp16_v1_part13.onnx.002 201595854  b4500f939fc537137abac32e3b634e58a97904274841d93114cf86b0487e9af0
-  (part13 joined: 403191709 bytes, cab5cde9bc85544829a8c3243b2f3d60413481d5123b005a41ce1215d9d99132)
+  mbr_kj_fp16_v1_part13.onnx     403191709  cab5cde9bc85544829a8c3243b2f3d60413481d5123b005a41ce1215d9d99132
 
 The converted files are a derivative of the weights above and are distributed
 under the same MIT License.

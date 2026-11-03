@@ -5,8 +5,7 @@ import {
   type OrtTensor,
   createChainedWebGpuSession,
 } from "@/audio/ort-runtime";
-import { fetchAndCacheModel, readCachedModel } from "@/audio/separation/model-cache";
-import type { ModelPart } from "@/audio/separation/roformer/model-parts";
+import { type CachedModel, fetchAndCacheModel, readCachedModel } from "@/audio/separation/model-cache";
 import { RF_FRAMES } from "@/audio/separation/roformer/spec";
 
 // -- Types --------------------------------------------------------------------
@@ -23,41 +22,27 @@ interface LoadOptions {
 
 // -- Loading ------------------------------------------------------------------
 
-async function readPiece(
-  piece: ModelPart["pieces"][number],
+async function readPart(
+  part: CachedModel,
   options: LoadOptions,
   onBytes: (loaded: number) => void,
-): Promise<ArrayBuffer> {
-  const cached = await readCachedModel(piece);
+): Promise<Uint8Array> {
+  const cached = await readCachedModel(part);
   if (cached) {
     onBytes(cached.byteLength);
-    return cached;
+    return new Uint8Array(cached);
   }
-  return fetchAndCacheModel(piece, options.signal, (loaded) => onBytes(loaded));
-}
-
-// A graph stored as byte ranges is joined one range at a time, so only one range is held beside the whole.
-async function readPart(part: ModelPart, options: LoadOptions, onBytes: (loaded: number) => void): Promise<Uint8Array> {
-  if (part.pieces.length === 1) return new Uint8Array(await readPiece(part.pieces[0], options, onBytes));
-  const joined = new Uint8Array(part.bytes);
-  let offset = 0;
-  for (const piece of part.pieces) {
-    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- pieces join in order, one held at a time
-    const bytes = await readPiece(piece, options, (loaded) => onBytes(offset + loaded));
-    joined.set(new Uint8Array(bytes), offset);
-    offset += bytes.byteLength;
-  }
-  return joined;
+  return new Uint8Array(await fetchAndCacheModel(part, options.signal, onBytes));
 }
 
 // Each graph's session is created as soon as its bytes arrive, and the bytes are dropped, so the download never
 // holds the whole model in memory beside the sessions.
 async function loadSessionChain(
   runtime: Ort,
-  parts: readonly ModelPart[],
+  parts: readonly CachedModel[],
   options: LoadOptions,
 ): Promise<SessionChain> {
-  const total = parts.reduce((sum, part) => sum + part.bytes, 0);
+  const total = parts.reduce((sum, part) => sum + part.approxBytes, 0);
   const sessions: OrtSession[] = [];
   let done = 0;
   try {
@@ -67,7 +52,7 @@ async function loadSessionChain(
       const bytes = await readPart(part, options, (loaded) => options.onProgress(done + loaded, total));
       options.signal.throwIfAborted();
       sessions.push(await createChainedWebGpuSession(runtime, bytes, index < parts.length - 1));
-      done += part.bytes;
+      done += part.approxBytes;
     }
     const device = await runtime.env.webgpu?.device;
     if (!device) throw new Error("ORT didn't expose its WebGPU device.");

@@ -189,15 +189,16 @@ Cost: free egress, and about $0.0015 a month to store the fp16 model.
 
 ### High quality vocals (Mel-Band RoFormer)
 
-Settings > Models > Vocal model also offers "High quality vocals": Kimberley Jensen's [Mel-Band RoFormer vocal model](https://huggingface.co/KimberleyJSN/melbandroformer) (MIT), converted to fp16 ONNX. Its stems are cleaner than HTDemucs's, but it's a 437 MB download and about 10x slower: 34 minutes for a 3.5-minute song on an Intel UHD 630, against 3.4 for fp16. It's offered only where WebGPU has `shader-f16`, because the fp32 model doesn't fit in browser GPU memory. If a run fails, the song is separated with HTDemucs instead.
+Settings > Models > Vocal model also offers "High quality vocals": Kimberley Jensen's [Mel-Band RoFormer vocal model](https://huggingface.co/KimberleyJSN/melbandroformer) (MIT), converted to fp16 ONNX. Its stems are cleaner than HTDemucs's, but it's a 437 MB download and much slower on integrated graphics: 34 minutes for a 3.5-minute song on an Intel UHD 630, against 3.4 for HTDemucs fp16. On a laptop RTX 4070 it runs at about real time. It's offered only where WebGPU has `shader-f16`, because the fp32 model doesn't fit in browser GPU memory. If a run fails, the song is separated with HTDemucs instead.
 
-The model is 14 consecutive graphs (the STFT, band split and inverse STFT run in JavaScript), served from `$VITE_VOCAL_MODEL_BASE_URL/mel-band-roformer/` with a notice that the app links to. Every file's size and SHA-256 is pinned in `src/audio/separation/roformer/model-parts.ts`, and a download that doesn't match is rejected. To host it:
+The model is 14 consecutive graphs (the STFT, band split and inverse STFT run in JavaScript), served from `$VITE_VOCAL_MODEL_BASE_URL/mel-band-roformer/` with a notice that the app links to. Every file's size and SHA-256 is pinned in `src/audio/separation/roformer/model-parts.ts`, and a download that doesn't match is rejected. [`scripts/mel-band-roformer/`](scripts/mel-band-roformer/README.md) builds the graphs from the checkpoint and uploads them through R2's S3 API:
 
 ```bash
-./scripts/upload-mel-band-roformer.sh composer-vocal-models ./mel-band-roformer-parts
+R2_ACCOUNT_ID=... R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=... \
+  ./scripts/upload-mel-band-roformer.sh composer-vocal-models ./mel-band-roformer-parts
 ```
 
-The script checks each file against its pin and never replaces an object that already exists. `scripts/mel-band-roformer/MEL_BAND_ROFORMER_KJ_NOTICE.txt` lists the source checkpoint (Hugging Face revision and SHA-256), the conversion and the licenses.
+The script checks each file against its pin and never replaces a model file that already exists. `scripts/mel-band-roformer/MEL_BAND_ROFORMER_KJ_NOTICE.txt` lists the source checkpoint (Hugging Face revision and SHA-256), the conversion and the licenses.
 
 ### Trying other alignment checkpoints
 
