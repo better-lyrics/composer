@@ -129,27 +129,35 @@ const NewSubmissionCard: React.FC<ModeCardProps> = (props) => {
   );
 };
 
+function useUpdateTarget(lyricId: number, sourceVideoId: string | undefined) {
+  const lyric = useUnisonLyric(lyricId).data;
+  const links = useVideoLinks(lyricId).data;
+  return {
+    replacesPending: Boolean(lyric?.revision.pending),
+    unlinkedVideo: lyric !== undefined && playsUnlinkedVideo(sourceVideoId, lyric.videoId, links),
+  };
+}
+
+const UpdateOutcome: React.FC<{ goesLive: boolean; replacesPending: boolean }> = ({ goesLive, replacesPending }) => (
+  <Outcome icon={goesLive ? IconBolt : IconHourglassHigh} warn={!goesLive}>
+    {goesLive ? "Goes live now" : "Council reviews it first"}
+    {replacesPending && ", replaces pending edit"}
+  </Outcome>
+);
+
 const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
   const { lyricId, session, sessionEnded, source } = props;
   const checks = useSubmitChecks("update", source);
   const input = useRevisionInput(source.content);
   const { sender, onError, failureText } = useSender(props);
   const { query, settling } = useRevisionPreview(lyricId, input, onError);
-  const lyric = useUnisonLyric(lyricId).data;
-  const links = useVideoLinks(lyricId).data;
-  const replacesPending = Boolean(lyric?.revision.pending);
-  const unlinkedVideo = lyric !== undefined && playsUnlinkedVideo(source.videoId, lyric.videoId, links);
+  const { replacesPending, unlinkedVideo } = useUpdateTarget(lyricId, source.videoId);
   const checksReasonId = useId();
   const changesReasonId = useId();
   const videoReasonId = useId();
   const preview = query.data;
   const goesLive = preview?.outcome.goesLive ?? true;
-  const outcome = preview ? (
-    <Outcome icon={goesLive ? IconBolt : IconHourglassHigh} warn={!goesLive}>
-      {goesLive ? "Goes live now" : "Council reviews it first"}
-      {replacesPending && ", replaces pending edit"}
-    </Outcome>
-  ) : null;
+  const blockedReasonId = !checks.canSubmit ? checksReasonId : unlinkedVideo ? videoReasonId : changesReasonId;
 
   return (
     <SubmitCardShell mode="update" busy={sender.pending} source={source} checks={checks}>
@@ -167,13 +175,13 @@ const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
       )}
       <SubmitFooter
         identity={session}
-        outcome={outcome}
+        outcome={preview && <UpdateOutcome goesLive={goesLive} replacesPending={replacesPending} />}
         sessionEnded={sessionEnded}
         failure={failureText}
         label={goesLive ? "Send update" : "Send for review"}
         pending={sender.pending}
         disabled={!checks.canSubmit || unlinkedVideo || !preview || preview.noChanges || settling}
-        blockedReasonId={!checks.canSubmit ? checksReasonId : unlinkedVideo ? videoReasonId : changesReasonId}
+        blockedReasonId={blockedReasonId}
         onSend={() => void sender.send({ kind: "update", lyricId, input })}
       />
     </SubmitCardShell>
