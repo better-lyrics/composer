@@ -1,11 +1,10 @@
-import { type HistoryStatus, historyStatus, revisionSummaryLine } from "@/domain/unison/revision-history";
+import { type Icon, IconCircleCheck, IconCircleX, IconHourglassHigh } from "@tabler/icons-react";
+import { useRef } from "react";
+import { type HistoryStatus, historyStatus, revisionDate, revisionSummaryLine } from "@/domain/unison/revision-history";
 import type { RevisionSummary } from "@/lib/unison/revision-types";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
-import { formatRelativeTime } from "@/utils/format-relative-time";
 import { SkeletonBar, SkeletonRows } from "@/views/unison/view-states";
-import { type Icon, IconCircleCheck, IconCircleX, IconHourglassHigh } from "@tabler/icons-react";
-import { useRef } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -36,10 +35,6 @@ const STATUS_LABELS: Record<HistoryStatus, string> = {
 const NAVIGATION_KEYS = new Set(["ArrowDown", "ArrowUp", "Home", "End"]);
 
 // -- Helpers -------------------------------------------------------------------
-
-function revisionDate(revision: RevisionSummary, now: number): string {
-  return formatRelativeTime(revision.createdAt * 1000, now);
-}
 
 function nextIndex(key: string, current: number, count: number): number {
   if (key === "Home") return 0;
@@ -122,4 +117,4 @@ const RevisionList: React.FC<RevisionListProps> = ({ revisions, selectedId, now,
 
 // -- Exports -------------------------------------------------------------------
 
-export { RevisionList, RevisionListSkeleton, RevisionStatusLabel, revisionDate };
+export { RevisionList, RevisionListSkeleton, RevisionStatusLabel };

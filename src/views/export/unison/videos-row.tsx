@@ -1,17 +1,17 @@
+import { IconBrandYoutube } from "@tabler/icons-react";
 import { displayArtists } from "@/domain/project/display-title";
 import { submitDurationSeconds } from "@/domain/unison/submit-checks";
-import { VIDEO_LENGTH_TOLERANCE_SECONDS, VIDEO_LINK_LIMIT } from "@/domain/unison/video-links";
+import { linkedVideoCount, VIDEO_LENGTH_TOLERANCE_SECONDS, VIDEO_LINK_LIMIT } from "@/domain/unison/video-links";
 import { useVideoLinks } from "@/hooks/unison/useVideoSuggestions";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { PopBody, PopHead, PopText } from "@/ui/pop-layout";
 import { Popover } from "@/ui/popover";
-import { linkedVideoCount, VideoPicker } from "@/ui/unison/video-picker";
+import { VideoPicker } from "@/ui/unison/video-picker";
 import { formatTime } from "@/utils/format-time";
 import { pluralize } from "@/utils/pluralize";
 import { useManageVideos } from "@/views/export/unison/use-manage-videos";
-import { IconBrandYoutube } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 

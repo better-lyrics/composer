@@ -1,13 +1,20 @@
+import { IconPlus, IconX } from "@tabler/icons-react";
+import { useId, useRef, useState } from "react";
 import { quotedTitle } from "@/domain/project/display-title";
-import { type ChosenVideo, suggestionLengthNote, VIDEO_LINK_LIMIT } from "@/domain/unison/video-links";
+import {
+  type ChosenVideo,
+  linkedVideoCount,
+  suggestionFacts,
+  suggestionLengthNote,
+  VIDEO_LINK_LIMIT,
+  type VideoFacts,
+} from "@/domain/unison/video-links";
 import type { SuggestedVideo } from "@/lib/unison/api-types";
 import { useConfirm } from "@/stores/confirm-store";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { AddVideoField } from "@/ui/unison/add-video-field";
-import { ChosenVideoRow, MatchMark, suggestionFacts, type VideoFacts, VideoRow } from "@/ui/unison/video-row";
-import { IconPlus, IconX } from "@tabler/icons-react";
-import { useId, useRef, useState } from "react";
+import { ChosenVideoRow, MatchMark, VideoRow } from "@/ui/unison/video-row";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -42,12 +49,6 @@ interface RowError {
 
 const ALREADY_LINKED_MESSAGE = "That video is already linked.";
 const CAP_REACHED_MESSAGE = `Up to ${VIDEO_LINK_LIMIT} videos per lyric. Unlink one to add another.`;
-
-// -- Helpers -------------------------------------------------------------------
-
-function linkedVideoCount(linked: readonly ChosenVideo[]): number {
-  return linked.length + 1;
-}
 
 // -- Components ----------------------------------------------------------------
 
@@ -172,5 +173,5 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
 
 // -- Exports -------------------------------------------------------------------
 
-export { linkedVideoCount, VideoPicker };
 export type { MainVideo };
+export { VideoPicker };

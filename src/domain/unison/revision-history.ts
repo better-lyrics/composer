@@ -1,4 +1,5 @@
 import type { RevisionStatus, RevisionSummary } from "@/lib/unison/revision-types";
+import { formatRelativeTime } from "@/utils/format-relative-time";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -51,7 +52,11 @@ function initialRevision(
   return revisions.find((revision) => revision.revNo === requestedRevNo) ?? revisions[0];
 }
 
+function revisionDate(revision: RevisionSummary, now: number): string {
+  return formatRelativeTime(revision.createdAt * 1000, now);
+}
+
 // -- Exports -------------------------------------------------------------------
 
 export type { HistoryStatus, MakeLiveRefusal };
-export { historyStatus, initialRevision, makeLiveRefusal, revisionDiffBase, revisionSummaryLine };
+export { historyStatus, initialRevision, makeLiveRefusal, revisionDate, revisionDiffBase, revisionSummaryLine };

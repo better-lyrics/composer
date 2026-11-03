@@ -11,6 +11,12 @@ interface ChosenVideo {
   origin: ChosenVideoOrigin;
 }
 
+interface VideoFacts {
+  artist: string;
+  kind: string | null;
+  duration: string | null;
+}
+
 interface SubmitVideoChoicesInput {
   suggestions: readonly SuggestedVideo[];
   mainVideoId: string;
@@ -29,6 +35,7 @@ interface VideoChoices {
 // Unison's `config.videoLinking`: the cap counts the main video.
 const VIDEO_LINK_LIMIT = 20;
 const VIDEO_LENGTH_TOLERANCE_SECONDS = 2;
+const KIND_LABELS: Record<SuggestedVideo["videoType"], string> = { song: "Song", video: "Video" };
 
 // -- Functions -----------------------------------------------------------------
 
@@ -83,15 +90,30 @@ function submitVideoChoices({
   };
 }
 
+// The main video counts toward the link limit.
+function linkedVideoCount(linked: readonly ChosenVideo[]): number {
+  return linked.length + 1;
+}
+
+function suggestionFacts(suggestion: SuggestedVideo): VideoFacts {
+  return {
+    artist: suggestion.artist,
+    kind: KIND_LABELS[suggestion.videoType],
+    duration: suggestion.durationSeconds === null ? null : formatTime(suggestion.durationSeconds, 0),
+  };
+}
+
 // -- Exports -------------------------------------------------------------------
 
+export type { ChosenVideo, ChosenVideoOrigin, VideoChoices, VideoFacts };
 export {
   fitsSongLength,
   lengthMismatchNote,
+  linkedVideoCount,
   submitVideoChoices,
+  suggestionFacts,
   suggestionLengthNote,
   uniqueSuggestions,
   VIDEO_LENGTH_TOLERANCE_SECONDS,
   VIDEO_LINK_LIMIT,
 };
-export type { ChosenVideo, ChosenVideoOrigin, VideoChoices };

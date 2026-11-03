@@ -1,12 +1,17 @@
+import { useId } from "react";
 import { isSealed } from "@/domain/unison/lyric-status";
-import { type MakeLiveRefusal, makeLiveRefusal, revisionDiffBase } from "@/domain/unison/revision-history";
+import {
+  type MakeLiveRefusal,
+  makeLiveRefusal,
+  revisionDate,
+  revisionDiffBase,
+} from "@/domain/unison/revision-history";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import type { RevisionSummary } from "@/lib/unison/revision-types";
 import { Button } from "@/ui/button";
 import { RevisionDiffSection } from "@/views/export/unison/revision-diff";
-import { RevisionStatusLabel, revisionDate } from "@/views/export/unison/revision-list";
+import { RevisionStatusLabel } from "@/views/export/unison/revision-list";
 import type { RevisionActions } from "@/views/export/unison/use-revision-actions";
-import { useId } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 

@@ -91,8 +91,7 @@ async function signInWithExtension(extensionId: string): Promise<StoredUnisonSes
 
 async function signInWithIdentityFile(file: File): Promise<StoredUnisonSession> {
   const identity = parseIdentityFile(await file.text());
-  const key = await importSigningKey(identity);
-  const { nonce } = await fetchChallenge();
+  const [key, { nonce }] = await Promise.all([importSigningKey(identity), fetchChallenge()]);
   const payload = { origin: window.location.origin, timestamp: Date.now(), nonce, keyId: identity.keyId };
   const signature = await crypto.subtle.sign(ECDSA_SHA256, key, new TextEncoder().encode(canonicalJson(payload)));
   return startSession({ payload, signature: toBase64(signature), publicKey: identity.publicKey });

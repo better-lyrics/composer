@@ -1,23 +1,16 @@
-import type { ChosenVideo } from "@/domain/unison/video-links";
+import { IconCircleCheck, IconHelpCircle, IconStack2 } from "@tabler/icons-react";
+import { type ChosenVideo, suggestionFacts, type VideoFacts } from "@/domain/unison/video-links";
 import type { SuggestedVideo } from "@/lib/unison/api-types";
 import { ProjectArt } from "@/ui/projects/project-art";
 import { Tooltip } from "@/ui/tooltip";
 import { YouTubeMusicLink } from "@/ui/unison/youtube-music-link";
 import { cn } from "@/utils/cn";
-import { formatTime } from "@/utils/format-time";
 import { YOUTUBE_PLACEHOLDER_THUMBNAIL_WIDTH, youTubeThumbnailUrl } from "@/utils/youtube-music-url";
-import { IconCircleCheck, IconHelpCircle, IconStack2 } from "@tabler/icons-react";
 
 // -- Types ---------------------------------------------------------------------
 
 type MatchLevel = NonNullable<SuggestedVideo["match"]>["level"];
 type VideoTag = "main" | "suggested";
-
-interface VideoFacts {
-  artist: string;
-  kind: string | null;
-  duration: string | null;
-}
 
 interface VideoRowProps {
   videoId: string;
@@ -47,19 +40,8 @@ const TAGS: Record<VideoTag, { label: string; className: string }> = {
   suggested: { label: "Suggested", className: "text-composer-accent-text" },
 };
 
-const KIND_LABELS: Record<SuggestedVideo["videoType"], string> = { song: "Song", video: "Video" };
 const PENDING_NOTE = "Checked after you submit";
 const LINKED_NOTE = "Linked video";
-
-// -- Helpers -------------------------------------------------------------------
-
-function suggestionFacts(suggestion: SuggestedVideo): VideoFacts {
-  return {
-    artist: suggestion.artist,
-    kind: KIND_LABELS[suggestion.videoType],
-    duration: suggestion.durationSeconds === null ? null : formatTime(suggestion.durationSeconds, 0),
-  };
-}
 
 // -- Components ----------------------------------------------------------------
 
@@ -137,5 +119,4 @@ const ChosenVideoRow: React.FC<{ video: ChosenVideo; error?: string | null; trai
 
 // -- Exports -------------------------------------------------------------------
 
-export { ChosenVideoRow, MatchMark, suggestionFacts, VideoRow };
-export type { VideoFacts };
+export { ChosenVideoRow, MatchMark, VideoRow };
