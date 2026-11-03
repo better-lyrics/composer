@@ -71,10 +71,18 @@ function useLibraryUnisonLyrics(keyId: string | null, linkedIds: readonly string
     placeholderData: keepPreviousData,
     enabled: keyId !== null,
   });
-  const { data } = query;
+  const { data, isPlaceholderData } = query;
+  // Placeholder data answers for other linked ids, so it can never prove a lyric was removed.
   return useMemo(
-    () => (data ? { ...data, byId: new Map(data.items.map((item) => [String(item.id), item])) } : null),
-    [data],
+    () =>
+      data
+        ? {
+            ...data,
+            complete: data.complete && !isPlaceholderData,
+            byId: new Map(data.items.map((item) => [String(item.id), item])),
+          }
+        : null,
+    [data, isPlaceholderData],
   );
 }
 

@@ -63,7 +63,8 @@ function buildUrl(path: string, query: UnisonRequestOptions["query"]): string {
 async function readJson(response: Response): Promise<unknown> {
   try {
     return await response.json();
-  } catch {
+  } catch (error) {
+    console.warn(LOG_PREFIX, `Unison sent a body that is not JSON (${response.status})`, error);
     return null;
   }
 }

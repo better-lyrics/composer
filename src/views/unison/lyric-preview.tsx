@@ -1,6 +1,8 @@
 import { mainBounds } from "@/domain/line/bounds";
+import { projectsByLyricId } from "@/domain/unison/linked-projects";
 import { isOwnLyric } from "@/domain/unison/ownership";
 import { useUnisonLyric } from "@/hooks/unison/useUnisonLyric";
+import { useProjectIndex } from "@/hooks/useProjectIndex";
 import type { UnisonLyric, UnisonSearchResult } from "@/lib/unison/api-types";
 import { openUnisonLyric, readUnisonLyric } from "@/lib/unison/open-unison-lyric";
 import { Button } from "@/ui/button";
@@ -76,6 +78,7 @@ const PreviewText: React.FC<{ preview: PreviewLines }> = ({ preview }) => {
 const LyricPreview: React.FC<LyricPreviewProps> = ({ result, ownKeyId }) => {
   const lyric = useUnisonLyric(result.id);
   const navigate = useNavigate();
+  const { entries } = useProjectIndex();
   const [opening, setOpening] = useState(false);
   const preview = useMemo(() => (lyric.data ? previewLines(lyric.data) : null), [lyric.data]);
   const submitter = result.submitter;
@@ -83,7 +86,9 @@ const LyricPreview: React.FC<LyricPreviewProps> = ({ result, ownKeyId }) => {
 
   const open = (loaded: UnisonLyric) => {
     setOpening(true);
-    openUnisonLyric(loaded, { link: isOwn, navigate })
+    // One project carries the link, so a second copy of your own lyric opens unlinked.
+    const link = isOwn && !projectsByLyricId(entries ?? []).has(String(loaded.id));
+    openUnisonLyric(loaded, { link, navigate })
       .catch((error: unknown) => console.error(LOG_PREFIX, "could not open the lyrics as a project", error))
       .finally(() => setOpening(false));
   };

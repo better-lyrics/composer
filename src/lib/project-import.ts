@@ -1,5 +1,6 @@
 import { type ProjectIndexEntry, buildIndexEntry } from "@/domain/project/index-entry";
 import { byMostRecentlyEdited } from "@/domain/project/library-order";
+import { readUnisonLyricId } from "@/domain/unison/lyric-id";
 import { openLyricsAsNewProject } from "@/lib/open-lyrics-as-project";
 import { openProject, reloadOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
@@ -88,7 +89,7 @@ async function replaceProjectFromFile(id: string, file: ProjectFile): Promise<vo
     audioSource: existing.audioSource ?? file.audioSource,
     audioFileName: existing.audioFileName ?? file.audioFileName,
     currentStem: existing.currentStem,
-    unisonLyricId: file.unisonLyricId ?? existing.unisonLyricId,
+    unisonLyricId: readUnisonLyricId(file.unisonLyricId) ?? existing.unisonLyricId,
   }));
   if (replacesOpenProject) await reloadOpenProject();
 }

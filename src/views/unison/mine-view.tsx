@@ -15,7 +15,7 @@ import { useLibraryActions } from "@/views/library/use-library-actions";
 import { MINE_GRID, MineColumns, MineRow } from "@/views/unison/mine-row";
 import { InlineError, LoadMore, SkeletonBar, SkeletonRows, SkeletonSong, ViewEmpty } from "@/views/unison/view-states";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -64,12 +64,15 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [openingId, setOpeningId] = useState<number | null>(null);
+  const opening = useRef(false);
 
   const projectByLyric = useMemo(() => projectsByLyricId(entries ?? []), [entries]);
   const items = useMemo(() => mine.data?.pages.flatMap((page) => page.items) ?? [], [mine.data]);
 
   const openAsProject = useCallback(
     (item: UnisonMineItem) => {
+      if (opening.current) return;
+      opening.current = true;
       setOpeningId(item.id);
       fetchUnisonLyric(queryClient, item.id)
         .then((lyric) => openUnisonLyric(lyric, { link: true, navigate }))
@@ -77,7 +80,10 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
           console.error(LOG_PREFIX, "could not open the lyrics as a project", error);
           toast.error(error instanceof Error ? error.message : "Couldn't open those lyrics");
         })
-        .finally(() => setOpeningId(null));
+        .finally(() => {
+          opening.current = false;
+          setOpeningId(null);
+        });
     },
     [queryClient, navigate],
   );

@@ -1,5 +1,5 @@
 import type { UnisonStatus } from "@/domain/unison/lyric-status";
-import { isOwnLyric } from "@/domain/unison/ownership";
+import { isOtherAccountLyric } from "@/domain/unison/ownership";
 import { useLinkedLyric } from "@/hooks/unison/useLinkedLyric";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { useProjectStore } from "@/stores/project";
@@ -95,7 +95,7 @@ const RemovedCard: React.FC = () => (
 
 const FoundCard: React.FC<FoundCardProps> = ({ lyric, status, keyId, videos }) => {
   const actions = useOnUnisonActions(lyric, keyId);
-  const owned = isOwnLyric(lyric, keyId);
+  const owned = !isOtherAccountLyric(lyric, keyId);
   const requestedRevNo = useHistoryRequest(lyric.id);
   const [history, setHistory] = useState<{ revNo: number | null } | null>(null);
   const shownHistory = history ?? (requestedRevNo === null ? null : { revNo: requestedRevNo });
@@ -121,6 +121,11 @@ const FoundCard: React.FC<FoundCardProps> = ({ lyric, status, keyId, videos }) =
           <IconHistory aria-hidden="true" className="size-4" />
           {declinedRevNo === null ? "History" : "Read the council's note"}
         </Button>
+        {!owned && (
+          <Button size="sm" variant="secondary" onClick={() => useProjectStore.getState().unlinkUnisonLyric()}>
+            Unlink
+          </Button>
+        )}
         {owned && status === "pending" && (
           <Button size="sm" variant="secondary" disabled={actions.busy} onClick={actions.withdraw}>
             Withdraw edit

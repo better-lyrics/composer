@@ -1,5 +1,5 @@
 import { useLinkedLyric } from "@/hooks/unison/useLinkedLyric";
-import { isOwnLyric } from "@/domain/unison/ownership";
+import { isOtherAccountLyric } from "@/domain/unison/ownership";
 import { useUnisonSession } from "@/hooks/useUnisonSession";
 import type { StoredUnisonSession } from "@/lib/unison/session";
 import { useProjectStore } from "@/stores/project";
@@ -31,7 +31,7 @@ const PanelCards: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 const LinkedCards: React.FC<SignedInCardsProps & { lyricId: string }> = ({ lyricId, ...props }) => {
   const linked = useLinkedLyric(lyricId);
-  const owned = linked.kind === "found" && isOwnLyric(linked.lyric, props.session.keyId);
+  const owned = linked.kind === "found" && !isOtherAccountLyric(linked.lyric, props.session.keyId);
   return (
     <>
       <OnUnisonCard
