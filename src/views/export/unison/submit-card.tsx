@@ -1,4 +1,5 @@
 import { UNISON_VARIANT_CAP } from "@/domain/unison/submit-checks";
+import { isOwnLyric } from "@/domain/unison/ownership";
 import { useRevisionPreview } from "@/hooks/unison/useRevisionPreview";
 import { useSubmitToUnison } from "@/hooks/unison/useSubmitToUnison";
 import { useUnisonLyric } from "@/hooks/unison/useUnisonLyric";
@@ -82,7 +83,7 @@ const NewSubmissionCard: React.FC<ModeCardProps> = (props) => {
   const checksReasonId = useId();
   const versionsReasonId = useId();
   const mine = useMemo(
-    () => variants.data?.filter((variant) => variant.submitter?.keyId === session.keyId) ?? [],
+    () => variants.data?.filter((variant) => isOwnLyric(variant, session.keyId)) ?? [],
     [variants.data, session.keyId],
   );
   const capReached = mine.length >= UNISON_VARIANT_CAP;

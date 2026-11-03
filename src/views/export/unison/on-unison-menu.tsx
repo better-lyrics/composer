@@ -11,7 +11,7 @@ import { useCallback, useState } from "react";
 interface OnUnisonMenuProps {
   lyric: UnisonLyric;
   disabled: boolean;
-  onRemove: () => void;
+  onRemove?: () => void;
 }
 
 // -- Components ----------------------------------------------------------------
@@ -43,8 +43,12 @@ const OnUnisonMenu: React.FC<OnUnisonMenuProps> = ({ lyric, disabled, onRemove }
           label="View on Unison"
           onSelect={() => window.open(unisonLyricPageUrl(lyric.videoId, lyric.id), "_blank", "noopener,noreferrer")}
         />
-        <MenuSeparator />
-        <MenuItem icon={IconTrash} label="Remove from Unison" tone="danger" onSelect={onRemove} />
+        {onRemove && (
+          <>
+            <MenuSeparator />
+            <MenuItem icon={IconTrash} label="Remove from Unison" tone="danger" onSelect={onRemove} />
+          </>
+        )}
       </Menu>
     </>
   );

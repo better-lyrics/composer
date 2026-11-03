@@ -1,4 +1,5 @@
 import { mainBounds } from "@/domain/line/bounds";
+import { isOwnLyric } from "@/domain/unison/ownership";
 import { useUnisonLyric } from "@/hooks/unison/useUnisonLyric";
 import type { UnisonLyric, UnisonSearchResult } from "@/lib/unison/api-types";
 import { openUnisonLyric, readUnisonLyric } from "@/lib/unison/open-unison-lyric";
@@ -78,7 +79,7 @@ const LyricPreview: React.FC<LyricPreviewProps> = ({ result, ownKeyId }) => {
   const [opening, setOpening] = useState(false);
   const preview = useMemo(() => (lyric.data ? previewLines(lyric.data) : null), [lyric.data]);
   const submitter = result.submitter;
-  const isOwn = ownKeyId !== null && submitter?.keyId === ownKeyId;
+  const isOwn = isOwnLyric(result, ownKeyId);
 
   const open = (loaded: UnisonLyric) => {
     setOpening(true);
