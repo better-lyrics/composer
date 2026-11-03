@@ -86,7 +86,11 @@ async function sendRequest(path: string, options: UnisonRequestOptions): Promise
   const { method = "GET", body, auth = false, signal, query } = options;
   const headers = new Headers();
   const session = auth ? readUnisonSession() : null;
-  if (auth && !session) throw new UnisonError("AUTH_REQUIRED", 401, "Sign in to Unison first");
+  if (auth && !session) {
+    // An expired session is dropped while reading it; tell subscribers so the UI shows signed out.
+    clearUnisonSession();
+    throw new UnisonError("AUTH_REQUIRED", 401, "Sign in to Unison first");
+  }
   if (session) headers.set("authorization", `Bearer ${session.token}`);
   if (body !== undefined) headers.set("content-type", "application/json");
 
