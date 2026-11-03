@@ -258,6 +258,12 @@ describe("replaceProjectFromFile", () => {
   });
 
   describe("regressions", () => {
+    it("regression: a file saved before the unison submit keeps the project's unison link", async () => {
+      await seedStoredProject("a", { project: { ...songTitled("Alpha"), unisonLyricId: "4821" } });
+      await replaceProjectFromFile("a", fileWithLine("File line"));
+      expect((await loadProjectRecord("a"))?.unisonLyricId).toBe("4821");
+    });
+
     it("regression: a failed flush stops the replace write and marks the save as failed instead of silently dropping the edit", async () => {
       await seedStoredProject("a", { open: true, project: songTitled("Alpha") });
       await restoreOpenProject();

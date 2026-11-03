@@ -88,6 +88,7 @@ async function replaceProjectFromFile(id: string, file: ProjectFile): Promise<vo
     audioSource: existing.audioSource ?? file.audioSource,
     audioFileName: existing.audioFileName ?? file.audioFileName,
     currentStem: existing.currentStem,
+    unisonLyricId: file.unisonLyricId ?? existing.unisonLyricId,
   }));
   if (replacesOpenProject) await reloadOpenProject();
 }
