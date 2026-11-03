@@ -115,10 +115,12 @@ function fallbackModel(
 }
 
 async function runSeparation(run: SeparationRun): Promise<boolean> {
+  // An upgrade of stems the song already has: if the RoFormer fails, they stay, and so does its error.
+  const hadStems = STEM_SLOTS.every((slot) => run.get().stemUrls[slot]);
   const variant = await runnableModel(run.selected);
   if (await separateWith(variant, run)) return true;
   const { error, status } = run.get();
-  const fallback = fallbackModel(variant, status, !run.isCurrentRun() || run.isCancelling());
+  const fallback = hadStems ? null : fallbackModel(variant, status, !run.isCurrentRun() || run.isCancelling());
   if (!fallback) return false;
   console.warn(LOG_PREFIX, "the RoFormer failed; separating with HTDemucs", error);
   toast.warning("High quality vocals failed, so the standard vocal model is separating this song.", {
@@ -132,4 +134,4 @@ async function runSeparation(run: SeparationRun): Promise<boolean> {
 
 // -- Exports ------------------------------------------------------------------
 
-export { fallbackModel, runnableModel, runSeparation };
+export { runSeparation };

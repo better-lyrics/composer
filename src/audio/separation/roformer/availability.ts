@@ -35,5 +35,5 @@ function probeRoformerSupport(): Promise<RoformerSupport> {
 
 // -- Exports ------------------------------------------------------------------
 
-export { probeRoformerSupport, roformerSupport };
+export { probeRoformerSupport };
 export type { RoformerSupport };

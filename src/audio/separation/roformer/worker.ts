@@ -25,7 +25,7 @@ type InboundMessage =
 
 type OutboundMessage =
   | { type: "progress"; seq: number; loaded: number; total: number }
-  | { type: "done"; seq: number; vocals?: Float32Array[]; stats?: SeparationStats }
+  | { type: "done"; seq: number; vocals?: Float32Array[] }
   | { type: "cancelled"; seq: number }
   | { type: "error"; seq: number; code: string; message: string };
 
@@ -106,7 +106,7 @@ async function separate(
   channels: Float32Array[],
   frames: number,
   isCancelled: () => boolean,
-): Promise<{ vocals: Float32Array[]; stats: SeparationStats } | null> {
+): Promise<Float32Array[] | null> {
   const ort = runtime;
   const sessions = chain;
   if (!sessions || !ort) throw new Error("The vocal model isn't loaded.");
@@ -183,7 +183,7 @@ async function separate(
         `for features and ${stats.mixWait.toFixed(0)} ms for the mixer; ${stats.startup.toFixed(0)} ms to start, ` +
         `${stats.drain.toFixed(0)} ms to finish`,
     );
-    return { vocals, stats };
+    return vocals;
   } finally {
     preparer.terminate();
     mixer.terminate();
@@ -199,12 +199,12 @@ async function handle(request: Request, isCancelled: () => boolean): Promise<voi
       chain = null;
       post({ type: "done", seq });
     } else {
-      const result = await separate(seq, request.channels, request.totalFrames, isCancelled);
-      if (!result) post({ type: "cancelled", seq });
+      const vocals = await separate(seq, request.channels, request.totalFrames, isCancelled);
+      if (!vocals) post({ type: "cancelled", seq });
       else
         post(
-          { type: "done", seq, ...result },
-          result.vocals.map((c) => c.buffer),
+          { type: "done", seq, vocals },
+          vocals.map((c) => c.buffer),
         );
     }
   } catch (err) {
@@ -228,4 +228,4 @@ self.addEventListener("message", (ev: MessageEvent<InboundMessage>) => {
   queue = queue.then(() => handle(msg, () => epoch !== cancelEpoch));
 });
 
-export type { InboundMessage, OutboundMessage, SeparationStats };
+export type { InboundMessage, OutboundMessage };

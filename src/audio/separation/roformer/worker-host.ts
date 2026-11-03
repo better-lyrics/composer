@@ -85,11 +85,15 @@ class RoformerWorker implements VocalSeparator {
   /** Frees the model's memory unless it's separating. */
   async releaseIfIdle(): Promise<void> {
     if (!this.worker || this.busy) return;
-    const released = this.request({ type: "release" }).catch((err: unknown) =>
-      console.warn(LOG_PREFIX, "releasing the sessions failed; ending the worker anyway", err),
-    );
+    let settled = false;
+    const released = this.request({ type: "release" })
+      .catch((err: unknown) => console.warn(LOG_PREFIX, "releasing the sessions failed; ending the worker anyway", err))
+      .finally(() => {
+        settled = true;
+      });
     await Promise.race([released, sleep(RELEASE_TIMEOUT_MS)]);
-    if (!this.busy) this.dispose();
+    // A release that hasn't answered is ended with the worker, unless a song was sent in the meantime.
+    if (this.pending.size === (settled ? 0 : 1)) this.dispose();
   }
 
   /** Ends the worker; anything in flight fails. */

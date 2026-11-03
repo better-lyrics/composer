@@ -186,7 +186,8 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
     try {
       const selected = useSettingsStore.getState().vocalModelVariant;
       const run = { selected, file, source, projectId, set, get, isCurrentRun, isCancelling: () => isCancelling };
-      if (!(await runSeparation(run))) return;
+      // A failed run is refreshed too: an upgrade that failed leaves the song's stems, and their job key comes back.
+      if (!(await runSeparation(run)) && !isCurrentRun()) return;
       if (isCurrentRun()) separatingFile = null;
       if (useAudioStore.getState().source === source) await get().refreshForCurrentSource();
     } finally {

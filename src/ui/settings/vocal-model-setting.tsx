@@ -3,6 +3,7 @@ import type { RoformerSupport } from "@/audio/separation/roformer/availability";
 import { roformerTerms } from "@/audio/separation/roformer/model-parts";
 import { releaseIdleRoformer } from "@/audio/separation/shared-separation-worker";
 import { useRoformerSupport } from "@/hooks/useRoformerSupport";
+import { useSeparationStore } from "@/stores/separation";
 import { settingEntry } from "@/stores/settings-catalog";
 import { type VocalModelVariant, useSettingsStore } from "@/stores/settings";
 import { ModelTermsHint, ModelTermsInfo } from "@/ui/model-terms-info";
@@ -61,6 +62,8 @@ const VocalModelSetting: React.FC = () => {
   const onChange = (next: string) => {
     if (next === value) return;
     set("vocalModelVariant", next as VocalModelVariant);
+    // The open song's stems are looked up again, so stems from the other model are offered an upgrade.
+    void useSeparationStore.getState().refreshForCurrentSource();
     // The RoFormer keeps its sessions for the next song; picking another model frees them.
     if (value === "roformer") void releaseIdleRoformer();
   };
