@@ -19,8 +19,8 @@ const VOCAL_MODEL_LABELS: Record<VocalModelVariant, string> = {
   roformer: "High quality vocals",
 };
 
-// Measured on a 3.5-minute song: about 70 s on a laptop RTX 4070, and 34 minutes on an Intel UHD 630 (3.4 for fp16).
-const ROFORMER_SPEED = "~1 min a song on an RTX 4070, ~35 min on integrated graphics";
+// Measured on a laptop RTX 4070: about 70 s for a 3.5-minute song.
+const ROFORMER_SPEED = "Slower: ~1 min a song on an RTX 4070, longer on weaker GPUs";
 
 // -- Helpers -------------------------------------------------------------------
 

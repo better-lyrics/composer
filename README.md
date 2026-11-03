@@ -189,7 +189,7 @@ Cost: free egress, and about $0.0015 a month to store the fp16 model.
 
 ### High quality vocals (Mel-Band RoFormer)
 
-Settings > Models > Vocal model also offers "High quality vocals": Kimberley Jensen's [Mel-Band RoFormer vocal model](https://huggingface.co/KimberleyJSN/melbandroformer) (MIT), converted to fp16 ONNX. Its stems are cleaner than HTDemucs's, but it's a 437 MB download and much slower on integrated graphics: 34 minutes for a 3.5-minute song on an Intel UHD 630, against 3.4 for HTDemucs fp16. On a laptop RTX 4070 it runs at about 3x real time (a 3.5-minute song in about 70 s). It's offered only where WebGPU has `shader-f16`, because the fp32 model doesn't fit in browser GPU memory. If a run fails, the song is separated with HTDemucs instead.
+Settings > Models > Vocal model also offers "High quality vocals": Kimberley Jensen's [Mel-Band RoFormer vocal model](https://huggingface.co/KimberleyJSN/melbandroformer) (MIT), converted to fp16 ONNX. Its stems are cleaner than HTDemucs's, but it's a 437 MB download and slower. On a laptop RTX 4070 it runs at about 3x real time (a 3.5-minute song in about 70 s). It's offered only where WebGPU has `shader-f16`, because the fp32 model doesn't fit in browser GPU memory. If a run fails, the song is separated with HTDemucs instead.
 
 The model is 14 consecutive graphs (the STFT, band split and inverse STFT run in JavaScript), served from `$VITE_VOCAL_MODEL_BASE_URL/mel-band-roformer/` with a notice that the app links to. Every file's size and SHA-256 is pinned in `src/audio/separation/roformer/model-parts.ts`, and a download that doesn't match is rejected. [`scripts/mel-band-roformer/`](scripts/mel-band-roformer/README.md) builds the graphs from the checkpoint and uploads them through R2's S3 API:
 

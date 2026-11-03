@@ -51,11 +51,11 @@ const StemProgress: React.FC<{ downloading: boolean; fills: string; approxBytes:
   );
 };
 
-// The RoFormer is far slower on integrated graphics, so the offer says so before it runs.
+// The RoFormer is much slower on a weak GPU, so the offer says so before it runs.
 function separateCopy(fills: string, highQuality: boolean, fromOtherModel: boolean): string {
   if (fromOtherModel)
-    return "These stems are from the standard vocal model. High quality vocals can take over half an hour on integrated graphics.";
-  return `Makes the ${fills} from this song.${highQuality ? " High quality vocals can take over half an hour on integrated graphics." : ""}`;
+    return "These stems are from the standard vocal model. High quality vocals take much longer on weaker GPUs.";
+  return `Makes the ${fills} from this song.${highQuality ? " High quality vocals take much longer on weaker GPUs." : ""}`;
 }
 
 const StemModelBlock: React.FC = () => {
