@@ -64,6 +64,7 @@ const PreviewText: React.FC<{ preview: PreviewLines }> = ({ preview }) => {
   return (
     <ol aria-label="Lyrics preview" className={cn(WELL, "flex flex-col gap-2 select-text")}>
       {preview.lines.map((line, index) => (
+        // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- read-only preview derived per render; lyric lines have no id and repeat in choruses
         <li key={`${index}-${line.text}`} className="grid grid-cols-[44px_1fr] gap-2 text-[13px] leading-5">
           <span className="font-mono text-xs leading-5 text-(--muted) tabular-nums">
             {line.time === null ? "" : formatTime(line.time, 0)}

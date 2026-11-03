@@ -1,6 +1,12 @@
 import { storedAudioBytesTotal } from "@/domain/project/audio-status";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
-import { type LibraryFilter, filterCounts, libraryProjects, resumeProject } from "@/domain/project/library-view";
+import {
+  type LibraryFilter,
+  filterCounts,
+  libraryProjects,
+  resumeProject,
+  shownLibraryFilter,
+} from "@/domain/project/library-view";
 import { useProjectIndex } from "@/hooks/useProjectIndex";
 import { createProject } from "@/lib/open-project";
 import { useSettingsStore } from "@/stores/settings";
@@ -23,7 +29,7 @@ import { useLibraryActions } from "@/views/library/use-library-actions";
 import { useLibrarySelection } from "@/views/library/use-library-selection";
 import { useLibraryShortcuts } from "@/views/library/use-library-shortcuts";
 import { useLibraryUnison } from "@/views/library/use-library-unison";
-import { UnisonUpdates } from "@/views/library/unison-updates";
+import { SignedInUnisonUpdates } from "@/views/library/unison-updates";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
@@ -88,7 +94,7 @@ const LibraryScreen: React.FC = () => {
 
   const live = entries ?? NO_PROJECTS;
   const unison = useLibraryUnison(live);
-  const filter = chosenFilter === "unison" && !unison.signedIn ? "all" : chosenFilter;
+  const filter = shownLibraryFilter(chosenFilter, unison.signedIn);
   const visible = useMemo(() => libraryProjects(live, { filter, query, sort }), [live, filter, query, sort]);
   const visibleIds = useMemo(() => visible.map((project) => project.id), [visible]);
   const counts = useMemo(() => filterCounts(live), [live]);
@@ -192,15 +198,14 @@ const LibraryScreen: React.FC = () => {
             {resume && <ResumeCard project={resume} now={fetchedAt} onOpen={actions.open} className={RISE} />}
             <NewSongPanel className={cn(RISE, "[animation-delay:60ms]")} />
           </div>
-          {unison.signedIn && (
-            <UnisonUpdates
-              items={unison.items}
-              projectByLyric={unison.projectByLyric}
-              now={fetchedAt}
-              onOpenProject={actions.open}
-              className={cn(RISE, "[animation-delay:90ms]")}
-            />
-          )}
+          <SignedInUnisonUpdates
+            signedIn={unison.signedIn}
+            items={unison.items}
+            projectByLyric={unison.projectByLyric}
+            now={fetchedAt}
+            onOpenProject={actions.open}
+            className={cn(RISE, "[animation-delay:90ms]")}
+          />
           <MostWantedShelf className={cn(RISE, "[animation-delay:90ms]")} />
           <section
             aria-label="All projects"

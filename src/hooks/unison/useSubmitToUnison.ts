@@ -34,6 +34,7 @@ async function linkExtraVideos(lyricId: number, videoIds: readonly string[]): Pr
   const unlinked: string[] = [];
   for (const videoId of videoIds) {
     try {
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop -- links run in order so Unison keeps the order the user picked, and the server takes a row lock per link anyway
       await linkVideo(lyricId, videoId);
     } catch (error) {
       console.warn(LOG_PREFIX, `Could not link video ${videoId} to lyric ${lyricId}`, error);

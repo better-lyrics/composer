@@ -25,6 +25,11 @@ function matchesFilter(entry: ProjectIndexEntry, filter: LibraryFilter): boolean
   return projectStage(entry) === filter;
 }
 
+// The Unison filter only exists while signed in to Unison.
+function shownLibraryFilter(chosen: LibraryFilter, signedInToUnison: boolean): LibraryFilter {
+  return chosen === "unison" && !signedInToUnison ? "all" : chosen;
+}
+
 function libraryProjects(entries: readonly ProjectIndexEntry[], options: LibraryViewOptions): ProjectIndexEntry[] {
   const needle = normalizeProjectQuery(options.query);
   return entries
@@ -52,5 +57,5 @@ function resumeProject(entries: readonly ProjectIndexEntry[]): ProjectIndexEntry
 
 // -- Exports ------------------------------------------------------------------
 
-export { LIBRARY_FILTERS, filterCounts, libraryProjects, resumeProject };
+export { LIBRARY_FILTERS, filterCounts, libraryProjects, resumeProject, shownLibraryFilter };
 export type { LibraryFilter };

@@ -37,6 +37,7 @@ const DiffList: React.FC<DiffListProps> = ({ lines, className }) => (
     )}
   >
     {lines.map((line, index) => (
+      // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- read-only diff derived per render; lines have no id and can repeat word for word
       <li key={`${line.kind}-${index}`} className={cn("flex gap-2 px-3 select-text", LINE_STYLES[line.kind])}>
         <span aria-hidden="true" className="w-3 shrink-0 text-(--muted)">
           {MARKS[line.kind]}
