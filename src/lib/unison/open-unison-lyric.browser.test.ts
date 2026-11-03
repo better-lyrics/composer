@@ -18,8 +18,8 @@ const VIDEO_ID = "dQw4w9WgXcQ";
 const TTML = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:itunes="http://music.apple.com/lyric-ttml-internal" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" itunes:timing="Line">
   <body dur="00:20.000">
     <div begin="00:01.000" end="00:10.000">
-      <p begin="00:01.000" end="00:04.000" ttm:agent="v1">Never gonna give you up</p>
-      <p begin="00:04.000" end="00:08.000" ttm:agent="v1">Never gonna let you down</p>
+      <p begin="00:01.000" end="00:04.000" ttm:agent="v1">Paper lanterns over the bay</p>
+      <p begin="00:04.000" end="00:08.000" ttm:agent="v1">Quiet bells along the pier</p>
     </div>
   </body>
 </tt>`;
@@ -71,7 +71,10 @@ describe("openUnisonLyric", () => {
 
     const project = useProjectStore.getState();
     expect(openProjectIdSnapshot()).not.toBe("a");
-    expect(project.lines.map((line) => line.text)).toEqual(["Never gonna give you up", "Never gonna let you down"]);
+    expect(project.lines.map((line) => line.text)).toEqual([
+      "Paper lanterns over the bay",
+      "Quiet bells along the pier",
+    ]);
     expect(project.metadata).toMatchObject({
       title: "Never Gonna Give You Up",
       artists: ["Rick Astley"],
