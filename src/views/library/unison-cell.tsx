@@ -28,6 +28,8 @@ const UnisonCell: React.FC<UnisonCellProps> = ({ project, lyrics, className }) =
         {state.score !== null && <ScoreLabel score={state.score} voteCount={state.voteCount} className="truncate" />}
       </>
     );
+  } else if (state.kind === "other-account") {
+    content = <span className={cn(CELL_TEXT, "text-(--muted)")}>Other account</span>;
   } else if (state.kind === "unknown") {
     content = <span className={cn(CELL_TEXT, "text-(--muted)")}>On Unison</span>;
   } else if (state.kind === "ready") {

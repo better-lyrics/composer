@@ -1,6 +1,7 @@
 import { UNISON_STALE_TIME_MS, unisonQueryKeys } from "@/hooks/unison/query-keys";
 import type { UnisonMineItem } from "@/lib/unison/api-types";
-import { fetchMine } from "@/lib/unison/endpoints";
+import { UnisonError } from "@/lib/unison/client";
+import { fetchLyric, fetchMine } from "@/lib/unison/endpoints";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
@@ -8,8 +9,10 @@ import { useMemo } from "react";
 
 interface LibraryUnisonLyrics {
   items: UnisonMineItem[];
-  /** True once every page of `/lyrics/mine` loaded, so a linked id that is still missing was removed. */
+  /** True once every page of `/lyrics/mine` loaded, so a linked id that is still missing was removed or is not ours. */
   complete: boolean;
+  otherAccountIds: ReadonlySet<string>;
+  unresolvedIds: ReadonlySet<string>;
 }
 
 interface LibraryUnisonState extends LibraryUnisonLyrics {
@@ -21,6 +24,8 @@ interface LibraryUnisonState extends LibraryUnisonLyrics {
 const MINE_PAGE_LIMIT = 50;
 // 6 pages of 50 cover 300 lyrics; past that, unresolved links read as unknown instead of removed.
 const MAX_MINE_PAGES = 6;
+const NOT_FOUND_STATUS = 404;
+const NO_IDS: ReadonlySet<string> = new Set();
 
 // -- Fetching ------------------------------------------------------------------
 
@@ -32,11 +37,28 @@ async function fetchMineForLibrary(linkedIds: readonly string[], signal: AbortSi
     const result = await fetchMine({ cursor, limit: MINE_PAGE_LIMIT, signal });
     items.push(...result.items);
     for (const item of result.items) missing.delete(String(item.id));
-    if (result.nextCursor === null) return { items, complete: true };
-    if (missing.size === 0) return { items, complete: false };
+    if (result.nextCursor === null) return { items, complete: true, ...(await lookUpMissing(missing, signal)) };
+    if (missing.size === 0) return { items, complete: false, otherAccountIds: NO_IDS, unresolvedIds: NO_IDS };
     cursor = result.nextCursor;
   }
-  return { items, complete: false };
+  return { items, complete: false, otherAccountIds: NO_IDS, unresolvedIds: NO_IDS };
+}
+
+// A linked lyric missing from a complete `/lyrics/mine` was removed (404) or belongs to another account.
+async function lookUpMissing(
+  missing: ReadonlySet<string>,
+  signal: AbortSignal,
+): Promise<Pick<LibraryUnisonLyrics, "otherAccountIds" | "unresolvedIds">> {
+  const ids = [...missing];
+  const results = await Promise.allSettled(ids.map((id) => fetchLyric(Number(id), { signal })));
+  const otherAccountIds = new Set<string>();
+  const unresolvedIds = new Set<string>();
+  results.forEach((result, index) => {
+    if (result.status === "fulfilled") otherAccountIds.add(ids[index]);
+    else if (!(result.reason instanceof UnisonError && result.reason.status === NOT_FOUND_STATUS))
+      unresolvedIds.add(ids[index]);
+  });
+  return { otherAccountIds, unresolvedIds };
 }
 
 // -- Hook ----------------------------------------------------------------------
