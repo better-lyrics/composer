@@ -4,7 +4,7 @@ import { fetchUnisonLyric } from "@/hooks/unison/useUnisonLyric";
 import { useProjectIndex } from "@/hooks/useProjectIndex";
 import { useUnisonSession } from "@/hooks/useUnisonSession";
 import type { UnisonMineItem } from "@/lib/unison/api-types";
-import { UnisonError } from "@/lib/unison/client";
+import { isUnisonSessionEnded } from "@/lib/unison/client";
 import { openUnisonLyric } from "@/lib/unison/open-unison-lyric";
 import { Button } from "@/ui/button";
 import { BetterLyricsMark } from "@/ui/unison/better-lyrics-mark";
@@ -23,12 +23,6 @@ import { toast } from "sonner";
 
 const LOG_PREFIX = "[UnisonMine]";
 const SKELETON_ROW_COUNT = 4;
-
-// -- Helpers -------------------------------------------------------------------
-
-function isSessionEnded(error: Error | null): boolean {
-  return error instanceof UnisonError && error.code === "AUTH_REQUIRED";
-}
 
 // -- Components ----------------------------------------------------------------
 
@@ -117,6 +111,7 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
             item={item}
             projectId={projectByLyric.get(String(item.id))?.id}
             opening={openingId === item.id}
+            waiting={!entries}
             onOpenProject={libraryActions.open}
             onOpenAsProject={openAsProject}
           />
@@ -132,7 +127,7 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
 const MineView: React.FC = () => {
   const session = useUnisonSession();
   const mine = useMyUnisonLyrics(session?.keyId ?? null);
-  if (!session || isSessionEnded(mine.error)) return <MineSignedOut />;
+  if (!session || isUnisonSessionEnded(mine.error)) return <MineSignedOut />;
   return (
     <section aria-label="My lyrics on Unison" className="flex flex-col">
       <MineList mine={mine} />

@@ -1,5 +1,5 @@
 import { UNISON_VARIANT_CAP } from "@/domain/unison/submit-checks";
-import { UnisonError } from "@/lib/unison/client";
+import { isUnisonSessionEnded, UnisonError } from "@/lib/unison/client";
 import { unisonFailureReason } from "@/utils/unison-toast";
 
 // -- Types ---------------------------------------------------------------------
@@ -19,12 +19,8 @@ const SUBMIT_ERROR_COPY: Record<string, string> = {
 
 // -- Functions -----------------------------------------------------------------
 
-function isSessionEndedError(error: unknown): boolean {
-  return error instanceof UnisonError && (error.code === "AUTH_REQUIRED" || error.status === 401);
-}
-
 function submitFailure(error: unknown): SubmitFailure {
-  if (isSessionEndedError(error)) return { kind: "session-ended" };
+  if (isUnisonSessionEnded(error)) return { kind: "session-ended" };
   if (!(error instanceof UnisonError)) return { kind: "message", text: unisonFailureReason(error) };
   // Unison's own hint names the daily edit limit, which a generic line would hide.
   if (error.code === "RATE_LIMITED" && error.hint) return { kind: "message", text: error.hint };
@@ -33,4 +29,4 @@ function submitFailure(error: unknown): SubmitFailure {
 
 // -- Exports -------------------------------------------------------------------
 
-export { isSessionEndedError, submitFailure };
+export { submitFailure };

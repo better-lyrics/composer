@@ -16,6 +16,7 @@ interface MineRowProps {
   item: UnisonMineItem;
   projectId: string | undefined;
   opening: boolean;
+  waiting?: boolean;
   onOpenProject: (projectId: string) => void;
   onOpenAsProject: (item: UnisonMineItem) => void;
 }
@@ -40,7 +41,14 @@ const MineColumns: React.FC = () => (
   </div>
 );
 
-const MineRowContent: React.FC<MineRowProps> = ({ item, projectId, opening, onOpenProject, onOpenAsProject }) => {
+const MineRowContent: React.FC<MineRowProps> = ({
+  item,
+  projectId,
+  opening,
+  waiting,
+  onOpenProject,
+  onOpenAsProject,
+}) => {
   const status = unisonStatus(item);
   return (
     <li className={cn(MINE_GRID, ROW)}>
@@ -71,7 +79,7 @@ const MineRowContent: React.FC<MineRowProps> = ({ item, projectId, opening, onOp
           size="sm"
           variant="secondary"
           hasIcon
-          disabled={opening}
+          disabled={opening || waiting}
           aria-label={`Open as project, ${item.song}`}
           onClick={() => onOpenAsProject(item)}
           className="justify-self-end"

@@ -1,12 +1,10 @@
 import { UNISON_STALE_TIME_MS, unisonQueryKeys } from "@/hooks/unison/query-keys";
 import type { UnisonVariant } from "@/lib/unison/api-types";
-import { UnisonError } from "@/lib/unison/client";
+import { isUnisonNotFound } from "@/lib/unison/client";
 import { fetchVariants } from "@/lib/unison/endpoints";
 import { useQuery } from "@tanstack/react-query";
 
 // -- Constants -----------------------------------------------------------------
-
-const NOT_FOUND_STATUS = 404;
 
 // -- Functions -----------------------------------------------------------------
 
@@ -15,7 +13,7 @@ async function fetchVariantsOrNone(videoId: string, signal: AbortSignal): Promis
   try {
     return await fetchVariants(videoId, { signal });
   } catch (error) {
-    if (error instanceof UnisonError && error.status === NOT_FOUND_STATUS) return [];
+    if (isUnisonNotFound(error)) return [];
     throw error;
   }
 }

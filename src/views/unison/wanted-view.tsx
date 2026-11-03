@@ -91,8 +91,13 @@ const WantedView: React.FC = () => {
             <h2 className="px-3 text-xs font-medium text-(--muted)">{SECTION_TITLES[section.id]}</h2>
           )}
           <ol className="flex flex-col">
-            {section.songs.map((song) => (
-              <WantedRow key={song.videoId} song={song} starting={startingId === song.videoId} onStart={start} />
+            {section.songs.map((song, index) => (
+              <WantedRow
+                key={`${song.videoId}-${index}`}
+                song={song}
+                starting={startingId === song.videoId}
+                onStart={start}
+              />
             ))}
           </ol>
         </div>

@@ -72,9 +72,7 @@ const VideosRow: React.FC<VideosRowProps> = ({ lyric, durationSeconds, canManage
             </Button>
           }
         >
-          <div className="min-h-0 overflow-y-auto overscroll-contain">
-            <ManageVideos lyric={lyric} durationSeconds={durationSeconds} />
-          </div>
+          <ManageVideos lyric={lyric} durationSeconds={durationSeconds} />
         </Popover>
       )}
     </div>

@@ -1,6 +1,6 @@
 import { UNISON_STALE_TIME_MS, unisonQueryKeys } from "@/hooks/unison/query-keys";
 import type { UnisonMineItem } from "@/lib/unison/api-types";
-import { UnisonError } from "@/lib/unison/client";
+import { isUnisonNotFound } from "@/lib/unison/client";
 import { fetchLyric, fetchMine } from "@/lib/unison/endpoints";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -24,7 +24,6 @@ interface LibraryUnisonState extends LibraryUnisonLyrics {
 const MINE_PAGE_LIMIT = 50;
 // 6 pages of 50 cover 300 lyrics; past that, unresolved links read as unknown instead of removed.
 const MAX_MINE_PAGES = 6;
-const NOT_FOUND_STATUS = 404;
 const NO_IDS: ReadonlySet<string> = new Set();
 
 // -- Fetching ------------------------------------------------------------------
@@ -55,8 +54,7 @@ async function lookUpMissing(
   const unresolvedIds = new Set<string>();
   results.forEach((result, index) => {
     if (result.status === "fulfilled") otherAccountIds.add(ids[index]);
-    else if (!(result.reason instanceof UnisonError && result.reason.status === NOT_FOUND_STATUS))
-      unresolvedIds.add(ids[index]);
+    else if (!isUnisonNotFound(result.reason)) unresolvedIds.add(ids[index]);
   });
   return { otherAccountIds, unresolvedIds };
 }

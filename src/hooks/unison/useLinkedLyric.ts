@@ -1,7 +1,7 @@
 import { useUnisonLyric } from "@/hooks/unison/useUnisonLyric";
 import { type UnisonStatus, unisonStatus } from "@/domain/unison/lyric-status";
 import type { UnisonLyric } from "@/lib/unison/api-types";
-import { UnisonError } from "@/lib/unison/client";
+import { isUnisonNotFound } from "@/lib/unison/client";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -13,13 +13,11 @@ type LinkedLyric =
 
 // -- Constants -----------------------------------------------------------------
 
-const NOT_FOUND_STATUS = 404;
-
 // -- Hook ----------------------------------------------------------------------
 
 function useLinkedLyric(unisonLyricId: string): LinkedLyric {
   const query = useUnisonLyric(Number(unisonLyricId));
-  if (query.error instanceof UnisonError && query.error.status === NOT_FOUND_STATUS) return { kind: "removed" };
+  if (isUnisonNotFound(query.error)) return { kind: "removed" };
   if (query.data) return { kind: "found", lyric: query.data, status: unisonStatus(query.data) };
   if (query.error) return { kind: "failed", error: query.error, retry: () => void query.refetch() };
   return { kind: "loading" };

@@ -49,6 +49,17 @@ class UnisonError extends Error {
   }
 }
 
+const NOT_FOUND_STATUS = 404;
+const UNAUTHORIZED_STATUS = 401;
+
+function isUnisonNotFound(error: unknown): boolean {
+  return error instanceof UnisonError && error.status === NOT_FOUND_STATUS;
+}
+
+function isUnisonSessionEnded(error: unknown): boolean {
+  return error instanceof UnisonError && (error.code === "AUTH_REQUIRED" || error.status === UNAUTHORIZED_STATUS);
+}
+
 // -- Helpers -------------------------------------------------------------------
 
 function buildUrl(path: string, query: UnisonRequestOptions["query"]): string {
@@ -136,4 +147,4 @@ async function unisonFetchPage<T>(path: string, options: UnisonRequestOptions = 
 
 // -- Exports -------------------------------------------------------------------
 
-export { UNISON_BASE_URL, UnisonError, unisonFetch, unisonFetchPage };
+export { isUnisonNotFound, isUnisonSessionEnded, UNISON_BASE_URL, UnisonError, unisonFetch, unisonFetchPage };

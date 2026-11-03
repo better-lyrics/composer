@@ -6,6 +6,7 @@ import { useSubmitToUnison } from "@/hooks/unison/useSubmitToUnison";
 import { useUnisonLyric } from "@/hooks/unison/useUnisonLyric";
 import { useUnisonVariants } from "@/hooks/unison/useUnisonVariants";
 import { useVideoLinks } from "@/hooks/unison/useVideoSuggestions";
+import { isUnisonSessionEnded } from "@/lib/unison/client";
 import { useProjectStore } from "@/stores/project";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
@@ -18,7 +19,7 @@ import {
   useRevisionInput,
   useSubmitChecks,
 } from "@/views/export/unison/submit-card-shell";
-import { isSessionEndedError, submitFailure } from "@/views/export/unison/submit-errors";
+import { submitFailure } from "@/views/export/unison/submit-errors";
 import { type SubmitIdentity, SubmitFooter } from "@/views/export/unison/submit-footer";
 import { UNISON_CARD_TEXT_STYLES } from "@/views/export/unison/unison-card-styles";
 import { YourVersions } from "@/views/export/unison/your-versions";
@@ -48,7 +49,7 @@ type ModeCardProps = Omit<SubmitCardProps, "lyricId">;
 function useSender({ session, onSessionEnded, source }: ModeCardProps) {
   const onError = useCallback(
     (error: unknown) => {
-      if (isSessionEndedError(error)) onSessionEnded();
+      if (isUnisonSessionEnded(error)) onSessionEnded();
     },
     [onSessionEnded],
   );

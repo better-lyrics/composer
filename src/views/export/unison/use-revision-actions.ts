@@ -67,9 +67,11 @@ function useRevisionActions(lyric: UnisonLyric, keyId: string, onRestored: (revN
     run(
       "load",
       async () => {
+        const session = useProjectStore.getState().projectSession;
         const content = await fetchRevisionContent(queryClient, lyric.id, revision.id);
-        // The fetch can outlive a project switch; only the project still linked to this lyric loads it.
-        if (useProjectStore.getState().unisonLyricId !== String(lyric.id)) return;
+        // The fetch can outlive a project switch; only the project that asked loads it.
+        const project = useProjectStore.getState();
+        if (project.projectSession !== session || project.unisonLyricId !== String(lyric.id)) return;
         const read = readUnisonLyric({ song: lyric.song, format: content.format, lyrics: content.lyrics });
         if (read.status === "unreadable") {
           toast.error(read.message);

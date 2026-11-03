@@ -45,12 +45,11 @@ function useManageVideos(lyric: UnisonLyric, songSeconds: number): ManageVideos 
 
   const primaryVideoId = links?.find((video) => video.isPrimary)?.videoId ?? lyric.videoId;
   const linkedIds = new Set(links?.map((video) => video.videoId));
-  const linked = (links ?? [])
-    .filter((video) => !video.isPrimary)
-    .map((video): ChosenVideo => {
-      const suggestion = known.find((candidate) => candidate.videoId === video.videoId) ?? null;
-      return { videoId: video.videoId, suggestion, origin: "linked" };
-    });
+  const linked = (links ?? []).flatMap((video): ChosenVideo[] => {
+    if (video.isPrimary) return [];
+    const suggestion = known.find((candidate) => candidate.videoId === video.videoId) ?? null;
+    return [{ videoId: video.videoId, suggestion, origin: "linked" }];
+  });
   const more = uniqueSuggestions(suggestions, primaryVideoId).filter((candidate) => !linkedIds.has(candidate.videoId));
 
   const write = async (describe: string, request: () => Promise<VideoLink[]>, candidateSeconds: number | null) => {

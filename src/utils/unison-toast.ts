@@ -1,4 +1,4 @@
-import { UnisonError } from "@/lib/unison/client";
+import { isUnisonNotFound, isUnisonSessionEnded, UnisonError } from "@/lib/unison/client";
 import { useProjectStore } from "@/stores/project";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { toast } from "sonner";
@@ -16,8 +16,8 @@ function unisonFailureReason(error: unknown): string {
   if (!(error instanceof UnisonError)) return GENERIC_REASON;
   if (error.hint) return error.hint;
   if (error.code === "NETWORK") return UNREACHABLE_REASON;
-  if (error.code === "AUTH_REQUIRED" || error.status === 401) return SESSION_ENDED_REASON;
-  if (error.status === 404) return GONE_REASON;
+  if (isUnisonSessionEnded(error)) return SESSION_ENDED_REASON;
+  if (isUnisonNotFound(error)) return GONE_REASON;
   return GENERIC_REASON;
 }
 

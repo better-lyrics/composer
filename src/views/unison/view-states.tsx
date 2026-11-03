@@ -1,5 +1,6 @@
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
+import { unisonFailureReason } from "@/utils/unison-toast";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -53,7 +54,7 @@ const SkeletonBar: React.FC<{ className?: string }> = ({ className }) => (
 
 const InlineError: React.FC<InlineErrorProps> = ({ error, onRetry, className }) => (
   <div role="alert" className={cn("flex items-center gap-3 px-3 py-4", className)}>
-    <p className="text-sm text-composer-text-secondary select-text cursor-text">{error.message}</p>
+    <p className="text-sm text-composer-text-secondary select-text cursor-text">{unisonFailureReason(error)}</p>
     <Button size="sm" variant="secondary" onClick={onRetry}>
       Retry
     </Button>

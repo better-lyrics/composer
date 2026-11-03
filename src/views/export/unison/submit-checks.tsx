@@ -164,7 +164,7 @@ const PassedChecks: React.FC<{ copies: readonly CheckCopy[] }> = ({ copies }) =>
 const CheckList: React.FC<CheckListProps> = (props) => {
   const rows = props.checks.map((check) => ({ check, copy: checkCopy(check, props) }));
   const needsYou = rows.filter(({ check }) => check.status !== "pass");
-  const passed = rows.filter(({ check }) => check.status === "pass").map(({ copy }) => copy);
+  const passed = rows.flatMap(({ check, copy }) => (check.status === "pass" ? [copy] : []));
   return (
     <div className="flex flex-col gap-2">
       {needsYou.length > 0 && (
