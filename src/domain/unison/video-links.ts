@@ -1,4 +1,4 @@
-import type { SuggestedVideo } from "@/lib/unison/api-types";
+import type { SuggestedVideo, VideoLink } from "@/lib/unison/api-types";
 import { formatTime } from "@/utils/format-time";
 
 // -- Types ---------------------------------------------------------------------
@@ -103,6 +103,16 @@ function suggestionFacts(suggestion: SuggestedVideo): VideoFacts {
   };
 }
 
+// Unloaded links never block: the check waits for data instead of guessing.
+function playsUnlinkedVideo(
+  sourceVideoId: string | undefined,
+  lyricVideoId: string,
+  links: readonly VideoLink[] | undefined,
+): boolean {
+  if (!sourceVideoId || !links || sourceVideoId === lyricVideoId) return false;
+  return !links.some((link) => link.videoId === sourceVideoId);
+}
+
 // -- Exports -------------------------------------------------------------------
 
 export type { ChosenVideo, ChosenVideoOrigin, VideoChoices, VideoFacts };
@@ -110,6 +120,7 @@ export {
   fitsSongLength,
   lengthMismatchNote,
   linkedVideoCount,
+  playsUnlinkedVideo,
   submitVideoChoices,
   suggestionFacts,
   suggestionLengthNote,

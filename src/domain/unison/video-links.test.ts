@@ -3,6 +3,7 @@ import type { SuggestedVideo } from "@/lib/unison/api-types";
 import {
   fitsSongLength,
   lengthMismatchNote,
+  playsUnlinkedVideo,
   submitVideoChoices,
   suggestionLengthNote,
   VIDEO_LINK_LIMIT,
@@ -135,5 +136,26 @@ describe("submitVideoChoices", () => {
     const result = choices({ suggestions: many });
     expect(result.linked).toHaveLength(VIDEO_LINK_LIMIT - 1);
     expect(result.more).toHaveLength(4);
+  });
+});
+
+describe("playsUnlinkedVideo", () => {
+  const links = [
+    { videoId: MAIN_ID, isPrimary: true },
+    { videoId: "lYr1cV1d3o0", isPrimary: false },
+  ];
+
+  it("allows the lyric's main and linked videos", () => {
+    expect(playsUnlinkedVideo(MAIN_ID, MAIN_ID, links)).toBe(false);
+    expect(playsUnlinkedVideo("lYr1cV1d3o0", MAIN_ID, links)).toBe(false);
+  });
+
+  it("allows a project with no video, and links that have not loaded", () => {
+    expect(playsUnlinkedVideo(undefined, MAIN_ID, links)).toBe(false);
+    expect(playsUnlinkedVideo("oth3rV1d3o0", MAIN_ID, undefined)).toBe(false);
+  });
+
+  it("regression: flags a project whose audio was replaced with a video the lyric does not link", () => {
+    expect(playsUnlinkedVideo("oth3rV1d3o0", MAIN_ID, links)).toBe(true);
   });
 });

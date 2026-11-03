@@ -1,9 +1,11 @@
-import { UNISON_VARIANT_CAP } from "@/domain/unison/submit-checks";
 import { isOwnLyric } from "@/domain/unison/ownership";
+import { UNISON_VARIANT_CAP } from "@/domain/unison/submit-checks";
+import { playsUnlinkedVideo } from "@/domain/unison/video-links";
 import { useRevisionPreview } from "@/hooks/unison/useRevisionPreview";
 import { useSubmitToUnison } from "@/hooks/unison/useSubmitToUnison";
 import { useUnisonLyric } from "@/hooks/unison/useUnisonLyric";
 import { useUnisonVariants } from "@/hooks/unison/useUnisonVariants";
+import { useVideoLinks } from "@/hooks/unison/useVideoSuggestions";
 import { useProjectStore } from "@/stores/project";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
@@ -18,6 +20,7 @@ import {
 } from "@/views/export/unison/submit-card-shell";
 import { isSessionEndedError, submitFailure } from "@/views/export/unison/submit-errors";
 import { type SubmitIdentity, SubmitFooter } from "@/views/export/unison/submit-footer";
+import { UNISON_CARD_TEXT_STYLES } from "@/views/export/unison/unison-card-styles";
 import { YourVersions } from "@/views/export/unison/your-versions";
 import { IconBolt, IconHourglassHigh, IconStack2 } from "@tabler/icons-react";
 import { useCallback, useId, useMemo } from "react";
@@ -54,6 +57,11 @@ function useSender({ session, onSessionEnded, source }: ModeCardProps) {
     sender.failure && sender.failure.lyrics === source.content ? submitFailure(sender.failure.error) : null;
   return { sender, onError, failureText: failed?.kind === "message" ? failed.text : null };
 }
+
+// -- Constants -----------------------------------------------------------------
+
+const UNLINKED_VIDEO_REASON =
+  "This project plays a video that is not linked to this lyric. Link it under Videos first.";
 
 // -- Components ----------------------------------------------------------------
 
@@ -127,9 +135,13 @@ const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
   const input = useRevisionInput(source.content);
   const { sender, onError, failureText } = useSender(props);
   const { query, settling } = useRevisionPreview(lyricId, input, onError);
-  const replacesPending = Boolean(useUnisonLyric(lyricId).data?.revision.pending);
+  const lyric = useUnisonLyric(lyricId).data;
+  const links = useVideoLinks(lyricId).data;
+  const replacesPending = Boolean(lyric?.revision.pending);
+  const unlinkedVideo = lyric !== undefined && playsUnlinkedVideo(source.videoId, lyric.videoId, links);
   const checksReasonId = useId();
   const changesReasonId = useId();
+  const videoReasonId = useId();
   const preview = query.data;
   const goesLive = preview?.outcome.goesLive ?? true;
   const outcome = preview ? (
@@ -148,6 +160,11 @@ const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
         onRetry={() => void query.refetch()}
       />
       {!checks.canSubmit && <ChecksReason id={checksReasonId} />}
+      {unlinkedVideo && (
+        <p id={videoReasonId} className={UNISON_CARD_TEXT_STYLES}>
+          {UNLINKED_VIDEO_REASON}
+        </p>
+      )}
       <SubmitFooter
         identity={session}
         outcome={outcome}
@@ -155,8 +172,8 @@ const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
         failure={failureText}
         label={goesLive ? "Send update" : "Send for review"}
         pending={sender.pending}
-        disabled={!checks.canSubmit || !preview || preview.noChanges || settling}
-        blockedReasonId={checks.canSubmit ? changesReasonId : checksReasonId}
+        disabled={!checks.canSubmit || unlinkedVideo || !preview || preview.noChanges || settling}
+        blockedReasonId={!checks.canSubmit ? checksReasonId : unlinkedVideo ? videoReasonId : changesReasonId}
         onSend={() => void sender.send({ kind: "update", lyricId, input })}
       />
     </SubmitCardShell>
