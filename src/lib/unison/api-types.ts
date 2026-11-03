@@ -73,6 +73,7 @@ interface UnisonLyricBase {
   submitter?: UnisonSubmitter;
   fulfilled?: { demand: number; requestCount: number; fulfilledAt: number };
   marks?: UnisonMark[];
+  createdAt?: number;
 }
 
 interface UnisonVariant extends UnisonLyricBase {
