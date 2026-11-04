@@ -7,7 +7,11 @@
 #   2. Removes the graph's two fp32 -> fp16 -> fp32 Cast round-trips. They only
 #      drop precision, and WebGPU can't run fp16 casts without shader-f16, which
 #      many GPUs lack. Weights stay fp32 for the same reason.
-#   3. Copies the English dictionary and the licences next to it.
+#   3. Splits the HuBERT encoder's two ~650 ms Convs into short dispatches
+#      (scripts/slice-hubertfa-convs.py), so an Intel iGPU doesn't reset the
+#      device when another app needs the GPU, and checks the result against the
+#      unsplit graph on CPU.
+#   4. Copies the English dictionary and the licences next to it.
 #
 # Usage:
 #   ./scripts/build-hubertfa-onnx.sh [output_dir]
@@ -40,11 +44,11 @@ MODEL_DIR="$(dirname "$(find "${WORK_DIR}/release" -name model.onnx | head -1)")
 
 if [[ ! -d "${WORK_DIR}/venv" ]]; then
   python3 -m venv "${WORK_DIR}/venv"
-  "${WORK_DIR}/venv/bin/pip" install -q onnx
 fi
+"${WORK_DIR}/venv/bin/pip" install -q onnx onnxruntime numpy
 
 echo "==> removing fp32 -> fp16 -> fp32 Cast round-trips"
-"${WORK_DIR}/venv/bin/python" - "${MODEL_DIR}/model.onnx" "${OUT_DIR}/hubertfa_v007_fp32_webgpu.onnx" <<'PY'
+"${WORK_DIR}/venv/bin/python" - "${MODEL_DIR}/model.onnx" "${WORK_DIR}/no_fp16_casts.onnx" <<'PY'
 import sys
 import onnx
 from onnx import TensorProto
@@ -72,12 +76,18 @@ onnx.save(model, dst)
 print(f"removed {len(removed) // 2} Cast round-trips")
 PY
 
+echo "==> splitting the encoder's long Convs into short dispatches"
+"${WORK_DIR}/venv/bin/python" "$(dirname "$0")/slice-hubertfa-convs.py" \
+  "${WORK_DIR}/no_fp16_casts.onnx" "${OUT_DIR}/hubertfa_v007_fp32_webgpu_v2.onnx" --check
+
 cp "${MODEL_DIR}/ds_cmudict-07b.txt" "${OUT_DIR}/hubertfa_v007_cmudict.txt"
 curl -fsSL "${LICENSE_URL}" -o "${OUT_DIR}/HUBERTFA_LICENSE.txt"
 cat > "${OUT_DIR}/HUBERTFA_NOTICE.txt" <<'TXT'
-hubertfa_v007_fp32_webgpu.onnx is HubertFA v0.0.7's model.onnx
+hubertfa_v007_fp32_webgpu_v2.onnx is HubertFA v0.0.7's model.onnx
 (https://github.com/wolfgitpr/HubertFA, Apache-2.0; see HUBERTFA_LICENSE.txt).
-Modification: two float32 -> float16 -> float32 Cast round-trips were removed from the graph.
+Modifications: two float32 -> float16 -> float32 Cast round-trips were removed from the graph,
+and the encoder's feature-extractor and positional Convs were split into smaller Convs that
+compute the same result.
 It embeds the chinese-hubert-base encoder (https://huggingface.co/TencentGameMate/chinese-hubert-base, MIT).
 hubertfa_v007_cmudict.txt is HubertFA's ds_cmudict-07b.txt, derived from the CMU Pronouncing Dictionary (BSD-style licence).
 TXT

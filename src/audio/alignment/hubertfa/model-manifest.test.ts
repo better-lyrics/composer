@@ -36,7 +36,7 @@ describe("parseAlignmentManifest", () => {
     expect(models).toEqual([
       expect.objectContaining({
         id: BUILTIN_ALIGNMENT_MODEL.id,
-        modelUrl: `${BASE_URL}/hubertfa_v007_fp32_webgpu.onnx`,
+        modelUrl: `${BASE_URL}/hubertfa_v007_fp32_webgpu_v2.onnx`,
       }),
       {
         id: "ft-1",
