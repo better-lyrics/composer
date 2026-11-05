@@ -30,7 +30,11 @@ function tickBraccato(el: BraccatoLyricsElement, sample: PlaybackSample, applied
     return applied;
   }
   // Without the rate the word sweeps run on the wall clock and stutter at any speed but 1x.
-  el.tickOptions = { playbackRate, ...highlightLeadTrims(themeLeads(el), playbackRate, playing) };
+  el.tickOptions = {
+    playbackRate,
+    followPausedSeeks: true,
+    ...highlightLeadTrims(themeLeads(el), playbackRate, playing),
+  };
   if (animating) {
     el.currentTime = sample.currentTime;
     el.playing = true;
