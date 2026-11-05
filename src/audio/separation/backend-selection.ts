@@ -1,6 +1,6 @@
 import { type Backend, WEBGPU_POWER_PREFERENCE } from "@/audio/ort-runtime";
 import { describeError } from "@/audio/separation/worker-log";
-import type { VocalModelVariant } from "@/stores/settings";
+import type { HtdemucsVariant } from "@/audio/separation/model-registry";
 
 type BackendChoice =
   | { backend: "webgpu"; adapterLabel: string; hasTimestampQuery: boolean | null; hasShaderF16: boolean }
@@ -57,9 +57,9 @@ async function chooseBackend(forceWasm: boolean | undefined): Promise<BackendCho
 
 // fp16 needs WebGPU shader-f16, and on WASM it is about 4x slower than fp32, so both cases run fp32 instead.
 function runnableVariant(
-  variant: VocalModelVariant,
+  variant: HtdemucsVariant,
   choice: BackendChoice,
-): { variant: VocalModelVariant; fallbackReason: string | null } {
+): { variant: HtdemucsVariant; fallbackReason: string | null } {
   if (variant !== "fp16") return { variant, fallbackReason: null };
   if (choice.backend === "wasm") {
     return { variant: "fp32", fallbackReason: "the fp16 vocal model is slow on WASM (CPU), so using fp32" };
@@ -74,3 +74,4 @@ function runnableVariant(
 }
 
 export { chooseBackend, runnableVariant };
+export type { BackendChoice };

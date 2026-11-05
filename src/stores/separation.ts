@@ -1,6 +1,6 @@
 import { hashFile } from "@/audio/separation/audio-codec";
 import { hasCachedModel } from "@/audio/separation/model-cache";
-import { getModelDescriptor, isModelHostingConfigured } from "@/audio/separation/model-registry";
+import { isModelHostingConfigured, vocalModelFiles } from "@/audio/separation/model-registry";
 import { cancelSeparationWorker, disposeSeparationWorker } from "@/audio/separation/shared-separation-worker";
 import { isProjectStemJobKey } from "@/audio/separation/stem-job-liveness";
 import {
@@ -14,9 +14,7 @@ import type { SeparationError, SeparationStatus, Stem } from "@/audio/separation
 import { STEM_SLOTS, type StemOrigin, type StemSlot } from "@/domain/stems/stem-slot";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { playableFile, useAudioStore } from "@/stores/audio";
-import { storeSeparatedStems } from "@/stores/separated-stem-write";
-import { runModelDownload } from "@/stores/separation-model-download";
-import { separateSongFile } from "@/stores/separation-pipeline";
+import { runSeparation } from "@/stores/separation-run";
 import { useSettingsStore } from "@/stores/settings";
 import { type ImportedStemDetails, resolveStems, songKeyFor } from "@/stores/stem-sources";
 import { nextStemUrls, releaseStemUrls } from "@/stores/stem-urls";
@@ -36,6 +34,8 @@ interface SeparationState extends StemImportState {
   stemOrigins: Partial<Record<StemSlot, StemOrigin>>;
   stemDetails: Partial<Record<StemSlot, ImportedStemDetails>>;
   hostingConfigured: boolean;
+  /** The song's stems came from a model other than the selected one, such as HTDemucs while the RoFormer is picked. */
+  stemsFromOtherModel: boolean;
 }
 
 interface SeparationActions {
@@ -84,7 +84,13 @@ function endSeparationOfOtherSong(file: File | null): void {
 }
 
 const LOG_PREFIX = "[Separation]";
-const NO_STEMS = { availableStems: ["original"] as Stem[], stemUrls: {}, stemOrigins: {}, stemDetails: {} };
+const NO_STEMS = {
+  availableStems: ["original"] as Stem[],
+  stemUrls: {},
+  stemOrigins: {},
+  stemDetails: {},
+  stemsFromOtherModel: false,
+};
 
 const useSeparationStore = create<SeparationState & SeparationActions>((set, get) => ({
   status: "idle",
@@ -101,16 +107,16 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
   pendingImport: null,
   importError: null,
   hostingConfigured: isModelHostingConfigured(),
+  stemsFromOtherModel: false,
 
   refreshModelCacheStatus: async () => {
-    const variant = useSettingsStore.getState().vocalModelVariant;
-    const descriptor = getModelDescriptor(variant);
-    if (!descriptor) {
+    const files = vocalModelFiles(useSettingsStore.getState().vocalModelVariant);
+    if (!files) {
       set({ modelCached: false, hostingConfigured: false });
       return;
     }
-    const cached = await hasCachedModel(descriptor);
-    set({ modelCached: cached, hostingConfigured: true });
+    const cached = await Promise.all(files.map(hasCachedModel));
+    set({ modelCached: cached.every(Boolean), hostingConfigured: true });
   },
 
   refreshForCurrentSource: async () => {
@@ -144,6 +150,8 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
         const busy = separatingFile !== null && (status === "downloading" || status === "processing");
         set({
           jobKey: resolved.jobKey,
+          stemsFromOtherModel:
+            slots.length > 0 && !isProjectStemJobKey(resolved.jobKey) && resolved.jobKey !== cacheJobKey,
           availableStems,
           stemUrls,
           stemOrigins: Object.fromEntries(slots.map((slot) => [slot, resolved.slots[slot]?.origin])),
@@ -170,39 +178,16 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
     const source = useAudioStore.getState().source;
     const projectId = openProjectIdSnapshot();
     const file = playableFile(source);
-    if (!file || STEM_SLOTS.every((slot) => get().stemUrls[slot])) return;
+    if (!file || (STEM_SLOTS.every((slot) => get().stemUrls[slot]) && !get().stemsFromOtherModel)) return;
 
     isCancelling = false;
     const isCurrentRun = beginSeparationRun();
     separatingFile = file;
     try {
-      const variant = useSettingsStore.getState().vocalModelVariant;
-      if (!(await runModelDownload(set, variant, () => isCancelling))) return;
-      if (!isCurrentRun()) return;
-      set({ modelCached: true });
-
-      const separated = await separateSongFile(file, {
-        set,
-        isCurrentRun,
-        isCancelling: () => isCancelling,
-        onHashed: (cacheHash) => {
-          if (!isProjectStemJobKey(get().jobKey)) set({ jobKey: stemJobKey(cacheHash, variant) });
-        },
-      });
-      if (!separated || !isCurrentRun()) return;
-      try {
-        await storeSeparatedStems({
-          cacheHash: separated.cacheHash,
-          songKey: songKeyFor(source, separated.audioHash),
-          variant,
-          files: separated.stemFiles,
-          durationSeconds: separated.durationSeconds,
-          projectId: isProjectStemJobKey(get().jobKey) ? projectId : undefined,
-          emptySlots: STEM_SLOTS.filter((slot) => !get().stemUrls[slot]),
-        });
-      } catch (err) {
-        if (isCurrentRun()) set({ status: "error", error: { code: "unknown", message: (err as Error).message } });
-      }
+      const selected = useSettingsStore.getState().vocalModelVariant;
+      const run = { selected, file, source, projectId, set, get, isCurrentRun, isCancelling: () => isCancelling };
+      // A failed run is refreshed too: an upgrade that failed leaves the song's stems, and their job key comes back.
+      if (!(await runSeparation(run)) && !isCurrentRun()) return;
       if (isCurrentRun()) separatingFile = null;
       if (useAudioStore.getState().source === source) await get().refreshForCurrentSource();
     } finally {

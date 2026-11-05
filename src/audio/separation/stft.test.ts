@@ -18,6 +18,26 @@ function diffRms(a: Float32Array, b: Float32Array): number {
 }
 
 describe("stft", () => {
+  it("round-trips at the Mel-Band RoFormer's unnormalised 2048/441 framing", () => {
+    const framing = { fftSize: 2048, hop: 441 };
+    const length = 352800;
+    expect(stftFrameCount(length, true, framing)).toBe(801);
+    const signal = Float32Array.from({ length }, (_, i) => Math.sin((2 * Math.PI * 523 * i) / 44100) * 0.5);
+    const real = new Float32Array(801 * 1025);
+    const imag = new Float32Array(801 * 1025);
+    forEachStftFrame(
+      signal,
+      (f, frameReal, frameImag) => {
+        real.set(frameReal.subarray(0, 1025), f * 1025);
+        imag.set(frameImag.subarray(0, 1025), f * 1025);
+      },
+      true,
+      framing,
+    );
+    const back = istft({ real, imag, numFrames: 801, numBins: 1025 }, length, {}, framing);
+    expect(diffRms(signal, back) / rms(signal)).toBeLessThan(1e-5);
+  });
+
   it("round-trips a sine wave with low RMS error", () => {
     const sr = 44100;
     const length = 32768;

@@ -51,6 +51,22 @@ describe("resolveStems", () => {
   });
 
   describe("invariants", () => {
+    it("keeps RoFormer and HTDemucs stems apart, showing HTDemucs stems for the RoFormer only until it has its own", async () => {
+      const put = (variant: "fp16" | "roformer", bytes: number) =>
+        Promise.all([
+          putStem("mixed", "vocals", variant, new Blob([new Uint8Array(bytes)])),
+          putStem("mixed", "instrumental", variant, new Blob([new Uint8Array(bytes)])),
+        ]);
+      await put("fp16", 10);
+      expect((await resolveStems(undefined, "mixed", "mixed", "roformer")).jobKey).toBe(stemJobKey("mixed", "fp16"));
+      await put("roformer", 30);
+      const roformer = await resolveStems(undefined, "mixed", "mixed", "roformer");
+      expect(roformer.jobKey).toBe(stemJobKey("mixed", "roformer"));
+      expect(roformer.slots.vocals?.file.size).toBe(30);
+      const htdemucs = await resolveStems(undefined, "mixed", "mixed", "fp16");
+      expect(htdemucs.slots.vocals?.file.size).toBe(10);
+    });
+
     it("ignores stems saved for another song but never deletes them", async () => {
       await seedStoredProject("resolve-other-song");
       await importVocals("resolve-other-song", "old-song");

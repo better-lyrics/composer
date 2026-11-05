@@ -5,6 +5,21 @@ type Backend = "webgpu" | "wasm";
 interface OrtTensor {
   data: Float32Array;
   dims: number[];
+  /** Frees a tensor ORT left on the GPU (preferredOutputLocation "gpu-buffer"). */
+  dispose?(): void;
+}
+
+type ExecutionProvider = string | { name: "webgpu"; storageBufferCacheMode?: "bucket" | "simple" | "disabled" };
+
+interface SessionOptions {
+  executionProviders: ExecutionProvider[];
+  graphOptimizationLevel?: string;
+  preferredOutputLocation?: "cpu" | "gpu-buffer";
+}
+
+interface GpuDeviceLike {
+  queue: { onSubmittedWorkDone(): Promise<void> };
+  lost: Promise<{ reason: string; message: string }>;
 }
 
 interface OrtSession {
@@ -16,16 +31,15 @@ interface OrtSession {
 
 interface Ort {
   InferenceSession: {
-    create(
-      bytes: ArrayBuffer | Uint8Array,
-      opts: { executionProviders: string[]; graphOptimizationLevel?: string },
-    ): Promise<OrtSession>;
+    create(bytes: ArrayBuffer | Uint8Array, opts: SessionOptions): Promise<OrtSession>;
   };
   Tensor: new (dtype: "float32", data: Float32Array, dims: number[]) => OrtTensor;
   env: {
     wasm: { wasmPaths?: string; numThreads?: number };
     webgpu?: {
       powerPreference?: "high-performance" | "low-power";
+      /** The device ORT created; resolves once a WebGPU session exists. */
+      device?: Promise<GpuDeviceLike>;
       profiling?: {
         mode?: "off" | "default";
         ondata?: (data: { programName?: string; startTime: number; endTime: number }) => void;
@@ -67,5 +81,19 @@ function createSession(runtime: Ort, modelBytes: ArrayBuffer, backend: Backend):
   });
 }
 
-export { WEBGPU_POWER_PREFERENCE, createSession, loadOrt };
-export type { Backend, Ort, OrtSession, OrtTensor };
+// One graph of a model split into consecutive sessions: every output but the last stays on the GPU for the next part,
+// and the bucket cache recycles the parts' intermediate buffers.
+function createChainedWebGpuSession(
+  runtime: Ort,
+  modelBytes: Uint8Array,
+  keepOutputOnGpu: boolean,
+): Promise<OrtSession> {
+  return runtime.InferenceSession.create(modelBytes, {
+    executionProviders: [{ name: "webgpu", storageBufferCacheMode: "bucket" }],
+    graphOptimizationLevel: "all",
+    preferredOutputLocation: keepOutputOnGpu ? "gpu-buffer" : "cpu",
+  });
+}
+
+export { WEBGPU_POWER_PREFERENCE, createChainedWebGpuSession, createSession, loadOrt };
+export type { Backend, GpuDeviceLike, Ort, OrtSession, OrtTensor };
