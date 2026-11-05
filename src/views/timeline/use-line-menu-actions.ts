@@ -105,7 +105,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
   const handleAutoAlign = useCallback(() => {
     if (!autoAlignInfo) return;
-    void autoAlign(autoAlignInfo.lineIds, { realign: autoAlignInfo.realign });
+    void autoAlign(autoAlignInfo.targets, { realign: autoAlignInfo.realign });
     clearContextMenu();
   }, [autoAlignInfo, autoAlign, clearContextMenu]);
 

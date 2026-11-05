@@ -56,15 +56,21 @@ function hasOwnEnd(previous: LineTaps, taps: LineTaps): boolean {
   return previous.end > previous.begin && previous.end !== taps.begin;
 }
 
+// The lead-in Composer used before step 1: 0.3 s, stopped at the previous line's end.
+function clippedBegin(taps: LineTaps, previous: LineTaps | null | undefined): number {
+  const begin = taps.begin - CLIPPED_LEAD_IN;
+  return previous ? Math.max(begin, Math.min(taps.begin, previous.end)) : begin;
+}
+
+function tailedWindow(begin: number, taps: LineTaps, duration: number): AlignmentWindow {
+  const from = Math.max(0, begin);
+  return capWindow({ begin: from, end: Math.max(from, Math.min(duration, taps.end + TAIL)) });
+}
+
 function alignmentWindow(taps: LineTaps, options: WindowOptions): AlignmentWindow {
   const { previous } = options;
-  let begin = taps.begin - LEAD_IN;
-  if (previous && hasOwnEnd(previous, taps)) {
-    begin = Math.max(taps.begin - CLIPPED_LEAD_IN, Math.min(taps.begin, previous.end));
-  }
-  begin = Math.max(0, begin);
-  const end = Math.min(options.duration, taps.end + TAIL);
-  return capWindow({ begin, end: Math.max(begin, end) });
+  const begin = previous && hasOwnEnd(previous, taps) ? clippedBegin(taps, previous) : taps.begin - LEAD_IN;
+  return tailedWindow(begin, taps, options.duration);
 }
 
 function searchWindow(taps: LineTaps, duration: number): AlignmentWindow {
@@ -89,6 +95,18 @@ function refinedWindow(
   return end - begin < MIN_REFINED_SECONDS ? plain : { begin, end };
 }
 
+/**
+ * The window a line's background vocals are aligned in, around `taps`: the
+ * line's span joined with its background words'. They have no tap of their
+ * own, so they keep the window Composer used before step 1: 0.3 s before,
+ * stopped at the previous line's end, to 0.15 s after. On hubertfa-posttrain's
+ * BGVOCALS.md holdout that beat step 1's 0.6 s lead-in, a window running on to
+ * the next line's end, and the CTC search.
+ */
+function backgroundWindow(taps: LineTaps, options: WindowOptions): AlignmentWindow {
+  return tailedWindow(clippedBegin(taps, options.previous), taps, options.duration);
+}
+
 function sliceWindow(samples: Float32Array, sampleRate: number, window: AlignmentWindow): Float32Array {
   const from = Math.max(0, Math.floor(window.begin * sampleRate));
   const to = Math.min(samples.length, Math.ceil(window.end * sampleRate));
@@ -97,5 +115,5 @@ function sliceWindow(samples: Float32Array, sampleRate: number, window: Alignmen
 
 // -- Exports ------------------------------------------------------------------
 
-export { LEAD_IN, alignmentWindow, capWindow, refinedWindow, searchWindow, sliceWindow };
 export type { AlignmentWindow };
+export { LEAD_IN, alignmentWindow, backgroundWindow, capWindow, refinedWindow, searchWindow, sliceWindow };

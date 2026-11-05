@@ -2,6 +2,7 @@
  * @vitest-environment node
  */
 import { useAlignmentStore } from "@/stores/alignment";
+import { countAlignableLines } from "@/stores/alignment-plan";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { createGroup } from "@/test/factories";
@@ -17,6 +18,10 @@ const seen = vi.hoisted(() => ({
   calls: [] as { line: string; anchor: string | null }[],
   // How far the model moves a line's anchor word from where the line before put it, by the line's first word.
   anchorMoves: {} as Record<string, number>,
+  // Each call's window in song time, by its first word.
+  windows: {} as Record<string, [number, number]>,
+  // How many times the CTC search ran.
+  locates: 0,
 }));
 
 // Real model resolution: hosting is configured, the manifest fetch finds none
@@ -37,6 +42,8 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
   type Segment = Parameters<typeof splitByCharacters>[0] & {
     hanReading: string;
     windowBegin: number;
+    samples: Float32Array;
+    sampleRate: number;
     anchor?: string[];
   };
   return {
@@ -48,11 +55,16 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
       },
       release: () => {},
       isLoaded: () => true,
-      locate: async () => null,
+      locate: async () => {
+        seen.locates++;
+        return null;
+      },
       align: async (segment: Segment) => {
         seen.segments.push({ hanReading: segment.hanReading, parts: segment.words.map((w) => w.parts) });
         const line = segment.words[0].text;
         seen.calls.push({ line, anchor: segment.anchor?.join("") ?? null });
+        const { windowBegin, samples, sampleRate } = segment;
+        seen.windows[line] = [windowBegin, windowBegin + samples.length / sampleRate];
         // An anchored window starts 0.1 s before the anchor word.
         const placed = segment.windowBegin + 0.1 + (seen.anchorMoves[line] ?? 0);
         const anchor = segment.anchor ? { begin: placed, end: placed + 0.2 } : null;
@@ -79,6 +91,8 @@ describe("alignment store", () => {
     seen.fallBackAfter = null;
     seen.calls = [];
     seen.anchorMoves = {};
+    seen.windows = {};
+    seen.locates = 0;
     useProjectStore.setState({ groups: [] });
     useProjectStore.setState(INITIAL_STATE);
     useAlignmentStore.setState({ status: "idle", progress: { done: 0, total: 0 }, error: null });
@@ -195,7 +209,10 @@ describe("alignment store", () => {
       { id: "L3", text: "chosen", agentId: "v1", begin: 7, end: 8 },
     ]);
 
-    await useAlignmentStore.getState().alignLines(["L1", "L3"]);
+    await useAlignmentStore.getState().alignLines([
+      { lineId: "L1", track: "word" },
+      { lineId: "L3", track: "word" },
+    ]);
 
     const [first, second, third] = useProjectStore.getState().lines;
     expect(first.words).toEqual(words);
@@ -221,6 +238,162 @@ describe("alignment store", () => {
     expect(after[0].begin).toBe(1);
     expect(after[2].end).toBeCloseTo(3);
     expect(after[1].begin).not.toBe(1.1);
+  });
+
+  it("aligns a line's background vocals as their own run, from just before the line to just past its end", async () => {
+    // Tapping a line seeds its background words with a guess; alignment may move them anywhere in their window.
+    const seeded = [
+      { text: "oh ", begin: 11, end: 11.5 },
+      { text: "yeah", begin: 11.5, end: 12 },
+    ];
+    useProjectStore.getState().setLines([
+      {
+        id: "L1",
+        text: "hello there",
+        agentId: "v1",
+        begin: 10,
+        end: 12,
+        backgroundText: "oh yeah",
+        backgroundWords: seeded,
+      },
+    ]);
+
+    const result = await useAlignmentStore.getState().alignLines();
+
+    expect(result).toMatchObject({ aligned: 1, skipped: 0 });
+    expect(seen.segments.map((s) => s.parts)).toEqual([
+      [["hello"], ["there"]],
+      [["oh"], ["yeah"]],
+    ]);
+    const bg = useProjectStore.getState().lines[0].backgroundWords!;
+    expect(bg.map((w) => w.text)).toEqual(["oh ", "yeah"]);
+    // The window runs 0.3 s before the line to 0.15 s after it; the fake aligner fills the line itself.
+    expect(seen.windows.oh[0]).toBeCloseTo(9.7);
+    expect(seen.windows.oh[1]).toBeCloseTo(12.15);
+    expect(bg[0].begin).toBe(10);
+    expect(bg[1].end).toBeCloseTo(12);
+  });
+
+  it("aligns only the targeted track of a line", async () => {
+    const background = [
+      { text: "oh ", begin: 12.5, end: 12.6 },
+      { text: "yeah", begin: 12.6, end: 13.5 },
+    ];
+    const line = { id: "L1", text: "hello there", agentId: "v1", backgroundText: "oh yeah" };
+    useProjectStore.getState().setLines([{ ...line, begin: 10, end: 12, backgroundWords: background }]);
+
+    await useAlignmentStore.getState().alignLines([{ lineId: "L1", track: "bg" }], { realign: true });
+
+    const aligned = useProjectStore.getState().lines[0];
+    expect([aligned.begin, aligned.end, aligned.words]).toEqual([10, 12, undefined]);
+    expect(aligned.backgroundWords!.map((w) => w.text)).toEqual(["oh ", "yeah"]);
+    // The job spans the line and the background words, which run past it.
+    expect(seen.windows.oh[0]).toBeCloseTo(9.7);
+    expect(seen.windows.oh[1]).toBeCloseTo(13.65);
+    expect(aligned.backgroundWords![0].begin).toBe(10);
+    expect(aligned.backgroundWords![1].end).toBeCloseTo(13.5);
+
+    await useAlignmentStore.getState().alignLines([{ lineId: "L1", track: "word" }]);
+
+    const after = useProjectStore.getState().lines[0];
+    expect(after.words?.map((w) => w.text)).toEqual(["hello ", "there"]);
+    expect(after.backgroundWords).toBe(aligned.backgroundWords);
+  });
+
+  it("regression: aligns picked background vocals on a line with only line timing, without re-aligning", async () => {
+    const seeded = [
+      { text: "oh ", begin: 10, end: 10.3 },
+      { text: "yeah", begin: 10.3, end: 10.6 },
+    ];
+    const line = { id: "L1", text: "hello there", agentId: "v1", begin: 10, end: 12, backgroundText: "oh yeah" };
+    useProjectStore.getState().setLines([{ ...line, backgroundWords: seeded }]);
+    const both = [
+      { lineId: "L1", track: "word" as const },
+      { lineId: "L1", track: "bg" as const },
+    ];
+    const lines = useProjectStore.getState().lines;
+    expect(countAlignableLines(lines, both)).toEqual({ lineTimed: 1, wordTimed: 0, background: 1, lines: 1 });
+    expect(countAlignableLines(lines, [both[1]])).toEqual({ lineTimed: 0, wordTimed: 0, background: 1, lines: 1 });
+
+    // What the Timeline passes for these counts.
+    await useAlignmentStore.getState().alignLines(both, { realign: false });
+
+    const aligned = useProjectStore.getState().lines[0];
+    expect(aligned.words?.map((w) => w.text)).toEqual(["hello ", "there"]);
+    expect(seen.windows.oh[0]).toBeCloseTo(9.7);
+    expect(aligned.backgroundWords![1].end).toBeCloseTo(12);
+  });
+
+  it("aligns background vocals without the lyrics' anchor, CTC search or 0.6 s lead-in, leaving the lyrics as they'd be without them", async () => {
+    const lyrics = [
+      { id: "L0", text: "before", agentId: "v1", words: [{ text: "before", begin: 8, end: 9.5 }] },
+      { id: "L1", text: "one two", agentId: "v1", begin: 10, end: 11.5 },
+      { id: "L2", text: "three four", agentId: "v1", begin: 11.5, end: 13 },
+    ];
+    const seeded = [
+      { text: "oh ", begin: 10, end: 10.3 },
+      { text: "yeah", begin: 10.3, end: 10.6 },
+    ];
+    useProjectStore.getState().setLines(lyrics);
+    await useAlignmentStore.getState().alignLines();
+    const without = { lines: useProjectStore.getState().lines, calls: seen.calls, locates: seen.locates };
+
+    useProjectStore.setState(INITIAL_STATE);
+    seen.calls = [];
+    seen.locates = 0;
+    useProjectStore
+      .getState()
+      .setLines(lyrics.map((l) => (l.id === "L1" ? { ...l, backgroundText: "oh yeah", backgroundWords: seeded } : l)));
+    await useAlignmentStore.getState().alignLines();
+
+    // L2 still anchors on L1's last lyric word, and the background job has no anchor and no CTC search.
+    expect(seen.calls).toEqual([
+      { line: "one", anchor: null },
+      { line: "oh", anchor: null },
+      { line: "three", anchor: "two" },
+    ]);
+    expect(seen.locates).toBe(without.locates);
+    expect(seen.calls.filter((c) => c.line !== "oh")).toEqual(without.calls);
+    expect(useProjectStore.getState().lines.map((l) => l.words)).toEqual(without.lines.map((l) => l.words));
+    // L0 ends before L1's tap, so L1's lyrics and background vocals both start 0.3 s early; the background
+    // vocals stop 0.15 s after L1, not at L2's end.
+    expect(seen.windows.one[0]).toBeCloseTo(9.7);
+    expect(seen.windows.oh[0]).toBeCloseTo(9.7);
+    expect(seen.windows.oh[1]).toBeCloseTo(11.65);
+  });
+
+  it("runs the background vocals of a line no tap ended on to the song's end, 15 s at most", async () => {
+    const lyrics = [
+      { id: "L1", text: "one two", agentId: "v1", begin: 10, end: 12 },
+      { id: "L2", text: "three four", agentId: "v1", begin: 12, end: 12 },
+    ];
+    const seeded = [
+      { text: "oh ", begin: 12, end: 12.3 },
+      { text: "yeah", begin: 12.3, end: 12.6 },
+    ];
+    useProjectStore
+      .getState()
+      .setLines(lyrics.map((l) => (l.id === "L2" ? { ...l, backgroundText: "oh yeah", backgroundWords: seeded } : l)));
+
+    await useAlignmentStore.getState().alignLines();
+
+    // L1 ends at L2's tap, so there's no lead-in; without the cap the window would run to the 60 s song's end.
+    expect(seen.windows.oh[0]).toBeCloseTo(12);
+    expect(seen.windows.oh[1]).toBeCloseTo(27);
+  });
+
+  it("keeps background words the model can't place", async () => {
+    const seeded = [{ text: "zzz", begin: 10, end: 10.3 }];
+    const line = { id: "L1", text: "hello there", agentId: "v1", begin: 10, end: 12, backgroundText: "zzz" };
+    useProjectStore.getState().setLines([{ ...line, backgroundWords: seeded }]);
+    const before = useProjectStore.getState().lines[0].backgroundWords;
+
+    const result = await useAlignmentStore.getState().alignLines();
+
+    expect(result).toMatchObject({ aligned: 1, fellBack: 0, unknownWords: ["zzz"] });
+    const after = useProjectStore.getState().lines[0];
+    expect(after.words?.map((w) => w.text)).toEqual(["hello ", "there"]);
+    expect(after.backgroundWords).toBe(before);
   });
 
   it("switches the Sync tab to word mode once lines have word timing", async () => {
@@ -308,7 +481,7 @@ describe("alignment store", () => {
       { id: "L2", text: "one more line", agentId: "v1", words: [{ text: "one ", begin: 3, end: 4 }] },
     ]);
 
-    await useAlignmentStore.getState().alignLines(["L1"]);
+    await useAlignmentStore.getState().alignLines([{ lineId: "L1", track: "word" }]);
 
     expect(useProjectStore.getState().lines[1].text).toBe("one more line");
   });
@@ -412,6 +585,17 @@ describe("alignment store", () => {
     expect(seen.japanese).toEqual([true]);
     expect(seen.segments.map((s) => s.hanReading)).toEqual(["ja", "ja"]);
     expect(seen.segments[1].parts).toEqual([["き", "み", "と"], ["dance"]]);
+  });
+
+  it("regression: reads kanji as Japanese when only the background vocals have kana", async () => {
+    useProjectStore
+      .getState()
+      .setLines([{ id: "L1", text: "hello there", agentId: "v1", begin: 1, end: 2, backgroundText: "私の声" }]);
+
+    await useAlignmentStore.getState().alignLines();
+
+    expect(seen.japanese).toEqual([true]);
+    expect(seen.segments.map((s) => s.hanReading)).toEqual(["ja", "ja"]);
   });
 
   it("refuses lyrics in other languages", async () => {
