@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { resolve } from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
@@ -9,11 +10,25 @@ import { writeSeoAssets } from "./scripts/build-seo-assets";
 
 const SITE_ORIGIN = "https://composer.betterlyrics.org";
 
+// The commit a build came from, sent with alignment telemetry so results can be tied to the code that made them.
+function buildCommit(): string {
+  const fromCi = process.env.WORKERS_CI_COMMIT_SHA ?? process.env.GITHUB_SHA;
+  if (fromCi) return fromCi.slice(0, 12);
+  try {
+    return execSync("git rev-parse --short=12 HEAD", { stdio: ["ignore", "pipe", "ignore"] })
+      .toString()
+      .trim();
+  } catch {
+    return "unknown";
+  }
+}
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __ORT_VERSION__: JSON.stringify(ortPkg.version),
+    __APP_COMMIT__: JSON.stringify(buildCommit()),
   },
   resolve: {
     alias: {

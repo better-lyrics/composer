@@ -2,7 +2,7 @@
 
 const LOG_PREFIX = "[PersistenceIDB]";
 const DB_NAME = "ttml-composer";
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const PROJECT_STORE_NAME = "projects";
 const STEM_STORE_NAME = "separated-stems";
 const PROJECT_RECORD_STORE_NAME = "project-records";
@@ -10,6 +10,7 @@ const PROJECT_INDEX_STORE_NAME = "project-index";
 const PROJECT_AUDIO_STORE_NAME = "project-audio";
 const PROJECT_STEMS_STORE_NAME = "project-stems";
 const APP_STATE_STORE_NAME = "app-state";
+const ALIGNMENT_TELEMETRY_STORE_NAME = "alignment-telemetry";
 const ALL_STORE_NAMES = [
   PROJECT_STORE_NAME,
   STEM_STORE_NAME,
@@ -18,6 +19,7 @@ const ALL_STORE_NAMES = [
   PROJECT_AUDIO_STORE_NAME,
   PROJECT_STEMS_STORE_NAME,
   APP_STATE_STORE_NAME,
+  ALIGNMENT_TELEMETRY_STORE_NAME,
 ];
 
 // -- Connection ---------------------------------------------------------------
@@ -142,6 +144,7 @@ async function runTransaction(
 // -- Exports ------------------------------------------------------------------
 
 export {
+  ALIGNMENT_TELEMETRY_STORE_NAME,
   DB_NAME,
   DB_VERSION,
   PROJECT_STORE_NAME,

@@ -9,65 +9,15 @@ import { fingerprintChanged } from "@/domain/alignment/fingerprint";
 import { canAlignLanguage, hanReadingFor, songLanguage } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { sanitizeIntervals } from "@/domain/alignment/words";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate } from "@/domain/line/model";
+import { type AlignedRunLine, collectAlignedRun } from "@/lib/alignment-telemetry";
 import { alignLine, isAbortError } from "@/stores/alignment-line";
 import { type PlannedLine, isUnchanged, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
+import type { AlignmentActions, AlignmentErrorCode, AlignmentState } from "@/stores/alignment-types";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { create } from "zustand";
-
-// -- Types --------------------------------------------------------------------
-
-type AlignmentStatus = "idle" | "downloading" | "running" | "error";
-
-type AlignmentErrorCode = "unavailable" | "unsupported-language" | "needs-vocals" | "needs-model" | "failed";
-
-interface AlignmentError {
-  code: AlignmentErrorCode;
-  message: string;
-}
-
-interface AlignmentResult {
-  aligned: number;
-  /** Lines edited while alignment ran; their new timing was not applied. */
-  skipped: number;
-  /** Lines the model couldn't place, split by character count instead. */
-  fellBack: number;
-  /** Words with no known pronunciation; their lines fell back. */
-  unknownWords: string[];
-  /** Words aligned on a pronunciation guessed from their spelling. */
-  guessedWords: string[];
-}
-
-interface AlignOptions {
-  /** Permission to download the alignment model if it isn't cached yet. */
-  allowDownload?: boolean;
-  /** Also redo lines that already have word timing, using their current span as the guide. */
-  realign?: boolean;
-}
-
-interface AlignmentState {
-  status: AlignmentStatus;
-  progress: { done: number; total: number };
-  error: AlignmentError | null;
-  modelCached: boolean;
-  /** Download size of the selected model and its dictionary, once resolved. */
-  modelSizeBytes: number | null;
-}
-
-interface AlignmentActions {
-  /** Aligns the given lines, or every eligible line when omitted. */
-  alignLines: (lineIds?: readonly string[], options?: AlignOptions) => Promise<AlignmentResult | null>;
-  cancel: () => void;
-  dismissError: () => void;
-  refreshModelCached: (modelId?: string) => Promise<void>;
-  /**
-   * Times the syllables of words split since `before`, when the model is
-   * already loaded. Only the boundaries inside each split word move.
-   */
-  retimeNewSyllables: (before: readonly LyricLine[]) => Promise<void>;
-}
 
 // -- Constants ----------------------------------------------------------------
 
@@ -149,6 +99,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       const pcm = await loadVocalsPcm(vocalsUrl);
       const updates: LineUpdate[] = [];
       const plannedById = new Map<string, PlannedLine>();
+      const alignedById = new Map<string, AlignedRunLine>();
       const unknownWords = new Set<string>();
       const guessedWords = new Set<string>();
       let fellBack = 0;
@@ -158,7 +109,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
       for (const [index, plan] of planned.entries()) {
         signal.throwIfAborted();
         // react-doctor-disable-next-line react-doctor/async-await-in-loop -- lines align in order: each may anchor on the one before
-        const { result, timings, ...next } = await alignLine(
+        const { result, timings, window, ...next } = await alignLine(
           plan,
           { aligner, pcm, hanReading, signal, anchors },
           chain,
@@ -170,6 +121,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
           if (result.fellBack) fellBack++;
           updates.push({ id: plan.line.id, updates: { words: timings } });
           plannedById.set(plan.line.id, plan);
+          alignedById.set(plan.line.id, { line: plan.line, taps: plan.taps, window, result, timings });
         }
         set({ progress: { done: index + 1, total: planned.length } });
       }
@@ -190,6 +142,8 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         );
         // Lines are tapped in Line mode; once they have word timing, refine words.
         latest.setGranularity("word");
+        const lines = applicable.map((u) => alignedById.get(u.id)!);
+        collectAlignedRun({ modelId, language: project.metadata.language ?? null, realign: !!options.realign, lines });
       }
       set({ status: "idle", progress: { done: 0, total: 0 } });
       return {
@@ -297,4 +251,3 @@ useSettingsStore.subscribe((s, prev) => {
 // -- Exports ------------------------------------------------------------------
 
 export { isAutoAlignAvailable, useAlignmentStore };
-export type { AlignmentError, AlignmentErrorCode };

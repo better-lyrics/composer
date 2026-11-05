@@ -16,6 +16,7 @@ import { StatusChip } from "@/ui/status-chip";
 import { formatWholeMegabytes } from "@/utils/format-file-size";
 import { percent } from "@/utils/percent";
 import { pluralize } from "@/utils/pluralize";
+import { AlignmentSharing } from "@/views/sync/alignment-sharing";
 import {
   IconCheck,
   IconLanguage,
@@ -135,7 +136,8 @@ const AutoAlignSetup: React.FC<{ run: (realign: boolean) => void }> = ({ run }) 
         <VocalsRow />
         <ModelLanguageRow />
       </PopGroup>
-      <PopActions split className="mt-4">
+      <AlignmentSharing />
+      <PopActions split className="mt-2">
         {counts.wordTimed > 0 ? (
           <PopButton
             variant="ghost"

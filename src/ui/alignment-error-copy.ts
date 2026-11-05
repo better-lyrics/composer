@@ -1,4 +1,4 @@
-import type { AlignmentErrorCode } from "@/stores/alignment";
+import type { AlignmentErrorCode } from "@/stores/alignment-types";
 
 // -- Types --------------------------------------------------------------------
 

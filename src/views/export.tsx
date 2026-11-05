@@ -1,4 +1,5 @@
 import { useExportTtml } from "@/hooks/use-export-ttml";
+import { sendAlignmentTelemetry } from "@/lib/alignment-telemetry";
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -67,7 +68,8 @@ const ExportPanel: React.FC = () => {
 
     downloadText(exportContent, fileName, "application/ttml+xml;charset=utf-8");
     useProjectStore.getState().clearUnexportedImport();
-  }, [exportContent, isExportable, fileName, alignment.confirmExport]);
+    sendAlignmentTelemetry({ ttml: exportContent, youtubeVideoId });
+  }, [exportContent, isExportable, fileName, alignment.confirmExport, youtubeVideoId]);
 
   const handleCopy = useCallback(async () => {
     if (!exportContent || !isExportable()) return;
@@ -75,9 +77,10 @@ const ExportPanel: React.FC = () => {
 
     await navigator.clipboard.writeText(exportContent);
     useProjectStore.getState().clearUnexportedImport();
+    sendAlignmentTelemetry({ ttml: exportContent, youtubeVideoId });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [exportContent, isExportable, alignment.confirmExport]);
+  }, [exportContent, isExportable, alignment.confirmExport, youtubeVideoId]);
 
   const handleEdit = useCallback(() => {
     if (!session) {
