@@ -82,7 +82,7 @@ echo "==> splitting the encoder's long Convs into short dispatches"
 
 cp "${MODEL_DIR}/ds_cmudict-07b.txt" "${OUT_DIR}/hubertfa_v007_cmudict.txt"
 curl -fsSL "${LICENSE_URL}" -o "${OUT_DIR}/HUBERTFA_LICENSE.txt"
-cat > "${OUT_DIR}/HUBERTFA_NOTICE.txt" <<'TXT'
+cat > "${OUT_DIR}/HUBERTFA_V2_NOTICE.txt" <<'TXT'
 hubertfa_v007_fp32_webgpu_v2.onnx is HubertFA v0.0.7's model.onnx
 (https://github.com/wolfgitpr/HubertFA, Apache-2.0; see HUBERTFA_LICENSE.txt).
 Modifications: two float32 -> float16 -> float32 Cast round-trips were removed from the graph,

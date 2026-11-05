@@ -53,7 +53,7 @@ upload() {
 upload hubertfa_v007_fp32_webgpu_v2.onnx application/octet-stream
 upload hubertfa_v007_cmudict.txt 'text/plain; charset=utf-8'
 upload HUBERTFA_LICENSE.txt 'text/plain; charset=utf-8'
-upload HUBERTFA_NOTICE.txt 'text/plain; charset=utf-8'
+upload HUBERTFA_V2_NOTICE.txt 'text/plain; charset=utf-8'
 
 # kuromoji's IPADIC dictionary, loaded only to read kanji in Japanese lyrics.
 # Uploaded gzipped as-is (no Content-Encoding): the app decompresses it itself.
