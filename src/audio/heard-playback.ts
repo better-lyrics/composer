@@ -9,7 +9,7 @@ const MAX_CONTINUOUS_STEP_SECONDS = 1;
 
 // -- State --------------------------------------------------------------------
 
-let scope: string | null = null;
+let scope: { session: number; song: string | null } | null = null;
 let closed: HeardRange[] = [];
 let open: HeardRange | null = null;
 let lastTime: number | null = null;
@@ -17,9 +17,13 @@ let lastTime: number | null = null;
 // -- Functions ----------------------------------------------------------------
 
 function followSongScope(): void {
-  const current = `${useProjectStore.getState().projectSession}|${songKey(useAudioStore.getState().source)}`;
-  if (current === scope) return;
-  scope = current;
+  const session = useProjectStore.getState().projectSession;
+  const song = songKey(useAudioStore.getState().source) ?? scope?.song ?? null;
+  if (scope?.session === session && (scope.song === song || scope.song === null)) {
+    scope.song = song;
+    return;
+  }
+  scope = { session, song };
   closed = [];
   open = null;
   lastTime = null;
