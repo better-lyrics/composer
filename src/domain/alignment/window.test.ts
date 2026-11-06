@@ -1,5 +1,5 @@
-import { alignmentWindow, refinedWindow, searchWindow, sliceWindow } from "@/domain/alignment/window";
 import { describe, expect, it } from "vitest";
+import { alignmentWindow, refinedWindow, searchWindow, sliceWindow } from "@/domain/alignment/window";
 
 // -- alignmentWindow ----------------------------------------------------------
 

@@ -97,5 +97,5 @@ function sliceWindow(samples: Float32Array, sampleRate: number, window: Alignmen
 
 // -- Exports ------------------------------------------------------------------
 
-export { LEAD_IN, alignmentWindow, capWindow, refinedWindow, searchWindow, sliceWindow };
 export type { AlignmentWindow };
+export { alignmentWindow, capWindow, LEAD_IN, refinedWindow, searchWindow, sliceWindow };

@@ -1,6 +1,6 @@
 import type { AlignmentCounts } from "@/domain/alignment/build-tag";
 import { type AlignedTimings, timingFingerprint } from "@/domain/alignment/fingerprint";
-import { coversSpan, type HeardRange } from "@/domain/alignment/heard-ranges";
+import { coversSpan, type HeardRange, mergeRanges } from "@/domain/alignment/heard-ranges";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineTimed } from "@/domain/line/sync-progress";
@@ -59,6 +59,7 @@ function alignmentBreakdown(
 ): AlignmentBreakdown {
   const counts: AlignmentCounts = { untouched: 0, heard: 0, fixed: 0, handSynced: 0 };
   const untouchedIds = new Set<string>();
+  const heardRuns = mergeRanges(heard);
   for (const line of lines) {
     if (!isLineTimed(line)) continue;
     if (alignedTimings[line.id] === undefined) counts.handSynced++;
@@ -67,7 +68,7 @@ function alignmentBreakdown(
       counts.untouched++;
       untouchedIds.add(line.id);
       const bounds = effectiveBounds(line);
-      if (bounds && coversSpan(heard, bounds.begin, bounds.end)) counts.heard++;
+      if (bounds && coversSpan(heardRuns, bounds.begin, bounds.end)) counts.heard++;
     }
   }
   return { counts, untouchedIds };

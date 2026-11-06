@@ -1,6 +1,6 @@
+import { describe, expect, it } from "vitest";
 import { sungTransliteration } from "@/domain/alignment/transliteration";
 import type { LyricLine } from "@/domain/line/model";
-import { describe, expect, it } from "vitest";
 
 function line(text: string, transliteration?: string, extra: Partial<LyricLine> = {}): LyricLine {
   return {

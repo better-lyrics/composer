@@ -3,7 +3,7 @@ import { useProjectStore } from "@/stores/project";
 
 // -- Constants ----------------------------------------------------------------
 
-const MAX_CONTINUOUS_STEP_SECONDS = 1.5;
+const MAX_CONTINUOUS_STEP_SECONDS = 1;
 
 // -- State --------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ function noteHeardTime(event: Event): void {
   const audio = event.currentTarget;
   if (!(audio instanceof HTMLMediaElement)) return;
   if (audio.paused) {
-    lastTime = null;
+    lastTime = audio.currentTime;
     return;
   }
   followProjectSession();

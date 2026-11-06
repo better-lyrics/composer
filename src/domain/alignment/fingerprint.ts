@@ -29,5 +29,5 @@ function readAlignedTimings(value: unknown): AlignedTimings {
 
 // -- Exports ------------------------------------------------------------------
 
-export { readAlignedTimings, fingerprintChanged, timingFingerprint };
 export type { AlignedTimings };
+export { fingerprintChanged, readAlignedTimings, timingFingerprint };

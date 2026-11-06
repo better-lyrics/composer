@@ -33,6 +33,19 @@ describe("heard ranges", () => {
     ).toBe(false);
   });
 
+  it("regression: covers a line that was paused and resumed partway through", () => {
+    expect(
+      coversSpan(
+        [
+          [10, 15],
+          [15.35, 19.85],
+        ],
+        12,
+        18,
+      ),
+    ).toBe(true);
+  });
+
   it("reads only well-formed saved ranges", () => {
     expect(readHeardRanges([[1, 2], ["x", 3], [5, 4], null])).toEqual([[1, 2]]);
     expect(readHeardRanges("nope")).toEqual([]);

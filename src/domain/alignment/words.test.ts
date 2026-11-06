@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import {
   groupAlignmentWords,
   groupTimedWords,
@@ -5,7 +6,6 @@ import {
   sanitizeIntervals,
   timingsFromParts,
 } from "@/domain/alignment/words";
-import { describe, expect, it } from "vitest";
 
 // -- groupAlignmentWords ------------------------------------------------------
 
