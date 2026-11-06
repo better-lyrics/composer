@@ -23,6 +23,13 @@ describe("build tag", () => {
     expect(readBuildTag(tagged)).toEqual(TAG);
   });
 
+  it("never touches lyric text that looks like the attribute", () => {
+    const lyric = TTML.replace(">drift<", '> composer:build="abcdefgh"<');
+    const tagged = withBuildTag(lyric, TAG);
+    expect(tagged).toContain('> composer:build="abcdefgh"<');
+    expect(readBuildTag(tagged)).toEqual(TAG);
+  });
+
   it("never leaves the root with an undeclared prefix or a second build attribute", () => {
     const undeclared = TTML.replace(' xmlns:composer="https://composer.betterlyrics.org/ttml"', "");
     expect(withBuildTag(undeclared, TAG)).toBe(undeclared);

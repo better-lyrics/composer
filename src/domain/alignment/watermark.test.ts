@@ -16,6 +16,7 @@ const ALIGNED = createLine({
     { text: "across ", begin: 12.902, end: 13.153 },
     { text: "the ", begin: 13.154, end: 13.48 },
     { text: "harbor", begin: 13.48, end: 14.2 },
+    { text: "oh", begin: 14.2, end: 14.204 },
   ],
 });
 

@@ -15,7 +15,8 @@ const MAX_SHIFT_MS = 3;
 const MIN_STAMPED_MS = 7;
 const MARKED_SHARE = 0.75;
 const BACKGROUND_OPEN = '<span ttm:role="x-bg"';
-const SPAN_BEGIN = /<span begin="(\d+):(\d+)\.(\d{3})"/g;
+const SPAN_TIMES = /<span begin="(\d+):(\d+)\.(\d{3})" end="(\d+):(\d+)\.(\d{3})"/g;
+const MIN_READ_SPAN_MS = MIN_STAMPED_MS + 2 * MAX_SHIFT_MS;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -51,10 +52,15 @@ function watermarkLines(lines: readonly LyricLine[], untouchedIds: ReadonlySet<s
   });
 }
 
-function spanBeginsMs(lineBody: string): number[] {
-  return [...lineBody.matchAll(SPAN_BEGIN)].map(
-    ([, minutes, seconds, ms]) => Number(minutes) * 60000 + Number(seconds) * 1000 + Number(ms),
-  );
+function clockMs(minutes: string, seconds: string, ms: string): number {
+  return Number(minutes) * 60000 + Number(seconds) * 1000 + Number(ms);
+}
+
+function spanTimesMs(lineBody: string): { begin: number; end: number }[] {
+  return [...lineBody.matchAll(SPAN_TIMES)].map(([, bm, bs, bms, em, es, ems]) => ({
+    begin: clockMs(bm, bs, bms),
+    end: clockMs(em, es, ems),
+  }));
 }
 
 function readWatermark(ttml: string): WatermarkReading {
@@ -63,12 +69,13 @@ function readWatermark(ttml: string): WatermarkReading {
   for (const chunk of ttml.split("<p ").slice(1)) {
     const body = chunk.slice(0, chunk.indexOf("</p>"));
     const background = body.indexOf(BACKGROUND_OPEN);
-    const begins = spanBeginsMs(background === -1 ? body : body.slice(0, background));
-    if (begins.length < 2) continue;
+    const spans = spanTimesMs(background === -1 ? body : body.slice(0, background));
+    const readable = spans.filter((span) => span.end - span.begin >= MIN_READ_SPAN_MS);
+    if (readable.length < 2) continue;
     checkedLines++;
-    const residue = begins.length % RESIDUE;
-    const matched = begins.filter((ms) => ms % RESIDUE === residue).length;
-    if (matched >= 2 && matched >= begins.length * MARKED_SHARE) markedLines++;
+    const residue = spans.length % RESIDUE;
+    const matched = readable.filter((span) => span.begin % RESIDUE === residue).length;
+    if (matched >= 2 && matched >= readable.length * MARKED_SHARE) markedLines++;
   }
   return { markedLines, checkedLines };
 }

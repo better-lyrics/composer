@@ -21,7 +21,7 @@ function outgoingTtml({ editedContent, duration, exportTiming, youtubeVideoId }:
   const { metadata, agents, lines, groups, alignedTimings } = useProjectStore.getState();
   const { counts, untouchedIds } = alignmentBreakdown(lines, alignedTimings, heardRanges());
   if (editedContent !== null) return withBuildTag(editedContent, { ...counts, handEdited: true });
-  const stamped = watermarkLines(lines, untouchedIds);
+  const stamped = exportTiming === "line" ? lines : watermarkLines(lines, untouchedIds);
   const ttml = generateProjectTtml(
     { metadata, agents, lines: stamped, groups },
     duration,

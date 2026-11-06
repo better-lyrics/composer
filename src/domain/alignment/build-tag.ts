@@ -79,15 +79,15 @@ function decodeBuildTag(value: string, seed: string): BuildTag | null {
 }
 
 function withBuildTag(ttml: string, tag: BuildTag): string {
-  const untagged = ttml.replace(ANY_BUILD_ATTRIBUTE, "");
+  const untagged = ttml.replace(ROOT_OPEN, (root) => root.replace(ANY_BUILD_ATTRIBUTE, ""));
   const root = untagged.match(ROOT_OPEN)?.[0];
   if (!root?.includes(COMPOSER_NAMESPACE_DECLARATION)) return untagged;
   const value = encodeBuildTag(tag, seedOf(untagged));
-  return untagged.replace(ROOT_OPEN, (root) => `${root} composer:build="${value}"`);
+  return untagged.replace(ROOT_OPEN, () => `${root} composer:build="${value}"`);
 }
 
 function readBuildTag(ttml: string): BuildTag | null {
-  const value = ttml.match(BUILD_ATTRIBUTE)?.[1];
+  const value = ttml.match(ROOT_OPEN)?.[0].match(BUILD_ATTRIBUTE)?.[1];
   return value === undefined ? null : decodeBuildTag(value, seedOf(ttml));
 }
 
