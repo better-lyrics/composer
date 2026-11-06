@@ -1,0 +1,57 @@
+import { describe, expect, it } from "vitest";
+import { coversSpan, mergeRanges, readPlayedRanges, withoutSpans } from "@/domain/alignment/played-ranges";
+
+describe("played ranges", () => {
+  it("merges overlapping runs and cuts re-aligned spans out", () => {
+    const played = mergeRanges([
+      [30, 40],
+      [10, 20],
+      [18, 25],
+    ]);
+    expect(played).toEqual([
+      [10, 25],
+      [30, 40],
+    ]);
+    expect(withoutSpans(played, [{ begin: 12, end: 14 }])).toEqual([
+      [10, 12],
+      [14, 25],
+      [30, 40],
+    ]);
+  });
+
+  it("covers a span only when one run holds all of it, within the update tolerance", () => {
+    expect(coversSpan([[10.3, 19.8]], 10, 20)).toBe(true);
+    expect(
+      coversSpan(
+        [
+          [10, 14],
+          [16, 20],
+        ],
+        11,
+        19,
+      ),
+    ).toBe(false);
+  });
+
+  it("regression: covers a line that was paused and resumed partway through", () => {
+    expect(
+      coversSpan(
+        [
+          [10, 15],
+          [15.35, 19.85],
+        ],
+        12,
+        18,
+      ),
+    ).toBe(true);
+  });
+
+  it("never counts a short line that playback stopped just before", () => {
+    expect(coversSpan([[9, 9.9]], 10, 10.4)).toBe(false);
+  });
+
+  it("reads only well-formed saved ranges", () => {
+    expect(readPlayedRanges([[1, 2], ["x", 3], [5, 4], null])).toEqual([[1, 2]]);
+    expect(readPlayedRanges("nope")).toEqual([]);
+  });
+});

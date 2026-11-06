@@ -118,4 +118,4 @@ function extractTimedWords(parent: Element, excludeContainer?: Element | null): 
 
 // -- Exports ------------------------------------------------------------------
 
-export { declareMissingNamespaces, parseTtmlTimestamp, extractTimedWords };
+export { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp, ROOT_TT_TAG_REGEX };

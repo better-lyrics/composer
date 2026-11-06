@@ -6,8 +6,8 @@ import type { LyricLine } from "@/domain/line/model";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
+import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { GranularityMode } from "@/stores/project";
 import type { TtmlEditState } from "@/stores/project/types";
@@ -39,6 +39,7 @@ interface SavedProject {
   ttmlEditState?: TtmlEditState;
   alignedTimings?: unknown;
   alignmentNoticeDismissed?: boolean;
+  playedRanges?: unknown;
 }
 
 interface SavedAudioFile {
@@ -62,5 +63,5 @@ function upgradeSavedProject(project: SavedProject): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
+export type { SavedAudioFile, SavedProject };
 export { SAVED_PROJECT_VERSION, upgradeSavedProject };
-export type { SavedProject, SavedAudioFile };

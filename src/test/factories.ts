@@ -109,8 +109,9 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
     ttmlEditState: null,
     alignedTimings: {},
     alignmentNoticeDismissed: false,
+    playedRanges: [],
     ...overrides,
   };
 }
 
-export { createLine, createWord, createGroup, createProjectSaveInput, snapPoints };
+export { createGroup, createLine, createProjectSaveInput, createWord, snapPoints };

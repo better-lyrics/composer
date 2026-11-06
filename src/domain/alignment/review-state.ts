@@ -1,6 +1,10 @@
+import type { AlignmentCounts } from "@/domain/alignment/build-tag";
 import { type AlignedTimings, timingFingerprint } from "@/domain/alignment/fingerprint";
+import { coversSpan, mergeRanges, type PlayedRange } from "@/domain/alignment/played-ranges";
+import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineTimed } from "@/domain/line/sync-progress";
+import { isExportedLine } from "@/utils/ttml-line-keys";
 
 // -- Types --------------------------------------------------------------------
 
@@ -11,6 +15,11 @@ interface AlignmentReview {
   untouchedCount: number;
   timedCount: number;
   firstUntouchedLineId: string | null;
+}
+
+interface AlignmentBreakdown {
+  counts: AlignmentCounts;
+  untouchedIds: Set<string>;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -25,6 +34,11 @@ function tierFor(untouchedCount: number, timedCount: number): AlignmentReviewTie
   return untouchedCount / timedCount >= MOSTLY_UNTOUCHED_SHARE ? "mostly-untouched" : "reviewed";
 }
 
+function isUntouched(line: LyricLine, alignedTimings: AlignedTimings): boolean {
+  const aligned = alignedTimings[line.id];
+  return aligned !== undefined && aligned === timingFingerprint(line);
+}
+
 function alignmentReview(lines: readonly LyricLine[], alignedTimings: AlignedTimings): AlignmentReview {
   let timedCount = 0;
   let untouchedCount = 0;
@@ -32,15 +46,36 @@ function alignmentReview(lines: readonly LyricLine[], alignedTimings: AlignedTim
   for (const line of lines) {
     if (!isLineTimed(line)) continue;
     timedCount++;
-    const aligned = alignedTimings[line.id];
-    if (aligned === undefined || aligned !== timingFingerprint(line)) continue;
+    if (!isUntouched(line, alignedTimings)) continue;
     untouchedCount++;
     firstUntouchedLineId ??= line.id;
   }
   return { tier: tierFor(untouchedCount, timedCount), untouchedCount, timedCount, firstUntouchedLineId };
 }
 
+function alignmentBreakdown(
+  lines: readonly LyricLine[],
+  alignedTimings: AlignedTimings,
+  played: readonly PlayedRange[],
+): AlignmentBreakdown {
+  const counts: AlignmentCounts = { untouched: 0, played: 0, fixed: 0, handSynced: 0 };
+  const untouchedIds = new Set<string>();
+  const playedRuns = mergeRanges(played);
+  for (const line of lines) {
+    if (!isExportedLine(line)) continue;
+    if (alignedTimings[line.id] === undefined) counts.handSynced++;
+    else if (!isUntouched(line, alignedTimings)) counts.fixed++;
+    else {
+      counts.untouched++;
+      untouchedIds.add(line.id);
+      const bounds = effectiveBounds(line);
+      if (bounds && coversSpan(playedRuns, bounds.begin, bounds.end)) counts.played++;
+    }
+  }
+  return { counts, untouchedIds };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { alignmentReview };
 export type { AlignmentReview };
+export { alignmentBreakdown, alignmentReview };
