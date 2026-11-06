@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { type AnchorChain, anchorWindow, keepsAnchored, lastWord, withoutAnchor } from "@/domain/alignment/anchor";
+import { describe, expect, it } from "vitest";
 
 // -- anchorWindow -------------------------------------------------------------
 

@@ -1,8 +1,7 @@
 // @vitest-environment node
-
-import { describe, expect, it } from "vitest";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import type { WordTiming } from "@/domain/word/timing";
+import { describe, expect, it } from "vitest";
 
 const word = (text: string, begin: number, end: number, syllableGroupId?: string): WordTiming => ({
   text,

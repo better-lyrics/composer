@@ -1,6 +1,6 @@
-import { nanoid } from "nanoid";
 import { splitCjkPart } from "@/domain/alignment/cjk";
 import type { WordTiming } from "@/domain/word/timing";
+import { nanoid } from "nanoid";
 
 // -- Types --------------------------------------------------------------------
 
@@ -125,5 +125,5 @@ function retimeWords(existing: readonly WordTiming[], partIntervals: WordInterva
 
 // -- Exports ------------------------------------------------------------------
 
-export type { AlignmentWord, PartSplit, WordInterval };
 export { groupAlignmentWords, groupTimedWords, retimeWords, sanitizeIntervals, timingsFromParts };
+export type { AlignmentWord, PartSplit, WordInterval };

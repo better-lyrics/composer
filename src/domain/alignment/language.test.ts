@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
   canAlignLanguage,
   coverageColumns,
@@ -6,6 +5,7 @@ import {
   isAlignableLanguage,
   songLanguage,
 } from "@/domain/alignment/language";
+import { describe, expect, it } from "vitest";
 
 const lines = (...texts: string[]) => texts.map((text) => ({ text }));
 

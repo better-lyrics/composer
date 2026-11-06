@@ -53,5 +53,5 @@ function retimeInnerBoundaries(
 
 // -- Exports ------------------------------------------------------------------
 
-export type { GroupRange };
 export { newSyllableGroups, retimeInnerBoundaries };
+export type { GroupRange };

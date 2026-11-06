@@ -1,5 +1,5 @@
 import { hasLetterOrDigit } from "@/domain/alignment/cjk";
-import { type AlignmentWindow, capWindow, LEAD_IN } from "@/domain/alignment/window";
+import { type AlignmentWindow, LEAD_IN, capWindow } from "@/domain/alignment/window";
 import type { AlignmentWord, PartSplit, WordInterval } from "@/domain/alignment/words";
 
 // The anchored lead-in (STEP1.md's C2): a line starts its window just before
@@ -93,5 +93,5 @@ function withoutAnchor(
 
 // -- Exports ------------------------------------------------------------------
 
-export type { AnchorChain, AnchorWord };
 export { anchorWindow, keepsAnchored, lastWord, withoutAnchor };
+export type { AnchorChain, AnchorWord };

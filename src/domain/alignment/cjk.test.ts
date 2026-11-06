@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { hasCjk, hasKana, splitCjkPart } from "@/domain/alignment/cjk";
+import { describe, expect, it } from "vitest";
 
 describe("splitCjkPart", () => {
   it("leaves non-CJK parts alone", () => {

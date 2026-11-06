@@ -68,7 +68,6 @@ function coverageColumns(languageLists: readonly (readonly string[])[], song: st
 
 // -- Exports ------------------------------------------------------------------
 
-export type { HanReading };
 export {
   baseLanguage,
   canAlignLanguage,
@@ -78,3 +77,4 @@ export {
   isAlignableLanguage,
   songLanguage,
 };
+export type { HanReading };
