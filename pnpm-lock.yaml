@@ -53,8 +53,8 @@ importers:
         specifier: ^1.8.9
         version: 1.8.9(@lit/react@1.0.8(@types/react@19.3.0))(react@19.3.1)
       '@wavesurfer/react':
-        specifier: ^1.0.12
-        version: 1.0.12(react@19.3.1)(wavesurfer.js@7.12.12)
+        specifier: ^1.0.14
+        version: 1.0.14(react@19.3.1)(wavesurfer.js@7.12.12)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -68,8 +68,8 @@ importers:
         specifier: ^3.3.3
         version: 3.3.3
       motion:
-        specifier: ^14.8.0
-        version: 14.8.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        specifier: ^14.9.0
+        version: 14.9.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       music-metadata:
         specifier: ^12.3.2
         version: 12.3.2
@@ -1537,8 +1537,8 @@ packages:
   '@vitest/utils@4.1.12':
     resolution: {integrity: sha512-Q3awXrwOfEV+qc3WmO5ONyE0yO7Q1gQ9/oyHxGLZ/pl7N3NO/ZztqQwKLuwMkV+CA1JYSIeO3gkHnRDIo4AVaA==}
 
-  '@wavesurfer/react@1.0.12':
-    resolution: {integrity: sha512-BNHpz2ryKNVvJdxB47pCPUsNCsjb2pZRysg82M5djIiw0vsiSJwdlt5jaAfDo3vd5IWrcoK9OiPQKO9ZEVNpDQ==}
+  '@wavesurfer/react@1.0.14':
+    resolution: {integrity: sha512-BeCy0LW5yR5vJTm0bwe3j8W5YuIlzZI8RSTOGu75ddzBHVs/zCEmSAxaRmNJNuda097gaWYgZrpYgRjXfwOVHA==}
     peerDependencies:
       react: ^18.2.0 || ^19.0.0
       wavesurfer.js: '>=7.7.14'
@@ -1802,8 +1802,8 @@ packages:
     engines: {node: '>=18.14.0'}
     hasBin: true
 
-  framer-motion@14.8.0:
-    resolution: {integrity: sha512-PQsSx+UlaKiyPhADjVT5wALBErJJdbMeKQS4gQx6ibOrSNni7qjqfTKMvf6YHGG8pQWi6njs7AqrIG7R2hbnxA==}
+  framer-motion@14.9.0:
+    resolution: {integrity: sha512-g1hZu8WoTwgsoVAaqEEcefhvR03cKGtkmrKaRrWpXhnM3LGR8jl1u2qyJ1PMVlO7LKQHE8TTRQYUlMmnrY4L+g==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
@@ -2167,14 +2167,14 @@ packages:
     resolution: {integrity: sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==}
     engines: {node: '>= 0.6'}
 
-  motion-dom@14.8.0:
-    resolution: {integrity: sha512-HzA41kvV7BgluM7L/XbW+gHFzDtJUbHnEsrlnIzPS9dqSfoPy9YzL6VKF7ai0TiQcykkkLUqvIxECAdwa9gwAw==}
+  motion-dom@14.9.0:
+    resolution: {integrity: sha512-wGjKbNDMHd75aLStkxLCKZ+T8/wusZHklmNLK1Ak68UrdBt2X8I4yweYR/0WonxGnBsw6oloDTIV8pN+UTvzzA==}
 
   motion-utils@14.7.0:
     resolution: {integrity: sha512-woO0/Nb7ys75f94fjvQi/6leiHGvZUYkeHUPEZ3vxsV+9OpEVhkxp01x8MlRwX0zt31EqgXsKDAoBoJLC148Tw==}
 
-  motion@14.8.0:
-    resolution: {integrity: sha512-4KUxmgq8Lt8o/4/m8WnRicBQ+mJUMHl5Gp00o0R0+uU3NDqLwQX3GuBiqVillZl0NzOrhPuC00c5ydP6lokjmQ==}
+  motion@14.9.0:
+    resolution: {integrity: sha512-Oc+jjq/AyhwsnEUaAq2xEu/SsfKTphgsXqoxddTSLzgTdXZc6FwHcp9RLGSECccTykN1/p3gWUN4kMJAamm+1g==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
@@ -3932,7 +3932,7 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.1
 
-  '@wavesurfer/react@1.0.12(react@19.3.1)(wavesurfer.js@7.12.12)':
+  '@wavesurfer/react@1.0.14(react@19.3.1)(wavesurfer.js@7.12.12)':
     dependencies:
       react: 19.3.1
       wavesurfer.js: 7.12.12
@@ -4193,9 +4193,9 @@ snapshots:
       fd-package-json: 2.0.0
       package-manager-detector: 1.9.0
 
-  framer-motion@14.8.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
+  framer-motion@14.9.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
     dependencies:
-      motion-dom: 14.8.0
+      motion-dom: 14.9.0
       motion-utils: 14.7.0
       tslib: 2.8.1
     optionalDependencies:
@@ -4553,15 +4553,15 @@ snapshots:
     dependencies:
       mime-db: 1.52.0
 
-  motion-dom@14.8.0:
+  motion-dom@14.9.0:
     dependencies:
       motion-utils: 14.7.0
 
   motion-utils@14.7.0: {}
 
-  motion@14.8.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
+  motion@14.9.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
     dependencies:
-      framer-motion: 14.8.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      framer-motion: 14.9.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       tslib: 2.8.1
     optionalDependencies:
       react: 19.3.1
