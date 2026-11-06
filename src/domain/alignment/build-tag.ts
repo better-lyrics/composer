@@ -19,6 +19,8 @@ const TAG_SPACE = 2 ** 41;
 const TAG_LENGTH = 8;
 const ROOT_OPEN = /<tt\b[^>]*/;
 const BUILD_ATTRIBUTE = /\scomposer:build="([0-9a-z]{8})"/;
+const ANY_BUILD_ATTRIBUTE = /\scomposer:build="[^"]*"/g;
+const COMPOSER_NAMESPACE_DECLARATION = "xmlns:composer=";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -77,7 +79,9 @@ function decodeBuildTag(value: string, seed: string): BuildTag | null {
 }
 
 function withBuildTag(ttml: string, tag: BuildTag): string {
-  const untagged = ttml.replace(BUILD_ATTRIBUTE, "");
+  const untagged = ttml.replace(ANY_BUILD_ATTRIBUTE, "");
+  const root = untagged.match(ROOT_OPEN)?.[0];
+  if (!root?.includes(COMPOSER_NAMESPACE_DECLARATION)) return untagged;
   const value = encodeBuildTag(tag, seedOf(untagged));
   return untagged.replace(ROOT_OPEN, (root) => `${root} composer:build="${value}"`);
 }

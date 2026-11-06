@@ -14,6 +14,7 @@ const RESIDUE = 7;
 const MAX_SHIFT_MS = 3;
 const MIN_STAMPED_MS = 7;
 const MARKED_SHARE = 0.75;
+const BACKGROUND_OPEN = '<span ttm:role="x-bg"';
 const SPAN_BEGIN = /<span begin="(\d+):(\d+)\.(\d{3})"/g;
 
 // -- Functions ----------------------------------------------------------------
@@ -26,13 +27,6 @@ function shiftTo(ms: number, residue: number): number {
   return ((residue - (ms % RESIDUE) + RESIDUE + MAX_SHIFT_MS) % RESIDUE) - MAX_SHIFT_MS;
 }
 
-// Must match the spans generateTTML writes for a line, so a reader can recompute the residue.
-function exportedSpanCount(line: LyricLine): number {
-  const main = line.words?.length ?? 0;
-  const background = line.backgroundText ? Math.max(line.backgroundWords?.length ?? 0, 1) : 0;
-  return main + background;
-}
-
 function stampTrack(words: readonly WordTiming[], residue: number): WordTiming[] {
   const stamped = words.map((word) => ({ ...word }));
   for (let i = 0; i < stamped.length; i++) {
@@ -43,6 +37,7 @@ function stampTrack(words: readonly WordTiming[], residue: number): WordTiming[]
     const previous = i > 0 ? stamped[i - 1] : undefined;
     const touching = previous !== undefined && toMs(previous.end) === beginMs ? previous : undefined;
     if (target < 0 || (touching && target <= toMs(touching.begin))) continue;
+    if (previous && !touching && target < toMs(previous.end)) continue;
     word.begin = target / 1000;
     if (touching) touching.end = target / 1000;
   }
@@ -52,11 +47,7 @@ function stampTrack(words: readonly WordTiming[], residue: number): WordTiming[]
 function watermarkLines(lines: readonly LyricLine[], untouchedIds: ReadonlySet<string>): LyricLine[] {
   return lines.map((line) => {
     if (!untouchedIds.has(line.id) || !line.words?.length) return line;
-    const residue = exportedSpanCount(line) % RESIDUE;
-    const background = line.backgroundWords?.length
-      ? { backgroundWords: stampTrack(line.backgroundWords, residue) }
-      : {};
-    return { ...line, words: stampTrack(line.words, residue), ...background };
+    return { ...line, words: stampTrack(line.words, line.words.length % RESIDUE) };
   });
 }
 
@@ -70,7 +61,9 @@ function readWatermark(ttml: string): WatermarkReading {
   let markedLines = 0;
   let checkedLines = 0;
   for (const chunk of ttml.split("<p ").slice(1)) {
-    const begins = spanBeginsMs(chunk.slice(0, chunk.indexOf("</p>")));
+    const body = chunk.slice(0, chunk.indexOf("</p>"));
+    const background = body.indexOf(BACKGROUND_OPEN);
+    const begins = spanBeginsMs(background === -1 ? body : body.slice(0, background));
     if (begins.length < 2) continue;
     checkedLines++;
     const residue = begins.length % RESIDUE;

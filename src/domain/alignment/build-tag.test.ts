@@ -23,6 +23,13 @@ describe("build tag", () => {
     expect(readBuildTag(tagged)).toEqual(TAG);
   });
 
+  it("never leaves the root with an undeclared prefix or a second build attribute", () => {
+    const undeclared = TTML.replace(' xmlns:composer="https://composer.betterlyrics.org/ttml"', "");
+    expect(withBuildTag(undeclared, TAG)).toBe(undeclared);
+    const stale = TTML.replace("<tt ", '<tt composer:build="old" ');
+    expect(withBuildTag(stale, TAG).match(/composer:build=/g)).toHaveLength(1);
+  });
+
   it("reads a changed character or a tag moved to another song as nothing", () => {
     const value = tagValue(withBuildTag(TTML, TAG));
     const flipped = value.slice(0, 7) + (value[7] === "a" ? "b" : "a");

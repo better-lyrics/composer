@@ -26,6 +26,10 @@ function followProjectSession(): void {
 function noteHeardTime(event: Event): void {
   const audio = event.currentTarget;
   if (!(audio instanceof HTMLMediaElement)) return;
+  if (event.type === "seeking") {
+    lastTime = null;
+    return;
+  }
   if (audio.paused) {
     lastTime = audio.currentTime;
     return;

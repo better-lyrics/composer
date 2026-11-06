@@ -13,8 +13,8 @@ const ALIGNED = createLine({
   words: [
     { text: "Lanterns ", begin: 12.34, end: 12.611 },
     { text: "drift ", begin: 12.611, end: 12.902 },
-    { text: "across ", begin: 12.902, end: 13.155 },
-    { text: "the ", begin: 13.155, end: 13.48 },
+    { text: "across ", begin: 12.902, end: 13.153 },
+    { text: "the ", begin: 13.154, end: 13.48 },
     { text: "harbor", begin: 13.48, end: 14.2 },
   ],
 });
@@ -40,7 +40,7 @@ function ttmlOf(lines: LyricLine[]): string {
 // -- Tests --------------------------------------------------------------------
 
 describe("watermarkLines", () => {
-  it("marks only the given lines and keeps every word within 3 ms, ordered and touching", () => {
+  it("marks only the given lines and keeps every word within 3 ms, ordered and never overlapping", () => {
     const [stamped, hand] = watermarkLines([ALIGNED, HAND], new Set(["a"]));
     expect(hand).toBe(HAND);
     const before = ALIGNED.words ?? [];
@@ -49,7 +49,9 @@ describe("watermarkLines", () => {
       expect(Math.abs(word.begin - before[i].begin)).toBeLessThanOrEqual(3 * MS);
       expect(Math.abs(word.end - before[i].end)).toBeLessThanOrEqual(3 * MS);
       expect(word.begin).toBeLessThan(word.end);
-      if (i > 0) expect(word.begin).toBe(after[i - 1].end);
+      if (i === 0) return;
+      if (before[i].begin === before[i - 1].end) expect(word.begin).toBe(after[i - 1].end);
+      else expect(word.begin).toBeGreaterThanOrEqual(after[i - 1].end);
     });
     expect(readWatermark(ttmlOf([stamped, HAND]))).toEqual({ markedLines: 1, checkedLines: 2 });
   });

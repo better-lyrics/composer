@@ -149,6 +149,7 @@ const AudioEngine: React.FC = () => {
       audio.addEventListener("loadedmetadata", handleLoadedMetadata);
       audio.addEventListener("timeupdate", handleTimeUpdate);
       audio.addEventListener("timeupdate", noteHeardTime);
+      audio.addEventListener("seeking", noteHeardTime);
       audio.addEventListener("ended", handleEnded);
       audio.addEventListener("error", handleError);
       audio.addEventListener("seeking", resyncPlaybackClock);
@@ -158,6 +159,7 @@ const AudioEngine: React.FC = () => {
         audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
         audio.removeEventListener("timeupdate", handleTimeUpdate);
         audio.removeEventListener("timeupdate", noteHeardTime);
+        audio.removeEventListener("seeking", noteHeardTime);
         audio.removeEventListener("ended", handleEnded);
         audio.removeEventListener("error", handleError);
         audio.removeEventListener("seeking", resyncPlaybackClock);
