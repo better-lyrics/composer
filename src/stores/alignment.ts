@@ -1,3 +1,4 @@
+import { forgetHeardSpans } from "@/audio/heard-playback";
 import { hubertfaAligner } from "@/audio/alignment/hubertfa/hubertfa-aligner";
 import { areAlignmentAssetsCached, resolveAlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import type { Aligner } from "@/audio/alignment/types";
@@ -9,6 +10,7 @@ import { fingerprintChanged } from "@/domain/alignment/fingerprint";
 import { canAlignLanguage, hanReadingFor, songLanguage } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { sanitizeIntervals } from "@/domain/alignment/words";
+import { effectiveBounds } from "@/domain/line/bounds";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { alignLine, isAbortError } from "@/stores/alignment-line";
 import { type PlannedLine, isUnchanged, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
@@ -185,9 +187,9 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         latest.updateLinesWithHistory(applicable, { deriveText: false });
         // Shared group copies change in the same write; linked siblings may be replaced with their timing unchanged.
         const after = useProjectStore.getState();
-        after.recordAlignedTimings(
-          after.lines.flatMap((line) => (fingerprintChanged(currentById.get(line.id), line) ? [line.id] : [])),
-        );
+        const realigned = after.lines.filter((line) => fingerprintChanged(currentById.get(line.id), line));
+        after.recordAlignedTimings(realigned.map((line) => line.id));
+        forgetHeardSpans(realigned.flatMap((line) => effectiveBounds(line) ?? []));
         // Lines are tapped in Line mode; once they have word timing, refine words.
         latest.setGranularity("word");
       }
