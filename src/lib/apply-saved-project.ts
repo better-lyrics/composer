@@ -1,5 +1,7 @@
+import { restoreHeardRanges } from "@/audio/heard-playback";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { readAlignedTimings } from "@/domain/alignment/fingerprint";
+import { readHeardRanges } from "@/domain/alignment/heard-ranges";
 import { withSeededBackground } from "@/domain/line/background";
 import { savedExportTiming } from "@/domain/project/export-timing";
 import { isMetadataKey } from "@/domain/project/imported-metadata";
@@ -49,6 +51,7 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   state.restoreImportedMetadataKeys((project.importedMetadataKeys ?? []).filter(isMetadataKey));
   state.setTtmlEditState(project.ttmlEditState ?? null);
   state.restoreAlignmentReview(readAlignedTimings(project.alignedTimings), project.alignmentNoticeDismissed === true);
+  restoreHeardRanges(readHeardRanges(project.heardRanges));
   if (origin === "file") state.clearHistory();
   state.markClean();
   return malformedFieldsOf(project);

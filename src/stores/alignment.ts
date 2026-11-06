@@ -1,4 +1,3 @@
-import { forgetHeardSpans } from "@/audio/heard-playback";
 import { hubertfaAligner } from "@/audio/alignment/hubertfa/hubertfa-aligner";
 import { areAlignmentAssetsCached, resolveAlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import type { Aligner } from "@/audio/alignment/types";
@@ -6,13 +5,12 @@ import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { isModelHostingConfigured } from "@/audio/separation/model-registry";
 import type { AnchorChain } from "@/domain/alignment/anchor";
 import { hasCjk } from "@/domain/alignment/cjk";
-import { fingerprintChanged } from "@/domain/alignment/fingerprint";
 import { canAlignLanguage, hanReadingFor, songLanguage } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { sanitizeIntervals } from "@/domain/alignment/words";
-import { effectiveBounds } from "@/domain/line/bounds";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { alignLine, isAbortError } from "@/stores/alignment-line";
+import { recordRealignedLines } from "@/stores/alignment-record";
 import { type PlannedLine, isUnchanged, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
@@ -186,10 +184,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         // Timing only: deriving text would drop the untimed words of partly synced lines.
         latest.updateLinesWithHistory(applicable, { deriveText: false });
         // Shared group copies change in the same write; linked siblings may be replaced with their timing unchanged.
-        const after = useProjectStore.getState();
-        const realigned = after.lines.filter((line) => fingerprintChanged(currentById.get(line.id), line));
-        after.recordAlignedTimings(realigned.map((line) => line.id));
-        forgetHeardSpans(realigned.flatMap((line) => effectiveBounds(line) ?? []));
+        recordRealignedLines(currentById);
         // Lines are tapped in Line mode; once they have word timing, refine words.
         latest.setGranularity("word");
       }

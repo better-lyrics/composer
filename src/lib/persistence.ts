@@ -1,4 +1,5 @@
 import type { AlignedTimings } from "@/domain/alignment/fingerprint";
+import type { HeardRange } from "@/domain/alignment/heard-ranges";
 import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
@@ -42,6 +43,7 @@ interface ProjectSaveInput {
   ttmlEditState: TtmlEditState;
   alignedTimings: AlignedTimings;
   alignmentNoticeDismissed: boolean;
+  heardRanges: HeardRange[];
 }
 
 // -- Records ------------------------------------------------------------------

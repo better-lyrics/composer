@@ -1,3 +1,4 @@
+import { heardRanges } from "@/audio/heard-playback";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { keepsYouTubeAudio } from "@/domain/storage/audio-retention";
 import type { ProjectSaveInput } from "@/lib/persistence";
@@ -66,6 +67,7 @@ function currentSaveInput(): ProjectSaveInput {
     ttmlEditState: projectState.ttmlEditState,
     alignedTimings: projectState.alignedTimings,
     alignmentNoticeDismissed: projectState.alignmentNoticeDismissed,
+    heardRanges: heardRanges(),
   };
 }
 
