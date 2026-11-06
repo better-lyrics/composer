@@ -1,5 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
+import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
 
 // -- Types --------------------------------------------------------------------
 
@@ -15,7 +16,7 @@ const MAX_SHIFT_MS = 3;
 const MIN_STAMPED_MS = 7;
 const MARKED_SHARE = 0.75;
 const BACKGROUND_OPEN = '<span ttm:role="x-bg"';
-const SPAN_TIMES = /<span begin="(\d+):(\d+)\.(\d{3})" end="(\d+):(\d+)\.(\d{3})"/g;
+const SPAN_TIMES = /<span begin="([^"]+)" end="([^"]+)"/g;
 const MIN_READ_SPAN_MS = MIN_STAMPED_MS + 2 * MAX_SHIFT_MS;
 
 // -- Functions ----------------------------------------------------------------
@@ -51,14 +52,10 @@ function watermarkLines(lines: readonly LyricLine[], untouchedIds: ReadonlySet<s
   });
 }
 
-function clockMs(minutes: string, seconds: string, ms: string): number {
-  return Number(minutes) * 60000 + Number(seconds) * 1000 + Number(ms);
-}
-
 function spanTimesMs(lineBody: string): { begin: number; end: number }[] {
-  return [...lineBody.matchAll(SPAN_TIMES)].map(([, bm, bs, bms, em, es, ems]) => ({
-    begin: clockMs(bm, bs, bms),
-    end: clockMs(em, es, ems),
+  return [...lineBody.matchAll(SPAN_TIMES)].map(([, begin, end]) => ({
+    begin: toMs(parseTtmlTimestamp(begin)),
+    end: toMs(parseTtmlTimestamp(end)),
   }));
 }
 

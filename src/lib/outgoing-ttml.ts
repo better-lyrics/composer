@@ -10,6 +10,7 @@ import { generateProjectTtml } from "@/utils/ttml";
 
 interface OutgoingSource {
   editedContent: string | null;
+  generatedContent: string;
   duration: number;
   exportTiming: TimingGranularity;
   youtubeVideoId: string | undefined;
@@ -17,10 +18,17 @@ interface OutgoingSource {
 
 // -- Functions ----------------------------------------------------------------
 
-function outgoingTtml({ editedContent, duration, exportTiming, youtubeVideoId }: OutgoingSource): string {
+function outgoingTtml({
+  editedContent,
+  generatedContent,
+  duration,
+  exportTiming,
+  youtubeVideoId,
+}: OutgoingSource): string {
   const { metadata, agents, lines, groups, alignedTimings } = useProjectStore.getState();
   const { counts, untouchedIds } = alignmentBreakdown(lines, alignedTimings, heardRanges());
-  if (editedContent !== null) return withBuildTag(editedContent, { ...counts, handEdited: true });
+  if (editedContent !== null && editedContent !== generatedContent)
+    return withBuildTag(editedContent, { ...counts, handEdited: true });
   const stamped = exportTiming === "line" ? lines : watermarkLines(lines, untouchedIds);
   const ttml = generateProjectTtml(
     { metadata, agents, lines: stamped, groups },

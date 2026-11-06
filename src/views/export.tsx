@@ -62,33 +62,28 @@ const ExportPanel: React.FC = () => {
     return false;
   }, [editedContent]);
 
+  const outgoingContent = useCallback(
+    () => outgoingTtml({ editedContent, generatedContent: generatedTtml, duration, exportTiming, youtubeVideoId }),
+    [editedContent, generatedTtml, duration, exportTiming, youtubeVideoId],
+  );
+
   const handleDownload = useCallback(async () => {
     if (!exportContent || !isExportable()) return;
     if (!(await alignment.confirmExport("download"))) return;
 
-    const outgoing = outgoingTtml({ editedContent, duration, exportTiming, youtubeVideoId });
-    downloadText(outgoing, fileName, "application/ttml+xml;charset=utf-8");
+    downloadText(outgoingContent(), fileName, "application/ttml+xml;charset=utf-8");
     useProjectStore.getState().clearUnexportedImport();
-  }, [
-    exportContent,
-    isExportable,
-    fileName,
-    alignment.confirmExport,
-    editedContent,
-    duration,
-    exportTiming,
-    youtubeVideoId,
-  ]);
+  }, [exportContent, isExportable, fileName, alignment.confirmExport, outgoingContent]);
 
   const handleCopy = useCallback(async () => {
     if (!exportContent || !isExportable()) return;
     if (!(await alignment.confirmExport("copy"))) return;
 
-    await navigator.clipboard.writeText(outgoingTtml({ editedContent, duration, exportTiming, youtubeVideoId }));
+    await navigator.clipboard.writeText(outgoingContent());
     useProjectStore.getState().clearUnexportedImport();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [exportContent, isExportable, alignment.confirmExport, editedContent, duration, exportTiming, youtubeVideoId]);
+  }, [exportContent, isExportable, alignment.confirmExport, outgoingContent]);
 
   const handleEdit = useCallback(() => {
     if (!session) {

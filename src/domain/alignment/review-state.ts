@@ -4,6 +4,7 @@ import { coversSpan, type HeardRange, mergeRanges } from "@/domain/alignment/hea
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineTimed } from "@/domain/line/sync-progress";
+import { isExportedLine } from "@/utils/ttml-line-keys";
 
 // -- Types --------------------------------------------------------------------
 
@@ -61,7 +62,7 @@ function alignmentBreakdown(
   const untouchedIds = new Set<string>();
   const heardRuns = mergeRanges(heard);
   for (const line of lines) {
-    if (!isLineTimed(line)) continue;
+    if (!isExportedLine(line)) continue;
     if (alignedTimings[line.id] === undefined) counts.handSynced++;
     else if (!isUntouched(line, alignedTimings)) counts.fixed++;
     else {

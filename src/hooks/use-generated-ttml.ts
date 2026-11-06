@@ -1,10 +1,10 @@
+import { useMemo } from "react";
+import { projectAudioSource } from "@/audio/project-audio-source";
 import { syncProgress } from "@/domain/line/sync-progress";
 import type { TimingGranularity } from "@/domain/project/timing-granularity";
-import { projectAudioSource } from "@/lib/project-snapshot";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { generateProjectTtml } from "@/utils/ttml";
-import { useMemo } from "react";
 
 function useGeneratedTtml(timing: TimingGranularity) {
   const metadata = useProjectStore((state) => state.metadata);

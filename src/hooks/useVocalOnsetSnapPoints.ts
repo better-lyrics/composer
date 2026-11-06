@@ -1,8 +1,6 @@
-import { useEffect } from "react";
-import { songKey } from "@/audio/song-key";
 import { loadVocalOnsets } from "@/audio/vocal-onset-snap-points";
-import type { AudioSource } from "@/stores/audio";
 import { useAudioStore } from "@/stores/audio";
+import type { AudioSource } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
@@ -10,6 +8,7 @@ import { isAbortError } from "@/utils/abort-error";
 import { fileIdentityKey } from "@/utils/file-identity";
 import { createLatestRequest } from "@/utils/latest-request";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useEffect } from "react";
 
 function audioSourceKey(source: AudioSource): string | null {
   if (source?.type === "file") {
@@ -21,6 +20,12 @@ function audioSourceKey(source: AudioSource): string | null {
     const filePart = file ? `|file:${fileIdentityKey(file)}` : "";
     return `youtube:${source.videoId}${filePart}`;
   }
+  return null;
+}
+
+function songKey(source: AudioSource): string | null {
+  if (source?.type === "file") return `file:${fileIdentityKey(source.file)}`;
+  if (source?.type === "youtube") return `youtube:${source.videoId}`;
   return null;
 }
 

@@ -139,4 +139,9 @@ describe("alignmentBreakdown", () => {
     expect(counts).toEqual({ untouched: 4, heard: 2, fixed: 2, handSynced: 2 });
     expect([...untouchedIds]).toEqual(["L1", "L2", "L3", "L4"]);
   });
+
+  it("counts only lines the export writes", () => {
+    const blank = createLine({ id: "B1", text: "", begin: 60, end: 61 });
+    expect(alignmentBreakdown([...SONG, blank], fingerprintsOf(SONG), []).counts.handSynced).toBe(0);
+  });
 });

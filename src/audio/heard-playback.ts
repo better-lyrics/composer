@@ -1,4 +1,4 @@
-import { songKey } from "@/audio/song-key";
+import { projectAudioSource } from "@/audio/project-audio-source";
 import { type HeardRange, mergeRanges, withoutSpans } from "@/domain/alignment/heard-ranges";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -18,7 +18,8 @@ let lastTime: number | null = null;
 
 function followSongScope(): void {
   const session = useProjectStore.getState().projectSession;
-  const song = songKey(useAudioStore.getState().source) ?? scope?.song ?? null;
+  const audio = projectAudioSource(useAudioStore.getState());
+  const song = audio ? (audio.kind === "file" ? `file:${audio.name}` : `youtube:${audio.videoId}`) : null;
   if (scope?.session === session && (scope.song === song || scope.song === null)) {
     scope.song = song;
     return;

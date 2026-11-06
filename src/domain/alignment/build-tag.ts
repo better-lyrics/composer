@@ -1,3 +1,5 @@
+import { fnv1a } from "@/utils/fnv1a";
+
 // -- Types --------------------------------------------------------------------
 
 interface AlignmentCounts {
@@ -23,12 +25,6 @@ const ANY_BUILD_ATTRIBUTE = /\scomposer:build="[^"]*"/g;
 const COMPOSER_NAMESPACE_DECLARATION = "xmlns:composer=";
 
 // -- Functions ----------------------------------------------------------------
-
-function fnv1a(text: string): number {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193) >>> 0;
-  return hash;
-}
 
 function occurrences(text: string, part: string): number {
   return text.split(part).length - 1;
