@@ -1,8 +1,8 @@
-import { readAlignedTimings, fingerprintChanged, timingFingerprint } from "@/domain/alignment/fingerprint";
+import { describe, expect, it } from "vitest";
+import { fingerprintChanged, readAlignedTimings, timingFingerprint } from "@/domain/alignment/fingerprint";
 import { alignmentBreakdown, alignmentReview } from "@/domain/alignment/review-state";
 import type { LyricLine } from "@/domain/line/model";
 import { createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 

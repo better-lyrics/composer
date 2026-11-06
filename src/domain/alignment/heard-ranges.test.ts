@@ -1,5 +1,5 @@
-import { coversSpan, mergeRanges, readHeardRanges, withoutSpans } from "@/domain/alignment/heard-ranges";
 import { describe, expect, it } from "vitest";
+import { coversSpan, mergeRanges, readHeardRanges, withoutSpans } from "@/domain/alignment/heard-ranges";
 
 describe("heard ranges", () => {
   it("merges overlapping runs and cuts re-aligned spans out", () => {

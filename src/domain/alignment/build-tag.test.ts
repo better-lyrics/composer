@@ -1,5 +1,5 @@
-import { readBuildTag, withBuildTag } from "@/domain/alignment/build-tag";
 import { describe, expect, it } from "vitest";
+import { readBuildTag, withBuildTag } from "@/domain/alignment/build-tag";
 
 // -- Fixtures -----------------------------------------------------------------
 

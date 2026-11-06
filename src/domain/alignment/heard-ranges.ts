@@ -61,5 +61,5 @@ function readHeardRanges(value: unknown): HeardRange[] {
 
 // -- Exports ------------------------------------------------------------------
 
-export { coversSpan, mergeRanges, readHeardRanges, withoutSpans };
 export type { HeardRange };
+export { coversSpan, mergeRanges, readHeardRanges, withoutSpans };

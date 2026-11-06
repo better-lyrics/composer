@@ -89,5 +89,5 @@ function readBuildTag(ttml: string): BuildTag | null {
 
 // -- Exports ------------------------------------------------------------------
 
+export type { AlignmentCounts };
 export { readBuildTag, withBuildTag };
-export type { AlignmentCounts, BuildTag };

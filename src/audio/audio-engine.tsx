@@ -1,15 +1,15 @@
+import { useEffect, useRef } from "react";
 import { decodeAudioToWav, needsWavConversion } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { noteHeardTime } from "@/audio/heard-playback";
 import { resyncPlaybackClock } from "@/audio/playback-clock";
-import { seekInPlaceToResume } from "@/audio/seek-reveal-intent";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
+import { seekInPlaceToResume } from "@/audio/seek-reveal-intent";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { BROWSER_KIND } from "@/utils/platform";
-import { useEffect, useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
 

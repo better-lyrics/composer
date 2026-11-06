@@ -86,4 +86,4 @@ function buildSaveInput(): ProjectSaveInput | null {
 
 // -- Exports ------------------------------------------------------------------
 
-export { storedAudioFile, hadStoredAudio, buildSaveInput, currentSaveInput, openProjectView, projectAudioSource };
+export { buildSaveInput, currentSaveInput, hadStoredAudio, openProjectView, projectAudioSource, storedAudioFile };

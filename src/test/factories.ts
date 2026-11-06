@@ -114,4 +114,4 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
   };
 }
 
-export { createLine, createWord, createGroup, createProjectSaveInput, snapPoints };
+export { createGroup, createLine, createProjectSaveInput, createWord, snapPoints };

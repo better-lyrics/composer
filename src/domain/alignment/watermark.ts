@@ -53,7 +53,9 @@ function watermarkLines(lines: readonly LyricLine[], untouchedIds: ReadonlySet<s
   return lines.map((line) => {
     if (!untouchedIds.has(line.id) || !line.words?.length) return line;
     const residue = exportedSpanCount(line) % RESIDUE;
-    const background = line.backgroundWords?.length ? { backgroundWords: stampTrack(line.backgroundWords, residue) } : {};
+    const background = line.backgroundWords?.length
+      ? { backgroundWords: stampTrack(line.backgroundWords, residue) }
+      : {};
     return { ...line, words: stampTrack(line.words, residue), ...background };
   });
 }

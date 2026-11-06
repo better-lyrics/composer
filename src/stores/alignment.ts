@@ -1,3 +1,4 @@
+import { create } from "zustand";
 import { hubertfaAligner } from "@/audio/alignment/hubertfa/hubertfa-aligner";
 import { areAlignmentAssetsCached, resolveAlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import type { Aligner } from "@/audio/alignment/types";
@@ -10,12 +11,11 @@ import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syl
 import { sanitizeIntervals } from "@/domain/alignment/words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { alignLine, isAbortError } from "@/stores/alignment-line";
+import { isUnchanged, type PlannedLine, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
 import { recordRealignedLines } from "@/stores/alignment-record";
-import { type PlannedLine, isUnchanged, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
-import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------
 
@@ -293,5 +293,5 @@ useSettingsStore.subscribe((s, prev) => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { isAutoAlignAvailable, useAlignmentStore };
 export type { AlignmentError, AlignmentErrorCode };
+export { isAutoAlignAvailable, useAlignmentStore };

@@ -1,6 +1,6 @@
 import type { AlignmentCounts } from "@/domain/alignment/build-tag";
 import { type AlignedTimings, timingFingerprint } from "@/domain/alignment/fingerprint";
-import { type HeardRange, coversSpan } from "@/domain/alignment/heard-ranges";
+import { coversSpan, type HeardRange } from "@/domain/alignment/heard-ranges";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineTimed } from "@/domain/line/sync-progress";
@@ -75,5 +75,5 @@ function alignmentBreakdown(
 
 // -- Exports ------------------------------------------------------------------
 
-export { alignmentBreakdown, alignmentReview };
 export type { AlignmentReview };
+export { alignmentBreakdown, alignmentReview };

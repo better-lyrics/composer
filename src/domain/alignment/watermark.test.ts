@@ -1,9 +1,9 @@
+import { describe, expect, it } from "vitest";
 import { readWatermark, watermarkLines } from "@/domain/alignment/watermark";
 import type { LyricLine } from "@/domain/line/model";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createLine } from "@/test/factories";
 import { generateTTML } from "@/utils/ttml";
-import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
