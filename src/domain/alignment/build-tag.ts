@@ -1,4 +1,5 @@
 import { fnv1a } from "@/utils/fnv1a";
+import { ROOT_TT_TAG_REGEX } from "@/utils/lyrics-parsers/ttml-helpers";
 
 // -- Types --------------------------------------------------------------------
 
@@ -19,7 +20,6 @@ const COUNT_LIMIT = 512;
 const CHECK_LIMIT = 16;
 const TAG_SPACE = 2 ** 41;
 const TAG_LENGTH = 8;
-const ROOT_OPEN = /<tt\b[^>]*/;
 const BUILD_ATTRIBUTE = /\scomposer:build="([0-9a-z]{8})"/;
 const ANY_BUILD_ATTRIBUTE = /\scomposer:build="[^"]*"/g;
 const COMPOSER_NAMESPACE_DECLARATION = "xmlns:composer=";
@@ -75,15 +75,15 @@ function decodeBuildTag(value: string, seed: string): BuildTag | null {
 }
 
 function withBuildTag(ttml: string, tag: BuildTag): string {
-  const untagged = ttml.replace(ROOT_OPEN, (root) => root.replace(ANY_BUILD_ATTRIBUTE, ""));
-  const root = untagged.match(ROOT_OPEN)?.[0];
+  const untagged = ttml.replace(ROOT_TT_TAG_REGEX, (root) => root.replace(ANY_BUILD_ATTRIBUTE, ""));
+  const root = untagged.match(ROOT_TT_TAG_REGEX)?.[0];
   if (!root?.includes(COMPOSER_NAMESPACE_DECLARATION)) return untagged;
   const value = encodeBuildTag(tag, seedOf(untagged));
-  return untagged.replace(ROOT_OPEN, () => `${root} composer:build="${value}"`);
+  return untagged.replace(ROOT_TT_TAG_REGEX, () => `${root.slice(0, -1)} composer:build="${value}">`);
 }
 
 function readBuildTag(ttml: string): BuildTag | null {
-  const value = ttml.match(ROOT_OPEN)?.[0].match(BUILD_ATTRIBUTE)?.[1];
+  const value = ttml.match(ROOT_TT_TAG_REGEX)?.[0].match(BUILD_ATTRIBUTE)?.[1];
   return value === undefined ? null : decodeBuildTag(value, seedOf(ttml));
 }
 

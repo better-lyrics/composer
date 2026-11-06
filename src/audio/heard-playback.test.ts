@@ -8,6 +8,7 @@ import { resetAllStores } from "@/test/stores";
 
 function playThrough(from: number, to: number): void {
   const audio = new Audio();
+  useAudioStore.getState().registerAudioElement(audio);
   Object.defineProperty(audio, "paused", { value: false });
   let time = from;
   Object.defineProperty(audio, "currentTime", { get: () => time });
@@ -40,8 +41,21 @@ it("keeps ranges when a save reads them while another song is loading but has no
   useAudioStore.getState().setSource({ type: "file", file: audioFile("harbor-lights.mp3") });
   playThrough(0, 5);
   useAudioStore.getState().setYouTubeSource("q1w2e3r4t5y");
-  heardRanges();
+  expect(heardRanges()).toEqual([]);
   useAudioStore.getState().setSource({ type: "file", file: audioFile("harbor-lights.mp3") });
+
+  expect(heardRanges()).toEqual([[0, 5]]);
+});
+
+it("ignores playback from an audio element that is no longer the current one", () => {
+  useAudioStore.getState().setSource({ type: "file", file: audioFile("harbor-lights.mp3") });
+  playThrough(0, 5);
+  const stale = new Audio();
+  Object.defineProperty(stale, "paused", { value: false });
+  let time = 40;
+  Object.defineProperty(stale, "currentTime", { get: () => time });
+  stale.addEventListener("timeupdate", noteHeardTime);
+  for (; time <= 45; time += 0.25) stale.dispatchEvent(new Event("timeupdate"));
 
   expect(heardRanges()).toEqual([[0, 5]]);
 });

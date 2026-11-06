@@ -16,10 +16,15 @@ let lastTime: number | null = null;
 
 // -- Functions ----------------------------------------------------------------
 
+function currentSong(): string | null {
+  const audio = projectAudioSource(useAudioStore.getState());
+  if (!audio) return null;
+  return audio.kind === "file" ? `file:${audio.name}` : `youtube:${audio.videoId}`;
+}
+
 function followSongScope(): void {
   const session = useProjectStore.getState().projectSession;
-  const audio = projectAudioSource(useAudioStore.getState());
-  const song = audio ? (audio.kind === "file" ? `file:${audio.name}` : `youtube:${audio.videoId}`) : null;
+  const song = currentSong();
   if (scope?.session === session && (scope.song === song || scope.song === null)) {
     scope.song = song;
     return;
@@ -32,7 +37,7 @@ function followSongScope(): void {
 
 function noteHeardTime(event: Event): void {
   const audio = event.currentTarget;
-  if (!(audio instanceof HTMLMediaElement)) return;
+  if (!(audio instanceof HTMLMediaElement) || audio !== useAudioStore.getState().audioElement) return;
   if (event.type === "seeking" || audio.seeking) {
     lastTime = null;
     return;
@@ -55,6 +60,8 @@ function noteHeardTime(event: Event): void {
 
 function heardRanges(): HeardRange[] {
   if (scope?.session !== useProjectStore.getState().projectSession) followSongScope();
+  const song = currentSong();
+  if (scope?.song && song && scope.song !== song) return [];
   return mergeRanges(open === null ? closed : [...closed, open]);
 }
 
@@ -65,6 +72,7 @@ function restoreHeardRanges(ranges: HeardRange[]): void {
 }
 
 function forgetHeardSpans(spans: readonly { begin: number; end: number }[]): void {
+  followSongScope();
   closed = withoutSpans(heardRanges(), spans);
   open = null;
   lastTime = null;
