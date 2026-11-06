@@ -46,6 +46,10 @@ describe("heard ranges", () => {
     ).toBe(true);
   });
 
+  it("never counts a short line that playback stopped just before", () => {
+    expect(coversSpan([[9, 9.9]], 10, 10.4)).toBe(false);
+  });
+
   it("reads only well-formed saved ranges", () => {
     expect(readHeardRanges([[1, 2], ["x", 3], [5, 4], null])).toEqual([[1, 2]]);
     expect(readHeardRanges("nope")).toEqual([]);

@@ -38,12 +38,13 @@ function withoutSpans(ranges: readonly HeardRange[], spans: readonly Span[]): He
 }
 
 function coversSpan(ranges: readonly HeardRange[], begin: number, end: number): boolean {
+  const edge = Math.min(UPDATE_TOLERANCE_SECONDS, (end - begin) / 4);
   let runStart = Number.NEGATIVE_INFINITY;
   let reach = Number.NEGATIVE_INFINITY;
   for (const [start, stop] of ranges.toSorted((a, b) => a[0] - b[0])) {
     if (start > reach + UPDATE_TOLERANCE_SECONDS) runStart = start;
     reach = Math.max(reach, stop);
-    if (runStart <= begin + UPDATE_TOLERANCE_SECONDS && reach >= end - UPDATE_TOLERANCE_SECONDS) return true;
+    if (runStart <= begin + edge && reach >= end - edge) return true;
   }
   return false;
 }

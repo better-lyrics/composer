@@ -1,4 +1,6 @@
+import { songKey } from "@/audio/song-key";
 import { type HeardRange, mergeRanges, withoutSpans } from "@/domain/alignment/heard-ranges";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 
 // -- Constants ----------------------------------------------------------------
@@ -7,17 +9,17 @@ const MAX_CONTINUOUS_STEP_SECONDS = 1;
 
 // -- State --------------------------------------------------------------------
 
-let session = -1;
+let scope: string | null = null;
 let closed: HeardRange[] = [];
 let open: HeardRange | null = null;
 let lastTime: number | null = null;
 
 // -- Functions ----------------------------------------------------------------
 
-function followProjectSession(): void {
-  const current = useProjectStore.getState().projectSession;
-  if (current === session) return;
-  session = current;
+function followSongScope(): void {
+  const current = `${useProjectStore.getState().projectSession}|${songKey(useAudioStore.getState().source)}`;
+  if (current === scope) return;
+  scope = current;
   closed = [];
   open = null;
   lastTime = null;
@@ -26,7 +28,7 @@ function followProjectSession(): void {
 function noteHeardTime(event: Event): void {
   const audio = event.currentTarget;
   if (!(audio instanceof HTMLMediaElement)) return;
-  if (event.type === "seeking") {
+  if (event.type === "seeking" || audio.seeking) {
     lastTime = null;
     return;
   }
@@ -34,7 +36,7 @@ function noteHeardTime(event: Event): void {
     lastTime = audio.currentTime;
     return;
   }
-  followProjectSession();
+  followSongScope();
   const time = audio.currentTime;
   if (lastTime !== null && time >= lastTime && time - lastTime <= MAX_CONTINUOUS_STEP_SECONDS) {
     if (open !== null && open[1] === lastTime) open[1] = time;
@@ -47,12 +49,12 @@ function noteHeardTime(event: Event): void {
 }
 
 function heardRanges(): HeardRange[] {
-  followProjectSession();
+  followSongScope();
   return mergeRanges(open === null ? closed : [...closed, open]);
 }
 
 function restoreHeardRanges(ranges: HeardRange[]): void {
-  followProjectSession();
+  followSongScope();
   closed = mergeRanges(ranges);
   open = null;
 }
