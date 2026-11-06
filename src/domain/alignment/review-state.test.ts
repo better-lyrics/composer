@@ -1,5 +1,5 @@
 import { readAlignedTimings, fingerprintChanged, timingFingerprint } from "@/domain/alignment/fingerprint";
-import { alignmentReview } from "@/domain/alignment/review-state";
+import { alignmentBreakdown, alignmentReview } from "@/domain/alignment/review-state";
 import type { LyricLine } from "@/domain/line/model";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
@@ -127,5 +127,16 @@ describe("readAlignedTimings", () => {
     expect(readAlignedTimings(undefined)).toEqual({});
     expect(readAlignedTimings("nope")).toEqual({});
     expect(readAlignedTimings([1, 2])).toEqual({});
+  });
+});
+
+// -- alignmentBreakdown -------------------------------------------------------
+
+describe("alignmentBreakdown", () => {
+  it("splits timed lines into untouched, heard, fixed and hand-synced", () => {
+    const lines = SONG.map((line, i) => (i === 4 || i === 5 ? nudged(line, 0.05) : line));
+    const { counts, untouchedIds } = alignmentBreakdown(lines, fingerprintsOf(SONG.slice(0, 6)), [[12, 20]]);
+    expect(counts).toEqual({ untouched: 4, heard: 2, fixed: 2, handSynced: 2 });
+    expect([...untouchedIds]).toEqual(["L1", "L2", "L3", "L4"]);
   });
 });
