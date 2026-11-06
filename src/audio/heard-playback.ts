@@ -54,7 +54,7 @@ function noteHeardTime(event: Event): void {
 }
 
 function heardRanges(): HeardRange[] {
-  followSongScope();
+  if (scope?.session !== useProjectStore.getState().projectSession) followSongScope();
   return mergeRanges(open === null ? closed : [...closed, open]);
 }
 

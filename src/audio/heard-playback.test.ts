@@ -35,3 +35,13 @@ it("regression: keeps a project's restored ranges when its audio arrives after a
 
   expect(heardRanges()).toEqual([[0, 10]]);
 });
+
+it("keeps ranges when a save reads them while another song is loading but has not played", () => {
+  useAudioStore.getState().setSource({ type: "file", file: audioFile("harbor-lights.mp3") });
+  playThrough(0, 5);
+  useAudioStore.getState().setYouTubeSource("q1w2e3r4t5y");
+  heardRanges();
+  useAudioStore.getState().setSource({ type: "file", file: audioFile("harbor-lights.mp3") });
+
+  expect(heardRanges()).toEqual([[0, 5]]);
+});
