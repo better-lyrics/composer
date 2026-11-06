@@ -9,8 +9,8 @@ import { useProjectStore } from "@/stores/project";
 function recordRealignedLines(before: ReadonlyMap<string, LyricLine>): void {
   const project = useProjectStore.getState();
   const realigned = project.lines.filter((line) => fingerprintChanged(before.get(line.id), line));
-  project.recordAlignedTimings(realigned.map((line) => line.id));
   forgetHeardSpans(realigned.flatMap((line) => effectiveBounds(line) ?? []));
+  project.recordAlignedTimings(realigned.map((line) => line.id));
 }
 
 // -- Exports ------------------------------------------------------------------
