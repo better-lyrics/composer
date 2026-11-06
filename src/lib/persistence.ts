@@ -1,7 +1,7 @@
 import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
 import type { AlignedTimings } from "@/domain/alignment/fingerprint";
-import type { HeardRange } from "@/domain/alignment/heard-ranges";
+import type { PlayedRange } from "@/domain/alignment/played-ranges";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
@@ -43,7 +43,7 @@ interface ProjectSaveInput {
   ttmlEditState: TtmlEditState;
   alignedTimings: AlignedTimings;
   alignmentNoticeDismissed: boolean;
-  heardRanges: HeardRange[];
+  playedRanges: PlayedRange[];
 }
 
 // -- Records ------------------------------------------------------------------

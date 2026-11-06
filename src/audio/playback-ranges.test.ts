@@ -1,5 +1,5 @@
 import { beforeEach, expect, it } from "vitest";
-import { heardRanges, noteHeardTime, restoreHeardRanges } from "@/audio/heard-playback";
+import { notePlaybackTime, playedRanges, restorePlayedRanges } from "@/audio/playback-ranges";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { resetAllStores } from "@/test/stores";
@@ -12,7 +12,7 @@ function playThrough(from: number, to: number): void {
   Object.defineProperty(audio, "paused", { value: false });
   let time = from;
   Object.defineProperty(audio, "currentTime", { get: () => time });
-  audio.addEventListener("timeupdate", noteHeardTime);
+  audio.addEventListener("timeupdate", notePlaybackTime);
   for (; time <= to; time += 0.25) audio.dispatchEvent(new Event("timeupdate"));
 }
 
@@ -31,20 +31,20 @@ it("regression: keeps a project's restored ranges when its audio arrives after a
   useProjectStore.getState().reset();
   useAudioStore.getState().setSource(null);
   useAudioStore.getState().expectProjectAudio({ kind: "file", name: "evening-tide.mp3" });
-  restoreHeardRanges([[0, 10]]);
+  restorePlayedRanges([[0, 10]]);
   useAudioStore.getState().setSource({ type: "file", file: audioFile("evening-tide.mp3") });
 
-  expect(heardRanges()).toEqual([[0, 10]]);
+  expect(playedRanges()).toEqual([[0, 10]]);
 });
 
 it("keeps ranges when a save reads them while another song is loading but has not played", () => {
   useAudioStore.getState().setSource({ type: "file", file: audioFile("harbor-lights.mp3") });
   playThrough(0, 5);
   useAudioStore.getState().setYouTubeSource("q1w2e3r4t5y");
-  expect(heardRanges()).toEqual([]);
+  expect(playedRanges()).toEqual([]);
   useAudioStore.getState().setSource({ type: "file", file: audioFile("harbor-lights.mp3") });
 
-  expect(heardRanges()).toEqual([[0, 5]]);
+  expect(playedRanges()).toEqual([[0, 5]]);
 });
 
 it("ignores playback from an audio element that is no longer the current one", () => {
@@ -54,8 +54,8 @@ it("ignores playback from an audio element that is no longer the current one", (
   Object.defineProperty(stale, "paused", { value: false });
   let time = 40;
   Object.defineProperty(stale, "currentTime", { get: () => time });
-  stale.addEventListener("timeupdate", noteHeardTime);
+  stale.addEventListener("timeupdate", notePlaybackTime);
   for (; time <= 45; time += 0.25) stale.dispatchEvent(new Event("timeupdate"));
 
-  expect(heardRanges()).toEqual([[0, 5]]);
+  expect(playedRanges()).toEqual([[0, 5]]);
 });

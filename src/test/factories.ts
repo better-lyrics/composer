@@ -109,7 +109,7 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
     ttmlEditState: null,
     alignedTimings: {},
     alignmentNoticeDismissed: false,
-    heardRanges: [],
+    playedRanges: [],
     ...overrides,
   };
 }

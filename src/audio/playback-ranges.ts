@@ -1,5 +1,5 @@
 import { projectAudioSource } from "@/audio/project-audio-source";
-import { type HeardRange, mergeRanges, withoutSpans } from "@/domain/alignment/heard-ranges";
+import { mergeRanges, type PlayedRange, withoutSpans } from "@/domain/alignment/played-ranges";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 
@@ -10,8 +10,8 @@ const MAX_CONTINUOUS_STEP_SECONDS = 1;
 // -- State --------------------------------------------------------------------
 
 let scope: { session: number; song: string | null } | null = null;
-let closed: HeardRange[] = [];
-let open: HeardRange | null = null;
+let closed: PlayedRange[] = [];
+let open: PlayedRange | null = null;
 let lastTime: number | null = null;
 
 // -- Functions ----------------------------------------------------------------
@@ -35,7 +35,7 @@ function followSongScope(): void {
   lastTime = null;
 }
 
-function noteHeardTime(event: Event): void {
+function notePlaybackTime(event: Event): void {
   const audio = event.currentTarget;
   if (!(audio instanceof HTMLMediaElement) || audio !== useAudioStore.getState().audioElement) return;
   if (event.type === "seeking" || audio.seeking) {
@@ -58,26 +58,26 @@ function noteHeardTime(event: Event): void {
   lastTime = time;
 }
 
-function heardRanges(): HeardRange[] {
+function playedRanges(): PlayedRange[] {
   if (scope?.session !== useProjectStore.getState().projectSession) followSongScope();
   const song = currentSong();
   if (scope?.song && song && scope.song !== song) return [];
   return mergeRanges(open === null ? closed : [...closed, open]);
 }
 
-function restoreHeardRanges(ranges: HeardRange[]): void {
+function restorePlayedRanges(ranges: PlayedRange[]): void {
   followSongScope();
   closed = mergeRanges(ranges);
   open = null;
 }
 
-function forgetHeardSpans(spans: readonly { begin: number; end: number }[]): void {
+function forgetPlayedSpans(spans: readonly { begin: number; end: number }[]): void {
   followSongScope();
-  closed = withoutSpans(heardRanges(), spans);
+  closed = withoutSpans(playedRanges(), spans);
   open = null;
   lastTime = null;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { forgetHeardSpans, heardRanges, noteHeardTime, restoreHeardRanges };
+export { forgetPlayedSpans, notePlaybackTime, playedRanges, restorePlayedRanges };

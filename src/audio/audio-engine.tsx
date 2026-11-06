@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { decodeAudioToWav, needsWavConversion } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
-import { noteHeardTime } from "@/audio/heard-playback";
 import { resyncPlaybackClock } from "@/audio/playback-clock";
+import { notePlaybackTime } from "@/audio/playback-ranges";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { seekInPlaceToResume } from "@/audio/seek-reveal-intent";
 import { useAudioStore } from "@/stores/audio";
@@ -148,8 +148,8 @@ const AudioEngine: React.FC = () => {
 
       audio.addEventListener("loadedmetadata", handleLoadedMetadata);
       audio.addEventListener("timeupdate", handleTimeUpdate);
-      audio.addEventListener("timeupdate", noteHeardTime);
-      audio.addEventListener("seeking", noteHeardTime);
+      audio.addEventListener("timeupdate", notePlaybackTime);
+      audio.addEventListener("seeking", notePlaybackTime);
       audio.addEventListener("ended", handleEnded);
       audio.addEventListener("error", handleError);
       audio.addEventListener("seeking", resyncPlaybackClock);
@@ -158,8 +158,8 @@ const AudioEngine: React.FC = () => {
       teardown = () => {
         audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
         audio.removeEventListener("timeupdate", handleTimeUpdate);
-        audio.removeEventListener("timeupdate", noteHeardTime);
-        audio.removeEventListener("seeking", noteHeardTime);
+        audio.removeEventListener("timeupdate", notePlaybackTime);
+        audio.removeEventListener("seeking", notePlaybackTime);
         audio.removeEventListener("ended", handleEnded);
         audio.removeEventListener("error", handleError);
         audio.removeEventListener("seeking", resyncPlaybackClock);

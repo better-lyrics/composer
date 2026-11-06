@@ -5,7 +5,7 @@ import { ROOT_TT_TAG_REGEX } from "@/utils/lyrics-parsers/ttml-helpers";
 
 interface AlignmentCounts {
   untouched: number;
-  heard: number;
+  played: number;
   fixed: number;
   handSynced: number;
 }
@@ -39,7 +39,7 @@ function maskOf(seed: string): number {
 }
 
 function packCounts(tag: BuildTag): number {
-  const counts = [tag.untouched, tag.heard, tag.fixed, tag.handSynced];
+  const counts = [tag.untouched, tag.played, tag.fixed, tag.handSynced];
   const packed = counts.reduce(
     (total, count) => total * COUNT_LIMIT + Math.min(Math.max(0, Math.round(count)), COUNT_LIMIT - 1),
     0,
@@ -54,8 +54,8 @@ function unpackCounts(packed: number): BuildTag {
     counts.unshift(rest % COUNT_LIMIT);
     rest = Math.floor(rest / COUNT_LIMIT);
   }
-  const [untouched, heard, fixed, handSynced] = counts;
-  return { untouched, heard, fixed, handSynced, handEdited: packed % 2 === 1 };
+  const [untouched, played, fixed, handSynced] = counts;
+  return { untouched, played, fixed, handSynced, handEdited: packed % 2 === 1 };
 }
 
 function checkOf(packed: number, seed: string): number {

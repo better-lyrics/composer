@@ -1,6 +1,6 @@
 import type { AlignmentCounts } from "@/domain/alignment/build-tag";
 import { type AlignedTimings, timingFingerprint } from "@/domain/alignment/fingerprint";
-import { coversSpan, type HeardRange, mergeRanges } from "@/domain/alignment/heard-ranges";
+import { coversSpan, mergeRanges, type PlayedRange } from "@/domain/alignment/played-ranges";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineTimed } from "@/domain/line/sync-progress";
@@ -56,11 +56,11 @@ function alignmentReview(lines: readonly LyricLine[], alignedTimings: AlignedTim
 function alignmentBreakdown(
   lines: readonly LyricLine[],
   alignedTimings: AlignedTimings,
-  heard: readonly HeardRange[],
+  played: readonly PlayedRange[],
 ): AlignmentBreakdown {
-  const counts: AlignmentCounts = { untouched: 0, heard: 0, fixed: 0, handSynced: 0 };
+  const counts: AlignmentCounts = { untouched: 0, played: 0, fixed: 0, handSynced: 0 };
   const untouchedIds = new Set<string>();
-  const heardRuns = mergeRanges(heard);
+  const playedRuns = mergeRanges(played);
   for (const line of lines) {
     if (!isExportedLine(line)) continue;
     if (alignedTimings[line.id] === undefined) counts.handSynced++;
@@ -69,7 +69,7 @@ function alignmentBreakdown(
       counts.untouched++;
       untouchedIds.add(line.id);
       const bounds = effectiveBounds(line);
-      if (bounds && coversSpan(heardRuns, bounds.begin, bounds.end)) counts.heard++;
+      if (bounds && coversSpan(playedRuns, bounds.begin, bounds.end)) counts.played++;
     }
   }
   return { counts, untouchedIds };

@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { coversSpan, mergeRanges, readHeardRanges, withoutSpans } from "@/domain/alignment/heard-ranges";
+import { coversSpan, mergeRanges, readPlayedRanges, withoutSpans } from "@/domain/alignment/played-ranges";
 
-describe("heard ranges", () => {
+describe("played ranges", () => {
   it("merges overlapping runs and cuts re-aligned spans out", () => {
-    const heard = mergeRanges([
+    const played = mergeRanges([
       [30, 40],
       [10, 20],
       [18, 25],
     ]);
-    expect(heard).toEqual([
+    expect(played).toEqual([
       [10, 25],
       [30, 40],
     ]);
-    expect(withoutSpans(heard, [{ begin: 12, end: 14 }])).toEqual([
+    expect(withoutSpans(played, [{ begin: 12, end: 14 }])).toEqual([
       [10, 12],
       [14, 25],
       [30, 40],
@@ -51,7 +51,7 @@ describe("heard ranges", () => {
   });
 
   it("reads only well-formed saved ranges", () => {
-    expect(readHeardRanges([[1, 2], ["x", 3], [5, 4], null])).toEqual([[1, 2]]);
-    expect(readHeardRanges("nope")).toEqual([]);
+    expect(readPlayedRanges([[1, 2], ["x", 3], [5, 4], null])).toEqual([[1, 2]]);
+    expect(readPlayedRanges("nope")).toEqual([]);
   });
 });

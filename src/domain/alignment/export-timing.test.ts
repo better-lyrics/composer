@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readWatermark, watermarkLines } from "@/domain/alignment/watermark";
+import { readExportTiming, withExportTiming } from "@/domain/alignment/export-timing";
 import type { LyricLine } from "@/domain/line/model";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createLine } from "@/test/factories";
@@ -40,12 +40,12 @@ function ttmlOf(lines: LyricLine[]): string {
 
 // -- Tests --------------------------------------------------------------------
 
-describe("watermarkLines", () => {
+describe("withExportTiming", () => {
   it("marks only the given lines and keeps every word within 3 ms, ordered and never overlapping", () => {
-    const [stamped, hand] = watermarkLines([ALIGNED, HAND], new Set(["a"]));
+    const [settled, hand] = withExportTiming([ALIGNED, HAND], new Set(["a"]));
     expect(hand).toBe(HAND);
     const before = ALIGNED.words ?? [];
-    const after = stamped.words ?? [];
+    const after = settled.words ?? [];
     after.forEach((word, i) => {
       expect(Math.abs(word.begin - before[i].begin)).toBeLessThanOrEqual(3 * MS);
       expect(Math.abs(word.end - before[i].end)).toBeLessThanOrEqual(3 * MS);
@@ -54,7 +54,7 @@ describe("watermarkLines", () => {
       if (before[i].begin === before[i - 1].end) expect(word.begin).toBe(after[i - 1].end);
       else expect(word.begin).toBeGreaterThanOrEqual(after[i - 1].end);
     });
-    expect(readWatermark(ttmlOf([stamped, HAND]))).toEqual({ markedLines: 1, checkedLines: 2 });
+    expect(readExportTiming(ttmlOf([settled, HAND]))).toEqual({ markedLines: 1, checkedLines: 2 });
   });
 
   it("never moves a line start, so lines that touch the line before still touch it", () => {
@@ -68,8 +68,8 @@ describe("watermarkLines", () => {
         { text: "tide", begin: 15.2, end: 15.9 },
       ],
     });
-    const stamped = watermarkLines([ALIGNED, next], new Set(["a", "b"]));
-    expect(stamped.map((line) => line.words?.[0].begin)).toEqual([12.34, 14.204]);
-    expect(readWatermark(ttmlOf(stamped)).markedLines).toBe(2);
+    const settled = withExportTiming([ALIGNED, next], new Set(["a", "b"]));
+    expect(settled.map((line) => line.words?.[0].begin)).toEqual([12.34, 14.204]);
+    expect(readExportTiming(ttmlOf(settled)).markedLines).toBe(2);
   });
 });

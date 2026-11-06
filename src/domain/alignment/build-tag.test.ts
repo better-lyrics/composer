@@ -8,7 +8,7 @@ const TTML =
   '<p begin="0:01.000" end="0:02.000"><span begin="0:01.000" end="0:01.500">Lanterns </span><span begin="0:01.500" end="0:02.000">drift</span></p>' +
   "</div></body></tt>";
 
-const TAG = { untouched: 22, heard: 18, fixed: 12, handSynced: 6, handEdited: false };
+const TAG = { untouched: 22, played: 18, fixed: 12, handSynced: 6, handEdited: false };
 
 function tagValue(ttml: string): string {
   return ttml.match(/composer:build="([0-9a-z]{8})"/)?.[1] ?? "";

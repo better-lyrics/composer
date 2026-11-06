@@ -1,6 +1,6 @@
 // -- Types --------------------------------------------------------------------
 
-type HeardRange = [number, number];
+type PlayedRange = [number, number];
 
 interface Span {
   begin: number;
@@ -13,8 +13,8 @@ const UPDATE_TOLERANCE_SECONDS = 0.5;
 
 // -- Functions ----------------------------------------------------------------
 
-function mergeRanges(ranges: readonly HeardRange[]): HeardRange[] {
-  const merged: HeardRange[] = [];
+function mergeRanges(ranges: readonly PlayedRange[]): PlayedRange[] {
+  const merged: PlayedRange[] = [];
   for (const [start, end] of ranges.toSorted((a, b) => a[0] - b[0])) {
     const last = merged.at(-1);
     if (last && start <= last[1]) last[1] = Math.max(last[1], end);
@@ -23,21 +23,21 @@ function mergeRanges(ranges: readonly HeardRange[]): HeardRange[] {
   return merged;
 }
 
-function withoutSpan(ranges: readonly HeardRange[], span: Span): HeardRange[] {
+function withoutSpan(ranges: readonly PlayedRange[], span: Span): PlayedRange[] {
   return ranges.flatMap(([start, end]) => {
     if (span.end <= start || span.begin >= end) return [[start, end]];
-    const pieces: HeardRange[] = [];
+    const pieces: PlayedRange[] = [];
     if (start < span.begin) pieces.push([start, span.begin]);
     if (span.end < end) pieces.push([span.end, end]);
     return pieces;
   });
 }
 
-function withoutSpans(ranges: readonly HeardRange[], spans: readonly Span[]): HeardRange[] {
-  return spans.reduce<HeardRange[]>((kept, span) => withoutSpan(kept, span), [...ranges]);
+function withoutSpans(ranges: readonly PlayedRange[], spans: readonly Span[]): PlayedRange[] {
+  return spans.reduce<PlayedRange[]>((kept, span) => withoutSpan(kept, span), [...ranges]);
 }
 
-function coversSpan(ranges: readonly HeardRange[], begin: number, end: number): boolean {
+function coversSpan(ranges: readonly PlayedRange[], begin: number, end: number): boolean {
   const edge = Math.min(UPDATE_TOLERANCE_SECONDS, (end - begin) / 4);
   let runStart = Number.NEGATIVE_INFINITY;
   let reach = Number.NEGATIVE_INFINITY;
@@ -49,7 +49,7 @@ function coversSpan(ranges: readonly HeardRange[], begin: number, end: number): 
   return false;
 }
 
-function isHeardRange(value: unknown): value is HeardRange {
+function isPlayedRange(value: unknown): value is PlayedRange {
   return (
     Array.isArray(value) &&
     value.length === 2 &&
@@ -61,11 +61,11 @@ function isHeardRange(value: unknown): value is HeardRange {
   );
 }
 
-function readHeardRanges(value: unknown): HeardRange[] {
-  return Array.isArray(value) ? value.filter(isHeardRange) : [];
+function readPlayedRanges(value: unknown): PlayedRange[] {
+  return Array.isArray(value) ? value.filter(isPlayedRange) : [];
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export type { HeardRange };
-export { coversSpan, mergeRanges, readHeardRanges, withoutSpans };
+export type { PlayedRange };
+export { coversSpan, mergeRanges, readPlayedRanges, withoutSpans };

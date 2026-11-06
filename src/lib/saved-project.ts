@@ -39,7 +39,7 @@ interface SavedProject {
   ttmlEditState?: TtmlEditState;
   alignedTimings?: unknown;
   alignmentNoticeDismissed?: boolean;
-  heardRanges?: unknown;
+  playedRanges?: unknown;
 }
 
 interface SavedAudioFile {
