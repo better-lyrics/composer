@@ -56,4 +56,20 @@ describe("watermarkLines", () => {
     });
     expect(readWatermark(ttmlOf([stamped, HAND]))).toEqual({ markedLines: 1, checkedLines: 2 });
   });
+
+  it("never moves a line start, so lines that touch the line before still touch it", () => {
+    const next = createLine({
+      id: "b",
+      text: "Home before the tide",
+      words: [
+        { text: "Home ", begin: 14.204, end: 14.6 },
+        { text: "before ", begin: 14.6, end: 14.95 },
+        { text: "the ", begin: 14.95, end: 15.2 },
+        { text: "tide", begin: 15.2, end: 15.9 },
+      ],
+    });
+    const stamped = watermarkLines([ALIGNED, next], new Set(["a", "b"]));
+    expect(stamped.map((line) => line.words?.[0].begin)).toEqual([12.34, 14.204]);
+    expect(readWatermark(ttmlOf(stamped)).markedLines).toBe(2);
+  });
 });

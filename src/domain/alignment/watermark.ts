@@ -30,17 +30,16 @@ function shiftTo(ms: number, residue: number): number {
 
 function stampTrack(words: readonly WordTiming[], residue: number): WordTiming[] {
   const stamped = words.map((word) => ({ ...word }));
-  for (let i = 0; i < stamped.length; i++) {
+  for (let i = 1; i < stamped.length; i++) {
     const word = stamped[i];
     const beginMs = toMs(word.begin);
     if (toMs(word.end) - beginMs < MIN_STAMPED_MS) continue;
     const target = beginMs + shiftTo(beginMs, residue);
-    const previous = i > 0 ? stamped[i - 1] : undefined;
-    const touching = previous !== undefined && toMs(previous.end) === beginMs ? previous : undefined;
-    if (target < 0 || (touching && target <= toMs(touching.begin))) continue;
-    if (previous && !touching && target < toMs(previous.end)) continue;
+    const previous = stamped[i - 1];
+    const touching = toMs(previous.end) === beginMs;
+    if (target < (touching ? toMs(previous.begin) + 1 : toMs(previous.end))) continue;
     word.begin = target / 1000;
-    if (touching) touching.end = target / 1000;
+    if (touching) previous.end = target / 1000;
   }
   return stamped;
 }
@@ -70,7 +69,7 @@ function readWatermark(ttml: string): WatermarkReading {
     const body = chunk.slice(0, chunk.indexOf("</p>"));
     const background = body.indexOf(BACKGROUND_OPEN);
     const spans = spanTimesMs(background === -1 ? body : body.slice(0, background));
-    const readable = spans.filter((span) => span.end - span.begin >= MIN_READ_SPAN_MS);
+    const readable = spans.slice(1).filter((span) => span.end - span.begin >= MIN_READ_SPAN_MS);
     if (readable.length < 2) continue;
     checkedLines++;
     const residue = spans.length % RESIDUE;
