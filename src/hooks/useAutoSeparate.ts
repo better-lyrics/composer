@@ -21,6 +21,8 @@ function useAutoSeparate(): void {
       if (!useSettingsStore.getState().autoSeparateOnImport) return;
       if (!sep.hostingConfigured) return;
       if (sep.status === "downloading" || sep.status === "processing") return;
+      // Stems from another model are an upgrade the user starts; the RoFormer is much slower.
+      if (useSeparationStore.getState().stemsFromOtherModel) return;
       sep.separate();
     });
     return () => unsub();

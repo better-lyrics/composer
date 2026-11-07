@@ -110,8 +110,9 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
     alignedTimings: {},
     unisonLyricId: null,
     alignmentNoticeDismissed: false,
+    playedRanges: [],
     ...overrides,
   };
 }
 
-export { createLine, createWord, createGroup, createProjectSaveInput, snapPoints };
+export { createGroup, createLine, createProjectSaveInput, createWord, snapPoints };

@@ -1,22 +1,11 @@
+import type { HtdemucsVariant } from "@/audio/separation/model-registry";
+import type { ProcessOptions, ProcessResult } from "@/audio/separation/vocal-separator";
 import type { InboundMessage, OutboundMessage } from "@/audio/separation/worker";
-import type { VocalModelVariant } from "@/stores/settings";
 
 interface InitOptions {
-  variant: VocalModelVariant;
+  variant: HtdemucsVariant;
   forceWasm?: boolean;
   onProgress?: (loaded: number, total: number) => void;
-}
-
-interface ProcessOptions {
-  channels: Float32Array[];
-  totalFrames: number;
-  onProgress?: (processed: number, total: number) => void;
-}
-
-interface ProcessResult {
-  vocals: Float32Array[];
-  numChannels: number;
-  totalFrames: number;
 }
 
 const LOG_PREFIX = "[separation-host]";

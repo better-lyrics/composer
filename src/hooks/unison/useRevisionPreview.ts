@@ -3,7 +3,7 @@ import { UNISON_STALE_TIME_MS, unisonQueryKeys } from "@/hooks/unison/query-keys
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { previewRevision } from "@/lib/unison/endpoints";
 import type { RevisionInput } from "@/lib/unison/revision-types";
-import { textHash } from "@/utils/text-hash";
+import { fnv1a } from "@/utils/fnv1a";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
@@ -16,7 +16,7 @@ const PREVIEW_DEBOUNCE_MS = 600;
 
 function useRevisionPreview(lyricId: number, input: RevisionInput, onError: (error: unknown) => void) {
   const settledInput = useDebouncedValue(input, PREVIEW_DEBOUNCE_MS);
-  const inputHash = useMemo(() => textHash(canonicalJson(settledInput)), [settledInput]);
+  const inputHash = useMemo(() => fnv1a(canonicalJson(settledInput)).toString(36), [settledInput]);
   const query = useQuery({
     queryKey: unisonQueryKeys.revisionPreview(lyricId, inputHash),
     queryFn: async ({ signal }) => {

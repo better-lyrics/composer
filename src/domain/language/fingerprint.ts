@@ -1,8 +1,9 @@
+import { fnv1a } from "@/utils/fnv1a";
 import { stripSplitCharacter } from "@/utils/split-character";
-import { textHash } from "@/utils/text-hash";
 
 function languageSourceFingerprint(text: string, backgroundText?: string): string {
-  return textHash(`${stripSplitCharacter(text)}\u0000${backgroundText ? stripSplitCharacter(backgroundText) : ""}`);
+  const value = `${stripSplitCharacter(text)}\u0000${backgroundText ? stripSplitCharacter(backgroundText) : ""}`;
+  return fnv1a(value).toString(36);
 }
 
 export { languageSourceFingerprint };

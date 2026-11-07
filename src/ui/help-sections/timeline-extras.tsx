@@ -235,8 +235,9 @@ const TimelineExtras: React.FC = () => (
         </li>
         <li>
           Once vocals are separated, press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.togglePitchLine")} />{" "}
-          and a pitch line runs along the bottom of each word, following the melody. Amber means the singing carries on
-          past the word's edge, which usually means the edge ends too early.
+          and a pitch line runs along the bottom of each word, following the melody. Use it to line syllables up with
+          the notes and to see where a new line starts. Amber marks singing that carries on past a word's edge, which is
+          often fine.
         </li>
         <li>
           <SettingLink setting="pitchLine" /> shows the line on every row, only on the row you point at, select or hear,

@@ -5,8 +5,27 @@ const LOG_PREFIX = "[ModelCache]";
 
 type DownloadProgress = (loaded: number, total: number) => void;
 // Any large file fetched once and kept: the vocal model, the alignment model
-// and its dictionary all share this cache.
-type CachedModel = Pick<ModelDescriptor, "url" | "approxBytes">;
+// and its dictionary all share this cache. A pinned sha256 is checked before the
+// download is cached, so a cached file is always the pinned one.
+type CachedModel = Pick<ModelDescriptor, "url" | "approxBytes"> & { sha256?: string };
+
+class IntegrityError extends Error {
+  readonly code = "integrity-mismatch";
+  constructor(url: string) {
+    super(`${url} doesn't match its pinned checksum.`);
+    this.name = "IntegrityError";
+  }
+}
+
+async function sha256Hex(bytes: ArrayBuffer | Uint8Array<ArrayBuffer>): Promise<string> {
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  return Array.from(digest, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function verifyAndCache(model: CachedModel, bytes: ArrayBuffer | Uint8Array<ArrayBuffer>): Promise<void> {
+  if (model.sha256 && (await sha256Hex(bytes)) !== model.sha256) throw new IntegrityError(model.url);
+  await storeInCache(model, bytes);
+}
 
 async function hasCachedModel(model: CachedModel): Promise<boolean> {
   if (typeof caches === "undefined") return false;
@@ -52,7 +71,7 @@ async function fetchAndCacheModel(
   if (!reader) {
     const buf = await response.arrayBuffer();
     onProgress(buf.byteLength, buf.byteLength);
-    await storeInCache(model, buf);
+    await verifyAndCache(model, buf);
     return buf;
   }
 
@@ -79,7 +98,7 @@ async function fetchAndCacheModel(
     offset += chunk.byteLength;
   }
 
-  await storeInCache(model, merged);
+  await verifyAndCache(model, merged);
   return merged.buffer;
 }
 

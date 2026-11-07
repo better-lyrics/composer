@@ -1,3 +1,5 @@
+import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { getLanguageReviewTracks } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -288,6 +290,68 @@ describe("TimelineSyllableSplitter", () => {
     expect(saved.transliteration?.text).toBe("ildan eun");
     expect(saved.words?.map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
     expect(saved.words?.map((word) => word.transliterationJoinerAfter)).toEqual(["", " ", undefined]);
+  });
+
+  it("re-stamps a manual transliteration after a word split", async () => {
+    const line: LyricLine = {
+      id: "line-word-split",
+      agentId: "v1",
+      text: "хорошо",
+      words: [{ text: "хорошо", begin: 0, end: 1 }],
+      transliteration: {
+        language: "ru-Latn",
+        text: "khorosho",
+        segments: [],
+        origin: "manual",
+        sourceFingerprint: languageSourceFingerprint("хорошо"),
+      },
+    };
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    const screen = await render(<TimelineSyllableSplitter />);
+    window.dispatchEvent(new Event("timeline:split-word"));
+
+    await screen.getByRole("button", { name: "Original split point 3" }).click();
+    await screen.getByRole("button", { name: "Split Word" }).click();
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
+    const saved = useProjectStore.getState().lines[0];
+    expect(saved.text).toBe("хор ошо");
+    expect(saved.transliteration?.text).toBe("khorosho");
+    expect(saved.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint("хор ошо"));
+    expect(getLanguageReviewTracks(saved)).toEqual([]);
+  });
+
+  it("keeps a literal transliteration dash when splitting into words at it", async () => {
+    const line: LyricLine = {
+      id: "line-dash-word-split",
+      agentId: "v1",
+      text: "to-do",
+      words: [{ text: "to-do", begin: 0, end: 1, transliteration: "to-do" }],
+      transliteration: {
+        language: "en-Latn",
+        text: "to-do",
+        segments: [],
+        origin: "manual",
+        sourceFingerprint: languageSourceFingerprint("to-do"),
+      },
+    };
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    const screen = await render(<TimelineSyllableSplitter />);
+    window.dispatchEvent(new Event("timeline:split-word"));
+
+    await screen.getByRole("button", { name: "Original dash 3" }).click();
+    await screen.getByRole("button", { name: "Split Word" }).click();
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
+    const saved = useProjectStore.getState().lines[0];
+    expect(saved.transliteration?.text).toBe("to-do");
+    expect(getLanguageReviewTracks(saved)).toEqual([]);
   });
 
   it("preserves a literal transliteration dash when the playhead sets the timing boundary", async () => {

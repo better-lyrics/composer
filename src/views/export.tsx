@@ -1,6 +1,10 @@
+import { IconFolderOpen } from "@tabler/icons-react";
+import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useUnisonSession } from "@/hooks/useUnisonSession";
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
+import { outgoingTtml } from "@/lib/outgoing-ttml";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
@@ -11,13 +15,10 @@ import { ExportCodePane } from "@/views/export/export-code-pane";
 import { ExportHeader } from "@/views/export/export-header";
 import { ExportSidePanel } from "@/views/export/export-side-panel";
 import { useProjectFileInput } from "@/views/export/project-menu-button";
-import { useAlignmentReview } from "@/views/export/use-alignment-review";
 import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
-import { IconFolderOpen } from "@tabler/icons-react";
 import type { UnisonExportSource } from "@/views/export/unison/submit-card-shell";
 import { UnisonPanel } from "@/views/export/unison/unison-panel";
-import { useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useAlignmentReview } from "@/views/export/use-alignment-review";
 
 // -- Types --------------------------------------------------------------------
 
@@ -65,23 +66,28 @@ const ExportPanel: React.FC = () => {
     return false;
   }, [editedContent]);
 
+  const outgoingContent = useCallback(
+    () => outgoingTtml({ editedContent, generatedContent: generatedTtml, duration, exportTiming, youtubeVideoId }),
+    [editedContent, generatedTtml, duration, exportTiming, youtubeVideoId],
+  );
+
   const handleDownload = useCallback(async () => {
     if (!exportContent || !isExportable()) return;
     if (!(await alignment.confirmExport("download"))) return;
 
-    downloadText(exportContent, fileName, "application/ttml+xml;charset=utf-8");
+    downloadText(outgoingContent(), fileName, "application/ttml+xml;charset=utf-8");
     useProjectStore.getState().clearUnexportedImport();
-  }, [exportContent, isExportable, fileName, alignment.confirmExport]);
+  }, [exportContent, isExportable, fileName, alignment.confirmExport, outgoingContent]);
 
   const handleCopy = useCallback(async () => {
     if (!exportContent || !isExportable()) return;
     if (!(await alignment.confirmExport("copy"))) return;
 
-    await navigator.clipboard.writeText(exportContent);
+    await navigator.clipboard.writeText(outgoingContent());
     useProjectStore.getState().clearUnexportedImport();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [exportContent, isExportable, alignment.confirmExport]);
+  }, [exportContent, isExportable, alignment.confirmExport, outgoingContent]);
 
   const handleEdit = useCallback(() => {
     if (!session) {

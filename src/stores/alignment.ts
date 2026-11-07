@@ -1,3 +1,4 @@
+import { create } from "zustand";
 import { hubertfaAligner } from "@/audio/alignment/hubertfa/hubertfa-aligner";
 import { areAlignmentAssetsCached, resolveAlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
 import type { Aligner } from "@/audio/alignment/types";
@@ -5,17 +6,16 @@ import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { isModelHostingConfigured } from "@/audio/separation/model-registry";
 import type { AnchorChain } from "@/domain/alignment/anchor";
 import { hasCjk } from "@/domain/alignment/cjk";
-import { fingerprintChanged } from "@/domain/alignment/fingerprint";
 import { canAlignLanguage, hanReadingFor, songLanguage } from "@/domain/alignment/language";
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
 import { sanitizeIntervals } from "@/domain/alignment/words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { alignLine, isAbortError } from "@/stores/alignment-line";
-import { type PlannedLine, isUnchanged, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
+import { isUnchanged, type PlannedLine, planLines, segmentFor, withSharedTiming } from "@/stores/alignment-plan";
+import { recordRealignedLines } from "@/stores/alignment-record";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
-import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------
 
@@ -184,10 +184,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         // Timing only: deriving text would drop the untimed words of partly synced lines.
         latest.updateLinesWithHistory(applicable, { deriveText: false });
         // Shared group copies change in the same write; linked siblings may be replaced with their timing unchanged.
-        const after = useProjectStore.getState();
-        after.recordAlignedTimings(
-          after.lines.flatMap((line) => (fingerprintChanged(currentById.get(line.id), line) ? [line.id] : [])),
-        );
+        recordRealignedLines(currentById);
         // Lines are tapped in Line mode; once they have word timing, refine words.
         latest.setGranularity("word");
       }
@@ -296,5 +293,5 @@ useSettingsStore.subscribe((s, prev) => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { isAutoAlignAvailable, useAlignmentStore };
 export type { AlignmentError, AlignmentErrorCode };
+export { isAutoAlignAvailable, useAlignmentStore };

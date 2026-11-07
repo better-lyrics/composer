@@ -4,7 +4,6 @@ import { useAudioStore } from "@/stores/audio";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { keepSpaceForFocusedControl } from "@/ui/keep-space-for-focused-control";
 import { Popover } from "@/ui/popover";
 import { Tooltip } from "@/ui/tooltip";
 import { cn } from "@/utils/cn";
@@ -140,7 +139,6 @@ const BeatGridCorner: React.FC = () => {
     // react-doctor-disable-next-line react-doctor/no-static-element-interactions -- the cell only stops events from reaching the scroll host; the button inside is the control
     <div
       onMouseDown={(e) => e.stopPropagation()}
-      onKeyDown={keepSpaceForFocusedControl}
       onPointerLeave={() => setTooltipHeld(false)}
       onBlur={(e) => {
         if (e.currentTarget.contains(e.target)) setTooltipHeld(false);

@@ -187,6 +187,19 @@ HTDemucs is the official Facebook AI Research model (`facebookresearch/demucs`, 
 
 Cost: free egress, and about $0.0015 a month to store the fp16 model.
 
+### High quality vocals (Mel-Band RoFormer)
+
+Settings > Models > Vocal model also offers "High quality vocals": Kimberley Jensen's [Mel-Band RoFormer vocal model](https://huggingface.co/KimberleyJSN/melbandroformer) (MIT), converted to fp16 ONNX. Its stems are cleaner than HTDemucs's, but it's a 437 MB download and slower. On a laptop RTX 4070 it runs at about 3x real time (a 3.5-minute song in about 70 s). It's offered only where WebGPU has `shader-f16`, because the fp32 model doesn't fit in browser GPU memory. If a run fails, the song is separated with HTDemucs instead.
+
+The model is 14 consecutive graphs (the STFT, band split and inverse STFT run in JavaScript), served from `$VITE_VOCAL_MODEL_BASE_URL/mel-band-roformer/` with a notice that the app links to. Every file's size and SHA-256 is pinned in `src/audio/separation/roformer/model-parts.ts`, and a download that doesn't match is rejected. [`scripts/mel-band-roformer/`](scripts/mel-band-roformer/README.md) builds the graphs from the checkpoint and uploads them through R2's S3 API:
+
+```bash
+R2_ACCOUNT_ID=... R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=... \
+  ./scripts/upload-mel-band-roformer.sh composer-vocal-models ./mel-band-roformer-parts
+```
+
+The script checks each file against its pin and never replaces a model file that already exists. `scripts/mel-band-roformer/MEL_BAND_ROFORMER_KJ_NOTICE.txt` lists the source checkpoint (Hugging Face revision and SHA-256), the conversion and the licenses.
+
 ### Trying other alignment checkpoints
 
 Auto-align uses HubertFA v0.0.7 by default. To try other checkpoints with the same inputs, outputs and phone set, list them in a manifest named `hubertfa-models.json` next to the models (`$VITE_VOCAL_MODEL_BASE_URL/hubertfa-models.json`). Each one then shows up under Settings > Playback > Alignment model.

@@ -1,11 +1,11 @@
 import { settingEntry } from "@/stores/settings-catalog";
 import { TARGET_SAMPLE_RATE, decodeFileToFloat32, hashFile } from "@/audio/separation/audio-codec";
 import { encodeSeparatedStems } from "@/audio/separation/separated-stems";
-import { getSeparationWorker } from "@/audio/separation/shared-separation-worker";
 import { stemCacheHash } from "@/audio/separation/stem-store";
 import type { SeparationError, SeparationStatus } from "@/audio/separation/types";
 import { hasOnlyFiniteSamples } from "@/audio/separation/validate-channels";
-import type { SeparationWorker } from "@/audio/separation/worker-host";
+import type { ProcessResult, VocalSeparator } from "@/audio/separation/vocal-separator";
+import type { VocalModelVariant } from "@/stores/settings";
 
 // -- Types --------------------------------------------------------------------
 
@@ -16,6 +16,8 @@ interface PipelineState {
 }
 
 interface PipelineRun {
+  separator: VocalSeparator;
+  variant: VocalModelVariant;
   set: (partial: Partial<PipelineState>) => void;
   isCurrentRun: () => boolean;
   isCancelling: () => boolean;
@@ -49,9 +51,9 @@ async function separateSongFile(file: File, run: PipelineRun): Promise<Separated
   if (!run.isCurrentRun()) return null;
   run.onHashed(cacheHash);
 
-  let result: Awaited<ReturnType<SeparationWorker["process"]>>;
+  let result: ProcessResult;
   try {
-    result = await getSeparationWorker().process({
+    result = await run.separator.process({
       channels: decoded.channels,
       totalFrames: decoded.numFrames,
       onProgress: (processed, total) => {
@@ -74,7 +76,10 @@ async function separateSongFile(file: File, run: PipelineRun): Promise<Separated
       status: "error",
       error: {
         code: "ort-failed",
-        message: `The vocal model returned invalid audio samples. Switch ${settingEntry("vocalModelVariant").label} to fp32 and run separation again.`,
+        message:
+          run.variant === "fp16"
+            ? `The vocal model returned invalid audio samples. Switch ${settingEntry("vocalModelVariant").label} to fp32 and run separation again.`
+            : "The vocal model returned invalid audio samples.",
       },
     });
     return null;
