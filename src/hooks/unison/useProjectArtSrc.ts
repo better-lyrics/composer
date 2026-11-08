@@ -1,3 +1,4 @@
+import { createContext, useContext } from "react";
 import { useUnisonFeatures } from "@/hooks/unison/useUnisonFeatures";
 import { artworkUrl } from "@/lib/unison/endpoints";
 
@@ -6,17 +7,25 @@ import { artworkUrl } from "@/lib/unison/endpoints";
 interface ArtSource {
   thumbnailDataUrl?: string;
   videoId?: string;
+  unisonLyricId?: string;
 }
+
+// -- Context -------------------------------------------------------------------
+
+// The video of each linked lyric, by lyric id, from the account's lyrics a screen already loaded.
+const LinkedLyricVideos = createContext<ReadonlyMap<string, string>>(new Map());
 
 // -- Hook ----------------------------------------------------------------------
 
-// A project's own cover wins. Without one, a YouTube project shows the cover Unison serves for its video.
-function useProjectArtSrc({ thumbnailDataUrl, videoId }: ArtSource): string | undefined {
+// A project's own cover wins. Without one, Unison serves the cover of its video, or of its linked lyric's video.
+function useProjectArtSrc({ thumbnailDataUrl, videoId, unisonLyricId }: ArtSource): string | undefined {
   const { enabled } = useUnisonFeatures();
-  if (thumbnailDataUrl) return thumbnailDataUrl;
-  return enabled && videoId ? artworkUrl(videoId) : undefined;
+  const linkedVideos = useContext(LinkedLyricVideos);
+  if (thumbnailDataUrl || !enabled) return thumbnailDataUrl;
+  const shownVideoId = videoId ?? (unisonLyricId ? linkedVideos.get(unisonLyricId) : undefined);
+  return shownVideoId ? artworkUrl(shownVideoId) : undefined;
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export { useProjectArtSrc };
+export { LinkedLyricVideos, useProjectArtSrc };
