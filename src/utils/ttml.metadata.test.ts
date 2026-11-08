@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { generateTTML } from "@/utils/ttml";
 
 const metadata: ProjectMetadata = {
@@ -143,6 +144,20 @@ describe("generateTTML attribute escaping", () => {
 
     expect(xml).toContain('xml:id="v&quot;1"');
     expect(parse(xml).querySelector("parsererror")).toBeNull();
+  });
+
+  it("regression: a singer without a name stays unnamed after import and export", () => {
+    const source = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent xml:id="v1" type="person"><ttm:name>Lead</ttm:name></ttm:agent><ttm:agent xml:id="v2" type="group"/></metadata></head><body><div><p begin="1.000" end="2.000" ttm:agent="v2"><span begin="1.000" end="2.000">hi</span></p></div></body></tt>`;
+    const parsed = parseTtml(source);
+
+    const xml = generateTTML({
+      metadata: { title: "t", artists: [], album: "", duration: 0 },
+      agents: parsed.agents ?? [],
+      lines: parsed.lines,
+    });
+
+    expect(xml).toContain('<ttm:agent xml:id="v2" type="group"/>');
+    expect(xml).toContain("<ttm:name>Lead</ttm:name>");
   });
 
   it("regression: a language tag containing quotes stays well-formed", () => {
