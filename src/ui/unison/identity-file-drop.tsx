@@ -1,11 +1,11 @@
+import { IconAlertCircle, IconFileText, IconLoader2 } from "@tabler/icons-react";
+import { useId, useRef, useState } from "react";
 import { IdentityFileError } from "@/domain/unison/identity-file";
 import { UnisonError } from "@/lib/unison/client";
 import type { StoredUnisonSession } from "@/lib/unison/session";
-import { signInWithIdentityFile } from "@/lib/unison/sign-in";
+import { SupersededSignInError, signInWithIdentityFile } from "@/lib/unison/sign-in";
 import { cn } from "@/utils/cn";
 import { isFileDrag } from "@/utils/file-drag";
-import { IconAlertCircle, IconFileText, IconLoader2 } from "@tabler/icons-react";
-import { useId, useRef, useState } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -46,7 +46,7 @@ const IdentityFileDrop: React.FC<IdentityFileDropProps> = ({ disabled, onPending
     try {
       onConnected(await signInWithIdentityFile(file));
     } catch (signInError) {
-      setError(identityFileErrorMessage(signInError));
+      if (!(signInError instanceof SupersededSignInError)) setError(identityFileErrorMessage(signInError));
     } finally {
       setReading(false);
       onPendingChange(false);

@@ -33,6 +33,16 @@ class SignInError extends Error {
   }
 }
 
+class SupersededSignInError extends Error {
+  constructor() {
+    super("A newer sign-in replaced this one");
+  }
+}
+
+// -- State ---------------------------------------------------------------------
+
+let latestAttempt = 0;
+
 // -- Helpers -------------------------------------------------------------------
 
 function toBase64(buffer: ArrayBuffer): string {
@@ -61,8 +71,10 @@ function isSignedSessionBody(value: unknown): value is UnisonSignedSessionBody {
   return typeof body.signature === "string" && !!body.payload && typeof body.payload === "object";
 }
 
-async function startSession(signedBody: UnisonSignedSessionBody): Promise<StoredUnisonSession> {
+// Only the newest attempt saves, so a slow sign-in never replaces the account chosen after it.
+async function startSession(signedBody: UnisonSignedSessionBody, attempt: number): Promise<StoredUnisonSession> {
   const response: UnisonSessionResponse = await createSession(signedBody);
+  if (attempt !== latestAttempt) throw new SupersededSignInError();
   const session: StoredUnisonSession = {
     token: response.sessionToken,
     expiresAt: response.expiresAt,
@@ -77,6 +89,7 @@ async function startSession(signedBody: UnisonSignedSessionBody): Promise<Stored
 // -- Functions -----------------------------------------------------------------
 
 async function signInWithExtension(extensionId: string): Promise<StoredUnisonSession> {
+  const attempt = ++latestAttempt;
   const { nonce } = await fetchChallenge();
   let signedBody: unknown;
   try {
@@ -86,18 +99,19 @@ async function signInWithExtension(extensionId: string): Promise<StoredUnisonSes
     throw new SignInError(EXTENSION_REASON_KINDS[error.reason] ?? "failed", error.reason);
   }
   if (!isSignedSessionBody(signedBody)) throw new SignInError("failed", "INVALID_RESPONSE");
-  return startSession(signedBody);
+  return startSession(signedBody, attempt);
 }
 
 async function signInWithIdentityFile(file: File): Promise<StoredUnisonSession> {
+  const attempt = ++latestAttempt;
   const identity = parseIdentityFile(await file.text());
   const [key, { nonce }] = await Promise.all([importSigningKey(identity), fetchChallenge()]);
   const payload = { origin: window.location.origin, timestamp: Date.now(), nonce, keyId: identity.keyId };
   const signature = await crypto.subtle.sign(ECDSA_SHA256, key, new TextEncoder().encode(canonicalJson(payload)));
-  return startSession({ payload, signature: toBase64(signature), publicKey: identity.publicKey });
+  return startSession({ payload, signature: toBase64(signature), publicKey: identity.publicKey }, attempt);
 }
 
 // -- Exports -------------------------------------------------------------------
 
 export type { SignInErrorKind };
-export { SignInError, signInWithExtension, signInWithIdentityFile };
+export { SignInError, SupersededSignInError, signInWithExtension, signInWithIdentityFile };

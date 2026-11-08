@@ -2,7 +2,7 @@ import { IconAlertCircle, IconLoader2 } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 import type { BetterLyricsDetection } from "@/hooks/unison/useBetterLyricsDetection";
 import type { StoredUnisonSession } from "@/lib/unison/session";
-import { signInWithExtension } from "@/lib/unison/sign-in";
+import { SupersededSignInError, signInWithExtension } from "@/lib/unison/sign-in";
 import { Button } from "@/ui/button";
 import { BetterLyricsMark } from "@/ui/unison/better-lyrics-mark";
 import { EXTENSION_FAILURE_MESSAGES, type ExtensionFailure, extensionFailureOf } from "@/ui/unison/extension-failure";
@@ -102,7 +102,7 @@ const ConnectPanel: React.FC<ConnectPanelProps> = ({
     try {
       onConnected(await signInWithExtension(extensionId));
     } catch (error) {
-      setFailure(extensionFailureOf(error));
+      if (!(error instanceof SupersededSignInError)) setFailure(extensionFailureOf(error));
     } finally {
       setPending(null);
     }
@@ -138,5 +138,4 @@ const ConnectPanel: React.FC<ConnectPanelProps> = ({
 
 // -- Exports -------------------------------------------------------------------
 
-export type { ExtensionFailure };
-export { ConnectPanel, extensionFailureOf };
+export { ConnectPanel };

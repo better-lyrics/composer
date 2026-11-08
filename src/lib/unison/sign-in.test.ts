@@ -4,7 +4,7 @@ import { IdentityFileError } from "@/domain/unison/identity-file";
 import type { UnisonSignedSessionBody } from "@/lib/unison/api-types";
 import type { ExtensionPort } from "@/lib/unison/extension-port";
 import { clearUnisonSession, readUnisonSession } from "@/lib/unison/session";
-import { SignInError, signInWithExtension, signInWithIdentityFile } from "@/lib/unison/sign-in";
+import { SignInError, SupersededSignInError, signInWithExtension, signInWithIdentityFile } from "@/lib/unison/sign-in";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -137,6 +137,24 @@ describe("signInWithIdentityFile", () => {
 });
 
 describe("signInWithExtension", () => {
+  it("regression: a slower extension sign-in never replaces an identity file sign-in started after it", async () => {
+    stubUnison();
+    const extension: { reply?: (message: unknown) => void } = {};
+    installExtension((port) => {
+      extension.reply = port.reply;
+    });
+    const exported = await identityExport();
+    const extensionBody = { payload: { keyId: "e".repeat(64) }, signature: "c2ln", publicKey: {} };
+
+    const viaExtension = signInWithExtension("ext");
+    await vi.waitFor(() => expect(extension.reply).toBeDefined());
+    await signInWithIdentityFile(fileOf(exported));
+    extension.reply?.({ ok: true, signedBody: extensionBody });
+
+    await expect(viaExtension).rejects.toBeInstanceOf(SupersededSignInError);
+    expect(readUnisonSession()?.keyId).toBe(exported.keyId);
+  });
+
   describe("error paths", () => {
     it("reports a closed prompt as cancelled", async () => {
       stubUnison();
