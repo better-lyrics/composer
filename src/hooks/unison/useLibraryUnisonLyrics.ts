@@ -28,7 +28,12 @@ const NO_IDS: ReadonlySet<string> = new Set();
 
 // -- Fetching ------------------------------------------------------------------
 
-async function fetchMineForLibrary(linkedIds: readonly string[], signal: AbortSignal): Promise<LibraryUnisonLyrics> {
+// Link suggestions need every lyric, since one on a later page can make a match ambiguous.
+async function fetchMineForLibrary(
+  linkedIds: readonly string[],
+  loadAll: boolean,
+  signal: AbortSignal,
+): Promise<LibraryUnisonLyrics> {
   const missing = new Set(linkedIds);
   const items: UnisonMineItem[] = [];
   let cursor: string | undefined;
@@ -37,7 +42,8 @@ async function fetchMineForLibrary(linkedIds: readonly string[], signal: AbortSi
     items.push(...result.items);
     for (const item of result.items) missing.delete(String(item.id));
     if (result.nextCursor === null) return { items, complete: true, ...(await lookUpMissing(missing, signal)) };
-    if (missing.size === 0) return { items, complete: false, otherAccountIds: NO_IDS, unresolvedIds: NO_IDS };
+    if (missing.size === 0 && !loadAll)
+      return { items, complete: false, otherAccountIds: NO_IDS, unresolvedIds: NO_IDS };
     cursor = result.nextCursor;
   }
   return { items, complete: false, otherAccountIds: NO_IDS, unresolvedIds: NO_IDS };
@@ -61,10 +67,14 @@ async function lookUpMissing(
 
 // -- Hook ----------------------------------------------------------------------
 
-function useLibraryUnisonLyrics(keyId: string | null, linkedIds: readonly string[]): LibraryUnisonState | null {
+function useLibraryUnisonLyrics(
+  keyId: string | null,
+  linkedIds: readonly string[],
+  loadAll: boolean,
+): LibraryUnisonState | null {
   const query = useQuery({
-    queryKey: unisonQueryKeys.mineForLibrary(keyId ?? "", linkedIds),
-    queryFn: ({ signal }) => fetchMineForLibrary(linkedIds, signal),
+    queryKey: unisonQueryKeys.mineForLibrary(keyId ?? "", linkedIds, loadAll),
+    queryFn: ({ signal }) => fetchMineForLibrary(linkedIds, loadAll, signal),
     staleTime: UNISON_STALE_TIME_MS,
     // Another account's list must never stand in for this one.
     placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[2] === keyId ? previous : undefined),

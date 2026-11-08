@@ -30,16 +30,18 @@ function useLibraryUnison(entries: readonly ProjectIndexEntry[]): LibraryUnisonD
   const showColumn = signedIn && features.libraryColumn;
   const showNotices = signedIn && features.libraryNotices;
   const keyId = showColumn || showNotices ? (session?.keyId ?? null) : null;
-  const lyrics = useLibraryUnisonLyrics(keyId, linkedIds);
+  const seekingLinks = showColumn && entries.some((entry) => !entry.unisonLyricId && entry.lineCount > 0);
+  const lyrics = useLibraryUnisonLyrics(keyId, linkedIds, seekingLinks);
   const items = lyrics?.items ?? null;
+  const complete = lyrics?.complete ?? false;
   const matches = useMemo((): UnisonMatch[] => {
-    if (!items) return [];
+    if (!items || !complete) return [];
     const byId = new Map(items.map((item) => [String(item.id), item]));
     return linkSuggestions(entries, items).flatMap((suggestion) => {
       const lyric = byId.get(suggestion.lyricId);
       return lyric ? [{ ...suggestion, song: lyric.song, artist: lyric.artist }] : [];
     });
-  }, [entries, items]);
+  }, [entries, items, complete]);
   const unison = useMemo(
     () => (showColumn ? { lyrics, matches: new Map(matches.map((match) => [match.projectId, match])) } : null),
     [showColumn, lyrics, matches],
