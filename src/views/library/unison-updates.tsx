@@ -147,8 +147,8 @@ const UnisonUpdates: React.FC<UnisonUpdatesProps> = ({ items, projectByLyric, no
 };
 
 // Mounts per sign-in, so each account starts from its own stored notices.
-const SignedInUnisonUpdates: React.FC<UnisonUpdatesProps & { signedIn: boolean }> = ({ signedIn, ...props }) =>
-  signedIn ? <UnisonUpdates {...props} /> : null;
+const SignedInUnisonUpdates: React.FC<UnisonUpdatesProps & { shown: boolean }> = ({ shown, ...props }) =>
+  shown ? <UnisonUpdates {...props} /> : null;
 
 // -- Exports -------------------------------------------------------------------
 

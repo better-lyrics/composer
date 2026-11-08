@@ -1,3 +1,4 @@
+import { useUnisonFeatures } from "@/hooks/unison/useUnisonFeatures";
 import { HEADER_ICON_STYLES } from "@/ui/header-icon-styles";
 import { IconButton } from "@/ui/icon-button";
 import { ProjectBreadcrumb } from "@/ui/projects/project-breadcrumb";
@@ -73,38 +74,45 @@ const BrowseSwitcher: React.FC<{ screen: BrowseScreen }> = ({ screen }) => {
 
 // -- Component ----------------------------------------------------------------
 
-const AppHeader: React.FC<AppHeaderProps> = ({ screen, onSettingsOpen, onHelpOpen, onTourStart }) => (
-  <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 h-14 shrink-0 pl-4 pr-3 select-none">
-    {screen === "editor" ? <EditorBrand /> : <LibraryBrand />}
-    {screen === "editor" ? <TabBar /> : <BrowseSwitcher screen={screen} />}
-    <div className="flex items-center justify-end gap-1 min-w-0">
-      <ThemeMenu />
-      <IconButton
-        label="Settings"
-        icon={<IconSettings className="size-[18px]" />}
-        variant="ghost"
-        onClick={onSettingsOpen}
-        className={HEADER_ICON_STYLES}
-      />
-      <IconButton
-        label="Product tour"
-        icon={<IconRoute className="size-[18px]" />}
-        variant="ghost"
-        onClick={onTourStart}
-        className={HEADER_ICON_STYLES}
-      />
-      <IconButton
-        label="Keyboard shortcuts (?)"
-        icon={<IconHelp className="size-[18px]" />}
-        variant="ghost"
-        onClick={onHelpOpen}
-        className={HEADER_ICON_STYLES}
-      />
-      <span aria-hidden="true" className="w-px h-5 mx-1.5 bg-(--divider)" />
-      <HeaderAccount />
-    </div>
-  </header>
-);
+const AppHeader: React.FC<AppHeaderProps> = ({ screen, onSettingsOpen, onHelpOpen, onTourStart }) => {
+  const unison = useUnisonFeatures().enabled;
+  return (
+    <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 h-14 shrink-0 pl-4 pr-3 select-none">
+      {screen === "editor" ? <EditorBrand /> : <LibraryBrand />}
+      {screen === "editor" ? <TabBar /> : unison ? <BrowseSwitcher screen={screen} /> : <span />}
+      <div className="flex items-center justify-end gap-1 min-w-0">
+        <ThemeMenu />
+        <IconButton
+          label="Settings"
+          icon={<IconSettings className="size-[18px]" />}
+          variant="ghost"
+          onClick={onSettingsOpen}
+          className={HEADER_ICON_STYLES}
+        />
+        <IconButton
+          label="Product tour"
+          icon={<IconRoute className="size-[18px]" />}
+          variant="ghost"
+          onClick={onTourStart}
+          className={HEADER_ICON_STYLES}
+        />
+        <IconButton
+          label="Keyboard shortcuts (?)"
+          icon={<IconHelp className="size-[18px]" />}
+          variant="ghost"
+          onClick={onHelpOpen}
+          className={HEADER_ICON_STYLES}
+        />
+        {unison && (
+          <>
+            <span aria-hidden="true" className="w-px h-5 mx-1.5 bg-(--divider)" />
+            <HeaderAccount />
+          </>
+        )}
+      </div>
+    </header>
+  );
+};
 
 // -- Exports ------------------------------------------------------------------
 

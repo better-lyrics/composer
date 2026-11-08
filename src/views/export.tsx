@@ -2,6 +2,7 @@ import { IconFolderOpen } from "@tabler/icons-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useExportTtml } from "@/hooks/use-export-ttml";
+import { useUnisonFeatures } from "@/hooks/unison/useUnisonFeatures";
 import { useUnisonSession } from "@/hooks/useUnisonSession";
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import { outgoingTtml } from "@/lib/outgoing-ttml";
@@ -47,7 +48,8 @@ const ExportPanel: React.FC = () => {
   } = useExportTtml();
 
   const projectSession = useProjectStore((state) => state.projectSession);
-  const signedInToUnison = useUnisonSession() !== null;
+  const unisonEnabled = useUnisonFeatures().enabled;
+  const signedInToUnison = useUnisonSession() !== null && unisonEnabled;
   const [copied, setCopied] = useState(false);
   const [editingSession, setEditingSession] = useState<EditingSession | null>(null);
   const session = editingSession?.projectSession === projectSession ? editingSession : null;
@@ -206,7 +208,7 @@ const ExportPanel: React.FC = () => {
             />
           }
         />
-        <ExportSidePanel unison={<UnisonPanel source={unisonSource} />} />
+        <ExportSidePanel unison={unisonEnabled && <UnisonPanel source={unisonSource} />} />
       </div>
     </div>
   );

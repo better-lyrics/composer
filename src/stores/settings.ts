@@ -6,8 +6,10 @@ import type { LaunchScreen, LibraryView } from "@/domain/project/library-prefere
 import { SPECTRUM_SETTING_DEFAULTS, type SpectrumSettings } from "@/domain/spectrum/settings";
 import type { KeepYouTubeAudio } from "@/domain/storage/audio-retention";
 import type { StorageLimit } from "@/domain/storage/storage-limit";
+import type { CobaltInstance, CobaltInstanceStatus } from "@/stores/settings-cobalt";
 import { SETTINGS_PERSIST_VERSION, migrateSettings } from "@/stores/settings-migration";
 import { SNAP_DEFAULTS, type SnapSettings } from "@/stores/settings-snap";
+import { UNISON_SETTING_DEFAULTS, type UnisonSettings } from "@/stores/settings-unison";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-url";
 import { PREVIEW_SIDEBAR_WIDTH } from "@/utils/preview-sidebar-width";
 import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
@@ -28,21 +30,9 @@ interface ExperimentFlags {
   youtubeBridge: boolean;
 }
 
-interface CobaltInstance {
-  id: string;
-  label: string;
-  url: string;
-}
-
-interface CobaltInstanceStatus {
-  status: "success" | "error";
-  errorMessage?: string;
-  at: number;
-}
-
 const DEFAULT_COBALT_INSTANCE_ID = "default";
 
-interface SettingsState extends SnapSettings, SpectrumSettings {
+interface SettingsState extends SnapSettings, SpectrumSettings, UnisonSettings {
   pitchLine: PitchLineMode;
   defaultPlaybackRate: number;
   rememberPlaybackRate: boolean;
@@ -135,6 +125,7 @@ const DEFAULTS: SettingsState = {
   ...SPECTRUM_SETTING_DEFAULTS,
   pitchLine: DEFAULT_PITCH_LINE_MODE,
   ...SNAP_DEFAULTS,
+  ...UNISON_SETTING_DEFAULTS,
   defaultPlaybackRate: 0.75,
   rememberPlaybackRate: true,
   lastPlaybackRate: 0.75,

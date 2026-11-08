@@ -3,6 +3,7 @@ import type { ModalNavSection } from "@/ui/modal-nav-layout";
 import {
   IconAlertTriangle,
   IconClock,
+  IconCloudUpload,
   IconCpu,
   IconDeviceFloppy,
   IconFileText,
@@ -25,6 +26,7 @@ const SETTINGS_SECTION_ICONS: Record<SettingsSectionId, ModalNavSection["icon"]>
   theme: IconPalette,
   shortcuts: IconKeyboard,
   confirmations: IconAlertTriangle,
+  unison: IconCloudUpload,
   lyrics: IconFileText,
   playback: IconPlayerPlay,
   sync: IconClock,

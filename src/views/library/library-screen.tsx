@@ -94,7 +94,8 @@ const LibraryScreen: React.FC = () => {
 
   const live = entries ?? NO_PROJECTS;
   const unison = useLibraryUnison(live);
-  const filter = shownLibraryFilter(chosenFilter, unison.signedIn);
+  const showUnison = unison.unison !== null;
+  const filter = shownLibraryFilter(chosenFilter, showUnison);
   const visible = useMemo(() => libraryProjects(live, { filter, query, sort }), [live, filter, query, sort]);
   const visibleIds = useMemo(() => visible.map((project) => project.id), [visible]);
   const counts = useMemo(() => filterCounts(live), [live]);
@@ -199,14 +200,14 @@ const LibraryScreen: React.FC = () => {
             <NewSongPanel className={cn(RISE, "[animation-delay:60ms]")} />
           </div>
           <SignedInUnisonUpdates
-            signedIn={unison.signedIn}
+            shown={unison.showNotices}
             items={unison.items}
             projectByLyric={unison.projectByLyric}
             now={fetchedAt}
             onOpenProject={actions.open}
             className={cn(RISE, "[animation-delay:90ms]")}
           />
-          <MostWantedShelf className={cn(RISE, "[animation-delay:90ms]")} />
+          {unison.showWantedShelf && <MostWantedShelf className={cn(RISE, "[animation-delay:90ms]")} />}
           <section
             aria-label="All projects"
             className={cn(RISE, "[animation-delay:120ms] flex flex-col flex-1 min-h-90 select-none")}
@@ -215,7 +216,7 @@ const LibraryScreen: React.FC = () => {
               count={live.length}
               filter={filter}
               counts={counts}
-              showUnisonFilter={unison.signedIn}
+              showUnisonFilter={showUnison}
               onFilterChange={setFilter}
               query={query}
               onQueryChange={setQuery}
@@ -225,7 +226,7 @@ const LibraryScreen: React.FC = () => {
               view={view}
               onViewChange={(next) => setSetting("libraryView", next)}
             />
-            {view === "list" && <ProjectListColumns showUnison={unison.signedIn} />}
+            {view === "list" && <ProjectListColumns showUnison={showUnison} />}
             <Scroll className="flex-1 min-h-0 -ml-3 -mr-13">
               <div className="pl-3 pr-13 pb-4">
                 <LibraryBody

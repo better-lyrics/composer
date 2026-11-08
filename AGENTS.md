@@ -140,7 +140,7 @@ default first.
 - Every setting is a catalog entry in `src/stores/settings-catalog-entries-<section>.ts`. Labels,
   descriptions, sections and groups are read from the catalog everywhere (`SettingLink`, search,
   Changed). Never hand-write a setting label in copy. Labels describe the on state.
-- Sections, in sidebar order: App (General, Theme, Shortcuts, Confirmations), Editing (Lyrics,
+- Sections, in sidebar order: App (General, Theme, Shortcuts, Confirmations, Unison), Editing (Lyrics,
   Playback, Sync & Timing, Timeline, Snap, Spectrum), System (Save & Storage, Models, Advanced). Put
   a setting in the section named after the feature it changes. Anything about a downloaded model
   goes in Models.
