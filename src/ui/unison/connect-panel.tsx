@@ -1,49 +1,32 @@
+import { IconAlertCircle, IconLoader2 } from "@tabler/icons-react";
+import { useRef, useState } from "react";
 import type { BetterLyricsDetection } from "@/hooks/unison/useBetterLyricsDetection";
-import { UnisonError } from "@/lib/unison/client";
 import type { StoredUnisonSession } from "@/lib/unison/session";
-import { SignInError, type SignInErrorKind, signInWithExtension } from "@/lib/unison/sign-in";
+import { signInWithExtension } from "@/lib/unison/sign-in";
 import { Button } from "@/ui/button";
 import { BetterLyricsMark } from "@/ui/unison/better-lyrics-mark";
+import { EXTENSION_FAILURE_MESSAGES, type ExtensionFailure, extensionFailureOf } from "@/ui/unison/extension-failure";
 import { IdentityFileDrop } from "@/ui/unison/identity-file-drop";
 import { cn } from "@/utils/cn";
 import { OrDivider } from "@/views/import/import-layout";
-import { IconAlertCircle, IconLoader2 } from "@tabler/icons-react";
-import { useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
-type ExtensionFailure = SignInErrorKind | "unreachable";
 type PendingSignIn = "extension" | "file" | null;
 
 interface ConnectPanelProps {
   detection: BetterLyricsDetection;
   reason?: string;
+  initialFailure?: ExtensionFailure | null;
   onConnected: (session: StoredUnisonSession) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
 
-const LOG_PREFIX = "[UnisonConnect]";
 const DEFAULT_REASON = "Submit to Unison and track your lyrics.";
 const BETTER_LYRICS_INSTALL_URL =
   "https://chromewebstore.google.com/detail/better-lyrics/effdbpeggelllpfkjppbokhmmiinhlmg";
 const HINT = "text-xs leading-[18px] text-(--muted) text-pretty";
-
-const EXTENSION_FAILURE_MESSAGES: Record<ExtensionFailure, string> = {
-  cancelled: "You closed the Better Lyrics prompt. Try again, and choose Approve.",
-  "not-allowed": "Better Lyrics doesn't allow this site. Use your identity file instead.",
-  failed: "Better Lyrics couldn't sign you in. Try again, or use your identity file.",
-  unreachable: "Couldn't reach Unison. Check your connection and try again.",
-};
-
-// -- Helpers -------------------------------------------------------------------
-
-function extensionFailureOf(error: unknown): ExtensionFailure {
-  if (error instanceof SignInError && error.kind === "cancelled") return "cancelled";
-  console.error(LOG_PREFIX, "Better Lyrics sign-in failed", error);
-  if (error instanceof SignInError) return error.kind;
-  return error instanceof UnisonError && error.code === "NETWORK" ? "unreachable" : "failed";
-}
 
 // -- Components ----------------------------------------------------------------
 
@@ -94,9 +77,14 @@ const ExtensionButton: React.FC<{ waiting: boolean; disabled: boolean; onClick: 
   </Button>
 );
 
-const ConnectPanel: React.FC<ConnectPanelProps> = ({ detection, reason = DEFAULT_REASON, onConnected }) => {
+const ConnectPanel: React.FC<ConnectPanelProps> = ({
+  detection,
+  reason = DEFAULT_REASON,
+  initialFailure = null,
+  onConnected,
+}) => {
   const [pending, setPending] = useState<PendingSignIn>(null);
-  const [failure, setFailure] = useState<ExtensionFailure | null>(null);
+  const [failure, setFailure] = useState<ExtensionFailure | null>(initialFailure);
   const { state, extensionId } = detection;
   const waiting = pending === "extension";
   const panelRef = useRef<HTMLDivElement>(null);
@@ -150,4 +138,5 @@ const ConnectPanel: React.FC<ConnectPanelProps> = ({ detection, reason = DEFAULT
 
 // -- Exports -------------------------------------------------------------------
 
-export { ConnectPanel };
+export type { ExtensionFailure };
+export { ConnectPanel, extensionFailureOf };
