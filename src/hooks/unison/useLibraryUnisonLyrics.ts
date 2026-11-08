@@ -2,7 +2,7 @@ import { UNISON_STALE_TIME_MS, unisonQueryKeys } from "@/hooks/unison/query-keys
 import type { UnisonMineItem } from "@/lib/unison/api-types";
 import { isUnisonNotFound } from "@/lib/unison/client";
 import { fetchLyric, fetchMine } from "@/lib/unison/endpoints";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -66,21 +66,22 @@ function useLibraryUnisonLyrics(keyId: string | null, linkedIds: readonly string
     queryKey: unisonQueryKeys.mineForLibrary(keyId ?? "", linkedIds),
     queryFn: ({ signal }) => fetchMineForLibrary(linkedIds, signal),
     staleTime: UNISON_STALE_TIME_MS,
-    placeholderData: keepPreviousData,
+    // Another account's list must never stand in for this one.
+    placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[2] === keyId ? previous : undefined),
     enabled: keyId !== null,
   });
-  const { data, isPlaceholderData } = query;
+  const { data: lyrics, isPlaceholderData } = query;
   // Placeholder data answers for other linked ids, so it can never prove a lyric was removed.
   return useMemo(
     () =>
-      data
+      lyrics
         ? {
-            ...data,
-            complete: data.complete && !isPlaceholderData,
-            byId: new Map(data.items.map((item) => [String(item.id), item])),
+            ...lyrics,
+            complete: lyrics.complete && !isPlaceholderData,
+            byId: new Map(lyrics.items.map((item) => [String(item.id), item])),
           }
         : null,
-    [data, isPlaceholderData],
+    [lyrics, isPlaceholderData],
   );
 }
 

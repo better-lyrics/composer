@@ -25,6 +25,7 @@ interface LyricPreviewProps {
 interface PreviewLine {
   time: number | null;
   text: string;
+  backgroundText: string;
 }
 
 type PreviewLines = { status: "readable"; lines: PreviewLine[] } | { status: "unreadable"; message: string };
@@ -41,9 +42,11 @@ const WELL =
 function previewLines(lyric: UnisonLyric): PreviewLines {
   const read = readUnisonLyric(lyric);
   if (read.status === "unreadable") return read;
-  const lines = read.parsed.lines.flatMap((line) =>
-    line.text.trim() ? [{ time: mainBounds(line)?.begin ?? null, text: line.text }] : [],
-  );
+  const lines = read.parsed.lines.flatMap((line) => {
+    const backgroundText = line.backgroundText?.trim() ?? "";
+    if (!line.text.trim() && !backgroundText) return [];
+    return [{ time: mainBounds(line)?.begin ?? null, text: line.text, backgroundText }];
+  });
   return { status: "readable", lines };
 }
 
@@ -69,7 +72,10 @@ const PreviewText: React.FC<{ preview: PreviewLines }> = ({ preview }) => {
           <span className="font-mono text-xs leading-5 text-(--muted) tabular-nums">
             {line.time === null ? "" : formatTime(line.time, 0)}
           </span>
-          <span className="text-composer-text text-pretty">{line.text}</span>
+          <span className="text-composer-text text-pretty">
+            {line.text}
+            {line.backgroundText && <span className="text-(--muted)"> ({line.backgroundText})</span>}
+          </span>
         </li>
       ))}
     </ol>

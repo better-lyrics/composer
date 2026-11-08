@@ -166,7 +166,7 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
           </ul>
         </div>
       )}
-      <AddVideoField onAdd={add} floating={floating} disabledReason={atCap ? CAP_REACHED_MESSAGE : null} />
+      <AddVideoField onAdd={add} floating={floating} busy={busy} disabledReason={atCap ? CAP_REACHED_MESSAGE : null} />
     </div>
   );
 };

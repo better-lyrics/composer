@@ -15,7 +15,7 @@ interface BetterLyricsDetection {
 
 // Installing the extension needs a reload, so one probe per page load is enough.
 function useBetterLyricsDetection(enabled: boolean): BetterLyricsDetection {
-  const { data } = useQuery({
+  const { data: extensionId } = useQuery({
     queryKey: unisonQueryKeys.betterLyricsExtension(),
     queryFn: findBetterLyricsExtension,
     staleTime: Number.POSITIVE_INFINITY,
@@ -23,8 +23,8 @@ function useBetterLyricsDetection(enabled: boolean): BetterLyricsDetection {
     retry: false,
     enabled,
   });
-  if (data === undefined) return { state: "checking", extensionId: null };
-  return data === null ? { state: "missing", extensionId: null } : { state: "ready", extensionId: data };
+  if (extensionId === undefined) return { state: "checking", extensionId: null };
+  return extensionId === null ? { state: "missing", extensionId: null } : { state: "ready", extensionId };
 }
 
 // -- Exports -------------------------------------------------------------------

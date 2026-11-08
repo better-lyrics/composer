@@ -70,7 +70,7 @@ async function startSession(signedBody: UnisonSignedSessionBody): Promise<Stored
     displayName: response.displayName,
     avatarUrl: response.avatarUrl,
   };
-  saveUnisonSession(session);
+  if (!saveUnisonSession(session)) throw new SignInError("failed", "STORAGE_UNAVAILABLE");
   return session;
 }
 

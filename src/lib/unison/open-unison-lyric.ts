@@ -22,7 +22,9 @@ const FILE_EXTENSIONS: Record<UnisonLyricsFormat, string> = { ttml: "ttml", lrc:
 
 // -- Helpers -------------------------------------------------------------------
 
-function unisonSongDetails(lyric: UnisonLyric): Partial<ProjectMetadata> {
+type UnisonSongIdentity = Pick<UnisonLyric, "song" | "artist" | "album" | "isrc" | "language">;
+
+function unisonSongDetails(lyric: UnisonSongIdentity): Partial<ProjectMetadata> {
   const isrc = lyric.isrc ? normalizeIsrc(lyric.isrc) : undefined;
   const language = lyric.language ? normalizeLanguageTag(lyric.language) : undefined;
   return {
@@ -35,7 +37,7 @@ function unisonSongDetails(lyric: UnisonLyric): Partial<ProjectMetadata> {
 }
 
 // Unison details are the submitted song identity, so they win over the document's own.
-function withUnisonDetails(parsed: ParseResult, lyric: UnisonLyric): ParseResult {
+function withUnisonDetails(parsed: ParseResult, lyric: UnisonSongIdentity): ParseResult {
   return { ...parsed, metadata: { ...parsed.metadata, ...unisonSongDetails(lyric) } };
 }
 
@@ -69,4 +71,4 @@ async function openUnisonLyric(lyric: UnisonLyric, { link, navigate }: OpenUniso
 
 // -- Exports -------------------------------------------------------------------
 
-export { openUnisonLyric, readUnisonLyric };
+export { openUnisonLyric, readUnisonLyric, withUnisonDetails };

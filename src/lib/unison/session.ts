@@ -36,12 +36,14 @@ function readRaw(): string | null {
   }
 }
 
-function writeRaw(raw: string | null): void {
+function writeRaw(raw: string | null): boolean {
   try {
     if (raw === null) localStorage.removeItem(UNISON_SESSION_STORAGE_KEY);
     else localStorage.setItem(UNISON_SESSION_STORAGE_KEY, raw);
+    return true;
   } catch (error) {
     console.warn(`${LOG_PREFIX} Could not ${raw === null ? "remove" : "save"} the session`, error);
+    return false;
   }
 }
 
@@ -99,9 +101,10 @@ function readUnisonSession(): StoredUnisonSession | null {
   return cachedSnapshot.session;
 }
 
-function saveUnisonSession(session: StoredUnisonSession): void {
-  writeRaw(JSON.stringify(session));
+function saveUnisonSession(session: StoredUnisonSession): boolean {
+  const saved = writeRaw(JSON.stringify(session));
   notifyListeners();
+  return saved;
 }
 
 function clearUnisonSession(): void {

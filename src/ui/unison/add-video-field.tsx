@@ -12,6 +12,8 @@ interface AddVideoFieldProps {
   onAdd: (videoId: string) => Promise<string | null> | string | null;
   disabledReason?: string | null;
   floating?: boolean;
+  /** Another video write is running; adding waits for it. */
+  busy?: boolean;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -21,7 +23,7 @@ const MESSAGE_STYLES = "px-0.5 text-xs leading-[18px] text-pretty select-text cu
 
 // -- Component -----------------------------------------------------------------
 
-const AddVideoField: React.FC<AddVideoFieldProps> = ({ onAdd, disabledReason, floating }) => {
+const AddVideoField: React.FC<AddVideoFieldProps> = ({ onAdd, disabledReason, floating, busy = false }) => {
   const [link, setLink] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -31,7 +33,7 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({ onAdd, disabledReason, fl
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (adding) return;
+    if (adding || busy) return;
     const videoId = extractVideoId(link);
     if (!videoId) {
       setError(INVALID_LINK_MESSAGE);
@@ -62,7 +64,7 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({ onAdd, disabledReason, fl
           wrapperClassName="flex-1 min-w-0"
           className={cn(floating && FLOATING_INPUT_STYLES, "h-8 pl-8 pr-3 rounded-lg text-[13px]")}
         />
-        <Button type="submit" size="md" variant="secondary" disabled={disabled || adding || link.trim() === ""}>
+        <Button type="submit" size="md" variant="secondary" disabled={disabled || adding || busy || link.trim() === ""}>
           Add
         </Button>
       </div>

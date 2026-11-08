@@ -3,7 +3,7 @@ import { invalidateLyricWrite } from "@/hooks/unison/query-keys";
 import { fetchRevisionContent } from "@/hooks/unison/useRevisions";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { revertRevision } from "@/lib/unison/endpoints";
-import { readUnisonLyric } from "@/lib/unison/open-unison-lyric";
+import { readUnisonLyric, withUnisonDetails } from "@/lib/unison/open-unison-lyric";
 import type { RevisionSummary } from "@/lib/unison/revision-types";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
@@ -77,7 +77,14 @@ function useRevisionActions(lyric: UnisonLyric, keyId: string, onRestored: (revN
           toast.error(read.message);
           return;
         }
-        showRevisionLoadedToast(revision.revNo, replaceWithParsedLyrics(read.parsed));
+        // A revision carries its own album, ISRC and language; the song and artist belong to the lyric.
+        const details = {
+          ...lyric,
+          album: content.album ?? undefined,
+          isrc: content.isrc ?? undefined,
+          language: content.language ?? undefined,
+        };
+        showRevisionLoadedToast(revision.revNo, replaceWithParsedLyrics(withUnisonDetails(read.parsed, details)));
       },
       `Could not load revision ${revision.revNo}`,
     );

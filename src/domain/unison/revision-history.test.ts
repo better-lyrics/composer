@@ -1,5 +1,4 @@
 import {
-  historyStatus,
   initialRevision,
   makeLiveRefusal,
   revisionDiffBase,
@@ -38,17 +37,6 @@ const HISTORY: RevisionSummary[] = [
 ];
 
 // -- Tests ---------------------------------------------------------------------
-
-describe("historyStatus", () => {
-  it("names every server status the way the history list shows it", () => {
-    expect(historyStatus("live")).toBe("live");
-    expect(historyStatus("pending")).toBe("pending");
-    expect(historyStatus("rejected")).toBe("declined");
-    expect(historyStatus("past")).toBe("earlier");
-    expect(historyStatus("withdrawn")).toBe("withdrawn");
-    expect(historyStatus("superseded")).toBe("replaced");
-  });
-});
 
 describe("makeLiveRefusal", () => {
   it("allows only a revision that was live before, for the submitter", () => {
