@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { artistCredit } from "@/domain/project/display-title";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { UnisonLyric, UnisonLyricsFormat } from "@/lib/unison/api-types";
@@ -7,7 +9,6 @@ import { normalizeIsrc } from "@/utils/isrc";
 import type { ParseResult } from "@/utils/lyrics-parsers";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { type LyricsRead, readLyricsFile, replaceWithParsedLyrics } from "@/views/lyrics-import-modal/import-lyrics";
-import { toast } from "sonner";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -37,8 +38,14 @@ function unisonSongDetails(lyric: UnisonSongIdentity): Partial<ProjectMetadata> 
 }
 
 // Unison details are the submitted song identity, so they win over the document's own.
+// Unison keeps several artists as one credit, so a document list that makes the same credit stays a list.
 function withUnisonDetails(parsed: ParseResult, lyric: UnisonSongIdentity): ParseResult {
-  return { ...parsed, metadata: { ...parsed.metadata, ...unisonSongDetails(lyric) } };
+  const ownArtists = parsed.metadata.artists;
+  const sameCredit = ownArtists !== undefined && artistCredit(ownArtists) === lyric.artist;
+  return {
+    ...parsed,
+    metadata: { ...parsed.metadata, ...unisonSongDetails(lyric), ...(sameCredit ? { artists: ownArtists } : {}) },
+  };
 }
 
 // -- Reading -------------------------------------------------------------------

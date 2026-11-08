@@ -23,13 +23,14 @@ function harborLines(secondWordBegin = 3): LyricLine[] {
   ];
 }
 
-function liveLyric(lines: LyricLine[]): UnisonLyric {
-  const { metadata, agents } = useProjectStore.getState();
+function liveLyric(lines: LyricLine[], artists = ["Marisol Vega"]): UnisonLyric {
+  const { agents } = useProjectStore.getState();
+  const metadata = { ...useProjectStore.getState().metadata, artists };
   return {
     id: 5120,
     videoId: "harborVideo1",
     song: "Paper Lanterns",
-    artist: "Marisol Vega",
+    artist: artists.join(", "),
     album: "Harbor Songs",
     language: "en",
     lyrics: generateTTML({ metadata, agents, lines, groups: [] }),
@@ -58,6 +59,14 @@ describe("matchesLiveLyric", () => {
     const project = savedFrom(liveLyric(harborLines()));
 
     expect(matchesLiveLyric(project, liveLyric(harborLines(3.003)))).toBe(true);
+  });
+
+  it("regression: a project with several artists matches the lyric that credits them together", () => {
+    const artists = ["Marisol Vega", "Ines Duarte"];
+    const live = liveLyric(harborLines(), artists);
+    const project = savedFrom(live);
+
+    expect(matchesLiveLyric({ ...project, metadata: { ...project.metadata, artists } }, live)).toBe(true);
   });
 
   describe("error paths", () => {

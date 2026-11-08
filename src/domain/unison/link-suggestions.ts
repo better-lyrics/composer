@@ -1,4 +1,4 @@
-import { namedArtists } from "@/domain/project/display-title";
+import { artistCredit } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 
 // -- Types ---------------------------------------------------------------------
@@ -35,7 +35,7 @@ function sentFor(project: ProjectIndexEntry, lyric: SentLyric): boolean {
   if (project.videoId) return project.videoId === lyric.videoId;
   return (
     lyric.song !== undefined &&
-    songKey(project.title, namedArtists(project.artists).join(", ")) === songKey(lyric.song, lyric.artist ?? "")
+    songKey(project.title, artistCredit(project.artists)) === songKey(lyric.song, lyric.artist ?? "")
   );
 }
 

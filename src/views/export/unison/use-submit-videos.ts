@@ -1,4 +1,5 @@
-import { displayArtists, namedArtists } from "@/domain/project/display-title";
+import { useMemo, useReducer, useState } from "react";
+import { artistCredit, displayArtists } from "@/domain/project/display-title";
 import { submitDurationSeconds } from "@/domain/unison/submit-checks";
 import {
   type ChosenVideo,
@@ -12,7 +13,6 @@ import type { SongForSuggestions, SuggestedVideo } from "@/lib/unison/api-types"
 import { useProjectStore } from "@/stores/project";
 import type { MainVideo } from "@/ui/unison/video-picker";
 import { formatTime } from "@/utils/format-time";
-import { useMemo, useReducer, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -42,7 +42,7 @@ function useSubmitVideos(mainVideoId: string, durationSeconds: number): SubmitVi
   const songSeconds = submitDurationSeconds(durationSeconds || metadata.duration);
   const song = useMemo((): SongForSuggestions | null => {
     const title = metadata.title.trim();
-    const artist = namedArtists(metadata.artists).join(", ");
+    const artist = artistCredit(metadata.artists);
     if (!title || !artist || !(songSeconds > 0)) return null;
     return { song: title, artist, album: metadata.album?.trim() || null, duration: songSeconds, videoId: mainVideoId };
   }, [metadata.title, metadata.artists, metadata.album, songSeconds, mainVideoId]);
