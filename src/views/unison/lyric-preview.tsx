@@ -7,6 +7,7 @@ import type { UnisonLyric, UnisonSearchResult } from "@/lib/unison/api-types";
 import { openUnisonLyric, readUnisonLyric } from "@/lib/unison/open-unison-lyric";
 import { Button } from "@/ui/button";
 import { ConfidenceMeter } from "@/ui/unison/confidence-meter";
+import { Scroll } from "@/ui/scroll";
 import { UnisonAvatar } from "@/ui/unison/unison-avatar";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
@@ -34,8 +35,8 @@ type PreviewLines = { status: "readable"; lines: PreviewLine[] } | { status: "un
 
 const LOG_PREFIX = "[UnisonPreview]";
 const SKELETON_LINE_WIDTHS = ["w-3/5", "w-4/5", "w-2/5", "w-3/4", "w-1/2", "w-2/3"];
-const WELL =
-  "h-52 overflow-auto overscroll-contain rounded-[10px] bg-(--well) px-3.5 py-3 shadow-[inset_0_0_0_1px_var(--edge)]";
+const WELL = "h-52 rounded-[10px] bg-(--well) shadow-[inset_0_0_0_1px_var(--edge)]";
+const WELL_PADDING = "px-3.5 py-3";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -53,7 +54,10 @@ function previewLines(lyric: UnisonLyric): PreviewLines {
 // -- Components ----------------------------------------------------------------
 
 const PreviewSkeleton: React.FC = () => (
-  <div aria-hidden="true" className={cn(WELL, "flex flex-col gap-3.5 animate-pulse motion-reduce:animate-none")}>
+  <div
+    aria-hidden="true"
+    className={cn(WELL, WELL_PADDING, "flex flex-col gap-3.5 animate-pulse motion-reduce:animate-none")}
+  >
     {SKELETON_LINE_WIDTHS.map((width) => (
       <span key={width} className={cn("block h-2.5 rounded bg-(--layer-2)", width)} />
     ))}
@@ -62,23 +66,27 @@ const PreviewSkeleton: React.FC = () => (
 
 const PreviewText: React.FC<{ preview: PreviewLines }> = ({ preview }) => {
   if (preview.status === "unreadable") {
-    return <p className={cn(WELL, "text-[13px] text-(--muted) select-text cursor-text")}>{preview.message}</p>;
+    return (
+      <p className={cn(WELL, WELL_PADDING, "text-[13px] text-(--muted) select-text cursor-text")}>{preview.message}</p>
+    );
   }
   return (
-    <ol aria-label="Lyrics preview" className={cn(WELL, "flex flex-col gap-2 select-text")}>
-      {preview.lines.map((line, index) => (
-        // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- read-only preview derived per render; lyric lines have no id and repeat in choruses
-        <li key={`${index}-${line.text}`} className="grid grid-cols-[44px_1fr] gap-2 text-[13px] leading-5">
-          <span className="font-mono text-xs leading-5 text-(--muted) tabular-nums">
-            {line.time === null ? "" : formatTime(line.time, 0)}
-          </span>
-          <span className="text-composer-text text-pretty">
-            {line.text}
-            {line.backgroundText && <span className="text-(--muted)"> ({line.backgroundText})</span>}
-          </span>
-        </li>
-      ))}
-    </ol>
+    <Scroll className={WELL}>
+      <ol aria-label="Lyrics preview" className={cn(WELL_PADDING, "flex flex-col gap-2 select-text")}>
+        {preview.lines.map((line, index) => (
+          // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- read-only preview derived per render; lyric lines have no id and repeat in choruses
+          <li key={`${index}-${line.text}`} className="grid grid-cols-[44px_1fr] gap-2 text-[13px] leading-5">
+            <span className="font-mono text-xs leading-5 text-(--muted) tabular-nums">
+              {line.time === null ? "" : formatTime(line.time, 0)}
+            </span>
+            <span className="text-composer-text text-pretty">
+              {line.text}
+              {line.backgroundText && <span className="text-(--muted)"> ({line.backgroundText})</span>}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </Scroll>
   );
 };
 

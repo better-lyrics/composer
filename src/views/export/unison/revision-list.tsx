@@ -1,5 +1,6 @@
 import { type HistoryStatus, historyStatus, revisionDate, revisionSummaryLine } from "@/domain/unison/revision-history";
 import type { RevisionSummary } from "@/lib/unison/revision-types";
+import { Scroll } from "@/ui/scroll";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
 import { SkeletonBar, SkeletonRows } from "@/views/unison/view-states";
@@ -75,43 +76,45 @@ const RevisionList: React.FC<RevisionListProps> = ({ revisions, selectedId, now,
   };
 
   return (
-    // react-doctor-disable-next-line react-doctor/prefer-tag-over-role
-    <div
-      ref={listRef}
-      role="listbox"
-      aria-label="Revisions"
-      onKeyDown={handleKeyDown}
-      className="flex flex-col gap-1 -ml-2 overflow-auto overscroll-contain"
-    >
-      {revisions.map((revision) => {
-        const selected = revision.id === selectedId;
-        return (
-          <button
-            key={revision.id}
-            type="button"
-            role="option"
-            aria-selected={selected}
-            tabIndex={selected ? 0 : -1}
-            onClick={() => onSelect(revision)}
-            className={cn(
-              "flex w-full flex-col gap-1 px-2.5 py-2 rounded-[10px] text-left cursor-pointer transition-colors duration-100 outline-none focus-visible:outline-2 focus-visible:outline-composer-accent focus-visible:-outline-offset-2",
-              selected ? "bg-composer-accent/12" : "hover:bg-(--layer-1)",
-            )}
-          >
-            <span className="flex items-center gap-2">
-              <span className="shrink-0 text-[13px] font-medium tabular-nums whitespace-nowrap">
-                Revision {revision.revNo}
+    <Scroll className="min-h-0 -ml-2">
+      {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role */}
+      <div
+        ref={listRef}
+        role="listbox"
+        aria-label="Revisions"
+        onKeyDown={handleKeyDown}
+        className="flex flex-col gap-1"
+      >
+        {revisions.map((revision) => {
+          const selected = revision.id === selectedId;
+          return (
+            <button
+              key={revision.id}
+              type="button"
+              role="option"
+              aria-selected={selected}
+              tabIndex={selected ? 0 : -1}
+              onClick={() => onSelect(revision)}
+              className={cn(
+                "flex w-full flex-col gap-1 px-2.5 py-2 rounded-[10px] text-left cursor-pointer transition-colors duration-100 outline-none focus-visible:outline-2 focus-visible:outline-composer-accent focus-visible:-outline-offset-2",
+                selected ? "bg-composer-accent/12" : "hover:bg-(--layer-1)",
+              )}
+            >
+              <span className="flex items-center gap-2">
+                <span className="shrink-0 text-[13px] font-medium tabular-nums whitespace-nowrap">
+                  Revision {revision.revNo}
+                </span>
+                <RevisionStatusLabel revision={revision} />
+                <span className="ml-auto shrink-0 text-xs text-(--muted) whitespace-nowrap">
+                  {revisionDate(revision, now)}
+                </span>
               </span>
-              <RevisionStatusLabel revision={revision} />
-              <span className="ml-auto shrink-0 text-xs text-(--muted) whitespace-nowrap">
-                {revisionDate(revision, now)}
-              </span>
-            </span>
-            <span className="text-xs text-(--muted) truncate">{revisionSummaryLine(revision)}</span>
-          </button>
-        );
-      })}
-    </div>
+              <span className="text-xs text-(--muted) truncate">{revisionSummaryLine(revision)}</span>
+            </button>
+          );
+        })}
+      </div>
+    </Scroll>
   );
 };
 

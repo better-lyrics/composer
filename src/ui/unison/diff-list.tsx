@@ -1,4 +1,5 @@
 import type { DiffLine, DiffLineKind } from "@/domain/unison/revision-changes";
+import { Scroll } from "@/ui/scroll";
 import { cn } from "@/utils/cn";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -29,29 +30,25 @@ const LINE_STYLES: Record<DiffLineKind, string> = {
 // -- Component -----------------------------------------------------------------
 
 const DiffList: React.FC<DiffListProps> = ({ lines, className }) => (
-  <ul
-    aria-label="Changes"
-    className={cn(
-      "flex flex-col overflow-auto overscroll-contain rounded-[10px] bg-(--well) py-1.5 shadow-[inset_0_0_0_1px_var(--edge)] font-mono text-xs leading-5",
-      className,
-    )}
-  >
-    {lines.map((line, index) => (
-      // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- read-only diff derived per render; lines have no id and can repeat word for word
-      <li key={`${line.kind}-${index}`} className={cn("flex gap-2 px-3 select-text", LINE_STYLES[line.kind])}>
-        <span aria-hidden="true" className="w-3 shrink-0 text-(--muted)">
-          {MARKS[line.kind]}
-        </span>
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-pretty break-words">
-            <span className="sr-only">{SPOKEN[line.kind]}</span>
-            {line.text}
+  <Scroll className={cn("rounded-[10px] bg-(--well) shadow-[inset_0_0_0_1px_var(--edge)]", className)}>
+    <ul aria-label="Changes" className="flex flex-col py-1.5 font-mono text-xs leading-5">
+      {lines.map((line, index) => (
+        // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- read-only diff derived per render; lines have no id and can repeat word for word
+        <li key={`${line.kind}-${index}`} className={cn("flex gap-2 px-3 select-text", LINE_STYLES[line.kind])}>
+          <span aria-hidden="true" className="w-3 shrink-0 text-(--muted)">
+            {MARKS[line.kind]}
           </span>
-          {line.detail && <span className="font-sans text-xs text-(--label)">{line.detail}</span>}
-        </span>
-      </li>
-    ))}
-  </ul>
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="text-pretty break-words">
+              <span className="sr-only">{SPOKEN[line.kind]}</span>
+              {line.text}
+            </span>
+            {line.detail && <span className="font-sans text-xs text-(--label)">{line.detail}</span>}
+          </span>
+        </li>
+      ))}
+    </ul>
+  </Scroll>
 );
 
 // -- Exports -------------------------------------------------------------------
