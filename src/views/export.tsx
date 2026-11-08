@@ -122,7 +122,7 @@ const ExportPanel: React.FC = () => {
 
   const unisonSource = useMemo(
     (): UnisonExportSource => ({
-      content: exportContent,
+      content: exportContent && outgoingContent(),
       isEdited: editedContent !== null,
       videoId: youtubeVideoId,
       durationSeconds: duration,
@@ -134,6 +134,7 @@ const ExportPanel: React.FC = () => {
     }),
     [
       exportContent,
+      outgoingContent,
       editedContent,
       youtubeVideoId,
       duration,

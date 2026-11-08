@@ -1,6 +1,6 @@
 import type { LyricsSubmission, UnisonLyric } from "@/lib/unison/api-types";
+import { outgoingTtml } from "@/lib/outgoing-ttml";
 import { UNISON_BASE_URL } from "@/lib/unison/client";
-import type { RevisionPreview } from "@/lib/unison/revision-types";
 import { type StoredUnisonSession, UNISON_SESSION_STORAGE_KEY } from "@/lib/unison/session";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -36,15 +36,6 @@ const SUBMITTER: NonNullable<UnisonLyric["submitter"]> = {
   featured: [],
   avatarUrl: null,
   reputation: 0,
-};
-
-const NO_CHANGES_PREVIEW: RevisionPreview = {
-  checks: [],
-  drift: { text: 0, timing: 0, timingOffsetMs: 0, textLimit: 1, timingLimit: 1, anchorRevNo: 1 },
-  outcome: { goesLive: true, reason: null },
-  noChanges: true,
-  rateLimit: { lyricRemaining: 10, lyricLimit: 10, userRemaining: 10, userLimit: 10 },
-  diff: { rows: [], againstRevNo: 1 },
 };
 
 // -- Helpers ------------------------------------------------------------------
@@ -94,8 +85,8 @@ function stubUnison(): LyricsSubmission[] {
         return ok(submittedLyric(submitted));
       case `GET /lyrics/${SUBMITTED_ID}/videos`:
         return ok({ videos: [{ videoId: VIDEO_ID, isPrimary: true }] });
-      case `POST /lyrics/${SUBMITTED_ID}/revisions/preview`:
-        return ok(NO_CHANGES_PREVIEW);
+      case `POST /lyrics/${SUBMITTED_ID}/revisions/compare`:
+        return ok({ same: true });
     }
     throw new Error(`Unexpected request in the Unison submit test: ${route}`);
   });
@@ -132,9 +123,15 @@ function loadSyncedProject(): void {
   });
 }
 
-function exportedTtml(): string {
+function copiedTtml(): string {
   const project = useProjectStore.getState();
-  return generateProjectTtml(project, SONG_SECONDS, project.exportTiming, VIDEO_ID);
+  return outgoingTtml({
+    editedContent: null,
+    generatedContent: generateProjectTtml(project, SONG_SECONDS, project.exportTiming, VIDEO_ID),
+    duration: SONG_SECONDS,
+    exportTiming: project.exportTiming,
+    youtubeVideoId: VIDEO_ID,
+  });
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -164,7 +161,7 @@ describe("Unison submit card", () => {
     const [submission] = submissions;
     expect(submission?.videoId).toBe(VIDEO_ID);
     expect(submission?.format).toBe("ttml");
-    expect(submission?.lyrics).toBe(exportedTtml());
+    expect(submission?.lyrics).toBe(copiedTtml());
     await expect.poll(() => useProjectStore.getState().unisonLyricId).toBe(String(SUBMITTED_ID));
     await expect.element(screen.getByText("Submitted to Unison. It's live now.")).toBeInTheDocument();
   });
