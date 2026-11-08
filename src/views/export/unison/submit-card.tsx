@@ -110,7 +110,7 @@ const NewSubmissionCard: React.FC<ModeCardProps> = (props) => {
           versions={mine}
           capReached={capReached}
           reasonId={versionsReasonId}
-          onUpdate={(lyricId) => useProjectStore.getState().linkUnisonLyric(String(lyricId))}
+          onLink={(lyricId) => useProjectStore.getState().linkUnisonLyric(String(lyricId))}
         />
       )}
       {!capReached && videoSection}

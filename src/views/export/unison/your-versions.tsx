@@ -13,7 +13,7 @@ interface YourVersionsProps {
   versions: readonly UnisonVariant[];
   capReached: boolean;
   reasonId: string;
-  onUpdate: (lyricId: number) => void;
+  onLink: (lyricId: number) => void;
 }
 
 // -- Helpers -------------------------------------------------------------------
@@ -30,24 +30,23 @@ function versionLabel(version: UnisonVariant, now: number): string {
 interface VersionRowProps {
   version: UnisonVariant;
   now: number;
-  actionLabel: string;
-  onUpdate: (lyricId: number) => void;
+  onLink: (lyricId: number) => void;
 }
 
-const VersionRow: React.FC<VersionRowProps> = ({ version, now, actionLabel, onUpdate }) => (
+const VersionRow: React.FC<VersionRowProps> = ({ version, now, onLink }) => (
   <li className="flex items-center gap-3 h-10 pl-3 pr-1.5 rounded-[10px] bg-(--layer-1)">
     <span className="flex-1 min-w-0 truncate text-[13px] text-(--label)">{versionLabel(version, now)}</span>
-    <span className="text-[13px] font-medium tabular-nums">
-      {formatScore(version.score)}
-      <span className="sr-only"> score</span>
+    <span className="text-[13px] tabular-nums">
+      <span className="text-(--muted)">Score </span>
+      <span className="font-medium">{formatScore(version.score)}</span>
     </span>
-    <Button size="sm" variant="secondary" onClick={() => onUpdate(version.id)} className="shrink-0">
-      {actionLabel}
+    <Button size="sm" variant="secondary" onClick={() => onLink(version.id)} className="shrink-0">
+      Link
     </Button>
   </li>
 );
 
-const YourVersions: React.FC<YourVersionsProps> = ({ versions, capReached, reasonId, onUpdate }) => {
+const YourVersions: React.FC<YourVersionsProps> = ({ versions, capReached, reasonId, onLink }) => {
   const [now] = useState(Date.now);
   return (
     <PanelSection
@@ -62,17 +61,13 @@ const YourVersions: React.FC<YourVersionsProps> = ({ versions, capReached, reaso
     >
       <div className="flex flex-col gap-2">
         <p id={reasonId} className="text-[13px] leading-5 text-composer-text text-pretty">
-          {capReached ? "Limit reached. Update one instead." : "You already have a version of this song."}
+          {capReached
+            ? "Limit reached. Link one of yours to update it instead."
+            : "You already have a version of this song. Link it to compare before sending anything."}
         </p>
         <ul className="flex flex-col gap-2">
           {versions.map((version) => (
-            <VersionRow
-              key={version.id}
-              version={version}
-              now={now}
-              actionLabel={capReached ? "Update" : "Update it"}
-              onUpdate={onUpdate}
-            />
+            <VersionRow key={version.id} version={version} now={now} onLink={onLink} />
           ))}
         </ul>
       </div>
