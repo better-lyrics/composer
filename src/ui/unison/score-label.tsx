@@ -14,9 +14,10 @@ interface ScoreLabelProps {
 
 const ScoreLabel: React.FC<ScoreLabelProps> = ({ score, voteCount, className }) => (
   <span className={cn("text-[13px] tabular-nums text-(--label) whitespace-nowrap", className)}>
-    {formatScore(score)}
-    <span className="sr-only"> score,</span>
+    <span className="text-(--muted)">Score </span>
+    <span className="font-medium">{formatScore(score)}</span>
     <span aria-hidden="true"> ・ </span>
+    <span className="sr-only">, </span>
     {pluralize(voteCount, "vote")}
   </span>
 );

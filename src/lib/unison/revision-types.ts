@@ -99,6 +99,7 @@ export type {
   RevisionDetail,
   RevisionDiff,
   RevisionDiffRow,
+  RevisionFieldCheck,
   RevisionInput,
   RevisionPreview,
   RevisionStatus,

@@ -1,7 +1,7 @@
-import { formatScore } from "@/domain/unison/lyric-status";
 import { UNISON_VARIANT_CAP } from "@/domain/unison/submit-checks";
 import type { UnisonVariant } from "@/lib/unison/api-types";
 import { Button } from "@/ui/button";
+import { ScoreLabel } from "@/ui/unison/score-label";
 import { unisonSyncLabel } from "@/ui/unison/sync-type-label";
 import { formatRelativeTimeInline } from "@/utils/format-relative-time";
 import { PanelSection } from "@/views/export/unison/panel-section";
@@ -36,10 +36,7 @@ interface VersionRowProps {
 const VersionRow: React.FC<VersionRowProps> = ({ version, now, onLink }) => (
   <li className="flex items-center gap-3 h-10 pl-3 pr-1.5 rounded-[10px] bg-(--layer-1)">
     <span className="flex-1 min-w-0 truncate text-[13px] text-(--label)">{versionLabel(version, now)}</span>
-    <span className="text-[13px] tabular-nums">
-      <span className="text-(--muted)">Score </span>
-      <span className="font-medium">{formatScore(version.score)}</span>
-    </span>
+    <ScoreLabel score={version.score} voteCount={version.voteCount} />
     <Button size="sm" variant="secondary" onClick={() => onLink(version.id)} className="shrink-0">
       Link
     </Button>

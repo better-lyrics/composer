@@ -7,6 +7,7 @@ import { useUnisonLyric } from "@/hooks/unison/useUnisonLyric";
 import { useUnisonVariants } from "@/hooks/unison/useUnisonVariants";
 import { useVideoLinks } from "@/hooks/unison/useVideoSuggestions";
 import { isUnisonSessionEnded } from "@/lib/unison/client";
+import type { RevisionFieldCheck, RevisionPreview } from "@/lib/unison/revision-types";
 import { useProjectStore } from "@/stores/project";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
@@ -146,6 +147,25 @@ const UpdateOutcome: React.FC<{ goesLive: boolean; replacesPending: boolean }> =
   </Outcome>
 );
 
+function useUpdateBlockers(canSubmitLocally: boolean, preview: RevisionPreview | undefined, unlinkedVideo: boolean) {
+  const ids = { checks: useId(), server: useId(), video: useId(), changes: useId() };
+  const failedServerChecks = preview?.checks.filter((check) => check.status === "bad") ?? [];
+  const blocker = [
+    { id: ids.checks, active: !canSubmitLocally },
+    { id: ids.server, active: failedServerChecks.length > 0 },
+    { id: ids.video, active: unlinkedVideo },
+  ].find((candidate) => candidate.active);
+  return { ids, failedServerChecks, blocked: blocker !== undefined, blockedReasonId: blocker?.id ?? ids.changes };
+}
+
+const FailedServerChecks: React.FC<{ id: string; checks: RevisionFieldCheck[] }> = ({ id, checks }) => (
+  <ul id={id} className={cn(UNISON_CARD_TEXT_STYLES, "select-text")}>
+    {checks.map((check) => (
+      <li key={`${check.field}:${check.message}`}>{check.message}</li>
+    ))}
+  </ul>
+);
+
 const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
   const { lyricId, session, sessionEnded, source } = props;
   const checks = useSubmitChecks("update", source);
@@ -153,39 +173,26 @@ const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
   const { sender, onError, failureText } = useSender(props);
   const { query, settling } = useRevisionPreview(lyricId, input, onError);
   const { replacesPending, unlinkedVideo } = useUpdateTarget(lyricId, source.videoId);
-  const checksReasonId = useId();
-  const changesReasonId = useId();
-  const videoReasonId = useId();
-  const serverChecksReasonId = useId();
   const preview = query.data;
-  const failedServerChecks = preview?.checks.filter((check) => check.status === "bad") ?? [];
+  const { ids, failedServerChecks, blocked, blockedReasonId } = useUpdateBlockers(
+    checks.canSubmit,
+    preview,
+    unlinkedVideo,
+  );
   const goesLive = preview?.outcome.goesLive ?? true;
-  const blockedReasonId = !checks.canSubmit
-    ? checksReasonId
-    : failedServerChecks.length > 0
-      ? serverChecksReasonId
-      : unlinkedVideo
-        ? videoReasonId
-        : changesReasonId;
 
   return (
     <SubmitCardShell mode="update" busy={sender.pending} source={source} checks={checks}>
       <ChangesSection
         preview={preview}
         error={query.error}
-        reasonId={changesReasonId}
+        reasonId={ids.changes}
         onRetry={() => void query.refetch()}
       />
-      {!checks.canSubmit && <ChecksReason id={checksReasonId} />}
-      {failedServerChecks.length > 0 && (
-        <ul id={serverChecksReasonId} className={cn(UNISON_CARD_TEXT_STYLES, "select-text")}>
-          {failedServerChecks.map((check, index) => (
-            <li key={`${check.field}-${index}`}>{check.message}</li>
-          ))}
-        </ul>
-      )}
+      {!checks.canSubmit && <ChecksReason id={ids.checks} />}
+      {failedServerChecks.length > 0 && <FailedServerChecks id={ids.server} checks={failedServerChecks} />}
       {unlinkedVideo && (
-        <p id={videoReasonId} className={UNISON_CARD_TEXT_STYLES}>
+        <p id={ids.video} className={UNISON_CARD_TEXT_STYLES}>
           {UNLINKED_VIDEO_REASON}
         </p>
       )}
@@ -196,14 +203,7 @@ const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
         failure={failureText}
         label={goesLive ? "Send update" : "Send for review"}
         pending={sender.pending}
-        disabled={
-          !checks.canSubmit ||
-          failedServerChecks.length > 0 ||
-          unlinkedVideo ||
-          !preview ||
-          preview.noChanges ||
-          settling
-        }
+        disabled={blocked || !preview || preview.noChanges || settling}
         blockedReasonId={blockedReasonId}
         onSend={() => void sender.send({ kind: "update", lyricId, input })}
       />
