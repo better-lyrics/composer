@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
+import type { UnisonStanding } from "@/domain/unison/library-sort";
 import { linkCandidates, type UnsureLink } from "@/domain/unison/link-suggestions";
 import { projectsByLyricId } from "@/domain/unison/linked-projects";
 import { useContentLinks } from "@/hooks/unison/useContentLinks";
@@ -18,6 +19,8 @@ interface LibraryUnisonData {
   items: readonly UnisonMineItem[] | null;
   projectByLyric: ReadonlyMap<string, ProjectIndexEntry>;
   matches: readonly UnisonMatch[];
+  linkedVideos: ReadonlyMap<string, string>;
+  standings: ReadonlyMap<string, UnisonStanding>;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -56,7 +59,27 @@ function useLibraryUnison(entries: readonly ProjectIndexEntry[]): LibraryUnisonD
     () => (showColumn ? { lyrics, matches: new Map(matches.map((match) => [match.projectId, match])) } : null),
     [showColumn, lyrics, matches],
   );
+  const linkedVideos = useMemo(() => new Map((items ?? []).map((item) => [String(item.id), item.videoId])), [items]);
+  const standings = useMemo(
+    () =>
+      new Map(
+        (items ?? []).flatMap((item) => {
+          const project = projectByLyric.get(String(item.id));
+          if (!project) return [];
+          const standing: UnisonStanding = {
+            score: item.score,
+            voteCount: item.voteCount,
+            changedAt: item.revision.updatedAt,
+            sentAt: item.createdAt,
+          };
+          return [[project.id, standing] as const];
+        }),
+      ),
+    [items, projectByLyric],
+  );
   return {
+    linkedVideos,
+    standings,
     showNotices,
     showWantedShelf: signedIn && features.wantedShelf,
     unison,

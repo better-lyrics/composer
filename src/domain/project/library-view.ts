@@ -1,16 +1,20 @@
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
-import { type LibrarySort, byMostRecentlyEdited, compareProjects } from "@/domain/project/library-order";
+import { byMostRecentlyEdited, compareProjects, type LibrarySort } from "@/domain/project/library-order";
 import { type ProjectStage, projectStage } from "@/domain/project/progress";
 import { normalizeProjectQuery, projectMatchesQuery } from "@/domain/project/search";
+import { compareByUnison, isUnisonSort, type UnisonSort, type UnisonStanding } from "@/domain/unison/library-sort";
 
 // -- Types --------------------------------------------------------------------
 
 type LibraryFilter = "all" | ProjectStage | "unison";
 
+type LibraryOrder = LibrarySort | UnisonSort;
+
 interface LibraryViewOptions {
   filter: LibraryFilter;
   query: string;
-  sort: LibrarySort;
+  sort: LibraryOrder;
+  standings?: ReadonlyMap<string, UnisonStanding>;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -30,11 +34,20 @@ function shownLibraryFilter(chosen: LibraryFilter, signedInToUnison: boolean): L
   return chosen === "unison" && !signedInToUnison ? "all" : chosen;
 }
 
+// Unison sorts only exist while the Unison column shows.
+function shownLibraryOrder(chosen: LibraryOrder, showUnison: boolean): LibraryOrder {
+  return isUnisonSort(chosen) && !showUnison ? "edited" : chosen;
+}
+
 function libraryProjects(entries: readonly ProjectIndexEntry[], options: LibraryViewOptions): ProjectIndexEntry[] {
   const needle = normalizeProjectQuery(options.query);
   return entries
     .filter((entry) => matchesFilter(entry, options.filter) && projectMatchesQuery(entry, needle))
-    .toSorted(compareProjects(options.sort));
+    .toSorted(
+      isUnisonSort(options.sort)
+        ? compareByUnison(options.sort, options.standings ?? new Map())
+        : compareProjects(options.sort),
+    );
 }
 
 function filterCounts(entries: readonly ProjectIndexEntry[]): Record<LibraryFilter, number> {
@@ -57,5 +70,5 @@ function resumeProject(entries: readonly ProjectIndexEntry[]): ProjectIndexEntry
 
 // -- Exports ------------------------------------------------------------------
 
-export { LIBRARY_FILTERS, filterCounts, libraryProjects, resumeProject, shownLibraryFilter };
-export type { LibraryFilter };
+export type { LibraryFilter, LibraryOrder };
+export { filterCounts, LIBRARY_FILTERS, libraryProjects, resumeProject, shownLibraryFilter, shownLibraryOrder };

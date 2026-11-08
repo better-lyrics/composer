@@ -5,9 +5,11 @@ import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import {
   filterCounts,
   type LibraryFilter,
+  type LibraryOrder,
   libraryProjects,
   resumeProject,
   shownLibraryFilter,
+  shownLibraryOrder,
 } from "@/domain/project/library-view";
 import { LinkedLyricVideos } from "@/hooks/unison/useProjectArtSrc";
 import { useLastPresent } from "@/hooks/useLastPresent";
@@ -82,7 +84,7 @@ const LibraryScreen: React.FC = () => {
   );
   const view = useSettingsStore((state) => state.libraryView);
   const setSetting = useSettingsStore((state) => state.set);
-  const [sort, setSort] = useState(() => useSettingsStore.getState().librarySort);
+  const [chosenSort, setSort] = useState<LibraryOrder>(() => useSettingsStore.getState().librarySort);
   const [chosenFilter, setFilter] = useState<LibraryFilter>("all");
   const [query, setQuery] = useState("");
   const [menu, setMenu] = useState<OpenMenu | null>(null);
@@ -96,13 +98,14 @@ const LibraryScreen: React.FC = () => {
 
   const live = entries ?? NO_PROJECTS;
   const unison = useLibraryUnison(live);
-  const linkedVideos = useMemo(
-    () => new Map((unison.items ?? []).map((item) => [String(item.id), item.videoId])),
-    [unison.items],
-  );
   const showUnison = unison.unison !== null;
   const filter = shownLibraryFilter(chosenFilter, showUnison);
-  const visible = useMemo(() => libraryProjects(live, { filter, query, sort }), [live, filter, query, sort]);
+  const sort = shownLibraryOrder(chosenSort, showUnison);
+  const { standings } = unison;
+  const visible = useMemo(
+    () => libraryProjects(live, { filter, query, sort, standings }),
+    [live, filter, query, sort, standings],
+  );
   const visibleIds = useMemo(() => visible.map((project) => project.id), [visible]);
   const counts = useMemo(() => filterCounts(live), [live]);
   const resume = useMemo(() => resumeProject(live), [live]);
@@ -195,7 +198,7 @@ const LibraryScreen: React.FC = () => {
   const indexState: LibraryIndexState = entries ? "loaded" : error ? "failed" : "loading";
 
   return (
-    <LinkedLyricVideos value={linkedVideos}>
+    <LinkedLyricVideos value={unison.linkedVideos}>
       <div className="flex flex-col flex-1 min-h-0 mb-2 workspace-card">
         <main ref={mainRef} className="flex flex-1 min-h-0 overflow-y-auto overscroll-none">
           <div
