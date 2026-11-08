@@ -61,19 +61,48 @@ const VersionRow: React.FC<{ version: UnisonSearchResult; selected: boolean; onS
   </li>
 );
 
+const SongSubtitle: React.FC<{ song: SongVersions }> = ({ song }) => (
+  <span className="block text-[13px] font-normal text-(--muted) truncate">
+    {song.artist} ・ {pluralize(song.versions.length, "version")} on Unison
+  </span>
+);
+
+// With one version there is nothing to choose between, so the whole song picks it.
+const SongHeader: React.FC<{ song: SongVersions; onSelect: (id: number) => void }> = ({ song, onSelect }) => {
+  const [only] = song.versions;
+  if (song.versions.length > 1) {
+    return (
+      <div className="flex items-center gap-3 px-3">
+        <UnisonSongArt videoId={song.videoId} size="dialog" />
+        <div className="min-w-0">
+          <h2 className="text-[15px] font-semibold truncate">{song.song}</h2>
+          <SongSubtitle song={song} />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <h2>
+      <button
+        type="button"
+        onClick={() => onSelect(only.id)}
+        className="flex w-full items-center gap-3 -my-1 py-1 px-3 rounded-[10px] text-left cursor-pointer transition-colors duration-100 hover:bg-(--layer-1)"
+      >
+        <UnisonSongArt videoId={song.videoId} size="dialog" />
+        <span className="min-w-0">
+          <span className="block text-[15px] font-semibold truncate">{song.song}</span>
+          <SongSubtitle song={song} />
+        </span>
+      </button>
+    </h2>
+  );
+};
+
 const SearchResults: React.FC<SearchResultsProps> = ({ results, selectedId, onSelect }) => (
   <div className="flex flex-col gap-6">
     {versionsBySong(results).map((song) => (
       <section key={song.videoId} aria-label={song.song} className="flex flex-col gap-3">
-        <div className="flex items-center gap-3 px-3">
-          <UnisonSongArt videoId={song.videoId} size="dialog" />
-          <div className="min-w-0">
-            <h2 className="text-[15px] font-semibold truncate">{song.song}</h2>
-            <p className="text-[13px] text-(--muted) truncate">
-              {song.artist} ・ {pluralize(song.versions.length, "version")} on Unison
-            </p>
-          </div>
-        </div>
+        <SongHeader song={song} onSelect={onSelect} />
         <ul aria-label={`Versions of ${song.song}`} className="flex flex-col gap-1">
           {song.versions.map((version) => (
             <VersionRow key={version.id} version={version} selected={version.id === selectedId} onSelect={onSelect} />

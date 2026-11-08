@@ -1,4 +1,5 @@
 import { projectsByLyricId } from "@/domain/unison/linked-projects";
+import { type MineSort, nextMineSort, sortedMine } from "@/domain/unison/mine-sort";
 import { useMyUnisonLyrics } from "@/hooks/unison/useMyUnisonLyrics";
 import { fetchUnisonLyric } from "@/hooks/unison/useUnisonLyric";
 import { useProjectIndex } from "@/hooks/useProjectIndex";
@@ -15,7 +16,7 @@ import { useLibraryActions } from "@/views/library/use-library-actions";
 import { MINE_GRID, MineColumns, MineRow } from "@/views/unison/mine-row";
 import { InlineError, LoadMore, SkeletonBar, SkeletonRows, SkeletonSong, ViewEmpty } from "@/views/unison/view-states";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -62,6 +63,16 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
 
   const projectByLyric = useMemo(() => projectsByLyricId(entries ?? []), [entries]);
   const items = useMemo(() => mine.data?.pages.flatMap((page) => page.items) ?? [], [mine.data]);
+  const [sort, setSort] = useState<MineSort | null>(null);
+  const shownItems = useMemo(() => sortedMine(items, sort), [items, sort]);
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = mine;
+
+  // A sort covers every lyric, so the rest of the pages load once one is chosen.
+  useEffect(() => {
+    if (sort && hasNextPage && !isFetchingNextPage) void fetchNextPage();
+  }, [sort, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const changeSort = useCallback((key: MineSort["key"]) => setSort((current) => nextMineSort(current, key)), []);
 
   const openAsProject = useCallback(
     (item: UnisonMineItem) => {
@@ -86,7 +97,7 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
   if (mine.isPending) {
     return (
       <>
-        <MineColumns />
+        <MineColumns sort={sort} onSort={changeSort} />
         <MineSkeleton />
       </>
     );
@@ -103,9 +114,9 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
 
   return (
     <>
-      <MineColumns />
+      <MineColumns sort={sort} onSort={changeSort} />
       <ul className="pt-1">
-        {items.map((item) => (
+        {shownItems.map((item) => (
           <MineRow
             key={item.id}
             item={item}
@@ -117,7 +128,7 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
           />
         ))}
       </ul>
-      {mine.hasNextPage && (
+      {mine.hasNextPage && !sort && (
         <LoadMore label="Load more" loading={mine.isFetchingNextPage} onLoadMore={() => void mine.fetchNextPage()} />
       )}
     </>

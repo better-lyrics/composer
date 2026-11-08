@@ -1,4 +1,5 @@
 import { unisonStatus } from "@/domain/unison/lyric-status";
+import type { MineSort, MineSortKey } from "@/domain/unison/mine-sort";
 import type { UnisonMineItem } from "@/lib/unison/api-types";
 import { Button } from "@/ui/button";
 import { ConfidenceMeter } from "@/ui/unison/confidence-meter";
@@ -7,7 +8,7 @@ import { unisonSyncLabel } from "@/ui/unison/sync-type-label";
 import { DescribedUnisonStatusChip } from "@/ui/unison/unison-status-chip";
 import { UnisonSongArt } from "@/ui/unison/unison-song-art";
 import { cn } from "@/utils/cn";
-import { IconFileImport } from "@tabler/icons-react";
+import { IconChevronDown, IconChevronUp, IconFileImport } from "@tabler/icons-react";
 import { memo } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -21,6 +22,11 @@ interface MineRowProps {
   onOpenAsProject: (item: UnisonMineItem) => void;
 }
 
+interface MineColumnsProps {
+  sort: MineSort | null;
+  onSort: (key: MineSortKey) => void;
+}
+
 // -- Constants -----------------------------------------------------------------
 
 const MINE_GRID = "grid items-center gap-x-4 grid-cols-[40px_minmax(0,2fr)_132px_120px_120px_148px] px-3";
@@ -28,15 +34,36 @@ const ROW = "h-14 rounded-[10px] hover:bg-(--layer-1) transition-colors duration
 
 // -- Components ----------------------------------------------------------------
 
-const MineColumns: React.FC = () => (
-  <div
-    aria-hidden="true"
-    className={cn(MINE_GRID, "h-8 shadow-[inset_0_-1px_0_var(--divider)] text-xs font-medium text-(--muted)")}
-  >
-    <span className="col-span-2">Song</span>
-    <span>Status</span>
-    <span>Score</span>
-    <span>Confidence</span>
+const SORT_COLUMNS: readonly { key: MineSortKey; label: string; className?: string }[] = [
+  { key: "song", label: "Song", className: "col-span-2" },
+  { key: "status", label: "Status" },
+  { key: "score", label: "Score" },
+  { key: "confidence", label: "Confidence" },
+];
+
+const MineColumns: React.FC<MineColumnsProps> = ({ sort, onSort }) => (
+  <div className={cn(MINE_GRID, "h-8 shadow-[inset_0_-1px_0_var(--divider)] text-xs font-medium text-(--muted)")}>
+    {SORT_COLUMNS.map((column) => {
+      const direction = sort?.key === column.key ? sort.direction : null;
+      const Arrow = direction === "asc" ? IconChevronUp : IconChevronDown;
+      return (
+        <button
+          key={column.key}
+          type="button"
+          aria-label={`Sort by ${column.label.toLowerCase()}${direction ? `, ${direction === "asc" ? "ascending" : "descending"}` : ""}`}
+          aria-pressed={direction !== null}
+          onClick={() => onSort(column.key)}
+          className={cn(
+            "flex items-center gap-1 justify-self-start -mx-1 px-1 h-6 rounded-md cursor-pointer select-none hover:text-composer-text focus-visible:outline-2 focus-visible:outline-composer-accent",
+            direction && "text-composer-text",
+            column.className,
+          )}
+        >
+          {column.label}
+          {direction && <Arrow aria-hidden="true" className="size-3.5" />}
+        </button>
+      );
+    })}
     <span />
   </div>
 );

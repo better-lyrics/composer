@@ -3,6 +3,7 @@ import { useStartWantedSong } from "@/hooks/unison/useStartWantedSong";
 import type { WantedSong } from "@/lib/unison/api-types";
 import { Button } from "@/ui/button";
 import { UnisonSongArt } from "@/ui/unison/unison-song-art";
+import { YouTubeMusicLink } from "@/ui/unison/youtube-music-link";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
 import { InlineError, LoadMore, SkeletonBar, SkeletonRows, SkeletonSong, ViewEmpty } from "@/views/unison/view-states";
@@ -47,9 +48,7 @@ const WantedRow: React.FC<{ song: WantedSong; starting: boolean; onStart: (song:
     <span className="font-mono text-[13px] text-(--muted) tabular-nums text-right">{song.rank}</span>
     <UnisonSongArt videoId={song.videoId} artworkUrl={song.thumbnailUrl} size="row" />
     <div className="min-w-0">
-      <p className="text-sm font-medium truncate" title={song.song}>
-        {song.song}
-      </p>
+      <YouTubeMusicLink videoId={song.videoId} label={song.song} className="text-sm font-medium line-clamp-1" />
       <p className="text-[13px] text-(--muted) truncate">{song.artist}</p>
     </div>
     <span className="text-[13px] text-(--label) tabular-nums">{pluralize(song.requestCount, "request")}</span>
