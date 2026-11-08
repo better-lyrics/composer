@@ -61,7 +61,10 @@ const MineRowContent: React.FC<MineRowProps> = ({
           {item.artist} ・ {unisonSyncLabel(item.syncType)}
         </p>
       </div>
-      <DescribedUnisonStatusChip status={status} className="justify-self-start" />
+      {/* The tooltip anchor is the grid item, so it must not stretch across the column. */}
+      <span className="justify-self-start">
+        <DescribedUnisonStatusChip status={status} />
+      </span>
       <ScoreLabel score={item.score} voteCount={item.voteCount} />
       <ConfidenceMeter confidence={item.confidence} />
       {projectId ? (
