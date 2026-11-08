@@ -19,6 +19,7 @@ interface ExportHeaderProps {
   onEdit: () => void;
   onCopy: () => void;
   onDownload: () => void;
+  downloadIsPrimary: boolean;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -45,6 +46,7 @@ const ExportHeader: React.FC<ExportHeaderProps> = ({
   onEdit,
   onCopy,
   onDownload,
+  downloadIsPrimary,
 }) => (
   <div className="flex items-center justify-between gap-4 h-13 shrink-0 pl-5 pr-2 border-b border-(--divider)">
     <h2 className="sr-only">Export</h2>
@@ -82,7 +84,7 @@ const ExportHeader: React.FC<ExportHeaderProps> = ({
         {copied ? <IconCheck className="size-4" /> : <IconCopy className="size-4" />}
         {copied ? "Copied" : "Copy"}
       </Button>
-      <Button hasIcon size="lg" variant="primary" onClick={onDownload}>
+      <Button hasIcon size="lg" variant={downloadIsPrimary ? "primary" : "secondary"} onClick={onDownload}>
         <IconDownload className="size-4" />
         Download TTML
       </Button>

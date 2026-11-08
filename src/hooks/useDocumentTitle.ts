@@ -6,6 +6,7 @@ import type { AppScreen } from "@/utils/app-routes";
 
 const BRAND = "Composer";
 const SEPARATOR = "・";
+const SCREEN_TITLES: Record<Exclude<AppScreen, "editor">, string> = { library: "Projects", unison: "Unison" };
 
 // -- Hook ---------------------------------------------------------------------
 
@@ -15,8 +16,8 @@ function useDocumentTitle(screen: AppScreen = "editor"): void {
 
   useEffect(() => {
     if (baseTitleRef.current === null) baseTitleRef.current = document.title;
-    if (screen === "library") {
-      document.title = `${BRAND} ${SEPARATOR} Projects`;
+    if (screen !== "editor") {
+      document.title = `${BRAND} ${SEPARATOR} ${SCREEN_TITLES[screen]}`;
       return;
     }
     const trimmed = songTitle.trim();

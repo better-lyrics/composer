@@ -1,3 +1,4 @@
+import type { ProjectTab } from "@/domain/project/tab";
 import { openProject } from "@/lib/open-project";
 import {
   type DeletableProject,
@@ -6,6 +7,7 @@ import {
   exportProjectFiles,
   renameProject,
 } from "@/lib/project-library-actions";
+import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { EDITOR_PATH } from "@/utils/app-routes";
 import { useMemo } from "react";
@@ -15,7 +17,7 @@ import { toast } from "sonner";
 // -- Types --------------------------------------------------------------------
 
 interface LibraryActions {
-  open: (id: string) => void;
+  open: (id: string, tab?: ProjectTab) => void;
   rename: (id: string, title: string) => void;
   duplicate: (id: string) => void;
   exportFiles: (ids: readonly string[]) => void;
@@ -43,9 +45,12 @@ function useLibraryActions(): LibraryActions {
 
   return useMemo(
     () => ({
-      open: (id: string) => {
+      open: (id: string, tab?: ProjectTab) => {
         openProject(id).then(
-          () => navigate(EDITOR_PATH),
+          () => {
+            if (tab) useProjectStore.getState().setActiveTab(tab);
+            navigate(EDITOR_PATH);
+          },
           reportFailure("could not open the project", "Couldn't open that project"),
         );
       },

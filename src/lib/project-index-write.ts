@@ -41,6 +41,7 @@ function indexEntryForProject(id: string, project: SavedProject, carried: IndexC
     audioSource: project.audioSource,
     updatedAt: project.savedAt,
     recordBytes: estimateRecordBytes(project),
+    unisonLyricId: project.unisonLyricId,
     ...carried,
   });
 }

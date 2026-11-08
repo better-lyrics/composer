@@ -47,10 +47,11 @@ async function renameProject(id: string, title: string): Promise<void> {
 
 async function duplicateProject(id: string): Promise<string> {
   const [record, audio, stems] = await Promise.all([latestRecord(id), loadProjectAudio(id), loadProjectStems(id)]);
+  const { unisonLyricId: _unisonLyricId, ...copy } = record;
   const copyId = createProjectId();
   await saveProjectRecordWithAudio(
     copyId,
-    { ...record, metadata: { ...record.metadata, title: copyTitle(record.metadata.title) }, savedAt: Date.now() },
+    { ...copy, metadata: { ...copy.metadata, title: copyTitle(copy.metadata.title) }, savedAt: Date.now() },
     audio,
   );
   if (stems) await copyProjectStems(copyId, stems);

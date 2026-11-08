@@ -1,28 +1,42 @@
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { storedAudioBytesTotal } from "@/domain/project/audio-status";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
-import { type LibraryFilter, filterCounts, libraryProjects, resumeProject } from "@/domain/project/library-view";
+import {
+  filterCounts,
+  type LibraryFilter,
+  type LibraryOrder,
+  libraryProjects,
+  resumeProject,
+  shownLibraryFilter,
+  shownLibraryOrder,
+} from "@/domain/project/library-view";
+import { isUnisonSort } from "@/domain/unison/library-sort";
+import { LinkedLyricVideos } from "@/hooks/unison/useProjectArtSrc";
+import { useLastPresent } from "@/hooks/useLastPresent";
 import { useProjectIndex } from "@/hooks/useProjectIndex";
 import { createProject } from "@/lib/open-project";
 import { useSettingsStore } from "@/stores/settings";
-import { Scroll } from "@/ui/scroll";
 import type { MenuAnchor } from "@/ui/menu";
+import { Scroll } from "@/ui/scroll";
 import { EDITOR_PATH, screenForPath } from "@/utils/app-routes";
 import { cn } from "@/utils/cn";
 import { BulkBar } from "@/views/library/bulk-bar";
 import { LibraryBody, type LibraryIndexState } from "@/views/library/library-body";
 import { LibraryFooter } from "@/views/library/library-footer";
 import { LibraryToolbar } from "@/views/library/library-toolbar";
+import { linkToUnison } from "@/views/library/link-to-unison";
+import { MostWantedShelf } from "@/views/library/most-wanted-shelf";
 import { NewSongPanel } from "@/views/library/new-song-panel";
 import { type ProjectCollectionProps, ProjectListColumns } from "@/views/library/project-list";
 import { ProjectMenu } from "@/views/library/project-menu";
-import { useLastPresent } from "@/hooks/useLastPresent";
 import { RenameProjectModal } from "@/views/library/rename-project-modal";
 import { ResumeCard } from "@/views/library/resume-card";
+import { SignedInUnisonUpdates } from "@/views/library/unison-updates";
 import { useLibraryActions } from "@/views/library/use-library-actions";
 import { useLibrarySelection } from "@/views/library/use-library-selection";
 import { useLibraryShortcuts } from "@/views/library/use-library-shortcuts";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useLibraryUnison } from "@/views/library/use-library-unison";
 
 // -- Types --------------------------------------------------------------------
 
@@ -71,8 +85,8 @@ const LibraryScreen: React.FC = () => {
   );
   const view = useSettingsStore((state) => state.libraryView);
   const setSetting = useSettingsStore((state) => state.set);
-  const [sort, setSort] = useState(() => useSettingsStore.getState().librarySort);
-  const [filter, setFilter] = useState<LibraryFilter>("all");
+  const [chosenSort, setSort] = useState<LibraryOrder>(() => useSettingsStore.getState().librarySort);
+  const [chosenFilter, setFilter] = useState<LibraryFilter>("all");
   const [query, setQuery] = useState("");
   const [menu, setMenu] = useState<OpenMenu | null>(null);
   const shownMenu = useLastPresent(menu);
@@ -84,7 +98,15 @@ const LibraryScreen: React.FC = () => {
   const actions = useLibraryActions();
 
   const live = entries ?? NO_PROJECTS;
-  const visible = useMemo(() => libraryProjects(live, { filter, query, sort }), [live, filter, query, sort]);
+  const unison = useLibraryUnison(live, isUnisonSort(chosenSort));
+  const showUnison = unison.unison !== null;
+  const filter = shownLibraryFilter(chosenFilter, showUnison);
+  const sort = shownLibraryOrder(chosenSort, showUnison);
+  const { standings } = unison;
+  const visible = useMemo(
+    () => libraryProjects(live, { filter, query, sort, standings }),
+    [live, filter, query, sort, standings],
+  );
   const visibleIds = useMemo(() => visible.map((project) => project.id), [visible]);
   const counts = useMemo(() => filterCounts(live), [live]);
   const resume = useMemo(() => resumeProject(live), [live]);
@@ -168,6 +190,7 @@ const LibraryScreen: React.FC = () => {
     now: fetchedAt,
     selectedIds,
     menuProjectId: menu?.project.id ?? null,
+    unison: unison.unison,
     onOpen: handleOpen,
     onToggleSelect: toggle,
     onOpenMenu: openMenu,
@@ -176,85 +199,99 @@ const LibraryScreen: React.FC = () => {
   const indexState: LibraryIndexState = entries ? "loaded" : error ? "failed" : "loading";
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 mb-2 workspace-card">
-      <main ref={mainRef} className="flex flex-1 min-h-0 overflow-y-auto overscroll-none">
-        <div
-          data-first-paint={firstPaint}
-          className="group/lib flex flex-col gap-10 flex-1 min-w-0 max-w-[1264px] mx-auto px-16 pt-8 max-[720px]:px-5"
-        >
-          <div className="grid grid-cols-[minmax(0,1fr)_380px] gap-4 max-[1180px]:grid-cols-[minmax(0,1fr)_320px] max-[880px]:grid-cols-1">
-            {resume && <ResumeCard project={resume} now={fetchedAt} onOpen={actions.open} className={RISE} />}
-            <NewSongPanel className={cn(RISE, "[animation-delay:60ms]")} />
-          </div>
-          <section
-            aria-label="All projects"
-            className={cn(RISE, "[animation-delay:120ms] flex flex-col flex-1 min-h-90 select-none")}
+    <LinkedLyricVideos value={unison.linkedVideos}>
+      <div className="flex flex-col flex-1 min-h-0 mb-2 workspace-card">
+        <main ref={mainRef} className="flex flex-1 min-h-0 overflow-y-auto overscroll-none">
+          <div
+            data-first-paint={firstPaint}
+            className="group/lib flex flex-col gap-10 flex-1 min-w-0 max-w-[1264px] mx-auto px-16 pt-8 max-[720px]:px-5"
           >
-            <LibraryToolbar
-              count={live.length}
-              filter={filter}
-              counts={counts}
-              onFilterChange={setFilter}
-              query={query}
-              onQueryChange={setQuery}
-              searchRef={searchRef}
-              sort={sort}
-              onSortChange={setSort}
-              view={view}
-              onViewChange={(next) => setSetting("libraryView", next)}
+            <div className="grid grid-cols-[minmax(0,1fr)_380px] gap-4 max-[1180px]:grid-cols-[minmax(0,1fr)_320px] max-[880px]:grid-cols-1">
+              {resume && <ResumeCard project={resume} now={fetchedAt} onOpen={actions.open} className={RISE} />}
+              <NewSongPanel className={cn(RISE, "[animation-delay:60ms]")} />
+            </div>
+            <SignedInUnisonUpdates
+              shown={unison.showNotices}
+              items={unison.items}
+              projectByLyric={unison.projectByLyric}
+              now={fetchedAt}
+              onOpenProject={actions.open}
+              className={cn(RISE, "[animation-delay:90ms]")}
             />
-            {view === "list" && <ProjectListColumns />}
-            <Scroll className="flex-1 min-h-0 -ml-3 -mr-13">
-              <div className="pl-3 pr-13 pb-4">
-                <LibraryBody
-                  state={indexState}
-                  view={view}
-                  collection={collection}
-                  query={query}
-                  filter={filter}
-                  onClearSearch={() => setQuery("")}
-                  onShowAll={() => setFilter("all")}
-                />
-              </div>
-            </Scroll>
-          </section>
-          <LibraryFooter storedAudioBytes={storedBytes} onManageStorage={actions.manageStorage} />
-        </div>
-      </main>
-      {selecting && (
-        <BulkBar
-          selectedCount={selectedIds.size}
-          visibleCount={visible.length}
-          onSelectAll={selectAll}
-          onExport={() => actions.exportFiles(selectedProjects.map((project) => project.id))}
-          onDelete={() => deleteProjects(selectedProjects)}
-          onClear={clear}
-        />
-      )}
-      {shownMenu && (
-        <ProjectMenu
-          key={menuKey(shownMenu)}
-          project={shownMenu.project}
-          anchor={menu === shownMenu ? menu.anchor : null}
-          onClose={closeMenu}
-          onOpen={actions.open}
-          onRename={setRenaming}
-          onDuplicate={actions.duplicate}
-          onExport={(id) => actions.exportFiles([id])}
-          onDelete={(project) => deleteProjects([project])}
-        />
-      )}
-      {renaming && (
-        <RenameProjectModal
-          title={renaming.title}
-          onRename={(title) => {
-            actions.rename(renaming.id, title);
-            setRenaming(null);
-          }}
-          onClose={() => setRenaming(null)}
-        />
-      )}
-    </div>
+            {unison.showWantedShelf && <MostWantedShelf className={cn(RISE, "[animation-delay:90ms]")} />}
+            <section
+              aria-label="All projects"
+              className={cn(RISE, "[animation-delay:120ms] flex flex-col flex-1 min-h-90 select-none")}
+            >
+              <LibraryToolbar
+                count={live.length}
+                filter={filter}
+                counts={counts}
+                showUnisonFilter={showUnison}
+                onFilterChange={setFilter}
+                query={query}
+                onQueryChange={setQuery}
+                searchRef={searchRef}
+                sort={sort}
+                onSortChange={setSort}
+                view={view}
+                onViewChange={(next) => setSetting("libraryView", next)}
+                linkableCount={unison.matches.length}
+                onLinkAll={() => void linkToUnison(unison.matches)}
+              />
+              {view === "list" && <ProjectListColumns showUnison={showUnison} />}
+              <Scroll className="flex-1 min-h-0 -ml-3 -mr-13">
+                <div className="pl-3 pr-13 pb-4">
+                  <LibraryBody
+                    state={indexState}
+                    view={view}
+                    collection={collection}
+                    query={query}
+                    filter={filter}
+                    onClearSearch={() => setQuery("")}
+                    onShowAll={() => setFilter("all")}
+                  />
+                </div>
+              </Scroll>
+            </section>
+            <LibraryFooter storedAudioBytes={storedBytes} onManageStorage={actions.manageStorage} />
+          </div>
+        </main>
+        {selecting && (
+          <BulkBar
+            selectedCount={selectedIds.size}
+            visibleCount={visible.length}
+            onSelectAll={selectAll}
+            onExport={() => actions.exportFiles(selectedProjects.map((project) => project.id))}
+            onDelete={() => deleteProjects(selectedProjects)}
+            onClear={clear}
+          />
+        )}
+        {shownMenu && (
+          <ProjectMenu
+            key={menuKey(shownMenu)}
+            project={shownMenu.project}
+            anchor={menu === shownMenu ? menu.anchor : null}
+            onClose={closeMenu}
+            onOpen={actions.open}
+            onRename={setRenaming}
+            onDuplicate={actions.duplicate}
+            onExport={(id) => actions.exportFiles([id])}
+            onDelete={(project) => deleteProjects([project])}
+          />
+        )}
+        {renaming && (
+          <RenameProjectModal
+            title={renaming.title}
+            onRename={(title) => {
+              actions.rename(renaming.id, title);
+              setRenaming(null);
+            }}
+            onClose={() => setRenaming(null)}
+          />
+        )}
+      </div>
+    </LinkedLyricVideos>
   );
 };
 

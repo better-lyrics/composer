@@ -1,21 +1,24 @@
-import { type LibrarySort, isLibrarySort } from "@/domain/project/library-order";
+import { IconArrowsSort, IconChevronDown, IconSearch } from "@tabler/icons-react";
+import { useMemo } from "react";
+import { isLibrarySort } from "@/domain/project/library-order";
 import type { LibraryView } from "@/domain/project/library-preferences";
-import { LIBRARY_FILTERS, type LibraryFilter } from "@/domain/project/library-view";
+import { LIBRARY_FILTERS, type LibraryFilter, type LibraryOrder } from "@/domain/project/library-view";
+import { isUnisonSort } from "@/domain/unison/library-sort";
 import { getEffectiveKeysArray, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { IconField } from "@/ui/icon-field";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import {
   LIBRARY_FILTER_LABELS,
-  LIBRARY_SORT_LABELS,
+  LIBRARY_ORDER_LABELS,
+  LIBRARY_ORDER_OPTIONS_WITH_UNISON,
   LIBRARY_SORT_OPTIONS,
   LIBRARY_VIEW_TOGGLE_OPTIONS,
 } from "@/ui/projects/library-options";
 import { SegmentedControl } from "@/ui/segmented-control";
 import { Select } from "@/ui/select";
+import { BetterLyricsMark } from "@/ui/unison/better-lyrics-mark";
 import { formatShortcut } from "@/utils/format-key";
-import { IconArrowsSort, IconChevronDown, IconSearch } from "@tabler/icons-react";
-import { useMemo } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -23,14 +26,17 @@ interface LibraryToolbarProps {
   count: number;
   filter: LibraryFilter;
   counts: Record<LibraryFilter, number>;
+  showUnisonFilter: boolean;
   onFilterChange: (filter: LibraryFilter) => void;
   query: string;
   onQueryChange: (query: string) => void;
   searchRef: React.Ref<HTMLInputElement>;
-  sort: LibrarySort;
-  onSortChange: (sort: LibrarySort) => void;
+  sort: LibraryOrder;
+  onSortChange: (sort: LibraryOrder) => void;
   view: LibraryView;
   onViewChange: (view: LibraryView) => void;
+  linkableCount: number;
+  onLinkAll: () => void;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -43,6 +49,7 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({
   count,
   filter,
   counts,
+  showUnisonFilter,
   onFilterChange,
   query,
   onQueryChange,
@@ -51,13 +58,20 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({
   onSortChange,
   view,
   onViewChange,
+  linkableCount,
+  onLinkAll,
 }) => {
   const searchShortcut = useShortcutBindingsStore(() => formatShortcut(getEffectiveKeysArray(SEARCH_SHORTCUT_ID)));
   const filterOptions = useMemo(
-    () => LIBRARY_FILTERS.map((value) => ({ value, label: LIBRARY_FILTER_LABELS[value], count: counts[value] })),
-    [counts],
+    () =>
+      LIBRARY_FILTERS.flatMap((value) =>
+        value === "unison" && !showUnisonFilter
+          ? []
+          : [{ value, label: LIBRARY_FILTER_LABELS[value], count: counts[value] }],
+      ),
+    [counts, showUnisonFilter],
   );
-  const sortLabel = LIBRARY_SORT_LABELS[sort];
+  const sortLabel = LIBRARY_ORDER_LABELS[sort];
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pb-3">
@@ -71,6 +85,12 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({
         onChange={onFilterChange}
       />
       <div className="flex flex-[1_1_420px] items-center justify-end gap-3 min-w-0">
+        {linkableCount > 0 && (
+          <Button variant="secondary" size="lg" hasIcon onClick={onLinkAll} className="shrink-0 whitespace-nowrap">
+            <BetterLyricsMark className="size-4" />
+            Link {linkableCount} to Unison
+          </Button>
+        )}
         <IconField
           ref={searchRef}
           icon={IconSearch}
@@ -92,9 +112,9 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({
           aria-label="Sort projects"
           value={sort}
           onChange={(next) => {
-            if (isLibrarySort(next)) onSortChange(next);
+            if (isLibrarySort(next) || isUnisonSort(next)) onSortChange(next);
           }}
-          options={LIBRARY_SORT_OPTIONS}
+          options={showUnisonFilter ? LIBRARY_ORDER_OPTIONS_WITH_UNISON : LIBRARY_SORT_OPTIONS}
           trigger={
             <Button
               variant="secondary"

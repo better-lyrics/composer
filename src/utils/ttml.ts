@@ -18,6 +18,7 @@ import {
   renderTransliterationContent,
 } from "@/utils/ttml-alternate-content";
 import { isExportedLine, keyedExportLines } from "@/utils/ttml-line-keys";
+import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import { emitWordSpan, escapeXml, escapeXmlAttribute } from "@/utils/ttml-markup";
 
 // -- Constants ----------------------------------------------------------------
@@ -80,15 +81,16 @@ function generateTTML({
   if (youtubeVideoId) {
     parts.push(`${ind(3)}<composer:meta key="${YOUTUBE_VIDEO_ID_KEY}" value="${escapeXmlAttribute(youtubeVideoId)}"/>`);
   }
-  for (const agent of agents) {
-    if (agent.name) {
+  agents.forEach((agent, position) => {
+    // The importer names an unnamed singer for display only; exporting that name would edit the lyrics.
+    if (agent.name && agent.name !== placeholderAgentName(position)) {
       parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXmlAttribute(agent.id)}" type="${agent.type}">`);
       parts.push(`${ind(4)}<ttm:name>${escapeXml(agent.name)}</ttm:name>`);
       parts.push(`${ind(3)}</ttm:agent>`);
     } else {
       parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXmlAttribute(agent.id)}" type="${agent.type}"/>`);
     }
-  }
+  });
   if (groups && groups.length > 0) {
     parts.push(`${ind(3)}<composer:groups>`);
     for (const g of groups) {

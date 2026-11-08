@@ -9,6 +9,7 @@ import { createMetadataSlice, createProjectInitialState } from "@/stores/project
 import { createSnapPointsSlice } from "@/stores/project/snap-points-slice";
 import type { ProjectState, ProjectStore } from "@/stores/project/types";
 import { createUiSlice } from "@/stores/project/ui-slice";
+import { createUnisonLinkSlice } from "@/stores/project/unison-link-slice";
 import { create } from "zustand";
 
 // -- Initial State ------------------------------------------------------------
@@ -32,6 +33,7 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
   ...createSnapPointsSlice(set, get, api),
   ...createBeatGridSlice(set, get, api),
   ...createAlignmentReviewSlice(set, get, api),
+  ...createUnisonLinkSlice(set, get, api),
 }));
 
 export { useProjectStore, INITIAL_STATE };

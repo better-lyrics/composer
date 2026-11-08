@@ -1,6 +1,9 @@
+import { IconDots } from "@tabler/icons-react";
+import { memo } from "react";
 import { displayArtists, displayTitle, hasArtists } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { hasLyrics, progressDescription, projectStage, syncedPercent } from "@/domain/project/progress";
+import { useProjectArtSrc } from "@/hooks/unison/useProjectArtSrc";
 import { IconButton } from "@/ui/icon-button";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
 import { ProgressBar } from "@/ui/progress-bar";
@@ -10,8 +13,7 @@ import { SelectCheckbox } from "@/ui/select-checkbox";
 import { cn } from "@/utils/cn";
 import { AudioStatusLabel } from "@/views/library/audio-status-label";
 import type { ProjectItemProps } from "@/views/library/project-row";
-import { IconDots } from "@tabler/icons-react";
-import { memo } from "react";
+import { UnisonArtLink, UnisonCardChip } from "@/views/library/unison-cell";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -27,9 +29,10 @@ const REVEAL_ON_CARD = cn(
 
 // -- Sub-components -------------------------------------------------------------
 
-const CardProgressLabel: React.FC<{ project: ProjectIndexEntry }> = ({ project }) => {
+const CardProgressLabel: React.FC<{ project: ProjectIndexEntry; compact: boolean }> = ({ project, compact }) => {
   if (!hasLyrics(project)) return <span>No lyrics</span>;
-  if (projectStage(project) === "synced") return <SyncedBadge withLabel />;
+  if (projectStage(project) === "synced")
+    return <SyncedBadge withLabel={!compact} className={cn(compact && "size-4")} />;
   return <span className="tabular-nums">{syncedPercent(project)}%</span>;
 };
 
@@ -39,10 +42,12 @@ const ProjectCardContent: React.FC<ProjectItemProps> = ({
   project,
   isSelected,
   isMenuOpen,
+  unison,
   onOpen,
   onToggleSelect,
   onOpenMenu,
 }) => {
+  const artSrc = useProjectArtSrc(project);
   const title = displayTitle(project.title);
   return (
     <li
@@ -57,7 +62,7 @@ const ProjectCardContent: React.FC<ProjectItemProps> = ({
     >
       <div className="relative z-1 pointer-events-none transition-[translate] duration-160 ease-emphasized group-hover/card:-translate-y-0.5">
         <ProjectArt
-          src={project.thumbnailDataUrl}
+          src={artSrc}
           size="card"
           className="group-data-selected/card:shadow-[0_0_0_2px_var(--color-composer-accent)]"
         />
@@ -67,6 +72,13 @@ const ProjectCardContent: React.FC<ProjectItemProps> = ({
           onToggle={(range) => onToggleSelect(project.id, range)}
           className={cn("absolute top-2.5 left-2.5 z-2 pointer-events-auto checked:opacity-100", REVEAL_ON_CARD)}
         />
+        {unison && (
+          <UnisonArtLink
+            project={project}
+            unison={unison}
+            className="absolute bottom-2 left-2 z-2 pointer-events-auto"
+          />
+        )}
         <IconButton
           variant="ghost"
           label={`More actions for ${title}`}
@@ -99,8 +111,13 @@ const ProjectCardContent: React.FC<ProjectItemProps> = ({
       </div>
       <ProgressBar percent={syncedPercent(project)} label={progressDescription(project)} />
       <div className="flex items-center justify-between gap-2 text-xs text-composer-text-muted">
-        <AudioStatusLabel project={project} compact />
-        <CardProgressLabel project={project} />
+        <span className="min-w-0 truncate">
+          <AudioStatusLabel project={project} compact />
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          {unison && <UnisonCardChip project={project} unison={unison} />}
+          <CardProgressLabel project={project} compact={Boolean(unison && project.unisonLyricId)} />
+        </span>
       </div>
     </li>
   );

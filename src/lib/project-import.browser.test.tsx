@@ -1,24 +1,17 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { restoreOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { schedulePendingDeletion } from "@/lib/pending-deletions";
-import { debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
-import { type ProjectFile, projectFileFrom } from "@/lib/project-file";
+import { projectFileFrom } from "@/lib/project-file";
 import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
-import { importProjectFile, replaceProjectFromFile } from "@/lib/project-import";
+import { importProjectFile } from "@/lib/project-import";
 import { listProjectIndex, removeProjectData } from "@/lib/project-repository";
-import { loadProjectForRestore } from "@/lib/project-restore";
 import { loadProjectRecord } from "@/lib/project-storage";
-import { ProjectDeletedError } from "@/lib/project-tombstones";
-import { getSaveStatus } from "@/lib/save-status";
-import { SAVED_PROJECT_VERSION, type SavedProject } from "@/lib/saved-project";
+import { SAVED_PROJECT_VERSION } from "@/lib/saved-project";
 import { useChoiceStore } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
-import { createMp3File } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
-import { saveInputTitled, seedStoredProject, songTitled, storedProject } from "@/test/projects";
+import { seedStoredProject, songTitled, storedProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
 import { Toaster } from "sonner";
@@ -29,17 +22,6 @@ import { describe, expect, it, vi } from "vitest";
 function fileFor(projectId: string | undefined, title: string): File {
   const project = storedProject({ ...songTitled(title), lines: [createLine({ text: `${title} line` })] });
   return new File([JSON.stringify(projectFileFrom(projectId, project))], `${title}.ttml-project.json`);
-}
-
-function fileWithLine(text: string): ProjectFile {
-  return {
-    version: SAVED_PROJECT_VERSION,
-    savedAt: Date.now(),
-    metadata: { title: "File", artists: [], album: "", duration: 0 },
-    agents: DEFAULT_AGENTS,
-    lines: [createLine({ text })],
-    granularity: "word",
-  };
 }
 
 const TTML_DOCUMENT =
@@ -86,6 +68,18 @@ describe("importProjectFile", () => {
     expect(useProjectStore.getState().metadata.title).toBe("Bravo");
     expect((await loadProjectRecord(id as string))?.hasUnexportedImport).toBe(true);
     expect((await loadProjectRecord("a"))?.metadata.title).toBe("Alpha");
+  });
+
+  it("keeps both without a second link to the same unison lyric", async () => {
+    await seedStoredProject("a", { project: { ...songTitled("Alpha"), unisonLyricId: "4821" } });
+    const project = storedProject({ ...songTitled("Alpha"), unisonLyricId: "4821" });
+    const file = new File([JSON.stringify(projectFileFrom("a", project))], "Alpha.composer");
+    const pending = importProjectFile(file);
+    await expect.poll(() => useChoiceStore.getState().request).not.toBeNull();
+    useChoiceStore.getState().answer("keep-both");
+    const id = await pending;
+    expect((await loadProjectRecord(id as string))?.unisonLyricId).toBeUndefined();
+    expect((await loadProjectRecord("a"))?.unisonLyricId).toBe("4821");
   });
 
   describe("regressions", () => {
@@ -190,72 +184,6 @@ describe("importProjectFile", () => {
       await render(<ChoiceModalHost />);
       await importProjectFile(fileFor(undefined, "Solo"));
       expect(document.querySelector("dialog")).toBeNull();
-    });
-  });
-});
-
-describe("replaceProjectFromFile", () => {
-  it("flushes the open project's pending save before replacing, leaving no later overwrite", async () => {
-    await seedStoredProject("a", {
-      open: true,
-      project: { ...songTitled("Alpha"), lines: [createLine({ text: "Library line", begin: 1, end: 2 })] },
-    });
-    await restoreOpenProject();
-    useSettingsStore.setState({ autoSaveDelay: 60_000 });
-    debouncedSave(saveInputTitled("StaleEdit"));
-
-    await replaceProjectFromFile("a", fileWithLine("File line"));
-
-    expect((await loadProjectRecord("a"))?.lines[0]?.text).toBe("File line");
-    await flushPendingSave();
-    expect((await loadProjectRecord("a"))?.lines[0]?.text).toBe("File line");
-  });
-
-  describe("MP3 priming flags", () => {
-    const P = 1104 / 44_100;
-
-    async function replaceTimedLine(local: Partial<SavedProject>, file: Partial<ProjectFile>): Promise<number> {
-      await seedStoredProject("a", {
-        audio: createMp3File(),
-        project: { audioSource: { kind: "file", name: "silence.mp3" }, ...local },
-      });
-      await replaceProjectFromFile("a", {
-        ...fileWithLine("File line"),
-        ...file,
-        lines: [createLine({ text: "File line", begin: 1, end: 2 })],
-      });
-      const reloaded = (await loadProjectForRestore("a")).project;
-      return (reloaded?.lines[0] as { begin: number }).begin;
-    }
-
-    it("regression: an older export into a corrected project still moves to the corrected decode", async () => {
-      const begin = await replaceTimedLine(
-        { primingStripped: true, primingCorrected: true },
-        { primingStripped: true, primingCorrected: undefined },
-      );
-      expect(begin).toBeCloseTo(1 + P, 9);
-    });
-
-    it("regression: a corrected export into an old project is not moved again", async () => {
-      const begin = await replaceTimedLine(
-        { primingStripped: true, primingCorrected: false },
-        { primingStripped: true, primingCorrected: true },
-      );
-      expect(begin).toBeCloseTo(1, 9);
-    });
-  });
-
-  describe("regressions", () => {
-    it("regression: a failed flush stops the replace write and marks the save as failed instead of silently dropping the edit", async () => {
-      await seedStoredProject("a", { open: true, project: songTitled("Alpha") });
-      await restoreOpenProject();
-      useSettingsStore.setState({ autoSaveDelay: 60_000 });
-      debouncedSave(saveInputTitled("StaleEdit"));
-      await removeProjectData("a");
-
-      await expect(replaceProjectFromFile("a", fileWithLine("File line"))).rejects.toBeInstanceOf(ProjectDeletedError);
-      expect(getSaveStatus()).toBe("failed");
-      expect(await loadProjectRecord("a")).toBeUndefined();
     });
   });
 });

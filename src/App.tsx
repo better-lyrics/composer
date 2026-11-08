@@ -18,6 +18,7 @@ import { useProjectChannel } from "@/hooks/useProjectChannel";
 import { useProjectShortcuts } from "@/hooks/useProjectShortcuts";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
 import { useSaveShortcut } from "@/hooks/useSaveShortcut";
+import { useUnisonFeatures } from "@/hooks/unison/useUnisonFeatures";
 import { useStorageMaintenance } from "@/hooks/useStorageMaintenance";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
 import { appQueryClient } from "@/lib/app-query-client";
@@ -35,14 +36,15 @@ import { HelpModal } from "@/ui/help-modal";
 import { OverlayHosts } from "@/ui/overlay-hosts";
 import { APP_SETTING_LINK_HOST, SettingLinkContext } from "@/ui/setting-link-context";
 import { SettingsModal } from "@/ui/settings-modal";
-import { EDITOR_PATH, screenForPath } from "@/utils/app-routes";
+import { EDITOR_PATH, LIBRARY_PATH, screenForPath } from "@/utils/app-routes";
 import { EditorScreen } from "@/views/editor-screen";
 import { LibraryScreen } from "@/views/library/library-screen";
 import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
+import { UnisonScreen } from "@/views/unison/unison-screen";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { LazyMotion, domAnimation } from "motion/react";
 import { Activity, useCallback, useEffect, useEffectEvent, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -60,6 +62,9 @@ const AppShell: React.FC = () => {
   const navigate = useNavigate();
   const screen = screenForPath(pathname);
   const isEditor = screen === "editor";
+  const unisonEnabled = useUnisonFeatures().enabled;
+  const [unisonVisited, setUnisonVisited] = useState(screen === "unison");
+  if (screen === "unison" && !unisonVisited) setUnisonVisited(true);
   const setActiveTab = useProjectStore((s) => s.setActiveTab);
   const source = useAudioStore((s) => s.source);
   const helpOpen = useUIStore((s) => s.helpOpen);
@@ -168,14 +173,16 @@ const AppShell: React.FC = () => {
         initialQuery={helpLocation.query}
         onClose={closeHelp}
       />
-      <SettingsModal
-        key={`settings-${settingsSession}`}
-        isOpen={settingsOpen}
-        onClose={closeSettings}
-      />
-      <Activity mode={isEditor ? "hidden" : "visible"}>
+      <SettingsModal key={`settings-${settingsSession}`} isOpen={settingsOpen} onClose={closeSettings} />
+      <Activity mode={screen === "library" ? "visible" : "hidden"}>
         <LibraryScreen />
       </Activity>
+      {unisonVisited && unisonEnabled && (
+        <Activity mode={screen === "unison" ? "visible" : "hidden"}>
+          <UnisonScreen />
+        </Activity>
+      )}
+      {screen === "unison" && !unisonEnabled && <Navigate to={LIBRARY_PATH} replace />}
       <Activity mode={isEditor ? "visible" : "hidden"}>
         <EditorScreen />
       </Activity>

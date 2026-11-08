@@ -27,6 +27,7 @@ import { StorageProtectionSetting } from "@/ui/settings/storage/storage-protecti
 import { StorageUsageSetting } from "@/ui/settings/storage/storage-usage-setting";
 import { ThemeSettings } from "@/ui/settings/theme/theme-settings";
 import { VocalModelSetting } from "@/ui/settings/vocal-model-setting";
+import { UnisonAccountSetting } from "@/ui/settings/unison-account-setting";
 import {
   ANALYSIS_WINDOW_OPTIONS,
   FREQUENCY_SCALE_OPTIONS,
@@ -63,6 +64,11 @@ const asMilliseconds = (seconds: number) => `${(seconds * 1000).toFixed(0)}ms`;
 
 const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   showShortcutHints: TOGGLE,
+  unisonEnabled: TOGGLE,
+  unisonAccount: { kind: "custom", Component: UnisonAccountSetting },
+  unisonLibraryColumn: TOGGLE,
+  unisonLibraryNotices: TOGGLE,
+  unisonWantedShelf: TOGGLE,
   showSyllableIndicators: TOGGLE,
   autoExtractBackgroundVocals: TOGGLE,
   mergeStandaloneBackgroundLines: TOGGLE,

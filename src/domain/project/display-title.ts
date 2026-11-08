@@ -16,8 +16,13 @@ function hasArtists(artists: readonly string[]): boolean {
   return namedArtists(artists).length > 0;
 }
 
+// The one-line credit Unison stores and the library shows.
+function artistCredit(artists: readonly string[]): string {
+  return namedArtists(artists).join(", ");
+}
+
 function displayArtists(artists: readonly string[]): string {
-  return namedArtists(artists).join(", ") || "No artist";
+  return artistCredit(artists) || "No artist";
 }
 
 function youtubeSourceTitle(title: string, videoId: string): string {
@@ -26,4 +31,4 @@ function youtubeSourceTitle(title: string, videoId: string): string {
 
 // -- Exports ------------------------------------------------------------------
 
-export { displayTitle, quotedTitle, displayArtists, hasArtists, namedArtists, youtubeSourceTitle };
+export { artistCredit, displayArtists, displayTitle, hasArtists, namedArtists, quotedTitle, youtubeSourceTitle };

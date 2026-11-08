@@ -1,5 +1,6 @@
 import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";
+import { ExportSidePanel } from "@/views/export/export-side-panel";
 import { MetadataPanel } from "@/views/export/metadata-panel";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
@@ -293,13 +294,14 @@ describe("MetadataPanel · language validation", () => {
   describe("regressions", () => {
     it("regression: puts the expanded fields in a scroll area so a tall panel stays reachable", async () => {
       seedMetadata();
-      const screen = await render(<MetadataPanel />);
+      // The Unison cards share the column now, so the side panel scrolls as one, Song details heading included.
+      const screen = await render(<ExportSidePanel />);
       const title = screen.getByRole("textbox", { name: "Title" });
       await expect.element(title).toBeInTheDocument();
       await expect.poll(() => title.element().closest("[data-overlayscrollbars-viewport]")).not.toBeNull();
       expect(
         screen.getByRole("heading", { name: "Song details" }).element().closest("[data-overlayscrollbars-viewport]"),
-      ).toBeNull();
+      ).toBe(title.element().closest("[data-overlayscrollbars-viewport]"));
     });
   });
 });

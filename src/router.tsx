@@ -1,6 +1,6 @@
 import { ErrorFallback } from "@/pages/error-fallback";
 import { GUIDE_SLUGS } from "@/pages/guides/slugs";
-import { EDITOR_SEGMENT } from "@/utils/app-routes";
+import { EDITOR_SEGMENT, UNISON_SEGMENT } from "@/utils/app-routes";
 import type { RouteRecord } from "vite-react-ssg";
 
 const errorElement = <ErrorFallback />;
@@ -14,6 +14,7 @@ const routes: RouteRecord[] = [
     children: [
       { index: true, element: null },
       { path: EDITOR_SEGMENT, element: null },
+      { path: UNISON_SEGMENT, element: null },
     ],
   },
   {

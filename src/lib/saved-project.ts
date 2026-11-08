@@ -39,6 +39,7 @@ interface SavedProject {
   ttmlEditState?: TtmlEditState;
   alignedTimings?: unknown;
   alignmentNoticeDismissed?: boolean;
+  unisonLyricId?: string;
   playedRanges?: unknown;
 }
 

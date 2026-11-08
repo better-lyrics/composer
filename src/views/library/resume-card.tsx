@@ -1,15 +1,16 @@
+import { IconPlayerPlayFilled } from "@tabler/icons-react";
+import { useId } from "react";
 import { displayArtists, displayTitle } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { hasLyrics, progressDescription, syncedPercent } from "@/domain/project/progress";
 import type { ProjectTab } from "@/domain/project/tab";
+import { useProjectArtSrc } from "@/hooks/unison/useProjectArtSrc";
 import { Button } from "@/ui/button";
 import { KawarpBackdrop } from "@/ui/kawarp-backdrop";
 import { ProgressBar } from "@/ui/progress-bar";
 import { ProjectArt } from "@/ui/projects/project-art";
 import { cn } from "@/utils/cn";
 import { formatRelativeTimeInline } from "@/utils/format-relative-time";
-import { IconPlayerPlayFilled } from "@tabler/icons-react";
-import { useId } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -66,6 +67,7 @@ const ResumeProgress: React.FC<{ project: ProjectIndexEntry }> = ({ project }) =
 // -- Component ----------------------------------------------------------------
 
 const ResumeCard: React.FC<ResumeCardProps> = ({ project, now, onOpen, className }) => {
+  const artSrc = useProjectArtSrc(project);
   const titleId = useId();
   const action = project.lastTab ? RESUME_ACTIONS[project.lastTab] : DEFAULT_RESUME_ACTION;
 
@@ -76,7 +78,7 @@ const ResumeCard: React.FC<ResumeCardProps> = ({ project, now, onOpen, className
         className="absolute inset-0 -z-2 overflow-hidden rounded-[inherit] [contain:strict]"
       />
       <div className="flex items-center gap-5">
-        <ProjectArt src={project.thumbnailDataUrl} size="hero" className="bg-white/10 [&_svg]:text-white" />
+        <ProjectArt src={artSrc} size="hero" className="bg-white/10 [&_svg]:text-white" />
         <div className="flex-1 min-w-0">
           <p className="mb-1.5 text-[13px] text-white/70">Edited {formatRelativeTimeInline(project.updatedAt, now)}</p>
           <h2

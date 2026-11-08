@@ -1,6 +1,5 @@
 import { isValidLanguageTag, normalizeLanguageTag } from "@/domain/project/language";
 import { useProjectStore } from "@/stores/project";
-import { Scroll } from "@/ui/scroll";
 import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
 import { ExtraFieldList } from "@/views/export/extra-field-list";
 import { MetadataFieldList } from "@/views/export/metadata-field-list";
@@ -48,7 +47,7 @@ const MetadataPanel: React.FC = () => {
   const { shown, suggestions } = musicBrainz;
 
   return (
-    <aside aria-label="Song details" className="flex flex-col min-h-0 border-l border-(--divider)">
+    <aside aria-label="Song details" className="flex flex-col">
       <div className="flex h-14 shrink-0 items-center justify-between gap-2 pl-4 pr-3 shadow-[inset_0_-1px_0_var(--divider)]">
         <h3 ref={titleRef} tabIndex={-1} className="text-sm font-bold text-composer-text outline-none select-none">
           Song details
@@ -56,107 +55,107 @@ const MetadataPanel: React.FC = () => {
         <MusicBrainzHeaderSlot panel={musicBrainz} onRequest={thenFocusTitle(musicBrainz.request)} />
       </div>
 
-      <Scroll className="flex-1 min-h-0">
-        <div className="flex flex-col gap-4 p-4">
-          {shown && (
-            <MatchStrip
-              matches={shown.match.matches}
-              chosen={shown.match.chosen}
-              details={shown.details}
-              onChoose={musicBrainz.choose}
-            />
-          )}
-
-          <label className="flex flex-col gap-1.5">
-            <span className={DETAILS_LABEL_STYLES}>Title</span>
-            <input
-              type="text"
-              aria-label="Title"
-              value={metadata.title}
-              placeholder="Song title"
-              onChange={(e) => setMetadata({ title: e.target.value })}
-              className={DETAILS_FIELD_STYLES}
-            />
-          </label>
-
-          <SuggestedField
-            fieldName="Album"
-            value={metadata.album}
-            placeholder="Album name"
-            onChange={(e) => setMetadata({ album: e.target.value })}
-            suggestion={suggestions.album}
-            onUseSuggestion={(album) => musicBrainz.accept({ album })}
+      <div className="flex flex-col gap-4 p-4">
+        {shown && (
+          <MatchStrip
+            matches={shown.match.matches}
+            chosen={shown.match.chosen}
+            details={shown.details}
+            onChoose={musicBrainz.choose}
           />
+        )}
 
-          <SuggestedField
-            fieldName="ISRC"
-            className="font-mono font-medium tabular-nums"
-            aria-invalid={isrcInvalid}
-            value={isrcValue}
-            placeholder="e.g. USQX91700001"
-            onChange={(e) => handleIsrcChange(e.target.value)}
-            suggestion={suggestions.isrc}
-            onUseSuggestion={(isrc) => musicBrainz.accept({ isrc: normalizeIsrc(isrc) })}
-          >
-            {isrcInvalid && (
-              <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
-                Invalid ISRC ・ expected 12 characters like USQX91700001
-              </span>
-            )}
-          </SuggestedField>
-
-          <label className="flex flex-col gap-1.5">
-            <span className={DETAILS_LABEL_STYLES}>Language</span>
-            <input
-              type="text"
-              aria-label="Language"
-              aria-describedby={languageHintId}
-              aria-invalid={languageInvalid}
-              value={languageValue}
-              placeholder="e.g. en, ja, pt-BR"
-              onChange={(e) => handleLanguageChange(e.target.value)}
-              className={DETAILS_FIELD_STYLES}
-            />
-            {languageInvalid && (
-              <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
-                Invalid language ・ expected a BCP-47 tag like en or pt-BR
-              </span>
-            )}
-            <span id={languageHintId} className="text-xs text-(--muted) select-none">
-              BCP-47 tag ・ leave blank to let players detect it
-            </span>
-          </label>
-
-          <MetadataFieldList
-            label="Artists"
-            itemNoun="Artist"
-            placeholder="Artist name"
-            values={metadata.artists}
-            onChange={(next) => setMetadata({ artists: next })}
-            suggestion={suggestions.artists}
-            onUseSuggestion={(artists) => musicBrainz.accept({ artists })}
+        <label className="flex flex-col gap-1.5">
+          <span className={DETAILS_LABEL_STYLES}>Title</span>
+          <input
+            type="text"
+            aria-label="Title"
+            value={metadata.title}
+            placeholder="Song title"
+            onChange={(e) => setMetadata({ title: e.target.value })}
+            className={DETAILS_FIELD_STYLES}
           />
+        </label>
 
-          <MetadataFieldList
-            label="Songwriters"
-            itemNoun="Songwriter"
-            placeholder="Songwriter name"
-            values={metadata.songwriters ?? []}
-            onChange={(next) => setMetadata({ songwriters: next })}
-            suggestion={suggestions.songwriters}
-            onUseSuggestion={(songwriters) => musicBrainz.accept({ songwriters })}
-          />
-
-          <ExtraFieldList values={metadata.extra ?? {}} onChange={(next) => setMetadata({ extra: next })} />
-        </div>
-      </Scroll>
-      {shown && (
-        <MusicBrainzFooter
-          recordingId={shown.match.chosen.recording.id}
-          fillCount={musicBrainz.fillCount}
-          onDismiss={thenFocusTitle(musicBrainz.dismiss)}
-          onFill={thenFocusTitle(musicBrainz.fillAll)}
+        <SuggestedField
+          fieldName="Album"
+          value={metadata.album}
+          placeholder="Album name"
+          onChange={(e) => setMetadata({ album: e.target.value })}
+          suggestion={suggestions.album}
+          onUseSuggestion={(album) => musicBrainz.accept({ album })}
         />
+
+        <SuggestedField
+          fieldName="ISRC"
+          className="font-mono font-medium tabular-nums"
+          aria-invalid={isrcInvalid}
+          value={isrcValue}
+          placeholder="e.g. USQX91700001"
+          onChange={(e) => handleIsrcChange(e.target.value)}
+          suggestion={suggestions.isrc}
+          onUseSuggestion={(isrc) => musicBrainz.accept({ isrc: normalizeIsrc(isrc) })}
+        >
+          {isrcInvalid && (
+            <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
+              Invalid ISRC ・ expected 12 characters like USQX91700001
+            </span>
+          )}
+        </SuggestedField>
+
+        <label className="flex flex-col gap-1.5">
+          <span className={DETAILS_LABEL_STYLES}>Language</span>
+          <input
+            type="text"
+            aria-label="Language"
+            aria-describedby={languageHintId}
+            aria-invalid={languageInvalid}
+            value={languageValue}
+            placeholder="e.g. en, ja, pt-BR"
+            onChange={(e) => handleLanguageChange(e.target.value)}
+            className={DETAILS_FIELD_STYLES}
+          />
+          {languageInvalid && (
+            <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
+              Invalid language ・ expected a BCP-47 tag like en or pt-BR
+            </span>
+          )}
+          <span id={languageHintId} className="text-xs text-(--muted) select-none">
+            BCP-47 tag ・ leave blank to let players detect it
+          </span>
+        </label>
+
+        <MetadataFieldList
+          label="Artists"
+          itemNoun="Artist"
+          placeholder="Artist name"
+          values={metadata.artists}
+          onChange={(next) => setMetadata({ artists: next })}
+          suggestion={suggestions.artists}
+          onUseSuggestion={(artists) => musicBrainz.accept({ artists })}
+        />
+
+        <MetadataFieldList
+          label="Songwriters"
+          itemNoun="Songwriter"
+          placeholder="Songwriter name"
+          values={metadata.songwriters ?? []}
+          onChange={(next) => setMetadata({ songwriters: next })}
+          suggestion={suggestions.songwriters}
+          onUseSuggestion={(songwriters) => musicBrainz.accept({ songwriters })}
+        />
+
+        <ExtraFieldList values={metadata.extra ?? {}} onChange={(next) => setMetadata({ extra: next })} />
+      </div>
+      {shown && (
+        <div className="sticky bottom-0 bg-composer-bg">
+          <MusicBrainzFooter
+            recordingId={shown.match.chosen.recording.id}
+            fillCount={musicBrainz.fillCount}
+            onDismiss={thenFocusTitle(musicBrainz.dismiss)}
+            onFill={thenFocusTitle(musicBrainz.fillAll)}
+          />
+        </div>
       )}
     </aside>
   );

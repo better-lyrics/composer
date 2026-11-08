@@ -1,6 +1,7 @@
 import { isHexColor } from "@/domain/theme/color";
 import type { TokenKey } from "@/domain/theme/model";
-import { useState } from "react";
+import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
+import { useEffect, useRef, useState } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -33,6 +34,30 @@ const ThemeTokenInput: React.FC<ThemeTokenInputProps> = ({ tokenKey, label, valu
     setDraft(value);
   }
 
+  // Every theme write restyles the whole app, and the native picker fires several times a frame while dragging.
+  const [pickedColor, setPickedColor] = useState<string | null>(null);
+  const latestPick = useRef("");
+  const pendingPick = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (pendingPick.current === null) return;
+      cancelNextFrame(pendingPick.current);
+      pendingPick.current = null;
+      setPickedColor(null);
+    },
+    [],
+  );
+  const pickColor = (picked: string) => {
+    latestPick.current = picked;
+    setPickedColor(picked);
+    pendingPick.current ??= nextFrame(() => {
+      pendingPick.current = null;
+      setPickedColor(null);
+      onChange(latestPick.current);
+    });
+  };
+  const swatchColor = pickedColor ?? value;
+
   const commitHex = (raw: string) => {
     const trimmed = raw.trim();
     if (isHexColor(trimmed)) {
@@ -43,18 +68,18 @@ const ThemeTokenInput: React.FC<ThemeTokenInputProps> = ({ tokenKey, label, valu
   };
 
   return (
-    <label className="flex items-center gap-2.5 select-none" data-token-key={tokenKey}>
+    <div className="flex items-center gap-2.5 select-none" data-token-key={tokenKey}>
       <span className="flex-1 min-w-0 text-[13.5px] font-medium text-composer-text">{label}</span>
       <span className="flex items-center gap-2.5">
         <span
           className="relative size-7.5 shrink-0 rounded-lg shadow-[inset_0_0_0_1px_var(--edge-strong)] has-[:focus-visible]:shadow-[inset_0_0_0_1px_var(--edge-strong),0_0_0_2px_var(--pop),0_0_0_3.5px_var(--ink)]"
-          style={{ backgroundColor: value }}
+          style={{ backgroundColor: swatchColor }}
         >
           <input
             type="color"
             className="absolute inset-0 size-full opacity-0 cursor-pointer"
-            value={toColorInputValue(value)}
-            onChange={(event) => onChange(event.target.value)}
+            value={toColorInputValue(swatchColor)}
+            onChange={(event) => pickColor(event.target.value)}
             aria-label={`${label} color`}
           />
         </span>
@@ -71,7 +96,7 @@ const ThemeTokenInput: React.FC<ThemeTokenInputProps> = ({ tokenKey, label, valu
           spellCheck={false}
         />
       </span>
-    </label>
+    </div>
   );
 };
 
