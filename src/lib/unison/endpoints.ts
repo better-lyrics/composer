@@ -8,6 +8,7 @@ import type {
   UnisonLyric,
   UnisonMineItem,
   UnisonPage,
+  UnisonProfile,
   UnisonSearchResult,
   UnisonSessionResponse,
   UnisonSignedSessionBody,
@@ -50,6 +51,12 @@ function createSession(signedBody: UnisonSignedSessionBody, options: CallOptions
 
 async function logout(options: CallOptions = {}): Promise<void> {
   await unisonFetch("/auth/logout", { ...options, method: "POST", auth: true });
+}
+
+// -- Profile -------------------------------------------------------------------
+
+function fetchProfile(keyId: string, options: CallOptions = {}): Promise<UnisonProfile> {
+  return unisonFetch(`/leaderboard/users/${keyId}`, options);
 }
 
 // -- Lyrics --------------------------------------------------------------------
@@ -198,6 +205,7 @@ function fetchMostWanted({ cursor = "", signal }: PageOptions = {}): Promise<Uni
 // -- Exports -------------------------------------------------------------------
 
 export {
+  fetchProfile,
   compareWithLive,
   createSession,
   deleteLyrics,

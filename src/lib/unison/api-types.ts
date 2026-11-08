@@ -28,6 +28,19 @@ interface UnisonActor {
   avatarUrl: string | null;
 }
 
+interface UnisonProfileStats {
+  rank: number;
+  level: number;
+  xp: number;
+  xpFloor: number;
+  xpForNext: number;
+  submissionCount: number;
+  totalUpvotes: number;
+  fulfilledCount: number;
+}
+
+type UnisonProfile = { ranked: false } | ({ ranked: true } & UnisonProfileStats);
+
 interface UnisonSubmitter extends UnisonActor {
   reputation: number;
 }
@@ -236,6 +249,8 @@ export type {
   UnisonLyricsFormat,
   UnisonMineItem,
   UnisonPage,
+  UnisonProfile,
+  UnisonProfileStats,
   UnisonSearchResult,
   UnisonSessionResponse,
   UnisonSignedSessionBody,

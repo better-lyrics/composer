@@ -5,13 +5,14 @@ import { unisonProfileUrl } from "@/lib/unison/web-urls";
 import { Button } from "@/ui/button";
 import { HEADER_ICON_STYLES } from "@/ui/header-icon-styles";
 import { IconButton } from "@/ui/icon-button";
-import { Menu, type MenuAnchor, MenuHeader, MenuItem, MenuSeparator } from "@/ui/menu";
+import { Menu, type MenuAnchor, MenuItem, MenuSeparator } from "@/ui/menu";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
+import { AccountStats } from "@/ui/unison/account-stats";
 import { BetterLyricsMark } from "@/ui/unison/better-lyrics-mark";
 import { ConnectPopover } from "@/ui/unison/connect-popover";
 import { UnisonAvatar } from "@/ui/unison/unison-avatar";
 import { unisonViewPath } from "@/utils/app-routes";
-import { IconCloudUpload, IconExternalLink, IconFlame, IconLogout } from "@tabler/icons-react";
+import { IconCloudUpload, IconExternalLink, IconLogout } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -37,11 +38,10 @@ const AccountMenu: React.FC<{ session: StoredUnisonSession }> = ({ session }) =>
         align="end"
         onClose={close}
         aria-label="Unison account"
-        className="w-[248px] rounded-[14px]"
+        className="w-[272px] rounded-[14px]"
       >
-        <MenuHeader title={session.displayName} />
+        <AccountStats session={session} />
         <MenuItem icon={IconCloudUpload} label="My Unison lyrics" onSelect={() => navigate(unisonViewPath("mine"))} />
-        <MenuItem icon={IconFlame} label="Most wanted" onSelect={() => navigate(unisonViewPath("wanted"))} />
         <MenuItem
           icon={IconExternalLink}
           label="Profile on Unison"

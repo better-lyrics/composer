@@ -10,6 +10,7 @@ const unisonQueryKeys = {
   mine: (keyId: string) => [UNISON_QUERY_ROOT, "mine", keyId] as const,
   mineForLibrary: (keyId: string, linkedIds: readonly string[]) =>
     [UNISON_QUERY_ROOT, "mine", keyId, "library", linkedIds] as const,
+  profile: (keyId: string) => [UNISON_QUERY_ROOT, "profile", keyId] as const,
   mostWanted: () => [UNISON_QUERY_ROOT, "most-wanted"] as const,
   allSearches: () => [UNISON_QUERY_ROOT, "search"] as const,
   search: (query: string) => [UNISON_QUERY_ROOT, "search", query] as const,
