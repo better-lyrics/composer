@@ -1,12 +1,10 @@
 import type { Placement } from "@floating-ui/react";
-import { IconChevronDown } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cloneElement, useState } from "react";
 import { detectBetterLyrics, useBetterLyricsDetection } from "@/hooks/unison/useBetterLyricsDetection";
-import { signInWithExtension } from "@/lib/unison/sign-in";
-import { Button } from "@/ui/button";
+import { SupersededSignInError, signInWithExtension } from "@/lib/unison/sign-in";
 import type { ButtonSize, ButtonVariant } from "@/ui/button-class-name";
-import { Popover } from "@/ui/popover";
+import { SplitLatch } from "@/ui/split-latch";
 import { ConnectPanel } from "@/ui/unison/connect-panel";
 import { type ExtensionFailure, extensionFailureOf } from "@/ui/unison/extension-failure";
 import { cn } from "@/utils/cn";
@@ -35,11 +33,11 @@ const ConnectPopover: React.FC<ConnectPopoverProps> = ({ trigger, reason, placem
   const [open, setOpen] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [failure, setFailure] = useState<ExtensionFailure | null>(null);
-  const [group, setGroup] = useState<HTMLDivElement | null>(null);
   const detection = useBetterLyricsDetection(armed);
   const arm = () => setArmed(true);
   const triggerProps = trigger.props as TriggerProps;
   const fullWidth = triggerProps.className?.includes("w-full") ?? false;
+  const raised = triggerProps.variant !== "ghost";
 
   const openPanel = (withFailure: ExtensionFailure | null) => {
     setFailure(withFailure);
@@ -57,63 +55,53 @@ const ConnectPopover: React.FC<ConnectPopoverProps> = ({ trigger, reason, placem
       const session = await signInWithExtension(extensionId);
       showConnectedToast(session.displayName);
     } catch (error) {
-      openPanel(extensionFailureOf(error));
+      if (!(error instanceof SupersededSignInError)) openPanel(extensionFailureOf(error));
     } finally {
       setConnecting(false);
     }
   };
 
   const main = cloneElement(trigger, {
+    variant: "ghost",
     disabled: connecting || triggerProps.disabled,
     "aria-busy": connecting || undefined,
     onPointerEnter: arm,
     onFocus: arm,
     onClick: () => void connect(),
-    className: cn(triggerProps.className, "rounded-r-none", fullWidth && "flex-1 w-auto min-w-0"),
+    className: cn(
+      triggerProps.className,
+      "pr-1.5",
+      raised && "text-(--label) hover:text-composer-text",
+      fullWidth && "w-full",
+    ),
   } as TriggerProps);
 
   return (
-    <div ref={setGroup} className={cn("inline-flex gap-px", fullWidth && "flex w-full")}>
-      {main}
-      <Popover
-        open={open}
-        onOpenChange={(next) => {
-          if (next) {
-            arm();
-            setFailure(null);
-          }
-          setOpen(next);
-        }}
-        placement={placement}
-        hasPopup="dialog"
-        aria-label="Connect Better Lyrics"
-        positionAnchor={group}
-        trigger={
-          <Button
-            variant={triggerProps.variant}
-            size={triggerProps.size}
-            aria-label="Other ways to connect"
-            title="Other ways to connect"
-            onPointerEnter={arm}
-            className="rounded-l-none px-1.5"
-          >
-            <IconChevronDown aria-hidden="true" className="size-3.5" />
-          </Button>
+    <SplitLatch
+      variant={raised ? "raised" : "action"}
+      menuLabel="Other ways to connect"
+      placement={placement}
+      className={cn(fullWidth && "w-full [&>:first-child]:flex-1")}
+      open={open}
+      onOpenChange={(next) => {
+        if (next) {
+          arm();
+          setFailure(null);
         }
-      >
-        {(close) => (
-          <ConnectPanel
-            detection={detection}
-            reason={reason}
-            initialFailure={failure}
-            onConnected={(session) => {
-              close();
-              showConnectedToast(session.displayName);
-            }}
-          />
-        )}
-      </Popover>
-    </div>
+        setOpen(next);
+      }}
+      latch={<div>{main}</div>}
+    >
+      <ConnectPanel
+        detection={detection}
+        reason={reason}
+        initialFailure={failure}
+        onConnected={(session) => {
+          setOpen(false);
+          showConnectedToast(session.displayName);
+        }}
+      />
+    </SplitLatch>
   );
 };
 
