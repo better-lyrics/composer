@@ -25,6 +25,10 @@ interface UnisonStatusChipProps {
   className?: string;
 }
 
+interface DescribedUnisonStatusChipProps extends UnisonStatusChipProps {
+  detail?: React.ReactNode;
+}
+
 // -- Constants -----------------------------------------------------------------
 
 const STATUS_CHIPS: Record<UnisonStatus, StatusChipStyle> = {
@@ -56,11 +60,25 @@ const UnisonStatusChip: React.FC<UnisonStatusChipProps> = ({ status, className }
   );
 };
 
-const DescribedUnisonStatusChip: React.FC<UnisonStatusChipProps> = ({ status, className }) => (
-  <Tooltip content={UNISON_STATUS_DESCRIPTIONS[status]}>
+const DescribedUnisonStatusChip: React.FC<DescribedUnisonStatusChipProps> = ({ status, detail, className }) => (
+  <Tooltip
+    content={
+      detail ? (
+        <span className="flex flex-col gap-0.5">
+          {UNISON_STATUS_DESCRIPTIONS[status]}
+          {detail}
+        </span>
+      ) : (
+        UNISON_STATUS_DESCRIPTIONS[status]
+      )
+    }
+  >
     <span className={cn("inline-flex cursor-help", className)}>
       <UnisonStatusChip status={status} />
-      <span className="sr-only">, {UNISON_STATUS_DESCRIPTIONS[status]}</span>
+      <span className="sr-only">
+        , {UNISON_STATUS_DESCRIPTIONS[status]}
+        {detail && <>, {detail}</>}
+      </span>
     </span>
   </Tooltip>
 );

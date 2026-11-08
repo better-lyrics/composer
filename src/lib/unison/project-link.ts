@@ -1,3 +1,4 @@
+import type { LinkSuggestion } from "@/domain/unison/link-suggestions";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { listProjectIndex, updateProjectRecord } from "@/lib/project-repository";
 import { useProjectStore } from "@/stores/project";
@@ -55,6 +56,11 @@ async function unlinkProjectsFromLyric(lyricId: string): Promise<void> {
   }
 }
 
+async function linkProjectsToLyrics(links: readonly LinkSuggestion[]): Promise<void> {
+  const session = useProjectStore.getState().projectSession;
+  await Promise.all(links.map(({ projectId, lyricId }) => linkProjectToLyric({ projectId, session }, lyricId)));
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { captureLinkTarget, linkProjectToLyric, unlinkProjectsFromLyric };
+export { captureLinkTarget, linkProjectToLyric, linkProjectsToLyrics, unlinkProjectsFromLyric };

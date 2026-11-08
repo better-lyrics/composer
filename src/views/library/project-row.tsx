@@ -1,5 +1,6 @@
 import { displayArtists, displayTitle, hasArtists } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
+import type { LinkSuggestion } from "@/domain/unison/link-suggestions";
 import type { UnisonLibraryLyrics } from "@/domain/unison/project-unison-state";
 import { hasLyrics, progressDescription, projectStage, syncedPercent } from "@/domain/project/progress";
 import { IconButton } from "@/ui/icon-button";
@@ -18,8 +19,14 @@ import { memo } from "react";
 
 // -- Types --------------------------------------------------------------------
 
+interface UnisonMatch extends LinkSuggestion {
+  song: string;
+  artist: string;
+}
+
 interface LibraryUnison {
   lyrics: UnisonLibraryLyrics | null;
+  matches: ReadonlyMap<string, UnisonMatch>;
 }
 
 interface ProjectItemProps {
@@ -153,7 +160,7 @@ const ProjectRowContent: React.FC<ProjectItemProps> = ({
         {project.album || "No album"}
       </div>
       <RowProgress project={project} />
-      {unison && <UnisonCell project={project} lyrics={unison.lyrics} className={UNISON_COLUMN} />}
+      {unison && <UnisonCell project={project} unison={unison} className={UNISON_COLUMN} />}
       <div className="min-w-0">
         <AudioStatusLabel project={project} />
       </div>
@@ -177,4 +184,4 @@ const ProjectRow = memo(ProjectRowContent);
 // -- Exports ------------------------------------------------------------------
 
 export { ProjectRow, ROW_LAYOUTS, UNISON_COLUMN };
-export type { LibraryUnison, ProjectItemProps };
+export type { LibraryUnison, ProjectItemProps, UnisonMatch };

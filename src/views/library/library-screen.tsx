@@ -29,6 +29,7 @@ import { useLibraryActions } from "@/views/library/use-library-actions";
 import { useLibrarySelection } from "@/views/library/use-library-selection";
 import { useLibraryShortcuts } from "@/views/library/use-library-shortcuts";
 import { useLibraryUnison } from "@/views/library/use-library-unison";
+import { linkToUnison } from "@/views/library/link-to-unison";
 import { SignedInUnisonUpdates } from "@/views/library/unison-updates";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
@@ -225,6 +226,8 @@ const LibraryScreen: React.FC = () => {
               onSortChange={setSort}
               view={view}
               onViewChange={(next) => setSetting("libraryView", next)}
+              linkableCount={unison.matches.length}
+              onLinkAll={() => void linkToUnison(unison.matches)}
             />
             {view === "list" && <ProjectListColumns showUnison={showUnison} />}
             <Scroll className="flex-1 min-h-0 -ml-3 -mr-13">

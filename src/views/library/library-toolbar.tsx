@@ -13,6 +13,7 @@ import {
 } from "@/ui/projects/library-options";
 import { SegmentedControl } from "@/ui/segmented-control";
 import { Select } from "@/ui/select";
+import { BetterLyricsMark } from "@/ui/unison/better-lyrics-mark";
 import { formatShortcut } from "@/utils/format-key";
 import { IconArrowsSort, IconChevronDown, IconSearch } from "@tabler/icons-react";
 import { useMemo } from "react";
@@ -32,6 +33,8 @@ interface LibraryToolbarProps {
   onSortChange: (sort: LibrarySort) => void;
   view: LibraryView;
   onViewChange: (view: LibraryView) => void;
+  linkableCount: number;
+  onLinkAll: () => void;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -53,6 +56,8 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({
   onSortChange,
   view,
   onViewChange,
+  linkableCount,
+  onLinkAll,
 }) => {
   const searchShortcut = useShortcutBindingsStore(() => formatShortcut(getEffectiveKeysArray(SEARCH_SHORTCUT_ID)));
   const filterOptions = useMemo(
@@ -78,6 +83,12 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({
         onChange={onFilterChange}
       />
       <div className="flex flex-[1_1_420px] items-center justify-end gap-3 min-w-0">
+        {linkableCount > 0 && (
+          <Button variant="secondary" size="lg" hasIcon onClick={onLinkAll} className="shrink-0 whitespace-nowrap">
+            <BetterLyricsMark className="size-4" />
+            Link {linkableCount} to Unison
+          </Button>
+        )}
         <IconField
           ref={searchRef}
           icon={IconSearch}

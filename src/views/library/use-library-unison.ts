@@ -1,10 +1,11 @@
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
+import { linkSuggestions } from "@/domain/unison/link-suggestions";
 import { projectsByLyricId } from "@/domain/unison/linked-projects";
 import { useLibraryUnisonLyrics } from "@/hooks/unison/useLibraryUnisonLyrics";
 import { useUnisonFeatures } from "@/hooks/unison/useUnisonFeatures";
 import { useUnisonSession } from "@/hooks/useUnisonSession";
 import type { UnisonMineItem } from "@/lib/unison/api-types";
-import type { LibraryUnison } from "@/views/library/project-row";
+import type { LibraryUnison, UnisonMatch } from "@/views/library/project-row";
 import { useMemo } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -15,6 +16,7 @@ interface LibraryUnisonData {
   unison: LibraryUnison | null;
   items: readonly UnisonMineItem[] | null;
   projectByLyric: ReadonlyMap<string, ProjectIndexEntry>;
+  matches: readonly UnisonMatch[];
 }
 
 // -- Hook ----------------------------------------------------------------------
@@ -29,13 +31,26 @@ function useLibraryUnison(entries: readonly ProjectIndexEntry[]): LibraryUnisonD
   const showNotices = signedIn && features.libraryNotices;
   const keyId = showColumn || showNotices ? (session?.keyId ?? null) : null;
   const lyrics = useLibraryUnisonLyrics(keyId, linkedIds);
-  const unison = useMemo(() => (showColumn ? { lyrics } : null), [showColumn, lyrics]);
+  const items = lyrics?.items ?? null;
+  const matches = useMemo((): UnisonMatch[] => {
+    if (!items) return [];
+    const byId = new Map(items.map((item) => [String(item.id), item]));
+    return linkSuggestions(entries, items).flatMap((suggestion) => {
+      const lyric = byId.get(suggestion.lyricId);
+      return lyric ? [{ ...suggestion, song: lyric.song, artist: lyric.artist }] : [];
+    });
+  }, [entries, items]);
+  const unison = useMemo(
+    () => (showColumn ? { lyrics, matches: new Map(matches.map((match) => [match.projectId, match])) } : null),
+    [showColumn, lyrics, matches],
+  );
   return {
     showNotices,
     showWantedShelf: signedIn && features.wantedShelf,
     unison,
-    items: lyrics?.items ?? null,
+    items,
     projectByLyric,
+    matches: showColumn ? matches : [],
   };
 }
 

@@ -94,14 +94,14 @@ const MostWantedShelf: React.FC<{ className?: string }> = ({ className }) => {
             Hide
           </Button>
           <LinkButton
-          to={unisonViewPath("wanted")}
-          variant="ghost"
-          size="sm"
-          hasIcon
-          className="flex-row-reverse pl-3 pr-2.5"
-        >
-          <IconArrowRight aria-hidden="true" className="size-4" />
-          See all
+            to={unisonViewPath("wanted")}
+            variant="ghost"
+            size="sm"
+            hasIcon
+            className="flex-row-reverse pl-3 pr-2.5"
+          >
+            <IconArrowRight aria-hidden="true" className="size-4" />
+            See all
           </LinkButton>
         </div>
       </div>

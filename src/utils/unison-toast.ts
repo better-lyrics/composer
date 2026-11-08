@@ -1,6 +1,7 @@
 import { isUnisonNotFound, isUnisonSessionEnded, UnisonError } from "@/lib/unison/client";
 import { useProjectStore } from "@/stores/project";
 import { settingEntry } from "@/stores/settings-catalog";
+import { pluralize } from "@/utils/pluralize";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { toast } from "sonner";
 
@@ -40,6 +41,10 @@ function showWantedShelfHiddenToast(undo: () => void): void {
   toast(`${settingEntry("unisonWantedShelf").label} hidden`, { action: { label: "Undo", onClick: undo } });
 }
 
+function showProjectsLinkedToast(count: number, undo: () => void): void {
+  toast.success(`Linked ${pluralize(count, "project")} to Unison`, { action: { label: "Undo", onClick: undo } });
+}
+
 function showEditWithdrawnToast(): void {
   toast("Edit withdrawn. Listeners keep the current version.");
 }
@@ -77,6 +82,7 @@ export {
   showConnectedToast,
   showDisconnectedToast,
   showEditWithdrawnToast,
+  showProjectsLinkedToast,
   showRemovedFromUnisonToast,
   showRevisionLoadedToast,
   showRevisionRestoredToast,

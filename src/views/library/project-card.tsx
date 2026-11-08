@@ -9,7 +9,7 @@ import { SyncedBadge } from "@/ui/projects/synced-badge";
 import { SelectCheckbox } from "@/ui/select-checkbox";
 import { cn } from "@/utils/cn";
 import { AudioStatusLabel } from "@/views/library/audio-status-label";
-import { UnisonCardChip } from "@/views/library/unison-cell";
+import { UnisonArtLink, UnisonCardChip } from "@/views/library/unison-cell";
 import type { ProjectItemProps } from "@/views/library/project-row";
 import { IconDots } from "@tabler/icons-react";
 import { memo } from "react";
@@ -70,6 +70,13 @@ const ProjectCardContent: React.FC<ProjectItemProps> = ({
           onToggle={(range) => onToggleSelect(project.id, range)}
           className={cn("absolute top-2.5 left-2.5 z-2 pointer-events-auto checked:opacity-100", REVEAL_ON_CARD)}
         />
+        {unison && (
+          <UnisonArtLink
+            project={project}
+            unison={unison}
+            className="absolute bottom-2 left-2 z-2 pointer-events-auto"
+          />
+        )}
         <IconButton
           variant="ghost"
           label={`More actions for ${title}`}
@@ -106,7 +113,7 @@ const ProjectCardContent: React.FC<ProjectItemProps> = ({
           <AudioStatusLabel project={project} compact />
         </span>
         <span className="flex shrink-0 items-center gap-2">
-          {unison && <UnisonCardChip project={project} lyrics={unison.lyrics} />}
+          {unison && <UnisonCardChip project={project} unison={unison} />}
           <CardProgressLabel project={project} compact={Boolean(unison && project.unisonLyricId)} />
         </span>
       </div>
