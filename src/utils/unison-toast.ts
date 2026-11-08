@@ -5,6 +5,15 @@ import { settingEntry } from "@/stores/settings-catalog";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { pluralize } from "@/utils/pluralize";
 
+// -- Types --------------------------------------------------------------------
+
+interface LyricsAddedToProjects {
+  added: number;
+  linked: number;
+  unresolved: number;
+  failed: number;
+}
+
 // -- Constants ----------------------------------------------------------------
 
 const UNREACHABLE_REASON = "Could not reach Unison. Check your connection and try again.";
@@ -45,12 +54,33 @@ function showProjectsLinkedToast(count: number, undo: () => void): void {
   toast.success(`Linked ${pluralize(count, "project")} to Unison`, { action: { label: "Undo", onClick: undo } });
 }
 
-function showLyricsAddedToProjectsToast(added: number, failed: number, undo: () => void): void {
-  const description = failed > 0 ? `Could not add ${pluralize(failed, "other lyric")}.` : undefined;
-  toast.success(`Added ${pluralize(added, "project")} from Unison`, {
-    description,
+function severalProjectsMatch(count: number): string {
+  return `Several projects match ${pluralize(count, "lyric")}. Link ${count === 1 ? "it" : "them"} from Export.`;
+}
+
+function addedToProjectsTitle(added: number, linked: number): string {
+  if (added === 0) return `Linked ${pluralize(linked, "project")} you already had`;
+  if (linked === 0) return `Added ${pluralize(added, "project")} from Unison`;
+  return `Added ${pluralize(added, "project")}, linked ${linked} you already had`;
+}
+
+function showLyricsAddedToProjectsToast(outcome: LyricsAddedToProjects, undo: () => void): void {
+  const notes = [
+    outcome.unresolved > 0 ? severalProjectsMatch(outcome.unresolved) : null,
+    outcome.failed > 0 ? `Could not add ${pluralize(outcome.failed, "other lyric")}.` : null,
+  ].filter((note) => note !== null);
+  toast.success(addedToProjectsTitle(outcome.added, outcome.linked), {
+    description: notes.length > 0 ? notes.join(" ") : undefined,
     action: { label: "Undo", onClick: undo },
   });
+}
+
+function showNothingAddedToProjectsToast(unresolved: number): void {
+  toast("Nothing added to Projects", { description: severalProjectsMatch(unresolved) });
+}
+
+function showAddedProjectsKeptToast(kept: number): void {
+  toast(`Kept ${pluralize(kept, "project")} you changed after adding`);
 }
 
 function showLinkFailedToast(count: number): void {
@@ -91,11 +121,13 @@ function showUnisonFailureToast(title: string, error: unknown): void {
 // -- Exports ------------------------------------------------------------------
 
 export {
+  showAddedProjectsKeptToast,
   showConnectedToast,
   showDisconnectedToast,
   showEditWithdrawnToast,
   showLinkFailedToast,
   showLyricsAddedToProjectsToast,
+  showNothingAddedToProjectsToast,
   showProjectsLinkedToast,
   showRemovedFromUnisonToast,
   showRevisionLoadedToast,

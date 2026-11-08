@@ -15,6 +15,16 @@ interface LinkSuggestion {
   lyricId: string;
 }
 
+interface UnsureLink {
+  lyricId: string;
+  projectIds: string[];
+}
+
+interface LinkCandidates {
+  sure: LinkSuggestion[];
+  unsure: UnsureLink[];
+}
+
 // -- Derivations ---------------------------------------------------------------
 
 const songKey = (song: string, artist: string): string =>
@@ -29,21 +39,26 @@ function sentFor(project: ProjectIndexEntry, lyric: SentLyric): boolean {
   );
 }
 
-// Only one-to-one matches are offered; anything ambiguous is left for the user to link from Export.
-function linkSuggestions(entries: readonly ProjectIndexEntry[], lyrics: readonly SentLyric[]): LinkSuggestion[] {
+// Only one-to-one matches are sure; anything ambiguous needs a content check or the user's pick in Export.
+function linkCandidates(entries: readonly ProjectIndexEntry[], lyrics: readonly SentLyric[]): LinkCandidates {
   const linkedLyricIds = new Set(entries.flatMap((entry) => entry.unisonLyricId ?? []));
   const projects = entries.filter((entry) => !entry.unisonLyricId && entry.lineCount > 0);
   const unlinkedLyrics = lyrics.filter((lyric) => !linkedLyricIds.has(String(lyric.id)));
-  return unlinkedLyrics.flatMap((lyric) => {
+  const candidates: LinkCandidates = { sure: [], unsure: [] };
+  for (const lyric of unlinkedLyrics) {
     const matches = projects.filter((project) => sentFor(project, lyric));
-    if (matches.length !== 1) return [];
-    const [project] = matches;
-    const rivals = unlinkedLyrics.filter((other) => sentFor(project, other));
-    return rivals.length === 1 ? [{ projectId: project.id, lyricId: String(lyric.id) }] : [];
-  });
+    const lyricId = String(lyric.id);
+    const [only] = matches;
+    if (matches.length === 1 && unlinkedLyrics.filter((other) => sentFor(only, other)).length === 1) {
+      candidates.sure.push({ projectId: only.id, lyricId });
+    } else if (matches.length > 0) {
+      candidates.unsure.push({ lyricId, projectIds: matches.map((project) => project.id) });
+    }
+  }
+  return candidates;
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export { linkSuggestions };
-export type { LinkSuggestion };
+export type { LinkSuggestion, UnsureLink };
+export { linkCandidates };

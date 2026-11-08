@@ -1,11 +1,11 @@
-import { linkSuggestions } from "@/domain/unison/link-suggestions";
-import { indexEntry } from "@/test/index-entries";
 import { describe, expect, it } from "vitest";
+import { linkCandidates } from "@/domain/unison/link-suggestions";
+import { indexEntry } from "@/test/index-entries";
 
 const youtube = (videoId: string, overrides = {}) => indexEntry(videoId, { videoId, lineCount: 12, ...overrides });
 
-describe("linkSuggestions", () => {
-  it("pairs a project only with the one unlinked lyric sent for its video, or for its song when it has no video", () => {
+describe("linkCandidates", () => {
+  it("pairs a project only with the one unlinked lyric sent for its video or song, and leaves several matches unsure", () => {
     const projects = [
       youtube("paper-lanterns"),
       { ...youtube("harbor-lights"), id: "harbor-a" },
@@ -27,9 +27,12 @@ describe("linkSuggestions", () => {
     ];
     const linkedElsewhere = youtube("other-video", { id: "keeper", unisonLyricId: "40" });
 
-    expect(linkSuggestions([...projects, linkedElsewhere], lyrics)).toEqual([
-      { projectId: "paper-lanterns", lyricId: "10" },
-      { projectId: "tide-file", lyricId: "60" },
-    ]);
+    expect(linkCandidates([...projects, linkedElsewhere], lyrics)).toEqual({
+      sure: [
+        { projectId: "paper-lanterns", lyricId: "10" },
+        { projectId: "tide-file", lyricId: "60" },
+      ],
+      unsure: [{ lyricId: "20", projectIds: ["harbor-a", "harbor-b"] }],
+    });
   });
 });

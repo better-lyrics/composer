@@ -1,12 +1,13 @@
+import { useMemo } from "react";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
-import { linkSuggestions } from "@/domain/unison/link-suggestions";
+import { linkCandidates, type UnsureLink } from "@/domain/unison/link-suggestions";
 import { projectsByLyricId } from "@/domain/unison/linked-projects";
+import { useContentLinks } from "@/hooks/unison/useContentLinks";
 import { useLibraryUnisonLyrics } from "@/hooks/unison/useLibraryUnisonLyrics";
 import { useUnisonFeatures } from "@/hooks/unison/useUnisonFeatures";
 import { useUnisonSession } from "@/hooks/useUnisonSession";
 import type { UnisonMineItem } from "@/lib/unison/api-types";
 import type { LibraryUnison, UnisonMatch } from "@/views/library/project-row";
-import { useMemo } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -18,6 +19,10 @@ interface LibraryUnisonData {
   projectByLyric: ReadonlyMap<string, ProjectIndexEntry>;
   matches: readonly UnisonMatch[];
 }
+
+// -- Constants -----------------------------------------------------------------
+
+const NOTHING_UNSURE: readonly UnsureLink[] = [];
 
 // -- Hook ----------------------------------------------------------------------
 
@@ -34,14 +39,19 @@ function useLibraryUnison(entries: readonly ProjectIndexEntry[]): LibraryUnisonD
   const lyrics = useLibraryUnisonLyrics(keyId, linkedIds, seekingLinks);
   const items = lyrics?.items ?? null;
   const complete = lyrics?.complete ?? false;
+  const candidates = useMemo(
+    () => (items && complete ? linkCandidates(entries, items) : null),
+    [entries, items, complete],
+  );
+  const contentLinks = useContentLinks(candidates?.unsure ?? NOTHING_UNSURE, entries);
   const matches = useMemo((): UnisonMatch[] => {
-    if (!items || !complete) return [];
+    if (!items || !candidates) return [];
     const byId = new Map(items.map((item) => [String(item.id), item]));
-    return linkSuggestions(entries, items).flatMap((suggestion) => {
+    return [...candidates.sure, ...contentLinks].flatMap((suggestion) => {
       const lyric = byId.get(suggestion.lyricId);
       return lyric ? [{ ...suggestion, song: lyric.song, artist: lyric.artist }] : [];
     });
-  }, [entries, items, complete]);
+  }, [items, candidates, contentLinks]);
   const unison = useMemo(
     () => (showColumn ? { lyrics, matches: new Map(matches.map((match) => [match.projectId, match])) } : null),
     [showColumn, lyrics, matches],

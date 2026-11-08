@@ -1,5 +1,5 @@
-import type { SongForSuggestions } from "@/lib/unison/api-types";
 import type { QueryClient } from "@tanstack/react-query";
+import type { SongForSuggestions } from "@/lib/unison/api-types";
 
 // -- Keys ----------------------------------------------------------------------
 
@@ -10,6 +10,8 @@ const unisonQueryKeys = {
   mine: (keyId: string) => [UNISON_QUERY_ROOT, "mine", keyId] as const,
   mineForLibrary: (keyId: string, linkedIds: readonly string[], loadAll: boolean) =>
     [UNISON_QUERY_ROOT, "mine", keyId, "library", linkedIds, loadAll] as const,
+  contentLinks: (candidates: readonly (readonly string[])[]) =>
+    [UNISON_QUERY_ROOT, "content-links", candidates] as const,
   profile: (keyId: string) => [UNISON_QUERY_ROOT, "profile", keyId] as const,
   mostWanted: () => [UNISON_QUERY_ROOT, "most-wanted"] as const,
   allSearches: () => [UNISON_QUERY_ROOT, "search"] as const,
@@ -52,4 +54,4 @@ function invalidateLyricWrite(queryClient: QueryClient, lyricId: number, keyId: 
 
 // -- Exports -------------------------------------------------------------------
 
-export { UNISON_STALE_TIME_MS, invalidateLyricWrite, unisonQueryKeys };
+export { invalidateLyricWrite, UNISON_STALE_TIME_MS, unisonQueryKeys };

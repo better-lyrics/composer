@@ -9,9 +9,18 @@ import { fetchArtworkDataUrl } from "@/lib/unison/endpoints";
 import { readUnisonLyric, withUnisonDetails } from "@/lib/unison/open-unison-lyric";
 import { useSettingsStore } from "@/stores/settings";
 
+// -- Types ---------------------------------------------------------------------
+
+interface AddedProject {
+  id: string;
+  savedAt: number;
+}
+
 // -- Constants -----------------------------------------------------------------
 
 const LOG_PREFIX = "[UnisonProjects]";
+// The cover is optional, so a slow one never holds up saving the lyrics.
+const ARTWORK_TIMEOUT_MS = 5000;
 
 // -- Records -------------------------------------------------------------------
 
@@ -45,14 +54,14 @@ function unisonLyricProject(lyric: UnisonLyric, thumbnail: string | null): Saved
 
 async function artworkOrNothing(videoId: string): Promise<string | null> {
   try {
-    return await fetchArtworkDataUrl(videoId);
+    return await fetchArtworkDataUrl(videoId, { signal: AbortSignal.timeout(ARTWORK_TIMEOUT_MS) });
   } catch (error) {
     console.warn(LOG_PREFIX, `No artwork for ${videoId}`, error);
     return null;
   }
 }
 
-async function saveUnisonLyricProject(lyric: UnisonLyric): Promise<string | null> {
+async function saveUnisonLyricProject(lyric: UnisonLyric): Promise<AddedProject | null> {
   const project = unisonLyricProject(lyric, await artworkOrNothing(lyric.videoId));
   if (!project) {
     console.warn(LOG_PREFIX, `Lyric ${lyric.id} could not be read`);
@@ -60,9 +69,10 @@ async function saveUnisonLyricProject(lyric: UnisonLyric): Promise<string | null
   }
   const id = createProjectId();
   await saveProjectRecord(id, project);
-  return id;
+  return { id, savedAt: project.savedAt };
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export { saveUnisonLyricProject };
+export type { AddedProject };
+export { saveUnisonLyricProject, unisonLyricProject };

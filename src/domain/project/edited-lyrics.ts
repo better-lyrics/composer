@@ -57,9 +57,11 @@ function editedLyricsWrite(current: ProjectLyrics, edited: EditedLyrics): Edited
   };
 }
 
-function changedParts(current: ProjectLyrics, write: EditedLyricsWrite): ProjectPart[] {
+function changedParts(current: ProjectLyrics, write: EditedLyricsWrite, timeToleranceSeconds = 0): ProjectPart[] {
+  const sameTime =
+    timeToleranceSeconds > 0 ? (a: number, b: number) => Math.abs(a - b) <= timeToleranceSeconds : undefined;
   const changes: [ProjectPart, boolean][] = [
-    ["lines", !isStructurallyEqual(current.lines, write.lines)],
+    ["lines", !isStructurallyEqual(current.lines, write.lines, sameTime)],
     ["metadata", Object.keys(write.metadata).length > 0],
     ["agents", !isStructurallyEqual(current.agents, write.agents)],
     ["groups", !isStructurallyEqual(current.groups, write.groups)],
@@ -73,5 +75,5 @@ function changesProject(current: ProjectLyrics, write: EditedLyricsWrite): boole
 
 // -- Exports ------------------------------------------------------------------
 
+export type { EditedLyrics, ProjectLyrics, ProjectPart };
 export { changedParts, changesProject, editedLyricsWrite };
-export type { EditedLyrics, ProjectPart };
