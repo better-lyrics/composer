@@ -143,8 +143,21 @@ const DeckKnob: React.FC<DeckKnobProps> = ({
     return () => target.removeEventListener("wheel", handleWheel);
   }, [fraction, onFraction]);
 
+  const endWheelGesture = () => {
+    wheelGesture.current.ownFraction = Number.NaN;
+    wheelGesture.current.wrote = false;
+  };
+
+  const resetValue = () => {
+    endWheelGesture();
+    onReset();
+    setOpen(false);
+  };
+
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.button === 1) event.preventDefault();
     if (event.button !== 0) return;
+    endWheelGesture();
     const startX = event.clientX;
     const startY = event.clientY;
     const startFraction = fraction;
@@ -186,6 +199,7 @@ const DeckKnob: React.FC<DeckKnobProps> = ({
     if (direction === undefined) return;
     event.preventDefault();
     event.stopPropagation();
+    endWheelGesture();
     onStep(direction);
   };
 
@@ -208,12 +222,12 @@ const DeckKnob: React.FC<DeckKnobProps> = ({
         <button
           type="button"
           aria-label={`${label}, ${valueText}`}
-          title="Drag or scroll to adjust, double-click to reset"
+          title="Drag or scroll to adjust, double-click or middle-click to reset"
           onPointerDown={handlePointerDown}
           onKeyDown={handleKeyDown}
-          onDoubleClick={() => {
-            onReset();
-            setOpen(false);
+          onDoubleClick={resetValue}
+          onAuxClick={(event) => {
+            if (event.button === 1) resetValue();
           }}
           className="flex items-center gap-2 -mx-1 px-1 rounded-lg cursor-grab active:cursor-grabbing select-none touch-none"
         >
