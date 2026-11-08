@@ -57,6 +57,15 @@ async function identicalProjects(lyric: UnisonLyric, projectIds: readonly string
   });
 }
 
+async function identicalOrNone(unsure: UnsureLink, loadLyric: LyricLoader): Promise<string[]> {
+  try {
+    return await identicalProjects(await loadLyric(unsure.lyricId), unsure.projectIds);
+  } catch (error) {
+    console.warn(LOG_PREFIX, `Could not compare lyric ${unsure.lyricId} with its projects`, error);
+    return [];
+  }
+}
+
 // Several identical projects resolve to the most recently edited one. None identical leaves the choice to the user.
 async function linksByContent(
   unsure: readonly UnsureLink[],
@@ -64,24 +73,20 @@ async function linksByContent(
   loadLyric: LyricLoader,
 ): Promise<ContentLinks> {
   const updatedAt = new Map(entries.map((entry) => [entry.id, entry.updatedAt]));
+  const identical = await Promise.all(unsure.map((candidate) => identicalOrNone(candidate, loadLyric)));
   const taken = new Set<string>();
   const result: ContentLinks = { links: [], unresolved: [] };
-  for (const { lyricId, projectIds } of unsure) {
-    let identical: string[] = [];
-    try {
-      const open = projectIds.filter((id) => !taken.has(id));
-      identical = await identicalProjects(await loadLyric(lyricId), open);
-    } catch (error) {
-      console.warn(LOG_PREFIX, `Could not compare lyric ${lyricId} with its projects`, error);
-    }
-    const [projectId] = identical.toSorted((a, b) => (updatedAt.get(b) ?? 0) - (updatedAt.get(a) ?? 0));
+  unsure.forEach(({ lyricId }, index) => {
+    const [projectId] = (identical[index] ?? [])
+      .filter((id) => !taken.has(id))
+      .toSorted((a, b) => (updatedAt.get(b) ?? 0) - (updatedAt.get(a) ?? 0));
     if (projectId === undefined) {
       result.unresolved.push(lyricId);
-      continue;
+      return;
     }
     taken.add(projectId);
     result.links.push({ projectId, lyricId });
-  }
+  });
   return result;
 }
 
