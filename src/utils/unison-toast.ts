@@ -45,6 +45,10 @@ function showProjectsLinkedToast(count: number, undo: () => void): void {
   toast.success(`Linked ${pluralize(count, "project")} to Unison`, { action: { label: "Undo", onClick: undo } });
 }
 
+function showLinkFailedToast(count: number): void {
+  toast.error(`Could not link ${pluralize(count, "project")}`, { description: "Saving failed. Try again." });
+}
+
 function showEditWithdrawnToast(): void {
   toast("Edit withdrawn. Listeners keep the current version.");
 }
@@ -82,6 +86,7 @@ export {
   showConnectedToast,
   showDisconnectedToast,
   showEditWithdrawnToast,
+  showLinkFailedToast,
   showProjectsLinkedToast,
   showRemovedFromUnisonToast,
   showRevisionLoadedToast,
