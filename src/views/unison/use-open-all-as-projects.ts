@@ -19,21 +19,19 @@ function useOpenAllAsProjects() {
   const openAll = async (items: readonly UnisonMineItem[]) => {
     if (busy) return;
     setBusy(true);
-    const created: string[] = [];
-    let failed = 0;
-    let lastError: unknown = null;
-    for (const item of items) {
-      try {
-        const id = await saveUnisonLyricProject(await fetchUnisonLyric(queryClient, item.id));
-        if (id) created.push(id);
-        else failed++;
-      } catch (error) {
-        console.error(LOG_PREFIX, `could not open lyric ${item.id} as a project`, error);
-        failed++;
-        lastError = error;
-      }
+    let results: PromiseSettledResult<string | null>[];
+    try {
+      results = await Promise.allSettled(
+        items.map(async (item) => saveUnisonLyricProject(await fetchUnisonLyric(queryClient, item.id))),
+      );
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
+    const created = results.flatMap((result) => (result.status === "fulfilled" && result.value ? [result.value] : []));
+    const failed = results.length - created.length;
+    const rejected = results.filter((result) => result.status === "rejected");
+    for (const result of rejected) console.error(LOG_PREFIX, "could not open a lyric as a project", result.reason);
+    const lastError: unknown = rejected.at(-1)?.reason ?? null;
     if (created.length === 0) {
       showUnisonFailureToast("Could not open your lyrics as projects", lastError);
       return;
