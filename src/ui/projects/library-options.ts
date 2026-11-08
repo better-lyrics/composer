@@ -14,20 +14,13 @@ const LIBRARY_SORT_LABELS: Record<LibrarySort, string> = {
   progress: "Progress",
 };
 
-// Listed under a Unison heading, so the menu names drop it. The sort button shows no heading, so its names keep it.
-const UNISON_SORT_MENU_LABELS: Record<UnisonSort, string> = {
+const UNISON_SORT_LABELS: Record<UnisonSort, string> = {
   "unison-score": "Highest score",
   "unison-changed": "Recently went live",
   "unison-sent": "Recently shared",
 };
 
-const UNISON_SORT_BUTTON_LABELS: Record<UnisonSort, string> = {
-  "unison-score": "Highest Unison score",
-  "unison-changed": "Recently went live",
-  "unison-sent": "Recently shared to Unison",
-};
-
-const LIBRARY_ORDER_LABELS: Record<LibraryOrder, string> = { ...LIBRARY_SORT_LABELS, ...UNISON_SORT_BUTTON_LABELS };
+const LIBRARY_ORDER_LABELS: Record<LibraryOrder, string> = { ...LIBRARY_SORT_LABELS, ...UNISON_SORT_LABELS };
 
 const LIBRARY_FILTER_LABELS: Record<LibraryFilter, string> = {
   all: "All",
@@ -45,8 +38,8 @@ const LIBRARY_SORT_OPTIONS: { value: LibrarySort; label: string }[] = LIBRARY_SO
 }));
 
 const LIBRARY_ORDER_OPTIONS_WITH_UNISON: { value: LibraryOrder; label: string }[] = [
-  ...LIBRARY_SORT_OPTIONS,
-  ...UNISON_SORTS.map((sort) => ({ value: sort, label: UNISON_SORT_MENU_LABELS[sort], group: "Unison" })),
+  ...LIBRARY_SORT_OPTIONS.map((option) => ({ ...option, group: "Project" })),
+  ...UNISON_SORTS.map((sort) => ({ value: sort, label: UNISON_SORT_LABELS[sort], group: "Unison" })),
 ];
 
 const LIBRARY_VIEW_OPTIONS: readonly SegmentedOption<LibraryView>[] = [
