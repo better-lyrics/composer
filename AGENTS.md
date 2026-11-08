@@ -135,7 +135,8 @@ default first.
   single default serves both. Prefer, in order: a default that fits most people; a control where the
   feature lives (a header latch, a popover row), persisted from day one; a Settings row.
 - A control that lives on the feature does not also need a Settings row, unless the row sets the
-  default for new projects or sessions.
+  default for new projects or sessions, or the control hides the feature and the row is the only way
+  to bring it back.
 - Never add a setting to avoid a design decision, or to keep a behaviour nobody asked to keep.
 - Every setting is a catalog entry in `src/stores/settings-catalog-entries-<section>.ts`. Labels,
   descriptions, sections and groups are read from the catalog everywhere (`SettingLink`, search,
