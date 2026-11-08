@@ -28,6 +28,14 @@ const RADIUS = 17;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const ARC = CIRCUMFERENCE * 0.75;
 
+// -- Helpers ------------------------------------------------------------------
+
+function wheelPixelScale(deltaMode: number): number {
+  if (deltaMode === WheelEvent.DOM_DELTA_LINE) return WHEEL_LINE_PIXELS;
+  if (deltaMode === WheelEvent.DOM_DELTA_PAGE) return window.innerHeight;
+  return 1;
+}
+
 // -- Components ---------------------------------------------------------------
 
 const KnobFace: React.FC<{ fraction: number }> = ({ fraction }) => {
@@ -98,22 +106,37 @@ const DeckKnob: React.FC<DeckKnobProps> = ({
   useEffect(() => () => endDrag.current?.(), []);
 
   const wheelTarget = useRef<HTMLSpanElement>(null);
-  const wheelGesture = useRef({ startFraction: 0, travel: 0, lastTime: Number.NEGATIVE_INFINITY });
+  const wheelGesture = useRef({
+    startFraction: 0,
+    travel: 0,
+    lastTime: Number.NEGATIVE_INFINITY,
+    ownFraction: Number.NaN,
+    wrote: false,
+  });
   useEffect(() => {
+    const gesture = wheelGesture.current;
+    const adoptOwnWrite = () => {
+      if (!gesture.wrote) return;
+      gesture.ownFraction = fraction;
+      gesture.wrote = false;
+    };
+    adoptOwnWrite();
     const target = wheelTarget.current;
     if (!target) return;
     const handleWheel = (event: WheelEvent) => {
+      if (event.ctrlKey) return;
       event.preventDefault();
-      const gesture = wheelGesture.current;
-      if (event.timeStamp - gesture.lastTime > WHEEL_GESTURE_GAP_MS) {
+      adoptOwnWrite();
+      const changedElsewhere = fraction !== gesture.ownFraction;
+      if (changedElsewhere || event.timeStamp - gesture.lastTime > WHEEL_GESTURE_GAP_MS) {
         gesture.startFraction = fraction;
         gesture.travel = 0;
       }
       gesture.lastTime = event.timeStamp;
-      const scale = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? WHEEL_LINE_PIXELS : 1;
-      gesture.travel += (event.deltaX - event.deltaY) * scale;
+      gesture.travel += (event.deltaX - event.deltaY) * wheelPixelScale(event.deltaMode);
       const next = Math.min(1, Math.max(0, gesture.startFraction + gesture.travel / WHEEL_PIXELS_FOR_FULL_TURN));
       gesture.travel = (next - gesture.startFraction) * WHEEL_PIXELS_FOR_FULL_TURN;
+      gesture.wrote = true;
       onFraction(next);
     };
     target.addEventListener("wheel", handleWheel, { passive: false });
