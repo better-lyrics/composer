@@ -4,6 +4,7 @@
 
 import { settingEntry } from "@/stores/settings-catalog";
 import { composeAbortSignals } from "@/utils/abort-signals";
+import { blobToDataUrl } from "@/utils/blob-data-url";
 import { stripTrailingSlashes } from "@/utils/url";
 
 const BRIDGE_REPO_URL = "https://github.com/better-lyrics/composer-bridge";
@@ -110,13 +111,7 @@ async function getThumbFromBridge(baseUrl: string, videoId: string, signal?: Abo
   try {
     const res = await fetch(`${normalizeBaseUrl(baseUrl)}/thumb/${encodeURIComponent(videoId)}`, { signal: composed });
     if (!res.ok) return undefined;
-    const blob = await res.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-      reader.onerror = () => reject(reader.error ?? new Error("FileReader failed"));
-      reader.readAsDataURL(blob);
-    });
+    return await blobToDataUrl(await res.blob());
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") return undefined;
     return undefined;
@@ -159,18 +154,18 @@ function formatBridgeErrorForToast(err: unknown): string {
   return "Composer Bridge failed for an unknown reason.";
 }
 
+export type { BridgeHealth };
 export {
   BRIDGE_REPO_URL,
-  HEALTH_QUERY_KEY,
   BridgeError,
+  buildBridgeAudioFile,
   checkBridgeHealth,
-  getAudioFromBridge,
-  getThumbFromBridge,
-  formatBridgeErrorForToast,
-  isBridgeUnreachable,
-  normalizeBaseUrl,
   decodeHeader,
   extensionForBridgeMime,
-  buildBridgeAudioFile,
+  formatBridgeErrorForToast,
+  getAudioFromBridge,
+  getThumbFromBridge,
+  HEALTH_QUERY_KEY,
+  isBridgeUnreachable,
+  normalizeBaseUrl,
 };
-export type { BridgeHealth };

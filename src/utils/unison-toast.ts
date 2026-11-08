@@ -45,9 +45,9 @@ function showProjectsLinkedToast(count: number, undo: () => void): void {
   toast.success(`Linked ${pluralize(count, "project")} to Unison`, { action: { label: "Undo", onClick: undo } });
 }
 
-function showLyricsOpenedAsProjectsToast(opened: number, failed: number, undo: () => void): void {
-  const description = failed > 0 ? `Could not open ${pluralize(failed, "other lyric")}.` : undefined;
-  toast.success(`Added ${pluralize(opened, "project")} from Unison`, {
+function showLyricsAddedToProjectsToast(added: number, failed: number, undo: () => void): void {
+  const description = failed > 0 ? `Could not add ${pluralize(failed, "other lyric")}.` : undefined;
+  toast.success(`Added ${pluralize(added, "project")} from Unison`, {
     description,
     action: { label: "Undo", onClick: undo },
   });
@@ -95,7 +95,7 @@ export {
   showDisconnectedToast,
   showEditWithdrawnToast,
   showLinkFailedToast,
-  showLyricsOpenedAsProjectsToast,
+  showLyricsAddedToProjectsToast,
   showProjectsLinkedToast,
   showRemovedFromUnisonToast,
   showRevisionLoadedToast,

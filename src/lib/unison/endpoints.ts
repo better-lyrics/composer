@@ -16,7 +16,7 @@ import type {
   VideoLink,
   WantedSong,
 } from "@/lib/unison/api-types";
-import { unisonFetch, unisonFetchPage } from "@/lib/unison/client";
+import { UNISON_BASE_URL, unisonFetch, unisonFetchPage } from "@/lib/unison/client";
 import type {
   RevisionDetail,
   RevisionDiff,
@@ -24,6 +24,7 @@ import type {
   RevisionPreview,
   RevisionSummary,
 } from "@/lib/unison/revision-types";
+import { blobToDataUrl } from "@/utils/blob-data-url";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -223,6 +224,17 @@ async function suggestVideosForLyric(id: number, options: CallOptions = {}): Pro
   return { suggestions: suggestions ?? [], linked: linked ?? [] };
 }
 
+// -- Artwork -------------------------------------------------------------------
+
+const ARTWORK_THUMBNAIL_SIZE = 256;
+
+// Unison serves the cover itself, falling back to its own copy when the original is gone.
+async function fetchArtworkDataUrl(videoId: string, { signal }: CallOptions = {}): Promise<string | null> {
+  const query = new URLSearchParams({ v: videoId, size: String(ARTWORK_THUMBNAIL_SIZE) });
+  const response = await fetch(`${UNISON_BASE_URL}/artwork/image?${query}`, { signal });
+  return response.ok ? blobToDataUrl(await response.blob()) : null;
+}
+
 // -- Leaderboard ---------------------------------------------------------------
 
 // The server returns the unpaged top list unless a cursor is present, so the first page sends an empty one.
@@ -236,6 +248,7 @@ export {
   compareWithLive,
   createSession,
   deleteLyrics,
+  fetchArtworkDataUrl,
   fetchChallenge,
   fetchLyric,
   fetchMinePages,

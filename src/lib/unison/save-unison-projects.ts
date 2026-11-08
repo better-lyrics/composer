@@ -5,6 +5,7 @@ import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createProjectId, saveProjectRecord } from "@/lib/project-repository";
 import { SAVED_PROJECT_VERSION, type SavedProject } from "@/lib/saved-project";
 import type { UnisonLyric } from "@/lib/unison/api-types";
+import { fetchArtworkDataUrl } from "@/lib/unison/endpoints";
 import { readUnisonLyric, withUnisonDetails } from "@/lib/unison/open-unison-lyric";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -15,7 +16,7 @@ const LOG_PREFIX = "[UnisonProjects]";
 // -- Records -------------------------------------------------------------------
 
 // The same shape a lyric opened one at a time saves, minus audio: the YouTube source loads when the project opens.
-function unisonLyricProject(lyric: UnisonLyric): SavedProject | null {
+function unisonLyricProject(lyric: UnisonLyric, thumbnail: string | null): SavedProject | null {
   const read = readUnisonLyric(lyric);
   if (read.status === "unreadable") return null;
   const parsed = withUnisonDetails(read.parsed, lyric);
@@ -24,7 +25,11 @@ function unisonLyricProject(lyric: UnisonLyric): SavedProject | null {
   return {
     version: SAVED_PROJECT_VERSION,
     savedAt: Date.now(),
-    metadata: { ...details.metadata, title: details.metadata.title || lyric.videoId },
+    metadata: {
+      ...details.metadata,
+      title: details.metadata.title || lyric.videoId,
+      ...(thumbnail ? { thumbnailDataUrl: thumbnail, thumbnailForVideoId: lyric.videoId } : {}),
+    },
     agents: assignment.agents,
     lines: assignment.lines,
     groups: parsed.groups ?? [],
@@ -38,8 +43,17 @@ function unisonLyricProject(lyric: UnisonLyric): SavedProject | null {
 
 // -- Saving --------------------------------------------------------------------
 
+async function artworkOrNothing(videoId: string): Promise<string | null> {
+  try {
+    return await fetchArtworkDataUrl(videoId);
+  } catch (error) {
+    console.warn(LOG_PREFIX, `No artwork for ${videoId}`, error);
+    return null;
+  }
+}
+
 async function saveUnisonLyricProject(lyric: UnisonLyric): Promise<string | null> {
-  const project = unisonLyricProject(lyric);
+  const project = unisonLyricProject(lyric, await artworkOrNothing(lyric.videoId));
   if (!project) {
     console.warn(LOG_PREFIX, `Lyric ${lyric.id} could not be read`);
     return null;

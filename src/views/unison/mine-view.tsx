@@ -21,7 +21,7 @@ import { useLibraryActions } from "@/views/library/use-library-actions";
 import { DeclinedEdits } from "@/views/unison/declined-edits";
 import { MINE_GRID, MineColumns, MineRow } from "@/views/unison/mine-row";
 import { ProfileHeader } from "@/views/unison/profile-header";
-import { useOpenAllAsProjects } from "@/views/unison/use-open-all-as-projects";
+import { useAddAllToProjects } from "@/views/unison/use-add-all-to-projects";
 import { InlineError, SkeletonBar, SkeletonRows, SkeletonSong, ViewEmpty } from "@/views/unison/view-states";
 
 // -- Types ---------------------------------------------------------------------
@@ -76,7 +76,7 @@ const MineList: React.FC<{ mine: MineQuery }> = ({ mine }) => {
   const libraryActions = useLibraryActions();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const openAll = useOpenAllAsProjects();
+  const addAll = useAddAllToProjects();
   const [openingId, setOpeningId] = useState<number | null>(null);
   const opening = useRef(false);
 
@@ -116,16 +116,16 @@ const MineList: React.FC<{ mine: MineQuery }> = ({ mine }) => {
     );
   }
 
-  const openAllButton = entries && withoutProject.length > 0 && (
+  const addAllButton = entries && withoutProject.length > 0 && (
     <Button
       variant="secondary"
       size="lg"
       hasIcon
-      disabled={openAll.busy}
-      onClick={() => void openAll.openAll(withoutProject)}
+      disabled={addAll.busy}
+      onClick={() => void addAll.addAll(withoutProject)}
     >
       <IconFileImport aria-hidden="true" className="size-4" />
-      Open {withoutProject.length} as projects
+      Add {withoutProject.length} to Projects
     </Button>
   );
 
@@ -133,7 +133,7 @@ const MineList: React.FC<{ mine: MineQuery }> = ({ mine }) => {
     <>
       <DeclinedEdits items={items} projectByLyric={projectByLyric} onOpenProject={libraryActions.open} />
       <div>
-        <MineHeading count={mine.isPending ? null : items.length} action={openAllButton} />
+        <MineHeading count={mine.isPending ? null : items.length} action={addAllButton} />
         <MineColumns sort={sort} onSort={(key) => setSort((current) => nextMineSort(current, key))} />
         {mine.isPending ? (
           <MineSkeleton />
