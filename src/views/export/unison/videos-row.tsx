@@ -11,6 +11,7 @@ import { VideoPicker } from "@/ui/unison/video-picker";
 import { formatTime } from "@/utils/format-time";
 import { pluralize } from "@/utils/pluralize";
 import { useManageVideos } from "@/views/export/unison/use-manage-videos";
+import { InlineError, SkeletonBar } from "@/views/unison/view-states";
 import { IconBrandYoutube } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -30,26 +31,35 @@ const ManageVideos: React.FC<Omit<VideosRowProps, "canManage">> = ({ lyric, dura
   const songTitle = metadata.title.trim() || lyric.song;
   return (
     <PopBody>
-      <PopHead title="Videos" meta={`${linkedVideoCount(videos.linked)} / ${VIDEO_LINK_LIMIT}`} />
+      <PopHead
+        title="Videos"
+        meta={videos.loaded ? `${linkedVideoCount(videos.linked)} / ${VIDEO_LINK_LIMIT}` : undefined}
+      />
       <PopText className="mt-1 mb-3">Lengths must match the song within {VIDEO_LENGTH_TOLERANCE_SECONDS} s.</PopText>
-      <div className="px-1 pb-1">
-        <VideoPicker
-          floating
-          main={{
-            videoId: videos.primaryVideoId,
-            title: songTitle,
-            artworkUrl: metadata.thumbnailDataUrl,
-            facts: { artist: displayArtists(metadata.artists), kind: null, duration: formatTime(songSeconds, 0) },
-          }}
-          linked={videos.linked}
-          more={videos.more}
-          songTitle={songTitle}
-          songSeconds={songSeconds}
-          busy={videos.busy}
-          onLink={videos.link}
-          onUnlink={videos.unlink}
-          onAdd={videos.add}
-        />
+      <div className="px-1 pb-1" aria-busy={!videos.loaded && !videos.loadError}>
+        {videos.loaded ? (
+          <VideoPicker
+            floating
+            main={{
+              videoId: videos.primaryVideoId,
+              title: songTitle,
+              artworkUrl: metadata.thumbnailDataUrl,
+              facts: { artist: displayArtists(metadata.artists), kind: null, duration: formatTime(songSeconds, 0) },
+            }}
+            linked={videos.linked}
+            more={videos.more}
+            songTitle={songTitle}
+            songSeconds={songSeconds}
+            busy={videos.busy}
+            onLink={videos.link}
+            onUnlink={videos.unlink}
+            onAdd={videos.add}
+          />
+        ) : videos.loadError ? (
+          <InlineError error={videos.loadError} onRetry={videos.retry} className="px-0 py-1" />
+        ) : (
+          <SkeletonBar className="w-3/4 animate-pulse motion-reduce:animate-none" />
+        )}
       </div>
     </PopBody>
   );

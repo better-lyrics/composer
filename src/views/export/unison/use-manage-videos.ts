@@ -12,6 +12,9 @@ import { useState } from "react";
 
 interface ManageVideos {
   primaryVideoId: string;
+  loaded: boolean;
+  loadError: Error | null;
+  retry: () => void;
   linked: ChosenVideo[];
   more: SuggestedVideo[];
   busy: boolean;
@@ -37,7 +40,8 @@ function linkFailure(error: unknown, candidateSeconds: number | null, songSecond
 
 function useManageVideos(lyric: UnisonLyric, songSeconds: number): ManageVideos {
   const queryClient = useQueryClient();
-  const links = useVideoLinks(lyric.id).data;
+  const linksQuery = useVideoLinks(lyric.id);
+  const links = linksQuery.data;
   const suggestionData = useLyricVideoSuggestions(lyric.id).data;
   const suggestions = suggestionData?.suggestions ?? [];
   const known = [...suggestions, ...(suggestionData?.linked ?? [])];
@@ -74,6 +78,9 @@ function useManageVideos(lyric: UnisonLyric, songSeconds: number): ManageVideos 
   };
 
   return {
+    loaded: links !== undefined,
+    loadError: linksQuery.error,
+    retry: () => void linksQuery.refetch(),
     primaryVideoId,
     linked,
     more,

@@ -156,9 +156,17 @@ const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
   const checksReasonId = useId();
   const changesReasonId = useId();
   const videoReasonId = useId();
+  const serverChecksReasonId = useId();
   const preview = query.data;
+  const failedServerChecks = preview?.checks.filter((check) => check.status === "bad") ?? [];
   const goesLive = preview?.outcome.goesLive ?? true;
-  const blockedReasonId = !checks.canSubmit ? checksReasonId : unlinkedVideo ? videoReasonId : changesReasonId;
+  const blockedReasonId = !checks.canSubmit
+    ? checksReasonId
+    : failedServerChecks.length > 0
+      ? serverChecksReasonId
+      : unlinkedVideo
+        ? videoReasonId
+        : changesReasonId;
 
   return (
     <SubmitCardShell mode="update" busy={sender.pending} source={source} checks={checks}>
@@ -169,6 +177,13 @@ const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
         onRetry={() => void query.refetch()}
       />
       {!checks.canSubmit && <ChecksReason id={checksReasonId} />}
+      {failedServerChecks.length > 0 && (
+        <ul id={serverChecksReasonId} className={cn(UNISON_CARD_TEXT_STYLES, "select-text")}>
+          {failedServerChecks.map((check, index) => (
+            <li key={`${check.field}-${index}`}>{check.message}</li>
+          ))}
+        </ul>
+      )}
       {unlinkedVideo && (
         <p id={videoReasonId} className={UNISON_CARD_TEXT_STYLES}>
           {UNLINKED_VIDEO_REASON}
@@ -181,7 +196,14 @@ const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
         failure={failureText}
         label={goesLive ? "Send update" : "Send for review"}
         pending={sender.pending}
-        disabled={!checks.canSubmit || unlinkedVideo || !preview || preview.noChanges || settling}
+        disabled={
+          !checks.canSubmit ||
+          failedServerChecks.length > 0 ||
+          unlinkedVideo ||
+          !preview ||
+          preview.noChanges ||
+          settling
+        }
         blockedReasonId={blockedReasonId}
         onSend={() => void sender.send({ kind: "update", lyricId, input })}
       />
