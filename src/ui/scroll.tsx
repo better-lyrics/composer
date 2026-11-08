@@ -44,7 +44,8 @@ const Scroll: React.FC<ScrollProps> = ({
     <OverlayScrollbarsComponent
       ref={componentRef}
       defer
-      className={cn("overflow-auto overscroll-none", className)}
+      // Until OverlayScrollbars initializes (again after every hidden Activity shows), the host scrolls natively.
+      className={cn("overflow-auto overscroll-none [scrollbar-width:none]", className)}
       options={{
         scrollbars: { theme: "os-theme-light", autoHide, autoHideDelay },
       }}
