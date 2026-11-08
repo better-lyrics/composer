@@ -29,7 +29,8 @@ const NOTHING_UNSURE: readonly UnsureLink[] = [];
 
 // -- Hook ----------------------------------------------------------------------
 
-function useLibraryUnison(entries: readonly ProjectIndexEntry[]): LibraryUnisonData {
+// Unison sorts need a standing for every linked project, so they read every page past the usual cap.
+function useLibraryUnison(entries: readonly ProjectIndexEntry[], sortsByUnison: boolean): LibraryUnisonData {
   const session = useUnisonSession();
   const features = useUnisonFeatures();
   const projectByLyric = useMemo(() => projectsByLyricId(entries), [entries]);
@@ -39,7 +40,7 @@ function useLibraryUnison(entries: readonly ProjectIndexEntry[]): LibraryUnisonD
   const showNotices = signedIn && features.libraryNotices;
   const keyId = showColumn || showNotices ? (session?.keyId ?? null) : null;
   const seekingLinks = showColumn && entries.some((entry) => !entry.unisonLyricId && entry.lineCount > 0);
-  const lyrics = useLibraryUnisonLyrics(keyId, linkedIds, seekingLinks);
+  const lyrics = useLibraryUnisonLyrics(keyId, linkedIds, seekingLinks, showColumn && sortsByUnison);
   const items = lyrics?.items ?? null;
   const complete = lyrics?.complete ?? false;
   const candidates = useMemo(
@@ -63,19 +64,19 @@ function useLibraryUnison(entries: readonly ProjectIndexEntry[]): LibraryUnisonD
   const standings = useMemo(
     () =>
       new Map(
-        (items ?? []).flatMap((item) => {
-          const project = projectByLyric.get(String(item.id));
-          if (!project) return [];
+        entries.flatMap((entry) => {
+          const item = entry.unisonLyricId ? lyrics?.byId.get(entry.unisonLyricId) : undefined;
+          if (!item) return [];
           const standing: UnisonStanding = {
             score: item.score,
             voteCount: item.voteCount,
             changedAt: item.revision.updatedAt,
             sentAt: item.createdAt,
           };
-          return [[project.id, standing] as const];
+          return [[entry.id, standing] as const];
         }),
       ),
-    [items, projectByLyric],
+    [entries, lyrics],
   );
   return {
     linkedVideos,

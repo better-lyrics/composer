@@ -11,6 +11,7 @@ import {
   shownLibraryFilter,
   shownLibraryOrder,
 } from "@/domain/project/library-view";
+import { isUnisonSort } from "@/domain/unison/library-sort";
 import { LinkedLyricVideos } from "@/hooks/unison/useProjectArtSrc";
 import { useLastPresent } from "@/hooks/useLastPresent";
 import { useProjectIndex } from "@/hooks/useProjectIndex";
@@ -97,7 +98,7 @@ const LibraryScreen: React.FC = () => {
   const actions = useLibraryActions();
 
   const live = entries ?? NO_PROJECTS;
-  const unison = useLibraryUnison(live);
+  const unison = useLibraryUnison(live, isUnisonSort(chosenSort));
   const showUnison = unison.unison !== null;
   const filter = shownLibraryFilter(chosenFilter, showUnison);
   const sort = shownLibraryOrder(chosenSort, showUnison);

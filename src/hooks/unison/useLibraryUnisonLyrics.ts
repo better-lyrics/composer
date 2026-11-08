@@ -30,10 +30,12 @@ const NO_IDS: ReadonlySet<string> = new Set();
 async function fetchMineForLibrary(
   linkedIds: readonly string[],
   loadAll: boolean,
+  everyPage: boolean,
   signal: AbortSignal,
 ): Promise<LibraryUnisonLyrics> {
   const missing = new Set(linkedIds);
   const { items, complete } = await fetchMinePages(signal, {
+    maxPages: everyPage ? Number.POSITIVE_INFINITY : undefined,
     stopAfter: (page) => {
       for (const item of page) missing.delete(String(item.id));
       return missing.size === 0 && !loadAll;
@@ -65,10 +67,11 @@ function useLibraryUnisonLyrics(
   keyId: string | null,
   linkedIds: readonly string[],
   loadAll: boolean,
+  everyPage: boolean,
 ): LibraryUnisonState | null {
   const query = useQuery({
-    queryKey: unisonQueryKeys.mineForLibrary(keyId ?? "", linkedIds, loadAll),
-    queryFn: ({ signal }) => fetchMineForLibrary(linkedIds, loadAll, signal),
+    queryKey: unisonQueryKeys.mineForLibrary(keyId ?? "", linkedIds, loadAll, everyPage),
+    queryFn: ({ signal }) => fetchMineForLibrary(linkedIds, loadAll, everyPage, signal),
     staleTime: UNISON_STALE_TIME_MS,
     // Another account's list must never stand in for this one.
     placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[2] === keyId ? previous : undefined),
