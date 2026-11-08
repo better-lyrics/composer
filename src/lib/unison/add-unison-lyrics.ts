@@ -43,9 +43,11 @@ async function addUnisonLyricsToProjects(
   const byContent = await linksByContent(unsure, entries, loadLyric);
   const toLink = [...sure, ...byContent.links];
   const linked = await linkProjectsToLyrics(toLink);
-  const missing = pending.filter((item) => !matched.has(String(item.id)));
+  const missing = pending.filter((item) => !matched.has(String(item.id))).toSorted((a, b) => b.createdAt - a.createdAt);
+  // A millisecond apart, newest upload last saved, so the library lists them in the order they reached Unison.
+  const addedAt = Date.now();
   const saves = await Promise.allSettled(
-    missing.map(async (item) => saveUnisonLyricProject(await loadLyric(String(item.id)))),
+    missing.map(async (item, rank) => saveUnisonLyricProject(await loadLyric(String(item.id)), addedAt - rank)),
   );
   const created = saves.flatMap((save) => (save.status === "fulfilled" && save.value ? [save.value] : []));
   const rejected = saves.flatMap((save) => (save.status === "rejected" ? [save.reason] : []));

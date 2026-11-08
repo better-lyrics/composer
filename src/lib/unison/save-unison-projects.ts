@@ -25,7 +25,7 @@ const ARTWORK_TIMEOUT_MS = 5000;
 // -- Records -------------------------------------------------------------------
 
 // The same shape a lyric opened one at a time saves, minus audio: the YouTube source loads when the project opens.
-function unisonLyricProject(lyric: UnisonLyric, thumbnail: string | null): SavedProject | null {
+function unisonLyricProject(lyric: UnisonLyric, thumbnail: string | null, savedAt = Date.now()): SavedProject | null {
   const read = readUnisonLyric(lyric);
   if (read.status === "unreadable") return null;
   const parsed = withUnisonDetails(read.parsed, lyric);
@@ -33,7 +33,7 @@ function unisonLyricProject(lyric: UnisonLyric, thumbnail: string | null): Saved
   const assignment = agentsAfterImport(DEFAULT_AGENTS, parsed.agents, parsed.lines);
   return {
     version: SAVED_PROJECT_VERSION,
-    savedAt: Date.now(),
+    savedAt,
     metadata: {
       ...details.metadata,
       title: details.metadata.title || lyric.videoId,
@@ -61,8 +61,8 @@ async function artworkOrNothing(videoId: string): Promise<string | null> {
   }
 }
 
-async function saveUnisonLyricProject(lyric: UnisonLyric): Promise<AddedProject | null> {
-  const project = unisonLyricProject(lyric, await artworkOrNothing(lyric.videoId));
+async function saveUnisonLyricProject(lyric: UnisonLyric, savedAt?: number): Promise<AddedProject | null> {
+  const project = unisonLyricProject(lyric, await artworkOrNothing(lyric.videoId), savedAt);
   if (!project) {
     console.warn(LOG_PREFIX, `Lyric ${lyric.id} could not be read`);
     return null;
