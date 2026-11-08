@@ -13,6 +13,7 @@ import { useMemo } from "react";
 
 interface ChangesSectionProps {
   preview: RevisionPreview | undefined;
+  upToDate: boolean;
   error: unknown;
   reasonId: string;
   onRetry: () => void;
@@ -20,7 +21,7 @@ interface ChangesSectionProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const NO_CHANGES_REASON = "Same as the live version.";
+const NO_CHANGES_REASON = "Nothing to update. This is already the live version.";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -42,8 +43,15 @@ const ChangesMeta: React.FC<{ label: string }> = ({ label }) => (
   </span>
 );
 
-const ChangesBody: React.FC<ChangesSectionProps> = ({ preview, error, reasonId, onRetry }) => {
+const ChangesBody: React.FC<ChangesSectionProps> = ({ preview, upToDate, error, reasonId, onRetry }) => {
   const lines = useMemo(() => (preview ? revisionDiffLines(preview.diff.rows) : []), [preview]);
+  if (upToDate || preview?.noChanges) {
+    return (
+      <p id={reasonId} className="text-[13px] leading-5 text-(--label)">
+        {NO_CHANGES_REASON}
+      </p>
+    );
+  }
   if (error && !preview) {
     return (
       <div role="alert" className="flex items-center justify-between gap-3">
@@ -64,13 +72,6 @@ const ChangesBody: React.FC<ChangesSectionProps> = ({ preview, error, reasonId, 
       </div>
     );
   }
-  if (preview.noChanges) {
-    return (
-      <p id={reasonId} className="text-[13px] leading-5 text-(--label)">
-        {NO_CHANGES_REASON}
-      </p>
-    );
-  }
   return <DiffList lines={lines} className="max-h-48" />;
 };
 
@@ -79,7 +80,7 @@ const ChangesSection: React.FC<ChangesSectionProps> = (props) => {
   const label = preview && !preview.noChanges ? countsLabel(revisionChangeCounts(preview.diff.rows)) : "";
   return (
     <PanelSection title="Changes" meta={label ? <ChangesMeta label={label} /> : undefined}>
-      <div aria-busy={!preview && !props.error}>
+      <div aria-busy={!preview && !props.upToDate && !props.error}>
         <ChangesBody {...props} />
       </div>
     </PanelSection>

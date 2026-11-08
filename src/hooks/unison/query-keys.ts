@@ -22,6 +22,8 @@ const unisonQueryKeys = {
   revision: (id: number, revId: number) => [UNISON_QUERY_ROOT, "revisions", id, "content", revId] as const,
   revisionPreviews: (id: number) => [UNISON_QUERY_ROOT, "revision-preview", id] as const,
   revisionPreview: (id: number, inputHash: string) => [UNISON_QUERY_ROOT, "revision-preview", id, inputHash] as const,
+  revisionSameAsLive: (id: number, inputHash: string) =>
+    [UNISON_QUERY_ROOT, "revision-preview", id, inputHash, "same-as-live"] as const,
   videoLinks: (id: number) => [UNISON_QUERY_ROOT, "video-links", id] as const,
   songVideoSuggestions: (song: SongForSuggestions | null) =>
     [UNISON_QUERY_ROOT, "video-suggestions", "song", song] as const,

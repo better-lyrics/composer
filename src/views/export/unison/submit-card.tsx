@@ -171,9 +171,9 @@ const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
   const checks = useSubmitChecks("update", source);
   const input = useRevisionInput(source.content);
   const { sender, onError, failureText } = useSender(props);
-  const { query, settling } = useRevisionPreview(lyricId, input, onError);
+  const { query, upToDate, settling } = useRevisionPreview(lyricId, input, onError);
   const { replacesPending, unlinkedVideo } = useUpdateTarget(lyricId, source.videoId);
-  const preview = query.data;
+  const preview = upToDate ? undefined : query.data;
   const { ids, failedServerChecks, blocked, blockedReasonId } = useUpdateBlockers(
     checks.canSubmit,
     preview,
@@ -185,6 +185,7 @@ const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
     <SubmitCardShell mode="update" busy={sender.pending} source={source} checks={checks}>
       <ChangesSection
         preview={preview}
+        upToDate={upToDate}
         error={query.error}
         reasonId={ids.changes}
         onRetry={() => void query.refetch()}

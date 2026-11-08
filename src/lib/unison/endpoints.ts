@@ -108,6 +108,16 @@ function previewRevision(id: number, input: RevisionInput, options: CallOptions 
   return unisonFetch(`/lyrics/${id}/revisions/preview`, { ...options, method: "POST", body: input, auth: true });
 }
 
+async function compareWithLive(id: number, input: RevisionInput, options: CallOptions = {}): Promise<boolean> {
+  const { same } = await unisonFetch<{ same: boolean }>(`/lyrics/${id}/revisions/compare`, {
+    ...options,
+    method: "POST",
+    body: input,
+    auth: true,
+  });
+  return same;
+}
+
 async function saveRevision(id: number, input: RevisionInput, options: CallOptions = {}): Promise<RevisionSummary> {
   const { revision } = await unisonFetch<{ revision: RevisionSummary }>(`/lyrics/${id}/revisions`, {
     ...options,
@@ -188,6 +198,7 @@ function fetchMostWanted({ cursor = "", signal }: PageOptions = {}): Promise<Uni
 // -- Exports -------------------------------------------------------------------
 
 export {
+  compareWithLive,
   createSession,
   deleteLyrics,
   fetchChallenge,
