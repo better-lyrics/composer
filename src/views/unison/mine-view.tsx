@@ -16,7 +16,7 @@ import { useLibraryActions } from "@/views/library/use-library-actions";
 import { MINE_GRID, MineColumns, MineRow } from "@/views/unison/mine-row";
 import { InlineError, LoadMore, SkeletonBar, SkeletonRows, SkeletonSong, ViewEmpty } from "@/views/unison/view-states";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -65,14 +65,27 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
   const items = useMemo(() => mine.data?.pages.flatMap((page) => page.items) ?? [], [mine.data]);
   const [sort, setSort] = useState<MineSort | null>(null);
   const shownItems = useMemo(() => sortedMine(items, sort), [items, sort]);
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = mine;
+  const { fetchNextPage } = mine;
+  const loadingAll = useRef(false);
 
-  // A sort covers every lyric, so the rest of the pages load once one is chosen.
-  useEffect(() => {
-    if (sort && hasNextPage && !isFetchingNextPage) void fetchNextPage();
-  }, [sort, hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-  const changeSort = useCallback((key: MineSort["key"]) => setSort((current) => nextMineSort(current, key)), []);
+  // A sort covers every lyric, so choosing one loads the remaining pages, stopping at the first failure.
+  const changeSort = useCallback(
+    (key: MineSort["key"]) => {
+      setSort((current) => nextMineSort(current, key));
+      if (loadingAll.current || !mine.hasNextPage) return;
+      loadingAll.current = true;
+      const loadRest = async () => {
+        let page = await fetchNextPage();
+        while (page.hasNextPage && !page.isFetchNextPageError) page = await fetchNextPage();
+      };
+      loadRest()
+        .catch((error: unknown) => console.warn(LOG_PREFIX, "could not load every lyric to sort", error))
+        .finally(() => {
+          loadingAll.current = false;
+        });
+    },
+    [fetchNextPage, mine.hasNextPage],
+  );
 
   const openAsProject = useCallback(
     (item: UnisonMineItem) => {
