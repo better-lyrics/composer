@@ -22,8 +22,13 @@ interface ChangesSectionProps {
 // -- Constants -----------------------------------------------------------------
 
 const NO_CHANGES_REASON = "Nothing to update. This is already the live version.";
+const DETAILS_ONLY_NOTE = "Only song details changed. Every line matches the live version.";
 
 // -- Helpers -------------------------------------------------------------------
+
+function changesNothingShown({ lines, wordsRetimed, details }: RevisionChangeCounts): boolean {
+  return lines === 0 && wordsRetimed === 0 && details === 0;
+}
 
 function countsLabel({ lines, wordsRetimed, details }: RevisionChangeCounts): string {
   const parts = [
@@ -71,6 +76,9 @@ const ChangesBody: React.FC<ChangesSectionProps> = ({ preview, upToDate, error, 
         <SkeletonBar className="w-1/2" />
       </div>
     );
+  }
+  if (changesNothingShown(revisionChangeCounts(preview.diff.rows))) {
+    return <p className="text-[13px] leading-5 text-(--label)">{DETAILS_ONLY_NOTE}</p>;
   }
   return <DiffList lines={lines} className="max-h-48" />;
 };
