@@ -4,6 +4,8 @@ import { IdentityFileError } from "@/domain/unison/identity-file";
 import { UnisonError } from "@/lib/unison/client";
 import type { StoredUnisonSession } from "@/lib/unison/session";
 import { SupersededSignInError, signInWithIdentityFile } from "@/lib/unison/sign-in";
+import { DropTileContent } from "@/ui/drop-tile";
+import { DROP_TILE_STYLES } from "@/ui/drop-tile-styles";
 import { cn } from "@/utils/cn";
 import { isFileDrag } from "@/utils/file-drag";
 
@@ -92,24 +94,23 @@ const IdentityFileDrop: React.FC<IdentityFileDropProps> = ({ disabled, onPending
         onDragLeave={leaveDrag}
         onDrop={drop}
         className={cn(
-          "flex w-full items-center gap-3 p-2.5 rounded-[10px] border-[1.5px] border-dashed bg-(--well) text-start cursor-pointer transition-colors disabled:cursor-not-allowed",
+          DROP_TILE_STYLES,
+          "cursor-pointer disabled:cursor-not-allowed",
           disabled && "opacity-60",
-          isDragOver ? "border-composer-accent" : "border-composer-text/13 enabled:hover:border-composer-text/22",
+          isDragOver && "border-composer-accent bg-composer-accent/10",
         )}
       >
-        <span className="grid place-items-center size-9 shrink-0 rounded-lg bg-(--layer-2) text-(--label)">
-          {reading ? (
-            <IconLoader2 aria-hidden="true" className="size-[18px] animate-spin motion-reduce:animate-none" />
-          ) : (
-            <IconFileText aria-hidden="true" className="size-[18px]" />
-          )}
-        </span>
-        <span className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-[13px] font-medium text-composer-text">Use your identity file</span>
-          <span className="text-xs text-(--muted)">
-            {reading ? "Connecting to Unison" : "From Better Lyrics settings, never stored"}
-          </span>
-        </span>
+        <DropTileContent
+          icon={
+            reading ? (
+              <IconLoader2 aria-hidden="true" className="size-[18px] animate-spin motion-reduce:animate-none" />
+            ) : (
+              <IconFileText aria-hidden="true" className="size-[18px]" />
+            )
+          }
+          title="Use your identity file"
+          detail={reading ? "Connecting to Unison" : "From Better Lyrics settings, never stored"}
+        />
       </button>
       <input
         ref={inputRef}
