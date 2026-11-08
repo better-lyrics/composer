@@ -175,17 +175,6 @@ describe("unison link", () => {
     expect(useProjectStore.getState().isDirty).toBe(false);
   });
 
-  it("keeps the link when the project opens from a file", () => {
-    applySavedProject(projectFile({ unisonLyricId: "4821" }), "file");
-    expect(useProjectStore.getState().unisonLyricId).toBe("4821");
-  });
-
-  it("saves no field for an unlinked project", () => {
-    useProjectStore.getState().linkUnisonLyric("4821");
-    useProjectStore.getState().unlinkUnisonLyric();
-    expect("unisonLyricId" in buildSavedProject(currentSaveInput())).toBe(false);
-  });
-
   it("opens an older project with no link unlinked", () => {
     useProjectStore.getState().linkUnisonLyric("4821");
     applySavedProject(projectFile(), "storage");

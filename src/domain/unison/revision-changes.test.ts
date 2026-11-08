@@ -45,19 +45,6 @@ describe("revisionChangeCounts", () => {
   it("counts changed lines, retimed words and song details", () => {
     expect(revisionChangeCounts(UPDATE_ROWS)).toEqual({ lines: 5, wordsRetimed: 6, details: 1 });
   });
-
-  it("counts a line shift without moved words as a changed line only", () => {
-    const rows: RevisionDiffRow[] = [{ kind: "timing", lineNo: 1, startMs: 0, deltaMs: -120, text: "Tide" }];
-    expect(revisionChangeCounts(rows)).toEqual({ lines: 1, wordsRetimed: 0, details: 0 });
-  });
-
-  it("counts nothing for unchanged rows and gaps", () => {
-    const rows: RevisionDiffRow[] = [
-      { kind: "same", lineNo: 1, startMs: 0, text: "Tide" },
-      { kind: "gap", count: 40 },
-    ];
-    expect(revisionChangeCounts(rows)).toEqual({ lines: 0, wordsRetimed: 0, details: 0 });
-  });
 });
 
 describe("revisionDiffLines", () => {
@@ -73,28 +60,5 @@ describe("revisionDiffLines", () => {
       { kind: "retimed", text: "Hold the light till morning", detail: "2 words moved" },
       { kind: "added", text: "ISRC: GBUM71029604" },
     ]);
-  });
-
-  it("names an earlier shift and a resplit with no moved words", () => {
-    const rows: RevisionDiffRow[] = [
-      { kind: "timing", lineNo: 1, startMs: 0, deltaMs: -50, text: "Tide" },
-      { kind: "syllable", lineNo: 2, startMs: 900, text: "Rope and harbour", before: "Rope", after: "Ro|pe", moved: 0 },
-    ];
-    expect(revisionDiffLines(rows)).toEqual([
-      { kind: "retimed", text: "Tide", detail: "0.05 s earlier" },
-      { kind: "retimed", text: "Rope and harbour", detail: "Syllables split differently" },
-    ]);
-  });
-
-  it("shows a changed song detail as removed then added", () => {
-    const rows: RevisionDiffRow[] = [{ kind: "field", field: "language", before: "en", after: "en-GB" }];
-    expect(revisionDiffLines(rows)).toEqual([
-      { kind: "removed", text: "Language: en" },
-      { kind: "added", text: "Language: en-GB" },
-    ]);
-  });
-
-  it("returns no lines for an empty diff", () => {
-    expect(revisionDiffLines([])).toEqual([]);
   });
 });

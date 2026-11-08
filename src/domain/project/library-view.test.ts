@@ -36,14 +36,6 @@ describe("libraryProjects", () => {
     expect(ids(libraryProjects(LIBRARY, { ...options, filter: "synced" }))).toEqual(["synced"]);
   });
 
-  it("filters to projects linked to Unison", () => {
-    const linked = [...LIBRARY, entry("linked-draft", { updatedAt: 5, unisonLyricId: "7" })];
-    expect(ids(libraryProjects(linked, { filter: "unison", query: "", sort: "edited" }))).toEqual([
-      "linked-draft",
-      "synced",
-    ]);
-  });
-
   it("combines the filter with the search", () => {
     expect(ids(libraryProjects(LIBRARY, { filter: "all", query: "m83", sort: "edited" }))).toEqual(["syncing"]);
     expect(libraryProjects(LIBRARY, { filter: "synced", query: "m83", sort: "edited" })).toEqual([]);

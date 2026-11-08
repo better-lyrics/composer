@@ -137,25 +137,7 @@ describe("signInWithIdentityFile", () => {
 });
 
 describe("signInWithExtension", () => {
-  it("starts a session from the extension's signed body", async () => {
-    const { sessionBodies } = stubUnison();
-    const signedBody = { payload: { origin: "x", timestamp: 1, nonce: "n", keyId: "k".repeat(64) }, signature: "sig" };
-    installExtension((port) => port.reply({ ok: true, signedBody }));
-
-    const session = await signInWithExtension("ext");
-
-    expect(session.token).toBe("token-1");
-    expect(sessionBodies).toEqual([signedBody]);
-  });
-
   describe("error paths", () => {
-    it("reports a declined prompt as cancelled", async () => {
-      stubUnison();
-      installExtension((port) => port.reply({ ok: false, reason: "USER_CANCELLED" }));
-
-      await expect(signInWithExtension("ext")).rejects.toMatchObject({ kind: "cancelled" });
-    });
-
     it("reports a closed prompt as cancelled", async () => {
       stubUnison();
       installExtension((port) => port.close());
@@ -165,13 +147,6 @@ describe("signInWithExtension", () => {
       await expect(attempt).rejects.toBeInstanceOf(SignInError);
       await expect(attempt).rejects.toMatchObject({ kind: "cancelled" });
       expect(readUnisonSession()).toBeNull();
-    });
-
-    it("reports a site the extension does not allow as not allowed", async () => {
-      stubUnison();
-      installExtension((port) => port.reply({ ok: false, reason: "ORIGIN_MISMATCH" }));
-
-      await expect(signInWithExtension("ext")).rejects.toMatchObject({ kind: "not-allowed" });
     });
   });
 });

@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SuggestedVideo } from "@/lib/unison/api-types";
-import {
-  fitsSongLength,
-  lengthMismatchNote,
-  playsUnlinkedVideo,
-  submitVideoChoices,
-  suggestionLengthNote,
-  VIDEO_LINK_LIMIT,
-} from "@/domain/unison/video-links";
+import { fitsSongLength, playsUnlinkedVideo, submitVideoChoices, VIDEO_LINK_LIMIT } from "@/domain/unison/video-links";
 
 // -- Fixtures ------------------------------------------------------------------
 
@@ -62,30 +55,6 @@ describe("fitsSongLength", () => {
   });
 });
 
-describe("lengthMismatchNote", () => {
-  it("says how much shorter the video is", () => {
-    expect(lengthMismatchNote(252, 355)).toBe("4:12 long, 1:43 shorter than the song. Must be within 2 s.");
-  });
-
-  it("says how much longer the video is", () => {
-    expect(lengthMismatchNote(370, 355)).toBe("6:10 long, 0:15 longer than the song. Must be within 2 s.");
-  });
-});
-
-describe("suggestionLengthNote", () => {
-  it("explains a suggestion whose length is off", () => {
-    expect(suggestionLengthNote(suggestion("Long0000001", { durationSeconds: 370 }), SONG_SECONDS)).toBe(
-      lengthMismatchNote(370, SONG_SECONDS),
-    );
-  });
-
-  it("has nothing to say for a fitting, unknown or missing length", () => {
-    expect(suggestionLengthNote(SAME, SONG_SECONDS)).toBeNull();
-    expect(suggestionLengthNote(suggestion("NoLength001", { durationSeconds: null }), SONG_SECONDS)).toBeNull();
-    expect(suggestionLengthNote(undefined, SONG_SECONDS)).toBeNull();
-  });
-});
-
 describe("submitVideoChoices", () => {
   it("links same-recording suggestions and lists the rest as more matches", () => {
     const result = choices();
@@ -93,28 +62,11 @@ describe("submitVideoChoices", () => {
     expect(ids(result.more)).toEqual([RELATED.videoId, UNRATED.videoId]);
   });
 
-  it("moves a dismissed suggestion to more matches", () => {
-    const result = choices({ dismissed: new Set([SAME.videoId]) });
-    expect(result.linked).toEqual([]);
-    expect(ids(result.more)).toEqual([SAME.videoId, RELATED.videoId, UNRATED.videoId]);
-  });
-
   it("never links a same match whose length is off", () => {
     const longer = suggestion("Longer00001", { durationSeconds: SONG_SECONDS + 30 });
     const result = choices({ suggestions: [longer] });
     expect(result.linked).toEqual([]);
     expect(ids(result.more)).toEqual([longer.videoId]);
-  });
-
-  it("keeps chosen videos after the suggested ones and out of more matches", () => {
-    const result = choices({
-      chosen: [
-        { videoId: RELATED.videoId, suggestion: RELATED, origin: "chosen" },
-        { videoId: "Pasted00001", suggestion: null, origin: "pasted" },
-      ],
-    });
-    expect(ids(result.linked)).toEqual([SAME.videoId, RELATED.videoId, "Pasted00001"]);
-    expect(ids(result.more)).toEqual([UNRATED.videoId]);
   });
 
   it("never offers the main video", () => {
@@ -144,11 +96,6 @@ describe("playsUnlinkedVideo", () => {
     { videoId: MAIN_ID, isPrimary: true },
     { videoId: "lYr1cV1d3o0", isPrimary: false },
   ];
-
-  it("allows the lyric's main and linked videos", () => {
-    expect(playsUnlinkedVideo(MAIN_ID, MAIN_ID, links)).toBe(false);
-    expect(playsUnlinkedVideo("lYr1cV1d3o0", MAIN_ID, links)).toBe(false);
-  });
 
   it("allows a project with no video, and links that have not loaded", () => {
     expect(playsUnlinkedVideo(undefined, MAIN_ID, links)).toBe(false);

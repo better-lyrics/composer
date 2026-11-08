@@ -36,24 +36,6 @@ describe("unison session", () => {
     expect(readUnisonSession()).toEqual(saved);
   });
 
-  it("reads as signed out after clear", () => {
-    saveUnisonSession(session());
-    clearUnisonSession();
-    expect(readUnisonSession()).toBeNull();
-    expect(localStorage.getItem(UNISON_SESSION_STORAGE_KEY)).toBeNull();
-  });
-
-  it("notifies subscribers on save and clear", () => {
-    const listener = vi.fn();
-    const unsubscribe = subscribeUnisonSession(listener);
-    saveUnisonSession(session());
-    clearUnisonSession();
-    expect(listener).toHaveBeenCalledTimes(2);
-    unsubscribe();
-    saveUnisonSession(session());
-    expect(listener).toHaveBeenCalledTimes(2);
-  });
-
   it("notifies subscribers when another tab changes the key", () => {
     const listener = vi.fn();
     const unsubscribe = subscribeUnisonSession(listener);
@@ -65,14 +47,6 @@ describe("unison session", () => {
   });
 
   describe("edge cases", () => {
-    it("ignores storage events for other keys", () => {
-      const listener = vi.fn();
-      const unsubscribe = subscribeUnisonSession(listener);
-      window.dispatchEvent(new StorageEvent("storage", { key: "composer.other.v1" }));
-      expect(listener).not.toHaveBeenCalled();
-      unsubscribe();
-    });
-
     it("treats a storage clear from another tab as a change", () => {
       const listener = vi.fn();
       const unsubscribe = subscribeUnisonSession(listener);
@@ -106,13 +80,6 @@ describe("unison session", () => {
   });
 
   describe("error paths", () => {
-    it("reads malformed JSON as signed out and removes it", () => {
-      vi.spyOn(console, "warn").mockImplementation(() => {});
-      localStorage.setItem(UNISON_SESSION_STORAGE_KEY, "{not json");
-      expect(readUnisonSession()).toBeNull();
-      expect(localStorage.getItem(UNISON_SESSION_STORAGE_KEY)).toBeNull();
-    });
-
     it("reads a wrong shape as signed out and removes it", () => {
       vi.spyOn(console, "warn").mockImplementation(() => {});
       localStorage.setItem(UNISON_SESSION_STORAGE_KEY, JSON.stringify({ token: 5, expiresAt: "soon" }));

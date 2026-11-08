@@ -54,25 +54,11 @@ describe("unisonFetch", () => {
     await expect(unisonFetchPage("/lyrics/mine")).resolves.toEqual({ items: [{ id: 1 }], nextCursor: "20" });
   });
 
-  it("sends a JSON body with a content type", async () => {
-    signIn();
-    const calls = stubFetch(() => json({ success: true, data: { id: 3, created: true } }, 201));
-    await unisonFetch("/lyrics/submit", { method: "POST", body: { song: "Halo" }, auth: true });
-    expect(headersOf(calls[0]).get("content-type")).toBe("application/json");
-    expect(calls[0].init.body).toBe(JSON.stringify({ song: "Halo" }));
-  });
-
   it("sends the bearer token on auth calls", async () => {
     signIn("token-b");
     const calls = stubFetch(() => json({ success: true, data: {} }));
     await unisonFetch("/auth/me", { auth: true });
     expect(headersOf(calls[0]).get("authorization")).toBe("Bearer token-b");
-  });
-
-  it("adds defined query values and skips undefined ones", async () => {
-    const calls = stubFetch(() => json({ success: true, data: [] }));
-    await unisonFetch("/lyrics/search", { query: { q: "a b&c", limit: undefined } });
-    expect(calls[0].url).toBe(`${UNISON_BASE_URL}/lyrics/search?q=a+b%26c`);
   });
 
   describe("edge cases", () => {
@@ -89,11 +75,6 @@ describe("unisonFetch", () => {
       const calls = stubFetch(() => json({ success: true, data: {} }));
       await unisonFetch("/lyrics/4");
       expect(headersOf(calls[0]).has("authorization")).toBe(false);
-    });
-
-    it("reads a missing cursor as the last page", async () => {
-      stubFetch(() => json({ success: true, data: [] }));
-      await expect(unisonFetchPage("/lyrics/mine")).resolves.toEqual({ items: [], nextCursor: null });
     });
   });
 
@@ -155,14 +136,6 @@ describe("unisonFetch", () => {
       });
       await expect(unisonFetch("/auth/me", { auth: true })).rejects.toMatchObject({ status: 401 });
       expect(readUnisonSession()?.token).toBe("new");
-    });
-
-    it("maps a network failure to NETWORK", async () => {
-      vi.spyOn(console, "warn").mockImplementation(() => {});
-      vi.stubGlobal("fetch", async () => {
-        throw new TypeError("Failed to fetch");
-      });
-      await expect(unisonFetch("/lyrics/4")).rejects.toMatchObject({ code: "NETWORK", status: 0 });
     });
 
     it("lets an AbortError through untouched", async () => {

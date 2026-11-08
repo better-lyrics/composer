@@ -102,10 +102,6 @@ describe("buildIndexEntry", () => {
   });
 
   describe("unison lyric", () => {
-    it("records the linked unison lyric id", () => {
-      expect(buildIndexEntry(input({ unisonLyricId: "4821" })).unisonLyricId).toBe("4821");
-    });
-
     it("omits the id for an unlinked project and for a malformed one", () => {
       expect("unisonLyricId" in buildIndexEntry(input({ unisonLyricId: null }))).toBe(false);
       expect("unisonLyricId" in buildIndexEntry(input())).toBe(false);

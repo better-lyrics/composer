@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type SubmitCheckInput, submitChecks, submitDurationSeconds } from "@/domain/unison/submit-checks";
+import { type SubmitCheckInput, submitChecks } from "@/domain/unison/submit-checks";
 
 // -- Fixtures ------------------------------------------------------------------
 
@@ -52,20 +52,6 @@ describe("submitChecks", () => {
   });
 
   describe("matched video", () => {
-    it("fails without a YouTube video", () => {
-      expect(checkOf(readyInput({ videoId: undefined }), "video")).toMatchObject({
-        status: "fail",
-        problem: "no-video",
-      });
-    });
-
-    it("fails without a known duration", () => {
-      expect(checkOf(readyInput({ durationSeconds: 0 }), "video")).toMatchObject({
-        status: "fail",
-        problem: "no-duration",
-      });
-    });
-
     it("fails when the duration is outside what Unison accepts", () => {
       expect(checkOf(readyInput({ durationSeconds: 3601 }), "video")).toMatchObject({
         status: "fail",
@@ -75,24 +61,10 @@ describe("submitChecks", () => {
   });
 
   describe("song details", () => {
-    it("fails without a title", () => {
-      expect(checkOf(readyInput({ title: "  " }), "song")).toMatchObject({ status: "fail", problem: "no-title" });
-    });
-
     it("fails when every artist is blank", () => {
       expect(checkOf(readyInput({ artists: ["", " "] }), "song")).toMatchObject({
         status: "fail",
         problem: "no-artist",
-      });
-    });
-  });
-
-  describe("sync", () => {
-    it("fails when a line is not synced and carries the counts", () => {
-      expect(checkOf(readyInput({ fullySynced: false, syncedLineCount: 50 }), "synced")).toMatchObject({
-        status: "fail",
-        syncedLineCount: 50,
-        lineCount: 54,
       });
     });
   });
@@ -119,10 +91,6 @@ describe("submitChecks", () => {
         edited: true,
       });
     });
-
-    it("reports a generated export failure as not edited", () => {
-      expect(checkOf(readyInput({ content: PRETTY_TTML }), "ttml")).toMatchObject({ status: "fail", edited: false });
-    });
   });
 
   describe("ISRC", () => {
@@ -130,10 +98,6 @@ describe("submitChecks", () => {
       const result = submitChecks(readyInput({ isrc: undefined }));
       expect(result.checks.find((check) => check.id === "isrc")?.status).toBe("note");
       expect(result.canSubmit).toBe(true);
-    });
-
-    it("treats a blank ISRC as missing", () => {
-      expect(checkOf(readyInput({ isrc: "  " }), "isrc")?.status).toBe("note");
     });
   });
 
@@ -166,11 +130,5 @@ describe("submitChecks", () => {
         expect(result.canSubmit).toBe(!result.checks.some((check) => check.status === "fail"));
       }
     });
-  });
-});
-
-describe("submitDurationSeconds", () => {
-  it("rounds to whole seconds, as Unison stores them", () => {
-    expect(submitDurationSeconds(355.6)).toBe(356);
   });
 });

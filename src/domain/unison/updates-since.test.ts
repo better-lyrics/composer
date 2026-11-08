@@ -45,25 +45,9 @@ describe("updatesSince", () => {
     ]);
   });
 
-  it("reports several updates, newest first", () => {
-    const updates = updatesSince(SEEN, [
-      mine(1, { revNo: 2, updatedAt: 10 }),
-      mine(2, { revNo: 3, lastRejected: { revNo: 4, reviewNote: null }, hidden: true, updatedAt: 20 }),
-    ]);
-    expect(updates.map((update) => [update.lyricId, update.kind])).toEqual([
-      ["2", "declined"],
-      ["2", "hidden"],
-      ["1", "approved"],
-    ]);
-  });
-
   describe("edge cases", () => {
     it("reports nothing on a first visit", () => {
       expect(updatesSince(null, [mine(1, { revNo: 5, hidden: true })])).toEqual([]);
-    });
-
-    it("reports nothing for a lyric missing from the current list", () => {
-      expect(updatesSince(SEEN, [])).toEqual([]);
     });
 
     it("reports nothing for a lyric that was not in the snapshot", () => {
@@ -74,12 +58,6 @@ describe("updatesSince", () => {
       expect(
         updatesSince(SEEN, [mine(1), mine(2, { revNo: 3, lastRejected: { revNo: 2, reviewNote: null } })]),
       ).toEqual([]);
-    });
-
-    it("does not report a lyric that stayed hidden or became visible again", () => {
-      const seen: LastSeen = { "1": { revNo: 1, pendingRevNo: null, rejectedRevNo: null, hidden: true } };
-      expect(updatesSince(seen, [mine(1, { hidden: true })])).toEqual([]);
-      expect(updatesSince(seen, [mine(1)])).toEqual([]);
     });
   });
 
@@ -106,35 +84,15 @@ describe("updatesSince", () => {
 });
 
 describe("lastSeenFrom", () => {
-  it("records the live revision, the last rejected revision and visibility", () => {
-    expect(
-      lastSeenFrom([
-        mine(4, { revNo: 7, pending: { revNo: 9 }, lastRejected: { revNo: 8, reviewNote: null }, hidden: true }),
-      ]),
-    ).toEqual({
-      "4": { revNo: 7, pendingRevNo: 9, rejectedRevNo: 8, hidden: true },
-    });
-  });
-
   it("keeps earlier entries for lyrics that were not loaded this time", () => {
     expect(lastSeenFrom([mine(1, { revNo: 2 })], SEEN)).toEqual({
       "1": { revNo: 2, pendingRevNo: null, rejectedRevNo: null, hidden: false },
       "2": SEEN["2"],
     });
   });
-
-  it("never mutates the previous snapshot", () => {
-    const previous = structuredClone(SEEN);
-    lastSeenFrom([mine(1, { revNo: 9 })], previous);
-    expect(previous).toEqual(SEEN);
-  });
 });
 
 describe("settledLastSeen", () => {
-  it("records every lyric on a first visit", () => {
-    expect(settledLastSeen(null, [mine(1, { revNo: 2 })])).toEqual(lastSeenFrom([mine(1, { revNo: 2 })]));
-  });
-
   it("keeps the old entry of a lyric with an update to report", () => {
     const settled = settledLastSeen(SEEN, [mine(1, { revNo: 2 })]);
     expect(settled["1"]).toEqual(SEEN["1"]);

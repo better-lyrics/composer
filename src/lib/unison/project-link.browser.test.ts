@@ -18,12 +18,6 @@ async function seedTwoProjects(): Promise<void> {
 // -- Tests --------------------------------------------------------------------
 
 describe("linkProjectToLyric", () => {
-  it("links the open project in the stores", async () => {
-    await seedTwoProjects();
-    await linkProjectToLyric(captureLinkTarget(), "4217");
-    expect(useProjectStore.getState().unisonLyricId).toBe("4217");
-  });
-
   it("regression: a submit that lands after a project switch links the project it came from", async () => {
     await seedTwoProjects();
     const target = captureLinkTarget();

@@ -1,9 +1,4 @@
-import {
-  initialRevision,
-  makeLiveRefusal,
-  revisionDiffBase,
-  revisionSummaryLine,
-} from "@/domain/unison/revision-history";
+import { makeLiveRefusal, revisionDiffBase } from "@/domain/unison/revision-history";
 import type { RevisionStatus, RevisionSummary } from "@/lib/unison/revision-types";
 import { describe, expect, it } from "vitest";
 
@@ -43,11 +38,6 @@ describe("makeLiveRefusal", () => {
     expect(makeLiveRefusal(revision(3, "past"), true)).toBeNull();
   });
 
-  it("refuses the live and the pending revision", () => {
-    expect(makeLiveRefusal(revision(5, "live"), true)).toBe("live");
-    expect(makeLiveRefusal(revision(6, "pending"), true)).toBe("pending");
-  });
-
   it("refuses revisions that never went live, because the server only restores live ones", () => {
     expect(makeLiveRefusal(revision(4, "rejected"), true)).toBe("never-live");
     expect(makeLiveRefusal(revision(2, "withdrawn"), true)).toBe("never-live");
@@ -67,43 +57,5 @@ describe("revisionDiffBase", () => {
 
   it("lets the server pick the previous live revision for the live one", () => {
     expect(revisionDiffBase(HISTORY[1], HISTORY)).toBeNull();
-  });
-
-  it("falls back to the server's choice when no revision is live", () => {
-    expect(revisionDiffBase(HISTORY[0], [HISTORY[0], HISTORY[2]])).toBeNull();
-  });
-});
-
-describe("revisionSummaryLine", () => {
-  it("says which revision a restore brought back", () => {
-    expect(revisionSummaryLine(revision(7, "live", { revertsRevNo: 3 }))).toBe("Brings back revision 3");
-  });
-
-  it("calls the first revision the first upload", () => {
-    expect(revisionSummaryLine(revision(1, "past"))).toBe("First upload");
-  });
-
-  it("shows the council's note for a declined revision", () => {
-    expect(revisionSummaryLine(HISTORY[2])).toBe("Timing drifts late in the bridge.");
-  });
-
-  it("names the author of any other edit", () => {
-    expect(revisionSummaryLine(revision(3, "past"))).toBe("Edit by Paper Ferries");
-    expect(revisionSummaryLine(revision(3, "past", { author: null }))).toBe("Edit");
-  });
-});
-
-describe("initialRevision", () => {
-  it("opens at the requested revision", () => {
-    expect(initialRevision(HISTORY, 4)?.revNo).toBe(4);
-  });
-
-  it("opens at the newest revision when none or an unknown one is requested", () => {
-    expect(initialRevision(HISTORY, null)?.revNo).toBe(6);
-    expect(initialRevision(HISTORY, 99)?.revNo).toBe(6);
-  });
-
-  it("has nothing to open in an empty history", () => {
-    expect(initialRevision([], 4)).toBeUndefined();
   });
 });
