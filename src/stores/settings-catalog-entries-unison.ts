@@ -40,7 +40,7 @@ const UNISON_CATALOG_ENTRIES = {
     section: "unison",
     group: "Projects",
     label: "Most wanted songs",
-    description: "Show the songs listeners are asking lyrics for.",
+    description: "While connected, show the songs listeners are asking lyrics for.",
     keywords: ["library", "requests", "wanted", "shelf"],
     settingKey: "unisonWantedShelf",
     visibleWhen: (state) => state.unisonEnabled,

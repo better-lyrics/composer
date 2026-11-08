@@ -4,9 +4,11 @@ import type { WantedSong } from "@/lib/unison/api-types";
 import { Button } from "@/ui/button";
 import { LinkButton } from "@/ui/link-button";
 import { UnisonSongArt } from "@/ui/unison/unison-song-art";
+import { useSettingsStore } from "@/stores/settings";
 import { unisonViewPath } from "@/utils/app-routes";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
+import { showWantedShelfHiddenToast } from "@/utils/unison-toast";
 import { IconArrowRight, IconFlame } from "@tabler/icons-react";
 import { useId, useMemo } from "react";
 
@@ -15,6 +17,14 @@ import { useId, useMemo } from "react";
 const SHELF_SIZE = 4;
 const SHELF_GRID = "grid grid-cols-4 gap-3 max-[1100px]:grid-cols-2 max-[560px]:grid-cols-1";
 const TILE = "flex items-center gap-3 h-18 p-2.5 pr-3 rounded-xl bg-(--layer-1) shadow-[inset_0_0_0_1px_var(--edge)]";
+
+// -- Helpers -------------------------------------------------------------------
+
+function hideShelf(): void {
+  const settings = useSettingsStore.getState();
+  settings.set("unisonWantedShelf", false);
+  showWantedShelfHiddenToast(() => settings.set("unisonWantedShelf", true));
+}
 
 // -- Components ----------------------------------------------------------------
 
@@ -79,7 +89,11 @@ const MostWantedShelf: React.FC<{ className?: string }> = ({ className }) => {
           <IconFlame aria-hidden="true" className="size-[18px] text-composer-warning" />
           Most wanted on Unison
         </h2>
-        <LinkButton
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={hideShelf}>
+            Hide
+          </Button>
+          <LinkButton
           to={unisonViewPath("wanted")}
           variant="ghost"
           size="sm"
@@ -88,7 +102,8 @@ const MostWantedShelf: React.FC<{ className?: string }> = ({ className }) => {
         >
           <IconArrowRight aria-hidden="true" className="size-4" />
           See all
-        </LinkButton>
+          </LinkButton>
+        </div>
       </div>
       {wanted.isPending ? (
         <ShelfSkeleton />

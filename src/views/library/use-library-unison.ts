@@ -32,7 +32,7 @@ function useLibraryUnison(entries: readonly ProjectIndexEntry[]): LibraryUnisonD
   const unison = useMemo(() => (showColumn ? { lyrics } : null), [showColumn, lyrics]);
   return {
     showNotices,
-    showWantedShelf: features.wantedShelf,
+    showWantedShelf: signedIn && features.wantedShelf,
     unison,
     items: lyrics?.items ?? null,
     projectByLyric,

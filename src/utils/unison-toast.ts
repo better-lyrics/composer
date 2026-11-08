@@ -1,5 +1,6 @@
 import { isUnisonNotFound, isUnisonSessionEnded, UnisonError } from "@/lib/unison/client";
 import { useProjectStore } from "@/stores/project";
+import { settingEntry } from "@/stores/settings-catalog";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { toast } from "sonner";
 
@@ -33,6 +34,10 @@ function showDisconnectedToast(): void {
 
 function showRemovedFromUnisonToast(): void {
   toast("Removed from Unison");
+}
+
+function showWantedShelfHiddenToast(undo: () => void): void {
+  toast(`${settingEntry("unisonWantedShelf").label} hidden`, { action: { label: "Undo", onClick: undo } });
 }
 
 function showEditWithdrawnToast(): void {
@@ -78,5 +83,6 @@ export {
   showSubmittedToast,
   showUnisonFailureToast,
   showUpdateSentToast,
+  showWantedShelfHiddenToast,
   unisonFailureReason,
 };
