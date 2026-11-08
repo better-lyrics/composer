@@ -1,11 +1,11 @@
+import { describe, expect, it } from "vitest";
 import {
   type LastSeen,
-  type UnisonMineSnapshot,
   lastSeenFrom,
   settledLastSeen,
+  type UnisonMineSnapshot,
   updatesSince,
 } from "@/domain/unison/updates-since";
-import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -112,6 +112,18 @@ describe("settledLastSeen", () => {
       ]);
       const approved = mine(2, { revNo: 5, lastRejected: { revNo: 2, reviewNote: null } });
       expect(updatesSince(settled, [approved]).map((update) => update.kind)).toEqual(["approved"]);
+    });
+
+    it("regression: a declined edit the notices do not show never holds back a later approval", () => {
+      const shown = new Set(["approved", "hidden"] as const);
+      const declinedThenResent = mine(2, {
+        revNo: 3,
+        pending: { revNo: 6 },
+        lastRejected: { revNo: 4, reviewNote: "Timing drifts" },
+      });
+      const settled = settledLastSeen(SEEN, [declinedThenResent], shown);
+      const approved = mine(2, { revNo: 6, lastRejected: { revNo: 4, reviewNote: "Timing drifts" } });
+      expect(updatesSince(settled, [approved], shown).map((update) => update.kind)).toEqual(["approved"]);
     });
   });
 });

@@ -31,6 +31,10 @@ interface UnisonUpdate {
   reviewNote: string | null;
 }
 
+// -- Constants -----------------------------------------------------------------
+
+const ALL_KINDS: ReadonlySet<UnisonUpdateKind> = new Set(["approved", "declined", "hidden"]);
+
 // -- Derivations ---------------------------------------------------------------
 
 function lastSeenLyric(lyric: UnisonMineSnapshot): LastSeenLyric {
@@ -40,6 +44,14 @@ function lastSeenLyric(lyric: UnisonMineSnapshot): LastSeenLyric {
     rejectedRevNo: lyric.revision.lastRejected?.revNo ?? null,
     hidden: lyric.hidden,
   };
+}
+
+function shownUpdates(
+  seen: LastSeenLyric,
+  lyric: UnisonMineSnapshot,
+  kinds: ReadonlySet<UnisonUpdateKind>,
+): UnisonUpdate[] {
+  return lyricUpdates(seen, lyric).filter((update) => kinds.has(update.kind));
 }
 
 function lyricUpdates(seen: LastSeenLyric, lyric: UnisonMineSnapshot): UnisonUpdate[] {
@@ -60,12 +72,16 @@ function lyricUpdates(seen: LastSeenLyric, lyric: UnisonMineSnapshot): UnisonUpd
   return updates;
 }
 
-function updatesSince(previous: LastSeen | null, current: readonly UnisonMineSnapshot[]): UnisonUpdate[] {
+function updatesSince(
+  previous: LastSeen | null,
+  current: readonly UnisonMineSnapshot[],
+  kinds: ReadonlySet<UnisonUpdateKind> = ALL_KINDS,
+): UnisonUpdate[] {
   if (!previous) return [];
   return current
     .flatMap((lyric) => {
       const seen = previous[String(lyric.id)];
-      return seen ? lyricUpdates(seen, lyric) : [];
+      return seen ? shownUpdates(seen, lyric, kinds) : [];
     })
     .toSorted((a, b) => b.at - a.at);
 }
@@ -76,17 +92,22 @@ function lastSeenFrom(current: readonly UnisonMineSnapshot[], previous: LastSeen
   return next;
 }
 
-// A lyric with an update keeps its old entry until the notice is acted on; the rest advance.
-function settledLastSeen(previous: LastSeen | null, current: readonly UnisonMineSnapshot[]): LastSeen {
+// A lyric with an update to show keeps its old entry until the notice is acted on; the rest advance,
+// including updates of kinds nobody shows, which would otherwise hold the entry forever.
+function settledLastSeen(
+  previous: LastSeen | null,
+  current: readonly UnisonMineSnapshot[],
+  kinds: ReadonlySet<UnisonUpdateKind> = ALL_KINDS,
+): LastSeen {
   const next: LastSeen = { ...previous };
   for (const lyric of current) {
     const seen = previous?.[String(lyric.id)];
-    if (!seen || lyricUpdates(seen, lyric).length === 0) next[String(lyric.id)] = lastSeenLyric(lyric);
+    if (!seen || shownUpdates(seen, lyric, kinds).length === 0) next[String(lyric.id)] = lastSeenLyric(lyric);
   }
   return next;
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export { lastSeenFrom, settledLastSeen, updatesSince };
 export type { LastSeen, LastSeenLyric, UnisonMineSnapshot, UnisonUpdate, UnisonUpdateKind };
+export { lastSeenFrom, settledLastSeen, updatesSince };

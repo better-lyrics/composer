@@ -38,6 +38,9 @@ interface UpdateRowProps {
 
 // -- Constants -----------------------------------------------------------------
 
+// Declined edits show on the Unison page, with their note.
+const LIBRARY_KINDS: ReadonlySet<UnisonUpdateKind> = new Set(["approved", "hidden"]);
+
 const UPDATE_CHIPS: Record<UnisonUpdateKind, { tone: "positive" | "error"; label: string; icon: Icon }> = {
   approved: { tone: "positive", label: "Edit approved", icon: IconCircleCheck },
   declined: { tone: "error", label: "Edit declined", icon: IconCircleX },
@@ -74,18 +77,14 @@ const UnisonUpdates: React.FC<UnisonUpdatesProps> = ({ items, projectByLyric, no
   const [previous, setPrevious] = useState(readLastSeen);
   const updates = useMemo(
     () =>
-      items
-        ? updatesSince(previous, items).filter(
-            (update) => update.kind !== "declined" && projectByLyric.has(update.lyricId),
-          )
-        : [],
+      items ? updatesSince(previous, items, LIBRARY_KINDS).filter((update) => projectByLyric.has(update.lyricId)) : [],
     [items, previous, projectByLyric],
   );
 
   // Another tab may have acted on a notice since this one mounted, so settle against what is stored now.
   useEffect(() => {
     if (!items) return;
-    const settled = settledLastSeen(readLastSeen(), items);
+    const settled = settledLastSeen(readLastSeen(), items, LIBRARY_KINDS);
     writeLastSeen(settled);
     setPrevious(settled);
   }, [items]);
