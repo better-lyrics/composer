@@ -1,5 +1,5 @@
-import { Popover } from "@/ui/popover";
 import { useEffect, useId, useRef, useState } from "react";
+import { Popover } from "@/ui/popover";
 
 // -- Types --------------------------------------------------------------------
 
@@ -21,6 +21,9 @@ interface DeckKnobProps {
 const DRAG_PIXELS_FOR_FULL_TURN = 160;
 const DRAG_THRESHOLD = 3;
 const KEY_DIRECTIONS: Record<string, 1 | -1> = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 };
+const WHEEL_PIXELS_FOR_FULL_TURN = 500;
+const WHEEL_GESTURE_GAP_MS = 200;
+const WHEEL_LINE_PIXELS = 16;
 const RADIUS = 17;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const ARC = CIRCUMFERENCE * 0.75;
@@ -94,6 +97,29 @@ const DeckKnob: React.FC<DeckKnobProps> = ({
   const endDrag = useRef<(() => void) | null>(null);
   useEffect(() => () => endDrag.current?.(), []);
 
+  const wheelTarget = useRef<HTMLSpanElement>(null);
+  const wheelGesture = useRef({ startFraction: 0, travel: 0, lastTime: Number.NEGATIVE_INFINITY });
+  useEffect(() => {
+    const target = wheelTarget.current;
+    if (!target) return;
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const gesture = wheelGesture.current;
+      if (event.timeStamp - gesture.lastTime > WHEEL_GESTURE_GAP_MS) {
+        gesture.startFraction = fraction;
+        gesture.travel = 0;
+      }
+      gesture.lastTime = event.timeStamp;
+      const scale = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? WHEEL_LINE_PIXELS : 1;
+      gesture.travel += (event.deltaX - event.deltaY) * scale;
+      const next = Math.min(1, Math.max(0, gesture.startFraction + gesture.travel / WHEEL_PIXELS_FOR_FULL_TURN));
+      gesture.travel = (next - gesture.startFraction) * WHEEL_PIXELS_FOR_FULL_TURN;
+      onFraction(next);
+    };
+    target.addEventListener("wheel", handleWheel, { passive: false });
+    return () => target.removeEventListener("wheel", handleWheel);
+  }, [fraction, onFraction]);
+
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (event.button !== 0) return;
     const startX = event.clientX;
@@ -159,7 +185,7 @@ const DeckKnob: React.FC<DeckKnobProps> = ({
         <button
           type="button"
           aria-label={`${label}, ${valueText}`}
-          title="Drag to adjust, double-click to reset"
+          title="Drag or scroll to adjust, double-click to reset"
           onPointerDown={handlePointerDown}
           onKeyDown={handleKeyDown}
           onDoubleClick={() => {
@@ -168,10 +194,12 @@ const DeckKnob: React.FC<DeckKnobProps> = ({
           }}
           className="flex items-center gap-2 -mx-1 px-1 rounded-lg cursor-grab active:cursor-grabbing select-none touch-none"
         >
-          <KnobFace fraction={fraction} />
-          <span className="flex flex-col w-[52px] text-left leading-[1.15] max-[1279px]:hidden">
-            <span className="text-[11.5px] text-(--muted)">{label}</span>
-            <span className="font-mono text-[13px] tabular-nums text-composer-text">{valueText}</span>
+          <span ref={wheelTarget} className="contents">
+            <KnobFace fraction={fraction} />
+            <span className="flex flex-col w-[52px] text-left leading-[1.15] max-[1279px]:hidden">
+              <span className="text-[11.5px] text-(--muted)">{label}</span>
+              <span className="font-mono text-[13px] tabular-nums text-composer-text">{valueText}</span>
+            </span>
           </span>
         </button>
       }
