@@ -1,3 +1,5 @@
+import { IconHistory } from "@tabler/icons-react";
+import { useId, useState } from "react";
 import type { UnisonStatus } from "@/domain/unison/lyric-status";
 import { isOtherAccountLyric } from "@/domain/unison/ownership";
 import { useLinkedLyric } from "@/hooks/unison/useLinkedLyric";
@@ -7,8 +9,8 @@ import { Button } from "@/ui/button";
 import { ConfidenceMeter } from "@/ui/unison/confidence-meter";
 import { ScoreLabel } from "@/ui/unison/score-label";
 import { DescribedUnisonStatusChip } from "@/ui/unison/unison-status-chip";
-import { clearHistoryRequest, useHistoryRequest } from "@/views/export/unison/history-request";
 import { HistoryModal } from "@/views/export/unison/history-modal";
+import { clearHistoryRequest, useHistoryRequest } from "@/views/export/unison/history-request";
 import { OnUnisonMenu } from "@/views/export/unison/on-unison-menu";
 import {
   UNISON_CARD_HEADING_STYLES,
@@ -17,8 +19,6 @@ import {
 } from "@/views/export/unison/unison-card-styles";
 import { useOnUnisonActions } from "@/views/export/unison/use-on-unison-actions";
 import { InlineError, SkeletonBar } from "@/views/unison/view-states";
-import { IconHistory } from "@tabler/icons-react";
-import { useId, useState } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -113,7 +113,7 @@ const FoundCard: React.FC<FoundCardProps> = ({ lyric, status, keyId, videos }) =
       {owned ? <ActionHint status={status} /> : <p className={UNISON_CARD_TEXT_STYLES}>{OTHER_ACCOUNT_HINT}</p>}
       <div className="flex items-center justify-between gap-3">
         <ScoreLabel score={lyric.score} voteCount={lyric.voteCount} />
-        <ConfidenceMeter confidence={lyric.confidence} withLabel />
+        <ConfidenceMeter confidence={lyric.confidence} label="long" />
       </div>
       {videos}
       <div className="flex gap-2">

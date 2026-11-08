@@ -69,6 +69,27 @@ function fetchMine({ cursor, limit, signal }: SizedPageOptions = {}): Promise<Un
   });
 }
 
+const MINE_PAGE_LIMIT = 50;
+// 6 pages of 50 cover 300 lyrics, far past what one account shares.
+const MAX_MINE_PAGES = 6;
+
+/** Walks `/lyrics/mine` page by page. `complete` is true only when the last page was reached. */
+async function fetchMinePages(
+  signal: AbortSignal,
+  stopAfter: (page: readonly UnisonMineItem[]) => boolean = () => false,
+): Promise<{ items: UnisonMineItem[]; complete: boolean }> {
+  const items: UnisonMineItem[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < MAX_MINE_PAGES; page++) {
+    const result = await fetchMine({ cursor, limit: MINE_PAGE_LIMIT, signal });
+    items.push(...result.items);
+    if (result.nextCursor === null) return { items, complete: true };
+    if (stopAfter(result.items)) break;
+    cursor = result.nextCursor;
+  }
+  return { items, complete: false };
+}
+
 function fetchLyric(id: number, options: CallOptions = {}): Promise<UnisonLyric> {
   return unisonFetch(`/lyrics/${id}`, options);
 }
@@ -205,14 +226,15 @@ function fetchMostWanted({ cursor = "", signal }: PageOptions = {}): Promise<Uni
 // -- Exports -------------------------------------------------------------------
 
 export {
-  fetchProfile,
   compareWithLive,
   createSession,
   deleteLyrics,
   fetchChallenge,
   fetchLyric,
   fetchMine,
+  fetchMinePages,
   fetchMostWanted,
+  fetchProfile,
   fetchRevision,
   fetchRevisionDiff,
   fetchRevisions,

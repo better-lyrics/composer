@@ -39,7 +39,15 @@ interface UnisonProfileStats {
   fulfilledCount: number;
 }
 
-type UnisonProfile = { ranked: false } | ({ ranked: true } & UnisonProfileStats);
+interface UnisonProfileBanner {
+  videoId: string;
+  artworkUrl: string;
+}
+
+type UnisonProfile = ({ ranked: false } | ({ ranked: true } & UnisonProfileStats)) & {
+  /** One of the user's own songs, present only while that lyric is live. */
+  banner?: UnisonProfileBanner;
+};
 
 interface UnisonSubmitter extends UnisonActor {
   reputation: number;
@@ -250,6 +258,7 @@ export type {
   UnisonMineItem,
   UnisonPage,
   UnisonProfile,
+  UnisonProfileBanner,
   UnisonProfileStats,
   UnisonSearchResult,
   UnisonSessionResponse,

@@ -1,9 +1,8 @@
-import { type UnisonStatus, unisonStatus } from "@/domain/unison/lyric-status";
 import type { UnisonConfidence, UnisonMineItem } from "@/lib/unison/api-types";
 
 // -- Types ---------------------------------------------------------------------
 
-type MineSortKey = "song" | "status" | "score" | "confidence";
+type MineSortKey = "song" | "score" | "confidence" | "updated";
 type SortDirection = "asc" | "desc";
 
 interface MineSort {
@@ -13,23 +12,14 @@ interface MineSort {
 
 // -- Constants -----------------------------------------------------------------
 
-const STATUS_ORDER: Record<UnisonStatus, number> = {
-  sealed: 0,
-  live: 1,
-  pending: 2,
-  declined: 3,
-  hidden: 4,
-  removed: 5,
-};
-
 const CONFIDENCE_ORDER: Record<UnisonConfidence, number> = { low: 0, medium: 1, high: 2 };
 
-// Text reads A to Z first; numbers read best first.
+// Text reads A to Z first; numbers read best first, dates newest first.
 const FIRST_DIRECTION: Record<MineSortKey, SortDirection> = {
   song: "asc",
-  status: "asc",
   score: "desc",
   confidence: "desc",
+  updated: "desc",
 };
 
 const COLLATOR = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
@@ -38,8 +28,8 @@ const COLLATOR = new Intl.Collator(undefined, { sensitivity: "base", numeric: tr
 
 function compareMine(key: MineSortKey, a: UnisonMineItem, b: UnisonMineItem): number {
   if (key === "song") return COLLATOR.compare(a.song, b.song) || COLLATOR.compare(a.artist, b.artist);
-  if (key === "status") return STATUS_ORDER[unisonStatus(a)] - STATUS_ORDER[unisonStatus(b)];
   if (key === "score") return a.score - b.score || a.voteCount - b.voteCount;
+  if (key === "updated") return a.revision.updatedAt - b.revision.updatedAt;
   return CONFIDENCE_ORDER[a.confidence] - CONFIDENCE_ORDER[b.confidence];
 }
 

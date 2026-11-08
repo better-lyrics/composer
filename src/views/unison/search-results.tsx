@@ -1,115 +1,88 @@
+import { IconFileImport } from "@tabler/icons-react";
+import { isOwnLyric } from "@/domain/unison/ownership";
 import type { UnisonSearchResult } from "@/lib/unison/api-types";
+import { Button } from "@/ui/button";
 import { ConfidenceMeter } from "@/ui/unison/confidence-meter";
 import { ScoreLabel } from "@/ui/unison/score-label";
 import { unisonSyncLabel } from "@/ui/unison/sync-type-label";
 import { UnisonSongArt } from "@/ui/unison/unison-song-art";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
+import { MINE_GRID, ROW_AT_REST, ROW_REVEAL, UNISON_ROW } from "@/views/unison/mine-row";
 
 // -- Types ---------------------------------------------------------------------
 
-interface SongVersions {
-  videoId: string;
-  song: string;
-  artist: string;
-  versions: UnisonSearchResult[];
-}
-
 interface SearchResultsProps {
   results: readonly UnisonSearchResult[];
-  selectedId: number | undefined;
-  onSelect: (id: number) => void;
+  ownKeyId: string | null;
+  openingId: number | null;
+  onOpen: (result: UnisonSearchResult) => void;
 }
 
-// -- Helpers -------------------------------------------------------------------
-
-function versionsBySong(results: readonly UnisonSearchResult[]): SongVersions[] {
-  const songs = new Map<string, SongVersions>();
-  for (const result of results) {
-    const song = songs.get(result.videoId);
-    if (song) song.versions.push(result);
-    else songs.set(result.videoId, { ...result, versions: [result] });
-  }
-  return [...songs.values()];
+interface SearchRowProps {
+  result: UnisonSearchResult;
+  own: boolean;
+  opening: boolean;
+  onOpen: (result: UnisonSearchResult) => void;
 }
 
 // -- Components ----------------------------------------------------------------
 
-const VersionRow: React.FC<{ version: UnisonSearchResult; selected: boolean; onSelect: (id: number) => void }> = ({
-  version,
-  selected,
-  onSelect,
-}) => (
-  <li>
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={() => onSelect(version.id)}
-      className={cn(
-        "grid w-full grid-cols-[minmax(0,1fr)_132px_100px_120px] items-center gap-4 h-12 px-3 rounded-[10px] text-left cursor-pointer transition-colors duration-100",
-        selected ? "bg-composer-accent/12" : "hover:bg-(--layer-1)",
-      )}
-    >
-      <span className="flex items-center gap-2 min-w-0 text-[13px]">
-        <span className="font-medium truncate">{version.submitter?.displayName ?? "Unknown"}</span>
-        {version.submitter && <span className="text-(--muted) shrink-0">Level {version.submitter.level}</span>}
+const SearchRow: React.FC<SearchRowProps> = ({ result, own, opening, onOpen }) => (
+  <li className={cn(MINE_GRID, UNISON_ROW)}>
+    <UnisonSongArt videoId={result.videoId} size="row" />
+    <div className="min-w-0">
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <span className="truncate" title={result.song}>
+          {result.song}
+        </span>
+        {own && (
+          <span className="shrink-0 h-5 px-1.5 grid place-items-center rounded-md bg-(--layer-2) text-[11.5px] font-medium text-(--label)">
+            Yours
+          </span>
+        )}
+      </p>
+      <p className="text-[13px] text-(--muted) truncate">
+        {result.artist}
+        {result.submitter && ` ・ by ${result.submitter.displayName}`}
+      </p>
+    </div>
+    <ScoreLabel score={result.score} voteCount={result.voteCount} />
+    <ConfidenceMeter confidence={result.confidence} label="short" />
+    <div className="grid justify-items-end items-center *:[grid-area:1/1]">
+      <span className={cn("text-[13px] text-(--muted) whitespace-nowrap", ROW_AT_REST)}>
+        {unisonSyncLabel(result.syncType)}
       </span>
-      <span className="text-[13px] text-(--label)">{unisonSyncLabel(version.syncType)}</span>
-      <ConfidenceMeter confidence={version.confidence} />
-      <ScoreLabel score={version.score} voteCount={version.voteCount} className="justify-self-end" />
-    </button>
+      <Button
+        size="sm"
+        variant="secondary"
+        hasIcon
+        disabled={opening}
+        aria-label={`Open as project, ${result.song}`}
+        onClick={() => onOpen(result)}
+        className={ROW_REVEAL}
+      >
+        <IconFileImport aria-hidden="true" className="size-4" />
+        Open as project
+      </Button>
+    </div>
   </li>
 );
 
-const SongSubtitle: React.FC<{ song: SongVersions }> = ({ song }) => (
-  <span className="block text-[13px] font-normal text-(--muted) truncate">
-    {song.artist} ・ {pluralize(song.versions.length, "version")} on Unison
-  </span>
-);
-
-// With one version there is nothing to choose between, so the whole song picks it.
-const SongHeader: React.FC<{ song: SongVersions; onSelect: (id: number) => void }> = ({ song, onSelect }) => {
-  const [only] = song.versions;
-  if (song.versions.length > 1) {
-    return (
-      <div className="flex items-center gap-3 px-3">
-        <UnisonSongArt videoId={song.videoId} size="dialog" />
-        <div className="min-w-0">
-          <h2 className="text-[15px] font-semibold truncate">{song.song}</h2>
-          <SongSubtitle song={song} />
-        </div>
-      </div>
-    );
-  }
-  return (
-    <h2>
-      <button
-        type="button"
-        onClick={() => onSelect(only.id)}
-        className="flex w-full items-center gap-3 -my-1 py-1 px-3 rounded-[10px] text-left cursor-pointer transition-colors duration-100 hover:bg-(--layer-1)"
-      >
-        <UnisonSongArt videoId={song.videoId} size="dialog" />
-        <span className="min-w-0">
-          <span className="block text-[15px] font-semibold truncate">{song.song}</span>
-          <SongSubtitle song={song} />
-        </span>
-      </button>
-    </h2>
-  );
-};
-
-const SearchResults: React.FC<SearchResultsProps> = ({ results, selectedId, onSelect }) => (
-  <div className="flex flex-col gap-6">
-    {versionsBySong(results).map((song) => (
-      <section key={song.videoId} aria-label={song.song} className="flex flex-col gap-3">
-        <SongHeader song={song} onSelect={onSelect} />
-        <ul aria-label={`Versions of ${song.song}`} className="flex flex-col gap-1">
-          {song.versions.map((version) => (
-            <VersionRow key={version.id} version={version} selected={version.id === selectedId} onSelect={onSelect} />
-          ))}
-        </ul>
-      </section>
-    ))}
+const SearchResults: React.FC<SearchResultsProps> = ({ results, ownKeyId, openingId, onOpen }) => (
+  <div>
+    <p className="px-3 pb-2 text-[13px] text-(--muted) tabular-nums">{pluralize(results.length, "result")}</p>
+    <ul>
+      {results.map((result) => (
+        <SearchRow
+          key={result.id}
+          result={result}
+          own={isOwnLyric(result, ownKeyId)}
+          opening={openingId === result.id}
+          onOpen={onOpen}
+        />
+      ))}
+    </ul>
   </div>
 );
 

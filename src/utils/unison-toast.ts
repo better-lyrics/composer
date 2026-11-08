@@ -1,9 +1,9 @@
+import { toast } from "sonner";
 import { isUnisonNotFound, isUnisonSessionEnded, UnisonError } from "@/lib/unison/client";
 import { useProjectStore } from "@/stores/project";
 import { settingEntry } from "@/stores/settings-catalog";
-import { pluralize } from "@/utils/pluralize";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
-import { toast } from "sonner";
+import { pluralize } from "@/utils/pluralize";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -43,6 +43,14 @@ function showWantedShelfHiddenToast(undo: () => void): void {
 
 function showProjectsLinkedToast(count: number, undo: () => void): void {
   toast.success(`Linked ${pluralize(count, "project")} to Unison`, { action: { label: "Undo", onClick: undo } });
+}
+
+function showLyricsOpenedAsProjectsToast(opened: number, failed: number, undo: () => void): void {
+  const description = failed > 0 ? `Could not open ${pluralize(failed, "other lyric")}.` : undefined;
+  toast.success(`Added ${pluralize(opened, "project")} from Unison`, {
+    description,
+    action: { label: "Undo", onClick: undo },
+  });
 }
 
 function showLinkFailedToast(count: number): void {
@@ -87,6 +95,7 @@ export {
   showDisconnectedToast,
   showEditWithdrawnToast,
   showLinkFailedToast,
+  showLyricsOpenedAsProjectsToast,
   showProjectsLinkedToast,
   showRemovedFromUnisonToast,
   showRevisionLoadedToast,

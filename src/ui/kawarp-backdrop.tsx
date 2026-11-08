@@ -1,14 +1,19 @@
-import { useFrameLoop } from "@/hooks/use-frame-loop";
-import { usePageVisible } from "@/hooks/use-page-visible";
-import { animateFrames } from "@/lib/frame-loop";
 import { Kawarp, type KawarpOptions } from "@kawarp/core";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useFrameLoop } from "@/hooks/use-frame-loop";
+import { usePageVisible } from "@/hooks/use-page-visible";
+import { animateFrames } from "@/lib/frame-loop";
+import { decodedKawarpImage, preloadKawarpImage } from "@/lib/kawarp-image-cache";
 
 // -- Types --------------------------------------------------------------------
 
+type KawarpLook = "live" | "wash";
+
 interface KawarpBackdropProps {
   src?: string;
+  /** "wash" uses the Unison OG image wash settings. */
+  look?: KawarpLook;
   className?: string;
 }
 
@@ -30,6 +35,16 @@ const KAWARP_OPTIONS: KawarpOptions = {
   dithering: 0.008,
   scale: 1.25,
 };
+// The Unison OG image wash, with lighter grain: on screen the OG amount reads as noise.
+const WASH_OPTIONS: KawarpOptions = {
+  warpIntensity: 0.9,
+  blurPasses: 8,
+  saturation: 1.5,
+  dithering: 0.03,
+  animationSpeed: KAWARP_OPTIONS.animationSpeed,
+  transitionDuration: KAWARP_OPTIONS.transitionDuration,
+};
+const LOOK_OPTIONS: Record<KawarpLook, KawarpOptions> = { live: KAWARP_OPTIONS, wash: WASH_OPTIONS };
 const OPAQUE_CONTEXT: WebGLContextAttributes = {
   alpha: false,
   antialias: false,
@@ -54,25 +69,47 @@ function fitCanvas(canvas: HTMLCanvasElement): boolean {
   return true;
 }
 
-function createKawarp(canvas: HTMLCanvasElement): CreatedKawarp | null {
+function createKawarp(canvas: HTMLCanvasElement, options: KawarpOptions): CreatedKawarp | null {
   try {
     const gl = canvas.getContext("webgl", OPAQUE_CONTEXT);
     if (!gl) throw new Error("WebGL context unavailable");
-    return { kawarp: new Kawarp(canvas, KAWARP_OPTIONS), gl };
+    return { kawarp: new Kawarp(canvas, options), gl };
   } catch (error) {
     console.warn(LOG_PREFIX, "WebGL is not available, keeping the plain backdrop", error);
     return null;
   }
 }
 
-async function paintSource(kawarp: Kawarp, src: string | undefined, isCurrent: () => boolean): Promise<void> {
+// A source already in memory shows on the first frame, so a page that preloaded its art never fades in from black.
+function showNow(kawarp: Kawarp, instant: boolean, draw: () => void): void {
+  if (!instant) {
+    draw();
+    return;
+  }
+  const duration = kawarp.transitionDuration;
+  kawarp.transitionDuration = 0;
+  draw();
+  kawarp.transitionDuration = duration;
+}
+
+async function paintSource(
+  kawarp: Kawarp,
+  src: string | undefined,
+  firstPaint: boolean,
+  isCurrent: () => boolean,
+): Promise<void> {
   if (!src) {
-    if (!isCurrent()) return;
-    kawarp.loadGradient(NEUTRAL_GRADIENT);
+    showNow(kawarp, firstPaint, () => kawarp.loadGradient(NEUTRAL_GRADIENT));
+    return;
+  }
+  const ready = decodedKawarpImage(src);
+  if (ready) {
+    showNow(kawarp, firstPaint, () => kawarp.loadImageElement(ready));
     return;
   }
   try {
-    await kawarp.loadImage(src);
+    const bitmap = await preloadKawarpImage(src);
+    if (isCurrent()) kawarp.loadImageElement(bitmap);
   } catch (error) {
     if (!isCurrent()) return;
     console.warn(LOG_PREFIX, "could not load the cover art, using the gradient", error);
@@ -82,11 +119,12 @@ async function paintSource(kawarp: Kawarp, src: string | undefined, isCurrent: (
 
 // -- Component ----------------------------------------------------------------
 
-const KawarpBackdrop: React.FC<KawarpBackdropProps> = ({ src, className }) => {
+const KawarpBackdrop: React.FC<KawarpBackdropProps> = ({ src, look = "live", className }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const kawarpRef = useRef<Kawarp | null>(null);
   const srcRef = useRef(src);
   const paintedSrcRef = useRef<string | undefined>(undefined);
+  const shownRef = useRef(false);
   const elapsedRef = useRef(0);
   const lastFrameRef = useRef<number | null>(null);
   const animatingRef = useRef(false);
@@ -95,6 +133,7 @@ const KawarpBackdrop: React.FC<KawarpBackdropProps> = ({ src, className }) => {
   const pageVisible = usePageVisible();
   const reducedMotion = useReducedMotion() === true;
   const animating = painted && onScreen && pageVisible && !reducedMotion;
+  const [options] = useState(() => LOOK_OPTIONS[look]);
 
   useEffect(() => {
     srcRef.current = src;
@@ -105,9 +144,11 @@ const KawarpBackdrop: React.FC<KawarpBackdropProps> = ({ src, className }) => {
   });
 
   const paint = useCallback((kawarp: Kawarp, source: string | undefined) => {
+    const firstPaint = !shownRef.current;
+    shownRef.current = true;
     paintedSrcRef.current = source;
     const isCurrent = () => kawarpRef.current === kawarp && paintedSrcRef.current === source;
-    void paintSource(kawarp, source, isCurrent).then(() => {
+    void paintSource(kawarp, source, firstPaint, isCurrent).then(() => {
       if (!isCurrent()) return;
       setPainted(true);
       if (!animatingRef.current) kawarp.renderFrame(elapsedRef.current);
@@ -125,9 +166,10 @@ const KawarpBackdrop: React.FC<KawarpBackdropProps> = ({ src, className }) => {
     let gl: WebGLRenderingContext | null = null;
 
     function attach(): void {
-      const created = createKawarp(canvas);
+      const created = createKawarp(canvas, options);
       if (!created) return;
       gl = created.gl;
+      shownRef.current = false;
       kawarpRef.current = created.kawarp;
       paint(created.kawarp, srcRef.current);
     }
@@ -179,7 +221,7 @@ const KawarpBackdrop: React.FC<KawarpBackdropProps> = ({ src, className }) => {
       setPainted(false);
       setOnScreen(false);
     };
-  }, [paint]);
+  }, [paint, options]);
 
   useEffect(() => {
     const kawarp = kawarpRef.current;
@@ -190,8 +232,8 @@ const KawarpBackdrop: React.FC<KawarpBackdropProps> = ({ src, className }) => {
   useEffect(() => {
     const kawarp = kawarpRef.current;
     if (!kawarp || !painted) return;
-    kawarp.transitionDuration = reducedMotion ? 0 : (KAWARP_OPTIONS.transitionDuration ?? 0);
-  }, [painted, reducedMotion]);
+    kawarp.transitionDuration = reducedMotion ? 0 : (options.transitionDuration ?? 0);
+  }, [painted, reducedMotion, options]);
 
   useEffect(() => {
     if (!animating) return;

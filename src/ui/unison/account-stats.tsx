@@ -1,15 +1,10 @@
+import { levelPercent, xpToNextLevel } from "@/domain/unison/level-progress";
 import { useUnisonProfile } from "@/hooks/unison/useUnisonProfile";
 import type { UnisonProfileStats } from "@/lib/unison/api-types";
 import type { StoredUnisonSession } from "@/lib/unison/session";
 import { MenuSeparator } from "@/ui/menu";
 import { ProgressBar } from "@/ui/progress-bar";
 import { UnisonAvatar } from "@/ui/unison/unison-avatar";
-
-// -- Helpers -------------------------------------------------------------------
-
-function levelPercent({ xp, xpFloor, xpForNext }: UnisonProfileStats): number {
-  return xpForNext > xpFloor ? ((xp - xpFloor) / (xpForNext - xpFloor)) * 100 : 100;
-}
 
 // -- Components ----------------------------------------------------------------
 
@@ -25,7 +20,7 @@ const ProfileStats: React.FC<{ stats: UnisonProfileStats }> = ({ stats }) => (
     <div className="flex flex-col gap-1.5">
       <ProgressBar percent={levelPercent(stats)} label={`Level ${stats.level + 1} progress`} />
       <p className="text-xs tabular-nums text-(--muted) select-text">
-        {Math.max(0, stats.xpForNext - stats.xp)} XP to level {stats.level + 1}
+        {xpToNextLevel(stats)} XP to level {stats.level + 1}
       </p>
     </div>
     <dl className="grid grid-cols-3 gap-2 select-text">

@@ -1,6 +1,7 @@
 import { displayTitle } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { projectUnisonState } from "@/domain/unison/project-unison-state";
+import { ART_PILL_STYLES } from "@/ui/art-pill-styles";
 import { Button } from "@/ui/button";
 import { BetterLyricsMark } from "@/ui/unison/better-lyrics-mark";
 import { ScoreLabel } from "@/ui/unison/score-label";
@@ -20,8 +21,6 @@ interface UnisonCellProps {
 // -- Constants -----------------------------------------------------------------
 
 const CELL_TEXT = "truncate text-[13px]";
-const ON_ART =
-  "h-7 pl-2 pr-2.5 rounded-[6px] border border-transparent bg-composer-bg/80 text-composer-text backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgb(255_255_255/0.05),0_0_0_1px_rgb(0_0_0/0.06),0_2px_4px_-1px_rgb(0_0_0/0.18),0_8px_20px_-6px_rgb(0_0_0/0.3)] hover:bg-composer-bg/90 hover:text-composer-text";
 
 // -- Components ----------------------------------------------------------------
 
@@ -79,7 +78,7 @@ const UnisonCardChip: React.FC<Omit<UnisonCellProps, "className">> = ({ project,
 };
 
 const UnisonArtLink: React.FC<UnisonCellProps> = ({ className, ...props }) => (
-  <LinkToUnisonButton {...props} onArt className={cn(ON_ART, className)} />
+  <LinkToUnisonButton {...props} onArt className={cn(ART_PILL_STYLES, className)} />
 );
 
 // -- Exports -------------------------------------------------------------------

@@ -1,4 +1,9 @@
-import { projectsByLyricId } from "@/domain/unison/linked-projects";
+import { IconFileImport } from "@tabler/icons-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { lyricsWithoutProject, projectsByLyricId } from "@/domain/unison/linked-projects";
 import { type MineSort, nextMineSort, sortedMine } from "@/domain/unison/mine-sort";
 import { useMyUnisonLyrics } from "@/hooks/unison/useMyUnisonLyrics";
 import { fetchUnisonLyric } from "@/hooks/unison/useUnisonLyric";
@@ -13,17 +18,21 @@ import { ConnectPopover } from "@/ui/unison/connect-popover";
 import { unisonViewPath } from "@/utils/app-routes";
 import { cn } from "@/utils/cn";
 import { useLibraryActions } from "@/views/library/use-library-actions";
+import { DeclinedEdits } from "@/views/unison/declined-edits";
 import { MINE_GRID, MineColumns, MineRow } from "@/views/unison/mine-row";
-import { InlineError, LoadMore, SkeletonBar, SkeletonRows, SkeletonSong, ViewEmpty } from "@/views/unison/view-states";
-import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { ProfileHeader } from "@/views/unison/profile-header";
+import { useOpenAllAsProjects } from "@/views/unison/use-open-all-as-projects";
+import { InlineError, SkeletonBar, SkeletonRows, SkeletonSong, ViewEmpty } from "@/views/unison/view-states";
+
+// -- Types ---------------------------------------------------------------------
+
+type MineQuery = ReturnType<typeof useMyUnisonLyrics>;
 
 // -- Constants -----------------------------------------------------------------
 
 const LOG_PREFIX = "[UnisonMine]";
 const SKELETON_ROW_COUNT = 4;
+const NO_SONGS: readonly UnisonMineItem[] = [];
 
 // -- Components ----------------------------------------------------------------
 
@@ -46,46 +55,36 @@ const MineSignedOut: React.FC = () => (
 const MineSkeleton: React.FC = () => (
   <SkeletonRows count={SKELETON_ROW_COUNT} rowClassName={cn(MINE_GRID, "h-14")}>
     <SkeletonSong />
+    <SkeletonBar className="w-24" />
     <SkeletonBar className="w-16" />
-    <SkeletonBar className="w-20" />
-    <SkeletonBar className="w-10" />
-    <span className="block h-7 w-28 justify-self-end rounded-lg bg-(--layer-2)" />
+    <SkeletonBar className="w-20 justify-self-end" />
   </SkeletonRows>
 );
 
-const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mine }) => {
+const MineHeading: React.FC<{ count: number | null; action: React.ReactNode }> = ({ count, action }) => (
+  <div className="flex items-center justify-between gap-4 min-h-10 pb-3">
+    <h2 className="text-[15px] font-semibold">
+      Your lyrics
+      {count !== null && <span className="ml-2 font-medium text-(--muted) tabular-nums">{count}</span>}
+    </h2>
+    {action}
+  </div>
+);
+
+const MineList: React.FC<{ mine: MineQuery }> = ({ mine }) => {
   const { entries } = useProjectIndex();
   const libraryActions = useLibraryActions();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const openAll = useOpenAllAsProjects();
   const [openingId, setOpeningId] = useState<number | null>(null);
   const opening = useRef(false);
 
   const projectByLyric = useMemo(() => projectsByLyricId(entries ?? []), [entries]);
-  const items = useMemo(() => mine.data?.pages.flatMap((page) => page.items) ?? [], [mine.data]);
+  const items = useMemo(() => mine.data?.items ?? [], [mine.data]);
+  const withoutProject = useMemo(() => lyricsWithoutProject(items, entries ?? []), [items, entries]);
   const [sort, setSort] = useState<MineSort | null>(null);
   const shownItems = useMemo(() => sortedMine(items, sort), [items, sort]);
-  const { fetchNextPage } = mine;
-  const loadingAll = useRef(false);
-
-  // A sort covers every lyric, so choosing one loads the remaining pages, stopping at the first failure.
-  const changeSort = useCallback(
-    (key: MineSort["key"]) => {
-      setSort((current) => nextMineSort(current, key));
-      if (loadingAll.current || !mine.hasNextPage) return;
-      loadingAll.current = true;
-      const loadRest = async () => {
-        let page = await fetchNextPage();
-        while (page.hasNextPage && !page.isFetchNextPageError) page = await fetchNextPage();
-      };
-      loadRest()
-        .catch((error: unknown) => console.warn(LOG_PREFIX, "could not load every lyric to sort", error))
-        .finally(() => {
-          loadingAll.current = false;
-        });
-    },
-    [fetchNextPage, mine.hasNextPage],
-  );
 
   const openAsProject = useCallback(
     (item: UnisonMineItem) => {
@@ -107,15 +106,7 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
   );
 
   if (mine.isError) return <InlineError error={mine.error} onRetry={() => void mine.refetch()} />;
-  if (mine.isPending) {
-    return (
-      <>
-        <MineColumns sort={sort} onSort={changeSort} />
-        <MineSkeleton />
-      </>
-    );
-  }
-  if (items.length === 0) {
+  if (!mine.isPending && items.length === 0) {
     return (
       <ViewEmpty message="You haven't shared any lyrics on Unison yet.">
         <Button size="sm" variant="secondary" onClick={() => navigate(unisonViewPath("wanted"))}>
@@ -125,25 +116,44 @@ const MineList: React.FC<{ mine: ReturnType<typeof useMyUnisonLyrics> }> = ({ mi
     );
   }
 
+  const openAllButton = entries && withoutProject.length > 0 && (
+    <Button
+      variant="secondary"
+      size="lg"
+      hasIcon
+      disabled={openAll.busy}
+      onClick={() => void openAll.openAll(withoutProject)}
+    >
+      <IconFileImport aria-hidden="true" className="size-4" />
+      Open {withoutProject.length} as projects
+    </Button>
+  );
+
   return (
     <>
-      <MineColumns sort={sort} onSort={changeSort} />
-      <ul className="pt-1">
-        {shownItems.map((item) => (
-          <MineRow
-            key={item.id}
-            item={item}
-            projectId={projectByLyric.get(String(item.id))?.id}
-            opening={openingId === item.id}
-            waiting={!entries}
-            onOpenProject={libraryActions.open}
-            onOpenAsProject={openAsProject}
-          />
-        ))}
-      </ul>
-      {mine.hasNextPage && !sort && (
-        <LoadMore label="Load more" loading={mine.isFetchingNextPage} onLoadMore={() => void mine.fetchNextPage()} />
-      )}
+      <DeclinedEdits items={items} projectByLyric={projectByLyric} onOpenProject={libraryActions.open} />
+      <div>
+        <MineHeading count={mine.isPending ? null : items.length} action={openAllButton} />
+        <MineColumns sort={sort} onSort={(key) => setSort((current) => nextMineSort(current, key))} />
+        {mine.isPending ? (
+          <MineSkeleton />
+        ) : (
+          <ul className="pt-1">
+            {shownItems.map((item) => (
+              <MineRow
+                key={item.id}
+                item={item}
+                projectId={projectByLyric.get(String(item.id))?.id}
+                now={mine.dataUpdatedAt}
+                opening={openingId === item.id}
+                waiting={!entries}
+                onOpenProject={libraryActions.open}
+                onOpenAsProject={openAsProject}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
     </>
   );
 };
@@ -153,7 +163,8 @@ const MineView: React.FC = () => {
   const mine = useMyUnisonLyrics(session?.keyId ?? null);
   if (!session || isUnisonSessionEnded(mine.error)) return <MineSignedOut />;
   return (
-    <section aria-label="My lyrics on Unison" className="flex flex-col">
+    <section aria-label="My lyrics on Unison" className="flex flex-col gap-6">
+      <ProfileHeader session={session} songs={mine.data?.items ?? NO_SONGS} />
       <MineList mine={mine} />
     </section>
   );

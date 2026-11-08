@@ -16,12 +16,6 @@ interface InlineErrorProps {
   className?: string;
 }
 
-interface LoadMoreProps {
-  label: string;
-  loading: boolean;
-  onLoadMore: () => void;
-}
-
 // -- Constants -----------------------------------------------------------------
 
 const SKELETON_BLOCK = "block rounded bg-(--layer-2)";
@@ -68,14 +62,6 @@ const ViewEmpty: React.FC<{ message: string; children?: React.ReactNode }> = ({ 
   </div>
 );
 
-const LoadMore: React.FC<LoadMoreProps> = ({ label, loading, onLoadMore }) => (
-  <div className="flex justify-center pt-3">
-    <Button size="md" variant="secondary" disabled={loading} onClick={onLoadMore}>
-      {loading ? "Loading" : label}
-    </Button>
-  </div>
-);
-
 // -- Exports -------------------------------------------------------------------
 
-export { InlineError, LoadMore, SkeletonBar, SkeletonRows, SkeletonSong, ViewEmpty };
+export { InlineError, SkeletonBar, SkeletonRows, SkeletonSong, ViewEmpty };

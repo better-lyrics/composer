@@ -1,3 +1,7 @@
+import { IconCloudUpload, IconExternalLink, IconLogout } from "@tabler/icons-react";
+import { useCallback, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useUnisonProfile } from "@/hooks/unison/useUnisonProfile";
 import { useUnisonSession } from "@/hooks/useUnisonSession";
 import type { StoredUnisonSession } from "@/lib/unison/session";
 import { signOutOfUnison } from "@/lib/unison/sign-out";
@@ -12,13 +16,12 @@ import { BetterLyricsMark } from "@/ui/unison/better-lyrics-mark";
 import { ConnectPopover } from "@/ui/unison/connect-popover";
 import { UnisonAvatar } from "@/ui/unison/unison-avatar";
 import { unisonViewPath } from "@/utils/app-routes";
-import { IconCloudUpload, IconExternalLink, IconLogout } from "@tabler/icons-react";
-import { useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 // -- Components ----------------------------------------------------------------
 
 const AccountMenu: React.FC<{ session: StoredUnisonSession }> = ({ session }) => {
+  // Loads with the header, so the account menu and the Unison page open with the profile ready.
+  useUnisonProfile(session.keyId);
   const navigate = useNavigate();
   const [anchor, setAnchor] = useState<MenuAnchor | null>(null);
   const close = useCallback(() => setAnchor(null), []);
