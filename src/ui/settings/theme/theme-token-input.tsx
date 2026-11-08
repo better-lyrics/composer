@@ -40,7 +40,10 @@ const ThemeTokenInput: React.FC<ThemeTokenInputProps> = ({ tokenKey, label, valu
   const pendingPick = useRef<number | null>(null);
   useEffect(
     () => () => {
-      if (pendingPick.current !== null) cancelNextFrame(pendingPick.current);
+      if (pendingPick.current === null) return;
+      cancelNextFrame(pendingPick.current);
+      pendingPick.current = null;
+      setPickedColor(null);
     },
     [],
   );
