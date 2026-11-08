@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { levelPercent, xpToNextLevel } from "@/domain/unison/level-progress";
 import { useUnisonProfile } from "@/hooks/unison/useUnisonProfile";
 import type { UnisonMineItem, UnisonProfileBanner, UnisonProfileStats } from "@/lib/unison/api-types";
@@ -84,6 +85,21 @@ const Standing: React.FC<{ stats: UnisonProfileStats }> = ({ stats }) => (
   </>
 );
 
+// Anonymous like the Kawarp preload: it reuses that response, and Google can refuse the plain image request.
+const BannerArt: React.FC<{ src: string }> = ({ src }) => {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  if (failedSrc === src) return null;
+  return (
+    <img
+      alt=""
+      src={src}
+      crossOrigin="anonymous"
+      onError={() => setFailedSrc(src)}
+      className={cn("absolute inset-y-0 right-0 w-[46%] h-full object-cover object-[50%_35%] -z-2", ART_FADE)}
+    />
+  );
+};
+
 const BannerLayers: React.FC<{ banner: UnisonProfileBanner; song: UnisonMineItem | undefined }> = ({
   banner,
   song,
@@ -94,11 +110,7 @@ const BannerLayers: React.FC<{ banner: UnisonProfileBanner; song: UnisonMineItem
       look="wash"
       className="absolute inset-0 -z-3 overflow-hidden rounded-[inherit] [contain:strict]"
     />
-    <img
-      alt=""
-      src={banner.artworkUrl}
-      className={cn("absolute inset-y-0 right-0 w-[46%] h-full object-cover object-[50%_35%] -z-2", ART_FADE)}
-    />
+    <BannerArt src={banner.artworkUrl} />
     <div aria-hidden="true" className={cn("absolute inset-0 -z-1", TEXT_SCRIM)} />
     {song && (
       <span className="absolute bottom-3 right-3 max-w-[40%] h-6 px-2 flex items-center rounded-[6px] bg-black/40 backdrop-blur-xl text-xs text-white opacity-0 transition-opacity duration-150 group-hover/banner:opacity-100">
