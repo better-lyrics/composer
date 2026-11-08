@@ -1,10 +1,10 @@
+import type { Placement } from "@floating-ui/react";
+import { IconCheck, IconChevronDown } from "@tabler/icons-react";
+import { cloneElement, type ReactElement, type ReactNode, useRef, useState } from "react";
 import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
-import type { Placement } from "@floating-ui/react";
-import { IconCheck, IconChevronDown } from "@tabler/icons-react";
-import { type ReactElement, type ReactNode, cloneElement, useRef, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -17,6 +17,8 @@ interface SelectOption {
   badge?: string;
   /** Listed but not pickable; the detail line says why. */
   disabled?: boolean;
+  /** Consecutive options with the same group are listed under its name. */
+  group?: string;
 }
 
 interface SelectProps {
@@ -174,6 +176,29 @@ const OptionRow: React.FC<OptionRowProps> = ({
   </button>
 );
 
+function optionRuns(options: readonly SelectOption[]): { group?: string; start: number; options: SelectOption[] }[] {
+  const runs: { group?: string; start: number; options: SelectOption[] }[] = [];
+  options.forEach((option, index) => {
+    const last = runs.at(-1);
+    if (last && last.group === option.group) last.options.push(option);
+    else runs.push({ group: option.group, start: index, options: [option] });
+  });
+  return runs;
+}
+
+const OptionGroup: React.FC<{ name?: string; children: ReactNode }> = ({ name, children }) =>
+  name ? (
+    <div role="group" aria-label={name}>
+      <hr className="h-px mx-0.5 my-[5px] border-0 bg-(--divider)" />
+      <div aria-hidden="true" className="px-2 pt-1 pb-1.5 text-xs font-medium text-(--muted) select-none">
+        {name}
+      </div>
+      {children}
+    </div>
+  ) : (
+    children
+  );
+
 const Select: React.FC<SelectProps> = ({
   value,
   onChange,
@@ -230,25 +255,32 @@ const Select: React.FC<SelectProps> = ({
           <Scroll className="max-h-80" onInitialized={focusTabStopOption}>
             {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role -- styled single-select popover; datalist is input autocomplete, not a listbox, and would reintroduce native chrome */}
             <div role="listbox" aria-label={ariaLabel} className="flex flex-col p-1.5 w-max min-w-50 max-w-80">
-              {options.map((option, index) => (
-                <OptionRow
-                  key={option.value}
-                  option={option}
-                  selected={option.value === value}
-                  tabStop={index === tabStopIndex}
-                  active={index === activeIndex}
-                  itemRef={(node) => {
-                    listRef.current[index] = node;
-                  }}
-                  itemProps={getItemProps({
-                    onClick: () => {
-                      if (option.disabled) return;
-                      onChange(option.value);
-                      close();
-                    },
+              {optionRuns(options).map((run) => (
+                <OptionGroup key={run.group ?? `run-${run.start}`} name={run.group}>
+                  {run.options.map((option, offset) => {
+                    const index = run.start + offset;
+                    return (
+                      <OptionRow
+                        key={option.value}
+                        option={option}
+                        selected={option.value === value}
+                        tabStop={index === tabStopIndex}
+                        active={index === activeIndex}
+                        itemRef={(node) => {
+                          listRef.current[index] = node;
+                        }}
+                        itemProps={getItemProps({
+                          onClick: () => {
+                            if (option.disabled) return;
+                            onChange(option.value);
+                            close();
+                          },
+                        })}
+                        renderOption={renderOption}
+                      />
+                    );
                   })}
-                  renderOption={renderOption}
-                />
+                </OptionGroup>
               ))}
             </div>
           </Scroll>
@@ -260,5 +292,5 @@ const Select: React.FC<SelectProps> = ({
 
 // -- Exports ------------------------------------------------------------------
 
-export { OptionLabel, Select };
 export type { SelectOption };
+export { OptionLabel, Select };
