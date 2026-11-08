@@ -7,7 +7,8 @@ import { fetchMinePages } from "@/lib/unison/endpoints";
 function useMyUnisonLyrics(keyId: string | null) {
   return useQuery({
     queryKey: unisonQueryKeys.mine(keyId ?? ""),
-    queryFn: ({ signal }) => fetchMinePages(signal),
+    // Every lyric is listed, sorted and offered to open, so the list loads to its last page.
+    queryFn: ({ signal }) => fetchMinePages(signal, { maxPages: Number.POSITIVE_INFINITY }),
     staleTime: UNISON_STALE_TIME_MS,
     enabled: keyId !== null,
   });

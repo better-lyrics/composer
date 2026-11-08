@@ -33,9 +33,11 @@ async function fetchMineForLibrary(
   signal: AbortSignal,
 ): Promise<LibraryUnisonLyrics> {
   const missing = new Set(linkedIds);
-  const { items, complete } = await fetchMinePages(signal, (page) => {
-    for (const item of page) missing.delete(String(item.id));
-    return missing.size === 0 && !loadAll;
+  const { items, complete } = await fetchMinePages(signal, {
+    stopAfter: (page) => {
+      for (const item of page) missing.delete(String(item.id));
+      return missing.size === 0 && !loadAll;
+    },
   });
   if (complete) return { items, complete, ...(await lookUpMissing(missing, signal)) };
   return { items, complete, otherAccountIds: NO_IDS, unresolvedIds: NO_IDS };

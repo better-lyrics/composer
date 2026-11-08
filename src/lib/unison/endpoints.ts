@@ -70,21 +70,28 @@ function fetchMine({ cursor, limit, signal }: SizedPageOptions = {}): Promise<Un
 }
 
 const MINE_PAGE_LIMIT = 50;
-// 6 pages of 50 cover 300 lyrics, far past what one account shares.
 const MAX_MINE_PAGES = 6;
+
+interface MinePagesOptions {
+  /** Defaults to 6 pages of 50, enough for checks that only need most of the list. */
+  maxPages?: number;
+  stopAfter?: (page: readonly UnisonMineItem[]) => boolean;
+}
 
 /** Walks `/lyrics/mine` page by page. `complete` is true only when the last page was reached. */
 async function fetchMinePages(
   signal: AbortSignal,
-  stopAfter: (page: readonly UnisonMineItem[]) => boolean = () => false,
+  { maxPages = MAX_MINE_PAGES, stopAfter = () => false }: MinePagesOptions = {},
 ): Promise<{ items: UnisonMineItem[]; complete: boolean }> {
   const items: UnisonMineItem[] = [];
+  const seenCursors = new Set<string>();
   let cursor: string | undefined;
-  for (let page = 0; page < MAX_MINE_PAGES; page++) {
+  for (let page = 0; page < maxPages; page++) {
     const result = await fetchMine({ cursor, limit: MINE_PAGE_LIMIT, signal });
     items.push(...result.items);
     if (result.nextCursor === null) return { items, complete: true };
-    if (stopAfter(result.items)) break;
+    if (stopAfter(result.items) || seenCursors.has(result.nextCursor)) break;
+    seenCursors.add(result.nextCursor);
     cursor = result.nextCursor;
   }
   return { items, complete: false };
@@ -231,7 +238,6 @@ export {
   deleteLyrics,
   fetchChallenge,
   fetchLyric,
-  fetchMine,
   fetchMinePages,
   fetchMostWanted,
   fetchProfile,
