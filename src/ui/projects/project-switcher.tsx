@@ -1,6 +1,11 @@
+import { IconArrowRight, IconPlus, IconSearch } from "@tabler/icons-react";
+import { useId, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import { displayArtists, displayTitle } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { recentProjects } from "@/domain/project/recent-projects";
+import { useProjectArtSrc } from "@/hooks/unison/useProjectArtSrc";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { useProjectIndex } from "@/hooks/useProjectIndex";
 import { createProject, openProject } from "@/lib/open-project";
@@ -15,10 +20,6 @@ import { Scroll } from "@/ui/scroll";
 import { LIBRARY_PATH } from "@/utils/app-routes";
 import { cn } from "@/utils/cn";
 import { formatRelativeTime } from "@/utils/format-relative-time";
-import { IconArrowRight, IconPlus, IconSearch } from "@tabler/icons-react";
-import { useId, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 
@@ -42,38 +43,41 @@ const SWITCHER_LIMIT = 6;
 
 // -- Sub-components -----------------------------------------------------------
 
-const SwitcherRow: React.FC<SwitcherRowProps> = ({ project, optionId, isActive, now, onActivate, onChoose }) => (
-  <button
-    type="button"
-    role="option"
-    id={optionId}
-    tabIndex={-1}
-    aria-selected={isActive}
-    onMouseMove={onActivate}
-    onClick={onChoose}
-    className={cn(
-      "grid grid-cols-[36px_minmax(0,1fr)_56px_72px] items-center gap-3 w-full h-12 px-1.5 rounded-[10px] text-left cursor-pointer",
-      isActive && "bg-(--layer-2)",
-    )}
-  >
-    <ProjectArt src={project.thumbnailDataUrl} size="md" className="rounded-sm" />
-    <span className="min-w-0">
-      <span className="block truncate text-sm font-medium text-composer-text">{displayTitle(project.title)}</span>
-      <span className={cn("block truncate text-[13px]", isActive ? "text-(--label)" : "text-(--muted)")}>
-        {displayArtists(project.artists)}
-      </span>
-    </span>
-    <ProjectProgress lineCount={project.lineCount} syncedLineCount={project.syncedLineCount} isActive={isActive} />
-    <span
+const SwitcherRow: React.FC<SwitcherRowProps> = ({ project, optionId, isActive, now, onActivate, onChoose }) => {
+  const artSrc = useProjectArtSrc(project);
+  return (
+    <button
+      type="button"
+      role="option"
+      id={optionId}
+      tabIndex={-1}
+      aria-selected={isActive}
+      onMouseMove={onActivate}
+      onClick={onChoose}
       className={cn(
-        "text-xs text-right whitespace-nowrap tabular-nums",
-        isActive ? "text-(--label)" : "text-(--muted)",
+        "grid grid-cols-[36px_minmax(0,1fr)_56px_72px] items-center gap-3 w-full h-12 px-1.5 rounded-[10px] text-left cursor-pointer",
+        isActive && "bg-(--layer-2)",
       )}
     >
-      {formatRelativeTime(project.updatedAt, now)}
-    </span>
-  </button>
-);
+      <ProjectArt src={artSrc} size="md" className="rounded-sm" />
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-medium text-composer-text">{displayTitle(project.title)}</span>
+        <span className={cn("block truncate text-[13px]", isActive ? "text-(--label)" : "text-(--muted)")}>
+          {displayArtists(project.artists)}
+        </span>
+      </span>
+      <ProjectProgress lineCount={project.lineCount} syncedLineCount={project.syncedLineCount} isActive={isActive} />
+      <span
+        className={cn(
+          "text-xs text-right whitespace-nowrap tabular-nums",
+          isActive ? "text-(--label)" : "text-(--muted)",
+        )}
+      >
+        {formatRelativeTime(project.updatedAt, now)}
+      </span>
+    </button>
+  );
+};
 
 // -- Component ----------------------------------------------------------------
 

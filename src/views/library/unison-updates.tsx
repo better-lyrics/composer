@@ -10,6 +10,7 @@ import {
   type UnisonUpdateKind,
   updatesSince,
 } from "@/domain/unison/updates-since";
+import { useProjectArtSrc } from "@/hooks/unison/useProjectArtSrc";
 import type { UnisonMineItem } from "@/lib/unison/api-types";
 import { readLastSeen, writeLastSeen } from "@/lib/unison/last-seen";
 import { Button } from "@/ui/button";
@@ -50,12 +51,13 @@ const UPDATE_CHIPS: Record<UnisonUpdateKind, { tone: "positive" | "error"; label
 // -- Components ----------------------------------------------------------------
 
 const UpdateRow: React.FC<UpdateRowProps> = ({ update, project, now, onAct }) => {
+  const artSrc = useProjectArtSrc(project);
   const chip = UPDATE_CHIPS[update.kind];
   const title = displayTitle(project.title);
   const action = "Open project";
   return (
     <li className="grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 min-h-12 pr-1.5">
-      <ProjectArt src={project.thumbnailDataUrl} size="md" />
+      <ProjectArt src={artSrc} size="md" />
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="text-[13px] font-medium truncate">{title}</span>
         <span className="flex items-center gap-2 text-xs text-(--muted)">

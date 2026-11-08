@@ -1,8 +1,11 @@
+import { IconDots } from "@tabler/icons-react";
+import { memo } from "react";
 import { displayArtists, displayTitle, hasArtists } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
+import { hasLyrics, progressDescription, projectStage, syncedPercent } from "@/domain/project/progress";
 import type { LinkSuggestion } from "@/domain/unison/link-suggestions";
 import type { UnisonLibraryLyrics } from "@/domain/unison/project-unison-state";
-import { hasLyrics, progressDescription, projectStage, syncedPercent } from "@/domain/project/progress";
+import { useProjectArtSrc } from "@/hooks/unison/useProjectArtSrc";
 import { IconButton } from "@/ui/icon-button";
 import type { MenuAnchor } from "@/ui/menu";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
@@ -14,8 +17,6 @@ import { cn } from "@/utils/cn";
 import { formatRelativeTime } from "@/utils/format-relative-time";
 import { AudioStatusLabel } from "@/views/library/audio-status-label";
 import { UnisonCell } from "@/views/library/unison-cell";
-import { IconDots } from "@tabler/icons-react";
-import { memo } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -106,6 +107,7 @@ const ProjectRowContent: React.FC<ProjectItemProps> = ({
   onToggleSelect,
   onOpenMenu,
 }) => {
+  const artSrc = useProjectArtSrc(project);
   const title = displayTitle(project.title);
   const layout = unison ? ROW_LAYOUTS.unison : ROW_LAYOUTS.plain;
   return (
@@ -121,7 +123,7 @@ const ProjectRowContent: React.FC<ProjectItemProps> = ({
     >
       <div className="relative size-10">
         <ProjectArt
-          src={project.thumbnailDataUrl}
+          src={artSrc}
           size="row"
           className={cn(
             "[&_svg]:transition-opacity [&_svg]:duration-100",
@@ -183,5 +185,5 @@ const ProjectRow = memo(ProjectRowContent);
 
 // -- Exports ------------------------------------------------------------------
 
-export { ProjectRow, ROW_LAYOUTS, UNISON_COLUMN };
 export type { LibraryUnison, ProjectItemProps, UnisonMatch };
+export { ProjectRow, ROW_LAYOUTS, UNISON_COLUMN };

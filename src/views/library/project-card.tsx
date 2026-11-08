@@ -1,6 +1,9 @@
+import { IconDots } from "@tabler/icons-react";
+import { memo } from "react";
 import { displayArtists, displayTitle, hasArtists } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { hasLyrics, progressDescription, projectStage, syncedPercent } from "@/domain/project/progress";
+import { useProjectArtSrc } from "@/hooks/unison/useProjectArtSrc";
 import { IconButton } from "@/ui/icon-button";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
 import { ProgressBar } from "@/ui/progress-bar";
@@ -9,10 +12,8 @@ import { SyncedBadge } from "@/ui/projects/synced-badge";
 import { SelectCheckbox } from "@/ui/select-checkbox";
 import { cn } from "@/utils/cn";
 import { AudioStatusLabel } from "@/views/library/audio-status-label";
-import { UnisonArtLink, UnisonCardChip } from "@/views/library/unison-cell";
 import type { ProjectItemProps } from "@/views/library/project-row";
-import { IconDots } from "@tabler/icons-react";
-import { memo } from "react";
+import { UnisonArtLink, UnisonCardChip } from "@/views/library/unison-cell";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -46,6 +47,7 @@ const ProjectCardContent: React.FC<ProjectItemProps> = ({
   onToggleSelect,
   onOpenMenu,
 }) => {
+  const artSrc = useProjectArtSrc(project);
   const title = displayTitle(project.title);
   return (
     <li
@@ -60,7 +62,7 @@ const ProjectCardContent: React.FC<ProjectItemProps> = ({
     >
       <div className="relative z-1 pointer-events-none transition-[translate] duration-160 ease-emphasized group-hover/card:-translate-y-0.5">
         <ProjectArt
-          src={project.thumbnailDataUrl}
+          src={artSrc}
           size="card"
           className="group-data-selected/card:shadow-[0_0_0_2px_var(--color-composer-accent)]"
         />

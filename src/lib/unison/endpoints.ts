@@ -229,9 +229,13 @@ async function suggestVideosForLyric(id: number, options: CallOptions = {}): Pro
 const ARTWORK_THUMBNAIL_SIZE = 256;
 
 // Unison serves the cover itself, falling back to its own copy when the original is gone.
-async function fetchArtworkDataUrl(videoId: string, { signal }: CallOptions = {}): Promise<string | null> {
+function artworkUrl(videoId: string): string {
   const query = new URLSearchParams({ v: videoId, size: String(ARTWORK_THUMBNAIL_SIZE) });
-  const response = await fetch(`${UNISON_BASE_URL}/artwork/image?${query}`, { signal });
+  return `${UNISON_BASE_URL}/artwork/image?${query}`;
+}
+
+async function fetchArtworkDataUrl(videoId: string, { signal }: CallOptions = {}): Promise<string | null> {
+  const response = await fetch(artworkUrl(videoId), { signal });
   return response.ok ? blobToDataUrl(await response.blob()) : null;
 }
 
@@ -245,6 +249,7 @@ function fetchMostWanted({ cursor = "", signal }: PageOptions = {}): Promise<Uni
 // -- Exports -------------------------------------------------------------------
 
 export {
+  artworkUrl,
   compareWithLive,
   createSession,
   deleteLyrics,
