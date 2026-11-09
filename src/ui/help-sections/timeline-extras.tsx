@@ -1,4 +1,5 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { StepTimingHelp } from "@/ui/help-sections/step-timing-help";
 import { HelpTopic } from "@/ui/help-topic";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SettingLink } from "@/ui/setting-link";
@@ -37,6 +38,8 @@ const TimelineExtras: React.FC = () => (
         </li>
       </ul>
     </HelpTopic>
+
+    <StepTimingHelp />
 
     <HelpTopic title="Syllable timing">
       <p className={PROSE}>
@@ -152,6 +155,11 @@ const TimelineExtras: React.FC = () => (
           <strong>Marker</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleMarkerMode")} />
           ): arms the waveform so a click drops a custom snap point. See <strong>Snap points and marker mode</strong> in
           the Timeline section for the full rundown.
+        </li>
+        <li>
+          <strong>Step timing</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} />
+          ): the timing keys follow the selected word and move on to the next one. See <strong>Step timing</strong>{" "}
+          above.
         </li>
         <li>
           <strong>Auto-align</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.autoAlign")} />
