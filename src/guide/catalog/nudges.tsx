@@ -1,9 +1,12 @@
+import { TIMELINE_NUDGE_COPY } from "@/guide/catalog/nudge-copy-timeline";
+import { TRANSPORT_NUDGE_COPY } from "@/guide/catalog/nudge-copy-transport";
 import { GUIDE_NUDGE_TRIGGERS } from "@/guide/catalog/nudge-triggers";
 import { keyBadge, keys } from "@/guide/catalog/keys";
-import type { GuideNudge } from "@/guide/catalog/types";
+import type { GuideNudge, GuideNudgeCopy } from "@/guide/catalog/types";
 import { isAutoAlignAvailable } from "@/stores/alignment";
 import { toggledPlaybackRate, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { lineHasInlineParens } from "@/utils/background-vocal-extraction";
 import {
   IconAbc,
   IconBrain,
@@ -13,16 +16,15 @@ import {
   IconRotateClockwise,
   IconGauge,
   IconUnlink,
+  IconUsers,
   IconZoomIn,
 } from "@tabler/icons-react";
 
-// -- Types --------------------------------------------------------------------
-
-type NudgeCopy = Omit<GuideNudge, keyof (typeof GUIDE_NUDGE_TRIGGERS)[number]>;
-
 // -- Copy ---------------------------------------------------------------------
 
-const NUDGE_COPY: Record<string, NudgeCopy> = {
+const NUDGE_COPY: Record<string, GuideNudgeCopy> = {
+  ...TIMELINE_NUDGE_COPY,
+  ...TRANSPORT_NUDGE_COPY,
   syllableGap: {
     icon: IconUnlink,
     title: "Trying to split two syllables?",
@@ -106,6 +108,21 @@ const NUDGE_COPY: Record<string, NudgeCopy> = {
     body: <>Composer can write how each line sounds in Latin letters, and keep it in step as you edit.</>,
     peek: <>Add romanization under each line</>,
     primary: { label: "Open Languages", run: () => useProjectStore.getState().setActiveTab("languages") },
+  },
+  extractAll: {
+    icon: IconMicrophone,
+    title: "Pulling them out one line at a time?",
+    body: <>Extract background vocals moves the words in parentheses on every line in one go.</>,
+    peek: <>Extract every line at once with this button</>,
+    available: () => useProjectStore.getState().lines.some(lineHasInlineParens),
+  },
+  singerForRange: {
+    icon: IconUsers,
+    title: "Setting singers line by line?",
+    body: (
+      <>Click a line number, then {keyBadge("Shift")}+click another. Pick the singer once for every line in between.</>
+    ),
+    peek: <>{keyBadge("Shift")}+click line numbers to set many at once</>,
   },
 };
 

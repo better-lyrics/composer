@@ -16,6 +16,7 @@ import {
   resolveWordsToOperate,
 } from "@/views/timeline/drag-handlers";
 import { noteWordDragShift } from "@/views/timeline/tiny-drag-signal";
+import { noteLoneWordMove } from "@/views/timeline/word-by-word-signal";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -139,6 +140,7 @@ function useTimelineDnd(lines: ReadableLine[]) {
         applySameLineReorder(activeData, wordsToMove, lines, timeDelta, rangeOf, updateLineWithHistory);
         noteGuideSignal("timeline.move");
         noteWordDragShift(activeData.lineId, activeData.trackType, activeData.wordIndex, timeDelta);
+        if (wordsToMove.length === 1) noteLoneWordMove(activeData.lineId, activeData.trackType, activeData.wordIndex);
         return;
       }
 

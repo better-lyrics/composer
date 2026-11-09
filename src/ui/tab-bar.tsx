@@ -1,6 +1,7 @@
 import { getLanguageAlignmentErrorItems } from "@/domain/language/alignment-errors";
 import { getLanguageReviewItems } from "@/domain/language/review";
 import { PROJECT_TABS, type ProjectTab } from "@/domain/project/tab";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
@@ -67,8 +68,11 @@ const TabBar: React.FC = () => {
     <TabStrip
       tabs={TABS}
       active={activeTab}
-      onSelect={setActiveTab}
-      navAttributes={{ "data-tour": "tab-bar" }}
+      onSelect={(tab) => {
+        if (tab !== activeTab) noteGuideSignal("app.tabButton");
+        setActiveTab(tab);
+      }}
+      navAttributes={{ "data-tour": "tab-bar", "data-guide-spot": "tabs" }}
       tabAttributes={(tab) => ({
         "data-tour": `tab-${tab.id}`,
         "aria-describedby": tab.id === "timeline" && rangeIndicator ? rangeStateId : undefined,

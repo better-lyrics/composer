@@ -19,6 +19,7 @@ interface GlobalShortcutActions {
 function togglePlaybackSpeed(): void {
   useAudioStore.getState().setPlaybackRate(toggledPlaybackRate());
   noteGuideSignal("sync.speed");
+  noteGuideSignal("transport.speedKey");
 }
 
 function whileTyping(action: () => void): () => void {
@@ -31,6 +32,7 @@ function whileTyping(action: () => void): () => void {
 function seekAndNote(seconds: number): void {
   seekBy(seconds);
   notePlacement(livePlaybackTime(), "keyboard");
+  noteGuideSignal("transport.seekKey");
 }
 
 function seekBackward(): void {
@@ -57,11 +59,16 @@ function toggleStem(): void {
 
 function playFromShortcut(): void {
   notePlayShortcut();
+  noteGuideSignal("transport.playKey");
   togglePlayback();
 }
 
 function useGlobalShortcuts(actions: GlobalShortcutActions): void {
   const { setActiveTab, setHelpOpen, setSettingsOpen, editorActive = true } = actions;
+  const goToTab = (tab: ProjectTab) => {
+    setActiveTab(tab);
+    noteGuideSignal("app.tabKey");
+  };
   const general = {
     "global.help": () => setHelpOpen(true),
     "global.settings": () => setSettingsOpen(true),
@@ -70,13 +77,13 @@ function useGlobalShortcuts(actions: GlobalShortcutActions): void {
   useKeyboardShortcuts(
     editorActive
       ? {
-          "global.goToImport": () => setActiveTab("import"),
-          "global.goToEdit": () => setActiveTab("edit"),
-          "global.goToLanguages": () => setActiveTab("languages"),
-          "global.goToSync": () => setActiveTab("sync"),
-          "global.goToTimeline": () => setActiveTab("timeline"),
-          "global.goToPreview": () => setActiveTab("preview"),
-          "global.goToExport": () => setActiveTab("export"),
+          "global.goToImport": () => goToTab("import"),
+          "global.goToEdit": () => goToTab("edit"),
+          "global.goToLanguages": () => goToTab("languages"),
+          "global.goToSync": () => goToTab("sync"),
+          "global.goToTimeline": () => goToTab("timeline"),
+          "global.goToPreview": () => goToTab("preview"),
+          "global.goToExport": () => goToTab("export"),
           "global.playPause": playFromShortcut,
           "global.playPauseWhileTyping": whileTyping(togglePlayback),
           "global.seekBackward": seekBackward,

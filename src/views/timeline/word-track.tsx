@@ -395,6 +395,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   const handleWordDoubleClick = (wordIndex: number) => {
     useTimelineStore.getState().setEditingWord({ lineId, wordIndex, type: trackType });
+    noteGuideSignal("timeline.editTextDirect");
   };
 
   const handleWordContextMenu = (wordIndex: number, e: React.MouseEvent) => {

@@ -239,6 +239,7 @@ function useTimelineKeyboard(
               wordIndex: eSel[0].wordIndex,
               type: eSel[0].type,
             });
+            noteGuideSignal("timeline.editTextDirect");
           }
           return;
         }
@@ -257,6 +258,7 @@ function useTimelineKeyboard(
           } else if (selectedWords.length > 0) {
             e.preventDefault();
             deleteSelectedWords();
+            noteGuideSignal("timeline.deleteKey");
           }
           return;
         }
@@ -326,6 +328,7 @@ function useTimelineKeyboard(
           if (!playSelection()) break;
           e.preventDefault();
           noteGuideSignal("timeline.play");
+          noteGuideSignal("timeline.playSelectionKey");
           break;
         case "timeline.toggleFollow":
           useSettingsStore.getState().toggle("followPlayhead");
@@ -348,6 +351,7 @@ function useTimelineKeyboard(
           break;
         case "timeline.toggleSnap":
           useSettingsStore.getState().toggle("timelineSnap");
+          noteGuideSignal("timeline.snapToggle");
           break;
         case "timeline.toggleBeatGrid": {
           if (!useProjectStore.getState().beatGrid) {
@@ -411,6 +415,7 @@ function useTimelineKeyboard(
               wordIndex: eSel[0].wordIndex,
               type: eSel[0].type,
             });
+            noteGuideSignal("timeline.editTextDirect");
           }
           break;
         }
@@ -581,6 +586,7 @@ function useTimelineKeyboard(
           }
           const anyExpanded = [...keys].some((k) => !collapsedInstances[k]);
           for (const k of keys) setInstanceCollapsed(k, anyExpanded);
+          noteGuideSignal("timeline.collapseAll");
           break;
         }
         case "timeline.jumpPrevInstance":

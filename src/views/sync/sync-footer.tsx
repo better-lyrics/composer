@@ -45,6 +45,7 @@ const SyncGestureControls: React.FC<SyncGestureControlsProps> = ({
       <Key
         tabIndex={-1}
         aria-label={getShortcutDescription("sync.tap")}
+        data-guide-spot="syncTap"
         data-pressed={showPulse || undefined}
         data-lit={showPulse || undefined}
         onPointerDown={handleTapPointerDown}

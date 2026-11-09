@@ -28,6 +28,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (!contextMenu || contextMenu.target.kind !== "word") return;
     const { lineId, wordIndex, type } = contextMenu.target;
     useTimelineStore.getState().setEditingWord({ lineId, wordIndex, type });
+    noteGuideSignal("timeline.menuEditText");
     clearContextMenu();
   }, [contextMenu, clearContextMenu]);
 
@@ -61,6 +62,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
       useTimelineStore.getState().setSelectedWords([{ lineId, lineIndex, wordIndex, type }]);
     }
     deleteSelectedWords();
+    noteGuideSignal("timeline.menuDelete");
     clearContextMenu();
   }, [contextMenu, clickedSelectionCount, clearContextMenu]);
 

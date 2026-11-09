@@ -147,6 +147,7 @@ function PlaybackMenuItems({
         onSelect={() => {
           selectAndRun(playSelection);
           noteGuideSignal("timeline.play");
+          noteGuideSignal("timeline.menuPlay");
         }}
       />
       <MenuItem

@@ -32,16 +32,21 @@ const RateKnob: React.FC = () => {
   const changeRate = (next: number) => {
     setPlaybackRate(next);
     noteGuideGesture("sync.speed");
+    noteGuideGesture("transport.rateKnob");
   };
 
   return (
     <DeckKnob
       label="Rate"
+      guideSpot="rate"
       valueText={`${rate.toFixed(2)}×`}
       fraction={(rate - RATE_MIN) / (RATE_MAX - RATE_MIN)}
       onFraction={(fraction) => changeRate(roundedRate(RATE_MIN + fraction * (RATE_MAX - RATE_MIN)))}
       onStep={(direction) => changeRate(roundedRate(rate + direction * RATE_STEP))}
-      onReset={() => setPlaybackRate(NORMAL_PLAYBACK_RATE)}
+      onReset={() => {
+        setPlaybackRate(NORMAL_PLAYBACK_RATE);
+        noteGuideGesture("transport.rateKnob");
+      }}
       rememberValue={() => {
         const { playbackRate, otherPlaybackRate, restorePlaybackRates } = useAudioStore.getState();
         return () => restorePlaybackRates({ playbackRate, otherPlaybackRate });

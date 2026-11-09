@@ -131,11 +131,13 @@ const EditPanel: React.FC = () => {
     if (next.length === current.length && next.every((line, i) => line === current[i])) return;
     commitLinesWithHistory(next);
     noteGuideSignal("edit.background");
+    noteGuideSignal("edit.extractAll");
   }, [extractOptions, commitLinesWithHistory]);
 
   const handleAgentChange = useCallback((lineId: string, agentId: string) => {
     useProjectStore.getState().updateLineWithHistory(lineId, { agentId });
     noteGuideSignal("edit.singer");
+    noteGuideSignal("edit.singerOneLine");
   }, []);
 
   const handleBackgroundChange = useCallback((lineId: string, text: string) => {
@@ -173,6 +175,7 @@ const EditPanel: React.FC = () => {
       }),
     });
     noteGuideSignal("edit.background");
+    noteGuideSignal("edit.extractOneLine");
   }, []);
 
   const handleLineSelect = useCallback((lineNumber: number, shiftKey: boolean) => {
@@ -444,6 +447,7 @@ const EditPanel: React.FC = () => {
           <Button
             hasIcon
             size="lg"
+            data-guide-spot="extractAll"
             onClick={handleExtractBackgroundVocals}
             disabled={!canExtractBackgroundVocals}
             title={canExtractBackgroundVocals ? undefined : "No parentheses to extract"}

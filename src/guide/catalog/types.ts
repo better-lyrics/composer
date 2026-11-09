@@ -26,6 +26,8 @@ interface GuideNudge extends GuideNudgeEntry {
   available?: () => boolean;
 }
 
+type GuideNudgeCopy = Omit<GuideNudge, keyof GuideNudgeEntry>;
+
 // -- Constants ----------------------------------------------------------------
 
 const GUIDE_TIER_NAMES: Record<GuideTierId, string> = {
@@ -44,4 +46,4 @@ const stageTip =
 // -- Exports ------------------------------------------------------------------
 
 export { GUIDE_TIER_NAMES, stageTip };
-export type { GuideNudge, GuideTip };
+export type { GuideNudge, GuideNudgeCopy, GuideTip };

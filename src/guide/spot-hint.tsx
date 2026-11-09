@@ -107,7 +107,7 @@ const SpotHint: React.FC = () => {
             exit="exit"
             style={{ left: hint.x, top: hint.y }}
             className={cn(
-              "surface-floating layer-floating pointer-events-none fixed flex h-8 max-w-[min(420px,calc(100vw-2rem))] items-center gap-2 rounded-full border border-transparent pr-3 pl-2 text-xs whitespace-nowrap select-none",
+              "surface-floating layer-floating pointer-events-none fixed flex h-8 max-w-[min(420px,calc(100vw-2rem))] items-center gap-2 rounded-full border border-transparent px-2.5 text-xs whitespace-nowrap select-none",
               hint.fromRight && "-translate-x-full",
               !hint.below && "-translate-y-full",
             )}

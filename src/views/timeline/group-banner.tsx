@@ -81,6 +81,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
     (e: React.MouseEvent) => {
       e.stopPropagation();
       toggleInstanceCollapsed(`${group.id}:${instanceIdx}`);
+      noteGuideSignal("timeline.collapseOne");
     },
     [group.id, instanceIdx, toggleInstanceCollapsed],
   );

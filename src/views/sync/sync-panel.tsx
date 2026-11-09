@@ -265,9 +265,10 @@ const SyncPanel: React.FC = () => {
   const handleTapPointerDown = useCallback(
     (e: React.PointerEvent<HTMLButtonElement>) => {
       e.preventDefault();
+      if (e.pointerType === "mouse" && !editMode) noteGuideSignal("sync.mouseTap");
       performTap();
     },
-    [performTap],
+    [performTap, editMode],
   );
 
   // Only the pointer that opened the hold may close it, otherwise a second
@@ -324,6 +325,7 @@ const SyncPanel: React.FC = () => {
       switch (matched) {
         case "sync.tap":
           e.preventDefault();
+          if (!editMode) noteGuideSignal("sync.keyTap");
           performKeyboardTap();
           break;
         case "sync.holdSync":

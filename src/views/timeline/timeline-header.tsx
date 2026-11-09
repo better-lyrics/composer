@@ -71,6 +71,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
 
   const handleToggleAllCollapsed = useCallback(() => {
     for (const k of instanceKeys) setInstanceCollapsed(k, anyExpanded);
+    noteGuideSignal("timeline.collapseAll");
   }, [instanceKeys, anyExpanded, setInstanceCollapsed]);
 
   const handleExpandAll = useCallback(() => {
@@ -190,7 +191,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
             </ShortcutToggleButton>
           </div>
 
-          <div className="tray">
+          <div className="tray" data-guide-spot="snap">
             <SnapLatch />
             <ShortcutToggleButton
               active={markerMode}
@@ -233,6 +234,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
               description={anyExpanded ? "Collapse all groups" : "Expand all groups"}
               shortcut="timeline.toggleAllCollapsed"
               showHint={showHints}
+              guideSpot="collapseAll"
             >
               {anyExpanded ? <IconChevronsUp /> : <IconChevronsDown />}
             </HeaderAction>
