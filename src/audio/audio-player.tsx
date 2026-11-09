@@ -1,4 +1,3 @@
-import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
 import { MeterBridge } from "@/audio/deck/meter-bridge";
 import { OverviewScrub } from "@/audio/deck/overview-scrub";
 import { RateKnob } from "@/audio/deck/rate-knob";
@@ -14,6 +13,7 @@ import { selectIsCountingIn, useSyncCountInStore } from "@/stores/sync-count-in"
 import { KEEPS_POPOVERS_OPEN_PROPS } from "@/ui/keeps-popovers-open";
 import { Key } from "@/ui/key";
 import { cn } from "@/utils/cn";
+import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
 
 // -- Constants ----------------------------------------------------------------
 

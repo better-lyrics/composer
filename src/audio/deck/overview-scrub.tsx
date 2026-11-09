@@ -1,4 +1,3 @@
-import { useLayoutEffect, useRef } from "react";
 import { useLevelEnvelope } from "@/audio/deck/use-level-envelope";
 import type { LevelEnvelope } from "@/audio/level-envelope";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
@@ -8,6 +7,7 @@ import { useThemeStore } from "@/stores/theme";
 import { Slider } from "@/ui/slider";
 import { playheadTime } from "@/views/timeline/playhead-time";
 import { SeekBarFocusBand } from "@/views/timeline/seek-bar-focus-band";
+import { useLayoutEffect, useRef } from "react";
 
 // -- Types --------------------------------------------------------------------
 

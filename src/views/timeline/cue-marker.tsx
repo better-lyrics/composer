@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { notePlacement } from "@/lib/replay-cue";
 import { useAudioStore } from "@/stores/audio";
@@ -8,6 +7,7 @@ import { Tooltip } from "@/ui/tooltip";
 import { playheadTime } from "@/views/timeline/playhead-time";
 import { noteReplaySpot } from "@/views/timeline/replay-spot-signal";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
 

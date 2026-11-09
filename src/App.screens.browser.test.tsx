@@ -8,7 +8,6 @@ import { allowConsole } from "@/test/console-guard";
 import { LocationProbe } from "@/test/location-probe";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
-import { TOUR_SEEN_KEY } from "@/tour/use-tour";
 import { isMac } from "@/utils/platform";
 
 // -- Helpers ------------------------------------------------------------------
@@ -29,7 +28,6 @@ function tabBarVisible(): boolean {
 }
 
 beforeEach(async () => {
-  localStorage.setItem(TOUR_SEEN_KEY, "true");
   allowConsole(/cannot be a descendant of/);
   allowConsole(/cannot contain a nested/);
   allowConsole(/WebGL is not available/);

@@ -1,8 +1,8 @@
+import { hasKeyboard } from "@/lib/keyboard-presence";
 import type { GuideEvent, GuideSignal } from "@/domain/guide/model";
 import { firesOn } from "@/domain/guide/triggers";
 import { GUIDE_NUDGE_TRIGGERS } from "@/guide/catalog/nudge-triggers";
 import { GUIDE_SIGNAL_OUTCOMES } from "@/guide/catalog/signal-outcomes";
-import { hasKeyboard } from "@/lib/keyboard-presence";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { type ProjectGuideFacts, useGuideStore } from "@/stores/guide";
 

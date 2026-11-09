@@ -1,7 +1,7 @@
 import type { JourneyStepId } from "@/domain/guide/journey";
 import type { GuideStage } from "@/domain/guide/model";
-import { keys } from "@/guide/catalog/keys";
 import { IMPORT_TIPS } from "@/guide/catalog/import";
+import { keys } from "@/guide/catalog/keys";
 import { SYNC_TIPS } from "@/guide/catalog/sync";
 import type { GuideSpotTarget, GuideTip } from "@/guide/catalog/types";
 

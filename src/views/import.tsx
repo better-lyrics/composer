@@ -133,6 +133,7 @@ const LoadedSongPanel: React.FC<LoadedSongPanelProps> = ({ art, title, subtitle,
       <ImportZone>
         <SourceCard
           ref={setCard}
+          guideSpot="importDrop"
           art={art}
           title={title}
           subtitle={subtitle}

@@ -10,7 +10,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
-const TOUR_SEEN_KEY = "composer-tour-seen";
 const TOUR_RESUME_KEY = "composer-tour-resume:v1";
 const LOG_PREFIX = "[Tour]";
 const VIDEO_BUTTON_CLASS = "composer-tour-video-btn";
@@ -43,7 +42,6 @@ function clearResumeState() {
 }
 
 function resetTour() {
-  localStorage.removeItem(TOUR_SEEN_KEY);
   clearResumeState();
 }
 
@@ -82,12 +80,6 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
   const gateSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [guideCard, setGuideCard] = useState<GuideCardState | null>(null);
   const reducedMotion = useReducedMotion();
-
-  const shouldShowTour = !localStorage.getItem(TOUR_SEEN_KEY);
-
-  const markTourSeen = useCallback(() => {
-    localStorage.setItem(TOUR_SEEN_KEY, "true");
-  }, []);
 
   const clearGateTimers = useCallback(() => {
     if (gateIntervalRef.current) {
@@ -249,10 +241,9 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
   );
 
   const startTour = useCallback(() => {
-    markTourSeen();
     clearResumeState();
     driveTour();
-  }, [markTourSeen, driveTour]);
+  }, [driveTour]);
 
   useEffect(() => {
     return () => {
@@ -272,17 +263,14 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
 
     const resume = loadResumeState(createTourSteps(openBestPractices).length);
     if (resume) {
-      markTourSeen();
       driveTour(resume.stepIndex);
     } else {
       startTour();
     }
-  }, [guideCard, destroyDriver, clearGateTimers, markTourSeen, driveTour, startTour, openBestPractices]);
+  }, [guideCard, destroyDriver, clearGateTimers, driveTour, startTour, openBestPractices]);
 
   return {
-    startTour,
     resumeOrStartTour,
-    shouldShowTour,
     guideCard,
     skipGuideCard,
   };
@@ -290,4 +278,4 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
 
 // -- Exports ------------------------------------------------------------------
 
-export { resetTour, TOUR_SEEN_KEY, useTour };
+export { resetTour, useTour };

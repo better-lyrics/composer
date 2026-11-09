@@ -52,7 +52,7 @@ const GENERAL_CATALOG_ENTRIES = {
     section: "general",
     group: "Reset",
     label: "Reset product tour",
-    description: "Restart the guided walkthrough that introduces Composer's features.",
+    description: "Start the guided walkthrough from the first step the next time you open it.",
     keywords: ["tour", "walkthrough", "onboarding", "guide"],
   },
   resetGuide: {

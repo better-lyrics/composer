@@ -1,4 +1,4 @@
-import { getEffectiveKeysArray, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
+import { getEffectiveKeysArray, getShortcutDescription, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 
 // -- Components ---------------------------------------------------------------
@@ -9,7 +9,9 @@ const keyBadge = (...names: string[]) => <InlineKeyBadge keys={names} className=
 // Catalog copy is built once at load, so the badge reads the binding at render to follow every rebind.
 const ShortcutKeys: React.FC<{ shortcutId: string }> = ({ shortcutId }) => {
   useShortcutBindingsStore((state) => state.overrides[shortcutId] ?? state.preset);
-  return keyBadge(...getEffectiveKeysArray(shortcutId));
+  const bound = getEffectiveKeysArray(shortcutId);
+  // An unbound shortcut is named instead, so a tip never tells you to press "Unbound".
+  return bound.length > 0 ? keyBadge(...bound) : <>{getShortcutDescription(shortcutId)}</>;
 };
 
 const keys = (shortcutId: string) => <ShortcutKeys shortcutId={shortcutId} />;

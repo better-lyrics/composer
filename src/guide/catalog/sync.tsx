@@ -1,17 +1,17 @@
+import { isAutoAlignAvailable } from "@/stores/alignment";
+import { keys } from "@/guide/catalog/keys";
+import { stageTip } from "@/guide/catalog/types";
 import {
   IconArrowBackUp,
   IconBrain,
-  IconGauge,
   IconHandClick,
   IconHandStop,
   IconLineDashed,
   IconPlayerTrackNext,
   IconRotateClockwise,
   IconScissors,
+  IconGauge,
 } from "@tabler/icons-react";
-import { keys } from "@/guide/catalog/keys";
-import { stageTip } from "@/guide/catalog/types";
-import { isAutoAlignAvailable } from "@/stores/alignment";
 
 // -- Tips ---------------------------------------------------------------------
 

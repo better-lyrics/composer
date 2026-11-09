@@ -78,25 +78,20 @@ const AppShell: React.FC = () => {
   const openSettings = useUIStore((s) => s.openSettings);
   const closeSettings = useUIStore((s) => s.closeSettings);
   const openBestPractices = useCallback(() => openHelp("best-practices"), [openHelp]);
-  const { startTour, resumeOrStartTour, shouldShowTour, guideCard, skipGuideCard } = useTour({
+  const { resumeOrStartTour, guideCard, skipGuideCard } = useTour({
     onOpenBestPractices: openBestPractices,
   });
-  const startTourLater = useEffectEvent(() => startTour());
   const resumeTourLater = useEffectEvent(() => resumeOrStartTour());
   if (!isEditor && tourRequested) setTourRequested(false);
 
   useEffect(() => {
-    if (!isEditor || (!shouldShowTour && !tourRequested)) return;
+    if (!isEditor || !tourRequested) return;
     const timer = setTimeout(() => {
-      if (!tourRequested) {
-        startTourLater();
-        return;
-      }
       setTourRequested(false);
       resumeTourLater();
     }, TOUR_START_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [isEditor, shouldShowTour, tourRequested]);
+  }, [isEditor, tourRequested]);
 
   useEffect(() => wireFrameLoop(), []);
 

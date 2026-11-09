@@ -17,7 +17,6 @@ import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { isRestoringProject } from "@/lib/project-restore";
 import { lastQuietLearnAt } from "@/guide/use-guide-state-learning";
 import { useAudioStore } from "@/stores/audio";
-import { TOUR_SEEN_KEY } from "@/tour/use-tour";
 import { useProjectStore } from "@/stores/project";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
@@ -139,9 +138,7 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
   }, [journey, projectId, settled]);
 
   useEffect(() => {
-    // A first run belongs to the product tour; the guide greets only people who have seen it, once the project is back.
-    if (!settled || greetedThisSession || !firstVisit || !journey.current || !localStorage.getItem(TOUR_SEEN_KEY))
-      return;
+    if (!settled || greetedThisSession || !firstVisit || !journey.current) return;
     greetedThisSession = true;
     enqueuePeek({ id: "next:greeting", kind: "next", gist: JOURNEY_COPY[journey.current].next });
   }, [settled, firstVisit, journey]);
@@ -172,5 +169,5 @@ function useMilestoneFeed(tiers: StageTiers) {
 
 // -- Exports ------------------------------------------------------------------
 
-export { useJourneyFeed, useMilestoneFeed, useNudgeFeed };
 export type { EarnedTier, StageTiers };
+export { useJourneyFeed, useMilestoneFeed, useNudgeFeed };
