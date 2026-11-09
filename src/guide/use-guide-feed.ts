@@ -93,7 +93,7 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
     const restored = now - lastRestoreAt < RESTORE_SETTLE_MS && now - lastGuideSignalAt() > RESTORE_SETTLE_MS;
     seen.current = { projectId, doneCount: journey.doneCount };
     const switched = before.projectId !== undefined && before.projectId !== projectId;
-    if (restored || switched || journey.doneCount !== before.doneCount + 1) return;
+    if (restored || switched || journey.doneCount <= before.doneCount) return;
     const finished = journey.steps.findLast((step) => step.done);
     if (!finished) return;
     const next = journey.current ? JOURNEY_COPY[journey.current].next : null;
