@@ -42,14 +42,14 @@ function editAt(input: StepKeyWriteInput, slot: WordSelection, key: StepKey): St
 
 // -- Functions ----------------------------------------------------------------
 
-// A step past a line's last word starts the next line's first word too, so both lines land in one undo step.
+// A step past the end of a track starts the next track's first word too, as one undo step.
 function writeStepKey(input: StepKeyWriteInput): StepRefusal | null {
   const { cursor, next, key } = input;
   const own = editAt(input, cursor, key);
   if (!own) return null;
   if (own.kind === "refused") return own.refusal;
   const updates = [own.update];
-  if (key === "step" && next && next.lineIndex !== cursor.lineIndex) {
+  if (key === "step" && next && (next.lineIndex !== cursor.lineIndex || next.type !== cursor.type)) {
     const started = editAt(input, next, "start");
     if (started?.kind === "refused") return started.refusal;
     if (started) updates.push(started.update);

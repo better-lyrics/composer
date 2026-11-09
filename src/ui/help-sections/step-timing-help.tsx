@@ -25,8 +25,8 @@ const StepTimingHelp: React.FC = () => (
         next word.
       </li>
       <li>
-        On the last word of a line, <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} /> also starts the
-        first word of the next line. To leave a gap before the next line, press{" "}
+        After a line's last word, <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} /> moves on to its
+        background words, then to the next line, and starts that word at the same time. To leave a gap, press{" "}
         <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} /> instead.
       </li>
       <li>

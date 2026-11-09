@@ -22,6 +22,9 @@ function nextStepSlot(lines: readonly LyricLine[], cursor: WordSelection, includ
   const line = lines[cursor.lineIndex];
   const words = line ? effectiveTrackWords(line, cursor.type) : undefined;
   if (words && cursor.wordIndex + 1 < words.length) return { ...cursor, wordIndex: cursor.wordIndex + 1 };
+  if (line && cursor.type === "word" && effectiveTrackWords(line, "bg")?.length) {
+    return { lineId: line.id, lineIndex: cursor.lineIndex, wordIndex: 0, type: "bg" };
+  }
   for (let i = cursor.lineIndex + 1; i < lines.length; i++) {
     if (include(lines[i]) && mainBlocks(lines[i]) > 0) return firstWordOf(lines[i], i);
   }
