@@ -81,7 +81,7 @@ const NUDGE_COPY: Record<string, GuideNudgeCopy> = {
   tryAutoAlign: {
     icon: IconBrain,
     title: "Want a head start?",
-    body: <>Press {keys("timeline.autoAlign")} and Auto-align times every word for you. Then fix what it gets wrong.</>,
+    body: <>Open Auto-align at the top of Sync and it times every word for you. Then fix what it gets wrong.</>,
     peek: <>Auto-align can time the words for you</>,
     available: isAutoAlignAvailable,
   },

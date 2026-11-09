@@ -27,6 +27,10 @@ const ON_STATE_SIGNALS: readonly [GuideSignal, (state: GuideStateSnapshot) => bo
   ["preview.sidebar", ({ settings }) => settings.previewSidebar],
 ];
 
+// -- State --------------------------------------------------------------------
+
+let quietLearnAt = Number.NEGATIVE_INFINITY;
+
 // -- Helpers ------------------------------------------------------------------
 
 function learnWhatIsOn(): void {
@@ -40,8 +44,15 @@ function learnWhatIsOn(): void {
   // Learned quietly: a state is not an action, so it never counts toward a nudge or reads as news.
   const { learnedSignals, learnSignal } = useGuideStore.getState();
   for (const [signal, isOn] of ON_STATE_SIGNALS) {
-    if (!learnedSignals.includes(signal) && isOn(snapshot)) learnSignal(signal);
+    if (!learnedSignals.includes(signal) && isOn(snapshot)) {
+      quietLearnAt = performance.now();
+      learnSignal(signal);
+    }
   }
+}
+
+function lastQuietLearnAt(): number {
+  return quietLearnAt;
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -64,4 +75,4 @@ function useGuideStateLearning(): void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { useGuideStateLearning };
+export { lastQuietLearnAt, useGuideStateLearning };

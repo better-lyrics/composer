@@ -15,6 +15,7 @@ import {
 } from "@/lib/guide-signals";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { isRestoringProject } from "@/lib/project-restore";
+import { lastQuietLearnAt } from "@/guide/use-guide-state-learning";
 import { useAudioStore } from "@/stores/audio";
 import { TOUR_SEEN_KEY } from "@/tour/use-tour";
 import { useProjectStore } from "@/stores/project";
@@ -32,6 +33,7 @@ type StageTiers = ReadonlyMap<GuideStage, readonly TierStatus[]>;
 // -- Constants ----------------------------------------------------------------
 
 const RESTORE_SETTLE_MS = 1_000;
+const QUIET_LEARN_ECHO_MS = 500;
 
 // -- State --------------------------------------------------------------------
 
@@ -121,6 +123,8 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
     const undone = new Set(journey.steps.filter((step) => !step.done).map((step) => `done:${projectId}:${step.id}`));
     dropPeeks((peek) => !undone.has(peek.id));
     const switched = before.projectId !== undefined && before.projectId !== projectId;
+    // News belongs to its project: a switch drops what another project left waiting.
+    if (switched) dropPeeks((peek) => !peek.id.startsWith("done:") || peek.id.startsWith(`done:${projectId}:`));
     if (!settled || restored || switched || journey.doneCount <= before.doneCount) return;
     const finished = journey.steps.findLast((step) => step.done);
     if (!finished) return;
@@ -147,8 +151,10 @@ function useMilestoneFeed(tiers: StageTiers) {
   const [milestone, setMilestone] = useState<EarnedTier | null>(null);
   useEffect(() => {
     const now = earnedKeys(tiers);
+    // A tier finished by quietly noticing what is already on (spectrum, sidebar) is not something you just did.
+    const byYourAction = performance.now() - lastQuietLearnAt() > QUIET_LEARN_ECHO_MS;
     for (const key of now) {
-      if (earnedBefore.current.has(key)) continue;
+      if (earnedBefore.current.has(key) || !byYourAction) continue;
       const [stage, tier] = key.split(":") as [GuideStage, GuideTierId];
       setMilestone({ stage, tier });
       enqueuePeek({ id: `unlocked:${key}`, kind: "unlocked", gist: unlockedGist(stage, tier, tiers.get(stage) ?? []) });

@@ -22,4 +22,4 @@ function canPeek({ now, busy, lastPeekAt, peeksThisSession }: PeekMoment): boole
 
 // -- Exports ------------------------------------------------------------------
 
-export { PEEK_COOLDOWN_MS, PEEK_VISIBLE_MS, canPeek };
+export { PEEK_COOLDOWN_MS, PEEK_SESSION_CAP, PEEK_VISIBLE_MS, canPeek };

@@ -72,8 +72,10 @@ const GuideHost: React.FC = () => {
     setFocusNudgeId(null);
   };
   const openCard = () => {
-    setFocusNudgeId(queue.showing?.nudgeId ?? null);
-    markPeeksRead();
+    const focus = queue.showing?.nudgeId ?? null;
+    const cardNudgeId = pending.find((queued) => queued.id === focus)?.id ?? pending[0]?.id;
+    setFocusNudgeId(focus);
+    markPeeksRead((peek) => peek.nudgeId !== undefined && peek.nudgeId !== cardNudgeId);
     setOpen(true);
   };
   useEscapeLayer("panel", open, close);

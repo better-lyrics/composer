@@ -1,3 +1,4 @@
+import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import type { Icon } from "@tabler/icons-react";
 import { guideChipVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
@@ -55,6 +56,9 @@ function showSpotHint(spot: string, content: SpotHintContent): boolean {
   if (!anchor) return false;
   const rect = anchor.getBoundingClientRect();
   if (rect.width === 0 && rect.height === 0) return false;
+  // Off screen, under an open dialog or behind another hint, the orb carries it instead.
+  const onScreen = rect.right > 0 && rect.left < window.innerWidth && rect.bottom > 0 && rect.top < window.innerHeight;
+  if (!onScreen || shown || useEscapeLayerStackStore.getState().layers.length > 0) return false;
   // An anchor can name an area its hint must not cover, such as the waveform under the playhead.
   const clearSelector = anchor.getAttribute("data-guide-spot-clear");
   const clearBottom = clearSelector ? document.querySelector(clearSelector)?.getBoundingClientRect().bottom : undefined;
