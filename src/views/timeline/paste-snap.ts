@@ -2,10 +2,11 @@ import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing"
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/tracks";
 import { snapPointTimes } from "@/domain/snap-point/model";
-import { livePlaybackTime, useAudioStore } from "@/stores/audio";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
+import { playheadTime } from "@/views/timeline/playhead-time";
 import { liveSnapAnchors, snapThresholdPx } from "@/views/timeline/point-snap-anchors";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { collectSnapAnchors, findSnapShift, type SnapAnchor } from "@/views/timeline/snap";
@@ -32,7 +33,7 @@ function pasteSnapAnchors(): SnapAnchor[] {
   const { lines, customSnapPoints, beatGrid } = useProjectStore.getState();
   const { isPlaying, duration } = useAudioStore.getState();
   const { zoom, vocalOnsetSnapPoints } = useTimelineStore.getState();
-  const playhead = isPlaying ? null : livePlaybackTime();
+  const playhead = isPlaying ? null : playheadTime();
   const key = [
     lines,
     customSnapPoints,

@@ -1,8 +1,8 @@
-import { noteGuideSignal } from "@/lib/guide-signals";
-import { livePlaybackTime } from "@/stores/audio";
-import { computeAnchoredScrollLeft } from "@/utils/timeline/zoom-anchor";
-import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, ZOOM_STEP, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type RefObject, useCallback } from "react";
+import { noteGuideSignal } from "@/lib/guide-signals";
+import { computeAnchoredScrollLeft } from "@/utils/timeline/zoom-anchor";
+import { playheadTime } from "@/views/timeline/playhead-time";
+import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore, ZOOM_STEP } from "@/views/timeline/timeline-store";
 import { readViewScroll, scrollView } from "@/views/timeline/view-scroll";
 
 // -- Helpers -------------------------------------------------------------------
@@ -36,7 +36,7 @@ function useTimelineZoom(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
       const contentWidthInView = Math.max(0, container.clientWidth - GUTTER_WIDTH);
       const { anchorTime, anchorViewportX } = pickAnchor(
-        livePlaybackTime(),
+        playheadTime(),
         oldZoom,
         readViewScroll(container).left,
         contentWidthInView,

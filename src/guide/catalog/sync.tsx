@@ -1,17 +1,17 @@
-import { isAutoAlignAvailable } from "@/stores/alignment";
-import { keys } from "@/guide/catalog/keys";
-import { stageTip } from "@/guide/catalog/types";
 import {
   IconArrowBackUp,
   IconBrain,
+  IconGauge,
   IconHandClick,
   IconHandStop,
   IconLineDashed,
   IconPlayerTrackNext,
   IconRotateClockwise,
   IconScissors,
-  IconGauge,
 } from "@tabler/icons-react";
+import { keys } from "@/guide/catalog/keys";
+import { stageTip } from "@/guide/catalog/types";
+import { isAutoAlignAvailable } from "@/stores/alignment";
 
 // -- Tips ---------------------------------------------------------------------
 
@@ -52,7 +52,11 @@ const SYNC_TIPS = [
     tier: "further",
     icon: IconPlayerTrackNext,
     title: "Gapless syllables",
-    gist: <>While holding, tap {keys("sync.tap")} to start the next syllable.</>,
+    gist: (
+      <>
+        While holding {keys("sync.holdSync")}, tap {keys("sync.tap")} to start the next syllable.
+      </>
+    ),
   }),
   tip({
     id: "speed",

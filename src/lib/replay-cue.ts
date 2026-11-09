@@ -1,8 +1,9 @@
 import { cueAfterPlacement, type PlacementKind, transportPosition } from "@/domain/cue/cue-rules";
-import { livePlaybackTime, useAudioStore } from "@/stores/audio";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { isYouTubeSourceFor } from "@/utils/youtube-source";
+import { playheadTime } from "@/views/timeline/playhead-time";
 import { playPlain, skipLoopRegionOnNextPlay } from "@/views/timeline/selection-playback";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -32,7 +33,7 @@ function flashCue(time: number): void {
 }
 
 function currentTransportPosition(): { target: number; playhead: number; latched: boolean } {
-  const playhead = livePlaybackTime();
+  const playhead = playheadTime();
   const latched = onTimeline() && useSettingsStore.getState().returnToCue;
   const target = transportPosition({ latched, cue: useTimelineStore.getState().cue, playhead });
   return { target, playhead, latched };
@@ -57,10 +58,10 @@ function notePlacement(time: number, kind: PlacementKind): void {
 function playFromCue(): void {
   const { cue, setCue } = useTimelineStore.getState();
   if (cue === null) {
-    setCue(livePlaybackTime());
+    setCue(playheadTime());
     if (useAudioStore.getState().isPlaying) return;
   }
-  flashCue(playPlain(useTimelineStore.getState().cue ?? livePlaybackTime(), "centre"));
+  flashCue(playPlain(useTimelineStore.getState().cue ?? playheadTime(), "centre"));
 }
 
 // Latched, Enter always plays from the cue, so a drawn region the cue sits outside is not adopted.
