@@ -25,9 +25,9 @@ const StepTimingHelp: React.FC = () => (
         next word.
       </li>
       <li>
-        On the last word of a line, <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} /> only ends the
-        word. The gap before the next line stays, so set the next start with{" "}
-        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordBegin")} />.
+        On the last word of a line, <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} /> also starts the
+        first word of the next line. To leave a gap before the next line, press{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} /> instead.
       </li>
       <li>
         With the pointer over the waveform or the spectrum, the keys write the time under the pointer, and a line shows

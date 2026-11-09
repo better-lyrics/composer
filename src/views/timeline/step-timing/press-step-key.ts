@@ -5,8 +5,7 @@ import { nextStepSlot } from "@/domain/step-timing/step-cursor";
 import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { stepBgWordWrite } from "@/utils/timing/bg-word-timing";
-import { stepWordWrite } from "@/utils/timing/word-timing";
+import { writeStepKey } from "@/utils/timing/step-key-write";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
 import { stepWriteTime } from "@/views/timeline/step-timing/pointer-write-time";
@@ -40,24 +39,24 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
   const word = line ? effectiveTrackWords(line, cursor.type)?.[cursor.wordIndex] : undefined;
   if (!line || !word) return;
   const project = useProjectStore.getState();
-  const write = cursor.type === "word" ? stepWordWrite : stepBgWordWrite;
-  const refusal = write({
+  const rangeOf = timeRangeResolver(project.lines, project.groups, duration);
+  const next = key === "start" ? null : nextStepSlot(lines, cursor, include);
+  const refusal = writeStepKey({
     lines,
-    lineIdx: cursor.lineIndex,
-    wordIdx: cursor.wordIndex,
+    cursor,
+    next,
     key,
     time,
     minDuration: useSettingsStore.getState().minWordDuration,
-    range: timeRangeResolver(project.lines, project.groups, duration)(line),
-    updateLineWithHistory: project.updateLineWithHistory,
+    rangeOf,
+    updateLinesWithHistory: project.updateLinesWithHistory,
   });
   if (refusal) {
     toast(refusalMessage(refusal));
     timeline.setSelectedWords([cursor]);
     return;
   }
-  const next = key === "start" ? cursor : (nextStepSlot(lines, cursor, include) ?? cursor);
-  timeline.setSelectedWords([next]);
+  timeline.setSelectedWords([next ?? cursor]);
 }
 
 // -- Exports ------------------------------------------------------------------
