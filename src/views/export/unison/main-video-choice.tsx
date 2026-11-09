@@ -59,7 +59,7 @@ const MainVideoChoice: React.FC<MainVideoChoiceProps> = ({ durationSeconds, onCh
   const songTitle = useProjectStore((state) => state.metadata.title);
   const { songSeconds, suggestions } = useSongSuggestions(undefined, durationSeconds);
 
-  const use = async (suggestion: SuggestedVideo) => {
+  const chooseSuggestion = async (suggestion: SuggestedVideo) => {
     if (await confirmDifferentTitle(confirm, suggestion, songTitle)) onChoose(suggestion.videoId);
   };
 
@@ -73,7 +73,7 @@ const MainVideoChoice: React.FC<MainVideoChoiceProps> = ({ durationSeconds, onCh
               key={suggestion.videoId}
               suggestion={suggestion}
               songSeconds={songSeconds}
-              onUse={() => void use(suggestion)}
+              onUse={() => void chooseSuggestion(suggestion)}
             />
           ))}
         </ul>
