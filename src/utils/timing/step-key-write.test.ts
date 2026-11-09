@@ -28,11 +28,11 @@ const slot = (lineId: string, lineIndex: number, wordIndex: number): WordSelecti
 });
 const store = () => useProjectStore.getState();
 const lineById = (id: string) => store().lines.find((line) => line.id === id);
-const press = (cursor: WordSelection, next: WordSelection | null, time: number) =>
+const press = (cursor: WordSelection, startNext: WordSelection | null, time: number) =>
   writeStepKey({
     lines: store().lines,
     cursor,
-    next,
+    startNext,
     key: "step",
     time,
     minDuration: 0.05,
@@ -75,7 +75,7 @@ describe("writeStepKey", () => {
     expect(store().lines.map((line) => line.words)).toEqual(before.map((line) => line.words));
   });
 
-  it("only ends a background track's last word and leaves the next line's start alone", () => {
+  it("only ends the word when there is no word to chain into, and leaves the next line's start alone", () => {
     const echo = createLine({
       id: "e",
       text: "Hold the light",
@@ -89,7 +89,7 @@ describe("writeStepKey", () => {
       words: [word("Fold ", 33, 33.4), word("the ", 33.5, 34)],
     });
     useProjectStore.setState({ lines: [echo, next], groups: [] });
-    press({ lineId: "e", lineIndex: 0, wordIndex: 0, type: "bg" }, slot("n", 1, 0), 30.7);
+    press({ lineId: "e", lineIndex: 0, wordIndex: 0, type: "bg" }, null, 30.7);
     expect(lineById("e")?.backgroundWords?.[0].end).toBe(30.7);
     expect(lineById("n")?.words?.[0].begin).toBe(33);
   });

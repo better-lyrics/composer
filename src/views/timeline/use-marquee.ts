@@ -37,6 +37,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
   const [marqueeRect, setMarqueeRect] = useState<MarqueeRect | null>(null);
   const [autoScrolling, setAutoScrolling] = useState(false);
   const stateRef = useRef<MarqueeState>("idle");
+  const laneOwnsClickRef = useRef(false);
   const startRef = useRef({ clientX: 0, clientY: 0, scrollLeft: 0, scrollTop: 0 });
   const currentRef = useRef({ clientX: 0, clientY: 0 });
   const shiftRef = useRef(false);
@@ -159,6 +160,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
       stateRef.current = "pending";
       shiftRef.current = e.shiftKey;
+      laneOwnsClickRef.current = useTimelineStore.getState().stepTiming && target.closest("[data-word-track]") !== null;
       const { left, top } = readViewScroll(container);
       startRef.current = { clientX: e.clientX, clientY: e.clientY, scrollLeft: left, scrollTop: top };
       currentRef.current = { clientX: e.clientX, clientY: e.clientY };
@@ -196,7 +198,8 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
         if (rect) {
           const newSelections = computeSelection(rect);
           if (shiftRef.current) {
-            const existing = useTimelineStore.getState().selectedWords;
+            const { stepQueue, selectedWords } = useTimelineStore.getState();
+            const existing = stepQueue ?? selectedWords;
             useTimelineStore.getState().setSelectedWords(mergeWordSelections(existing, newSelections));
           } else {
             useTimelineStore.getState().setSelectedWords(newSelections);
@@ -205,7 +208,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
             noteGuideSignal(newSelections.length > 1 ? "timeline.selectMore" : "timeline.select");
         }
       } else if (stateRef.current === "pending") {
-        if (!shiftRef.current) {
+        if (!shiftRef.current && !laneOwnsClickRef.current) {
           useTimelineStore.getState().clearSelection();
         }
       }

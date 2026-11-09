@@ -12,7 +12,7 @@ import type { StepEdit } from "@/utils/timing/word-timing-ops";
 interface StepKeyWriteInput {
   lines: readonly ReadableLine[];
   cursor: WordSelection;
-  next: WordSelection | null;
+  startNext: WordSelection | null;
   key: StepKey;
   time: number;
   minDuration: number;
@@ -42,15 +42,17 @@ function editAt(input: StepKeyWriteInput, slot: WordSelection, key: StepKey): St
 
 // -- Functions ----------------------------------------------------------------
 
-// Only main words chain across lines; background words overlap the main line, so their last step only ends them.
+// A step that also starts a word on another line lands both lines in one undo step.
 function writeStepKey(input: StepKeyWriteInput): StepRefusal | null {
-  const { cursor, next, key } = input;
-  const own = editAt(input, cursor, key);
+  const { cursor, startNext, key } = input;
+  const inTrack = startNext?.lineId === cursor.lineId && startNext.type === cursor.type;
+  const ownKey = key !== "step" || inTrack ? key : "end";
+  const own = editAt(input, cursor, ownKey);
   if (!own) return null;
   if (own.kind === "refused") return own.refusal;
   const updates = [own.update];
-  if (key === "step" && cursor.type === "word" && next?.type === "word" && next.lineIndex !== cursor.lineIndex) {
-    const started = editAt(input, next, "start");
+  if (key === "step" && startNext && !inTrack) {
+    const started = editAt(input, startNext, "start");
     if (started?.kind === "refused") return started.refusal;
     if (started) updates.push(started.update);
   }

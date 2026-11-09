@@ -1144,7 +1144,7 @@ braccato-lyrics .blyrics-container {
     transition-property: --word-fill, color, box-shadow;
     transition-duration: 120ms;
     transition-timing-function: ease-out;
-    &:not([data-selected], [data-step-next]) {
+    &:not([data-selected], [data-step-next], [data-step-queued]) {
       --word-fill: oklch(from var(--step-face) l 0.005 h);
       --step-top: transparent;
       --step-drop: transparent;
@@ -1160,6 +1160,9 @@ braccato-lyrics .blyrics-container {
       color: var(--color-composer-on-accent);
     }
   }
+  [data-scroll-container][data-step-timing] [data-step-chain="off"] .word-face {
+    opacity: 0.55;
+  }
   html[data-scheme="light"] [data-scroll-container][data-step-timing] .word-face {
     --step-face: color-mix(in oklab, var(--agent) 10%, color-mix(in oklab, white 85%, var(--color-composer-bg-dark)));
     --step-ring: color-mix(in oklab, var(--agent) 30%, var(--edge));
@@ -1169,7 +1172,7 @@ braccato-lyrics .blyrics-container {
       inset 0 1px 0 var(--step-top),
       inset 0 0 0 1px var(--step-ring),
       0 1px 2px var(--step-drop);
-    &:not([data-selected], [data-step-next]) {
+    &:not([data-selected], [data-step-next], [data-step-queued]) {
       --step-ring: var(--edge);
       color: color-mix(in oklab, var(--ink) 74%, var(--color-composer-bg));
     }

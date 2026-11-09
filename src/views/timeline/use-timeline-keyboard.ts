@@ -226,8 +226,10 @@ function useTimelineKeyboard(
           if (pasteMode.status === "preview") {
             useTimelineStore.getState().setPasteMode({ status: "idle" });
           } else if (useTimelineStore.getState().stepTiming) {
-            if (useTimelineStore.getState().loopRegion) clearLoopRegion();
-            else useTimelineStore.getState().setStepTiming(false);
+            const { loopRegion, selectedWords, clearSelection, setStepTiming } = useTimelineStore.getState();
+            if (loopRegion) clearLoopRegion();
+            else if (selectedWords.length > 0) clearSelection();
+            else setStepTiming(false);
           } else {
             clearLoopRegion();
             useTimelineStore.getState().clearSelection();

@@ -1,7 +1,8 @@
 import { toast } from "sonner";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { effectiveTrackWords, type ReadableLine } from "@/domain/line/effective-words";
-import { nextStepSlot } from "@/domain/step-timing/step-cursor";
+import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
+import { chainedNext } from "@/domain/step-timing/step-queue";
 import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -40,11 +41,13 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
   if (!line || !word) return;
   const project = useProjectStore.getState();
   const rangeOf = timeRangeResolver(project.lines, project.groups, duration);
-  const next = key === "start" ? null : nextStepSlot(lines, cursor, include);
+  const queue = timeline.stepQueue;
+  const next = key === "start" ? null : nextCursorSlot(lines, cursor, queue, include);
+  const startNext = key === "step" ? chainedNext(cursor, next, nextStepSlot(lines, cursor, include)) : null;
   const refusal = writeStepKey({
     lines,
     cursor,
-    next,
+    startNext,
     key,
     time,
     minDuration: useSettingsStore.getState().minWordDuration,
@@ -56,7 +59,12 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
     timeline.setSelectedWords([cursor]);
     return;
   }
-  timeline.setSelectedWords([next ?? cursor]);
+  if (next || key === "start") {
+    timeline.setSelectedWords([next ?? cursor]);
+    return;
+  }
+  timeline.clearSelection();
+  timeline.setSelectedWords([cursor]);
 }
 
 // -- Exports ------------------------------------------------------------------

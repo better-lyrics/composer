@@ -21,6 +21,7 @@ import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
 import { StepNextContext } from "@/views/timeline/step-timing/step-next";
+import { isWholeLane } from "@/views/timeline/step-timing/step-selection";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { selectionGripEdges } from "@/views/timeline/stretch-grips";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -93,6 +94,11 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const stepTiming = useTimelineStore((s) => s.stepTiming);
   const stepNext = use(StepNextContext);
+  const stepQueue = useTimelineStore((s) => s.stepQueue);
+  const offStepChain =
+    stepTiming &&
+    trackType === "bg" &&
+    !(stepQueue ?? selectedWords).some((s) => s.lineId === lineId && s.type === "bg");
   const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
   const rollingEdit = useSettingsStore((s) => s.rollingEdit);
@@ -359,7 +365,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
   }, []);
 
   const handleTrackClick = () => {
-    setSelectedWords([]);
+    if (!stepTiming) return setSelectedWords([]);
+    const lane = words.map((_, wordIndex) => ({ lineId, lineIndex, wordIndex, type: trackType }));
+    setSelectedWords(isWholeLane(stepQueue ?? selectedWords, lane) ? [] : lane);
   };
 
   const handleSelect = (wordIndex: number, e: React.MouseEvent) => {
@@ -456,6 +464,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
     <div
       ref={trackRef}
       role="presentation"
+      data-word-track
+      data-step-chain={offStepChain ? "off" : undefined}
       className="relative"
       style={{ height, width: duration * zoom }}
       onClick={handleTrackClick}
@@ -496,6 +506,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
                 (playingRegion !== null && !overlapsLoopRegion(display, playingRegion)))
             }
             isStepNext={stepNext?.lineId === lineId && stepNext.type === trackType && stepNext.wordIndex === wordIndex}
+            isStepQueued={stepQueue !== null && isWordSelected(stepQueue, lineId, wordIndex, trackType)}
             isSelected={isWordSelected(selectedWords, lineId, wordIndex, trackType)}
             isExplicit={word.explicit === true}
             syllablePosition={syllablePosition}

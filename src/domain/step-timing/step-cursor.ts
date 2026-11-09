@@ -1,6 +1,7 @@
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
+import { nextInQueue } from "@/domain/step-timing/step-queue";
 
 // -- Types --------------------------------------------------------------------
 
@@ -28,6 +29,15 @@ function nextStepSlot(lines: readonly LyricLine[], cursor: WordSelection, includ
   return null;
 }
 
+function nextCursorSlot(
+  lines: readonly LyricLine[],
+  cursor: WordSelection,
+  queue: readonly WordSelection[] | null,
+  include: LineFilter,
+): WordSelection | null {
+  return queue ? nextInQueue(queue, cursor) : nextStepSlot(lines, cursor, include);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { nextStepSlot };
+export { nextCursorSlot, nextStepSlot };

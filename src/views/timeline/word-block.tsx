@@ -26,6 +26,7 @@ interface WordBlockProps {
   isDimmed: boolean;
   isSelected: boolean;
   isStepNext?: boolean;
+  isStepQueued?: boolean;
   isExplicit?: boolean;
   syllablePosition?: SyllablePosition;
   gapBefore?: boolean;
@@ -60,6 +61,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
   isDimmed,
   isSelected,
   isStepNext,
+  isStepQueued,
   isExplicit,
   syllablePosition = "none",
   syllableEdgesJoin = true,
@@ -111,6 +113,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
       data-end={end}
       data-selected={isSelected || undefined}
       data-step-next={isStepNext || undefined}
+      data-step-queued={isStepQueued || undefined}
       data-gap-before={gapBefore || undefined}
       data-gap-after={gapAfter || undefined}
       className={cn(
