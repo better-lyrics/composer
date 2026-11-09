@@ -106,4 +106,4 @@ const ChosenVideoRow: React.FC<{ video: ChosenVideo; error?: string | null; trai
 
 // -- Exports -------------------------------------------------------------------
 
-export { ChosenVideoRow, MatchMark, VideoRow };
+export { ChosenVideoRow, MatchMark, PENDING_NOTE, VideoRow };

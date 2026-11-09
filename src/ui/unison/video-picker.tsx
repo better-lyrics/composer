@@ -1,4 +1,3 @@
-import { quotedTitle } from "@/domain/project/display-title";
 import {
   type ChosenVideo,
   linkedVideoCount,
@@ -12,8 +11,9 @@ import { useConfirm } from "@/stores/confirm-store";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { AddVideoField } from "@/ui/unison/add-video-field";
+import { confirmDifferentTitle } from "@/ui/unison/confirm-different-title";
 import { ChosenVideoRow, MatchMark, VideoRow } from "@/ui/unison/video-row";
-import { IconPlus, IconX } from "@tabler/icons-react";
+import { IconX } from "@tabler/icons-react";
 import { useId, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -25,19 +25,20 @@ interface MainVideo {
   title?: string;
   artworkUrl?: string | null;
   facts?: VideoFacts;
+  note?: string;
 }
 
 interface VideoPickerProps {
   main: MainVideo;
   linked: readonly ChosenVideo[];
   more: readonly SuggestedVideo[];
-  songTitle: string;
   songSeconds: number;
   busy?: boolean;
   floating?: boolean;
   onLink: (suggestion: SuggestedVideo) => PickerResult;
   onUnlink: (videoId: string) => PickerResult;
   onAdd: (videoId: string) => PickerResult;
+  onChangeMain?: () => void;
 }
 
 interface RowError {
@@ -52,17 +53,39 @@ const CAP_REACHED_MESSAGE = `Up to ${VIDEO_LINK_LIMIT} videos per lyric. Unlink 
 
 // -- Components ----------------------------------------------------------------
 
+const MainVideoRow: React.FC<{ main: MainVideo; busy?: boolean; onChange?: () => void }> = ({
+  main,
+  busy,
+  onChange,
+}) => (
+  <VideoRow
+    videoId={main.videoId}
+    title={main.title}
+    artworkUrl={main.artworkUrl}
+    tag="main"
+    facts={main.facts}
+    note={main.note}
+    trailing={
+      onChange && (
+        <Button size="sm" variant="ghost" disabled={busy} onClick={onChange} className="shrink-0">
+          Change
+        </Button>
+      )
+    }
+  />
+);
+
 const VideoPicker: React.FC<VideoPickerProps> = ({
   main,
   linked,
   more,
-  songTitle,
   songSeconds,
   busy,
   floating,
   onLink,
   onUnlink,
   onAdd,
+  onChangeMain,
 }) => {
   const confirm = useConfirm();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -79,16 +102,7 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
   };
 
   const link = async (suggestion: SuggestedVideo) => {
-    if (suggestion.match?.level !== "same") {
-      const sure = await confirm({
-        title: "Link a video with a different title?",
-        description: `${quotedTitle(suggestion.title)} may not be the same recording as ${quotedTitle(songTitle)}. Link it only if the lyrics line up with it.`,
-        confirmLabel: "Link video",
-        cancelLabel: "Cancel",
-        variant: "primary",
-      });
-      if (!sure) return;
-    }
+    if (!(await confirmDifferentTitle(confirm, suggestion))) return;
     await run(suggestion.videoId, () => onLink(suggestion));
   };
 
@@ -101,13 +115,7 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
   return (
     <div ref={rootRef} tabIndex={-1} className="flex min-w-0 flex-col gap-4 outline-none">
       <ul aria-label="Linked videos" className="flex min-w-0 flex-col gap-2">
-        <VideoRow
-          videoId={main.videoId}
-          title={main.title}
-          artworkUrl={main.artworkUrl}
-          tag="main"
-          facts={main.facts}
-        />
+        <MainVideoRow main={main} busy={busy} onChange={onChangeMain} />
         {linked.map((video) => (
           <ChosenVideoRow
             key={video.videoId}
@@ -149,13 +157,11 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
                       <Button
                         size="sm"
                         variant="secondary"
-                        hasIcon
                         disabled={busy || atCap || lengthNote !== null}
                         aria-label={`Link ${suggestion.title}`}
                         onClick={() => void link(suggestion)}
                         className="shrink-0"
                       >
-                        <IconPlus aria-hidden="true" className="size-4" />
                         Link
                       </Button>
                     </>
@@ -173,5 +179,5 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
 
 // -- Exports -------------------------------------------------------------------
 
-export { VideoPicker };
+export { MainVideoRow, VideoPicker };
 export type { MainVideo };

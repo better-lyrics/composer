@@ -33,13 +33,18 @@ interface SubmitterSession extends SubmitIdentity {
   keyId: string;
 }
 
+interface VideoSectionState {
+  busy: boolean;
+  capReached: boolean;
+}
+
 interface SubmitCardProps {
   lyricId: number | null;
   session: SubmitterSession;
   sessionEnded: boolean;
   onSessionEnded: () => void;
   source: UnisonExportSource;
-  videoSection?: React.ReactNode;
+  videoSection?: (state: VideoSectionState) => React.ReactNode;
   videoIds?: readonly string[];
 }
 
@@ -114,7 +119,7 @@ const NewSubmissionCard: React.FC<ModeCardProps> = (props) => {
           onLink={(lyricId) => useProjectStore.getState().linkUnisonLyric(String(lyricId))}
         />
       )}
-      {!capReached && videoSection}
+      {videoSection?.({ busy: sender.pending, capReached })}
       {!checks.canSubmit && <ChecksReason id={checksReasonId} />}
       <SubmitFooter
         identity={session}
@@ -218,4 +223,4 @@ const SubmitCard: React.FC<SubmitCardProps> = ({ lyricId, ...props }) =>
 // -- Exports -------------------------------------------------------------------
 
 export { SubmitCard };
-export type { SubmitterSession };
+export type { SubmitterSession, VideoSectionState };

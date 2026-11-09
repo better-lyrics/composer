@@ -10,6 +10,7 @@ import { useId, useState } from "react";
 
 interface AddVideoFieldProps {
   onAdd: (videoId: string) => Promise<string | null> | string | null;
+  placeholder?: string;
   disabledReason?: string | null;
   floating?: boolean;
   /** Another video write is running; adding waits for it. */
@@ -23,7 +24,13 @@ const MESSAGE_STYLES = "px-0.5 text-xs leading-[18px] text-pretty select-text cu
 
 // -- Component -----------------------------------------------------------------
 
-const AddVideoField: React.FC<AddVideoFieldProps> = ({ onAdd, disabledReason, floating, busy = false }) => {
+const AddVideoField: React.FC<AddVideoFieldProps> = ({
+  onAdd,
+  placeholder = "Paste another YouTube link",
+  disabledReason,
+  floating,
+  busy = false,
+}) => {
   const [link, setLink] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -54,7 +61,7 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({ onAdd, disabledReason, fl
           aria-label="YouTube link to add"
           aria-invalid={error !== null && !disabled}
           aria-describedby={message ? messageId : undefined}
-          placeholder="Paste another YouTube link"
+          placeholder={placeholder}
           value={link}
           disabled={disabled}
           onChange={(event) => {

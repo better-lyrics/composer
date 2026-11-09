@@ -58,7 +58,7 @@ function checkCopy(check: SubmitCheck, props: CheckListProps): CheckCopy {
         };
       }
       if (check.problem === "no-video") {
-        return { title: "No YouTube video", detail: "Unison matches lyrics to a video. Load the song from YouTube." };
+        return { title: "No YouTube video chosen", detail: "Unison matches lyrics to a video. Choose it under Video." };
       }
       if (check.problem === "no-duration") return { title: "Song length unknown", detail: "Load the song's audio." };
       return { title: "Song length out of range", detail: "Unison takes songs up to 1 hour long." };

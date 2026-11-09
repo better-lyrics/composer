@@ -48,7 +48,6 @@ const ManageVideos: React.FC<Omit<VideosRowProps, "canManage">> = ({ lyric, dura
             }}
             linked={videos.linked}
             more={videos.more}
-            songTitle={songTitle}
             songSeconds={songSeconds}
             busy={videos.busy}
             onLink={videos.link}

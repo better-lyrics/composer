@@ -5,6 +5,7 @@ import {
   type ChosenVideo,
   type ChosenVideoOrigin,
   submitVideoChoices,
+  suggestionFacts,
   suggestionLengthNote,
   type VideoChoices,
 } from "@/domain/unison/video-links";
@@ -12,6 +13,7 @@ import { useSongVideoSuggestions } from "@/hooks/unison/useVideoSuggestions";
 import type { SongForSuggestions, SuggestedVideo } from "@/lib/unison/api-types";
 import { useProjectStore } from "@/stores/project";
 import type { MainVideo } from "@/ui/unison/video-picker";
+import { PENDING_NOTE } from "@/ui/unison/video-row";
 import { formatTime } from "@/utils/format-time";
 
 // -- Types ---------------------------------------------------------------------
@@ -19,7 +21,6 @@ import { formatTime } from "@/utils/format-time";
 interface SubmitVideos extends VideoChoices {
   main: MainVideo;
   songSeconds: number;
-  songTitle: string;
   videoIds: string[];
   link: (suggestion: SuggestedVideo) => string | null;
   unlink: (videoId: string) => null;
@@ -37,7 +38,7 @@ function dismissalKey(mainVideoId: string, videoId: string): string {
 
 // -- Hook ----------------------------------------------------------------------
 
-function useSubmitVideos(mainVideoId: string, durationSeconds: number): SubmitVideos {
+function useSongSuggestions(mainVideoId: string | undefined, durationSeconds: number) {
   const metadata = useProjectStore((state) => state.metadata);
   const songSeconds = submitDurationSeconds(durationSeconds || metadata.duration);
   const song = useMemo((): SongForSuggestions | null => {
@@ -46,7 +47,17 @@ function useSubmitVideos(mainVideoId: string, durationSeconds: number): SubmitVi
     if (!title || !artist || !(songSeconds > 0)) return null;
     return { song: title, artist, album: metadata.album?.trim() || null, duration: songSeconds, videoId: mainVideoId };
   }, [metadata.title, metadata.artists, metadata.album, songSeconds, mainVideoId]);
-  const suggestions = useSongVideoSuggestions(song).data ?? [];
+  return { songSeconds, suggestions: useSongVideoSuggestions(song).data ?? [] };
+}
+
+function chosenMainVideo({ videoId, suggestion }: ChosenVideo): MainVideo {
+  if (!suggestion) return { videoId, note: PENDING_NOTE };
+  return { videoId, title: suggestion.title, artworkUrl: suggestion.artworkUrl, facts: suggestionFacts(suggestion) };
+}
+
+function useSubmitVideos(mainVideoId: string, durationSeconds: number, chosenMain?: ChosenVideo): SubmitVideos {
+  const metadata = useProjectStore((state) => state.metadata);
+  const { songSeconds, suggestions } = useSongSuggestions(mainVideoId, durationSeconds);
   const [chosen, setChosen] = useState<ChosenVideo[]>([]);
   const [, rememberDismissal] = useReducer((count: number) => count + 1, 0);
 
@@ -66,14 +77,15 @@ function useSubmitVideos(mainVideoId: string, durationSeconds: number): SubmitVi
 
   return {
     ...choices,
-    main: {
-      videoId: mainVideoId,
-      title: metadata.title.trim() || undefined,
-      artworkUrl: metadata.thumbnailDataUrl,
-      facts: { artist: displayArtists(metadata.artists), kind: null, duration: formatTime(songSeconds, 0) },
-    },
+    main: chosenMain
+      ? chosenMainVideo(chosenMain)
+      : {
+          videoId: mainVideoId,
+          title: metadata.title.trim() || undefined,
+          artworkUrl: metadata.thumbnailDataUrl,
+          facts: { artist: displayArtists(metadata.artists), kind: null, duration: formatTime(songSeconds, 0) },
+        },
     songSeconds,
-    songTitle: metadata.title,
     videoIds: choices.linked.map((video) => video.videoId),
     link: (suggestion) => choose(suggestion.videoId, suggestion, "chosen"),
     unlink: (videoId) => {
@@ -93,4 +105,4 @@ function useSubmitVideos(mainVideoId: string, durationSeconds: number): SubmitVi
 
 // -- Exports -------------------------------------------------------------------
 
-export { useSubmitVideos };
+export { useSongSuggestions, useSubmitVideos };
