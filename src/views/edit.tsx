@@ -19,7 +19,7 @@ import { Button } from "@/ui/button";
 import { Scroll } from "@/ui/scroll";
 import {
   extractBackgroundVocals,
-  extractInlineFromLine,
+  extractInlineAcrossLinkedLines,
   lineHasInlineParens,
 } from "@/utils/background-vocal-extraction";
 import { pluralWord, pluralize } from "@/utils/pluralize";
@@ -158,22 +158,12 @@ const EditPanel: React.FC = () => {
   }, []);
 
   const handleExtractLine = useCallback((lineId: string) => {
-    const target = useProjectStore.getState().lines.find((line) => line.id === lineId);
-    if (!target) return;
-    const extracted = extractInlineFromLine(target, {
+    const updates = extractInlineAcrossLinkedLines(useProjectStore.getState().lines, lineId, {
       mergeStandaloneLines: false,
       preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
     });
-    if (extracted === target) return;
-    useProjectStore.getState().updateLineWithHistory(lineId, {
-      text: extracted.text,
-      words: extracted.words,
-      ...backgroundFields({
-        text: extracted.backgroundText,
-        words: extracted.backgroundWords,
-        source: extracted.backgroundTextSource ?? "manual",
-      }),
-    });
+    if (updates.length === 0) return;
+    useProjectStore.getState().updateLinesWithHistory(updates, { propagateToSiblings: false });
     noteGuideSignal("edit.background");
     noteGuideSignal("edit.extractOneLine");
   }, []);
