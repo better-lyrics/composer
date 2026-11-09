@@ -1,5 +1,6 @@
 import { keyBadge, keys } from "@/guide/catalog/keys";
 import { stageTip } from "@/guide/catalog/types";
+import { UndoKeys } from "@/ui/undo-hint";
 import {
   IconArrowBackUp,
   IconArrowsHorizontal,
@@ -74,7 +75,7 @@ const TIMELINE_TIPS = [
     tier: "basics",
     icon: IconArrowBackUp,
     title: "Take it back",
-    gist: <>Press {keys("global.undo")} to undo anything, even a big drag.</>,
+    gist: <>Press <UndoKeys className="ml-0" /> to undo anything, even a big drag.</>,
   }),
   tip({
     id: "selectMore",

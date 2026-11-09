@@ -1,6 +1,7 @@
 import { isAutoAlignAvailable } from "@/stores/alignment";
 import { keys } from "@/guide/catalog/keys";
 import { stageTip } from "@/guide/catalog/types";
+import { UndoKeys } from "@/ui/undo-hint";
 import {
   IconArrowBackUp,
   IconBrain,
@@ -31,7 +32,7 @@ const SYNC_TIPS = [
     tier: "basics",
     icon: IconArrowBackUp,
     title: "Take back a bad tap",
-    gist: <>Press {keys("global.undo")} and tap that word again.</>,
+    gist: <>Press <UndoKeys className="ml-0" /> and tap that word again.</>,
   }),
   tip({
     id: "resync",
