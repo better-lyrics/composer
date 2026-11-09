@@ -39,7 +39,8 @@ const ShownNudgePanel: React.FC<React.ComponentProps<typeof NudgePanel>> = (prop
   return <NudgePanel {...props} />;
 };
 
-type ShownTier = { stage: GuideStage; tier?: GuideTierId } | null;
+// A stage picked from the record or a milestone holds only while you stay on the tab you picked it from.
+type ShownTier = { stage: GuideStage; tier?: GuideTierId; pickedOn: GuideStage } | null;
 
 const RecordView: React.FC<{ tiers: StageTiers; onOpenStage: (stage: GuideStage) => void }> = ({
   tiers,
@@ -146,7 +147,7 @@ const CardView: React.FC<CardViewProps> = ({
       <RecordView
         tiers={tiers}
         onOpenStage={(recordStage) => {
-          setShownTier({ stage: recordStage });
+          setShownTier({ stage: recordStage, pickedOn: stage });
           onLeaveRecord();
         }}
       />
@@ -159,7 +160,7 @@ const CardView: React.FC<CardViewProps> = ({
         tips={tips}
         learned={learned}
         onContinue={(next) => {
-          setShownTier({ stage: milestone.stage, tier: next });
+          setShownTier({ stage: milestone.stage, tier: next, pickedOn: stage });
           onMilestoneDone();
         }}
       />
@@ -183,7 +184,9 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = (props) => {
   const { stage, milestone, showingRecord } = props;
   const learnedSignals = useGuideStore((state) => state.learnedSignals);
   const learned = useMemo(() => new Set(learnedSignals), [learnedSignals]);
-  const [shownTier, setShownTier] = useState<ShownTier>(null);
+  const [picked, setShownTier] = useState<ShownTier>(null);
+  if (picked && picked.pickedOn !== stage) setShownTier(null);
+  const shownTier = picked?.pickedOn === stage ? picked : null;
   const viewKey = showingRecord
     ? "record"
     : milestone
