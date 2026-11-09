@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from "react";
 import { useLevelEnvelope } from "@/audio/deck/use-level-envelope";
 import type { LevelEnvelope } from "@/audio/level-envelope";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
@@ -5,8 +6,8 @@ import { noteGuideGesture } from "@/lib/guide-gesture-signal";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useThemeStore } from "@/stores/theme";
 import { Slider } from "@/ui/slider";
+import { playheadTime } from "@/views/timeline/playhead-time";
 import { SeekBarFocusBand } from "@/views/timeline/seek-bar-focus-band";
-import { useLayoutEffect, useRef } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -127,7 +128,7 @@ const OverviewScrub: React.FC = () => {
 
   const moveHead = () => {
     if (duration <= 0 || painter.width <= 0) return;
-    const headX = (livePlaybackTime() / duration) * painter.width;
+    const headX = (playheadTime() / duration) * painter.width;
     if (headRef.current) headRef.current.style.translate = `${headX - 1}px 0`;
     const headBar = Math.floor(headX / BAR_PITCH);
     if (painter.headBar < 0) paintBars(painter, 0, painter.bars.length - 1, headX);

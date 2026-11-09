@@ -38,7 +38,7 @@ const SYNC_TIPS = [
     tier: "basics",
     icon: IconRotateClockwise,
     title: "Redo one line",
-    gist: <>Click the line to jump back to it, then tap it again.</>,
+    gist: <>Click the line to jump back to it, then press {keys("sync.tap")} from there.</>,
   }),
   tip({
     id: "hold",

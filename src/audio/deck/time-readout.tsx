@@ -1,9 +1,10 @@
+import { useLayoutEffect, useMemo, useRef } from "react";
 import { lineStarts, startedLineIndex } from "@/domain/line/line-at-time";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
-import { livePlaybackTime, useAudioStore } from "@/stores/audio";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { formatTime } from "@/utils/format-time";
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { playheadTime } from "@/views/timeline/playhead-time";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -22,7 +23,7 @@ const TimeReadout: React.FC = () => {
   const lineRef = useRef<HTMLSpanElement>(null);
 
   const paint = () => {
-    const time = livePlaybackTime();
+    const time = playheadTime();
     const [whole, fraction] = formatTime(time, 2).split(".");
     writeText(wholeRef.current, whole);
     writeText(fractionRef.current, `.${fraction}`);
