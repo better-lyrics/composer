@@ -1,4 +1,5 @@
-import { startGuideOver, unmuteGuideCategories } from "@/lib/guide-signals";
+import { askToStartGuideOver } from "@/guide/start-over";
+import { unmuteGuideCategories } from "@/lib/guide-signals";
 import { useConfirm } from "@/stores/confirm-store";
 import { useGuideStore } from "@/stores/guide";
 import { useSettingsStore } from "@/stores/settings";
@@ -13,7 +14,7 @@ import { IconCompass, IconRefresh } from "@tabler/icons-react";
 const ResetGuideSetting: React.FC = () => (
   <SettingRowLayout>
     <SettingText id="resetGuide" />
-    <Button size="lg" variant="secondary" hasIcon onClick={() => startGuideOver()}>
+    <Button size="lg" variant="secondary" hasIcon onClick={askToStartGuideOver}>
       <IconCompass size={14} />
       Start over
     </Button>

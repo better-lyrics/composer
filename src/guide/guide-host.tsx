@@ -7,6 +7,7 @@ import { GuideCardBody } from "@/guide/guide-card-body";
 import { hideGuide } from "@/guide/hide-guide";
 import { markPeeksRead } from "@/guide/peek-queue";
 import { pointAt } from "@/guide/point-at";
+import { askToStartGuideOver } from "@/guide/start-over";
 import { type StageTiers, useJourneyFeed, useMilestoneFeed, useNudgeFeed } from "@/guide/use-guide-feed";
 import { useGuidePeek } from "@/guide/use-guide-peek";
 import { SpotHint } from "@/guide/spot-hint";
@@ -15,7 +16,6 @@ import { useGuideTips } from "@/guide/use-guide-tips";
 import { useOrbPlacement } from "@/guide/use-orb-placement";
 import { useJourneyVisits, useProjectJourney } from "@/guide/use-project-journey";
 import { useEscapeLayer } from "@/hooks/useEscapeLayer";
-import { startGuideOver } from "@/lib/guide-signals";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { useGuideStore } from "@/stores/guide";
 import { useProjectStore } from "@/stores/project";
@@ -126,7 +126,7 @@ const GuideHost: React.FC = () => {
                   onToggleRecord={() => setShowingRecord((shown) => !shown)}
                   onToggleShowAll={() => useGuideStore.getState().setShowAll(!showAll)}
                   onOpenHelp={() => useUIStore.getState().openHelp(STAGE_HELP_SECTIONS[activeTab])}
-                  onStartOver={() => startGuideOver()}
+                  onStartOver={askToStartGuideOver}
                   onHide={hideGuide}
                 >
                   <GuideCardBody

@@ -106,8 +106,8 @@ const TipList: React.FC<TipListProps> = ({ open, waitsOn, learned, onKnown, onSh
   const hiddenCount = open.length - shown.length;
   return (
     <m.div layout="position" className="pt-2.5 pb-0.5">
-      <ul>
-        <AnimatePresence initial={false}>
+      <ul className="relative">
+        <AnimatePresence initial={false} mode="popLayout">
           {shown.map((tip) => (
             <TipRow
               key={tip.id}

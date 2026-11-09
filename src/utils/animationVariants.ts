@@ -226,7 +226,8 @@ const guideViewSwapVariants: Variants = {
   exit: { opacity: 0, filter: "blur(2px)", transition: { duration: 0.12, ease: "easeOut" } },
 };
 
-const guideRowExit = { opacity: 0, height: 0, transition: { duration: 0.15, ease: "easeOut" } } as const;
+// A row leaves in place while the rows below and the card spring into the gap.
+const guideRowExit = { opacity: 0, filter: "blur(2px)", transition: { duration: 0.12, ease: "easeOut" } } as const;
 
 const guideChipVariants: Variants = {
   hidden: { opacity: 0, y: 4 },

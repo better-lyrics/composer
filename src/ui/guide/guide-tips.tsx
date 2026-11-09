@@ -55,6 +55,7 @@ const GuideTips: React.FC<GuideTipsProps> = ({
         </p>
       ) : (
         <TipList
+          key={selected}
           open={inTier.filter((tip) => !learnedSignals.has(tip.learnedBy)).toSorted(byReadiness)}
           waitsOn={waitsOn}
           learned={inTier.filter((tip) => learnedSignals.has(tip.learnedBy))}
