@@ -1150,6 +1150,9 @@ braccato-lyrics .blyrics-container {
       --step-drop: transparent;
       color: color-mix(in oklab, var(--ink) 88%, var(--color-composer-bg));
     }
+    &[data-step-next] {
+      --word-fill: color-mix(in oklab, var(--color-composer-accent) 30%, var(--word-face));
+    }
     &[data-selected] {
       --word-fill: color-mix(in oklab, var(--color-composer-accent) 78%, black);
       --step-top: color-mix(in oklab, white 18%, transparent);
@@ -1169,6 +1172,13 @@ braccato-lyrics .blyrics-container {
     &:not([data-selected], [data-step-next]) {
       --step-ring: var(--edge);
       color: color-mix(in oklab, var(--ink) 74%, var(--color-composer-bg));
+    }
+    &[data-step-next] {
+      --word-fill: color-mix(
+        in oklab,
+        var(--color-composer-accent) 14%,
+        color-mix(in oklab, white 85%, var(--color-composer-bg-dark))
+      );
     }
     &[data-selected] {
       --word-fill: color-mix(in oklab, var(--color-composer-accent) 88%, black);
