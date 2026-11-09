@@ -1,3 +1,4 @@
+import { hasKeyboard } from "@/lib/keyboard-presence";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useGuideStore } from "@/stores/guide";
 import { useSettingsStore } from "@/stores/settings";
@@ -43,7 +44,11 @@ function setPlace(next: ChipPlace | null): void {
 
 // Once you have opened a gap with Alt, you know it: the chip never shows again.
 function chipStillTeaching(): boolean {
-  return useSettingsStore.getState().showGuide && !useGuideStore.getState().learnedSignals.includes(ALT_GAP_SIGNAL);
+  return (
+    hasKeyboard() &&
+    useSettingsStore.getState().showGuide &&
+    !useGuideStore.getState().learnedSignals.includes(ALT_GAP_SIGNAL)
+  );
 }
 
 const subscribe = (listener: () => void) => {

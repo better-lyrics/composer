@@ -13,7 +13,7 @@ import {
   IconMagnet,
   IconPalette,
   IconPencilCog,
-  IconPlayerPlay,
+  IconPlayerPlayFilled,
   IconPlugConnected,
   IconSettings,
 } from "@tabler/icons-react";
@@ -28,7 +28,7 @@ const SETTINGS_SECTION_ICONS: Record<SettingsSectionId, ModalNavSection["icon"]>
   confirmations: IconAlertTriangle,
   unison: IconCloudUpload,
   lyrics: IconFileText,
-  playback: IconPlayerPlay,
+  playback: IconPlayerPlayFilled,
   sync: IconClock,
   timeline: IconLayoutRows,
   snap: IconMagnet,

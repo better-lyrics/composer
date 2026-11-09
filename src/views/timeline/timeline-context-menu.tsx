@@ -343,8 +343,16 @@ function GutterMenuSection({ targets, clearContextMenu, target }: SectionProps &
         select={() => selectLine(lineId, lineIndex)}
         clearContextMenu={clearContextMenu}
       />
-      <MenuItem label="Add line above" shortcut={["Shift", "N"]} onSelect={() => handleAddLine("above")} />
-      <MenuItem label="Add line below" shortcut={["N"]} onSelect={() => handleAddLine("below")} />
+      <MenuItem
+        label="Add line above"
+        shortcut={getEffectiveKeysArray("timeline.insertLineAbove")}
+        onSelect={() => handleAddLine("above")}
+      />
+      <MenuItem
+        label="Add line below"
+        shortcut={getEffectiveKeysArray("timeline.insertLineBelow")}
+        onSelect={() => handleAddLine("below")}
+      />
       {targets.placeAtPlayheadInfo && <MenuItem label="Place at playhead" onSelect={handlePlaceAtPlayhead} />}
       <SelectionGrouping targets={targets} clearContextMenu={clearContextMenu} />
       <MenuSeparator />

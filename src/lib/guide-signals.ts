@@ -1,3 +1,4 @@
+import { hasKeyboard } from "@/lib/keyboard-presence";
 import type { GuideEvent, GuideSignal } from "@/domain/guide/model";
 import { firesOn } from "@/domain/guide/triggers";
 import { GUIDE_NUDGE_TRIGGERS } from "@/guide/catalog/nudge-triggers";
@@ -45,6 +46,7 @@ function firedNudges(now: number): PendingNudge[] {
       !retiredThisSession.has(nudge.id) &&
       !seenNudges.includes(nudge.id) &&
       !mutedCategories.includes(nudge.category) &&
+      !(nudge.needsKeyboard && !hasKeyboard()) &&
       !(nudge.resolvedBy && learnedSignals.includes(nudge.resolvedBy)) &&
       firesOn(nudge.trigger, events, now),
   ).map((nudge) => ({ id: nudge.id, key: events.findLast((event) => event.signal === nudge.trigger.signal)?.key }));

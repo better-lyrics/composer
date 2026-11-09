@@ -6,7 +6,7 @@ import {
   IconCursorText,
   IconMagnet,
   IconMarquee2,
-  IconPlayerPlay,
+  IconPlayerPlayFilled,
 } from "@tabler/icons-react";
 
 // -- Copy ---------------------------------------------------------------------
@@ -43,7 +43,7 @@ const TIMELINE_NUDGE_COPY: Record<string, GuideNudgeCopy> = {
     peek: <>Select words and press {keys("timeline.deleteSelection")} to delete</>,
   },
   playSelectionWithKey: {
-    icon: IconPlayerPlay,
+    icon: IconPlayerPlayFilled,
     title: "Play without the menu",
     body: <>Select words and press {keys("timeline.playSelection")} to hear just them.</>,
     peek: <>Press {keys("timeline.playSelection")} to play what you selected</>,

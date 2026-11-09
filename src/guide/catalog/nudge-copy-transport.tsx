@@ -1,6 +1,12 @@
 import { keys } from "@/guide/catalog/keys";
 import type { GuideNudgeCopy } from "@/guide/catalog/types";
-import { IconGauge, IconKeyboard, IconLayoutNavbar, IconPlayerPlay, IconPlayerTrackPrev } from "@tabler/icons-react";
+import {
+  IconGauge,
+  IconKeyboard,
+  IconLayoutNavbar,
+  IconPlayerPlayFilled,
+  IconPlayerTrackPrev,
+} from "@tabler/icons-react";
 
 // -- Copy ---------------------------------------------------------------------
 
@@ -14,7 +20,7 @@ const TRANSPORT_NUDGE_COPY: Record<string, GuideNudgeCopy> = {
     peek: <>Tap with {keys("sync.tap")} instead of clicking</>,
   },
   playWithKey: {
-    icon: IconPlayerPlay,
+    icon: IconPlayerPlayFilled,
     title: "Play from the keyboard",
     body: <>{keys("global.playPause")} plays and pauses on every tab. Your pointer can stay where it is.</>,
     peek: <>Press {keys("global.playPause")} to play and pause</>,

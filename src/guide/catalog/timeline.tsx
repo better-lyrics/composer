@@ -17,7 +17,7 @@ import {
   IconMapPin,
   IconMicrophone2,
   IconMouse,
-  IconPlayerPlay,
+  IconPlayerPlayFilled,
   IconRepeat,
   IconRewindBackward5,
   IconScissors,
@@ -57,7 +57,7 @@ const TIMELINE_TIPS = [
   tip({
     id: "play",
     tier: "further",
-    icon: IconPlayerPlay,
+    icon: IconPlayerPlayFilled,
     title: "Hear just that bit",
     gist: <>Select words, then press {keys("timeline.playSelection")}.</>,
   }),

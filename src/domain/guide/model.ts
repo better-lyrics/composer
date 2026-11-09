@@ -31,6 +31,8 @@ interface GuideNudgeEntry {
   resolvedBy?: GuideSignal;
   // Shown in place, next to the element marked data-guide-spot with this name, instead of through the orb.
   spot?: string;
+  // Teaches a key or a modifier, so it waits until the device shows it has a keyboard.
+  needsKeyboard?: boolean;
 }
 
 interface GuideEvent {

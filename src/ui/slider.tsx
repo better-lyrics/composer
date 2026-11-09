@@ -12,7 +12,7 @@ interface SliderProps {
   "aria-label"?: string;
   className?: string;
   children?: React.ReactNode;
-  // "overlay" draws nothing: the slider becomes an invisible control over a custom surface.
+  // "overlay" draws nothing: the slider becomes an invisible click surface over a custom one, never tinted by focus.
   appearance?: "track" | "overlay";
 }
 
@@ -130,7 +130,7 @@ const Slider: React.FC<SliderProps> = ({
     <div
       ref={trackRef}
       role="slider"
-      tabIndex={0}
+      tabIndex={appearance === "overlay" ? -1 : 0}
       aria-valuemin={min}
       aria-valuemax={max}
       aria-valuenow={value}
