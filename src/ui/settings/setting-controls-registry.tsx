@@ -15,7 +15,7 @@ import {
   BeatModelFilesSetting,
   VocalModelFilesSetting,
 } from "@/ui/settings/models/model-file-list";
-import { ResetAllSettingsSetting, ResetGuideSetting } from "@/ui/settings/reset-settings";
+import { ResetAllSettingsSetting, ResetGuideSetting, UnmuteGuideHintsSetting } from "@/ui/settings/reset-settings";
 import type { SelectOption } from "@/ui/select";
 import type { SliderAction } from "@/ui/settings/setting-controls";
 import { ShortcutPresetGallery } from "@/ui/settings/shortcuts/shortcut-preset-gallery";
@@ -65,6 +65,8 @@ const asMilliseconds = (seconds: number) => `${(seconds * 1000).toFixed(0)}ms`;
 const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   showShortcutHints: TOGGLE,
   showGuide: TOGGLE,
+  guideHints: TOGGLE,
+  unmuteGuideHints: { kind: "custom", Component: UnmuteGuideHintsSetting },
   unisonEnabled: TOGGLE,
   unisonAccount: { kind: "custom", Component: UnisonAccountSetting },
   unisonLibraryColumn: TOGGLE,

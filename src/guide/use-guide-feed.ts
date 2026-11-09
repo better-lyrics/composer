@@ -17,6 +17,7 @@ import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { isRestoringProject } from "@/lib/project-restore";
 import { lastQuietLearnAt } from "@/guide/use-guide-state-learning";
 import { useAudioStore } from "@/stores/audio";
+import { useSettingsStore } from "@/stores/settings";
 import { useProjectStore } from "@/stores/project";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
@@ -65,10 +66,12 @@ function unlockedGist(stage: GuideStage, tier: GuideTierId, statuses: readonly T
 
 function useNudgeFeed(): readonly PendingNudge[] {
   const pending = useSyncExternalStore(subscribeGuideNudges, pendingGuideNudges, pendingGuideNudges);
+  const hintsOn = useSettingsStore((state) => state.guideHints);
   useEffect(() => {
     for (const queued of pending) {
       const nudge = GUIDE_NUDGES.find((candidate) => candidate.id === queued.id);
-      if (nudge?.available?.() === false) resolveGuideNudge(nudge.id);
+      // Hints turned off take back the ones still waiting, without counting them as seen.
+      if (!hintsOn || nudge?.available?.() === false) resolveGuideNudge(queued.id);
       else if (nudge?.spot && showSpotHint(nudge.spot, { id: nudge.id, icon: nudge.icon, text: nudge.peek })) {
         markGuideNudgeShown(nudge.id);
         resolveGuideNudge(nudge.id);
@@ -77,7 +80,7 @@ function useNudgeFeed(): readonly PendingNudge[] {
       }
     }
     dropPeeks((peek) => !peek.nudgeId || pending.some((queued) => queued.id === peek.nudgeId));
-  }, [pending]);
+  }, [pending, hintsOn]);
   return pending;
 }
 

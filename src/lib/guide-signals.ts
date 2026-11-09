@@ -5,6 +5,7 @@ import { GUIDE_NUDGE_TRIGGERS } from "@/guide/catalog/nudge-triggers";
 import { GUIDE_SIGNAL_OUTCOMES } from "@/guide/catalog/signal-outcomes";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { type ProjectGuideFacts, useGuideStore } from "@/stores/guide";
+import { useSettingsStore } from "@/stores/settings";
 
 // -- Types --------------------------------------------------------------------
 
@@ -41,6 +42,7 @@ function remember(event: GuideEvent): void {
 }
 
 function firedNudges(now: number): PendingNudge[] {
+  if (!useSettingsStore.getState().guideHints) return [];
   const state = useGuideStore.getState();
   const seen = new Set(state.seenNudges);
   const muted = new Set(state.mutedCategories);
@@ -98,8 +100,9 @@ function markGuideNudgeShown(id: string): void {
 }
 
 // Start over wipes the session too, or a hint that already fired this session could never come back.
+// Hints you turned off stay off: only unmuting brings them back.
 function startGuideOver(): void {
-  useGuideStore.setState({ learnedSignals: [], mutedCategories: [], seenNudges: [], showAll: false });
+  useGuideStore.setState({ learnedSignals: [], seenNudges: [], showAll: false });
   retiredThisSession.clear();
   events = [];
   setPending([]);
@@ -111,6 +114,12 @@ function muteGuideCategory(category: string): void {
   const muted = new Set(GUIDE_NUDGE_TRIGGERS.filter((nudge) => nudge.category === category).map((nudge) => nudge.id));
   for (const id of muted) retiredThisSession.add(id);
   if (pending.some((queued) => muted.has(queued.id))) setPending(pending.filter((queued) => !muted.has(queued.id)));
+}
+
+function unmuteGuideCategories(categories: readonly string[] = useGuideStore.getState().mutedCategories): void {
+  const muted = new Set(categories);
+  useGuideStore.setState((state) => ({ mutedCategories: state.mutedCategories.filter((id) => !muted.has(id)) }));
+  for (const nudge of GUIDE_NUDGE_TRIGGERS) if (muted.has(nudge.category)) retiredThisSession.delete(nudge.id);
 }
 
 function resolveGuideNudge(id: string): void {
@@ -141,4 +150,5 @@ export {
   resolveGuideNudge,
   startGuideOver,
   subscribeGuideNudges,
+  unmuteGuideCategories,
 };

@@ -17,6 +17,21 @@ const GENERAL_CATALOG_ENTRIES = {
     keywords: ["guide", "tips", "hints", "medals"],
     settingKey: "showGuide",
   },
+  guideHints: {
+    section: "general",
+    label: "Show hints while you work",
+    description: "Do something the slow way and the guide shows the faster way once, next to the control.",
+    keywords: ["guide", "hints", "nudges", "popups"],
+    settingKey: "guideHints",
+    visibleWhen: (state) => state.showGuide,
+  },
+  unmuteGuideHints: {
+    section: "general",
+    label: "Hints you turned off",
+    description: "Hints you stopped from the guide stay off until you turn them back on here.",
+    keywords: ["guide", "hints", "muted", "unmute"],
+    visibleWhen: (state) => state.showGuide && state.guideHints,
+  },
   musicBrainzLookup: {
     section: "general",
     label: "Song details from MusicBrainz",
@@ -52,7 +67,7 @@ const GENERAL_CATALOG_ENTRIES = {
     section: "general",
     group: "Reset",
     label: "Start the guide over",
-    description: "Forget what the guide has seen you learn and bring back tips you turned off.",
+    description: "Forget what the guide has seen you learn, so every tip and medal starts fresh.",
     keywords: ["guide", "tips", "medals", "progress", "onboarding"],
   },
   resetAllSettings: {

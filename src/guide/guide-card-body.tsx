@@ -1,9 +1,10 @@
 import { GUIDE_TIER_ORDER, type GuideStage, type GuideTierId } from "@/domain/guide/model";
 import { STAGE_NAMES } from "@/guide/catalog/journey";
 import { GUIDE_NUDGES } from "@/guide/catalog/nudges";
+import { muteHintsLike } from "@/guide/mute-hints";
 import type { GuideTip } from "@/guide/catalog/types";
 import type { EarnedTier, StageTiers } from "@/guide/use-guide-feed";
-import { markGuideNudgeShown, muteGuideCategory, type PendingNudge, resolveGuideNudge } from "@/lib/guide-signals";
+import { markGuideNudgeShown, type PendingNudge, resolveGuideNudge } from "@/lib/guide-signals";
 import { useGuideStore } from "@/stores/guide";
 import { GuideRecord } from "@/ui/guide/guide-record";
 import { GuideTips } from "@/ui/guide/guide-tips";
@@ -94,7 +95,7 @@ const TipsView: React.FC<{
             resolveGuideNudge(nudge.id);
           }}
           onDismiss={() => resolveGuideNudge(nudge.id)}
-          onMute={() => muteGuideCategory(nudge.category)}
+          onMute={() => muteHintsLike(nudge.category)}
         />
       )}
       {(!nudge || nudge.stage === tipStage) && stageTips.length > 0 && (

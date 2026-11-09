@@ -77,6 +77,7 @@ interface SettingsState extends SnapSettings, SpectrumSettings, UnisonSettings {
 
   showShortcutHints: boolean;
   showGuide: boolean;
+  guideHints: boolean;
   showSyllableIndicators: boolean;
   splitCharacter: string;
   autoExtractBackgroundVocals: boolean;
@@ -170,6 +171,7 @@ const DEFAULTS: SettingsState = {
 
   showShortcutHints: true,
   showGuide: true,
+  guideHints: true,
   showSyllableIndicators: true,
   splitCharacter: "|",
   autoExtractBackgroundVocals: true,

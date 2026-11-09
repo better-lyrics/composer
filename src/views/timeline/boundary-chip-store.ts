@@ -40,6 +40,7 @@ function chipStillTeaching(): boolean {
   return (
     hasKeyboard() &&
     useSettingsStore.getState().showGuide &&
+    useSettingsStore.getState().guideHints &&
     !useGuideStore.getState().learnedSignals.includes(ALT_GAP_SIGNAL)
   );
 }

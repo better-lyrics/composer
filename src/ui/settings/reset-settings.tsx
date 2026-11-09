@@ -1,9 +1,11 @@
-import { startGuideOver } from "@/lib/guide-signals";
+import { startGuideOver, unmuteGuideCategories } from "@/lib/guide-signals";
 import { useConfirm } from "@/stores/confirm-store";
+import { useGuideStore } from "@/stores/guide";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
+import { pluralize } from "@/utils/pluralize";
 import { IconCompass, IconRefresh } from "@tabler/icons-react";
 
 // -- Rows ---------------------------------------------------------------------
@@ -17,6 +19,18 @@ const ResetGuideSetting: React.FC = () => (
     </Button>
   </SettingRowLayout>
 );
+
+const UnmuteGuideHintsSetting: React.FC = () => {
+  const mutedCount = useGuideStore((state) => state.mutedCategories.length);
+  return (
+    <SettingRowLayout>
+      <SettingText id="unmuteGuideHints" />
+      <Button size="lg" variant="secondary" disabled={mutedCount === 0} onClick={() => unmuteGuideCategories()}>
+        {mutedCount === 0 ? "None off" : `Turn ${pluralize(mutedCount, "kind")} back on`}
+      </Button>
+    </SettingRowLayout>
+  );
+};
 
 const ResetAllSettingsSetting: React.FC = () => {
   const resetToDefaults = useSettingsStore((s) => s.resetToDefaults);
@@ -46,4 +60,4 @@ const ResetAllSettingsSetting: React.FC = () => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { ResetAllSettingsSetting, ResetGuideSetting };
+export { ResetAllSettingsSetting, ResetGuideSetting, UnmuteGuideHintsSetting };
