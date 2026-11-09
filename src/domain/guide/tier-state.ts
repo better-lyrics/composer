@@ -20,7 +20,11 @@ function stageTiers(
 ): TierStatus[] {
   const counts = GUIDE_TIER_ORDER.map((tier) => {
     const inTier = tips.filter((entry) => entry.stage === stage && entry.tier === tier);
-    return { tier, total: inTier.length, learned: inTier.filter((entry) => learnedSignals.has(entry.learnedBy)).length };
+    return {
+      tier,
+      total: inTier.length,
+      learned: inTier.filter((entry) => learnedSignals.has(entry.learnedBy)).length,
+    };
   });
   return counts.map((count, index) => ({ ...count, state: stateOf(counts, index, showAll) }));
 }

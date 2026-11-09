@@ -20,7 +20,8 @@ const UntimedLinesNotice: React.FC = () => {
       <IconClockExclamation aria-hidden="true" className="size-4 shrink-0 text-composer-warning" />
       <p className="min-w-0 text-[13px] leading-5 text-pretty text-(--label)">
         <span className="font-medium text-composer-text tabular-nums">{pluralize(untimedCount, "line")}</span>{" "}
-        {untimedCount === 1 ? "has" : "have"} no timing yet, so listeners won't see {untimedCount === 1 ? "it" : "them"}.
+        {untimedCount === 1 ? "has" : "have"} no timing yet, so listeners won't see {untimedCount === 1 ? "it" : "them"}
+        .
       </p>
       <Button
         hasIcon
