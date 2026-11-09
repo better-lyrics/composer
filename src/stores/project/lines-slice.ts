@@ -1,5 +1,5 @@
+import { updatedLinkedSibling } from "@/domain/group/linked-sibling";
 import { extractLinkedFields, getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
-import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
@@ -78,26 +78,12 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       const { propagateToSiblings = true, ...historyOptions } = options;
       const target = state.lines.find((l) => l.id === id);
       const linkScope = propagateToSiblings && target ? getLinkScope(target) : null;
-      const linkedUpdates = linkScope ? extractLinkedFields(updates) : null;
-      const sourceWordsBefore = target?.words;
-      const sourceWordsAfter = updates.words;
-      const sourceBgWordsBefore = target?.backgroundWords;
-      const sourceBgWordsAfter = updates.backgroundWords;
 
       const newLines = state.lines.map((line) => {
         if (line.id === id) {
           return reconcileLine({ ...line, ...updates });
         }
-        if (isLinkedSibling(line, linkScope)) {
-          const siblingUpdates: Partial<LooseLine> = { ...(linkedUpdates ?? {}) };
-          const propagatedWords = propagateWordChanges(sourceWordsAfter, sourceWordsBefore, line.words);
-          if (propagatedWords) siblingUpdates.words = propagatedWords;
-          const propagatedBg = propagateWordChanges(sourceBgWordsAfter, sourceBgWordsBefore, line.backgroundWords);
-          if (propagatedBg) siblingUpdates.backgroundWords = propagatedBg;
-          if (Object.keys(siblingUpdates).length > 0) {
-            return reconcileLine({ ...line, ...siblingUpdates });
-          }
-        }
+        if (target && isLinkedSibling(line, linkScope)) return updatedLinkedSibling(line, target, updates);
         return line;
       });
 
@@ -115,27 +101,16 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         const targetIdx = indexById.get(id);
         const target = targetIdx !== undefined ? newLines[targetIdx] : undefined;
         const linkScope = propagateToSiblings && target ? getLinkScope(target) : null;
-        const sourceWordsBefore = target?.words;
-        const sourceWordsAfter = lineUpdates.words;
-        const sourceBgBefore = target?.backgroundWords;
-        const sourceBgAfter = lineUpdates.backgroundWords;
-        const linkedUpdates = linkScope ? extractLinkedFields(lineUpdates) : null;
 
         if (targetIdx !== undefined && target) {
           newLines[targetIdx] = reconcileLine({ ...target, ...lineUpdates });
         }
 
-        if (linkScope) {
+        if (target && linkScope) {
           for (let i = 0; i < newLines.length; i++) {
             const line = newLines[i];
-            if (line.id === id) continue;
-            if (!isLinkedSibling(line, linkScope)) continue;
-            const siblingUpdates: Partial<LooseLine> = { ...(linkedUpdates ?? {}) };
-            const propagatedWords = propagateWordChanges(sourceWordsAfter, sourceWordsBefore, line.words);
-            if (propagatedWords) siblingUpdates.words = propagatedWords;
-            const propagatedBg = propagateWordChanges(sourceBgAfter, sourceBgBefore, line.backgroundWords);
-            if (propagatedBg) siblingUpdates.backgroundWords = propagatedBg;
-            if (Object.keys(siblingUpdates).length > 0) newLines[i] = reconcileLine({ ...line, ...siblingUpdates });
+            if (line.id === id || !isLinkedSibling(line, linkScope)) continue;
+            newLines[i] = updatedLinkedSibling(line, target, lineUpdates);
           }
         }
       }
@@ -297,4 +272,4 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
 // -- Exports ------------------------------------------------------------------
 
-export { createLinesSlice, createLinesInitialState };
+export { createLinesInitialState, createLinesSlice };

@@ -19,14 +19,16 @@ function propagateWordChanges(
   if (!sourceAfter || !siblingWords) return undefined;
 
   if (sourceBefore && sourceAfter.length === sourceBefore.length) {
-    if (sourceAfter.length !== siblingWords.length) return undefined;
-    let changed = false;
-    const next = siblingWords.map((w, i) => {
-      if (w.text === sourceAfter[i].text) return w;
-      changed = true;
-      return { ...w, text: sourceAfter[i].text };
-    });
-    return changed ? next : undefined;
+    if (sourceAfter.length === siblingWords.length) {
+      let changed = false;
+      const next = siblingWords.map((w, i) => {
+        if (w.text === sourceAfter[i].text) return w;
+        changed = true;
+        return { ...w, text: sourceAfter[i].text };
+      });
+      return changed ? next : undefined;
+    }
+    if (sourceAfter.every((w, i) => w.text === sourceBefore[i].text)) return undefined;
   }
 
   const result = applySiblingWords(sourceAfter, sourceBefore, siblingWords);
