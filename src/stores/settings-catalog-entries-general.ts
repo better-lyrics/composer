@@ -14,7 +14,7 @@ const GENERAL_CATALOG_ENTRIES = {
     section: "general",
     label: "Show the guide",
     description: "A small corner guide with your next step and tips for what you're doing.",
-    keywords: ["guide", "tips", "help", "tutorial", "onboarding", "hints"],
+    keywords: ["guide", "tips", "hints", "medals"],
     settingKey: "showGuide",
   },
   musicBrainzLookup: {

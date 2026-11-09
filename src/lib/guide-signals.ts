@@ -44,8 +44,7 @@ function firedNudges(now: number): PendingNudge[] {
       !retiredThisSession.has(nudge.id) &&
       !mutedCategories.includes(nudge.category) &&
       !(nudge.resolvedBy && learnedSignals.includes(nudge.resolvedBy)) &&
-      firesOn(nudge.trigger, events, now) &&
-      (nudge.when?.() ?? true),
+      firesOn(nudge.trigger, events, now),
   ).map((nudge) => ({ id: nudge.id, key: events.findLast((event) => event.signal === nudge.trigger.signal)?.key }));
 }
 
@@ -94,5 +93,12 @@ function subscribeGuideNudges(listener: () => void): () => void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { noteGuideExport, noteGuideProjectFact, noteGuideSignal, pendingGuideNudges, resolveGuideNudge, subscribeGuideNudges };
+export {
+  noteGuideExport,
+  noteGuideProjectFact,
+  noteGuideSignal,
+  pendingGuideNudges,
+  resolveGuideNudge,
+  subscribeGuideNudges,
+};
 export type { PendingNudge };

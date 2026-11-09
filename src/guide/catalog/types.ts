@@ -20,6 +20,7 @@ interface GuideNudge extends GuideNudgeEntry {
   body: React.ReactNode;
   peek: React.ReactNode;
   primary?: GuideNudgeAction;
+  available?: () => boolean;
 }
 
 // -- Constants ----------------------------------------------------------------

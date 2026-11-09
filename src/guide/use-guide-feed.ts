@@ -4,7 +4,7 @@ import { JOURNEY_COPY, STAGE_NAMES } from "@/guide/catalog/journey";
 import { GUIDE_NUDGES } from "@/guide/catalog/nudges";
 import { GUIDE_TIER_NAMES } from "@/guide/catalog/types";
 import { dropPeeks, enqueuePeek } from "@/guide/peek-queue";
-import { type PendingNudge, pendingGuideNudges, subscribeGuideNudges } from "@/lib/guide-signals";
+import { type PendingNudge, pendingGuideNudges, resolveGuideNudge, subscribeGuideNudges } from "@/lib/guide-signals";
 import { isRestoringProject } from "@/lib/project-restore";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -53,7 +53,8 @@ function useNudgeFeed(): readonly PendingNudge[] {
   useEffect(() => {
     for (const queued of pending) {
       const nudge = GUIDE_NUDGES.find((candidate) => candidate.id === queued.id);
-      if (nudge) enqueuePeek({ id: `nudge:${nudge.id}`, kind: "tip", gist: nudge.peek, nudgeId: nudge.id });
+      if (nudge?.available?.() === false) resolveGuideNudge(nudge.id);
+      else if (nudge) enqueuePeek({ id: `nudge:${nudge.id}`, kind: "tip", gist: nudge.peek, nudgeId: nudge.id });
     }
     dropPeeks((peek) => !peek.nudgeId || pending.some((queued) => queued.id === peek.nudgeId));
   }, [pending]);

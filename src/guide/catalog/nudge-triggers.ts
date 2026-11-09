@@ -1,16 +1,9 @@
 import type { GuideNudgeEntry } from "@/domain/guide/model";
-import { isAutoAlignAvailable } from "@/stores/alignment";
-
-// -- Types --------------------------------------------------------------------
-
-interface GuideNudgeTrigger extends GuideNudgeEntry {
-  when?: () => boolean;
-}
 
 // -- Triggers -----------------------------------------------------------------
 
-// Data only, so signal checks never load tip copy. Copy and actions live in nudges.tsx under the same ids.
-const GUIDE_NUDGE_TRIGGERS: readonly GuideNudgeTrigger[] = [
+// Data only, with no store imports: stores reached from the test setup call noteGuideSignal. Copy and actions live in nudges.tsx.
+const GUIDE_NUDGE_TRIGGERS: readonly GuideNudgeEntry[] = [
   {
     id: "syllableGap",
     stage: "timeline",
@@ -59,7 +52,6 @@ const GUIDE_NUDGE_TRIGGERS: readonly GuideNudgeTrigger[] = [
     category: "sync-auto-align",
     trigger: { signal: "sync.tap", count: 40, windowMs: 5 * 60_000 },
     resolvedBy: "sync.autoAlign",
-    when: () => isAutoAlignAvailable(),
   },
   {
     id: "keysWhileTyping",

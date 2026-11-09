@@ -1,6 +1,7 @@
 import { GUIDE_NUDGE_TRIGGERS } from "@/guide/catalog/nudge-triggers";
 import { keys } from "@/guide/catalog/keys";
 import type { GuideNudge } from "@/guide/catalog/types";
+import { isAutoAlignAvailable } from "@/stores/alignment";
 import { toggledPlaybackRate, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
@@ -95,6 +96,7 @@ const NUDGE_COPY: Record<string, NudgeCopy> = {
     title: "Want a head start?",
     body: <>Press {keys("timeline.autoAlign")} and Auto-align times every word for you. Then fix what it gets wrong.</>,
     peek: <>Auto-align can time the words for you</>,
+    available: isAutoAlignAvailable,
   },
   keysWhileTyping: {
     icon: IconKeyboard,
