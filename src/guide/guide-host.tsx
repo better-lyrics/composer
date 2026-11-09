@@ -47,7 +47,9 @@ const GuideHost: React.FC = () => {
   const { milestone, clearMilestone } = useMilestoneFeed(tiers);
   const { queue, hold, release } = useGuidePeek(open);
 
+  // Whatever arrived while the card was open was in front of the user already.
   const close = () => {
+    markPeeksRead();
     setOpen(false);
     setShowingRecord(false);
     setFocusNudgeId(null);
@@ -71,7 +73,7 @@ const GuideHost: React.FC = () => {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="layer-floating pointer-events-none fixed right-4 bottom-4 flex flex-col items-end gap-3 [&>*]:pointer-events-auto">
+      <div className="layer-floating pointer-events-none absolute right-3 bottom-3 flex flex-col items-end gap-3 *:pointer-events-auto">
         <AnimatePresence>
           {open && (
             <GuideCard

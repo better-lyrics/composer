@@ -52,9 +52,9 @@ const EditorScreen: React.FC = () => {
             </div>
           </Activity>
         ))}
+        {showGuide && <GuideHost />}
       </main>
       {showPlayer && <AudioPlayer />}
-      {showGuide && <GuideHost />}
     </div>
   );
 };

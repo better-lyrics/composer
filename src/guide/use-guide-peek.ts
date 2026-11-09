@@ -1,7 +1,7 @@
 import { PEEK_VISIBLE_MS } from "@/domain/guide/peek-gate";
 import { foldPeek, peekQueueSnapshot, subscribePeekQueue, tryShowPeek } from "@/guide/peek-queue";
 import { useAudioStore } from "@/stores/audio";
-import { useEscapeLayerStackStore, isAnyModalOpen } from "@/stores/escape-layer-stack";
+import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { isTypingTarget } from "@/utils/typing-target";
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 
@@ -11,12 +11,13 @@ let pointerDown = false;
 
 // -- Helpers ------------------------------------------------------------------
 
+// Any open layer counts: a modal, a panel such as the theme editor, or the product tour.
 function isBusy(cardOpen: boolean): boolean {
   return (
     cardOpen ||
     pointerDown ||
     useAudioStore.getState().isPlaying ||
-    isAnyModalOpen() ||
+    useEscapeLayerStackStore.getState().layers.length > 0 ||
     isTypingTarget(document.activeElement)
   );
 }
