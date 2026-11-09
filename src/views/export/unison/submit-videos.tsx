@@ -32,7 +32,7 @@ interface SubmissionWithVideosProps extends NewSubmissionProps {
 
 const SubmissionWithVideos: React.FC<SubmissionWithVideosProps> = ({ mainVideoId, onChangeMain, ...props }) => {
   const videos = useSubmitVideos(mainVideoId, props.source.durationSeconds);
-  const section = (
+  const section = (busy: boolean) => (
     <PanelSection title="Videos" meta={<VideoCount count={linkedVideoCount(videos.linked)} />}>
       <div className="-mx-1.5">
         <VideoPicker
@@ -45,6 +45,7 @@ const SubmissionWithVideos: React.FC<SubmissionWithVideosProps> = ({ mainVideoId
           onUnlink={videos.unlink}
           onAdd={videos.add}
           onChangeMain={onChangeMain}
+          busy={busy}
         />
       </div>
     </PanelSection>
@@ -55,7 +56,9 @@ const SubmissionWithVideos: React.FC<SubmissionWithVideosProps> = ({ mainVideoId
 const FileSourceSubmission: React.FC<NewSubmissionProps> = (props) => {
   const [chosenVideoId, setChosenVideoId] = useState<string | null>(null);
   if (!chosenVideoId) {
-    const section = <MainVideoChoice durationSeconds={props.source.durationSeconds} onChoose={setChosenVideoId} />;
+    const section = () => (
+      <MainVideoChoice durationSeconds={props.source.durationSeconds} onChoose={setChosenVideoId} />
+    );
     return <SubmitCard lyricId={null} {...props} videoSection={section} />;
   }
   return (

@@ -81,8 +81,10 @@ const MainVideoChoice: React.FC<MainVideoChoiceProps> = ({ durationSeconds, onCh
       <AddVideoField
         placeholder="Paste the YouTube link"
         onAdd={(videoId) => {
-          onChoose(videoId);
-          return null;
+          const suggestion = suggestions.find((candidate) => candidate.videoId === videoId);
+          const lengthNote = suggestionLengthNote(suggestion, songSeconds);
+          if (!lengthNote) onChoose(videoId);
+          return lengthNote;
         }}
       />
     </PanelSection>
