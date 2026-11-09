@@ -18,11 +18,11 @@ import { useGuideStore } from "@/stores/guide";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
-import { cn } from "@/utils/cn";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { GuideCard } from "@/ui/guide/guide-card";
 import { GuideOrb } from "@/ui/guide/guide-orb";
-import { AnimatePresence, MotionConfig } from "motion/react";
+import { guideSpring } from "@/utils/animationVariants";
+import { AnimatePresence, LazyMotion, MotionConfig, m } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 
 // -- Hooks --------------------------------------------------------------------
@@ -35,6 +35,10 @@ function useAllStageTiers(tips: readonly GuideTip[]): StageTiers {
     return new Map(PROJECT_TABS.map((stage) => [stage, stageTiers(tips, stage, learned, showAll)]));
   }, [tips, learnedSignals, showAll]);
 }
+
+// -- Helpers ------------------------------------------------------------------
+
+const loadGuideMotionFeatures = () => import("@/guide/guide-motion-features").then((module) => module.default);
 
 // -- Component ----------------------------------------------------------------
 
@@ -84,68 +88,73 @@ const GuideHost: React.FC = () => {
   const stepStage = journey.current ? JOURNEY_COPY[journey.current].stage : null;
   const stepIndex = journey.current ? journey.steps.findIndex((step) => step.id === journey.current) : -1;
   const unread = queue.waiting.length + queue.unread.length;
+  const orbShift = {
+    x: activeTab === "export" ? -416 : 0,
+    y: activeTab === "sync" ? -72 : timelineFooterShown ? -54 : 0,
+  };
 
   return (
-    <MotionConfig reducedMotion="user">
-      <div
-        className={cn(
-          "layer-floating pointer-events-none absolute right-3 bottom-3 flex flex-col items-end gap-3 transition-transform duration-250 ease-out *:pointer-events-auto",
-          timelineFooterShown && "-translate-y-[54px]",
-          activeTab === "sync" && "-translate-y-[72px]",
-          activeTab === "export" && "-translate-x-[416px]",
-        )}
-      >
-        <AnimatePresence>
-          {open && (
-            <GuideCard
-              key="card"
-              stepTitle={journey.current ? JOURNEY_COPY[journey.current].title : "Song finished"}
-              goToStep={
-                stepStage && stepStage !== activeTab
-                  ? {
-                      stageName: STAGE_NAMES[stepStage],
-                      onGo: () => useProjectStore.getState().setActiveTab(stepStage),
-                    }
-                  : undefined
-              }
-              stepNumber={stepIndex >= 0 ? stepIndex + 1 : null}
-              doneCount={journey.doneCount}
-              stepTotal={journey.steps.length}
-              showingRecord={showingRecord}
-              showAll={showAll}
-              onToggleRecord={() => setShowingRecord((shown) => !shown)}
-              onToggleShowAll={() => useGuideStore.getState().setShowAll(!showAll)}
-              onOpenHelp={() => useUIStore.getState().openHelp(STAGE_HELP_SECTIONS[activeTab])}
-              onStartOver={() => useGuideStore.getState().startOver()}
-              onHide={hideGuide}
-            >
-              <GuideCardBody
-                stage={activeTab}
-                stageName={STAGE_NAMES[activeTab]}
-                tiers={tiers}
-                tips={tips}
-                pending={pending}
-                focusNudgeId={focusNudgeId}
-                milestone={milestone}
+    <LazyMotion features={loadGuideMotionFeatures}>
+      <MotionConfig reducedMotion="user">
+        <m.div
+          layout="position"
+          initial={false}
+          animate={{ x: orbShift.x, y: orbShift.y }}
+          transition={guideSpring}
+          className="layer-floating pointer-events-none absolute right-3 bottom-3 flex flex-col items-end gap-3 *:pointer-events-auto"
+        >
+          <AnimatePresence>
+            {open && (
+              <GuideCard
+                key="card"
+                stepTitle={journey.current ? JOURNEY_COPY[journey.current].title : "Song finished"}
+                goToStep={
+                  stepStage && stepStage !== activeTab
+                    ? {
+                        stageName: STAGE_NAMES[stepStage],
+                        onGo: () => useProjectStore.getState().setActiveTab(stepStage),
+                      }
+                    : undefined
+                }
+                stepNumber={stepIndex >= 0 ? stepIndex + 1 : null}
+                doneCount={journey.doneCount}
+                stepTotal={journey.steps.length}
                 showingRecord={showingRecord}
-                onLeaveRecord={() => setShowingRecord(false)}
-                onMilestoneDone={clearMilestone}
-              />
-            </GuideCard>
-          )}
-        </AnimatePresence>
-        <SpotHint />
-        <GuideOrb
-          peek={queue.showing}
-          unread={unread}
-          progress={journey.doneCount / journey.steps.length}
-          open={open}
-          onClick={open ? close : openCard}
-          onHold={hold}
-          onRelease={release}
-        />
-      </div>
-    </MotionConfig>
+                showAll={showAll}
+                onToggleRecord={() => setShowingRecord((shown) => !shown)}
+                onToggleShowAll={() => useGuideStore.getState().setShowAll(!showAll)}
+                onOpenHelp={() => useUIStore.getState().openHelp(STAGE_HELP_SECTIONS[activeTab])}
+                onStartOver={() => useGuideStore.getState().startOver()}
+                onHide={hideGuide}
+              >
+                <GuideCardBody
+                  stage={activeTab}
+                  stageName={STAGE_NAMES[activeTab]}
+                  tiers={tiers}
+                  tips={tips}
+                  pending={pending}
+                  focusNudgeId={focusNudgeId}
+                  milestone={milestone}
+                  showingRecord={showingRecord}
+                  onLeaveRecord={() => setShowingRecord(false)}
+                  onMilestoneDone={clearMilestone}
+                />
+              </GuideCard>
+            )}
+          </AnimatePresence>
+          <SpotHint />
+          <GuideOrb
+            peek={queue.showing}
+            unread={unread}
+            progress={journey.doneCount / journey.steps.length}
+            open={open}
+            onClick={open ? close : openCard}
+            onHold={hold}
+            onRelease={release}
+          />
+        </m.div>
+      </MotionConfig>
+    </LazyMotion>
   );
 };
 
