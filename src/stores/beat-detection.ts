@@ -1,5 +1,6 @@
 import { detectBeats } from "@/audio/beat/detect-beats";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { playableFile, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { create } from "zustand";
@@ -86,6 +87,7 @@ const useBeatDetectionStore = create<BeatDetectionState>((set) => ({
         return;
       }
       useProjectStore.getState().applyBeatGridWithHistory(detectedGrid(detection));
+      noteGuideSignal("timeline.beats");
       set(IDLE);
     } catch (error) {
       if (!isCurrent() || isAbort(error)) return;

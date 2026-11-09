@@ -1,4 +1,5 @@
 import { isTypingTarget } from "@/hooks/useKeyboardShortcuts";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
@@ -44,6 +45,7 @@ function handleGroupFocusKeyDown(event: KeyboardEvent): void {
     event.preventDefault();
     event.stopImmediatePropagation();
     timeline.openGroup(instance.groupId, instance.instanceIdx);
+    noteGuideSignal("timeline.openGroup");
     return;
   }
 

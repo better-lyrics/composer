@@ -5,7 +5,7 @@ import { Button } from "@/ui/button";
 import { LoopToggleButton } from "@/views/timeline/loop-toggle";
 import { SelectionPlaybackStrip } from "@/views/timeline/selection-playback-bar";
 import type { SelectionPlaybackMode } from "@/views/timeline/timeline-store";
-import { IconPlayerPlay } from "@tabler/icons-react";
+import { IconPlayerPlayFilled } from "@tabler/icons-react";
 import { useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -48,7 +48,7 @@ const SelectionPlaybackDemo: React.FC = () => {
           </div>
         ) : (
           <Button size="lg" variant="secondary" hasIcon onClick={() => setMode("once")}>
-            <IconPlayerPlay aria-hidden="true" className="size-4" />
+            <IconPlayerPlayFilled aria-hidden="true" className="size-4" />
             Play selection
           </Button>
         )}

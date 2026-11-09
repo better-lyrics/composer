@@ -12,6 +12,8 @@ import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { OverviewBand } from "@/views/timeline/overview/overview-band";
 import { placeSnapPoint } from "@/views/timeline/place-snap-point";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
+import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
+import { noteReplaySpot } from "@/views/timeline/replay-spot-signal";
 import { clearLoopRegion } from "@/views/timeline/selection-playback";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WaveformFocusShade } from "@/views/timeline/waveform-focus-shade";
@@ -177,9 +179,10 @@ const TimelineWaveform: React.FC = () => {
         return;
       }
       clearLoopRegion();
-      const target = snapPlayheadTime(time, e.metaKey);
+      const target = snapPlayheadTime(time, holdsSnapBypass(e));
       seekTo(target);
       notePlacement(target, "pointer");
+      noteReplaySpot(target);
     },
     [duration, totalWidth, timeFromClick, seekTo],
   );

@@ -8,6 +8,7 @@ interface SourceCardProps {
   subtitle: React.ReactNode;
   trailing?: React.ReactNode;
   tone?: "warning";
+  guideSpot?: string;
   ref?: React.Ref<HTMLDivElement>;
 }
 
@@ -39,9 +40,10 @@ const ImportZone: React.FC<{ tone?: "warning"; children: React.ReactNode }> = ({
   </div>
 );
 
-const SourceCard: React.FC<SourceCardProps> = ({ art, title, subtitle, trailing, tone, ref }) => (
+const SourceCard: React.FC<SourceCardProps> = ({ art, title, subtitle, trailing, tone, guideSpot, ref }) => (
   <div
     ref={ref}
+    data-guide-spot={guideSpot}
     className={cn(
       "flex items-center gap-3.5 w-full p-2.5 pr-3.5 rounded-[21px] border",
       tone === "warning" ? "bg-composer-warning/6 border-composer-warning/28" : "bg-composer-bg border-(--edge)",

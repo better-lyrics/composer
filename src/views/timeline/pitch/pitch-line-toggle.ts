@@ -1,4 +1,5 @@
 import type { PitchLineMode } from "@/domain/pitch/pitch-line-mode";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ function setPitchLineShown(shown: boolean): void {
   const settings = useSettingsStore.getState();
   if (settings.pitchLine !== "off") lastShownMode = settings.pitchLine;
   settings.set("pitchLine", shown ? lastShownMode : "off");
+  if (shown && useSeparationStore.getState().stemUrls.vocals) noteGuideSignal("timeline.pitch");
 }
 
 function togglePitchLine(): void {

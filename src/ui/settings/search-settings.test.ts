@@ -33,8 +33,8 @@ describe("searchSettings", () => {
     expect(search("confirmations").settings).toEqual(settingIdsInSection("confirmations"));
   });
 
-  it("finds the tour and settings reset rows", () => {
-    expect(search("onboarding").settings).toEqual(["resetTour"]);
+  it("finds the guide and settings reset rows", () => {
+    expect(search("onboarding").settings).toEqual(["resetGuide"]);
     expect(search("reset to defaults").settings).toContain("resetAllSettings");
   });
 

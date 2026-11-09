@@ -4,6 +4,8 @@ import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
 import { notePlacement } from "@/lib/replay-cue";
 import { xToTime } from "@/views/timeline/coords";
 import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
+import { noteReplaySpot } from "@/views/timeline/replay-spot-signal";
+import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { GUTTER_WIDTH } from "@/views/timeline/timeline-store";
 import { readViewScroll, scrollViewBy, viewScrollLeft } from "@/views/timeline/view-scroll";
 
@@ -56,7 +58,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
     config.setDraggingPlayhead(true, config.getCurrentTime());
 
     let pointerX = e.clientX;
-    let metaHeld = e.metaKey;
+    let metaHeld = holdsSnapBypass(e);
     let prevSample: ScrubSample | null = null;
     let unsubscribeEdgeScroll: (() => void) | null = null;
     const controller = new AbortController();
@@ -92,7 +94,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
     };
 
     const handleMouseMove = (moveEvent: MouseEvent): void => {
-      metaHeld = moveEvent.metaKey;
+      metaHeld = holdsSnapBypass(moveEvent);
       pointerX = moveEvent.clientX;
       const time = computeTimeFromPointer(pointerX);
       if (time !== null) {
@@ -115,9 +117,10 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
     const handleMouseUp = (upEvent: MouseEvent): void => {
       const time = computeTimeFromPointer(upEvent.clientX);
       if (time !== null) {
-        const target = config.snapTime(time, upEvent.metaKey);
+        const target = config.snapTime(time, holdsSnapBypass(upEvent));
         config.seekTo(target);
         notePlacement(target, "pointer");
+        noteReplaySpot(target);
       }
       cleanup();
     };

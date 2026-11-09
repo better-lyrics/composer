@@ -1,4 +1,5 @@
 import type { StemSlot } from "@/domain/stems/stem-slot";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useSeparationStore } from "@/stores/separation";
 import { isFileDrag } from "@/utils/file-drag";
 import { useRef, useState } from "react";
@@ -21,7 +22,12 @@ function useStemFileImport(): StemFileImport {
   const pickerSlotRef = useRef<StemSlot | null>(null);
   const [dropSlot, setDropSlot] = useState<StemSlot | null>(null);
 
-  const importStem = (slot: StemSlot, file: File) => void useSeparationStore.getState().importStem(slot, file);
+  const importStem = (slot: StemSlot, file: File) => {
+    void useSeparationStore
+      .getState()
+      .importStem(slot, file)
+      .then((imported) => imported && noteGuideSignal("import.stems"));
+  };
 
   const openFilePicker = (slot: StemSlot) => {
     pickerSlotRef.current = slot;

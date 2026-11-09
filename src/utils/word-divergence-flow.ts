@@ -18,10 +18,10 @@ async function handleWordChangeWithDivergenceCheck(
   newWords: WordTiming[],
   field: "words" | "backgroundWords" = "words",
   extraUpdates: Partial<LyricLine> = {},
-): Promise<void> {
+): Promise<boolean> {
   const lines = useProjectStore.getState().lines;
   const target = lines.find((l) => l.id === lineId);
-  if (!target) return;
+  if (!target) return false;
 
   const sourceBefore = target[field];
   const oldCount = sourceBefore?.length ?? 0;
@@ -30,12 +30,12 @@ async function handleWordChangeWithDivergenceCheck(
 
   if (!countChanged) {
     useProjectStore.getState().updateLineWithHistory(lineId, { ...extraUpdates, [field]: newWords });
-    return;
+    return true;
   }
 
   if (!wouldDivergenceCauseRetiming(lines, lineId, newWords, field)) {
     useProjectStore.getState().applyWordCountChange(lineId, newWords, field, "apply", extraUpdates);
-    return;
+    return true;
   }
 
   const groupId = target.groupId as string;
@@ -49,6 +49,7 @@ async function handleWordChangeWithDivergenceCheck(
   useProjectStore.getState().applyWordCountChange(lineId, newWords, field, resolution, extraUpdates);
   if (resolution === "apply") showGroupActionToast("Word structure synced across instances");
   else if (resolution === "detach") showGroupActionToast("Line detached from group");
+  return resolution !== "cancel";
 }
 
 // -- Exports ------------------------------------------------------------------

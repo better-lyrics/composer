@@ -14,7 +14,6 @@ import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
-import { TOUR_SEEN_KEY } from "@/tour/use-tour";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -45,7 +44,6 @@ async function expectUntouched(id: string): Promise<void> {
 }
 
 async function bootApp(): Promise<void> {
-  localStorage.setItem(TOUR_SEEN_KEY, "true");
   await render(<App />, { withRouter: { initialEntries: ["/editor"] } });
 }
 

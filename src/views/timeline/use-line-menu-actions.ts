@@ -3,6 +3,7 @@ import { instanceName } from "@/domain/instance/name";
 import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import { useAutoAlign } from "@/hooks/use-auto-align";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -91,10 +92,13 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     (agentId: string) => {
       if (!contextMenu || contextMenu.target.kind !== "gutter") return;
       const { lineId } = contextMenu.target;
-      updateLineWithHistory(lineId, { agentId });
+      if (rawLines.find((line) => line.id === lineId)?.agentId !== agentId) {
+        updateLineWithHistory(lineId, { agentId });
+        noteGuideSignal("edit.singer");
+      }
       clearContextMenu();
     },
-    [contextMenu, updateLineWithHistory, clearContextMenu],
+    [contextMenu, rawLines, updateLineWithHistory, clearContextMenu],
   );
 
   const handleSplitIntoWords = useCallback(() => {

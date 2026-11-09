@@ -6,6 +6,7 @@ import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useChoiceStore } from "@/stores/choice-store";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
+import { useGuideStore } from "@/stores/guide";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
@@ -91,6 +92,7 @@ function wireFrameLoop(): () => void {
     useImportModalStore.subscribe(wakeFromThisWiring),
     useChoiceStore.subscribe(wakeFromThisWiring),
     useEscapeLayerStackStore.subscribe(wakeFromThisWiring),
+    useGuideStore.subscribe(wakeFromThisWiring),
     useProjectStore.subscribe(wakeFromThisWiring),
     useSeparationStore.subscribe(wakeFromThisWiring),
     useSettingsStore.subscribe(wakeFromThisWiring),

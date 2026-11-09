@@ -1,6 +1,7 @@
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { WordSelection } from "@/domain/selection/model";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -14,6 +15,8 @@ import {
   expandSelectionsAcrossLines,
   resolveWordsToOperate,
 } from "@/views/timeline/drag-handlers";
+import { noteWordDragShift } from "@/views/timeline/tiny-drag-signal";
+import { noteLoneWordMove } from "@/views/timeline/word-by-word-signal";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -135,6 +138,9 @@ function useTimelineDnd(lines: ReadableLine[]) {
       if (sameLine && sameTrack) {
         if (Math.abs(delta.x) < DRAG_X_MIN_THRESHOLD) return;
         applySameLineReorder(activeData, wordsToMove, lines, timeDelta, rangeOf, updateLineWithHistory);
+        noteGuideSignal("timeline.move");
+        noteWordDragShift(activeData.lineId, activeData.trackType, activeData.wordIndex, timeDelta);
+        if (wordsToMove.length === 1) noteLoneWordMove(activeData.lineId, activeData.trackType, activeData.wordIndex);
         return;
       }
 
@@ -147,6 +153,7 @@ function useTimelineDnd(lines: ReadableLine[]) {
         timeDelta,
         rangeOf,
       });
+      noteGuideSignal("timeline.move");
     },
     [updateLineWithHistory, duration, lines],
   );

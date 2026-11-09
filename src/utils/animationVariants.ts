@@ -185,6 +185,74 @@ const loupeDeltaPopVariants: Variants = {
 
 // -- Stagger Container --------------------------------------------------------
 
+// -- Guide --------------------------------------------------------------------
+
+// Fluid by default: every guide state change is a zero-bounce spring that retargets mid-flight.
+const guideSpring: Transition = { type: "spring", duration: 0.25, bounce: 0 };
+const guideSpringSlow: Transition = { type: "spring", duration: 0.5, bounce: 0 };
+
+const guideCardVariants: Variants = {
+  hidden: { opacity: 0, y: 12, scale: 0.97, filter: "blur(4px)" },
+  shown: { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", transition: { ...guideSpring, staggerChildren: 0.04 } },
+  exit: { opacity: 0, y: 8, scale: 0.98, filter: "blur(4px)", transition: { duration: 0.15, ease: "easeOut" } },
+};
+
+const guideChunkVariants: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  shown: { opacity: 1, y: 0, transition: guideSpring },
+};
+
+const guideIconSwapVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.25, filter: "blur(4px)" },
+  shown: { opacity: 1, scale: 1, filter: "blur(0px)", transition: guideSpring },
+};
+
+const guidePeekTextVariants: Variants = {
+  hidden: { opacity: 0, filter: "blur(4px)" },
+  shown: { opacity: 1, filter: "blur(0px)", transition: { ...guideSpring, delay: 0.08 } },
+  exit: { opacity: 0, filter: "blur(4px)", transition: { duration: 0.1 } },
+};
+
+const guideBadgeVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.5 },
+  shown: { opacity: 1, scale: 1, transition: guideSpring },
+  exit: { opacity: 0, scale: 0.5, transition: { duration: 0.1 } },
+};
+
+// Card views swap in place: blur bridges the two states while the body springs to the new height.
+const guideViewSwapVariants: Variants = {
+  hidden: { opacity: 0, filter: "blur(2px)" },
+  shown: { opacity: 1, filter: "blur(0px)", transition: guideSpring },
+  exit: { opacity: 0, filter: "blur(2px)", transition: { duration: 0.12, ease: "easeOut" } },
+};
+
+// A row leaves in place while the rows below and the card spring into the gap.
+const guideRowExit = { opacity: 0, filter: "blur(2px)", transition: { duration: 0.12, ease: "easeOut" } } as const;
+
+const guideChipVariants: Variants = {
+  hidden: { opacity: 0, y: 4 },
+  shown: { opacity: 1, y: 0, transition: guideSpring },
+  exit: { opacity: 0, transition: { duration: 0.1 } },
+};
+
+// Delight is saved for milestones: the medal drops in, then the copy rises in after it lands.
+const guideMedalDropVariants: Variants = {
+  hidden: { opacity: 0, y: -18, scale: 0.9 },
+  shown: { opacity: 1, y: 0, scale: 1, transition: { ...guideSpringSlow, delay: 0.1 } },
+};
+
+const guideRevealVariants: Variants = {
+  hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
+  shown: (index: number) => ({
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { ...guideSpringSlow, delay: 0.55 + index * 0.1 },
+  }),
+};
+
+const guideMedalPress = { downAtMs: 420, upAtMs: 560, sweepStepMs: 50, sweepStartMs: 150 } as const;
+
 // -- Exports ------------------------------------------------------------------
 
 export {
@@ -210,4 +278,16 @@ export {
   pitchLineMotion,
   spectrumRefineMotion,
   easeOutCubic,
+  guideSpring,
+  guideCardVariants,
+  guideChunkVariants,
+  guideIconSwapVariants,
+  guidePeekTextVariants,
+  guideBadgeVariants,
+  guideRowExit,
+  guideViewSwapVariants,
+  guideChipVariants,
+  guideMedalDropVariants,
+  guideRevealVariants,
+  guideMedalPress,
 };

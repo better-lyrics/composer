@@ -4,6 +4,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { selectionBounds } from "@/domain/selection/bounds";
 import { lineWordSelections } from "@/domain/selection/line-selections";
 import type { WordSelection } from "@/domain/selection/model";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Menu, type MenuAnchor, MenuItem, MenuLabel, MenuRadioItem, MenuSeparator } from "@/ui/menu";
@@ -143,12 +144,20 @@ function PlaybackMenuItems({
       <MenuItem
         label={`Play ${noun}`}
         shortcut={getEffectiveKeysArray("timeline.playSelection")}
-        onSelect={() => selectAndRun(playSelection)}
+        onSelect={() => {
+          selectAndRun(playSelection);
+          noteGuideSignal("timeline.play");
+          noteGuideSignal("timeline.menuPlay");
+        }}
       />
       <MenuItem
         label={`Loop ${noun}`}
         shortcut={getEffectiveKeysArray("global.toggleLoop")}
-        onSelect={() => selectAndRun(loopSelection)}
+        onSelect={() => {
+          selectAndRun(loopSelection);
+          noteGuideSignal("timeline.play");
+          noteGuideSignal("timeline.loop");
+        }}
       />
       <MenuSeparator />
     </>
@@ -334,8 +343,16 @@ function GutterMenuSection({ targets, clearContextMenu, target }: SectionProps &
         select={() => selectLine(lineId, lineIndex)}
         clearContextMenu={clearContextMenu}
       />
-      <MenuItem label="Add line above" shortcut={["Shift", "N"]} onSelect={() => handleAddLine("above")} />
-      <MenuItem label="Add line below" shortcut={["N"]} onSelect={() => handleAddLine("below")} />
+      <MenuItem
+        label="Add line above"
+        shortcut={getEffectiveKeysArray("timeline.insertLineAbove")}
+        onSelect={() => handleAddLine("above")}
+      />
+      <MenuItem
+        label="Add line below"
+        shortcut={getEffectiveKeysArray("timeline.insertLineBelow")}
+        onSelect={() => handleAddLine("below")}
+      />
       {targets.placeAtPlayheadInfo && <MenuItem label="Place at playhead" onSelect={handlePlaceAtPlayhead} />}
       <SelectionGrouping targets={targets} clearContextMenu={clearContextMenu} />
       <MenuSeparator />
@@ -381,7 +398,10 @@ function GroupBannerMenuSection({ targets, clearContextMenu, target }: SectionPr
       <MenuItem
         label="Open group"
         shortcut={getEffectiveKeysArray("timeline.openGroup")}
-        onSelect={() => openGroup(target.groupId, target.instanceIdx)}
+        onSelect={() => {
+          openGroup(target.groupId, target.instanceIdx);
+          noteGuideSignal("timeline.openGroup");
+        }}
       />
       <MenuItem
         label={isCollapsed ? "Expand instance" : "Collapse instance"}

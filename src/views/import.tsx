@@ -133,6 +133,7 @@ const LoadedSongPanel: React.FC<LoadedSongPanelProps> = ({ art, title, subtitle,
       <ImportZone>
         <SourceCard
           ref={setCard}
+          guideSpot="importDrop"
           art={art}
           title={title}
           subtitle={subtitle}
@@ -223,7 +224,7 @@ const ImportPanel: React.FC = () => {
           onProjectFileDrop={openProjectFile}
           className="gap-1 px-0 py-2"
         >
-          <IconMusic className="size-11 mb-3 text-composer-text-faint" stroke={1.5} />
+          <IconMusic data-guide-spot="importDrop" className="size-11 mb-3 text-composer-text-faint" stroke={1.5} />
           <p className="text-base font-medium text-(--label)">Drop an audio or project file here</p>
           <p className="text-[13px] text-(--muted)">
             or <span className="text-composer-accent-text">click to browse</span>

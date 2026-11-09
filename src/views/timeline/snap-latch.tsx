@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useSettingsStore } from "@/stores/settings";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { SplitLatch } from "@/ui/split-latch";
@@ -44,7 +45,10 @@ const SnapLatch: React.FC = () => {
           active={enabled}
           label="Snap"
           shortcut="timeline.toggleSnap"
-          onClick={() => useSettingsStore.getState().toggle("timelineSnap")}
+          onClick={() => {
+            useSettingsStore.getState().toggle("timelineSnap");
+            noteGuideSignal("timeline.snapToggle");
+          }}
           className={cn(isBypassing && "opacity-50")}
           description={`Hold ${MOD_KEY} to bypass`}
           iconOnly

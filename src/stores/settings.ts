@@ -76,6 +76,8 @@ interface SettingsState extends SnapSettings, SpectrumSettings, UnisonSettings {
   launchScreen: LaunchScreen;
 
   showShortcutHints: boolean;
+  showGuide: boolean;
+  guideHints: boolean;
   showSyllableIndicators: boolean;
   splitCharacter: string;
   autoExtractBackgroundVocals: boolean;
@@ -168,6 +170,8 @@ const DEFAULTS: SettingsState = {
   launchScreen: "projects",
 
   showShortcutHints: true,
+  showGuide: true,
+  guideHints: true,
   showSyllableIndicators: true,
   splitCharacter: "|",
   autoExtractBackgroundVocals: true,

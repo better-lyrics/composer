@@ -9,6 +9,8 @@ interface ProgressBarProps {
   label: string;
   tone?: ProgressBarTone;
   segments?: number;
+  complete?: boolean;
+  sweepStepMs?: number;
   className?: string;
 }
 
@@ -37,7 +39,15 @@ const SEGMENT_OFF_STYLES: Record<ProgressBarTone, string> = {
 
 // -- Component ----------------------------------------------------------------
 
-const ProgressBar: React.FC<ProgressBarProps> = ({ percent, label, tone = "default", segments, className }) => {
+const ProgressBar: React.FC<ProgressBarProps> = ({
+  percent,
+  label,
+  tone = "default",
+  segments,
+  complete,
+  sweepStepMs,
+  className,
+}) => {
   const clamped = Math.min(100, Math.max(0, percent));
   if (segments !== undefined) {
     const litCount = Math.round((clamped / 100) * segments);
@@ -45,7 +55,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ percent, label, tone = "defau
       <div
         role="progressbar"
         aria-label={label}
-        aria-valuenow={clamped}
+        aria-valuenow={Math.round(clamped)}
         aria-valuemin={0}
         aria-valuemax={100}
         className={cn("grid grid-flow-col auto-cols-fr gap-[3px] h-2.5", className)}
@@ -53,7 +63,12 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ percent, label, tone = "defau
         {Array.from({ length: segments }, (_, index) => (
           <i
             key={index}
-            className={cn("rounded-[2px]", index < litCount ? SEGMENT_LIT_STYLES[tone] : SEGMENT_OFF_STYLES[tone])}
+            style={sweepStepMs ? { transitionDelay: `${index * sweepStepMs}ms` } : undefined}
+            className={cn(
+              "rounded-[2px] transition-[background-color] duration-150 ease-out",
+              index < litCount ? SEGMENT_LIT_STYLES[tone] : SEGMENT_OFF_STYLES[tone],
+              complete && index < litCount && "bg-composer-positive",
+            )}
           />
         ))}
       </div>
@@ -63,7 +78,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ percent, label, tone = "defau
     <div
       role="progressbar"
       aria-label={label}
-      aria-valuenow={clamped}
+      aria-valuenow={Math.round(clamped)}
       aria-valuemin={0}
       aria-valuemax={100}
       className={cn("relative overflow-hidden rounded-full", TRACK_STYLES[tone], className)}

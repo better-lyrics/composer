@@ -1,5 +1,6 @@
 import { canonicalJson } from "@/domain/unison/canonical-json";
 import { type IdentityFile, IdentityFileError, parseIdentityFile } from "@/domain/unison/identity-file";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import type { UnisonSessionResponse, UnisonSignedSessionBody } from "@/lib/unison/api-types";
 import { createSession, fetchChallenge } from "@/lib/unison/endpoints";
 import { ExtensionAuthError, requestSignedSession } from "@/lib/unison/extension-port";
@@ -83,6 +84,7 @@ async function startSession(signedBody: UnisonSignedSessionBody, attempt: number
     avatarUrl: response.avatarUrl,
   };
   if (!saveUnisonSession(session)) throw new SignInError("failed", "STORAGE_UNAVAILABLE");
+  noteGuideSignal("export.unisonConnect");
   return session;
 }
 

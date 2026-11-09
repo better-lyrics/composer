@@ -1,5 +1,6 @@
 import { withNewInstance } from "@/domain/group/own-timing";
 import { instanceCount } from "@/domain/instance/enumerate";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
@@ -44,6 +45,7 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
     if (!groupableSelection) return;
     const projectState = useProjectStore.getState();
     projectState.addGroupWithLines(groupableSelection.result.group, groupableSelection.result.updatedLines);
+    noteGuideSignal("edit.group");
     showGroupedToast(groupableSelection.result.group, groupableSelection.count, groupableSelection.addedFromGaps);
     clearContextMenu();
   }, [groupableSelection, clearContextMenu]);

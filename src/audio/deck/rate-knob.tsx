@@ -1,4 +1,5 @@
 import { DeckKnob } from "@/audio/deck/deck-knob";
+import { noteGuideGesture } from "@/lib/guide-gesture-signal";
 import { NORMAL_PLAYBACK_RATE, useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { settingEntry } from "@/stores/settings-catalog";
@@ -28,15 +29,24 @@ const RateKnob: React.FC = () => {
   const setPlaybackRate = useAudioStore((state) => state.setPlaybackRate);
   const preservePitch = useSettingsStore((state) => state.preservePitch);
   const setSetting = useSettingsStore((state) => state.set);
+  const changeRate = (next: number) => {
+    setPlaybackRate(next);
+    noteGuideGesture("sync.speed");
+    noteGuideGesture("transport.rateKnob");
+  };
 
   return (
     <DeckKnob
       label="Rate"
+      guideSpot="rate"
       valueText={`${rate.toFixed(2)}×`}
       fraction={(rate - RATE_MIN) / (RATE_MAX - RATE_MIN)}
-      onFraction={(fraction) => setPlaybackRate(roundedRate(RATE_MIN + fraction * (RATE_MAX - RATE_MIN)))}
-      onStep={(direction) => setPlaybackRate(roundedRate(rate + direction * RATE_STEP))}
-      onReset={() => setPlaybackRate(NORMAL_PLAYBACK_RATE)}
+      onFraction={(fraction) => changeRate(roundedRate(RATE_MIN + fraction * (RATE_MAX - RATE_MIN)))}
+      onStep={(direction) => changeRate(roundedRate(rate + direction * RATE_STEP))}
+      onReset={() => {
+        setPlaybackRate(NORMAL_PLAYBACK_RATE);
+        noteGuideGesture("transport.rateKnob");
+      }}
       rememberValue={() => {
         const { playbackRate, otherPlaybackRate, restorePlaybackRates } = useAudioStore.getState();
         return () => restorePlaybackRates({ playbackRate, otherPlaybackRate });
@@ -49,7 +59,7 @@ const RateKnob: React.FC = () => {
               key={preset}
               size="sm"
               variant={rate === preset ? "primary" : "secondary"}
-              onClick={() => setPlaybackRate(preset)}
+              onClick={() => changeRate(preset)}
               className="font-mono"
             >
               {preset}x
@@ -63,7 +73,7 @@ const RateKnob: React.FC = () => {
             min={RATE_MIN}
             max={RATE_MAX}
             step={RATE_STEP}
-            onChange={(value) => setPlaybackRate(Math.round(value * 100) / 100)}
+            onChange={(value) => changeRate(Math.round(value * 100) / 100)}
             aria-label="Playback rate"
             className="w-full"
           />

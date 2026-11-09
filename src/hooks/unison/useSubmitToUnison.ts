@@ -1,4 +1,5 @@
 import { invalidateLyricWrite, unisonQueryKeys } from "@/hooks/unison/query-keys";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import type { LyricsSubmission } from "@/lib/unison/api-types";
 import { linkVideo, saveRevision, submitLyrics } from "@/lib/unison/endpoints";
 import { captureLinkTarget, linkProjectToLyric } from "@/lib/unison/project-link";
@@ -65,12 +66,14 @@ function useSubmitToUnison(keyId: string, onError: (error: unknown) => void): Un
     await linkProjectToLyric(linkTarget, String(id));
     const unlinked = await linkExtraVideos(id, videoIds);
     showSubmittedToast(unlinked);
+    noteGuideSignal("export.unisonSubmit");
     await refresh(id);
   };
 
   const sendUpdate = async (lyricId: number, input: RevisionInput) => {
     const revision = await saveRevision(lyricId, input);
     showUpdateSentToast(revision.status === "live");
+    noteGuideSignal("export.unisonUpdate");
     await refresh(lyricId);
   };
 

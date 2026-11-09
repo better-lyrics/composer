@@ -2,6 +2,7 @@ import { loopRegionBetween } from "@/domain/selection/loop-region";
 import { snapPointTimes } from "@/domain/snap-point/model";
 import { gridPointAt, gridPointLabel } from "@/domain/tempo/grid-points";
 import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { notePlacement } from "@/lib/replay-cue";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useAudioStore } from "@/stores/audio";
@@ -127,6 +128,7 @@ function startLoopRegionDrag(
     swallowTrailingClick();
     if (draft) {
       commitDrawnLoopRegion(draft);
+      noteGuideSignal("timeline.loop");
       notePlacement(draft.begin, "pointer");
     }
   };

@@ -2,6 +2,7 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { trackWords } from "@/domain/line/tracks";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import type { WordTiming } from "@/domain/word/timing";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -27,36 +28,30 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (!contextMenu || contextMenu.target.kind !== "word") return;
     const { lineId, wordIndex, type } = contextMenu.target;
     useTimelineStore.getState().setEditingWord({ lineId, wordIndex, type });
+    noteGuideSignal("timeline.menuEditText");
     clearContextMenu();
   }, [contextMenu, clearContextMenu]);
 
-  const handleSplitSyllables = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "word") return;
-    const { lineId, wordIndex, type } = contextMenu.target;
-    useTimelineStore.getState().setEditingWord(null);
-    // Store target info and open syllable splitter via editingWord with a flag
-    // For now, use the keyboard shortcut approach - set selection and close menu
-    const lineIndex = contextMenu.target.lineIndex;
-    useTimelineStore.getState().setSelectedWords([{ lineId, lineIndex, wordIndex, type }]);
-    clearContextMenu();
-    // Dispatch a custom event so the syllable splitter can pick it up
-    window.dispatchEvent(new CustomEvent("timeline:split-syllable"));
-  }, [contextMenu, clearContextMenu]);
-
-  const handleSplitWord = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "word") return;
-    const { lineId, wordIndex, type } = contextMenu.target;
-    useTimelineStore.getState().setEditingWord(null);
-    const lineIndex = contextMenu.target.lineIndex;
-    useTimelineStore.getState().setSelectedWords([{ lineId, lineIndex, wordIndex, type }]);
-    clearContextMenu();
-    window.dispatchEvent(new CustomEvent("timeline:split-word"));
-  }, [contextMenu, clearContextMenu]);
+  // The splitter picks the word up from the selection when the menu event arrives.
+  const splitFromMenu = useCallback(
+    (eventName: "timeline:split-syllable" | "timeline:split-word") => {
+      if (!contextMenu || contextMenu.target.kind !== "word") return;
+      const { lineId, lineIndex, wordIndex, type } = contextMenu.target;
+      useTimelineStore.getState().setEditingWord(null);
+      useTimelineStore.getState().setSelectedWords([{ lineId, lineIndex, wordIndex, type }]);
+      clearContextMenu();
+      window.dispatchEvent(new CustomEvent(eventName));
+    },
+    [contextMenu, clearContextMenu],
+  );
+  const handleSplitSyllables = useCallback(() => splitFromMenu("timeline:split-syllable"), [splitFromMenu]);
+  const handleSplitWord = useCallback(() => splitFromMenu("timeline:split-word"), [splitFromMenu]);
 
   const handleToggleExplicit = useCallback(() => {
     if (!explicitToggleContext) return;
     const { lineId, field, indices } = explicitToggleContext;
     toggleWordExplicit(lineId, field, indices);
+    noteGuideSignal("timeline.explicit");
     clearContextMenu();
   }, [explicitToggleContext, toggleWordExplicit, clearContextMenu]);
 
@@ -67,6 +62,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
       useTimelineStore.getState().setSelectedWords([{ lineId, lineIndex, wordIndex, type }]);
     }
     deleteSelectedWords();
+    noteGuideSignal("timeline.menuDelete");
     clearContextMenu();
   }, [contextMenu, clickedSelectionCount, clearContextMenu]);
 

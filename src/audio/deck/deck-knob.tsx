@@ -13,6 +13,7 @@ interface DeckKnobProps {
   onReset: () => void;
   // Snapshots the current value and returns how to put it back, so Escape can cancel a drag exactly.
   rememberValue: () => () => void;
+  guideSpot?: string;
   children: React.ReactNode;
 }
 
@@ -98,6 +99,7 @@ const DeckKnob: React.FC<DeckKnobProps> = ({
   onStep,
   onReset,
   rememberValue,
+  guideSpot,
   children,
 }) => {
   const [open, setOpen] = useState(false);
@@ -222,6 +224,7 @@ const DeckKnob: React.FC<DeckKnobProps> = ({
         <button
           type="button"
           aria-label={`${label}, ${valueText}`}
+          data-guide-spot={guideSpot}
           title="Drag or scroll to adjust, double-click or middle-click to reset"
           onPointerDown={handlePointerDown}
           onKeyDown={handleKeyDown}

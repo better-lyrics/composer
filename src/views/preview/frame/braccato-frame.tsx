@@ -1,6 +1,7 @@
 import type { Bounds } from "@/domain/word/bounds";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { frameTime } from "@/lib/frame-loop";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { AUDIO_STORE_PLAYBACK } from "@/views/preview/renderer-playback";
 import { cn } from "@/utils/cn";
@@ -171,9 +172,10 @@ const BraccatoFrame: React.FC<BraccatoFrameProps> = ({ ttmlString, focusRange, f
       if (message.kind === "ready") setConnection((count) => count + 1);
       else if (message.kind === "shown") setIsShown(true);
       else if (message.kind === "play") useAudioStore.getState().setIsPlaying(true);
-      else if (message.kind === "seek" && Number.isFinite(message.seconds))
+      else if (message.kind === "seek" && Number.isFinite(message.seconds)) {
         useAudioStore.getState().seekTo(message.seconds);
-      else if (message.kind === "key") replayKey(message);
+        noteGuideSignal("preview.seek");
+      } else if (message.kind === "key") replayKey(message);
       else if (message.kind === "pointerdown" && frame) replayPointerDown(frame);
       else if (message.kind === "click" && frame) replayClick(frame);
       else if (message.kind === "release-focus" && document.activeElement === frame) frame?.blur();
@@ -187,13 +189,10 @@ const BraccatoFrame: React.FC<BraccatoFrameProps> = ({ ttmlString, focusRange, f
   useEffect(() => {
     if (isShown) return;
     const deadline = !isLoaded ? READY_DEADLINE_MS : isReady ? SHOWN_AFTER_READY_MS : READY_AFTER_LOAD_MS;
-    const timeout = window.setTimeout(
-      () => {
-        console.warn(LOG_PREFIX, "preview frame did not show the lyrics, showing the inline preview", src);
-        reportUnavailable();
-      },
-      deadline,
-    );
+    const timeout = window.setTimeout(() => {
+      console.warn(LOG_PREFIX, "preview frame did not show the lyrics, showing the inline preview", src);
+      reportUnavailable();
+    }, deadline);
     return () => window.clearTimeout(timeout);
   }, [isShown, isReady, isLoaded, src]);
 

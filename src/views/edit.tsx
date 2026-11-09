@@ -1,11 +1,14 @@
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import { backgroundFields, withSeededBackground } from "@/domain/line/background";
+import { detectNonLatinLanguage } from "@/domain/language/script-detection";
+import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { LyricLine } from "@/domain/line/model";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "@/domain/word/timing";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useConfirm } from "@/stores/confirm-store";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
@@ -14,7 +17,11 @@ import { useSettingsStore } from "@/stores/settings";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { Button } from "@/ui/button";
 import { Scroll } from "@/ui/scroll";
-import { extractBackgroundVocals, extractInlineAcrossLinkedLines } from "@/utils/background-vocal-extraction";
+import {
+  extractBackgroundVocals,
+  extractInlineAcrossLinkedLines,
+  lineHasInlineParens,
+} from "@/utils/background-vocal-extraction";
 import { pluralWord, pluralize } from "@/utils/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
@@ -43,6 +50,15 @@ const LYRICS_TEXTAREA_PLACEHOLDER = `Paste your lyrics here, one line at a time.
 Or paste or drop a whole lyrics file (${LYRICS_FORMATS_PROSE}) or ${PROJECT_FILE_PROSE} to import it`;
 
 const preventDefaultDragOver = (e: React.DragEvent) => e.preventDefault();
+
+const lyricsText = (lines: readonly LyricLine[]) => lines.map((line) => line.text).join("\n");
+
+const noteTypedLyrics = (lines: readonly LyricLine[]) => {
+  if (!hasLyricLines(lines)) return;
+  noteGuideSignal("edit.type");
+  const { splitCharacter } = useSettingsStore.getState();
+  if (splitCharacter && lyricsText(lines).includes(splitCharacter)) noteGuideSignal("edit.presplit");
+};
 
 // -- Components ---------------------------------------------------------------
 
@@ -114,10 +130,14 @@ const EditPanel: React.FC = () => {
     const next = extractBackgroundVocals(current, extractOptions);
     if (next.length === current.length && next.every((line, i) => line === current[i])) return;
     commitLinesWithHistory(next);
+    noteGuideSignal("edit.background");
+    noteGuideSignal("edit.extractAll");
   }, [extractOptions, commitLinesWithHistory]);
 
   const handleAgentChange = useCallback((lineId: string, agentId: string) => {
     useProjectStore.getState().updateLineWithHistory(lineId, { agentId });
+    noteGuideSignal("edit.singer");
+    noteGuideSignal("edit.singerOneLine");
   }, []);
 
   const handleBackgroundChange = useCallback((lineId: string, text: string) => {
@@ -134,6 +154,7 @@ const EditPanel: React.FC = () => {
     useProjectStore
       .getState()
       .updateLineWithHistory(lineId, backgroundFields({ text: newBgText, words, source: "manual" }));
+    if (newBgText) noteGuideSignal("edit.background");
   }, []);
 
   const handleExtractLine = useCallback((lineId: string) => {
@@ -143,10 +164,13 @@ const EditPanel: React.FC = () => {
     });
     if (updates.length === 0) return;
     useProjectStore.getState().updateLinesWithHistory(updates, { propagateToSiblings: false });
+    noteGuideSignal("edit.background");
+    noteGuideSignal("edit.extractOneLine");
   }, []);
 
   const handleLineSelect = useCallback((lineNumber: number, shiftKey: boolean) => {
     const anchor = lastSelectedLineRef.current;
+    if (shiftKey && anchor !== null) noteGuideSignal("edit.lineRange");
     setSelectedLines((prev) => {
       const next = new Set(prev);
       if (shiftKey && anchor !== null) {
@@ -183,6 +207,7 @@ const EditPanel: React.FC = () => {
       didDragRef.current = false;
       return;
     }
+    if (!didDragRef.current) noteGuideSignal("edit.lineRange");
     didDragRef.current = true;
     const start = Math.min(anchor, lineNumber);
     const end = Math.max(anchor, lineNumber);
@@ -201,6 +226,7 @@ const EditPanel: React.FC = () => {
       );
       const updates = [...selectedLineIds].map((id) => ({ id: id as string, updates: { agentId } }));
       useProjectStore.getState().updateLinesWithHistory(updates);
+      noteGuideSignal("edit.singer");
       setSelectedLines(new Set());
     },
     [parsed, selectedLines],
@@ -218,7 +244,9 @@ const EditPanel: React.FC = () => {
     const baseline = runBaselineRef.current;
     if (baseline) {
       runBaselineRef.current = null;
-      useProjectStore.getState().commitPendingLineEdit(baseline.lines, baseline.wasDirty);
+      const { lines, commitPendingLineEdit } = useProjectStore.getState();
+      commitPendingLineEdit(baseline.lines, baseline.wasDirty);
+      noteTypedLyrics(lines);
     }
   }, []);
 
@@ -233,14 +261,19 @@ const EditPanel: React.FC = () => {
   const handleTextareaBlur = useCallback(() => {
     setIsTypingLyrics(false);
     finalizeRun();
-    if (!useSettingsStore.getState().autoExtractBackgroundVocals) return;
     const current = useProjectStore.getState().lines;
+    if (detectNonLatinLanguage(lyricsText(current))) noteGuideSignal("edit.nonLatinLyrics");
+    if (!useSettingsStore.getState().autoExtractBackgroundVocals) {
+      if (current.some(lineHasInlineParens)) noteGuideSignal("edit.parenInLine");
+      return;
+    }
     const next = extractBackgroundVocals(current, {
       mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
       preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
     });
     if (next.length === current.length && next.every((line, i) => line === current[i])) return;
     commitLinesWithHistory(next);
+    noteGuideSignal("edit.background");
   }, [commitLinesWithHistory, finalizeRun]);
 
   useEffect(() => {
@@ -331,6 +364,7 @@ const EditPanel: React.FC = () => {
       let finalLines = action.finalLines;
 
       if (wasPaste) {
+        const pastedLines = finalLines;
         if (useSettingsStore.getState().autoExtractBackgroundVocals) {
           finalLines = extractBackgroundVocals(finalLines, {
             mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
@@ -339,6 +373,10 @@ const EditPanel: React.FC = () => {
         }
         finalizeRun();
         commitLinesWithHistory(finalLines);
+        noteTypedLyrics(finalLines);
+        if (finalLines.length !== pastedLines.length || finalLines.some((line, i) => line !== pastedLines[i])) {
+          noteGuideSignal("edit.background");
+        }
         return;
       }
 
@@ -399,6 +437,7 @@ const EditPanel: React.FC = () => {
           <Button
             hasIcon
             size="lg"
+            data-guide-spot="extractAll"
             onClick={handleExtractBackgroundVocals}
             disabled={!canExtractBackgroundVocals}
             title={canExtractBackgroundVocals ? undefined : "No parentheses to extract"}
@@ -410,6 +449,7 @@ const EditPanel: React.FC = () => {
             hasIcon
             size="lg"
             data-tour="import-lyrics-button"
+            data-guide-spot="importLyrics"
             onClick={importTriggers.onClick}
             onDoubleClick={importTriggers.onDoubleClick}
             title="Click to search, paste, or upload. Double-click to upload a file directly."

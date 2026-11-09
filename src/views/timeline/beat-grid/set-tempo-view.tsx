@@ -10,6 +10,7 @@ import {
   tapTempo,
 } from "@/domain/tempo/tap-tempo";
 import { tempoStats } from "@/domain/tempo/tempo-stats";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
@@ -88,6 +89,7 @@ const SetTempoView: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     const anchor = Math.max(0, tappedAt ?? livePlaybackTime());
     const grid = manualGrid({ bpm, beatsPerBar: Number(meter), anchor, end: useAudioStore.getState().duration });
     useProjectStore.getState().applyBeatGridWithHistory(grid);
+    noteGuideSignal("timeline.beats");
     const detection = useBeatDetectionStore.getState();
     if (detection.status === "error") detection.dismiss();
     onDone();

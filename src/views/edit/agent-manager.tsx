@@ -1,5 +1,7 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { agentDisplayName } from "@/domain/agent/display-name";
 import { AGENT_PRESETS, getAgentColor } from "@/domain/agent/colors";
+import { nextAgentId } from "@/domain/agent/next-agent-id";
 import type { Agent, AgentType } from "@/domain/agent/model";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -28,22 +30,6 @@ const AGENT_TYPE_OPTIONS = [
 ];
 
 const FIELD = cn(INPUT_STYLES, "h-8 py-0");
-
-// -- Helpers ------------------------------------------------------------------
-
-function generateAgentId(existingAgents: { id: string }[]): string {
-  const usedNumbers = new Set<number>();
-  for (const a of existingAgents) {
-    const m = a.id.match(/^v(\d+)$/);
-    if (m) usedNumbers.add(Number.parseInt(m[1], 10));
-  }
-
-  let next = 1;
-  while (usedNumbers.has(next)) {
-    next++;
-  }
-  return `v${next}`;
-}
 
 // -- Components ---------------------------------------------------------------
 
@@ -74,6 +60,7 @@ const EditAgentForm: React.FC<{
 
   const handleSave = useCallback(() => {
     updateAgent(agent.id, { name: name.trim() || undefined, type });
+    if (name.trim()) noteGuideSignal("edit.singer");
     onDone();
   }, [updateAgent, agent.id, name, type, onDone]);
 
@@ -127,7 +114,8 @@ const AddAgentForm: React.FC<{ onDone: () => void; onBack: () => void }> = ({ on
 
   const handleAddCustom = () => {
     if (!customName.trim()) return;
-    addAgent({ id: generateAgentId(agents), type: customType, name: customName.trim() });
+    addAgent({ id: nextAgentId(agents), type: customType, name: customName.trim() });
+    noteGuideSignal("edit.singer");
     onDone();
   };
 
@@ -142,6 +130,7 @@ const AddAgentForm: React.FC<{ onDone: () => void; onBack: () => void }> = ({ on
               type="button"
               onClick={() => {
                 addAgent(preset);
+                noteGuideSignal("edit.singer");
                 onDone();
               }}
               className="cursor-pointer rounded-[7px] hover:brightness-125"

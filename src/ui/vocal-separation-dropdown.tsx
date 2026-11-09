@@ -1,4 +1,5 @@
 import type { Stem } from "@/audio/separation/types";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
@@ -66,6 +67,7 @@ const VocalSeparationDropdown: React.FC<VocalSeparationDropdownProps> = ({ open,
         {(close) => {
           const selectAndClose = (stem: Stem) => {
             selectStem(stem);
+            if (useSeparationStore.getState().currentStem !== "original") noteGuideSignal("timeline.stems");
             close();
           };
           return (

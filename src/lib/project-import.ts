@@ -1,6 +1,7 @@
 import { type ProjectIndexEntry, buildIndexEntry } from "@/domain/project/index-entry";
 import { byMostRecentlyEdited } from "@/domain/project/library-order";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { openLyricsAsNewProject } from "@/lib/open-lyrics-as-project";
 import { openProject, reloadOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
@@ -244,6 +245,7 @@ async function importProjectContents(contents: ProjectFileContents): Promise<str
       id = await importProjectAsNew(projectFile);
     }
     await openProject(id);
+    noteGuideSignal("import.projectFile");
     return id;
   } catch (error) {
     console.error(LOG_PREFIX, "could not import the project file", error);

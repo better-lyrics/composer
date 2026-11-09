@@ -1,4 +1,5 @@
 import { pastedRows } from "@/domain/language/paste-import";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
@@ -90,7 +91,11 @@ const LanguagesPanel: React.FC = () => {
           { force, transliteration: generation.transliteration, translations: generation.translations },
           edits,
         );
-        if (updates.length > 0) updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+        if (updates.length > 0) {
+          updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+          if (requestedTargets.length > 0) noteGuideSignal("languages.generate");
+          if (generation.transliteration) noteGuideSignal("languages.romanize");
+        }
         const detected = generation.detectedLanguage;
         if (updates.length > 0 && !currentState.metadata.language && detected && detected !== "auto") {
           setMetadata({ language: detected });

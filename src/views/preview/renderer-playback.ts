@@ -1,5 +1,7 @@
 import { isFollowingAudioLine } from "@/audio/playback-clock";
-import { livePlaybackTime, useAudioStore } from "@/stores/audio";
+import { noteGuideSignal } from "@/lib/guide-signals";
+import { useAudioStore } from "@/stores/audio";
+import { playheadTime } from "@/views/timeline/playhead-time";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -27,10 +29,9 @@ const liveSample: PlaybackSample = { currentTime: 0, paused: true, followsAudio:
 function audioStoreSample(): PlaybackSample | null {
   const audio = useAudioStore.getState().audioElement;
   if (!audio) return null;
-  const { isDraggingPlayhead, dragTime } = useTimelineStore.getState();
-  liveSample.currentTime = isDraggingPlayhead ? dragTime : livePlaybackTime();
+  liveSample.currentTime = playheadTime();
   liveSample.paused = audio.paused;
-  liveSample.followsAudio = !isDraggingPlayhead && isFollowingAudioLine();
+  liveSample.followsAudio = !useTimelineStore.getState().isDraggingPlayhead && isFollowingAudioLine();
   liveSample.playbackRate = audio.playbackRate;
   return liveSample;
 }
@@ -40,11 +41,14 @@ function audioStoreSample(): PlaybackSample | null {
 const AUDIO_STORE_PLAYBACK: RendererPlayback = {
   // Read each frame so the renderer keeps tracking the element the audio engine recreates.
   sample: audioStoreSample,
-  seekTo: (seconds) => useAudioStore.getState().seekTo(seconds),
+  seekTo: (seconds) => {
+    useAudioStore.getState().seekTo(seconds);
+    noteGuideSignal("preview.seek");
+  },
   play: () => useAudioStore.getState().setIsPlaying(true),
 };
 
 // -- Exports -------------------------------------------------------------------
 
-export { AUDIO_STORE_PLAYBACK };
 export type { PlaybackSample, RendererPlayback };
+export { AUDIO_STORE_PLAYBACK };

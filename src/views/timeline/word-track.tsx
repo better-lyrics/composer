@@ -8,6 +8,7 @@ import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -22,10 +23,12 @@ import { selfKey } from "@/views/timeline/snap";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { selectionGripEdges } from "@/views/timeline/stretch-grips";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { noteWordDragShift } from "@/views/timeline/tiny-drag-signal";
 import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { WordBlock } from "@/views/timeline/word-block";
+import { beginBoundaryDrag, endBoundaryDrag } from "@/views/timeline/boundary-chip-store";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -158,6 +161,18 @@ const WordTrack: React.FC<WordTrackProps> = ({
       const boundaryEdge: BoundaryEdge = edge === "left" ? "begin" : "end";
       const range = storedLineTimeRange(lineId, duration);
 
+      const edgeKey = `${lineId}:${trackType}:${edge === "left" ? wordIndex - 1 : wordIndex}`;
+      const teachesAltGap = shouldRollNeighbour({
+        words,
+        wordIndex,
+        edge: boundaryEdge,
+        rollingEdit: useSettingsStore.getState().rollingEdit,
+        syllablesFollowRolling: syllablesFollowRollingAtStart,
+        syllablePositions,
+        altHeld: false,
+      });
+      if (teachesAltGap) beginBoundaryDrag(track, startX, edgeKey);
+
       setResizing(true);
       lastPointerRef.current = { clientX: startX, clientY: 0 };
       conjoinedRef.current = { active: false, adjacentWordIndex: null };
@@ -248,8 +263,17 @@ const WordTrack: React.FC<WordTrackProps> = ({
           swallowTrailingClick();
           settleLoupe();
         }
+        const changedTiming = dragged && finalState !== null && resizeChangedTiming(initialState, finalState, words);
+        if (teachesAltGap) {
+          endBoundaryDrag(changedTiming ? { edgeKey, gapOpen: finalState?.adjacentWordIndex === undefined } : null);
+        }
 
-        if (dragged && finalState && resizeChangedTiming(initialState, finalState, words)) {
+        if (changedTiming && finalState) {
+          noteGuideSignal("timeline.resize");
+          if (finalState.adjacentWordIndex !== undefined && useSettingsStore.getState().rollingEdit)
+            noteGuideSignal("timeline.rolling");
+          const edgeShift = edge === "left" ? finalState.begin - initialState.begin : finalState.end - initialState.end;
+          noteWordDragShift(lineId, trackType, wordIndex, edgeShift);
           if (finalState.adjacentWordIndex !== undefined) {
             const mainUpdate = edge === "left" ? { begin: finalState.begin } : { end: finalState.end };
             const adjUpdate = edge === "left" ? { end: finalState.adjacentEnd! } : { begin: finalState.adjacentBegin! };
@@ -267,6 +291,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       };
 
       cleanupRef.current = () => {
+        endBoundaryDrag(null);
         setResizing(false);
         setLiveWordEdit(null);
         snap.endGesture();
@@ -335,6 +360,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
   };
 
   const handleSelect = (wordIndex: number, e: React.MouseEvent) => {
+    noteGuideSignal("timeline.select");
+    if (e.metaKey || e.ctrlKey) noteGuideSignal("timeline.selectMore");
     if (e.shiftKey) {
       const pos = syllablePositions[wordIndex];
       if (pos !== "none") {
@@ -368,6 +395,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   const handleWordDoubleClick = (wordIndex: number) => {
     useTimelineStore.getState().setEditingWord({ lineId, wordIndex, type: trackType });
+    noteGuideSignal("timeline.editTextDirect");
   };
 
   const handleWordContextMenu = (wordIndex: number, e: React.MouseEvent) => {

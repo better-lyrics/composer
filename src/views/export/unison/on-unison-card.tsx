@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { IconHistory } from "@tabler/icons-react";
 import { useId, useState } from "react";
 import type { UnisonStatus } from "@/domain/unison/lyric-status";
@@ -117,7 +118,15 @@ const FoundCard: React.FC<FoundCardProps> = ({ lyric, status, keyId, videos }) =
       </div>
       {videos}
       <div className="flex gap-2">
-        <Button size="sm" variant="secondary" hasIcon onClick={() => setHistory({ revNo: declinedRevNo })}>
+        <Button
+          size="sm"
+          variant="secondary"
+          hasIcon
+          onClick={() => {
+            noteGuideSignal("export.unisonHistory");
+            setHistory({ revNo: declinedRevNo });
+          }}
+        >
           <IconHistory aria-hidden="true" className="size-4" />
           {declinedRevNo === null ? "History" : "Read the council's note"}
         </Button>

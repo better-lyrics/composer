@@ -1,5 +1,5 @@
 import type { SelectionPlaybackMode } from "@/views/timeline/timeline-store";
-import { type Icon, IconPlayerPlay, IconRepeat } from "@tabler/icons-react";
+import { type Icon, IconPlayerPlayFilled, IconRepeat } from "@tabler/icons-react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -11,7 +11,7 @@ interface RangePlaybackIndicator {
 // -- Functions -----------------------------------------------------------------
 
 function selectionPlaybackIcon(mode: SelectionPlaybackMode): Icon {
-  return mode === "loop" ? IconRepeat : IconPlayerPlay;
+  return mode === "loop" ? IconRepeat : IconPlayerPlayFilled;
 }
 
 function rangePlaybackIndicator(

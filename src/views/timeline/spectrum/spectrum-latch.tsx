@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useSettingsStore } from "@/stores/settings";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { SplitLatch } from "@/ui/split-latch";
@@ -20,7 +21,10 @@ const SpectrumLatch: React.FC = () => {
           active={visible}
           label="Spectrum"
           shortcut="timeline.toggleSpectrum"
-          onClick={() => useSettingsStore.getState().toggle("showSpectrum")}
+          onClick={() => {
+            useSettingsStore.getState().toggle("showSpectrum");
+            if (useSettingsStore.getState().showSpectrum) noteGuideSignal("timeline.spectrum");
+          }}
           iconOnly
         >
           <IconGrain />

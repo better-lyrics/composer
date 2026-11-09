@@ -3,6 +3,7 @@ import type { WordSelection } from "@/domain/selection/model";
 import { mergeWordSelections } from "@/domain/selection/set-ops";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { holdFrames } from "@/lib/frame-loop";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
@@ -200,6 +201,8 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
           } else {
             useTimelineStore.getState().setSelectedWords(newSelections);
           }
+          if (newSelections.length > 0)
+            noteGuideSignal(newSelections.length > 1 ? "timeline.selectMore" : "timeline.select");
         }
       } else if (stateRef.current === "pending") {
         if (!shiftRef.current) {
