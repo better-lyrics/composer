@@ -40,4 +40,4 @@ const stageTip =
 // -- Exports ------------------------------------------------------------------
 
 export { GUIDE_TIER_NAMES, stageTip };
-export type { GuideNudge, GuideNudgeAction, GuideTip };
+export type { GuideNudge, GuideTip };

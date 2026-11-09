@@ -43,4 +43,4 @@ function projectJourney(facts: JourneyFacts): Journey {
 // -- Exports ------------------------------------------------------------------
 
 export { projectJourney };
-export type { Journey, JourneyFacts, JourneyStepId };
+export type { Journey, JourneyStepId };

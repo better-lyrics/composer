@@ -32,4 +32,4 @@ const PEEK_ICONS: Record<PeekKind, Icon> = {
 // -- Exports ------------------------------------------------------------------
 
 export { PEEK_ICONS, PEEK_LABELS, PEEK_TONES };
-export type { GuidePeek, PeekKind };
+export type { GuidePeek };

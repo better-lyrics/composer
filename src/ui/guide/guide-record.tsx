@@ -51,4 +51,3 @@ const GuideRecord: React.FC<{ stages: readonly StageRecord[] }> = ({ stages }) =
 // -- Exports ------------------------------------------------------------------
 
 export { GuideRecord };
-export type { StageRecord };

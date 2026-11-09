@@ -78,4 +78,3 @@ function subscribePeekQueue(listener: () => void): () => void {
 // -- Exports ------------------------------------------------------------------
 
 export { dropPeeks, enqueuePeek, foldPeek, markPeeksRead, peekQueueSnapshot, subscribePeekQueue, tryShowPeek };
-export type { PeekQueueState };
