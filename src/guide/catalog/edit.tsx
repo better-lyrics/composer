@@ -1,5 +1,6 @@
 import { keyBadge, keys } from "@/guide/catalog/keys";
 import { stageTip } from "@/guide/catalog/types";
+import { useSettingsStore } from "@/stores/settings";
 import {
   IconArrowBack,
   IconKeyboard,
@@ -10,6 +11,18 @@ import {
   IconTypography,
   IconUser,
 } from "@tabler/icons-react";
+
+// -- Components ---------------------------------------------------------------
+
+// Shows the split character you chose in Settings, so the tip names the key you actually type.
+const PresplitGist: React.FC = () => {
+  const splitCharacter = useSettingsStore((state) => state.splitCharacter);
+  return (
+    <>
+      Type {keyBadge(splitCharacter)} inside a word, like "hel{splitCharacter}lo", to sync it in syllables.
+    </>
+  );
+};
 
 // -- Tips ---------------------------------------------------------------------
 
@@ -69,7 +82,7 @@ const EDIT_TIPS = [
     tier: "pro",
     icon: IconScissors,
     title: "Split long words ahead of time",
-    gist: <>Type the split character inside a word to sync it in syllables.</>,
+    gist: <PresplitGist />,
   }),
   tip({
     id: "group",
