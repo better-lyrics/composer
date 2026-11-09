@@ -85,5 +85,5 @@ function applyStepKey(input: StepWriteInput): StepWrite {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { StepKey, StepRefusal, StepWrite };
+export type { StepKey, StepRefusal };
 export { applyStepKey };

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { formatTime } from "@/utils/format-time";
+import { followBandPointer } from "@/views/timeline/overview/band-pointer";
 import { bandPointerTime, clearBandPointer, trackBandPointer } from "@/views/timeline/step-timing/pointer-write-time";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -22,7 +23,6 @@ const StepWriteGuide: React.FC = () => {
       line.hidden = true;
     };
     const handlePointerMove = (e: PointerEvent) => {
-      if (e.target instanceof Element && e.target.closest("[data-band-resize-handle]")) return hide();
       trackBandPointer(e.clientX, container);
       const time = bandPointerTime();
       if (time === null || !timeRef.current) return;
@@ -30,13 +30,7 @@ const StepWriteGuide: React.FC = () => {
       line.style.transform = `translateX(${e.clientX - root.getBoundingClientRect().left}px)`;
       timeRef.current.textContent = formatTime(time);
     };
-    band.addEventListener("pointermove", handlePointerMove);
-    band.addEventListener("pointerleave", hide);
-    return () => {
-      band.removeEventListener("pointermove", handlePointerMove);
-      band.removeEventListener("pointerleave", hide);
-      hide();
-    };
+    return followBandPointer(band, handlePointerMove, hide);
   }, [stepTiming]);
 
   return (
