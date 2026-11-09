@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { isTypingTarget } from "@/hooks/useKeyboardShortcuts";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
@@ -6,7 +7,6 @@ import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { type InstanceRef, selectedBannerInstance } from "@/views/timeline/selected-banner";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useEffect } from "react";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -20,8 +20,17 @@ function focusedBannerInstance(target: EventTarget | null): InstanceRef | null {
 }
 
 function escapeBelongsElsewhere(target: EventTarget | null): boolean {
-  const { contextMenu, editingWord, renamingGroupId, pasteMode, selectedWords, loopRegion, loopRegionDrag } =
-    useTimelineStore.getState();
+  const {
+    contextMenu,
+    editingWord,
+    renamingGroupId,
+    pasteMode,
+    selectedWords,
+    loopRegion,
+    loopRegionDrag,
+    stepTiming,
+  } = useTimelineStore.getState();
+  if (stepTiming) return true;
   if (contextMenu || editingWord || renamingGroupId !== null) return true;
   if (pasteMode.status !== "idle" || selectedWords.length > 0) return true;
   if (loopRegion !== null || loopRegionDrag !== null) return true;

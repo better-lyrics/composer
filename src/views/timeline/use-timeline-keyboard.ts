@@ -1,3 +1,5 @@
+import { type RefObject, useCallback, useEffect } from "react";
+import { toast } from "sonner";
 import { withNewInstance } from "@/domain/group/own-timing";
 import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
 import { pickedTemplateSource } from "@/domain/group/template-source";
@@ -35,7 +37,7 @@ import { isInFocus } from "@/views/timeline/group-focus";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
-import { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar, jumpToAdjacentGridLine } from "@/views/timeline/jump-to-bar";
+import { jumpToAdjacentBar, jumpToAdjacentGridLine, NO_BEAT_GRID_MESSAGE } from "@/views/timeline/jump-to-bar";
 import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { showLoupeAfterKeyEdit, storedEdgeTime } from "@/views/timeline/loupe/loupe-target";
 import { isPartialSyllableSelection, mergeSelectedWords } from "@/views/timeline/merge-selected-words";
@@ -47,14 +49,13 @@ import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { clearLoopRegion, playSelection } from "@/views/timeline/selection-playback";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { pressStepKey } from "@/views/timeline/step-timing/press-step-key";
 import { AUTO_ALIGN_EVENT } from "@/views/timeline/timeline-auto-align";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
 import { computeRowLayout, partitionNudgeSelections, shiftSelectionsTogether } from "@/views/timeline/utils";
-import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
-import { type RefObject, useCallback, useEffect } from "react";
-import { toast } from "sonner";
 import { readViewScroll, scrollView, smoothScrollView } from "@/views/timeline/view-scroll";
+import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -224,6 +225,9 @@ function useTimelineKeyboard(
           const { pasteMode } = useTimelineStore.getState();
           if (pasteMode.status === "preview") {
             useTimelineStore.getState().setPasteMode({ status: "idle" });
+          } else if (useTimelineStore.getState().stepTiming) {
+            if (useTimelineStore.getState().loopRegion) clearLoopRegion();
+            else useTimelineStore.getState().setStepTiming(false);
           } else {
             clearLoopRegion();
             useTimelineStore.getState().clearSelection();
@@ -392,12 +396,21 @@ function useTimelineKeyboard(
           useTimelineStore.getState().toggleTextVariant();
           break;
         case "timeline.setWordBegin":
+        case "timeline.setWordEnd": {
           e.preventDefault();
-          handleSetWordTiming("begin");
+          const edge = matched === "timeline.setWordBegin" ? "begin" : "end";
+          if (useTimelineStore.getState().stepTiming) pressStepKey(edge === "begin" ? "start" : "end", lines, duration);
+          else handleSetWordTiming(edge);
           break;
-        case "timeline.setWordEnd":
+        }
+        case "timeline.stepWord":
           e.preventDefault();
-          handleSetWordTiming("end");
+          if (useTimelineStore.getState().stepTiming) pressStepKey("step", lines, duration);
+          else useTimelineStore.getState().setStepTiming(true);
+          break;
+        case "timeline.stepTimingOff":
+          e.preventDefault();
+          useTimelineStore.getState().setStepTiming(false);
           break;
         case "timeline.insertLineBelow":
         case "timeline.insertLineAbove": {
