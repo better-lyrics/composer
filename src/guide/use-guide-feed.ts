@@ -7,6 +7,7 @@ import { dropPeeks, enqueuePeek } from "@/guide/peek-queue";
 import { type PendingNudge, pendingGuideNudges, resolveGuideNudge, subscribeGuideNudges } from "@/lib/guide-signals";
 import { isRestoringProject } from "@/lib/project-restore";
 import { useAudioStore } from "@/stores/audio";
+import { TOUR_SEEN_KEY } from "@/tour/use-tour";
 import { useProjectStore } from "@/stores/project";
 import { createElement, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
@@ -94,7 +95,8 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
   }, [journey, projectId]);
 
   useEffect(() => {
-    if (greetedThisSession || !firstVisit || !journey.current) return;
+    // A first run belongs to the product tour; the guide greets only people who have seen it.
+    if (greetedThisSession || !firstVisit || !journey.current || !localStorage.getItem(TOUR_SEEN_KEY)) return;
     greetedThisSession = true;
     enqueuePeek({ id: "next:greeting", kind: "next", gist: JOURNEY_COPY[journey.current].next });
   }, [firstVisit, journey]);
