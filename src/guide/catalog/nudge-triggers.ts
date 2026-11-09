@@ -17,6 +17,7 @@ const GUIDE_NUDGE_TRIGGERS: readonly GuideNudgeEntry[] = [
     category: "timeline-loop",
     trigger: { signal: "timeline.replaySameSpot", count: 3, windowMs: 120_000 },
     resolvedBy: "timeline.loop",
+    spot: "playhead",
   },
   {
     id: "zoomFaster",
@@ -24,6 +25,7 @@ const GUIDE_NUDGE_TRIGGERS: readonly GuideNudgeEntry[] = [
     category: "timeline-zoom",
     trigger: { signal: "timeline.zoomButton", count: 5, windowMs: 10_000 },
     resolvedBy: "timeline.zoom",
+    spot: "zoom",
   },
   {
     id: "nudgeWithKeys",

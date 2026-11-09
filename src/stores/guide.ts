@@ -12,10 +12,12 @@ interface ProjectGuideFacts {
 interface GuideState {
   learnedSignals: string[];
   mutedCategories: string[];
+  seenNudges: string[];
   showAll: boolean;
   projects: Record<string, ProjectGuideFacts>;
   learnSignal: (signal: string) => void;
   muteCategory: (category: string) => void;
+  markNudgeSeen: (id: string) => void;
   setShowAll: (showAll: boolean) => void;
   noteProjectFact: (projectId: string, fact: keyof ProjectGuideFacts) => void;
   forgetProject: (projectId: string) => void;
@@ -35,10 +37,12 @@ const useGuideStore = create<GuideState>()(
     (set) => ({
       learnedSignals: [],
       mutedCategories: [],
+      seenNudges: [],
       showAll: false,
       projects: {},
       learnSignal: (signal) => set((state) => ({ learnedSignals: withId(state.learnedSignals, signal) })),
       muteCategory: (category) => set((state) => ({ mutedCategories: withId(state.mutedCategories, category) })),
+      markNudgeSeen: (id) => set((state) => ({ seenNudges: withId(state.seenNudges, id) })),
       setShowAll: (showAll) => set({ showAll }),
       noteProjectFact: (projectId, fact) =>
         set((state) => {
@@ -52,7 +56,7 @@ const useGuideStore = create<GuideState>()(
           const { [projectId]: _forgotten, ...rest } = state.projects;
           return { projects: rest };
         }),
-      startOver: () => set({ learnedSignals: [], mutedCategories: [], showAll: false }),
+      startOver: () => set({ learnedSignals: [], mutedCategories: [], seenNudges: [], showAll: false }),
     }),
     { name: "composer-guide", version: 1 },
   ),

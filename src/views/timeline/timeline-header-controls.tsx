@@ -21,7 +21,7 @@ const TimelineZoomControls: React.FC<{ scrollContainerRef?: React.RefObject<HTML
 
   const zoomPercent = Math.round(((zoom - MIN_ZOOM) / (ZOOM_AT_100_PERCENT - MIN_ZOOM)) * 100);
   return (
-    <div className="tray" {...KEEPS_POPOVERS_OPEN_PROPS}>
+    <div className="tray" data-guide-spot="zoom" {...KEEPS_POPOVERS_OPEN_PROPS}>
       <IconButton
         label="Zoom out"
         icon={<IconMinus size={18} />}

@@ -43,7 +43,7 @@ const NUDGE_COPY: Record<string, NudgeCopy> = {
     icon: IconZoomIn,
     title: "There's a faster way to zoom",
     body: <>Hold {keyBadge("Mod")} and scroll over the Timeline. It zooms around your pointer.</>,
-    peek: <>Hold {keyBadge("Mod")} and scroll to zoom</>,
+    peek: <>Faster: hold {keyBadge("Mod")} and scroll over the Timeline</>,
   },
   nudgeWithKeys: {
     icon: IconKeyboard,

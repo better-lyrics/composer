@@ -39,10 +39,11 @@ function remember(event: GuideEvent): void {
 }
 
 function firedNudges(now: number): PendingNudge[] {
-  const { mutedCategories, learnedSignals } = useGuideStore.getState();
+  const { mutedCategories, learnedSignals, seenNudges } = useGuideStore.getState();
   return GUIDE_NUDGE_TRIGGERS.filter(
     (nudge) =>
       !retiredThisSession.has(nudge.id) &&
+      !seenNudges.includes(nudge.id) &&
       !mutedCategories.includes(nudge.category) &&
       !(nudge.resolvedBy && learnedSignals.includes(nudge.resolvedBy)) &&
       firesOn(nudge.trigger, events, now),
@@ -67,7 +68,11 @@ function noteGuideSignal(signal: GuideSignal, key?: string): void {
     return !done;
   });
   const fired = firedNudges(now);
-  for (const nudge of fired) retiredThisSession.add(nudge.id);
+  // A nudge shows once, ever: whether it was taken, waved off or folded into the orb's count.
+  for (const nudge of fired) {
+    retiredThisSession.add(nudge.id);
+    useGuideStore.getState().markNudgeSeen(nudge.id);
+  }
   if (fired.length > 0 || resolved.length !== pending.length) setPending([...resolved, ...fired]);
 }
 
@@ -80,7 +85,6 @@ function noteGuideProjectFact(fact: keyof ProjectGuideFacts): void {
   if (projectId) useGuideStore.getState().noteProjectFact(projectId, fact);
 }
 
-// A nudge shows at most once a session, whether the user took it, waved it off or did the thing on their own.
 function noteGuideExport(): void {
   noteGuideSignal("export.get");
   noteGuideProjectFact("exported");

@@ -1,5 +1,4 @@
 import type { GuideSignal } from "@/domain/guide/model";
-import { noteGuideSignal } from "@/lib/guide-signals";
 import { useGuideStore } from "@/stores/guide";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
@@ -38,9 +37,10 @@ function learnWhatIsOn(): void {
     hearingStem: separation.currentStem !== "original",
     hasBeatGrid: useProjectStore.getState().beatGrid !== null,
   };
-  const { learnedSignals } = useGuideStore.getState();
+  // Learned quietly: a state is not an action, so it never counts toward a nudge or reads as news.
+  const { learnedSignals, learnSignal } = useGuideStore.getState();
   for (const [signal, isOn] of ON_STATE_SIGNALS) {
-    if (!learnedSignals.includes(signal) && isOn(snapshot)) noteGuideSignal(signal);
+    if (!learnedSignals.includes(signal) && isOn(snapshot)) learnSignal(signal);
   }
 }
 

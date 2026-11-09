@@ -4,7 +4,6 @@ import { useSettingsStore } from "@/stores/settings";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { cn } from "@/utils/cn";
 import { guideChipVariants, guideIconSwapVariants } from "@/utils/animationVariants";
-import { ALT_KEY } from "@/utils/platform";
 import { IconLink, IconUnlink } from "@tabler/icons-react";
 import { AnimatePresence, MotionConfig, m } from "motion/react";
 import { useEffect, useSyncExternalStore } from "react";
@@ -22,14 +21,12 @@ interface ChipPlace {
 
 const ALT_GAP_SIGNAL = "timeline.gap";
 const CHIP_LIFT_PX = 40;
-const DRAGS_AFTER_LEARNING = 3;
 
 // -- State --------------------------------------------------------------------
 
 // One chip for the whole Timeline: only one boundary drag runs at a time, so word tracks share this owner.
 let place: ChipPlace | null = null;
 let altDown = false;
-let altGapsThisSession = 0;
 const listeners = new Set<() => void>();
 
 // -- Helpers ------------------------------------------------------------------
@@ -44,9 +41,9 @@ function setPlace(next: ChipPlace | null): void {
   notify();
 }
 
+// Once you have opened a gap with Alt, you know it: the chip never shows again.
 function chipStillTeaching(): boolean {
-  if (!useSettingsStore.getState().showGuide) return false;
-  return !useGuideStore.getState().learnedSignals.includes(ALT_GAP_SIGNAL) || altGapsThisSession < DRAGS_AFTER_LEARNING;
+  return useSettingsStore.getState().showGuide && !useGuideStore.getState().learnedSignals.includes(ALT_GAP_SIGNAL);
 }
 
 const subscribe = (listener: () => void) => {
@@ -68,7 +65,6 @@ function beginBoundaryDrag(track: HTMLElement, clientX: number, edgeKey: string)
 function endBoundaryDrag(finished: { edgeKey: string; gapOpen: boolean } | null): void {
   setPlace(null);
   if (!finished) return;
-  if (finished.gapOpen) altGapsThisSession += 1;
   noteGuideSignal(finished.gapOpen ? ALT_GAP_SIGNAL : "timeline.syllablesMovedTogether", finished.edgeKey);
 }
 
@@ -120,7 +116,7 @@ const ChipBody: React.FC<{ gapOpen: boolean }> = ({ gapOpen }) => (
     <span aria-hidden className="h-3 w-px bg-composer-border" />
     <span className="flex items-center gap-1 text-(--muted)">
       {gapOpen ? "Release" : "Hold"}
-      <InlineKeyBadge keys={[ALT_KEY]} />
+      <InlineKeyBadge keys={["Alt"]} className="ml-0" />
       {gapOpen ? "to join" : "to split"}
     </span>
   </>

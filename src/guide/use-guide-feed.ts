@@ -4,6 +4,7 @@ import { IMPORTED_TIMING_DONE, JOURNEY_COPY, STAGE_NAMES } from "@/guide/catalog
 import { GUIDE_NUDGES } from "@/guide/catalog/nudges";
 import { GUIDE_TIER_NAMES } from "@/guide/catalog/types";
 import { dropPeeks, enqueuePeek } from "@/guide/peek-queue";
+import { showSpotHint } from "@/guide/spot-hint";
 import {
   lastGuideSignalAt,
   type PendingNudge,
@@ -66,7 +67,9 @@ function useNudgeFeed(): readonly PendingNudge[] {
     for (const queued of pending) {
       const nudge = GUIDE_NUDGES.find((candidate) => candidate.id === queued.id);
       if (nudge?.available?.() === false) resolveGuideNudge(nudge.id);
-      else if (nudge) {
+      else if (nudge?.spot && showSpotHint(nudge.spot, { id: nudge.id, icon: nudge.icon, text: nudge.peek })) {
+        resolveGuideNudge(nudge.id);
+      } else if (nudge) {
         enqueuePeek({ id: `nudge:${nudge.id}`, kind: "tip", gist: nudge.peek, nudgeId: nudge.id, stage: nudge.stage });
       }
     }
@@ -93,6 +96,15 @@ function useRestoreWatch(): void {
 
 function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVisit: boolean): void {
   useRestoreWatch();
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void getPersistenceSettled().then(() => live && setSettled(true));
+    return () => {
+      live = false;
+    };
+  }, []);
+
   const seen = useRef<{ projectId?: string; doneCount: number; done: readonly string[] }>({
     projectId,
     doneCount: journey.doneCount,
@@ -107,7 +119,7 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
     const undone = new Set(journey.steps.filter((step) => !step.done).map((step) => `done:${projectId}:${step.id}`));
     dropPeeks((peek) => !undone.has(peek.id));
     const switched = before.projectId !== undefined && before.projectId !== projectId;
-    if (restored || switched || journey.doneCount <= before.doneCount) return;
+    if (!settled || restored || switched || journey.doneCount <= before.doneCount) return;
     const finished = journey.steps.findLast((step) => step.done);
     if (!finished) return;
     const arrived = journey.steps.filter((step) => step.done && !before.done.includes(step.id)).map((step) => step.id);
@@ -116,24 +128,15 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
     const next = journey.current ? JOURNEY_COPY[journey.current].title : null;
     const gist = next ? `${done} Next: ${next.charAt(0).toLowerCase()}${next.slice(1)}` : done;
     enqueuePeek({ id: `done:${projectId}:${finished.id}`, kind: "done", gist });
-  }, [journey, projectId]);
-
-  const [restored, setRestored] = useState(false);
-  useEffect(() => {
-    let live = true;
-    void getPersistenceSettled().then(() => live && setRestored(true));
-    return () => {
-      live = false;
-    };
-  }, []);
+  }, [journey, projectId, settled]);
 
   useEffect(() => {
     // A first run belongs to the product tour; the guide greets only people who have seen it, once the project is back.
-    if (!restored || greetedThisSession || !firstVisit || !journey.current || !localStorage.getItem(TOUR_SEEN_KEY))
+    if (!settled || greetedThisSession || !firstVisit || !journey.current || !localStorage.getItem(TOUR_SEEN_KEY))
       return;
     greetedThisSession = true;
     enqueuePeek({ id: "next:greeting", kind: "next", gist: JOURNEY_COPY[journey.current].next });
-  }, [restored, firstVisit, journey]);
+  }, [settled, firstVisit, journey]);
 }
 
 // A tier earned while you work earns its milestone; tiers already earned before this session stay quiet.

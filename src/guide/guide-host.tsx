@@ -7,6 +7,7 @@ import { hideGuide } from "@/guide/hide-guide";
 import { markPeeksRead } from "@/guide/peek-queue";
 import { type StageTiers, useJourneyFeed, useMilestoneFeed, useNudgeFeed } from "@/guide/use-guide-feed";
 import { useGuidePeek } from "@/guide/use-guide-peek";
+import { SpotHint } from "@/guide/spot-hint";
 import { useGuideStateLearning } from "@/guide/use-guide-state-learning";
 import { useGuideTips } from "@/guide/use-guide-tips";
 import { useProjectJourney } from "@/guide/use-project-journey";
@@ -133,6 +134,7 @@ const GuideHost: React.FC = () => {
             </GuideCard>
           )}
         </AnimatePresence>
+        <SpotHint />
         <GuideOrb
           peek={queue.showing}
           unread={unread}

@@ -27,6 +27,8 @@ interface GuideNudgeEntry {
   category: string;
   trigger: GuideTrigger;
   resolvedBy?: GuideSignal;
+  // Shown in place, next to the element marked data-guide-spot with this name, instead of through the orb.
+  spot?: string;
 }
 
 interface GuideEvent {
