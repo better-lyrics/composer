@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { effectiveTrackWords, type ReadableLine } from "@/domain/line/effective-words";
-import { nextStepSlot, stepStartSlot } from "@/domain/step-timing/step-cursor";
+import { nextStepSlot } from "@/domain/step-timing/step-cursor";
 import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -12,6 +12,7 @@ import { isInFocus } from "@/views/timeline/group-focus";
 import { showLoupeAfterKeyEdit } from "@/views/timeline/loupe/loupe-target";
 import { stepWriteTime } from "@/views/timeline/step-timing/pointer-write-time";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { findBoundaryTarget } from "@/views/timeline/word-at-playhead";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -26,14 +27,14 @@ function refusalMessage(refusal: StepRefusal): string {
 
 // -- Functions ----------------------------------------------------------------
 
-function pressStepKey(key: StepKey, lines: readonly ReadableLine[], duration: number): void {
+function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): void {
   const time = stepWriteTime();
   const focus = currentEffectiveFocus();
   const include = (line: ReadableLine) => isInFocus(line, focus);
   const timeline = useTimelineStore.getState();
-  const cursor = timeline.selectedWords[0] ?? stepStartSlot(lines, time, include);
+  const cursor = timeline.selectedWords[0] ?? findBoundaryTarget(lines, time, key === "start" ? "begin" : "end", focus);
   if (!cursor) {
-    toast("No line after this point");
+    toast(key === "start" ? "No word starts after this point" : "No word ends before this point");
     return;
   }
   const line = lines[cursor.lineIndex];

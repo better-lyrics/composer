@@ -38,7 +38,11 @@ const StepTimingHelp: React.FC = () => (
         before the previous word ends, nothing changes and a message names that word.
       </li>
       <li>
-        With no word selected, the first press starts at the first word of the line at that time, or the next line.
+        With no word selected, <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordBegin")} /> picks the word
+        under the time or the next one to start, and{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} /> or{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} /> pick the word under the time or the last
+        one to end.
       </li>
     </ul>
     <p className={`${PROSE} mt-3`}>

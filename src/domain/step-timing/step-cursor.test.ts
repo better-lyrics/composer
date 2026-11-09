@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
-import { nextStepSlot, stepStartSlot } from "@/domain/step-timing/step-cursor";
+import { nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { createLine } from "@/test/factories";
 
 const everyLine = () => true;
@@ -40,11 +40,5 @@ describe("nextStepSlot", () => {
     expect(
       nextStepSlot(lines, { lineId: "a", lineIndex: 0, wordIndex: 1, type: "word" }, (line) => line.id !== "b"),
     ).toBeNull();
-  });
-});
-
-describe("stepStartSlot", () => {
-  it("starts at the first word of the line that has not ended at the time", () => {
-    expect(stepStartSlot(lines, 15.2, everyLine)).toEqual({ lineId: "b", lineIndex: 2, wordIndex: 0, type: "word" });
   });
 });
