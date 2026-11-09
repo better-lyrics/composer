@@ -106,7 +106,7 @@ const TipList: React.FC<TipListProps> = ({ open, waitsOn, learned, onKnown, onSh
   const hiddenCount = open.length - shown.length;
   return (
     <m.div layout="position" className="pt-2.5 pb-0.5">
-      <ul className="relative">
+      <ul key={showAll ? "all" : "first"} className="relative">
         <AnimatePresence initial={false} mode="popLayout">
           {shown.map((tip) => (
             <TipRow
@@ -121,9 +121,9 @@ const TipList: React.FC<TipListProps> = ({ open, waitsOn, learned, onKnown, onSh
       </ul>
       <div className="flex items-center justify-between">
         <LearnedRow tips={learned} />
-        {hiddenCount > 0 && (
-          <Button variant="ghost" size="sm" onClick={() => setShowAll(true)}>
-            {hiddenCount} more
+        {open.length > VISIBLE_TIPS && (
+          <Button variant="ghost" size="sm" aria-expanded={showAll} onClick={() => setShowAll((all) => !all)}>
+            {showAll ? "Show less" : `${hiddenCount} more`}
           </Button>
         )}
       </div>
