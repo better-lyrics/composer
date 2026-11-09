@@ -36,7 +36,7 @@ const JOURNEY_COPY: Record<JourneyStepId, JourneyStepCopy> = {
     title: "Fine-tune on the Timeline",
     stage: "timeline",
     next: <>Open the Timeline and drag any word that's off</>,
-    done: "Timing looks tidy.",
+    done: "Timeline checked.",
   },
   preview: {
     title: "Watch it in Preview",
