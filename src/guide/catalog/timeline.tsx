@@ -1,4 +1,5 @@
 import { keyBadge, keys } from "@/guide/catalog/keys";
+import { NudgeAmount } from "@/guide/catalog/setting-values";
 import { stageTip } from "@/guide/catalog/types";
 import { UndoKeys } from "@/ui/undo-hint";
 import {
@@ -75,7 +76,11 @@ const TIMELINE_TIPS = [
     tier: "basics",
     icon: IconArrowBackUp,
     title: "Take it back",
-    gist: <>Press <UndoKeys className="ml-0" /> to undo anything, even a big drag.</>,
+    gist: (
+      <>
+        Press <UndoKeys className="ml-0" /> to undo any edit, even a big drag.
+      </>
+    ),
   }),
   tip({
     id: "selectMore",
@@ -105,7 +110,7 @@ const TIMELINE_TIPS = [
     title: "Nudge without the mouse",
     gist: (
       <>
-        Press {keys("timeline.nudgeLeft")} {keys("timeline.nudgeRight")} to move the selection a hair.
+        Press {keys("timeline.nudgeLeft")} {keys("timeline.nudgeRight")} to move the selection <NudgeAmount />.
       </>
     ),
   }),
@@ -114,14 +119,14 @@ const TIMELINE_TIPS = [
     tier: "further",
     icon: IconColumns,
     title: "Rolling edits",
-    gist: <>Press {keys("timeline.toggleRollingEdit")}, then drag a shared edge. Both words stay flush.</>,
+    gist: <>Turn on Rolling ({keys("timeline.toggleRollingEdit")}), then drag a shared edge. Both words stay flush.</>,
   }),
   tip({
     id: "cue",
     tier: "further",
     icon: IconRewindBackward5,
     title: "Replay from the cue",
-    gist: <>Press {keys("timeline.playFromCue")} to play again from where you last started.</>,
+    gist: <>Press {keys("timeline.playFromCue")} to play again from the Cue, where you last clicked.</>,
   }),
   tip({
     id: "atPlayhead",
@@ -137,7 +142,7 @@ const TIMELINE_TIPS = [
     title: "Reuse timing",
     gist: (
       <>
-        Press {keys("timeline.copy")} on some words, then {keys("timeline.paste")} on another line.
+        Press {keys("timeline.copy")} on some words, then {keys("timeline.paste")} and click where the timing goes.
       </>
     ),
   }),
@@ -146,7 +151,7 @@ const TIMELINE_TIPS = [
     tier: "further",
     icon: IconScissors,
     title: "Split a word",
-    gist: <>Press {keys("timeline.splitSyllable")} to cut a word into syllables.</>,
+    gist: <>Select a word and press {keys("timeline.splitSyllable")} to pick where it splits into syllables.</>,
   }),
   tip({
     id: "editText",
@@ -167,7 +172,7 @@ const TIMELINE_TIPS = [
     tier: "pro",
     icon: IconEar,
     title: "Hear only the vocal",
-    gist: <>Separate the vocal from the Stem menu, then press {keys("global.toggleStem")} to hear it alone.</>,
+    gist: <>Click Separate in the Stem menu, then press {keys("global.toggleStem")} to hear the vocal alone.</>,
   }),
   tip({
     id: "spectrum",
@@ -182,14 +187,14 @@ const TIMELINE_TIPS = [
     needs: "timeline.stems",
     icon: IconWaveSine,
     title: "Follow the melody",
-    gist: <>Press {keys("timeline.togglePitchLine")} to draw the melody over the rows.</>,
+    gist: <>Press {keys("timeline.togglePitchLine")} to draw the melody inside the word blocks.</>,
   }),
   tip({
     id: "beats",
     tier: "pro",
     icon: IconGridDots,
     title: "Snap to the beat",
-    gist: <>Find the beat, then press {keys("timeline.toggleBeatGrid")} to show bars you can snap to.</>,
+    gist: <>Click Detect beats under Beat grid in the Snap menu, and drags snap to the beat.</>,
   }),
   tip({
     id: "onsets",
@@ -199,8 +204,8 @@ const TIMELINE_TIPS = [
     title: "Snap to where words start",
     gist: (
       <>
-        Once the vocal is separated, drags snap to where each word starts. Vocal onsets in the Snap menu turns it on or
-        off.
+        Once the vocal is separated, drags snap to where the voice comes in. Vocal onsets in the Snap menu turns it on
+        or off.
       </>
     ),
   }),
@@ -216,7 +221,7 @@ const TIMELINE_TIPS = [
     tier: "pro",
     icon: IconFocus2,
     title: "Work on one chorus",
-    gist: <>Press {keys("timeline.openGroup")} on a group to see only its lines.</>,
+    gist: <>Select words in a group and press {keys("timeline.openGroup")} to see only its lines.</>,
   }),
   tip({
     id: "explicit",

@@ -2,9 +2,10 @@ import { TIMELINE_NUDGE_COPY } from "@/guide/catalog/nudge-copy-timeline";
 import { TRANSPORT_NUDGE_COPY } from "@/guide/catalog/nudge-copy-transport";
 import { GUIDE_NUDGE_TRIGGERS } from "@/guide/catalog/nudge-triggers";
 import { keyBadge, keys } from "@/guide/catalog/keys";
+import { NudgeAmount } from "@/guide/catalog/setting-values";
 import type { GuideNudge, GuideNudgeCopy } from "@/guide/catalog/types";
 import { isAutoAlignAvailable } from "@/stores/alignment";
-import { toggledPlaybackRate, useAudioStore } from "@/stores/audio";
+import { slowerPlaybackRate, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { lineHasInlineParens } from "@/utils/background-vocal-extraction";
 import {
@@ -27,13 +28,11 @@ const NUDGE_COPY: Record<string, GuideNudgeCopy> = {
   ...TRANSPORT_NUDGE_COPY,
   syllableGap: {
     icon: IconUnlink,
-    title: "Trying to split two syllables?",
+    title: "Trying to pull them apart?",
     body: (
-      <>
-        Both syllables moved on your last few drags. Hold {keyBadge("Alt")} while you drag the edge and they come apart.
-      </>
+      <>Both sides moved on your last few drags. Hold {keyBadge("Alt")} while you drag the edge and they come apart.</>
     ),
-    peek: <>Hold {keyBadge("Alt")} while dragging to split syllables</>,
+    peek: <>Hold {keyBadge("Alt")} while dragging to pull the edge apart</>,
   },
   loopHardPart: {
     icon: IconRepeat,
@@ -52,8 +51,8 @@ const NUDGE_COPY: Record<string, GuideNudgeCopy> = {
     title: "Tiny moves are easier with keys",
     body: (
       <>
-        Select the word and press {keys("timeline.nudgeLeft")} {keys("timeline.nudgeRight")}. Each press moves it a
-        hair.
+        Select the word and press {keys("timeline.nudgeLeft")} {keys("timeline.nudgeRight")}. Each press moves it{" "}
+        <NudgeAmount />.
       </>
     ),
     peek: (
@@ -71,17 +70,21 @@ const NUDGE_COPY: Record<string, GuideNudgeCopy> = {
   slowDown: {
     icon: IconGauge,
     title: "Taps landing early?",
-    body: <>Slow the song down while you sync. Your timing still lands on the real song.</>,
+    body: <>Turn the Rate knob down while you sync. Your timing still lands on the real song.</>,
     peek: <>Slow the song down while you tap</>,
     primary: {
       label: "Slow it down",
-      run: () => useAudioStore.getState().setPlaybackRate(toggledPlaybackRate()),
+      run: () => useAudioStore.getState().setPlaybackRate(slowerPlaybackRate()),
     },
   },
   tryAutoAlign: {
     icon: IconBrain,
     title: "Want a head start?",
-    body: <>Open Auto-align at the top of Sync and it times every word for you. Then fix what it gets wrong.</>,
+    body: (
+      <>
+        Time each line first, then Auto-align at the top of Sync times every word for you. Then fix what it gets wrong.
+      </>
+    ),
     peek: <>Auto-align can time the words for you</>,
     available: isAutoAlignAvailable,
   },
@@ -99,14 +102,14 @@ const NUDGE_COPY: Record<string, GuideNudgeCopy> = {
   backgroundVocal: {
     icon: IconMicrophone,
     title: "Is that a background vocal?",
-    body: <>Words in parentheses can become their own background vocal, with their own timing.</>,
+    body: <>Extract background vocals, or the BG button on a line, makes them their own vocal with their own timing.</>,
     peek: <>"(...)" in a line can be a background vocal</>,
   },
   romanize: {
     icon: IconAbc,
-    title: "Want romanization under each line?",
+    title: "Want a transliteration under each line?",
     body: <>Composer can write how each line sounds in Latin letters, and keep it in step as you edit.</>,
-    peek: <>Add romanization under each line</>,
+    peek: <>Add a transliteration under each line</>,
     primary: { label: "Open Languages", run: () => useProjectStore.getState().setActiveTab("languages") },
   },
   extractAll: {
@@ -119,9 +122,7 @@ const NUDGE_COPY: Record<string, GuideNudgeCopy> = {
   singerForRange: {
     icon: IconUsers,
     title: "Setting singers line by line?",
-    body: (
-      <>Click a line number, then {keyBadge("Shift")}+click another. Pick the singer once for every line in between.</>
-    ),
+    body: <>Click a line number, then {keyBadge("Shift")}+click another. Pick the singer once under Assign agent.</>,
     peek: <>{keyBadge("Shift")}+click line numbers to set many at once</>,
   },
 };

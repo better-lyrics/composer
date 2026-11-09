@@ -186,6 +186,13 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
 
 // -- Readers ------------------------------------------------------------------
 
+// A slower speed never speeds you up: the slow speed you last used, or the first one, and never above where you are.
+function slowerPlaybackRate(): number {
+  const { playbackRate, otherPlaybackRate } = useAudioStore.getState();
+  const slow = otherPlaybackRate < NORMAL_PLAYBACK_RATE ? otherPlaybackRate : FIRST_OTHER_PLAYBACK_RATE;
+  return Math.min(playbackRate, slow);
+}
+
 function toggledPlaybackRate(): number {
   const { playbackRate, otherPlaybackRate } = useAudioStore.getState();
   return playbackRate === NORMAL_PLAYBACK_RATE ? otherPlaybackRate : NORMAL_PLAYBACK_RATE;
@@ -225,6 +232,7 @@ export {
   livePlaybackTime,
   playableFile,
   seekBy,
+  slowerPlaybackRate,
   toggledPlaybackRate,
   useAudioStore,
 };

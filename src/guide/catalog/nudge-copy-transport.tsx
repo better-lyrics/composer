@@ -1,4 +1,5 @@
 import { keys } from "@/guide/catalog/keys";
+import { SeekStep } from "@/guide/catalog/setting-values";
 import type { GuideNudgeCopy } from "@/guide/catalog/types";
 import {
   IconGauge,
@@ -22,18 +23,27 @@ const TRANSPORT_NUDGE_COPY: Record<string, GuideNudgeCopy> = {
   playWithKey: {
     icon: IconPlayerPlayFilled,
     title: "Play from the keyboard",
-    body: <>{keys("global.playPause")} plays and pauses on every tab. Your pointer can stay where it is.</>,
+    body: (
+      <>
+        {keys("global.playPause")} plays and pauses on any tab while you're not typing. Your pointer can stay where it
+        is.
+      </>
+    ),
     peek: <>Press {keys("global.playPause")} to play and pause</>,
   },
   seekWithKeys: {
     icon: IconPlayerTrackPrev,
-    title: "Going back a few seconds?",
+    title: "Going back a little?",
     body: (
       <>
-        Press {keys("global.seekBackward")} to go back a few seconds and {keys("global.seekForward")} to go ahead.
+        Press {keys("global.seekBackward")} to go back <SeekStep /> and {keys("global.seekForward")} to go ahead.
       </>
     ),
-    peek: <>Press {keys("global.seekBackward")} to go back a few seconds</>,
+    peek: (
+      <>
+        Press {keys("global.seekBackward")} to go back <SeekStep />
+      </>
+    ),
   },
   speedToggle: {
     icon: IconGauge,

@@ -60,7 +60,9 @@ const EDIT_TIPS = [
     tier: "further",
     icon: IconMicrophone,
     title: "Pull out background vocals",
-    gist: <>Words in parentheses, like "(ooh)", can become a background vocal.</>,
+    gist: (
+      <>Words in parentheses, like "(ooh)", become a background vocal. Extract background vocals pulls out any left.</>
+    ),
     spot: { stage: "edit", spot: "extractAll", text: 'Pull every "(...)" out at once here' },
   }),
   tip({
@@ -89,7 +91,7 @@ const EDIT_TIPS = [
     tier: "pro",
     icon: IconStack2,
     title: "Group a repeating chorus",
-    gist: <>Accept a grouping suggestion and you only sync the chorus once.</>,
+    gist: <>Click Group on a grouping suggestion and you only sync the chorus once.</>,
   }),
 ];
 

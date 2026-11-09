@@ -39,14 +39,14 @@ const EXPORT_TIPS = [
     tier: "further",
     icon: IconTags,
     title: "Fill in song details",
-    gist: <>Accept the MusicBrainz match to add album, songwriters and ISRC.</>,
+    gist: <>When Composer finds a MusicBrainz match, Fill adds album, songwriters and ISRC.</>,
   }),
   tip({
     id: "editTtml",
     tier: "further",
     icon: IconCode,
     title: "Edit the TTML by hand",
-    gist: <>Click Edit, change what you need, then Done.</>,
+    gist: <>With Word timing picked, click Edit, change what you need, then Done.</>,
   }),
   tip({
     id: "backup",
@@ -61,7 +61,7 @@ const EXPORT_TIPS = [
     appliesWhen: unisonOn,
     icon: IconPlugConnected,
     title: "Connect to Unison",
-    gist: <>Sign in with Better Lyrics from the Unison panel.</>,
+    gist: <>Click Connect to submit under Share on Unison and sign in with Better Lyrics.</>,
   }),
   tip({
     id: "unisonSubmit",
@@ -77,7 +77,7 @@ const EXPORT_TIPS = [
     appliesWhen: unisonOn,
     icon: IconRefresh,
     title: "Send an update",
-    gist: <>Fixed something? Send it as a new revision.</>,
+    gist: <>Fixed something? Send update sends it as a new revision.</>,
   }),
   tip({
     id: "unisonHistory",

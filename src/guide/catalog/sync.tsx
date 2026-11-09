@@ -32,14 +32,18 @@ const SYNC_TIPS = [
     tier: "basics",
     icon: IconArrowBackUp,
     title: "Take back a bad tap",
-    gist: <>Press <UndoKeys className="ml-0" /> and tap that word again.</>,
+    gist: (
+      <>
+        Press <UndoKeys className="ml-0" /> and tap that word again.
+      </>
+    ),
   }),
   tip({
     id: "resync",
     tier: "basics",
     icon: IconRotateClockwise,
     title: "Redo one line",
-    gist: <>Click the line to jump back to it, then press {keys("sync.tap")} from there.</>,
+    gist: <>Pause, click the line to jump back to it, then press {keys("sync.tap")} from there.</>,
   }),
   tip({
     id: "hold",
@@ -64,7 +68,7 @@ const SYNC_TIPS = [
     tier: "further",
     icon: IconGauge,
     title: "Slow the song down",
-    gist: <>Press {keys("global.togglePlaybackSpeed")}, or turn the rate knob.</>,
+    gist: <>Turn the Rate knob down, or press {keys("global.togglePlaybackSpeed")} to switch speeds.</>,
     spot: { stage: "sync", spot: "rate", text: "Turn this down to slow the song" },
   }),
   tip({
@@ -72,14 +76,14 @@ const SYNC_TIPS = [
     tier: "further",
     icon: IconLineDashed,
     title: "Lines or words",
-    gist: <>Switch to line timing for a quick first pass.</>,
+    gist: <>Pick Line in the Sync header for a quick first pass.</>,
   }),
   tip({
     id: "split",
     tier: "pro",
     icon: IconScissors,
     title: "Split syllables here",
-    gist: <>Click the scissors on a word to split it while you sync.</>,
+    gist: <>Pause, then click the scissors on a synced word to split it into syllables.</>,
   }),
   tip({
     id: "autoAlign",
@@ -87,7 +91,7 @@ const SYNC_TIPS = [
     appliesWhen: isAutoAlignAvailable,
     icon: IconBrain,
     title: "Let Auto-align time the words",
-    gist: <>Press {keys("timeline.autoAlign")} and fix what it gets wrong.</>,
+    gist: <>Time your lines first, then Auto-align at the top of Sync times every word.</>,
   }),
 ];
 

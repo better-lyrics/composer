@@ -1,4 +1,6 @@
 import { stageTip } from "@/guide/catalog/types";
+import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
+import { PROJECT_FILE_EXTENSIONS_LABEL } from "@/lib/project-file-read";
 import {
   IconFileMusic,
   IconFileText,
@@ -26,7 +28,7 @@ const IMPORT_TIPS = [
     tier: "basics",
     icon: IconFileText,
     title: "Add lyrics from a file",
-    gist: <>Drop a .txt, .lrc, .srt or .ttml file.</>,
+    gist: <>Drop a lyrics file on Edit, or use Import Lyrics. {LYRICS_FORMATS_PROSE} all work.</>,
     spot: { stage: "edit", spot: "importLyrics", text: "Import your lyrics here, or paste them in the editor" },
   }),
   tip({
@@ -42,7 +44,7 @@ const IMPORT_TIPS = [
     tier: "further",
     icon: IconFolderOpen,
     title: "Open a project file",
-    gist: <>Drop a .composer file to pick up where you left off.</>,
+    gist: <>Drop a project file ({PROJECT_FILE_EXTENSIONS_LABEL}) to pick up where you left off.</>,
   }),
   tip({
     id: "replaceAudio",
@@ -56,7 +58,7 @@ const IMPORT_TIPS = [
     tier: "pro",
     icon: IconMicrophone2,
     title: "Bring your own stems",
-    gist: <>Already have the vocal on its own? Import it instead of separating.</>,
+    gist: <>Already have the vocal on its own? Use Import file in the Stem menu instead of separating.</>,
   }),
 ];
 
