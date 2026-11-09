@@ -95,10 +95,10 @@ const GuideOrb: React.FC<GuideOrbProps> = ({ peek, unread, progress, open, onCli
               animate="shown"
               exit="exit"
               aria-live="polite"
-              className="flex items-center gap-2 whitespace-nowrap pr-3.5 pl-1.5"
+              className="flex max-w-[min(520px,calc(100vw-8rem))] items-center gap-2 whitespace-nowrap pr-3.5 pl-1.5"
             >
               <span className={cn("font-semibold", PEEK_TONES[peek.kind])}>{PEEK_LABELS[peek.kind]}</span>
-              <span className="text-composer-text">{peek.gist}</span>
+              <span className="min-w-0 truncate text-composer-text">{peek.gist}</span>
             </m.span>
           )}
         </AnimatePresence>
