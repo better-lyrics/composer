@@ -1,7 +1,7 @@
 import { GUIDE_TIER_ORDER, type GuideStage, type GuideTierId } from "@/domain/guide/model";
-import { ALL_GUIDE_TIPS } from "@/guide/catalog/all-tips";
 import { STAGE_NAMES } from "@/guide/catalog/journey";
 import { GUIDE_NUDGES } from "@/guide/catalog/nudges";
+import type { GuideTip } from "@/guide/catalog/types";
 import type { EarnedTier, StageTiers } from "@/guide/use-guide-feed";
 import { type PendingNudge, resolveGuideNudge } from "@/lib/guide-signals";
 import { useGuideStore } from "@/stores/guide";
@@ -17,6 +17,7 @@ interface GuideCardBodyProps {
   stage: GuideStage;
   stageName: string;
   tiers: StageTiers;
+  tips: readonly GuideTip[];
   pending: readonly PendingNudge[];
   focusNudgeId: string | null;
   milestone: EarnedTier | null;
@@ -30,6 +31,7 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
   stage,
   stageName,
   tiers,
+  tips,
   pending,
   focusNudgeId,
   milestone,
@@ -51,7 +53,7 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
 
   if (milestone) {
     const count = (tier: GuideTierId) =>
-      ALL_GUIDE_TIPS.filter((tip) => tip.stage === milestone.stage && tip.tier === tier).length;
+      tips.filter((tip) => tip.stage === milestone.stage && tip.tier === tier).length;
     const next = GUIDE_TIER_ORDER.slice(GUIDE_TIER_ORDER.indexOf(milestone.tier) + 1).find((tier) => count(tier) > 0);
     return (
       <Milestone
@@ -68,9 +70,10 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
   }
 
   const queued = pending.find((candidate) => candidate.id === focusNudgeId) ?? pending[0];
-  const nudge = queued && GUIDE_NUDGES.find((candidate) => candidate.id === queued.id);
+  // Show me asked for one stage's tips; a nudge waits for the next open instead of hiding them.
+  const nudge = !shownTier && queued ? GUIDE_NUDGES.find((candidate) => candidate.id === queued.id) : undefined;
   const tipStage = shownTier?.stage ?? stage;
-  const stageTips = ALL_GUIDE_TIPS.filter((tip) => tip.stage === tipStage);
+  const stageTips = tips.filter((tip) => tip.stage === tipStage);
   return (
     <>
       {nudge && (

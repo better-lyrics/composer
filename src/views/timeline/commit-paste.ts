@@ -6,6 +6,7 @@ import { templateSourceInstance } from "@/domain/group/template-source";
 import { instanceCount } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/tracks";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
@@ -34,6 +35,7 @@ interface PasteTarget {
 function finishPaste(): void {
   useTimelineStore.getState().setPasteMode({ status: "idle" });
   useTimelineStore.getState().clearSelection();
+  noteGuideSignal("timeline.copy");
 }
 
 async function placeInstance(

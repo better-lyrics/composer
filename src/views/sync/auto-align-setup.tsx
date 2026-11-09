@@ -4,6 +4,7 @@ import { hasMainLyrics, isLineSynced, isWordSynced } from "@/domain/line/predica
 import { languageName } from "@/domain/project/language";
 import { useSelectedAlignmentModel } from "@/hooks/useAlignmentModels";
 import { useSongLanguage } from "@/hooks/useSongLanguage";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAlignmentStore } from "@/stores/alignment";
 import { countAlignableLines } from "@/stores/alignment-plan";
 import { useProjectStore } from "@/stores/project";
@@ -34,6 +35,13 @@ interface LineCounts {
   untimed: number;
 }
 
+// -- Helpers -------------------------------------------------------------------
+
+const switchToLineMode = () => {
+  useProjectStore.getState().setGranularity("line");
+  noteGuideSignal("sync.granularity");
+};
+
 // -- Components ----------------------------------------------------------------
 
 const LineTimingRow: React.FC<{ counts: LineCounts }> = ({ counts }) => {
@@ -43,9 +51,7 @@ const LineTimingRow: React.FC<{ counts: LineCounts }> = ({ counts }) => {
   if (timed === 0) {
     return (
       <PopRow label="Line timing" icon={IconTimelineEventText} hint="Tap each line's start and end. Rough is fine.">
-        {granularity === "word" && (
-          <PopButton onClick={() => useProjectStore.getState().setGranularity("line")}>Line mode</PopButton>
-        )}
+        {granularity === "word" && <PopButton onClick={switchToLineMode}>Line mode</PopButton>}
       </PopRow>
     );
   }

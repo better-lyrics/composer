@@ -11,6 +11,7 @@ import {
   resolveGuideNudge,
   subscribeGuideNudges,
 } from "@/lib/guide-signals";
+import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { isRestoringProject } from "@/lib/project-restore";
 import { useAudioStore } from "@/stores/audio";
 import { TOUR_SEEN_KEY } from "@/tour/use-tour";
@@ -92,6 +93,9 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
     const now = performance.now();
     const restored = now - lastRestoreAt < RESTORE_SETTLE_MS && now - lastGuideSignalAt() > RESTORE_SETTLE_MS;
     seen.current = { projectId, doneCount: journey.doneCount };
+    // A step that came undone (a failed load fell back) takes back its news.
+    const undone = new Set(journey.steps.filter((step) => !step.done).map((step) => `done:${projectId}:${step.id}`));
+    dropPeeks((peek) => !undone.has(peek.id));
     const switched = before.projectId !== undefined && before.projectId !== projectId;
     if (restored || switched || journey.doneCount <= before.doneCount) return;
     const finished = journey.steps.findLast((step) => step.done);
@@ -99,15 +103,25 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
     const done = JOURNEY_COPY[finished.id].done;
     const next = journey.current ? JOURNEY_COPY[journey.current].title : null;
     const gist = next ? `${done} Next: ${next.charAt(0).toLowerCase()}${next.slice(1)}` : done;
-    enqueuePeek({ id: `done:${projectId}:${journey.doneCount}`, kind: "done", gist });
+    enqueuePeek({ id: `done:${projectId}:${finished.id}`, kind: "done", gist });
   }, [journey, projectId]);
 
+  const [restored, setRestored] = useState(false);
   useEffect(() => {
-    // A first run belongs to the product tour; the guide greets only people who have seen it.
-    if (greetedThisSession || !firstVisit || !journey.current || !localStorage.getItem(TOUR_SEEN_KEY)) return;
+    let live = true;
+    void getPersistenceSettled().then(() => live && setRestored(true));
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    // A first run belongs to the product tour; the guide greets only people who have seen it, once the project is back.
+    if (!restored || greetedThisSession || !firstVisit || !journey.current || !localStorage.getItem(TOUR_SEEN_KEY))
+      return;
     greetedThisSession = true;
     enqueuePeek({ id: "next:greeting", kind: "next", gist: JOURNEY_COPY[journey.current].next });
-  }, [firstVisit, journey]);
+  }, [restored, firstVisit, journey]);
 }
 
 // A tier earned while you work earns its milestone; tiers already earned before this session stay quiet.

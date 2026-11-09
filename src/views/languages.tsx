@@ -84,8 +84,6 @@ const LanguagesPanel: React.FC = () => {
           return;
         }
         if (generation.failedLineIds.size > 0) toast.error("Couldn't generate some lines. Try Regenerate.");
-        if (requestedTargets.length > 0) noteGuideSignal("languages.generate");
-        if (generation.transliteration) noteGuideSignal("languages.romanize");
         const updates = mergeGeneratedLanguageUpdates(
           startingLines,
           currentState.lines,
@@ -93,7 +91,11 @@ const LanguagesPanel: React.FC = () => {
           { force, transliteration: generation.transliteration, translations: generation.translations },
           edits,
         );
-        if (updates.length > 0) updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+        if (updates.length > 0) {
+          updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+          if (requestedTargets.length > 0) noteGuideSignal("languages.generate");
+          if (generation.transliteration) noteGuideSignal("languages.romanize");
+        }
         const detected = generation.detectedLanguage;
         if (updates.length > 0 && !currentState.metadata.language && detected && detected !== "auto") {
           setMetadata({ language: detected });

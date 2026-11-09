@@ -5,6 +5,7 @@ import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { WordSelection } from "@/domain/selection/model";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -142,6 +143,7 @@ const TimelineInfoPanel: React.FC = () => {
         syllablesFollowRolling: useSettingsStore.getState().syllablesFollowRolling,
         updateLineWithHistory,
       });
+      noteGuideSignal("timeline.resize");
     },
     [selectedWord, lines, rawLines, groups, duration, updateLineWithHistory],
   );

@@ -6,6 +6,7 @@ import type { LoopRegion } from "@/domain/selection/loop-region";
 import type { WordSelection } from "@/domain/selection/model";
 import { playbackRange } from "@/domain/selection/playback-range";
 import type { Bounds } from "@/domain/word/bounds";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -137,19 +138,25 @@ function clearLoopRegion(): void {
   setLoopRegion(null);
 }
 
+function noteLoopOn(): void {
+  const { selectionPlayback, loopRegion } = useTimelineStore.getState();
+  if (loopsRange(selectionPlayback, useSettingsStore.getState().loopOpenGroup, loopRegion)) {
+    noteGuideSignal("timeline.loop");
+  }
+}
+
 function toggleLoop(): void {
   const { selectionPlayback, setSelectionPlayback, loopRegion, setLoopRegion } = useTimelineStore.getState();
   if (selectionPlayback !== null) {
     const next = selectionPlayback === "loop" ? "once" : "loop";
     setSelectionPlayback(next);
     if (loopRegion) setLoopRegion({ ...loopRegion, loops: next === "loop" });
-    return;
-  }
-  if (loopRegion) {
+  } else if (loopRegion) {
     setLoopRegion({ ...loopRegion, loops: !loopRegion.loops });
-    return;
+  } else {
+    useSettingsStore.getState().toggle("loopOpenGroup");
   }
-  useSettingsStore.getState().toggle("loopOpenGroup");
+  noteLoopOn();
 }
 
 // Away from the Timeline only a range that is already running can change.
@@ -169,8 +176,10 @@ function toggleRangeLoop(): boolean {
     toggleLoop();
     return true;
   }
-  if (playLoopRegion("loop")) return true;
-  if (loopSelection()) return true;
+  if (playLoopRegion("loop") || loopSelection()) {
+    noteGuideSignal("timeline.loop");
+    return true;
+  }
   if (currentEffectiveFocus() === null) return false;
   toggleLoop();
   return true;

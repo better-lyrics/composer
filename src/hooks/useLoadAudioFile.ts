@@ -123,9 +123,6 @@ function useLoadAudioFile(): (file: File, mode?: AudioFileLoadMode) => Promise<v
       toast.error(UNPLAYABLE_AUDIO_MESSAGE);
       return;
     }
-    noteGuideSignal("import.audio");
-    if (mode === "replace") noteGuideSignal("import.replaceAudio");
-
     const previous = useAudioStore.getState().source;
     const title = fileNameWithoutExtension(file.name);
     const replacesDifferentSong =
@@ -133,9 +130,13 @@ function useLoadAudioFile(): (file: File, mode?: AudioFileLoadMode) => Promise<v
       (previous != null && !(previous.type === "file" && fileIdentityKey(previous.file) === fileIdentityKey(file)));
 
     if (mode === "replace") {
-      if (replacesDifferentSong) void swapFileInPlace(file, previous);
+      if (!replacesDifferentSong) return;
+      noteGuideSignal("import.audio");
+      noteGuideSignal("import.replaceAudio");
+      void swapFileInPlace(file, previous);
       return;
     }
+    noteGuideSignal("import.audio");
     const project = useProjectStore.getState();
     const keepsOpenProject = !hasLyricLines(project.lines) && !(mode === "new-song" && project.hasUnexportedImport);
     if (replacesDifferentSong && !keepsOpenProject) {

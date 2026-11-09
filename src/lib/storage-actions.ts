@@ -1,4 +1,5 @@
 import { type StemRemoval, clearStemCache } from "@/audio/separation/stem-store";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { isProjectInUse } from "@/lib/open-project-session";
 import { hiddenProjectIdsSnapshot } from "@/lib/pending-deletions";
 import { flushPendingSave } from "@/lib/persistence-debounce";
@@ -38,6 +39,7 @@ async function backUpAllProjects(): Promise<ProjectBundle | null> {
   if (records.length === 0) return null;
   const bundle = buildProjectBundle(records, Date.now());
   downloadProjectBundle(bundle);
+  noteGuideSignal("export.backup");
   return bundle;
 }
 

@@ -19,12 +19,12 @@ function setPitchLineShown(shown: boolean): void {
   const settings = useSettingsStore.getState();
   if (settings.pitchLine !== "off") lastShownMode = settings.pitchLine;
   settings.set("pitchLine", shown ? lastShownMode : "off");
+  if (shown && useSeparationStore.getState().stemUrls.vocals) noteGuideSignal("timeline.pitch");
 }
 
 function togglePitchLine(): void {
   const show = useSettingsStore.getState().pitchLine === "off";
   setPitchLineShown(show);
-  if (show) noteGuideSignal("timeline.pitch");
   if (show && !useSeparationStore.getState().stemUrls.vocals) {
     toast("The pitch line needs separated vocals", {
       id: NEEDS_VOCALS_TOAST_ID,

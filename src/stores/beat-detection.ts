@@ -65,7 +65,6 @@ const useBeatDetectionStore = create<BeatDetectionState>((set) => ({
     const source = useAudioStore.getState().source;
     const file = playableFile(source);
     if (!file) return;
-    noteGuideSignal("timeline.beats");
     running?.abort();
     const controller = new AbortController();
     running = controller;
@@ -88,6 +87,7 @@ const useBeatDetectionStore = create<BeatDetectionState>((set) => ({
         return;
       }
       useProjectStore.getState().applyBeatGridWithHistory(detectedGrid(detection));
+      noteGuideSignal("timeline.beats");
       set(IDLE);
     } catch (error) {
       if (!isCurrent() || isAbort(error)) return;

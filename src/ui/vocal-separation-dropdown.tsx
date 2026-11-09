@@ -67,7 +67,7 @@ const VocalSeparationDropdown: React.FC<VocalSeparationDropdownProps> = ({ open,
         {(close) => {
           const selectAndClose = (stem: Stem) => {
             selectStem(stem);
-            if (stem !== "original") noteGuideSignal("timeline.stems");
+            if (useSeparationStore.getState().currentStem !== "original") noteGuideSignal("timeline.stems");
             close();
           };
           return (

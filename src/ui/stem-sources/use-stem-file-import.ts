@@ -23,8 +23,10 @@ function useStemFileImport(): StemFileImport {
   const [dropSlot, setDropSlot] = useState<StemSlot | null>(null);
 
   const importStem = (slot: StemSlot, file: File) => {
-    noteGuideSignal("import.stems");
-    void useSeparationStore.getState().importStem(slot, file);
+    void useSeparationStore
+      .getState()
+      .importStem(slot, file)
+      .then((imported) => imported && noteGuideSignal("import.stems"));
   };
 
   const openFilePicker = (slot: StemSlot) => {

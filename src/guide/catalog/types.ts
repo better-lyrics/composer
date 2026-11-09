@@ -1,4 +1,5 @@
 import type { GuideNudgeEntry, GuideStage, GuideTierId, GuideTipEntry } from "@/domain/guide/model";
+import type { SettingsState } from "@/stores/settings";
 import type { Icon } from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------
@@ -7,6 +8,7 @@ interface GuideTip extends GuideTipEntry {
   icon: Icon;
   title: string;
   gist: React.ReactNode;
+  appliesWhen?: (settings: SettingsState) => boolean;
 }
 
 interface GuideNudgeAction {

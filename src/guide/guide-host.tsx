@@ -1,12 +1,13 @@
 import { stageTiers } from "@/domain/guide/tier-state";
 import { PROJECT_TABS } from "@/domain/project/tab";
-import { ALL_GUIDE_TIPS } from "@/guide/catalog/all-tips";
 import { JOURNEY_COPY, STAGE_HELP_SECTIONS, STAGE_NAMES } from "@/guide/catalog/journey";
+import type { GuideTip } from "@/guide/catalog/types";
 import { GuideCardBody } from "@/guide/guide-card-body";
 import { hideGuide } from "@/guide/hide-guide";
 import { markPeeksRead } from "@/guide/peek-queue";
 import { type StageTiers, useJourneyFeed, useMilestoneFeed, useNudgeFeed } from "@/guide/use-guide-feed";
 import { useGuidePeek } from "@/guide/use-guide-peek";
+import { useGuideTips } from "@/guide/use-guide-tips";
 import { useProjectJourney } from "@/guide/use-project-journey";
 import { useEscapeLayer } from "@/hooks/useEscapeLayer";
 import { noteGuideProjectFact } from "@/lib/guide-signals";
@@ -23,13 +24,13 @@ import { useEffect, useMemo, useState } from "react";
 
 // -- Hooks --------------------------------------------------------------------
 
-function useAllStageTiers(): StageTiers {
+function useAllStageTiers(tips: readonly GuideTip[]): StageTiers {
   const learnedSignals = useGuideStore((state) => state.learnedSignals);
   const showAll = useGuideStore((state) => state.showAll);
   return useMemo(() => {
     const learned = new Set(learnedSignals);
-    return new Map(PROJECT_TABS.map((stage) => [stage, stageTiers(ALL_GUIDE_TIPS, stage, learned, showAll)]));
-  }, [learnedSignals, showAll]);
+    return new Map(PROJECT_TABS.map((stage) => [stage, stageTiers(tips, stage, learned, showAll)]));
+  }, [tips, learnedSignals, showAll]);
 }
 
 // -- Component ----------------------------------------------------------------
@@ -40,7 +41,8 @@ const GuideHost: React.FC = () => {
   const [showingRecord, setShowingRecord] = useState(false);
   const projectId = useOpenProjectId();
   const journey = useProjectJourney();
-  const tiers = useAllStageTiers();
+  const tips = useGuideTips();
+  const tiers = useAllStageTiers(tips);
   const firstVisit = useGuideStore((state) => state.learnedSignals.length === 0);
   const showAll = useGuideStore((state) => state.showAll);
   const activeTab = useProjectStore((state) => state.activeTab);
@@ -104,6 +106,7 @@ const GuideHost: React.FC = () => {
                 stage={activeTab}
                 stageName={STAGE_NAMES[activeTab]}
                 tiers={tiers}
+                tips={tips}
                 pending={pending}
                 focusNudgeId={focusNudgeId}
                 milestone={milestone}

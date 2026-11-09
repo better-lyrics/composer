@@ -52,7 +52,7 @@ function fineSeekForward(): void {
 function toggleStem(): void {
   const stem = toggledStem();
   useSeparationStore.getState().selectStem(stem);
-  if (stem !== "original") noteGuideSignal("timeline.stems");
+  if (useSeparationStore.getState().currentStem !== "original") noteGuideSignal("timeline.stems");
 }
 
 function playFromShortcut(): void {

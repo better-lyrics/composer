@@ -122,6 +122,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
     });
     updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
     noteGuideSignal("languages.paste");
+    if (kind === "transliteration") noteGuideSignal("languages.romanize");
     if (kind === "translation") onImportedTranslation(targetLanguage);
     toast.success(`Imported ${pluralize(mappedCount, "line")}`);
     onClose();

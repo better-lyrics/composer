@@ -169,6 +169,7 @@ function useTimelineKeyboard(
         syllablesFollowRolling: useSettingsStore.getState().syllablesFollowRolling,
         updateLineWithHistory: useProjectStore.getState().updateLineWithHistory,
       });
+      noteGuideSignal("timeline.resize");
       showLoupeAfterKeyEdit({ lineId: line.id, wordIndex, type: targetWord.type }, edge, word[edge]);
     },
     [lines, duration, scrollContainerRef],
@@ -185,8 +186,9 @@ function useTimelineKeyboard(
       if (historyAction) {
         e.preventDefault();
         if (e.repeat) return;
+        const undoes = historyAction === "undo" && useProjectStore.getState().canUndo();
         useProjectStore.getState()[historyAction]();
-        if (historyAction === "undo") noteGuideSignal("timeline.undo");
+        if (undoes) noteGuideSignal("timeline.undo");
         return;
       }
 
@@ -404,7 +406,6 @@ function useTimelineKeyboard(
           const { selectedWords: eSel } = useTimelineStore.getState();
           if (eSel.length === 1) {
             e.preventDefault();
-            noteGuideSignal("timeline.editText");
             useTimelineStore.getState().setEditingWord({
               lineId: eSel[0].lineId,
               wordIndex: eSel[0].wordIndex,

@@ -42,8 +42,8 @@ interface SeparationActions {
   refreshModelCacheStatus: () => Promise<void>;
   refreshForCurrentSource: () => Promise<void>;
   separate: () => Promise<void>;
-  importStem: (slot: StemSlot, file: File) => Promise<void>;
-  acceptPendingImport: () => Promise<void>;
+  importStem: (slot: StemSlot, file: File) => Promise<boolean>;
+  acceptPendingImport: () => Promise<boolean>;
   cancelPendingImport: () => void;
   removeImportedStem: (slot: StemSlot) => Promise<void>;
   selectStem: (stem: Stem) => void;
@@ -197,16 +197,18 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
 
   importStem: async (slot, file) => {
     const ready = await prepareStemImport(slot, file, set);
-    if (ready && (await commitStemImport(slot, file, ready, set))) await get().refreshForCurrentSource();
+    if (!ready || !(await commitStemImport(slot, file, ready, set))) return false;
+    await get().refreshForCurrentSource();
+    return true;
   },
 
   acceptPendingImport: async () => {
     const pending = get().pendingImport;
-    if (!pending) return;
+    if (!pending) return false;
     set({ pendingImport: null });
-    if (await commitStemImport(pending.slot, pending.file, pending, set)) {
-      await get().refreshForCurrentSource();
-    }
+    if (!(await commitStemImport(pending.slot, pending.file, pending, set))) return false;
+    await get().refreshForCurrentSource();
+    return true;
   },
 
   cancelPendingImport: () => set({ pendingImport: null }),

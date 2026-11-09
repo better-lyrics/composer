@@ -98,7 +98,6 @@ const ExportPanel: React.FC = () => {
   const handleEdit = useCallback(() => {
     if (!session) {
       setEditingSession({ projectSession, startContent: exportContent });
-      noteGuideSignal("export.editTtml");
       return;
     }
     const changedThisSession = editedContent !== null && editedContent !== session.startContent;

@@ -1,4 +1,5 @@
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
@@ -87,6 +88,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
           lineId,
           type === "word" ? effectiveWordTextEdit(line, updatedWords) : manualBackgroundWordEdit(updatedWords),
         );
+        noteGuideSignal("timeline.editText");
       }
       clearEditingWord();
     },

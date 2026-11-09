@@ -43,7 +43,7 @@ const StemModule: React.FC = () => {
                   return;
                 }
                 selectStem(stem);
-                if (stem !== "original") noteGuideSignal("timeline.stems");
+                if (useSeparationStore.getState().currentStem !== "original") noteGuideSignal("timeline.stems");
               }}
               className="w-9"
             >

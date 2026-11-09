@@ -2,6 +2,7 @@ import type { LinkGroup } from "@/domain/group/template";
 import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import { backgroundFields, withSeededBackground } from "@/domain/line/background";
 import { detectNonLatinLanguage } from "@/domain/language/script-detection";
+import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { LyricLine } from "@/domain/line/model";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
@@ -52,6 +53,13 @@ const preventDefaultDragOver = (e: React.DragEvent) => e.preventDefault();
 
 const lyricsText = (lines: readonly LyricLine[]) => lines.map((line) => line.text).join("\n");
 
+const noteTypedLyrics = (lines: readonly LyricLine[]) => {
+  if (!hasLyricLines(lines)) return;
+  noteGuideSignal("edit.type");
+  const { splitCharacter } = useSettingsStore.getState();
+  if (splitCharacter && lyricsText(lines).includes(splitCharacter)) noteGuideSignal("edit.presplit");
+};
+
 // -- Components ---------------------------------------------------------------
 
 const EditPanel: React.FC = () => {
@@ -77,7 +85,6 @@ const EditPanel: React.FC = () => {
   const debounceRef = useRef<number | null>(null);
   const [selectedLines, setSelectedLines] = useState<Set<number>>(new Set());
   const [isTypingLyrics, setIsTypingLyrics] = useState(false);
-  const textAtFocusRef = useRef("");
   const lastSelectedLineRef = useRef<number | null>(null);
   const dragAnchorRef = useRef<number | null>(null);
   const didDragRef = useRef(false);
@@ -207,6 +214,7 @@ const EditPanel: React.FC = () => {
       didDragRef.current = false;
       return;
     }
+    if (!didDragRef.current) noteGuideSignal("edit.lineRange");
     didDragRef.current = true;
     const start = Math.min(anchor, lineNumber);
     const end = Math.max(anchor, lineNumber);
@@ -243,7 +251,9 @@ const EditPanel: React.FC = () => {
     const baseline = runBaselineRef.current;
     if (baseline) {
       runBaselineRef.current = null;
-      useProjectStore.getState().commitPendingLineEdit(baseline.lines, baseline.wasDirty);
+      const { lines, commitPendingLineEdit } = useProjectStore.getState();
+      commitPendingLineEdit(baseline.lines, baseline.wasDirty);
+      noteTypedLyrics(lines);
     }
   }, []);
 
@@ -259,11 +269,7 @@ const EditPanel: React.FC = () => {
     setIsTypingLyrics(false);
     finalizeRun();
     const current = useProjectStore.getState().lines;
-    const { splitCharacter } = useSettingsStore.getState();
-    const text = lyricsText(current);
-    if (text !== "" && text !== textAtFocusRef.current) noteGuideSignal("edit.type");
-    if (splitCharacter && text.includes(splitCharacter)) noteGuideSignal("edit.presplit");
-    if (detectNonLatinLanguage(text)) noteGuideSignal("edit.nonLatinLyrics");
+    if (detectNonLatinLanguage(lyricsText(current))) noteGuideSignal("edit.nonLatinLyrics");
     if (!useSettingsStore.getState().autoExtractBackgroundVocals) {
       if (current.some(lineHasInlineParens)) noteGuideSignal("edit.parenInLine");
       return;
@@ -365,6 +371,7 @@ const EditPanel: React.FC = () => {
       let finalLines = action.finalLines;
 
       if (wasPaste) {
+        const pastedLines = finalLines;
         if (useSettingsStore.getState().autoExtractBackgroundVocals) {
           finalLines = extractBackgroundVocals(finalLines, {
             mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
@@ -373,6 +380,10 @@ const EditPanel: React.FC = () => {
         }
         finalizeRun();
         commitLinesWithHistory(finalLines);
+        noteTypedLyrics(finalLines);
+        if (finalLines.length !== pastedLines.length || finalLines.some((line, i) => line !== pastedLines[i])) {
+          noteGuideSignal("edit.background");
+        }
         return;
       }
 
@@ -479,10 +490,7 @@ const EditPanel: React.FC = () => {
               ref={textareaRef}
               value={rawText}
               onChange={textareaChange.onChange}
-              onFocus={() => {
-                setIsTypingLyrics(true);
-                textAtFocusRef.current = lyricsText(useProjectStore.getState().lines);
-              }}
+              onFocus={() => setIsTypingLyrics(true)}
               onBlur={handleTextareaBlur}
               onCompositionStart={textareaChange.onCompositionStart}
               onCompositionEnd={textareaChange.onCompositionEnd}

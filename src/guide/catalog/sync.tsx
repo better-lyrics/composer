@@ -1,3 +1,4 @@
+import { isAutoAlignAvailable } from "@/stores/alignment";
 import { keys } from "@/guide/catalog/keys";
 import { stageTip } from "@/guide/catalog/types";
 import {
@@ -88,6 +89,7 @@ const SYNC_TIPS = [
   tip({
     id: "autoAlign",
     tier: "pro",
+    appliesWhen: isAutoAlignAvailable,
     icon: IconBrain,
     title: "Let Auto-align time the words",
     gist: <>Press {keys("timeline.autoAlign")} and fix what it gets wrong.</>,

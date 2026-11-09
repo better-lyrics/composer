@@ -1,5 +1,6 @@
 import { displayTitle } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { schedulePendingDeletion } from "@/lib/pending-deletions";
 import { flushPendingSave, saveOpenProjectNow } from "@/lib/persistence-debounce";
@@ -63,6 +64,7 @@ async function exportProjectFiles(ids: readonly string[]): Promise<void> {
   records.forEach((record, index) => {
     if (record.status === "fulfilled") downloadProjectFile(projectFileFrom(ids[index], record.value));
   });
+  if (records.some((record) => record.status === "fulfilled")) noteGuideSignal("export.backup");
   const failure = records.find((record) => record.status === "rejected");
   if (failure) throw failure.reason;
 }

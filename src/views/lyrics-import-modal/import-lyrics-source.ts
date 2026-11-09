@@ -77,6 +77,15 @@ function projectFileChoice(
 
 // -- Actions ------------------------------------------------------------------
 
+async function importLyricsNotingGuide(
+  input: Parameters<typeof importLyrics>[0],
+  ctx: ImportContext,
+): Promise<boolean> {
+  const imported = await importLyrics(input, ctx);
+  if (imported) noteGuideSignal("import.lyrics");
+  return imported;
+}
+
 async function importProjectFileForLyrics(
   contents: ProjectFileContents,
   fileName: string | null,
@@ -88,7 +97,11 @@ async function importProjectFileForLyrics(
   const choice = await askChoice({ ...projectFileChoice(contents, fileName), busyMessage: FINISH_IMPORT_FIRST });
   if (choice === "cancel") return false;
   if (contents.kind === "bundle") return restoreBundleContents(contents.projects, contents.unreadable);
-  if (choice === "use-lyrics") return importProjectLyrics(contents.project, fileName ?? PASTED_PROJECT_NAME, ctx);
+  if (choice === "use-lyrics") {
+    const imported = await importProjectLyrics(contents.project, fileName ?? PASTED_PROJECT_NAME, ctx);
+    if (imported) noteGuideSignal("import.lyrics");
+    return imported;
+  }
   return (await importProjectContents(contents)) !== null;
 }
 
@@ -97,7 +110,7 @@ async function importProjectNamedFile(fileName: string, text: string, ctx: Impor
   try {
     contents = parseProjectFileContents(text);
   } catch (error) {
-    if (detectFileType("", text) === "ttml") return importLyrics({ filename: fileName, content: text }, ctx);
+    if (detectFileType("", text) === "ttml") return importLyricsNotingGuide({ filename: fileName, content: text }, ctx);
     reportUnreadableProjectFile(error);
     return false;
   }
@@ -114,9 +127,7 @@ async function importLyricsFile(file: File, ctx: ImportContext): Promise<boolean
   if (isProjectFileName(file.name)) return importProjectNamedFile(file.name, text, ctx);
   const contents = readProjectFileText(text);
   if (contents) return importProjectFileForLyrics(contents, file.name, ctx);
-  const imported = await importLyrics({ filename: file.name, content: text }, ctx);
-  if (imported) noteGuideSignal("import.lyrics");
-  return imported;
+  return importLyricsNotingGuide({ filename: file.name, content: text }, ctx);
 }
 
 function importPastedLyrics(content: string, parsed: ParseResult, ctx: ImportContext): Promise<boolean> {
@@ -126,7 +137,7 @@ function importPastedLyrics(content: string, parsed: ParseResult, ctx: ImportCon
 async function importLyricsText(text: string, ctx: ImportContext): Promise<boolean> {
   const contents = readProjectFileText(text);
   if (contents) return importProjectFileForLyrics(contents, null, ctx);
-  return importLyrics({ filename: PASTED_TEXT_NAME, content: text }, ctx);
+  return importLyricsNotingGuide({ filename: PASTED_TEXT_NAME, content: text }, ctx);
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -149,13 +149,16 @@ function useTimelineSyllableSplitterState({
     if (!split) return;
     const extraUpdates = split.transliteration ? { transliteration: split.transliteration } : {};
 
-    const done =
+    const done = (
       type === "word"
         ? handleWordChangeWithDivergenceCheck(lineId, split.words, "words", extraUpdates)
         : handleWordChangeWithDivergenceCheck(lineId, split.words, "backgroundWords", {
             ...manualBackgroundWordEdit(split.words),
             ...extraUpdates,
-          });
+          })
+    ).then((written) => {
+      if (written) noteGuideSignal("timeline.split");
+    });
     // Only a split that wasn't placed by ear is timed from the audio afterwards.
     return placedByEar ? undefined : done;
   }, [target, splitPoints, transliterationSplitPoints]);
@@ -183,7 +186,6 @@ function useTimelineSyllableSplitterState({
       return;
     }
 
-    noteGuideSignal("timeline.split");
     void applySingleWordSplit()?.then(retime);
     resetSplitPoints();
     closeModal();

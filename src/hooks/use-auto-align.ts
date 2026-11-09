@@ -83,8 +83,10 @@ function useAutoAlign() {
       if (options?.toastErrors !== false) showAlignmentError(autoAlign, lineIds, options?.realign);
       return;
     }
-    noteGuideSignal("sync.autoAlign");
-    if (result.aligned > 0) showGroupActionToast(alignedMessage(result.aligned, result.skipped));
+    if (result.aligned > 0) {
+      showGroupActionToast(alignedMessage(result.aligned, result.skipped));
+      noteGuideSignal("sync.autoAlign");
+    }
     if (result.fellBack > 0) {
       toast.warning(
         `${pluralize(result.fellBack, "line")} couldn't be aligned and ${pluralWord(result.fellBack, "was", "were")} split evenly`,

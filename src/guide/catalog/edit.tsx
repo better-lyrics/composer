@@ -41,7 +41,7 @@ const EDIT_TIPS = [
     tier: "basics",
     icon: IconUser,
     title: "Say who sings",
-    gist: <>Click a line's singer tag to change who sings it.</>,
+    gist: <>Name your singers under Agents. With two or more, click a line's tag to switch.</>,
   }),
   tip({
     id: "background",

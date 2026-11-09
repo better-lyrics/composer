@@ -263,11 +263,12 @@ const WordTrack: React.FC<WordTrackProps> = ({
           swallowTrailingClick();
           settleLoupe();
         }
+        const changedTiming = dragged && finalState !== null && resizeChangedTiming(initialState, finalState, words);
         if (teachesAltGap) {
-          endBoundaryDrag(dragged ? { edgeKey, gapOpen: finalState?.adjacentWordIndex === undefined } : null);
+          endBoundaryDrag(changedTiming ? { edgeKey, gapOpen: finalState?.adjacentWordIndex === undefined } : null);
         }
 
-        if (dragged && finalState && resizeChangedTiming(initialState, finalState, words)) {
+        if (changedTiming && finalState) {
           noteGuideSignal("timeline.resize");
           if (finalState.adjacentWordIndex !== undefined && useSettingsStore.getState().rollingEdit)
             noteGuideSignal("timeline.rolling");
@@ -392,7 +393,6 @@ const WordTrack: React.FC<WordTrackProps> = ({
   };
 
   const handleWordDoubleClick = (wordIndex: number) => {
-    noteGuideSignal("timeline.editText");
     useTimelineStore.getState().setEditingWord({ lineId, wordIndex, type: trackType });
   };
 

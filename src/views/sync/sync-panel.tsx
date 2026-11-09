@@ -312,8 +312,10 @@ const SyncPanel: React.FC = () => {
 
       const runHistory = (action: "undo" | "redo") => {
         if (action === "redo") return redo();
+        if (!useProjectStore.getState().canUndo()) return;
         noteSyncUndo();
         undo();
+        noteGuideSignal("sync.fixTap");
       };
       if (runHistoryShortcut(e, runHistory, { scope: "sync" })) return;
 

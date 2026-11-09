@@ -1,6 +1,7 @@
 import type { GuideEvent, GuideSignal } from "@/domain/guide/model";
 import { firesOn } from "@/domain/guide/triggers";
 import { GUIDE_NUDGE_TRIGGERS } from "@/guide/catalog/nudge-triggers";
+import { GUIDE_SIGNAL_OUTCOMES } from "@/guide/catalog/signal-outcomes";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { type ProjectGuideFacts, useGuideStore } from "@/stores/guide";
 
@@ -54,10 +55,14 @@ function firedNudges(now: number): PendingNudge[] {
 function noteGuideSignal(signal: GuideSignal, key?: string): void {
   const now = performance.now();
   remember({ signal, at: now, key });
-  const { learnedSignals, learnSignal } = useGuideStore.getState();
-  if (!learnedSignals.includes(signal)) learnSignal(signal);
+  const taught = [signal, ...(GUIDE_SIGNAL_OUTCOMES[signal] ?? [])];
+  for (const learned of taught) {
+    const { learnedSignals, learnSignal } = useGuideStore.getState();
+    if (!learnedSignals.includes(learned)) learnSignal(learned);
+  }
   const resolved = pending.filter((queued) => {
-    const done = GUIDE_NUDGE_TRIGGERS.find((nudge) => nudge.id === queued.id)?.resolvedBy === signal;
+    const resolvedBy = GUIDE_NUDGE_TRIGGERS.find((nudge) => nudge.id === queued.id)?.resolvedBy;
+    const done = resolvedBy !== undefined && taught.includes(resolvedBy);
     if (done) retiredThisSession.add(queued.id);
     return !done;
   });

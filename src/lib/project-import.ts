@@ -203,9 +203,7 @@ async function importProjectFile(file: File): Promise<string | null> {
       return openLyricsAsNewProject(text, file.name);
     return reportUnreadableProjectFile(error);
   }
-  const importedId = await importProjectContents(contents);
-  if (importedId) noteGuideSignal("import.projectFile");
-  return importedId;
+  return importProjectContents(contents);
 }
 
 async function restoreBundleContents(projects: readonly ProjectFile[], unreadable: number): Promise<boolean> {
@@ -247,6 +245,7 @@ async function importProjectContents(contents: ProjectFileContents): Promise<str
       id = await importProjectAsNew(projectFile);
     }
     await openProject(id);
+    noteGuideSignal("import.projectFile");
     return id;
   } catch (error) {
     console.error(LOG_PREFIX, "could not import the project file", error);

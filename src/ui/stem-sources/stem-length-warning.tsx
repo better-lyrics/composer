@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useSeparationStore } from "@/stores/separation";
 import { Button } from "@/ui/button";
 import { COMPACT_BUTTON } from "@/ui/stem-sources/compact-button";
@@ -17,7 +18,12 @@ const StemLengthWarning: React.FC<{ fileName: string; mismatchSeconds: number }>
           <Button size="sm" variant="secondary" className={COMPACT_BUTTON} onClick={cancelPendingImport}>
             Cancel
           </Button>
-          <Button size="sm" variant="primary" className={COMPACT_BUTTON} onClick={() => void acceptPendingImport()}>
+          <Button
+            size="sm"
+            variant="primary"
+            className={COMPACT_BUTTON}
+            onClick={() => void acceptPendingImport().then((imported) => imported && noteGuideSignal("import.stems"))}
+          >
             Import anyway
           </Button>
         </>
