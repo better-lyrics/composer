@@ -1164,6 +1164,7 @@ braccato-lyrics .blyrics-container {
     opacity: 0.55;
   }
   html[data-scheme="light"] [data-scroll-container][data-step-timing] .word-face {
+    --word-fill: var(--step-face);
     --step-face: color-mix(in oklab, var(--agent) 10%, color-mix(in oklab, white 85%, var(--color-composer-bg-dark)));
     --step-ring: color-mix(in oklab, var(--agent) 30%, var(--edge));
     background-image: var(--hatch, none);
