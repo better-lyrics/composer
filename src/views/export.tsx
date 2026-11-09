@@ -10,7 +10,9 @@ import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
+import { noteGuideExport } from "@/lib/guide-signals";
 import { AlignmentReviewNotice } from "@/views/export/alignment-review-notice";
+import { UntimedLinesNotice } from "@/views/export/untimed-lines-notice";
 import { applyEditsToProject } from "@/views/export/apply-edits-feedback";
 import { ExportCodePane } from "@/views/export/export-code-pane";
 import { ExportHeader } from "@/views/export/export-header";
@@ -79,6 +81,7 @@ const ExportPanel: React.FC = () => {
 
     downloadText(outgoingContent(), fileName, "application/ttml+xml;charset=utf-8");
     useProjectStore.getState().clearUnexportedImport();
+    noteGuideExport();
   }, [exportContent, isExportable, fileName, alignment.confirmExport, outgoingContent]);
 
   const handleCopy = useCallback(async () => {
@@ -87,6 +90,7 @@ const ExportPanel: React.FC = () => {
 
     await navigator.clipboard.writeText(outgoingContent());
     useProjectStore.getState().clearUnexportedImport();
+    noteGuideExport();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [exportContent, isExportable, alignment.confirmExport, outgoingContent]);
@@ -201,12 +205,15 @@ const ExportPanel: React.FC = () => {
           onRegenerate={handleRegenerate}
           onKeepEdits={handleKeepEdits}
           notice={
-            <AlignmentReviewNotice
-              notice={alignment.notice}
-              review={alignment.review}
-              onReview={alignment.reviewInTimeline}
-              onDismiss={alignment.dismiss}
-            />
+            <>
+              <UntimedLinesNotice />
+              <AlignmentReviewNotice
+                notice={alignment.notice}
+                review={alignment.review}
+                onReview={alignment.reviewInTimeline}
+                onDismiss={alignment.dismiss}
+              />
+            </>
           }
         />
         <ExportSidePanel unison={unisonEnabled && <UnisonPanel source={unisonSource} />} />

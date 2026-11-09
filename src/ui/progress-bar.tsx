@@ -9,6 +9,8 @@ interface ProgressBarProps {
   label: string;
   tone?: ProgressBarTone;
   segments?: number;
+  complete?: boolean;
+  sweepStepMs?: number;
   className?: string;
 }
 
@@ -37,7 +39,15 @@ const SEGMENT_OFF_STYLES: Record<ProgressBarTone, string> = {
 
 // -- Component ----------------------------------------------------------------
 
-const ProgressBar: React.FC<ProgressBarProps> = ({ percent, label, tone = "default", segments, className }) => {
+const ProgressBar: React.FC<ProgressBarProps> = ({
+  percent,
+  label,
+  tone = "default",
+  segments,
+  complete,
+  sweepStepMs,
+  className,
+}) => {
   const clamped = Math.min(100, Math.max(0, percent));
   if (segments !== undefined) {
     const litCount = Math.round((clamped / 100) * segments);
@@ -53,7 +63,12 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ percent, label, tone = "defau
         {Array.from({ length: segments }, (_, index) => (
           <i
             key={index}
-            className={cn("rounded-[2px]", index < litCount ? SEGMENT_LIT_STYLES[tone] : SEGMENT_OFF_STYLES[tone])}
+            style={sweepStepMs ? { transitionDelay: `${index * sweepStepMs}ms` } : undefined}
+            className={cn(
+              "rounded-[2px] transition-[background-color] duration-150 ease-out",
+              index < litCount ? SEGMENT_LIT_STYLES[tone] : SEGMENT_OFF_STYLES[tone],
+              complete && index < litCount && "bg-composer-positive",
+            )}
           />
         ))}
       </div>

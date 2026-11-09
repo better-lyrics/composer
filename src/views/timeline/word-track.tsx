@@ -26,6 +26,7 @@ import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay
 import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { WordBlock } from "@/views/timeline/word-block";
+import { BoundaryModeChip, useBoundaryModeChip } from "@/views/timeline/boundary-mode-chip";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -112,6 +113,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   });
 
   const snap = useTimelineSnap();
+  const { chipPlace, beginBoundaryDrag, endBoundaryDrag } = useBoundaryModeChip();
   const getLastPointer = useCallback(() => lastPointerRef.current, []);
   useGestureInputReplay({ active: resizing, getLastPointer });
 
@@ -157,6 +159,18 @@ const WordTrack: React.FC<WordTrackProps> = ({
       const minWordDuration = useSettingsStore.getState().minWordDuration;
       const boundaryEdge: BoundaryEdge = edge === "left" ? "begin" : "end";
       const range = storedLineTimeRange(lineId, duration);
+
+      const edgeKey = `${lineId}:${trackType}:${edge === "left" ? wordIndex - 1 : wordIndex}`;
+      const teachesAltGap = shouldRollNeighbour({
+        words,
+        wordIndex,
+        edge: boundaryEdge,
+        rollingEdit: useSettingsStore.getState().rollingEdit,
+        syllablesFollowRolling: syllablesFollowRollingAtStart,
+        syllablePositions,
+        altHeld: false,
+      });
+      if (teachesAltGap) beginBoundaryDrag(track, startX, edgeKey);
 
       setResizing(true);
       lastPointerRef.current = { clientX: startX, clientY: 0 };
@@ -248,6 +262,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
           swallowTrailingClick();
           settleLoupe();
         }
+        if (teachesAltGap) {
+          endBoundaryDrag(dragged ? { edgeKey, gapOpen: finalState?.adjacentWordIndex === undefined } : null);
+        }
 
         if (dragged && finalState && resizeChangedTiming(initialState, finalState, words)) {
           if (finalState.adjacentWordIndex !== undefined) {
@@ -267,6 +284,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       };
 
       cleanupRef.current = () => {
+        endBoundaryDrag(null);
         setResizing(false);
         setLiveWordEdit(null);
         snap.endGesture();
@@ -278,7 +296,18 @@ const WordTrack: React.FC<WordTrackProps> = ({
       document.addEventListener("pointermove", handleMouseMove);
       document.addEventListener("pointerup", handleMouseUp);
     },
-    [words, duration, onUpdateWord, syllablePositions, snap, lineId, trackType, tryStartStretch],
+    [
+      words,
+      duration,
+      onUpdateWord,
+      syllablePositions,
+      snap,
+      lineId,
+      trackType,
+      tryStartStretch,
+      beginBoundaryDrag,
+      endBoundaryDrag,
+    ],
   );
 
   const isBoundaryConjoined = (boundaryIndex: number): boolean =>
@@ -483,6 +512,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
           />
         );
       })}
+      <BoundaryModeChip place={chipPlace} gapOpen={altPressed} />
     </div>
   );
 };

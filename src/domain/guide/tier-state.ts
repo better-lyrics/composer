@@ -15,12 +15,12 @@ const NEXT_TIER_OPENS_AT = 0.8;
 function stageTiers(
   tips: readonly GuideTipEntry[],
   stage: GuideStage,
-  learned: ReadonlySet<string>,
+  learnedSignals: ReadonlySet<string>,
   showAll: boolean,
 ): TierStatus[] {
   const counts = GUIDE_TIER_ORDER.map((tier) => {
     const inTier = tips.filter((entry) => entry.stage === stage && entry.tier === tier);
-    return { tier, total: inTier.length, learned: inTier.filter((entry) => learned.has(entry.id)).length };
+    return { tier, total: inTier.length, learned: inTier.filter((entry) => learnedSignals.has(entry.learnedBy)).length };
   });
   return counts.map((count, index) => ({ ...count, state: stateOf(counts, index, showAll) }));
 }
