@@ -38,7 +38,7 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
 }) => {
   const learnedSignals = useGuideStore((state) => state.learnedSignals);
   const learned = useMemo(() => new Set(learnedSignals), [learnedSignals]);
-  const [tierAfterMilestone, setTierAfterMilestone] = useState<GuideTierId | undefined>();
+  const [shownTier, setShownTier] = useState<{ stage: GuideStage; tier?: GuideTierId } | null>(null);
 
   if (showingRecord) {
     const stages = [...tiers].map(([recordStage, statuses]) => ({
@@ -60,7 +60,7 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
         tipCount={count(milestone.tier)}
         next={next ? { tier: next, tipCount: count(next) } : null}
         onContinue={() => {
-          setTierAfterMilestone(next);
+          setShownTier({ stage: milestone.stage, tier: next });
           onMilestoneDone();
         }}
       />
@@ -69,7 +69,8 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
 
   const queued = pending.find((candidate) => candidate.id === focusNudgeId) ?? pending[0];
   const nudge = queued && GUIDE_NUDGES.find((candidate) => candidate.id === queued.id);
-  const stageTips = ALL_GUIDE_TIPS.filter((tip) => tip.stage === stage);
+  const tipStage = shownTier?.stage ?? stage;
+  const stageTips = ALL_GUIDE_TIPS.filter((tip) => tip.stage === tipStage);
   return (
     <>
       {nudge && (
@@ -86,13 +87,14 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
           }}
         />
       )}
-      {(!nudge || nudge.stage === stage) && stageTips.length > 0 && (
+      {(!nudge || nudge.stage === tipStage) && stageTips.length > 0 && (
         <GuideTips
-          key={`${stage}:${tierAfterMilestone ?? ""}`}
-          tiers={tiers.get(stage) ?? []}
+          key={`${tipStage}:${shownTier?.tier ?? ""}`}
+          stageName={STAGE_NAMES[tipStage]}
+          tiers={tiers.get(tipStage) ?? []}
           tips={stageTips}
           learnedSignals={learned}
-          initialTier={tierAfterMilestone}
+          initialTier={shownTier?.tier}
           onKnown={(tip) => useGuideStore.getState().learnSignal(tip.learnedBy)}
         />
       )}

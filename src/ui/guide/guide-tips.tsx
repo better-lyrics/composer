@@ -7,6 +7,7 @@ import { useState } from "react";
 // -- Types --------------------------------------------------------------------
 
 interface GuideTipsProps {
+  stageName: string;
   tiers: readonly TierStatus[];
   tips: readonly GuideTip[];
   learnedSignals: ReadonlySet<string>;
@@ -22,13 +23,14 @@ function firstTierToWorkOn(tiers: readonly TierStatus[]): GuideTierId {
 
 // -- Component ----------------------------------------------------------------
 
-const GuideTips: React.FC<GuideTipsProps> = ({ tiers, tips, learnedSignals, initialTier, onKnown }) => {
+const GuideTips: React.FC<GuideTipsProps> = ({ stageName, tiers, tips, learnedSignals, initialTier, onKnown }) => {
   const [selected, setSelected] = useState<GuideTierId>(() => initialTier ?? firstTierToWorkOn(tiers));
   const status = tiers.find((candidate) => candidate.tier === selected);
   const inTier = tips.filter((tip) => tip.tier === selected);
   const previous = GUIDE_TIER_ORDER[GUIDE_TIER_ORDER.indexOf(selected) - 1];
   return (
     <>
+      <h3 className="px-2.5 pb-1 text-xs font-medium text-(--muted)">{stageName} tips</h3>
       <TierTiles tiers={tiers} selected={selected} onSelect={setSelected} />
       {status?.state === "locked" && previous ? (
         <p className="px-2.5 py-3 text-xs text-pretty text-(--muted)">
