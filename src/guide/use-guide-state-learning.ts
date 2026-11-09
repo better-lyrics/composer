@@ -60,15 +60,15 @@ function lastQuietLearnAt(): number {
 function useGuideStateLearning(): void {
   useEffect(() => {
     learnWhatIsOn();
-    const stops = [
-      useSettingsStore.subscribe(learnWhatIsOn),
-      useSeparationStore.subscribe(learnWhatIsOn),
-      useProjectStore.subscribe((state, previous) => {
-        if (state.beatGrid !== previous.beatGrid) learnWhatIsOn();
-      }),
-    ];
+    const stopSettings = useSettingsStore.subscribe(learnWhatIsOn);
+    const stopSeparation = useSeparationStore.subscribe(learnWhatIsOn);
+    const stopProject = useProjectStore.subscribe((state, previous) => {
+      if (state.beatGrid !== previous.beatGrid) learnWhatIsOn();
+    });
     return () => {
-      for (const stop of stops) stop();
+      stopSettings();
+      stopSeparation();
+      stopProject();
     };
   }, []);
 }

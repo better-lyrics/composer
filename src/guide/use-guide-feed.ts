@@ -148,7 +148,8 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
 
 // A tier earned while you work earns its milestone; tiers already earned before this session stay quiet.
 function useMilestoneFeed(tiers: StageTiers) {
-  const earnedBefore = useRef(earnedKeys(tiers));
+  const [initialEarned] = useState(() => earnedKeys(tiers));
+  const earnedBefore = useRef(initialEarned);
   const [milestone, setMilestone] = useState<EarnedTier | null>(null);
   useEffect(() => {
     const now = earnedKeys(tiers);

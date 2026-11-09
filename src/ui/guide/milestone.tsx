@@ -24,13 +24,13 @@ function useMilestoneBeats() {
   const [pressed, setPressed] = useState(false);
   const [filled, setFilled] = useState(false);
   useEffect(() => {
-    const timers = [
-      window.setTimeout(() => setFilled(true), guideMedalPress.sweepStartMs),
-      window.setTimeout(() => setPressed(true), guideMedalPress.downAtMs),
-      window.setTimeout(() => setPressed(false), guideMedalPress.upAtMs),
-    ];
+    const fill = window.setTimeout(() => setFilled(true), guideMedalPress.sweepStartMs);
+    const press = window.setTimeout(() => setPressed(true), guideMedalPress.downAtMs);
+    const lift = window.setTimeout(() => setPressed(false), guideMedalPress.upAtMs);
     return () => {
-      for (const timer of timers) window.clearTimeout(timer);
+      window.clearTimeout(fill);
+      window.clearTimeout(press);
+      window.clearTimeout(lift);
     };
   }, []);
   return { pressed, filled };
