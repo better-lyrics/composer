@@ -1,3 +1,5 @@
+import { type RefObject, useCallback, useEffect } from "react";
+import { toast } from "sonner";
 import { withNewInstance } from "@/domain/group/own-timing";
 import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
 import { pickedTemplateSource } from "@/domain/group/template-source";
@@ -13,7 +15,7 @@ import type { WordSelection } from "@/domain/selection/model";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { notePlacement } from "@/lib/replay-cue";
-import { livePlaybackTime, useAudioStore } from "@/stores/audio";
+import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -35,25 +37,24 @@ import { isInFocus } from "@/views/timeline/group-focus";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
-import { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar, jumpToAdjacentGridLine } from "@/views/timeline/jump-to-bar";
+import { jumpToAdjacentBar, jumpToAdjacentGridLine, NO_BEAT_GRID_MESSAGE } from "@/views/timeline/jump-to-bar";
 import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { showLoupeAfterKeyEdit, storedEdgeTime } from "@/views/timeline/loupe/loupe-target";
 import { isPartialSyllableSelection, mergeSelectedWords } from "@/views/timeline/merge-selected-words";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { pingGroup } from "@/views/timeline/ping-group";
 import { togglePitchLine } from "@/views/timeline/pitch/pitch-line-toggle";
+import { playheadTime } from "@/views/timeline/playhead-time";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { clearLoopRegion, playSelection } from "@/views/timeline/selection-playback";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { AUTO_ALIGN_EVENT } from "@/views/timeline/timeline-auto-align";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
 import { computeRowLayout, partitionNudgeSelections, shiftSelectionsTogether } from "@/views/timeline/utils";
-import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
-import { type RefObject, useCallback, useEffect } from "react";
-import { toast } from "sonner";
 import { readViewScroll, scrollView, smoothScrollView } from "@/views/timeline/view-scroll";
+import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -92,7 +93,7 @@ function useTimelineKeyboard(
 
   const handleSetWordTiming = useCallback(
     (edge: "begin" | "end") => {
-      const currentTime = livePlaybackTime();
+      const currentTime = playheadTime();
 
       const { selectedWords, zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
       const selectedWord = selectedWords[0] ?? null;
@@ -267,7 +268,7 @@ function useTimelineKeyboard(
           const scrollContainer = scrollContainerRef.current;
           if (!scrollContainer) return;
 
-          const currentTime = livePlaybackTime();
+          const currentTime = playheadTime();
           const { zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
 
           scrollView(scrollContainer, centerTimeScrollLeft(currentTime, zoom, scrollContainer.clientWidth));
@@ -313,7 +314,7 @@ function useTimelineKeyboard(
         }
         case "timeline.selectWordAtPlayhead": {
           e.preventDefault();
-          const currentTime = livePlaybackTime();
+          const currentTime = playheadTime();
           const matches = findWordsAtTime(lines, currentTime, currentEffectiveFocus());
           const next = pickNextWordAtPlayhead(matches, useTimelineStore.getState().selectedWords);
           if (!next) {
@@ -382,8 +383,8 @@ function useTimelineKeyboard(
           break;
         case "timeline.dropSnapMarkerAtPlayhead": {
           e.preventDefault();
-          const playheadTime = livePlaybackTime();
-          useProjectStore.getState().addCustomSnapPoint(playheadTime);
+          const playheadAt = playheadTime();
+          useProjectStore.getState().addCustomSnapPoint(playheadAt);
           noteGuideSignal("timeline.markers");
           break;
         }
@@ -526,7 +527,7 @@ function useTimelineKeyboard(
           const [groupId, instanceIdxStr] = groupKey.split(":");
           const sourceInstanceIdx = Number.parseInt(instanceIdxStr, 10);
 
-          const playheadTime = livePlaybackTime();
+          const playheadAt = playheadTime();
           const group = projectState.groups.find((candidate) => candidate.id === groupId);
           const template = instanceToTemplate(
             projectState.lines,
@@ -541,7 +542,7 @@ function useTimelineKeyboard(
             lines: projectState.lines,
             groupId,
             template,
-            playheadTime,
+            playheadTime: playheadAt,
           });
           if (placement.kind === "fill") {
             projectState.setLinesWithHistory(
@@ -715,8 +716,8 @@ function useTimelineKeyboard(
           const instanceLines = linesOfInstance(projectLines, inst.groupId, inst.instanceIdx);
           const bounds = instanceBounds(instanceLines);
           if (!bounds) break;
-          const playheadTime = livePlaybackTime();
-          const delta = playheadTime - bounds.begin;
+          const playheadAt = playheadTime();
+          const delta = playheadAt - bounds.begin;
           if (Math.abs(delta) < 0.001) break;
           e.preventDefault();
           useProjectStore
@@ -741,7 +742,7 @@ function useTimelineKeyboard(
           e.preventDefault();
           const dir: 1 | -1 = matched.includes("Next") ? 1 : -1;
           const fine = matched.includes("Fine");
-          const current = livePlaybackTime();
+          const current = playheadTime();
           const pins = useProjectStore.getState().customSnapPoints;
           const onsets = fine ? useTimelineStore.getState().vocalOnsetSnapPoints : [];
           const points = normalizeTimes([...snapPointTimes(pins), ...onsets]);

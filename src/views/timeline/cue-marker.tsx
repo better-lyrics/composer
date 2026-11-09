@@ -1,12 +1,13 @@
+import { useRef } from "react";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { notePlacement } from "@/lib/replay-cue";
-import { livePlaybackTime, useAudioStore } from "@/stores/audio";
+import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { ShortcutTip } from "@/ui/shortcut-tip";
 import { Tooltip } from "@/ui/tooltip";
+import { playheadTime } from "@/views/timeline/playhead-time";
 import { noteReplaySpot } from "@/views/timeline/replay-spot-signal";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -32,8 +33,8 @@ const CueMarker: React.FC = () => {
     () => {
       const anchor = anchorRef.current;
       if (!anchor || cue === null) return;
-      const { zoom: liveZoom, isDraggingPlayhead, dragTime } = useTimelineStore.getState();
-      const playhead = isDraggingPlayhead ? dragTime : livePlaybackTime();
+      const liveZoom = useTimelineStore.getState().zoom;
+      const playhead = playheadTime();
       anchor.toggleAttribute("data-under-playhead", Math.abs(cue - playhead) * liveZoom < HIDE_UNDER_PLAYHEAD_PX);
     },
     "cue-marker",
