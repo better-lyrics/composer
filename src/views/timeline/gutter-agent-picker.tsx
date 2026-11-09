@@ -1,5 +1,7 @@
 import { agentDisplayName } from "@/domain/agent/display-name";
 import { getAgentColor } from "@/domain/agent/colors";
+import { nextAgentId } from "@/domain/agent/next-agent-id";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";
 import { INPUT_STYLES } from "@/ui/input-styles";
@@ -30,25 +32,22 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
 
   const handleAssign = useCallback(
     (newAgentId: string, close: () => void) => {
-      updateLineWithHistory(lineId, { agentId: newAgentId });
+      if (newAgentId !== agentId) {
+        updateLineWithHistory(lineId, { agentId: newAgentId });
+        noteGuideSignal("edit.singer");
+      }
       close();
     },
-    [lineId, updateLineWithHistory],
+    [lineId, agentId, updateLineWithHistory],
   );
 
   const handleAddNew = useCallback(
     (close: () => void) => {
       if (!newAgentName.trim()) return;
-      const usedNumbers = new Set<number>();
-      for (const a of agents) {
-        const m = a.id.match(/^v(\d+)$/);
-        if (m) usedNumbers.add(Number.parseInt(m[1], 10));
-      }
-      let next = 1;
-      while (usedNumbers.has(next)) next++;
-      const newId = `v${next}`;
+      const newId = nextAgentId(agents);
       addAgent({ id: newId, type: "person", name: newAgentName.trim() });
       updateLineWithHistory(lineId, { agentId: newId });
+      noteGuideSignal("edit.singer");
       setNewAgentName("");
       close();
     },
