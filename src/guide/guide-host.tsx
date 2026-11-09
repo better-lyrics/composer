@@ -7,6 +7,7 @@ import { hideGuide } from "@/guide/hide-guide";
 import { markPeeksRead } from "@/guide/peek-queue";
 import { type StageTiers, useJourneyFeed, useMilestoneFeed, useNudgeFeed } from "@/guide/use-guide-feed";
 import { useGuidePeek } from "@/guide/use-guide-peek";
+import { useGuideStateLearning } from "@/guide/use-guide-state-learning";
 import { useGuideTips } from "@/guide/use-guide-tips";
 import { useProjectJourney } from "@/guide/use-project-journey";
 import { useEscapeLayer } from "@/hooks/useEscapeLayer";
@@ -14,6 +15,7 @@ import { noteGuideProjectFact } from "@/lib/guide-signals";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { useGuideStore } from "@/stores/guide";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
 import { cn } from "@/utils/cn";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -47,7 +49,11 @@ const GuideHost: React.FC = () => {
   const showAll = useGuideStore((state) => state.showAll);
   const activeTab = useProjectStore((state) => state.activeTab);
   // The orb steps around controls that sit in this corner: the Sync tap keys, the Timeline footer and the Export side panel.
-  const timelineFooterShown = useTimelineStore((state) => state.selectedWords.length > 0) && activeTab === "timeline";
+  // The footer stops short of the Timeline preview sidebar, so with the sidebar open the orb stays in its corner.
+  const previewSidebar = useSettingsStore((state) => state.previewSidebar);
+  const timelineFooterShown =
+    useTimelineStore((state) => state.selectedWords.length > 0) && activeTab === "timeline" && !previewSidebar;
+  useGuideStateLearning();
   const pending = useNudgeFeed();
   useJourneyFeed(journey, projectId, firstVisit);
   const { milestone, clearMilestone } = useMilestoneFeed(tiers);
@@ -121,6 +127,7 @@ const GuideHost: React.FC = () => {
                 focusNudgeId={focusNudgeId}
                 milestone={milestone}
                 showingRecord={showingRecord}
+                onLeaveRecord={() => setShowingRecord(false)}
                 onMilestoneDone={clearMilestone}
               />
             </GuideCard>

@@ -11,6 +11,7 @@ import { useState } from "react";
 
 interface TipListProps {
   open: readonly GuideTip[];
+  waitsOn: (tip: GuideTip) => string | null;
   learned: readonly GuideTip[];
   onKnown: (tip: GuideTip) => void;
 }
@@ -21,16 +22,24 @@ const VISIBLE_TIPS = 3;
 
 // -- Components ---------------------------------------------------------------
 
-const TipRow: React.FC<{ tip: GuideTip; onKnown: () => void }> = ({ tip, onKnown }) => (
+const TipRow: React.FC<{ tip: GuideTip; waitsOn: string | null; onKnown: () => void }> = ({
+  tip,
+  waitsOn,
+  onKnown,
+}) => (
   <m.li
     layout="position"
     exit={guideRowExit}
     className="group flex gap-2.5 overflow-hidden rounded-[14px] py-2 pr-1.5 pl-2.5 transition-[background-color] duration-150 hover:bg-(--layer-1)"
   >
-    <tip.icon className="mt-0.5 size-4 shrink-0 text-composer-accent-text" stroke={1.75} />
+    <tip.icon
+      className={cn("mt-0.5 size-4 shrink-0", waitsOn ? "text-(--muted)" : "text-composer-accent-text")}
+      stroke={1.75}
+    />
     <div className="min-w-0 flex-1">
-      <div className="text-[13px] font-medium">{tip.title}</div>
+      <div className={cn("text-[13px] font-medium", waitsOn && "text-(--label)")}>{tip.title}</div>
       <p className="mt-0.5 text-xs leading-[1.55] text-pretty text-(--label)">{tip.gist}</p>
+      {waitsOn && <p className="mt-1 text-xs text-(--muted)">Comes after "{waitsOn}"</p>}
     </div>
     <IconButton
       variant="ghost"
@@ -70,7 +79,7 @@ const LearnedRow: React.FC<{ tips: readonly GuideTip[] }> = ({ tips }) => {
   );
 };
 
-const TipList: React.FC<TipListProps> = ({ open, learned, onKnown }) => {
+const TipList: React.FC<TipListProps> = ({ open, waitsOn, learned, onKnown }) => {
   const [showAll, setShowAll] = useState(false);
   const shown = showAll ? open : open.slice(0, VISIBLE_TIPS);
   const hiddenCount = open.length - shown.length;
@@ -79,7 +88,7 @@ const TipList: React.FC<TipListProps> = ({ open, learned, onKnown }) => {
       <ul>
         <AnimatePresence initial={false}>
           {shown.map((tip) => (
-            <TipRow key={tip.id} tip={tip} onKnown={() => onKnown(tip)} />
+            <TipRow key={tip.id} tip={tip} waitsOn={waitsOn(tip)} onKnown={() => onKnown(tip)} />
           ))}
         </AnimatePresence>
       </ul>

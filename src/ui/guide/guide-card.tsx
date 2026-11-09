@@ -1,6 +1,7 @@
 import { GuideOptionsMenu } from "@/ui/guide/guide-options-menu";
 import { IconButton } from "@/ui/icon-button";
 import { ProgressBar } from "@/ui/progress-bar";
+import { Scroll } from "@/ui/scroll";
 import { guideCardVariants, guideChunkVariants } from "@/utils/animationVariants";
 import { IconArrowLeft, IconAward, IconChevronRight } from "@tabler/icons-react";
 import { m } from "motion/react";
@@ -42,7 +43,7 @@ const GuideCard: React.FC<GuideCardProps> = ({
     initial="hidden"
     animate="shown"
     exit="exit"
-    className="surface-floating w-[420px] max-w-[calc(100vw-2rem)] origin-bottom-right overflow-hidden rounded-[20px] border border-transparent p-1.5"
+    className="surface-floating flex max-h-[calc(100dvh-16rem)] w-[420px] max-w-[calc(100vw-2rem)] origin-bottom-right flex-col overflow-hidden rounded-[20px] border border-transparent p-1.5"
   >
     <m.div variants={guideChunkVariants} className="flex items-center gap-2 py-1 pr-1 pl-2.5">
       {goToStep ? (
@@ -81,7 +82,9 @@ const GuideCard: React.FC<GuideCardProps> = ({
         className="h-1"
       />
     </m.div>
-    <m.div variants={guideChunkVariants}>{children}</m.div>
+    <m.div variants={guideChunkVariants} className="flex min-h-0 flex-col">
+      <Scroll className="-mx-1.5 -mb-1.5 min-h-0 px-1.5 pb-1.5">{children}</Scroll>
+    </m.div>
   </m.section>
 );
 

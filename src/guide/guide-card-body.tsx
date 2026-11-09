@@ -22,6 +22,7 @@ interface GuideCardBodyProps {
   focusNudgeId: string | null;
   milestone: EarnedTier | null;
   showingRecord: boolean;
+  onLeaveRecord: () => void;
   onMilestoneDone: () => void;
 }
 
@@ -36,6 +37,7 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
   focusNudgeId,
   milestone,
   showingRecord,
+  onLeaveRecord,
   onMilestoneDone,
 }) => {
   const learnedSignals = useGuideStore((state) => state.learnedSignals);
@@ -48,7 +50,15 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
       name: STAGE_NAMES[recordStage],
       tiers: statuses,
     }));
-    return <GuideRecord stages={stages.filter((row) => row.tiers.some((status) => status.total > 0))} />;
+    return (
+      <GuideRecord
+        stages={stages.filter((row) => row.tiers.some((status) => status.total > 0))}
+        onOpenStage={(recordStage) => {
+          setShownTier({ stage: recordStage });
+          onLeaveRecord();
+        }}
+      />
+    );
   }
 
   if (milestone) {

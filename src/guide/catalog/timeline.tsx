@@ -56,7 +56,7 @@ const TIMELINE_TIPS = [
   }),
   tip({
     id: "play",
-    tier: "basics",
+    tier: "further",
     icon: IconPlayerPlay,
     title: "Hear just that bit",
     gist: <>Select words, then press {keys("timeline.playSelection")}.</>,
@@ -161,6 +161,13 @@ const TIMELINE_TIPS = [
     gist: <>Scroll over the waveform to move the playhead.</>,
   }),
   tip({
+    id: "stems",
+    tier: "pro",
+    icon: IconEar,
+    title: "Hear only the vocal",
+    gist: <>Separate the vocal from the Stem menu, then press {keys("global.toggleStem")} to hear it alone.</>,
+  }),
+  tip({
     id: "spectrum",
     tier: "pro",
     icon: IconChartHistogram,
@@ -170,6 +177,7 @@ const TIMELINE_TIPS = [
   tip({
     id: "pitch",
     tier: "pro",
+    needs: "timeline.stems",
     icon: IconWaveSine,
     title: "Follow the melody",
     gist: <>Press {keys("timeline.togglePitchLine")} to draw the melody over the rows.</>,
@@ -184,16 +192,15 @@ const TIMELINE_TIPS = [
   tip({
     id: "onsets",
     tier: "pro",
+    needs: "timeline.stems",
     icon: IconMicrophone2,
     title: "Snap to where words start",
-    gist: <>Turn on vocal onsets in the Snap menu to catch each consonant.</>,
-  }),
-  tip({
-    id: "stems",
-    tier: "pro",
-    icon: IconEar,
-    title: "Hear only the vocal",
-    gist: <>Press {keys("global.toggleStem")} to switch to the vocal on its own.</>,
+    gist: (
+      <>
+        Once the vocal is separated, drags snap to where each word starts. Vocal onsets in the Snap menu turns it on or
+        off.
+      </>
+    ),
   }),
   tip({
     id: "markers",

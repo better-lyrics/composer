@@ -1,4 +1,5 @@
 import { PEEK_ICONS, PEEK_LABELS, PEEK_TONES, type GuidePeek } from "@/ui/guide/peek";
+import { ProgressRing } from "@/ui/guide/progress-ring";
 import { cn } from "@/utils/cn";
 import {
   guideBadgeVariants,
@@ -23,28 +24,7 @@ interface GuideOrbProps {
 
 // -- Constants ----------------------------------------------------------------
 
-const RING_RADIUS = 15;
-const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
-
 // -- Components ---------------------------------------------------------------
-
-const ProgressRing: React.FC<{ progress: number }> = ({ progress }) => (
-  <svg viewBox="0 0 36 36" className="absolute inset-0 size-9 -rotate-90" aria-hidden>
-    <circle cx="18" cy="18" r={RING_RADIUS} fill="none" stroke="var(--layer-2)" strokeWidth="2" />
-    <circle
-      cx="18"
-      cy="18"
-      r={RING_RADIUS}
-      fill="none"
-      stroke="var(--color-composer-accent)"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeDasharray={RING_LENGTH}
-      strokeDashoffset={RING_LENGTH * (1 - progress)}
-      className="transition-[stroke-dashoffset] duration-500 ease-out"
-    />
-  </svg>
-);
 
 const orbLabel = (unread: number) => (unread > 0 ? `Open guide, ${unread} new` : "Open guide");
 
@@ -68,7 +48,7 @@ const GuideOrb: React.FC<GuideOrbProps> = ({ peek, unread, progress, open, onCli
         className="surface-floating flex h-11 cursor-pointer select-none items-center overflow-hidden rounded-full border border-transparent p-1 text-[13px] transition-[scale] duration-150 ease-out active:scale-[0.96]"
       >
         <m.span layout="position" className="relative flex size-9 shrink-0 items-center justify-center">
-          <ProgressRing progress={progress} />
+          <ProgressRing progress={progress} className="absolute inset-0" />
           <AnimatePresence initial={false} mode="popLayout">
             <m.span
               key={open ? "open" : (peek?.kind ?? "rest")}

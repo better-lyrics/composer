@@ -28,6 +28,13 @@ const GuideTips: React.FC<GuideTipsProps> = ({ stageName, tiers, tips, learnedSi
   const status = tiers.find((candidate) => candidate.tier === selected);
   const inTier = tips.filter((tip) => tip.tier === selected);
   const previous = GUIDE_TIER_ORDER[GUIDE_TIER_ORDER.indexOf(selected) - 1];
+  // A tip that only works after another one waits behind it, and says which.
+  const waitsOn = (tip: GuideTip) =>
+    tip.needs && !learnedSignals.has(tip.needs)
+      ? (tips.find((candidate) => candidate.learnedBy === tip.needs)?.title ?? null)
+      : null;
+  const byReadiness = (first: GuideTip, second: GuideTip) =>
+    Number(waitsOn(first) !== null) - Number(waitsOn(second) !== null);
   return (
     <>
       <h3 className="px-2.5 pb-2 text-xs font-medium text-(--muted)">{stageName} tips</h3>
@@ -38,7 +45,8 @@ const GuideTips: React.FC<GuideTipsProps> = ({ stageName, tiers, tips, learnedSi
         </p>
       ) : (
         <TipList
-          open={inTier.filter((tip) => !learnedSignals.has(tip.learnedBy))}
+          open={inTier.filter((tip) => !learnedSignals.has(tip.learnedBy)).toSorted(byReadiness)}
+          waitsOn={waitsOn}
           learned={inTier.filter((tip) => learnedSignals.has(tip.learnedBy))}
           onKnown={onKnown}
         />
