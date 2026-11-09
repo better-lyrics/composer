@@ -37,7 +37,7 @@ function dismissalKey(mainVideoId: string, videoId: string): string {
 
 // -- Hook ----------------------------------------------------------------------
 
-function useSubmitVideos(mainVideoId: string, durationSeconds: number): SubmitVideos {
+function useSongSuggestions(mainVideoId: string | undefined, durationSeconds: number) {
   const metadata = useProjectStore((state) => state.metadata);
   const songSeconds = submitDurationSeconds(durationSeconds || metadata.duration);
   const song = useMemo((): SongForSuggestions | null => {
@@ -46,7 +46,12 @@ function useSubmitVideos(mainVideoId: string, durationSeconds: number): SubmitVi
     if (!title || !artist || !(songSeconds > 0)) return null;
     return { song: title, artist, album: metadata.album?.trim() || null, duration: songSeconds, videoId: mainVideoId };
   }, [metadata.title, metadata.artists, metadata.album, songSeconds, mainVideoId]);
-  const suggestions = useSongVideoSuggestions(song).data ?? [];
+  return { songSeconds, suggestions: useSongVideoSuggestions(song).data ?? [] };
+}
+
+function useSubmitVideos(mainVideoId: string, durationSeconds: number): SubmitVideos {
+  const metadata = useProjectStore((state) => state.metadata);
+  const { songSeconds, suggestions } = useSongSuggestions(mainVideoId, durationSeconds);
   const [chosen, setChosen] = useState<ChosenVideo[]>([]);
   const [, rememberDismissal] = useReducer((count: number) => count + 1, 0);
 
@@ -93,4 +98,4 @@ function useSubmitVideos(mainVideoId: string, durationSeconds: number): SubmitVi
 
 // -- Exports -------------------------------------------------------------------
 
-export { useSubmitVideos };
+export { useSongSuggestions, useSubmitVideos };

@@ -1,4 +1,3 @@
-import { quotedTitle } from "@/domain/project/display-title";
 import {
   type ChosenVideo,
   linkedVideoCount,
@@ -12,6 +11,7 @@ import { useConfirm } from "@/stores/confirm-store";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { AddVideoField } from "@/ui/unison/add-video-field";
+import { confirmDifferentTitle } from "@/ui/unison/confirm-different-title";
 import { ChosenVideoRow, MatchMark, VideoRow } from "@/ui/unison/video-row";
 import { IconPlus, IconX } from "@tabler/icons-react";
 import { useId, useRef, useState } from "react";
@@ -38,6 +38,7 @@ interface VideoPickerProps {
   onLink: (suggestion: SuggestedVideo) => PickerResult;
   onUnlink: (videoId: string) => PickerResult;
   onAdd: (videoId: string) => PickerResult;
+  onChangeMain?: () => void;
 }
 
 interface RowError {
@@ -63,6 +64,7 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
   onLink,
   onUnlink,
   onAdd,
+  onChangeMain,
 }) => {
   const confirm = useConfirm();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -79,16 +81,7 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
   };
 
   const link = async (suggestion: SuggestedVideo) => {
-    if (suggestion.match?.level !== "same") {
-      const sure = await confirm({
-        title: "Link a video with a different title?",
-        description: `${quotedTitle(suggestion.title)} may not be the same recording as ${quotedTitle(songTitle)}. Link it only if the lyrics line up with it.`,
-        confirmLabel: "Link video",
-        cancelLabel: "Cancel",
-        variant: "primary",
-      });
-      if (!sure) return;
-    }
+    if (!(await confirmDifferentTitle(confirm, suggestion, songTitle))) return;
     await run(suggestion.videoId, () => onLink(suggestion));
   };
 
@@ -107,6 +100,13 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
           artworkUrl={main.artworkUrl}
           tag="main"
           facts={main.facts}
+          trailing={
+            onChangeMain && (
+              <Button size="sm" variant="ghost" disabled={busy} onClick={onChangeMain} className="shrink-0">
+                Change
+              </Button>
+            )
+          }
         />
         {linked.map((video) => (
           <ChosenVideoRow
