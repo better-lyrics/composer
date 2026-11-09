@@ -1135,6 +1135,7 @@ braccato-lyrics .blyrics-container {
     --step-drop: var(--word-shadow);
     --word-fill: var(--step-face);
     opacity: 1;
+    color: color-mix(in oklab, var(--ink) 94%, transparent);
     background-image: var(--hatch, none);
     box-shadow:
       inset 0 1px 0 var(--step-top),
@@ -1160,6 +1161,7 @@ braccato-lyrics .blyrics-container {
     --step-face: color-mix(in oklab, var(--agent) 10%, color-mix(in oklab, white 85%, var(--color-composer-bg-dark)));
     --step-ring: color-mix(in oklab, var(--agent) 30%, var(--edge));
     background-image: var(--hatch, none);
+    color: color-mix(in oklab, var(--ink) 94%, transparent);
     box-shadow:
       inset 0 1px 0 var(--step-top),
       inset 0 0 0 1px var(--step-ring),
