@@ -2,6 +2,7 @@ import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing"
 import type { LinkGroup } from "@/domain/group/template";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import { type StepKey, type StepRefusal, applyStepKey } from "@/domain/step-timing/step-write";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
 import { getSyllablePositions } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
@@ -40,6 +41,17 @@ interface SetBoundaryInput {
   rolling: boolean;
   syllablesFollowRolling: boolean;
   range?: TimeRange;
+  updateLineWithHistory: UpdateLineWithHistory;
+}
+
+interface StepWriteOpInput {
+  lines: readonly ReadableLine[];
+  lineIdx: number;
+  wordIdx: number;
+  key: StepKey;
+  time: number;
+  minDuration: number;
+  range: TimeRange;
   updateLineWithHistory: UpdateLineWithHistory;
 }
 
@@ -187,7 +199,26 @@ function createWordTimingOps(config: WordFieldConfig) {
     });
   }
 
-  return { nudgeBegin, setBegin, nudgeEnd, setEnd, setBoundary };
+  function stepWrite({
+    lines,
+    lineIdx,
+    wordIdx,
+    key,
+    time,
+    minDuration,
+    range,
+    updateLineWithHistory,
+  }: StepWriteOpInput): StepRefusal | null {
+    const line = lines[lineIdx];
+    const words = line ? getWords(line) : undefined;
+    if (!line || !words?.[wordIdx]) return null;
+    const result = applyStepKey({ words, index: wordIdx, key, time, minDuration, range });
+    if (result.kind === "refused") return result.refusal;
+    updateLineWithHistory(line.id, boundaryUpdate(line, result.words), { deriveText: false, propagateToSiblings: false });
+    return null;
+  }
+
+  return { nudgeBegin, setBegin, nudgeEnd, setEnd, setBoundary, stepWrite };
 }
 
 // -- Exports -------------------------------------------------------------------

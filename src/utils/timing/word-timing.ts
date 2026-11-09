@@ -1,7 +1,7 @@
 import { effectiveTimingWrite } from "@/domain/line/effective-words";
 import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
 
-const { nudgeBegin, setBegin, nudgeEnd, setEnd, setBoundary } = createWordTimingOps({
+const { nudgeBegin, setBegin, nudgeEnd, setEnd, setBoundary, stepWrite } = createWordTimingOps({
   getWords: (line) => line.words,
   writeWords: effectiveTimingWrite,
 });
@@ -12,4 +12,5 @@ export {
   nudgeEnd as nudgeWordEnd,
   setEnd as setWordEnd,
   setBoundary as setWordBoundary,
+  stepWrite as stepWordWrite,
 };
