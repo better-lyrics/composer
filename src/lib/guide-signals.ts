@@ -70,11 +70,8 @@ function noteGuideSignal(signal: GuideSignal, key?: string): void {
     return !done;
   });
   const fired = firedNudges(now);
-  // A nudge shows once, ever: whether it was taken, waved off or folded into the orb's count.
-  for (const nudge of fired) {
-    retiredThisSession.add(nudge.id);
-    useGuideStore.getState().markNudgeSeen(nudge.id);
-  }
+  // Fired nudges wait for a quiet moment; they count as seen only once shown (markGuideNudgeShown).
+  for (const nudge of fired) retiredThisSession.add(nudge.id);
   if (fired.length > 0 || resolved.length !== pending.length) setPending([...resolved, ...fired]);
 }
 
@@ -90,6 +87,11 @@ function noteGuideProjectFact(fact: keyof ProjectGuideFacts): void {
 function noteGuideExport(): void {
   noteGuideSignal("export.get");
   noteGuideProjectFact("exported");
+}
+
+// A nudge shows once, ever: from the moment it is on screen, whether it is then taken, waved off or folded away.
+function markGuideNudgeShown(id: string): void {
+  if (!useGuideStore.getState().seenNudges.includes(id)) useGuideStore.getState().markNudgeSeen(id);
 }
 
 function resolveGuideNudge(id: string): void {
@@ -110,6 +112,7 @@ function subscribeGuideNudges(listener: () => void): () => void {
 
 export {
   lastGuideSignalAt,
+  markGuideNudgeShown,
   noteGuideExport,
   noteGuideProjectFact,
   noteGuideSignal,

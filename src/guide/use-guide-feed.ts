@@ -9,6 +9,7 @@ import {
   lastGuideSignalAt,
   type PendingNudge,
   pendingGuideNudges,
+  markGuideNudgeShown,
   resolveGuideNudge,
   subscribeGuideNudges,
 } from "@/lib/guide-signals";
@@ -68,6 +69,7 @@ function useNudgeFeed(): readonly PendingNudge[] {
       const nudge = GUIDE_NUDGES.find((candidate) => candidate.id === queued.id);
       if (nudge?.available?.() === false) resolveGuideNudge(nudge.id);
       else if (nudge?.spot && showSpotHint(nudge.spot, { id: nudge.id, icon: nudge.icon, text: nudge.peek })) {
+        markGuideNudgeShown(nudge.id);
         resolveGuideNudge(nudge.id);
       } else if (nudge) {
         enqueuePeek({ id: `nudge:${nudge.id}`, kind: "tip", gist: nudge.peek, nudgeId: nudge.id, stage: nudge.stage });

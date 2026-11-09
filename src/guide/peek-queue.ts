@@ -1,5 +1,6 @@
 import type { GuideStage } from "@/domain/guide/model";
 import { PEEK_COOLDOWN_MS, canPeek } from "@/domain/guide/peek-gate";
+import { markGuideNudgeShown } from "@/lib/guide-signals";
 import type { GuidePeek } from "@/ui/guide/peek";
 
 // -- Types --------------------------------------------------------------------
@@ -40,14 +41,16 @@ function enqueuePeek(peek: GuidePeek): void {
 function tryShowPeek(busy: boolean, now: number, stage: GuideStage): number | null {
   const head = state.waiting.find((peek) => !peek.stage || peek.stage === stage);
   if (state.showing || !head) return null;
-  // News about something you just did shows now; the cooldown only spaces out tips.
-  const since = head.kind === "done" ? undefined : lastPeekAt;
-  if (!canPeek({ now, busy, lastPeekAt: since, peeksThisSession })) {
+  // News and nudges answer something you just did, so they show now; the cooldown and cap only space out tips.
+  const answersYou = head.kind === "done" || head.nudgeId !== undefined;
+  const since = answersYou ? undefined : lastPeekAt;
+  if (!canPeek({ now, busy, lastPeekAt: since, peeksThisSession: answersYou ? 0 : peeksThisSession })) {
     return !busy && lastPeekAt !== undefined ? Math.max(0, lastPeekAt + PEEK_COOLDOWN_MS - now) : null;
   }
   lastPeekAt = now;
   peeksThisSession += 1;
   update({ ...state, showing: head, waiting: state.waiting.filter((peek) => peek !== head) });
+  if (head.nudgeId) markGuideNudgeShown(head.nudgeId);
   return null;
 }
 

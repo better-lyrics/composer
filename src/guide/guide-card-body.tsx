@@ -3,13 +3,13 @@ import { STAGE_NAMES } from "@/guide/catalog/journey";
 import { GUIDE_NUDGES } from "@/guide/catalog/nudges";
 import type { GuideTip } from "@/guide/catalog/types";
 import type { EarnedTier, StageTiers } from "@/guide/use-guide-feed";
-import { type PendingNudge, resolveGuideNudge } from "@/lib/guide-signals";
+import { markGuideNudgeShown, type PendingNudge, resolveGuideNudge } from "@/lib/guide-signals";
 import { useGuideStore } from "@/stores/guide";
 import { GuideRecord } from "@/ui/guide/guide-record";
 import { GuideTips } from "@/ui/guide/guide-tips";
 import { Milestone } from "@/ui/guide/milestone";
 import { NudgePanel } from "@/ui/guide/nudge-panel";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -27,6 +27,13 @@ interface GuideCardBodyProps {
 }
 
 // -- Component ----------------------------------------------------------------
+
+// The card is one of the places a nudge reaches the screen, so showing it here counts as seen.
+const ShownNudgePanel: React.FC<React.ComponentProps<typeof NudgePanel>> = (props) => {
+  const { id } = props.nudge;
+  useEffect(() => markGuideNudgeShown(id), [id]);
+  return <NudgePanel {...props} />;
+};
 
 const GuideCardBody: React.FC<GuideCardBodyProps> = ({
   stage,
@@ -87,7 +94,7 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
   return (
     <>
       {nudge && (
-        <NudgePanel
+        <ShownNudgePanel
           nudge={nudge}
           onTake={() => {
             nudge.primary?.run(queued.key);
