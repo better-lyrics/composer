@@ -5,6 +5,7 @@ import {
   type ChosenVideo,
   type ChosenVideoOrigin,
   submitVideoChoices,
+  suggestionFacts,
   suggestionLengthNote,
   type VideoChoices,
 } from "@/domain/unison/video-links";
@@ -12,6 +13,7 @@ import { useSongVideoSuggestions } from "@/hooks/unison/useVideoSuggestions";
 import type { SongForSuggestions, SuggestedVideo } from "@/lib/unison/api-types";
 import { useProjectStore } from "@/stores/project";
 import type { MainVideo } from "@/ui/unison/video-picker";
+import { PENDING_NOTE } from "@/ui/unison/video-row";
 import { formatTime } from "@/utils/format-time";
 
 // -- Types ---------------------------------------------------------------------
@@ -49,7 +51,12 @@ function useSongSuggestions(mainVideoId: string | undefined, durationSeconds: nu
   return { songSeconds, suggestions: useSongVideoSuggestions(song).data ?? [] };
 }
 
-function useSubmitVideos(mainVideoId: string, durationSeconds: number): SubmitVideos {
+function chosenMainVideo({ videoId, suggestion }: ChosenVideo): MainVideo {
+  if (!suggestion) return { videoId, note: PENDING_NOTE };
+  return { videoId, title: suggestion.title, artworkUrl: suggestion.artworkUrl, facts: suggestionFacts(suggestion) };
+}
+
+function useSubmitVideos(mainVideoId: string, durationSeconds: number, chosenMain?: ChosenVideo): SubmitVideos {
   const metadata = useProjectStore((state) => state.metadata);
   const { songSeconds, suggestions } = useSongSuggestions(mainVideoId, durationSeconds);
   const [chosen, setChosen] = useState<ChosenVideo[]>([]);
@@ -71,12 +78,14 @@ function useSubmitVideos(mainVideoId: string, durationSeconds: number): SubmitVi
 
   return {
     ...choices,
-    main: {
-      videoId: mainVideoId,
-      title: metadata.title.trim() || undefined,
-      artworkUrl: metadata.thumbnailDataUrl,
-      facts: { artist: displayArtists(metadata.artists), kind: null, duration: formatTime(songSeconds, 0) },
-    },
+    main: chosenMain
+      ? chosenMainVideo(chosenMain)
+      : {
+          videoId: mainVideoId,
+          title: metadata.title.trim() || undefined,
+          artworkUrl: metadata.thumbnailDataUrl,
+          facts: { artist: displayArtists(metadata.artists), kind: null, duration: formatTime(songSeconds, 0) },
+        },
     songSeconds,
     songTitle: metadata.title,
     videoIds: choices.linked.map((video) => video.videoId),

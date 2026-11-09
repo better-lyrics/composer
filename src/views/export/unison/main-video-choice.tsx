@@ -1,4 +1,4 @@
-import { suggestionFacts, suggestionLengthNote } from "@/domain/unison/video-links";
+import { type ChosenVideo, suggestionFacts, suggestionLengthNote } from "@/domain/unison/video-links";
 import type { SuggestedVideo } from "@/lib/unison/api-types";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
@@ -13,7 +13,7 @@ import { useSongSuggestions } from "@/views/export/unison/use-submit-videos";
 
 interface MainVideoChoiceProps {
   durationSeconds: number;
-  onChoose: (videoId: string) => void;
+  onChoose: (video: ChosenVideo) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -60,7 +60,8 @@ const MainVideoChoice: React.FC<MainVideoChoiceProps> = ({ durationSeconds, onCh
   const { songSeconds, suggestions } = useSongSuggestions(undefined, durationSeconds);
 
   const chooseSuggestion = async (suggestion: SuggestedVideo) => {
-    if (await confirmDifferentTitle(confirm, suggestion, songTitle)) onChoose(suggestion.videoId);
+    if (await confirmDifferentTitle(confirm, suggestion, songTitle))
+      onChoose({ videoId: suggestion.videoId, suggestion, origin: "chosen" });
   };
 
   return (
@@ -83,7 +84,8 @@ const MainVideoChoice: React.FC<MainVideoChoiceProps> = ({ durationSeconds, onCh
         onAdd={(videoId) => {
           const suggestion = suggestions.find((candidate) => candidate.videoId === videoId);
           const lengthNote = suggestionLengthNote(suggestion, songSeconds);
-          if (!lengthNote) onChoose(videoId);
+          if (!lengthNote)
+            onChoose({ videoId, suggestion: suggestion ?? null, origin: suggestion ? "chosen" : "pasted" });
           return lengthNote;
         }}
       />

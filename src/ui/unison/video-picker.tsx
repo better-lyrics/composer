@@ -25,6 +25,7 @@ interface MainVideo {
   title?: string;
   artworkUrl?: string | null;
   facts?: VideoFacts;
+  note?: string;
 }
 
 interface VideoPickerProps {
@@ -64,6 +65,7 @@ const MainVideoRow: React.FC<{ main: MainVideo; busy?: boolean; onChange?: () =>
     artworkUrl={main.artworkUrl}
     tag="main"
     facts={main.facts}
+    note={main.note}
     trailing={
       onChange && (
         <Button size="sm" variant="ghost" disabled={busy} onClick={onChange} className="shrink-0">

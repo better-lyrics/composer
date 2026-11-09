@@ -1,4 +1,4 @@
-import { linkedVideoCount, VIDEO_LINK_LIMIT } from "@/domain/unison/video-links";
+import { type ChosenVideo, linkedVideoCount, VIDEO_LINK_LIMIT } from "@/domain/unison/video-links";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { type MainVideo, MainVideoRow, VideoPicker } from "@/ui/unison/video-picker";
 import { MainVideoChoice } from "@/views/export/unison/main-video-choice";
@@ -35,11 +35,17 @@ const ChangeMainVideo: React.FC<{ main: MainVideo; onChange: () => void }> = ({ 
 
 interface SubmissionWithVideosProps extends NewSubmissionProps {
   mainVideoId: string;
+  chosenMain?: ChosenVideo;
   onChangeMain?: () => void;
 }
 
-const SubmissionWithVideos: React.FC<SubmissionWithVideosProps> = ({ mainVideoId, onChangeMain, ...props }) => {
-  const videos = useSubmitVideos(mainVideoId, props.source.durationSeconds);
+const SubmissionWithVideos: React.FC<SubmissionWithVideosProps> = ({
+  mainVideoId,
+  chosenMain,
+  onChangeMain,
+  ...props
+}) => {
+  const videos = useSubmitVideos(mainVideoId, props.source.durationSeconds, chosenMain);
   const section = ({ busy, capReached }: VideoSectionState) => {
     if (capReached) return onChangeMain && <ChangeMainVideo main={videos.main} onChange={onChangeMain} />;
     return (
@@ -65,19 +71,20 @@ const SubmissionWithVideos: React.FC<SubmissionWithVideosProps> = ({ mainVideoId
 };
 
 const FileSourceSubmission: React.FC<NewSubmissionProps> = (props) => {
-  const [chosenVideoId, setChosenVideoId] = useState<string | null>(null);
-  if (!chosenVideoId) {
+  const [chosenMain, setChosenMain] = useState<ChosenVideo | null>(null);
+  if (!chosenMain) {
     const section = ({ capReached }: VideoSectionState) =>
-      !capReached && <MainVideoChoice durationSeconds={props.source.durationSeconds} onChoose={setChosenVideoId} />;
+      !capReached && <MainVideoChoice durationSeconds={props.source.durationSeconds} onChoose={setChosenMain} />;
     return <SubmitCard lyricId={null} {...props} videoSection={section} />;
   }
   return (
     <SubmissionWithVideos
-      key={chosenVideoId}
+      key={chosenMain.videoId}
       {...props}
-      source={{ ...props.source, videoId: chosenVideoId }}
-      mainVideoId={chosenVideoId}
-      onChangeMain={() => setChosenVideoId(null)}
+      source={{ ...props.source, videoId: chosenMain.videoId }}
+      mainVideoId={chosenMain.videoId}
+      chosenMain={chosenMain}
+      onChangeMain={() => setChosenMain(null)}
     />
   );
 };
