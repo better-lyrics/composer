@@ -5,6 +5,7 @@ import { isSyncComplete, syncProgress } from "@/domain/line/sync-progress";
 import { previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { cancelCountIn, isCountingIn } from "@/lib/sync-count-in";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
@@ -49,6 +50,10 @@ const SyncPanel: React.FC = () => {
   const seekTo = useAudioStore((s) => s.seekTo);
   const textVariant = useTimelineStore((s) => s.textVariant);
   const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
+  const toggleReadingText = useCallback(() => {
+    toggleTextVariant();
+    if (useTimelineStore.getState().textVariant === "transliteration") noteGuideSignal("languages.showWhileSyncing");
+  }, [toggleTextVariant]);
   const linesHaveTransliteration = useMemo(() => hasTransliteration(lines), [lines]);
   const displayLines = useMemo(
     () =>
@@ -177,6 +182,7 @@ const SyncPanel: React.FC = () => {
     (newGranularity: "line" | "word") => {
       if (newGranularity === granularity) return;
       setGranularity(newGranularity);
+      noteGuideSignal("sync.granularity");
     },
     [granularity, setGranularity],
   );
@@ -185,6 +191,7 @@ const SyncPanel: React.FC = () => {
     const entering = !editMode;
     if (entering) cancelCountIn();
     setSyncEditMode(entering);
+    if (entering) noteGuideSignal("sync.editTimings");
     if (entering && isPlaying) setIsPlaying(false);
   }, [editMode, isPlaying, setIsPlaying]);
   const toggleEditFromKeyboard = useEffectEvent(() => {
@@ -194,6 +201,7 @@ const SyncPanel: React.FC = () => {
   const playingLine = useMemo(() => playingLineIndex(lines, currentTime), [lines, currentTime]);
 
   const { lineIndex, wordIndex } = cursor;
+  const noteSyncUndo = useEffectEvent(() => noteGuideSignal("sync.undoTap", lines[lineIndex]?.id));
 
   const lastSyncedTime = useMemo(() => {
     const slot = previousSlot(lines, cursor, granularity);
@@ -302,7 +310,12 @@ const SyncPanel: React.FC = () => {
       if (activeTab !== "sync") return;
       if (isAnyModalOpen()) return;
 
-      if (runHistoryShortcut(e, (action) => (action === "undo" ? undo() : redo()), { scope: "sync" })) return;
+      const runHistory = (action: "undo" | "redo") => {
+        if (action === "redo") return redo();
+        noteSyncUndo();
+        undo();
+      };
+      if (runHistoryShortcut(e, runHistory, { scope: "sync" })) return;
 
       const matched = findMatchingShortcut(e, "sync");
       if (!matched) return;
@@ -328,7 +341,7 @@ const SyncPanel: React.FC = () => {
           break;
         case "sync.toggleTextVariant":
           e.preventDefault();
-          toggleTextVariant();
+          toggleReadingText();
           break;
         case "sync.toggleEdit":
           if (isTypingTarget(e.target)) return;
@@ -364,7 +377,7 @@ const SyncPanel: React.FC = () => {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [activeTab, undo, redo, handleNudgeLastSynced, editMode, isHolding, toggleTextVariant]);
+  }, [activeTab, undo, redo, handleNudgeLastSynced, editMode, isHolding, toggleReadingText]);
 
   if (!source) {
     return (
@@ -388,7 +401,7 @@ const SyncPanel: React.FC = () => {
         progress={progress}
         textVariant={textVariant}
         hasTransliteration={linesHaveTransliteration}
-        toggleTextVariant={toggleTextVariant}
+        toggleTextVariant={toggleReadingText}
         granularity={granularity}
         handleGranularityChange={handleGranularityChange}
         editMode={editMode}

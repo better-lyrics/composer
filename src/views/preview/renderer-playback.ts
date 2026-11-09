@@ -1,4 +1,5 @@
 import { isFollowingAudioLine } from "@/audio/playback-clock";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -40,7 +41,10 @@ function audioStoreSample(): PlaybackSample | null {
 const AUDIO_STORE_PLAYBACK: RendererPlayback = {
   // Read each frame so the renderer keeps tracking the element the audio engine recreates.
   sample: audioStoreSample,
-  seekTo: (seconds) => useAudioStore.getState().seekTo(seconds),
+  seekTo: (seconds) => {
+    useAudioStore.getState().seekTo(seconds);
+    noteGuideSignal("preview.seek");
+  },
   play: () => useAudioStore.getState().setIsPlaying(true),
 };
 

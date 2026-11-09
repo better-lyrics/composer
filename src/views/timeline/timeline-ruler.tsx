@@ -4,6 +4,7 @@ import { CueMarker } from "@/views/timeline/cue-marker";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
 import { placeSnapPoint } from "@/views/timeline/place-snap-point";
+import { noteReplaySpot } from "@/views/timeline/replay-spot-signal";
 import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconClock } from "@tabler/icons-react";
@@ -78,6 +79,7 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, track
     else {
       seekTo(time);
       notePlacement(time, "pointer");
+      noteReplaySpot(time);
     }
   };
 

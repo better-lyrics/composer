@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useSyncExternalStore } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -30,6 +31,7 @@ function snapshot(): HistoryRequest | null {
 // -- Functions -----------------------------------------------------------------
 
 function requestHistoryAt(lyricId: number, revNo: number): void {
+  noteGuideSignal("export.unisonHistory");
   publish({ lyricId, revNo });
 }
 

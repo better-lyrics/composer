@@ -4,6 +4,7 @@ import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { ShortcutTip } from "@/ui/shortcut-tip";
 import { Tooltip } from "@/ui/tooltip";
+import { noteReplaySpot } from "@/views/timeline/replay-spot-signal";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRef } from "react";
 
@@ -16,6 +17,7 @@ const HIDE_UNDER_PLAYHEAD_PX = 6;
 function seekToCue(cue: number): void {
   useAudioStore.getState().seekTo(cue);
   notePlacement(cue, "pointer");
+  noteReplaySpot(cue);
 }
 
 // -- Components ----------------------------------------------------------------

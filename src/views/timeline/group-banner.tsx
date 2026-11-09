@@ -1,5 +1,6 @@
 import { keepsOwnTiming, sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";
 import { buildGroupPingVariants } from "@/utils/animationVariants";
@@ -66,6 +67,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
     (e: React.MouseEvent) => {
       e.stopPropagation();
       openGroup(group.id, instanceIdx);
+      noteGuideSignal("timeline.openGroup");
     },
     [group.id, instanceIdx, openGroup],
   );

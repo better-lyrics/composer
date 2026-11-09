@@ -11,6 +11,7 @@ import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot } from "@/domain/sync/cursor";
 import type { WordTiming } from "@/domain/word/timing";
 import { keptSyncReRecording, syncReRecordingAt, useSyncCursor } from "@/hooks/useSyncCursor";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { requestPlayback } from "@/lib/sync-count-in";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
@@ -44,7 +45,9 @@ const EARLY_TAP_TOAST_ID = "sync-early-tap";
 // -- Helpers --------------------------------------------------------------------
 
 function toastEarlyTap(clampedTo: number | null): void {
-  if (clampedTo !== null) toast(`Early tap snapped to ${formatTimeMs(clampedTo)}`, { id: EARLY_TAP_TOAST_ID });
+  if (clampedTo === null) return;
+  toast(`Early tap snapped to ${formatTimeMs(clampedTo)}`, { id: EARLY_TAP_TOAST_ID });
+  noteGuideSignal("sync.earlyTap");
 }
 
 function triggerPulse(setShowPulse: (show: boolean) => void): void {
@@ -138,12 +141,14 @@ function useSyncHandlers({
   );
 
   const handleTap = useCallback(() => {
-    if (runGesture(granularity === "word" ? "tap-word" : "tap-line")) triggerPulse(setShowPulse);
+    if (!runGesture(granularity === "word" ? "tap-word" : "tap-line")) return;
+    triggerPulse(setShowPulse);
+    noteGuideSignal("sync.tap");
   }, [runGesture, granularity, setShowPulse]);
 
   const handleHoldStart = useCallback(() => {
     ignoreNextHoldEndRef.current = false;
-    runGesture("hold-start");
+    if (runGesture("hold-start")) noteGuideSignal("sync.hold");
   }, [runGesture]);
 
   const handleHoldEnd = useCallback(() => {
@@ -155,7 +160,9 @@ function useSyncHandlers({
   }, [runGesture, setShowPulse]);
 
   const handleHoldTap = useCallback(() => {
-    if (runGesture("hold-tap")) triggerPulse(setShowPulse);
+    if (!runGesture("hold-tap")) return;
+    triggerPulse(setShowPulse);
+    noteGuideSignal("sync.holdTap");
   }, [runGesture, setShowPulse]);
 
   const handleReset = useCallback(async () => {
@@ -225,6 +232,7 @@ function useSyncHandlers({
         jumpedToPosition: true,
         reRecording: syncReRecordingAt(skippedInstances, lines, index),
       }));
+      noteGuideSignal("sync.resync");
       const bounds = effectiveBounds(lines[index]);
       if (!bounds) return;
       seekForRedo(bounds.begin);
@@ -245,6 +253,7 @@ function useSyncHandlers({
         jumpedToPosition: true,
         reRecording: syncReRecordingAt(skippedInstances, lines, lineIdx),
       }));
+      noteGuideSignal("sync.resync");
       seekForRedo(word.begin);
     },
     [lines, skippedInstances, seekForRedo, setSyncState],
@@ -348,6 +357,7 @@ function useSyncHandlers({
     (delta: number) => {
       const slot = previousSlot(lines, cursor, granularity);
       if (!slot) return;
+      noteGuideSignal("sync.fixTap");
       if (slot.wordIndex !== null) {
         handleNudgeWord(slot.lineIndex, slot.wordIndex, delta);
         return;

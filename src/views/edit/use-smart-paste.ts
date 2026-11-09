@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { type PasteScope, classifyPastedText } from "@/views/edit/smart-paste";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importPastedLyrics, importProjectFileForLyrics } from "@/views/lyrics-import-modal/import-lyrics-source";
@@ -35,7 +36,10 @@ function useSmartPaste({ typedPasteRef, onBeforeImport }: SmartPasteOptions) {
       event.preventDefault();
       onBeforeImport();
       if (pasted.kind === "project-file") void importProjectFileForLyrics(pasted.contents, null, pasteContext);
-      else void importPastedLyrics(text, pasted.parsed, pasteContext);
+      else {
+        noteGuideSignal("edit.smartPaste");
+        void importPastedLyrics(text, pasted.parsed, pasteContext);
+      }
     },
     [onBeforeImport, typedPasteRef, pasteContext],
   );

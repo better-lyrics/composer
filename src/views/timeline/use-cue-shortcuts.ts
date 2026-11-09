@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { playFromCue } from "@/lib/replay-cue";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
@@ -16,6 +17,7 @@ function handleCueKeyDown(event: KeyboardEvent): void {
   if (matched === "timeline.playFromCue") {
     event.preventDefault();
     playFromCue();
+    noteGuideSignal("timeline.cue");
   } else if (matched === "timeline.toggleReturnToCue") {
     event.preventDefault();
     useSettingsStore.getState().toggle("returnToCue");

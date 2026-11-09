@@ -2,6 +2,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { WordTiming } from "@/domain/word/timing";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -179,7 +180,10 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
               active={previewSidebar}
               label="Preview"
               shortcut="timeline.togglePreview"
-              onClick={() => useSettingsStore.getState().toggle("previewSidebar")}
+              onClick={() => {
+                useSettingsStore.getState().toggle("previewSidebar");
+                if (useSettingsStore.getState().previewSidebar) noteGuideSignal("preview.sidebar");
+              }}
               iconOnly
             >
               <IconEye />

@@ -10,7 +10,7 @@ import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
-import { noteGuideExport } from "@/lib/guide-signals";
+import { noteGuideExport, noteGuideSignal } from "@/lib/guide-signals";
 import { AlignmentReviewNotice } from "@/views/export/alignment-review-notice";
 import { UntimedLinesNotice } from "@/views/export/untimed-lines-notice";
 import { applyEditsToProject } from "@/views/export/apply-edits-feedback";
@@ -98,6 +98,7 @@ const ExportPanel: React.FC = () => {
   const handleEdit = useCallback(() => {
     if (!session) {
       setEditingSession({ projectSession, startContent: exportContent });
+      noteGuideSignal("export.editTtml");
       return;
     }
     const changedThisSession = editedContent !== null && editedContent !== session.startContent;
@@ -186,7 +187,10 @@ const ExportPanel: React.FC = () => {
         copied={copied}
         exportTiming={exportTiming}
         lineTimingLocked={isEditing || editBlocksLineTiming}
-        onExportTimingChange={setExportTiming}
+        onExportTimingChange={(timing) => {
+          setExportTiming(timing);
+          noteGuideSignal("export.timing");
+        }}
         onRegenerate={handleRegenerate}
         onEdit={handleEdit}
         onCopy={handleCopy}

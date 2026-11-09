@@ -1,11 +1,13 @@
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import { backgroundFields, withSeededBackground } from "@/domain/line/background";
+import { detectNonLatinLanguage } from "@/domain/language/script-detection";
 import type { LyricLine } from "@/domain/line/model";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "@/domain/word/timing";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useConfirm } from "@/stores/confirm-store";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
@@ -14,7 +16,11 @@ import { useSettingsStore } from "@/stores/settings";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { Button } from "@/ui/button";
 import { Scroll } from "@/ui/scroll";
-import { extractBackgroundVocals, extractInlineFromLine } from "@/utils/background-vocal-extraction";
+import {
+  extractBackgroundVocals,
+  extractInlineFromLine,
+  lineHasInlineParens,
+} from "@/utils/background-vocal-extraction";
 import { pluralWord, pluralize } from "@/utils/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
@@ -114,10 +120,12 @@ const EditPanel: React.FC = () => {
     const next = extractBackgroundVocals(current, extractOptions);
     if (next.length === current.length && next.every((line, i) => line === current[i])) return;
     commitLinesWithHistory(next);
+    noteGuideSignal("edit.background");
   }, [extractOptions, commitLinesWithHistory]);
 
   const handleAgentChange = useCallback((lineId: string, agentId: string) => {
     useProjectStore.getState().updateLineWithHistory(lineId, { agentId });
+    noteGuideSignal("edit.singer");
   }, []);
 
   const handleBackgroundChange = useCallback((lineId: string, text: string) => {
@@ -134,6 +142,7 @@ const EditPanel: React.FC = () => {
     useProjectStore
       .getState()
       .updateLineWithHistory(lineId, backgroundFields({ text: newBgText, words, source: "manual" }));
+    if (newBgText) noteGuideSignal("edit.background");
   }, []);
 
   const handleExtractLine = useCallback((lineId: string) => {
@@ -153,10 +162,12 @@ const EditPanel: React.FC = () => {
         source: extracted.backgroundTextSource ?? "manual",
       }),
     });
+    noteGuideSignal("edit.background");
   }, []);
 
   const handleLineSelect = useCallback((lineNumber: number, shiftKey: boolean) => {
     const anchor = lastSelectedLineRef.current;
+    if (shiftKey && anchor !== null) noteGuideSignal("edit.lineRange");
     setSelectedLines((prev) => {
       const next = new Set(prev);
       if (shiftKey && anchor !== null) {
@@ -211,6 +222,7 @@ const EditPanel: React.FC = () => {
       );
       const updates = [...selectedLineIds].map((id) => ({ id: id as string, updates: { agentId } }));
       useProjectStore.getState().updateLinesWithHistory(updates);
+      noteGuideSignal("edit.singer");
       setSelectedLines(new Set());
     },
     [parsed, selectedLines],
@@ -243,8 +255,13 @@ const EditPanel: React.FC = () => {
   const handleTextareaBlur = useCallback(() => {
     setIsTypingLyrics(false);
     finalizeRun();
-    if (!useSettingsStore.getState().autoExtractBackgroundVocals) return;
     const current = useProjectStore.getState().lines;
+    const { splitCharacter } = useSettingsStore.getState();
+    if (current.some((line) => line.text !== "")) noteGuideSignal("edit.type");
+    if (splitCharacter && current.some((line) => line.text.includes(splitCharacter))) noteGuideSignal("edit.presplit");
+    if (current.some(lineHasInlineParens)) noteGuideSignal("edit.parenInLine");
+    if (detectNonLatinLanguage(current.map((line) => line.text).join("\n"))) noteGuideSignal("edit.nonLatinLyrics");
+    if (!useSettingsStore.getState().autoExtractBackgroundVocals) return;
     const next = extractBackgroundVocals(current, {
       mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
       preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,

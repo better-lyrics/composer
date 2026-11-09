@@ -1,5 +1,6 @@
 import { detectBeats } from "@/audio/beat/detect-beats";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { playableFile, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { create } from "zustand";
@@ -64,6 +65,7 @@ const useBeatDetectionStore = create<BeatDetectionState>((set) => ({
     const source = useAudioStore.getState().source;
     const file = playableFile(source);
     if (!file) return;
+    noteGuideSignal("timeline.beats");
     running?.abort();
     const controller = new AbortController();
     running = controller;

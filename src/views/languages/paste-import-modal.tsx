@@ -4,6 +4,7 @@ import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TranslationTrack, TransliterationTrack } from "@/domain/language/model";
 import { alignPastedLanguageLines } from "@/domain/language/paste-import";
 import type { LyricLine } from "@/domain/line/model";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { INPUT_STYLES } from "@/ui/input-styles";
@@ -120,6 +121,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
       updates.push({ id: line.id, updates: { translations } });
     });
     updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+    noteGuideSignal("languages.paste");
     if (kind === "translation") onImportedTranslation(targetLanguage);
     toast.success(`Imported ${pluralize(mappedCount, "line")}`);
     onClose();

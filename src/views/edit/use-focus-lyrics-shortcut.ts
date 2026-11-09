@@ -1,8 +1,10 @@
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import type { RefObject } from "react";
 
 function focusAtEnd(textarea: HTMLTextAreaElement | null): void {
   if (!textarea) return;
+  noteGuideSignal("edit.refocus");
   textarea.focus();
   textarea.setSelectionRange(textarea.value.length, textarea.value.length);
 }

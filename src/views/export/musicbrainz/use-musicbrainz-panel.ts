@@ -8,6 +8,7 @@ import {
 import { type MusicBrainzMatch, useMusicBrainzMatch } from "@/hooks/useMusicBrainzMatch";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { showMusicBrainzFillToast } from "@/utils/musicbrainz-toast";
 import { useMemo, useState } from "react";
@@ -97,6 +98,7 @@ function useMusicBrainzPanel(): MusicBrainzPanel {
     const previous = previousValues(patch, useProjectStore.getState().metadata);
     if (found) updateSession({ chosenRecordingId: found.chosen.recording.id });
     setMetadata(patch);
+    noteGuideSignal("export.details");
     showMusicBrainzFillToast(previous);
   };
 

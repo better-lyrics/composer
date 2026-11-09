@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime } from "@/stores/audio";
 import { computeAnchoredScrollLeft } from "@/utils/timeline/zoom-anchor";
 import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, ZOOM_STEP, useTimelineStore } from "@/views/timeline/timeline-store";
@@ -48,11 +49,13 @@ function useTimelineZoom(scrollContainerRef: RefObject<HTMLDivElement | null>) {
   const zoomIn = useCallback(() => {
     const z = useTimelineStore.getState().zoom;
     applyZoom(Math.min(MAX_ZOOM, z + ZOOM_STEP));
+    noteGuideSignal("timeline.zoomButton");
   }, [applyZoom]);
 
   const zoomOut = useCallback(() => {
     const z = useTimelineStore.getState().zoom;
     applyZoom(Math.max(MIN_ZOOM, z - ZOOM_STEP));
+    noteGuideSignal("timeline.zoomButton");
   }, [applyZoom]);
 
   return { zoomIn, zoomOut };

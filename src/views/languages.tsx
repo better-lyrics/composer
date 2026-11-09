@@ -1,4 +1,5 @@
 import { pastedRows } from "@/domain/language/paste-import";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
@@ -83,6 +84,8 @@ const LanguagesPanel: React.FC = () => {
           return;
         }
         if (generation.failedLineIds.size > 0) toast.error("Couldn't generate some lines. Try Regenerate.");
+        if (requestedTargets.length > 0) noteGuideSignal("languages.generate");
+        if (generation.transliteration) noteGuideSignal("languages.romanize");
         const updates = mergeGeneratedLanguageUpdates(
           startingLines,
           currentState.lines,

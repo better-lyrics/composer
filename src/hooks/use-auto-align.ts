@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAlignmentStore } from "@/stores/alignment";
 import { useSeparationStore } from "@/stores/separation";
 import { alignmentErrorCopy } from "@/ui/alignment-error-copy";
@@ -82,6 +83,7 @@ function useAutoAlign() {
       if (options?.toastErrors !== false) showAlignmentError(autoAlign, lineIds, options?.realign);
       return;
     }
+    noteGuideSignal("sync.autoAlign");
     if (result.aligned > 0) showGroupActionToast(alignedMessage(result.aligned, result.skipped));
     if (result.fellBack > 0) {
       toast.warning(

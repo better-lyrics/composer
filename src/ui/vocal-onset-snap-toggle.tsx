@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { Switch } from "@/ui/switch";
@@ -28,7 +29,10 @@ const VocalOnsetSnapToggle: React.FC = () => {
         checked={enabled && hasVocals}
         disabled={!hasVocals}
         label="Snap to vocal onsets"
-        onCheckedChange={(checked) => useSettingsStore.getState().set("vocalOnsetSnap", checked)}
+        onCheckedChange={(checked) => {
+          useSettingsStore.getState().set("vocalOnsetSnap", checked);
+          if (checked) noteGuideSignal("timeline.onsets");
+        }}
       />
     </div>
   );

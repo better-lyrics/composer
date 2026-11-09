@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useState } from "react";
 import type { Stem } from "@/audio/separation/types";
 import { useAudioStore } from "@/stores/audio";
@@ -36,7 +37,14 @@ const StemModule: React.FC = () => {
               aria-label={available ? STEM_LABELS[stem] : `${STEM_LABELS[stem]}, import or separate first`}
               title={STEM_LABELS[stem]}
               data-unavailable={available ? undefined : ""}
-              onClick={() => (available ? selectStem(stem) : setOpen(true))}
+              onClick={() => {
+                if (!available) {
+                  setOpen(true);
+                  return;
+                }
+                selectStem(stem);
+                if (stem !== "original") noteGuideSignal("timeline.stems");
+              }}
               className="w-9"
             >
               <Icon aria-hidden="true" className="size-[15px]" />

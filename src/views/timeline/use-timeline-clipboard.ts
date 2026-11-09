@@ -1,5 +1,6 @@
 import type { ReadableLine } from "@/domain/line/effective-words";
 import { trackWords } from "@/domain/line/tracks";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { pluralize } from "@/utils/pluralize";
 import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
@@ -67,6 +68,7 @@ function useTimelineClipboard(lines: readonly ReadableLine[]) {
       useTimelineStore.getState().setPasteMode({ status: "idle" });
     } else {
       useTimelineStore.getState().setPasteMode({ status: "preview", clipboard });
+      noteGuideSignal("timeline.copy");
     }
   }, []);
 

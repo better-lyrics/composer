@@ -1,4 +1,5 @@
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { FINISH_IMPORT_FIRST } from "@/lib/import-busy-message";
 import { type ProjectFileContents, isProjectFileName, parseProjectFileContents } from "@/lib/project-file-read";
 import { importProjectContents, reportUnreadableProjectFile, restoreBundleContents } from "@/lib/project-import";
@@ -113,7 +114,9 @@ async function importLyricsFile(file: File, ctx: ImportContext): Promise<boolean
   if (isProjectFileName(file.name)) return importProjectNamedFile(file.name, text, ctx);
   const contents = readProjectFileText(text);
   if (contents) return importProjectFileForLyrics(contents, file.name, ctx);
-  return importLyrics({ filename: file.name, content: text }, ctx);
+  const imported = await importLyrics({ filename: file.name, content: text }, ctx);
+  if (imported) noteGuideSignal("import.lyrics");
+  return imported;
 }
 
 function importPastedLyrics(content: string, parsed: ParseResult, ctx: ImportContext): Promise<boolean> {

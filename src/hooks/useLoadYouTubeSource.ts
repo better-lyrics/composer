@@ -5,6 +5,7 @@ import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
 import type { AudioLoadMode } from "@/hooks/useLoadAudioFile";
 import { adoptPrimingForNewAudio } from "@/lib/attach-audio-priming";
 import { deleteProject, openProject, startSongInNewProject } from "@/lib/open-project";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { beginSourceSwap, settleSourceSwap, videoSourceMetadata } from "@/lib/source-metadata";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
@@ -49,11 +50,18 @@ function useLoadYouTubeSource(): (videoId: string, mode?: AudioLoadMode) => Prom
     const previous = useAudioStore.getState().source;
     const prevVideoId = previous?.type === "youtube" ? previous.videoId : null;
     const replacesDifferentSong = previous != null && prevVideoId !== videoId;
-    if (mode === "replace") return replacesDifferentSong ? swapVideoInPlace(videoId, previous) : Promise.resolve();
-    if (replacesDifferentSong && hasLyricLines(useProjectStore.getState().lines)) {
-      return loadVideoInNewProject(videoId, previous);
+    if (mode === "replace") {
+      if (!replacesDifferentSong) return Promise.resolve();
+      return swapVideoInPlace(videoId, previous).then(() => {
+        noteGuideSignal("import.audio");
+        noteGuideSignal("import.replaceAudio");
+      });
     }
-    return loadVideoInPlace(videoId, previous);
+    const load =
+      replacesDifferentSong && hasLyricLines(useProjectStore.getState().lines)
+        ? loadVideoInNewProject(videoId, previous)
+        : loadVideoInPlace(videoId, previous);
+    return load.then(() => noteGuideSignal("import.audio"));
   }, []);
 }
 

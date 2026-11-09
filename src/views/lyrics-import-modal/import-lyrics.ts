@@ -1,10 +1,12 @@
 import { withSeededBackground } from "@/domain/line/background";
 import type { RawLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
+import { detectNonLatinLanguage } from "@/domain/language/script-detection";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { importableMetadata } from "@/domain/project/imported-metadata";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import type { ProjectFile } from "@/lib/project-file";
 import { useAudioStore } from "@/stores/audio";
 import { type ConfirmOptions, useConfirm, useConfirmStore } from "@/stores/confirm-store";
@@ -136,6 +138,8 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
   const skipped = skippedLineCount(parsed.issues);
   if (skipped > 0) toast.warning(partialImportMessage(workingLines.length, skipped));
 
+  if (input.searchResult) noteGuideSignal("import.search");
+  if (detectNonLatinLanguage(workingLines.map((line) => line.text).join("\n"))) noteGuideSignal("edit.nonLatinLyrics");
   ctx.onResult?.(reported, { label: input.searchResult?.sourceLabel ?? ctx.sourceLabel, filename: input.filename });
   return true;
 }

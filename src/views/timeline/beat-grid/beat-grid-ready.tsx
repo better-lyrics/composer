@@ -2,6 +2,7 @@ import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { canDouble, canHalve, doubled, halved, isEdited, resetGrid, withBarOneAt } from "@/domain/tempo/grid-edits";
 import { gridDensity } from "@/domain/tempo/grid-points";
 import { tempoStats } from "@/domain/tempo/tempo-stats";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, playableFile, useAudioStore } from "@/stores/audio";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
@@ -43,7 +44,10 @@ const ShowOnWaveformRow: React.FC = () => {
     >
       <Switch
         checked={visible}
-        onCheckedChange={(checked) => useSettingsStore.getState().set("beatGridVisible", checked)}
+        onCheckedChange={(checked) => {
+          useSettingsStore.getState().set("beatGridVisible", checked);
+          if (checked) noteGuideSignal("timeline.beats");
+        }}
         label="Show on waveform"
       />
     </PopRow>

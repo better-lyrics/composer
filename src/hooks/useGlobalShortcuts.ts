@@ -1,6 +1,7 @@
 import type { ProjectTab } from "@/domain/project/tab";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { notePlayShortcut } from "@/hooks/useSpaceHabitHint";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { notePlacement } from "@/lib/replay-cue";
 import { togglePlayback } from "@/lib/sync-count-in";
 import { livePlaybackTime, seekBy, toggledPlaybackRate, useAudioStore } from "@/stores/audio";
@@ -17,6 +18,14 @@ interface GlobalShortcutActions {
 
 function togglePlaybackSpeed(): void {
   useAudioStore.getState().setPlaybackRate(toggledPlaybackRate());
+  noteGuideSignal("sync.speed");
+}
+
+function whileTyping(action: () => void): () => void {
+  return () => {
+    noteGuideSignal("edit.playWhileTyping");
+    action();
+  };
 }
 
 function seekAndNote(seconds: number): void {
@@ -41,7 +50,9 @@ function fineSeekForward(): void {
 }
 
 function toggleStem(): void {
-  useSeparationStore.getState().selectStem(toggledStem());
+  const stem = toggledStem();
+  useSeparationStore.getState().selectStem(stem);
+  if (stem !== "original") noteGuideSignal("timeline.stems");
 }
 
 function playFromShortcut(): void {
@@ -67,15 +78,15 @@ function useGlobalShortcuts(actions: GlobalShortcutActions): void {
           "global.goToPreview": () => setActiveTab("preview"),
           "global.goToExport": () => setActiveTab("export"),
           "global.playPause": playFromShortcut,
-          "global.playPauseWhileTyping": togglePlayback,
+          "global.playPauseWhileTyping": whileTyping(togglePlayback),
           "global.seekBackward": seekBackward,
           "global.seekForward": seekForward,
-          "global.seekBackwardWhileTyping": seekBackward,
-          "global.seekForwardWhileTyping": seekForward,
+          "global.seekBackwardWhileTyping": whileTyping(seekBackward),
+          "global.seekForwardWhileTyping": whileTyping(seekForward),
           "global.seekBackwardFine": fineSeekBackward,
           "global.seekForwardFine": fineSeekForward,
-          "global.seekBackwardFineWhileTyping": fineSeekBackward,
-          "global.seekForwardFineWhileTyping": fineSeekForward,
+          "global.seekBackwardFineWhileTyping": whileTyping(fineSeekBackward),
+          "global.seekForwardFineWhileTyping": whileTyping(fineSeekForward),
           "global.togglePlaybackSpeed": togglePlaybackSpeed,
           "global.toggleStem": toggleStem,
           "global.toggleLoop": toggleLoopShortcut,

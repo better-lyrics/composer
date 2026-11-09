@@ -1,4 +1,5 @@
 import type { WordTiming } from "@/domain/word/timing";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAlignmentStore } from "@/stores/alignment";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
@@ -83,6 +84,7 @@ function useSyllableSplitterState({
       reuseGroupId: true,
     });
     onSplit(wordIndex, newWords);
+    noteGuideSignal("sync.split");
   }, [word, splitPoints, transliterationSplitPoints, wordIndex, onSplit]);
 
   const confirmSplit = useCallback(
@@ -102,6 +104,7 @@ function useSyllableSplitterState({
           splitPoints,
           caseInsensitive,
         });
+        noteGuideSignal("sync.split");
         retime();
         setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
         close();

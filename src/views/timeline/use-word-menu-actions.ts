@@ -2,6 +2,7 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { trackWords } from "@/domain/line/tracks";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import type { WordTiming } from "@/domain/word/timing";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -27,6 +28,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (!contextMenu || contextMenu.target.kind !== "word") return;
     const { lineId, wordIndex, type } = contextMenu.target;
     useTimelineStore.getState().setEditingWord({ lineId, wordIndex, type });
+    noteGuideSignal("timeline.editText");
     clearContextMenu();
   }, [contextMenu, clearContextMenu]);
 
@@ -57,6 +59,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (!explicitToggleContext) return;
     const { lineId, field, indices } = explicitToggleContext;
     toggleWordExplicit(lineId, field, indices);
+    noteGuideSignal("timeline.explicit");
     clearContextMenu();
   }, [explicitToggleContext, toggleWordExplicit, clearContextMenu]);
 

@@ -1,6 +1,7 @@
 import { type ProjectIndexEntry, buildIndexEntry } from "@/domain/project/index-entry";
 import { byMostRecentlyEdited } from "@/domain/project/library-order";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { openLyricsAsNewProject } from "@/lib/open-lyrics-as-project";
 import { openProject, reloadOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
@@ -202,7 +203,9 @@ async function importProjectFile(file: File): Promise<string | null> {
       return openLyricsAsNewProject(text, file.name);
     return reportUnreadableProjectFile(error);
   }
-  return importProjectContents(contents);
+  const importedId = await importProjectContents(contents);
+  if (importedId) noteGuideSignal("import.projectFile");
+  return importedId;
 }
 
 async function restoreBundleContents(projects: readonly ProjectFile[], unreadable: number): Promise<boolean> {

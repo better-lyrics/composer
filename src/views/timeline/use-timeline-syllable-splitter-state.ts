@@ -5,6 +5,7 @@ import {
 import { splitTransliterationAtBoundaries } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { WordTiming } from "@/domain/word/timing";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime } from "@/stores/audio";
 import { useAlignmentStore } from "@/stores/alignment";
 import { useConfirm } from "@/stores/confirm-store";
@@ -175,12 +176,14 @@ function useTimelineSyllableSplitterState({
         splitPoints,
         caseInsensitive,
       });
+      noteGuideSignal("timeline.split");
       retime();
       resetSplitPoints();
       closeModal();
       return;
     }
 
+    noteGuideSignal("timeline.split");
     void applySingleWordSplit()?.then(retime);
     resetSplitPoints();
     closeModal();

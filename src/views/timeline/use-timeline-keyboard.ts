@@ -11,6 +11,7 @@ import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import type { WordSelection } from "@/domain/selection/model";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { notePlacement } from "@/lib/replay-cue";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
@@ -183,7 +184,9 @@ function useTimelineKeyboard(
       const historyAction = historyShortcutAction(e, { scope: "timeline" });
       if (historyAction) {
         e.preventDefault();
-        if (!e.repeat) useProjectStore.getState()[historyAction]();
+        if (e.repeat) return;
+        useProjectStore.getState()[historyAction]();
+        if (historyAction === "undo") noteGuideSignal("timeline.undo");
         return;
       }
 
@@ -314,16 +317,20 @@ function useTimelineKeyboard(
             break;
           }
           useTimelineStore.getState().setSelectedWords([next]);
+          noteGuideSignal("timeline.atPlayhead");
           break;
         }
         case "timeline.playSelection":
-          if (playSelection()) e.preventDefault();
+          if (!playSelection()) break;
+          e.preventDefault();
+          noteGuideSignal("timeline.play");
           break;
         case "timeline.toggleFollow":
           useSettingsStore.getState().toggle("followPlayhead");
           break;
         case "timeline.togglePreview":
           useSettingsStore.getState().toggle("previewSidebar");
+          if (useSettingsStore.getState().previewSidebar) noteGuideSignal("preview.sidebar");
           break;
         case "timeline.copy":
           e.preventDefault();
@@ -346,10 +353,12 @@ function useTimelineKeyboard(
             break;
           }
           useSettingsStore.getState().toggle("beatGridVisible");
+          if (useSettingsStore.getState().beatGridVisible) noteGuideSignal("timeline.beats");
           break;
         }
         case "timeline.toggleSpectrum":
           useSettingsStore.getState().toggle("showSpectrum");
+          if (useSettingsStore.getState().showSpectrum) noteGuideSignal("timeline.spectrum");
           break;
         case "timeline.autoAlign":
           e.preventDefault();
@@ -369,6 +378,7 @@ function useTimelineKeyboard(
           e.preventDefault();
           const playheadTime = livePlaybackTime();
           useProjectStore.getState().addCustomSnapPoint(playheadTime);
+          noteGuideSignal("timeline.markers");
           break;
         }
         case "timeline.toggleTextVariant":
@@ -394,6 +404,7 @@ function useTimelineKeyboard(
           const { selectedWords: eSel } = useTimelineStore.getState();
           if (eSel.length === 1) {
             e.preventDefault();
+            noteGuideSignal("timeline.editText");
             useTimelineStore.getState().setEditingWord({
               lineId: eSel[0].lineId,
               wordIndex: eSel[0].wordIndex,
@@ -483,6 +494,7 @@ function useTimelineKeyboard(
             break;
           }
           projectState.addGroupWithLines(result.group, result.updatedLines);
+          noteGuideSignal("edit.group");
           showGroupedToast(result.group, filled.expanded.size, filled.addedCount);
           break;
         }
@@ -655,6 +667,7 @@ function useTimelineKeyboard(
           } else {
             useProjectStore.getState().updateLinesWithHistory(result.updates, { propagateToSiblings: false });
           }
+          noteGuideSignal("timeline.nudge");
           if (nudgedFrom !== null) showLoupeAfterKeyEdit(nudgeSel[0], "begin", nudgedFrom);
           break;
         }
@@ -682,6 +695,7 @@ function useTimelineKeyboard(
           const { targets, value } = resolveExplicitSelectionToggle(useProjectStore.getState().lines, explicitSel);
           if (targets.length === 0) break;
           useProjectStore.getState().markWordsExplicit(targets, value);
+          noteGuideSignal("timeline.explicit");
           break;
         }
         case "timeline.shiftInstanceToPlayhead": {

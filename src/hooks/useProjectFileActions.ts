@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { createProject, deleteProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { buildSavedProject } from "@/lib/persistence";
@@ -20,6 +21,7 @@ function useProjectFileActions() {
 
   const handleExportProject = useCallback(() => {
     downloadProjectFile(projectFileFrom(openProjectIdSnapshot(), buildSavedProject(currentSaveInput())));
+    noteGuideSignal("export.backup");
   }, []);
 
   const handleImportProject = importProjectFromInput;

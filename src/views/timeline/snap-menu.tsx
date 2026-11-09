@@ -1,4 +1,5 @@
 import { tempoStats } from "@/domain/tempo/tempo-stats";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -79,7 +80,10 @@ const SnapSourceRow: React.FC<SnapSourceRowProps> = ({ source, hint, disabled })
         checked={checked && !disabled}
         disabled={!snapOn || disabled}
         label={label}
-        onCheckedChange={(next) => useSettingsStore.getState().set(setting, next)}
+        onCheckedChange={(next) => {
+          useSettingsStore.getState().set(setting, next);
+          if (next && source === "onsets") noteGuideSignal("timeline.onsets");
+        }}
       />
     </PopRow>
   );

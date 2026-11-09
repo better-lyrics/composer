@@ -4,8 +4,10 @@ import { RateKnob } from "@/audio/deck/rate-knob";
 import { StemModule } from "@/audio/deck/stem-module";
 import { TimeReadout } from "@/audio/deck/time-readout";
 import { VolumeKnob } from "@/audio/deck/volume-knob";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { togglePlayback } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { selectIsCountingIn, useSyncCountInStore } from "@/stores/sync-count-in";
 import { KEEPS_POPOVERS_OPEN_PROPS } from "@/ui/keeps-popovers-open";
@@ -17,6 +19,13 @@ import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react
 
 const MODULE_STYLES =
   "relative flex items-center gap-2.5 h-full px-3.5 first:pl-0 last:pr-0 [&+&]:before:absolute [&+&]:before:left-0 [&+&]:before:inset-y-[18px] [&+&]:before:w-px [&+&]:before:bg-(--divider)";
+
+// -- Helpers ------------------------------------------------------------------
+
+function pressPlayKey(): void {
+  if (useProjectStore.getState().activeTab === "edit") noteGuideSignal("edit.playButton");
+  togglePlayback();
+}
 
 // -- Components ---------------------------------------------------------------
 
@@ -30,7 +39,7 @@ const PlayKey: React.FC = () => {
   const showsPause = isPlaying || countingIn;
   const Glyph = showsPause ? IconPlayerPauseFilled : IconPlayerPlayFilled;
   return (
-    <Key size="lg" onClick={togglePlayback} aria-label={showsPause ? "Pause" : "Play"} className="w-[54px]">
+    <Key size="lg" onClick={pressPlayKey} aria-label={showsPause ? "Pause" : "Play"} className="w-[54px]">
       <Glyph aria-hidden="true" className={cn("size-5", showsPause && "text-composer-accent-text")} />
     </Key>
   );

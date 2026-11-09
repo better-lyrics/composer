@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -72,6 +73,7 @@ function groupSections(sections: readonly RepeatingSection[]): number {
   const { duration } = useAudioStore.getState();
   const { groupRepeatingSections } = useProjectStore.getState();
   const outcomes = sections.map((section) => groupRepeatingSections(section.starts, section.length, { duration }));
+  noteGuideSignal("edit.group");
   showKeptOwnTimingToast(
     outcomes.flatMap((outcome) => outcome.keptOwnTiming),
     "edit",

@@ -3,6 +3,7 @@ import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
 import { adoptPrimingForNewAudio } from "@/lib/attach-audio-priming";
 import { startSongInNewProject } from "@/lib/open-project";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { relinkProjectAudioFile } from "@/lib/relink-audio";
 import { sourceSwapPatch } from "@/domain/project/source-metadata";
@@ -122,6 +123,8 @@ function useLoadAudioFile(): (file: File, mode?: AudioFileLoadMode) => Promise<v
       toast.error(UNPLAYABLE_AUDIO_MESSAGE);
       return;
     }
+    noteGuideSignal("import.audio");
+    if (mode === "replace") noteGuideSignal("import.replaceAudio");
 
     const previous = useAudioStore.getState().source;
     const title = fileNameWithoutExtension(file.name);

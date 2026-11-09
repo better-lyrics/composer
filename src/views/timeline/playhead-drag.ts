@@ -4,6 +4,7 @@ import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
 import { notePlacement } from "@/lib/replay-cue";
 import { xToTime } from "@/views/timeline/coords";
 import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
+import { noteReplaySpot } from "@/views/timeline/replay-spot-signal";
 import { GUTTER_WIDTH } from "@/views/timeline/timeline-store";
 import { readViewScroll, scrollViewBy, viewScrollLeft } from "@/views/timeline/view-scroll";
 
@@ -118,6 +119,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
         const target = config.snapTime(time, upEvent.metaKey);
         config.seekTo(target);
         notePlacement(target, "pointer");
+        noteReplaySpot(target);
       }
       cleanup();
     };

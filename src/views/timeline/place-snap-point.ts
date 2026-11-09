@@ -1,3 +1,4 @@
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { pointSnapAnchors } from "@/views/timeline/point-snap-anchors";
 import { snapTimeToPoints } from "@/views/timeline/snap-marker-math";
@@ -9,6 +10,7 @@ function placeSnapPoint(time: number): void {
   const anchors = pointSnapAnchors({ includeMarkers: false, includeOnsets: true, includeBeats: true });
   const { zoom } = useTimelineStore.getState();
   useProjectStore.getState().addCustomSnapPoint(snapTimeToPoints(time, anchors, zoom));
+  noteGuideSignal("timeline.markers");
 }
 
 // -- Exports ------------------------------------------------------------------
