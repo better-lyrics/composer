@@ -209,7 +209,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
               label="Step timing"
               shortcut={stepTiming ? "timeline.stepTimingOff" : "timeline.stepWord"}
               onClick={() => useTimelineStore.getState().setStepTiming(!stepTiming)}
-              description="Timing keys follow the selected word and move on to the next one"
+              description="Timing keys follow the selected word and move on. Click an empty lane to time just that lane"
               iconOnly
             >
               <IconStepInto />

@@ -2,6 +2,7 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HelpTopic } from "@/ui/help-topic";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { PROSE } from "@/ui/typography";
+import { MOD_KEY } from "@/utils/platform";
 
 // -- Components ----------------------------------------------------------------
 
@@ -30,9 +31,9 @@ const StepTimingHelp: React.FC = () => (
         <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} /> instead.
       </li>
       <li>
-        Background words are timed on their own. Click one, and{" "}
-        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} /> steps through them. On the last one it only
-        ends the word, then moves to the next line without changing its start.
+        The keys skip background words. To time them, or any other set of words, select them first: click an empty part
+        of a lane to select the whole lane (click again to clear it), or drag a box around words, or {MOD_KEY}-click
+        them. The keys then run through only those words, and stop after the last one.
       </li>
       <li>
         With the pointer over the waveform or the spectrum, the keys write the time under the pointer, and a line shows
@@ -51,8 +52,8 @@ const StepTimingHelp: React.FC = () => (
       </li>
     </ul>
     <p className={`${PROSE} mt-3`}>
-      Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepTimingOff")} /> or Escape to turn it off. Each key
-      press is one undo step.
+      Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepTimingOff")} /> to turn it off. Escape first
+      clears the selection, then turns it off. Each key press is one undo step.
     </p>
   </HelpTopic>
 );
