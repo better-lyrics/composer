@@ -449,6 +449,7 @@ const EditPanel: React.FC = () => {
             hasIcon
             size="lg"
             data-tour="import-lyrics-button"
+            data-guide-spot="importLyrics"
             onClick={importTriggers.onClick}
             onDoubleClick={importTriggers.onDoubleClick}
             title="Click to search, paste, or upload. Double-click to upload a file directly."

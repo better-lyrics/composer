@@ -19,6 +19,7 @@ const IMPORT_TIPS = [
     icon: IconFileMusic,
     title: "Bring in the song",
     gist: <>Drop an audio file, or paste a YouTube link.</>,
+    spot: { stage: "import", spot: "importDrop", text: "Drop your song here, or paste a YouTube link" },
   }),
   tip({
     id: "lyrics",
@@ -26,6 +27,7 @@ const IMPORT_TIPS = [
     icon: IconFileText,
     title: "Add lyrics from a file",
     gist: <>Drop a .txt, .lrc, .srt or .ttml file.</>,
+    spot: { stage: "edit", spot: "importLyrics", text: "Import your lyrics here, or paste them in the editor" },
   }),
   tip({
     id: "search",
@@ -33,6 +35,7 @@ const IMPORT_TIPS = [
     icon: IconSearch,
     title: "Search for lyrics",
     gist: <>Search the lyrics providers and pick a match.</>,
+    spot: { stage: "edit", spot: "importLyrics", text: "Open Import Lyrics to search for your song" },
   }),
   tip({
     id: "projectFile",

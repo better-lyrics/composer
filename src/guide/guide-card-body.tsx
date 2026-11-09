@@ -24,6 +24,7 @@ interface GuideCardBodyProps {
   showingRecord: boolean;
   onLeaveRecord: () => void;
   onMilestoneDone: () => void;
+  onShowTip: (tip: GuideTip) => void;
 }
 
 // -- Component ----------------------------------------------------------------
@@ -77,7 +78,8 @@ const TipsView: React.FC<{
   learned: ReadonlySet<string>;
   queued: PendingNudge | undefined;
   shownTier: ShownTier;
-}> = ({ stage, stageName, tiers, tips, learned, queued, shownTier }) => {
+  onShowTip: (tip: GuideTip) => void;
+}> = ({ stage, stageName, tiers, tips, learned, queued, shownTier, onShowTip }) => {
   // Show me asked for one stage's tips; a nudge waits for the next open instead of hiding them.
   const nudge = !shownTier && queued ? GUIDE_NUDGES.find((candidate) => candidate.id === queued.id) : undefined;
   const tipStage = shownTier?.stage ?? stage;
@@ -104,6 +106,7 @@ const TipsView: React.FC<{
           learnedSignals={learned}
           initialTier={shownTier?.tier}
           onKnown={(tip) => useGuideStore.getState().learnSignal(tip.learnedBy)}
+          onShow={onShowTip}
         />
       )}
       {!nudge && stageTips.length === 0 && (
@@ -124,6 +127,7 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
   showingRecord,
   onLeaveRecord,
   onMilestoneDone,
+  onShowTip,
 }) => {
   const learnedSignals = useGuideStore((state) => state.learnedSignals);
   const learned = useMemo(() => new Set(learnedSignals), [learnedSignals]);
@@ -161,6 +165,7 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
       learned={learned}
       queued={pending.find((candidate) => candidate.id === focusNudgeId) ?? pending[0]}
       shownTier={shownTier}
+      onShowTip={onShowTip}
     />
   );
 };

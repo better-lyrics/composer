@@ -67,6 +67,7 @@ const TIMELINE_TIPS = [
     icon: IconZoomIn,
     title: "Zoom in close",
     gist: <>Hold {keyBadge("Mod")} and scroll over the Timeline.</>,
+    spot: { stage: "timeline", spot: "zoom", text: <>Zoom here, or hold {keyBadge("Mod")} and scroll</> },
   }),
   tip({
     id: "undo",

@@ -2,10 +2,11 @@ import type { Journey } from "@/domain/guide/journey";
 import { stageTiers } from "@/domain/guide/tier-state";
 import { PROJECT_TABS, type ProjectTab } from "@/domain/project/tab";
 import { JOURNEY_COPY, STAGE_HELP_SECTIONS, STAGE_NAMES } from "@/guide/catalog/journey";
-import type { GuideTip } from "@/guide/catalog/types";
+import type { GuideSpotTarget, GuideTip } from "@/guide/catalog/types";
 import { GuideCardBody } from "@/guide/guide-card-body";
 import { hideGuide } from "@/guide/hide-guide";
 import { markPeeksRead } from "@/guide/peek-queue";
+import { pointAt } from "@/guide/point-at";
 import { type StageTiers, useJourneyFeed, useMilestoneFeed, useNudgeFeed } from "@/guide/use-guide-feed";
 import { useGuidePeek } from "@/guide/use-guide-peek";
 import { SpotHint } from "@/guide/spot-hint";
@@ -22,6 +23,7 @@ import { useUIStore } from "@/stores/ui";
 import { GuideCard } from "@/ui/guide/guide-card";
 import { GuideOrb } from "@/ui/guide/guide-orb";
 import { guideSpring } from "@/utils/animationVariants";
+import { type Icon, IconPointer } from "@tabler/icons-react";
 import { AnimatePresence, LazyMotion, MotionConfig, m } from "motion/react";
 import { useMemo, useState } from "react";
 
@@ -41,13 +43,14 @@ function useAllStageTiers(tips: readonly GuideTip[]): StageTiers {
 const loadGuideMotionFeatures = () =>
   import("@/guide/guide-motion-features").then((module) => module.guideMotionFeatures);
 
-// The card header names the next step, links to its tab from elsewhere and counts where it sits.
-function journeyHeader(journey: Journey, activeTab: ProjectTab) {
+// The card header names the next step, shows where it happens and counts where it sits.
+function journeyHeader(journey: Journey, activeTab: ProjectTab, show: (target: GuideSpotTarget, icon: Icon) => void) {
   const current = journey.current;
   if (!current) return { stepTitle: "Song finished", goToStep: undefined, stepNumber: null };
-  const { title, stage } = JOURNEY_COPY[current];
-  const goToStep =
-    stage === activeTab
+  const { title, stage, spot } = JOURNEY_COPY[current];
+  const goToStep = spot
+    ? { stageName: STAGE_NAMES[stage], onGo: () => show(spot, IconPointer) }
+    : stage === activeTab
       ? undefined
       : { stageName: STAGE_NAMES[stage], onGo: () => useProjectStore.getState().setActiveTab(stage) };
   return { stepTitle: title, goToStep, stepNumber: journey.steps.findIndex((step) => step.id === current) + 1 };
@@ -87,11 +90,15 @@ const GuideHost: React.FC = () => {
     setOpen(true);
   };
   useEscapeLayer("panel", open, close);
+  const show = (target: GuideSpotTarget, icon: Icon) => {
+    close();
+    pointAt(target, icon);
+  };
 
   useJourneyVisits(journey, activeTab, projectId);
   const placement = useOrbPlacement(activeTab);
 
-  const header = journeyHeader(journey, activeTab);
+  const header = journeyHeader(journey, activeTab, show);
   const unread = queue.waiting.length + queue.unread.length;
 
   return (
@@ -133,6 +140,7 @@ const GuideHost: React.FC = () => {
                   showingRecord={showingRecord}
                   onLeaveRecord={() => setShowingRecord(false)}
                   onMilestoneDone={clearMilestone}
+                  onShowTip={(tip) => tip.spot && show(tip.spot, tip.icon)}
                 />
               </GuideCard>
             )}

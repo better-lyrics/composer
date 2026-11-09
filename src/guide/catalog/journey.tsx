@@ -1,6 +1,9 @@
 import type { JourneyStepId } from "@/domain/guide/journey";
 import type { GuideStage } from "@/domain/guide/model";
 import { keys } from "@/guide/catalog/keys";
+import { IMPORT_TIPS } from "@/guide/catalog/import";
+import { SYNC_TIPS } from "@/guide/catalog/sync";
+import type { GuideSpotTarget, GuideTip } from "@/guide/catalog/types";
 
 // -- Types --------------------------------------------------------------------
 
@@ -9,7 +12,13 @@ interface JourneyStepCopy {
   stage: GuideStage;
   next: React.ReactNode;
   done: string;
+  spot?: GuideSpotTarget;
 }
+
+// -- Helpers ----------------------------------------------------------------
+
+// A step points where its first tip does, so the two never disagree.
+const tipSpot = (tips: readonly GuideTip[], id: string) => tips.find((tip) => tip.id === id)?.spot;
 
 // -- Copy ---------------------------------------------------------------------
 
@@ -19,18 +28,21 @@ const JOURNEY_COPY: Record<JourneyStepId, JourneyStepCopy> = {
     stage: "import",
     next: <>Drop in an audio file or paste a YouTube link</>,
     done: "Song added.",
+    spot: tipSpot(IMPORT_TIPS, "audio"),
   },
   lyrics: {
     title: "Add your lyrics",
     stage: "edit",
     next: <>Paste your lyrics in Edit, one line per line</>,
     done: "Lyrics are in.",
+    spot: tipSpot(IMPORT_TIPS, "lyrics"),
   },
   sync: {
     title: "Sync your lyrics",
     stage: "sync",
     next: <>Play the song and press {keys("sync.tap")} as each word is sung</>,
     done: "Every line has timing.",
+    spot: tipSpot(SYNC_TIPS, "tap"),
   },
   fineTune: {
     title: "Fine-tune on the Timeline",

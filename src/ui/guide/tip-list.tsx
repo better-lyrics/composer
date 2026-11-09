@@ -14,6 +14,7 @@ interface TipListProps {
   waitsOn: (tip: GuideTip) => string | null;
   learned: readonly GuideTip[];
   onKnown: (tip: GuideTip) => void;
+  onShow: (tip: GuideTip) => void;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -22,16 +23,8 @@ const VISIBLE_TIPS = 3;
 
 // -- Components ---------------------------------------------------------------
 
-const TipRow: React.FC<{ tip: GuideTip; waitsOn: string | null; onKnown: () => void }> = ({
-  tip,
-  waitsOn,
-  onKnown,
-}) => (
-  <m.li
-    layout="position"
-    exit={guideRowExit}
-    className="group flex gap-2.5 overflow-hidden rounded-[14px] py-2 pr-1.5 pl-2.5 transition-[background-color] duration-150 hover:bg-(--layer-1)"
-  >
+const TipText: React.FC<{ tip: GuideTip; waitsOn: string | null }> = ({ tip, waitsOn }) => (
+  <>
     <tip.icon
       className={cn("mt-0.5 size-4 shrink-0", waitsOn ? "text-(--muted)" : "text-composer-accent-text")}
       stroke={1.75}
@@ -41,6 +34,34 @@ const TipRow: React.FC<{ tip: GuideTip; waitsOn: string | null; onKnown: () => v
       <p className="mt-0.5 text-xs leading-[1.55] text-pretty text-(--label)">{tip.gist}</p>
       {waitsOn && <p className="mt-1 text-xs text-(--muted)">Comes after "{waitsOn}"</p>}
     </div>
+  </>
+);
+
+const TipRow: React.FC<{ tip: GuideTip; waitsOn: string | null; onKnown: () => void; onShow: () => void }> = ({
+  tip,
+  waitsOn,
+  onKnown,
+  onShow,
+}) => (
+  <m.li
+    layout="position"
+    exit={guideRowExit}
+    className="group flex gap-2.5 overflow-hidden rounded-[14px] py-2 pr-1.5 pl-2.5 transition-[background-color] duration-150 hover:bg-(--layer-1)"
+  >
+    {tip.spot ? (
+      <button
+        type="button"
+        aria-label={`${tip.title}, show me where`}
+        onClick={onShow}
+        className="flex min-w-0 flex-1 cursor-pointer select-none gap-2.5 text-left"
+      >
+        <TipText tip={tip} waitsOn={waitsOn} />
+      </button>
+    ) : (
+      <div className="flex min-w-0 flex-1 gap-2.5">
+        <TipText tip={tip} waitsOn={waitsOn} />
+      </div>
+    )}
     <IconButton
       variant="ghost"
       label={`I know "${tip.title}"`}
@@ -79,7 +100,7 @@ const LearnedRow: React.FC<{ tips: readonly GuideTip[] }> = ({ tips }) => {
   );
 };
 
-const TipList: React.FC<TipListProps> = ({ open, waitsOn, learned, onKnown }) => {
+const TipList: React.FC<TipListProps> = ({ open, waitsOn, learned, onKnown, onShow }) => {
   const [showAll, setShowAll] = useState(false);
   const shown = showAll ? open : open.slice(0, VISIBLE_TIPS);
   const hiddenCount = open.length - shown.length;
@@ -88,7 +109,13 @@ const TipList: React.FC<TipListProps> = ({ open, waitsOn, learned, onKnown }) =>
       <ul>
         <AnimatePresence initial={false}>
           {shown.map((tip) => (
-            <TipRow key={tip.id} tip={tip} waitsOn={waitsOn(tip)} onKnown={() => onKnown(tip)} />
+            <TipRow
+              key={tip.id}
+              tip={tip}
+              waitsOn={waitsOn(tip)}
+              onKnown={() => onKnown(tip)}
+              onShow={() => onShow(tip)}
+            />
           ))}
         </AnimatePresence>
       </ul>

@@ -4,10 +4,18 @@ import type { Icon } from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------
 
+// Where a tip or step happens: the tab and the control the Guide points at when you click it.
+interface GuideSpotTarget {
+  stage: GuideStage;
+  spot: string;
+  text: React.ReactNode;
+}
+
 interface GuideTip extends GuideTipEntry {
   icon: Icon;
   title: string;
   gist: React.ReactNode;
+  spot?: GuideSpotTarget;
   appliesWhen?: (settings: SettingsState) => boolean;
   needs?: GuideSignal;
 }
@@ -46,4 +54,4 @@ const stageTip =
 // -- Exports ------------------------------------------------------------------
 
 export { GUIDE_TIER_NAMES, stageTip };
-export type { GuideNudge, GuideNudgeCopy, GuideTip };
+export type { GuideNudge, GuideNudgeCopy, GuideSpotTarget, GuideTip };

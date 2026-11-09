@@ -48,6 +48,7 @@ const EDIT_TIPS = [
     icon: IconMicrophone,
     title: "Pull out background vocals",
     gist: <>Words in parentheses, like "(ooh)", can become a background vocal.</>,
+    spot: { stage: "edit", spot: "extractAll", text: 'Pull every "(...)" out at once here' },
   }),
   tip({
     id: "lineRange",

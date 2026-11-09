@@ -13,6 +13,7 @@ interface GuideTipsProps {
   learnedSignals: ReadonlySet<string>;
   initialTier?: GuideTierId;
   onKnown: (tip: GuideTip) => void;
+  onShow: (tip: GuideTip) => void;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -23,7 +24,15 @@ function firstTierToWorkOn(tiers: readonly TierStatus[]): GuideTierId {
 
 // -- Component ----------------------------------------------------------------
 
-const GuideTips: React.FC<GuideTipsProps> = ({ stageName, tiers, tips, learnedSignals, initialTier, onKnown }) => {
+const GuideTips: React.FC<GuideTipsProps> = ({
+  stageName,
+  tiers,
+  tips,
+  learnedSignals,
+  initialTier,
+  onKnown,
+  onShow,
+}) => {
   const [selected, setSelected] = useState<GuideTierId>(() => initialTier ?? firstTierToWorkOn(tiers));
   const status = tiers.find((candidate) => candidate.tier === selected);
   const inTier = tips.filter((tip) => tip.tier === selected);
@@ -49,6 +58,7 @@ const GuideTips: React.FC<GuideTipsProps> = ({ stageName, tiers, tips, learnedSi
           waitsOn={waitsOn}
           learned={inTier.filter((tip) => learnedSignals.has(tip.learnedBy))}
           onKnown={onKnown}
+          onShow={onShow}
         />
       )}
     </>
