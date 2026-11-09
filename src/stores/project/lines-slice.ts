@@ -1,4 +1,3 @@
-import type { StateCreator } from "zustand";
 import { updatedLinkedSibling } from "@/domain/group/linked-sibling";
 import { extractLinkedFields, getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
@@ -18,6 +17,7 @@ import { markTransientLines } from "@/stores/project/transient-lines";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
 import { applySiblingWords } from "@/utils/word-diff";
+import type { StateCreator } from "zustand";
 
 // -- Initial State ------------------------------------------------------------
 

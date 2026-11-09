@@ -18,8 +18,7 @@ function propagateWordChanges(
 ): WordTiming[] | undefined {
   if (!sourceAfter || !siblingWords) return undefined;
 
-  if (sourceBefore && sourceAfter.length === sourceBefore.length) {
-    if (sourceAfter.length !== siblingWords.length) return undefined;
+  if (sourceBefore && sourceAfter.length === sourceBefore.length && sourceAfter.length === siblingWords.length) {
     let changed = false;
     const next = siblingWords.map((w, i) => {
       if (w.text === sourceAfter[i].text) return w;

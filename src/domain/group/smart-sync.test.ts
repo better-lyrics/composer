@@ -37,14 +37,14 @@ describe("propagateWordChanges", () => {
     expect(propagateWordChanges(words, words, [{ text: "I", begin: 9, end: 9.5 }])).toBeUndefined();
   });
 
-  it("fast path: returns undefined when sibling count diverged from the source", () => {
+  it("text edit on a sibling whose count diverged: takes the source structure inside the sibling's own span", () => {
     const before: WordTiming[] = [{ text: "I", begin: 0, end: 1 }];
     const after: WordTiming[] = [{ text: "X", begin: 0, end: 1 }];
     const sibling: WordTiming[] = [
       { text: "I", begin: 9, end: 10 },
       { text: "extra", begin: 10, end: 11 },
     ];
-    expect(propagateWordChanges(after, before, sibling)).toBeUndefined();
+    expect(propagateWordChanges(after, before, sibling)).toEqual([{ text: "X", begin: 9, end: 11 }]);
   });
 
   it("structural change: delegates to the smart-sync diff, preserving unchanged sibling timing", () => {
