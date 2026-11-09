@@ -9,7 +9,6 @@ import { stepBgWordWrite } from "@/utils/timing/bg-word-timing";
 import { stepWordWrite } from "@/utils/timing/word-timing";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
-import { showLoupeAfterKeyEdit } from "@/views/timeline/loupe/loupe-target";
 import { stepWriteTime } from "@/views/timeline/step-timing/pointer-write-time";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { findBoundaryTarget } from "@/views/timeline/word-at-playhead";
@@ -57,8 +56,6 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
     timeline.setSelectedWords([cursor]);
     return;
   }
-  const edge = key === "start" ? "begin" : "end";
-  showLoupeAfterKeyEdit({ lineId: line.id, wordIndex: cursor.wordIndex, type: cursor.type }, edge, word[edge]);
   const next = key === "start" ? cursor : (nextStepSlot(lines, cursor, include) ?? cursor);
   timeline.setSelectedWords([next]);
 }
