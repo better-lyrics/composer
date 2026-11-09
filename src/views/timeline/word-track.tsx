@@ -20,6 +20,7 @@ import { setLiveWordEdit } from "@/views/timeline/pitch/live-word-edit";
 import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
+import { StepNextContext } from "@/views/timeline/step-timing/step-next";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { selectionGripEdges } from "@/views/timeline/stretch-grips";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -29,7 +30,7 @@ import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch"
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { WordBlock } from "@/views/timeline/word-block";
 import { beginBoundaryDrag, endBoundaryDrag } from "@/views/timeline/boundary-chip-store";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -90,6 +91,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
 }) => {
   const zoom = useTimelineStore((s) => s.zoom);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
+  const stepTiming = useTimelineStore((s) => s.stepTiming);
+  const stepNext = use(StepNextContext);
   const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
   const rollingEdit = useSettingsStore((s) => s.rollingEdit);
@@ -385,7 +388,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       toggleSelection(selection);
     } else {
       const alreadySelected = isWordSelected(selectedWords, lineId, wordIndex, trackType);
-      if (alreadySelected && selectedWords.length === 1) {
+      if (alreadySelected && selectedWords.length === 1 && !stepTiming) {
         setSelectedWords([]);
       } else {
         setSelectedWords([selection]);
@@ -488,9 +491,11 @@ const WordTrack: React.FC<WordTrackProps> = ({
             color={color}
             zoom={zoom}
             isDimmed={
-              (hasSelection && !isWordSelected(selectedWords, lineId, wordIndex, trackType)) ||
-              (playingRegion !== null && !overlapsLoopRegion(display, playingRegion))
+              !stepTiming &&
+              ((hasSelection && !isWordSelected(selectedWords, lineId, wordIndex, trackType)) ||
+                (playingRegion !== null && !overlapsLoopRegion(display, playingRegion)))
             }
+            isStepNext={stepNext?.lineId === lineId && stepNext.type === trackType && stepNext.wordIndex === wordIndex}
             isSelected={isWordSelected(selectedWords, lineId, wordIndex, trackType)}
             isExplicit={word.explicit === true}
             syllablePosition={syllablePosition}
@@ -518,4 +523,5 @@ const WordTrack: React.FC<WordTrackProps> = ({
 // -- Exports -------------------------------------------------------------------
 
 const MemoizedWordTrack = memo(WordTrack);
+
 export { MemoizedWordTrack as WordTrack };

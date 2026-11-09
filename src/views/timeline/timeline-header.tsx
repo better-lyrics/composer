@@ -1,3 +1,17 @@
+import {
+  IconArrowBackUp,
+  IconArrowBarBoth,
+  IconChevronsDown,
+  IconChevronsUp,
+  IconEye,
+  IconFocusCentered,
+  IconLanguage,
+  IconLayoutDistributeHorizontal,
+  IconMapPin,
+  IconStepInto,
+  IconTextPlus,
+} from "@tabler/icons-react";
+import { useCallback, useEffect, useMemo } from "react";
 import { isLinked } from "@/domain/instance/predicates";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { isLineSynced } from "@/domain/line/predicates";
@@ -17,19 +31,6 @@ import { TimelineZoomControls } from "@/views/timeline/timeline-header-controls"
 import { TimelineNotices } from "@/views/timeline/timeline-notices";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCueShortcuts } from "@/views/timeline/use-cue-shortcuts";
-import {
-  IconArrowBackUp,
-  IconArrowBarBoth,
-  IconChevronsDown,
-  IconChevronsUp,
-  IconEye,
-  IconFocusCentered,
-  IconLanguage,
-  IconLayoutDistributeHorizontal,
-  IconMapPin,
-  IconTextPlus,
-} from "@tabler/icons-react";
-import { useCallback, useEffect, useMemo } from "react";
 
 interface TimelineHeaderProps {
   onImportLyrics?: () => void;
@@ -44,6 +45,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   const rollingEdit = useSettingsStore((s) => s.rollingEdit);
   const markerMode = useTimelineStore((s) => s.markerMode);
   const toggleMarkerMode = useTimelineStore((s) => s.toggleMarkerMode);
+  const stepTiming = useTimelineStore((s) => s.stepTiming);
   const showHints = useSettingsStore((s) => s.showShortcutHints);
   const lines = useProjectStore((s) => s.lines);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
@@ -201,6 +203,16 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
               iconOnly
             >
               <IconMapPin />
+            </ShortcutToggleButton>
+            <ShortcutToggleButton
+              active={stepTiming}
+              label="Step timing"
+              shortcut="timeline.stepWord"
+              onClick={() => useTimelineStore.getState().setStepTiming(!stepTiming)}
+              description="Timing keys follow the selected word and move on to the next one"
+              iconOnly
+            >
+              <IconStepInto />
             </ShortcutToggleButton>
           </div>
 

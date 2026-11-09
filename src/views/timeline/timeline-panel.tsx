@@ -1,3 +1,6 @@
+import { DndContext } from "@dnd-kit/core";
+import { IconMusic } from "@tabler/icons-react";
+import { useOverlayScrollbars } from "overlayscrollbars-react";
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { getAgentColor } from "@/domain/agent/colors";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
@@ -24,10 +27,13 @@ import { LoopRegionReadout } from "@/views/timeline/loop-region-readout";
 import { EditLoupe } from "@/views/timeline/loupe/edit-loupe";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
+import { isPlaybackStyleWrite } from "@/views/timeline/playback-style-mutation";
+import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { SelectionPlaybackBar } from "@/views/timeline/selection-playback-bar";
 import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
+import { StepNextContext, useStepNext } from "@/views/timeline/step-timing/step-next";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
@@ -35,10 +41,7 @@ import { BoundaryModeChip } from "@/views/timeline/boundary-mode-chip";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
-import { isPlaybackStyleWrite } from "@/views/timeline/playback-style-mutation";
-import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { TimelineRuler } from "@/views/timeline/timeline-ruler";
-import { syncViewScroll, viewScrollLeft } from "@/views/timeline/view-scroll";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
@@ -55,10 +58,8 @@ import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { useTimelineWheel } from "@/views/timeline/use-timeline-wheel";
+import { syncViewScroll, viewScrollLeft } from "@/views/timeline/view-scroll";
 import { WordEditOverlay } from "@/views/timeline/word-edit-overlay";
-import { DndContext } from "@dnd-kit/core";
-import { IconMusic } from "@tabler/icons-react";
-import { useOverlayScrollbars } from "overlayscrollbars-react";
 import "overlayscrollbars/overlayscrollbars.css";
 import { Activity, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -101,6 +102,8 @@ const TimelinePanel: React.FC = () => {
   const openImportModal = useImportModal();
 
   const effectiveLines = useMemo(() => getEffectiveLines(lines), [lines]);
+  const stepNext = useStepNext(effectiveLines);
+  const stepTiming = useTimelineStore((s) => s.stepTiming);
   const timelineShown = !!source && lines.length > 0;
 
   const [initOverlayScrollbars, overlayScrollbars] = useOverlayScrollbars({
@@ -298,6 +301,7 @@ const TimelinePanel: React.FC = () => {
                   role="application"
                   aria-label="Timeline"
                   data-scroll-container
+                  data-step-timing={stepTiming || undefined}
                   className="flex-1 overflow-auto overscroll-none static! z-[unset] overflow-anchor-none paste-cursor"
                   onScroll={handleScroll}
                   onMouseDown={handleMouseDown}
@@ -310,7 +314,9 @@ const TimelinePanel: React.FC = () => {
                   <BeatGridCorner />
                   <TimelineWaveform />
 
-                  <TimelineRows scrollContainerRef={scrollContainerRef} />
+                  <StepNextContext value={stepNext}>
+                    <TimelineRows scrollContainerRef={scrollContainerRef} />
+                  </StepNextContext>
                 </div>
 
                 <TimelinePlayhead
