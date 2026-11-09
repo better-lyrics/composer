@@ -30,6 +30,7 @@ import { clearAllProjects } from "@/lib/project-storage";
 import { ProjectDeletedError, isProjectDeleted } from "@/lib/project-tombstones";
 import { saveResumePositionNow } from "@/lib/resume-position";
 import { awaitInFlightSaves, trackSave } from "@/lib/save-status";
+import { useGuideStore } from "@/stores/guide";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
@@ -171,12 +172,14 @@ function closeIfOpen(id: string): void {
   cancelPendingSave();
   forgetOpenProjectId();
   applyProjectToStores(EMPTY_RESTORE);
+  useGuideStore.setState({ projects: {} });
 }
 
 async function deleteProject(id: string): Promise<void> {
   closeIfOpen(id);
   await removeProjectData(id);
   closeIfOpen(id);
+  useGuideStore.getState().forgetProject(id);
 }
 
 async function closeAndClearAllProjects(): Promise<void> {
@@ -188,6 +191,7 @@ async function closeAndClearAllProjects(): Promise<void> {
   cancelPendingSave();
   forgetOpenProjectId();
   applyProjectToStores(EMPTY_RESTORE);
+  useGuideStore.setState({ projects: {} });
 }
 
 // -- Recovery -----------------------------------------------------------------

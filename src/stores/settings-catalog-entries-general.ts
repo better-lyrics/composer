@@ -10,6 +10,13 @@ const GENERAL_CATALOG_ENTRIES = {
     keywords: ["badges", "keys", "hotkeys"],
     settingKey: "showShortcutHints",
   },
+  showGuide: {
+    section: "general",
+    label: "Show the guide",
+    description: "A small corner guide with your next step and tips for what you're doing.",
+    keywords: ["guide", "tips", "help", "tutorial", "onboarding", "hints"],
+    settingKey: "showGuide",
+  },
   musicBrainzLookup: {
     section: "general",
     label: "Song details from MusicBrainz",
@@ -47,6 +54,13 @@ const GENERAL_CATALOG_ENTRIES = {
     label: "Reset product tour",
     description: "Restart the guided walkthrough that introduces Composer's features.",
     keywords: ["tour", "walkthrough", "onboarding", "guide"],
+  },
+  resetGuide: {
+    section: "general",
+    group: "Reset",
+    label: "Start the guide over",
+    description: "Forget what the guide has seen you learn and bring back tips you turned off.",
+    keywords: ["guide", "tips", "medals", "progress"],
   },
   resetAllSettings: {
     section: "general",
