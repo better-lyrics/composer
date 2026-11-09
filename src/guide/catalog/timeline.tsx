@@ -1,7 +1,5 @@
-import { keys } from "@/guide/catalog/keys";
+import { keyBadge, keys } from "@/guide/catalog/keys";
 import { stageTip } from "@/guide/catalog/types";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { ALT_KEY, MOD_KEY } from "@/utils/platform";
 import {
   IconArrowBackUp,
   IconArrowsHorizontal,
@@ -41,7 +39,7 @@ const TIMELINE_TIPS = [
     title: "Pick a word",
     gist: (
       <>
-        Click a word to select it. <InlineKeyBadge keys={[MOD_KEY]} />
+        Click a word to select it. {keyBadge("Mod")}
         +click adds more.
       </>
     ),
@@ -72,11 +70,7 @@ const TIMELINE_TIPS = [
     tier: "basics",
     icon: IconZoomIn,
     title: "Zoom in close",
-    gist: (
-      <>
-        Hold <InlineKeyBadge keys={[MOD_KEY]} /> and scroll over the Timeline.
-      </>
-    ),
+    gist: <>Hold {keyBadge("Mod")} and scroll over the Timeline.</>,
   }),
   tip({
     id: "undo",
@@ -90,11 +84,7 @@ const TIMELINE_TIPS = [
     tier: "further",
     icon: IconUnlink,
     title: "Open a gap between syllables",
-    gist: (
-      <>
-        Hold <InlineKeyBadge keys={[ALT_KEY]} /> while you drag the edge between them.
-      </>
-    ),
+    gist: <>Hold {keyBadge("Alt")} while you drag the edge between them.</>,
   }),
   tip({
     id: "loop",

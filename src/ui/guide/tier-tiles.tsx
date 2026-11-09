@@ -31,7 +31,7 @@ const TierTile: React.FC<{ status: TierStatus; selected: boolean; onSelect: () =
     aria-pressed={selected}
     onClick={onSelect}
     className={cn(
-      "flex min-w-0 cursor-pointer select-none flex-col gap-2 rounded-xl p-2.5 text-left transition-[background-color,box-shadow,scale] duration-150 ease-out active:scale-[0.96]",
+      "flex min-w-0 cursor-pointer select-none flex-col gap-2 rounded-[14px] p-2.5 text-left transition-[background-color,box-shadow,scale] duration-150 ease-out active:scale-[0.96]",
       selected ? "bg-(--layer-2) shadow-[inset_0_0_0_1px_var(--lit-ring)]" : "hover:bg-(--layer-1)",
     )}
   >

@@ -1,11 +1,9 @@
 import { GUIDE_NUDGE_TRIGGERS } from "@/guide/catalog/nudge-triggers";
-import { keys } from "@/guide/catalog/keys";
+import { keyBadge, keys } from "@/guide/catalog/keys";
 import type { GuideNudge } from "@/guide/catalog/types";
 import { isAutoAlignAvailable } from "@/stores/alignment";
 import { toggledPlaybackRate, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { ALT_KEY, MOD_KEY } from "@/utils/platform";
 import {
   IconAbc,
   IconBrain,
@@ -30,15 +28,10 @@ const NUDGE_COPY: Record<string, NudgeCopy> = {
     title: "Trying to split two syllables?",
     body: (
       <>
-        Both syllables moved on your last few drags. Hold <InlineKeyBadge keys={[ALT_KEY]} /> while you drag the edge
-        and they come apart.
+        Both syllables moved on your last few drags. Hold {keyBadge("Alt")} while you drag the edge and they come apart.
       </>
     ),
-    peek: (
-      <>
-        Hold <InlineKeyBadge keys={[ALT_KEY]} /> while dragging to split syllables
-      </>
-    ),
+    peek: <>Hold {keyBadge("Alt")} while dragging to split syllables</>,
   },
   loopHardPart: {
     icon: IconRepeat,
@@ -49,16 +42,8 @@ const NUDGE_COPY: Record<string, NudgeCopy> = {
   zoomFaster: {
     icon: IconZoomIn,
     title: "There's a faster way to zoom",
-    body: (
-      <>
-        Hold <InlineKeyBadge keys={[MOD_KEY]} /> and scroll over the Timeline. It zooms around your pointer.
-      </>
-    ),
-    peek: (
-      <>
-        Hold <InlineKeyBadge keys={[MOD_KEY]} /> and scroll to zoom
-      </>
-    ),
+    body: <>Hold {keyBadge("Mod")} and scroll over the Timeline. It zooms around your pointer.</>,
+    peek: <>Hold {keyBadge("Mod")} and scroll to zoom</>,
   },
   nudgeWithKeys: {
     icon: IconKeyboard,

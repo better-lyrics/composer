@@ -1,3 +1,4 @@
+import { cn } from "@/utils/cn";
 import { formatKey } from "@/utils/format-key";
 import { isMac } from "@/utils/platform";
 import { IconCommand } from "@tabler/icons-react";
@@ -7,6 +8,7 @@ import { IconCommand } from "@tabler/icons-react";
 interface InlineKeyBadgeProps {
   keys?: string[];
   text?: string;
+  className?: string;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -16,7 +18,7 @@ const KEYCAP_CLASS =
 
 // -- Component ----------------------------------------------------------------
 
-const InlineKeyBadge: React.FC<InlineKeyBadgeProps> = ({ keys, text }) => {
+const InlineKeyBadge: React.FC<InlineKeyBadgeProps> = ({ keys, text, className }) => {
   if (text !== undefined) {
     return (
       <span
@@ -32,14 +34,17 @@ const InlineKeyBadge: React.FC<InlineKeyBadgeProps> = ({ keys, text }) => {
     return (
       <span
         data-inline-key-badge
-        className="inline-flex items-center justify-center h-4 px-1.5 text-[10px] font-medium rounded bg-current/5 leading-none italic ml-1.5 opacity-70"
+        className={cn(
+          "inline-flex items-center justify-center h-4 px-1.5 text-[10px] font-medium rounded bg-current/5 leading-none italic ml-1.5 opacity-70",
+          className,
+        )}
       >
         Unbound
       </span>
     );
   }
   return (
-    <span data-inline-key-badge className="inline-flex items-center gap-0.5 ml-1.5">
+    <span data-inline-key-badge className={cn("inline-flex items-center gap-0.5 ml-1.5", className)}>
       {resolvedKeys.map((key) => (
         <span key={key} className={KEYCAP_CLASS}>
           {key === "Mod" && isMac ? <IconCommand className="size-2.5" /> : formatKey(key)}

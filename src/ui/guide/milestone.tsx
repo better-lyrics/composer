@@ -41,7 +41,7 @@ function useMilestoneBeats() {
 const Milestone: React.FC<MilestoneProps> = ({ stageName, tier, tipCount, next, onContinue }) => {
   const { pressed, filled } = useMilestoneBeats();
   return (
-    <m.div initial="hidden" animate="shown" className="flex flex-col items-center px-4 pt-5 pb-3 text-center">
+    <m.div initial="hidden" animate="shown" className="flex flex-col items-center pt-5 text-center">
       <m.div variants={guideMedalDropVariants}>
         <Medal tier={tier} state="earned" size="lg" pressed={pressed} />
       </m.div>
@@ -69,7 +69,7 @@ const Milestone: React.FC<MilestoneProps> = ({ stageName, tier, tipCount, next, 
         <m.div
           custom={2}
           variants={guideRevealVariants}
-          className="mt-5 flex w-full items-center gap-3 rounded-xl bg-(--layer-1) p-2.5 text-left shadow-[inset_0_0_0_1px_var(--layer-2)]"
+          className="mt-5 flex w-full items-center gap-3 rounded-[14px] bg-(--layer-1) p-2.5 text-left shadow-[inset_0_0_0_1px_var(--layer-2)]"
         >
           <Medal tier={next.tier} state="open" size="md" />
           <div className="min-w-0 flex-1">
@@ -81,7 +81,7 @@ const Milestone: React.FC<MilestoneProps> = ({ stageName, tier, tipCount, next, 
           </Button>
         </m.div>
       ) : (
-        <m.div custom={2} variants={guideRevealVariants} className="mt-5">
+        <m.div custom={2} variants={guideRevealVariants} className="mt-5 mb-3">
           <Button variant="secondary" size="sm" onClick={onContinue}>
             Back to tips
           </Button>

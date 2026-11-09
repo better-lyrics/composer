@@ -42,7 +42,7 @@ const GuideCard: React.FC<GuideCardProps> = ({
     exit="exit"
     className="surface-floating w-[420px] max-w-[calc(100vw-2rem)] origin-bottom-right rounded-[20px] border border-transparent p-1.5"
   >
-    <m.div variants={guideChunkVariants} className="flex items-center gap-2 py-1 pl-2.5">
+    <m.div variants={guideChunkVariants} className="flex items-center gap-2 py-1 pr-1 pl-2.5">
       <span className="truncate text-[13px] font-semibold">{stepTitle}</span>
       <span className="shrink-0 text-xs text-(--muted) tabular-nums">
         {stepNumber === null ? `All ${stepTotal} steps done` : `Step ${stepNumber} of ${stepTotal}`}

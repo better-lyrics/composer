@@ -25,7 +25,7 @@ const TipRow: React.FC<{ tip: GuideTip; onKnown: () => void }> = ({ tip, onKnown
   <m.li
     layout="position"
     exit={guideRowExit}
-    className="group flex gap-2.5 overflow-hidden rounded-lg px-2.5 py-2 transition-[background-color] duration-150 hover:bg-(--layer-1)"
+    className="group flex gap-2.5 overflow-hidden rounded-[14px] px-2.5 py-2 transition-[background-color] duration-150 hover:bg-(--layer-1)"
   >
     <tip.icon className="mt-0.5 size-4 shrink-0 text-composer-accent-text" stroke={1.75} />
     <div className="min-w-0 flex-1">
@@ -37,7 +37,7 @@ const TipRow: React.FC<{ tip: GuideTip; onKnown: () => void }> = ({ tip, onKnown
       label={`I know "${tip.title}"`}
       icon={<IconCheck className="size-3.5" />}
       onClick={onKnown}
-      className="size-6 shrink-0 rounded-md opacity-0 transition-[opacity,background-color,color] group-hover:opacity-100 focus-visible:opacity-100"
+      className="size-6 shrink-0 rounded-md opacity-0 transition-[opacity,background-color,color] group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
     />
   </m.li>
 );
