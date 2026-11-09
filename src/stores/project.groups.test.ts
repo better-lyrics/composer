@@ -1,10 +1,11 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
+import { backgroundFields, withSeededBackground } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 /**
  * @vitest-environment node
  */
 import { useProjectStore } from "@/stores/project";
-import { beforeEach, describe, expect, it } from "vitest";
 
 const SONG_LENGTH = 300;
 
@@ -808,6 +809,23 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     expect(a1?.backgroundWords?.[1].text).toBe("yeah");
     expect(a1?.backgroundWords?.[0].begin).toBe(60);
     expect(a1?.backgroundWords?.[1].end).toBe(61.4);
+  });
+
+  it("regression: a new background vocal gets seeded words in every linked instance", () => {
+    seedTwoInstancesWithTimings();
+    const source = useProjectStore.getState().lines.find((l) => l.id === "a0");
+    if (!source) throw new Error("a0 not found");
+    const seededWords = withSeededBackground({ ...source, backgroundText: "ooh yeah" }).backgroundWords;
+
+    useProjectStore
+      .getState()
+      .updateLineWithHistory("a0", backgroundFields({ text: "ooh yeah", words: seededWords, source: "manual" }));
+
+    const sibling = useProjectStore.getState().lines.find((l) => l.id === "a1");
+    expect(sibling?.backgroundText).toBe("ooh yeah");
+    expect(sibling?.backgroundWords?.map((w) => w.text).join("")).toBe("ooh yeah");
+    expect(sibling?.backgroundWords?.[0].begin).toBeGreaterThanOrEqual(60);
+    expect(sibling?.backgroundWords?.at(-1)?.end).toBeLessThanOrEqual(62);
   });
 
   it("propagates word splits to siblings, scaling timing to sibling span", () => {
