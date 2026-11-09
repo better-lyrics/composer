@@ -1,3 +1,4 @@
+import { create } from "zustand";
 import type { LanguageTextVariant } from "@/domain/language/display";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import type { ResumePosition } from "@/domain/project/resume-position";
@@ -10,7 +11,6 @@ import { useSettingsStore } from "@/stores/settings";
 import type { GroupFocus } from "@/views/timeline/group-focus";
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
 import type { ClipboardData, PasteMode } from "@/views/timeline/selection-types";
-import { create } from "zustand";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -67,6 +67,7 @@ interface TimelineState {
   contextMenu: ContextMenuState | null;
   editingWord: EditingWord | null;
   markerMode: boolean;
+  stepTiming: boolean;
   hoveredSnapPointId: string | null;
   collapsedInstances: Record<string, boolean>;
   focusedGroup: GroupFocus | null;
@@ -114,6 +115,7 @@ interface TimelineActions {
   resetProjectScope: () => void;
   setCue: (cue: number | null) => void;
   toggleMarkerMode: () => void;
+  setStepTiming: (on: boolean) => void;
   setHoveredSnapPointId: (id: string | null) => void;
   setInstanceCollapsed: (key: string, isCollapsed: boolean) => void;
   toggleInstanceCollapsed: (key: string) => void;
@@ -168,6 +170,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     contextMenu: null,
     editingWord: null,
     markerMode: false,
+    stepTiming: false,
     hoveredSnapPointId: null,
     collapsedInstances: {},
     focusedGroup: null,
@@ -243,9 +246,11 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
         pendingResumeView: null,
         focusedGroup: null,
         textVariant: "original",
+        stepTiming: false,
       }),
     setCue: (cue) => set({ cue }),
     toggleMarkerMode: () => set((s) => ({ markerMode: !s.markerMode })),
+    setStepTiming: (stepTiming) => set({ stepTiming }),
     setHoveredSnapPointId: (hoveredSnapPointId) => set({ hoveredSnapPointId }),
     setInstanceCollapsed: (key, isCollapsed) =>
       set((s) => ({ collapsedInstances: { ...s.collapsedInstances, [key]: isCollapsed } })),
@@ -287,5 +292,5 @@ function shownLoopRegion(state: TimelineState): Bounds | null {
 
 // -- Exports -------------------------------------------------------------------
 
-export { shownLoopRegion, useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP };
 export type { ContextMenuTarget, LoopRegionDrag, SelectionPlaybackMode, TrackHit };
+export { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, shownLoopRegion, useTimelineStore, WAVEFORM_HEIGHT, ZOOM_STEP };
