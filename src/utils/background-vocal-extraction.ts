@@ -159,21 +159,27 @@ function extractInlineFromLine(line: LyricLine, options: ExtractOptions): LyricL
   return extracted === line ? line : withSeededBackground(extracted);
 }
 
+function extractionUpdate(extracted: LyricLine): Partial<LyricLine> {
+  const background = backgroundFields({
+    text: extracted.backgroundText,
+    words: extracted.backgroundWords,
+    source: extracted.backgroundTextSource ?? "manual",
+  });
+  return { text: extracted.text, words: extracted.words, ...background };
+}
+
 function extractInlineAcrossLinkedLines(lines: LyricLine[], lineId: string, options: ExtractOptions): LineUpdate[] {
   const target = lines.find((line) => line.id === lineId);
   if (!target) return [];
   const scope = getLinkScope(target);
-  return lines.flatMap((line) => {
-    if (line.id !== lineId && !isLinkedSibling(line, scope)) return [];
+  const updates: LineUpdate[] = [];
+  for (const line of lines) {
+    if (line.id !== lineId && !isLinkedSibling(line, scope)) continue;
     const extracted = extractInlineFromLine(line, options);
     if (extracted === line) return [];
-    const background = backgroundFields({
-      text: extracted.backgroundText,
-      words: extracted.backgroundWords,
-      source: extracted.backgroundTextSource ?? "manual",
-    });
-    return [{ id: line.id, updates: { text: extracted.text, words: extracted.words, ...background } }];
-  });
+    updates.push({ id: line.id, updates: extractionUpdate(extracted) });
+  }
+  return updates;
 }
 
 // -- Whole-list transform -----------------------------------------------------

@@ -56,4 +56,16 @@ describe("extractInlineAcrossLinkedLines", () => {
     expect(lineSynced[0].begin).toBeGreaterThanOrEqual(60);
     expect(lineSynced.at(-1)?.end).toBeLessThanOrEqual(63);
   });
+
+  it("regression: refuses the whole linked edit when one copy cannot extract its own words", () => {
+    const lines: LyricLine[] = [
+      { ...linkedLine("a0", 0, { begin: 10, end: 12 }), text: "Hello(ooh) world" },
+      {
+        ...linkedLine("a1", 1, { words: wordsAt(["Hello(ooh)", "world"], 60, 62) }),
+        text: "Hello(ooh) world",
+      },
+    ];
+
+    expect(extractInlineAcrossLinkedLines(lines, "a0", OPTIONS)).toEqual([]);
+  });
 });
