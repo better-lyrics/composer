@@ -4,7 +4,13 @@ import { JOURNEY_COPY, STAGE_NAMES } from "@/guide/catalog/journey";
 import { GUIDE_NUDGES } from "@/guide/catalog/nudges";
 import { GUIDE_TIER_NAMES } from "@/guide/catalog/types";
 import { dropPeeks, enqueuePeek } from "@/guide/peek-queue";
-import { type PendingNudge, pendingGuideNudges, resolveGuideNudge, subscribeGuideNudges } from "@/lib/guide-signals";
+import {
+  lastGuideSignalAt,
+  type PendingNudge,
+  pendingGuideNudges,
+  resolveGuideNudge,
+  subscribeGuideNudges,
+} from "@/lib/guide-signals";
 import { isRestoringProject } from "@/lib/project-restore";
 import { useAudioStore } from "@/stores/audio";
 import { TOUR_SEEN_KEY } from "@/tour/use-tour";
@@ -62,7 +68,8 @@ function useNudgeFeed(): readonly PendingNudge[] {
   return pending;
 }
 
-// Opening a project fills the stores in one synchronous restore; steps it brings back done are not news.
+// Opening a project fills the stores in one synchronous restore; steps it brings back done are not news,
+// unless the user just did something, such as dropping a song that starts a new project.
 function useRestoreWatch(): void {
   useEffect(() => {
     const noteRestore = () => {
@@ -82,9 +89,11 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
   const seen = useRef<{ projectId?: string; doneCount: number }>({ projectId, doneCount: journey.doneCount });
   useEffect(() => {
     const before = seen.current;
-    const restored = performance.now() - lastRestoreAt < RESTORE_SETTLE_MS;
+    const now = performance.now();
+    const restored = now - lastRestoreAt < RESTORE_SETTLE_MS && now - lastGuideSignalAt() > RESTORE_SETTLE_MS;
     seen.current = { projectId, doneCount: journey.doneCount };
-    if (restored || before.projectId !== projectId || journey.doneCount !== before.doneCount + 1) return;
+    const switched = before.projectId !== undefined && before.projectId !== projectId;
+    if (restored || switched || journey.doneCount !== before.doneCount + 1) return;
     const finished = journey.steps.findLast((step) => step.done);
     if (!finished) return;
     const next = journey.current ? JOURNEY_COPY[journey.current].next : null;

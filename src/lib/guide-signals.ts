@@ -66,6 +66,10 @@ function noteGuideSignal(signal: GuideSignal, key?: string): void {
   if (fired.length > 0 || resolved.length !== pending.length) setPending([...resolved, ...fired]);
 }
 
+function lastGuideSignalAt(): number {
+  return events.at(-1)?.at ?? Number.NEGATIVE_INFINITY;
+}
+
 function noteGuideProjectFact(fact: keyof ProjectGuideFacts): void {
   const projectId = openProjectIdSnapshot();
   if (projectId) useGuideStore.getState().noteProjectFact(projectId, fact);
@@ -94,6 +98,7 @@ function subscribeGuideNudges(listener: () => void): () => void {
 // -- Exports ------------------------------------------------------------------
 
 export {
+  lastGuideSignalAt,
   noteGuideExport,
   noteGuideProjectFact,
   noteGuideSignal,
