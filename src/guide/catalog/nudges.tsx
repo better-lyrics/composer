@@ -72,6 +72,7 @@ const NUDGE_COPY: Record<string, GuideNudgeCopy> = {
     title: "Taps landing early?",
     body: <>Turn the Rate knob down while you sync. Your timing still lands on the real song.</>,
     peek: <>Slow the song down while you tap</>,
+    available: () => slowerPlaybackRate() < useAudioStore.getState().playbackRate,
     primary: {
       label: "Slow it down",
       run: () => useAudioStore.getState().setPlaybackRate(slowerPlaybackRate()),

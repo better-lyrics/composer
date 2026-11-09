@@ -127,6 +127,12 @@ function resolveGuideNudge(id: string): void {
   if (pending.some((queued) => queued.id === id)) setPending(pending.filter((queued) => queued.id !== id));
 }
 
+// Takes back a hint that never reached the screen, so it can fire again later.
+function withdrawGuideNudge(id: string): void {
+  retiredThisSession.delete(id);
+  if (pending.some((queued) => queued.id === id)) setPending(pending.filter((queued) => queued.id !== id));
+}
+
 function pendingGuideNudges(): readonly PendingNudge[] {
   return pending;
 }
@@ -151,4 +157,5 @@ export {
   startGuideOver,
   subscribeGuideNudges,
   unmuteGuideCategories,
+  withdrawGuideNudge,
 };

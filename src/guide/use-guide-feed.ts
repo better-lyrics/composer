@@ -12,6 +12,7 @@ import {
   markGuideNudgeShown,
   resolveGuideNudge,
   subscribeGuideNudges,
+  withdrawGuideNudge,
 } from "@/lib/guide-signals";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { isRestoringProject } from "@/lib/project-restore";
@@ -70,8 +71,9 @@ function useNudgeFeed(): readonly PendingNudge[] {
   useEffect(() => {
     for (const queued of pending) {
       const nudge = GUIDE_NUDGES.find((candidate) => candidate.id === queued.id);
-      // Hints turned off take back the ones still waiting, without counting them as seen.
-      if (!hintsOn || nudge?.available?.() === false) resolveGuideNudge(queued.id);
+      // Hints turned off take back the ones still waiting, so they can fire once hints are back on.
+      if (!hintsOn) withdrawGuideNudge(queued.id);
+      else if (nudge?.available?.() === false) resolveGuideNudge(queued.id);
       else if (nudge?.spot && showSpotHint(nudge.spot, { id: nudge.id, icon: nudge.icon, text: nudge.peek })) {
         markGuideNudgeShown(nudge.id);
         resolveGuideNudge(nudge.id);
