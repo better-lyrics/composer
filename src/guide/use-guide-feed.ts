@@ -15,7 +15,7 @@ import { isRestoringProject } from "@/lib/project-restore";
 import { useAudioStore } from "@/stores/audio";
 import { TOUR_SEEN_KEY } from "@/tour/use-tour";
 import { useProjectStore } from "@/stores/project";
-import { createElement, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -96,10 +96,9 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
     if (restored || switched || journey.doneCount <= before.doneCount) return;
     const finished = journey.steps.findLast((step) => step.done);
     if (!finished) return;
-    const next = journey.current ? JOURNEY_COPY[journey.current].next : null;
-    const gist = next
-      ? createElement("span", null, `${JOURNEY_COPY[finished.id].done} Next: `, next)
-      : JOURNEY_COPY[finished.id].done;
+    const done = JOURNEY_COPY[finished.id].done;
+    const next = journey.current ? JOURNEY_COPY[journey.current].title : null;
+    const gist = next ? `${done} Next: ${next.charAt(0).toLowerCase()}${next.slice(1)}` : done;
     enqueuePeek({ id: `done:${projectId}:${journey.doneCount}`, kind: "done", gist });
   }, [journey, projectId]);
 

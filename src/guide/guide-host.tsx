@@ -14,6 +14,8 @@ import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { useGuideStore } from "@/stores/guide";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
+import { cn } from "@/utils/cn";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { GuideCard } from "@/ui/guide/guide-card";
 import { GuideOrb } from "@/ui/guide/guide-orb";
 import { AnimatePresence, MotionConfig } from "motion/react";
@@ -42,6 +44,7 @@ const GuideHost: React.FC = () => {
   const firstVisit = useGuideStore((state) => state.learnedSignals.length === 0);
   const showAll = useGuideStore((state) => state.showAll);
   const activeTab = useProjectStore((state) => state.activeTab);
+  const timelineFooterShown = useTimelineStore((state) => state.selectedWords.length > 0) && activeTab === "timeline";
   const pending = useNudgeFeed();
   useJourneyFeed(journey, projectId, firstVisit);
   const { milestone, clearMilestone } = useMilestoneFeed(tiers);
@@ -73,7 +76,12 @@ const GuideHost: React.FC = () => {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="layer-floating pointer-events-none absolute right-3 bottom-3 flex flex-col items-end gap-3 *:pointer-events-auto">
+      <div
+        className={cn(
+          "layer-floating pointer-events-none absolute right-3 bottom-3 flex flex-col items-end gap-3 transition-transform duration-250 ease-out *:pointer-events-auto",
+          timelineFooterShown && "-translate-y-[54px]",
+        )}
+      >
         <AnimatePresence>
           {open && (
             <GuideCard
