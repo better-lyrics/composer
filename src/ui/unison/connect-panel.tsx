@@ -1,6 +1,7 @@
 import { IconAlertCircle, IconLoader2 } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 import type { BetterLyricsDetection } from "@/hooks/unison/useBetterLyricsDetection";
+import { BETTER_LYRICS_EXTENSION_ID } from "@/lib/unison/extension-port";
 import type { StoredUnisonSession } from "@/lib/unison/session";
 import { SupersededSignInError, signInWithExtension } from "@/lib/unison/sign-in";
 import { Button } from "@/ui/button";
@@ -24,15 +25,14 @@ interface ConnectPanelProps {
 // -- Constants -----------------------------------------------------------------
 
 const DEFAULT_REASON = "Submit to Unison and track your lyrics.";
-const BETTER_LYRICS_INSTALL_URL =
-  "https://chromewebstore.google.com/detail/better-lyrics/effdbpeggelllpfkjppbokhmmiinhlmg";
+const BETTER_LYRICS_INSTALL_URL = `https://chromewebstore.google.com/detail/better-lyrics/${BETTER_LYRICS_EXTENSION_ID}`;
 const HINT = "text-xs leading-[18px] text-(--muted) text-pretty";
 
 // -- Components ----------------------------------------------------------------
 
 const MissingExtensionHint: React.FC = () => (
   <p className={HINT}>
-    Not in this browser. Works in Chrome and Edge.{" "}
+    Not in this browser. Works in Chrome and most Chromium browsers.{" "}
     <a
       href={BETTER_LYRICS_INSTALL_URL}
       target="_blank"

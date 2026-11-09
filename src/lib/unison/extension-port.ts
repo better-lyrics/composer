@@ -16,7 +16,7 @@ type ExtensionAuthResponse = { ok: true; signedBody: unknown } | { ok: false; re
 
 // -- Constants -----------------------------------------------------------------
 
-const BETTER_LYRICS_EXTENSION_IDS = ["effdbpeggelllpfkjppbokhmmiinhlmg", "mjfeaklppoegooljmjicjdbiccgjdlhd"] as const;
+const BETTER_LYRICS_EXTENSION_ID = "effdbpeggelllpfkjppbokhmmiinhlmg";
 const AUTH_PORT_NAME = "bl-auth-site";
 const PROBE_PORT_NAME = "bl-probe";
 const PROBE_TIMEOUT_MS = 200;
@@ -78,8 +78,7 @@ function probe(runtime: ExtensionRuntime, extensionId: string): Promise<boolean>
 async function findBetterLyricsExtension(): Promise<string | null> {
   const runtime = extensionRuntime();
   if (!runtime) return null;
-  const found = await Promise.all(BETTER_LYRICS_EXTENSION_IDS.map((id) => probe(runtime, id)));
-  return BETTER_LYRICS_EXTENSION_IDS.find((_, index) => found[index]) ?? null;
+  return (await probe(runtime, BETTER_LYRICS_EXTENSION_ID)) ? BETTER_LYRICS_EXTENSION_ID : null;
 }
 
 function requestSignedSession(extensionId: string, nonce: string): Promise<unknown> {
@@ -117,4 +116,4 @@ function requestSignedSession(extensionId: string, nonce: string): Promise<unkno
 // -- Exports -------------------------------------------------------------------
 
 export type { ExtensionPort };
-export { ExtensionAuthError, findBetterLyricsExtension, requestSignedSession };
+export { BETTER_LYRICS_EXTENSION_ID, ExtensionAuthError, findBetterLyricsExtension, requestSignedSession };
