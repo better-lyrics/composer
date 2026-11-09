@@ -53,15 +53,17 @@ const TierTile: React.FC<{ status: TierStatus; selected: boolean; onSelect: () =
 );
 
 const TierTiles: React.FC<TierTilesProps> = ({ tiers, selected, onSelect }) => (
-  <div className="grid grid-cols-3 gap-1">
-    {tiers.map((status) => (
-      <TierTile
-        key={status.tier}
-        status={status}
-        selected={status.tier === selected}
-        onSelect={() => onSelect(status.tier)}
-      />
-    ))}
+  <div className="grid auto-cols-fr grid-flow-col gap-1">
+    {tiers
+      .filter((status) => status.total > 0)
+      .map((status) => (
+        <TierTile
+          key={status.tier}
+          status={status}
+          selected={status.tier === selected}
+          onSelect={() => onSelect(status.tier)}
+        />
+      ))}
   </div>
 );
 

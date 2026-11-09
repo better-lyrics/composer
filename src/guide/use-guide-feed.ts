@@ -38,8 +38,10 @@ function earnedKeys(tiers: StageTiers): Set<string> {
   return keys;
 }
 
-function unlockedGist(stage: GuideStage, tier: GuideTierId): string {
-  const next = GUIDE_TIER_ORDER[GUIDE_TIER_ORDER.indexOf(tier) + 1];
+function unlockedGist(stage: GuideStage, tier: GuideTierId, statuses: readonly TierStatus[]): string {
+  const next = statuses.find(
+    (status) => GUIDE_TIER_ORDER.indexOf(status.tier) > GUIDE_TIER_ORDER.indexOf(tier) && status.total > 0,
+  )?.tier;
   const finished = `${STAGE_NAMES[stage]} ${GUIDE_TIER_NAMES[tier].toLowerCase()}, done.`;
   return next ? `${finished} ${GUIDE_TIER_NAMES[next]} is open` : `${finished} Every ${STAGE_NAMES[stage]} tip learned`;
 }
@@ -107,7 +109,7 @@ function useMilestoneFeed(tiers: StageTiers) {
       if (earnedBefore.current.has(key)) continue;
       const [stage, tier] = key.split(":") as [GuideStage, GuideTierId];
       setMilestone({ stage, tier });
-      enqueuePeek({ id: `unlocked:${key}`, kind: "unlocked", gist: unlockedGist(stage, tier) });
+      enqueuePeek({ id: `unlocked:${key}`, kind: "unlocked", gist: unlockedGist(stage, tier, tiers.get(stage) ?? []) });
     }
     earnedBefore.current = now;
   }, [tiers]);

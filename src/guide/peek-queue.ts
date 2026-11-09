@@ -29,7 +29,8 @@ const sameItem = (peek: GuidePeek) => (other: GuidePeek) => other.id === peek.id
 // -- API ----------------------------------------------------------------------
 
 function enqueuePeek(peek: GuidePeek): void {
-  const known = state.showing?.id === peek.id || state.waiting.some(sameItem(peek)) || state.unread.some(sameItem(peek));
+  const known =
+    state.showing?.id === peek.id || state.waiting.some(sameItem(peek)) || state.unread.some(sameItem(peek));
   if (!known) update({ ...state, waiting: [...state.waiting, peek] });
 }
 

@@ -50,9 +50,9 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
   }
 
   if (milestone) {
-    const next = GUIDE_TIER_ORDER[GUIDE_TIER_ORDER.indexOf(milestone.tier) + 1];
     const count = (tier: GuideTierId) =>
       ALL_GUIDE_TIPS.filter((tip) => tip.stage === milestone.stage && tip.tier === tier).length;
+    const next = GUIDE_TIER_ORDER.slice(GUIDE_TIER_ORDER.indexOf(milestone.tier) + 1).find((tier) => count(tier) > 0);
     return (
       <Milestone
         stageName={STAGE_NAMES[milestone.stage]}

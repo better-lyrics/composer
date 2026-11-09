@@ -16,13 +16,14 @@ const COLUMN_NAMES: Record<GuideTierId, string> = { basics: "Basics", further: "
 // -- Component ----------------------------------------------------------------
 
 const GuideRecord: React.FC<{ stages: readonly StageRecord[] }> = ({ stages }) => {
-  const earned = stages.flatMap((row) => row.tiers).filter((status) => status.state === "earned").length;
+  const withTips = stages.flatMap((row) => row.tiers).filter((status) => status.total > 0);
+  const earned = withTips.filter((status) => status.state === "earned").length;
   return (
     <div className="px-1 pb-1">
       <div className="flex items-baseline justify-between px-1.5 pb-2">
         <span className="text-[13px] font-semibold">Your record</span>
         <span className="text-xs text-(--muted) tabular-nums">
-          {earned} of {stages.length * GUIDE_TIER_ORDER.length} medals
+          {earned} of {withTips.length} medals
         </span>
       </div>
       <div className="grid grid-cols-[1fr_repeat(3,48px)] items-center gap-y-1 rounded-xl bg-(--layer-1) p-2">
@@ -37,7 +38,7 @@ const GuideRecord: React.FC<{ stages: readonly StageRecord[] }> = ({ stages }) =
             <span className="px-1.5 text-[13px]">{row.name}</span>
             {row.tiers.map((status) => (
               <span key={status.tier} className="flex justify-center">
-                <Medal tier={status.tier} state={status.state} size="sm" />
+                {status.total > 0 && <Medal tier={status.tier} state={status.state} size="sm" />}
               </span>
             ))}
           </div>

@@ -1,6 +1,11 @@
 import { PEEK_ICONS, PEEK_LABELS, PEEK_TONES, type GuidePeek } from "@/ui/guide/peek";
 import { cn } from "@/utils/cn";
-import { guideBadgeVariants, guideIconSwapVariants, guidePeekTextVariants, guideSpring } from "@/utils/animationVariants";
+import {
+  guideBadgeVariants,
+  guideIconSwapVariants,
+  guidePeekTextVariants,
+  guideSpring,
+} from "@/utils/animationVariants";
 import { IconChevronDown, IconCompass } from "@tabler/icons-react";
 import { AnimatePresence, m } from "motion/react";
 

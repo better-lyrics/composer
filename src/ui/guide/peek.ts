@@ -22,7 +22,12 @@ const PEEK_TONES: Record<PeekKind, string> = {
   done: "text-composer-positive",
 };
 
-const PEEK_ICONS: Record<PeekKind, Icon> = { next: IconCompass, tip: IconSparkles, unlocked: IconStars, done: IconCheck };
+const PEEK_ICONS: Record<PeekKind, Icon> = {
+  next: IconCompass,
+  tip: IconSparkles,
+  unlocked: IconStars,
+  done: IconCheck,
+};
 
 // -- Exports ------------------------------------------------------------------
 
