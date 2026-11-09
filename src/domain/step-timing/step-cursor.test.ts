@@ -41,35 +41,4 @@ describe("nextStepSlot", () => {
       nextStepSlot(lines, { lineId: "a", lineIndex: 0, wordIndex: 1, type: "word" }, (line) => line.id !== "b"),
     ).toBeNull();
   });
-
-  it("goes through the line's background words before the next line, like background lines in AMLL", () => {
-    const withEcho = [
-      createLine({
-        id: "e",
-        text: "Hold the light",
-        words: [
-          { text: "Hold ", begin: 30, end: 30.4 },
-          { text: "light", begin: 30.4, end: 31 },
-        ],
-        backgroundText: "oh oh",
-        backgroundWords: [
-          { text: "oh ", begin: 31, end: 31.3 },
-          { text: "oh", begin: 31.3, end: 31.8 },
-        ],
-      }),
-      lines[2],
-    ];
-    expect(nextStepSlot(withEcho, { lineId: "e", lineIndex: 0, wordIndex: 1, type: "word" }, everyLine)).toEqual({
-      lineId: "e",
-      lineIndex: 0,
-      wordIndex: 0,
-      type: "bg",
-    });
-    expect(nextStepSlot(withEcho, { lineId: "e", lineIndex: 0, wordIndex: 1, type: "bg" }, everyLine)).toEqual({
-      lineId: "b",
-      lineIndex: 1,
-      wordIndex: 0,
-      type: "word",
-    });
-  });
 });

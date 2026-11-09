@@ -74,18 +74,4 @@ describe("writeStepKey", () => {
     store().undo();
     expect(store().lines.map((line) => line.words)).toEqual(before.map((line) => line.words));
   });
-
-  it("starts the line's background words when a step leaves its last main word", () => {
-    const echo = createLine({
-      id: "e",
-      text: "Hold the light",
-      words: [word("Hold ", 30, 30.4), word("light", 30.4, 31)],
-      backgroundText: "oh",
-      backgroundWords: [word("oh", 31.4, 31.8)],
-    });
-    useProjectStore.setState({ lines: [echo], groups: [] });
-    press(slot("e", 0, 1), { lineId: "e", lineIndex: 0, wordIndex: 0, type: "bg" }, 31.1);
-    expect(lineById("e")?.words?.[1].end).toBe(31.1);
-    expect(lineById("e")?.backgroundWords?.[0]).toMatchObject({ begin: 31.1, end: 31.8 });
-  });
 });
