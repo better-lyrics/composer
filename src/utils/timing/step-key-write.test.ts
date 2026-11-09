@@ -74,4 +74,23 @@ describe("writeStepKey", () => {
     store().undo();
     expect(store().lines.map((line) => line.words)).toEqual(before.map((line) => line.words));
   });
+
+  it("only ends a background track's last word and leaves the next line's start alone", () => {
+    const echo = createLine({
+      id: "e",
+      text: "Hold the light",
+      words: [word("Hold ", 30, 30.4), word("light", 30.4, 31)],
+      backgroundText: "oh",
+      backgroundWords: [word("oh", 30.2, 30.6)],
+    });
+    const next = createLine({
+      id: "n",
+      text: "Fold the night",
+      words: [word("Fold ", 33, 33.4), word("the ", 33.5, 34)],
+    });
+    useProjectStore.setState({ lines: [echo, next], groups: [] });
+    press({ lineId: "e", lineIndex: 0, wordIndex: 0, type: "bg" }, slot("n", 1, 0), 30.7);
+    expect(lineById("e")?.backgroundWords?.[0].end).toBe(30.7);
+    expect(lineById("n")?.words?.[0].begin).toBe(33);
+  });
 });

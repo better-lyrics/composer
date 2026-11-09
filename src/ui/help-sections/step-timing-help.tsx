@@ -30,6 +30,11 @@ const StepTimingHelp: React.FC = () => (
         <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} /> instead.
       </li>
       <li>
+        Background words are timed on their own. Click one, and{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} /> steps through them. On the last one it only
+        ends the word, then moves to the next line without changing its start.
+      </li>
+      <li>
         With the pointer over the waveform or the spectrum, the keys write the time under the pointer, and a line shows
         that time. Anywhere else they write the playhead time.
       </li>
