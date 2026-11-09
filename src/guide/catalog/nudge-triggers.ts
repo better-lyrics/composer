@@ -59,7 +59,7 @@ const GUIDE_NUDGE_TRIGGERS: readonly GuideNudgeTrigger[] = [
     category: "sync-auto-align",
     trigger: { signal: "sync.tap", count: 40, windowMs: 5 * 60_000 },
     resolvedBy: "sync.autoAlign",
-    when: isAutoAlignAvailable,
+    when: () => isAutoAlignAvailable(),
   },
   {
     id: "keysWhileTyping",
