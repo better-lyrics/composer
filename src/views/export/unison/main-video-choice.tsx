@@ -1,7 +1,6 @@
 import { type ChosenVideo, suggestionFacts, suggestionLengthNote } from "@/domain/unison/video-links";
 import type { SuggestedVideo } from "@/lib/unison/api-types";
 import { useConfirm } from "@/stores/confirm-store";
-import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { AddVideoField } from "@/ui/unison/add-video-field";
 import { confirmDifferentTitle } from "@/ui/unison/confirm-different-title";
@@ -56,11 +55,10 @@ const SuggestionRow: React.FC<{ suggestion: SuggestedVideo; songSeconds: number;
 
 const MainVideoChoice: React.FC<MainVideoChoiceProps> = ({ durationSeconds, onChoose }) => {
   const confirm = useConfirm();
-  const songTitle = useProjectStore((state) => state.metadata.title);
   const { songSeconds, suggestions } = useSongSuggestions(undefined, durationSeconds);
 
   const chooseSuggestion = async (suggestion: SuggestedVideo) => {
-    if (await confirmDifferentTitle(confirm, suggestion, songTitle))
+    if (await confirmDifferentTitle(confirm, suggestion))
       onChoose({ videoId: suggestion.videoId, suggestion, origin: "chosen" });
   };
 

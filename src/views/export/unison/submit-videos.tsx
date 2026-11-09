@@ -55,7 +55,6 @@ const SubmissionWithVideos: React.FC<SubmissionWithVideosProps> = ({
             main={videos.main}
             linked={videos.linked}
             more={videos.more}
-            songTitle={videos.songTitle}
             songSeconds={videos.songSeconds}
             onLink={videos.link}
             onUnlink={videos.unlink}

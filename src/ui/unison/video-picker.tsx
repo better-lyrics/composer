@@ -32,7 +32,6 @@ interface VideoPickerProps {
   main: MainVideo;
   linked: readonly ChosenVideo[];
   more: readonly SuggestedVideo[];
-  songTitle: string;
   songSeconds: number;
   busy?: boolean;
   floating?: boolean;
@@ -80,7 +79,6 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
   main,
   linked,
   more,
-  songTitle,
   songSeconds,
   busy,
   floating,
@@ -104,7 +102,7 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
   };
 
   const link = async (suggestion: SuggestedVideo) => {
-    if (!(await confirmDifferentTitle(confirm, suggestion, songTitle))) return;
+    if (!(await confirmDifferentTitle(confirm, suggestion))) return;
     await run(suggestion.videoId, () => onLink(suggestion));
   };
 

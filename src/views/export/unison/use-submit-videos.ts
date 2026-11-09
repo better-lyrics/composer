@@ -21,7 +21,6 @@ import { formatTime } from "@/utils/format-time";
 interface SubmitVideos extends VideoChoices {
   main: MainVideo;
   songSeconds: number;
-  songTitle: string;
   videoIds: string[];
   link: (suggestion: SuggestedVideo) => string | null;
   unlink: (videoId: string) => null;
@@ -87,7 +86,6 @@ function useSubmitVideos(mainVideoId: string, durationSeconds: number, chosenMai
           facts: { artist: displayArtists(metadata.artists), kind: null, duration: formatTime(songSeconds, 0) },
         },
     songSeconds,
-    songTitle: metadata.title,
     videoIds: choices.linked.map((video) => video.videoId),
     link: (suggestion) => choose(suggestion.videoId, suggestion, "chosen"),
     unlink: (videoId) => {
