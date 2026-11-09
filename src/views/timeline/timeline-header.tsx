@@ -207,7 +207,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
             <ShortcutToggleButton
               active={stepTiming}
               label="Step timing"
-              shortcut="timeline.stepWord"
+              shortcut={stepTiming ? "timeline.stepTimingOff" : "timeline.stepWord"}
               onClick={() => useTimelineStore.getState().setStepTiming(!stepTiming)}
               description="Timing keys follow the selected word and move on to the next one"
               iconOnly
