@@ -28,7 +28,7 @@ import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay
 import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { WordBlock } from "@/views/timeline/word-block";
-import { BoundaryModeChip, useBoundaryModeChip } from "@/views/timeline/boundary-mode-chip";
+import { beginBoundaryDrag, endBoundaryDrag } from "@/views/timeline/boundary-mode-chip";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -115,7 +115,6 @@ const WordTrack: React.FC<WordTrackProps> = ({
   });
 
   const snap = useTimelineSnap();
-  const { chipPlace, beginBoundaryDrag, endBoundaryDrag } = useBoundaryModeChip();
   const getLastPointer = useCallback(() => lastPointerRef.current, []);
   useGestureInputReplay({ active: resizing, getLastPointer });
 
@@ -303,18 +302,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       document.addEventListener("pointermove", handleMouseMove);
       document.addEventListener("pointerup", handleMouseUp);
     },
-    [
-      words,
-      duration,
-      onUpdateWord,
-      syllablePositions,
-      snap,
-      lineId,
-      trackType,
-      tryStartStretch,
-      beginBoundaryDrag,
-      endBoundaryDrag,
-    ],
+    [words, duration, onUpdateWord, syllablePositions, snap, lineId, trackType, tryStartStretch],
   );
 
   const isBoundaryConjoined = (boundaryIndex: number): boolean =>
@@ -521,7 +509,6 @@ const WordTrack: React.FC<WordTrackProps> = ({
           />
         );
       })}
-      <BoundaryModeChip place={chipPlace} gapOpen={altPressed} />
     </div>
   );
 };

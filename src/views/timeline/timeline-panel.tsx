@@ -31,6 +31,7 @@ import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
+import { BoundaryModeChip } from "@/views/timeline/boundary-mode-chip";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
@@ -345,6 +346,7 @@ const TimelinePanel: React.FC = () => {
               </div>
 
               <TimelineInfoPanel />
+              <BoundaryModeChip />
             </div>
 
             <Activity mode={previewSidebar ? "visible" : "hidden"}>
