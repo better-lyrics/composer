@@ -1,6 +1,6 @@
 import type { Journey } from "@/domain/guide/journey";
 import { GUIDE_TIER_ORDER, type GuideStage, type GuideTierId, type TierStatus } from "@/domain/guide/model";
-import { JOURNEY_COPY, STAGE_NAMES } from "@/guide/catalog/journey";
+import { IMPORTED_TIMING_DONE, JOURNEY_COPY, STAGE_NAMES } from "@/guide/catalog/journey";
 import { GUIDE_NUDGES } from "@/guide/catalog/nudges";
 import { GUIDE_TIER_NAMES } from "@/guide/catalog/types";
 import { dropPeeks, enqueuePeek } from "@/guide/peek-queue";
@@ -46,6 +46,10 @@ function earnedKeys(tiers: StageTiers): Set<string> {
   return keys;
 }
 
+function doneIds(steps: Journey["steps"]): string[] {
+  return steps.flatMap((step) => (step.done ? [step.id] : []));
+}
+
 function unlockedGist(stage: GuideStage, tier: GuideTierId, statuses: readonly TierStatus[]): string {
   const next = statuses.find(
     (status) => GUIDE_TIER_ORDER.indexOf(status.tier) > GUIDE_TIER_ORDER.indexOf(tier) && status.total > 0,
@@ -62,7 +66,9 @@ function useNudgeFeed(): readonly PendingNudge[] {
     for (const queued of pending) {
       const nudge = GUIDE_NUDGES.find((candidate) => candidate.id === queued.id);
       if (nudge?.available?.() === false) resolveGuideNudge(nudge.id);
-      else if (nudge) enqueuePeek({ id: `nudge:${nudge.id}`, kind: "tip", gist: nudge.peek, nudgeId: nudge.id });
+      else if (nudge) {
+        enqueuePeek({ id: `nudge:${nudge.id}`, kind: "tip", gist: nudge.peek, nudgeId: nudge.id, stage: nudge.stage });
+      }
     }
     dropPeeks((peek) => !peek.nudgeId || pending.some((queued) => queued.id === peek.nudgeId));
   }, [pending]);
@@ -87,12 +93,16 @@ function useRestoreWatch(): void {
 
 function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVisit: boolean): void {
   useRestoreWatch();
-  const seen = useRef<{ projectId?: string; doneCount: number }>({ projectId, doneCount: journey.doneCount });
+  const seen = useRef<{ projectId?: string; doneCount: number; done: readonly string[] }>({
+    projectId,
+    doneCount: journey.doneCount,
+    done: doneIds(journey.steps),
+  });
   useEffect(() => {
     const before = seen.current;
     const now = performance.now();
     const restored = now - lastRestoreAt < RESTORE_SETTLE_MS && now - lastGuideSignalAt() > RESTORE_SETTLE_MS;
-    seen.current = { projectId, doneCount: journey.doneCount };
+    seen.current = { projectId, doneCount: journey.doneCount, done: doneIds(journey.steps) };
     // A step that came undone (a failed load fell back) takes back its news.
     const undone = new Set(journey.steps.filter((step) => !step.done).map((step) => `done:${projectId}:${step.id}`));
     dropPeeks((peek) => !undone.has(peek.id));
@@ -100,7 +110,9 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
     if (restored || switched || journey.doneCount <= before.doneCount) return;
     const finished = journey.steps.findLast((step) => step.done);
     if (!finished) return;
-    const done = JOURNEY_COPY[finished.id].done;
+    const arrived = journey.steps.filter((step) => step.done && !before.done.includes(step.id)).map((step) => step.id);
+    const cameSynced = arrived.includes("lyrics") && arrived.includes("sync");
+    const done = cameSynced ? IMPORTED_TIMING_DONE : JOURNEY_COPY[finished.id].done;
     const next = journey.current ? JOURNEY_COPY[journey.current].title : null;
     const gist = next ? `${done} Next: ${next.charAt(0).toLowerCase()}${next.slice(1)}` : done;
     enqueuePeek({ id: `done:${projectId}:${finished.id}`, kind: "done", gist });

@@ -361,6 +361,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   const handleSelect = (wordIndex: number, e: React.MouseEvent) => {
     noteGuideSignal("timeline.select");
+    if (e.metaKey || e.ctrlKey) noteGuideSignal("timeline.selectMore");
     if (e.shiftKey) {
       const pos = syllablePositions[wordIndex];
       if (pos !== "none") {

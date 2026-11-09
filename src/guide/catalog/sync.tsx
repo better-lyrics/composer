@@ -6,7 +6,6 @@ import {
   IconBrain,
   IconHandClick,
   IconHandStop,
-  IconList,
   IconLineDashed,
   IconPlayerTrackNext,
   IconRotateClockwise,
@@ -30,19 +29,15 @@ const SYNC_TIPS = [
     id: "fixTap",
     tier: "basics",
     icon: IconArrowBackUp,
-    title: "Fix a bad tap",
-    gist: (
-      <>
-        {keys("sync.nudgeLeft")} {keys("sync.nudgeRight")} move the last word, {keys("global.undo")} takes it back.
-      </>
-    ),
+    title: "Take back a bad tap",
+    gist: <>Press {keys("global.undo")} and tap that word again.</>,
   }),
   tip({
     id: "resync",
     tier: "basics",
     icon: IconRotateClockwise,
     title: "Redo one line",
-    gist: <>Pause, click a word in that line, then tap again from there.</>,
+    gist: <>Click the line to jump back to it, then tap it again.</>,
   }),
   tip({
     id: "hold",
@@ -78,13 +73,6 @@ const SYNC_TIPS = [
     icon: IconScissors,
     title: "Split syllables here",
     gist: <>Click the scissors on a word to split it while you sync.</>,
-  }),
-  tip({
-    id: "editTimings",
-    tier: "pro",
-    icon: IconList,
-    title: "See every timing",
-    gist: <>Press {keys("sync.toggleEdit")} to list every line's timing.</>,
   }),
   tip({
     id: "autoAlign",

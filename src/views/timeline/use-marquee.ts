@@ -201,7 +201,8 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
           } else {
             useTimelineStore.getState().setSelectedWords(newSelections);
           }
-          if (newSelections.length > 0) noteGuideSignal("timeline.select");
+          if (newSelections.length > 0)
+            noteGuideSignal(newSelections.length > 1 ? "timeline.selectMore" : "timeline.select");
         }
       } else if (stateRef.current === "pending") {
         if (!shiftRef.current) {

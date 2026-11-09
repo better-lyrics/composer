@@ -22,6 +22,7 @@ import {
   IconRewindBackward5,
   IconScissors,
   IconSelect,
+  IconSelectAll,
   IconUnlink,
   IconWaveSine,
   IconZoomIn,
@@ -37,12 +38,7 @@ const TIMELINE_TIPS = [
     tier: "basics",
     icon: IconHandFinger,
     title: "Pick a word",
-    gist: (
-      <>
-        Click a word to select it. {keyBadge("Mod")}
-        +click adds more.
-      </>
-    ),
+    gist: <>Click a word to select it.</>,
   }),
   tip({
     id: "move",
@@ -78,6 +74,13 @@ const TIMELINE_TIPS = [
     icon: IconArrowBackUp,
     title: "Take it back",
     gist: <>Press {keys("global.undo")} to undo anything, even a big drag.</>,
+  }),
+  tip({
+    id: "selectMore",
+    tier: "further",
+    icon: IconSelectAll,
+    title: "Select more words",
+    gist: <>{keyBadge("Mod")}+click adds a word, or drag a box around several.</>,
   }),
   tip({
     id: "gap",

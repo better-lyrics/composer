@@ -1,3 +1,4 @@
+import type { GuideStage } from "@/domain/guide/model";
 import { PEEK_COOLDOWN_MS, canPeek } from "@/domain/guide/peek-gate";
 import type { GuidePeek } from "@/ui/guide/peek";
 
@@ -35,15 +36,18 @@ function enqueuePeek(peek: GuidePeek): void {
 }
 
 // Returns the ms to wait before the next try when something waits behind the cooldown, else null.
-function tryShowPeek(busy: boolean, now: number): number | null {
-  if (state.showing || state.waiting.length === 0) return null;
-  if (!canPeek({ now, busy, lastPeekAt, peeksThisSession })) {
+// A peek about one tab waits until you are on it.
+function tryShowPeek(busy: boolean, now: number, stage: GuideStage): number | null {
+  const head = state.waiting.find((peek) => !peek.stage || peek.stage === stage);
+  if (state.showing || !head) return null;
+  // News about something you just did shows now; the cooldown only spaces out tips.
+  const since = head.kind === "done" ? undefined : lastPeekAt;
+  if (!canPeek({ now, busy, lastPeekAt: since, peeksThisSession })) {
     return !busy && lastPeekAt !== undefined ? Math.max(0, lastPeekAt + PEEK_COOLDOWN_MS - now) : null;
   }
-  const [head, ...rest] = state.waiting;
   lastPeekAt = now;
   peeksThisSession += 1;
-  update({ ...state, showing: head, waiting: rest });
+  update({ ...state, showing: head, waiting: state.waiting.filter((peek) => peek !== head) });
   return null;
 }
 

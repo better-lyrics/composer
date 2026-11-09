@@ -1,3 +1,4 @@
+import type { GuideStage } from "@/domain/guide/model";
 import { IconCheck, IconCompass, IconSparkles, IconStars, type Icon } from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------
@@ -9,6 +10,7 @@ interface GuidePeek {
   kind: PeekKind;
   gist: React.ReactNode;
   nudgeId?: string;
+  stage?: GuideStage;
 }
 
 // -- Constants ----------------------------------------------------------------

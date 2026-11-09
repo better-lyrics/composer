@@ -52,6 +52,9 @@ const JOURNEY_COPY: Record<JourneyStepId, JourneyStepCopy> = {
   },
 };
 
+// Lyrics that arrive with their timing finish two steps at once.
+const IMPORTED_TIMING_DONE = "Your lyrics came with timing.";
+
 const STAGE_NAMES: Record<GuideStage, string> = {
   import: "Import",
   edit: "Edit",
@@ -74,4 +77,4 @@ const STAGE_HELP_SECTIONS: Record<GuideStage, string> = {
 
 // -- Exports ------------------------------------------------------------------
 
-export { JOURNEY_COPY, STAGE_HELP_SECTIONS, STAGE_NAMES };
+export { IMPORTED_TIMING_DONE, JOURNEY_COPY, STAGE_HELP_SECTIONS, STAGE_NAMES };

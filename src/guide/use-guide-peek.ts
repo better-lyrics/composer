@@ -1,3 +1,4 @@
+import type { GuideStage } from "@/domain/guide/model";
 import { PEEK_VISIBLE_MS } from "@/domain/guide/peek-gate";
 import { foldPeek, peekQueueSnapshot, subscribePeekQueue, tryShowPeek } from "@/guide/peek-queue";
 import { useAudioStore } from "@/stores/audio";
@@ -25,16 +26,16 @@ function isBusy(cardOpen: boolean): boolean {
 // -- Hooks --------------------------------------------------------------------
 
 // Shows the head of the peek queue when the user is idle, and folds it into the count after a few seconds.
-function useGuidePeek(cardOpen: boolean) {
+function useGuidePeek(cardOpen: boolean, stage: GuideStage) {
   const queue = useSyncExternalStore(subscribePeekQueue, peekQueueSnapshot, peekQueueSnapshot);
   const retryTimer = useRef<number | undefined>(undefined);
   const visibleTimer = useRef<{ id?: number; endsAt: number; remaining: number }>({ endsAt: 0, remaining: 0 });
 
   const attempt = useCallback(() => {
     window.clearTimeout(retryTimer.current);
-    const wait = tryShowPeek(isBusy(cardOpen), performance.now());
+    const wait = tryShowPeek(isBusy(cardOpen), performance.now(), stage);
     if (wait !== null) retryTimer.current = window.setTimeout(attempt, wait);
-  }, [cardOpen]);
+  }, [cardOpen, stage]);
 
   useEffect(() => {
     if (cardOpen) foldPeek();

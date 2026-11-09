@@ -191,7 +191,6 @@ const SyncPanel: React.FC = () => {
     const entering = !editMode;
     if (entering) cancelCountIn();
     setSyncEditMode(entering);
-    if (entering) noteGuideSignal("sync.editTimings");
     if (entering && isPlaying) setIsPlaying(false);
   }, [editMode, isPlaying, setIsPlaying]);
   const toggleEditFromKeyboard = useEffectEvent(() => {

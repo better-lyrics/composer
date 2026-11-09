@@ -46,12 +46,12 @@ const GuideHost: React.FC = () => {
   const firstVisit = useGuideStore((state) => state.learnedSignals.length === 0);
   const showAll = useGuideStore((state) => state.showAll);
   const activeTab = useProjectStore((state) => state.activeTab);
-  // The orb steps around controls that sit in this corner: the Timeline footer and the Export side panel.
+  // The orb steps around controls that sit in this corner: the Sync tap keys, the Timeline footer and the Export side panel.
   const timelineFooterShown = useTimelineStore((state) => state.selectedWords.length > 0) && activeTab === "timeline";
   const pending = useNudgeFeed();
   useJourneyFeed(journey, projectId, firstVisit);
   const { milestone, clearMilestone } = useMilestoneFeed(tiers);
-  const { queue, hold, release } = useGuidePeek(open);
+  const { queue, hold, release } = useGuidePeek(open, activeTab);
 
   // Whatever arrived while the card was open was in front of the user already.
   const close = () => {
@@ -84,6 +84,7 @@ const GuideHost: React.FC = () => {
         className={cn(
           "layer-floating pointer-events-none absolute right-3 bottom-3 flex flex-col items-end gap-3 transition-transform duration-250 ease-out *:pointer-events-auto",
           timelineFooterShown && "-translate-y-[54px]",
+          activeTab === "sync" && "-translate-y-[72px]",
           activeTab === "export" && "-translate-x-[416px]",
         )}
       >
