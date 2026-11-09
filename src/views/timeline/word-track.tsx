@@ -28,7 +28,7 @@ import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay
 import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { WordBlock } from "@/views/timeline/word-block";
-import { beginBoundaryDrag, endBoundaryDrag } from "@/views/timeline/boundary-mode-chip";
+import { beginBoundaryDrag, endBoundaryDrag } from "@/views/timeline/boundary-chip-store";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------

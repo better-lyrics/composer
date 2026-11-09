@@ -4,7 +4,7 @@ import { IMPORTED_TIMING_DONE, JOURNEY_COPY, STAGE_NAMES } from "@/guide/catalog
 import { GUIDE_NUDGES } from "@/guide/catalog/nudges";
 import { GUIDE_TIER_NAMES } from "@/guide/catalog/types";
 import { dropPeeks, enqueuePeek } from "@/guide/peek-queue";
-import { showSpotHint } from "@/guide/spot-hint";
+import { showSpotHint } from "@/guide/spot-hint-store";
 import {
   lastGuideSignalAt,
   type PendingNudge,
@@ -19,7 +19,7 @@ import { lastQuietLearnAt } from "@/guide/use-guide-state-learning";
 import { useAudioStore } from "@/stores/audio";
 import { TOUR_SEEN_KEY } from "@/tour/use-tour";
 import { useProjectStore } from "@/stores/project";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -127,7 +127,8 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
     if (switched) dropPeeks((peek) => !peek.id.startsWith("done:") || peek.id.startsWith(`done:${projectId}:`));
     if (!settled || restored || switched || journey.doneCount <= before.doneCount) return;
     // The news is about the step that just finished, not the furthest one already done.
-    const arrived = journey.steps.filter((step) => step.done && !before.done.includes(step.id)).map((step) => step.id);
+    const doneBefore = new Set(before.done);
+    const arrived = journey.steps.filter((step) => step.done && !doneBefore.has(step.id)).map((step) => step.id);
     const finished = arrived.at(-1);
     if (!finished) return;
     const cameSynced = arrived.includes("lyrics") && arrived.includes("sync");
@@ -148,21 +149,24 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
 
 // A tier earned while you work earns its milestone; tiers already earned before this session stay quiet.
 function useMilestoneFeed(tiers: StageTiers) {
-  const [initialEarned] = useState(() => earnedKeys(tiers));
-  const earnedBefore = useRef(initialEarned);
-  const [milestone, setMilestone] = useState<EarnedTier | null>(null);
-  useEffect(() => {
-    const now = earnedKeys(tiers);
+  const earned = useMemo(() => earnedKeys(tiers), [tiers]);
+  const [earnedBefore, setEarnedBefore] = useState(earned);
+  const [milestone, setMilestone] = useState<(EarnedTier & { gist: string }) | null>(null);
+  // Adjusting state while rendering, so the milestone and its peek come from the same render that earned it.
+  if (earned !== earnedBefore) {
+    setEarnedBefore(earned);
     // A tier finished by quietly noticing what is already on (spectrum, sidebar) is not something you just did.
     const byYourAction = performance.now() - lastQuietLearnAt() > QUIET_LEARN_ECHO_MS;
-    for (const key of now) {
-      if (earnedBefore.current.has(key) || !byYourAction) continue;
+    const key = [...earned].findLast((candidate) => !earnedBefore.has(candidate));
+    if (key && byYourAction) {
       const [stage, tier] = key.split(":") as [GuideStage, GuideTierId];
-      setMilestone({ stage, tier });
-      enqueuePeek({ id: `unlocked:${key}`, kind: "unlocked", gist: unlockedGist(stage, tier, tiers.get(stage) ?? []) });
+      setMilestone({ stage, tier, gist: unlockedGist(stage, tier, tiers.get(stage) ?? []) });
     }
-    earnedBefore.current = now;
-  }, [tiers]);
+  }
+  useEffect(() => {
+    if (milestone)
+      enqueuePeek({ id: `unlocked:${milestone.stage}:${milestone.tier}`, kind: "unlocked", gist: milestone.gist });
+  }, [milestone]);
   return { milestone, clearMilestone: () => setMilestone(null) };
 }
 

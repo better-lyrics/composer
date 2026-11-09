@@ -1,6 +1,6 @@
-import { syncProgress } from "@/domain/line/sync-progress";
+import type { Journey } from "@/domain/guide/journey";
 import { stageTiers } from "@/domain/guide/tier-state";
-import { PROJECT_TABS } from "@/domain/project/tab";
+import { PROJECT_TABS, type ProjectTab } from "@/domain/project/tab";
 import { JOURNEY_COPY, STAGE_HELP_SECTIONS, STAGE_NAMES } from "@/guide/catalog/journey";
 import type { GuideTip } from "@/guide/catalog/types";
 import { GuideCardBody } from "@/guide/guide-card-body";
@@ -11,20 +11,19 @@ import { useGuidePeek } from "@/guide/use-guide-peek";
 import { SpotHint } from "@/guide/spot-hint";
 import { useGuideStateLearning } from "@/guide/use-guide-state-learning";
 import { useGuideTips } from "@/guide/use-guide-tips";
-import { useProjectJourney } from "@/guide/use-project-journey";
+import { useOrbPlacement } from "@/guide/use-orb-placement";
+import { useJourneyVisits, useProjectJourney } from "@/guide/use-project-journey";
 import { useEscapeLayer } from "@/hooks/useEscapeLayer";
-import { noteGuideProjectFact } from "@/lib/guide-signals";
+import { startGuideOver } from "@/lib/guide-signals";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { useGuideStore } from "@/stores/guide";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { GuideCard } from "@/ui/guide/guide-card";
 import { GuideOrb } from "@/ui/guide/guide-orb";
 import { guideSpring } from "@/utils/animationVariants";
 import { AnimatePresence, LazyMotion, MotionConfig, m } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 // -- Hooks --------------------------------------------------------------------
 
@@ -39,7 +38,20 @@ function useAllStageTiers(tips: readonly GuideTip[]): StageTiers {
 
 // -- Helpers ------------------------------------------------------------------
 
-const loadGuideMotionFeatures = () => import("@/guide/guide-motion-features").then((module) => module.default);
+const loadGuideMotionFeatures = () =>
+  import("@/guide/guide-motion-features").then((module) => module.guideMotionFeatures);
+
+// The card header names the next step, links to its tab from elsewhere and counts where it sits.
+function journeyHeader(journey: Journey, activeTab: ProjectTab) {
+  const current = journey.current;
+  if (!current) return { stepTitle: "Song finished", goToStep: undefined, stepNumber: null };
+  const { title, stage } = JOURNEY_COPY[current];
+  const goToStep =
+    stage === activeTab
+      ? undefined
+      : { stageName: STAGE_NAMES[stage], onGo: () => useProjectStore.getState().setActiveTab(stage) };
+  return { stepTitle: title, goToStep, stepNumber: journey.steps.findIndex((step) => step.id === current) + 1 };
+}
 
 // -- Component ----------------------------------------------------------------
 
@@ -54,15 +66,6 @@ const GuideHost: React.FC = () => {
   const firstVisit = useGuideStore((state) => state.learnedSignals.length === 0);
   const showAll = useGuideStore((state) => state.showAll);
   const activeTab = useProjectStore((state) => state.activeTab);
-  // Export opens its side panel only once there is synced content to export.
-  const exportPanelShown = useProjectStore(
-    (state) => state.activeTab === "export" && syncProgress(state.lines, "line").done > 0,
-  );
-  // The orb steps around controls that sit in this corner: the Sync tap keys, the Timeline footer and the Export side panel.
-  // The footer stops short of the Timeline preview sidebar, so with the sidebar open the orb stays in its corner.
-  const previewSidebar = useSettingsStore((state) => state.previewSidebar);
-  const timelineFooterShown =
-    useTimelineStore((state) => state.selectedWords.length > 0) && activeTab === "timeline" && !previewSidebar;
   useGuideStateLearning();
   const pending = useNudgeFeed();
   useJourneyFeed(journey, projectId, firstVisit);
@@ -85,23 +88,11 @@ const GuideHost: React.FC = () => {
   };
   useEscapeLayer("panel", open, close);
 
-  // Visiting a step's tab is a journey fact; Timeline and Preview count only once every line is synced.
-  const syncComplete = journey.steps.some((step) => step.id === "sync" && step.done);
-  useEffect(() => {
-    if (activeTab === "preview" && syncComplete) noteGuideProjectFact("visitedPreview");
-    if (activeTab === "timeline" && syncComplete) noteGuideProjectFact("visitedTimeline");
-  }, [activeTab, syncComplete]);
+  useJourneyVisits(journey, activeTab, projectId);
+  const placement = useOrbPlacement(activeTab);
 
-  const stepStage = journey.current ? JOURNEY_COPY[journey.current].stage : null;
-  const stepIndex = journey.current ? journey.steps.findIndex((step) => step.id === journey.current) : -1;
+  const header = journeyHeader(journey, activeTab);
   const unread = queue.waiting.length + queue.unread.length;
-  const orbLift = activeTab === "sync" ? 72 : timelineFooterShown ? 54 : 0;
-  const cardRoom =
-    orbLift === 72 ? "max-h-[calc(100dvh-16rem-72px)]" : orbLift === 54 ? "max-h-[calc(100dvh-16rem-54px)]" : undefined;
-  const orbShift = {
-    x: exportPanelShown ? -416 : 0,
-    y: -orbLift,
-  };
 
   return (
     <LazyMotion features={loadGuideMotionFeatures}>
@@ -109,7 +100,7 @@ const GuideHost: React.FC = () => {
         <m.div
           layout="position"
           initial={false}
-          animate={{ x: orbShift.x, y: orbShift.y }}
+          animate={{ x: placement.x, y: placement.y }}
           transition={guideSpring}
           className="layer-floating pointer-events-none absolute right-3 bottom-3 flex flex-col items-end gap-3 *:pointer-events-auto"
         >
@@ -117,17 +108,10 @@ const GuideHost: React.FC = () => {
             {open && (
               <GuideCard
                 key="card"
-                className={cardRoom}
-                stepTitle={journey.current ? JOURNEY_COPY[journey.current].title : "Song finished"}
-                goToStep={
-                  stepStage && stepStage !== activeTab
-                    ? {
-                        stageName: STAGE_NAMES[stepStage],
-                        onGo: () => useProjectStore.getState().setActiveTab(stepStage),
-                      }
-                    : undefined
-                }
-                stepNumber={stepIndex >= 0 ? stepIndex + 1 : null}
+                className={placement.cardRoom}
+                stepTitle={header.stepTitle}
+                goToStep={header.goToStep}
+                stepNumber={header.stepNumber}
                 doneCount={journey.doneCount}
                 stepTotal={journey.steps.length}
                 showingRecord={showingRecord}
@@ -135,7 +119,7 @@ const GuideHost: React.FC = () => {
                 onToggleRecord={() => setShowingRecord((shown) => !shown)}
                 onToggleShowAll={() => useGuideStore.getState().setShowAll(!showAll)}
                 onOpenHelp={() => useUIStore.getState().openHelp(STAGE_HELP_SECTIONS[activeTab])}
-                onStartOver={() => useGuideStore.getState().startOver()}
+                onStartOver={() => startGuideOver()}
                 onHide={hideGuide}
               >
                 <GuideCardBody

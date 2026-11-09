@@ -12,7 +12,7 @@ interface SliderProps {
   "aria-label"?: string;
   className?: string;
   children?: React.ReactNode;
-  // "overlay" draws nothing: the slider becomes an invisible click surface over a custom one, never tinted by focus.
+  // "overlay" draws nothing: the slider becomes an invisible control over a custom surface. A click never focuses it, so only Tab shows its focus.
   appearance?: "track" | "overlay";
 }
 
@@ -22,6 +22,8 @@ interface SliderProps {
 const CAP_WIDTH_PX = 12;
 
 // -- Helpers ------------------------------------------------------------------
+
+const keepFocusWhereItIs = (event: React.MouseEvent) => event.preventDefault();
 
 function stepDecimals(step: number): number {
   const [, fraction = ""] = String(step).split(".");
@@ -130,7 +132,7 @@ const Slider: React.FC<SliderProps> = ({
     <div
       ref={trackRef}
       role="slider"
-      tabIndex={appearance === "overlay" ? -1 : 0}
+      tabIndex={0}
       aria-valuemin={min}
       aria-valuemax={max}
       aria-valuenow={value}
@@ -142,6 +144,7 @@ const Slider: React.FC<SliderProps> = ({
         className,
       )}
       onPointerDown={handlePointerDown}
+      onMouseDown={appearance === "overlay" ? keepFocusWhereItIs : undefined}
       onPointerMove={handlePointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}

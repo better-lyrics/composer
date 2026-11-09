@@ -17,6 +17,7 @@ interface PendingNudge {
 
 const EVENT_WINDOW_MS = 5 * 60_000;
 const MAX_EVENTS = 200;
+const RESOLVED_BY = new Map(GUIDE_NUDGE_TRIGGERS.map((nudge) => [nudge.id, nudge.resolvedBy]));
 
 // -- State --------------------------------------------------------------------
 
@@ -40,14 +41,17 @@ function remember(event: GuideEvent): void {
 }
 
 function firedNudges(now: number): PendingNudge[] {
-  const { mutedCategories, learnedSignals, seenNudges } = useGuideStore.getState();
+  const state = useGuideStore.getState();
+  const seen = new Set(state.seenNudges);
+  const muted = new Set(state.mutedCategories);
+  const learned = new Set(state.learnedSignals);
   return GUIDE_NUDGE_TRIGGERS.filter(
     (nudge) =>
       !retiredThisSession.has(nudge.id) &&
-      !seenNudges.includes(nudge.id) &&
-      !mutedCategories.includes(nudge.category) &&
+      !seen.has(nudge.id) &&
+      !muted.has(nudge.category) &&
       !(nudge.needsKeyboard && !hasKeyboard()) &&
-      !(nudge.resolvedBy && learnedSignals.includes(nudge.resolvedBy)) &&
+      !(nudge.resolvedBy && learned.has(nudge.resolvedBy)) &&
       firesOn(nudge.trigger, events, now),
   ).map((nudge) => ({ id: nudge.id, key: events.findLast((event) => event.signal === nudge.trigger.signal)?.key }));
 }
@@ -58,14 +62,13 @@ function firedNudges(now: number): PendingNudge[] {
 function noteGuideSignal(signal: GuideSignal, key?: string): void {
   const now = performance.now();
   remember({ signal, at: now, key });
-  const taught = [signal, ...(GUIDE_SIGNAL_OUTCOMES[signal] ?? [])];
-  for (const learned of taught) {
-    const { learnedSignals, learnSignal } = useGuideStore.getState();
-    if (!learnedSignals.includes(learned)) learnSignal(learned);
-  }
+  const taught = new Set<GuideSignal>([signal, ...(GUIDE_SIGNAL_OUTCOMES[signal] ?? [])]);
+  const { learnSignal } = useGuideStore.getState();
+  const alreadyLearned = new Set(useGuideStore.getState().learnedSignals);
+  for (const learned of taught) if (!alreadyLearned.has(learned)) learnSignal(learned);
   const resolved = pending.filter((queued) => {
-    const resolvedBy = GUIDE_NUDGE_TRIGGERS.find((nudge) => nudge.id === queued.id)?.resolvedBy;
-    const done = resolvedBy !== undefined && taught.includes(resolvedBy);
+    const resolvedBy = RESOLVED_BY.get(queued.id);
+    const done = resolvedBy !== undefined && taught.has(resolvedBy);
     if (done) retiredThisSession.add(queued.id);
     return !done;
   });
@@ -94,6 +97,22 @@ function markGuideNudgeShown(id: string): void {
   if (!useGuideStore.getState().seenNudges.includes(id)) useGuideStore.getState().markNudgeSeen(id);
 }
 
+// Start over wipes the session too, or a hint that already fired this session could never come back.
+function startGuideOver(): void {
+  useGuideStore.getState().startOver();
+  retiredThisSession.clear();
+  events = [];
+  setPending([]);
+}
+
+// Muting a category also takes back its hints still waiting to show.
+function muteGuideCategory(category: string): void {
+  useGuideStore.getState().muteCategory(category);
+  const muted = new Set(GUIDE_NUDGE_TRIGGERS.filter((nudge) => nudge.category === category).map((nudge) => nudge.id));
+  for (const id of muted) retiredThisSession.add(id);
+  if (pending.some((queued) => muted.has(queued.id))) setPending(pending.filter((queued) => !muted.has(queued.id)));
+}
+
 function resolveGuideNudge(id: string): void {
   retiredThisSession.add(id);
   if (pending.some((queued) => queued.id === id)) setPending(pending.filter((queued) => queued.id !== id));
@@ -113,11 +132,13 @@ function subscribeGuideNudges(listener: () => void): () => void {
 export {
   lastGuideSignalAt,
   markGuideNudgeShown,
+  muteGuideCategory,
   noteGuideExport,
   noteGuideProjectFact,
   noteGuideSignal,
   pendingGuideNudges,
   resolveGuideNudge,
+  startGuideOver,
   subscribeGuideNudges,
 };
 export type { PendingNudge };

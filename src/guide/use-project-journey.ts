@@ -5,7 +5,9 @@ import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { playableFile, useAudioStore } from "@/stores/audio";
 import { NO_PROJECT_FACTS, useGuideStore } from "@/stores/guide";
 import { useProjectStore } from "@/stores/project";
-import { useMemo } from "react";
+import type { ProjectTab } from "@/domain/project/tab";
+import { noteGuideProjectFact } from "@/lib/guide-signals";
+import { useEffect, useMemo } from "react";
 
 // -- Hook ---------------------------------------------------------------------
 
@@ -21,6 +23,16 @@ function useProjectJourney(): Journey {
   );
 }
 
+// Visiting a step's tab is a journey fact; Timeline and Preview count only once every line is synced.
+function useJourneyVisits(journey: Journey, activeTab: ProjectTab, projectId: string | undefined): void {
+  const syncComplete = journey.steps.some((step) => step.id === "sync" && step.done);
+  useEffect(() => {
+    if (!projectId || !syncComplete) return;
+    if (activeTab === "preview") noteGuideProjectFact("visitedPreview");
+    if (activeTab === "timeline") noteGuideProjectFact("visitedTimeline");
+  }, [activeTab, syncComplete, projectId]);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { useProjectJourney };
+export { useJourneyVisits, useProjectJourney };

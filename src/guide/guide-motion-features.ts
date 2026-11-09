@@ -1,6 +1,10 @@
 import { domMax } from "motion/react";
 
-// -- Exports ------------------------------------------------------------------
+// -- Constants ----------------------------------------------------------------
 
 // Layout animations live only in domMax; the Guide loads it in its own chunk so the app keeps domAnimation.
-export default domMax;
+const guideMotionFeatures = domMax;
+
+// -- Exports ------------------------------------------------------------------
+
+export { guideMotionFeatures };

@@ -1,5 +1,5 @@
+import { startGuideOver } from "@/lib/guide-signals";
 import { useConfirm } from "@/stores/confirm-store";
-import { useGuideStore } from "@/stores/guide";
 import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
 import { resetTour } from "@/tour/use-tour";
@@ -30,7 +30,7 @@ const ResetTourSetting: React.FC = () => (
 const ResetGuideSetting: React.FC = () => (
   <SettingRowLayout>
     <SettingText id="resetGuide" />
-    <Button size="lg" variant="secondary" hasIcon onClick={() => useGuideStore.getState().startOver()}>
+    <Button size="lg" variant="secondary" hasIcon onClick={() => startGuideOver()}>
       <IconCompass size={14} />
       Start over
     </Button>
