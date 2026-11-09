@@ -1,13 +1,10 @@
 import { stageTip } from "@/guide/catalog/types";
-import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { PROJECT_FILE_EXTENSIONS_LABEL } from "@/lib/project-file-read";
 import {
   IconFileMusic,
-  IconFileText,
   IconFolderOpen,
   IconMicrophone2,
   IconReplace,
-  IconSearch,
 } from "@tabler/icons-react";
 
 // -- Tips ---------------------------------------------------------------------
@@ -22,22 +19,6 @@ const IMPORT_TIPS = [
     title: "Bring in the song",
     gist: <>Drop an audio file, or paste a YouTube link.</>,
     spot: { stage: "import", spot: "importDrop", text: "Drop your song here, or paste a YouTube link" },
-  }),
-  tip({
-    id: "lyrics",
-    tier: "basics",
-    icon: IconFileText,
-    title: "Add lyrics from a file",
-    gist: <>Drop a lyrics file on Edit, or use Import Lyrics. {LYRICS_FORMATS_PROSE} all work.</>,
-    spot: { stage: "edit", spot: "importLyrics", text: "Import your lyrics here, or paste them in the editor" },
-  }),
-  tip({
-    id: "search",
-    tier: "further",
-    icon: IconSearch,
-    title: "Search for lyrics",
-    gist: <>Search the lyrics providers and pick a match.</>,
-    spot: { stage: "edit", spot: "importLyrics", text: "Open Import Lyrics to search for your song" },
   }),
   tip({
     id: "projectFile",

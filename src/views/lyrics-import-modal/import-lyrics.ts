@@ -138,7 +138,7 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
   const skipped = skippedLineCount(parsed.issues);
   if (skipped > 0) toast.warning(partialImportMessage(workingLines.length, skipped));
 
-  if (input.searchResult) noteGuideSignal("import.search");
+  if (input.searchResult) noteGuideSignal("edit.search");
   if (detectNonLatinLanguage(workingLines.map((line) => line.text).join("\n"))) noteGuideSignal("edit.nonLatinLyrics");
   ctx.onResult?.(reported, { label: input.searchResult?.sourceLabel ?? ctx.sourceLabel, filename: input.filename });
   return true;

@@ -1,6 +1,7 @@
 import type { JourneyStepId } from "@/domain/guide/journey";
 import type { GuideStage } from "@/domain/guide/model";
 import { IMPORT_TIPS } from "@/guide/catalog/import";
+import { EDIT_TIPS } from "@/guide/catalog/edit";
 import { keys } from "@/guide/catalog/keys";
 import { SYNC_TIPS } from "@/guide/catalog/sync";
 import type { GuideSpotTarget, GuideTip } from "@/guide/catalog/types";
@@ -35,7 +36,7 @@ const JOURNEY_COPY: Record<JourneyStepId, JourneyStepCopy> = {
     stage: "edit",
     next: <>Paste your lyrics in Edit, one line per line</>,
     done: "Lyrics are in.",
-    spot: tipSpot(IMPORT_TIPS, "lyrics"),
+    spot: tipSpot(EDIT_TIPS, "lyrics"),
   },
   sync: {
     title: "Sync your lyrics",

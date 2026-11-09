@@ -82,7 +82,7 @@ async function importLyricsNotingGuide(
   ctx: ImportContext,
 ): Promise<boolean> {
   const imported = await importLyrics(input, ctx);
-  if (imported) noteGuideSignal("import.lyrics");
+  if (imported) noteGuideSignal("edit.lyrics");
   return imported;
 }
 
@@ -99,7 +99,7 @@ async function importProjectFileForLyrics(
   if (contents.kind === "bundle") return restoreBundleContents(contents.projects, contents.unreadable);
   if (choice === "use-lyrics") {
     const imported = await importProjectLyrics(contents.project, fileName ?? PASTED_PROJECT_NAME, ctx);
-    if (imported) noteGuideSignal("import.lyrics");
+    if (imported) noteGuideSignal("edit.lyrics");
     return imported;
   }
   return (await importProjectContents(contents)) !== null;

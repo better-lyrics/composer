@@ -21,7 +21,7 @@ function openLyricsAsNewProject(content: string, fileName: string): string | nul
   const id = createProject();
   const skipped = replaceWithParsedLyrics(read.parsed);
   useProjectStore.getState().clearHistory();
-  noteGuideSignal("import.lyrics");
+  noteGuideSignal("edit.lyrics");
   toast(`Opened ${fileName} as a new project from its ${detectFileType(fileName, content).toUpperCase()}`);
   if (skipped > 0) toast.warning(skippedLinesMessage(skipped));
   return id;

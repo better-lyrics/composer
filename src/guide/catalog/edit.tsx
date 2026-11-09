@@ -1,11 +1,14 @@
 import { keyBadge, keys } from "@/guide/catalog/keys";
 import { stageTip } from "@/guide/catalog/types";
+import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { useSettingsStore } from "@/stores/settings";
 import {
   IconArrowBack,
+  IconFileText,
   IconKeyboard,
   IconMicrophone,
   IconScissors,
+  IconSearch,
   IconSelectAll,
   IconStack2,
   IconTypography,
@@ -37,6 +40,14 @@ const EDIT_TIPS = [
     gist: <>One line here for each line that's sung.</>,
   }),
   tip({
+    id: "lyrics",
+    tier: "basics",
+    icon: IconFileText,
+    title: "Add lyrics from a file",
+    gist: <>Drop a lyrics file on Edit, or use Import Lyrics. {LYRICS_FORMATS_PROSE} all work.</>,
+    spot: { stage: "edit", spot: "importLyrics", text: "Import your lyrics here, or paste them in the editor" },
+  }),
+  tip({
     id: "playWhileTyping",
     tier: "basics",
     icon: IconKeyboard,
@@ -54,6 +65,14 @@ const EDIT_TIPS = [
     icon: IconUser,
     title: "Say who sings",
     gist: <>Name your singers under Agents. With two or more, click a line's tag to switch.</>,
+  }),
+  tip({
+    id: "search",
+    tier: "further",
+    icon: IconSearch,
+    title: "Search for lyrics",
+    gist: <>Search the lyrics providers and pick a match.</>,
+    spot: { stage: "edit", spot: "importLyrics", text: "Open Import Lyrics to search for your song" },
   }),
   tip({
     id: "background",
