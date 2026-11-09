@@ -53,6 +53,27 @@ const CAP_REACHED_MESSAGE = `Up to ${VIDEO_LINK_LIMIT} videos per lyric. Unlink 
 
 // -- Components ----------------------------------------------------------------
 
+const MainVideoRow: React.FC<{ main: MainVideo; busy?: boolean; onChange?: () => void }> = ({
+  main,
+  busy,
+  onChange,
+}) => (
+  <VideoRow
+    videoId={main.videoId}
+    title={main.title}
+    artworkUrl={main.artworkUrl}
+    tag="main"
+    facts={main.facts}
+    trailing={
+      onChange && (
+        <Button size="sm" variant="ghost" disabled={busy} onClick={onChange} className="shrink-0">
+          Change
+        </Button>
+      )
+    }
+  />
+);
+
 const VideoPicker: React.FC<VideoPickerProps> = ({
   main,
   linked,
@@ -94,20 +115,7 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
   return (
     <div ref={rootRef} tabIndex={-1} className="flex min-w-0 flex-col gap-4 outline-none">
       <ul aria-label="Linked videos" className="flex min-w-0 flex-col gap-2">
-        <VideoRow
-          videoId={main.videoId}
-          title={main.title}
-          artworkUrl={main.artworkUrl}
-          tag="main"
-          facts={main.facts}
-          trailing={
-            onChangeMain && (
-              <Button size="sm" variant="ghost" disabled={busy} onClick={onChangeMain} className="shrink-0">
-                Change
-              </Button>
-            )
-          }
-        />
+        <MainVideoRow main={main} busy={busy} onChange={onChangeMain} />
         {linked.map((video) => (
           <ChosenVideoRow
             key={video.videoId}
@@ -173,5 +181,5 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
 
 // -- Exports -------------------------------------------------------------------
 
-export { VideoPicker };
+export { MainVideoRow, VideoPicker };
 export type { MainVideo };
