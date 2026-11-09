@@ -34,6 +34,7 @@ import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
 import { StepNextContext, useStepNext } from "@/views/timeline/step-timing/step-next";
+import { StepWriteGuide } from "@/views/timeline/step-timing/step-write-guide";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
@@ -329,6 +330,7 @@ const TimelinePanel: React.FC = () => {
                 <SnapGuideline />
 
                 <LoopRegionGuides />
+                <StepWriteGuide />
                 <LoopRegionReadout host={rulerLane} />
 
                 <SnapMarkersOverlay scrollContainerRef={scrollContainerRef} headHost={rulerMarkerHost} />
