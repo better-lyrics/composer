@@ -161,7 +161,6 @@ const GUIDE_NUDGE_TRIGGERS: readonly GuideNudgeEntry[] = [
     category: "transport-keys",
     trigger: { signal: "transport.playButton", count: 3, windowMs: 120_000 },
     resolvedBy: "transport.playKey",
-    spot: "play",
   },
   {
     id: "seekWithKeys",

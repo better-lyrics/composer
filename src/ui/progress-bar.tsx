@@ -55,7 +55,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
       <div
         role="progressbar"
         aria-label={label}
-        aria-valuenow={clamped}
+        aria-valuenow={Math.round(clamped)}
         aria-valuemin={0}
         aria-valuemax={100}
         className={cn("grid grid-flow-col auto-cols-fr gap-[3px] h-2.5", className)}
@@ -78,7 +78,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
     <div
       role="progressbar"
       aria-label={label}
-      aria-valuenow={clamped}
+      aria-valuenow={Math.round(clamped)}
       aria-valuemin={0}
       aria-valuemax={100}
       className={cn("relative overflow-hidden rounded-full", TRACK_STYLES[tone], className)}

@@ -71,13 +71,15 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
   if (milestone) {
     const count = (tier: GuideTierId) =>
       tips.filter((tip) => tip.stage === milestone.stage && tip.tier === tier).length;
+    const newTips = (tier: GuideTierId) =>
+      tips.filter((tip) => tip.stage === milestone.stage && tip.tier === tier && !learned.has(tip.learnedBy)).length;
     const next = GUIDE_TIER_ORDER.slice(GUIDE_TIER_ORDER.indexOf(milestone.tier) + 1).find((tier) => count(tier) > 0);
     return (
       <Milestone
         stageName={STAGE_NAMES[milestone.stage]}
         tier={milestone.tier}
         tipCount={count(milestone.tier)}
-        next={next ? { tier: next, tipCount: count(next) } : null}
+        next={next ? { tier: next, tipCount: newTips(next) } : null}
         onContinue={() => {
           setShownTier({ stage: milestone.stage, tier: next });
           onMilestoneDone();

@@ -1,3 +1,4 @@
+import { syncProgress } from "@/domain/line/sync-progress";
 import { stageTiers } from "@/domain/guide/tier-state";
 import { PROJECT_TABS } from "@/domain/project/tab";
 import { JOURNEY_COPY, STAGE_HELP_SECTIONS, STAGE_NAMES } from "@/guide/catalog/journey";
@@ -53,6 +54,10 @@ const GuideHost: React.FC = () => {
   const firstVisit = useGuideStore((state) => state.learnedSignals.length === 0);
   const showAll = useGuideStore((state) => state.showAll);
   const activeTab = useProjectStore((state) => state.activeTab);
+  // Export opens its side panel only once there is synced content to export.
+  const exportPanelShown = useProjectStore(
+    (state) => state.activeTab === "export" && syncProgress(state.lines, "line").done > 0,
+  );
   // The orb steps around controls that sit in this corner: the Sync tap keys, the Timeline footer and the Export side panel.
   // The footer stops short of the Timeline preview sidebar, so with the sidebar open the orb stays in its corner.
   const previewSidebar = useSettingsStore((state) => state.previewSidebar);
@@ -80,19 +85,22 @@ const GuideHost: React.FC = () => {
   };
   useEscapeLayer("panel", open, close);
 
-  // Visiting a step's tab is a journey fact; the Timeline counts only once every line is synced.
+  // Visiting a step's tab is a journey fact; Timeline and Preview count only once every line is synced.
   const syncComplete = journey.steps.some((step) => step.id === "sync" && step.done);
   useEffect(() => {
-    if (activeTab === "preview") noteGuideProjectFact("visitedPreview");
+    if (activeTab === "preview" && syncComplete) noteGuideProjectFact("visitedPreview");
     if (activeTab === "timeline" && syncComplete) noteGuideProjectFact("visitedTimeline");
   }, [activeTab, syncComplete]);
 
   const stepStage = journey.current ? JOURNEY_COPY[journey.current].stage : null;
   const stepIndex = journey.current ? journey.steps.findIndex((step) => step.id === journey.current) : -1;
   const unread = queue.waiting.length + queue.unread.length;
+  const orbLift = activeTab === "sync" ? 72 : timelineFooterShown ? 54 : 0;
+  const cardRoom =
+    orbLift === 72 ? "max-h-[calc(100dvh-16rem-72px)]" : orbLift === 54 ? "max-h-[calc(100dvh-16rem-54px)]" : undefined;
   const orbShift = {
-    x: activeTab === "export" ? -416 : 0,
-    y: activeTab === "sync" ? -72 : timelineFooterShown ? -54 : 0,
+    x: exportPanelShown ? -416 : 0,
+    y: -orbLift,
   };
 
   return (
@@ -109,6 +117,7 @@ const GuideHost: React.FC = () => {
             {open && (
               <GuideCard
                 key="card"
+                className={cardRoom}
                 stepTitle={journey.current ? JOURNEY_COPY[journey.current].title : "Song finished"}
                 goToStep={
                   stepStage && stepStage !== activeTab

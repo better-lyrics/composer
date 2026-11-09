@@ -2,6 +2,7 @@ import { GuideOptionsMenu } from "@/ui/guide/guide-options-menu";
 import { IconButton } from "@/ui/icon-button";
 import { ProgressBar } from "@/ui/progress-bar";
 import { Scroll } from "@/ui/scroll";
+import { cn } from "@/utils/cn";
 import { guideCardVariants, guideChunkVariants } from "@/utils/animationVariants";
 import { IconArrowLeft, IconAward, IconChevronRight } from "@tabler/icons-react";
 import { m } from "motion/react";
@@ -21,6 +22,8 @@ interface GuideCardProps {
   onOpenHelp: () => void;
   onStartOver: () => void;
   onHide: () => void;
+  // Room the orb takes when it lifts over a footer, so the card never runs past the top.
+  className?: string;
   children: React.ReactNode;
 }
 
@@ -34,6 +37,7 @@ const GuideCard: React.FC<GuideCardProps> = ({
   stepTotal,
   showingRecord,
   onToggleRecord,
+  className,
   children,
   ...options
 }) => (
@@ -43,7 +47,10 @@ const GuideCard: React.FC<GuideCardProps> = ({
     initial="hidden"
     animate="shown"
     exit="exit"
-    className="surface-floating flex max-h-[calc(100dvh-16rem)] w-[420px] max-w-[calc(100vw-2rem)] origin-bottom-right flex-col overflow-hidden rounded-[20px] border border-transparent p-1.5"
+    className={cn(
+      "surface-floating flex max-h-[calc(100dvh-16rem)] w-[420px] max-w-[calc(100vw-2rem)] origin-bottom-right flex-col overflow-hidden rounded-[20px] border border-transparent p-1.5",
+      className,
+    )}
   >
     <m.div variants={guideChunkVariants} className="flex items-center gap-2 py-1 pr-1 pl-2.5">
       {goToStep ? (

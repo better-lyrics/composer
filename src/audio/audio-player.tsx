@@ -39,13 +39,7 @@ const PlayKey: React.FC = () => {
   const showsPause = isPlaying || countingIn;
   const Glyph = showsPause ? IconPlayerPauseFilled : IconPlayerPlayFilled;
   return (
-    <Key
-      size="lg"
-      data-guide-spot="play"
-      onClick={pressPlayKey}
-      aria-label={showsPause ? "Pause" : "Play"}
-      className="w-[54px]"
-    >
+    <Key size="lg" onClick={pressPlayKey} aria-label={showsPause ? "Pause" : "Play"} className="w-[54px]">
       <Glyph aria-hidden="true" className={cn("size-5", showsPause && "text-composer-accent-text")} />
     </Key>
   );

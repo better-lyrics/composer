@@ -126,14 +126,15 @@ function useJourneyFeed(journey: Journey, projectId: string | undefined, firstVi
     // News belongs to its project: a switch drops what another project left waiting.
     if (switched) dropPeeks((peek) => !peek.id.startsWith("done:") || peek.id.startsWith(`done:${projectId}:`));
     if (!settled || restored || switched || journey.doneCount <= before.doneCount) return;
-    const finished = journey.steps.findLast((step) => step.done);
-    if (!finished) return;
+    // The news is about the step that just finished, not the furthest one already done.
     const arrived = journey.steps.filter((step) => step.done && !before.done.includes(step.id)).map((step) => step.id);
+    const finished = arrived.at(-1);
+    if (!finished) return;
     const cameSynced = arrived.includes("lyrics") && arrived.includes("sync");
-    const done = cameSynced ? IMPORTED_TIMING_DONE : JOURNEY_COPY[finished.id].done;
+    const done = cameSynced ? IMPORTED_TIMING_DONE : JOURNEY_COPY[finished].done;
     const next = journey.current ? JOURNEY_COPY[journey.current].title : null;
     const gist = next ? `${done} Next: ${next.charAt(0).toLowerCase()}${next.slice(1)}` : done;
-    enqueuePeek({ id: `done:${projectId}:${finished.id}`, kind: "done", gist });
+    enqueuePeek({ id: `done:${projectId}:${finished}`, kind: "done", gist });
   }, [journey, projectId, settled]);
 
   useEffect(() => {
