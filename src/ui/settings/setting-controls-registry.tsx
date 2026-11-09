@@ -15,7 +15,7 @@ import {
   BeatModelFilesSetting,
   VocalModelFilesSetting,
 } from "@/ui/settings/models/model-file-list";
-import { ResetAllSettingsSetting, ResetGuideSetting, ResetTourSetting } from "@/ui/settings/reset-settings";
+import { ResetAllSettingsSetting, ResetGuideSetting } from "@/ui/settings/reset-settings";
 import type { SelectOption } from "@/ui/select";
 import type { SliderAction } from "@/ui/settings/setting-controls";
 import { ShortcutPresetGallery } from "@/ui/settings/shortcuts/shortcut-preset-gallery";
@@ -82,7 +82,6 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
       { value: "off", label: "Off" },
     ],
   },
-  resetTour: { kind: "custom", Component: ResetTourSetting },
   resetGuide: { kind: "custom", Component: ResetGuideSetting },
   resetAllSettings: { kind: "custom", Component: ResetAllSettingsSetting },
   libraryView: { kind: "custom", Component: LibraryViewSetting },

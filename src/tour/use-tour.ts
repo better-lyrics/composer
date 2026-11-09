@@ -41,10 +41,6 @@ function clearResumeState() {
   localStorage.removeItem(TOUR_RESUME_KEY);
 }
 
-function resetTour() {
-  clearResumeState();
-}
-
 // -- Watch the closing walkthrough --------------------------------------------
 
 // The conventions step overrides its next button to hand off to the help modal, which ends the tour,
@@ -278,4 +274,4 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
 
 // -- Exports ------------------------------------------------------------------
 
-export { resetTour, useTour };
+export { useTour };

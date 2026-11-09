@@ -48,19 +48,12 @@ const GENERAL_CATALOG_ENTRIES = {
     description: "The order projects appear in when you open Projects.",
     settingKey: "librarySort",
   },
-  resetTour: {
-    section: "general",
-    group: "Reset",
-    label: "Reset product tour",
-    description: "Start the guided walkthrough from the first step the next time you open it.",
-    keywords: ["tour", "walkthrough", "onboarding", "guide"],
-  },
   resetGuide: {
     section: "general",
     group: "Reset",
     label: "Start the guide over",
     description: "Forget what the guide has seen you learn and bring back tips you turned off.",
-    keywords: ["guide", "tips", "medals", "progress"],
+    keywords: ["guide", "tips", "medals", "progress", "onboarding"],
   },
   resetAllSettings: {
     section: "general",

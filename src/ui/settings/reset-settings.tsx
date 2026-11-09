@@ -1,31 +1,12 @@
 import { startGuideOver } from "@/lib/guide-signals";
 import { useConfirm } from "@/stores/confirm-store";
 import { useSettingsStore } from "@/stores/settings";
-import { useUIStore } from "@/stores/ui";
-import { resetTour } from "@/tour/use-tour";
 import { Button } from "@/ui/button";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
-import { IconCompass, IconRefresh, IconRoute } from "@tabler/icons-react";
-
-// -- Actions ------------------------------------------------------------------
-
-function restartTour(): void {
-  resetTour();
-  useUIStore.getState().closeSettings();
-}
+import { IconCompass, IconRefresh } from "@tabler/icons-react";
 
 // -- Rows ---------------------------------------------------------------------
-
-const ResetTourSetting: React.FC = () => (
-  <SettingRowLayout>
-    <SettingText id="resetTour" />
-    <Button size="lg" variant="secondary" hasIcon onClick={restartTour}>
-      <IconRoute size={14} />
-      Reset tour
-    </Button>
-  </SettingRowLayout>
-);
 
 const ResetGuideSetting: React.FC = () => (
   <SettingRowLayout>
@@ -65,4 +46,4 @@ const ResetAllSettingsSetting: React.FC = () => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { ResetAllSettingsSetting, ResetGuideSetting, ResetTourSetting };
+export { ResetAllSettingsSetting, ResetGuideSetting };
