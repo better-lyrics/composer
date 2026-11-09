@@ -219,6 +219,13 @@ const guideBadgeVariants: Variants = {
   exit: { opacity: 0, scale: 0.5, transition: { duration: 0.1 } },
 };
 
+// Card views swap in place: blur bridges the two states while the body springs to the new height.
+const guideViewSwapVariants: Variants = {
+  hidden: { opacity: 0, filter: "blur(2px)" },
+  shown: { opacity: 1, filter: "blur(0px)", transition: guideSpring },
+  exit: { opacity: 0, filter: "blur(2px)", transition: { duration: 0.12, ease: "easeOut" } },
+};
+
 const guideRowExit = { opacity: 0, height: 0, transition: { duration: 0.15, ease: "easeOut" } } as const;
 
 const guideChipVariants: Variants = {
@@ -277,6 +284,7 @@ export {
   guidePeekTextVariants,
   guideBadgeVariants,
   guideRowExit,
+  guideViewSwapVariants,
   guideChipVariants,
   guideMedalDropVariants,
   guideRevealVariants,

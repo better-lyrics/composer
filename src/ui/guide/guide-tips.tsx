@@ -2,6 +2,7 @@ import { GUIDE_TIER_ORDER, type GuideTierId, type TierStatus } from "@/domain/gu
 import { GUIDE_TIER_NAMES, type GuideTip } from "@/guide/catalog/types";
 import { TierTiles } from "@/ui/guide/tier-tiles";
 import { TipList } from "@/ui/guide/tip-list";
+import { m } from "motion/react";
 import { useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -45,7 +46,7 @@ const GuideTips: React.FC<GuideTipsProps> = ({
   const byReadiness = (first: GuideTip, second: GuideTip) =>
     Number(waitsOn(first) !== null) - Number(waitsOn(second) !== null);
   return (
-    <>
+    <m.div layout="position">
       <h3 className="px-2.5 pb-2 text-xs font-medium text-(--muted)">{stageName} tips</h3>
       <TierTiles tiers={tiers} selected={selected} onSelect={setSelected} />
       {status?.state === "locked" && previous ? (
@@ -61,7 +62,7 @@ const GuideTips: React.FC<GuideTipsProps> = ({
           onShow={onShow}
         />
       )}
-    </>
+    </m.div>
   );
 };
 

@@ -3,7 +3,7 @@ import { IconButton } from "@/ui/icon-button";
 import { ProgressBar } from "@/ui/progress-bar";
 import { Scroll } from "@/ui/scroll";
 import { cn } from "@/utils/cn";
-import { guideCardVariants, guideChunkVariants } from "@/utils/animationVariants";
+import { guideCardVariants, guideChunkVariants, guideSpring } from "@/utils/animationVariants";
 import { IconArrowLeft, IconAward, IconChevronRight } from "@tabler/icons-react";
 import { m } from "motion/react";
 
@@ -42,6 +42,8 @@ const GuideCard: React.FC<GuideCardProps> = ({
   ...options
 }) => (
   <m.section
+    layout
+    transition={{ layout: guideSpring }}
     aria-label="Guide"
     variants={guideCardVariants}
     initial="hidden"
@@ -52,7 +54,7 @@ const GuideCard: React.FC<GuideCardProps> = ({
       className,
     )}
   >
-    <m.div variants={guideChunkVariants} className="flex items-center gap-2 py-1 pr-1 pl-2.5">
+    <m.div layout="position" variants={guideChunkVariants} className="flex items-center gap-2 py-1 pr-1 pl-2.5">
       {goToStep ? (
         <button
           type="button"
@@ -80,7 +82,7 @@ const GuideCard: React.FC<GuideCardProps> = ({
         <GuideOptionsMenu {...options} />
       </span>
     </m.div>
-    <m.div variants={guideChunkVariants} className="px-2.5 pt-0.5 pb-4">
+    <m.div layout="position" variants={guideChunkVariants} className="px-2.5 pt-0.5 pb-4">
       <ProgressBar
         percent={(doneCount / stepTotal) * 100}
         segments={stepTotal}
@@ -89,8 +91,10 @@ const GuideCard: React.FC<GuideCardProps> = ({
         className="h-1"
       />
     </m.div>
-    <m.div variants={guideChunkVariants} className="flex min-h-0 flex-col">
-      <Scroll className="-mx-1.5 -mb-1.5 min-h-0 px-1.5 pb-1.5">{children}</Scroll>
+    <m.div layout="position" variants={guideChunkVariants} className="flex min-h-0 flex-col">
+      <Scroll className="-mx-1.5 -mb-1.5 min-h-0 px-1.5 pb-1.5">
+        <div className="relative">{children}</div>
+      </Scroll>
     </m.div>
   </m.section>
 );

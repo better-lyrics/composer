@@ -24,7 +24,7 @@ import { GuideCard } from "@/ui/guide/guide-card";
 import { GuideOrb } from "@/ui/guide/guide-orb";
 import { guideSpring } from "@/utils/animationVariants";
 import { type Icon, IconPointer } from "@tabler/icons-react";
-import { AnimatePresence, LazyMotion, MotionConfig, m } from "motion/react";
+import { AnimatePresence, LayoutGroup, LazyMotion, MotionConfig, m } from "motion/react";
 import { useMemo, useState } from "react";
 
 // -- Hooks --------------------------------------------------------------------
@@ -105,46 +105,47 @@ const GuideHost: React.FC = () => {
     <LazyMotion features={loadGuideMotionFeatures} strict>
       <MotionConfig reducedMotion="user">
         <m.div
-          layout="position"
           initial={false}
           animate={{ x: placement.x, y: placement.y }}
           transition={guideSpring}
           className="layer-floating pointer-events-none absolute right-3 bottom-3 flex flex-col items-end gap-3 *:pointer-events-auto"
         >
-          <AnimatePresence>
-            {open && (
-              <GuideCard
-                key="card"
-                className={placement.cardRoom}
-                stepTitle={header.stepTitle}
-                goToStep={header.goToStep}
-                stepNumber={header.stepNumber}
-                doneCount={journey.doneCount}
-                stepTotal={journey.steps.length}
-                showingRecord={showingRecord}
-                showAll={showAll}
-                onToggleRecord={() => setShowingRecord((shown) => !shown)}
-                onToggleShowAll={() => useGuideStore.getState().setShowAll(!showAll)}
-                onOpenHelp={() => useUIStore.getState().openHelp(STAGE_HELP_SECTIONS[activeTab])}
-                onStartOver={() => startGuideOver()}
-                onHide={hideGuide}
-              >
-                <GuideCardBody
-                  stage={activeTab}
-                  stageName={STAGE_NAMES[activeTab]}
-                  tiers={tiers}
-                  tips={tips}
-                  pending={pending}
-                  focusNudgeId={focusNudgeId}
-                  milestone={milestone}
+          <LayoutGroup>
+            <AnimatePresence>
+              {open && (
+                <GuideCard
+                  key="card"
+                  className={placement.cardRoom}
+                  stepTitle={header.stepTitle}
+                  goToStep={header.goToStep}
+                  stepNumber={header.stepNumber}
+                  doneCount={journey.doneCount}
+                  stepTotal={journey.steps.length}
                   showingRecord={showingRecord}
-                  onLeaveRecord={() => setShowingRecord(false)}
-                  onMilestoneDone={clearMilestone}
-                  onShowTip={(tip) => tip.spot && show(tip.spot, tip.icon)}
-                />
-              </GuideCard>
-            )}
-          </AnimatePresence>
+                  showAll={showAll}
+                  onToggleRecord={() => setShowingRecord((shown) => !shown)}
+                  onToggleShowAll={() => useGuideStore.getState().setShowAll(!showAll)}
+                  onOpenHelp={() => useUIStore.getState().openHelp(STAGE_HELP_SECTIONS[activeTab])}
+                  onStartOver={() => startGuideOver()}
+                  onHide={hideGuide}
+                >
+                  <GuideCardBody
+                    stage={activeTab}
+                    stageName={STAGE_NAMES[activeTab]}
+                    tiers={tiers}
+                    tips={tips}
+                    pending={pending}
+                    focusNudgeId={focusNudgeId}
+                    milestone={milestone}
+                    showingRecord={showingRecord}
+                    onLeaveRecord={() => setShowingRecord(false)}
+                    onMilestoneDone={clearMilestone}
+                    onShowTip={(tip) => tip.spot && show(tip.spot, tip.icon)}
+                  />
+                </GuideCard>
+              )}
+            </AnimatePresence>
+          </LayoutGroup>
           <SpotHint />
           <GuideOrb
             peek={queue.showing}

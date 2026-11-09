@@ -10,6 +10,8 @@ import { GuideRecord } from "@/ui/guide/guide-record";
 import { GuideTips } from "@/ui/guide/guide-tips";
 import { Milestone } from "@/ui/guide/milestone";
 import { NudgePanel } from "@/ui/guide/nudge-panel";
+import { guideViewSwapVariants } from "@/utils/animationVariants";
+import { AnimatePresence, m } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -117,7 +119,13 @@ const TipsView: React.FC<{
   );
 };
 
-const GuideCardBody: React.FC<GuideCardBodyProps> = ({
+type CardViewProps = GuideCardBodyProps & {
+  learned: ReadonlySet<string>;
+  shownTier: ShownTier;
+  onShownTier: (shown: ShownTier) => void;
+};
+
+const CardView: React.FC<CardViewProps> = ({
   stage,
   stageName,
   tiers,
@@ -126,13 +134,13 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
   focusNudgeId,
   milestone,
   showingRecord,
+  learned,
+  shownTier,
+  onShownTier: setShownTier,
   onLeaveRecord,
   onMilestoneDone,
   onShowTip,
 }) => {
-  const learnedSignals = useGuideStore((state) => state.learnedSignals);
-  const learned = useMemo(() => new Set(learnedSignals), [learnedSignals]);
-  const [shownTier, setShownTier] = useState<ShownTier>(null);
   if (showingRecord) {
     return (
       <RecordView
@@ -168,6 +176,25 @@ const GuideCardBody: React.FC<GuideCardBodyProps> = ({
       shownTier={shownTier}
       onShowTip={onShowTip}
     />
+  );
+};
+
+const GuideCardBody: React.FC<GuideCardBodyProps> = (props) => {
+  const { stage, milestone, showingRecord } = props;
+  const learnedSignals = useGuideStore((state) => state.learnedSignals);
+  const learned = useMemo(() => new Set(learnedSignals), [learnedSignals]);
+  const [shownTier, setShownTier] = useState<ShownTier>(null);
+  const viewKey = showingRecord
+    ? "record"
+    : milestone
+      ? `milestone:${milestone.stage}:${milestone.tier}`
+      : `tips:${shownTier?.stage ?? stage}`;
+  return (
+    <AnimatePresence initial={false} mode="popLayout">
+      <m.div key={viewKey} variants={guideViewSwapVariants} initial="hidden" animate="shown" exit="exit">
+        <CardView {...props} learned={learned} shownTier={shownTier} onShownTier={setShownTier} />
+      </m.div>
+    </AnimatePresence>
   );
 };
 

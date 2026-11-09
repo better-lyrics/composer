@@ -76,7 +76,7 @@ const LearnedRow: React.FC<{ tips: readonly GuideTip[] }> = ({ tips }) => {
   const [expanded, setExpanded] = useState(false);
   if (tips.length === 0) return <span />;
   return (
-    <div className="px-2.5">
+    <m.div layout="position" className="px-2.5">
       <button
         type="button"
         aria-expanded={expanded}
@@ -96,7 +96,7 @@ const LearnedRow: React.FC<{ tips: readonly GuideTip[] }> = ({ tips }) => {
           ))}
         </ul>
       )}
-    </div>
+    </m.div>
   );
 };
 
@@ -105,7 +105,7 @@ const TipList: React.FC<TipListProps> = ({ open, waitsOn, learned, onKnown, onSh
   const shown = showAll ? open : open.slice(0, VISIBLE_TIPS);
   const hiddenCount = open.length - shown.length;
   return (
-    <div className="pt-2.5 pb-0.5">
+    <m.div layout="position" className="pt-2.5 pb-0.5">
       <ul>
         <AnimatePresence initial={false}>
           {shown.map((tip) => (
@@ -127,7 +127,7 @@ const TipList: React.FC<TipListProps> = ({ open, waitsOn, learned, onKnown, onSh
           </Button>
         )}
       </div>
-    </div>
+    </m.div>
   );
 };
 
