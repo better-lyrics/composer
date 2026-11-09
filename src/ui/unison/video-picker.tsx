@@ -13,7 +13,7 @@ import { IconButton } from "@/ui/icon-button";
 import { AddVideoField } from "@/ui/unison/add-video-field";
 import { confirmDifferentTitle } from "@/ui/unison/confirm-different-title";
 import { ChosenVideoRow, MatchMark, VideoRow } from "@/ui/unison/video-row";
-import { IconPlus, IconX } from "@tabler/icons-react";
+import { IconX } from "@tabler/icons-react";
 import { useId, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -157,13 +157,11 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
                       <Button
                         size="sm"
                         variant="secondary"
-                        hasIcon
                         disabled={busy || atCap || lengthNote !== null}
                         aria-label={`Link ${suggestion.title}`}
                         onClick={() => void link(suggestion)}
                         className="shrink-0"
                       >
-                        <IconPlus aria-hidden="true" className="size-4" />
                         Link
                       </Button>
                     </>
