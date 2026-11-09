@@ -47,6 +47,15 @@ describe("propagateWordChanges", () => {
     expect(propagateWordChanges(after, before, sibling)).toEqual([{ text: "X", begin: 9, end: 11 }]);
   });
 
+  it("regression: leaves a diverged sibling alone when the source words did not change", () => {
+    const words: WordTiming[] = [{ text: "ooh", begin: 0, end: 1 }];
+    const sibling: WordTiming[] = [
+      { text: "oo", begin: 9, end: 9.5 },
+      { text: "oh", begin: 9.5, end: 10 },
+    ];
+    expect(propagateWordChanges([...words], words, sibling)).toBeUndefined();
+  });
+
   it("structural change: delegates to the smart-sync diff, preserving unchanged sibling timing", () => {
     const before: WordTiming[] = [
       { text: "I ", begin: 0, end: 0.3 },
