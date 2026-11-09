@@ -1,8 +1,8 @@
-import { hasKeyboard } from "@/lib/keyboard-presence";
 import type { GuideEvent, GuideSignal } from "@/domain/guide/model";
 import { firesOn } from "@/domain/guide/triggers";
 import { GUIDE_NUDGE_TRIGGERS } from "@/guide/catalog/nudge-triggers";
 import { GUIDE_SIGNAL_OUTCOMES } from "@/guide/catalog/signal-outcomes";
+import { hasKeyboard } from "@/lib/keyboard-presence";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { type ProjectGuideFacts, useGuideStore } from "@/stores/guide";
 
@@ -99,7 +99,7 @@ function markGuideNudgeShown(id: string): void {
 
 // Start over wipes the session too, or a hint that already fired this session could never come back.
 function startGuideOver(): void {
-  useGuideStore.getState().startOver();
+  useGuideStore.setState({ learnedSignals: [], mutedCategories: [], seenNudges: [], showAll: false });
   retiredThisSession.clear();
   events = [];
   setPending([]);
@@ -129,6 +129,7 @@ function subscribeGuideNudges(listener: () => void): () => void {
 
 // -- Exports ------------------------------------------------------------------
 
+export type { PendingNudge };
 export {
   lastGuideSignalAt,
   markGuideNudgeShown,
@@ -141,4 +142,3 @@ export {
   startGuideOver,
   subscribeGuideNudges,
 };
-export type { PendingNudge };

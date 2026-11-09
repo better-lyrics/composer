@@ -21,7 +21,6 @@ interface GuideState {
   setShowAll: (showAll: boolean) => void;
   noteProjectFact: (projectId: string, fact: keyof ProjectGuideFacts) => void;
   forgetProject: (projectId: string) => void;
-  startOver: () => void;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -56,7 +55,6 @@ const useGuideStore = create<GuideState>()(
           const { [projectId]: _forgotten, ...rest } = state.projects;
           return { projects: rest };
         }),
-      startOver: () => set({ learnedSignals: [], mutedCategories: [], seenNudges: [], showAll: false }),
     }),
     { name: "composer-guide", version: 1 },
   ),
@@ -64,5 +62,5 @@ const useGuideStore = create<GuideState>()(
 
 // -- Exports ------------------------------------------------------------------
 
-export { NO_PROJECT_FACTS, useGuideStore };
 export type { ProjectGuideFacts };
+export { NO_PROJECT_FACTS, useGuideStore };

@@ -24,7 +24,7 @@ const SYNC_TIPS = [
     icon: IconHandClick,
     title: "Tap each word",
     gist: <>Play the song and press {keys("sync.tap")} as each word is sung.</>,
-    spot: { stage: "sync", spot: "syncTap", text: <>Play, then press {keys("sync.tap")} as each word is sung</> },
+    spot: { stage: "sync", spot: "play", text: <>Play, then press {keys("sync.tap")} as each word is sung</> },
   }),
   tip({
     id: "fixTap",

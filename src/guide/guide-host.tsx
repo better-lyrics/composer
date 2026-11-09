@@ -1,3 +1,6 @@
+import { type Icon, IconPointer } from "@tabler/icons-react";
+import { AnimatePresence, LazyMotion, MotionConfig, m } from "motion/react";
+import { useMemo, useState } from "react";
 import type { Journey } from "@/domain/guide/journey";
 import { stageTiers } from "@/domain/guide/tier-state";
 import { PROJECT_TABS, type ProjectTab } from "@/domain/project/tab";
@@ -7,25 +10,22 @@ import { GuideCardBody } from "@/guide/guide-card-body";
 import { hideGuide } from "@/guide/hide-guide";
 import { markPeeksRead } from "@/guide/peek-queue";
 import { pointAt } from "@/guide/point-at";
+import { SpotHint } from "@/guide/spot-hint";
 import { type StageTiers, useJourneyFeed, useMilestoneFeed, useNudgeFeed } from "@/guide/use-guide-feed";
 import { useGuidePeek } from "@/guide/use-guide-peek";
-import { SpotHint } from "@/guide/spot-hint";
 import { useGuideStateLearning } from "@/guide/use-guide-state-learning";
 import { useGuideTips } from "@/guide/use-guide-tips";
 import { useOrbPlacement } from "@/guide/use-orb-placement";
 import { useJourneyVisits, useProjectJourney } from "@/guide/use-project-journey";
 import { useEscapeLayer } from "@/hooks/useEscapeLayer";
-import { startGuideOver } from "@/lib/guide-signals";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
+import { startGuideOver } from "@/lib/guide-signals";
 import { useGuideStore } from "@/stores/guide";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { GuideCard } from "@/ui/guide/guide-card";
 import { GuideOrb } from "@/ui/guide/guide-orb";
 import { guideSpring } from "@/utils/animationVariants";
-import { type Icon, IconPointer } from "@tabler/icons-react";
-import { AnimatePresence, LazyMotion, MotionConfig, m } from "motion/react";
-import { useMemo, useState } from "react";
 
 // -- Hooks --------------------------------------------------------------------
 
@@ -102,7 +102,7 @@ const GuideHost: React.FC = () => {
   const unread = queue.waiting.length + queue.unread.length;
 
   return (
-    <LazyMotion features={loadGuideMotionFeatures}>
+    <LazyMotion features={loadGuideMotionFeatures} strict>
       <MotionConfig reducedMotion="user">
         <m.div
           layout="position"

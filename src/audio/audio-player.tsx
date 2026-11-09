@@ -1,3 +1,4 @@
+import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
 import { MeterBridge } from "@/audio/deck/meter-bridge";
 import { OverviewScrub } from "@/audio/deck/overview-scrub";
 import { RateKnob } from "@/audio/deck/rate-knob";
@@ -13,7 +14,6 @@ import { selectIsCountingIn, useSyncCountInStore } from "@/stores/sync-count-in"
 import { KEEPS_POPOVERS_OPEN_PROPS } from "@/ui/keeps-popovers-open";
 import { Key } from "@/ui/key";
 import { cn } from "@/utils/cn";
-import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -39,7 +39,13 @@ const PlayKey: React.FC = () => {
   const showsPause = isPlaying || countingIn;
   const Glyph = showsPause ? IconPlayerPauseFilled : IconPlayerPlayFilled;
   return (
-    <Key size="lg" onClick={pressPlayKey} aria-label={showsPause ? "Pause" : "Play"} className="w-[54px]">
+    <Key
+      size="lg"
+      data-guide-spot="play"
+      onClick={pressPlayKey}
+      aria-label={showsPause ? "Pause" : "Play"}
+      className="w-[54px]"
+    >
       <Glyph aria-hidden="true" className={cn("size-5", showsPause && "text-composer-accent-text")} />
     </Key>
   );
