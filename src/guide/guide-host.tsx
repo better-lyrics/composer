@@ -74,6 +74,7 @@ const GuideHost: React.FC = () => {
     if (activeTab === "timeline" && syncComplete) noteGuideProjectFact("visitedTimeline");
   }, [activeTab, syncComplete]);
 
+  const stepStage = journey.current ? JOURNEY_COPY[journey.current].stage : null;
   const stepIndex = journey.current ? journey.steps.findIndex((step) => step.id === journey.current) : -1;
   const unread = queue.waiting.length + queue.unread.length;
 
@@ -91,6 +92,14 @@ const GuideHost: React.FC = () => {
             <GuideCard
               key="card"
               stepTitle={journey.current ? JOURNEY_COPY[journey.current].title : "Song finished"}
+              goToStep={
+                stepStage && stepStage !== activeTab
+                  ? {
+                      stageName: STAGE_NAMES[stepStage],
+                      onGo: () => useProjectStore.getState().setActiveTab(stepStage),
+                    }
+                  : undefined
+              }
               stepNumber={stepIndex >= 0 ? stepIndex + 1 : null}
               doneCount={journey.doneCount}
               stepTotal={journey.steps.length}

@@ -1,8 +1,7 @@
-import { keys } from "@/guide/catalog/keys";
+import { keyBadge, keys } from "@/guide/catalog/keys";
 import { stageTip } from "@/guide/catalog/types";
 import {
   IconArrowBack,
-  IconClipboardText,
   IconKeyboard,
   IconMicrophone,
   IconScissors,
@@ -55,7 +54,7 @@ const EDIT_TIPS = [
     tier: "further",
     icon: IconSelectAll,
     title: "Select many lines",
-    gist: <>Click a line, then Shift+click another to select everything between.</>,
+    gist: <>Click a line, then {keyBadge("Shift")}+click another to select everything between.</>,
   }),
   tip({
     id: "refocus",
@@ -63,13 +62,6 @@ const EDIT_TIPS = [
     icon: IconArrowBack,
     title: "Jump back into the lyrics",
     gist: <>Press {keys("global.goToEdit")} to put the cursor back in the text.</>,
-  }),
-  tip({
-    id: "smartPaste",
-    tier: "further",
-    icon: IconClipboardText,
-    title: "Paste from a lyrics site",
-    gist: <>Paste the whole page. Section tags and credits get cleaned up.</>,
   }),
   tip({
     id: "presplit",

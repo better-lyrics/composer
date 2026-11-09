@@ -25,7 +25,7 @@ const TipRow: React.FC<{ tip: GuideTip; onKnown: () => void }> = ({ tip, onKnown
   <m.li
     layout="position"
     exit={guideRowExit}
-    className="group flex gap-2.5 overflow-hidden rounded-[14px] px-2.5 py-2 transition-[background-color] duration-150 hover:bg-(--layer-1)"
+    className="group flex gap-2.5 overflow-hidden rounded-[14px] py-2 pr-1.5 pl-2.5 transition-[background-color] duration-150 hover:bg-(--layer-1)"
   >
     <tip.icon className="mt-0.5 size-4 shrink-0 text-composer-accent-text" stroke={1.75} />
     <div className="min-w-0 flex-1">
@@ -51,14 +51,16 @@ const LearnedRow: React.FC<{ tips: readonly GuideTip[] }> = ({ tips }) => {
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded((shown) => !shown)}
-        className="flex cursor-pointer select-none items-center gap-1.5 text-xs text-(--muted) transition-[color] duration-150 hover:text-(--label)"
+        className="flex h-8 cursor-pointer select-none items-center gap-2.5 text-xs text-(--muted) transition-[color] duration-150 hover:text-(--label)"
       >
-        <IconCheck className="size-3.5 text-composer-positive" stroke={2.25} />
-        {tips.length} learned
-        <IconChevronDown className={cn("size-3.5 transition-[rotate] duration-150", expanded && "rotate-180")} />
+        <IconCheck className="size-4 text-composer-positive" stroke={2} />
+        <span className="flex items-center gap-1">
+          {tips.length} learned
+          <IconChevronDown className={cn("size-3.5 transition-[rotate] duration-150", expanded && "rotate-180")} />
+        </span>
       </button>
       {expanded && (
-        <ul className="mt-1.5 space-y-1 pb-1 pl-5 text-xs text-(--muted)">
+        <ul className="space-y-1 pb-2 pl-6.5 text-xs text-(--muted)">
           {tips.map((tip) => (
             <li key={tip.id}>{tip.title}</li>
           ))}
@@ -73,7 +75,7 @@ const TipList: React.FC<TipListProps> = ({ open, learned, onKnown }) => {
   const shown = showAll ? open : open.slice(0, VISIBLE_TIPS);
   const hiddenCount = open.length - shown.length;
   return (
-    <div className="pt-1.5 pb-1.5">
+    <div className="pt-2.5 pb-0.5">
       <ul>
         <AnimatePresence initial={false}>
           {shown.map((tip) => (
@@ -81,7 +83,7 @@ const TipList: React.FC<TipListProps> = ({ open, learned, onKnown }) => {
           ))}
         </AnimatePresence>
       </ul>
-      <div className="flex items-center justify-between pr-1">
+      <div className="flex items-center justify-between">
         <LearnedRow tips={learned} />
         {hiddenCount > 0 && (
           <Button variant="ghost" size="sm" onClick={() => setShowAll(true)}>

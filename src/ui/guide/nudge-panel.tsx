@@ -13,7 +13,7 @@ interface NudgePanelProps {
 // -- Component ----------------------------------------------------------------
 
 const NudgePanel: React.FC<NudgePanelProps> = ({ nudge, onTake, onDismiss, onMute }) => (
-  <div className="mb-1.5 rounded-[14px] border border-transparent bg-[color-mix(in_oklab,var(--color-composer-accent)_11%,var(--pop))] p-2.5 shadow-[inset_0_0_0_1px_var(--lit-ring)]">
+  <div className="mb-4 rounded-[14px] border border-transparent bg-[color-mix(in_oklab,var(--color-composer-accent)_11%,var(--pop))] p-2.5 shadow-[inset_0_0_0_1px_var(--lit-ring)]">
     <div className="flex items-start gap-2.5">
       <nudge.icon className="mt-0.5 size-4 shrink-0 text-composer-accent-text" stroke={1.75} />
       <div className="min-w-0">

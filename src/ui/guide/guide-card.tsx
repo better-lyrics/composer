@@ -2,13 +2,14 @@ import { GuideOptionsMenu } from "@/ui/guide/guide-options-menu";
 import { IconButton } from "@/ui/icon-button";
 import { ProgressBar } from "@/ui/progress-bar";
 import { guideCardVariants, guideChunkVariants } from "@/utils/animationVariants";
-import { IconArrowLeft, IconAward } from "@tabler/icons-react";
+import { IconArrowLeft, IconAward, IconChevronRight } from "@tabler/icons-react";
 import { m } from "motion/react";
 
 // -- Types --------------------------------------------------------------------
 
 interface GuideCardProps {
   stepTitle: string;
+  goToStep?: { stageName: string; onGo: () => void };
   stepNumber: number | null;
   doneCount: number;
   stepTotal: number;
@@ -26,6 +27,7 @@ interface GuideCardProps {
 
 const GuideCard: React.FC<GuideCardProps> = ({
   stepTitle,
+  goToStep,
   stepNumber,
   doneCount,
   stepTotal,
@@ -40,10 +42,22 @@ const GuideCard: React.FC<GuideCardProps> = ({
     initial="hidden"
     animate="shown"
     exit="exit"
-    className="surface-floating w-[420px] max-w-[calc(100vw-2rem)] origin-bottom-right rounded-[20px] border border-transparent p-1.5"
+    className="surface-floating w-[420px] max-w-[calc(100vw-2rem)] origin-bottom-right overflow-hidden rounded-[20px] border border-transparent p-1.5"
   >
     <m.div variants={guideChunkVariants} className="flex items-center gap-2 py-1 pr-1 pl-2.5">
-      <span className="truncate text-[13px] font-semibold">{stepTitle}</span>
+      {goToStep ? (
+        <button
+          type="button"
+          aria-label={`${stepTitle}, go to ${goToStep.stageName}`}
+          onClick={goToStep.onGo}
+          className="group/step flex min-w-0 cursor-pointer select-none items-center gap-0.5 text-[13px] font-semibold"
+        >
+          <span className="truncate">{stepTitle}</span>
+          <IconChevronRight className="size-3.5 shrink-0 text-(--muted) transition-[color,translate] duration-150 group-hover/step:translate-x-0.5 group-hover/step:text-composer-text" />
+        </button>
+      ) : (
+        <span className="truncate text-[13px] font-semibold">{stepTitle}</span>
+      )}
       <span className="shrink-0 text-xs text-(--muted) tabular-nums">
         {stepNumber === null ? `All ${stepTotal} steps done` : `Step ${stepNumber} of ${stepTotal}`}
       </span>
@@ -58,7 +72,7 @@ const GuideCard: React.FC<GuideCardProps> = ({
         <GuideOptionsMenu {...options} />
       </span>
     </m.div>
-    <m.div variants={guideChunkVariants} className="px-2.5 pt-1 pb-2">
+    <m.div variants={guideChunkVariants} className="px-2.5 pt-0.5 pb-4">
       <ProgressBar
         percent={(doneCount / stepTotal) * 100}
         segments={stepTotal}

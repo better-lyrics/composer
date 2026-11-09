@@ -30,7 +30,7 @@ const GuideTips: React.FC<GuideTipsProps> = ({ stageName, tiers, tips, learnedSi
   const previous = GUIDE_TIER_ORDER[GUIDE_TIER_ORDER.indexOf(selected) - 1];
   return (
     <>
-      <h3 className="px-2.5 pb-1 text-xs font-medium text-(--muted)">{stageName} tips</h3>
+      <h3 className="px-2.5 pb-2 text-xs font-medium text-(--muted)">{stageName} tips</h3>
       <TierTiles tiers={tiers} selected={selected} onSelect={setSelected} />
       {status?.state === "locked" && previous ? (
         <p className="px-2.5 py-3 text-xs text-pretty text-(--muted)">
