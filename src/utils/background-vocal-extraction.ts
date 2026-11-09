@@ -1,6 +1,7 @@
-import { applyBackground, withSeededBackground } from "@/domain/line/background";
+import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
+import { applyBackground, backgroundFields, withSeededBackground } from "@/domain/line/background";
 import { isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { reconcileLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
@@ -158,6 +159,23 @@ function extractInlineFromLine(line: LyricLine, options: ExtractOptions): LyricL
   return extracted === line ? line : withSeededBackground(extracted);
 }
 
+function extractInlineAcrossLinkedLines(lines: LyricLine[], lineId: string, options: ExtractOptions): LineUpdate[] {
+  const target = lines.find((line) => line.id === lineId);
+  if (!target) return [];
+  const scope = getLinkScope(target);
+  return lines.flatMap((line) => {
+    if (line.id !== lineId && !isLinkedSibling(line, scope)) return [];
+    const extracted = extractInlineFromLine(line, options);
+    if (extracted === line) return [];
+    const background = backgroundFields({
+      text: extracted.backgroundText,
+      words: extracted.backgroundWords,
+      source: extracted.backgroundTextSource ?? "manual",
+    });
+    return [{ id: line.id, updates: { text: extracted.text, words: extracted.words, ...background } }];
+  });
+}
+
 // -- Whole-list transform -----------------------------------------------------
 
 function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): LyricLine[] {
@@ -206,4 +224,11 @@ function lineHasInlineParens(line: LyricLine): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
-export { classifyLine, extractBackgroundVocals, extractInlineFromLine, lineHasInlineParens, scanParenGroups };
+export {
+  classifyLine,
+  extractBackgroundVocals,
+  extractInlineAcrossLinkedLines,
+  extractInlineFromLine,
+  lineHasInlineParens,
+  scanParenGroups,
+};

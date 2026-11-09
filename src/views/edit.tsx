@@ -14,7 +14,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { Button } from "@/ui/button";
 import { Scroll } from "@/ui/scroll";
-import { extractBackgroundVocals, extractInlineFromLine } from "@/utils/background-vocal-extraction";
+import { extractBackgroundVocals, extractInlineAcrossLinkedLines } from "@/utils/background-vocal-extraction";
 import { pluralWord, pluralize } from "@/utils/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
@@ -137,22 +137,12 @@ const EditPanel: React.FC = () => {
   }, []);
 
   const handleExtractLine = useCallback((lineId: string) => {
-    const target = useProjectStore.getState().lines.find((line) => line.id === lineId);
-    if (!target) return;
-    const extracted = extractInlineFromLine(target, {
+    const updates = extractInlineAcrossLinkedLines(useProjectStore.getState().lines, lineId, {
       mergeStandaloneLines: false,
       preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
     });
-    if (extracted === target) return;
-    useProjectStore.getState().updateLineWithHistory(lineId, {
-      text: extracted.text,
-      words: extracted.words,
-      ...backgroundFields({
-        text: extracted.backgroundText,
-        words: extracted.backgroundWords,
-        source: extracted.backgroundTextSource ?? "manual",
-      }),
-    });
+    if (updates.length === 0) return;
+    useProjectStore.getState().updateLinesWithHistory(updates, { propagateToSiblings: false });
   }, []);
 
   const handleLineSelect = useCallback((lineNumber: number, shiftKey: boolean) => {
