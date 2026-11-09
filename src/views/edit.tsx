@@ -50,6 +50,8 @@ Or paste or drop a whole lyrics file (${LYRICS_FORMATS_PROSE}) or ${PROJECT_FILE
 
 const preventDefaultDragOver = (e: React.DragEvent) => e.preventDefault();
 
+const lyricsText = (lines: readonly LyricLine[]) => lines.map((line) => line.text).join("\n");
+
 // -- Components ---------------------------------------------------------------
 
 const EditPanel: React.FC = () => {
@@ -75,6 +77,7 @@ const EditPanel: React.FC = () => {
   const debounceRef = useRef<number | null>(null);
   const [selectedLines, setSelectedLines] = useState<Set<number>>(new Set());
   const [isTypingLyrics, setIsTypingLyrics] = useState(false);
+  const textAtFocusRef = useRef("");
   const lastSelectedLineRef = useRef<number | null>(null);
   const dragAnchorRef = useRef<number | null>(null);
   const didDragRef = useRef(false);
@@ -257,17 +260,21 @@ const EditPanel: React.FC = () => {
     finalizeRun();
     const current = useProjectStore.getState().lines;
     const { splitCharacter } = useSettingsStore.getState();
-    if (current.some((line) => line.text !== "")) noteGuideSignal("edit.type");
-    if (splitCharacter && current.some((line) => line.text.includes(splitCharacter))) noteGuideSignal("edit.presplit");
-    if (current.some(lineHasInlineParens)) noteGuideSignal("edit.parenInLine");
-    if (detectNonLatinLanguage(current.map((line) => line.text).join("\n"))) noteGuideSignal("edit.nonLatinLyrics");
-    if (!useSettingsStore.getState().autoExtractBackgroundVocals) return;
+    const text = lyricsText(current);
+    if (text !== "" && text !== textAtFocusRef.current) noteGuideSignal("edit.type");
+    if (splitCharacter && text.includes(splitCharacter)) noteGuideSignal("edit.presplit");
+    if (detectNonLatinLanguage(text)) noteGuideSignal("edit.nonLatinLyrics");
+    if (!useSettingsStore.getState().autoExtractBackgroundVocals) {
+      if (current.some(lineHasInlineParens)) noteGuideSignal("edit.parenInLine");
+      return;
+    }
     const next = extractBackgroundVocals(current, {
       mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
       preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
     });
     if (next.length === current.length && next.every((line, i) => line === current[i])) return;
     commitLinesWithHistory(next);
+    noteGuideSignal("edit.background");
   }, [commitLinesWithHistory, finalizeRun]);
 
   useEffect(() => {
@@ -472,7 +479,10 @@ const EditPanel: React.FC = () => {
               ref={textareaRef}
               value={rawText}
               onChange={textareaChange.onChange}
-              onFocus={() => setIsTypingLyrics(true)}
+              onFocus={() => {
+                setIsTypingLyrics(true);
+                textAtFocusRef.current = lyricsText(useProjectStore.getState().lines);
+              }}
               onBlur={handleTextareaBlur}
               onCompositionStart={textareaChange.onCompositionStart}
               onCompositionEnd={textareaChange.onCompositionEnd}

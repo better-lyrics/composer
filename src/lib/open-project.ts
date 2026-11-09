@@ -172,7 +172,6 @@ function closeIfOpen(id: string): void {
   cancelPendingSave();
   forgetOpenProjectId();
   applyProjectToStores(EMPTY_RESTORE);
-  useGuideStore.setState({ projects: {} });
 }
 
 async function deleteProject(id: string): Promise<void> {
