@@ -1172,6 +1172,7 @@ braccato-lyrics .blyrics-container {
     }
     &[data-selected] {
       --word-fill: color-mix(in oklab, var(--color-composer-accent) 88%, black);
+      color: var(--color-composer-on-accent);
       background-image: var(--hatch, none);
       box-shadow:
         inset 0 1px 0 var(--step-top),
