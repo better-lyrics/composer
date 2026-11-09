@@ -19,6 +19,8 @@ interface GuideTrigger {
   signal: GuideSignal;
   count: number;
   windowMs: number;
+  // Numeric keys within this distance of the latest one count as the same, such as times a second apart.
+  near?: number;
 }
 
 interface GuideNudgeEntry {

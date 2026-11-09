@@ -55,8 +55,13 @@ function showSpotHint(spot: string, content: SpotHintContent): boolean {
   if (!anchor) return false;
   const rect = anchor.getBoundingClientRect();
   if (rect.width === 0 && rect.height === 0) return false;
+  // An anchor can name an area its hint must not cover, such as the waveform under the playhead.
+  const clearSelector = anchor.getAttribute("data-guide-spot-clear");
+  const clearBottom = clearSelector ? document.querySelector(clearSelector)?.getBoundingClientRect().bottom : undefined;
   const below = rect.top < BELOW_WHEN_TOP_UNDER_PX;
-  const y = below ? Math.min(rect.bottom, rect.top + 48) + SPOT_GAP_PX : rect.top - SPOT_GAP_PX;
+  const y = below
+    ? Math.max(Math.min(rect.bottom, rect.top + 48), clearBottom ?? 0) + SPOT_GAP_PX
+    : rect.top - SPOT_GAP_PX;
   // The hint lines up with the anchor's outer edge, so it never runs off the side of the window.
   const fromRight = rect.left + rect.width / 2 > window.innerWidth / 2;
   shownAnchor = anchor;

@@ -4,10 +4,10 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- API ----------------------------------------------------------------------
 
-// Keyed by the half second the playhead is put at, so returning to one spot again and again reads as one place.
+// Keyed by the time in seconds; the trigger treats times close together as one spot.
 function noteReplaySpot(time: number): void {
   if (useProjectStore.getState().activeTab !== "timeline" || useTimelineStore.getState().loopRegion !== null) return;
-  noteGuideSignal("timeline.replaySameSpot", String(Math.round(time * 2)));
+  noteGuideSignal("timeline.replaySameSpot", String(time));
 }
 
 // -- Exports ------------------------------------------------------------------
