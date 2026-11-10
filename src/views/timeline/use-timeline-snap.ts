@@ -81,22 +81,8 @@ function writeSnappedLeader(leaderKey: string, anchorTime: number | null): void 
 
 // -- Hook ---------------------------------------------------------------------
 
+// Subscribes to nothing: it runs in every word track, and every snap input is read through getState() at gesture time.
 function useTimelineSnap(): UseTimelineSnap {
-  useSettingsStore((s) => s.timelineSnap);
-  useSettingsStore((s) => s.vocalOnsetSnap);
-  useSettingsStore((s) => s.beatSnap);
-  useSettingsStore((s) => s.beatGridVisible);
-  useSettingsStore((s) => s.beatGridLines);
-  useSettingsStore((s) => s.snapWordsAndLines);
-  useSettingsStore((s) => s.snapMarkers);
-  useSettingsStore((s) => s.snapToPlayhead);
-  useTimelineStore((s) => s.isBypassing);
-  useTimelineStore((s) => s.vocalOnsetSnapPoints);
-  // Deliberately NOT subscribing to customSnapPoints. This hook runs in every
-  // word-track, and customSnapPoints changes on every frame of a snap-marker
-  // drag, so a reactive subscription here would re-render every word block 60+
-  // times a second. The gesture reads it via getState() in beginGesture.
-
   const ctxRef = useRef<SnapCtx>({
     allAnchors: [],
     activeAnchors: [],
