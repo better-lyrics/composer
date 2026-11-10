@@ -1,4 +1,4 @@
-import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-words";
+import { effectiveTrackWords, getEffectiveLine } from "@/domain/line/effective-words";
 import { type WordIdentity, sameWordSelection } from "@/domain/selection/identity";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -66,8 +66,8 @@ function clearLoupe(): void {
 }
 
 function storedEdgeTime(word: WordIdentity, edge: LoupeEdge): number | null {
-  const line = getEffectiveLines(useProjectStore.getState().lines).find((candidate) => candidate.id === word.lineId);
-  const timing = line ? effectiveTrackWords(line, word.type)?.[word.wordIndex] : undefined;
+  const rawLine = useProjectStore.getState().lines.find((candidate) => candidate.id === word.lineId);
+  const timing = rawLine ? effectiveTrackWords(getEffectiveLine(rawLine), word.type)?.[word.wordIndex] : undefined;
   return timing ? timing[edge] : null;
 }
 
