@@ -2,15 +2,14 @@ import { notePlacement } from "@/lib/replay-cue";
 import { useAudioStore } from "@/stores/audio";
 import { CueMarker } from "@/views/timeline/cue-marker";
 import { cn } from "@/utils/cn";
-import { formatTime } from "@/utils/format-time";
 import { placeSnapPoint } from "@/views/timeline/place-snap-point";
 import { noteReplaySpot } from "@/views/timeline/replay-spot-signal";
-import { rulerLabelsInWindow, rulerStep } from "@/views/timeline/ruler-labels";
+import { rulerStep } from "@/views/timeline/ruler-labels";
 import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconClock } from "@tabler/icons-react";
-import { useEffect } from "react";
-import { useRulerWindow } from "@/views/timeline/use-ruler-window";
+import { useEffect, useRef } from "react";
+import { useRulerLabels } from "@/views/timeline/use-ruler-labels";
 import { readViewScroll } from "@/views/timeline/view-scroll";
 
 // -- Constants -----------------------------------------------------------------
@@ -47,7 +46,8 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, track
   const zoom = useTimelineStore((s) => s.zoom);
   const markerMode = useTimelineStore((s) => s.markerMode);
   const [labelled, minor] = rulerStep(zoom);
-  const labels = rulerLabelsInWindow(duration, labelled, zoom, useRulerWindow(scrollContainerRef, duration * zoom));
+  const labelHostRef = useRef<HTMLDivElement>(null);
+  useRulerLabels(trackRef, labelHostRef, duration, zoom);
 
   // A passive effect: the scroll container mounts after this sibling, so its ref is set only once layout effects ran.
   useEffect(() => {
@@ -87,16 +87,7 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, track
           className="absolute inset-y-0 left-0 will-change-[translate]"
           style={{ width: duration * zoom, ...tickBackground(labelled, minor, zoom) }}
         >
-          {labels.map((time) => (
-            <span
-              key={time}
-              aria-hidden="true"
-              className="absolute top-[7px] pl-[5px] font-mono text-[10.5px] font-medium leading-none text-composer-text-tertiary"
-              style={{ left: time * zoom }}
-            >
-              {formatTime(time, 0)}
-            </span>
-          ))}
+          <div ref={labelHostRef} className="contents" />
           <div ref={markerHostRef} className="absolute inset-0 pointer-events-none" />
           <CueMarker />
         </div>
