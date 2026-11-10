@@ -3,7 +3,8 @@ import { useAudioStore } from "@/stores/audio";
 import { cn } from "@/utils/cn";
 import { useEffectiveFocusGroup } from "@/views/timeline/effective-focus";
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
-import { shownLoopRegion, useTimelineStore } from "@/views/timeline/timeline-store";
+import { shownLoopRegion } from "@/views/timeline/shown-loop-region";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useFocusRange } from "@/views/timeline/use-focus-range";
 import { useSelectionPlaybackRange } from "@/views/timeline/use-selection-playback-range";
 

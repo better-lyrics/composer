@@ -4,7 +4,8 @@ import type { Bounds } from "@/domain/word/bounds";
 import { useProjectStore } from "@/stores/project";
 import { useEffectiveFocus, useEffectiveFocusGroup } from "@/views/timeline/effective-focus";
 import { instanceSpan } from "@/views/timeline/group-focus";
-import { shownLoopRegion, useTimelineStore } from "@/views/timeline/timeline-store";
+import { shownLoopRegion } from "@/views/timeline/shown-loop-region";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useSelectionPlaybackRange } from "@/views/timeline/use-selection-playback-range";
 import { useMemo } from "react";
 
