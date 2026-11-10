@@ -1,9 +1,15 @@
 import type { WordTiming } from "@/domain/word/timing";
+import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
+import { findIdenticalWords } from "@/utils/identical-word-matcher";
 import { SplitModeContent } from "@/views/sync/split-mode-content";
-import { useSyllableSplitterState } from "@/views/sync/use-syllable-splitter-state";
+import {
+  type UseSyllableSplitterStateResult,
+  useSyllableSplitterState,
+} from "@/views/sync/use-syllable-splitter-state";
 import { IconScissors } from "@tabler/icons-react";
+import { useMemo } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -15,25 +21,52 @@ interface SyllableSplitterProps {
   onSplit: (wordIndex: number, newWords: WordTiming[]) => void;
 }
 
+interface SyllableSplitPanelProps extends Pick<SyllableSplitterProps, "lineId" | "type" | "word" | "wordIndex"> {
+  state: UseSyllableSplitterStateResult;
+  close: () => void;
+}
+
 // -- Components ---------------------------------------------------------------
 
-const SyllableSplitter: React.FC<SyllableSplitterProps> = ({ lineId, type, word, wordIndex, onSplit }) => {
-  const {
-    splitPoints,
-    transliterationSplitPoints,
-    applyToAll,
-    caseInsensitive,
-    identicalCount,
-    toggleSplit,
-    toggleTransliterationSplit,
-    setApplyToAll,
-    setCaseInsensitive,
-    confirmSplit,
-    cancelSplit,
-  } = useSyllableSplitterState({ lineId, type, word, wordIndex, onSplit });
+const SyllableSplitPanel: React.FC<SyllableSplitPanelProps> = ({ lineId, type, word, wordIndex, state, close }) => {
+  const { splitPoints, caseInsensitive } = state;
+  const lines = useProjectStore((s) => s.lines);
+  const identicalCount = useMemo(
+    () =>
+      findIdenticalWords(lines, { lineId, wordIndex, type }, { caseInsensitive, excludeSource: true, splitPoints })
+        .length,
+    [lines, lineId, wordIndex, type, caseInsensitive, splitPoints],
+  );
+  const text = word.text.trimEnd();
 
-  const trimmedLength = word.text.trimEnd().length;
-  if (trimmedLength < 2) {
+  return (
+    <div className="p-5">
+      <h3 className="mb-4 text-lg font-medium">Split "{text}"</h3>
+      <SplitModeContent
+        text={text}
+        splitPoints={splitPoints}
+        onToggleSplit={state.toggleSplit}
+        onConfirm={() => state.confirmSplit(close, identicalCount)}
+        onCancel={() => state.cancelSplit(close)}
+        applyToAll={state.applyToAll}
+        onApplyToAllChange={state.setApplyToAll}
+        caseInsensitive={caseInsensitive}
+        onCaseInsensitiveChange={state.setCaseInsensitive}
+        identicalCount={identicalCount}
+        sourceText={text}
+        showApplyControls={!word.transliteration}
+        secondaryText={word.transliteration?.trim()}
+        secondarySplitPoints={state.transliterationSplitPoints}
+        onToggleSecondarySplit={state.toggleTransliterationSplit}
+      />
+    </div>
+  );
+};
+
+const SyllableSplitter: React.FC<SyllableSplitterProps> = ({ lineId, type, word, wordIndex, onSplit }) => {
+  const state = useSyllableSplitterState({ lineId, type, word, wordIndex, onSplit });
+
+  if (word.text.trimEnd().length < 2) {
     return null;
   }
 
@@ -51,26 +84,7 @@ const SyllableSplitter: React.FC<SyllableSplitterProps> = ({ lineId, type, word,
       }
     >
       {(close) => (
-        <div className="p-5">
-          <h3 className="mb-4 text-lg font-medium">Split "{word.text.trimEnd()}"</h3>
-          <SplitModeContent
-            text={word.text.trimEnd()}
-            splitPoints={splitPoints}
-            onToggleSplit={toggleSplit}
-            onConfirm={() => confirmSplit(close)}
-            onCancel={() => cancelSplit(close)}
-            applyToAll={applyToAll}
-            onApplyToAllChange={setApplyToAll}
-            caseInsensitive={caseInsensitive}
-            onCaseInsensitiveChange={setCaseInsensitive}
-            identicalCount={identicalCount}
-            sourceText={word.text.trimEnd()}
-            showApplyControls={!word.transliteration}
-            secondaryText={word.transliteration?.trim()}
-            secondarySplitPoints={transliterationSplitPoints}
-            onToggleSecondarySplit={toggleTransliterationSplit}
-          />
-        </div>
+        <SyllableSplitPanel lineId={lineId} type={type} word={word} wordIndex={wordIndex} state={state} close={close} />
       )}
     </Popover>
   );
