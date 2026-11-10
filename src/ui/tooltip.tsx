@@ -19,6 +19,8 @@ import {
 import type { Placement } from "@floating-ui/react";
 import { cloneElement, useEffect, useRef, useState } from "react";
 
+import { cn } from "@/utils/cn";
+
 // -- Types --------------------------------------------------------------------
 
 interface TooltipProps {
@@ -27,6 +29,7 @@ interface TooltipProps {
   placement?: Placement;
   delay?: number;
   disabled?: boolean;
+  className?: string;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -46,6 +49,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   placement = "top",
   delay = SHOW_DELAY,
   disabled = false,
+  className,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [opensWarm, setOpensWarm] = useState(false);
@@ -87,7 +91,7 @@ const Tooltip: React.FC<TooltipProps> = ({
 
   return (
     <>
-      <span ref={refs.setReference} className="inline-flex" {...referenceProps}>
+      <span ref={refs.setReference} className={cn("inline-flex", className)} {...referenceProps}>
         {typeof describedBy === "string" ? cloneElement(children, { "aria-describedby": describedBy }) : children}
       </span>
       {isOpen && (

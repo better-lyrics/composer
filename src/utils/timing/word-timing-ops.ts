@@ -1,7 +1,8 @@
 import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import type { ReadableLine } from "@/domain/line/effective-words";
-import type { LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { applyStepKey, type StepKey, type StepRefusal } from "@/domain/step-timing/step-write";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
 import { getSyllablePositions } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
@@ -42,6 +43,18 @@ interface SetBoundaryInput {
   range?: TimeRange;
   updateLineWithHistory: UpdateLineWithHistory;
 }
+
+interface StepEditInput {
+  lines: readonly ReadableLine[];
+  lineIdx: number;
+  wordIdx: number;
+  key: StepKey;
+  time: number;
+  minDuration: number;
+  range: TimeRange;
+}
+
+type StepEdit = { kind: "written"; update: LineUpdate } | { kind: "refused"; refusal: StepRefusal } | null;
 
 // -- Factory ------------------------------------------------------------------
 
@@ -187,9 +200,19 @@ function createWordTimingOps(config: WordFieldConfig) {
     });
   }
 
-  return { nudgeBegin, setBegin, nudgeEnd, setEnd, setBoundary };
+  function stepEdit({ lines, lineIdx, wordIdx, key, time, minDuration, range }: StepEditInput): StepEdit {
+    const line = lines[lineIdx];
+    const words = line ? getWords(line) : undefined;
+    if (!line || !words?.[wordIdx]) return null;
+    const result = applyStepKey({ words, index: wordIdx, key, time, minDuration, range });
+    if (result.kind === "refused") return result;
+    return { kind: "written", update: { id: line.id, updates: boundaryUpdate(line, result.words) } };
+  }
+
+  return { nudgeBegin, setBegin, nudgeEnd, setEnd, setBoundary, stepEdit };
 }
 
 // -- Exports -------------------------------------------------------------------
 
+export type { StepEdit };
 export { createWordTimingOps };

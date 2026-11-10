@@ -5,6 +5,38 @@ import type { GuideNudgeEntry } from "@/domain/guide/model";
 // Data only, with no store imports: stores reached from the test setup call noteGuideSignal. Copy and actions live in nudges.tsx.
 const GUIDE_NUDGE_TRIGGERS: readonly GuideNudgeEntry[] = [
   {
+    id: "stepTimingFirst",
+    needsKeyboard: true,
+    stage: "timeline",
+    category: "timeline-step",
+    trigger: { signal: "timeline.stepTimingOn", count: 1, windowMs: 60_000 },
+    resolvedBy: "timeline.stepTiming",
+    spot: "snap",
+  },
+  {
+    id: "stepWholeLane",
+    needsKeyboard: true,
+    stage: "timeline",
+    category: "timeline-step",
+    trigger: { signal: "timeline.stepBackgroundWord", count: 3, windowMs: 60_000 },
+    resolvedBy: "timeline.stepLane",
+  },
+  {
+    id: "stepBackgroundPass",
+    needsKeyboard: true,
+    stage: "timeline",
+    category: "timeline-step",
+    trigger: { signal: "timeline.stepPastBackground", count: 1, windowMs: 60_000 },
+    resolvedBy: "timeline.stepLane",
+  },
+  {
+    id: "stepQueueEnd",
+    needsKeyboard: true,
+    stage: "timeline",
+    category: "timeline-step",
+    trigger: { signal: "timeline.stepQueueEnd", count: 1, windowMs: 60_000 },
+  },
+  {
     id: "syllableGap",
     needsKeyboard: true,
     stage: "timeline",

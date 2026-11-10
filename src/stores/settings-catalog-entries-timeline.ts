@@ -88,6 +88,14 @@ const TIMELINE_CATALOG_ENTRIES = {
       "Syllables of one word move together only in rolling edit mode, like separate words. When off, they always move together.",
     settingKey: "syllablesFollowRolling",
   },
+  stepTimingBackground: {
+    section: "timeline",
+    group: "Editing",
+    label: "Include background vocals",
+    description: "In Step timing, the timing keys go through a line's background vocals after its lead words.",
+    keywords: ["step", "background", "bg", "backing", "lane"],
+    settingKey: "stepTimingBackground",
+  },
 } as const satisfies Record<string, SettingEntry>;
 
 // -- Exports ------------------------------------------------------------------

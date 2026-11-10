@@ -1,8 +1,8 @@
+import { IconCommand } from "@tabler/icons-react";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { KEYCAP_CLASS } from "@/ui/inline-key-badge";
 import { formatKey } from "@/utils/format-key";
 import { isMac } from "@/utils/platform";
-import { IconCommand } from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -119,6 +119,8 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["Escape"], description: "Deselect / cancel paste" },
       { keys: ["["], description: "Set word begin to playhead", shortcutId: "timeline.setWordBegin" },
       { keys: ["]"], description: "Set word end to playhead", shortcutId: "timeline.setWordEnd" },
+      { keys: ["G"], description: "Step timing: end the word and start the next", shortcutId: "timeline.stepWord" },
+      { keys: ["Shift", "G"], description: "Turn step timing on or off", shortcutId: "timeline.stepTimingOff" },
       { keys: ["Mod", "Z"], description: "Undo", shortcutId: "global.undo" },
       { keys: ["Mod", "Shift", "Z"], description: "Redo", shortcutId: "global.redo" },
       { keys: ["Mod", "Shift", "V"], description: "Import lyrics", shortcutId: "timeline.importLyrics" },

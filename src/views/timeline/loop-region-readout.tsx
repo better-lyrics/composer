@@ -1,5 +1,6 @@
 import { loopRegionLengthLabel, loopRegionRangeLabel } from "@/views/timeline/loop-region-copy";
-import { shownLoopRegion, useTimelineStore } from "@/views/timeline/timeline-store";
+import { shownLoopRegion } from "@/views/timeline/shown-loop-region";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconMagnet } from "@tabler/icons-react";
 import { createPortal } from "react-dom";
 

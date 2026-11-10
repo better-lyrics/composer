@@ -1,9 +1,9 @@
+import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import { createLine } from "@/test/factories";
 import { bgOps, captureUpdates, makeLine, wordsOps } from "@/test/word-timing-harness";
 import { setBgWordBegin, setBgWordBoundary } from "@/utils/timing/bg-word-timing";
-import { describe, expect, it } from "vitest";
 
 describe("createWordTimingOps: setBoundary", () => {
   interface BoundaryCase {

@@ -3,13 +3,13 @@ import { hasTransliteration } from "@/domain/language/has-transliteration";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { LoopRegion } from "@/domain/selection/loop-region";
 import type { WordSelection } from "@/domain/selection/model";
-import { toggleWordSelection } from "@/domain/selection/set-ops";
 import type { Bounds } from "@/domain/word/bounds";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import type { GroupFocus } from "@/views/timeline/group-focus";
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
 import type { ClipboardData, PasteMode } from "@/views/timeline/selection-types";
+import { loopRegionPatch, selectionPatch, stepTimingPatch, toggledSelectionPatch } from "@/views/timeline/step-timing/step-selection";
 import { create } from "zustand";
 
 // -- Types ---------------------------------------------------------------------
@@ -68,6 +68,8 @@ interface TimelineState {
   contextMenu: ContextMenuState | null;
   editingWord: EditingWord | null;
   markerMode: boolean;
+  stepTiming: boolean;
+  stepQueue: WordSelection[] | null;
   hoveredSnapPointId: string | null;
   collapsedInstances: Record<string, boolean>;
   focusedGroup: GroupFocus | null;
@@ -92,7 +94,7 @@ interface TimelineActions {
   zoomOut: () => void;
   toggleTextVariant: () => void;
   setTextVariant: (textVariant: LanguageTextVariant) => void;
-  setSelectedWords: (selections: WordSelection[]) => void;
+  setSelectedWords: (selections: WordSelection[], asQueue?: boolean) => void;
   setSelectionPlayback: (mode: SelectionPlaybackMode | null) => void;
   setLoopRegion: (region: LoopRegion | null) => void;
   setLoopRegionDrag: (drag: LoopRegionDrag | null) => void;
@@ -115,6 +117,7 @@ interface TimelineActions {
   resetProjectScope: () => void;
   setCue: (cue: number | null) => void;
   toggleMarkerMode: () => void;
+  setStepTiming: (on: boolean) => void;
   setHoveredSnapPointId: (id: string | null) => void;
   setInstanceCollapsed: (key: string, isCollapsed: boolean) => void;
   toggleInstanceCollapsed: (key: string) => void;
@@ -170,6 +173,8 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     contextMenu: null,
     editingWord: null,
     markerMode: false,
+    stepTiming: false,
+    stepQueue: null,
     hoveredSnapPointId: null,
     collapsedInstances: {},
     focusedGroup: null,
@@ -197,17 +202,14 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
         return hasTransliteration(useProjectStore.getState().lines) ? { textVariant: "transliteration" } : s;
       }),
     setTextVariant: (textVariant) => set({ textVariant }),
-    setSelectedWords: (selectedWords) =>
-      set(selectedWords.length > 0 ? { selectedWords, loopRegion: null } : { selectedWords }),
+    setSelectedWords: (selectedWords, asQueue) => set((s) => selectionPatch(s, selectedWords, asQueue)),
     setSelectionPlayback: (selectionPlayback) => set({ selectionPlayback }),
-    setLoopRegion: (loopRegion) =>
-      set((s) => (loopRegion && s.selectedWords.length > 0 ? { loopRegion, selectedWords: [] } : { loopRegion })),
+    setLoopRegion: (loopRegion) => set((s) => loopRegionPatch(s, loopRegion)),
     setLoopRegionDrag: (loopRegionDrag) => set({ loopRegionDrag }),
     setWaveformReady: (waveformReady) => set({ waveformReady }),
 
-    toggleSelection: (selection) =>
-      set((s) => ({ selectedWords: toggleWordSelection(s.selectedWords, selection), loopRegion: null })),
-    clearSelection: () => set({ selectedWords: [] }),
+    toggleSelection: (selection) => set((s) => toggledSelectionPatch(s, selection)),
+    clearSelection: () => set({ selectedWords: [], stepQueue: null }),
     setClipboard: (clipboard) => set({ clipboard }),
     setPasteMode: (pasteMode) => set({ pasteMode }),
     setScrollLeft: (scrollLeft) => {
@@ -246,9 +248,12 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
         pendingResumeView: null,
         focusedGroup: null,
         textVariant: "original",
+        stepTiming: false,
+        stepQueue: null,
       }),
     setCue: (cue) => set({ cue }),
     toggleMarkerMode: () => set((s) => ({ markerMode: !s.markerMode })),
+    setStepTiming: (stepTiming) => set((s) => stepTimingPatch(s, stepTiming)),
     setHoveredSnapPointId: (hoveredSnapPointId) => set({ hoveredSnapPointId }),
     setInstanceCollapsed: (key, isCollapsed) =>
       set((s) => ({ collapsedInstances: { ...s.collapsedInstances, [key]: isCollapsed } })),
@@ -286,14 +291,7 @@ useSettingsStore.subscribe((settings, previous) => {
     useTimelineStore.setState({ defaultRowHeight: settings.defaultRowHeight });
 });
 
-// -- Functions -----------------------------------------------------------------
-
-// A region being drawn shows before it replaces the current one on release.
-function shownLoopRegion(state: TimelineState): Bounds | null {
-  return state.loopRegionDrag?.draft ?? state.loopRegion;
-}
-
 // -- Exports -------------------------------------------------------------------
 
-export { shownLoopRegion, useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP };
+export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP };
 export type { ContextMenuTarget, LoopRegionDrag, SelectionPlaybackMode, TrackHit };

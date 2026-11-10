@@ -21,6 +21,7 @@ interface TimelinePlayheadProps {
 // -- Constants -----------------------------------------------------------------
 
 const HIT_BUFFER_PX = 18;
+const RULER_DRAG_THRESHOLD_PX = 3;
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -133,6 +134,28 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
   );
 
   useEffect(() => drag.dispose, [drag]);
+
+  // A ruler press seeks there; moving while held keeps dragging the playhead. A plain click never pauses playback.
+  useEffect(() => {
+    if (!capHost) return;
+    const listening = new AbortController();
+    const { signal } = listening;
+    let pressX: number | null = null;
+    const onDown = (down: MouseEvent) => {
+      if (down.button !== 0 || down.altKey || useTimelineStore.getState().markerMode) return;
+      if (down.target instanceof Element && down.target.closest(".timeline-playhead-cap")) return;
+      pressX = down.clientX;
+    };
+    const onMove = (move: MouseEvent) => {
+      if (pressX === null || Math.abs(move.clientX - pressX) < RULER_DRAG_THRESHOLD_PX) return;
+      pressX = null;
+      drag.onMouseDown(move, true);
+    };
+    capHost.addEventListener("mousedown", onDown, { signal });
+    document.addEventListener("mousemove", onMove, { signal });
+    document.addEventListener("mouseup", () => (pressX = null), { signal });
+    return () => listening.abort();
+  }, [capHost, drag]);
 
   if (duration === 0) return null;
 

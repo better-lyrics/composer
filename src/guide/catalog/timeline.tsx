@@ -1,7 +1,3 @@
-import { keyBadge, keys } from "@/guide/catalog/keys";
-import { NudgeAmount } from "@/guide/catalog/setting-values";
-import { stageTip } from "@/guide/catalog/types";
-import { UndoKeys } from "@/ui/undo-hint";
 import {
   IconArrowBackUp,
   IconArrowsHorizontal,
@@ -16,6 +12,7 @@ import {
   IconGridDots,
   IconHandFinger,
   IconKeyboard,
+  IconLayoutRows,
   IconMapPin,
   IconMicrophone2,
   IconMouse,
@@ -25,10 +22,15 @@ import {
   IconScissors,
   IconSelect,
   IconSelectAll,
+  IconStepInto,
   IconUnlink,
   IconWaveSine,
   IconZoomIn,
 } from "@tabler/icons-react";
+import { keyBadge, keys } from "@/guide/catalog/keys";
+import { NudgeAmount } from "@/guide/catalog/setting-values";
+import { stageTip } from "@/guide/catalog/types";
+import { UndoKeys } from "@/ui/undo-hint";
 
 // -- Tips ---------------------------------------------------------------------
 
@@ -229,6 +231,33 @@ const TIMELINE_TIPS = [
     icon: IconFlame,
     title: "Mark explicit words",
     gist: <>Select a word and press {keys("timeline.toggleExplicit")}.</>,
+  }),
+  tip({
+    id: "stepTiming",
+    tier: "pro",
+    icon: IconStepInto,
+    title: "Time word after word",
+    gist: (
+      <>
+        Press {keys("timeline.stepWord")} to turn on Step timing and click a word. {keys("timeline.setWordBegin")} sets
+        where it starts. {keys("timeline.stepWord")} ends it and starts the next word in the same spot.{" "}
+        {keys("timeline.setWordEnd")} ends it and leaves a gap before the next.
+      </>
+    ),
+    spot: { stage: "timeline", spot: "snap", text: "Step timing is the last switch in this group" },
+  }),
+  tip({
+    id: "stepLane",
+    tier: "pro",
+    needs: "timeline.stepTiming",
+    icon: IconLayoutRows,
+    title: "Retime just one lane",
+    gist: (
+      <>
+        In Step timing, click an empty spot in a lane, like the background vocals. The keys then go through only those
+        words.
+      </>
+    ),
   }),
 ];
 

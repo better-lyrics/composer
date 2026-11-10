@@ -52,6 +52,7 @@ interface SettingsState extends SnapSettings, SpectrumSettings, UnisonSettings {
   previewSidebarWidth: number;
   shareTimingInNewGroups: boolean;
   loopOpenGroup: boolean;
+  stepTimingBackground: boolean;
   syllablesFollowRolling: boolean;
   timelineHorizontalScroll: boolean;
 
@@ -146,6 +147,7 @@ const DEFAULTS: SettingsState = {
   previewSidebarWidth: PREVIEW_SIDEBAR_WIDTH.default,
   shareTimingInNewGroups: true,
   loopOpenGroup: false,
+  stepTimingBackground: false,
   syllablesFollowRolling: false,
   timelineHorizontalScroll: false,
 

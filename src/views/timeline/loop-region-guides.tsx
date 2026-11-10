@@ -1,5 +1,6 @@
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
-import { GUTTER_WIDTH, shownLoopRegion, useTimelineStore } from "@/views/timeline/timeline-store";
+import { shownLoopRegion } from "@/views/timeline/shown-loop-region";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Constants -----------------------------------------------------------------
 

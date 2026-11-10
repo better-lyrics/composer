@@ -1127,6 +1127,73 @@ braccato-lyrics .blyrics-container {
         0 1px 2px rgb(var(--shade) / 0.14);
     }
   }
+  /* Step timing: every state shares one flat fill and one shadow list, so each change fades. Other words lose chroma, not lightness. */
+  [data-scroll-container][data-step-timing] .word-face {
+    --step-face: color-mix(in oklab, var(--agent) 30%, var(--word-face));
+    --step-top: color-mix(in oklab, white 9%, transparent);
+    --step-ring: color-mix(in oklab, var(--ink) 6%, transparent);
+    --step-drop: var(--word-shadow);
+    --word-fill: var(--step-face);
+    opacity: 1;
+    color: color-mix(in oklab, var(--ink) 94%, transparent);
+    background-image: var(--hatch, none);
+    box-shadow:
+      inset 0 1px 0 var(--step-top),
+      inset 0 0 0 1px var(--step-ring),
+      0 1px 2px var(--step-drop);
+    transition-property: --word-fill, color, box-shadow;
+    transition-duration: 120ms;
+    transition-timing-function: ease-out;
+    &:not([data-selected], [data-step-next], [data-step-queued]) {
+      --word-fill: oklch(from var(--step-face) l 0.005 h);
+      --step-top: transparent;
+      --step-drop: transparent;
+      color: color-mix(in oklab, var(--ink) 88%, var(--color-composer-bg));
+    }
+    &[data-step-next] {
+      --word-fill: color-mix(in oklab, var(--color-composer-accent) 30%, var(--word-face));
+    }
+    &[data-selected] {
+      --word-fill: color-mix(in oklab, var(--color-composer-accent) 78%, black);
+      --step-top: color-mix(in oklab, white 18%, transparent);
+      --step-ring: transparent;
+      color: var(--color-composer-on-accent);
+    }
+  }
+  [data-scroll-container][data-step-timing] [data-step-chain="off"] .word-face {
+    opacity: 0.55;
+  }
+  html[data-scheme="light"] [data-scroll-container][data-step-timing] .word-face {
+    --word-fill: var(--step-face);
+    --step-face: color-mix(in oklab, var(--agent) 10%, color-mix(in oklab, white 85%, var(--color-composer-bg-dark)));
+    --step-ring: color-mix(in oklab, var(--agent) 30%, var(--edge));
+    background-image: var(--hatch, none);
+    color: color-mix(in oklab, var(--ink) 94%, transparent);
+    box-shadow:
+      inset 0 1px 0 var(--step-top),
+      inset 0 0 0 1px var(--step-ring),
+      0 1px 2px var(--step-drop);
+    &:not([data-selected], [data-step-next], [data-step-queued]) {
+      --step-ring: var(--edge);
+      color: color-mix(in oklab, var(--ink) 74%, var(--color-composer-bg));
+    }
+    &[data-step-next] {
+      --word-fill: color-mix(
+        in oklab,
+        var(--color-composer-accent) 14%,
+        color-mix(in oklab, white 85%, var(--color-composer-bg-dark))
+      );
+    }
+    &[data-selected] {
+      --word-fill: color-mix(in oklab, var(--color-composer-accent) 88%, black);
+      color: var(--color-composer-on-accent);
+      background-image: var(--hatch, none);
+      box-shadow:
+        inset 0 1px 0 var(--step-top),
+        inset 0 0 0 1px var(--step-ring),
+        0 1px 2px var(--step-drop);
+    }
+  }
 }
 
 /* Timeline pitch line: a canvas over each lane's words, shown by the mode the rows scope carries in data-pitch. Labels lift to make room. */

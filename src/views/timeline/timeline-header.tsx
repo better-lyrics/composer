@@ -1,3 +1,16 @@
+import {
+  IconArrowBackUp,
+  IconArrowBarBoth,
+  IconChevronsDown,
+  IconChevronsUp,
+  IconEye,
+  IconFocusCentered,
+  IconLanguage,
+  IconLayoutDistributeHorizontal,
+  IconMapPin,
+  IconTextPlus,
+} from "@tabler/icons-react";
+import { useCallback, useEffect, useMemo } from "react";
 import { isLinked } from "@/domain/instance/predicates";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { isLineSynced } from "@/domain/line/predicates";
@@ -12,24 +25,12 @@ import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers"
 import { HeaderAction } from "@/views/timeline/header-action";
 import { SnapLatch } from "@/views/timeline/snap-latch";
 import { SpectrumLatch } from "@/views/timeline/spectrum/spectrum-latch";
+import { StepTimingLatch } from "@/views/timeline/step-timing/step-timing-latch";
 import { TimelineAutoAlign } from "@/views/timeline/timeline-auto-align";
 import { TimelineZoomControls } from "@/views/timeline/timeline-header-controls";
 import { TimelineNotices } from "@/views/timeline/timeline-notices";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCueShortcuts } from "@/views/timeline/use-cue-shortcuts";
-import {
-  IconArrowBackUp,
-  IconArrowBarBoth,
-  IconChevronsDown,
-  IconChevronsUp,
-  IconEye,
-  IconFocusCentered,
-  IconLanguage,
-  IconLayoutDistributeHorizontal,
-  IconMapPin,
-  IconTextPlus,
-} from "@tabler/icons-react";
-import { useCallback, useEffect, useMemo } from "react";
 
 interface TimelineHeaderProps {
   onImportLyrics?: () => void;
@@ -202,6 +203,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
             >
               <IconMapPin />
             </ShortcutToggleButton>
+            <StepTimingLatch />
           </div>
 
           <div className="tray">

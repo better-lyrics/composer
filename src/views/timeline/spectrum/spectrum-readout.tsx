@@ -1,12 +1,13 @@
+import { useEffect, useRef } from "react";
 import { CHUNK_FRAMES } from "@/domain/spectrum/chunk-order";
 import { frequencyAtRow } from "@/domain/spectrum/frequency-scale";
 import { decodeDb } from "@/domain/spectrum/levels";
 import { noteOfFrequency } from "@/domain/spectrum/note";
 import { useSettingsStore } from "@/stores/settings";
+import { followBandPointer } from "@/views/timeline/overview/band-pointer";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { type SpectrumSessionState, spectrumSession } from "@/views/timeline/spectrum/spectrum-session";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useEffect, useRef } from "react";
 import { readViewScroll } from "@/views/timeline/view-scroll";
 
 // -- Constants -----------------------------------------------------------------
@@ -64,7 +65,6 @@ const SpectrumReadout: React.FC = () => {
       readout.hidden = true;
     };
     const handlePointerMove = (e: PointerEvent) => {
-      if (e.target instanceof Element && e.target.closest("[data-band-resize-handle]")) return hide();
       const box = viewport.getBoundingClientRect();
       const height = currentOverviewBandHeight() - BAND_BORDER;
       const { zoom } = useTimelineStore.getState();
@@ -91,13 +91,7 @@ const SpectrumReadout: React.FC = () => {
       line.style.top = `${Math.round(y)}px`;
     };
 
-    band.addEventListener("pointermove", handlePointerMove);
-    band.addEventListener("pointerleave", hide);
-    return () => {
-      band.removeEventListener("pointermove", handlePointerMove);
-      band.removeEventListener("pointerleave", hide);
-      hide();
-    };
+    return followBandPointer(band, handlePointerMove, hide);
   }, []);
 
   return (

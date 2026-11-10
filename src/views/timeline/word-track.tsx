@@ -3,7 +3,6 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { isWordSelected } from "@/domain/selection/identity";
 import { overlapsLoopRegion } from "@/domain/selection/loop-region";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
-import type { Bounds } from "@/domain/word/bounds";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
@@ -20,6 +19,7 @@ import { setLiveWordEdit } from "@/views/timeline/pitch/live-word-edit";
 import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
+import { useStepTrack } from "@/views/timeline/step-timing/use-step-track";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { selectionGripEdges } from "@/views/timeline/stretch-grips";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -27,6 +27,7 @@ import { noteWordDragShift } from "@/views/timeline/tiny-drag-signal";
 import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
+import { type DragState, liveWordBounds, resizeChangedTiming } from "@/views/timeline/word-resize-state";
 import { WordBlock } from "@/views/timeline/word-block";
 import { beginBoundaryDrag, endBoundaryDrag } from "@/views/timeline/boundary-chip-store";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -49,33 +50,6 @@ interface WordTrackProps {
   ) => void;
 }
 
-interface DragState {
-  wordIndex: number;
-  edge: "left" | "right";
-  begin: number;
-  end: number;
-  adjacentWordIndex?: number;
-  adjacentBegin?: number;
-  adjacentEnd?: number;
-}
-
-// -- Helpers -------------------------------------------------------------------
-
-function liveWordBounds(state: DragState): Map<number, Bounds> {
-  const words = new Map<number, Bounds>([[state.wordIndex, { begin: state.begin, end: state.end }]]);
-  if (state.adjacentWordIndex !== undefined && state.adjacentBegin !== undefined && state.adjacentEnd !== undefined) {
-    words.set(state.adjacentWordIndex, { begin: state.adjacentBegin, end: state.adjacentEnd });
-  }
-  return words;
-}
-
-function resizeChangedTiming(initial: DragState, final: DragState, words: WordTiming[]): boolean {
-  if (final.begin !== initial.begin || final.end !== initial.end) return true;
-  if (final.adjacentWordIndex === undefined) return false;
-  const adjacent = words[final.adjacentWordIndex];
-  return final.adjacentBegin !== adjacent.begin || final.adjacentEnd !== adjacent.end;
-}
-
 // -- Component -----------------------------------------------------------------
 
 const WordTrack: React.FC<WordTrackProps> = ({
@@ -90,6 +64,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 }) => {
   const zoom = useTimelineStore((s) => s.zoom);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
+  const step = useStepTrack(lineId, trackType);
   const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
   const rollingEdit = useSettingsStore((s) => s.rollingEdit);
@@ -356,11 +331,14 @@ const WordTrack: React.FC<WordTrackProps> = ({
   }, []);
 
   const handleTrackClick = () => {
+    if (step.stepTiming) return step.toggleLane(lineIndex, words.length);
     setSelectedWords([]);
   };
 
   const handleSelect = (wordIndex: number, e: React.MouseEvent) => {
     noteGuideSignal("timeline.select");
+    if (step.stepTiming && trackType === "bg" && !e.metaKey && !e.ctrlKey)
+      noteGuideSignal("timeline.stepBackgroundWord");
     if (e.metaKey || e.ctrlKey) noteGuideSignal("timeline.selectMore");
     if (e.shiftKey) {
       const pos = syllablePositions[wordIndex];
@@ -385,7 +363,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       toggleSelection(selection);
     } else {
       const alreadySelected = isWordSelected(selectedWords, lineId, wordIndex, trackType);
-      if (alreadySelected && selectedWords.length === 1) {
+      if (alreadySelected && selectedWords.length === 1 && !step.stepTiming) {
         setSelectedWords([]);
       } else {
         setSelectedWords([selection]);
@@ -453,6 +431,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     <div
       ref={trackRef}
       role="presentation"
+      {...step.trackAttributes}
       className="relative"
       style={{ height, width: duration * zoom }}
       onClick={handleTrackClick}
@@ -488,9 +467,12 @@ const WordTrack: React.FC<WordTrackProps> = ({
             color={color}
             zoom={zoom}
             isDimmed={
-              (hasSelection && !isWordSelected(selectedWords, lineId, wordIndex, trackType)) ||
-              (playingRegion !== null && !overlapsLoopRegion(display, playingRegion))
+              !step.stepTiming &&
+              ((hasSelection && !isWordSelected(selectedWords, lineId, wordIndex, trackType)) ||
+                (playingRegion !== null && !overlapsLoopRegion(display, playingRegion)))
             }
+            isStepNext={step.isNext(wordIndex)}
+            isStepQueued={step.isQueued(wordIndex)}
             isSelected={isWordSelected(selectedWords, lineId, wordIndex, trackType)}
             isExplicit={word.explicit === true}
             syllablePosition={syllablePosition}

@@ -1,8 +1,8 @@
+import { describe, expect, it } from "vitest";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { createLine } from "@/test/factories";
 import { bgOps, captureUpdates, makeLine, wordsOps } from "@/test/word-timing-harness";
 import { nudgeWordEnd, setWordBegin, setWordBoundary } from "@/utils/timing/word-timing";
-import { describe, expect, it } from "vitest";
 
 describe("createWordTimingOps: early returns", () => {
   it("nudgeBegin no-ops when line missing", () => {

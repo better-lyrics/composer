@@ -1,14 +1,14 @@
+import { useDraggable } from "@dnd-kit/core";
+import { useMemo } from "react";
+import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import { cn } from "@/utils/cn";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
-import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import { wordBlockWidth } from "@/views/timeline/row-geometry";
 import { selfKey } from "@/views/timeline/snap";
 import { SYLLABLE_RADIUS } from "@/views/timeline/syllable-radius";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordEdgeHandle } from "@/views/timeline/word-edge-handle";
 import { wordFit } from "@/views/timeline/word-fit";
-import { useDraggable } from "@dnd-kit/core";
-import { useMemo } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -25,6 +25,8 @@ interface WordBlockProps {
   zoom: number;
   isDimmed: boolean;
   isSelected: boolean;
+  isStepNext?: boolean;
+  isStepQueued?: boolean;
   isExplicit?: boolean;
   syllablePosition?: SyllablePosition;
   gapBefore?: boolean;
@@ -58,6 +60,8 @@ const WordBlock: React.FC<WordBlockProps> = ({
   zoom,
   isDimmed,
   isSelected,
+  isStepNext,
+  isStepQueued,
   isExplicit,
   syllablePosition = "none",
   syllableEdgesJoin = true,
@@ -108,6 +112,8 @@ const WordBlock: React.FC<WordBlockProps> = ({
       data-begin={begin}
       data-end={end}
       data-selected={isSelected || undefined}
+      data-step-next={isStepNext || undefined}
+      data-step-queued={isStepQueued || undefined}
       data-gap-before={gapBefore || undefined}
       data-gap-after={gapAfter || undefined}
       className={cn(
