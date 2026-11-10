@@ -125,18 +125,22 @@ const ExportPanel: React.FC = () => {
   );
 
   const unisonSource = useMemo(
-    (): UnisonExportSource => ({
-      content: exportContent && outgoingContent(),
-      isEdited: editedContent !== null,
-      videoId: youtubeVideoId,
-      durationSeconds: duration,
-      lineCount,
-      syncedLineCount,
-      review: alignment.review,
-      reviewInTimeline: alignment.reviewInTimeline,
-      regenerate: handleRegenerate,
-    }),
+    (): UnisonExportSource | null =>
+      unisonEnabled
+        ? {
+            content: exportContent && outgoingContent(),
+            isEdited: editedContent !== null,
+            videoId: youtubeVideoId,
+            durationSeconds: duration,
+            lineCount,
+            syncedLineCount,
+            review: alignment.review,
+            reviewInTimeline: alignment.reviewInTimeline,
+            regenerate: handleRegenerate,
+          }
+        : null,
     [
+      unisonEnabled,
       exportContent,
       outgoingContent,
       editedContent,
@@ -219,7 +223,7 @@ const ExportPanel: React.FC = () => {
             </>
           }
         />
-        <ExportSidePanel unison={unisonEnabled && <UnisonPanel source={unisonSource} />} />
+        <ExportSidePanel unison={unisonSource && <UnisonPanel source={unisonSource} />} />
       </div>
     </div>
   );
