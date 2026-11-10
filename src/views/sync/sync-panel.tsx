@@ -17,6 +17,7 @@ import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { type SyncState, getNudgeAmount } from "@/utils/sync-helpers";
 import { isTypingTarget } from "@/utils/typing-target";
 import { buildLaneRows } from "@/views/sync/lane-rows";
+import { FreezeWhileHidden } from "@/views/sync/freeze-while-hidden";
 import { SyncEndScreen } from "@/views/sync/sync-end-screen";
 import { SyncLineList } from "@/views/sync/sync-line-list";
 import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
@@ -100,9 +101,12 @@ const SyncPanel: React.FC = () => {
     cursor,
     skippedInstances,
   );
+  const visible = activeTab === "sync";
+  const showLineList = (!isPlaying && !countIn.countingIn) || editMode;
+  const showsLane = visible && !showLineList && !isComplete;
   const laneRows = useMemo(
-    () => buildLaneRows({ lines, displayLines, agents, groupTags, folded }),
-    [lines, displayLines, agents, groupTags, folded],
+    () => (showsLane ? buildLaneRows({ lines, displayLines, agents, groupTags, folded }) : []),
+    [showsLane, lines, displayLines, agents, groupTags, folded],
   );
 
   const stopSessionAtSongEnd = useEffectEvent(() => {
@@ -190,7 +194,11 @@ const SyncPanel: React.FC = () => {
     if (source && lines.length > 0) handleToggleEdit();
   });
 
-  const playingLine = useMemo(() => playingLineIndex(lines, currentTime), [lines, currentTime]);
+  const followsPlayback = editMode && visible;
+  const playingLine = useMemo(
+    () => (followsPlayback ? playingLineIndex(lines, currentTime) : -1),
+    [followsPlayback, lines, currentTime],
+  );
 
   const { lineIndex, wordIndex } = cursor;
   const noteSyncUndo = useEffectEvent(() => noteGuideSignal("sync.undoTap", lines[lineIndex]?.id));
@@ -285,7 +293,6 @@ const SyncPanel: React.FC = () => {
     [endHold],
   );
 
-  const showLineList = (!isPlaying && !countIn.countingIn) || editMode;
   const showGestureCircles = !isComplete && !editMode && isPlaying;
 
   // The release handlers live on the hold circle, so a hold outliving that
@@ -411,37 +418,39 @@ const SyncPanel: React.FC = () => {
         handleStartSync={handleStartSync}
       />
 
-      {showLineList ? (
-        <SyncLineList
-          lines={lines}
-          displayLines={displayLines}
-          groups={groups}
-          granularity={granularity}
-          currentTime={currentTime}
-          playingLineIndex={playingLine}
-          cursorLineIndex={lineIndex}
-          editMode={editMode}
-          isComplete={isComplete}
-          skippedLineIds={skippedLineIds}
-          skippedByLastLineId={skippedByLastLineId}
-          handlers={syncHandlers}
-          scrollContainerRef={scrollContainerRef}
-        />
-      ) : isComplete ? (
-        <SyncEndScreen syncComplete={syncComplete} />
-      ) : (
-        <SyncLane
-          rows={laneRows}
-          lineIndex={lineIndex}
-          wordIndex={wordIndex}
-          granularity={granularity}
-          isHolding={isHolding}
-          placingLineIndex={placingName !== null ? lineIndex : null}
-          ring={rippleTarget}
-          onRingDone={clearRippleTarget}
-          aboveCurrent={countIn.dots}
-        />
-      )}
+      <FreezeWhileHidden hidden={!visible}>
+        {showLineList ? (
+          <SyncLineList
+            lines={lines}
+            displayLines={displayLines}
+            groups={groups}
+            granularity={granularity}
+            currentTime={currentTime}
+            playingLineIndex={playingLine}
+            cursorLineIndex={lineIndex}
+            editMode={editMode}
+            isComplete={isComplete}
+            skippedLineIds={skippedLineIds}
+            skippedByLastLineId={skippedByLastLineId}
+            handlers={syncHandlers}
+            scrollContainerRef={scrollContainerRef}
+          />
+        ) : isComplete ? (
+          <SyncEndScreen syncComplete={syncComplete} />
+        ) : (
+          <SyncLane
+            rows={laneRows}
+            lineIndex={lineIndex}
+            wordIndex={wordIndex}
+            granularity={granularity}
+            isHolding={isHolding}
+            placingLineIndex={placingName !== null ? lineIndex : null}
+            ring={rippleTarget}
+            onRingDone={clearRippleTarget}
+            aboveCurrent={countIn.dots}
+          />
+        )}
+      </FreezeWhileHidden>
 
       <SyncFooter
         lastSyncedTime={lastSyncedTime}
