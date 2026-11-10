@@ -1,5 +1,6 @@
 import { keepsOwnTiming, sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
+import { instanceKey } from "@/domain/instance/key";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";
@@ -82,7 +83,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
   const handleChevronClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      toggleInstanceCollapsed(`${group.id}:${instanceIdx}`);
+      toggleInstanceCollapsed(instanceKey(group.id, instanceIdx));
       noteGuideSignal("timeline.collapseOne");
     },
     [group.id, instanceIdx, toggleInstanceCollapsed],
@@ -134,7 +135,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
     <m.div
       ref={bannerRef}
       data-banner-progress=""
-      data-instance-key={`${group.id}:${instanceIdx}`}
+      data-instance-key={instanceKey(group.id, instanceIdx)}
       data-instance-start={instanceStart}
       data-instance-end={instanceEnd}
       variants={pingVariants}

@@ -1,5 +1,6 @@
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceKey } from "@/domain/instance/key";
 import { type LinkedLine, isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
 import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
@@ -252,7 +253,7 @@ function timeRangeResolver(
   const wholeSong = wholeSongRange(duration);
   return (line) => {
     if (!isLinked(line) || !isSharedLine(line, groupsById)) return wholeSong;
-    const key = `${line.groupId}:${line.instanceIdx}`;
+    const key = instanceKey(line.groupId, line.instanceIdx);
     let range = rangeByInstance.get(key);
     const group = groupsById.get(line.groupId);
     if (!range && group) {

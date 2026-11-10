@@ -1,6 +1,7 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instancePositionsByLineId } from "@/domain/instance/enumerate";
+import { lineInstanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
@@ -95,7 +96,7 @@ function getEffectiveRows(lines: LyricLine[], focus: GroupFocus | null = null): 
 
   for (let i = 0; i < effective.length; i++) {
     const line = effective[i];
-    const key = isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
+    const key = lineInstanceKey(line);
     if (key !== currentKey) {
       flushBuffer(i);
       bufferStart = i;
@@ -175,7 +176,7 @@ function computeRowLayout({
 
   for (const line of lines) {
     if (!isInFocus(line, shownFocus)) continue;
-    const inst = shownFocus === null && isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
+    const inst = shownFocus === null ? lineInstanceKey(line) : null;
 
     if (inst !== lastInstanceKey && inst !== null) {
       headerTops.set(inst, { top: rowTop, height: groupHeaderHeight });

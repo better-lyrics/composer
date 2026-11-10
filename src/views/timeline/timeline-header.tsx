@@ -12,6 +12,7 @@ import {
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
+import { instanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import type { LyricLine } from "@/domain/line/model";
@@ -54,7 +55,7 @@ function lineFacts(lines: readonly LyricLine[]): LineFacts {
   const facts: LineFacts = {
     hasTransliteration: hasTransliteration(lines),
     hasUnexpandedLines: lines.some((l) => !l.words?.length && l.text.trim().length > 0),
-    instanceKeys: [...new Set(lines.flatMap((l) => (isLinked(l) ? [`${l.groupId}:${l.instanceIdx}`] : [])))],
+    instanceKeys: [...new Set(lines.flatMap((l) => (isLinked(l) ? [instanceKey(l.groupId, l.instanceIdx)] : [])))],
   };
   lineFactsByLines.set(lines, facts);
   return facts;

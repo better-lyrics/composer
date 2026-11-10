@@ -1,5 +1,6 @@
 import { agentDisplayName } from "@/domain/agent/display-name";
 import { getAgentColor } from "@/domain/agent/colors";
+import { instanceKey } from "@/domain/instance/key";
 import type { LyricLine } from "@/domain/line/model";
 import { selectionBounds } from "@/domain/selection/bounds";
 import { lineWordSelections } from "@/domain/selection/line-selections";
@@ -389,7 +390,7 @@ function GroupBannerMenuSection({ targets, clearContextMenu, target }: SectionPr
     target.instanceIdx,
     clearContextMenu,
   );
-  const isCollapsed = useTimelineStore.getState().collapsedInstances[`${target.groupId}:${target.instanceIdx}`];
+  const isCollapsed = useTimelineStore.getState().collapsedInstances[instanceKey(target.groupId, target.instanceIdx)];
   const openGroup = useTimelineStore((s) => s.openGroup);
   const groupColor = useProjectStore((s) => s.groups.find((group) => group.id === target.groupId)?.color);
 

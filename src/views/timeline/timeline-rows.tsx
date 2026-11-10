@@ -1,4 +1,4 @@
-import { isLinked } from "@/domain/instance/predicates";
+import { instanceKey, lineInstanceKey } from "@/domain/instance/key";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
@@ -54,7 +54,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
     let activeKey: string | null = null;
     for (const row of allRows) {
       if (row.kind === "group-header") {
-        const key = `${row.groupId}:${row.instanceIdx}`;
+        const key = instanceKey(row.groupId, row.instanceIdx);
         const hidden = collapsedInstances[key] ?? false;
         out.push(row);
         hideUntilNextNonGroup = hidden;
@@ -62,7 +62,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         continue;
       }
       if (hideUntilNextNonGroup) {
-        const lineKey = isLinked(row.line) ? `${row.line.groupId}:${row.line.instanceIdx}` : null;
+        const lineKey = lineInstanceKey(row.line);
         if (lineKey === activeKey) continue;
         hideUntilNextNonGroup = false;
         activeKey = null;

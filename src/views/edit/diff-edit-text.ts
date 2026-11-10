@@ -1,5 +1,6 @@
 import { extractLinkedFields, unlinkLines } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
+import { instanceKey, parseInstanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 
@@ -68,7 +69,7 @@ function instancesByKey(lines: LyricLine[]): Map<string, Set<string>> {
   const out = new Map<string, Set<string>>();
   for (const line of lines) {
     if (!isLinked(line)) continue;
-    const key = `${line.groupId}:${line.instanceIdx}`;
+    const key = instanceKey(line.groupId, line.instanceIdx);
     let bucket = out.get(key);
     if (!bucket) {
       bucket = new Set();
@@ -87,7 +88,7 @@ function findStructurallyImpactedInstances(oldLines: LyricLine[], newLines: Lyri
   const impacted: ImpactedInstance[] = [];
 
   const push = (groupId: string, instanceIdx: number) => {
-    const key = `${groupId}:${instanceIdx}`;
+    const key = instanceKey(groupId, instanceIdx);
     if (seen.has(key)) return;
     seen.add(key);
     impacted.push({ groupId, instanceIdx });
@@ -106,8 +107,8 @@ function findStructurallyImpactedInstances(oldLines: LyricLine[], newLines: Lyri
       }
     }
     if (differs) {
-      const [groupId, instanceIdxStr] = key.split(":");
-      push(groupId, Number.parseInt(instanceIdxStr, 10));
+      const { groupId, instanceIdx } = parseInstanceKey(key);
+      push(groupId, instanceIdx);
     }
   }
 
@@ -130,8 +131,8 @@ function findStructurallyImpactedInstances(oldLines: LyricLine[], newLines: Lyri
 }
 
 function detachInstancesFromLines(lines: LyricLine[], instances: ImpactedInstance[]): LyricLine[] {
-  const impactedKeys = new Set(instances.map((i) => `${i.groupId}:${i.instanceIdx}`));
-  return unlinkLines(lines, (line) => isLinked(line) && impactedKeys.has(`${line.groupId}:${line.instanceIdx}`));
+  const impactedKeys = new Set(instances.map((i) => instanceKey(i.groupId, i.instanceIdx)));
+  return unlinkLines(lines, (line) => isLinked(line) && impactedKeys.has(instanceKey(line.groupId, line.instanceIdx)));
 }
 
 interface LinkedScope {

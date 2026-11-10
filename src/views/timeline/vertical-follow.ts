@@ -1,3 +1,4 @@
+import { instanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
@@ -49,13 +50,13 @@ const IDLE_FOLLOW: Readonly<FollowMemory> = {
 
 function collapsedInstanceKey(line: LyricLine, collapsedInstances: Record<string, boolean>): string | null {
   if (!isLinked(line)) return null;
-  const key = `${line.groupId}:${line.instanceIdx}`;
+  const key = instanceKey(line.groupId, line.instanceIdx);
   return collapsedInstances[key] ? key : null;
 }
 
 function rowOf(line: LyricLine, layout: RowLayout, collapsedInstances: Record<string, boolean>): RowSpan | undefined {
-  const instanceKey = collapsedInstanceKey(line, collapsedInstances);
-  return instanceKey ? layout.headerTops.get(instanceKey) : layout.lineTops.get(line.id);
+  const headerKey = collapsedInstanceKey(line, collapsedInstances);
+  return headerKey ? layout.headerTops.get(headerKey) : layout.lineTops.get(line.id);
 }
 
 function spanOfRows(

@@ -1,5 +1,6 @@
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
+import { instanceKey } from "@/domain/instance/key";
 import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
@@ -23,7 +24,7 @@ function scrollToInstanceHeader(groupId: string, instanceIdx: number): void {
     waveformHeight: currentOverviewBandHeight(),
     groupHeaderHeight: GROUP_HEADER_HEIGHT,
   });
-  const target = layout.headerTops.get(`${groupId}:${instanceIdx}`);
+  const target = layout.headerTops.get(instanceKey(groupId, instanceIdx));
   if (!target) return;
 
   const instanceLines = linesOfInstance(projectLines, groupId, instanceIdx);
