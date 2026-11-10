@@ -13,6 +13,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { findInsertionSlot } from "@/utils/word-spaces";
+import { useAltHeld } from "@/views/timeline/alt-key-held";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { settleLoupe, showLoupeEdit } from "@/views/timeline/loupe/loupe-target";
 import { setLiveWordEdit } from "@/views/timeline/pitch/live-word-edit";
@@ -84,7 +85,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [hoveredBoundary, setHoveredBoundary] = useState<number | null>(null);
-  const [altPressed, setAltPressed] = useState(false);
+  const altPressed = useAltHeld();
   // react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [resizing, setResizing] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -112,16 +113,6 @@ const WordTrack: React.FC<WordTrackProps> = ({
   useEffect(() => {
     return () => {
       cleanupRef.current?.();
-    };
-  }, []);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => setAltPressed(e.altKey);
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("keyup", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("keyup", onKey);
     };
   }, []);
 
