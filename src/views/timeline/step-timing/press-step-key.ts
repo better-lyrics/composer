@@ -30,6 +30,12 @@ function refusalMessage(refusal: StepRefusal): string {
   return "There is no room for the words after this one before the song ends.";
 }
 
+function showEndedPreviousToast(previousWord: string): void {
+  toast(`“${previousWord.trim()}” now ends here too.`, {
+    action: { label: "Undo", onClick: () => useProjectStore.getState().undo() },
+  });
+}
+
 // -- Functions ----------------------------------------------------------------
 
 function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): void {
@@ -56,7 +62,7 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
       ? null
       : nextCursorSlot(lines, cursor, queue, include, useSettingsStore.getState().stepTimingBackground);
   const startNext = key === "step" ? chainedNext(cursor, next, nextStepSlot(lines, cursor, include)) : null;
-  const refusal = writeStepKey({
+  const outcome = writeStepKey({
     lines,
     groups: project.groups,
     cursor,
@@ -67,11 +73,12 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
     rangeOf,
     updateLinesWithHistory: project.updateLinesWithHistory,
   });
-  if (refusal) {
-    toast(refusalMessage(refusal));
+  if (outcome?.kind === "refused") {
+    toast(refusalMessage(outcome.refusal));
     timeline.setSelectedWords([cursor]);
     return;
   }
+  if (outcome?.endedPrevious) showEndedPreviousToast(outcome.endedPrevious);
   noteGuideSignal("timeline.stepTiming");
   const leftLine = cursor.type === "word" && next?.lineId !== cursor.lineId;
   if (leftLine && effectiveTrackWords(line, "bg")?.length) noteGuideSignal("timeline.stepPastBackground");

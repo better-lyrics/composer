@@ -39,7 +39,7 @@ const StepTimingLatch: React.FC = () => {
         <ShortcutToggleButton
           active={stepTiming}
           label="Step timing"
-          shortcut={stepTiming ? "timeline.stepTimingOff" : "timeline.stepWord"}
+          shortcut="timeline.stepTimingOff"
           onClick={() => setStepTimingMode(!stepTiming)}
           description="Timing keys follow the selected word and move on. Click an empty lane to time just that lane"
           iconOnly

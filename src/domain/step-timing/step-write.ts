@@ -7,7 +7,9 @@ type StepKey = "start" | "step" | "end";
 
 type StepRefusal = { reason: "beforePrevious"; previousWord: string } | { reason: "songStart" } | { reason: "noRoom" };
 
-type StepWrite = { kind: "written"; words: WordTiming[] } | { kind: "refused"; refusal: StepRefusal };
+type StepWrite =
+  | { kind: "written"; words: WordTiming[]; endedPrevious?: string }
+  | { kind: "refused"; refusal: StepRefusal };
 
 interface StepWriteInput {
   words: readonly WordTiming[];
@@ -43,12 +45,15 @@ function pushAhead(words: WordTiming[], from: number, floor: number, minDuration
 function writeStart(words: WordTiming[], index: number, input: StepWriteInput): StepWrite {
   const word = words[index];
   const previous = words[index - 1];
-  if (previous && input.time < previous.end) return beforePrevious(previous);
+  const endsPrevious = previous !== undefined && input.time < previous.end;
+  if (endsPrevious && input.time < previous.begin + input.minDuration) return beforePrevious(previous);
+  if (endsPrevious) words[index - 1] = { ...previous, end: input.time };
   const begin = Math.max(input.time, input.range.min);
   const end = Math.max(word.end, begin + input.minDuration);
   if (end > input.range.max) return NO_ROOM;
   words[index] = { ...word, begin, end };
-  return pushAhead(words, index + 1, end, input.minDuration, input.range.max) ? { kind: "written", words } : NO_ROOM;
+  if (!pushAhead(words, index + 1, end, input.minDuration, input.range.max)) return NO_ROOM;
+  return endsPrevious ? { kind: "written", words, endedPrevious: previous.text } : { kind: "written", words };
 }
 
 function writeEnd(words: WordTiming[], index: number, input: StepWriteInput): StepWrite {

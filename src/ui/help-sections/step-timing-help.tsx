@@ -58,8 +58,9 @@ const StepTimingHelp: React.FC = () => (
         you can loop a hard part while you time it.
       </li>
       <li>
-        Later words that are in the way move later, only as far as they must. Earlier words never move. If the time is
-        before the previous word ends, nothing changes and a message names that word.
+        Later words that are in the way move later, only as far as they must. Start a word inside the one before it, and
+        that word now ends there. If the time is before the previous word starts, or would leave it too short, nothing
+        changes and a message names that word.
       </li>
       <li>
         With no word selected, <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordBegin")} /> picks the word

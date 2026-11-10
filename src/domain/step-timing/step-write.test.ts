@@ -54,6 +54,23 @@ describe("applyStepKey", () => {
     });
   });
 
+  it("ends the previous word at the time when the start lands inside it", () => {
+    const words = [w("the ", 10.0, 10.4), w("wave", 10.4, 11.2)];
+    const result = step(words, 1, "start", 10.2);
+    expect(result).toEqual({
+      kind: "written",
+      words: [w("the ", 10.0, 10.2), w("wave", 10.2, 11.2)],
+      endedPrevious: "the ",
+    });
+  });
+
+  it("refuses a start that would leave the previous word shorter than the minimum", () => {
+    const words = [w("the ", 10.0, 10.4), w("wave", 10.4, 11.2)];
+    const refused = { kind: "refused", refusal: { reason: "beforePrevious", previousWord: "the " } };
+    expect(step(words, 1, "start", 10.03)).toEqual(refused);
+    expect(step(words, 1, "start", 9.8)).toEqual(refused);
+  });
+
   it("acts like the end key on the last word of a line and writes nothing after it", () => {
     const words = [w("down ", 15.58, 15.86), w("drain", 16.04, 16.8)];
     const result = step(words, 1, "step", 16.9);

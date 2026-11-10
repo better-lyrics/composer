@@ -45,7 +45,7 @@ describe("writeStepKey", () => {
   it("writes one step as one undo step", () => {
     useProjectStore.setState({ lines: [chorus("c0", 0, 28)], groups: [] });
     const before = lineById("c0")?.words;
-    expect(press(slot("c0", 0, 0), slot("c0", 0, 1), 28.5)).toBeNull();
+    expect(press(slot("c0", 0, 0), slot("c0", 0, 1), 28.5)).toEqual({ kind: "written" });
     expect(lineById("c0")?.words?.[1].begin).toBe(28.5);
     store().undo();
     expect(lineById("c0")?.words).toEqual(before);
@@ -71,7 +71,7 @@ describe("writeStepKey", () => {
       groups: [createGroup({ id: "g1", sharesTiming: true })],
     });
     const before = lineById("a0")?.words;
-    expect(press(slot("a1", 1, 2), slot("b0", 2, 0), 31.9)).toBeNull();
+    expect(press(slot("a1", 1, 2), slot("b0", 2, 0), 31.9)).toEqual({ kind: "written" });
     expect(lineById("a1")?.words?.[2].end).toBe(31.9);
     expect(lineById("a0")?.words).toEqual(before);
     expect(lineById("b0")?.words?.[0].begin).toBeCloseTo(40);
@@ -82,7 +82,7 @@ describe("writeStepKey", () => {
       lines: [chorus("a0", 0, 28), { ...chorus("b0", 1, 40), detached: true }],
       groups: [createGroup({ id: "g1", sharesTiming: true })],
     });
-    expect(press(slot("a0", 0, 2), slot("b0", 1, 0), 29.9)).toBeNull();
+    expect(press(slot("a0", 0, 2), slot("b0", 1, 0), 29.9)).toEqual({ kind: "written" });
     expect(lineById("b0")?.words?.[0].begin).toBe(29.9);
   });
 
@@ -94,7 +94,7 @@ describe("writeStepKey", () => {
     });
     useProjectStore.setState({ lines: [chorus("c0", 0, 28), next], groups: [] });
     const before = store().lines;
-    expect(press(slot("c0", 0, 2), slot("n", 1, 0), 29.9)).toBeNull();
+    expect(press(slot("c0", 0, 2), slot("n", 1, 0), 29.9)).toEqual({ kind: "written" });
     expect(lineById("c0")?.words?.[2].end).toBe(29.9);
     expect(lineById("n")?.words?.[0]).toMatchObject({ begin: 29.9, end: 33.4 });
     store().undo();
