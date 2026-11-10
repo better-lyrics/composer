@@ -1,7 +1,6 @@
 import { ownChanges, presetChanges } from "@/stores/shortcut-preset-changes";
 import type { ShortcutPreset } from "@/stores/shortcut-presets";
 import type { ShortcutBinding } from "@/stores/shortcut-registry";
-import { HelpSectionLink } from "@/ui/help-section-link";
 import { CARD_ACTIVE, CARD_BASE, CARD_INACTIVE } from "@/ui/settings/preset-card-styles";
 import { ShortcutChangesPopover } from "@/ui/settings/shortcuts/shortcut-changes-popover";
 import { switchShortcutPreset } from "@/ui/settings/shortcuts/switch-shortcut-preset";
@@ -17,10 +16,6 @@ interface ShortcutPresetCardProps {
   overrides: Record<string, ShortcutBinding>;
   changesPlacement: Placement;
 }
-
-// -- Constants -----------------------------------------------------------------
-
-const PRESETS_WITH_MOVING_OVER: ReadonlySet<ShortcutPreset["id"]> = new Set(["amll", "osu"]);
 
 // -- Components ----------------------------------------------------------------
 
@@ -55,13 +50,6 @@ const ShortcutPresetCard: React.FC<ShortcutPresetCardProps> = ({ preset, active,
           />
         )}
       </span>
-      {PRESETS_WITH_MOVING_OVER.has(preset.id) && (
-        <span className="absolute right-3 bottom-1.5 flex h-6 items-center">
-          <HelpSectionLink section="moving-over" className="text-[11.5px] select-none">
-            How Composer differs
-          </HelpSectionLink>
-        </span>
-      )}
     </div>
   );
 };

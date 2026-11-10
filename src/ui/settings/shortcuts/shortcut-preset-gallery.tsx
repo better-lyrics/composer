@@ -6,6 +6,7 @@ import { ShortcutImportCard } from "@/ui/settings/shortcuts/shortcut-import-card
 import { ShortcutPresetCard } from "@/ui/settings/shortcuts/shortcut-preset-card";
 import { resetMyShortcutChanges } from "@/ui/settings/shortcuts/switch-shortcut-preset";
 import { Button } from "@/ui/button";
+import { HelpSectionLink } from "@/ui/help-section-link";
 import { IconRefresh } from "@tabler/icons-react";
 
 // -- Constants ----------------------------------------------------------------
@@ -51,6 +52,9 @@ const ShortcutPresetGallery: React.FC = () => {
         ))}
         <ShortcutImportCard />
       </div>
+      <p className="mt-2 text-[11.5px] text-(--muted) select-none">
+        Coming from AMLL Tool or osu!? <HelpSectionLink section="moving-over">How Composer differs</HelpSectionLink>
+      </p>
     </div>
   );
 };
