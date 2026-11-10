@@ -1,4 +1,3 @@
-import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
@@ -138,8 +137,8 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
           <GroupHeaderRow
             group={group}
             instanceIdx={row.instanceIdx}
-            ordinal={instanceOrdinal(lines, row.groupId, row.instanceIdx)}
-            totalInstances={instanceCount(lines, row.groupId)}
+            ordinal={row.ordinal}
+            totalInstances={row.totalInstances}
             instanceStart={row.instanceStart}
             instanceEnd={row.instanceEnd}
           />
@@ -155,7 +154,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         />
       );
     },
-    [groupsById, lines, duration, handleUpdateWord, handleUpdateBgWord],
+    [groupsById, duration, handleUpdateWord, handleUpdateBgWord],
   );
 
   const totalWidth = duration * zoom;

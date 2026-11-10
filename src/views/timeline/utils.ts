@@ -1,5 +1,6 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
+import { instancePositionsByLineId } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
@@ -42,6 +43,8 @@ interface GroupHeaderRow {
   kind: "group-header";
   groupId: string;
   instanceIdx: number;
+  ordinal: number;
+  totalInstances: number;
   lineCount: number;
   instanceStart: number;
   instanceEnd: number;
@@ -58,6 +61,7 @@ type EffectiveRow = GroupHeaderRow | LineEffectiveRow;
 
 function getEffectiveRows(lines: LyricLine[], focus: GroupFocus | null = null): EffectiveRow[] {
   const effective = timelineEffectiveLines(lines);
+  const positions = instancePositionsByLineId(lines);
   const rows: EffectiveRow[] = [];
   let bufferStart = 0;
   let currentKey: string | null = null;
@@ -69,11 +73,14 @@ function getEffectiveRows(lines: LyricLine[], focus: GroupFocus | null = null): 
 
     if (isLinked(first)) {
       const bounds = instanceBounds(slice);
-      if (bounds) {
+      const position = positions.get(first.id);
+      if (bounds && position) {
         rows.push({
           kind: "group-header",
           groupId: first.groupId,
           instanceIdx: first.instanceIdx,
+          ordinal: position.ordinal,
+          totalInstances: position.count,
           lineCount: slice.length,
           instanceStart: bounds.begin,
           instanceEnd: bounds.end,
