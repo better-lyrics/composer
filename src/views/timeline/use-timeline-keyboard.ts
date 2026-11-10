@@ -49,7 +49,7 @@ import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { clearLoopRegion, playSelection } from "@/views/timeline/selection-playback";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
-import { pressStepKey } from "@/views/timeline/step-timing/press-step-key";
+import { pressStepKey, setStepTimingMode } from "@/views/timeline/step-timing/press-step-key";
 import { AUTO_ALIGN_EVENT } from "@/views/timeline/timeline-auto-align";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
@@ -408,7 +408,7 @@ function useTimelineKeyboard(
         case "timeline.stepWord":
           e.preventDefault();
           if (useTimelineStore.getState().stepTiming) pressStepKey("step", lines, duration);
-          else useTimelineStore.getState().setStepTiming(true);
+          else setStepTimingMode(true);
           break;
         case "timeline.stepTimingOff":
           e.preventDefault();

@@ -4,12 +4,14 @@ import { effectiveTrackWords, type ReadableLine } from "@/domain/line/effective-
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { chainedNext } from "@/domain/step-timing/step-queue";
 import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
+import { noteGuideSignal } from "@/lib/guide-signals";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { writeStepKey } from "@/utils/timing/step-key-write";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
-import { stepWriteTime } from "@/views/timeline/step-timing/pointer-write-time";
+import { bandPointerTime, stepWriteTime } from "@/views/timeline/step-timing/pointer-write-time";
 import { liveStepSelection } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { findBoundaryTarget } from "@/views/timeline/word-at-playhead";
@@ -25,9 +27,17 @@ function refusalMessage(refusal: StepRefusal): string {
   return "There is no room for the words after this one before the song ends.";
 }
 
+// A paused playhead means the time was placed by hand, which pointing at the band saves.
+function noteStepSignals(usedPointer: boolean): void {
+  noteGuideSignal("timeline.stepTiming");
+  if (usedPointer) noteGuideSignal("timeline.stepHover");
+  else if (!useAudioStore.getState().isPlaying) noteGuideSignal("timeline.stepAfterSeek");
+}
+
 // -- Functions ----------------------------------------------------------------
 
 function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): void {
+  const usedPointer = bandPointerTime() !== null;
   const time = stepWriteTime();
   const focus = currentEffectiveFocus();
   const include = (line: ReadableLine) => isInFocus(line, focus);
@@ -62,6 +72,7 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
     timeline.setSelectedWords([cursor]);
     return;
   }
+  noteStepSignals(usedPointer);
   if (next || key === "start") {
     timeline.setSelectedWords([next ?? cursor]);
     return;
@@ -70,6 +81,11 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
   timeline.setSelectedWords([cursor]);
 }
 
+function setStepTimingMode(on: boolean): void {
+  useTimelineStore.getState().setStepTiming(on);
+  if (on) noteGuideSignal("timeline.stepTimingOn");
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { pressStepKey };
+export { pressStepKey, setStepTimingMode };

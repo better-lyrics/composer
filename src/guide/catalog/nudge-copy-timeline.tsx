@@ -1,17 +1,55 @@
-import { keyBadge, keys } from "@/guide/catalog/keys";
-import type { GuideNudgeCopy } from "@/guide/catalog/types";
 import {
   IconBackspace,
   IconChevronsUp,
   IconCursorText,
+  IconLayoutRows,
   IconMagnet,
   IconMarquee2,
   IconPlayerPlayFilled,
+  IconPointer,
+  IconStepInto,
 } from "@tabler/icons-react";
+import { keyBadge, keys } from "@/guide/catalog/keys";
+import type { GuideNudgeCopy } from "@/guide/catalog/types";
 
 // -- Copy ---------------------------------------------------------------------
 
 const TIMELINE_NUDGE_COPY: Record<string, GuideNudgeCopy> = {
+  stepTimingFirst: {
+    icon: IconStepInto,
+    title: "Step timing is on",
+    body: (
+      <>
+        Click a word. Press {keys("timeline.setWordBegin")} where it starts, {keys("timeline.stepWord")} where the next
+        word begins, or {keys("timeline.setWordEnd")} where it ends if there's a pause after it.
+      </>
+    ),
+    peek: (
+      <>
+        {keys("timeline.setWordBegin")} starts a word, {keys("timeline.stepWord")} moves on,{" "}
+        {keys("timeline.setWordEnd")} ends with a gap
+      </>
+    ),
+  },
+  stepAtPointer: {
+    icon: IconPointer,
+    title: "No need to click first",
+    body: (
+      <>
+        Point at the waveform or the spectrum and press {keys("timeline.setWordBegin")}, {keys("timeline.stepWord")} or{" "}
+        {keys("timeline.setWordEnd")}. They use the time under the pointer.
+      </>
+    ),
+    peek: <>Point at the waveform, then press a timing key</>,
+  },
+  stepWholeLane: {
+    icon: IconLayoutRows,
+    title: "Timing these one by one?",
+    body: (
+      <>Click an empty spot in the lane to pick the whole lane. The timing keys then go through just those words.</>
+    ),
+    peek: <>Click an empty spot to pick the whole lane</>,
+  },
   skipSnapOnce: {
     icon: IconMagnet,
     title: "Turning snap off for one drag?",

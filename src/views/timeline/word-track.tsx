@@ -1,3 +1,4 @@
+import { memo, use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { timedTransliterationSlice } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { isWordSelected } from "@/domain/selection/identity";
@@ -14,6 +15,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { findInsertionSlot } from "@/utils/word-spaces";
+import { beginBoundaryDrag, endBoundaryDrag } from "@/views/timeline/boundary-chip-store";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { settleLoupe, showLoupeEdit } from "@/views/timeline/loupe/loupe-target";
 import { setLiveWordEdit } from "@/views/timeline/pitch/live-word-edit";
@@ -30,8 +32,6 @@ import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay
 import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { WordBlock } from "@/views/timeline/word-block";
-import { beginBoundaryDrag, endBoundaryDrag } from "@/views/timeline/boundary-chip-store";
-import { memo, use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -367,11 +367,14 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const handleTrackClick = () => {
     if (!stepTiming) return setSelectedWords([]);
     const lane = words.map((_, wordIndex) => ({ lineId, lineIndex, wordIndex, type: trackType }));
-    setSelectedWords(isWholeLane(stepQueue ?? selectedWords, lane) ? [] : lane);
+    const clearing = isWholeLane(stepQueue ?? selectedWords, lane);
+    setSelectedWords(clearing ? [] : lane);
+    if (!clearing && lane.length > 1) noteGuideSignal("timeline.stepLane");
   };
 
   const handleSelect = (wordIndex: number, e: React.MouseEvent) => {
     noteGuideSignal("timeline.select");
+    if (stepTiming && trackType === "bg" && !e.metaKey && !e.ctrlKey) noteGuideSignal("timeline.stepBackgroundWord");
     if (e.metaKey || e.ctrlKey) noteGuideSignal("timeline.selectMore");
     if (e.shiftKey) {
       const pos = syllablePositions[wordIndex];

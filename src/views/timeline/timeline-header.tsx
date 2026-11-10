@@ -26,6 +26,7 @@ import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers"
 import { HeaderAction } from "@/views/timeline/header-action";
 import { SnapLatch } from "@/views/timeline/snap-latch";
 import { SpectrumLatch } from "@/views/timeline/spectrum/spectrum-latch";
+import { setStepTimingMode } from "@/views/timeline/step-timing/press-step-key";
 import { TimelineAutoAlign } from "@/views/timeline/timeline-auto-align";
 import { TimelineZoomControls } from "@/views/timeline/timeline-header-controls";
 import { TimelineNotices } from "@/views/timeline/timeline-notices";
@@ -208,7 +209,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
               active={stepTiming}
               label="Step timing"
               shortcut={stepTiming ? "timeline.stepTimingOff" : "timeline.stepWord"}
-              onClick={() => useTimelineStore.getState().setStepTiming(!stepTiming)}
+              onClick={() => setStepTimingMode(!stepTiming)}
               description="Timing keys follow the selected word and move on. Click an empty lane to time just that lane"
               iconOnly
             >
