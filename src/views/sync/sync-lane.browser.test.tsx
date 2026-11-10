@@ -17,11 +17,11 @@ const lines: LyricLine[] = Array.from({ length: 2000 }, (_, index) =>
 );
 const rows = buildLaneRows({ lines, displayLines: [], agents: [], groupTags: new Map(), folded: new Set() });
 
-function lane(lineIndex: number) {
+function lane(lineIndex: number, laneRows = rows) {
   return (
     <div style={{ height: LANE_HEIGHT_PX, display: "flex", flexDirection: "column" }}>
       <SyncLane
-        rows={rows}
+        rows={laneRows}
         lineIndex={lineIndex}
         wordIndex={0}
         granularity="line"
@@ -64,5 +64,22 @@ describe("SyncLane", () => {
     await screen.rerender(lane(1401));
     expect(rowOffsetFromCentre(screen.container, 1401)).toBeLessThan(IN_PLACE_WITHIN_PX);
     await expect.poll(() => rowOffsetFromCentre(screen.container, 1402)).toBeLessThan(1);
+  });
+
+  it("regression: a line inserted above keeps the current line in place", async () => {
+    const screen = await renderBoundedLane(1400);
+    await stepFrames(1);
+    expect(rowOffsetFromCentre(screen.container, 1401)).toBeLessThan(IN_PLACE_WITHIN_PX);
+
+    const inserted = [...lines.slice(0, 2), createLine({ text: "A new line sung softly" }), ...lines.slice(2)];
+    const insertedRows = buildLaneRows({
+      lines: inserted,
+      displayLines: [],
+      agents: [],
+      groupTags: new Map(),
+      folded: new Set(),
+    });
+    await screen.rerender(lane(1401, insertedRows));
+    expect(rowOffsetFromCentre(screen.container, 1401)).toBeLessThan(IN_PLACE_WITHIN_PX);
   });
 });

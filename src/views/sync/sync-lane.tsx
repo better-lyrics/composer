@@ -30,7 +30,7 @@ type RowRef = (element: HTMLElement | null) => void;
 
 interface PlacedAnchor {
   visibleIndex: number;
-  lineIndex: number;
+  lineId: string;
   centre: number;
 }
 
@@ -87,8 +87,8 @@ const SyncLane: React.FC<SyncLaneProps> = ({
   const trackRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
   const rowHeights = useRef(new Map<string, number>());
-  const rowElements = useRef(new Map<number, HTMLElement>());
-  const rowRefs = useRef(new Map<number, RowRef>());
+  const rowElements = useRef(new Map<string, HTMLElement>());
+  const rowRefs = useRef(new Map<string, RowRef>());
 
   const visibleRows = useMemo(() => rows.filter((row) => !row.folded), [rows]);
   const anchorVisibleIndex = useMemo(() => {
@@ -102,14 +102,14 @@ const SyncLane: React.FC<SyncLaneProps> = ({
     [ring, reducedMotion],
   );
 
-  const rowRef = useCallback((rowLineIndex: number): RowRef => {
-    const cached = rowRefs.current.get(rowLineIndex);
+  const rowRef = useCallback((lineId: string): RowRef => {
+    const cached = rowRefs.current.get(lineId);
     if (cached) return cached;
     const ref: RowRef = (element) => {
-      if (element) rowElements.current.set(rowLineIndex, element);
-      else rowElements.current.delete(rowLineIndex);
+      if (element) rowElements.current.set(lineId, element);
+      else rowElements.current.delete(lineId);
     };
-    rowRefs.current.set(rowLineIndex, ref);
+    rowRefs.current.set(lineId, ref);
     return ref;
   }, []);
 
@@ -117,7 +117,7 @@ const SyncLane: React.FC<SyncLaneProps> = ({
 
   const measureRows = useCallback(() => {
     for (const row of visibleRows.slice(windowStart, windowEnd)) {
-      const height = rowElements.current.get(row.lineIndex)?.offsetHeight;
+      const height = rowElements.current.get(row.line.id)?.offsetHeight;
       if (height) rowHeights.current.set(row.line.id, height);
     }
   }, [visibleRows, windowStart, windowEnd]);
@@ -138,10 +138,10 @@ const SyncLane: React.FC<SyncLaneProps> = ({
     const anchorRow = visibleRows[anchorVisibleIndex];
     measureRows();
     sizeSpacer();
-    const anchor = anchorRow && rowElements.current.get(anchorRow.lineIndex);
+    const anchor = anchorRow && rowElements.current.get(anchorRow.line.id);
     if (!host || !track || !anchor) return;
     const previous = placedAnchor.current;
-    const previousAnchor = previous && rowElements.current.get(previous.lineIndex);
+    const previousAnchor = previous && rowElements.current.get(previous.lineId);
     const target = anchoredTrackY(host, anchor);
     if (previousAnchor && laneMove(previous.visibleIndex, anchorVisibleIndex) === "glide") {
       const shift = rowCentre(previousAnchor) - previous.centre;
@@ -152,7 +152,7 @@ const SyncLane: React.FC<SyncLaneProps> = ({
     }
     placedAnchor.current = {
       visibleIndex: anchorVisibleIndex,
-      lineIndex: anchorRow.lineIndex,
+      lineId: anchorRow.line.id,
       centre: rowCentre(anchor),
     };
   }, [visibleRows, anchorVisibleIndex, measureRows, sizeSpacer]);
@@ -161,7 +161,7 @@ const SyncLane: React.FC<SyncLaneProps> = ({
     const host = hostRef.current;
     const track = trackRef.current;
     const placed = placedAnchor.current;
-    const anchor = placed && rowElements.current.get(placed.lineIndex);
+    const anchor = placed && rowElements.current.get(placed.lineId);
     if (widthChanged) {
       rowHeights.current.clear();
       measureRows();
@@ -196,7 +196,7 @@ const SyncLane: React.FC<SyncLaneProps> = ({
           const distance = windowStart + offset - anchorVisibleIndex;
           const isCurrent = row.lineIndex === lineIndex;
           return (
-            <div key={row.line.id} ref={rowRef(row.lineIndex)} className="flex flex-col">
+            <div key={row.line.id} ref={rowRef(row.line.id)} className="flex flex-col">
               <SyncLaneLine
                 row={row}
                 isCurrent={isCurrent}
