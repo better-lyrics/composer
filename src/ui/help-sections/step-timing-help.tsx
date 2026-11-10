@@ -1,7 +1,6 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HelpTopic } from "@/ui/help-topic";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { SettingLink } from "@/ui/setting-link";
 import { PROSE } from "@/ui/typography";
 import { MOD_KEY } from "@/utils/platform";
 
@@ -37,9 +36,8 @@ const StepTimingHelp: React.FC = () => (
         them. The keys then run through only those words, and stop after the last one.
       </li>
       <li>
-        To time background vocals in the same pass, turn on <SettingLink setting="stepTimingBackground" /> in the Step
-        timing menu. The keys then go through each line's background words after its lead words, then on to the next
-        line.
+        To time background vocals in the same pass, open the Step timing menu and turn on Include background vocals. The
+        keys then go through each line's background words after its lead words, then on to the next line.
       </li>
       <li>
         You can stay in Step timing the whole time. Move the playhead back to time overlaps or background vocals on

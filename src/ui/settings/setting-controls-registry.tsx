@@ -147,7 +147,6 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   beatGridLines: { kind: "select", options: [...BEAT_GRID_LINE_OPTIONS] },
   shareTimingInNewGroups: TOGGLE,
   loopOpenGroup: TOGGLE,
-  stepTimingBackground: TOGGLE,
   selectionLeadIn: { kind: "slider", min: 0, max: 1, step: 0.05, format: (v) => (v === 0 ? "Off" : asMilliseconds(v)) },
   snapDistanceWords: SNAP_DISTANCE,
   snapDistanceMarkers: SNAP_DISTANCE,
