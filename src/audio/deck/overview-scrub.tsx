@@ -23,6 +23,8 @@ interface Painter {
   bars: Bar[];
   width: number;
   headBar: number;
+  headPlayed: [number, number, number];
+  headX: number;
   idle: string;
   played: string;
 }
@@ -65,6 +67,11 @@ function layoutBars(values: readonly number[], height: number, pixelRatio: numbe
     const width = Math.max(snap(BAR_WIDTH), 1 / pixelRatio);
     return { x, y: snap(height / 2) - half, width, height: half * 2 };
   });
+}
+
+function playedWidthOf(painter: Painter, barIndex: number, headX: number): number {
+  const bar = painter.bars[barIndex];
+  return bar ? Math.max(0, Math.min(bar.width, headX - bar.x)) : 0;
 }
 
 function paintBars(painter: Painter, from: number, to: number, headX: number): void {
@@ -124,16 +131,37 @@ const OverviewScrub: React.FC = () => {
   const headRef = useRef<HTMLDivElement>(null);
   const idleProbeRef = useRef<HTMLSpanElement>(null);
   const playedProbeRef = useRef<HTMLSpanElement>(null);
-  const painter = useRef<Painter>({ context: null, bars: [], width: 0, headBar: -1, idle: "", played: "" }).current;
+  const painter = useRef<Painter>({
+    context: null,
+    bars: [],
+    width: 0,
+    headBar: -1,
+    headPlayed: [0, 0, 0],
+    headX: Number.NaN,
+    idle: "",
+    played: "",
+  }).current;
 
   const moveHead = () => {
     if (duration <= 0 || painter.width <= 0) return;
     const headX = (playheadTime() / duration) * painter.width;
+    if (painter.headBar >= 0 && headX === painter.headX) return;
+    painter.headX = headX;
     if (headRef.current) headRef.current.style.translate = `${headX - 1}px 0`;
     const headBar = Math.floor(headX / BAR_PITCH);
+    const [before, at, after] = painter.headPlayed;
+    const playedBefore = playedWidthOf(painter, headBar - 1, headX);
+    const playedAt = playedWidthOf(painter, headBar, headX);
+    const playedAfter = playedWidthOf(painter, headBar + 1, headX);
+    const unchanged =
+      headBar === painter.headBar && before === playedBefore && at === playedAt && after === playedAfter;
     if (painter.headBar < 0) paintBars(painter, 0, painter.bars.length - 1, headX);
-    else paintBars(painter, Math.min(painter.headBar, headBar) - 1, Math.max(painter.headBar, headBar) + 1, headX);
+    else if (!unchanged)
+      paintBars(painter, Math.min(painter.headBar, headBar) - 1, Math.max(painter.headBar, headBar) + 1, headX);
     painter.headBar = headBar;
+    painter.headPlayed[0] = playedBefore;
+    painter.headPlayed[1] = playedAt;
+    painter.headPlayed[2] = playedAfter;
   };
 
   useLayoutEffect(() => {
