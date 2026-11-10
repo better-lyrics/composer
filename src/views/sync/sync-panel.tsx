@@ -1,4 +1,3 @@
-import { getLanguageDisplayLine } from "@/domain/language/display";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { playingLineIndex } from "@/domain/line/playing-line";
 import { isSyncComplete, syncProgress } from "@/domain/line/sync-progress";
@@ -24,6 +23,7 @@ import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
 import { SyncHeader } from "@/views/sync/sync-header";
 import { type RippleTarget, SyncLane } from "@/views/sync/sync-lane";
 import { usePlacementPreroll } from "@/views/sync/use-placement-preroll";
+import { useDisplayLines } from "@/views/sync/use-display-lines";
 import { useSharedSyncView } from "@/views/sync/use-shared-sync-view";
 import { useSyncCountIn } from "@/views/sync/use-sync-count-in";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -55,14 +55,7 @@ const SyncPanel: React.FC = () => {
     if (useTimelineStore.getState().textVariant === "transliteration") noteGuideSignal("languages.showWhileSyncing");
   }, [toggleTextVariant]);
   const linesHaveTransliteration = useMemo(() => hasTransliteration(lines), [lines]);
-  const displayLines = useMemo(
-    () =>
-      lines.map((line) => ({
-        ...line,
-        ...getLanguageDisplayLine(line, textVariant),
-      })),
-    [lines, textVariant],
-  );
+  const displayLines = useDisplayLines(lines, textVariant);
 
   const [syncState, setSyncState] = useState<SyncState>({
     position: { lineIndex: 0, wordIndex: 0 },
