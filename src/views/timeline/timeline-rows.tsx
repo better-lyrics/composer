@@ -6,6 +6,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
 import { LineRow } from "@/views/timeline/line-row";
@@ -42,8 +43,10 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const focusedGroup = useTimelineStore((s) => s.focusedGroup);
   const openProjectId = useOpenProjectId();
+  const splitCharacter = useSettingsStore((s) => s.splitCharacter);
 
-  const allRows = useMemo(() => getEffectiveRows(lines, focusedGroup), [lines, focusedGroup]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: getEffectiveRows splits words by the split character
+  const allRows = useMemo(() => getEffectiveRows(lines, focusedGroup), [lines, focusedGroup, splitCharacter]);
 
   const visibleRows = useMemo(() => {
     const out: EffectiveRow[] = [];

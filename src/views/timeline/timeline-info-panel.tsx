@@ -21,7 +21,7 @@ import {
   selectionCountLabel,
   selectionGroupHighlight,
 } from "@/views/timeline/selection-info";
-import { timelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
+import { useTimelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { formatTime } from "@/views/timeline/utils";
 import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
@@ -115,7 +115,7 @@ const TimelineInfoPanel: React.FC = () => {
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const selectedWord = selectedWords[0] ?? null;
 
-  const lines = timelineEffectiveLines(rawLines);
+  const lines = useTimelineEffectiveLines(rawLines);
   const highlight = useMemo(
     () => selectionGroupHighlight(selectedWords, rawLines, groups),
     [selectedWords, rawLines, groups],

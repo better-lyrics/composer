@@ -1,5 +1,6 @@
 import { type EffectiveLine, getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import { useSettingsStore } from "@/stores/settings";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- State --------------------------------------------------------------------
@@ -20,6 +21,11 @@ function timelineEffectiveLines(rawLines: readonly LyricLine[]): EffectiveLine[]
   return lastEffectiveLines;
 }
 
+function useTimelineEffectiveLines(rawLines: readonly LyricLine[]): EffectiveLine[] {
+  useSettingsStore((s) => s.splitCharacter);
+  return timelineEffectiveLines(rawLines);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { timelineEffectiveLines };
+export { timelineEffectiveLines, useTimelineEffectiveLines };
