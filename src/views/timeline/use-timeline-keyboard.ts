@@ -705,12 +705,12 @@ function useTimelineKeyboard(
         case "timeline.jumpPrevBar":
         case "timeline.jumpNextBar":
           e.preventDefault();
-          jumpToAdjacentBar(matched === "timeline.jumpNextBar" ? 1 : -1);
+          jumpToAdjacentBar(matched === "timeline.jumpNextBar" ? 1 : -1, e.repeat);
           break;
         case "timeline.jumpPrevGridLine":
         case "timeline.jumpNextGridLine":
           e.preventDefault();
-          jumpToAdjacentGridLine(matched === "timeline.jumpNextGridLine" ? 1 : -1);
+          jumpToAdjacentGridLine(matched === "timeline.jumpNextGridLine" ? 1 : -1, e.repeat);
           break;
         case "timeline.jumpPrevSnapPoint":
         case "timeline.jumpNextSnapPoint":
