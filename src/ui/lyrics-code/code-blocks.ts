@@ -47,7 +47,8 @@ function codeBlocks(tokens: readonly Token[], linesPerBlock: number): CodeBlock[
 // Oldest first: survivors keep their order and newly near blocks join at the end.
 function highlightedBlocks({ previous, near, kept, cap, holdsSelection }: HighlightWindow): number[] {
   const next = previous.filter((index) => near.has(index) || kept.has(index) || holdsSelection(index));
-  for (const index of near) if (!next.includes(index)) next.push(index);
+  const survivors = new Set(next);
+  for (const index of near) if (!survivors.has(index)) next.push(index);
   let excess = next.length - cap;
   return excess <= 0
     ? next
