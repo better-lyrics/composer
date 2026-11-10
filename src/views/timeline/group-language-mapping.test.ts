@@ -97,7 +97,9 @@ describe("linked group alternate-language mappings", () => {
     expectExactCopy(copy, source, 20);
     expect(copy.transliteration).not.toBe(template[0].transliteration);
 
-    if (copy.transliteration) copy.transliteration.segments[0].transliteration = "edited";
+    expect(() => {
+      if (copy.transliteration) copy.transliteration.segments[0].transliteration = "edited";
+    }).toThrow(TypeError);
     expect(source.transliteration?.segments[0].transliteration).toBe("abc");
     expect(template[0].transliteration?.segments[0].transliteration).toBe("abc");
   });

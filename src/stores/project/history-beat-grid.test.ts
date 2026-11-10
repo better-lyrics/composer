@@ -51,11 +51,15 @@ describe("project history snapshots the beat grid", () => {
     expect(useProjectStore.getState().lines[0].text).toBe("a");
   });
 
-  it("history entries do not share the grid object with the store", () => {
+  it("history entries keep the grid safe from later in-place writes", () => {
     useProjectStore.getState().applyBeatGridWithHistory(grid);
     const entry = useProjectStore.getState().history.at(-1);
     expect(entry?.beatGrid).toEqual(grid);
-    expect(entry?.beatGrid).not.toBe(useProjectStore.getState().beatGrid);
+    const live = useProjectStore.getState().beatGrid;
+    expect(() => {
+      if (live) live.offsetMs = 99;
+    }).toThrow(TypeError);
+    expect(entry?.beatGrid?.offsetMs).toBe(grid.offsetMs);
   });
 
   it("nudging the offset again and again is one undo step", () => {

@@ -264,7 +264,7 @@ describe("commitPendingLineEdit", () => {
     expect(baseline).toEqual(baselineSnapshot);
   });
 
-  it("stores history entries as independent clones", () => {
+  it("keeps history entries safe from later in-place writes", () => {
     useProjectStore.getState().setLines([seedLine("a", { text: "clone me" })]);
     const baseline = useProjectStore.getState().lines;
 
@@ -272,7 +272,10 @@ describe("commitPendingLineEdit", () => {
     useProjectStore.getState().commitPendingLineEdit(baseline);
 
     const committedIndex = useProjectStore.getState().historyIndex;
-    useProjectStore.getState().lines[0].text = "live mutation";
+    const live = useProjectStore.getState().lines[0];
+    expect(() => {
+      live.text = "live mutation";
+    }).toThrow(TypeError);
 
     expect(useProjectStore.getState().history[committedIndex].lines[0].text).toBe("clone me edited");
   });
@@ -414,7 +417,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     expect(baseline).toEqual(baselineSnapshot);
   });
 
-  it("stores the seeded baseline entry as an independent clone", () => {
+  it("keeps the seeded baseline entry safe from later in-place writes", () => {
     useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "A" })]);
     useProjectStore.getState().setLines([seedLine("a", { text: "B" })]);
     const baseline = useProjectStore.getState().lines;
@@ -422,7 +425,9 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
     useProjectStore.getState().commitPendingLineEdit(baseline, true);
 
-    baseline[0].text = "live mutation";
+    expect(() => {
+      baseline[0].text = "live mutation";
+    }).toThrow(TypeError);
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines[0].text).toBe("B");
   });
