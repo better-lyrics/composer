@@ -29,6 +29,12 @@ function writeWindowStart(wavesurfer: WaveSurfer, host: HTMLElement, start: numb
   wavesurfer.getWrapper().parentElement?.dispatchEvent(new Event("scroll"));
 }
 
+function applyZoom(wavesurfer: WaveSurfer, zoom: number): boolean {
+  if (wavesurfer.options.minPxPerSec === zoom) return false;
+  wavesurfer.setOptions({ minPxPerSec: zoom });
+  return true;
+}
+
 // -- Hooks ---------------------------------------------------------------------
 
 function useWaveformWindow(
@@ -74,16 +80,14 @@ function useWaveformWindow(
       if (!zooming) queueMicrotask(align);
     });
     const stopFollowingZoom = followWaveformZoom((zoom) => {
-      if (wavesurfer.options.minPxPerSec === zoom) return;
       zooming = true;
-      wavesurfer.setOptions({ minPxPerSec: zoom });
+      const zoomed = applyZoom(wavesurfer, zoom);
       zooming = false;
-      align();
+      if (zoomed) align();
     });
     const unsubscribeDestroy = wavesurfer.on("destroy", stopFollowingZoom);
     // Hidden under the spectrum the waveform keeps its old zoom; it catches up when it shows again.
-    const zoom = useTimelineStore.getState().zoom;
-    if (wavesurfer.options.minPxPerSec !== zoom) wavesurfer.setOptions({ minPxPerSec: zoom });
+    applyZoom(wavesurfer, useTimelineStore.getState().zoom);
     return () => {
       stopFollowingZoom();
       unsubscribeDestroy();
