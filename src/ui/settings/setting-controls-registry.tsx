@@ -130,7 +130,11 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
     format: (v) => `${v}px`,
     action: {
       label: "Use current",
-      onClick: () => useSettingsStore.getState().set("defaultRowHeight", useTimelineStore.getState().defaultRowHeight),
+      onClick: () => {
+        const { rowHeights, lastResizedLineId, defaultRowHeight } = useTimelineStore.getState();
+        const resizedHeight = lastResizedLineId === null ? undefined : rowHeights[lastResizedLineId];
+        useSettingsStore.getState().set("defaultRowHeight", resizedHeight ?? defaultRowHeight);
+      },
     },
   },
   timelineSnap: TOGGLE,
