@@ -89,6 +89,8 @@
     );
   --cap: color-mix(in oklab, var(--ink) 8%, var(--color-composer-bg));
   --raised-edge: inset 0 0 0 1px var(--edge), inset 0 1px 0 var(--highlight);
+  --button-edge: color-mix(in oklab, var(--ink) 2.5%, transparent);
+  --button-raised-edge: inset 0 0 0 1px var(--button-edge), inset 0 1px 0 var(--highlight);
   --display: color-mix(in oklab, var(--color-composer-bg-dark) 75%, var(--color-composer-bg));
   --on-display: color-mix(in oklab, var(--ink) 82%, transparent);
   --on-display-dim: color-mix(in oklab, var(--ink) 38%, transparent);
@@ -98,6 +100,7 @@
   --raised-face: var(--layer-2);
   --raised-face-hover: var(--layer-3);
   --lit-ring: color-mix(in oklab, var(--color-composer-accent) 30%, transparent);
+  --button-lit-ring: color-mix(in oklab, var(--color-composer-accent) 5%, transparent);
   --gutter-bg: color-mix(in oklab, var(--color-composer-bg) 40%, var(--color-composer-bg-dark));
   --float-shadow:
     inset 0 0 0 1px var(--edge), inset 0 1px 0 var(--highlight), 0 18px 40px -12px rgb(var(--shade) / 0.55);
@@ -125,6 +128,8 @@ html[data-scheme="light"] {
   --knob-lo: color-mix(in oklab, var(--ink) 8%, var(--color-composer-bg-dark));
   --gutter-bg: color-mix(in oklab, var(--color-composer-bg-dark) 60%, var(--color-composer-bg));
   --raised-edge: inset 0 1px 0 rgb(255 255 255 / 0.95), inset 0 0 0 1px var(--edge), 0 1px 2px rgb(var(--shade) / 0.12);
+  --button-raised-edge:
+    inset 0 1px 0 rgb(255 255 255 / 0.95), inset 0 0 0 1px var(--button-edge), 0 1px 2px rgb(var(--shade) / 0.12);
   --raised-face: linear-gradient(to bottom, #fff, color-mix(in oklab, var(--ink) 3%, white));
   --raised-face-hover: linear-gradient(
     to bottom,
@@ -469,7 +474,7 @@ braccato-lyrics .blyrics-container {
 
 @utility btn-raised {
   background: var(--raised-face);
-  box-shadow: var(--raised-edge);
+  box-shadow: var(--button-raised-edge);
   &:hover:not(:disabled),
   &:focus-visible {
     background: var(--raised-face-hover);
@@ -542,7 +547,7 @@ braccato-lyrics .blyrics-container {
 @utility latch-on {
   color: var(--ink);
   background: color-mix(in oklab, var(--color-composer-accent) 12%, var(--cap));
-  box-shadow: inset 0 0 0 1px var(--lit-ring);
+  box-shadow: inset 0 0 0 1px var(--button-lit-ring);
   &:focus-visible {
     background: color-mix(in oklab, var(--color-composer-accent) 20%, var(--cap));
   }
@@ -585,7 +590,7 @@ braccato-lyrics .blyrics-container {
     box-shadow var(--split-ease);
   &:has([aria-pressed="true"]) {
     background: color-mix(in oklab, var(--color-composer-accent) 12%, var(--cap));
-    box-shadow: inset 0 0 0 1px var(--lit-ring);
+    box-shadow: inset 0 0 0 1px var(--button-lit-ring);
   }
   &:has([aria-pressed="false"]:hover:not(:disabled)) {
     background: var(--layer-1);
@@ -627,7 +632,7 @@ braccato-lyrics .blyrics-container {
   align-items: center;
   border-radius: 12px;
   background: var(--raised-face);
-  box-shadow: var(--raised-edge);
+  box-shadow: var(--button-raised-edge);
   transition: background-color var(--split-ease);
   &:has(> :first-child > button:hover:not(:disabled)) {
     background: var(--raised-face-hover);
@@ -799,7 +804,7 @@ braccato-lyrics .blyrics-container {
       border-radius: inherit;
       background: linear-gradient(to bottom, var(--face-top), var(--face-bottom));
       box-shadow:
-        inset 0 0 0 1px var(--edge),
+        inset 0 0 0 1px var(--button-edge),
         inset 0 1px 0 var(--highlight);
       transition: translate 160ms cubic-bezier(0.22, 1, 0.36, 1);
     }
@@ -837,7 +842,7 @@ braccato-lyrics .blyrics-container {
     &[aria-pressed="true"] > .key-cap,
     &[data-lit] > .key-cap {
       box-shadow:
-        inset 0 0 0 1px var(--lit-ring),
+        inset 0 0 0 1px var(--button-lit-ring),
         inset 0 1px 0 var(--highlight);
     }
     &:disabled {
@@ -1508,7 +1513,7 @@ braccato-lyrics .blyrics-container {
   font-weight: 500;
   color: var(--label);
   background: var(--raised-face);
-  box-shadow: var(--raised-edge);
+  box-shadow: var(--button-raised-edge);
   transition:
     background-color 150ms,
     color 150ms,

@@ -22,8 +22,13 @@ const SHADOWS: readonly ShapeSample[] = [
   },
   {
     name: "--raised-edge",
-    use: "Raised buttons, tab caps and the workspace card.",
+    use: "Tab caps, the selected nav item and the workspace card.",
     sample: "rounded-xl bg-(--cap) shadow-(--raised-edge)",
+  },
+  {
+    name: "--button-raised-edge",
+    use: "Raised buttons, through btn-raised and split-raised.",
+    sample: "rounded-xl bg-(--cap) shadow-(--button-raised-edge)",
   },
   {
     name: "--well-edge",
