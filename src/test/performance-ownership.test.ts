@@ -14,7 +14,6 @@ const EFFECTIVE_LINES_CALLERS = new Map<string, string>([
   ["views/timeline/timeline-effective-lines.ts", "the owner: one shared array per lines change"],
   ["views/timeline/use-marquee.ts", "a pointer handler reads the lines once per marquee move, never in render"],
   ["views/timeline/timeline-syllable-splitter.tsx", "a shortcut handler reads one line when the splitter opens"],
-  ["views/timeline/word-edit-overlay.tsx", "mounted only while one word is being edited"],
 ]);
 
 const GROUPING_SCAN_CALL = /(?<!function )\bfindRepeatingStandaloneSections\(/;
