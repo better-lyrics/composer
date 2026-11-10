@@ -11,6 +11,7 @@ import { CANVAS_MONO_LABEL_FONT } from "@/views/timeline/canvas-fonts";
 import { STRIP_SCREENS, type Strip, stripFor } from "@/views/timeline/scroll-window";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRef } from "react";
+import { scrollContainerOf } from "@/views/timeline/scroll-container-of";
 import { viewScrollLeft } from "@/views/timeline/view-scroll";
 
 // -- Types ---------------------------------------------------------------------
@@ -171,65 +172,76 @@ const BeatGridCanvas: React.FC = () => {
   const drawnRef = useRef<DrawnState | null>(null);
   const coloursRef = useRef<ResolvedColours | null>(null);
   const stripRef = useRef<Strip | null>(null);
+  const bandSizeRef = useRef<{ viewportWidth: number; height: number } | null>(null);
   const enabled = visible && hasGrid;
   const bandEmpty = useBandEmpty();
 
   useFrameLoop(
-    () => {
-      const canvas = canvasRef.current;
-      const container = canvas?.closest<HTMLElement>("[data-scroll-container]");
-      const band = canvas?.parentElement;
-      if (!canvas || !container || !band) return;
-      const grid = useProjectStore.getState().beatGrid;
-      const { activeThemeId, customThemes } = useThemeStore.getState();
-      const zoom = useTimelineStore.getState().zoom;
-      const strip = stripFor(
-        stripRef.current,
-        viewScrollLeft(),
-        Math.max(0, container.clientWidth - GUTTER_WIDTH),
-        useAudioStore.getState().duration * zoom,
-        STRIP_SCREENS,
-      );
-      stripRef.current = strip;
-      const next: DrawnState = {
-        canvas,
-        scrollLeft: strip.start,
-        zoom,
-        width: strip.width,
-        height: band.clientHeight,
-        pixelRatio: window.devicePixelRatio || 1,
-        grid,
-        lines: useSettingsStore.getState().beatGridLines,
-        themeId: activeThemeId,
-        customThemes,
-        overSpectrum: useSettingsStore.getState().showSpectrum,
-      };
-      const playedX = `${Math.round(livePlaybackTime() * next.zoom - next.scrollLeft)}px`;
-      if (canvas.style.getPropertyValue("--played-x") !== playedX) canvas.style.setProperty("--played-x", playedX);
-      const drawn = drawnRef.current;
-      if (drawn && isSameDrawing(drawn, next)) return;
-      drawnRef.current = next;
+    {
+      read: () => {
+        const canvas = canvasRef.current;
+        const container = scrollContainerOf(canvas);
+        const band = canvas?.parentElement;
+        bandSizeRef.current =
+          container && band
+            ? { viewportWidth: Math.max(0, container.clientWidth - GUTTER_WIDTH), height: band.clientHeight }
+            : null;
+      },
+      write: () => {
+        const canvas = canvasRef.current;
+        const bandSize = bandSizeRef.current;
+        if (!canvas || !bandSize) return;
+        const grid = useProjectStore.getState().beatGrid;
+        const { activeThemeId, customThemes } = useThemeStore.getState();
+        const zoom = useTimelineStore.getState().zoom;
+        const strip = stripFor(
+          stripRef.current,
+          viewScrollLeft(),
+          bandSize.viewportWidth,
+          useAudioStore.getState().duration * zoom,
+          STRIP_SCREENS,
+        );
+        stripRef.current = strip;
+        const next: DrawnState = {
+          canvas,
+          scrollLeft: strip.start,
+          zoom,
+          width: strip.width,
+          height: bandSize.height,
+          pixelRatio: window.devicePixelRatio || 1,
+          grid,
+          lines: useSettingsStore.getState().beatGridLines,
+          themeId: activeThemeId,
+          customThemes,
+          overSpectrum: useSettingsStore.getState().showSpectrum,
+        };
+        const playedX = `${Math.round(livePlaybackTime() * next.zoom - next.scrollLeft)}px`;
+        if (canvas.style.getPropertyValue("--played-x") !== playedX) canvas.style.setProperty("--played-x", playedX);
+        const drawn = drawnRef.current;
+        if (drawn && isSameDrawing(drawn, next)) return;
+        drawnRef.current = next;
 
-      canvas.style.transform = `translate3d(${next.scrollLeft}px, 0, 0)`;
-      const pixelWidth = Math.round(next.width * next.pixelRatio);
-      const pixelHeight = Math.round(next.height * next.pixelRatio);
-      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
-        canvas.width = pixelWidth;
-        canvas.height = pixelHeight;
-        canvas.style.width = `${next.width}px`;
-        canvas.style.height = `${next.height}px`;
-      }
-      const context = canvas.getContext("2d");
-      if (!context) return;
-      context.setTransform(next.pixelRatio, 0, 0, next.pixelRatio, 0, 0);
-      context.clearRect(0, 0, next.width, next.height);
-      if (!grid || next.zoom <= 0) return;
-      let resolved = coloursRef.current;
-      if (!resolved || resolved.themeId !== next.themeId || resolved.customThemes !== next.customThemes) {
-        resolved = { themeId: next.themeId, customThemes, colours: resolveGridColours() };
-        coloursRef.current = resolved;
-      }
-      paintGrid(context, grid, next, next.overSpectrum ? SPECTRUM_GRID_COLOURS : resolved.colours);
+        canvas.style.transform = `translate3d(${next.scrollLeft}px, 0, 0)`;
+        const pixelWidth = Math.round(next.width * next.pixelRatio);
+        const pixelHeight = Math.round(next.height * next.pixelRatio);
+        if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+          canvas.width = pixelWidth;
+          canvas.height = pixelHeight;
+          canvas.style.width = `${next.width}px`;
+          canvas.style.height = `${next.height}px`;
+        }
+        const context = canvas.getContext("2d");
+        if (!context) return;
+        context.setTransform(next.pixelRatio, 0, 0, next.pixelRatio, 0, 0);
+        context.clearRect(0, 0, next.width, next.height);
+        if (!grid || next.zoom <= 0) return;
+        let resolved = coloursRef.current;
+        if (!resolved || resolved.themeId !== next.themeId || resolved.customThemes !== next.customThemes) {
+          resolved = { themeId: next.themeId, customThemes, colours: resolveGridColours() };
+          coloursRef.current = resolved;
+        }
+        paintGrid(context, grid, next, next.overSpectrum ? SPECTRUM_GRID_COLOURS : resolved.colours);
+      },
     },
     "beat-grid-canvas",
     enabled,

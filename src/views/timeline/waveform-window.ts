@@ -1,6 +1,7 @@
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { scrollWindowStart } from "@/views/timeline/scroll-window";
 import { GUTTER_WIDTH } from "@/views/timeline/timeline-store";
+import { scrollContainerOf } from "@/views/timeline/scroll-container-of";
 import { readViewScroll } from "@/views/timeline/view-scroll";
 import { type RefObject, useEffect, useRef } from "react";
 import type WaveSurfer from "wavesurfer.js";
@@ -13,7 +14,7 @@ const WAVEFORM_WINDOW_WIDTH = 8000;
 // -- Functions -----------------------------------------------------------------
 
 function readWindowStart(wavesurfer: WaveSurfer, host: HTMLElement | null, current: number): number | null {
-  const container = host?.closest<HTMLElement>("[data-scroll-container]");
+  const container = scrollContainerOf(host);
   if (!container) return null;
   const scrollLeft = readViewScroll(container).left;
   const visibleEnd = scrollLeft + Math.max(0, container.clientWidth - GUTTER_WIDTH);
