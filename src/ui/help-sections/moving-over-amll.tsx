@@ -87,8 +87,9 @@ const AmllWorkModel: React.FC = () => {
       </p>
       <HelpTable head={["", "AMLL Tool", "Composer"]} rows={rows} />
       <p className={`${PROSE} mt-3`}>
-        <AmllTimingKeys /> belong on the Timeline. Turn on Step timing there and they move through the words like your
-        cursor did. Sync is for the first pass, where you tap one key live as the song plays.
+        In AMLL Tool you stamp words with <AmllTimingKeys /> in Sync mode. In Composer you do that on the Timeline: turn
+        on Step timing, and the start, step and end keys move through the words like your cursor did. The keys are in
+        the table below. The Sync tab is for a first pass, where you tap one key live as the song plays.
       </p>
       <p className={`${PROSE} mt-2`}>
         If a chorus comes back, group its lines and time it once. The other copies get the same timing.
@@ -103,9 +104,7 @@ const AmllWorkModel: React.FC = () => {
 
 const AmllKeys: React.FC = () => (
   <HelpTopic title="AMLL Tool keys">
-    <PresetIntro preset="amll">
-      The AMLL Tool keys put <AmllTimingKeys /> back where your hands expect them.
-    </PresetIntro>
+    <PresetIntro preset="amll">Switch to the AMLL Tool preset to use the same keys you had in AMLL Tool.</PresetIntro>
     <HabitTable preset="amll" habits={AMLL_HABITS} />
     <p className={`${PROSE} mt-3`}>
       <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} className="ml-0" /> only steps while Step timing
