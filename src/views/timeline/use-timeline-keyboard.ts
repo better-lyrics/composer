@@ -725,7 +725,7 @@ function useTimelineKeyboard(
           const points = normalizeTimes([...snapPointTimes(pins), ...onsets]);
           const target = adjacentSnapPoint(points, current, dir);
           if (target === null) {
-            toast(fine ? "No snap point or onset that way" : "No snap point that way");
+            if (!e.repeat) toast(fine ? "No snap point or onset that way" : "No snap point that way");
             break;
           }
           useAudioStore.getState().seekTo(target);
