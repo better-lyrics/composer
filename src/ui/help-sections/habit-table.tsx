@@ -28,10 +28,10 @@ interface PresetIntroProps {
 
 // -- Components ----------------------------------------------------------------
 
-const KeyBadges: React.FC<{ keysPerShortcut: readonly string[][] }> = ({ keysPerShortcut }) =>
-  keysPerShortcut.map((keys, index) => (
-    <InlineKeyBadge key={`${keys.join("+")}-${index}`} keys={keys} className="ml-0 mr-1" />
-  ));
+const KeyBadges: React.FC<{ shortcutIds: readonly string[]; keysOf: (shortcutId: string) => string[] }> = ({
+  shortcutIds,
+  keysOf,
+}) => shortcutIds.map((id) => <InlineKeyBadge key={id} keys={keysOf(id)} className="ml-0 mr-1" />);
 
 const PresetKey: React.FC<{ preset: ShortcutPresetId; shortcutId: string }> = ({ preset, shortcutId }) => (
   <InlineKeyBadge keys={presetKeysArray(preset, shortcutId)} />
@@ -40,23 +40,21 @@ const PresetKey: React.FC<{ preset: ShortcutPresetId; shortcutId: string }> = ({
 const HabitTable: React.FC<HabitTableProps> = ({ preset, habits }) => {
   useShortcutBindingsStore((state) => state.preset);
   useShortcutBindingsStore((state) => state.overrides);
-  const rows = habits.map(({ action, shortcutIds }) => ({
-    action,
-    there: shortcutIds.map((id) => presetKeysArray(preset, id)),
-    here: shortcutIds.map((id) => getEffectiveKeysArray(id)),
-  }));
-  const sameKeys = rows.every((row) => isStructurallyEqual(row.there, row.here));
+  const presetKeys = (id: string) => presetKeysArray(preset, id);
+  const sameKeys = habits.every(({ shortcutIds }) =>
+    shortcutIds.every((id) => isStructurallyEqual(presetKeys(id), getEffectiveKeysArray(id))),
+  );
   const head = ["What you do", shortcutPreset(preset).name, ...(sameKeys ? [] : ["Here"])];
 
   return (
     <HelpTable
       head={head}
-      rows={rows.map(({ action, there, here }) => ({
+      rows={habits.map(({ action, shortcutIds }) => ({
         key: action,
         cells: [
           action,
-          <KeyBadges key="there" keysPerShortcut={there} />,
-          ...(sameKeys ? [] : [<KeyBadges key="here" keysPerShortcut={here} />]),
+          <KeyBadges key="there" shortcutIds={shortcutIds} keysOf={presetKeys} />,
+          ...(sameKeys ? [] : [<KeyBadges key="here" shortcutIds={shortcutIds} keysOf={getEffectiveKeysArray} />]),
         ],
       }))}
     />
