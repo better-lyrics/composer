@@ -46,12 +46,20 @@ const Tokens: React.FC<{ tokens: readonly Token[] }> = ({ tokens }) =>
 // Blocks away from the view hold their text unstyled, so copy and find still see every line.
 const CodeBlockSpan = memo<CodeBlockSpanProps>(({ block, index, highlighted, observeBlock }) => (
   <span ref={observeBlock} data-code-block={index}>
-    {highlighted ? <Tokens tokens={block.tokens} /> : block.text}
+    {highlighted ? (
+      // One wrapper is built off the page and inserted once, instead of one insertion per token.
+      <span>
+        <Tokens tokens={block.tokens} />
+      </span>
+    ) : (
+      block.text
+    )}
   </span>
 ));
 
 const WindowedCode: React.FC<WindowedCodeProps> = ({ blocks, className }) => {
-  const { nearBlocks, observeBlock } = useBlocksNearView();
+  const { highlighted, observeBlock } = useBlocksNearView();
+  const highlightedSet = useMemo(() => new Set(highlighted), [highlighted]);
   return (
     <pre className={cn("bh lyrics-code-surface", className)}>
       {blocks.map((block, index) => (
@@ -59,7 +67,7 @@ const WindowedCode: React.FC<WindowedCodeProps> = ({ blocks, className }) => {
           key={`${index}:${block.text}`}
           block={block}
           index={index}
-          highlighted={nearBlocks.has(index)}
+          highlighted={highlightedSet.has(index)}
           observeBlock={observeBlock}
         />
       ))}
