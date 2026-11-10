@@ -23,6 +23,14 @@ function liveWordBounds(state: DragState): Map<number, Bounds> {
   return words;
 }
 
+function displayedBounds(words: WordTiming[], wordIndex: number, dragState: DragState | null): Bounds {
+  if (dragState?.wordIndex === wordIndex) return { begin: dragState.begin, end: dragState.end };
+  if (dragState?.adjacentWordIndex === wordIndex)
+    return { begin: dragState.adjacentBegin!, end: dragState.adjacentEnd! };
+  const word = words[wordIndex];
+  return { begin: word.begin, end: word.end };
+}
+
 function resizeChangedTiming(initial: DragState, final: DragState, words: WordTiming[]): boolean {
   if (final.begin !== initial.begin || final.end !== initial.end) return true;
   if (final.adjacentWordIndex === undefined) return false;
@@ -33,4 +41,4 @@ function resizeChangedTiming(initial: DragState, final: DragState, words: WordTi
 // -- Exports ------------------------------------------------------------------
 
 export type { DragState };
-export { liveWordBounds, resizeChangedTiming };
+export { displayedBounds, liveWordBounds, resizeChangedTiming };

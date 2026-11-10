@@ -1,5 +1,6 @@
 import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import { cn } from "@/utils/cn";
+import { memo } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -77,4 +78,6 @@ const WordEdgeHandle: React.FC<WordEdgeHandleProps> = ({
 
 // -- Exports -------------------------------------------------------------------
 
-export { WordEdgeHandle };
+const MemoizedWordEdgeHandle = memo(WordEdgeHandle);
+export { MemoizedWordEdgeHandle as WordEdgeHandle };
+export type { WordEdge };
