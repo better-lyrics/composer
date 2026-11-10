@@ -60,10 +60,12 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const documentLanguage = normalizeLanguageTag(doc.documentElement.getAttribute("xml:lang") ?? "");
   if (documentLanguage) metadata.language = documentLanguage;
 
+  const amllMetaEls = Array.from(doc.getElementsByTagName("amll:meta"));
   const metaEls = Array.from(
     new Set(
       Array.from(doc.getElementsByTagName("composer:meta")).concat(
         COMPOSER_NAMESPACES.flatMap((ns) => Array.from(doc.getElementsByTagNameNS(ns, "meta"))),
+        amllMetaEls,
       ),
     ),
   );
@@ -251,6 +253,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     agents: agents.length > 0 ? agents : undefined,
     groups: groups.length > 0 ? groups : undefined,
     lineKeys,
+    madeInAmllTool: amllMetaEls.length > 0,
     issues: [],
   };
 }

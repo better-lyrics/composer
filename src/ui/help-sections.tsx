@@ -6,6 +6,7 @@ import { GettingStartedSection } from "@/ui/help-sections/getting-started";
 import { GroupsSection } from "@/ui/help-sections/groups";
 import { ImportSection } from "@/ui/help-sections/importing";
 import { KeyboardShortcutsSection } from "@/ui/help-sections/keyboard-shortcuts";
+import { MovingOverSection } from "@/ui/help-sections/moving-over";
 import { PreviewSection } from "@/ui/help-sections/preview";
 import { RecoverySection } from "@/ui/help-sections/recovery";
 import { SyncSection } from "@/ui/help-sections/syncing";
@@ -17,6 +18,7 @@ import { HelpSectionContext } from "@/ui/help-topic";
 
 const HELP_SECTION_COMPONENTS: Record<string, React.FC> = {
   "getting-started": GettingStartedSection,
+  "moving-over": MovingOverSection,
   "best-practices": BestPracticesSection,
   "keyboard-shortcuts": KeyboardShortcutsSection,
   importing: ImportSection,

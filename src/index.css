@@ -89,6 +89,7 @@
     );
   --cap: color-mix(in oklab, var(--ink) 8%, var(--color-composer-bg));
   --raised-edge: inset 0 0 0 1px var(--edge), inset 0 1px 0 var(--highlight);
+  --key-edge: color-mix(in oklab, var(--ink) 2.5%, transparent);
   --display: color-mix(in oklab, var(--color-composer-bg-dark) 75%, var(--color-composer-bg));
   --on-display: color-mix(in oklab, var(--ink) 82%, transparent);
   --on-display-dim: color-mix(in oklab, var(--ink) 38%, transparent);
@@ -98,6 +99,7 @@
   --raised-face: var(--layer-2);
   --raised-face-hover: var(--layer-3);
   --lit-ring: color-mix(in oklab, var(--color-composer-accent) 30%, transparent);
+  --key-lit-ring: color-mix(in oklab, var(--color-composer-accent) 5%, transparent);
   --gutter-bg: color-mix(in oklab, var(--color-composer-bg) 40%, var(--color-composer-bg-dark));
   --float-shadow:
     inset 0 0 0 1px var(--edge), inset 0 1px 0 var(--highlight), 0 18px 40px -12px rgb(var(--shade) / 0.55);
@@ -763,6 +765,22 @@ braccato-lyrics .blyrics-container {
   box-shadow: var(--float-shadow);
 }
 
+/* A disc of the orb's face under the count badge, clipped by the orb, so the gap shows only where they overlap. */
+@utility orb-badge-gap {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    width: 22px;
+    height: 22px;
+    border-radius: 9999px;
+    background: var(--pop);
+    pointer-events: none;
+  }
+}
+
 /* Timeline panning mode */
 @layer components {
   /* Extruded key: the base paints the side, the cap is the face. Press sinks the cap into the side. */
@@ -799,7 +817,7 @@ braccato-lyrics .blyrics-container {
       border-radius: inherit;
       background: linear-gradient(to bottom, var(--face-top), var(--face-bottom));
       box-shadow:
-        inset 0 0 0 1px var(--edge),
+        inset 0 0 0 1px var(--key-edge),
         inset 0 1px 0 var(--highlight);
       transition: translate 160ms cubic-bezier(0.22, 1, 0.36, 1);
     }
@@ -837,7 +855,7 @@ braccato-lyrics .blyrics-container {
     &[aria-pressed="true"] > .key-cap,
     &[data-lit] > .key-cap {
       box-shadow:
-        inset 0 0 0 1px var(--lit-ring),
+        inset 0 0 0 1px var(--key-lit-ring),
         inset 0 1px 0 var(--highlight);
     }
     &:disabled {

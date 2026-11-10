@@ -106,6 +106,7 @@ function replaceLyrics(
     agents: parsed.agents,
     metadata: { ...fallbackMetadata, ...metadata },
   });
+  if (parsed.madeInAmllTool) noteGuideSignal("import.amllFile");
   return { ...parsed, metadata };
 }
 

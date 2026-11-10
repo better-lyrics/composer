@@ -102,10 +102,14 @@ const useUIStore = create<UIState & UIActions>((set, get) => ({
   setSettingsQuery: (settingsQuery) => set({ settingsQuery }),
   consumeSettingsTarget: () => set({ settingsTarget: null }),
   rememberSettingsScrollTop: (settingsScrollTop) => set({ settingsScrollTop }),
+  // Help replaces Settings rather than stacking on it, the same handoff closeSettings makes the other way.
   openHelp: (section) =>
     set((state) => ({
       helpOpen: true,
-      modalHandoff: state.helpOpen,
+      settingsOpen: false,
+      settingsTarget: null,
+      settingsReturnTo: null,
+      modalHandoff: state.helpOpen || state.settingsOpen,
       helpSession: state.helpOpen && !section ? state.helpSession : state.helpSession + 1,
       ...(section ? { helpLocation: { section, scrollTop: 0 } } : {}),
     })),
