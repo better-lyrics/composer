@@ -1,6 +1,7 @@
 import type { SyncGranularity } from "@/domain/line/sync-progress";
 import { cn } from "@/utils/cn";
 import type { LaneRow } from "@/views/sync/lane-rows";
+import { heightAboveWindow, laneWindow } from "@/views/sync/lane-window";
 import { type LaneRing, SyncLaneLine } from "@/views/sync/sync-lane-line";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
@@ -58,6 +59,8 @@ const SyncLane: React.FC<SyncLaneProps> = ({
   const reducedMotion = useReducedMotion();
   const hostRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
+  const rowHeights = useRef(new Map<string, number>());
   const rowElements = useRef(new Map<number, HTMLElement>());
   const rowRefs = useRef(new Map<number, RowRef>());
   const anchorLineIndex = useRef<number | null>(null);
@@ -67,6 +70,7 @@ const SyncLane: React.FC<SyncLaneProps> = ({
     const atOrAfter = visibleRows.findIndex((row) => row.lineIndex >= lineIndex);
     return atOrAfter === -1 ? visibleRows.length - 1 : atOrAfter;
   }, [visibleRows, lineIndex]);
+  const { start: windowStart, end: windowEnd } = laneWindow(anchorVisibleIndex, visibleRows.length);
 
   const laneRing = useMemo<LaneRing | null>(
     () => (ring && reducedMotion !== true ? { wordIndex: ring.wordIndex, nonce: ring.nonce } : null),
@@ -93,10 +97,24 @@ const SyncLane: React.FC<SyncLaneProps> = ({
     track.style.transform = `translate3d(0, ${y}px, 0)`;
   }, []);
 
+  const sizeSpacer = useCallback(() => {
+    const track = trackRef.current;
+    const spacer = spacerRef.current;
+    for (const row of visibleRows.slice(windowStart, windowEnd)) {
+      const height = rowElements.current.get(row.lineIndex)?.offsetHeight;
+      if (height) rowHeights.current.set(row.line.id, height);
+    }
+    if (!track || !spacer) return;
+    const aboveIds = visibleRows.slice(0, windowStart).map((row) => row.line.id);
+    const gap = Number.parseFloat(getComputedStyle(track).rowGap) || 0;
+    spacer.style.height = `${heightAboveWindow(aboveIds, rowHeights.current, gap)}px`;
+  }, [visibleRows, windowStart, windowEnd]);
+
   useLayoutEffect(() => {
     anchorLineIndex.current = visibleRows[anchorVisibleIndex]?.lineIndex ?? null;
+    sizeSpacer();
     place();
-  }, [visibleRows, anchorVisibleIndex, place]);
+  }, [visibleRows, anchorVisibleIndex, sizeSpacer, place]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -112,13 +130,15 @@ const SyncLane: React.FC<SyncLaneProps> = ({
         ref={trackRef}
         className="relative mx-auto flex max-w-240 flex-col gap-6.5 px-3 transition-transform duration-220 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none"
       >
-        {visibleRows.map((row, visibleIndex) => {
-          const distance = visibleIndex - anchorVisibleIndex;
+        {windowStart > 0 && <div ref={spacerRef} aria-hidden />}
+        {visibleRows.slice(windowStart, windowEnd).map((row, offset) => {
+          const distance = windowStart + offset - anchorVisibleIndex;
+          const isCurrent = row.lineIndex === lineIndex;
           return (
             <div key={row.line.id} ref={rowRef(row.lineIndex)} className="flex flex-col">
               <SyncLaneLine
                 row={row}
-                isCurrent={row.lineIndex === lineIndex}
+                isCurrent={isCurrent}
                 isLastLine={row.lineIndex === lineIndex - 1}
                 wordIndex={wordIndex}
                 granularity={granularity}
@@ -126,7 +146,7 @@ const SyncLane: React.FC<SyncLaneProps> = ({
                 isPlacing={row.lineIndex === placingLineIndex}
                 ring={ring?.lineId === row.line.id ? laneRing : null}
                 onRingDone={onRingDone}
-                aboveCurrent={aboveCurrent}
+                aboveCurrent={isCurrent ? aboveCurrent : undefined}
                 className={cn(
                   "transition-[opacity,scale] duration-220 ease-out motion-reduce:transition-none",
                   rowPresenceClass(distance),
