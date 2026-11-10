@@ -19,6 +19,12 @@ describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
     expect(firstLine.words?.[6].text).toBe("man");
     expect(firstLine.words?.[6].end).toBeCloseTo(2.621, 3);
     expect(firstLine.text).toBe("Hell no, I can't be your man");
+    expect(result.metadata).toMatchObject({
+      title: "It Aint Nun",
+      artists: ["CHRIST DILLINGER, Acid Souljah"],
+      album: "It Aint Nun",
+    });
+    expect(result.madeInAmllTool).toBe(true);
   });
 
   it("does not leak <amll:meta> content into lyrics text", () => {
@@ -40,6 +46,7 @@ describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
     expect(result.lines[0].words).toHaveLength(2);
     expect(result.lines[0].words?.[0].begin).toBeCloseTo(1.0, 3);
     expect(result.lines[0].words?.[1].end).toBeCloseTo(2.0, 3);
+    expect(result.madeInAmllTool).toBeFalsy();
   });
 
   it("tolerates an undeclared prefix used only in an attribute", () => {

@@ -20,6 +20,7 @@ interface ParseResult {
   agents?: Agent[];
   groups?: LinkGroup[];
   lineKeys?: (string | undefined)[];
+  madeInAmllTool?: boolean;
 }
 
 type ParserFn = (content: string, fallbackDuration?: number) => ParseResult;
