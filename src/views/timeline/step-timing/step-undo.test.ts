@@ -41,3 +41,14 @@ it("undo puts the cursor back on the word the press timed, and redo moves it on 
   useProjectStore.getState().redo();
   expect(useTimelineStore.getState().selectedWords).toEqual([slot(1)]);
 });
+
+it("regression: undo still puts the cursor back after a language refresh amends the press", () => {
+  useTimelineStore.setState({ selectedWords: [slot(0)], stepQueue: null });
+  useProjectStore.getState().setLinesWithHistory([line(1.5)]);
+  useTimelineStore.setState({ selectedWords: [slot(1)] });
+  rememberStepPress({ selectedWords: [slot(0)], stepQueue: null });
+  useProjectStore.getState().applyLineUpdatesToCurrentStep([{ id: "a", updates: { agentId: "v2" } }]);
+
+  useProjectStore.getState().undo();
+  expect(useTimelineStore.getState().selectedWords).toEqual([slot(0)]);
+});
