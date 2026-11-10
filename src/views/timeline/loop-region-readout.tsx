@@ -15,8 +15,8 @@ interface LoopRegionReadoutProps {
 const LoopRegionReadout: React.FC<LoopRegionReadoutProps> = ({ host }) => {
   const region = useTimelineStore(shownLoopRegion);
   const drag = useTimelineStore((s) => s.loopRegionDrag);
-  const zoom = useTimelineStore((s) => s.zoom);
-  const scrollLeft = useTimelineStore((s) => s.scrollLeft);
+  const zoom = useTimelineStore((s) => (s.loopRegionDrag && shownLoopRegion(s) ? s.zoom : 0));
+  const scrollLeft = useTimelineStore((s) => (s.loopRegionDrag && shownLoopRegion(s) ? s.scrollLeft : 0));
   if (!host || !region || !drag) return null;
   return createPortal(
     <span

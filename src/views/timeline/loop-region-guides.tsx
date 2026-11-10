@@ -12,8 +12,8 @@ const GUIDE =
 // Each guide sits on the outer side of its edge, matching the shade borders above it.
 const LoopRegionGuides: React.FC = () => {
   const region = useTimelineStore(shownLoopRegion);
-  const zoom = useTimelineStore((s) => s.zoom);
-  const scrollLeft = useTimelineStore((s) => s.scrollLeft);
+  const zoom = useTimelineStore((s) => (shownLoopRegion(s) ? s.zoom : 0));
+  const scrollLeft = useTimelineStore((s) => (shownLoopRegion(s) ? s.scrollLeft : 0));
   const bandHeight = useOverviewBandHeight();
   if (!region) return null;
   const offset = GUTTER_WIDTH - scrollLeft;
