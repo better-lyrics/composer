@@ -1,8 +1,7 @@
+import { toast } from "sonner";
 import type { ProjectPart } from "@/domain/project/edited-lyrics";
-import { noteGuideSignal } from "@/lib/guide-signals";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
-import { toast } from "sonner";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -25,7 +24,6 @@ const NOT_SYNCED_MESSAGE =
 // Done in the TTML editor: apply the edits to the lyrics when the project can hold them, and say what happened.
 function applyEditsToProject(content: string, duration: number, youtubeVideoId?: string): void {
   const result = applyEditedTtml(content, duration, youtubeVideoId);
-  if (result.status !== "unreadable") noteGuideSignal("export.editTtml");
   if (result.status === "export-only") {
     if (result.reason === "not-held") {
       toast(NOT_HELD_MESSAGES[result.part]);

@@ -1,10 +1,6 @@
-import type { SettingsState } from "@/stores/settings";
-import { unisonFeatures } from "@/stores/settings-unison";
-import { stageTip } from "@/guide/catalog/types";
 import {
   IconClockHour4,
   IconCloudUpload,
-  IconCode,
   IconDeviceFloppy,
   IconDownload,
   IconHistory,
@@ -12,6 +8,9 @@ import {
   IconRefresh,
   IconTags,
 } from "@tabler/icons-react";
+import { stageTip } from "@/guide/catalog/types";
+import type { SettingsState } from "@/stores/settings";
+import { unisonFeatures } from "@/stores/settings-unison";
 
 // -- Tips ---------------------------------------------------------------------
 
@@ -40,13 +39,6 @@ const EXPORT_TIPS = [
     icon: IconTags,
     title: "Fill in song details",
     gist: <>When Composer finds a MusicBrainz match, Fill adds album, songwriters and ISRC.</>,
-  }),
-  tip({
-    id: "editTtml",
-    tier: "further",
-    icon: IconCode,
-    title: "Edit the TTML by hand",
-    gist: <>With Word timing picked, click Edit, change what you need, then Done.</>,
   }),
   tip({
     id: "backup",
