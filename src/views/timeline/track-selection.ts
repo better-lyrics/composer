@@ -86,6 +86,16 @@ function sameTrackSelection(a: TrackSelection, b: TrackSelection): boolean {
   return true;
 }
 
+function nextTrackSelection(
+  selections: WordSelection[],
+  lineId: string,
+  type: TrackType,
+  previous: TrackSelection | null,
+): TrackSelection {
+  const next = trackSelectionOf(selections, lineId, type);
+  return previous && sameTrackSelection(previous, next) ? previous : next;
+}
+
 // -- Hook ----------------------------------------------------------------------
 
 // Keeps its previous value while this track's part of the selection is unchanged, so selecting elsewhere never re-renders it.
@@ -98,8 +108,7 @@ function useTrackSelection(lineId: string, type: TrackType): TrackSelection {
       if (cached && cached.selections === selections && cached.lineId === lineId && cached.type === type) {
         return cached.value;
       }
-      const next = trackSelectionOf(selections, lineId, type);
-      const value = cached && sameTrackSelection(cached.value, next) ? cached.value : next;
+      const value = nextTrackSelection(selections, lineId, type, cached?.value ?? null);
       cacheRef.current = { selections, lineId, type, value };
       return value;
     },
@@ -110,4 +119,4 @@ function useTrackSelection(lineId: string, type: TrackType): TrackSelection {
 
 // -- Exports -------------------------------------------------------------------
 
-export { useTrackSelection };
+export { nextTrackSelection, useTrackSelection };
