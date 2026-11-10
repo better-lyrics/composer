@@ -20,7 +20,6 @@ const CHIP_LIFT_PX = 40;
 
 // One chip for the whole Timeline: only one boundary drag runs at a time, so word tracks share this owner.
 let place: ChipPlace | null = null;
-let altDown = false;
 const listeners = new Set<() => void>();
 
 // -- Helpers ------------------------------------------------------------------
@@ -50,7 +49,6 @@ const subscribeBoundaryChip = (listener: () => void) => {
   return () => listeners.delete(listener);
 };
 const boundaryChipSnapshot = () => place;
-const altHeldSnapshot = () => altDown;
 
 // -- API ----------------------------------------------------------------------
 
@@ -66,13 +64,6 @@ function endBoundaryDrag(finished: { edgeKey: string; gapOpen: boolean } | null)
   noteGuideSignal(finished.gapOpen ? ALT_GAP_SIGNAL : "timeline.syllablesMovedTogether", finished.edgeKey);
 }
 
-// Alt is often pressed before the drag starts, so the key is tracked all along and only re-renders while the chip shows.
-function noteAltKey(event: KeyboardEvent): void {
-  if (altDown === event.altKey) return;
-  altDown = event.altKey;
-  if (place) notify();
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export { altHeldSnapshot, beginBoundaryDrag, boundaryChipSnapshot, endBoundaryDrag, noteAltKey, subscribeBoundaryChip };
+export { beginBoundaryDrag, boundaryChipSnapshot, endBoundaryDrag, subscribeBoundaryChip };

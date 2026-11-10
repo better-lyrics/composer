@@ -1,34 +1,16 @@
-import {
-  altHeldSnapshot,
-  boundaryChipSnapshot,
-  noteAltKey,
-  subscribeBoundaryChip,
-} from "@/views/timeline/boundary-chip-store";
+import { useAltHeld } from "@/views/timeline/alt-key-held";
+import { boundaryChipSnapshot, subscribeBoundaryChip } from "@/views/timeline/boundary-chip-store";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { cn } from "@/utils/cn";
 import { guideChipVariants, guideIconSwapVariants } from "@/utils/animationVariants";
 import { IconLink, IconUnlink } from "@tabler/icons-react";
 import { AnimatePresence, MotionConfig, m } from "motion/react";
-import { useEffect, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 // -- Constants ----------------------------------------------------------------
 
 const noPlace = () => null;
-
-// -- Hooks --------------------------------------------------------------------
-
-function useAltHeld(): boolean {
-  useEffect(() => {
-    document.addEventListener("keydown", noteAltKey);
-    document.addEventListener("keyup", noteAltKey);
-    return () => {
-      document.removeEventListener("keydown", noteAltKey);
-      document.removeEventListener("keyup", noteAltKey);
-    };
-  }, []);
-  return useSyncExternalStore(subscribeBoundaryChip, altHeldSnapshot, altHeldSnapshot);
-}
 
 // -- Components ---------------------------------------------------------------
 
