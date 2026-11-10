@@ -11,6 +11,7 @@ import {
   IconTextPlus,
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { isLinked } from "@/domain/instance/predicates";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { isLineSynced } from "@/domain/line/predicates";
@@ -46,23 +47,16 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   const markerMode = useTimelineStore((s) => s.markerMode);
   const toggleMarkerMode = useTimelineStore((s) => s.toggleMarkerMode);
   const showHints = useSettingsStore((s) => s.showShortcutHints);
-  const lines = useProjectStore((s) => s.lines);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const setInstanceCollapsed = useTimelineStore((s) => s.setInstanceCollapsed);
   const textVariant = useTimelineStore((s) => s.textVariant);
   const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
-  const linesHaveTransliteration = useMemo(() => hasTransliteration(lines), [lines]);
-  const hasUnexpandedLines = useMemo(() => lines.some((l) => !l.words?.length && l.text.trim().length > 0), [lines]);
+  const linesHaveTransliteration = useProjectStore((s) => hasTransliteration(s.lines));
+  const hasUnexpandedLines = useProjectStore((s) => s.lines.some((l) => !l.words?.length && l.text.trim().length > 0));
 
-  const instanceKeys = useMemo(() => {
-    const keys = new Set<string>();
-    for (const line of lines) {
-      if (isLinked(line)) {
-        keys.add(`${line.groupId}:${line.instanceIdx}`);
-      }
-    }
-    return [...keys];
-  }, [lines]);
+  const instanceKeys = useProjectStore(
+    useShallow((s) => [...new Set(s.lines.flatMap((l) => (isLinked(l) ? [`${l.groupId}:${l.instanceIdx}`] : [])))]),
+  );
 
   const hasGroups = instanceKeys.length > 0;
   const anyExpanded = useMemo(
@@ -78,7 +72,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   const handleExpandAll = useCallback(() => {
     const currentTime = useAudioStore.getState().currentTime;
     const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const updateLinesWithHistory = useProjectStore.getState().updateLinesWithHistory;
+    const { lines, updateLinesWithHistory } = useProjectStore.getState();
 
     const updates: Array<{ id: string; updates: { words?: WordTiming[]; begin?: undefined; end?: undefined } }> = [];
 
@@ -120,7 +114,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
         useTimelineStore.getState().setSelectedWords(newSelections);
       }
     }
-  }, [lines]);
+  }, []);
 
   useEffect(() => {
     const handler = () => handleExpandAll();
