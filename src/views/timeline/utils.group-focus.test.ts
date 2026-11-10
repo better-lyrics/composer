@@ -1,6 +1,7 @@
 import type { LyricLine } from "@/domain/line/model";
 import { createLine, createWord } from "@/test/factories";
-import { type RowLayout, computeRowLayout, getEffectiveRows } from "@/views/timeline/utils";
+import { getEffectiveRows } from "@/views/timeline/effective-rows";
+import { type RowLayout, computeRowLayout } from "@/views/timeline/utils";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------

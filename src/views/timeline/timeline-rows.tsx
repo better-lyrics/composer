@@ -14,7 +14,7 @@ import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { PitchRowsScope } from "@/views/timeline/pitch/pitch-rows";
 import { emptyBgRowHeight, lineRowHeight } from "@/views/timeline/row-geometry";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
-import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/utils";
+import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/effective-rows";
 import { type RefObject, useCallback, useMemo } from "react";
 import { Virtuoso } from "react-virtuoso";
 

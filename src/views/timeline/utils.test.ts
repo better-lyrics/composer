@@ -7,13 +7,12 @@ import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { effectiveBounds } from "@/domain/line/bounds";
+import { type GroupHeaderRow, getEffectiveRows } from "@/views/timeline/effective-rows";
 import {
   distributeLinesTiming,
   distributeWordsInLine,
   formatTime,
-  getEffectiveRows,
   nudgeSelectedWords,
-  type GroupHeaderRow,
   getWordsInInstance,
   partitionNudgeSelections,
   shiftLineSyncedRows,

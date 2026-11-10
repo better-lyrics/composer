@@ -2,7 +2,7 @@ import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { resetAllStores } from "@/test/stores";
-import { getEffectiveRows } from "@/views/timeline/utils";
+import { getEffectiveRows } from "@/views/timeline/effective-rows";
 import { beforeEach, describe, expect, it } from "vitest";
 
 function linked(id: string, text: string, instanceIdx: number, templateLineIdx: number, begin: number): LyricLine {
