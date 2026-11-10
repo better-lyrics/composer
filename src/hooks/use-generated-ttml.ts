@@ -4,7 +4,7 @@ import { syncProgress } from "@/domain/line/sync-progress";
 import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { getSplitCharacter } from "@/utils/split-character";
+import { useSettingsStore } from "@/stores/settings";
 import { generateProjectTtml } from "@/utils/ttml";
 
 // -- Types --------------------------------------------------------------------
@@ -60,6 +60,7 @@ function useGeneratedTtml(timing: TimingGranularity) {
     const audio = projectAudioSource(state);
     return audio?.kind === "youtube" ? audio.videoId : undefined;
   });
+  const splitCharacter = useSettingsStore((state) => state.splitCharacter);
 
   const progress = useMemo(() => syncProgress(lines, "line"), [lines]);
   const content = sharedGeneratedTtml({
@@ -70,7 +71,7 @@ function useGeneratedTtml(timing: TimingGranularity) {
     duration,
     timing,
     youtubeVideoId,
-    splitCharacter: getSplitCharacter(),
+    splitCharacter,
   });
 
   return {
