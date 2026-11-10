@@ -76,13 +76,54 @@ function spanOfRows(
   return bottom > top ? { top, height: bottom - top } : null;
 }
 
-function lineAt(lines: readonly LyricLine[], time: number, lineIds: ReadonlySet<string> | null): LyricLine | null {
-  for (const line of lines) {
-    if (lineIds && !lineIds.has(line.id)) continue;
-    const bounds = effectiveBounds(line);
-    if (bounds !== null && time >= bounds.begin && time < bounds.end) return line;
+interface TimedLine {
+  line: LyricLine;
+  order: number;
+  begin: number;
+  end: number;
+}
+
+// Timed lines sorted by begin, with the latest end reached so far, so a lookup stops once no earlier line can reach the time.
+interface LineTimeIndex {
+  timed: TimedLine[];
+  reach: number[];
+}
+
+const lineTimeIndexes = new WeakMap<readonly LyricLine[], LineTimeIndex>();
+
+function lineTimeIndex(lines: readonly LyricLine[]): LineTimeIndex {
+  const cached = lineTimeIndexes.get(lines);
+  if (cached) return cached;
+  const timed = lines
+    .flatMap((line, order) => {
+      const bounds = effectiveBounds(line);
+      return bounds && bounds.end > bounds.begin ? [{ line, order, begin: bounds.begin, end: bounds.end }] : [];
+    })
+    .toSorted((a, b) => a.begin - b.begin);
+  const reach: number[] = [];
+  for (const entry of timed) reach.push(Math.max(reach[reach.length - 1] ?? Number.NEGATIVE_INFINITY, entry.end));
+  const index = { timed, reach };
+  lineTimeIndexes.set(lines, index);
+  return index;
+}
+
+// The first line in line order whose span holds the time, as a scan would find it.
+function lineAtTime(lines: readonly LyricLine[], time: number, lineIds: ReadonlySet<string> | null): LyricLine | null {
+  const { timed, reach } = lineTimeIndex(lines);
+  let low = 0;
+  let high = timed.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (timed[middle].begin <= time) low = middle + 1;
+    else high = middle;
   }
-  return null;
+  let found: TimedLine | null = null;
+  for (let index = low - 1; index >= 0 && reach[index] > time; index--) {
+    const entry = timed[index];
+    if (entry.end <= time || (lineIds && !lineIds.has(entry.line.id))) continue;
+    if (!found || entry.order < found.order) found = entry;
+  }
+  return found ? found.line : null;
 }
 
 function sameSpan(a: RowSpan | null, b: RowSpan | null): boolean {
@@ -130,7 +171,7 @@ function followStep(memory: FollowMemory, input: FollowInput): RowSpan | null {
   }
   if (memory.heldRows) return null;
 
-  const line = lineAt(input.lines, input.time, selectedLineIds);
+  const line = lineAtTime(input.lines, input.time, selectedLineIds);
   if (!line || (line.id === memory.lineId && input.layout === memory.lineLayout)) return null;
   memory.lineId = line.id;
   memory.lineLayout = input.layout;
@@ -148,5 +189,5 @@ function followScrollTop(rows: RowSpan, input: FollowInput, scrollHeight: number
 
 // -- Exports ------------------------------------------------------------------
 
-export { createFollowMemory, followScrollTop, followStep, resetFollowMemory };
+export { createFollowMemory, followScrollTop, followStep, lineAtTime, resetFollowMemory };
 export type { FollowInput, FollowMemory };
