@@ -19,6 +19,7 @@ const GUIDE_NUDGE_TRIGGERS: readonly GuideNudgeEntry[] = [
     stage: "timeline",
     category: "timeline-step",
     trigger: { signal: "timeline.stepKeyWhileOff", count: 1, windowMs: 60_000 },
+    resolvedBy: "timeline.stepTimingOn",
     spot: "snap",
   },
   {
