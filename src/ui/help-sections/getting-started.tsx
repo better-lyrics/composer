@@ -1,5 +1,6 @@
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { HelpSectionLink } from "@/ui/help-section-link";
 import { HelpTopic } from "@/ui/help-topic";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { PROSE, PROSE_LINK } from "@/ui/typography";
@@ -34,6 +35,9 @@ const GettingStartedSection: React.FC = () => (
           GitHub
         </a>
         .
+      </p>
+      <p className={PROSE}>
+        Used AMLL Tool or osu! before? Start with <HelpSectionLink section="moving-over" />.
       </p>
     </div>
 
