@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { isLinked } from "@/domain/instance/predicates";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
+import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -38,6 +39,27 @@ interface TimelineHeaderProps {
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
+interface LineFacts {
+  hasTransliteration: boolean;
+  hasUnexpandedLines: boolean;
+  instanceKeys: string[];
+}
+
+// Selectors run on every project store change; these walk every line, so once per lines array.
+const lineFactsByLines = new WeakMap<readonly LyricLine[], LineFacts>();
+
+function lineFacts(lines: readonly LyricLine[]): LineFacts {
+  const cached = lineFactsByLines.get(lines);
+  if (cached) return cached;
+  const facts: LineFacts = {
+    hasTransliteration: hasTransliteration(lines),
+    hasUnexpandedLines: lines.some((l) => !l.words?.length && l.text.trim().length > 0),
+    instanceKeys: [...new Set(lines.flatMap((l) => (isLinked(l) ? [`${l.groupId}:${l.instanceIdx}`] : [])))],
+  };
+  lineFactsByLines.set(lines, facts);
+  return facts;
+}
+
 const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollContainerRef }) => {
   useCueShortcuts();
   const followPlayhead = useSettingsStore((s) => s.followPlayhead);
@@ -51,12 +73,9 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   const setInstanceCollapsed = useTimelineStore((s) => s.setInstanceCollapsed);
   const textVariant = useTimelineStore((s) => s.textVariant);
   const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
-  const linesHaveTransliteration = useProjectStore((s) => hasTransliteration(s.lines));
-  const hasUnexpandedLines = useProjectStore((s) => s.lines.some((l) => !l.words?.length && l.text.trim().length > 0));
-
-  const instanceKeys = useProjectStore(
-    useShallow((s) => [...new Set(s.lines.flatMap((l) => (isLinked(l) ? [`${l.groupId}:${l.instanceIdx}`] : [])))]),
-  );
+  const linesHaveTransliteration = useProjectStore((s) => lineFacts(s.lines).hasTransliteration);
+  const hasUnexpandedLines = useProjectStore((s) => lineFacts(s.lines).hasUnexpandedLines);
+  const instanceKeys = useProjectStore(useShallow((s) => lineFacts(s.lines).instanceKeys));
 
   const hasGroups = instanceKeys.length > 0;
   const anyExpanded = useMemo(
