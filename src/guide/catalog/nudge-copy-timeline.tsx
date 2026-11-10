@@ -3,9 +3,11 @@ import {
   IconChevronsUp,
   IconCursorText,
   IconLayoutRows,
+  IconListCheck,
   IconMagnet,
   IconMarquee2,
   IconPlayerPlayFilled,
+  IconPlayerTrackPrev,
   IconStepInto,
 } from "@tabler/icons-react";
 import { keyBadge, keys } from "@/guide/catalog/keys";
@@ -37,6 +39,28 @@ const TIMELINE_NUDGE_COPY: Record<string, GuideNudgeCopy> = {
       <>Click an empty spot in the lane to pick the whole lane. The timing keys then go through just those words.</>
     ),
     peek: <>Click an empty spot to pick the whole lane</>,
+  },
+  stepBackgroundPass: {
+    icon: IconPlayerTrackPrev,
+    title: "Background vocals next?",
+    body: (
+      <>
+        Stay in Step timing. Move the playhead back, click an empty spot in the background lane, and time those words
+        the same way. Overlaps are fine.
+      </>
+    ),
+    peek: <>Move back and click the background lane to time it</>,
+  },
+  stepQueueEnd: {
+    icon: IconListCheck,
+    title: "End of your queue",
+    body: (
+      <>
+        The timing keys stop after the last word you picked. Click any word to carry on from there, or press Escape to
+        clear the queue.
+      </>
+    ),
+    peek: <>Click a word to carry on</>,
   },
   skipSnapOnce: {
     icon: IconMagnet,

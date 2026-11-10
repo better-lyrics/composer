@@ -36,6 +36,10 @@ const StepTimingHelp: React.FC = () => (
         them. The keys then run through only those words, and stop after the last one.
       </li>
       <li>
+        You can stay in Step timing the whole time. Move the playhead back to time overlaps or background vocals on
+        another pass.
+      </li>
+      <li>
         Click a word in the queue to carry on from there. Click a word outside it and the queue ends.{" "}
         <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} /> starts the next queued word only when it
         comes right after, and background words never start the next line. Otherwise{" "}

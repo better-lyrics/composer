@@ -67,6 +67,9 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
     return;
   }
   noteGuideSignal("timeline.stepTiming");
+  const leftLine = cursor.type === "word" && next?.lineId !== cursor.lineId;
+  if (leftLine && effectiveTrackWords(line, "bg")?.length) noteGuideSignal("timeline.stepPastBackground");
+  if (queue && key !== "start" && !next) noteGuideSignal("timeline.stepQueueEnd");
   // The queue outlives its last word, so the keys never leave the chosen words.
   timeline.setSelectedWords([next ?? cursor]);
 }

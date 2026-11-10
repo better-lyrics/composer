@@ -22,6 +22,21 @@ const GUIDE_NUDGE_TRIGGERS: readonly GuideNudgeEntry[] = [
     resolvedBy: "timeline.stepLane",
   },
   {
+    id: "stepBackgroundPass",
+    needsKeyboard: true,
+    stage: "timeline",
+    category: "timeline-step",
+    trigger: { signal: "timeline.stepPastBackground", count: 1, windowMs: 60_000 },
+    resolvedBy: "timeline.stepLane",
+  },
+  {
+    id: "stepQueueEnd",
+    needsKeyboard: true,
+    stage: "timeline",
+    category: "timeline-step",
+    trigger: { signal: "timeline.stepQueueEnd", count: 1, windowMs: 60_000 },
+  },
+  {
     id: "syllableGap",
     needsKeyboard: true,
     stage: "timeline",
