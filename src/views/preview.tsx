@@ -1,6 +1,6 @@
 import { useExportTtml } from "@/hooks/use-export-ttml";
+import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
 import { EmptyState } from "@/ui/empty-state";
 import { LyricsRenderer } from "@/views/preview/lyrics-renderer";
 import { memo } from "react";
@@ -54,7 +54,7 @@ const PreviewContent = memo<PreviewContentProps>(() => {
 });
 
 const PreviewPanel: React.FC = () => {
-  const isVisible = useProjectStore((s) => s.activeTab === "preview");
+  const isVisible = useIsActiveTab("preview");
   return <PreviewContent isVisible={isVisible} />;
 };
 

@@ -14,7 +14,20 @@ import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { cn } from "@/utils/cn";
-import { Activity, useState } from "react";
+import { Activity, memo, useState } from "react";
+
+// -- Interfaces ---------------------------------------------------------------
+
+interface TabPanelProps {
+  tab: ProjectTab;
+  Panel: React.FC;
+  isActive: boolean;
+}
+
+interface PanelContentProps {
+  Panel: React.FC;
+  isActive: boolean;
+}
 
 // -- Constants ----------------------------------------------------------------
 
@@ -30,7 +43,21 @@ const PANELS: readonly { tab: ProjectTab; Panel: React.FC }[] = [
 
 const TABS_WITH_OWN_HISTORY_KEYS: ReadonlySet<ProjectTab> = new Set(["edit", "sync", "timeline"]);
 
-// -- Component ----------------------------------------------------------------
+// -- Components ---------------------------------------------------------------
+
+const rendersOnlyOnReveal = (previous: PanelContentProps, next: PanelContentProps): boolean =>
+  previous.Panel === next.Panel && (previous.isActive || !next.isActive);
+
+// Panels read their own stores; the shell renders one only as it is revealed, so it shows current state.
+const PanelContent = memo<PanelContentProps>(({ Panel }) => <Panel />, rendersOnlyOnReveal);
+
+const TabPanel = memo<TabPanelProps>(({ tab, Panel, isActive }) => (
+  <Activity mode={isActive ? "visible" : "hidden"}>
+    <div data-tab-panel={tab} className="absolute inset-0 flex flex-col">
+      <PanelContent Panel={Panel} isActive={isActive} />
+    </div>
+  </Activity>
+));
 
 const EditorScreen: React.FC = () => {
   useMissingAudioNotice();
@@ -46,11 +73,7 @@ const EditorScreen: React.FC = () => {
     <div className="flex flex-col flex-1 min-h-0">
       <main className={cn("flex-1 min-h-0 workspace-card", !showPlayer && "mb-2")}>
         {PANELS.filter(({ tab }) => visitedTabs.has(tab)).map(({ tab, Panel }) => (
-          <Activity key={tab} mode={activeTab === tab ? "visible" : "hidden"}>
-            <div data-tab-panel={tab} className="absolute inset-0 flex flex-col">
-              <Panel />
-            </div>
-          </Activity>
+          <TabPanel key={tab} tab={tab} Panel={Panel} isActive={activeTab === tab} />
         ))}
         {showGuide && <GuideHost />}
       </main>
