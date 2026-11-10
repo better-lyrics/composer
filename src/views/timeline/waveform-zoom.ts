@@ -11,16 +11,20 @@ let zoomQueued = false;
 
 // -- Functions -----------------------------------------------------------------
 
-function applyLatestZoom(): void {
-  zoomQueued = false;
+function applyWaveformZoom(): void {
   applyZoom?.(useTimelineStore.getState().zoom);
 }
 
-// Subscribed at import, ahead of every component: the microtask runs after the zoom writer's scroll and before React commits the zoom.
+function applyQueuedZoom(): void {
+  zoomQueued = false;
+  applyWaveformZoom();
+}
+
+// For zoom writers outside zoomView (project restore, group focus); after zoomView the waveform already has the zoom.
 useTimelineStore.subscribe((state, previous) => {
   if (state.zoom === previous.zoom || applyZoom === null || zoomQueued) return;
   zoomQueued = true;
-  queueMicrotask(applyLatestZoom);
+  queueMicrotask(applyQueuedZoom);
 });
 
 function followWaveformZoom(apply: ApplyWaveformZoom): () => void {
@@ -32,4 +36,4 @@ function followWaveformZoom(apply: ApplyWaveformZoom): () => void {
 
 // -- Exports -------------------------------------------------------------------
 
-export { followWaveformZoom };
+export { applyWaveformZoom, followWaveformZoom };
