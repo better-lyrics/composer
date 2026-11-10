@@ -24,8 +24,10 @@ interface PlayheadDragConfig {
   snapTime: (time: number, bypass: boolean) => number;
 }
 
+type DragStart = Pick<MouseEvent, "button" | "clientX" | "metaKey" | "ctrlKey" | "preventDefault">;
+
 interface PlayheadDrag {
-  onMouseDown: (e: React.MouseEvent) => void;
+  onMouseDown: (e: DragStart) => void;
   dispose: () => void;
 }
 
@@ -48,7 +50,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
     return Math.min(config.getDuration(), xToTime(clientX, parentRect, config.getZoom(), scrollLeft));
   };
 
-  const onMouseDown = (e: React.MouseEvent): void => {
+  const onMouseDown = (e: DragStart): void => {
     if (e.button !== 0) return;
 
     e.preventDefault();
