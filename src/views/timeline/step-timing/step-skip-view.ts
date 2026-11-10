@@ -25,8 +25,9 @@ function stepSkipView(
     collapsedInstances[`${groupId}:${instanceIdx}`] ?? false;
   const skippedLineIds = stepSkippedLineIds(lines, groups, isCollapsed, cursorLine);
   const follows = new Map<string, string>();
+  const groupsById = new Map(groups.map((group) => [group.id, group]));
   for (const skipped of skippedSharedInstances(lines, groups)) {
-    const group = groups.find((candidate) => candidate.id === skipped.groupId);
+    const group = groupsById.get(skipped.groupId);
     if (!group || !skipped.lineIds.some((id) => skippedLineIds.has(id))) continue;
     const source = firstFullyTimedInstance(lines, group.id, sharedInstancesInLineOrder(lines, group));
     if (source !== undefined) follows.set(`${group.id}:${skipped.instanceIdx}`, instanceName(lines, group, source));
