@@ -16,15 +16,94 @@ interface HookCall {
 
 // -- Constants ----------------------------------------------------------------
 
-const BLOCK_COMMENT = /\/\*[\s\S]*?\*\//g;
-const LINE_COMMENT = /(^|[\s;,{}()])\/\/.*$/gm;
 const NOT_NEWLINE = /[^\n]/g;
+const LINE_COMMENT_PRECEDERS = new Set(["", " ", "\t", "\n", ";", ",", "{", "}", "(", ")"]);
+const REGEX_PRECEDERS = new Set(["", "(", ",", "=", ":", "[", "!", "&", "|", "?", "{", "}", ";"]);
 
 // -- Helpers ------------------------------------------------------------------
 
-// Blanks comments but keeps line numbers, so a rule never fires on prose about the pattern it bans.
+function quotedEnd(code: string, start: number, quote: string): number {
+  let index = start + 1;
+  while (index < code.length && code[index] !== quote && code[index] !== "\n") {
+    index += code[index] === "\\" ? 2 : 1;
+  }
+  return Math.min(index + 1, code.length);
+}
+
+// Returns the index after the closing backtick, or after `${` when an expression opens.
+function templateChunkEnd(code: string, start: number): { end: number; opensExpression: boolean } {
+  let index = start;
+  while (index < code.length) {
+    if (code[index] === "\\") index += 2;
+    else if (code[index] === "`") return { end: index + 1, opensExpression: false };
+    else if (code[index] === "$" && code[index + 1] === "{") return { end: index + 2, opensExpression: true };
+    else index++;
+  }
+  return { end: code.length, opensExpression: false };
+}
+
+function lastNonSpace(text: string): string {
+  let index = text.length - 1;
+  while (index >= 0 && (text[index] === " " || text[index] === "\t" || text[index] === "\n")) index--;
+  return text[index] ?? "";
+}
+
+function regexLiteralEnd(code: string, start: number): number | null {
+  let inClass = false;
+  for (let index = start + 1; index < code.length && code[index] !== "\n"; index++) {
+    const char = code[index];
+    if (char === "\\") index++;
+    else if (char === "[") inClass = true;
+    else if (char === "]") inClass = false;
+    else if (char === "/" && !inClass) return index + 1;
+  }
+  return null;
+}
+
+// Blanks comments but keeps line numbers and literal contents, so a rule never fires on prose about the pattern it bans.
 function withoutComments(code: string): string {
-  return code.replace(BLOCK_COMMENT, (block) => block.replace(NOT_NEWLINE, " ")).replace(LINE_COMMENT, "$1");
+  let out = "";
+  let index = 0;
+  let braceDepth = 0;
+  const templateBraceDepths: number[] = [];
+  const copyTemplateChunk = (from: number) => {
+    const chunk = templateChunkEnd(code, from);
+    out += code.slice(index, chunk.end);
+    index = chunk.end;
+    if (chunk.opensExpression) templateBraceDepths.push(braceDepth);
+  };
+  while (index < code.length) {
+    const char = code[index];
+    const next = code[index + 1];
+    if (char === "/" && next === "*") {
+      const close = code.indexOf("*/", index + 2);
+      const end = close === -1 ? code.length : close + 2;
+      out += code.slice(index, end).replace(NOT_NEWLINE, " ");
+      index = end;
+    } else if (char === "/" && next === "/" && LINE_COMMENT_PRECEDERS.has(code[index - 1] ?? "")) {
+      const newline = code.indexOf("\n", index);
+      index = newline === -1 ? code.length : newline;
+    } else if (char === '"' || char === "'") {
+      const end = quotedEnd(code, index, char);
+      out += code.slice(index, end);
+      index = end;
+    } else if (char === "`") {
+      copyTemplateChunk(index + 1);
+    } else if (char === "}" && templateBraceDepths.at(-1) === braceDepth) {
+      templateBraceDepths.pop();
+      copyTemplateChunk(index + 1);
+    } else if (char === "/" && REGEX_PRECEDERS.has(lastNonSpace(out))) {
+      const end = regexLiteralEnd(code, index) ?? index + 1;
+      out += code.slice(index, end);
+      index = end;
+    } else {
+      if (char === "{") braceDepth++;
+      else if (char === "}") braceDepth--;
+      out += char;
+      index++;
+    }
+  }
+  return out;
 }
 
 function productionSources(...dirs: string[]): ScannedSource[] {
@@ -63,5 +142,5 @@ function hookCalls(code: string, hook: string): HookCall[] {
 
 // -- Exports ------------------------------------------------------------------
 
-export { hookCalls, matchLines, productionSources };
+export { hookCalls, matchLines, productionSources, withoutComments };
 export type { ScannedSource };
