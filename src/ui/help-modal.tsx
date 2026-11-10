@@ -1,6 +1,7 @@
 import { useScrollTopOnSearch } from "@/hooks/useScrollTopOnSearch";
 import { useTrackedScrollTop } from "@/hooks/useTrackedScrollTop";
 import { useTypeToSearch } from "@/hooks/useTypeToSearch";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { type HelpLocation, useUIStore } from "@/stores/ui";
 import { Button } from "@/ui/button";
@@ -116,6 +117,7 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({
   useLayoutEffect(() => {
     shownContentRef.current = { activeSection, isSearching };
     revealPendingTopic();
+    if (!isSearching) noteGuideSignal(`help.${activeSection}`);
   }, [activeSection, isSearching, revealPendingTopic]);
 
   const navSections = useMemo(

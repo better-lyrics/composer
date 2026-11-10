@@ -1,5 +1,6 @@
 import type { ModalNavSection } from "@/ui/modal-nav-layout";
 import {
+  IconArrowsExchange,
   IconAward,
   IconDownload,
   IconEye,
@@ -19,6 +20,7 @@ import {
 
 const HELP_SECTIONS: readonly ModalNavSection[] = [
   { id: "getting-started", label: "Getting Started", icon: IconRocket },
+  { id: "moving-over", label: "Moving over", icon: IconArrowsExchange },
   { id: "best-practices", label: "Best practices", icon: IconTagStarred },
   { id: "keyboard-shortcuts", label: "Keyboard Shortcuts", icon: IconKeyboard },
   { id: "importing", label: "Importing", icon: IconFileImport },
