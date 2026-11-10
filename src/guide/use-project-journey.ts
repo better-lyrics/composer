@@ -1,4 +1,5 @@
 import { type Journey, projectJourney } from "@/domain/guide/journey";
+import type { LyricLine } from "@/domain/line/model";
 import { isProjectFullySynced } from "@/domain/line/sync-progress";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
@@ -9,13 +10,26 @@ import type { ProjectTab } from "@/domain/project/tab";
 import { noteGuideProjectFact } from "@/lib/guide-signals";
 import { useEffect, useMemo } from "react";
 
+// -- Helpers ------------------------------------------------------------------
+
+const fullySyncedByLines = new WeakMap<readonly LyricLine[], boolean>();
+
+// The selector runs on every project store change; the check walks every line, so it runs once per lines array.
+function isFullySyncedCached(lines: readonly LyricLine[]): boolean {
+  const cached = fullySyncedByLines.get(lines);
+  if (cached !== undefined) return cached;
+  const synced = isProjectFullySynced(lines);
+  fullySyncedByLines.set(lines, synced);
+  return synced;
+}
+
 // -- Hook ---------------------------------------------------------------------
 
 function useProjectJourney(): Journey {
   const projectId = useOpenProjectId();
   const hasAudio = useAudioStore((state) => state.expectedAudio !== null || playableFile(state.source) !== null);
   const hasLyrics = useProjectStore((state) => hasLyricLines(state.lines));
-  const syncComplete = useProjectStore((state) => isProjectFullySynced(state.lines));
+  const syncComplete = useProjectStore((state) => isFullySyncedCached(state.lines));
   const facts = useGuideStore((state) => (projectId ? state.projects[projectId] : undefined)) ?? NO_PROJECT_FACTS;
   return useMemo(
     () => projectJourney({ hasAudio, hasLyrics, syncComplete, ...facts }),
