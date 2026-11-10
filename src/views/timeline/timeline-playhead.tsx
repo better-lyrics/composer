@@ -138,20 +138,23 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
   // A ruler press seeks there; moving while held keeps dragging the playhead. A plain click never pauses playback.
   useEffect(() => {
     if (!capHost) return;
+    const listening = new AbortController();
+    const { signal } = listening;
+    let pressX: number | null = null;
     const onDown = (down: MouseEvent) => {
       if (down.button !== 0 || down.altKey || useTimelineStore.getState().markerMode) return;
       if (down.target instanceof Element && down.target.closest(".timeline-playhead-cap")) return;
-      const press = new AbortController();
-      const onMove = (move: MouseEvent) => {
-        if (Math.abs(move.clientX - down.clientX) < RULER_DRAG_THRESHOLD_PX) return;
-        press.abort();
-        drag.onMouseDown(down);
-      };
-      document.addEventListener("mousemove", onMove, { signal: press.signal });
-      document.addEventListener("mouseup", () => press.abort(), { signal: press.signal });
+      pressX = down.clientX;
     };
-    capHost.addEventListener("mousedown", onDown);
-    return () => capHost.removeEventListener("mousedown", onDown);
+    const onMove = (move: MouseEvent) => {
+      if (pressX === null || Math.abs(move.clientX - pressX) < RULER_DRAG_THRESHOLD_PX) return;
+      pressX = null;
+      drag.onMouseDown(move, true);
+    };
+    capHost.addEventListener("mousedown", onDown, { signal });
+    document.addEventListener("mousemove", onMove, { signal });
+    document.addEventListener("mouseup", () => (pressX = null), { signal });
+    return () => listening.abort();
   }, [capHost, drag]);
 
   if (duration === 0) return null;

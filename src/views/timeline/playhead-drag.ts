@@ -27,7 +27,7 @@ interface PlayheadDragConfig {
 type DragStart = Pick<MouseEvent, "button" | "clientX" | "metaKey" | "ctrlKey" | "preventDefault">;
 
 interface PlayheadDrag {
-  onMouseDown: (e: DragStart) => void;
+  onMouseDown: (e: DragStart, atPointer?: boolean) => void;
   dispose: () => void;
 }
 
@@ -50,7 +50,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
     return Math.min(config.getDuration(), xToTime(clientX, parentRect, config.getZoom(), scrollLeft));
   };
 
-  const onMouseDown = (e: DragStart): void => {
+  const onMouseDown = (e: DragStart, atPointer = false): void => {
     if (e.button !== 0) return;
 
     e.preventDefault();
@@ -95,7 +95,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
       }
     };
 
-    const handleMouseMove = (moveEvent: MouseEvent): void => {
+    const handleMouseMove = (moveEvent: Pick<MouseEvent, "clientX" | "metaKey" | "ctrlKey">): void => {
       metaHeld = holdsSnapBypass(moveEvent);
       pointerX = moveEvent.clientX;
       const time = computeTimeFromPointer(pointerX);
@@ -131,6 +131,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
     document.addEventListener("mousemove", handleMouseMove, { signal: controller.signal });
     document.addEventListener("mouseup", handleMouseUp, { signal: controller.signal });
     unsubscribeEdgeScroll = subscribeFrame(tickEdgeScroll, EDGE_SCROLL_LABEL);
+    if (atPointer) handleMouseMove(e);
   };
 
   const dispose = (): void => {
