@@ -112,6 +112,8 @@ const TimelinePanel: React.FC = () => {
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
   const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
   const dragZoom = useTimelineStore((s) => (activeDrag ? s.zoom : null));
+  // DndContext runs the snap modifier only when it renders, so a bypass change during a held drag must re-render it.
+  useTimelineStore((s) => activeDrag !== null && s.isBypassing);
   const { dragSnapModifier, beginGesture, endGesture, syncDragSnap } = useTimelineSnap();
   const lastDragPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const getLastDragPointer = useCallback(() => lastDragPointerRef.current, []);
