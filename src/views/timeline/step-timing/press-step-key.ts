@@ -30,9 +30,20 @@ function refusalMessage(refusal: StepRefusal): string {
   return "There is no room for the words after this one before the song ends.";
 }
 
+// The toast's Undo stays only while the press is still the latest step, so it never undoes a later edit.
 function showEndedPreviousToast(previousWord: string): void {
-  toast(`“${previousWord.trim()}” now ends here too.`, {
+  const { history, historyIndex } = useProjectStore.getState();
+  const press = history[historyIndex];
+  const stopFollowing = () => unsubscribe();
+  const toastId = toast(`“${previousWord.trim()}” now ends here too.`, {
     action: { label: "Undo", onClick: () => useProjectStore.getState().undo() },
+    onDismiss: stopFollowing,
+    onAutoClose: stopFollowing,
+  });
+  const unsubscribe = useProjectStore.subscribe((state) => {
+    if (state.history[state.historyIndex] === press) return;
+    unsubscribe();
+    toast.dismiss(toastId);
   });
 }
 
@@ -97,7 +108,7 @@ function setStepTimingMode(on: boolean): void {
 function pressStepShortcut(id: string, lines: ReadableLine[], duration: number): boolean {
   const { stepTiming } = useTimelineStore.getState();
   if (id === "timeline.stepTimingOff") setStepTimingMode(!stepTiming);
-  else if (id === "timeline.stepWord" && !stepTiming) setStepTimingMode(true);
+  else if (id === "timeline.stepWord" && !stepTiming) noteGuideSignal("timeline.stepKeyWhileOff");
   else if (!stepTiming) return false;
   else
     pressStepKey(

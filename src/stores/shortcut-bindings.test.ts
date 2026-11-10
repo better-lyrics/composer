@@ -283,6 +283,21 @@ describe("migrateShortcutBindings · presets", () => {
   });
 });
 
+describe("step timing keys moved to \\ and G", () => {
+  it("regression: unbinds the new step key when a saved toggle already took backslash", () => {
+    const saved = { preset: "composer", overrides: { "timeline.stepTimingOff": { key: "\\" } } };
+    expect(migrateShortcutBindings(saved, 8)).toEqual({
+      preset: "composer",
+      overrides: { "timeline.stepTimingOff": { key: "\\" }, "timeline.stepWord": { key: "" } },
+    });
+  });
+
+  it("leaves AMLL Tool alone, whose step keys did not move", () => {
+    const saved = { preset: "amll", overrides: { "timeline.togglePreview": { key: "\\" } } };
+    expect(migrateShortcutBindings(saved, 8)).toEqual(saved);
+  });
+});
+
 describe("bindingToKeys", () => {
   it("uppercases a single-character key", () => {
     expect(bindingToKeys({ key: "p", shift: true })).toEqual(["Shift", "P"]);

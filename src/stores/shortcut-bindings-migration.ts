@@ -1,5 +1,6 @@
 import { bindingsEqual, isBound, scopesConflict } from "@/stores/shortcut-binding-compare";
 import { presetForOverrides } from "@/stores/shortcut-preset-match";
+import { isShortcutPresetId, presetBinding } from "@/stores/shortcut-presets";
 import { getShortcutById, SHORTCUT_REGISTRY, type ShortcutBinding } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
 import { shiftedUsPunctuation } from "@/utils/us-punctuation";
@@ -7,12 +8,14 @@ import { shiftedUsPunctuation } from "@/utils/us-punctuation";
 // -- Types --------------------------------------------------------------------
 
 interface SavedBindings {
+  preset?: unknown;
   overrides?: Record<string, ShortcutBinding>;
 }
 
 // -- Migration ----------------------------------------------------------------
 
-const SHORTCUT_BINDINGS_VERSION = 8;
+const SHORTCUT_BINDINGS_VERSION = 9;
+const PRESETS_VERSION = 8;
 
 const UNBOUND: ShortcutBinding = { key: "" };
 
@@ -86,6 +89,13 @@ const unbindTakenFineSeekKeys = unbindTakenKeys(
   sameOptionPressOnMac,
 );
 
+// Version 9 moved the step key to backslash and the Step timing toggle to G. A preset that binds them kept its keys.
+function unbindTakenStepKeys(state: SavedBindings): SavedBindings {
+  const preset = isShortcutPresetId(state.preset) ? state.preset : "composer";
+  const movedIds = ["timeline.stepWord", "timeline.stepTimingOff"].filter((id) => !presetBinding(preset, id));
+  return unbindTakenKeys(movedIds)(state);
+}
+
 const RENAMED_SHORTCUT_IDS: Record<string, string> = { "timeline.toggleGroupLoop": "global.toggleLoop" };
 
 function unbindTakenAlternateRedo(state: SavedBindings): SavedBindings {
@@ -146,13 +156,14 @@ function migrateSavedOverrides(persistedState: unknown, version: number): unknow
   const withClipboardKeys = version < 4 ? unbindTakenClipboardKeys(withDeleteKeys) : withDeleteKeys;
   const withTypingPlayKeys = version < 5 ? unbindTakenTypingPlayKeys(withClipboardKeys) : withClipboardKeys;
   const withSeekKeys = version < 6 ? unbindTakenSeekKeys(withTypingPlayKeys) : withTypingPlayKeys;
-  return version < 7 ? unbindTakenFineSeekKeys(withSeekKeys) : withSeekKeys;
+  const withFineSeekKeys = version < 7 ? unbindTakenFineSeekKeys(withSeekKeys) : withSeekKeys;
+  return version < 9 ? unbindTakenStepKeys(withFineSeekKeys) : withFineSeekKeys;
 }
 
 // Version 8 moves saved changes onto the preset they match, so no key moves.
 function migrateShortcutBindings(persistedState: unknown, version: number): unknown {
   const state = migrateSavedOverrides(persistedState, version);
-  if (version >= SHORTCUT_BINDINGS_VERSION || !state || typeof state !== "object") return state;
+  if (version >= PRESETS_VERSION || !state || typeof state !== "object") return state;
   const { overrides: saved } = state as SavedBindings;
   const changed = saved && typeof saved === "object" ? saved : {};
   const { preset, overrides } = presetForOverrides(changed);

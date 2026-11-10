@@ -13,6 +13,7 @@ import {
 import { keyBadge, keys } from "@/guide/catalog/keys";
 import type { GuideNudgeCopy } from "@/guide/catalog/types";
 import { useSettingsStore } from "@/stores/settings";
+import { setStepTimingMode } from "@/views/timeline/step-timing/press-step-key";
 
 // -- Copy ---------------------------------------------------------------------
 
@@ -32,6 +33,18 @@ const TIMELINE_NUDGE_COPY: Record<string, GuideNudgeCopy> = {
         {keys("timeline.setWordEnd")} ends with a gap
       </>
     ),
+  },
+  stepKeyWhileOff: {
+    icon: IconStepInto,
+    title: "Step timing is off",
+    body: (
+      <>
+        Press {keys("timeline.stepTimingOff")} to turn it on. Then {keys("timeline.stepWord")} ends the selected word
+        and starts the next.
+      </>
+    ),
+    peek: <>Press {keys("timeline.stepTimingOff")} to turn on Step timing</>,
+    primary: { label: "Turn it on", run: () => setStepTimingMode(true) },
   },
   stepWholeLane: {
     icon: IconLayoutRows,

@@ -11,8 +11,8 @@ const StepTimingHelp: React.FC = () => (
   <HelpTopic title="Step timing">
     <p className={PROSE}>
       Step timing fixes words one at a time against the waveform or the spectrum. Press{" "}
-      <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} /> to turn it on. The other words lose their
-      colour. The timing keys act on the selected word and write the playhead's time.
+      <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepTimingOff")} /> to turn it on. The other words lose
+      their colour. The timing keys act on the selected word and write the playhead's time.
     </p>
     <ul className={`${PROSE} mt-2 list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
       <li>

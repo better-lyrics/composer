@@ -86,7 +86,7 @@ function decodeShortcutCode(code: string): ShortcutCode {
   const version = Number(versionText);
   if (version > SHORTCUT_BINDINGS_VERSION) throw new Error(NEWER_CODE);
   if (!isShortcutPresetId(preset)) throw new Error(UNKNOWN_PRESET);
-  const saved = { overrides: decodeOverrides(rest.join(":")) };
+  const saved = { preset, overrides: decodeOverrides(rest.join(":")) };
   const { overrides = {} } = migrateSavedOverrides(saved, version) as SavedBindings;
   const unknownId = Object.keys(overrides).find((id) => !getShortcutById(id));
   if (unknownId) throw new Error(`This code has a shortcut Composer doesn't know: ${unknownId}.`);
