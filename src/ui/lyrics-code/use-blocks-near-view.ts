@@ -69,6 +69,7 @@ function useBlocksNearView() {
     const observers = observersRef.current;
     const index = blockIndex(block);
     elements.set(index, block);
+    // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- unobserved in this ref callback's cleanup
     for (const observer of observers) observer.observe(block);
     return () => {
       for (const observer of observers) observer.unobserve(block);

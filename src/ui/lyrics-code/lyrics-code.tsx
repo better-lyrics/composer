@@ -64,6 +64,7 @@ const WindowedCode: React.FC<WindowedCodeProps> = ({ blocks, className }) => {
     <pre className={cn("bh lyrics-code-surface", className)}>
       {blocks.map((block, index) => (
         <CodeBlockSpan
+          // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- a block is its position plus its text: a moved or edited block must remount so its observed index and scrollbar mutation skip stay right
           key={`${index}:${block.text}`}
           block={block}
           index={index}
