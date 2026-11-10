@@ -5,6 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";
 import { buildGroupPingVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
+import { BannerTag } from "@/views/timeline/banner-tag";
 import { registerBanner } from "@/views/timeline/banner-progress-registry";
 import { StepSkipChip } from "@/views/timeline/step-timing/step-skip-chip";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -164,12 +165,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
         className="shrink-0 w-auto h-auto p-0.5 opacity-70 hover:opacity-100 hover:bg-transparent text-current relative before:content-[''] before:absolute before:-inset-2"
       />
       <span className="min-w-0 truncate">{group.label}</span>
-      {hasOwnTiming && (
-        <span className="flex min-w-0 items-center gap-0.5 overflow-hidden rounded-full border border-dashed border-composer-text-faint py-px pl-1 pr-1.5 text-composer-text-tertiary whitespace-nowrap">
-          <IconClock className="size-2.5 shrink-0" />
-          <span className="truncate">Own timing</span>
-        </span>
-      )}
+      {hasOwnTiming && <BannerTag icon={IconClock}>Own timing</BannerTag>}
       <StepSkipChip group={group} instanceIdx={instanceIdx} />
       <span
         className="flex items-center gap-[3px] font-medium text-composer-text/65 tabular-nums whitespace-nowrap ml-auto"
