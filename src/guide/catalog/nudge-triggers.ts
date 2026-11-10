@@ -14,14 +14,6 @@ const GUIDE_NUDGE_TRIGGERS: readonly GuideNudgeEntry[] = [
     spot: "snap",
   },
   {
-    id: "stepAtPointer",
-    needsKeyboard: true,
-    stage: "timeline",
-    category: "timeline-step",
-    trigger: { signal: "timeline.stepAfterSeek", count: 4, windowMs: 90_000 },
-    resolvedBy: "timeline.stepHover",
-  },
-  {
     id: "stepWholeLane",
     needsKeyboard: true,
     stage: "timeline",

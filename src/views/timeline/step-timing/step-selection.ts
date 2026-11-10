@@ -23,7 +23,8 @@ interface SelectionPatch {
 
 // In Step timing a selection of several words becomes the queue and the selection collapses to the cursor.
 function selectionPatch(state: StepSelectionState, selections: WordSelection[]): SelectionPatch {
-  const cleared = selections.length > 0 ? { loopRegion: null } : {};
+  // In Step timing a loop region and the cursor live together, so you can loop a hard part while you time it.
+  const cleared = selections.length > 0 && !state.stepTiming ? { loopRegion: null } : {};
   if (!state.stepTiming || selections.length === 0) return { selectedWords: selections, stepQueue: null, ...cleared };
   if (selections.length === 1) {
     const inQueue = state.stepQueue?.some((queued) => sameWordSelection(queued, selections[0]));

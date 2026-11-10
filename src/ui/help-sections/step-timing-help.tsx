@@ -36,8 +36,9 @@ const StepTimingHelp: React.FC = () => (
         them. The keys then run through only those words, and stop after the last one.
       </li>
       <li>
-        With the pointer over the waveform or the spectrum, the keys write the time under the pointer, and a line shows
-        that time. Anywhere else they write the playhead time.
+        The keys write the playhead's time. Click the ruler or the waveform, or drag the playhead, to put it where a
+        word starts or ends. This works while you drag too. Drawing a loop on the waveform keeps your selected word, so
+        you can loop a hard part while you time it.
       </li>
       <li>
         Later words that are in the way move later, only as far as they must. Earlier words never move. If the time is

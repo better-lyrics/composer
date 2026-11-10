@@ -15,6 +15,7 @@ import { useImportModal } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { BeatGridCorner } from "@/views/timeline/beat-grid/beat-grid-corner";
+import { BoundaryModeChip } from "@/views/timeline/boundary-mode-chip";
 import { HoverSizedDragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
 import { dragGhostCells } from "@/views/timeline/drag-ghost-cells";
 import { trackSnapModifier } from "@/views/timeline/drag-track-snap";
@@ -34,11 +35,9 @@ import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
 import { StepNextContext, useStepNext } from "@/views/timeline/step-timing/step-next";
-import { StepWriteGuide } from "@/views/timeline/step-timing/step-write-guide";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
-import { BoundaryModeChip } from "@/views/timeline/boundary-mode-chip";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
@@ -330,7 +329,6 @@ const TimelinePanel: React.FC = () => {
                 <SnapGuideline />
 
                 <LoopRegionGuides />
-                <StepWriteGuide />
                 <LoopRegionReadout host={rulerLane} />
 
                 <SnapMarkersOverlay scrollContainerRef={scrollContainerRef} headHost={rulerMarkerHost} />

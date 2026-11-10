@@ -6,7 +6,6 @@ import {
   IconMagnet,
   IconMarquee2,
   IconPlayerPlayFilled,
-  IconPointer,
   IconStepInto,
 } from "@tabler/icons-react";
 import { keyBadge, keys } from "@/guide/catalog/keys";
@@ -30,17 +29,6 @@ const TIMELINE_NUDGE_COPY: Record<string, GuideNudgeCopy> = {
         {keys("timeline.setWordEnd")} ends with a gap
       </>
     ),
-  },
-  stepAtPointer: {
-    icon: IconPointer,
-    title: "No need to click first",
-    body: (
-      <>
-        Point at the waveform or the spectrum and press {keys("timeline.setWordBegin")}, {keys("timeline.stepWord")} or{" "}
-        {keys("timeline.setWordEnd")}. They use the time under the pointer.
-      </>
-    ),
-    peek: <>Point at the waveform, then press a timing key</>,
   },
   stepWholeLane: {
     icon: IconLayoutRows,

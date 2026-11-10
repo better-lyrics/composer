@@ -203,7 +203,9 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setSelectedWords: (selectedWords) => set((s) => selectionPatch(s, selectedWords)),
     setSelectionPlayback: (selectionPlayback) => set({ selectionPlayback }),
     setLoopRegion: (loopRegion) =>
-      set((s) => (loopRegion && s.selectedWords.length > 0 ? { loopRegion, selectedWords: [] } : { loopRegion })),
+      set((s) =>
+        loopRegion && s.selectedWords.length > 0 && !s.stepTiming ? { loopRegion, selectedWords: [] } : { loopRegion },
+      ),
     setLoopRegionDrag: (loopRegionDrag) => set({ loopRegionDrag }),
     setWaveformReady: (waveformReady) => set({ waveformReady }),
 
