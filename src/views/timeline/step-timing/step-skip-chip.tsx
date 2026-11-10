@@ -22,7 +22,7 @@ const StepSkipChip: React.FC<StepSkipChipProps> = ({ group, instanceIdx }) => {
   if (!follows) return null;
   return (
     <Tooltip
-      className="min-w-3 shrink-[999]"
+      className="min-w-4 shrink-[999]"
       content={`${name} has the same timing as ${follows}, so the keys skip it. Timing ${follows} times this one too. To change it here, click one of its words.`}
     >
       <BannerTag icon={IconPlayerSkipForward}>Skipped · follows {follows}</BannerTag>
