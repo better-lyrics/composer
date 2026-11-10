@@ -21,8 +21,8 @@ import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
 import { useStepTrack } from "@/views/timeline/step-timing/use-step-track";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
-import { selectionGripEdges } from "@/views/timeline/stretch-grips";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTrackSelection } from "@/views/timeline/track-selection";
 import { noteWordDragShift } from "@/views/timeline/tiny-drag-signal";
 import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
@@ -63,7 +63,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   onUpdateWord,
 }) => {
   const zoom = useTimelineStore((s) => s.zoom);
-  const selectedWords = useTimelineStore((s) => s.selectedWords);
+  const { hasSelection, selectedIndices, leftGrip, rightGrip } = useTrackSelection(lineId, trackType);
   const step = useStepTrack(lineId, trackType);
   const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
@@ -292,19 +292,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       altHeld: altPressed,
     });
 
-  const hasSelection = selectedWords.length > 0;
   const playingRegion = useTimelineStore((s) => (s.selectionPlayback !== null ? s.loopRegion : null));
-
-  // The two outer edges of a multi-block selection advertise the proportional
-  // stretch. Read lines non-reactively: the grip block identity is stable while
-  // a stretch drag rescales timings, so it only needs to follow selection changes.
-  const gripIndices = useMemo(() => {
-    const { left, right } = selectionGripEdges(useProjectStore.getState().lines, selectedWords);
-    return {
-      leftGrip: left && left.lineId === lineId && left.type === trackType ? left.wordIndex : -1,
-      rightGrip: right && right.lineId === lineId && right.type === trackType ? right.wordIndex : -1,
-    };
-  }, [selectedWords, lineId, trackType]);
 
   const getDisplay = (wordIndex: number) => {
     if (dragState) {
@@ -362,6 +350,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     if (e.metaKey || e.ctrlKey) {
       toggleSelection(selection);
     } else {
+      const { selectedWords } = useTimelineStore.getState();
       const alreadySelected = isWordSelected(selectedWords, lineId, wordIndex, trackType);
       if (alreadySelected && selectedWords.length === 1 && !step.stepTiming) {
         setSelectedWords([]);
@@ -468,12 +457,12 @@ const WordTrack: React.FC<WordTrackProps> = ({
             zoom={zoom}
             isDimmed={
               !step.stepTiming &&
-              ((hasSelection && !isWordSelected(selectedWords, lineId, wordIndex, trackType)) ||
+              ((hasSelection && !selectedIndices.has(wordIndex)) ||
                 (playingRegion !== null && !overlapsLoopRegion(display, playingRegion)))
             }
             isStepNext={step.isNext(wordIndex)}
             isStepQueued={step.isQueued(wordIndex)}
-            isSelected={isWordSelected(selectedWords, lineId, wordIndex, trackType)}
+            isSelected={selectedIndices.has(wordIndex)}
             isExplicit={word.explicit === true}
             syllablePosition={syllablePosition}
             syllableEdgesJoin={!syllablesFollowRolling}
@@ -483,8 +472,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
             rightHighlighted={hoveredBoundary === wordIndex && isBoundaryConjoined(wordIndex)}
             leftConjoined={isBoundaryConjoined(wordIndex - 1)}
             rightConjoined={isBoundaryConjoined(wordIndex)}
-            showLeftGrip={wordIndex === gripIndices.leftGrip}
-            showRightGrip={wordIndex === gripIndices.rightGrip}
+            showLeftGrip={wordIndex === leftGrip}
+            showRightGrip={wordIndex === rightGrip}
             onClick={(e) => handleSelect(wordIndex, e)}
             onResizeStart={(edge, startX) => handleResizeStart(wordIndex, edge, startX)}
             onEdgeHover={(edge, hovering) => handleEdgeHover(wordIndex, edge, hovering)}
