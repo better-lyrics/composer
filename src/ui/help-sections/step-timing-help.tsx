@@ -11,7 +11,7 @@ const StepTimingHelp: React.FC = () => (
     <p className={PROSE}>
       Step timing fixes words one at a time against the waveform or the spectrum. Press{" "}
       <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} /> to turn it on. The other words lose their
-      colour, and the timing keys follow the selected word instead of the playhead.
+      colour. The timing keys act on the selected word and write the playhead's time.
     </p>
     <ul className={`${PROSE} mt-2 list-disc pl-[18px] marker:text-(--muted) space-y-1`}>
       <li>
@@ -36,6 +36,13 @@ const StepTimingHelp: React.FC = () => (
         them. The keys then run through only those words, and stop after the last one.
       </li>
       <li>
+        Click a word in the queue to carry on from there. Click a word outside it and the queue ends.{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} /> starts the next queued word only when it
+        comes right after, and background words never start the next line. Otherwise{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} /> works like{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} />.
+      </li>
+      <li>
         The keys write the playhead's time. Click the ruler or the waveform, or drag the playhead, to put it where a
         word starts or ends. This works while you drag too. Drawing a loop on the waveform keeps your selected word, so
         you can loop a hard part while you time it.
@@ -54,7 +61,7 @@ const StepTimingHelp: React.FC = () => (
     </ul>
     <p className={`${PROSE} mt-3`}>
       Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepTimingOff")} /> to turn it off. Escape first
-      clears the selection, then turns it off. Each key press is one undo step.
+      clears a loop, then the selection, then turns it off. Each key press is one undo step.
     </p>
   </HelpTopic>
 );
