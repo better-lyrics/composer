@@ -1,5 +1,4 @@
 import type { LinkGroup } from "@/domain/group/template";
-import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import { backgroundFields, withSeededBackground } from "@/domain/line/background";
 import { detectNonLatinLanguage } from "@/domain/language/script-detection";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
@@ -30,7 +29,7 @@ import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { linesToEditText } from "@/views/edit/edit-text";
 import { EditNotices } from "@/views/edit/edit-notices";
 import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
-import { LinePreview, PreviewGroupHeader } from "@/views/edit/line-preview";
+import { LinePreviewList } from "@/views/edit/line-preview-list";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
@@ -102,10 +101,6 @@ const EditPanel: React.FC = () => {
   const defaultAgentId = agents?.[0]?.id ?? "v1";
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);
   const nonEmptyCount = useMemo(() => parsed.filter((p) => !p.isEmpty).length, [parsed]);
-  const instanceCountByGroup = useMemo(
-    () => new Map(groups.map((g) => [g.id, instanceCount(lines, g.id)])),
-    [groups, lines],
-  );
 
   const extractOptions = useMemo(
     () => ({
@@ -507,49 +502,21 @@ const EditPanel: React.FC = () => {
                   Lyrics will appear here
                 </div>
               ) : (
-                <div>
-                  {parsed.map((line, index) => {
-                    const prev = index > 0 ? parsed[index - 1] : null;
-                    const isFirstOfInstance =
-                      line.groupId !== undefined &&
-                      line.instanceIdx !== undefined &&
-                      (prev?.groupId !== line.groupId || prev?.instanceIdx !== line.instanceIdx);
-                    const group = line.groupId ? groups.find((g) => g.id === line.groupId) : undefined;
-                    const totalInstances = group ? (instanceCountByGroup.get(group.id) ?? 0) : 0;
-                    const groupTooltip =
-                      group && totalInstances > 1
-                        ? `Part of ${group.label} · linked to ${pluralize(totalInstances - 1, "other instance")}. Edits propagate.`
-                        : undefined;
-                    return (
-                      <div key={line.lineNumber}>
-                        {isFirstOfInstance && group && line.instanceIdx !== undefined && (
-                          <PreviewGroupHeader
-                            label={group.label}
-                            ordinal={instanceOrdinal(lines, group.id, line.instanceIdx)}
-                            total={totalInstances}
-                            color={group.color}
-                          />
-                        )}
-                        <LinePreview
-                          line={line}
-                          agents={agents}
-                          isSelected={selectedLines.has(line.lineNumber)}
-                          hasMultipleSelected={selectedLines.size > 1}
-                          groupColor={group?.color}
-                          groupTooltip={groupTooltip}
-                          onSelect={handleLineSelect}
-                          onAgentChange={handleAgentChange}
-                          onBulkAgentChange={handleBulkAgentChange}
-                          onBackgroundChange={handleBackgroundChange}
-                          onExtractLine={handleExtractLine}
-                          onGutterMouseDown={handleGutterMouseDown}
-                          onGutterMouseEnter={handleGutterMouseEnter}
-                          didDragRef={didDragRef}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
+                <LinePreviewList
+                  parsed={parsed}
+                  lines={lines}
+                  groups={groups}
+                  agents={agents}
+                  selectedLines={selectedLines}
+                  onSelect={handleLineSelect}
+                  onAgentChange={handleAgentChange}
+                  onBulkAgentChange={handleBulkAgentChange}
+                  onBackgroundChange={handleBackgroundChange}
+                  onExtractLine={handleExtractLine}
+                  onGutterMouseDown={handleGutterMouseDown}
+                  onGutterMouseEnter={handleGutterMouseEnter}
+                  didDragRef={didDragRef}
+                />
               )}
             </Scroll>
           </div>

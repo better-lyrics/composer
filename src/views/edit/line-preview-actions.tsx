@@ -16,9 +16,8 @@ interface LinePreviewActionsProps {
   line: ParsedLine;
   agents: { id: string; name?: string }[];
   agentColor: string;
-  editsSelection: boolean;
   onAgentChange: (lineId: string, agentId: string) => void;
-  onBulkAgentChange: (agentId: string) => void;
+  onBulkAgentChange?: (agentId: string) => void;
   onBackgroundChange: (lineId: string, text: string) => void;
   onExtractLine: (lineId: string) => void;
 }
@@ -60,7 +59,6 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
   line,
   agents,
   agentColor,
-  editsSelection,
   onAgentChange,
   onBulkAgentChange,
   onBackgroundChange,
@@ -72,7 +70,7 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
         aria-label="Line agent"
         value={line.agentId}
         onChange={(next) => {
-          if (editsSelection) onBulkAgentChange(next);
+          if (onBulkAgentChange) onBulkAgentChange(next);
           else onAgentChange(line.lineId, next);
         }}
         options={agents.map((agent) => ({ value: agent.id, label: agentDisplayName(agent) }))}
