@@ -78,8 +78,8 @@ function setStepTimingMode(on: boolean): void {
 
 // Returns false for a timing key outside Step timing, which then sets the word under the playhead as usual.
 function pressStepShortcut(id: string, lines: ReadableLine[], duration: number): boolean {
-  const { stepTiming, setStepTiming } = useTimelineStore.getState();
-  if (id === "timeline.stepTimingOff") setStepTiming(false);
+  const { stepTiming } = useTimelineStore.getState();
+  if (id === "timeline.stepTimingOff") setStepTimingMode(!stepTiming);
   else if (id === "timeline.stepWord" && !stepTiming) setStepTimingMode(true);
   else if (!stepTiming) return false;
   else

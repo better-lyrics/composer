@@ -60,7 +60,7 @@ const StepTimingHelp: React.FC = () => (
       </li>
     </ul>
     <p className={`${PROSE} mt-3`}>
-      Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepTimingOff")} /> to turn it off. Escape first
+      Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepTimingOff")} /> to turn it on or off. Escape first
       clears a loop, then the selection, then turns it off. Each key press is one undo step.
     </p>
   </HelpTopic>

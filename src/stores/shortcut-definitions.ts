@@ -321,7 +321,7 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
   {
     id: "timeline.stepTimingOff",
     scope: "timeline",
-    description: "Turn off step timing",
+    description: "Turn step timing on or off",
     defaultBinding: { key: "g", shift: true },
   },
   {

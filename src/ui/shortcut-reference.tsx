@@ -120,7 +120,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["["], description: "Set word begin to playhead", shortcutId: "timeline.setWordBegin" },
       { keys: ["]"], description: "Set word end to playhead", shortcutId: "timeline.setWordEnd" },
       { keys: ["G"], description: "Step timing: end the word and start the next", shortcutId: "timeline.stepWord" },
-      { keys: ["Shift", "G"], description: "Turn off step timing", shortcutId: "timeline.stepTimingOff" },
+      { keys: ["Shift", "G"], description: "Turn step timing on or off", shortcutId: "timeline.stepTimingOff" },
       { keys: ["Mod", "Z"], description: "Undo", shortcutId: "global.undo" },
       { keys: ["Mod", "Shift", "Z"], description: "Redo", shortcutId: "global.redo" },
       { keys: ["Mod", "Shift", "V"], description: "Import lyrics", shortcutId: "timeline.importLyrics" },
