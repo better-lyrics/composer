@@ -2,14 +2,17 @@ import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { useSettingsStore } from "@/stores/settings";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { type Habit, HabitTable, PresetIntro, PresetKey } from "@/ui/help-sections/habit-table";
+import { HelpSectionLink } from "@/ui/help-section-link";
 import { HelpTable } from "@/ui/help-table";
 import { HelpTopic } from "@/ui/help-topic";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { SettingLink } from "@/ui/setting-link";
 import { INLINE_CODE, PROSE } from "@/ui/typography";
+import { cn } from "@/utils/cn";
 
 // -- Constants -----------------------------------------------------------------
 
-const LIST = `${PROSE} list-disc pl-[18px] marker:text-(--muted) mt-1.5 space-y-1`;
+const LIST = cn(PROSE, "list-disc pl-[18px] marker:text-(--muted) mt-1.5 space-y-1");
 
 const AMLL_HABITS: readonly Habit[] = [
   { action: "Start a word", shortcutIds: ["timeline.setWordBegin"] },
@@ -86,15 +89,17 @@ const AmllWorkModel: React.FC = () => {
         job at a time.
       </p>
       <HelpTable head={["", "AMLL Tool", "Composer"]} rows={rows} />
-      <p className={`${PROSE} mt-3`}>
+      <p className={cn(PROSE, "mt-3")}>
         In AMLL Tool you stamp words with <AmllTimingKeys /> in Sync mode. In Composer you do that on the Timeline: turn
         on Step timing, and the start, step and end keys move through the words like your cursor did. The keys are in
         the table below. The Sync tab is for a first pass, where you tap one key live as the song plays.
       </p>
-      <p className={`${PROSE} mt-2`}>
-        If a chorus comes back, group its lines and time it once. The other copies get the same timing.
+      <p className={cn(PROSE, "mt-2")}>
+        If a chorus comes back, group its lines and time one copy. While{" "}
+        <SettingLink setting="shareTimingInNewGroups" /> is on, the other copies get the same timing. See{" "}
+        <HelpSectionLink section="groups" /> for copies that keep their own timing.
       </p>
-      <p className={`${PROSE} mt-2`}>
+      <p className={cn(PROSE, "mt-2")}>
         To try it, import a <span className={INLINE_CODE}>.ttml</span> you've already made, open the Timeline, turn on
         Step timing and fix a few words. On your next new song, do the first pass in Sync.
       </p>
@@ -106,7 +111,7 @@ const AmllKeys: React.FC = () => (
   <HelpTopic title="AMLL Tool keys">
     <PresetIntro preset="amll">Switch to the AMLL Tool preset to use the same keys you had in AMLL Tool.</PresetIntro>
     <HabitTable preset="amll" habits={AMLL_HABITS} />
-    <p className={`${PROSE} mt-3`}>
+    <p className={cn(PROSE, "mt-3")}>
       <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} className="ml-0" /> only steps while Step timing
       is on, and <InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepTimingOff")} /> turns it on and off. Each key
       writes the playhead's time, so you can also pause, click the waveform where a word starts, and press the key.

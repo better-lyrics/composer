@@ -29,7 +29,9 @@ interface PresetIntroProps {
 // -- Components ----------------------------------------------------------------
 
 const KeyBadges: React.FC<{ keysPerShortcut: readonly string[][] }> = ({ keysPerShortcut }) =>
-  keysPerShortcut.map((keys) => <InlineKeyBadge key={keys.join("+")} keys={keys} className="ml-0 mr-1" />);
+  keysPerShortcut.map((keys, index) => (
+    <InlineKeyBadge key={`${keys.join("+")}-${index}`} keys={keys} className="ml-0 mr-1" />
+  ));
 
 const PresetKey: React.FC<{ preset: ShortcutPresetId; shortcutId: string }> = ({ preset, shortcutId }) => (
   <InlineKeyBadge keys={presetKeysArray(preset, shortcutId)} />
