@@ -42,11 +42,12 @@ function lineKey(_index: number, line: LyricLine): string {
   return line.id;
 }
 
-// A mounted row scrolls itself to the centre; an unmounted one goes through Virtuoso, which corrects as rows measure.
-function revealLine(scrollParent: HTMLElement, virtuoso: VirtuosoHandle | null, index: number) {
-  const row = scrollParent.querySelector(`[data-sync-line="${index + 1}"]`);
-  if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
-  else virtuoso?.scrollToIndex({ index, align: "center", behavior: "smooth" });
+function mountedRow(scrollParent: HTMLElement, index: number): Element | null {
+  return scrollParent.querySelector(`[data-sync-line="${index + 1}"]`);
+}
+
+function centreRow(row: Element) {
+  row.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 // -- Components ---------------------------------------------------------------
@@ -100,14 +101,34 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
     },
     [scrollContainerRef],
   );
-  const noteRowsRendered = useCallback((items: ListItem<LyricLine>[]) => {
-    if (items.length > 0) setRowsRendered(true);
-  }, []);
+  const farRevealIndex = useRef<number | null>(null);
+  const noteRowsRendered = useCallback(
+    (items: ListItem<LyricLine>[]) => {
+      if (items.length > 0) setRowsRendered(true);
+      const index = farRevealIndex.current;
+      if (index === null || !items.some((item) => item.index === index)) return;
+      farRevealIndex.current = null;
+      nextFrame(() => {
+        const row = scrollContainerRef.current && mountedRow(scrollContainerRef.current, index);
+        if (row) centreRow(row);
+      });
+    },
+    [scrollContainerRef],
+  );
 
+  // Smooth scrollToIndex over unmeasured rows aims at an estimate and gives up after a second, short of the line.
   useEffect(() => {
     if (!rowsRendered || !scrollParent || currentLineIndex < 0) return;
-    const frame = nextFrame(() => revealLine(scrollParent, virtuosoRef.current, currentLineIndex));
-    return () => cancelNextFrame(frame);
+    const frame = nextFrame(() => {
+      const row = mountedRow(scrollParent, currentLineIndex);
+      if (row) return centreRow(row);
+      farRevealIndex.current = currentLineIndex;
+      virtuosoRef.current?.scrollToIndex({ index: currentLineIndex, align: "center" });
+    });
+    return () => {
+      cancelNextFrame(frame);
+      farRevealIndex.current = null;
+    };
   }, [rowsRendered, scrollParent, currentLineIndex]);
 
   const renderLine = (index: number, line: LyricLine) => {
