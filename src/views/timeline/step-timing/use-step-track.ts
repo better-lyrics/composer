@@ -22,13 +22,16 @@ function useStepTrack(lineId: string, trackType: WordSelection["type"]): StepTra
   const stepTiming = useTimelineStore((s) => s.stepTiming);
   const stepQueue = useTimelineStore((s) => s.stepQueue);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
-  const stepNext = use(StepNextContext);
+  const stepView = use(StepNextContext);
+  const stepNext = stepView?.next;
   const includeBackground = useSettingsStore((s) => s.stepTimingBackground);
   const chosen = stepQueue ?? selectedWords;
   // A background lane the keys will not reach fades: outside the queue, or skipped while background vocals are left out.
   const reached = stepQueue === null && includeBackground;
+  const skippedRepeat = stepView?.skippedLineIds.has(lineId) === true && !chosen.some((s) => s.lineId === lineId);
   const offChain =
-    stepTiming && trackType === "bg" && !reached && !chosen.some((s) => s.lineId === lineId && s.type === "bg");
+    skippedRepeat ||
+    (stepTiming && trackType === "bg" && !reached && !chosen.some((s) => s.lineId === lineId && s.type === "bg"));
   return {
     stepTiming,
     trackAttributes: {

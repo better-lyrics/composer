@@ -6,6 +6,7 @@ import { IconButton } from "@/ui/icon-button";
 import { buildGroupPingVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import { registerBanner } from "@/views/timeline/banner-progress-registry";
+import { StepSkipChip } from "@/views/timeline/step-timing/step-skip-chip";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useBannerDrag } from "@/views/timeline/use-banner-drag";
 import { IconChevronDown, IconClock, IconLink } from "@tabler/icons-react";
@@ -169,6 +170,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
           <span className="truncate">Own timing</span>
         </span>
       )}
+      <StepSkipChip group={group} instanceIdx={instanceIdx} />
       <span
         className="flex items-center gap-[3px] font-medium text-composer-text/65 tabular-nums whitespace-nowrap ml-auto"
         onMouseEnter={handleBadgeMouseEnter}

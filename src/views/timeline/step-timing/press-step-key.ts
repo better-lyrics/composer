@@ -13,6 +13,7 @@ import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
 import { playheadTime } from "@/views/timeline/playhead-time";
 import { clearLoopRegion } from "@/views/timeline/selection-playback";
+import { stepSkipView } from "@/views/timeline/step-timing/step-skip-view";
 import { rememberStepPress } from "@/views/timeline/step-timing/step-undo";
 import { isWholeLane, liveStepSelection } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -34,7 +35,6 @@ function refusalMessage(refusal: StepRefusal): string {
 function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): void {
   const time = playheadTime();
   const focus = currentEffectiveFocus();
-  const include = (line: ReadableLine) => isInFocus(line, focus);
   const timeline = useTimelineStore.getState();
   const live = liveStepSelection(lines, timeline.selectedWords, timeline.stepQueue);
   const cursor = live.cursor ?? findBoundaryTarget(lines, time, key === "start" ? "begin" : "end", focus, true);
@@ -46,6 +46,8 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
   const word = line ? effectiveTrackWords(line, cursor.type)?.[cursor.wordIndex] : undefined;
   if (!line || !word) return;
   const project = useProjectStore.getState();
+  const { skippedLineIds } = stepSkipView(lines, project.groups, timeline.collapsedInstances, line);
+  const include = (candidate: ReadableLine) => isInFocus(candidate, focus) && !skippedLineIds.has(candidate.id);
   const rangeOf = timeRangeResolver(project.lines, project.groups, duration);
   const queue = live.cursor ? live.queue : null;
   if (queue && timeline.stepQueue && queue.length !== timeline.stepQueue.length) timeline.setSelectedWords(queue, true);
