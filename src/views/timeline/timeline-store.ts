@@ -202,14 +202,20 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
         return hasTransliteration(useProjectStore.getState().lines) ? { textVariant: "transliteration" } : s;
       }),
     setTextVariant: (textVariant) => set({ textVariant }),
-    setSelectedWords: (selectedWords, asQueue) => set((s) => selectionPatch(s, selectedWords, asQueue)),
+    setSelectedWords: (selectedWords, asQueue) =>
+      set((s) =>
+        selectedWords.length === 0 && s.selectedWords.length === 0 && s.stepQueue === null
+          ? s
+          : selectionPatch(s, selectedWords, asQueue),
+      ),
     setSelectionPlayback: (selectionPlayback) => set({ selectionPlayback }),
     setLoopRegion: (loopRegion) => set((s) => loopRegionPatch(s, loopRegion)),
     setLoopRegionDrag: (loopRegionDrag) => set({ loopRegionDrag }),
     setWaveformReady: (waveformReady) => set({ waveformReady }),
 
     toggleSelection: (selection) => set((s) => toggledSelectionPatch(s, selection)),
-    clearSelection: () => set({ selectedWords: [], stepQueue: null }),
+    clearSelection: () =>
+      set((s) => (s.selectedWords.length === 0 && s.stepQueue === null ? s : { selectedWords: [], stepQueue: null })),
     setClipboard: (clipboard) => set({ clipboard }),
     setPasteMode: (pasteMode) => set({ pasteMode }),
     setScrollLeft: (scrollLeft) => {
@@ -273,8 +279,8 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
           : { wordDragHover },
       ),
     setIsBypassing: (v) => set({ isBypassing: v }),
-    setSnappedBlockId: (id) => set({ snappedBlockId: id }),
-    setSnappedAnchorTime: (t) => set({ snappedAnchorTime: t }),
+    setSnappedBlockId: (id) => set((s) => (s.snappedBlockId === id ? s : { snappedBlockId: id })),
+    setSnappedAnchorTime: (t) => set((s) => (s.snappedAnchorTime === t ? s : { snappedAnchorTime: t })),
     setVocalOnsetSnapPoints: (points) =>
       set({
         vocalOnsetSnapPoints: [...points].filter((point) => Number.isFinite(point) && point >= 0).sort((a, b) => a - b),
