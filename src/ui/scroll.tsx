@@ -16,6 +16,7 @@ interface ScrollProps {
   viewportRef?: MutableRefObject<HTMLDivElement | null>;
   onInitialized?: (viewport: HTMLDivElement) => void;
   onScrollTopChange?: (scrollTop: number) => void;
+  ignoreMutation?: (mutation: MutationRecord) => boolean;
 }
 
 // -- Component ----------------------------------------------------------------
@@ -29,6 +30,7 @@ const Scroll: React.FC<ScrollProps> = ({
   viewportRef,
   onInitialized,
   onScrollTopChange,
+  ignoreMutation,
 }) => {
   const componentRef = useRef<OverlayScrollbarsComponentRef>(null);
   const scrollTopRef = useRef(initialScrollTop);
@@ -48,6 +50,7 @@ const Scroll: React.FC<ScrollProps> = ({
       className={cn("overflow-auto overscroll-none [scrollbar-width:none]", className)}
       options={{
         scrollbars: { theme: "os-theme-light", autoHide, autoHideDelay },
+        ...(ignoreMutation && { update: { ignoreMutation } }),
       }}
       events={{
         initialized: (instance) => {

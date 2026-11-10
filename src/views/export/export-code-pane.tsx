@@ -1,4 +1,5 @@
 import type { TimingGranularity } from "@/domain/project/timing-granularity";
+import { isCodeBlockSwap } from "@/ui/lyrics-code/code-block-mutation";
 import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
 import { Scroll } from "@/ui/scroll";
 import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
@@ -56,7 +57,10 @@ const ExportCodePane: React.FC<ExportCodePaneProps> = ({
       ) : (
         <>
           <div className="flex h-7 shrink-0">{head}</div>
-          <Scroll className="flex-1 min-h-0 rounded-xl bg-(--well) border border-(--edge)">
+          <Scroll
+            className="flex-1 min-h-0 rounded-xl bg-(--well) border border-(--edge)"
+            ignoreMutation={isCodeBlockSwap}
+          >
             <LyricsCode
               code={content}
               format="ttml"

@@ -56,7 +56,7 @@ const WindowedCode: React.FC<WindowedCodeProps> = ({ blocks, className }) => {
     <pre className={cn("bh lyrics-code-surface", className)}>
       {blocks.map((block, index) => (
         <CodeBlockSpan
-          key={index}
+          key={`${index}:${block.text}`}
           block={block}
           index={index}
           highlighted={nearBlocks.has(index)}
