@@ -21,7 +21,7 @@ function grabEdge(edge: LoopRegionDrag["edge"]) {
 const LoopRegionEdges: React.FC = () => {
   const bandHeight = useOverviewBandHeight();
   const region = useTimelineStore((s) => s.loopRegion);
-  const zoom = useTimelineStore((s) => s.zoom);
+  const zoom = useTimelineStore((s) => (s.loopRegion ? s.zoom : 0));
   if (!region) return null;
   const outer = EDGE_HIT_PX / 2;
   // On a narrow region each edge reaches only to the middle, so both stay grabbable.
