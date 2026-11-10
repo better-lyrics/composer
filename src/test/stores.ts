@@ -61,6 +61,7 @@ async function resetAllStores(): Promise<void> {
     pasteMode: { status: "idle" },
     scrollLeft: 0,
     rowHeights: {},
+    lastResizedLineId: null,
     defaultRowHeight: settings.defaultRowHeight,
     isDraggingPlayhead: false,
     dragTime: 0,
