@@ -12,6 +12,7 @@ import {
 } from "@tabler/icons-react";
 import { keyBadge, keys } from "@/guide/catalog/keys";
 import type { GuideNudgeCopy } from "@/guide/catalog/types";
+import { useSettingsStore } from "@/stores/settings";
 
 // -- Copy ---------------------------------------------------------------------
 
@@ -45,11 +46,13 @@ const TIMELINE_NUDGE_COPY: Record<string, GuideNudgeCopy> = {
     title: "Background vocals next?",
     body: (
       <>
-        Stay in Step timing. Move the playhead back, click an empty spot in the background lane, and time those words
-        the same way. Overlaps are fine.
+        Move the playhead back, click an empty spot in the background lane, and time those words the same way. Overlaps
+        are fine. Or tap Include them, and the keys go there after each line's lead words.
       </>
     ),
     peek: <>Move back and click the background lane to time it</>,
+    available: () => !useSettingsStore.getState().stepTimingBackground,
+    primary: { label: "Include them", run: () => useSettingsStore.getState().set("stepTimingBackground", true) },
   },
   stepQueueEnd: {
     icon: IconListCheck,

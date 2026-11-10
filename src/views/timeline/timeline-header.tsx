@@ -8,7 +8,6 @@ import {
   IconLanguage,
   IconLayoutDistributeHorizontal,
   IconMapPin,
-  IconStepInto,
   IconTextPlus,
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo } from "react";
@@ -26,7 +25,7 @@ import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers"
 import { HeaderAction } from "@/views/timeline/header-action";
 import { SnapLatch } from "@/views/timeline/snap-latch";
 import { SpectrumLatch } from "@/views/timeline/spectrum/spectrum-latch";
-import { setStepTimingMode } from "@/views/timeline/step-timing/press-step-key";
+import { StepTimingLatch } from "@/views/timeline/step-timing/step-timing-latch";
 import { TimelineAutoAlign } from "@/views/timeline/timeline-auto-align";
 import { TimelineZoomControls } from "@/views/timeline/timeline-header-controls";
 import { TimelineNotices } from "@/views/timeline/timeline-notices";
@@ -46,7 +45,6 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   const rollingEdit = useSettingsStore((s) => s.rollingEdit);
   const markerMode = useTimelineStore((s) => s.markerMode);
   const toggleMarkerMode = useTimelineStore((s) => s.toggleMarkerMode);
-  const stepTiming = useTimelineStore((s) => s.stepTiming);
   const showHints = useSettingsStore((s) => s.showShortcutHints);
   const lines = useProjectStore((s) => s.lines);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
@@ -205,16 +203,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
             >
               <IconMapPin />
             </ShortcutToggleButton>
-            <ShortcutToggleButton
-              active={stepTiming}
-              label="Step timing"
-              shortcut={stepTiming ? "timeline.stepTimingOff" : "timeline.stepWord"}
-              onClick={() => setStepTimingMode(!stepTiming)}
-              description="Timing keys follow the selected word and move on. Click an empty lane to time just that lane"
-              iconOnly
-            >
-              <IconStepInto />
-            </ShortcutToggleButton>
+            <StepTimingLatch />
           </div>
 
           <div className="tray">

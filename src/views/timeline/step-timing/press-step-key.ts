@@ -48,7 +48,10 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
   const rangeOf = timeRangeResolver(project.lines, project.groups, duration);
   const queue = live.cursor ? live.queue : null;
   if (queue && timeline.stepQueue && queue.length !== timeline.stepQueue.length) timeline.setSelectedWords(queue, true);
-  const next = key === "start" ? null : nextCursorSlot(lines, cursor, queue, include);
+  const next =
+    key === "start"
+      ? null
+      : nextCursorSlot(lines, cursor, queue, include, useSettingsStore.getState().stepTimingBackground);
   const startNext = key === "step" ? chainedNext(cursor, next, nextStepSlot(lines, cursor, include)) : null;
   const refusal = writeStepKey({
     lines,

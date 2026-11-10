@@ -29,13 +29,30 @@ function nextStepSlot(lines: readonly LyricLine[], cursor: WordSelection, includ
   return null;
 }
 
+// With background vocals included, a line's background words come right after its lead words.
+function nextSlotWithBackground(
+  lines: readonly LyricLine[],
+  cursor: WordSelection,
+  include: LineFilter,
+): WordSelection | null {
+  const line = lines[cursor.lineIndex];
+  const leadWords = line ? effectiveTrackWords(line, "word") : undefined;
+  const leadEnds = cursor.type === "word" && cursor.wordIndex + 1 === leadWords?.length;
+  if (line && leadEnds && effectiveTrackWords(line, "bg")?.length) {
+    return { lineId: line.id, lineIndex: cursor.lineIndex, wordIndex: 0, type: "bg" };
+  }
+  return nextStepSlot(lines, cursor, include);
+}
+
 function nextCursorSlot(
   lines: readonly LyricLine[],
   cursor: WordSelection,
   queue: readonly WordSelection[] | null,
   include: LineFilter,
+  withBackground = false,
 ): WordSelection | null {
-  return queue ? nextInQueue(queue, cursor) : nextStepSlot(lines, cursor, include);
+  if (queue) return nextInQueue(queue, cursor);
+  return withBackground ? nextSlotWithBackground(lines, cursor, include) : nextStepSlot(lines, cursor, include);
 }
 
 // -- Exports ------------------------------------------------------------------
