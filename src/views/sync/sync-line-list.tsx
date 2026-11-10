@@ -29,6 +29,7 @@ interface SyncLineListProps {
   skippedByLastLineId: ReadonlyMap<string, SkippedInstance>;
   handlers: SyncLineListHandlers;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
+  splitCharacter: string;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -66,6 +67,7 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
   skippedByLastLineId,
   handlers,
   scrollContainerRef,
+  splitCharacter,
 }) => {
   const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
   const linkInfoByLineId = useMemo(() => {
@@ -159,6 +161,7 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
           currentTime={currentTime}
           editMode={editMode}
           linkInfo={linkInfoByLineId.get(line.id)}
+          splitCharacter={splitCharacter}
         />
         {skipped && skippedGroup && !isComplete && (
           <SkippedInstanceBand

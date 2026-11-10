@@ -50,6 +50,7 @@ const SyncPanel: React.FC = () => {
   const audioElement = useAudioStore((s) => s.audioElement);
   const seekTo = useAudioStore((s) => s.seekTo);
   const textVariant = useTimelineStore((s) => s.textVariant);
+  const splitCharacter = useSettingsStore((s) => s.splitCharacter);
   const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
   const toggleReadingText = useCallback(() => {
     toggleTextVariant();
@@ -104,9 +105,10 @@ const SyncPanel: React.FC = () => {
   const visible = activeTab === "sync";
   const showLineList = (!isPlaying && !countIn.countingIn) || editMode;
   const showsLane = visible && !showLineList && !isComplete;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: buildLaneRows splits words by the split character
   const laneRows = useMemo(
     () => (showsLane ? buildLaneRows({ lines, displayLines, agents, groupTags, folded }) : []),
-    [showsLane, lines, displayLines, agents, groupTags, folded],
+    [showsLane, lines, displayLines, agents, groupTags, folded, splitCharacter],
   );
 
   const stopSessionAtSongEnd = useEffectEvent(() => {
@@ -434,6 +436,7 @@ const SyncPanel: React.FC = () => {
             skippedByLastLineId={skippedByLastLineId}
             handlers={syncHandlers}
             scrollContainerRef={scrollContainerRef}
+            splitCharacter={splitCharacter}
           />
         ) : isComplete ? (
           <SyncEndScreen syncComplete={syncComplete} />

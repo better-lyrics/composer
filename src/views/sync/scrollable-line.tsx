@@ -2,7 +2,7 @@ import { getAgentColor } from "@/domain/agent/colors";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
-import { stripSplitCharacter } from "@/utils/split-character";
+import { withoutSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { SyllableGroup } from "@/views/sync/syllable-group";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
@@ -41,6 +41,7 @@ interface ScrollableLineProps {
   currentTime: number;
   editMode: boolean;
   linkInfo?: ScrollableLineLinkInfo;
+  splitCharacter: string;
   onClick: () => void;
   onClickWord?: (wordIndex: number) => void;
   onClickBgWord?: (wordIndex: number) => void;
@@ -79,6 +80,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   currentTime,
   editMode,
   linkInfo,
+  splitCharacter,
   onClick,
   onClickWord,
   onClickBgWord,
@@ -94,10 +96,12 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   onNudgeBgWordEnd,
   onSetBgWordEndTime,
 }) => {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: splitIntoWords splits by the split character
   const wordTexts = useMemo(
     () => displayWordTexts ?? (words?.length ? words.map((w) => w.text) : splitIntoWords(text)),
-    [displayWordTexts, text, words],
+    [displayWordTexts, text, words, splitCharacter],
   );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: splitIntoWords splits by the split character
   const bgWordTexts = useMemo(
     () =>
       displayBackgroundWordTexts ??
@@ -106,11 +110,11 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
         : (displayBackgroundText ?? backgroundText)
           ? splitIntoWords(displayBackgroundText ?? backgroundText ?? "")
           : []),
-    [backgroundText, backgroundWords, displayBackgroundText, displayBackgroundWordTexts],
+    [backgroundText, backgroundWords, displayBackgroundText, displayBackgroundWordTexts, splitCharacter],
   );
 
   const renderLineContent = () => {
-    const renderedText = stripSplitCharacter(displayText ?? text);
+    const renderedText = withoutSplitCharacter(displayText ?? text, splitCharacter);
     if (editMode && lineBegin !== undefined && lineEnd !== undefined) {
       return (
         <span className="relative inline-block">
@@ -342,7 +346,8 @@ const ScrollableLine = memo(ScrollableLineInner, (prev, next) => {
     prev.linkInfo?.label === next.linkInfo?.label &&
     prev.linkInfo?.ordinal === next.linkInfo?.ordinal &&
     prev.linkInfo?.totalInstances === next.linkInfo?.totalInstances &&
-    prev.linkInfo?.shared === next.linkInfo?.shared
+    prev.linkInfo?.shared === next.linkInfo?.shared &&
+    prev.splitCharacter === next.splitCharacter
   );
 });
 
