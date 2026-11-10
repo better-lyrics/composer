@@ -8,21 +8,22 @@ function withoutProgressFill(style: string | null): string {
   return (style ?? "").replace(PROGRESS_FILL_DECLARATION, "");
 }
 
-function declarationsOutside(style: string | null, playbackProperties: readonly string[]): string {
+function declarationsOutside(style: string | null, playbackProperties: ReadonlySet<string>): string {
   return (style ?? "")
     .split(";")
     .map((declaration) => declaration.trim())
     .filter((declaration) => {
       if (declaration === "") return false;
-      return !playbackProperties.includes(declaration.slice(0, declaration.indexOf(":")).trim());
+      return !playbackProperties.has(declaration.slice(0, declaration.indexOf(":")).trim());
     })
     .join(";");
 }
 
 // Elements list the properties playback writes every frame in data-playback-style; any other style change still counts.
 function changesOnlyPlaybackProperties(target: HTMLElement, oldStyle: string | null): boolean {
-  const playbackProperties = target.dataset.playbackStyle?.split(" ");
-  if (!playbackProperties) return false;
+  const playbackStyle = target.dataset.playbackStyle;
+  if (playbackStyle === undefined) return false;
+  const playbackProperties = new Set(playbackStyle.split(" "));
   return (
     declarationsOutside(oldStyle, playbackProperties) ===
     declarationsOutside(target.getAttribute("style"), playbackProperties)
