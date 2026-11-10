@@ -44,7 +44,7 @@ const COLOR_GROUPS: readonly ColorGroup[] = [
       { name: "--label", swatch: "bg-(--label)" },
       { name: "--divider", swatch: "bg-(--divider)" },
       { name: "--edge", swatch: "bg-(--edge)" },
-      { name: "--button-edge", swatch: "bg-(--button-edge)" },
+      { name: "--key-edge", swatch: "bg-(--key-edge)" },
       { name: "--cap", swatch: "bg-(--cap)" },
     ],
   },
