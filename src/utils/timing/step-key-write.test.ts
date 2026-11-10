@@ -77,6 +77,15 @@ describe("writeStepKey", () => {
     expect(lineById("b0")?.words?.[0].begin).toBeCloseTo(40);
   });
 
+  it("still chains into a detached line, which keeps its own timing", () => {
+    useProjectStore.setState({
+      lines: [chorus("a0", 0, 28), { ...chorus("b0", 1, 40), detached: true }],
+      groups: [createGroup({ id: "g1", sharesTiming: true })],
+    });
+    expect(press(slot("a0", 0, 2), slot("b0", 1, 0), 29.9)).toBeNull();
+    expect(lineById("b0")?.words?.[0].begin).toBe(29.9);
+  });
+
   it("ends a line's last word and starts the next line at the same time, as one undo step", () => {
     const next = createLine({
       id: "n",

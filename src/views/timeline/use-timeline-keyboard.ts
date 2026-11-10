@@ -225,9 +225,7 @@ function useTimelineKeyboard(
           const { pasteMode } = useTimelineStore.getState();
           if (pasteMode.status === "preview") {
             useTimelineStore.getState().setPasteMode({ status: "idle" });
-          } else if (useTimelineStore.getState().stepTiming) {
-            escapeStepTiming();
-          } else {
+          } else if (!escapeStepTiming()) {
             clearLoopRegion();
             useTimelineStore.getState().clearSelection();
           }

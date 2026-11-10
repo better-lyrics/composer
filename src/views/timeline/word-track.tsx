@@ -20,7 +20,6 @@ import { setLiveWordEdit } from "@/views/timeline/pitch/live-word-edit";
 import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
-import { toggleStepLane } from "@/views/timeline/step-timing/press-step-key";
 import { useStepTrack } from "@/views/timeline/step-timing/use-step-track";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { selectionGripEdges } from "@/views/timeline/stretch-grips";
@@ -359,7 +358,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   }, []);
 
   const handleTrackClick = () => {
-    if (step.stepTiming) return toggleStepLane(lineId, lineIndex, trackType, words.length);
+    if (step.stepTiming) return step.toggleLane(lineIndex, words.length);
     setSelectedWords([]);
   };
 
@@ -459,8 +458,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     <div
       ref={trackRef}
       role="presentation"
-      data-word-track
-      data-step-chain={step.offChain ? "off" : undefined}
+      {...step.trackAttributes}
       className="relative"
       style={{ height, width: duration * zoom }}
       onClick={handleTrackClick}

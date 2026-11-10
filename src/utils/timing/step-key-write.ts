@@ -1,4 +1,4 @@
-import { sharesTiming, type TimeRange } from "@/domain/group/shared-timing";
+import { isSharedLine, type TimeRange } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LineUpdate } from "@/domain/line/model";
@@ -46,9 +46,9 @@ function editAt(input: StepKeyWriteInput, slot: WordSelection, key: StepKey): St
 function crossesSharedInstance(input: StepKeyWriteInput, startNext: WordSelection): boolean {
   const from = input.lines[input.cursor.lineIndex];
   const to = input.lines[startNext.lineIndex];
-  if (!from?.groupId || from.groupId !== to?.groupId || from.instanceIdx === to.instanceIdx) return false;
-  const group = input.groups.find((candidate) => candidate.id === from.groupId);
-  return sharesTiming(group, from.instanceIdx) && sharesTiming(group, to.instanceIdx);
+  if (!from || !to || from.groupId !== to.groupId || from.instanceIdx === to.instanceIdx) return false;
+  const groupsById = new Map(input.groups.map((group) => [group.id, group]));
+  return isSharedLine(from, groupsById) && isSharedLine(to, groupsById);
 }
 
 // -- Functions ----------------------------------------------------------------

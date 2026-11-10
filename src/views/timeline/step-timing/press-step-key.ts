@@ -91,12 +91,14 @@ function pressStepShortcut(id: string, lines: ReadableLine[], duration: number):
   return true;
 }
 
-// Escape clears a loop, then the selection, then leaves the mode.
-function escapeStepTiming(): void {
-  const { loopRegion, selectedWords, clearSelection, setStepTiming } = useTimelineStore.getState();
+// In Step timing, Escape clears a loop, then the selection, then leaves the mode. Returns false outside it.
+function escapeStepTiming(): boolean {
+  const { stepTiming, loopRegion, selectedWords, clearSelection, setStepTiming } = useTimelineStore.getState();
+  if (!stepTiming) return false;
   if (loopRegion) clearLoopRegion();
   else if (selectedWords.length > 0) clearSelection();
   else setStepTiming(false);
+  return true;
 }
 
 function toggleStepLane(lineId: string, lineIndex: number, type: WordSelection["type"], wordCount: number): void {
