@@ -1,20 +1,11 @@
 import { useExportTtml } from "@/hooks/use-export-ttml";
-import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { useAudioStore } from "@/stores/audio";
 import { EmptyState } from "@/ui/empty-state";
 import { LyricsRenderer } from "@/views/preview/lyrics-renderer";
-import { memo } from "react";
-
-// -- Interfaces ---------------------------------------------------------------
-
-interface PreviewContentProps {
-  isVisible: boolean;
-}
 
 // -- Components ---------------------------------------------------------------
 
-// Memoized on isVisible: editor re-renders skip the hidden tab, so it builds no TTML until shown.
-const PreviewContent = memo<PreviewContentProps>(() => {
+const PreviewPanel: React.FC = () => {
   const { content: ttmlString, duration, lineCount, syncedLineCount } = useExportTtml();
   const source = useAudioStore((s) => s.source);
 
@@ -51,11 +42,6 @@ const PreviewContent = memo<PreviewContentProps>(() => {
       <LyricsRenderer ttmlString={ttmlString} durationSeconds={duration} />
     </div>
   );
-});
-
-const PreviewPanel: React.FC = () => {
-  const isVisible = useIsActiveTab("preview");
-  return <PreviewContent isVisible={isVisible} />;
 };
 
 // -- Exports ------------------------------------------------------------------

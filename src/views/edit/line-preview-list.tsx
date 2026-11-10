@@ -2,7 +2,7 @@ import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import { instancePositionsByLineId } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
-import { useProjectStore } from "@/stores/project";
+import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { useSettingsStore } from "@/stores/settings";
 import { pluralize } from "@/utils/pluralize";
 import {
@@ -63,7 +63,7 @@ const LinePreviewList: React.FC<LinePreviewListProps> = ({
   const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
   const editsSelection = selectedLines.size > 1;
   const splitCharacter = useSettingsStore((s) => s.splitCharacter);
-  const isShown = useProjectStore((s) => s.activeTab === "edit");
+  const isShown = useIsActiveTab("edit");
 
   if (!isShown) return <div style={{ height: listHeight(parsed, groupsById) }} />;
 

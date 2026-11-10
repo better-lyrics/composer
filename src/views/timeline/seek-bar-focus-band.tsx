@@ -1,6 +1,7 @@
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
 import type { Bounds } from "@/domain/word/bounds";
+import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { useProjectStore } from "@/stores/project";
 import { useEffectiveFocus, useEffectiveFocusGroup } from "@/views/timeline/effective-focus";
 import { instanceSpan } from "@/views/timeline/group-focus";
@@ -58,7 +59,7 @@ const SeekBarFocusBand: React.FC<SeekBarFocusBandProps> = ({ duration }) => {
   const focus = useEffectiveFocus();
   const group = useEffectiveFocusGroup();
   const lines = useProjectStore((s) => s.lines);
-  const onTimeline = useProjectStore((s) => s.activeTab === "timeline");
+  const onTimeline = useIsActiveTab("timeline");
   const selectionPlayback = useSelectionPlaybackRange();
   const loopRegion = useTimelineStore(shownLoopRegion);
   const spans = useMemo(() => (group ? instanceSpans(lines, group.id) : []), [lines, group]);

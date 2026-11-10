@@ -6,6 +6,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "@/domain/word/timing";
+import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useConfirm } from "@/stores/confirm-store";
@@ -67,7 +68,7 @@ const EditPanel: React.FC = () => {
   const agents = useProjectStore((s) => s.agents);
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
-  const activeTab = useProjectStore((s) => s.activeTab);
+  const isActive = useIsActiveTab("edit");
   const confirm = useConfirm();
   const openImportModal = useImportModal();
   const lastImportResult = useLastImportResult();
@@ -77,7 +78,7 @@ const EditPanel: React.FC = () => {
 
   const [rawText, setRawText] = useState(() => linesToEditText(lines));
   const { textareaRef, showEditText } = useEditTextCaret(rawText, setRawText);
-  useFocusLyricsShortcut(textareaRef, activeTab === "edit");
+  useFocusLyricsShortcut(textareaRef, isActive);
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const modalPendingRef = useRef(false);
   const pastedRef = useRef(false);
@@ -271,7 +272,7 @@ const EditPanel: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (activeTab !== "edit") return;
+      if (!isActive) return;
       if (isAnyModalOpen()) return;
       const target = e.target as HTMLElement;
       if ((target.tagName === "INPUT" || target.tagName === "TEXTAREA") && target.id !== textareaId) return;
@@ -284,7 +285,7 @@ const EditPanel: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTab, textareaId, finalizeRun]);
+  }, [isActive, textareaId, finalizeRun]);
 
   useEffect(() => () => finalizeRun(), [finalizeRun]);
 

@@ -17,7 +17,6 @@ import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { type SyncState, getNudgeAmount } from "@/utils/sync-helpers";
 import { isTypingTarget } from "@/utils/typing-target";
 import { buildLaneRows } from "@/views/sync/lane-rows";
-import { FreezeWhileHidden } from "@/views/sync/freeze-while-hidden";
 import { SyncEndScreen } from "@/views/sync/sync-end-screen";
 import { SyncLineList } from "@/views/sync/sync-line-list";
 import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
@@ -38,7 +37,6 @@ const SyncPanel: React.FC = () => {
   const agents = useProjectStore((s) => s.agents);
   const undo = useProjectStore((s) => s.undo);
   const redo = useProjectStore((s) => s.redo);
-  const activeTab = useProjectStore((s) => s.activeTab);
   const granularity = useProjectStore((s) => s.granularity);
   const setGranularity = useProjectStore((s) => s.setGranularity);
   const source = useAudioStore((s) => s.source);
@@ -102,9 +100,8 @@ const SyncPanel: React.FC = () => {
     cursor,
     skippedInstances,
   );
-  const visible = activeTab === "sync";
   const showLineList = (!isPlaying && !countIn.countingIn) || editMode;
-  const showsLane = visible && !showLineList && !isComplete;
+  const showsLane = !showLineList && !isComplete;
   // biome-ignore lint/correctness/useExhaustiveDependencies: buildLaneRows splits words by the split character
   const laneRows = useMemo(
     () => (showsLane ? buildLaneRows({ lines, displayLines, agents, groupTags, folded }) : []),
@@ -196,10 +193,9 @@ const SyncPanel: React.FC = () => {
     if (source && lines.length > 0) handleToggleEdit();
   });
 
-  const followsPlayback = editMode && visible;
   const playingLine = useMemo(
-    () => (followsPlayback ? playingLineIndex(lines, currentTime) : -1),
-    [followsPlayback, lines, currentTime],
+    () => (editMode ? playingLineIndex(lines, currentTime) : -1),
+    [editMode, lines, currentTime],
   );
 
   const { lineIndex, wordIndex } = cursor;
@@ -309,7 +305,7 @@ const SyncPanel: React.FC = () => {
 
   // Effect events read the latest state, so the listeners attach once instead of on every hold or edit toggle.
   const onSyncKeyDown = useEffectEvent((e: KeyboardEvent) => {
-    if (activeTab !== "sync") return;
+    if (useProjectStore.getState().activeTab !== "sync") return;
     if (isAnyModalOpen()) return;
 
     const runHistory = (action: "undo" | "redo") => {
@@ -357,7 +353,7 @@ const SyncPanel: React.FC = () => {
   });
 
   const onSyncKeyUp = useEffectEvent((e: KeyboardEvent) => {
-    if (activeTab !== "sync" || !isHolding) return;
+    if (useProjectStore.getState().activeTab !== "sync" || !isHolding) return;
     if (isAnyModalOpen()) return;
 
     if (e.code === heldKeyCodeRef.current) {
@@ -420,40 +416,38 @@ const SyncPanel: React.FC = () => {
         handleStartSync={handleStartSync}
       />
 
-      <FreezeWhileHidden hidden={!visible}>
-        {showLineList ? (
-          <SyncLineList
-            lines={lines}
-            displayLines={displayLines}
-            groups={groups}
-            granularity={granularity}
-            currentTime={currentTime}
-            playingLineIndex={playingLine}
-            cursorLineIndex={lineIndex}
-            editMode={editMode}
-            isComplete={isComplete}
-            skippedLineIds={skippedLineIds}
-            skippedByLastLineId={skippedByLastLineId}
-            handlers={syncHandlers}
-            scrollContainerRef={scrollContainerRef}
-            splitCharacter={splitCharacter}
-          />
-        ) : isComplete ? (
-          <SyncEndScreen syncComplete={syncComplete} />
-        ) : (
-          <SyncLane
-            rows={laneRows}
-            lineIndex={lineIndex}
-            wordIndex={wordIndex}
-            granularity={granularity}
-            isHolding={isHolding}
-            placingLineIndex={placingName !== null ? lineIndex : null}
-            ring={rippleTarget}
-            onRingDone={clearRippleTarget}
-            aboveCurrent={countIn.dots}
-          />
-        )}
-      </FreezeWhileHidden>
+      {showLineList ? (
+        <SyncLineList
+          lines={lines}
+          displayLines={displayLines}
+          groups={groups}
+          granularity={granularity}
+          currentTime={currentTime}
+          playingLineIndex={playingLine}
+          cursorLineIndex={lineIndex}
+          editMode={editMode}
+          isComplete={isComplete}
+          skippedLineIds={skippedLineIds}
+          skippedByLastLineId={skippedByLastLineId}
+          handlers={syncHandlers}
+          scrollContainerRef={scrollContainerRef}
+          splitCharacter={splitCharacter}
+        />
+      ) : isComplete ? (
+        <SyncEndScreen syncComplete={syncComplete} />
+      ) : (
+        <SyncLane
+          rows={laneRows}
+          lineIndex={lineIndex}
+          wordIndex={wordIndex}
+          granularity={granularity}
+          isHolding={isHolding}
+          placingLineIndex={placingName !== null ? lineIndex : null}
+          ring={rippleTarget}
+          onRingDone={clearRippleTarget}
+          aboveCurrent={countIn.dots}
+        />
+      )}
 
       <SyncFooter
         lastSyncedTime={lastSyncedTime}
