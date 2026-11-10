@@ -40,11 +40,6 @@ interface RawHit extends FieldHit {
   field: "words" | "backgroundWords";
 }
 
-interface FieldScans {
-  splitChar: string;
-  hitsBySource: Map<string, FieldHit[]>;
-}
-
 // -- Matcher (singleton) -------------------------------------------------------
 
 let cachedMatcher: RegExpMatcher | null = null;
@@ -153,15 +148,28 @@ function scanField(source: string, alreadyMarked: Set<number>): FieldHit[] {
   return hits;
 }
 
-// Replaced on every run, so it only ever holds the fields of the current lyrics.
-let lastFieldScans: FieldScans = { splitChar: "", hitsBySource: new Map() };
+// Earlier lyrics kept beside the current ones: about two full rewrites of a 2000 line song.
+const RETAINED_EARLIER_FIELDS = 4096;
 
-function fieldHits(source: string, words: LyricLine["words"], scans: FieldScans, previous: FieldScans): FieldHit[] {
+let scannedSplitChar = "";
+const hitsByField = new Map<string, FieldHit[]>();
+
+function fieldHits(source: string, words: LyricLine["words"]): FieldHit[] {
   const marked = alreadyMarkedSet(words);
   const key = `${[...marked].join(",")}\u0000${source}`;
-  const hits = scans.hitsBySource.get(key) ?? previous.hitsBySource.get(key) ?? scanField(source, marked);
-  scans.hitsBySource.set(key, hits);
+  const cached = hitsByField.get(key);
+  if (cached) hitsByField.delete(key);
+  const hits = cached ?? scanField(source, marked);
+  hitsByField.set(key, hits);
   return hits;
+}
+
+function forgetOldestFields(fieldsInRun: number): void {
+  let excess = hitsByField.size - fieldsInRun - RETAINED_EARLIER_FIELDS;
+  for (const key of hitsByField.keys()) {
+    if (excess-- <= 0) return;
+    hitsByField.delete(key);
+  }
 }
 
 function alreadyMarkedSet(words: LyricLine["words"] | undefined): Set<number> {
@@ -178,24 +186,30 @@ function isLinked(line: LyricLine): boolean {
 }
 
 function findExplicitWords(lines: LyricLine[], groups: LinkGroup[] = []): ExplicitSuggestion[] {
-  const scans: FieldScans = { splitChar: getSplitCharacter(), hitsBySource: new Map() };
-  const previous = lastFieldScans.splitChar === scans.splitChar ? lastFieldScans : scans;
+  const splitChar = getSplitCharacter();
+  if (splitChar !== scannedSplitChar) {
+    hitsByField.clear();
+    scannedSplitChar = splitChar;
+  }
   const raw: RawHit[] = [];
+  let fieldsInRun = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.text && line.text.trim().length > 0) {
-      for (const hit of fieldHits(line.text, line.words, scans, previous)) {
+      fieldsInRun++;
+      for (const hit of fieldHits(line.text, line.words)) {
         raw.push({ ...hit, line, lineIndex: i, field: "words" });
       }
     }
     if (line.backgroundText && line.backgroundText.trim().length > 0) {
-      for (const hit of fieldHits(line.backgroundText, line.backgroundWords, scans, previous)) {
+      fieldsInRun++;
+      for (const hit of fieldHits(line.backgroundText, line.backgroundWords)) {
         raw.push({ ...hit, line, lineIndex: i, field: "backgroundWords" });
       }
     }
   }
-  lastFieldScans = scans;
+  forgetOldestFields(fieldsInRun);
 
   const groupLabelById = new Map(groups.map((g) => [g.id, g.label]));
   const linkedBuckets = new Map<string, RawHit[]>();
