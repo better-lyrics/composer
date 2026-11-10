@@ -230,6 +230,35 @@ const GUIDE_NUDGE_TRIGGERS: readonly GuideNudgeEntry[] = [
     resolvedBy: "app.tabKey",
     spot: "tabs",
   },
+  {
+    id: "movingOverAmll",
+    stage: "timeline",
+    category: "moving-over",
+    trigger: { signal: "shortcuts.presetAmll", count: 1, windowMs: 60_000 },
+    resolvedBy: "help.moving-over",
+  },
+  {
+    id: "movingOverOsu",
+    stage: "sync",
+    category: "moving-over",
+    trigger: { signal: "shortcuts.presetOsu", count: 1, windowMs: 60_000 },
+    resolvedBy: "help.moving-over",
+  },
+  {
+    id: "amllFileKeys",
+    needsKeyboard: true,
+    stage: "timeline",
+    category: "moving-over",
+    trigger: { signal: "import.amllFile", count: 1, windowMs: 60_000 },
+    resolvedBy: "shortcuts.presetAmll",
+  },
+  {
+    id: "amllFileHelp",
+    stage: "timeline",
+    category: "moving-over",
+    trigger: { signal: "import.amllFile", count: 1, windowMs: 60_000 },
+    resolvedBy: "help.moving-over",
+  },
 ];
 
 // -- Exports ------------------------------------------------------------------

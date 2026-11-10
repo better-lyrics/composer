@@ -1,3 +1,4 @@
+import { MOVING_OVER_NUDGE_COPY } from "@/guide/catalog/nudge-copy-moving-over";
 import { TIMELINE_NUDGE_COPY } from "@/guide/catalog/nudge-copy-timeline";
 import { TRANSPORT_NUDGE_COPY } from "@/guide/catalog/nudge-copy-transport";
 import { GUIDE_NUDGE_TRIGGERS } from "@/guide/catalog/nudge-triggers";
@@ -26,6 +27,7 @@ import {
 const NUDGE_COPY: Record<string, GuideNudgeCopy> = {
   ...TIMELINE_NUDGE_COPY,
   ...TRANSPORT_NUDGE_COPY,
+  ...MOVING_OVER_NUDGE_COPY,
   syllableGap: {
     icon: IconUnlink,
     title: "Trying to pull them apart?",
