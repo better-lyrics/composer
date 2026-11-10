@@ -8,7 +8,7 @@ import { SyllableGroup } from "@/views/sync/syllable-group";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
 import { type WordHandlers, WordRenderer } from "@/views/sync/word-renderer";
 import { IconLink } from "@tabler/icons-react";
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useMemo } from "react";
 import { cn } from "@/utils/cn";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -94,7 +94,6 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   onNudgeBgWordEnd,
   onSetBgWordEndTime,
 }) => {
-  const lineRef = useRef<HTMLDivElement>(null);
   const wordTexts = useMemo(
     () => displayWordTexts ?? (words?.length ? words.map((w) => w.text) : splitIntoWords(text)),
     [displayWordTexts, text, words],
@@ -109,12 +108,6 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
           : []),
     [backgroundText, backgroundWords, displayBackgroundText, displayBackgroundWordTexts],
   );
-
-  useEffect(() => {
-    if (isCurrent && lineRef.current) {
-      lineRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  }, [isCurrent]);
 
   const renderLineContent = () => {
     const renderedText = stripSplitCharacter(displayText ?? text);
@@ -258,7 +251,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
 
   return (
     <div
-      ref={lineRef}
+      data-sync-line={lineNumber}
       role="button"
       tabIndex={-1}
       aria-current={isCurrent || undefined}
