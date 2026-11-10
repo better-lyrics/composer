@@ -2,6 +2,7 @@ import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import { instancePositionsByLineId } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
+import { useSettingsStore } from "@/stores/settings";
 import { pluralize } from "@/utils/pluralize";
 import { LinePreview, PreviewGroupHeader } from "@/views/edit/line-preview";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
@@ -39,6 +40,7 @@ const LinePreviewList: React.FC<LinePreviewListProps> = ({
   const positions = useMemo(() => instancePositionsByLineId(lines), [lines]);
   const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
   const editsSelection = selectedLines.size > 1;
+  const splitCharacter = useSettingsStore((s) => s.splitCharacter);
 
   return (
     <div>
@@ -70,6 +72,7 @@ const LinePreviewList: React.FC<LinePreviewListProps> = ({
               line={line}
               agents={agents}
               isSelected={isSelected}
+              splitCharacter={splitCharacter}
               groupColor={group?.color}
               groupTooltip={groupTooltip}
               onBulkAgentChange={isSelected && editsSelection ? onBulkAgentChange : undefined}

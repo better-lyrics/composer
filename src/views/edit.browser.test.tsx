@@ -403,6 +403,18 @@ describe("regressions: typing does not reshuffle duplicate lines", () => {
   });
 });
 
+describe("regressions: preview follows settings", () => {
+  it("regression: a split character change updates the preview rows", async () => {
+    useProjectStore.setState({ lines: [createLine({ text: "Hel/lo world" })] });
+    const screen = await render(<EditPanel />);
+    await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Hel/lo world"]);
+
+    useSettingsStore.setState({ splitCharacter: "/" });
+
+    await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Hello world"]);
+  });
+});
+
 describe("Go to Edit while on Edit", () => {
   it("focuses the lyrics box with the caret at the end", async () => {
     useProjectStore.setState({

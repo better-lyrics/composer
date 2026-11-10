@@ -1,6 +1,6 @@
 import { getAgentColor } from "@/domain/agent/colors";
 import { cn } from "@/utils/cn";
-import { stripSplitCharacter } from "@/utils/split-character";
+import { withoutSplitCharacter } from "@/utils/split-character";
 import { LinePreviewActions } from "@/views/edit/line-preview-actions";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { IconLink } from "@tabler/icons-react";
@@ -12,6 +12,7 @@ interface LinePreviewProps {
   line: ParsedLine;
   agents: { id: string; name?: string }[];
   isSelected: boolean;
+  splitCharacter: string;
   groupColor?: string;
   groupTooltip?: string;
   onSelect: (lineNumber: number, shiftKey: boolean) => void;
@@ -99,6 +100,7 @@ const LinePreviewRow: React.FC<LinePreviewProps> = ({
   line,
   agents,
   isSelected,
+  splitCharacter,
   groupColor,
   groupTooltip,
   onSelect,
@@ -192,7 +194,7 @@ const LinePreviewRow: React.FC<LinePreviewProps> = ({
               : "text-composer-text",
           )}
         >
-          {stripSplitCharacter(line.text)}
+          {withoutSplitCharacter(line.text, splitCharacter)}
         </span>
 
         {line.backgroundText && (
