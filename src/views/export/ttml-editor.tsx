@@ -3,7 +3,7 @@ import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import { Scroll } from "@/ui/scroll";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
 import { TtmlDiffViewer } from "@/views/export/ttml-diff-viewer";
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useDeferredValue, useMemo, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -20,7 +20,11 @@ const TtmlEditor: React.FC<TtmlEditorProps> = ({ value, generatedTtml, onChange,
   const [showDiff, setShowDiff] = useState(false);
   const canDiff = value !== generatedTtml;
   const viewingDiff = showDiff && canDiff;
-  const validation = useMemo(() => (canDiff ? validateTtml(value) : null), [canDiff, value]);
+  const settledValue = useDeferredValue(value);
+  const validation = useMemo(
+    () => (settledValue !== generatedTtml ? validateTtml(settledValue) : null),
+    [settledValue, generatedTtml],
+  );
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-3.5">
