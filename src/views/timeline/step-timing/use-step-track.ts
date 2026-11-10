@@ -3,6 +3,7 @@ import { isWordSelected } from "@/domain/selection/identity";
 import type { WordSelection } from "@/domain/selection/model";
 import { toggleStepLane } from "@/views/timeline/step-timing/press-step-key";
 import { StepNextContext } from "@/views/timeline/step-timing/step-next";
+import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types --------------------------------------------------------------------
@@ -22,9 +23,12 @@ function useStepTrack(lineId: string, trackType: WordSelection["type"]): StepTra
   const stepQueue = useTimelineStore((s) => s.stepQueue);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const stepNext = use(StepNextContext);
+  const includeBackground = useSettingsStore((s) => s.stepTimingBackground);
   const chosen = stepQueue ?? selectedWords;
-  // A background lane outside the queue and the cursor is off the chain, and fades.
-  const offChain = stepTiming && trackType === "bg" && !chosen.some((s) => s.lineId === lineId && s.type === "bg");
+  // A background lane the keys will not reach fades: outside the queue, or skipped while background vocals are left out.
+  const reached = stepQueue === null && includeBackground;
+  const offChain =
+    stepTiming && trackType === "bg" && !reached && !chosen.some((s) => s.lineId === lineId && s.type === "bg");
   return {
     stepTiming,
     trackAttributes: {
