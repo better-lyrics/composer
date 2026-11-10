@@ -24,6 +24,7 @@ import {
 } from "@/utils/background-vocal-extraction";
 import { pluralWord, pluralize } from "@/utils/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
+import { useCanExtractBackgroundVocals } from "@/views/edit/can-extract-background";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { linesToEditText } from "@/views/edit/edit-text";
@@ -113,10 +114,7 @@ const EditPanel: React.FC = () => {
     }),
     [mergeStandaloneBackgroundLines, preserveBracketsOnExtraction],
   );
-  const canExtractBackgroundVocals = useMemo(() => {
-    const extracted = extractBackgroundVocals(lines, extractOptions);
-    return extracted.length !== lines.length || extracted.some((line, i) => line !== lines[i]);
-  }, [lines, extractOptions]);
+  const canExtractBackgroundVocals = useCanExtractBackgroundVocals(lines, extractOptions);
 
   const commitLinesWithHistory = useCallback((nextLines: LyricLine[], nextGroups?: LinkGroup[]) => {
     useProjectStore.getState().setLinesWithHistory(nextLines, nextGroups);
