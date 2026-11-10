@@ -31,6 +31,7 @@ const lineById = (id: string) => store().lines.find((line) => line.id === id);
 const press = (cursor: WordSelection, startNext: WordSelection | null, time: number) =>
   writeStepKey({
     lines: store().lines,
+    groups: store().groups,
     cursor,
     startNext,
     key: "step",
@@ -58,6 +59,22 @@ describe("writeStepKey", () => {
     press(slot("c0", 0, 0), slot("c0", 0, 1), 28.5);
     expect(lineById("c1")?.words?.[0].end).toBeCloseTo(40.5);
     expect(lineById("c1")?.words?.[1].begin).toBeCloseTo(40.5);
+  });
+
+  it("regression: never chains into another instance of the same shared group", () => {
+    const verse = (id: string, instanceIdx: number, begin: number) => ({
+      ...chorus(id, instanceIdx, begin),
+      templateLineIdx: 1,
+    });
+    useProjectStore.setState({
+      lines: [chorus("a0", 0, 28), verse("a1", 0, 30), chorus("b0", 1, 40), verse("b1", 1, 42)],
+      groups: [createGroup({ id: "g1", sharesTiming: true })],
+    });
+    const before = lineById("a0")?.words;
+    expect(press(slot("a1", 1, 2), slot("b0", 2, 0), 31.9)).toBeNull();
+    expect(lineById("a1")?.words?.[2].end).toBe(31.9);
+    expect(lineById("a0")?.words).toEqual(before);
+    expect(lineById("b0")?.words?.[0].begin).toBeCloseTo(40);
   });
 
   it("ends a line's last word and starts the next line at the same time, as one undo step", () => {

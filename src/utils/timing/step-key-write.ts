@@ -1,4 +1,5 @@
-import type { TimeRange } from "@/domain/group/shared-timing";
+import { sharesTiming, type TimeRange } from "@/domain/group/shared-timing";
+import type { LinkGroup } from "@/domain/group/template";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LineUpdate } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
@@ -11,6 +12,7 @@ import type { StepEdit } from "@/utils/timing/word-timing-ops";
 
 interface StepKeyWriteInput {
   lines: readonly ReadableLine[];
+  groups: readonly LinkGroup[];
   cursor: WordSelection;
   startNext: WordSelection | null;
   key: StepKey;
@@ -40,11 +42,21 @@ function editAt(input: StepKeyWriteInput, slot: WordSelection, key: StepKey): St
   });
 }
 
+// A start written in another instance of the same shared group would copy back over the cursor's own instance.
+function crossesSharedInstance(input: StepKeyWriteInput, startNext: WordSelection): boolean {
+  const from = input.lines[input.cursor.lineIndex];
+  const to = input.lines[startNext.lineIndex];
+  if (!from?.groupId || from.groupId !== to?.groupId || from.instanceIdx === to.instanceIdx) return false;
+  const group = input.groups.find((candidate) => candidate.id === from.groupId);
+  return sharesTiming(group, from.instanceIdx) && sharesTiming(group, to.instanceIdx);
+}
+
 // -- Functions ----------------------------------------------------------------
 
 // A step that also starts a word on another line lands both lines in one undo step.
 function writeStepKey(input: StepKeyWriteInput): StepRefusal | null {
-  const { cursor, startNext, key } = input;
+  const { cursor, key } = input;
+  const startNext = input.startNext && !crossesSharedInstance(input, input.startNext) ? input.startNext : null;
   const inTrack = startNext?.lineId === cursor.lineId && startNext.type === cursor.type;
   const ownKey = key !== "step" || inTrack ? key : "end";
   const own = editAt(input, cursor, ownKey);
