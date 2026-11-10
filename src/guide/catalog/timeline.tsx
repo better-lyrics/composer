@@ -239,8 +239,8 @@ const TIMELINE_TIPS = [
     title: "Time word after word",
     gist: (
       <>
-        Press {keys("timeline.stepWord")} to turn on Step timing and click a word. {keys("timeline.setWordBegin")} sets
-        where it starts. {keys("timeline.stepWord")} ends it and starts the next word in the same spot.{" "}
+        Press {keys("timeline.stepTimingOff")} to turn on Step timing and click a word. {keys("timeline.setWordBegin")}{" "}
+        sets where it starts. {keys("timeline.stepWord")} ends it and starts the next word in the same spot.{" "}
         {keys("timeline.setWordEnd")} ends it and leaves a gap before the next.
       </>
     ),

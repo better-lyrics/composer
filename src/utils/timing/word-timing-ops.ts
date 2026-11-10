@@ -54,7 +54,10 @@ interface StepEditInput {
   range: TimeRange;
 }
 
-type StepEdit = { kind: "written"; update: LineUpdate } | { kind: "refused"; refusal: StepRefusal } | null;
+type StepEdit =
+  | { kind: "written"; update: LineUpdate; endedPrevious?: string }
+  | { kind: "refused"; refusal: StepRefusal }
+  | null;
 
 // -- Factory ------------------------------------------------------------------
 
@@ -206,7 +209,8 @@ function createWordTimingOps(config: WordFieldConfig) {
     if (!line || !words?.[wordIdx]) return null;
     const result = applyStepKey({ words, index: wordIdx, key, time, minDuration, range });
     if (result.kind === "refused") return result;
-    return { kind: "written", update: { id: line.id, updates: boundaryUpdate(line, result.words) } };
+    const update = { id: line.id, updates: boundaryUpdate(line, result.words) };
+    return { kind: "written", update, endedPrevious: result.endedPrevious };
   }
 
   return { nudgeBegin, setBegin, nudgeEnd, setEnd, setBoundary, stepEdit };

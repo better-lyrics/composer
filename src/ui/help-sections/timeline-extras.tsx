@@ -157,7 +157,7 @@ const TimelineExtras: React.FC = () => (
           the Timeline section for the full rundown.
         </li>
         <li>
-          <strong>Step timing</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepWord")} />
+          <strong>Step timing</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.stepTimingOff")} />
           ): the timing keys follow the selected word and move on to the next one. See <strong>Step timing</strong>{" "}
           above.
         </li>

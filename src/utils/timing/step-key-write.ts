@@ -25,6 +25,8 @@ interface StepKeyWriteInput {
   ) => void;
 }
 
+type StepKeyOutcome = { kind: "refused"; refusal: StepRefusal } | { kind: "written"; endedPrevious?: string };
+
 // -- Helpers ------------------------------------------------------------------
 
 function editAt(input: StepKeyWriteInput, slot: WordSelection, key: StepKey): StepEdit {
@@ -54,22 +56,22 @@ function crossesSharedInstance(input: StepKeyWriteInput, startNext: WordSelectio
 // -- Functions ----------------------------------------------------------------
 
 // A step that also starts a word on another line lands both lines in one undo step.
-function writeStepKey(input: StepKeyWriteInput): StepRefusal | null {
+function writeStepKey(input: StepKeyWriteInput): StepKeyOutcome | null {
   const { cursor, key } = input;
   const startNext = input.startNext && !crossesSharedInstance(input, input.startNext) ? input.startNext : null;
   const inTrack = startNext?.lineId === cursor.lineId && startNext.type === cursor.type;
   const ownKey = key !== "step" || inTrack ? key : "end";
   const own = editAt(input, cursor, ownKey);
   if (!own) return null;
-  if (own.kind === "refused") return own.refusal;
+  if (own.kind === "refused") return own;
   const updates = [own.update];
   if (key === "step" && startNext && !inTrack) {
     const started = editAt(input, startNext, "start");
-    if (started?.kind === "refused") return started.refusal;
+    if (started?.kind === "refused") return started;
     if (started) updates.push(started.update);
   }
   input.updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
-  return null;
+  return { kind: "written", endedPrevious: own.endedPrevious };
 }
 
 // -- Exports ------------------------------------------------------------------

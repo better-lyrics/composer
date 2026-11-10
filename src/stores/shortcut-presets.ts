@@ -53,6 +53,8 @@ const SHORTCUT_PRESETS: readonly ShortcutPreset[] = [
       "timeline.setWordEnd": { key: "h" },
       "timeline.toggleFollow": { key: "f", shift: true },
       "timeline.pingSiblings": { key: "h", shift: true },
+      "timeline.stepWord": { key: "g" },
+      "timeline.stepTimingOff": { key: "g", shift: true },
     },
   },
   {

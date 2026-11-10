@@ -16,7 +16,7 @@ describe("shortcut codes", () => {
   });
 
   it("writes a preset with no changes as an empty tail", () => {
-    expect(encodeShortcutCode("editor", {})).toBe("csk1:editor:8:");
+    expect(encodeShortcutCode("editor", {})).toBe("csk1:editor:9:");
     expect(decodeShortcutCode("csk1:editor:8:")).toEqual({ preset: "editor", overrides: {} });
   });
 
