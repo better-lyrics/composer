@@ -41,8 +41,14 @@ interface PopoverListNavigation {
 
 // A reference anchors the popover to an element rendered elsewhere, so the element exists before the popover mounts.
 type PopoverAnchor =
-  | { trigger: ReactElement; reference?: never }
-  | { trigger?: never; reference: HTMLElement | null; open: boolean; onOpenChange: (open: boolean) => void };
+  | { trigger: ReactElement; reference?: never; id?: never }
+  | {
+      trigger?: never;
+      reference: HTMLElement | null;
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+      id?: string;
+    };
 
 interface PopoverOptions {
   children: ReactNode | ((close: () => void, getItemProps: GetItemProps) => ReactNode);
@@ -69,6 +75,7 @@ const PRESSABLE_CONTROL = "button, input, [role='slider']";
 const Popover: React.FC<PopoverProps> = ({
   trigger,
   reference,
+  id,
   children,
   placement = "bottom",
   offsetPx = 8,
@@ -167,6 +174,7 @@ const Popover: React.FC<PopoverProps> = ({
               ref={refs.setFloating}
               style={floatingStyles}
               {...getFloatingProps()}
+              {...(id && { id })}
               aria-label={ariaLabel}
               className="layer-floating w-max max-w-[calc(100vw-16px)] outline-none"
             >
@@ -187,4 +195,5 @@ const Popover: React.FC<PopoverProps> = ({
 
 // -- Exports ------------------------------------------------------------------
 
+export type { PopoverAnchor };
 export { Popover };

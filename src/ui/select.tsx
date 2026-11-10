@@ -1,8 +1,10 @@
 import type { Placement } from "@floating-ui/react";
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
 import { cloneElement, type ReactElement, type ReactNode, useRef, useState } from "react";
-import { Popover } from "@/ui/popover";
+import { LazyPopover } from "@/ui/lazy-popover";
+import { Popover, type PopoverAnchor } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
+import { OptionGroup, optionRuns } from "@/ui/select-option-groups";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
 
@@ -38,6 +40,8 @@ interface SelectProps {
   header?: ReactNode;
   /** Shown on the trigger after the label, such as a status chip. */
   triggerAdornment?: ReactNode;
+  /** Mounts the popover on the first open, for a Select repeated on every row of a long list. */
+  mountOnFirstOpen?: boolean;
 }
 
 type SelectAppearance = "field" | "pick";
@@ -176,32 +180,6 @@ const OptionRow: React.FC<OptionRowProps> = ({
   </button>
 );
 
-function optionRuns(options: readonly SelectOption[]): { group?: string; start: number; options: SelectOption[] }[] {
-  const runs: { group?: string; start: number; options: SelectOption[] }[] = [];
-  options.forEach((option, index) => {
-    const last = runs.at(-1);
-    if (last && last.group === option.group) last.options.push(option);
-    else runs.push({ group: option.group, start: index, options: [option] });
-  });
-  return runs;
-}
-
-const OptionGroup: React.FC<{ name?: string; children: ReactNode }> = ({ name, children }) =>
-  name ? (
-    <div role="group" aria-label={name} className="flex flex-col">
-      <hr className="h-px mx-1 mt-1.5 mb-1 border-0 bg-(--divider) in-[[role=group]:first-child]:hidden" />
-      <div
-        aria-hidden="true"
-        className="px-2 pt-1 pb-0.5 text-[11px] leading-4 font-semibold text-(--muted) select-none"
-      >
-        {name}
-      </div>
-      {children}
-    </div>
-  ) : (
-    children
-  );
-
 const Select: React.FC<SelectProps> = ({
   value,
   onChange,
@@ -217,6 +195,7 @@ const Select: React.FC<SelectProps> = ({
   renderOption,
   header,
   triggerAdornment,
+  mountOnFirstOpen = false,
 }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const listRef = useRef<Array<HTMLElement | null>>([]);
@@ -240,11 +219,11 @@ const Select: React.FC<SelectProps> = ({
       triggerAdornment,
     });
 
-  return (
+  const renderPopover = (anchor: PopoverAnchor) => (
     <Popover
+      {...anchor}
       placement={placement}
       hasPopup="listbox"
-      trigger={triggerElement}
       listNavigation={{
         listRef,
         activeIndex,
@@ -290,6 +269,13 @@ const Select: React.FC<SelectProps> = ({
         </>
       )}
     </Popover>
+  );
+
+  if (!mountOnFirstOpen) return renderPopover({ trigger: triggerElement });
+  return (
+    <LazyPopover hasPopup="listbox" trigger={triggerElement}>
+      {renderPopover}
+    </LazyPopover>
   );
 };
 

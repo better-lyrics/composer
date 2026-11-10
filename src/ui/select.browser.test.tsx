@@ -244,4 +244,35 @@ describe("Select", () => {
       await expect.element(screen.getByRole("option", { name: "Option 1", exact: true })).toHaveFocus();
     });
   });
+
+  it("with mountOnFirstOpen, opens on ArrowDown, names its listbox, and returns focus on Escape", async () => {
+    let selected = "a";
+    const screen = await render(
+      <Select
+        aria-label="Letter"
+        value="b"
+        onChange={(value) => {
+          selected = value;
+        }}
+        options={OPTIONS}
+        mountOnFirstOpen
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: "Letter" });
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "false");
+    await userEvent.tab();
+    await userEvent.keyboard("{ArrowDown}");
+    await expect.element(screen.getByRole("option", { name: "Beta" })).toHaveFocus();
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "true");
+    const listbox = screen.getByRole("listbox").element();
+    expect(trigger.element().getAttribute("aria-controls")).toBe(listbox.closest("[id]")?.id);
+    await userEvent.keyboard("{ArrowDown}{Enter}");
+    expect(selected).toBe("c");
+    await expect.element(trigger).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await expect.element(screen.getByRole("listbox")).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    await expect.element(screen.getByRole("listbox")).not.toBeInTheDocument();
+    await expect.element(trigger).toHaveFocus();
+  });
 });

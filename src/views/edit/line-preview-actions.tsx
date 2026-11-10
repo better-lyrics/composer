@@ -1,6 +1,7 @@
 import { agentDisplayName } from "@/domain/agent/display-name";
 import { getAgentColor } from "@/domain/agent/colors";
 import { INPUT_STYLES } from "@/ui/input-styles";
+import { LazyPopover } from "@/ui/lazy-popover";
 import { Popover } from "@/ui/popover";
 import { Select } from "@/ui/select";
 import { SingerTag } from "@/ui/singer-tag";
@@ -9,7 +10,6 @@ import { cn } from "@/utils/cn";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { IconAlertTriangle, IconArrowBackUp, IconChevronDown, IconMicrophone } from "@tabler/icons-react";
 import { useState } from "react";
-import { OnDemandPopover } from "@/views/edit/on-demand-popover";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -97,8 +97,16 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
 }) => (
   <div className="flex items-center gap-1.5 ml-auto transition-opacity opacity-0 group-hover:opacity-100 focus-within:opacity-100 has-[[aria-expanded=true]]:opacity-100">
     {agents.length > 1 && line.lineId && (
-      <OnDemandPopover
-        hasPopup="listbox"
+      <Select
+        aria-label="Line agent"
+        value={line.agentId}
+        onChange={(next) => {
+          if (onBulkAgentChange) onBulkAgentChange(next);
+          else onAgentChange(line.lineId, next);
+        }}
+        options={agents.map((agent) => ({ value: agent.id, label: agentDisplayName(agent) }))}
+        renderOption={(option) => <SingerTag color={getAgentColor(option.value)}>{option.label}</SingerTag>}
+        mountOnFirstOpen
         trigger={
           <button
             type="button"
@@ -110,25 +118,11 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
             <IconChevronDown className="size-[13px] -mr-[3px] opacity-60 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90" />
           </button>
         }
-      >
-        {(trigger) => (
-          <Select
-            aria-label="Line agent"
-            value={line.agentId}
-            onChange={(next) => {
-              if (onBulkAgentChange) onBulkAgentChange(next);
-              else onAgentChange(line.lineId, next);
-            }}
-            options={agents.map((agent) => ({ value: agent.id, label: agentDisplayName(agent) }))}
-            renderOption={(option) => <SingerTag color={getAgentColor(option.value)}>{option.label}</SingerTag>}
-            trigger={trigger}
-          />
-        )}
-      </OnDemandPopover>
+      />
     )}
 
     {line.lineId && (
-      <OnDemandPopover
+      <LazyPopover
         hasPopup="dialog"
         trigger={
           <button
@@ -140,8 +134,8 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
           </button>
         }
       >
-        {(trigger) => (
-          <Popover placement="bottom-start" trigger={trigger}>
+        {(anchor) => (
+          <Popover placement="bottom-start" {...anchor}>
             {(close) => (
               <BackgroundVocalsForm
                 line={line}
@@ -152,7 +146,7 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
             )}
           </Popover>
         )}
-      </OnDemandPopover>
+      </LazyPopover>
     )}
 
     {line.hasTiming && <span className="text-[11.5px] text-composer-accent-text">synced</span>}
