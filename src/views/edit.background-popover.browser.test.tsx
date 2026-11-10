@@ -36,6 +36,22 @@ describe("background vocals popover", () => {
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines[0].backgroundText).toBe("yea");
   });
+
+  it("opens from the keyboard and returns focus to its trigger on close", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world" })] });
+    const screen = await render(<EditPanel />);
+    const trigger = screen.getByRole("button", { name: "BG", exact: true });
+
+    (trigger.element() as HTMLElement).focus();
+    await userEvent.keyboard("{Enter}");
+    await expect.element(screen.getByRole("textbox", { name: "Background vocals text" })).toHaveFocus();
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "true");
+
+    await userEvent.keyboard("{Enter}");
+    await expect.element(screen.getByRole("textbox", { name: "Background vocals text" })).not.toBeInTheDocument();
+    await expect.element(trigger).toHaveFocus();
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "false");
+  });
 });
 
 describe("regressions", () => {

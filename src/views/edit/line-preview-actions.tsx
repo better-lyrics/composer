@@ -9,6 +9,7 @@ import { cn } from "@/utils/cn";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { IconAlertTriangle, IconArrowBackUp, IconChevronDown, IconMicrophone } from "@tabler/icons-react";
 import { useState } from "react";
+import { OnDemandPopover } from "@/views/edit/on-demand-popover";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -55,6 +56,36 @@ const BackgroundTextInput: React.FC<{
   );
 };
 
+const BackgroundVocalsForm: React.FC<{
+  line: ParsedLine;
+  onExtractLine: (lineId: string) => void;
+  onBackgroundChange: (lineId: string, text: string) => void;
+  onClose: () => void;
+}> = ({ line, onExtractLine, onBackgroundChange, onClose }) => (
+  <div className="flex flex-col gap-2 w-[220px] p-3">
+    <p className="text-[13.5px] font-bold text-composer-text">Background vocals</p>
+    {classifyLine(line.text).kind === "inline" && (
+      // react-doctor-disable-next-line react-doctor/html-no-nested-interactive -- lives in a portalled popover, so it is not nested in the row in the DOM
+      <button
+        type="button"
+        onClick={() => {
+          if (line.lineId) onExtractLine(line.lineId);
+          onClose();
+        }}
+        className="flex w-full items-center gap-1 px-0.5 text-xs cursor-pointer text-composer-accent-text hover:text-composer-text"
+      >
+        <IconArrowBackUp className="size-[13px]" />
+        Pull from ( )
+      </button>
+    )}
+    <BackgroundTextInput
+      initialText={line.backgroundText ?? ""}
+      onCommit={(text) => onBackgroundChange(line.lineId, text)}
+      onClose={onClose}
+    />
+  </div>
+);
+
 const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
   line,
   agents,
@@ -66,15 +97,8 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
 }) => (
   <div className="flex items-center gap-1.5 ml-auto transition-opacity opacity-0 group-hover:opacity-100 focus-within:opacity-100 has-[[aria-expanded=true]]:opacity-100">
     {agents.length > 1 && line.lineId && (
-      <Select
-        aria-label="Line agent"
-        value={line.agentId}
-        onChange={(next) => {
-          if (onBulkAgentChange) onBulkAgentChange(next);
-          else onAgentChange(line.lineId, next);
-        }}
-        options={agents.map((agent) => ({ value: agent.id, label: agentDisplayName(agent) }))}
-        renderOption={(option) => <SingerTag color={getAgentColor(option.value)}>{option.label}</SingerTag>}
+      <OnDemandPopover
+        hasPopup="listbox"
         trigger={
           <button
             type="button"
@@ -86,12 +110,26 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
             <IconChevronDown className="size-[13px] -mr-[3px] opacity-60 transition-[rotate,opacity] in-aria-expanded:rotate-180 in-aria-expanded:opacity-90" />
           </button>
         }
-      />
+      >
+        {(trigger) => (
+          <Select
+            aria-label="Line agent"
+            value={line.agentId}
+            onChange={(next) => {
+              if (onBulkAgentChange) onBulkAgentChange(next);
+              else onAgentChange(line.lineId, next);
+            }}
+            options={agents.map((agent) => ({ value: agent.id, label: agentDisplayName(agent) }))}
+            renderOption={(option) => <SingerTag color={getAgentColor(option.value)}>{option.label}</SingerTag>}
+            trigger={trigger}
+          />
+        )}
+      </OnDemandPopover>
     )}
 
     {line.lineId && (
-      <Popover
-        placement="bottom-start"
+      <OnDemandPopover
+        hasPopup="dialog"
         trigger={
           <button
             type="button"
@@ -102,31 +140,19 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
           </button>
         }
       >
-        {(close) => (
-          <div className="flex flex-col gap-2 w-[220px] p-3">
-            <p className="text-[13.5px] font-bold text-composer-text">Background vocals</p>
-            {classifyLine(line.text).kind === "inline" && (
-              // react-doctor-disable-next-line react-doctor/html-no-nested-interactive -- lives in a portalled popover, so it is not nested in the row in the DOM
-              <button
-                type="button"
-                onClick={() => {
-                  if (line.lineId) onExtractLine(line.lineId);
-                  close();
-                }}
-                className="flex w-full items-center gap-1 px-0.5 text-xs cursor-pointer text-composer-accent-text hover:text-composer-text"
-              >
-                <IconArrowBackUp className="size-[13px]" />
-                Pull from ( )
-              </button>
+        {(trigger) => (
+          <Popover placement="bottom-start" trigger={trigger}>
+            {(close) => (
+              <BackgroundVocalsForm
+                line={line}
+                onExtractLine={onExtractLine}
+                onBackgroundChange={onBackgroundChange}
+                onClose={close}
+              />
             )}
-            <BackgroundTextInput
-              initialText={line.backgroundText ?? ""}
-              onCommit={(text) => onBackgroundChange(line.lineId, text)}
-              onClose={close}
-            />
-          </div>
+          </Popover>
         )}
-      </Popover>
+      </OnDemandPopover>
     )}
 
     {line.hasTiming && <span className="text-[11.5px] text-composer-accent-text">synced</span>}
