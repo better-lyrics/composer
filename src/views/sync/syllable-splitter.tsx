@@ -9,7 +9,7 @@ import {
   useSyllableSplitterState,
 } from "@/views/sync/use-syllable-splitter-state";
 import { IconScissors } from "@tabler/icons-react";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -22,13 +22,22 @@ interface SyllableSplitterProps {
 }
 
 interface SyllableSplitPanelProps extends Pick<SyllableSplitterProps, "lineId" | "type" | "word" | "wordIndex"> {
+  panelId: string;
   state: UseSyllableSplitterStateResult;
   close: () => void;
 }
 
 // -- Components ---------------------------------------------------------------
 
-const SyllableSplitPanel: React.FC<SyllableSplitPanelProps> = ({ lineId, type, word, wordIndex, state, close }) => {
+const SyllableSplitPanel: React.FC<SyllableSplitPanelProps> = ({
+  panelId,
+  lineId,
+  type,
+  word,
+  wordIndex,
+  state,
+  close,
+}) => {
   const { splitPoints, caseInsensitive } = state;
   const lines = useProjectStore((s) => s.lines);
   const identicalCount = useMemo(
@@ -40,7 +49,7 @@ const SyllableSplitPanel: React.FC<SyllableSplitPanelProps> = ({ lineId, type, w
   const text = word.text.trimEnd();
 
   return (
-    <div className="p-5">
+    <div id={panelId} className="p-5">
       <h3 className="mb-4 text-lg font-medium">Split "{text}"</h3>
       <SplitModeContent
         text={text}
@@ -64,18 +73,33 @@ const SyllableSplitPanel: React.FC<SyllableSplitPanelProps> = ({ lineId, type, w
 };
 
 interface SyllableSplitPopoverProps extends SyllableSplitterProps {
+  panelId: string;
   trigger: HTMLButtonElement | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const SyllableSplitPopover: React.FC<SyllableSplitPopoverProps> = ({ trigger, open, onOpenChange, ...splitter }) => {
+const SyllableSplitPopover: React.FC<SyllableSplitPopoverProps> = ({
+  panelId,
+  trigger,
+  open,
+  onOpenChange,
+  ...splitter
+}) => {
   const state = useSyllableSplitterState(splitter);
   const { lineId, type, word, wordIndex } = splitter;
   return (
     <Popover reference={trigger} open={open} onOpenChange={onOpenChange}>
       {(close) => (
-        <SyllableSplitPanel lineId={lineId} type={type} word={word} wordIndex={wordIndex} state={state} close={close} />
+        <SyllableSplitPanel
+          panelId={panelId}
+          lineId={lineId}
+          type={type}
+          word={word}
+          wordIndex={wordIndex}
+          state={state}
+          close={close}
+        />
       )}
     </Popover>
   );
@@ -86,6 +110,7 @@ const SyllableSplitter: React.FC<SyllableSplitterProps> = (props) => {
   const [trigger, setTrigger] = useState<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
   const [opened, setOpened] = useState(false);
+  const panelId = useId();
 
   if (props.word.text.trimEnd().length < 2) {
     return null;
@@ -105,12 +130,15 @@ const SyllableSplitter: React.FC<SyllableSplitterProps> = (props) => {
         title="Split into syllables"
         aria-haspopup="dialog"
         aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
         onClick={toggle}
         className="px-1.5 py-0.5 h-auto align-middle rounded-sm"
       >
         <IconScissors className="size-3" />
       </Button>
-      {opened && <SyllableSplitPopover {...props} trigger={trigger} open={open} onOpenChange={setOpen} />}
+      {opened && (
+        <SyllableSplitPopover {...props} panelId={panelId} trigger={trigger} open={open} onOpenChange={setOpen} />
+      )}
     </>
   );
 };
