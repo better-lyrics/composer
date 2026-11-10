@@ -22,6 +22,21 @@ interface ScrollRange {
 
 const FOCUS_SCROLL_MARGIN_PX = 64;
 
+// -- State --------------------------------------------------------------------
+
+// The follow loop asks both every frame while a group is open; each answer holds until the lines or the focus change.
+const lastEffectiveFocus: { lines: readonly LyricLine[] | null; focus: GroupFocus | null; shown: GroupFocus | null } = {
+  lines: null,
+  focus: null,
+  shown: null,
+};
+const lastFocusBounds: {
+  lines: readonly LyricLine[] | null;
+  groupId: string;
+  hearInstanceIdx: number;
+  bounds: Bounds | null;
+} = { lines: null, groupId: "", hearInstanceIdx: -1, bounds: null };
+
 // -- Functions ----------------------------------------------------------------
 
 function isInFocus(line: LyricLine, focus: GroupFocus | null): boolean {
@@ -30,7 +45,10 @@ function isInFocus(line: LyricLine, focus: GroupFocus | null): boolean {
 
 function effectiveFocus(lines: readonly LyricLine[], focus: GroupFocus | null): GroupFocus | null {
   if (focus === null) return null;
-  return lines.some((line) => isInFocus(line, focus)) ? focus : null;
+  if (lastEffectiveFocus.lines === lines && lastEffectiveFocus.focus === focus) return lastEffectiveFocus.shown;
+  const shown = lines.some((line) => isInFocus(line, focus)) ? focus : null;
+  Object.assign(lastEffectiveFocus, { lines, focus, shown });
+  return shown;
 }
 
 function canHearInstance(lines: readonly LyricLine[], group: LinkGroup, instanceIdx: number): boolean {
@@ -61,7 +79,12 @@ function instanceSpan(lines: readonly LyricLine[], groupId: string, instanceIdx:
 }
 
 function focusBounds(lines: readonly LyricLine[], focus: GroupFocus): Bounds | null {
-  return instanceSpan(lines, focus.groupId, focus.hearInstanceIdx);
+  const { groupId, hearInstanceIdx } = focus;
+  const last = lastFocusBounds;
+  if (last.lines === lines && last.groupId === groupId && last.hearInstanceIdx === hearInstanceIdx) return last.bounds;
+  const bounds = instanceSpan(lines, groupId, hearInstanceIdx);
+  Object.assign(last, { lines, groupId, hearInstanceIdx, bounds });
+  return bounds;
 }
 
 function focusScrollRange(span: Bounds, zoom: number, visibleTrackWidth: number): ScrollRange {
