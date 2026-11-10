@@ -245,7 +245,12 @@ const BeatGridCanvas: React.FC = () => {
         bandEmpty && "opacity-0",
       )}
     >
-      <canvas ref={canvasRef} data-beat-grid-canvas className="absolute top-0 left-0 beat-grid-past-dim" />
+      <canvas
+        ref={canvasRef}
+        data-beat-grid-canvas
+        data-playback-style="--played-x"
+        className="absolute top-0 left-0 beat-grid-past-dim"
+      />
     </div>
   );
 };

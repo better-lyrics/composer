@@ -168,7 +168,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
     <>
       <canvas ref={ghostRef} aria-hidden className="pitch-lane-ghost" />
       <canvas ref={sparkRef} aria-hidden className="pitch-lane" />
-      <canvas ref={sungRef} aria-hidden data-sung className="pitch-lane" />
+      <canvas ref={sungRef} aria-hidden data-sung data-playback-style="clip-path" className="pitch-lane" />
     </>
   );
 };

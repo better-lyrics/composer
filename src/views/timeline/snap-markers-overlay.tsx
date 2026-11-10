@@ -57,6 +57,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
   }, [showOnsets, vocalOnsetSnapPoints, customSnapPoints, draggingTime, zoom, thresholdPx]);
 
   const layerRef = useRef<HTMLDivElement>(null);
+  const writtenRef = useRef<{ layer: HTMLDivElement | null; left: number }>({ layer: null, left: Number.NaN });
 
   const visibleOnsetCount = showOnsets ? vocalOnsetSnapPoints.length : 0;
   // An unmounted pin never gets its pointerup, so the drag would not commit.
@@ -66,10 +67,12 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
   useFrameLoop(
     () => {
       const layer = layerRef.current;
-      if (layer) {
-        const scrollLeft = viewScrollLeft();
-        layer.style.transform = `translate3d(${GUTTER_WIDTH - scrollLeft}px, 0, 0)`;
-      }
+      const written = writtenRef.current;
+      const left = GUTTER_WIDTH - viewScrollLeft();
+      if (!layer || (written.layer === layer && written.left === left)) return;
+      written.layer = layer;
+      written.left = left;
+      layer.style.transform = `translate3d(${left}px, 0, 0)`;
     },
     "snap-markers-overlay",
     isVisible,
