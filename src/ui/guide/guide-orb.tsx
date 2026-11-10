@@ -45,7 +45,10 @@ const GuideOrb: React.FC<GuideOrbProps> = ({ peek, unread, progress, open, onCli
         onBlur={onRelease}
         aria-label={showPeek ? undefined : open ? "Close guide" : orbLabel(unread)}
         aria-expanded={open}
-        className="surface-floating flex h-11 cursor-pointer select-none items-center overflow-hidden rounded-full border border-transparent p-1 text-[13px] transition-[scale] duration-150 ease-out active:scale-[0.96]"
+        className={cn(
+          "surface-floating flex h-11 cursor-pointer select-none items-center overflow-hidden rounded-full border border-transparent p-1 text-[13px] transition-[scale] duration-150 ease-out active:scale-[0.96]",
+          showCount && "orb-badge-gap",
+        )}
       >
         <m.span layout="position" className="relative flex size-9 shrink-0 items-center justify-center">
           <ProgressRing progress={progress} className="absolute inset-0" />
@@ -92,7 +95,7 @@ const GuideOrb: React.FC<GuideOrbProps> = ({ peek, unread, progress, open, onCli
             animate="shown"
             exit="exit"
             aria-hidden
-            className="pointer-events-none absolute -top-1 -right-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-composer-accent px-1 text-[11px] leading-none font-semibold text-composer-on-accent tabular-nums shadow-[0_0_0_2px_var(--color-composer-bg-dark)]"
+            className="pointer-events-none absolute -top-1 -right-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-composer-accent px-1 text-[11px] leading-none font-semibold text-composer-on-accent tabular-nums"
           >
             {unread}
           </m.span>

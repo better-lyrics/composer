@@ -768,6 +768,22 @@ braccato-lyrics .blyrics-container {
   box-shadow: var(--float-shadow);
 }
 
+/* A disc of the orb's face under the count badge, clipped by the orb, so the gap shows only where they overlap. */
+@utility orb-badge-gap {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    width: 22px;
+    height: 22px;
+    border-radius: 9999px;
+    background: var(--pop);
+    pointer-events: none;
+  }
+}
+
 /* Timeline panning mode */
 @layer components {
   /* Extruded key: the base paints the side, the cap is the face. Press sinks the cap into the side. */
