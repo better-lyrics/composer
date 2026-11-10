@@ -61,6 +61,7 @@ interface TimelineState {
   scrollTop: number | null;
   pendingResumeView: ResumePosition | null;
   rowHeights: Record<string, number>;
+  lastResizedLineId: string | null;
   defaultRowHeight: number;
   isDraggingPlayhead: boolean;
   dragTime: number;
@@ -162,6 +163,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     scrollTop: null,
     pendingResumeView: null,
     rowHeights: {},
+    lastResizedLineId: null,
     defaultRowHeight: settings.defaultRowHeight,
     isDraggingPlayhead: false,
     dragTime: 0,
@@ -217,6 +219,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setPendingResumeView: (pendingResumeView) => set({ pendingResumeView }),
     setRowHeight: (lineId, height) =>
       set((s) => ({
+        lastResizedLineId: lineId,
         rowHeights: {
           ...s.rowHeights,
           [lineId]: Math.max(MIN_ROW_HEIGHT, Math.min(MAX_ROW_HEIGHT, height)),
@@ -276,6 +279,11 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setPitchTrackGeneration: (pitchTrackGeneration) => set({ pitchTrackGeneration }),
     setLoupeTarget: (loupeTarget) => set({ loupeTarget }),
   };
+});
+
+useSettingsStore.subscribe((settings, previous) => {
+  if (settings.defaultRowHeight !== previous.defaultRowHeight)
+    useTimelineStore.setState({ defaultRowHeight: settings.defaultRowHeight });
 });
 
 // -- Functions -----------------------------------------------------------------
