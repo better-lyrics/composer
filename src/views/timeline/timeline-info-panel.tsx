@@ -1,7 +1,6 @@
 import { getAgentColor } from "@/domain/agent/colors";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
-import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { WordSelection } from "@/domain/selection/model";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
@@ -22,6 +21,7 @@ import {
   selectionCountLabel,
   selectionGroupHighlight,
 } from "@/views/timeline/selection-info";
+import { timelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { formatTime } from "@/views/timeline/utils";
 import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
@@ -115,7 +115,7 @@ const TimelineInfoPanel: React.FC = () => {
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const selectedWord = selectedWords[0] ?? null;
 
-  const lines = useMemo(() => getEffectiveLines(rawLines), [rawLines]);
+  const lines = timelineEffectiveLines(rawLines);
   const highlight = useMemo(
     () => selectionGroupHighlight(selectedWords, rawLines, groups),
     [selectedWords, rawLines, groups],

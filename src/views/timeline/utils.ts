@@ -2,7 +2,7 @@ import type { TimeRange } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-words";
+import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { trackWords } from "@/domain/line/tracks";
@@ -12,6 +12,7 @@ import { formatTime as formatTimeBase } from "@/utils/format-time";
 import { distributeWordsInLine } from "@/utils/sync-helpers";
 import { type GroupFocus, effectiveFocus, isInFocus } from "@/views/timeline/group-focus";
 import { lineRowHeight } from "@/views/timeline/row-geometry";
+import { timelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -56,7 +57,7 @@ interface LineEffectiveRow {
 type EffectiveRow = GroupHeaderRow | LineEffectiveRow;
 
 function getEffectiveRows(lines: LyricLine[], focus: GroupFocus | null = null): EffectiveRow[] {
-  const effective = getEffectiveLines(lines);
+  const effective = timelineEffectiveLines(lines);
   const rows: EffectiveRow[] = [];
   let bufferStart = 0;
   let currentKey: string | null = null;

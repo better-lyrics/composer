@@ -1,7 +1,6 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { getAgentColor } from "@/domain/agent/colors";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
-import { getEffectiveLines } from "@/domain/line/effective-words";
 import { trackWords } from "@/domain/line/tracks";
 import { isWordSelected } from "@/domain/selection/identity";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
@@ -29,6 +28,7 @@ import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
 import { StepNextContext, useStepNext } from "@/views/timeline/step-timing/step-next";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
+import { timelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { BoundaryModeChip } from "@/views/timeline/boundary-mode-chip";
@@ -81,7 +81,7 @@ const TimelinePanel: React.FC = () => {
   const [rulerMarkerHost, setRulerMarkerHost] = useState<HTMLDivElement | null>(null);
   const openImportModal = useImportModal();
 
-  const effectiveLines = useMemo(() => getEffectiveLines(lines), [lines]);
+  const effectiveLines = timelineEffectiveLines(lines);
   const stepNext = useStepNext(effectiveLines);
   const stepTiming = useTimelineStore((s) => s.stepTiming);
   const timelineShown = !!source && lines.length > 0;
