@@ -128,7 +128,7 @@ const NewSubmissionCard: React.FC<ModeCardProps> = (props) => {
         failure={failureText}
         label="Submit to Unison"
         pending={sender.pending}
-        disabled={!submission || capReached}
+        disabled={!submission || capReached || source.settling}
         blockedReasonId={capReached ? versionsReasonId : checksReasonId}
         onSend={() => submission && void sender.send({ kind: "new", submission, videoIds })}
       />
@@ -209,7 +209,7 @@ const UpdateCard: React.FC<ModeCardProps & { lyricId: number }> = (props) => {
         failure={failureText}
         label={goesLive ? "Send update" : "Send for review"}
         pending={sender.pending}
-        disabled={blocked || !preview || preview.noChanges || settling}
+        disabled={blocked || !preview || preview.noChanges || settling || source.settling}
         blockedReasonId={blockedReasonId}
         onSend={() => void sender.send({ kind: "update", lyricId, input })}
       />

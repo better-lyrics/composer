@@ -1,5 +1,5 @@
 import { IconFolderOpen } from "@tabler/icons-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useUnisonFeatures } from "@/hooks/unison/useUnisonFeatures";
@@ -124,12 +124,31 @@ const ExportPanel: React.FC = () => {
     [generatedTtml, hasConflict, setEditState],
   );
 
+  const settledEditedContent = useDeferredValue(editedContent);
+  const settledGeneratedTtml = useDeferredValue(generatedTtml);
+  const unisonSettling = settledEditedContent !== editedContent || settledGeneratedTtml !== generatedTtml;
+  const unisonContent = useMemo(() => {
+    if (!unisonEnabled) return "";
+    const settledExportContent = settledEditedContent ?? settledGeneratedTtml;
+    return (
+      settledExportContent &&
+      outgoingTtml({
+        editedContent: settledEditedContent,
+        generatedContent: settledGeneratedTtml,
+        duration,
+        exportTiming,
+        youtubeVideoId,
+      })
+    );
+  }, [unisonEnabled, settledEditedContent, settledGeneratedTtml, duration, exportTiming, youtubeVideoId]);
+
   const unisonSource = useMemo(
     (): UnisonExportSource | null =>
       unisonEnabled
         ? {
-            content: exportContent && outgoingContent(),
-            isEdited: editedContent !== null,
+            content: unisonContent,
+            settling: unisonSettling,
+            isEdited: settledEditedContent !== null,
             videoId: youtubeVideoId,
             durationSeconds: duration,
             lineCount,
@@ -141,9 +160,9 @@ const ExportPanel: React.FC = () => {
         : null,
     [
       unisonEnabled,
-      exportContent,
-      outgoingContent,
-      editedContent,
+      unisonContent,
+      unisonSettling,
+      settledEditedContent,
       youtubeVideoId,
       duration,
       lineCount,

@@ -15,6 +15,7 @@ import { useId, useMemo } from "react";
 
 interface UnisonExportSource {
   content: string;
+  settling: boolean;
   isEdited: boolean;
   videoId: string | undefined;
   durationSeconds: number;
@@ -56,23 +57,36 @@ function useSubmitChecks(mode: SubmitMode, source: UnisonExportSource): SubmitCh
   const metadata = useProjectStore((state) => state.metadata);
   const lines = useProjectStore((state) => state.lines);
   const fullySynced = useMemo(() => isProjectFullySynced(lines), [lines]);
+  const { videoId, durationSeconds, syncedLineCount, lineCount, content, isEdited } = source;
+  const alignmentTier = source.review.tier;
   return useMemo(
     () =>
       submitChecks({
         mode,
-        videoId: source.videoId,
-        durationSeconds: source.durationSeconds || metadata.duration,
+        videoId,
+        durationSeconds: durationSeconds || metadata.duration,
         title: metadata.title,
         artists: metadata.artists,
-        syncedLineCount: source.syncedLineCount,
-        lineCount: source.lineCount,
+        syncedLineCount,
+        lineCount,
         fullySynced,
-        alignmentTier: source.review.tier,
-        content: source.content,
-        contentIsEdited: source.isEdited,
+        alignmentTier,
+        content,
+        contentIsEdited: isEdited,
         isrc: metadata.isrc,
       }),
-    [mode, source, metadata, fullySynced],
+    [
+      mode,
+      videoId,
+      durationSeconds,
+      syncedLineCount,
+      lineCount,
+      alignmentTier,
+      content,
+      isEdited,
+      metadata,
+      fullySynced,
+    ],
   );
 }
 
