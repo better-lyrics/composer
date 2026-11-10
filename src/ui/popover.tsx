@@ -116,12 +116,14 @@ const Popover: React.FC<PopoverProps> = ({
   const { setReference, setPositionReference } = refs;
   const setTrigger = useCallback(
     (element: HTMLElement | null) => {
+      // react-doctor-disable-next-line react-doctor/no-derived-state -- a Floating UI ref setter, not React state
       setReference(element);
       const anchor = positionAnchor ?? element;
       setPositionReference(anchor ? unscaledReference(anchor) : null);
     },
     [setReference, setPositionReference, positionAnchor],
   );
+  // react-doctor-disable-next-line react-doctor/no-derived-state-effect -- registers an element rendered elsewhere with Floating UI, which holds no React state of ours
   useLayoutEffect(() => {
     if (!trigger) setTrigger(reference);
   }, [trigger, reference, setTrigger]);
