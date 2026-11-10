@@ -34,14 +34,20 @@ function refusalMessage(refusal: StepRefusal): string {
 function showEndedPreviousToast(previousWord: string): void {
   const { history, historyIndex } = useProjectStore.getState();
   const press = history[historyIndex];
+  const isLatest = (state: { history: readonly unknown[]; historyIndex: number }) =>
+    state.history[state.historyIndex] === press;
+  const undoPress = () => {
+    const project = useProjectStore.getState();
+    if (isLatest(project)) project.undo();
+  };
   const stopFollowing = () => unsubscribe();
   const toastId = toast(`“${previousWord.trim()}” now ends here too.`, {
-    action: { label: "Undo", onClick: () => useProjectStore.getState().undo() },
+    action: { label: "Undo", onClick: undoPress },
     onDismiss: stopFollowing,
     onAutoClose: stopFollowing,
   });
   const unsubscribe = useProjectStore.subscribe((state) => {
-    if (state.history[state.historyIndex] === press) return;
+    if (isLatest(state)) return;
     unsubscribe();
     toast.dismiss(toastId);
   });
