@@ -9,7 +9,7 @@ import {
   useSyllableSplitterState,
 } from "@/views/sync/use-syllable-splitter-state";
 import { IconScissors } from "@tabler/icons-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -63,30 +63,55 @@ const SyllableSplitPanel: React.FC<SyllableSplitPanelProps> = ({ lineId, type, w
   );
 };
 
-const SyllableSplitter: React.FC<SyllableSplitterProps> = ({ lineId, type, word, wordIndex, onSplit }) => {
-  const state = useSyllableSplitterState({ lineId, type, word, wordIndex, onSplit });
+interface SyllableSplitPopoverProps extends SyllableSplitterProps {
+  trigger: HTMLButtonElement | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
 
-  if (word.text.trimEnd().length < 2) {
-    return null;
-  }
-
+const SyllableSplitPopover: React.FC<SyllableSplitPopoverProps> = ({ trigger, open, onOpenChange, ...splitter }) => {
+  const state = useSyllableSplitterState(splitter);
+  const { lineId, type, word, wordIndex } = splitter;
   return (
-    <Popover
-      trigger={
-        <Button
-          size="sm"
-          variant="ghost"
-          title="Split into syllables"
-          className="px-1.5 py-0.5 h-auto align-middle rounded-sm"
-        >
-          <IconScissors className="size-3" />
-        </Button>
-      }
-    >
+    <Popover reference={trigger} open={open} onOpenChange={onOpenChange}>
       {(close) => (
         <SyllableSplitPanel lineId={lineId} type={type} word={word} wordIndex={wordIndex} state={state} close={close} />
       )}
     </Popover>
+  );
+};
+
+// Every synced word has a splitter, so its popover mounts on the first open and stays mounted after.
+const SyllableSplitter: React.FC<SyllableSplitterProps> = (props) => {
+  const [trigger, setTrigger] = useState<HTMLButtonElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const [opened, setOpened] = useState(false);
+
+  if (props.word.text.trimEnd().length < 2) {
+    return null;
+  }
+
+  const toggle = () => {
+    setOpened(true);
+    setOpen(!open);
+  };
+
+  return (
+    <>
+      <Button
+        ref={setTrigger}
+        size="sm"
+        variant="ghost"
+        title="Split into syllables"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={toggle}
+        className="px-1.5 py-0.5 h-auto align-middle rounded-sm"
+      >
+        <IconScissors className="size-3" />
+      </Button>
+      {opened && <SyllableSplitPopover {...props} trigger={trigger} open={open} onOpenChange={setOpen} />}
+    </>
   );
 };
 

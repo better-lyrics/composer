@@ -23,6 +23,7 @@ import {
   cloneElement,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -38,8 +39,12 @@ interface PopoverListNavigation {
   onNavigate: (index: number | null) => void;
 }
 
-interface PopoverProps {
-  trigger: ReactElement;
+// A reference anchors the popover to an element rendered elsewhere, so the element exists before the popover mounts.
+type PopoverAnchor =
+  | { trigger: ReactElement; reference?: never }
+  | { trigger?: never; reference: HTMLElement | null; open: boolean; onOpenChange: (open: boolean) => void };
+
+interface PopoverOptions {
   children: ReactNode | ((close: () => void, getItemProps: GetItemProps) => ReactNode);
   placement?: Placement;
   offsetPx?: number;
@@ -53,6 +58,8 @@ interface PopoverProps {
   instant?: boolean;
 }
 
+type PopoverProps = PopoverOptions & PopoverAnchor;
+
 // -- Constants ----------------------------------------------------------------
 
 const PRESSABLE_CONTROL = "button, input, [role='slider']";
@@ -61,6 +68,7 @@ const PRESSABLE_CONTROL = "button, input, [role='slider']";
 
 const Popover: React.FC<PopoverProps> = ({
   trigger,
+  reference,
   children,
   placement = "bottom",
   offsetPx = 8,
@@ -107,6 +115,9 @@ const Popover: React.FC<PopoverProps> = ({
     },
     [setReference, setPositionReference, positionAnchor],
   );
+  useLayoutEffect(() => {
+    if (!trigger) setTrigger(reference);
+  }, [trigger, reference, setTrigger]);
 
   const click = useClick(context);
   // Dismissing on click, after mousedown moved focus to the body, lets focus return to the trigger.
@@ -142,11 +153,12 @@ const Popover: React.FC<PopoverProps> = ({
 
   return (
     <>
-      {cloneElement(trigger, {
-        ref: setTrigger,
-        ...getReferenceProps(trigger.props as React.HTMLProps<Element>),
-        "aria-haspopup": hasPopup,
-      } as React.HTMLAttributes<HTMLElement> & { ref: typeof setTrigger })}
+      {trigger &&
+        cloneElement(trigger, {
+          ref: setTrigger,
+          ...getReferenceProps(trigger.props as React.HTMLProps<Element>),
+          "aria-haspopup": hasPopup,
+        } as React.HTMLAttributes<HTMLElement> & { ref: typeof setTrigger })}
 
       {isMounted && (
         <FloatingPortal>
