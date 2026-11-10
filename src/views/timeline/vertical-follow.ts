@@ -3,6 +3,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
+import { memoByIdentity } from "@/utils/memo-by-identity";
 import type { RowLayout } from "@/views/timeline/utils";
 
 // -- Types --------------------------------------------------------------------
@@ -90,11 +91,7 @@ interface LineTimeIndex {
   reach: number[];
 }
 
-const lineTimeIndexes = new WeakMap<readonly LyricLine[], LineTimeIndex>();
-
-function lineTimeIndex(lines: readonly LyricLine[]): LineTimeIndex {
-  const cached = lineTimeIndexes.get(lines);
-  if (cached) return cached;
+const lineTimeIndex = memoByIdentity((lines: readonly LyricLine[]): LineTimeIndex => {
   const timed = lines
     .flatMap((line, order) => {
       const bounds = effectiveBounds(line);
@@ -103,10 +100,8 @@ function lineTimeIndex(lines: readonly LyricLine[]): LineTimeIndex {
     .toSorted((a, b) => a.begin - b.begin);
   const reach: number[] = [];
   for (const entry of timed) reach.push(Math.max(reach[reach.length - 1] ?? Number.NEGATIVE_INFINITY, entry.end));
-  const index = { timed, reach };
-  lineTimeIndexes.set(lines, index);
-  return index;
-}
+  return { timed, reach };
+});
 
 // The first line in line order whose span holds the time, as a scan would find it.
 function lineAtTime(lines: readonly LyricLine[], time: number, lineIds: ReadonlySet<string> | null): LyricLine | null {

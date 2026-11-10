@@ -24,6 +24,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { TooltipGroup } from "@/ui/tooltip";
+import { memoByIdentity } from "@/utils/memo-by-identity";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { HeaderAction } from "@/views/timeline/header-action";
 import { SnapLatch } from "@/views/timeline/snap-latch";
@@ -47,19 +48,13 @@ interface LineFacts {
 }
 
 // Selectors run on every project store change; these walk every line, so once per lines array.
-const lineFactsByLines = new WeakMap<readonly LyricLine[], LineFacts>();
-
-function lineFacts(lines: readonly LyricLine[]): LineFacts {
-  const cached = lineFactsByLines.get(lines);
-  if (cached) return cached;
-  const facts: LineFacts = {
+const lineFacts = memoByIdentity(
+  (lines: readonly LyricLine[]): LineFacts => ({
     hasTransliteration: hasTransliteration(lines),
     hasUnexpandedLines: lines.some((l) => !l.words?.length && l.text.trim().length > 0),
     instanceKeys: [...new Set(lines.flatMap((l) => (isLinked(l) ? [instanceKey(l.groupId, l.instanceIdx)] : [])))],
-  };
-  lineFactsByLines.set(lines, facts);
-  return facts;
-}
+  }),
+);
 
 const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollContainerRef }) => {
   useCueShortcuts();

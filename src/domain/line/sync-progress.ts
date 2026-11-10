@@ -20,6 +20,15 @@ interface LineSyncFacts {
   slots: number;
   timedWords: number;
   fullyTimed: boolean;
+  backgroundComplete: boolean;
+}
+
+// -- Helpers ------------------------------------------------------------------
+
+function isBackgroundFullyTimed(line: LyricLine): boolean {
+  const backgroundWords = line.backgroundWords ?? [];
+  if (!line.backgroundText?.trim() || backgroundWords.length === 0) return true;
+  return backgroundWords.length >= splitIntoWords(line.backgroundText).length;
 }
 
 // -- Cache --------------------------------------------------------------------
@@ -41,6 +50,7 @@ function lineSyncFacts(line: LyricLine): LineSyncFacts {
     slots,
     timedWords,
     fullyTimed: lineSynced || (slots > 0 && timedWords === slots),
+    backgroundComplete: hasMainLyrics(line) ? isBackgroundFullyTimed(line) : !line.backgroundText?.trim(),
   };
   factsByLine.set(line, facts);
   return facts;
@@ -90,17 +100,8 @@ function isSyncComplete(lines: readonly LyricLine[]): boolean {
   return syncableCount > 0;
 }
 
-function isBackgroundFullyTimed(line: LyricLine): boolean {
-  const backgroundWords = line.backgroundWords ?? [];
-  if (!line.backgroundText?.trim() || backgroundWords.length === 0) return true;
-  return backgroundWords.length >= splitIntoWords(line.backgroundText).length;
-}
-
 function isProjectFullySynced(lines: readonly LyricLine[]): boolean {
-  return (
-    isSyncComplete(lines) &&
-    lines.every((line) => (hasMainLyrics(line) ? isBackgroundFullyTimed(line) : !line.backgroundText?.trim()))
-  );
+  return isSyncComplete(lines) && lines.every((line) => lineSyncFacts(line).backgroundComplete);
 }
 
 // -- Exports ------------------------------------------------------------------

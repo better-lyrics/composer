@@ -1,5 +1,6 @@
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
+import { memoByIdentity } from "@/utils/memo-by-identity";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -14,8 +15,6 @@ interface PlayingLineLookup {
 }
 
 // -- Lookup -------------------------------------------------------------------
-
-const lookupByLines = new WeakMap<readonly LyricLine[], PlayingLineLookup>();
 
 function buildLookup(lines: readonly LyricLine[]): PlayingLineLookup {
   const count = lines.length;
@@ -53,13 +52,7 @@ function buildLookup(lines: readonly LyricLine[]): PlayingLineLookup {
   return lookup;
 }
 
-function playingLineLookup(lines: readonly LyricLine[]): PlayingLineLookup {
-  const cached = lookupByLines.get(lines);
-  if (cached) return cached;
-  const lookup = buildLookup(lines);
-  lookupByLines.set(lines, lookup);
-  return lookup;
-}
+const playingLineLookup = memoByIdentity(buildLookup);
 
 function firstIndexAbove(nonDecreasing: Float64Array, value: number): number {
   let low = 0;
