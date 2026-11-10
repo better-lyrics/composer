@@ -1,3 +1,5 @@
+import type { GuideSignal } from "@/domain/guide/model";
+import { noteGuideSignal } from "@/lib/guide-signals";
 import { FINISH_OPEN_PROMPT_FIRST, askChoice } from "@/stores/choice-store";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { bindingToKeys, getShortcutDescription, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
@@ -7,6 +9,13 @@ import { getShortcutById, type ShortcutBinding } from "@/stores/shortcut-registr
 import { formatShortcut } from "@/utils/format-key";
 import { pluralize, pluralWord } from "@/utils/pluralize";
 import { toast } from "sonner";
+
+// -- Constants -----------------------------------------------------------------
+
+const PRESET_SIGNALS: Partial<Record<ShortcutPresetId, GuideSignal>> = {
+  amll: "shortcuts.presetAmll",
+  osu: "shortcuts.presetOsu",
+};
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -47,12 +56,18 @@ function applyShortcutsWithUndo(
   });
 }
 
+function notePresetSwitch(preset: ShortcutPresetId): void {
+  const signal = PRESET_SIGNALS[preset];
+  if (signal) noteGuideSignal(signal);
+}
+
 async function switchShortcutPreset(target: ShortcutPresetId): Promise<void> {
   const { preset, overrides } = useShortcutBindingsStore.getState();
   if (target === preset) return;
   const { name } = shortcutPreset(target);
   if (Object.keys(overrides).length === 0) {
     applyShortcutsWithUndo(target, {}, `Using ${name}`);
+    notePresetSwitch(target);
     return;
   }
   const answer = await askChoice({
@@ -66,6 +81,7 @@ async function switchShortcutPreset(target: ShortcutPresetId): Promise<void> {
   });
   if (answer === "cancel") return;
   applyShortcutsWithUndo(target, overridesAfterSwitch(target, overrides, answer === "keep"), `Using ${name}`);
+  notePresetSwitch(target);
 }
 
 async function resetMyShortcutChanges(): Promise<void> {
