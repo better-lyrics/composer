@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { INITIAL_STATE as IMPORT_MODAL_INITIAL_STATE, useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
@@ -36,6 +36,10 @@ function selectedRowTexts(container: HTMLElement): string[] {
 }
 
 // -- Tests --------------------------------------------------------------------
+
+beforeEach(() => {
+  useProjectStore.setState({ activeTab: "edit" });
+});
 
 describe("EditPanel", () => {
   it("renders a textarea or contenteditable region for editing lyrics", async () => {

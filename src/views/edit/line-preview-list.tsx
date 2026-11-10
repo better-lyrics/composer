@@ -2,9 +2,16 @@ import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import { instancePositionsByLineId } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { pluralize } from "@/utils/pluralize";
-import { LinePreview, type LinePreviewRowHandlers, PreviewGroupHeader } from "@/views/edit/line-preview";
+import {
+  LinePreview,
+  type LinePreviewRowHandlers,
+  PREVIEW_GROUP_HEADER_HEIGHT,
+  PREVIEW_ROW_HEIGHT,
+  PreviewGroupHeader,
+} from "@/views/edit/line-preview";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { useMemo } from "react";
 
@@ -17,6 +24,28 @@ interface LinePreviewListProps extends LinePreviewRowHandlers {
   agents: Agent[];
   selectedLines: ReadonlySet<number>;
   onBulkAgentChange: (agentId: string) => void;
+}
+
+// -- Helpers ------------------------------------------------------------------
+
+function startsInstance(parsed: readonly ParsedLine[], index: number): boolean {
+  const line = parsed[index];
+  const prev = index > 0 ? parsed[index - 1] : null;
+  return (
+    line.groupId !== undefined &&
+    line.instanceIdx !== undefined &&
+    (prev?.groupId !== line.groupId || prev?.instanceIdx !== line.instanceIdx)
+  );
+}
+
+function listHeight(parsed: readonly ParsedLine[], groupsById: ReadonlyMap<string, LinkGroup>): number {
+  let height = parsed.length * PREVIEW_ROW_HEIGHT;
+  parsed.forEach((line, index) => {
+    if (line.groupId && groupsById.has(line.groupId) && startsInstance(parsed, index)) {
+      height += PREVIEW_GROUP_HEADER_HEIGHT;
+    }
+  });
+  return height;
 }
 
 // -- Components ---------------------------------------------------------------
@@ -34,15 +63,14 @@ const LinePreviewList: React.FC<LinePreviewListProps> = ({
   const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
   const editsSelection = selectedLines.size > 1;
   const splitCharacter = useSettingsStore((s) => s.splitCharacter);
+  const isShown = useProjectStore((s) => s.activeTab === "edit");
+
+  if (!isShown) return <div style={{ height: listHeight(parsed, groupsById) }} />;
 
   return (
     <div>
       {parsed.map((line, index) => {
-        const prev = index > 0 ? parsed[index - 1] : null;
-        const isFirstOfInstance =
-          line.groupId !== undefined &&
-          line.instanceIdx !== undefined &&
-          (prev?.groupId !== line.groupId || prev?.instanceIdx !== line.instanceIdx);
+        const isFirstOfInstance = startsInstance(parsed, index);
         const group = line.groupId ? groupsById.get(line.groupId) : undefined;
         const position = group ? positions.get(line.lineId) : undefined;
         const totalInstances = position?.count ?? 0;

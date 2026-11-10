@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
@@ -16,6 +16,10 @@ function previewMainTexts(container: HTMLElement): string[] {
 }
 
 // -- Tests --------------------------------------------------------------------
+
+beforeEach(() => {
+  useProjectStore.setState({ activeTab: "edit" });
+});
 
 describe("editor undo run finalization lifecycle", () => {
   it("finalizes a typing run after the idle debounce with no blur", async () => {

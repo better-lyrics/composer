@@ -33,6 +33,8 @@ interface LinePreviewProps extends LinePreviewRowHandlers {
 
 const LINE_COLUMN = "line-cell flex justify-center w-11 shrink-0 font-mono font-medium";
 // 28px is min-h-7: every row is one line tall.
+const PREVIEW_ROW_HEIGHT = 28;
+const PREVIEW_GROUP_HEADER_HEIGHT = 26;
 const ROW_SKIPS_OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_28px]";
 const ROW_BODY = "flex flex-1 min-w-0 items-center gap-2 pl-3 pr-2 border-b border-(--divider) bg-clip-padding";
 
@@ -228,4 +230,4 @@ const LinePreview = memo(LinePreviewRow, sameLinePreviewProps);
 // -- Exports ------------------------------------------------------------------
 
 export type { LinePreviewRowHandlers };
-export { LinePreview, PreviewGroupHeader };
+export { LinePreview, PREVIEW_GROUP_HEADER_HEIGHT, PREVIEW_ROW_HEIGHT, PreviewGroupHeader };

@@ -2,7 +2,7 @@ import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { EditPanel } from "@/views/edit";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 
 // -- Helpers ------------------------------------------------------------------
@@ -20,6 +20,10 @@ function extractedLine() {
 }
 
 // -- Tests --------------------------------------------------------------------
+
+beforeEach(() => {
+  useProjectStore.setState({ activeTab: "edit" });
+});
 
 describe("background vocals popover", () => {
   it("writes edited text on Enter as one undo step", async () => {
