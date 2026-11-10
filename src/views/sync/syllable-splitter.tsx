@@ -1,6 +1,7 @@
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
+import { LazyPopover } from "@/ui/lazy-popover";
 import { Popover } from "@/ui/popover";
 import { findIdenticalWords } from "@/utils/identical-word-matcher";
 import { SplitModeContent } from "@/views/sync/split-mode-content";
@@ -9,7 +10,7 @@ import {
   useSyllableSplitterState,
 } from "@/views/sync/use-syllable-splitter-state";
 import { IconScissors } from "@tabler/icons-react";
-import { useId, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -74,7 +75,7 @@ const SyllableSplitPanel: React.FC<SyllableSplitPanelProps> = ({
 
 interface SyllableSplitPopoverProps extends SyllableSplitterProps {
   panelId: string;
-  trigger: HTMLButtonElement | null;
+  trigger: HTMLElement | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -107,39 +108,34 @@ const SyllableSplitPopover: React.FC<SyllableSplitPopoverProps> = ({
 
 // Every synced word has a splitter, so its popover mounts on the first open and stays mounted after.
 const SyllableSplitter: React.FC<SyllableSplitterProps> = (props) => {
-  const [trigger, setTrigger] = useState<HTMLButtonElement | null>(null);
-  const [open, setOpen] = useState(false);
-  const [opened, setOpened] = useState(false);
-  const panelId = useId();
-
   if (props.word.text.trimEnd().length < 2) {
     return null;
   }
 
-  const toggle = () => {
-    setOpened(true);
-    setOpen(!open);
-  };
-
   return (
-    <>
-      <Button
-        ref={setTrigger}
-        size="sm"
-        variant="ghost"
-        title="Split into syllables"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-controls={open ? panelId : undefined}
-        onClick={toggle}
-        className="px-1.5 py-0.5 h-auto align-middle rounded-sm"
-      >
-        <IconScissors className="size-3" />
-      </Button>
-      {opened && (
-        <SyllableSplitPopover {...props} panelId={panelId} trigger={trigger} open={open} onOpenChange={setOpen} />
+    <LazyPopover
+      hasPopup="dialog"
+      trigger={
+        <Button
+          size="sm"
+          variant="ghost"
+          title="Split into syllables"
+          className="px-1.5 py-0.5 h-auto align-middle rounded-sm"
+        >
+          <IconScissors className="size-3" />
+        </Button>
+      }
+    >
+      {(anchor) => (
+        <SyllableSplitPopover
+          {...props}
+          panelId={anchor.id}
+          trigger={anchor.reference}
+          open={anchor.open}
+          onOpenChange={anchor.onOpenChange}
+        />
       )}
-    </>
+    </LazyPopover>
   );
 };
 
