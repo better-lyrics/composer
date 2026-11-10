@@ -5,6 +5,8 @@ interface LaneWindow {
   end: number;
 }
 
+type LaneMove = "place" | "glide";
+
 // -- Constants ----------------------------------------------------------------
 
 // Only the anchor and its neighbours show; the rest stay mounted so a step of a few rows still fades them.
@@ -17,6 +19,12 @@ function laneWindow(anchorIndex: number, rowCount: number): LaneWindow {
     start: Math.max(0, anchorIndex - MOUNTED_AROUND_ANCHOR),
     end: Math.min(rowCount, anchorIndex + MOUNTED_AROUND_ANCHOR + 1),
   };
+}
+
+// A glide starts from rows still mounted after the step; a longer move is placed at once, like a fresh mount.
+function laneMove(previousAnchorIndex: number | null, anchorIndex: number): LaneMove {
+  if (previousAnchorIndex === null) return "place";
+  return Math.abs(anchorIndex - previousAnchorIndex) < MOUNTED_AROUND_ANCHOR ? "glide" : "place";
 }
 
 // The spacer stands in for the rows above the window; a row never measured counts as the average measured row.
@@ -32,4 +40,4 @@ function heightAboveWindow(rowIds: readonly string[], heights: ReadonlyMap<strin
 
 // -- Exports ------------------------------------------------------------------
 
-export { heightAboveWindow, laneWindow };
+export { heightAboveWindow, laneMove, laneWindow };
