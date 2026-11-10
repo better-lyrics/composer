@@ -8,22 +8,25 @@ import { memo, useCallback } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
-interface LinePreviewProps {
+interface LinePreviewRowHandlers {
+  onSelect: (lineNumber: number, shiftKey: boolean) => void;
+  onAgentChange: (lineId: string, agentId: string) => void;
+  onBackgroundChange: (lineId: string, text: string) => void;
+  onExtractLine: (lineId: string) => void;
+  onGutterMouseDown: (lineNumber: number, e: React.MouseEvent) => void;
+  onGutterMouseEnter: (lineNumber: number, e: React.MouseEvent) => void;
+  didDragRef: React.MutableRefObject<boolean>;
+}
+
+interface LinePreviewProps extends LinePreviewRowHandlers {
   line: ParsedLine;
   agents: { id: string; name?: string }[];
   isSelected: boolean;
   splitCharacter: string;
   groupColor?: string;
   groupTooltip?: string;
-  onSelect: (lineNumber: number, shiftKey: boolean) => void;
-  onAgentChange: (lineId: string, agentId: string) => void;
   /** Set only on a selected row while several lines are selected: its agent pick then edits them all. */
   onBulkAgentChange?: (agentId: string) => void;
-  onBackgroundChange: (lineId: string, text: string) => void;
-  onExtractLine: (lineId: string) => void;
-  onGutterMouseDown: (lineNumber: number, e: React.MouseEvent) => void;
-  onGutterMouseEnter: (lineNumber: number, e: React.MouseEvent) => void;
-  didDragRef: React.MutableRefObject<boolean>;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -224,4 +227,5 @@ const LinePreview = memo(LinePreviewRow, sameLinePreviewProps);
 
 // -- Exports ------------------------------------------------------------------
 
+export type { LinePreviewRowHandlers };
 export { LinePreview, PreviewGroupHeader };

@@ -4,26 +4,19 @@ import { instancePositionsByLineId } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
 import { useSettingsStore } from "@/stores/settings";
 import { pluralize } from "@/utils/pluralize";
-import { LinePreview, PreviewGroupHeader } from "@/views/edit/line-preview";
+import { LinePreview, type LinePreviewRowHandlers, PreviewGroupHeader } from "@/views/edit/line-preview";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { useMemo } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
-interface LinePreviewListProps {
+interface LinePreviewListProps extends LinePreviewRowHandlers {
   parsed: readonly ParsedLine[];
   lines: readonly LyricLine[];
   groups: readonly LinkGroup[];
   agents: Agent[];
   selectedLines: ReadonlySet<number>;
-  onSelect: (lineNumber: number, shiftKey: boolean) => void;
-  onAgentChange: (lineId: string, agentId: string) => void;
   onBulkAgentChange: (agentId: string) => void;
-  onBackgroundChange: (lineId: string, text: string) => void;
-  onExtractLine: (lineId: string) => void;
-  onGutterMouseDown: (lineNumber: number, e: React.MouseEvent) => void;
-  onGutterMouseEnter: (lineNumber: number, e: React.MouseEvent) => void;
-  didDragRef: React.MutableRefObject<boolean>;
 }
 
 // -- Components ---------------------------------------------------------------
