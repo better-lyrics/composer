@@ -1,4 +1,5 @@
 import { useSettingsStore } from "@/stores/settings";
+import { settingEntry } from "@/stores/settings-catalog";
 import { PopBody, PopGroup, PopHead, PopRow } from "@/ui/pop-layout";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { SplitLatch } from "@/ui/split-latch";
@@ -9,19 +10,16 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconMicrophone, IconStepInto } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 
-// -- Constants ---------------------------------------------------------------
-
-const BACKGROUND_LABEL = "Include background vocals";
-
 // -- Components ----------------------------------------------------------------
 
 const BackgroundRow: React.FC = () => {
   const included = useSettingsStore((s) => s.stepTimingBackground);
+  const { label } = settingEntry("stepTimingBackground");
   return (
-    <PopRow label={BACKGROUND_LABEL} icon={IconMicrophone} hint="After each line's lead words">
+    <PopRow label={label} icon={IconMicrophone} hint="After each line's lead words">
       <Switch
         checked={included}
-        label={BACKGROUND_LABEL}
+        label={label}
         onCheckedChange={(next) => useSettingsStore.getState().set("stepTimingBackground", next)}
       />
     </PopRow>
