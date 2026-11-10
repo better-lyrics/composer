@@ -135,7 +135,7 @@ const TimelineWaveform: React.FC = () => {
     wave: readToken("wave"),
     progress: readToken("wave-progress"),
   }));
-  // @wavesurfer/react rebuilds the instance whenever any option changes; later zooms go through ws.setOptions(), which unlike ws.zoom() never throws mid-reload.
+  // @wavesurfer/react rebuilds the instance whenever any option changes; later zooms go through ws.setOptions() in useWaveformWindow, which unlike ws.zoom() never throws mid-reload.
   const [initialZoom] = useState(() => useTimelineStore.getState().zoom);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: activeThemeId re-applies DOM-resolved colors on theme change without remounting WaveSurfer
@@ -143,12 +143,6 @@ const TimelineWaveform: React.FC = () => {
     if (!ws) return;
     ws.setOptions({ waveColor: readToken("wave"), progressColor: readToken("wave-progress") });
   }, [ws, activeThemeId]);
-
-  // Hidden under the spectrum the waveform keeps its old zoom; it catches up when it shows again.
-  useEffect(() => {
-    if (!ws || showSpectrum || ws.options.minPxPerSec === zoom) return;
-    ws.setOptions({ minPxPerSec: zoom });
-  }, [ws, zoom, showSpectrum]);
 
   useEffect(() => {
     if (!ws) return;

@@ -1,8 +1,9 @@
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { scrollWindowStart } from "@/views/timeline/scroll-window";
-import { GUTTER_WIDTH } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { scrollContainerOf } from "@/views/timeline/scroll-container-of";
 import { readViewScroll } from "@/views/timeline/view-scroll";
+import { followWaveformZoom } from "@/views/timeline/waveform-zoom";
 import { type RefObject, useEffect, useRef } from "react";
 import type WaveSurfer from "wavesurfer.js";
 
@@ -60,6 +61,7 @@ function useWaveformWindow(
   // reRender nudges the scroll after drawing to keep its cursor in place.
   useEffect(() => {
     if (!wavesurfer || !enabled) return;
+    let zooming = false;
     const align = () => {
       const host = hostRef.current;
       const start = readWindowStart(wavesurfer, host, startRef.current);
@@ -67,11 +69,26 @@ function useWaveformWindow(
       startRef.current = start;
       writeWindowStart(wavesurfer, host, start);
     };
-    const unsubscribe = wavesurfer.on("redraw", () => {
+    const unsubscribeRedraw = wavesurfer.on("redraw", () => {
       align();
-      queueMicrotask(align);
+      if (!zooming) queueMicrotask(align);
     });
-    return () => unsubscribe();
+    const stopFollowingZoom = followWaveformZoom((zoom) => {
+      if (wavesurfer.options.minPxPerSec === zoom) return;
+      zooming = true;
+      wavesurfer.setOptions({ minPxPerSec: zoom });
+      zooming = false;
+      align();
+    });
+    const unsubscribeDestroy = wavesurfer.on("destroy", stopFollowingZoom);
+    // Hidden under the spectrum the waveform keeps its old zoom; it catches up when it shows again.
+    const zoom = useTimelineStore.getState().zoom;
+    if (wavesurfer.options.minPxPerSec !== zoom) wavesurfer.setOptions({ minPxPerSec: zoom });
+    return () => {
+      stopFollowingZoom();
+      unsubscribeDestroy();
+      unsubscribeRedraw();
+    };
   }, [wavesurfer, enabled, hostRef]);
 }
 
