@@ -99,7 +99,8 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
   const attachScrollParent = useCallback(
     (element: HTMLDivElement | null) => {
       scrollContainerRef.current = element;
-      setScrollParent(element);
+      // A hidden Activity detaches refs; dropping the parent then would remount Virtuoso empty on every reveal.
+      if (element) setScrollParent(element);
     },
     [scrollContainerRef],
   );
@@ -118,10 +119,13 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
     [scrollContainerRef],
   );
 
+  const centredLineIndex = useRef<number | null>(null);
   // Smooth scrollToIndex over unmeasured rows aims at an estimate and gives up after a second, short of the line.
+  // Activity re-runs this on every reveal; the list then stays where it was left unless the current line moved.
   useEffect(() => {
-    if (!rowsRendered || !scrollParent || currentLineIndex < 0) return;
+    if (!rowsRendered || !scrollParent || currentLineIndex < 0 || currentLineIndex === centredLineIndex.current) return;
     const frame = nextFrame(() => {
+      centredLineIndex.current = currentLineIndex;
       const row = mountedRow(scrollParent, currentLineIndex);
       if (row) return centreRow(row);
       farRevealIndex.current = currentLineIndex;

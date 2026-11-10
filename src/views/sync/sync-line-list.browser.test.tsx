@@ -6,8 +6,10 @@ import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { key } from "@/test/shared-timing-sync";
+import { stepFrames } from "@/test/frame-steps";
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
+import { Activity } from "react";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
@@ -25,16 +27,40 @@ function loadLongSong(): void {
 }
 
 // Tailwind is compiled from a first mount, so the list's scroll container is height-bound and windowing is real.
-async function renderBoundedPanel() {
-  const ui = (
-    <div style={{ height: LIST_HEIGHT_PX, display: "flex", flexDirection: "column" }}>
-      <SyncPanel />
-    </div>
+function boundedPanel(mode: "visible" | "hidden" = "visible") {
+  return (
+    <Activity mode={mode}>
+      <div style={{ height: LIST_HEIGHT_PX, display: "flex", flexDirection: "column" }}>
+        <SyncPanel />
+      </div>
+    </Activity>
   );
-  const first = await render(ui);
+}
+
+async function renderBoundedPanel() {
+  const first = await render(boundedPanel());
   await installUtilitiesUsedIn(first.container);
   await first.unmount();
-  return render(ui);
+  return render(boundedPanel());
+}
+
+// Read after layout and before paint of the next frame, like a frame the user sees.
+function linesInViewNextFrame(scroller: HTMLElement): Promise<number[]> {
+  return new Promise((resolve) => {
+    const probe = document.createElement("div");
+    document.body.append(probe);
+    const observer = new ResizeObserver(() => {
+      observer.disconnect();
+      probe.remove();
+      const view = scroller.getBoundingClientRect();
+      const rows = [...scroller.querySelectorAll<HTMLElement>("[data-sync-line]")].filter((row) => {
+        const rect = row.getBoundingClientRect();
+        return rect.height > 0 && rect.bottom > view.top && rect.top < view.bottom;
+      });
+      resolve(rows.map((row) => Number(row.dataset.syncLine)));
+    });
+    observer.observe(probe);
+  });
 }
 
 function lineRow(container: HTMLElement, lineNumber: number): HTMLElement | null {
@@ -51,6 +77,27 @@ function rowOffsetFromCentre(scroller: HTMLElement, row: HTMLElement | null): nu
 // -- Tests --------------------------------------------------------------------
 
 describe("SyncLineList", () => {
+  it("regression: a list revealed by Activity shows its rows in the first frame, where it was left", async () => {
+    loadLongSong();
+    const screen = await renderBoundedPanel();
+    await expect.poll(() => lineRow(screen.container, 1)).not.toBeNull();
+    const scroller = lineRow(screen.container, 1)?.closest<HTMLElement>(".overflow-y-auto");
+    if (!scroller) throw new Error("no sync line list scroller");
+    scroller.scrollTop = 1500;
+    await expect.poll(() => lineRow(screen.container, 46)).not.toBeNull();
+    await stepFrames(10);
+    const linesBefore = await linesInViewNextFrame(scroller);
+    expect(linesBefore).not.toContain(1);
+
+    await screen.rerender(boundedPanel("hidden"));
+    await stepFrames(10);
+    await screen.rerender(boundedPanel("visible"));
+
+    expect(await linesInViewNextFrame(scroller)).toEqual(linesBefore);
+    await stepFrames(10);
+    expect(await linesInViewNextFrame(scroller)).toEqual(linesBefore);
+  });
+
   it("regression: pausing after a tap far down the song centres the current line", async () => {
     loadLongSong();
     const screen = await renderBoundedPanel();
