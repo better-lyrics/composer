@@ -5,9 +5,10 @@ import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
 import { SplitLatch } from "@/ui/split-latch";
 import { Switch } from "@/ui/switch";
 import { setStepTimingMode } from "@/views/timeline/step-timing/press-step-key";
+import { followStepUndo } from "@/views/timeline/step-timing/step-undo";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconMicrophone, IconStepInto } from "@tabler/icons-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // -- Components ----------------------------------------------------------------
 
@@ -28,6 +29,7 @@ const BackgroundRow: React.FC = () => {
 const StepTimingLatch: React.FC = () => {
   const stepTiming = useTimelineStore((s) => s.stepTiming);
   const [open, setOpen] = useState(false);
+  useEffect(followStepUndo, []);
   return (
     <SplitLatch
       menuLabel="Step timing options"

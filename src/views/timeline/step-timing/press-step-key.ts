@@ -13,6 +13,7 @@ import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
 import { playheadTime } from "@/views/timeline/playhead-time";
 import { clearLoopRegion } from "@/views/timeline/selection-playback";
+import { rememberStepPress } from "@/views/timeline/step-timing/step-undo";
 import { isWholeLane, liveStepSelection } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { findBoundaryTarget } from "@/views/timeline/word-at-playhead";
@@ -75,6 +76,7 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
   if (queue && key !== "start" && !next) noteGuideSignal("timeline.stepQueueEnd");
   // The queue outlives its last word, so the keys never leave the chosen words.
   timeline.setSelectedWords([next ?? cursor]);
+  rememberStepPress({ selectedWords: [cursor], stepQueue: queue });
 }
 
 function setStepTimingMode(on: boolean): void {
