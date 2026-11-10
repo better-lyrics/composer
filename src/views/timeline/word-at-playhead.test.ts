@@ -72,6 +72,23 @@ describe("pickNextWordAtPlayhead", () => {
 });
 
 describe("findBoundaryTarget", () => {
+  it("regression: step timing never picks an unselected background word", () => {
+    const lines = [
+      createLine({
+        id: "bg",
+        text: "hold",
+        words: [{ text: "hold", begin: 1, end: 2 }],
+        backgroundWords: [{ text: "ooh", begin: 2.5, end: 4 }],
+      }),
+    ];
+    expect(findBoundaryTarget(lines, 3, "end", null, true)).toEqual({
+      lineId: "bg",
+      lineIndex: 0,
+      wordIndex: 0,
+      type: "word",
+    });
+  });
+
   const gappedLine = () =>
     createLine({
       id: "gapped",

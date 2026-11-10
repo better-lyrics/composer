@@ -67,6 +67,7 @@ function findWordAcrossGap(
   time: number,
   edge: BoundaryEdge,
   focus: GroupFocus | null,
+  mainOnly: boolean,
 ): WordSelection | null {
   let nearest: WordSelection | null = null;
   let nearestDistance = Number.POSITIVE_INFINITY;
@@ -78,7 +79,7 @@ function findWordAcrossGap(
       nearestDistance = main.distance;
       nearest = { lineId: line.id, lineIndex, wordIndex: main.wordIndex, type: "word" };
     }
-    const background = nearestInTrack(line.backgroundWords, time, edge);
+    const background = mainOnly ? null : nearestInTrack(line.backgroundWords, time, edge);
     if (background && background.distance < nearestDistance) {
       nearestDistance = background.distance;
       nearest = { lineId: line.id, lineIndex, wordIndex: background.wordIndex, type: "bg" };
@@ -100,12 +101,14 @@ function findContainingWord(
   time: number,
   edge: BoundaryEdge,
   focus: GroupFocus | null,
+  mainOnly: boolean,
 ): WordSelection | null {
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (!isInFocus(line, focus)) continue;
     const mainIndex = line.words?.findIndex((word) => containsForEdge(word, time, edge)) ?? -1;
     if (mainIndex !== -1) return { lineId: line.id, lineIndex, wordIndex: mainIndex, type: "word" };
+    if (mainOnly) continue;
     const bgIndex = line.backgroundWords?.findIndex((word) => containsForEdge(word, time, edge)) ?? -1;
     if (bgIndex !== -1) return { lineId: line.id, lineIndex, wordIndex: bgIndex, type: "bg" };
   }
@@ -113,14 +116,17 @@ function findContainingWord(
 }
 
 // Containment resolves first, so anything the gap search still sees lies wholly on one
-// side of the playhead and can be ranked by plain distance.
+// side of the playhead and can be ranked by plain distance. Step timing passes mainOnly: its keys skip background words.
 function findBoundaryTarget(
   lines: LyricLine[],
   time: number,
   edge: BoundaryEdge,
   focus: GroupFocus | null = null,
+  mainOnly = false,
 ): WordSelection | null {
-  return findContainingWord(lines, time, edge, focus) ?? findWordAcrossGap(lines, time, edge, focus);
+  return (
+    findContainingWord(lines, time, edge, focus, mainOnly) ?? findWordAcrossGap(lines, time, edge, focus, mainOnly)
+  );
 }
 
 // -- Exports -------------------------------------------------------------------

@@ -36,7 +36,7 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
   const include = (line: ReadableLine) => isInFocus(line, focus);
   const timeline = useTimelineStore.getState();
   const live = liveStepSelection(lines, timeline.selectedWords, timeline.stepQueue);
-  const cursor = live.cursor ?? findBoundaryTarget(lines, time, key === "start" ? "begin" : "end", focus);
+  const cursor = live.cursor ?? findBoundaryTarget(lines, time, key === "start" ? "begin" : "end", focus, true);
   if (!cursor) {
     toast(key === "start" ? "No word starts after this point" : "No word ends before this point");
     return;
