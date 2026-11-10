@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import type { LoopRegion } from "@/domain/selection/loop-region";
 import { sameWordSelection } from "@/domain/selection/identity";
 import type { WordSelection } from "@/domain/selection/model";
 import { resolveSelections } from "@/domain/selection/resolve";
@@ -22,11 +23,12 @@ interface SelectionPatch {
 // -- Functions ----------------------------------------------------------------
 
 // In Step timing a selection of several words becomes the queue and the selection collapses to the cursor.
-function selectionPatch(state: StepSelectionState, selections: WordSelection[]): SelectionPatch {
+// A lane pick or a queue edit stays a queue even at one word, so the keys never leave the chosen words.
+function selectionPatch(state: StepSelectionState, selections: WordSelection[], asQueue = false): SelectionPatch {
   // In Step timing a loop region and the cursor live together, so you can loop a hard part while you time it.
   const cleared = selections.length > 0 && !state.stepTiming ? { loopRegion: null } : {};
   if (!state.stepTiming || selections.length === 0) return { selectedWords: selections, stepQueue: null, ...cleared };
-  if (selections.length === 1) {
+  if (selections.length === 1 && !asQueue) {
     const inQueue = state.stepQueue?.some((queued) => sameWordSelection(queued, selections[0]));
     return { selectedWords: selections, stepQueue: inQueue ? state.stepQueue : null, ...cleared };
   }
@@ -39,7 +41,7 @@ function selectionPatch(state: StepSelectionState, selections: WordSelection[]):
 // Cmd-click adds to or takes from the queue, not just the cursor.
 function toggledSelectionPatch(state: StepSelectionState, selection: WordSelection): SelectionPatch {
   const toggled = toggleWordSelection(state.stepQueue ?? state.selectedWords, selection);
-  return selectionPatch({ ...state, stepQueue: null }, toggled);
+  return selectionPatch({ ...state, stepQueue: null }, toggled, state.stepQueue !== null);
 }
 
 function stepTimingPatch(state: StepSelectionState, stepTiming: boolean): SelectionPatch & { stepTiming: boolean } {
@@ -65,6 +67,12 @@ function liveStepSelection(
   return { cursor, queue: queue.length > 0 ? queue : null };
 }
 
+function loopRegionPatch(state: StepSelectionState, loopRegion: LoopRegion | null) {
+  return loopRegion && state.selectedWords.length > 0 && !state.stepTiming
+    ? { loopRegion, selectedWords: [] }
+    : { loopRegion };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { isWholeLane, liveStepSelection, selectionPatch, stepTimingPatch, toggledSelectionPatch };
+export { isWholeLane, loopRegionPatch, liveStepSelection, selectionPatch, stepTimingPatch, toggledSelectionPatch };

@@ -47,7 +47,7 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
   const project = useProjectStore.getState();
   const rangeOf = timeRangeResolver(project.lines, project.groups, duration);
   const queue = live.cursor ? live.queue : null;
-  if (queue && timeline.stepQueue && queue.length !== timeline.stepQueue.length) timeline.setSelectedWords(queue);
+  if (queue && timeline.stepQueue && queue.length !== timeline.stepQueue.length) timeline.setSelectedWords(queue, true);
   const next = key === "start" ? null : nextCursorSlot(lines, cursor, queue, include);
   const startNext = key === "step" ? chainedNext(cursor, next, nextStepSlot(lines, cursor, include)) : null;
   const refusal = writeStepKey({
@@ -105,7 +105,7 @@ function toggleStepLane(lineId: string, lineIndex: number, type: WordSelection["
   const lane = Array.from({ length: wordCount }, (_, wordIndex) => ({ lineId, lineIndex, wordIndex, type }));
   const { stepQueue, selectedWords, setSelectedWords } = useTimelineStore.getState();
   const clearing = isWholeLane(stepQueue ?? selectedWords, lane);
-  setSelectedWords(clearing ? [] : lane);
+  setSelectedWords(clearing ? [] : lane, true);
   if (!clearing && lane.length > 1) noteGuideSignal("timeline.stepLane");
 }
 

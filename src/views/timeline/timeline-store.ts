@@ -1,4 +1,3 @@
-import { create } from "zustand";
 import type { LanguageTextVariant } from "@/domain/language/display";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import type { ResumePosition } from "@/domain/project/resume-position";
@@ -10,7 +9,8 @@ import { useSettingsStore } from "@/stores/settings";
 import type { GroupFocus } from "@/views/timeline/group-focus";
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
 import type { ClipboardData, PasteMode } from "@/views/timeline/selection-types";
-import { selectionPatch, stepTimingPatch, toggledSelectionPatch } from "@/views/timeline/step-timing/step-selection";
+import { loopRegionPatch, selectionPatch, stepTimingPatch, toggledSelectionPatch } from "@/views/timeline/step-timing/step-selection";
+import { create } from "zustand";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -94,7 +94,7 @@ interface TimelineActions {
   zoomOut: () => void;
   toggleTextVariant: () => void;
   setTextVariant: (textVariant: LanguageTextVariant) => void;
-  setSelectedWords: (selections: WordSelection[]) => void;
+  setSelectedWords: (selections: WordSelection[], asQueue?: boolean) => void;
   setSelectionPlayback: (mode: SelectionPlaybackMode | null) => void;
   setLoopRegion: (region: LoopRegion | null) => void;
   setLoopRegionDrag: (drag: LoopRegionDrag | null) => void;
@@ -202,12 +202,9 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
         return hasTransliteration(useProjectStore.getState().lines) ? { textVariant: "transliteration" } : s;
       }),
     setTextVariant: (textVariant) => set({ textVariant }),
-    setSelectedWords: (selectedWords) => set((s) => selectionPatch(s, selectedWords)),
+    setSelectedWords: (selectedWords, asQueue) => set((s) => selectionPatch(s, selectedWords, asQueue)),
     setSelectionPlayback: (selectionPlayback) => set({ selectionPlayback }),
-    setLoopRegion: (loopRegion) =>
-      set((s) =>
-        loopRegion && s.selectedWords.length > 0 && !s.stepTiming ? { loopRegion, selectedWords: [] } : { loopRegion },
-      ),
+    setLoopRegion: (loopRegion) => set((s) => loopRegionPatch(s, loopRegion)),
     setLoopRegionDrag: (loopRegionDrag) => set({ loopRegionDrag }),
     setWaveformReady: (waveformReady) => set({ waveformReady }),
 
@@ -294,14 +291,7 @@ useSettingsStore.subscribe((settings, previous) => {
     useTimelineStore.setState({ defaultRowHeight: settings.defaultRowHeight });
 });
 
-// -- Functions -----------------------------------------------------------------
-
-// A region being drawn shows before it replaces the current one on release.
-function shownLoopRegion(state: TimelineState): Bounds | null {
-  return state.loopRegionDrag?.draft ?? state.loopRegion;
-}
-
 // -- Exports -------------------------------------------------------------------
 
+export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP };
 export type { ContextMenuTarget, LoopRegionDrag, SelectionPlaybackMode, TrackHit };
-export { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, shownLoopRegion, useTimelineStore, WAVEFORM_HEIGHT, ZOOM_STEP };
