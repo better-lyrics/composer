@@ -111,4 +111,3 @@ function useTrackSelection(lineId: string, type: TrackType): TrackSelection {
 // -- Exports -------------------------------------------------------------------
 
 export { useTrackSelection };
-export type { TrackSelection };
