@@ -1,6 +1,7 @@
+import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 import { useProjectStore } from "@/stores/project";
-import { selectionGripEdges } from "@/views/timeline/stretch-grips";
+import { type SelectionGrips, selectionGripEdges } from "@/views/timeline/stretch-grips";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCallback, useRef } from "react";
 
@@ -22,6 +23,12 @@ interface CachedTrackSelection {
   value: TrackSelection;
 }
 
+interface CachedGrips {
+  selections: WordSelection[];
+  lines: LyricLine[];
+  grips: SelectionGrips;
+}
+
 // -- Constants -----------------------------------------------------------------
 
 const NO_INDICES: ReadonlySet<number> = new Set();
@@ -38,7 +45,20 @@ const SELECTED_ELSEWHERE: TrackSelection = {
   rightGrip: -1,
 };
 
+// -- State ---------------------------------------------------------------------
+
+let cachedGrips: CachedGrips | null = null;
+
 // -- Helpers -------------------------------------------------------------------
+
+// Every track touched by one selection change asks for the same grips, so they are resolved once and shared.
+function sharedSelectionGrips(selections: WordSelection[]): SelectionGrips {
+  const { lines } = useProjectStore.getState();
+  if (cachedGrips && cachedGrips.selections === selections && cachedGrips.lines === lines) return cachedGrips.grips;
+  const grips = selectionGripEdges(lines, selections);
+  cachedGrips = { selections, lines, grips };
+  return grips;
+}
 
 function trackSelectionOf(selections: WordSelection[], lineId: string, type: TrackType): TrackSelection {
   if (selections.length === 0) return NOTHING_SELECTED;
@@ -50,7 +70,7 @@ function trackSelectionOf(selections: WordSelection[], lineId: string, type: Tra
   }
   if (!indices) return SELECTED_ELSEWHERE;
   // Lines are read non-reactively: grips only follow selection changes, so a stretch drag keeps them in place.
-  const { left, right } = selectionGripEdges(useProjectStore.getState().lines, selections);
+  const { left, right } = sharedSelectionGrips(selections);
   return {
     hasSelection: true,
     selectedIndices: indices,
