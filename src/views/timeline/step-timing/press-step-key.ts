@@ -3,6 +3,7 @@ import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { effectiveTrackWords, type ReadableLine } from "@/domain/line/effective-words";
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { chainedNext } from "@/domain/step-timing/step-queue";
+import type { WordSelection } from "@/domain/selection/model";
 import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
@@ -11,7 +12,8 @@ import { writeStepKey } from "@/utils/timing/step-key-write";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
 import { playheadTime } from "@/views/timeline/playhead-time";
-import { liveStepSelection } from "@/views/timeline/step-timing/step-selection";
+import { clearLoopRegion } from "@/views/timeline/selection-playback";
+import { isWholeLane, liveStepSelection } from "@/views/timeline/step-timing/step-selection";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { findBoundaryTarget } from "@/views/timeline/word-at-playhead";
 
@@ -50,6 +52,7 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
   const startNext = key === "step" ? chainedNext(cursor, next, nextStepSlot(lines, cursor, include)) : null;
   const refusal = writeStepKey({
     lines,
+    groups: project.groups,
     cursor,
     startNext,
     key,
@@ -64,12 +67,8 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
     return;
   }
   noteGuideSignal("timeline.stepTiming");
-  if (next || key === "start") {
-    timeline.setSelectedWords([next ?? cursor]);
-    return;
-  }
-  timeline.clearSelection();
-  timeline.setSelectedWords([cursor]);
+  // The queue outlives its last word, so the keys never leave the chosen words.
+  timeline.setSelectedWords([next ?? cursor]);
 }
 
 function setStepTimingMode(on: boolean): void {
@@ -77,6 +76,37 @@ function setStepTimingMode(on: boolean): void {
   if (on) noteGuideSignal("timeline.stepTimingOn");
 }
 
+// Returns false for a timing key outside Step timing, which then sets the word under the playhead as usual.
+function pressStepShortcut(id: string, lines: ReadableLine[], duration: number): boolean {
+  const { stepTiming, setStepTiming } = useTimelineStore.getState();
+  if (id === "timeline.stepTimingOff") setStepTiming(false);
+  else if (id === "timeline.stepWord" && !stepTiming) setStepTimingMode(true);
+  else if (!stepTiming) return false;
+  else
+    pressStepKey(
+      id === "timeline.stepWord" ? "step" : id === "timeline.setWordBegin" ? "start" : "end",
+      lines,
+      duration,
+    );
+  return true;
+}
+
+// Escape clears a loop, then the selection, then leaves the mode.
+function escapeStepTiming(): void {
+  const { loopRegion, selectedWords, clearSelection, setStepTiming } = useTimelineStore.getState();
+  if (loopRegion) clearLoopRegion();
+  else if (selectedWords.length > 0) clearSelection();
+  else setStepTiming(false);
+}
+
+function toggleStepLane(lineId: string, lineIndex: number, type: WordSelection["type"], wordCount: number): void {
+  const lane = Array.from({ length: wordCount }, (_, wordIndex) => ({ lineId, lineIndex, wordIndex, type }));
+  const { stepQueue, selectedWords, setSelectedWords } = useTimelineStore.getState();
+  const clearing = isWholeLane(stepQueue ?? selectedWords, lane);
+  setSelectedWords(clearing ? [] : lane);
+  if (!clearing && lane.length > 1) noteGuideSignal("timeline.stepLane");
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { pressStepKey, setStepTimingMode };
+export { escapeStepTiming, pressStepShortcut, setStepTimingMode, toggleStepLane };

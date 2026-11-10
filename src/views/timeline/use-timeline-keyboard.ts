@@ -1,5 +1,3 @@
-import { type RefObject, useCallback, useEffect } from "react";
-import { toast } from "sonner";
 import { withNewInstance } from "@/domain/group/own-timing";
 import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
 import { pickedTemplateSource } from "@/domain/group/template-source";
@@ -37,7 +35,7 @@ import { isInFocus } from "@/views/timeline/group-focus";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
-import { jumpToAdjacentBar, jumpToAdjacentGridLine, NO_BEAT_GRID_MESSAGE } from "@/views/timeline/jump-to-bar";
+import { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar, jumpToAdjacentGridLine } from "@/views/timeline/jump-to-bar";
 import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { showLoupeAfterKeyEdit, storedEdgeTime } from "@/views/timeline/loupe/loupe-target";
 import { isPartialSyllableSelection, mergeSelectedWords } from "@/views/timeline/merge-selected-words";
@@ -49,13 +47,15 @@ import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { clearLoopRegion, playSelection } from "@/views/timeline/selection-playback";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
-import { pressStepKey, setStepTimingMode } from "@/views/timeline/step-timing/press-step-key";
-import { AUTO_ALIGN_EVENT } from "@/views/timeline/timeline-auto-align";
+import { escapeStepTiming, pressStepShortcut } from "@/views/timeline/step-timing/press-step-key";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { AUTO_ALIGN_EVENT } from "@/views/timeline/timeline-auto-align";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
 import { computeRowLayout, partitionNudgeSelections, shiftSelectionsTogether } from "@/views/timeline/utils";
-import { readViewScroll, scrollView, smoothScrollView } from "@/views/timeline/view-scroll";
 import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
+import { type RefObject, useCallback, useEffect } from "react";
+import { toast } from "sonner";
+import { readViewScroll, scrollView, smoothScrollView } from "@/views/timeline/view-scroll";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -226,10 +226,7 @@ function useTimelineKeyboard(
           if (pasteMode.status === "preview") {
             useTimelineStore.getState().setPasteMode({ status: "idle" });
           } else if (useTimelineStore.getState().stepTiming) {
-            const { loopRegion, selectedWords, clearSelection, setStepTiming } = useTimelineStore.getState();
-            if (loopRegion) clearLoopRegion();
-            else if (selectedWords.length > 0) clearSelection();
-            else setStepTiming(false);
+            escapeStepTiming();
           } else {
             clearLoopRegion();
             useTimelineStore.getState().clearSelection();
@@ -398,21 +395,12 @@ function useTimelineKeyboard(
           useTimelineStore.getState().toggleTextVariant();
           break;
         case "timeline.setWordBegin":
-        case "timeline.setWordEnd": {
-          e.preventDefault();
-          const edge = matched === "timeline.setWordBegin" ? "begin" : "end";
-          if (useTimelineStore.getState().stepTiming) pressStepKey(edge === "begin" ? "start" : "end", lines, duration);
-          else handleSetWordTiming(edge);
-          break;
-        }
+        case "timeline.setWordEnd":
         case "timeline.stepWord":
-          e.preventDefault();
-          if (useTimelineStore.getState().stepTiming) pressStepKey("step", lines, duration);
-          else setStepTimingMode(true);
-          break;
         case "timeline.stepTimingOff":
           e.preventDefault();
-          useTimelineStore.getState().setStepTiming(false);
+          if (pressStepShortcut(matched, lines, duration)) break;
+          handleSetWordTiming(matched === "timeline.setWordBegin" ? "begin" : "end");
           break;
         case "timeline.insertLineBelow":
         case "timeline.insertLineAbove": {
