@@ -1,3 +1,4 @@
+import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import {
   effectiveMainWordEdit,
   effectiveTimingWrite,
@@ -6,6 +7,7 @@ import {
   getEffectiveLines,
 } from "@/domain/line/effective-words";
 import { type LooseLine, type LyricLine, type RawLine, reconcileLine } from "@/domain/line/model";
+import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
@@ -85,6 +87,40 @@ describe("getEffectiveLines timing source", () => {
     ]);
     expect([w.timingSource, l.timingSource, u.timingSource]).toEqual(["words", "line", "none"]);
     expect(l.words).toEqual([{ text: "Line synced", begin: 3, end: 5 }]);
+  });
+
+  it("invariant: keeps the effective line of every unchanged raw line, and only of those", () => {
+    useSettingsStore.getState().set("splitCharacter", "|");
+    const lines = [
+      createLine({ id: "w", text: "Hel|lo", words: [{ text: "Hel|lo", begin: 1, end: 2 }] }),
+      createLine({ id: "l", text: "Fa|ding", begin: 3, end: 5 }),
+      line({
+        id: "t",
+        text: "Привет",
+        words: [{ text: "Привет", begin: 6, end: 7 }],
+        transliteration: {
+          language: "ru-Latn",
+          text: "privet",
+          segments: [],
+          origin: "manual",
+          sourceFingerprint: languageSourceFingerprint("Привет"),
+        },
+      }),
+    ];
+    const before = getEffectiveLines(lines);
+    const edited = [lines[0], reconcileLine({ ...lines[1], begin: 4 }), lines[2]];
+    const after = getEffectiveLines(edited);
+
+    expect(after[0]).toBe(before[0]);
+    expect(after[2]).toBe(before[2]);
+    expect(after[1]).not.toBe(before[1]);
+    expect(after).toEqual(getEffectiveLines(structuredClone(edited)));
+
+    useSettingsStore.getState().set("splitCharacter", "/");
+    const resplit = getEffectiveLines(edited);
+    useSettingsStore.getState().set("splitCharacter", "|");
+    expect(resplit[1]).not.toBe(after[1]);
+    expect(resplit[1].words?.[0].text).toBe("Fa|ding");
   });
 
   it("invariant: an EffectiveLine is not assignable to RawLine", () => {
