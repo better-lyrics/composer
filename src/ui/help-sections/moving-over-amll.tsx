@@ -42,7 +42,11 @@ const AmllWorkModel: React.FC = () => {
     },
     {
       key: "moving",
-      cells: ["Getting around", "Edit, Sync and Preview modes.", "Tabs, Import through Export. Go to any tab at any time."],
+      cells: [
+        "Getting around",
+        "Edit, Sync and Preview modes.",
+        "Tabs, Import through Export. Go to any tab at any time.",
+      ],
     },
     {
       key: "words",
