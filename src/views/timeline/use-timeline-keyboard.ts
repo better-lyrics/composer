@@ -1,5 +1,6 @@
 import { withNewInstance } from "@/domain/group/own-timing";
 import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
+import { currentInstanceFromSelection } from "@/domain/instance/selection-instance";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceCount, linesOfInstance } from "@/domain/instance/enumerate";
@@ -56,31 +57,6 @@ import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/v
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { readViewScroll, scrollView, smoothScrollView } from "@/views/timeline/view-scroll";
-
-// -- Helpers ------------------------------------------------------------------
-
-function currentInstanceFromSelection(
-  lines: LyricLine[],
-  selectedWords: ReadonlyArray<{ lineId: string }>,
-): { groupId: string; instanceIdx: number } | null {
-  if (selectedWords.length === 0) return null;
-  const linesById = new Map<string, LyricLine>();
-  for (const l of lines) linesById.set(l.id, l);
-  let groupId: string | null = null;
-  let instanceIdx: number | null = null;
-  for (const sel of selectedWords) {
-    const line = linesById.get(sel.lineId);
-    if (!line || !isLinked(line)) return null;
-    if (groupId === null) {
-      groupId = line.groupId;
-      instanceIdx = line.instanceIdx;
-    } else if (line.groupId !== groupId || line.instanceIdx !== instanceIdx) {
-      return null;
-    }
-  }
-  if (groupId === null || instanceIdx === null) return null;
-  return { groupId, instanceIdx };
-}
 
 // -- Hook ----------------------------------------------------------------------
 

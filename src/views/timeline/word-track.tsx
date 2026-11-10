@@ -3,7 +3,6 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { isWordSelected } from "@/domain/selection/identity";
 import { overlapsLoopRegion } from "@/domain/selection/loop-region";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
-import type { Bounds } from "@/domain/word/bounds";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
@@ -28,6 +27,7 @@ import { noteWordDragShift } from "@/views/timeline/tiny-drag-signal";
 import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
+import { type DragState, liveWordBounds, resizeChangedTiming } from "@/views/timeline/word-resize-state";
 import { WordBlock } from "@/views/timeline/word-block";
 import { beginBoundaryDrag, endBoundaryDrag } from "@/views/timeline/boundary-chip-store";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -48,33 +48,6 @@ interface WordTrackProps {
     adjacentIndex?: number,
     adjacentUpdates?: Partial<WordTiming>,
   ) => void;
-}
-
-interface DragState {
-  wordIndex: number;
-  edge: "left" | "right";
-  begin: number;
-  end: number;
-  adjacentWordIndex?: number;
-  adjacentBegin?: number;
-  adjacentEnd?: number;
-}
-
-// -- Helpers -------------------------------------------------------------------
-
-function liveWordBounds(state: DragState): Map<number, Bounds> {
-  const words = new Map<number, Bounds>([[state.wordIndex, { begin: state.begin, end: state.end }]]);
-  if (state.adjacentWordIndex !== undefined && state.adjacentBegin !== undefined && state.adjacentEnd !== undefined) {
-    words.set(state.adjacentWordIndex, { begin: state.adjacentBegin, end: state.adjacentEnd });
-  }
-  return words;
-}
-
-function resizeChangedTiming(initial: DragState, final: DragState, words: WordTiming[]): boolean {
-  if (final.begin !== initial.begin || final.end !== initial.end) return true;
-  if (final.adjacentWordIndex === undefined) return false;
-  const adjacent = words[final.adjacentWordIndex];
-  return final.adjacentBegin !== adjacent.begin || final.adjacentEnd !== adjacent.end;
 }
 
 // -- Component -----------------------------------------------------------------
