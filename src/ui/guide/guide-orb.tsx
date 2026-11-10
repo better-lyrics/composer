@@ -33,7 +33,7 @@ const GuideOrb: React.FC<GuideOrbProps> = ({ peek, unread, progress, open, onCli
   const PeekIcon = showPeek ? PEEK_ICONS[peek.kind] : IconCompass;
   const showCount = !showPeek && !open && unread > 0;
   return (
-    <m.div layout transition={guideSpring} className="relative">
+    <div className="relative">
       <m.button
         layout
         type="button"
@@ -46,7 +46,7 @@ const GuideOrb: React.FC<GuideOrbProps> = ({ peek, unread, progress, open, onCli
         aria-label={showPeek ? undefined : open ? "Close guide" : orbLabel(unread)}
         aria-expanded={open}
         className={cn(
-          "surface-floating flex h-11 cursor-pointer select-none items-center overflow-hidden rounded-full border border-transparent p-1 text-[13px] transition-[scale] duration-150 ease-out active:scale-[0.96]",
+          "surface-floating relative flex h-11 cursor-pointer select-none items-center overflow-hidden rounded-full border border-transparent p-1 text-[13px] transition-[scale] duration-150 ease-out active:scale-[0.96]",
           showCount && "orb-badge-gap",
         )}
       >
@@ -73,6 +73,7 @@ const GuideOrb: React.FC<GuideOrbProps> = ({ peek, unread, progress, open, onCli
           {showPeek && (
             <m.span
               key={peek.id}
+              layout="position"
               variants={guidePeekTextVariants}
               initial="hidden"
               animate="shown"
@@ -101,7 +102,7 @@ const GuideOrb: React.FC<GuideOrbProps> = ({ peek, unread, progress, open, onCli
           </m.span>
         )}
       </AnimatePresence>
-    </m.div>
+    </div>
   );
 };
 
