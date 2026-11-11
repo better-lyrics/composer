@@ -4,6 +4,7 @@ import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
 import { notePlacement } from "@/lib/replay-cue";
 import { xToTime } from "@/views/timeline/coords";
 import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
+import { raisePointerShield } from "@/views/timeline/pointer-shield";
 import { noteReplaySpot } from "@/views/timeline/replay-spot-signal";
 import { holdsSnapBypass } from "@/views/timeline/snap-bypass-key";
 import { GUTTER_WIDTH } from "@/views/timeline/timeline-store";
@@ -67,6 +68,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
     let containerRect = config.getContainerRect();
     let scrollRect: DOMRect | null = null;
     const controller = new AbortController();
+    const lowerPointerShield = raisePointerShield();
     // Edge auto-scroll must keep running while the pointer is held still at the edge.
     const releaseEdgeScrollFrames = holdFrames(EDGE_SCROLL_LABEL);
 
@@ -118,6 +120,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
       unsubscribeEdgeScroll = null;
       releaseEdgeScrollFrames();
       controller.abort();
+      lowerPointerShield();
       scrubPreview.stop();
       config.setDraggingPlayhead(false);
       activeCleanup = null;
@@ -137,6 +140,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
     activeCleanup = cleanup;
     document.addEventListener("mousemove", handleMouseMove, { signal: controller.signal });
     document.addEventListener("mouseup", handleMouseUp, { signal: controller.signal });
+    window.addEventListener("blur", lowerPointerShield, { signal: controller.signal });
     unsubscribeEdgeScroll = subscribeFrame({ read: readEdgeScroll, write: writeEdgeScroll }, EDGE_SCROLL_LABEL);
     if (atPointer) handleMouseMove(e);
   };
