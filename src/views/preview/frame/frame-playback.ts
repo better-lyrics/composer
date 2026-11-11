@@ -47,7 +47,7 @@ function createFramePlayback(post: (message: FromFrameMessage) => void): FramePl
       transitMs = Math.min(MAX_TRANSIT_MS, Math.max(0, performance.timeOrigin + receivedAt - next.sentAt));
       if (next.playing) releasePlayback ??= holdFrames("preview frame playback");
       else releaseHold();
-      wake();
+      wake(next.scrubbing === true && !next.playing ? 1 : undefined);
     },
     stop: () => {
       if (!clock) return;

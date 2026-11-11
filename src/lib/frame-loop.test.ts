@@ -81,6 +81,26 @@ describe("frame-loop", () => {
       unsubscribe();
     });
 
+    it("runs exactly one frame after a wake asking for one with no hold", () => {
+      const probe = countingSubscriber();
+      const unsubscribe = probe.subscribe();
+      advanceFrames(100);
+      wake(1);
+      advanceFrames(100);
+      expect(probe.calls()).toBe(tailFrames + 1);
+      unsubscribe();
+    });
+
+    it("keeps the full tail when a one-frame wake arrives mid-tail", () => {
+      const probe = countingSubscriber();
+      const unsubscribe = probe.subscribe();
+      advanceFrames(1);
+      wake(1);
+      advanceFrames(100);
+      expect(probe.calls()).toBe(tailFrames);
+      unsubscribe();
+    });
+
     it("re-arms the full tail when a second wake arrives mid-tail", () => {
       const probe = countingSubscriber();
       const unsubscribe = probe.subscribe();

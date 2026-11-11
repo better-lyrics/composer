@@ -1,6 +1,10 @@
 import { wake } from "@/lib/frame-loop";
 import { type RefObject, useEffect } from "react";
 
+// -- Functions -----------------------------------------------------------------
+
+const wakeOnLayoutChange = () => wake();
+
 // -- Hook ----------------------------------------------------------------------
 
 function useTimelineFrameWake(
@@ -13,13 +17,13 @@ function useTimelineFrameWake(
     const content = contentRef.current;
     if (!enabled || !container || !content) return;
 
-    container.addEventListener("scroll", wake, { passive: true });
-    const observer = new ResizeObserver(wake);
+    container.addEventListener("scroll", wakeOnLayoutChange, { passive: true });
+    const observer = new ResizeObserver(wakeOnLayoutChange);
     observer.observe(content);
     observer.observe(container);
 
     return () => {
-      container.removeEventListener("scroll", wake);
+      container.removeEventListener("scroll", wakeOnLayoutChange);
       observer.disconnect();
     };
   }, [enabled, scrollContainerRef, contentRef]);

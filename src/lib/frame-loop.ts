@@ -190,8 +190,8 @@ function pump(stamp: number): void {
   if (import.meta.env.DEV) reportRunawayFrames(rescheduling);
 }
 
-function wake(): void {
-  tailFrames = TAIL_FRAMES;
+function wake(frames = TAIL_FRAMES): void {
+  tailFrames = Math.max(tailFrames, frames);
   framesSinceWake = 0;
   schedule();
 }
