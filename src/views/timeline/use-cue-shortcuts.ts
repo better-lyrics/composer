@@ -4,14 +4,14 @@ import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
-import { isTypingTarget } from "@/utils/typing-target";
+import { focusedControlOwnsKey, isTypingTarget } from "@/utils/typing-target";
 import { useEffect } from "react";
 
 // -- Handlers -----------------------------------------------------------------
 
 function handleCueKeyDown(event: KeyboardEvent): void {
   if (useProjectStore.getState().activeTab !== "timeline") return;
-  if (isAnyModalOpen() || isTypingTarget(event.target)) return;
+  if (isAnyModalOpen() || isTypingTarget(event.target) || focusedControlOwnsKey(event)) return;
 
   const matched = findMatchingShortcut(event, "timeline");
   if (matched === "timeline.playFromCue") {

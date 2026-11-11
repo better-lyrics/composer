@@ -1,6 +1,7 @@
 import { Button, type ButtonProps } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
+import { focusFirstControlIfFocusLost, focusIfFocusLost } from "@/ui/focus-if-focus-lost";
 import { keepSpaceForFocusedControl } from "@/ui/keep-space-for-focused-control";
 import { Scroll } from "@/ui/scroll";
 import { type Icon, IconChevronLeft, IconChevronRight, IconHandFinger } from "@tabler/icons-react";
@@ -46,19 +47,12 @@ interface PopIconButtonProps extends Omit<ButtonProps, "size" | "children"> {
 
 // -- Constants -----------------------------------------------------------------
 
-const FOCUSABLE_CONTROL = "button:not(:disabled), input:not(:disabled)";
 const SET_BY_HAND_BUTTON = "[data-set-by-hand]";
 
 // -- Helpers -------------------------------------------------------------------
 
-// A view swap unmounts the focused control, so the new view takes focus unless one of its controls already did.
-function focusIfFocusLost(body: HTMLDivElement | null, selector: string): void {
-  if (!body || (document.activeElement !== null && document.activeElement !== document.body)) return;
-  (body.querySelector<HTMLElement>(selector) ?? body.querySelector<HTMLElement>(FOCUSABLE_CONTROL))?.focus();
-}
-
 const FOCUS_ON_ENTER = {
-  "first-control": (body: HTMLDivElement | null) => focusIfFocusLost(body, FOCUSABLE_CONTROL),
+  "first-control": focusFirstControlIfFocusLost,
   "set-by-hand": (body: HTMLDivElement | null) => focusIfFocusLost(body, SET_BY_HAND_BUTTON),
 } as const;
 

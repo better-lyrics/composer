@@ -114,7 +114,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
               value={newAgentName}
               onChange={(e) => setNewAgentName(e.target.value)}
               onKeyDown={(e) => {
-                e.stopPropagation();
+                if (e.key !== "Escape") e.stopPropagation();
                 if (e.key === "Enter") handleAddNew(close);
               }}
               placeholder="New agent name"

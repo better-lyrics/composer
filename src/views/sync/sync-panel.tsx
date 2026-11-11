@@ -15,7 +15,7 @@ import { EmptyState } from "@/ui/empty-state";
 import { runHistoryShortcut } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { type SyncState, getNudgeAmount } from "@/utils/sync-helpers";
-import { isTypingTarget } from "@/utils/typing-target";
+import { focusedControlOwnsKey, isTypingTarget } from "@/utils/typing-target";
 import { buildLaneRows } from "@/views/sync/lane-rows";
 import { SyncEndScreen } from "@/views/sync/sync-end-screen";
 import { SyncLineList } from "@/views/sync/sync-line-list";
@@ -318,7 +318,7 @@ const SyncPanel: React.FC = () => {
     if (runHistoryShortcut(e, runHistory, { scope: "sync" })) return;
 
     const matched = findMatchingShortcut(e, "sync");
-    if (!matched) return;
+    if (!matched || focusedControlOwnsKey(e)) return;
 
     switch (matched) {
       case "sync.tap":

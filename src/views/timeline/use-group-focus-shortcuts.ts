@@ -3,6 +3,7 @@ import { isTypingTarget } from "@/hooks/useKeyboardShortcuts";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
+import { isInPopover } from "@/utils/typing-target";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { type InstanceRef, selectedBannerInstance } from "@/views/timeline/selected-banner";
@@ -35,7 +36,7 @@ function escapeBelongsElsewhere(target: EventTarget | null): boolean {
   if (pasteMode.status !== "idle" || selectedWords.length > 0) return true;
   if (loopRegion !== null || loopRegionDrag !== null) return true;
   if (document.querySelector('[data-word-block][aria-pressed="true"]') !== null) return true;
-  return target instanceof Element && target.closest("[data-floating-ui-portal]") !== null;
+  return isInPopover(target);
 }
 
 function handleGroupFocusKeyDown(event: KeyboardEvent): void {

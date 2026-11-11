@@ -57,7 +57,9 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
         aria-label="Lyrics text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key !== "Escape") e.stopPropagation();
+        }}
         placeholder={PASTE_PLACEHOLDER}
         spellCheck={false}
         frameClassName="h-32"

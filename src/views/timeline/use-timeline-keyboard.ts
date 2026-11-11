@@ -25,7 +25,7 @@ import { historyShortcutAction } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
-import { isTypingTarget } from "@/utils/typing-target";
+import { focusedControlOwnsKey, isTypingTarget } from "@/utils/typing-target";
 import { centerTimeScrollLeft } from "@/views/timeline/coords";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
@@ -164,7 +164,7 @@ function useTimelineKeyboard(
     const handleKeyDown = (e: KeyboardEvent) => {
       if (useProjectStore.getState().activeTab !== "timeline") return;
       if (isAnyModalOpen()) return;
-      if (isTypingTarget(e.target)) return;
+      if (isTypingTarget(e.target) || focusedControlOwnsKey(e)) return;
 
       const historyAction = historyShortcutAction(e, { scope: "timeline" });
       if (historyAction) {
