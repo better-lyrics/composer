@@ -1,4 +1,4 @@
-import { decodeSourceAudio } from "@/audio/decoded-source-audio";
+import { withDecodedSource } from "@/audio/decoded-source-audio";
 import { encodeWavOffThread } from "@/audio/pcm-worker-host";
 
 // -- Helpers ------------------------------------------------------------------
@@ -13,21 +13,12 @@ function needsWavConversion(file: File): boolean {
   return /\.(mp3|aac)$/i.test(file.name);
 }
 
-function copyChannels(audio: AudioBuffer): Float32Array[] {
-  return Array.from({ length: audio.numberOfChannels }, (_, channel) => {
-    const copy = new Float32Array(audio.length);
-    audio.copyFromChannel(copy, channel);
-    return copy;
-  });
-}
-
 // Decodes any File the browser can read into an uncompressed WAV blob. Used
 // to swap a slow-seeking source (mp3, raw aac) for an O(1)-seekable WAV.
 // Rejects if the browser cannot decode the file; the caller falls back to
 // the original file.
-async function decodeAudioToWav(file: File): Promise<Blob> {
-  const decoded = await decodeSourceAudio(file);
-  return encodeWavOffThread(copyChannels(decoded), decoded.sampleRate);
+function decodeAudioToWav(file: File): Promise<Blob> {
+  return withDecodedSource(file, (decoded) => encodeWavOffThread(decoded.channels, decoded.sampleRate));
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -9,7 +9,7 @@ declare module "signalsmith-stretch" {
   interface StretchNode extends AudioWorkletNode {
     inputTime: number;
     schedule(change: StretchSchedule, adjustPrevious?: boolean): Promise<StretchSchedule>;
-    addBuffers(channels: Float32Array[]): Promise<number>;
+    addBuffers(channels: Float32Array[], transfer?: Transferable[]): Promise<number>;
     dropBuffers(): Promise<{ start: number; end: number }>;
     latency(): Promise<number>;
     configure(config: { blockMs?: number; intervalMs?: number }): Promise<void>;

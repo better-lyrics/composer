@@ -1,4 +1,4 @@
-import { decodeSourceAudio } from "@/audio/decoded-source-audio";
+import { croppedAudioBuffer, withDecodedSource } from "@/audio/decoded-source-audio";
 import { cachePitchTrack, readCachedPitchTrack } from "@/audio/pitch/pitch-cache";
 import { startPitchDetection } from "@/audio/pitch/pitch-worker-host";
 import { resampleMono } from "@/audio/pitch/resample-mono";
@@ -57,9 +57,10 @@ async function loadPitchTrack({
   signal.throwIfAborted();
   if (cached) return cached;
 
-  const decoded = await decodeSourceAudio(await fetchVocalStem(vocalsUrl, signal));
-  signal.throwIfAborted();
-  const audio16k = await resampleMono(decoded, SWIFT_F0_SAMPLE_RATE);
+  const audio16k = await withDecodedSource(await fetchVocalStem(vocalsUrl, signal), (decoded) => {
+    signal.throwIfAborted();
+    return resampleMono(croppedAudioBuffer(decoded), SWIFT_F0_SAMPLE_RATE);
+  });
   signal.throwIfAborted();
   const detection = startPitchDetection(audio16k, { focusTime: focusTime(), signal, onProgress });
   onFocusSetter(detection.setFocusTime);

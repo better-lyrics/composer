@@ -1,9 +1,10 @@
-import { decodeSourceAudio } from "@/audio/decoded-source-audio";
+import { type DecodedSource, withDecodedSource } from "@/audio/decoded-source-audio";
 import { scrubPreview } from "@/audio/scrub-preview";
+import type { ScrubBuffer } from "@/audio/scrub-stretch";
 import type { Stem } from "@/audio/separation/types";
 
 // -- Types ---------------------------------------------------------------------
-type LazyAudio = () => Promise<AudioBuffer>;
+type LazyAudio = () => Promise<ScrubBuffer>;
 type CachedStem = { url: string | null; audio: LazyAudio };
 
 // -- Constants -----------------------------------------------------------------
@@ -14,17 +15,22 @@ const cache: Map<Stem, CachedStem> = new Map();
 let activeStem: Stem | null = null;
 
 // -- Helpers -------------------------------------------------------------------
+function scrubBufferOf({ duration, channels }: DecodedSource): ScrubBuffer {
+  return { duration, numberOfChannels: channels.length, getChannelData: (channel) => channels[channel] };
+}
+
+// The stem bytes are kept, never the decoded audio: scrub preview moves the samples into its node.
 function lazyAudio(readSource: () => Promise<Blob>): LazyAudio {
-  let decoding: Promise<AudioBuffer> | null = null;
+  let reading: Promise<Blob> | null = null;
   return () => {
-    if (!decoding) {
-      const attempt = readSource().then(decodeSourceAudio);
-      decoding = attempt;
+    if (!reading) {
+      const attempt = readSource();
+      reading = attempt;
       attempt.catch(() => {
-        if (decoding === attempt) decoding = null;
+        if (reading === attempt) reading = null;
       });
     }
-    return decoding;
+    return reading.then((source) => withDecodedSource(source, scrubBufferOf));
   };
 }
 

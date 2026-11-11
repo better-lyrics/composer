@@ -9,8 +9,10 @@ interface Stretch {
   gain: GainNode;
 }
 
+type ScrubBuffer = Pick<AudioBuffer, "duration" | "numberOfChannels" | "getChannelData">;
+
 interface ScrubMove {
-  buffer: AudioBuffer;
+  buffer: ScrubBuffer;
   time: number;
   rate: number;
   volume: number;
@@ -29,7 +31,7 @@ const LOG_PREFIX = "[ScrubStretch]";
 // -- State --------------------------------------------------------------------
 
 let stretchPromise: Promise<Stretch> | null = null;
-let loadedBuffer: AudioBuffer | null = null;
+let loadedBuffer: ScrubBuffer | null = null;
 let loading: Promise<void> = Promise.resolve();
 let latestRequest = 0;
 let segment = { input: 0, at: 0, rate: 0 };
@@ -59,9 +61,9 @@ function createStretch(): Promise<Stretch> {
   return stretchPromise;
 }
 
-// The node keeps its own copy of the samples, so it is loaded once per buffer and dropped when the buffer goes.
+// The samples move into the node, leaving the buffer empty, so it is loaded once and dropped when the buffer goes.
 // A failed load is logged and forgotten so the next call retries; `loading` itself never rejects.
-function loadInto(node: StretchNode, buffer: AudioBuffer | null): Promise<void> {
+function loadInto(node: StretchNode, buffer: ScrubBuffer | null): Promise<void> {
   if (loadedBuffer === buffer) return loading;
   loadedBuffer = buffer;
   const channels = buffer
@@ -69,7 +71,7 @@ function loadInto(node: StretchNode, buffer: AudioBuffer | null): Promise<void> 
     : [];
   loading = loading
     .then(() => node.dropBuffers())
-    .then(() => (channels.length > 0 ? node.addBuffers(channels) : 0))
+    .then(() => (channels.length > 0 ? node.addBuffers(channels, [...new Set(channels.map((c) => c.buffer))]) : 0))
     .then(
       () => undefined,
       (err: unknown) => {
@@ -80,7 +82,7 @@ function loadInto(node: StretchNode, buffer: AudioBuffer | null): Promise<void> 
   return loading;
 }
 
-function useStretchBuffer(buffer: AudioBuffer | null): void {
+function useStretchBuffer(buffer: ScrubBuffer | null): void {
   latestRequest += 1;
   if (!buffer && !stretchPromise) return;
   createStretch()
@@ -147,3 +149,4 @@ function silenceStretch(): void {
 // -- Exports ------------------------------------------------------------------
 
 export { SCRUB_HOLD_S, scrubTo, silenceStretch, useStretchBuffer };
+export type { ScrubBuffer };
