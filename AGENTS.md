@@ -99,12 +99,19 @@ file to its allowlist without the maintainer's approval.
   membership) are derived only by the modules in `src/domain/`. Call them, do not re-derive inline.
 - `domain-isolation`: `src/domain/` never imports from stores, views, hooks, pages, ui or audio.
 - `store-history-single-path`, `store-pending-snapshot`: undo history has one write path. A store
-  write that skips history must mark the pending snapshot.
+  write that skips history must mark the pending snapshot. History entries are built only in
+  `snapshotEntry` and frozen with `deepFreeze` in every build, with no environment switch.
 - `frame-loop-ownership`, `frame-loop-wiring-complete`: animation frames go through
   `src/lib/frame-loop.ts`, never raw `requestAnimationFrame`. A new store must be wired into the
   frame loop.
 - `timeline-scroll-ownership`: the Timeline scroll position is read and written only through
   `views/timeline/view-scroll.ts`.
+- `performance-ownership`: per-edit and per-frame work goes through its owner. History never
+  deep-copies state, effective lines and the grouping scan are derived only by their owners, and
+  every Timeline frame callback that writes a style is declared.
+- `timeline-subscriptions`: Timeline rows and per-row hooks never subscribe to the whole selection
+  or the whole store, and only listed files subscribe to `zoom` or the scroll position.
+- `tab-visibility-ownership`: tab panels read visibility only through `useIsActiveTab`.
 - `file-size-budget`: source files stay under 300 lines. Split the file instead of growing it.
 - `one-concept-one-regex`: a regex literal is declared in one file only.
 - `button-primitives`, `download-owner`, `pluralize-owner`, `no-raw-settings-references`: use the
@@ -173,6 +180,17 @@ that touches it:
   and scroll; change zoom with `ws.setOptions`, never by rebuilding the instance.
 - Heavy tab panels mount on their first visit. Do not pre-render long lists or code views in a
   hidden `<Activity>`.
+- Work per edit must not grow faster than linear in line count. A derivation over every line is
+  cached by line identity (`utils/memo-by-identity.ts`), never recomputed per edit.
+- A selection, step or cursor change re-renders only the rows it touches. A row or a per-row hook
+  subscribes with a selector that returns its own primitive, never the whole selection.
+- A hidden tab panel renders nothing new. Gate on `hooks/use-is-active-tab.ts`.
+- Long lists and code views are windowed. A windowed list stays mounted while its tab is hidden:
+  take its scroll parent from `hooks/use-scroll-parent.ts`, which never clears it.
+- Undo history shares unchanged objects between steps, and entries are frozen in every build. Never
+  write to an object that came from the project store. Build a new one.
+- Measure against a master build with interleaved runs, at the display size you ship for. Main
+  thread frame times do not show GPU drops: check presented frames for anything that draws.
 
 To show a Timeline change is not slower, profile it at 4x CPU throttling: zoom with the buttons and
 with a fast Ctrl+wheel burst in both directions, scroll, and play. Compare against a master build.
