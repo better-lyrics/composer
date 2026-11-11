@@ -16,7 +16,6 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { Button } from "@/ui/button";
-import { Scroll } from "@/ui/scroll";
 import {
   extractBackgroundVocals,
   extractInlineAcrossLinkedLines,
@@ -497,29 +496,21 @@ const EditPanel: React.FC = () => {
               onAssignAgent={handleBulkAgentChange}
               onClear={handleClearSelection}
             />
-            <Scroll className="flex-1 border rounded-xl border-(--edge) bg-(--well)">
-              {parsed.length === 0 || (parsed.length === 1 && parsed[0].isEmpty) ? (
-                <div className="flex items-center justify-center h-full text-sm text-(--muted)">
-                  Lyrics will appear here
-                </div>
-              ) : (
-                <LinePreviewList
-                  parsed={parsed}
-                  lines={lines}
-                  groups={groups}
-                  agents={agents}
-                  selectedLines={selectedLines}
-                  onSelect={handleLineSelect}
-                  onAgentChange={handleAgentChange}
-                  onBulkAgentChange={handleBulkAgentChange}
-                  onBackgroundChange={handleBackgroundChange}
-                  onExtractLine={handleExtractLine}
-                  onGutterMouseDown={handleGutterMouseDown}
-                  onGutterMouseEnter={handleGutterMouseEnter}
-                  didDragRef={didDragRef}
-                />
-              )}
-            </Scroll>
+            <LinePreviewList
+              parsed={parsed}
+              lines={lines}
+              groups={groups}
+              agents={agents}
+              selectedLines={selectedLines}
+              onSelect={handleLineSelect}
+              onAgentChange={handleAgentChange}
+              onBulkAgentChange={handleBulkAgentChange}
+              onBackgroundChange={handleBackgroundChange}
+              onExtractLine={handleExtractLine}
+              onGutterMouseDown={handleGutterMouseDown}
+              onGutterMouseEnter={handleGutterMouseEnter}
+              didDragRef={didDragRef}
+            />
           </div>
         </div>
       </div>

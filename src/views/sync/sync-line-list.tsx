@@ -6,6 +6,7 @@ import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { SkippedInstance } from "@/domain/sync/skipped-instances";
+import { useScrollParent } from "@/hooks/use-scroll-parent";
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { ScrollableLine, type ScrollableLineLinkInfo } from "@/views/sync/scrollable-line";
 import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
@@ -94,15 +95,14 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
   const currentLineIndex = editMode ? playingLineIndex : cursorLineIndex;
 
   const virtuosoRef = useRef<VirtuosoHandle>(null);
-  const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null);
+  const [scrollParent, keepScrollParent] = useScrollParent();
   const [rowsRendered, setRowsRendered] = useState(false);
   const attachScrollParent = useCallback(
     (element: HTMLDivElement | null) => {
       scrollContainerRef.current = element;
-      // A hidden Activity detaches refs; dropping the parent then would remount Virtuoso empty on every reveal.
-      if (element) setScrollParent(element);
+      keepScrollParent(element);
     },
-    [scrollContainerRef],
+    [scrollContainerRef, keepScrollParent],
   );
   const farRevealIndex = useRef<number | null>(null);
   const noteRowsRendered = useCallback(

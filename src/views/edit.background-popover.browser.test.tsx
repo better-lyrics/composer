@@ -45,6 +45,7 @@ describe("background vocals popover", () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world" })] });
     const screen = await render(<EditPanel />);
     const trigger = screen.getByRole("button", { name: "BG", exact: true });
+    await expect.element(trigger).toBeVisible();
 
     (trigger.element() as HTMLElement).focus();
     await userEvent.keyboard("{Enter}");

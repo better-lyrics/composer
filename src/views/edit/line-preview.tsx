@@ -34,8 +34,6 @@ interface LinePreviewProps extends LinePreviewRowHandlers {
 const LINE_COLUMN = "line-cell flex justify-center w-11 shrink-0 font-mono font-medium";
 // 28px is min-h-7: every row is one line tall.
 const PREVIEW_ROW_HEIGHT = 28;
-const PREVIEW_GROUP_HEADER_HEIGHT = 26;
-const ROW_SKIPS_OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_28px]";
 const ROW_BODY = "flex flex-1 min-w-0 items-center gap-2 pl-3 pr-2 border-b border-(--divider) bg-clip-padding";
 
 // -- Helpers ------------------------------------------------------------------
@@ -89,7 +87,7 @@ const EmptyLinePreview: React.FC<{
   columnStyle: React.CSSProperties;
   onGutterMouseEnter: LinePreviewProps["onGutterMouseEnter"];
 }> = ({ lineNumber, columnStyle, onGutterMouseEnter }) => (
-  <div className={cn("flex items-stretch min-h-7 opacity-60", ROW_SKIPS_OFFSCREEN)}>
+  <div className="flex items-stretch min-h-7 opacity-60">
     <span
       className={cn(LINE_COLUMN, "items-center text-[11px] tabular-nums text-(--muted) select-none")}
       style={columnStyle}
@@ -159,7 +157,7 @@ const LinePreviewRow: React.FC<LinePreviewProps> = ({
     <div
       role="button"
       tabIndex={-1}
-      className={cn("group flex items-stretch min-h-7 cursor-pointer", ROW_SKIPS_OFFSCREEN)}
+      className="group flex items-stretch min-h-7 cursor-pointer"
       style={groupColor ? { "--group": groupColor } : undefined}
       onMouseDown={handleMouseDown}
       onClick={selectLineForBulkEdit}
@@ -230,4 +228,4 @@ const LinePreview = memo(LinePreviewRow, sameLinePreviewProps);
 // -- Exports ------------------------------------------------------------------
 
 export type { LinePreviewRowHandlers };
-export { LinePreview, PREVIEW_GROUP_HEADER_HEIGHT, PREVIEW_ROW_HEIGHT, PreviewGroupHeader };
+export { LinePreview, PREVIEW_ROW_HEIGHT, PreviewGroupHeader };
