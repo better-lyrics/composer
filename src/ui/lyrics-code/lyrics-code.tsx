@@ -44,8 +44,9 @@ const Tokens: React.FC<{ tokens: readonly Token[] }> = ({ tokens }) =>
   );
 
 // Blocks away from the view hold their text unstyled, so copy and find still see every line.
+// Each block is its own block box, so a highlight swap re-lays out that block instead of the whole document.
 const CodeBlockSpan = memo<CodeBlockSpanProps>(({ block, index, highlighted, observeBlock }) => (
-  <span ref={observeBlock} data-code-block={index}>
+  <span ref={observeBlock} data-code-block={index} className="block">
     {highlighted ? (
       // One wrapper is built off the page and inserted once, instead of one insertion per token.
       <span>
