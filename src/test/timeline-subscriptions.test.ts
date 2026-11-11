@@ -32,6 +32,10 @@ const ROW_COMPONENTS = new Map<string, string>([
   ["views/timeline/pitch/pitch-lane.tsx", "one per track while the pitch line shows"],
   ["views/timeline/group-header-row.tsx", "one per group instance"],
   ["views/timeline/group-banner.tsx", "one per group instance"],
+  ["views/timeline/track-selection.ts", "hook of every word track"],
+  ["views/timeline/step-timing/use-step-track.ts", "hook of every word track"],
+  ["views/timeline/use-row-resize.ts", "hook of every lyric line row"],
+  ["views/timeline/use-banner-drag.ts", "hook of every group banner"],
 ]);
 
 const SCROLL_SUBSCRIBERS = new Map<string, string>([
