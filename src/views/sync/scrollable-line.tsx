@@ -264,7 +264,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
       aria-current={isCurrent || undefined}
       onClick={onClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter") onClick();
+        if (e.key === "Enter" && e.target === e.currentTarget) onClick();
       }}
       className={cn("group/row flex w-full text-left cursor-pointer", isCurrent && "bg-composer-accent/7")}
     >

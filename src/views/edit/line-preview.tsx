@@ -144,7 +144,7 @@ const LinePreview: React.FC<LinePreviewProps> = ({
       onMouseDown={handleMouseDown}
       onClick={selectLineForBulkEdit}
       onKeyDown={(e) => {
-        if (e.key === "Enter") onSelect(line.lineNumber, e.shiftKey);
+        if (e.key === "Enter" && e.target === e.currentTarget) onSelect(line.lineNumber, e.shiftKey);
       }}
       title={groupTooltip}
     >
