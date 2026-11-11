@@ -9,7 +9,12 @@ import { useSettingsStore } from "@/stores/settings";
 import type { GroupFocus } from "@/views/timeline/group-focus";
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
 import type { ClipboardData, PasteMode } from "@/views/timeline/selection-types";
-import { loopRegionPatch, selectionPatch, stepTimingPatch, toggledSelectionPatch } from "@/views/timeline/step-timing/step-selection";
+import {
+  loopRegionPatch,
+  selectionWrite,
+  stepTimingPatch,
+  toggledSelectionPatch,
+} from "@/views/timeline/step-timing/step-selection";
 import { create } from "zustand";
 
 // -- Types ---------------------------------------------------------------------
@@ -202,20 +207,14 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
         return hasTransliteration(useProjectStore.getState().lines) ? { textVariant: "transliteration" } : s;
       }),
     setTextVariant: (textVariant) => set({ textVariant }),
-    setSelectedWords: (selectedWords, asQueue) =>
-      set((s) =>
-        selectedWords.length === 0 && s.selectedWords.length === 0 && s.stepQueue === null
-          ? s
-          : selectionPatch(s, selectedWords, asQueue),
-      ),
+    setSelectedWords: (selectedWords, asQueue) => set((s) => selectionWrite(s, selectedWords, asQueue)),
     setSelectionPlayback: (selectionPlayback) => set({ selectionPlayback }),
     setLoopRegion: (loopRegion) => set((s) => loopRegionPatch(s, loopRegion)),
     setLoopRegionDrag: (loopRegionDrag) => set({ loopRegionDrag }),
     setWaveformReady: (waveformReady) => set({ waveformReady }),
 
     toggleSelection: (selection) => set((s) => toggledSelectionPatch(s, selection)),
-    clearSelection: () =>
-      set((s) => (s.selectedWords.length === 0 && s.stepQueue === null ? s : { selectedWords: [], stepQueue: null })),
+    clearSelection: () => set((s) => selectionWrite(s, [])),
     setClipboard: (clipboard) => set({ clipboard }),
     setPasteMode: (pasteMode) => set({ pasteMode }),
     setScrollLeft: (scrollLeft) => {
@@ -228,10 +227,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setRowHeight: (lineId, height) =>
       set((s) => ({
         lastResizedLineId: lineId,
-        rowHeights: {
-          ...s.rowHeights,
-          [lineId]: Math.max(MIN_ROW_HEIGHT, Math.min(MAX_ROW_HEIGHT, height)),
-        },
+        rowHeights: { ...s.rowHeights, [lineId]: Math.max(MIN_ROW_HEIGHT, Math.min(MAX_ROW_HEIGHT, height)) },
       })),
     setDraggingPlayhead: (isDraggingPlayhead, time) => set({ isDraggingPlayhead, dragTime: time ?? get().dragTime }),
     setDragTime: (dragTime) => set({ dragTime }),

@@ -38,6 +38,16 @@ function selectionPatch(state: StepSelectionState, selections: WordSelection[], 
   return { selectedWords: [cursor ?? queue[0]], stepQueue: queue, ...cleared };
 }
 
+// Clearing a selection that is already empty keeps the state, so no subscriber sees a change.
+function selectionWrite<S extends StepSelectionState>(
+  state: S,
+  selections: WordSelection[],
+  asQueue?: boolean,
+): S | SelectionPatch {
+  const unchanged = selections.length === 0 && state.selectedWords.length === 0 && state.stepQueue === null;
+  return unchanged ? state : selectionPatch(state, selections, asQueue);
+}
+
 // Cmd-click adds to or takes from the queue, not just the cursor.
 function toggledSelectionPatch(state: StepSelectionState, selection: WordSelection): SelectionPatch {
   const toggled = toggleWordSelection(state.stepQueue ?? state.selectedWords, selection);
@@ -75,4 +85,12 @@ function loopRegionPatch(state: StepSelectionState, loopRegion: LoopRegion | nul
 
 // -- Exports ------------------------------------------------------------------
 
-export { isWholeLane, loopRegionPatch, liveStepSelection, selectionPatch, stepTimingPatch, toggledSelectionPatch };
+export {
+  isWholeLane,
+  loopRegionPatch,
+  liveStepSelection,
+  selectionPatch,
+  selectionWrite,
+  stepTimingPatch,
+  toggledSelectionPatch,
+};
