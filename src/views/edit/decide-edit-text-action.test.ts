@@ -254,4 +254,29 @@ describe("regressions", () => {
     expect(step2.finalLines[0].words).toEqual(lines[0].words);
     expect(step2.finalLines[1].words).toEqual(lines[1].words);
   });
+  it("keeps every untouched line as the same object through a keystroke", () => {
+    const lines: LyricLine[] = [
+      { id: "a", text: "Under the porch light (hey)", agentId: "v2", begin: 1, end: 3 },
+      { id: "b", text: "we counted the trains", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+      { id: "c", text: "(ooh) slow and steady", agentId: "v1" },
+    ];
+    const action = decideEditTextAction({
+      text: "Under the porch light (hey)\nwe counted the train\n(ooh) slow and steady",
+      defaultAgentId: "v1",
+      lines,
+      groups: [groupChorus],
+      modalPending: false,
+    });
+    if (action.kind !== "apply") throw new Error(action.kind);
+    expect(action.finalLines[0]).toBe(lines[0]);
+    expect(action.finalLines[2]).toBe(lines[2]);
+    expect(action.finalLines[1]).toMatchObject({
+      id: "b",
+      text: "we counted the train",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx: 0,
+      templateLineIdx: 0,
+    });
+  });
 });

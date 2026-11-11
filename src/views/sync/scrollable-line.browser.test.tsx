@@ -11,6 +11,7 @@ const BASE_PROPS = {
   granularity: "word" as const,
   currentTime: 0,
   editMode: false,
+  splitCharacter: "|",
   onClick: () => {},
 };
 

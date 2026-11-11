@@ -46,6 +46,31 @@ function computeCoveredOnsets(
   return covered;
 }
 
+// Onset lines are mounted a step past each side of the view, so a render landing a frame late never shows a gap.
+const ONSET_WINDOW_STEP_PX = 1024;
+
+function onsetWindowStep(scrollLeft: number): number {
+  return Math.floor(scrollLeft / ONSET_WINDOW_STEP_PX);
+}
+
+// Steps may come from a live and a lagging scroll position; the window covers both.
+function onsetIndicesInView(
+  onsets: readonly number[],
+  zoom: number,
+  stepA: number,
+  stepB: number,
+  viewportWidth: number,
+): number[] {
+  const start = (Math.min(stepA, stepB) - 1) * ONSET_WINDOW_STEP_PX;
+  const end = (Math.max(stepA, stepB) + 2) * ONSET_WINDOW_STEP_PX + viewportWidth;
+  const indices: number[] = [];
+  for (let index = 0; index < onsets.length; index++) {
+    const x = onsets[index] * zoom;
+    if (x >= start && x <= end) indices.push(index);
+  }
+  return indices;
+}
+
 const ADJACENT_EPSILON = 1e-4;
 
 function adjacentSnapPoint(points: number[], current: number, direction: 1 | -1): number | null {
@@ -61,5 +86,12 @@ function adjacentSnapPoint(points: number[], current: number, direction: 1 | -1)
 
 // -- Exports -------------------------------------------------------------------
 
-export { snapTimeToPoints, isTimeOnOnset, computeCoveredOnsets, adjacentSnapPoint };
+export {
+  snapTimeToPoints,
+  isTimeOnOnset,
+  computeCoveredOnsets,
+  adjacentSnapPoint,
+  onsetIndicesInView,
+  onsetWindowStep,
+};
 export type { PointSnapAnchor };

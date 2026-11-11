@@ -47,6 +47,14 @@ interface PlayheadFrame {
   blocks: HTMLElement[];
   lines: readonly LyricLine[];
   mask: string | null;
+  written: WrittenPositions;
+}
+
+interface WrittenPositions {
+  playhead: HTMLElement | null;
+  playheadX: number;
+  cap: HTMLElement | null;
+  capX: number;
 }
 
 // -- Functions -----------------------------------------------------------------
@@ -72,6 +80,7 @@ function createPlayheadFrame(): PlayheadFrame {
     blocks: [],
     lines: [],
     mask: null,
+    written: { playhead: null, playheadX: Number.NaN, cap: null, capX: Number.NaN },
   };
 }
 
@@ -166,6 +175,22 @@ function writeBannerProgress(currentTime: number): void {
   }
 }
 
+// React renders neither transform, so the last written value stays true until the element remounts.
+function writePositions(frame: PlayheadFrame, playhead: HTMLElement, cap: HTMLElement | null): void {
+  const written = frame.written;
+  if (written.playhead !== playhead || written.playheadX !== frame.position) {
+    written.playhead = playhead;
+    written.playheadX = frame.position;
+    playhead.style.transform = `translate3d(${frame.position}px, 0, 0)`;
+  }
+  const capX = frame.position + 1 - GUTTER_WIDTH;
+  if (cap && (written.cap !== cap || written.capX !== capX)) {
+    written.cap = cap;
+    written.capX = capX;
+    cap.style.transform = `translate3d(${capX}px, 0, 0)`;
+  }
+}
+
 function writePlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): void {
   const playhead = elements.playhead.current;
   const cap = elements.cap.current;
@@ -173,11 +198,11 @@ function writePlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): v
   if (!frame.ready || !playhead) return;
 
   container?.parentElement?.classList.toggle("scrollbar-hidden", frame.hideScrollbars);
-  playhead.style.transform = `translate3d(${frame.position}px, 0, 0)`;
-  if (cap) cap.style.transform = `translate3d(${frame.position + 1 - GUTTER_WIDTH}px, 0, 0)`;
+  writePositions(frame, playhead, cap);
 
   if (container) {
-    playhead.style.height = `${frame.contentHeight}px`;
+    const height = `${frame.contentHeight}px`;
+    if (playhead.style.height !== height) playhead.style.height = height;
     paintTimelineLights(frame.lights, container, frame.blocks, frame.lines, frame.displayTime);
     pinCutWordLabels(frame.blocks, frame.scrollLeft, frame.pinnedLabels);
     const rulerTrack = elements.rulerTrack?.current;

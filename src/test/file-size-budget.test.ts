@@ -24,7 +24,6 @@ const BASELINE_OVER_BUDGET = new Set<string>([
   "views/sync/sync-panel.tsx",
   "hooks/useSyncHandlers.ts",
   "views/timeline/utils.ts",
-  "views/timeline/word-track.tsx",
   // timeline-context-menu.tsx is intentionally exempt: its per-target sections share private menu primitives in one file.
   "views/timeline/timeline-context-menu.tsx",
   "views/sync/scrollable-line.tsx",

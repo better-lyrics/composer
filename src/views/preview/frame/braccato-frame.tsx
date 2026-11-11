@@ -46,7 +46,12 @@ function themeMessage(): ToFrameMessage {
 
 function sameClock(a: FrameClock | null, b: FrameClock): boolean {
   return (
-    a !== null && a.time === b.time && a.playing === b.playing && a.followsAudio === b.followsAudio && a.rate === b.rate
+    a !== null &&
+    a.time === b.time &&
+    a.playing === b.playing &&
+    a.followsAudio === b.followsAudio &&
+    a.rate === b.rate &&
+    a.scrubbing === b.scrubbing
   );
 }
 
@@ -90,6 +95,7 @@ function useFrameClock(frameRef: RefObject<HTMLIFrameElement | null>, frameOrigi
         playing: !audio.paused,
         followsAudio: audio.followsAudio,
         rate: audio.playbackRate,
+        scrubbing: audio.scrubbing,
         sentAt: performance.timeOrigin + frameTime(),
       };
       if (sameClock(sentRef.current, clock)) return;

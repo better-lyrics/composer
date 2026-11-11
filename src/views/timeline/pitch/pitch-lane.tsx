@@ -1,13 +1,16 @@
 import { effectiveBounds } from "@/domain/line/bounds";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
+import { isLineTimed } from "@/domain/line/sync-progress";
 import type { LyricLine } from "@/domain/line/model";
 import { pitchRangeBetween } from "@/domain/pitch/line-range";
-import { songWordCoverage, spillRuns } from "@/domain/pitch/spill";
+import { songWordCoverage, spillRuns, wordCoverage } from "@/domain/pitch/spill";
 import type { PitchPoint } from "@/domain/pitch/track";
+import type { Bounds } from "@/domain/word/bounds";
 import type { Rgb } from "@/domain/spectrum/palettes";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { livePlaybackTime } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { pitchLineMotion } from "@/utils/animationVariants";
 import { cssVariable, rgbOf } from "@/utils/theme/css-colour";
 import {
@@ -41,6 +44,13 @@ interface LaneInks {
   ink: Rgb;
   lit: Rgb;
   warning: Rgb;
+}
+
+interface OtherTracksCoverage {
+  lines: readonly LyricLine[];
+  lineId: string;
+  kind: PitchLaneKind;
+  coverage: readonly Bounds[];
 }
 
 interface PitchLaneProps {
@@ -97,6 +107,17 @@ function markPitchedWords(track: HTMLElement | null, runs: readonly PitchPoint[]
   }
 }
 
+// Every track but the edited one, built once per lines change, so a drag merges only its own words on each move.
+function otherTracksCoverage(
+  previous: OtherTracksCoverage | null,
+  lines: readonly LyricLine[],
+  lineId: string,
+  kind: PitchLaneKind,
+): OtherTracksCoverage {
+  if (previous && previous.lines === lines && previous.lineId === lineId && previous.kind === kind) return previous;
+  return { lines, lineId, kind, coverage: songWordCoverage(lines, { lineId, track: kind, words: [] }) };
+}
+
 // -- Components ----------------------------------------------------------------
 
 const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line, kind, height, color, rows }) => {
@@ -109,6 +130,9 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
   const spillCountRef = useRef<number | null>(null);
   const sungClipRef = useRef<SungClip | null>(null);
   const inksRef = useRef<LaneInks | null>(null);
+  const otherTracksRef = useRef<OtherTracksCoverage | null>(null);
+  const pitchLineOn = useSettingsStore((s) => s.pitchLine !== "off");
+  const hasSungLane = isLineTimed(line) && (effectiveTrackWords(line, kind)?.length ?? 0) > 0;
 
   const revealSung = useCallback(() => {
     const sung = sungRef.current;
@@ -120,7 +144,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
     sung.style.clipPath = `inset(0 ${clip.width - shown}px 0 0)`;
   }, []);
 
-  useFrameLoop(revealSung, "pitch-sung-fill");
+  useFrameLoop(revealSung, "pitch-sung-fill", pitchLineOn && hasSungLane);
 
   useEffect(() => {
     const spark = sparkRef.current;
@@ -147,9 +171,12 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
     );
     const leadWords = kind === "bg" ? (effectiveTrackWords(line, "word") ?? []) : [];
     const drawing = { window, runs: laneRuns(rows.track, kind, window, laneWords, leadWords), words: laneWords };
-    const coverage = live
-      ? songWordCoverage(useProjectStore.getState().lines, { lineId: line.id, track: kind, words: laneWords })
-      : rows.coverage;
+    let coverage = rows.coverage;
+    if (live) {
+      const others = otherTracksCoverage(otherTracksRef.current, useProjectStore.getState().lines, line.id, kind);
+      otherTracksRef.current = others;
+      coverage = wordCoverage([...others.coverage, ...laneWords]);
+    }
     const spills = kind === "word" ? spillRuns(drawing.runs, coverage) : [];
     if (spillCountRef.current !== null && spills.length < spillCountRef.current) {
       fadeOutSnapshot(spark, ghost, pitchLineMotion.spillFadeMs);
@@ -168,7 +195,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
     <>
       <canvas ref={ghostRef} aria-hidden className="pitch-lane-ghost" />
       <canvas ref={sparkRef} aria-hidden className="pitch-lane" />
-      <canvas ref={sungRef} aria-hidden data-sung className="pitch-lane" />
+      <canvas ref={sungRef} aria-hidden data-sung data-playback-style="clip-path" className="pitch-lane" />
     </>
   );
 };

@@ -2,6 +2,7 @@
  * @vitest-environment node
  */
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { groupingSuggestions } from "@/views/grouping/grouping-suggestions";
 import { findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
 import { describe, expect, it } from "vitest";
 
@@ -72,6 +73,26 @@ describe("findRepeatingStandaloneSections", () => {
         { starts: [2, 9], length: 3 },
       ]);
     });
+  });
+
+  it("reuses the suggestions when an edit changes only timing", () => {
+    const lines = [
+      line("w", "chorus a", { words: [{ text: "chorus a", begin: 1, end: 2 }] }),
+      ...block("1-", CHORUS.slice(1)),
+      line("v", "verse"),
+      ...block("2-", CHORUS),
+    ];
+    const before = groupingSuggestions(lines, "|");
+    const retimed = lines.map((l, i) =>
+      reconcileLine({
+        ...l,
+        begin: i + 10,
+        end: i + 11,
+        words: l.words?.map((w) => ({ ...w, begin: w.begin + 5, end: w.end + 5 })),
+      }),
+    );
+    expect(groupingSuggestions(retimed, "|")).toBe(before);
+    expect(groupingSuggestions(retimed.with(3, line("v", "verse two")), "|")).not.toBe(before);
   });
 
   it("fingerprint is stable when surrounding lines change but block content doesn't", () => {
@@ -227,7 +248,10 @@ describe("findRepeatingStandaloneSections", () => {
     });
 
     it("regression: splits on the split character it is given", () => {
-      const lines = [...block("1-", ["he/llo you", "me too", "ok then"]), ...block("2-", ["hello you", "me too", "ok then"])];
+      const lines = [
+        ...block("1-", ["he/llo you", "me too", "ok then"]),
+        ...block("2-", ["hello you", "me too", "ok then"]),
+      ];
       expect(detect(lines, "/").map((section) => section.starts)).toEqual([[0, 3]]);
       expect(spans(lines, "|")).toEqual([{ starts: [1, 4], length: 2 }]);
     });

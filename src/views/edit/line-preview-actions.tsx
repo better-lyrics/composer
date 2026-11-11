@@ -1,6 +1,7 @@
 import { agentDisplayName } from "@/domain/agent/display-name";
 import { getAgentColor } from "@/domain/agent/colors";
 import { INPUT_STYLES } from "@/ui/input-styles";
+import { LazyPopover } from "@/ui/lazy-popover";
 import { Popover } from "@/ui/popover";
 import { Select } from "@/ui/select";
 import { SingerTag } from "@/ui/singer-tag";
@@ -16,9 +17,8 @@ interface LinePreviewActionsProps {
   line: ParsedLine;
   agents: { id: string; name?: string }[];
   agentColor: string;
-  editsSelection: boolean;
   onAgentChange: (lineId: string, agentId: string) => void;
-  onBulkAgentChange: (agentId: string) => void;
+  onBulkAgentChange?: (agentId: string) => void;
   onBackgroundChange: (lineId: string, text: string) => void;
   onExtractLine: (lineId: string) => void;
 }
@@ -56,11 +56,40 @@ const BackgroundTextInput: React.FC<{
   );
 };
 
+const BackgroundVocalsForm: React.FC<{
+  line: ParsedLine;
+  onExtractLine: (lineId: string) => void;
+  onBackgroundChange: (lineId: string, text: string) => void;
+  onClose: () => void;
+}> = ({ line, onExtractLine, onBackgroundChange, onClose }) => (
+  <div className="flex flex-col gap-2 w-[220px] p-3">
+    <p className="text-[13.5px] font-bold text-composer-text">Background vocals</p>
+    {classifyLine(line.text).kind === "inline" && (
+      // react-doctor-disable-next-line react-doctor/html-no-nested-interactive -- lives in a portalled popover, so it is not nested in the row in the DOM
+      <button
+        type="button"
+        onClick={() => {
+          if (line.lineId) onExtractLine(line.lineId);
+          onClose();
+        }}
+        className="flex w-full items-center gap-1 px-0.5 text-xs cursor-pointer text-composer-accent-text hover:text-composer-text"
+      >
+        <IconArrowBackUp className="size-[13px]" />
+        Pull from ( )
+      </button>
+    )}
+    <BackgroundTextInput
+      initialText={line.backgroundText ?? ""}
+      onCommit={(text) => onBackgroundChange(line.lineId, text)}
+      onClose={onClose}
+    />
+  </div>
+);
+
 const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
   line,
   agents,
   agentColor,
-  editsSelection,
   onAgentChange,
   onBulkAgentChange,
   onBackgroundChange,
@@ -72,11 +101,12 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
         aria-label="Line agent"
         value={line.agentId}
         onChange={(next) => {
-          if (editsSelection) onBulkAgentChange(next);
+          if (onBulkAgentChange) onBulkAgentChange(next);
           else onAgentChange(line.lineId, next);
         }}
         options={agents.map((agent) => ({ value: agent.id, label: agentDisplayName(agent) }))}
         renderOption={(option) => <SingerTag color={getAgentColor(option.value)}>{option.label}</SingerTag>}
+        mountOnFirstOpen
         trigger={
           <button
             type="button"
@@ -92,8 +122,8 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
     )}
 
     {line.lineId && (
-      <Popover
-        placement="bottom-start"
+      <LazyPopover
+        hasPopup="dialog"
         trigger={
           <button
             type="button"
@@ -104,31 +134,19 @@ const LinePreviewActions: React.FC<LinePreviewActionsProps> = ({
           </button>
         }
       >
-        {(close) => (
-          <div className="flex flex-col gap-2 w-[220px] p-3">
-            <p className="text-[13.5px] font-bold text-composer-text">Background vocals</p>
-            {classifyLine(line.text).kind === "inline" && (
-              // react-doctor-disable-next-line react-doctor/html-no-nested-interactive -- lives in a portalled popover, so it is not nested in the row in the DOM
-              <button
-                type="button"
-                onClick={() => {
-                  if (line.lineId) onExtractLine(line.lineId);
-                  close();
-                }}
-                className="flex w-full items-center gap-1 px-0.5 text-xs cursor-pointer text-composer-accent-text hover:text-composer-text"
-              >
-                <IconArrowBackUp className="size-[13px]" />
-                Pull from ( )
-              </button>
+        {(anchor) => (
+          <Popover placement="bottom-start" {...anchor}>
+            {(close) => (
+              <BackgroundVocalsForm
+                line={line}
+                onExtractLine={onExtractLine}
+                onBackgroundChange={onBackgroundChange}
+                onClose={close}
+              />
             )}
-            <BackgroundTextInput
-              initialText={line.backgroundText ?? ""}
-              onCommit={(text) => onBackgroundChange(line.lineId, text)}
-              onClose={close}
-            />
-          </div>
+          </Popover>
         )}
-      </Popover>
+      </LazyPopover>
     )}
 
     {line.hasTiming && <span className="text-[11.5px] text-composer-accent-text">synced</span>}

@@ -11,12 +11,18 @@ import { toast } from "sonner";
 const NO_BEAT_GRID_MESSAGE = "No beat grid yet. Set one up from the Snap menu.";
 const HIDDEN_BEAT_GRID_MESSAGE = "Show the beat grid to step through its lines.";
 
+// -- Helpers -------------------------------------------------------------------
+
+function toastUnlessRepeat(message: string, isRepeat: boolean, show: (message: string) => unknown = toast): void {
+  if (!isRepeat) show(message);
+}
+
 // -- Actions -------------------------------------------------------------------
 
-function jumpToAdjacentBar(direction: 1 | -1): void {
+function jumpToAdjacentBar(direction: 1 | -1, isRepeat: boolean): void {
   const grid = useProjectStore.getState().beatGrid;
   if (!grid) {
-    toast(NO_BEAT_GRID_MESSAGE);
+    toastUnlessRepeat(NO_BEAT_GRID_MESSAGE, isRepeat);
     return;
   }
   const target = adjacentSnapPoint(
@@ -25,26 +31,26 @@ function jumpToAdjacentBar(direction: 1 | -1): void {
     direction,
   );
   if (target === null) {
-    toast(direction > 0 ? "No bar after the playhead" : "No bar before the playhead");
+    toastUnlessRepeat(direction > 0 ? "No bar after the playhead" : "No bar before the playhead", isRepeat);
     return;
   }
   useAudioStore.getState().seekTo(target);
   notePlacement(target, "keyboard");
 }
 
-function jumpToAdjacentGridLine(direction: 1 | -1): void {
+function jumpToAdjacentGridLine(direction: 1 | -1, isRepeat: boolean): void {
   if (!useProjectStore.getState().beatGrid) {
-    toast(NO_BEAT_GRID_MESSAGE);
+    toastUnlessRepeat(NO_BEAT_GRID_MESSAGE, isRepeat);
     return;
   }
   const lines = visibleBeatPoints().map((point) => point.t);
   if (lines.length === 0) {
-    toast(HIDDEN_BEAT_GRID_MESSAGE);
+    toastUnlessRepeat(HIDDEN_BEAT_GRID_MESSAGE, isRepeat);
     return;
   }
   const target = adjacentSnapPoint(lines, livePlaybackTime(), direction);
   if (target === null) {
-    toast(direction > 0 ? "No grid line after the playhead" : "No grid line before the playhead");
+    toastUnlessRepeat(direction > 0 ? "No grid line after the playhead" : "No grid line before the playhead", isRepeat);
     return;
   }
   useAudioStore.getState().seekTo(target);
@@ -53,4 +59,4 @@ function jumpToAdjacentGridLine(direction: 1 | -1): void {
 
 // -- Exports -------------------------------------------------------------------
 
-export { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar, jumpToAdjacentGridLine };
+export { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar, jumpToAdjacentGridLine, toastUnlessRepeat };

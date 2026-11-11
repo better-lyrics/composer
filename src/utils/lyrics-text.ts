@@ -9,6 +9,12 @@ function matchKey(text: string): string {
   return stripSplitCharacter(cleanSplitCharacters(text.trim()));
 }
 
+function carriesBackground(line: LyricLine): boolean {
+  return (
+    line.backgroundText !== undefined || line.backgroundWords !== undefined || line.backgroundTextSource !== undefined
+  );
+}
+
 function textToLyricLines(text: string, defaultAgentId: string, existingLines: LyricLine[] = []): LyricLine[] {
   const textToCandidates = new Map<string, LyricLine[]>();
   for (const line of existingLines) {
@@ -71,7 +77,9 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
 
   // Raw parentheses in `text` are the source of truth for background vocals;
   // a carried-over extracted backgroundText would double on re-extraction.
-  return mapped.map((line) => (/\([^)]*\)/.test(line.text) ? { ...line, ...CLEARED_BACKGROUND } : line));
+  return mapped.map((line) =>
+    carriesBackground(line) && /\([^)]*\)/.test(line.text) ? { ...line, ...CLEARED_BACKGROUND } : line,
+  );
 }
 
 // -- Exports ------------------------------------------------------------------

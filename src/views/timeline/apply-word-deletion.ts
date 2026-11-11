@@ -1,5 +1,5 @@
 import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
-import { isLinked } from "@/domain/instance/predicates";
+import { lineInstanceKey } from "@/domain/instance/key";
 import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
 import { isLineSynced } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
@@ -14,8 +14,6 @@ interface DeletionSelection {
 }
 
 // -- Helpers ------------------------------------------------------------------
-
-const instanceKey = (line: LyricLine): string | null => (isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null);
 
 function isLineFullyEmpty(line: LyricLine): boolean {
   return (
@@ -93,13 +91,13 @@ function deleteFromLines(lines: LyricLine[], selections: ReadonlyArray<DeletionS
 function emptiedInstanceKeys(lines: LyricLine[], updatedById: Map<string, LyricLine>): Set<string> {
   const touched = new Set<string>();
   for (const updated of updatedById.values()) {
-    const key = instanceKey(updated);
+    const key = lineInstanceKey(updated);
     if (key) touched.add(key);
   }
 
   const emptied = new Set(touched);
   for (const line of lines) {
-    const key = instanceKey(line);
+    const key = lineInstanceKey(line);
     if (key && emptied.has(key) && !isLineFullyEmpty(updatedById.get(line.id) ?? line)) emptied.delete(key);
   }
   return emptied;
@@ -118,10 +116,10 @@ function withLinkedSiblings(
   for (const sel of selections) {
     const line = linesById.get(sel.lineId);
     const scope = line ? getLinkScope(line) : null;
-    if (!line || !scope || emptied.has(instanceKey(line) ?? "")) continue;
+    if (!line || !scope || emptied.has(lineInstanceKey(line) ?? "")) continue;
     for (const sibling of lines) {
       if (sibling.id === line.id || !isLinkedSibling(sibling, scope)) continue;
-      if (emptied.has(instanceKey(sibling) ?? "")) continue;
+      if (emptied.has(lineInstanceKey(sibling) ?? "")) continue;
       if (trackLength(sibling, sel.type) !== trackLength(line, sel.type)) continue;
       expanded.push({ lineId: sibling.id, type: sel.type, wordIndex: sel.wordIndex });
     }
@@ -142,7 +140,7 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
   if (emptied.size === 0) return result;
 
   // An emptied instance becomes standalone placeholder rows, so paste-as-instance can refill it without an orphan banner.
-  return unlinkLines(result, (line) => emptied.has(instanceKey(line) ?? ""));
+  return unlinkLines(result, (line) => emptied.has(lineInstanceKey(line) ?? ""));
 }
 
 export { applyWordDeletion };

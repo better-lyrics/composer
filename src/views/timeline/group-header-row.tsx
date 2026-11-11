@@ -1,4 +1,5 @@
 import type { LinkGroup } from "@/domain/group/template";
+import { instanceKey } from "@/domain/instance/key";
 import { useProjectStore } from "@/stores/project";
 import { focusAndSelectOnMount } from "@/utils/focus-and-select-on-mount";
 import { GroupBanner } from "@/views/timeline/group-banner";
@@ -63,7 +64,7 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
   const renamingGroupId = useTimelineStore((s) => s.renamingGroupId);
   const renamingInstanceIdx = useTimelineStore((s) => s.renamingInstanceIdx);
   const setRenamingGroupId = useTimelineStore((s) => s.setRenamingGroupId);
-  const isCollapsed = collapsedInstances[`${group.id}:${instanceIdx}`] ?? false;
+  const isCollapsed = collapsedInstances[instanceKey(group.id, instanceIdx)] ?? false;
   const renaming = renamingGroupId === group.id && renamingInstanceIdx === instanceIdx;
 
   const openGroupMenuAt = useCallback(
@@ -123,7 +124,7 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
     <div
       className="relative flex"
       style={{ height: GROUP_HEADER_HEIGHT }}
-      data-group-header={`${group.id}:${instanceIdx}`}
+      data-group-header={instanceKey(group.id, instanceIdx)}
       data-group-id={group.id}
       data-instance-idx={instanceIdx}
       onDoubleClick={renaming ? undefined : startRename}

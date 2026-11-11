@@ -1,4 +1,4 @@
-import { decodeSourceAudio, primingDecodeTag } from "@/audio/decoded-source-audio";
+import { primingDecodeTag, withDecodedSource } from "@/audio/decoded-source-audio";
 import { mixToMono } from "@/audio/onset-detection";
 import { stftFrameCount } from "@/audio/separation/stft";
 import {
@@ -56,9 +56,11 @@ function decodeMono(target: SpectrumTarget): Promise<MonoAudio> {
   if (cached) return cached;
   const decoding = (async () => {
     const blob = typeof target.audio === "function" ? await target.audio() : target.audio;
-    const [buffer, decodeTag] = await Promise.all([decodeSourceAudio(blob), primingDecodeTag(blob)]);
-    const channels = Array.from({ length: buffer.numberOfChannels }, (_, i) => buffer.getChannelData(i));
-    return { pcm: mixToMono(channels), sampleRate: buffer.sampleRate, decodeTag };
+    const [mono, decodeTag] = await Promise.all([
+      withDecodedSource(blob, ({ channels, sampleRate }) => ({ pcm: mixToMono(channels), sampleRate })),
+      primingDecodeTag(blob),
+    ]);
+    return { ...mono, decodeTag };
   })();
   decoding.catch(() => monoCache.delete(target.sourceKey));
   monoCache.set(target.sourceKey, decoding);

@@ -2,38 +2,22 @@ import { notePlacement } from "@/lib/replay-cue";
 import { useAudioStore } from "@/stores/audio";
 import { CueMarker } from "@/views/timeline/cue-marker";
 import { cn } from "@/utils/cn";
-import { formatTime } from "@/utils/format-time";
 import { placeSnapPoint } from "@/views/timeline/place-snap-point";
 import { noteReplaySpot } from "@/views/timeline/replay-spot-signal";
+import { rulerStep } from "@/views/timeline/ruler-labels";
 import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconClock } from "@tabler/icons-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useRulerLabels } from "@/views/timeline/use-ruler-labels";
 import { readViewScroll } from "@/views/timeline/view-scroll";
 
 // -- Constants -----------------------------------------------------------------
 
-// Labelled interval and its minor tick, in seconds, from the closest zoom out.
-const RULER_STEPS: readonly (readonly [labelled: number, minor: number])[] = [
-  [1, 0.25],
-  [2, 0.5],
-  [5, 1],
-  [10, 2.5],
-  [15, 5],
-  [30, 10],
-  [60, 15],
-];
-const MIN_LABEL_SPACING_PX = 56;
 const LABELLED_TICK = "color-mix(in oklab, var(--color-composer-text-faint) 90%, transparent)";
 const MINOR_TICK = "color-mix(in oklab, var(--color-composer-text-faint) 50%, transparent)";
 
 // -- Helpers -------------------------------------------------------------------
-
-function rulerStep(zoom: number): readonly [number, number] {
-  return (
-    RULER_STEPS.find(([labelled]) => labelled * zoom >= MIN_LABEL_SPACING_PX) ?? RULER_STEPS[RULER_STEPS.length - 1]
-  );
-}
 
 function tickBackground(labelled: number, minor: number, zoom: number): React.CSSProperties {
   const ticks = (seconds: number, color: string) =>
@@ -62,7 +46,8 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, track
   const zoom = useTimelineStore((s) => s.zoom);
   const markerMode = useTimelineStore((s) => s.markerMode);
   const [labelled, minor] = rulerStep(zoom);
-  const labels = Array.from({ length: Math.floor(duration / labelled) + 1 }, (_, index) => index * labelled);
+  const labelHostRef = useRef<HTMLDivElement>(null);
+  useRulerLabels(trackRef, labelHostRef, duration, zoom);
 
   // A passive effect: the scroll container mounts after this sibling, so its ref is set only once layout effects ran.
   useEffect(() => {
@@ -102,16 +87,7 @@ const TimelineRuler: React.FC<TimelineRulerProps> = ({ scrollContainerRef, track
           className="absolute inset-y-0 left-0 will-change-[translate]"
           style={{ width: duration * zoom, ...tickBackground(labelled, minor, zoom) }}
         >
-          {labels.map((time) => (
-            <span
-              key={time}
-              aria-hidden="true"
-              className="absolute top-[7px] pl-[5px] font-mono text-[10.5px] font-medium leading-none text-composer-text-tertiary"
-              style={{ left: time * zoom }}
-            >
-              {formatTime(time, 0)}
-            </span>
-          ))}
+          <div ref={labelHostRef} className="contents" />
           <div ref={markerHostRef} className="absolute inset-0 pointer-events-none" />
           <CueMarker />
         </div>

@@ -1,4 +1,10 @@
-import { decodeSourceAudio, primingDecodeTag } from "@/audio/decoded-source-audio";
+import {
+  keepDecodedSource,
+  primingDecodeTag,
+  releaseDecodedSource,
+  takeDecodedSource,
+  withDecodedSource,
+} from "@/audio/decoded-source-audio";
 import { createMp3File, encodeWav, makeSineBuffer } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { describe, expect, it, vi } from "vitest";
@@ -7,10 +13,10 @@ function sineWav(seconds: number): Blob {
   return new Blob([encodeWav(makeSineBuffer(seconds))], { type: "audio/wav" });
 }
 
-describe("decodeSourceAudio", () => {
-  it("decodes a wav source into an AudioBuffer of the same duration", async () => {
-    const decoded = await decodeSourceAudio(sineWav(1));
-    expect(decoded.duration).toBeCloseTo(1, 1);
+describe("withDecodedSource", () => {
+  it("decodes a wav source into audio of the same duration", async () => {
+    const duration = await withDecodedSource(sineWav(1), (decoded) => decoded.duration);
+    expect(duration).toBeCloseTo(1, 1);
   });
 
   it("regression: does not crop an mp3 the browser already trimmed", async () => {
@@ -20,9 +26,9 @@ describe("decodeSourceAudio", () => {
     const raw = await ctx.decodeAudioData(bytes.slice(0));
     await ctx.close();
 
-    const decoded = await decodeSourceAudio(mp3);
+    const length = await withDecodedSource(mp3, (decoded) => decoded.channels[0].length);
 
-    expect(decoded.length).toBe(raw.length);
+    expect(length).toBe(raw.length);
   });
 
   it("regression: tags an mp3 whose decode matches neither tag length, since the old crop changed for it too", async () => {
@@ -49,25 +55,66 @@ describe("decodeSourceAudio", () => {
   });
 
   describe("invariants", () => {
-    it("decodes each source once and shares the buffer between callers", async () => {
+    it("runs one decode at a time and keeps none a use did not keep", async () => {
+      const decode = vi.spyOn(BaseAudioContext.prototype, "decodeAudioData");
       const source = sineWav(0.5);
-      const [first, second] = await Promise.all([decodeSourceAudio(source), decodeSourceAudio(source)]);
-      expect(second).toBe(first);
-      expect(await decodeSourceAudio(source)).toBe(first);
+      let releaseFirst = () => {};
+      const firstHeld = new Promise<void>((resolve) => {
+        releaseFirst = resolve;
+      });
+      let secondStarted = false;
+      const first = withDecodedSource(source, async (decoded) => {
+        await firstHeld;
+        return decoded;
+      });
+      const second = withDecodedSource(source, (decoded) => {
+        secondStarted = true;
+        return decoded;
+      });
+      await expect.poll(() => decode.mock.calls.length).toBe(1);
+      expect(secondStarted).toBe(false);
+
+      releaseFirst();
+      const [firstDecoded, secondDecoded] = await Promise.all([first, second]);
+
+      expect(decode).toHaveBeenCalledTimes(2);
+      expect(secondDecoded.audio).not.toBe(firstDecoded.audio);
+      decode.mockRestore();
+    });
+    it("keeps one decode, lends it to readers and hands it to the next use that takes it", async () => {
+      const decode = vi.spyOn(BaseAudioContext.prototype, "decodeAudioData");
+      const kept = sineWav(0.5);
+      const other = sineWav(0.5);
+      await keepDecodedSource(other);
+      await keepDecodedSource(kept);
+      expect(decode).toHaveBeenCalledTimes(2);
+
+      expect(await withDecodedSource(kept, (decoded) => decoded.duration)).toBeCloseTo(0.5, 1);
+      expect(await takeDecodedSource(kept, (decoded) => decoded.duration)).toBeCloseTo(0.5, 1);
+      expect(decode).toHaveBeenCalledTimes(2);
+
+      await takeDecodedSource(kept, () => null);
+      await withDecodedSource(other, () => null);
+      expect(decode).toHaveBeenCalledTimes(4);
+      decode.mockRestore();
     });
 
-    it("keeps different sources apart", async () => {
-      const first = await decodeSourceAudio(sineWav(0.5));
-      const second = await decodeSourceAudio(sineWav(0.5));
-      expect(second).not.toBe(first);
+    it("decodes again after the kept decode is released", async () => {
+      const source = sineWav(0.5);
+      await keepDecodedSource(source);
+      releaseDecodedSource(source);
+      const decode = vi.spyOn(BaseAudioContext.prototype, "decodeAudioData");
+      await withDecodedSource(source, () => null);
+      expect(decode).toHaveBeenCalledTimes(1);
+      decode.mockRestore();
     });
   });
 
   describe("error paths", () => {
-    it("rejects for bytes that are not audio and does not remember the failure", async () => {
+    it("rejects for bytes that are not audio and lets the next use run", async () => {
       const garbage = new Blob([new Uint8Array([1, 2, 3, 4])], { type: "audio/wav" });
-      await expect(decodeSourceAudio(garbage)).rejects.toBeDefined();
-      await expect(decodeSourceAudio(garbage)).rejects.toBeDefined();
+      await expect(withDecodedSource(garbage, () => null)).rejects.toBeDefined();
+      expect(await withDecodedSource(sineWav(0.5), (decoded) => decoded.duration)).toBeCloseTo(0.5, 1);
     });
   });
 });

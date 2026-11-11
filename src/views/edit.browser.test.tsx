@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { INITIAL_STATE as IMPORT_MODAL_INITIAL_STATE, useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
@@ -36,6 +36,10 @@ function selectedRowTexts(container: HTMLElement): string[] {
 }
 
 // -- Tests --------------------------------------------------------------------
+
+beforeEach(() => {
+  useProjectStore.setState({ activeTab: "edit" });
+});
 
 describe("EditPanel", () => {
   it("renders a textarea or contenteditable region for editing lyrics", async () => {
@@ -400,6 +404,18 @@ describe("regressions: typing does not reshuffle duplicate lines", () => {
     expect(chorus1.words?.map((w) => w.begin)).toEqual([49, 50, 51]);
     expect(chorus2.id).toBe("chorus-2");
     expect(chorus2.begin).toBe(116);
+  });
+});
+
+describe("regressions: preview follows settings", () => {
+  it("regression: a split character change updates the preview rows", async () => {
+    useProjectStore.setState({ lines: [createLine({ text: "Hel/lo world" })] });
+    const screen = await render(<EditPanel />);
+    await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Hel/lo world"]);
+
+    useSettingsStore.setState({ splitCharacter: "/" });
+
+    await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Hello world"]);
   });
 });
 

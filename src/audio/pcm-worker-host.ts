@@ -50,11 +50,19 @@ async function detectOnsetsOffThread(
   return result.onsets;
 }
 
-async function encodeWavOffThread(channels: Float32Array[], sampleRate: number): Promise<Blob> {
+// The channels go to the worker and come back with the WAV, so the caller may keep using them afterwards.
+async function encodeWavLendingChannels(
+  channels: Float32Array[],
+  sampleRate: number,
+): Promise<{ wav: Blob; channels: Float32Array[] }> {
   const result = await runPcmJob({ type: "encode-wav", channels, sampleRate }, channelBuffers(channels));
   if (result.type === "error") throw new Error(result.message);
   if (result.type !== "wav") throw new Error(`Unexpected audio worker result: ${result.type}`);
-  return new Blob([result.bytes], { type: "audio/wav" });
+  return { wav: new Blob([result.bytes], { type: "audio/wav" }), channels: result.channels };
+}
+
+async function encodeWavOffThread(channels: Float32Array[], sampleRate: number): Promise<Blob> {
+  return (await encodeWavLendingChannels(channels, sampleRate)).wav;
 }
 
 async function computeLevelEnvelopeOffThread(
@@ -70,4 +78,4 @@ async function computeLevelEnvelopeOffThread(
 
 // -- Exports ------------------------------------------------------------------
 
-export { computeLevelEnvelopeOffThread, detectOnsetsOffThread, encodeWavOffThread };
+export { computeLevelEnvelopeOffThread, detectOnsetsOffThread, encodeWavLendingChannels, encodeWavOffThread };

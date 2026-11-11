@@ -7,6 +7,7 @@ import {
   syncProgress,
   wordSlotCount,
 } from "@/domain/line/sync-progress";
+import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
@@ -149,5 +150,33 @@ describe("isProjectFullySynced", () => {
       expect(isSyncComplete(partial)).toBe(false);
       expect(isProjectFullySynced(partial)).toBe(false);
     });
+  });
+});
+
+describe("per-line cache", () => {
+  it("recomputes only a replaced line, matches a fresh computation, and follows the split character", () => {
+    useSettingsStore.setState({ splitCharacter: "|" });
+    const lines = [
+      createLine({ text: "hel|lo world", words: [word("hel", 1, 2)] }),
+      createLine({ text: "far a|way", begin: 3, end: 4 }),
+      createLine({ text: "" }),
+    ];
+    expect(syncProgress(lines, "word")).toEqual({ done: 4, total: 6 });
+
+    const untouched = lines[1];
+    untouched.text = "edited";
+    expect(wordSlotCount(untouched)).toBe(3);
+    untouched.text = "far a|way";
+
+    const tapped = [
+      createLine({ text: "hel|lo world", words: [word("hel", 1, 2), word("lo ", 2, 3)] }),
+      untouched,
+      lines[2],
+    ];
+    expect(syncProgress(tapped, "word")).toEqual(syncProgress(structuredClone(tapped), "word"));
+    expect(isSyncComplete(tapped)).toBe(isSyncComplete(structuredClone(tapped)));
+
+    useSettingsStore.setState({ splitCharacter: "/" });
+    expect(wordSlotCount(tapped[0])).toBe(2);
   });
 });

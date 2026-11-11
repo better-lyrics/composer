@@ -24,7 +24,13 @@ function createFramePlayback(post: (message: FromFrameMessage) => void): FramePl
   let receivedAt = 0;
   let transitMs = 0;
   let releasePlayback: (() => void) | null = null;
-  const sample: PlaybackSample = { currentTime: 0, paused: true, followsAudio: false, playbackRate: 1 };
+  const sample: PlaybackSample = {
+    currentTime: 0,
+    paused: true,
+    followsAudio: false,
+    playbackRate: 1,
+    scrubbing: false,
+  };
   const releaseHold = () => {
     releasePlayback?.();
     releasePlayback = null;
@@ -55,6 +61,7 @@ function createFramePlayback(post: (message: FromFrameMessage) => void): FramePl
       sample.paused = !clock.playing;
       sample.followsAudio = clock.followsAudio;
       sample.playbackRate = clock.rate;
+      sample.scrubbing = clock.scrubbing === true;
       return sample;
     },
     seekTo: (seconds) => post({ kind: "seek", seconds }),

@@ -1,5 +1,5 @@
 import { IconFolderOpen } from "@tabler/icons-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useUnisonFeatures } from "@/hooks/unison/useUnisonFeatures";
@@ -124,22 +124,45 @@ const ExportPanel: React.FC = () => {
     [generatedTtml, hasConflict, setEditState],
   );
 
+  const settledEditedContent = useDeferredValue(editedContent);
+  const settledGeneratedTtml = useDeferredValue(generatedTtml);
+  const unisonSettling = settledEditedContent !== editedContent || settledGeneratedTtml !== generatedTtml;
+  const unisonContent = useMemo(() => {
+    if (!unisonEnabled) return "";
+    const settledExportContent = settledEditedContent ?? settledGeneratedTtml;
+    return (
+      settledExportContent &&
+      outgoingTtml({
+        editedContent: settledEditedContent,
+        generatedContent: settledGeneratedTtml,
+        duration,
+        exportTiming,
+        youtubeVideoId,
+      })
+    );
+  }, [unisonEnabled, settledEditedContent, settledGeneratedTtml, duration, exportTiming, youtubeVideoId]);
+
   const unisonSource = useMemo(
-    (): UnisonExportSource => ({
-      content: exportContent && outgoingContent(),
-      isEdited: editedContent !== null,
-      videoId: youtubeVideoId,
-      durationSeconds: duration,
-      lineCount,
-      syncedLineCount,
-      review: alignment.review,
-      reviewInTimeline: alignment.reviewInTimeline,
-      regenerate: handleRegenerate,
-    }),
+    (): UnisonExportSource | null =>
+      unisonEnabled
+        ? {
+            content: unisonContent,
+            settling: unisonSettling,
+            isEdited: settledEditedContent !== null,
+            videoId: youtubeVideoId,
+            durationSeconds: duration,
+            lineCount,
+            syncedLineCount,
+            review: alignment.review,
+            reviewInTimeline: alignment.reviewInTimeline,
+            regenerate: handleRegenerate,
+          }
+        : null,
     [
-      exportContent,
-      outgoingContent,
-      editedContent,
+      unisonEnabled,
+      unisonContent,
+      unisonSettling,
+      settledEditedContent,
       youtubeVideoId,
       duration,
       lineCount,
@@ -219,7 +242,7 @@ const ExportPanel: React.FC = () => {
             </>
           }
         />
-        <ExportSidePanel unison={unisonEnabled && <UnisonPanel source={unisonSource} />} />
+        <ExportSidePanel unison={unisonSource && <UnisonPanel source={unisonSource} />} />
       </div>
     </div>
   );

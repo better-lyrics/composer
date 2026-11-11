@@ -4,6 +4,7 @@ import { currentInstanceFromSelection } from "@/domain/instance/selection-instan
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceCount, linesOfInstance } from "@/domain/instance/enumerate";
+import { instanceKey, lineInstanceKey, parseInstanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { ReadableLine } from "@/domain/line/effective-words";
@@ -36,7 +37,12 @@ import { isInFocus } from "@/views/timeline/group-focus";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
-import { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar, jumpToAdjacentGridLine } from "@/views/timeline/jump-to-bar";
+import {
+  NO_BEAT_GRID_MESSAGE,
+  jumpToAdjacentBar,
+  jumpToAdjacentGridLine,
+  toastUnlessRepeat,
+} from "@/views/timeline/jump-to-bar";
 import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { showLoupeAfterKeyEdit, storedEdgeTime } from "@/views/timeline/loupe/loupe-target";
 import { isPartialSyllableSelection, mergeSelectedWords } from "@/views/timeline/merge-selected-words";
@@ -271,10 +277,10 @@ function useTimelineKeyboard(
               waveformHeight: currentOverviewBandHeight(),
               groupHeaderHeight: GROUP_HEADER_HEIGHT,
             });
-            const instanceKey = isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
+            const headerKey = lineInstanceKey(line);
             const pos =
-              instanceKey && collapsedInstances[instanceKey]
-                ? layout.headerTops.get(instanceKey)
+              headerKey && collapsedInstances[headerKey]
+                ? layout.headerTops.get(headerKey)
                 : layout.lineTops.get(line.id);
 
             if (pos) {
@@ -493,7 +499,7 @@ function useTimelineKeyboard(
           for (const w of selectedWords) {
             const line = linesById.get(w.lineId);
             if (line && isLinked(line)) {
-              groupKeys.add(`${line.groupId}:${line.instanceIdx}`);
+              groupKeys.add(instanceKey(line.groupId, line.instanceIdx));
             }
           }
           if (groupKeys.size !== 1) {
@@ -501,8 +507,7 @@ function useTimelineKeyboard(
             break;
           }
           const [groupKey] = groupKeys;
-          const [groupId, instanceIdxStr] = groupKey.split(":");
-          const sourceInstanceIdx = Number.parseInt(instanceIdxStr, 10);
+          const { groupId, instanceIdx: sourceInstanceIdx } = parseInstanceKey(groupKey);
 
           const playheadAt = playheadTime();
           const group = projectState.groups.find((candidate) => candidate.id === groupId);
@@ -545,7 +550,7 @@ function useTimelineKeyboard(
             break;
           }
           e.preventDefault();
-          useTimelineStore.getState().toggleInstanceCollapsed(`${inst.groupId}:${inst.instanceIdx}`);
+          useTimelineStore.getState().toggleInstanceCollapsed(instanceKey(inst.groupId, inst.instanceIdx));
           break;
         }
         case "timeline.toggleAllCollapsed": {
@@ -555,7 +560,7 @@ function useTimelineKeyboard(
           const keys = new Set<string>();
           for (const line of projectLines) {
             if (isLinked(line)) {
-              keys.add(`${line.groupId}:${line.instanceIdx}`);
+              keys.add(instanceKey(line.groupId, line.instanceIdx));
             }
           }
           if (keys.size === 0) {
@@ -575,11 +580,11 @@ function useTimelineKeyboard(
             ? { groupId: focus.groupId, instanceIdx: focus.hearInstanceIdx }
             : currentInstanceFromSelection(projectLines, useTimelineStore.getState().selectedWords);
           if (!inst) {
-            toast.error("Select words inside one instance first");
+            toastUnlessRepeat("Select words inside one instance first", e.repeat, toast.error);
             break;
           }
           if (instanceCount(projectLines, inst.groupId) < 2) {
-            toast.error("This group has only one instance");
+            toastUnlessRepeat("This group has only one instance", e.repeat, toast.error);
             break;
           }
           e.preventDefault();
@@ -705,12 +710,12 @@ function useTimelineKeyboard(
         case "timeline.jumpPrevBar":
         case "timeline.jumpNextBar":
           e.preventDefault();
-          jumpToAdjacentBar(matched === "timeline.jumpNextBar" ? 1 : -1);
+          jumpToAdjacentBar(matched === "timeline.jumpNextBar" ? 1 : -1, e.repeat);
           break;
         case "timeline.jumpPrevGridLine":
         case "timeline.jumpNextGridLine":
           e.preventDefault();
-          jumpToAdjacentGridLine(matched === "timeline.jumpNextGridLine" ? 1 : -1);
+          jumpToAdjacentGridLine(matched === "timeline.jumpNextGridLine" ? 1 : -1, e.repeat);
           break;
         case "timeline.jumpPrevSnapPoint":
         case "timeline.jumpNextSnapPoint":
@@ -725,7 +730,7 @@ function useTimelineKeyboard(
           const points = normalizeTimes([...snapPointTimes(pins), ...onsets]);
           const target = adjacentSnapPoint(points, current, dir);
           if (target === null) {
-            toast(fine ? "No snap point or onset that way" : "No snap point that way");
+            if (!e.repeat) toast(fine ? "No snap point or onset that way" : "No snap point that way");
             break;
           }
           useAudioStore.getState().seekTo(target);

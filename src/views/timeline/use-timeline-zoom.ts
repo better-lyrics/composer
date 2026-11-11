@@ -3,7 +3,8 @@ import { computeAnchoredScrollLeft } from "@/utils/timeline/zoom-anchor";
 import { playheadTime } from "@/views/timeline/playhead-time";
 import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, ZOOM_STEP, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type RefObject, useCallback } from "react";
-import { readViewScroll, scrollView } from "@/views/timeline/view-scroll";
+import { readViewScroll } from "@/views/timeline/view-scroll";
+import { zoomView } from "@/views/timeline/zoom-view";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -31,8 +32,10 @@ function useTimelineZoom(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       if (newZoom === oldZoom) return;
 
       const container = scrollContainerRef.current;
-      useTimelineStore.getState().setZoom(newZoom);
-      if (!container) return;
+      if (!container) {
+        useTimelineStore.getState().setZoom(newZoom);
+        return;
+      }
 
       const contentWidthInView = Math.max(0, container.clientWidth - GUTTER_WIDTH);
       const { anchorTime, anchorViewportX } = pickAnchor(
@@ -41,7 +44,7 @@ function useTimelineZoom(scrollContainerRef: RefObject<HTMLDivElement | null>) {
         readViewScroll(container).left,
         contentWidthInView,
       );
-      scrollView(container, computeAnchoredScrollLeft(anchorTime, anchorViewportX, newZoom));
+      zoomView(container, newZoom, computeAnchoredScrollLeft(anchorTime, anchorViewportX, newZoom));
     },
     [scrollContainerRef],
   );

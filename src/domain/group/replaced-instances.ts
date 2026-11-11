@@ -1,4 +1,5 @@
 import { sameTime } from "@/domain/group/same-timing";
+import { instanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
@@ -36,7 +37,7 @@ function replacedInstances(before: readonly LyricLine[], after: readonly LyricLi
     const next = afterById.get(line.id);
     if (!next || next === line || !isLinked(next)) continue;
     if (keepsTimedMain(line, next) && keepsTimedWords(line.backgroundWords, next.backgroundWords)) continue;
-    replaced.set(`${next.groupId}:${next.instanceIdx}`, { groupId: next.groupId, instanceIdx: next.instanceIdx });
+    replaced.set(instanceKey(next.groupId, next.instanceIdx), { groupId: next.groupId, instanceIdx: next.instanceIdx });
   }
   return [...replaced.values()];
 }

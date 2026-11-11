@@ -86,7 +86,8 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
 
     const onMove = (e: MouseEvent) => {
       const playhead = playheadRef.current;
-      if (!playhead) return;
+      // A held button is a drag in progress, and hit testing on every move of it forces a layout.
+      if (!playhead || e.buttons !== 0) return;
 
       const playheadCenterXViewport = frame.containerLeft + frame.playheadCenterXLocal;
       const nearPlayhead =

@@ -23,6 +23,7 @@ import {
   cloneElement,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -38,8 +39,18 @@ interface PopoverListNavigation {
   onNavigate: (index: number | null) => void;
 }
 
-interface PopoverProps {
-  trigger: ReactElement;
+// A reference anchors the popover to an element rendered elsewhere, so the element exists before the popover mounts.
+type PopoverAnchor =
+  | { trigger: ReactElement; reference?: never; id?: never }
+  | {
+      trigger?: never;
+      reference: HTMLElement | null;
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+      id?: string;
+    };
+
+interface PopoverOptions {
   children: ReactNode | ((close: () => void, getItemProps: GetItemProps) => ReactNode);
   placement?: Placement;
   offsetPx?: number;
@@ -53,6 +64,8 @@ interface PopoverProps {
   instant?: boolean;
 }
 
+type PopoverProps = PopoverOptions & PopoverAnchor;
+
 // -- Constants ----------------------------------------------------------------
 
 const PRESSABLE_CONTROL = "button, input, [role='slider']";
@@ -61,6 +74,8 @@ const PRESSABLE_CONTROL = "button, input, [role='slider']";
 
 const Popover: React.FC<PopoverProps> = ({
   trigger,
+  reference,
+  id,
   children,
   placement = "bottom",
   offsetPx = 8,
@@ -101,12 +116,17 @@ const Popover: React.FC<PopoverProps> = ({
   const { setReference, setPositionReference } = refs;
   const setTrigger = useCallback(
     (element: HTMLElement | null) => {
+      // react-doctor-disable-next-line react-doctor/no-derived-state -- a Floating UI ref setter, not React state
       setReference(element);
       const anchor = positionAnchor ?? element;
       setPositionReference(anchor ? unscaledReference(anchor) : null);
     },
     [setReference, setPositionReference, positionAnchor],
   );
+  // react-doctor-disable-next-line react-doctor/no-derived-state-effect -- registers an element rendered elsewhere with Floating UI, which holds no React state of ours
+  useLayoutEffect(() => {
+    if (!trigger) setTrigger(reference);
+  }, [trigger, reference, setTrigger]);
 
   const click = useClick(context);
   // Dismissing on click, after mousedown moved focus to the body, lets focus return to the trigger.
@@ -142,11 +162,12 @@ const Popover: React.FC<PopoverProps> = ({
 
   return (
     <>
-      {cloneElement(trigger, {
-        ref: setTrigger,
-        ...getReferenceProps(trigger.props as React.HTMLProps<Element>),
-        "aria-haspopup": hasPopup,
-      } as React.HTMLAttributes<HTMLElement> & { ref: typeof setTrigger })}
+      {trigger &&
+        cloneElement(trigger, {
+          ref: setTrigger,
+          ...getReferenceProps(trigger.props as React.HTMLProps<Element>),
+          "aria-haspopup": hasPopup,
+        } as React.HTMLAttributes<HTMLElement> & { ref: typeof setTrigger })}
 
       {isMounted && (
         <FloatingPortal>
@@ -155,6 +176,7 @@ const Popover: React.FC<PopoverProps> = ({
               ref={refs.setFloating}
               style={floatingStyles}
               {...getFloatingProps()}
+              {...(id && { id })}
               aria-label={ariaLabel}
               className="layer-floating w-max max-w-[calc(100vw-16px)] outline-none"
             >
@@ -175,4 +197,5 @@ const Popover: React.FC<PopoverProps> = ({
 
 // -- Exports ------------------------------------------------------------------
 
+export type { PopoverAnchor };
 export { Popover };

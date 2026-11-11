@@ -25,7 +25,7 @@ function seekToCue(cue: number): void {
 
 const CueMarker: React.FC = () => {
   const cue = useTimelineStore((s) => s.cue);
-  const zoom = useTimelineStore((s) => s.zoom);
+  const zoom = useTimelineStore((s) => (s.cue !== null ? s.zoom : 0));
   const latched = useSettingsStore((s) => s.returnToCue);
   const anchorRef = useRef<HTMLDivElement>(null);
 

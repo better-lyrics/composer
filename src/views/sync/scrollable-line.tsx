@@ -2,13 +2,13 @@ import { getAgentColor } from "@/domain/agent/colors";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
-import { stripSplitCharacter } from "@/utils/split-character";
+import { withoutSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { SyllableGroup } from "@/views/sync/syllable-group";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
 import { type WordHandlers, WordRenderer } from "@/views/sync/word-renderer";
 import { IconLink } from "@tabler/icons-react";
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useMemo } from "react";
 import { cn } from "@/utils/cn";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -41,6 +41,7 @@ interface ScrollableLineProps {
   currentTime: number;
   editMode: boolean;
   linkInfo?: ScrollableLineLinkInfo;
+  splitCharacter: string;
   onClick: () => void;
   onClickWord?: (wordIndex: number) => void;
   onClickBgWord?: (wordIndex: number) => void;
@@ -79,6 +80,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   currentTime,
   editMode,
   linkInfo,
+  splitCharacter,
   onClick,
   onClickWord,
   onClickBgWord,
@@ -94,11 +96,12 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   onNudgeBgWordEnd,
   onSetBgWordEndTime,
 }) => {
-  const lineRef = useRef<HTMLDivElement>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: splitIntoWords splits by the split character
   const wordTexts = useMemo(
     () => displayWordTexts ?? (words?.length ? words.map((w) => w.text) : splitIntoWords(text)),
-    [displayWordTexts, text, words],
+    [displayWordTexts, text, words, splitCharacter],
   );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: splitIntoWords splits by the split character
   const bgWordTexts = useMemo(
     () =>
       displayBackgroundWordTexts ??
@@ -107,17 +110,11 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
         : (displayBackgroundText ?? backgroundText)
           ? splitIntoWords(displayBackgroundText ?? backgroundText ?? "")
           : []),
-    [backgroundText, backgroundWords, displayBackgroundText, displayBackgroundWordTexts],
+    [backgroundText, backgroundWords, displayBackgroundText, displayBackgroundWordTexts, splitCharacter],
   );
 
-  useEffect(() => {
-    if (isCurrent && lineRef.current) {
-      lineRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  }, [isCurrent]);
-
   const renderLineContent = () => {
-    const renderedText = stripSplitCharacter(displayText ?? text);
+    const renderedText = withoutSplitCharacter(displayText ?? text, splitCharacter);
     if (editMode && lineBegin !== undefined && lineEnd !== undefined) {
       return (
         <span className="relative inline-block">
@@ -258,7 +255,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
 
   return (
     <div
-      ref={lineRef}
+      data-sync-line={lineNumber}
       // react-doctor-disable-next-line react-doctor/role-button-requires-complete-keyboard-activation -- never in tab order, and Space is the Sync tap key, so a Space handler would also jump the cursor on every tap
       role="button"
       tabIndex={-1}
@@ -350,7 +347,8 @@ const ScrollableLine = memo(ScrollableLineInner, (prev, next) => {
     prev.linkInfo?.label === next.linkInfo?.label &&
     prev.linkInfo?.ordinal === next.linkInfo?.ordinal &&
     prev.linkInfo?.totalInstances === next.linkInfo?.totalInstances &&
-    prev.linkInfo?.shared === next.linkInfo?.shared
+    prev.linkInfo?.shared === next.linkInfo?.shared &&
+    prev.splitCharacter === next.splitCharacter
   );
 });
 

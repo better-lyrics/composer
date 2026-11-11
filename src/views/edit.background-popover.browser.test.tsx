@@ -2,7 +2,7 @@ import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { EditPanel } from "@/views/edit";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 
 // -- Helpers ------------------------------------------------------------------
@@ -21,6 +21,10 @@ function extractedLine() {
 
 // -- Tests --------------------------------------------------------------------
 
+beforeEach(() => {
+  useProjectStore.setState({ activeTab: "edit" });
+});
+
 describe("background vocals popover", () => {
   it("writes edited text on Enter as one undo step", async () => {
     useProjectStore
@@ -35,6 +39,23 @@ describe("background vocals popover", () => {
 
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines[0].backgroundText).toBe("yea");
+  });
+
+  it("opens from the keyboard and returns focus to its trigger on close", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world" })] });
+    const screen = await render(<EditPanel />);
+    const trigger = screen.getByRole("button", { name: "BG", exact: true });
+    await expect.element(trigger).toBeVisible();
+
+    (trigger.element() as HTMLElement).focus();
+    await userEvent.keyboard("{Enter}");
+    await expect.element(screen.getByRole("textbox", { name: "Background vocals text" })).toHaveFocus();
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "true");
+
+    await userEvent.keyboard("{Enter}");
+    await expect.element(screen.getByRole("textbox", { name: "Background vocals text" })).not.toBeInTheDocument();
+    await expect.element(trigger).toHaveFocus();
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "false");
   });
 });
 

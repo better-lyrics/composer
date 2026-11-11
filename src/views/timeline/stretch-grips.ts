@@ -52,3 +52,4 @@ function selectionGripEdges(rawLines: LyricLine[], selections: ReadonlyArray<Str
 // -- Exports -------------------------------------------------------------------
 
 export { selectionGripEdges };
+export type { SelectionGrips };

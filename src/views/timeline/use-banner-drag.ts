@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { wholeSongRange } from "@/domain/group/shared-timing";
+import { instanceKey } from "@/domain/instance/key";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
@@ -65,7 +66,7 @@ function useBannerDrag({ groupId, instanceIdx, instanceStart, instanceEnd }: Use
       syncSnapBypass(e);
       beginGesture({
         selfIds: new Set(instanceWords.map((word) => selfKey(word.lineId, word.wordIndex, word.type))),
-        leaderKey: `banner:${groupId}:${instanceIdx}`,
+        leaderKey: `banner:${instanceKey(groupId, instanceIdx)}`,
         overlapCheck: (shift) =>
           instanceStart + proposedDeltaSeconds + shift >= songRange.min - SONG_EDGE_EPSILON &&
           instanceEnd + proposedDeltaSeconds + shift <= songRange.max + SONG_EDGE_EPSILON,

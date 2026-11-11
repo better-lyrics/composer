@@ -1,6 +1,6 @@
 import { getAgentColor } from "@/domain/agent/colors";
 import { effectiveBounds } from "@/domain/line/bounds";
-import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-words";
+import { effectiveTrackWords, getEffectiveLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { PitchTrack } from "@/domain/pitch/track";
 import type { LoupeSize } from "@/domain/spectrum/loupe-size";
@@ -117,7 +117,7 @@ function drawLoupe(
   if (inputs.beatGrid && inputs.beatGridVisible) drawLoupeBeats(frame, inputs.beatGrid, inputs.beatGridLines);
   const { line } = inputs;
   if (line) {
-    const [effective] = getEffectiveLines([line]);
+    const effective = getEffectiveLine(line);
     const span = effectiveBounds(effective);
     if (inputs.pitchTrack && span) drawLoupePitch(frame, inputs.pitchTrack, span);
     drawLoupeLanes(frame, {

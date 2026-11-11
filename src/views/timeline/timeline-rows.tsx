@@ -1,5 +1,4 @@
-import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
-import { isLinked } from "@/domain/instance/predicates";
+import { instanceKey, lineInstanceKey } from "@/domain/instance/key";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
@@ -7,6 +6,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
 import { LineRow } from "@/views/timeline/line-row";
@@ -14,7 +14,7 @@ import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { PitchRowsScope } from "@/views/timeline/pitch/pitch-rows";
 import { emptyBgRowHeight, lineRowHeight } from "@/views/timeline/row-geometry";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
-import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/utils";
+import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/effective-rows";
 import { type RefObject, useCallback, useMemo } from "react";
 import { Virtuoso } from "react-virtuoso";
 
@@ -43,8 +43,10 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const focusedGroup = useTimelineStore((s) => s.focusedGroup);
   const openProjectId = useOpenProjectId();
+  const splitCharacter = useSettingsStore((s) => s.splitCharacter);
 
-  const allRows = useMemo(() => getEffectiveRows(lines, focusedGroup), [lines, focusedGroup]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: getEffectiveRows splits words by the split character
+  const allRows = useMemo(() => getEffectiveRows(lines, focusedGroup), [lines, focusedGroup, splitCharacter]);
 
   const visibleRows = useMemo(() => {
     const out: EffectiveRow[] = [];
@@ -52,7 +54,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
     let activeKey: string | null = null;
     for (const row of allRows) {
       if (row.kind === "group-header") {
-        const key = `${row.groupId}:${row.instanceIdx}`;
+        const key = instanceKey(row.groupId, row.instanceIdx);
         const hidden = collapsedInstances[key] ?? false;
         out.push(row);
         hideUntilNextNonGroup = hidden;
@@ -60,7 +62,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         continue;
       }
       if (hideUntilNextNonGroup) {
-        const lineKey = isLinked(row.line) ? `${row.line.groupId}:${row.line.instanceIdx}` : null;
+        const lineKey = lineInstanceKey(row.line);
         if (lineKey === activeKey) continue;
         hideUntilNextNonGroup = false;
         activeKey = null;
@@ -138,8 +140,8 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
           <GroupHeaderRow
             group={group}
             instanceIdx={row.instanceIdx}
-            ordinal={instanceOrdinal(lines, row.groupId, row.instanceIdx)}
-            totalInstances={instanceCount(lines, row.groupId)}
+            ordinal={row.ordinal}
+            totalInstances={row.totalInstances}
             instanceStart={row.instanceStart}
             instanceEnd={row.instanceEnd}
           />
@@ -155,7 +157,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         />
       );
     },
-    [groupsById, lines, duration, handleUpdateWord, handleUpdateBgWord],
+    [groupsById, duration, handleUpdateWord, handleUpdateBgWord],
   );
 
   const totalWidth = duration * zoom;

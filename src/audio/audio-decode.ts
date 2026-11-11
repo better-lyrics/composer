@@ -1,5 +1,5 @@
-import { decodeSourceAudio } from "@/audio/decoded-source-audio";
-import { encodeWavOffThread } from "@/audio/pcm-worker-host";
+import { keepDecoded, takeDecodedSource } from "@/audio/decoded-source-audio";
+import { encodeWavLendingChannels } from "@/audio/pcm-worker-host";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -13,21 +13,16 @@ function needsWavConversion(file: File): boolean {
   return /\.(mp3|aac)$/i.test(file.name);
 }
 
-function copyChannels(audio: AudioBuffer): Float32Array[] {
-  return Array.from({ length: audio.numberOfChannels }, (_, channel) => {
-    const copy = new Float32Array(audio.length);
-    audio.copyFromChannel(copy, channel);
-    return copy;
-  });
-}
-
 // Decodes any File the browser can read into an uncompressed WAV blob. Used
 // to swap a slow-seeking source (mp3, raw aac) for an O(1)-seekable WAV.
 // Rejects if the browser cannot decode the file; the caller falls back to
-// the original file.
-async function decodeAudioToWav(file: File): Promise<Blob> {
-  const decoded = await decodeSourceAudio(file);
-  return encodeWavOffThread(copyChannels(decoded), decoded.sampleRate);
+// the original file. A kept decode stays for the first scrub of this file, which takes it instead of decoding again.
+function decodeAudioToWav(file: File, keepDecode = false): Promise<Blob> {
+  return takeDecodedSource(file, async (decoded) => {
+    const { wav, channels } = await encodeWavLendingChannels(decoded.channels, decoded.sampleRate);
+    if (keepDecode) keepDecoded(file, { ...decoded, channels });
+    return wav;
+  });
 }
 
 // -- Exports ------------------------------------------------------------------

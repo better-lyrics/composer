@@ -1,5 +1,4 @@
 import type { LinkGroup } from "@/domain/group/template";
-import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import { backgroundFields, withSeededBackground } from "@/domain/line/background";
 import { detectNonLatinLanguage } from "@/domain/language/script-detection";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
@@ -7,6 +6,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "@/domain/word/timing";
+import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useConfirm } from "@/stores/confirm-store";
@@ -16,7 +16,6 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { Button } from "@/ui/button";
-import { Scroll } from "@/ui/scroll";
 import {
   extractBackgroundVocals,
   extractInlineAcrossLinkedLines,
@@ -24,12 +23,13 @@ import {
 } from "@/utils/background-vocal-extraction";
 import { pluralWord, pluralize } from "@/utils/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
+import { useCanExtractBackgroundVocals } from "@/views/edit/can-extract-background";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { linesToEditText } from "@/views/edit/edit-text";
 import { EditNotices } from "@/views/edit/edit-notices";
 import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
-import { LinePreview, PreviewGroupHeader } from "@/views/edit/line-preview";
+import { LinePreviewList } from "@/views/edit/line-preview-list";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
@@ -67,7 +67,7 @@ const EditPanel: React.FC = () => {
   const agents = useProjectStore((s) => s.agents);
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
-  const activeTab = useProjectStore((s) => s.activeTab);
+  const isActive = useIsActiveTab("edit");
   const confirm = useConfirm();
   const openImportModal = useImportModal();
   const lastImportResult = useLastImportResult();
@@ -77,7 +77,7 @@ const EditPanel: React.FC = () => {
 
   const [rawText, setRawText] = useState(() => linesToEditText(lines));
   const { textareaRef, showEditText } = useEditTextCaret(rawText, setRawText);
-  useFocusLyricsShortcut(textareaRef, activeTab === "edit");
+  useFocusLyricsShortcut(textareaRef, isActive);
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const modalPendingRef = useRef(false);
   const pastedRef = useRef(false);
@@ -101,10 +101,6 @@ const EditPanel: React.FC = () => {
   const defaultAgentId = agents?.[0]?.id ?? "v1";
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);
   const nonEmptyCount = useMemo(() => parsed.filter((p) => !p.isEmpty).length, [parsed]);
-  const instanceCountByGroup = useMemo(
-    () => new Map(groups.map((g) => [g.id, instanceCount(lines, g.id)])),
-    [groups, lines],
-  );
 
   const extractOptions = useMemo(
     () => ({
@@ -113,10 +109,7 @@ const EditPanel: React.FC = () => {
     }),
     [mergeStandaloneBackgroundLines, preserveBracketsOnExtraction],
   );
-  const canExtractBackgroundVocals = useMemo(() => {
-    const extracted = extractBackgroundVocals(lines, extractOptions);
-    return extracted.length !== lines.length || extracted.some((line, i) => line !== lines[i]);
-  }, [lines, extractOptions]);
+  const canExtractBackgroundVocals = useCanExtractBackgroundVocals(lines, extractOptions);
 
   const commitLinesWithHistory = useCallback((nextLines: LyricLine[], nextGroups?: LinkGroup[]) => {
     useProjectStore.getState().setLinesWithHistory(nextLines, nextGroups);
@@ -278,7 +271,7 @@ const EditPanel: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (activeTab !== "edit") return;
+      if (!isActive) return;
       if (isAnyModalOpen()) return;
       const target = e.target as HTMLElement;
       if ((target.tagName === "INPUT" || target.tagName === "TEXTAREA") && target.id !== textareaId) return;
@@ -291,7 +284,7 @@ const EditPanel: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTab, textareaId, finalizeRun]);
+  }, [isActive, textareaId, finalizeRun]);
 
   useEffect(() => () => finalizeRun(), [finalizeRun]);
 
@@ -503,57 +496,21 @@ const EditPanel: React.FC = () => {
               onAssignAgent={handleBulkAgentChange}
               onClear={handleClearSelection}
             />
-            <Scroll className="flex-1 border rounded-xl border-(--edge) bg-(--well)">
-              {parsed.length === 0 || (parsed.length === 1 && parsed[0].isEmpty) ? (
-                <div className="flex items-center justify-center h-full text-sm text-(--muted)">
-                  Lyrics will appear here
-                </div>
-              ) : (
-                <div>
-                  {parsed.map((line, index) => {
-                    const prev = index > 0 ? parsed[index - 1] : null;
-                    const isFirstOfInstance =
-                      line.groupId !== undefined &&
-                      line.instanceIdx !== undefined &&
-                      (prev?.groupId !== line.groupId || prev?.instanceIdx !== line.instanceIdx);
-                    const group = line.groupId ? groups.find((g) => g.id === line.groupId) : undefined;
-                    const totalInstances = group ? (instanceCountByGroup.get(group.id) ?? 0) : 0;
-                    const groupTooltip =
-                      group && totalInstances > 1
-                        ? `Part of ${group.label} · linked to ${pluralize(totalInstances - 1, "other instance")}. Edits propagate.`
-                        : undefined;
-                    return (
-                      <div key={line.lineNumber}>
-                        {isFirstOfInstance && group && line.instanceIdx !== undefined && (
-                          <PreviewGroupHeader
-                            label={group.label}
-                            ordinal={instanceOrdinal(lines, group.id, line.instanceIdx)}
-                            total={totalInstances}
-                            color={group.color}
-                          />
-                        )}
-                        <LinePreview
-                          line={line}
-                          agents={agents}
-                          isSelected={selectedLines.has(line.lineNumber)}
-                          hasMultipleSelected={selectedLines.size > 1}
-                          groupColor={group?.color}
-                          groupTooltip={groupTooltip}
-                          onSelect={handleLineSelect}
-                          onAgentChange={handleAgentChange}
-                          onBulkAgentChange={handleBulkAgentChange}
-                          onBackgroundChange={handleBackgroundChange}
-                          onExtractLine={handleExtractLine}
-                          onGutterMouseDown={handleGutterMouseDown}
-                          onGutterMouseEnter={handleGutterMouseEnter}
-                          didDragRef={didDragRef}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </Scroll>
+            <LinePreviewList
+              parsed={parsed}
+              lines={lines}
+              groups={groups}
+              agents={agents}
+              selectedLines={selectedLines}
+              onSelect={handleLineSelect}
+              onAgentChange={handleAgentChange}
+              onBulkAgentChange={handleBulkAgentChange}
+              onBackgroundChange={handleBackgroundChange}
+              onExtractLine={handleExtractLine}
+              onGutterMouseDown={handleGutterMouseDown}
+              onGutterMouseEnter={handleGutterMouseEnter}
+              didDragRef={didDragRef}
+            />
           </div>
         </div>
       </div>

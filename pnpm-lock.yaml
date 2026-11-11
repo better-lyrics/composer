@@ -14,14 +14,14 @@ importers:
   .:
     dependencies:
       '@braccato/core':
-        specifier: ^1.20.1
-        version: 1.20.1
+        specifier: ^1.21.5
+        version: 1.21.5
       '@braccato/highlight':
         specifier: ^0.3.2
         version: 0.3.2
       '@braccato/parsers':
-        specifier: ^0.4.1
-        version: 0.4.1
+        specifier: ^0.4.2
+        version: 0.4.2
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -388,14 +388,14 @@ packages:
   '@borewit/text-codec@0.2.2':
     resolution: {integrity: sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ==}
 
-  '@braccato/core@1.20.1':
-    resolution: {integrity: sha512-3K3CE0o6+HNTC4rF48fQjqZSK5m/Yu6tMQulDWqYmgBhlLWMkOk0Cfsi838+9+npu4ylDXgSWQZK0rSCxJ/tEQ==}
+  '@braccato/core@1.21.5':
+    resolution: {integrity: sha512-4JytjeNJncuM1CI6XneMfaUN/71tmM9cpe8CabcIJXc4Z1kFAi2GuEzf1BXQLyDzCROy450br1BZuo9WmGpSrw==}
 
   '@braccato/highlight@0.3.2':
     resolution: {integrity: sha512-1ZbgvqOhp3jsNnFbduyZdJRGMy78qv8JJyu64Zq//vld7aE4pk9HssAhitrh9eK8ByItM1U0RGOAroN+AxWIjg==}
 
-  '@braccato/parsers@0.4.1':
-    resolution: {integrity: sha512-mhXAPEPrn5jlE4bZWS45hXkglIeUkMQ0MMxnmtffAuP2IGY3Ildh3WDRZFcxZ1PtLT4Qr06eyVhrm8epCumDjw==}
+  '@braccato/parsers@0.4.2':
+    resolution: {integrity: sha512-G9elpXkNEV+xEDcmtNHqg7PCwR7zQVpLITxamfJjgya8FLLC11GnHX+xAT2atUt2gYXnj/7bgwj6FPFSGb8ACg==}
 
   '@braccato/types@1.1.0':
     resolution: {integrity: sha512-HqGnKB/nb0usTGfh7xQMRAV/sOrU4wPRHXONDGgDDmoBBJjl4vgedkvZ7QYERVhzYdarOSleLjXJf8Jir4qCdA==}
@@ -3085,15 +3085,15 @@ snapshots:
 
   '@borewit/text-codec@0.2.2': {}
 
-  '@braccato/core@1.20.1':
+  '@braccato/core@1.21.5':
     dependencies:
       '@braccato/types': 1.1.0
 
   '@braccato/highlight@0.3.2':
     dependencies:
-      '@braccato/parsers': 0.4.1
+      '@braccato/parsers': 0.4.2
 
-  '@braccato/parsers@0.4.1':
+  '@braccato/parsers@0.4.2':
     dependencies:
       '@braccato/types': 1.1.0
       fast-xml-parser: 5.11.2

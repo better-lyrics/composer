@@ -218,6 +218,32 @@ describe("BraccatoRenderer", () => {
     expect(el.playing).toBe(true);
   });
 
+  it("regression: a seek while the playhead is dragged leaves no lyrics animation running", async () => {
+    const sample = { currentTime: 4, paused: true, followsAudio: false, playbackRate: 1, scrubbing: false };
+    const playback: RendererPlayback = { sample: () => sample, seekTo: () => {}, play: () => {} };
+    onTestFinished(holdFrames("seeking"));
+    const runningAnimations = (el: BraccatoLyricsElement) =>
+      [...el.getAnimations({ subtree: true }), ...(el.shadowRoot?.getAnimations() ?? [])].filter(
+        (animation) => animation.playState === "running",
+      ).length;
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} playback={playback} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+    await expect.poll(() => el.currentTime).toBe(4);
+
+    sample.currentTime = 5;
+    await stepFrames(2);
+    sample.currentTime = 6.5;
+    await stepFrames(2);
+    expect(runningAnimations(el)).toBeGreaterThan(0);
+
+    sample.scrubbing = true;
+    sample.currentTime = 25;
+    await stepFrames(2);
+    expect(runningAnimations(el)).toBe(0);
+  });
+
   it("hands the playback rate over so word sweeps follow the song rather than the wall clock", async () => {
     const audio = new Audio();
     audio.currentTime = 14;

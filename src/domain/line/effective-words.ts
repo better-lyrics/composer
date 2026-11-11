@@ -4,7 +4,7 @@ import { type LyricLine, effectiveLineBrand, reconcileLine } from "@/domain/line
 import { isLineSynced } from "@/domain/line/predicates";
 import { trackWords } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
-import { stripSplitCharacter } from "@/utils/split-character";
+import { getSplitCharacter, stripSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -46,17 +46,39 @@ function isEffectiveLine(line: ReadableLine): line is EffectiveLine {
   return effectiveLineBrand in line;
 }
 
-function getEffectiveLines(lines: readonly LyricLine[]): EffectiveLine[] {
-  return lines.map((line) => {
-    const effectiveLine = withEffectiveWords(line);
-    const display = getLanguageDisplayLine(effectiveLine, "transliteration");
-    const displayed = reconcileLine({
-      ...effectiveLine,
-      ...(display.words ? { words: display.words } : {}),
-      ...(display.backgroundWords ? { backgroundWords: display.backgroundWords } : {}),
-    });
-    return brand(displayed, timingSourceOf(line));
+function computeEffectiveLine(line: LyricLine): EffectiveLine {
+  const effectiveLine = withEffectiveWords(line);
+  const display = getLanguageDisplayLine(effectiveLine, "transliteration");
+  const displayed = reconcileLine({
+    ...effectiveLine,
+    ...(display.words ? { words: display.words } : {}),
+    ...(display.backgroundWords ? { backgroundWords: display.backgroundWords } : {}),
   });
+  return brand(displayed, timingSourceOf(line));
+}
+
+interface CachedEffectiveLine {
+  splitCharacter: string;
+  effectiveLine: EffectiveLine;
+}
+
+const effectiveLineCache = new WeakMap<LyricLine, CachedEffectiveLine>();
+
+function cachedEffectiveLine(line: LyricLine, splitCharacter: string): EffectiveLine {
+  const cached = effectiveLineCache.get(line);
+  if (cached?.splitCharacter === splitCharacter) return cached.effectiveLine;
+  const effectiveLine = computeEffectiveLine(line);
+  effectiveLineCache.set(line, { splitCharacter, effectiveLine });
+  return effectiveLine;
+}
+
+function getEffectiveLine(line: LyricLine): EffectiveLine {
+  return cachedEffectiveLine(line, getSplitCharacter());
+}
+
+function getEffectiveLines(lines: readonly LyricLine[]): EffectiveLine[] {
+  const splitCharacter = getSplitCharacter();
+  return lines.map((line) => cachedEffectiveLine(line, splitCharacter));
 }
 
 function isLineSyncedSource(line: ReadableLine): boolean {
@@ -95,8 +117,9 @@ export {
   effectiveTrackWords,
   effectiveWordTextEdit,
   effectiveWords,
+  getEffectiveLine,
   getEffectiveLines,
   isLineSyncedSource,
 };
 
-export type { ReadableLine };
+export type { EffectiveLine, ReadableLine };

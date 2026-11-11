@@ -10,12 +10,14 @@ import {
   showReplacedOwnTimingToast,
 } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
-import { type RepeatingSection, findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
+import { groupingSuggestions } from "@/views/grouping/grouping-suggestions";
+import type { RepeatingSection } from "@/views/grouping/repeating-sections";
 import { IconBulb, IconLink } from "@tabler/icons-react";
 import { useMemo } from "react";
 
 const MODAL_LINE_MAX = 80;
 const MODAL_LINE_LIMIT = 6;
+const NO_SUGGESTIONS: RepeatingSection[] = [];
 
 function useGroupingNotice(enabled = true): NoticeKind | null {
   const lines = useProjectStore((s) => s.lines);
@@ -24,7 +26,7 @@ function useGroupingNotice(enabled = true): NoticeKind | null {
   const splitChar = useSettingsStore((s) => s.splitCharacter);
 
   const suggestions = useMemo(
-    () => (enabled ? findRepeatingStandaloneSections(lines, splitChar) : []),
+    () => (enabled ? groupingSuggestions(lines, splitChar) : NO_SUGGESTIONS),
     [enabled, lines, splitChar],
   );
   const { visible, dismissedFingerprints } = useMemo(

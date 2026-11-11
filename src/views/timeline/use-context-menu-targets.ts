@@ -7,7 +7,7 @@ import {
 import { templateSourceInstance } from "@/domain/group/template-source";
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
-import { getEffectiveLines } from "@/domain/line/effective-words";
+import { type EffectiveLine, getEffectiveLine } from "@/domain/line/effective-words";
 import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { isWordSelected } from "@/domain/selection/identity";
@@ -26,9 +26,14 @@ import {
 } from "@/views/timeline/group-ops";
 import { mergeRunKind } from "@/views/timeline/merge-selected-words";
 import { computeSplitIntoWordsUpdates, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
+import { timelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
 import type { ContextMenuTarget } from "@/views/timeline/timeline-store";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useMemo } from "react";
+
+// -- Constants ----------------------------------------------------------------
+
+const NO_EFFECTIVE_LINES: EffectiveLine[] = [];
 
 // -- Selection ----------------------------------------------------------------
 
@@ -47,7 +52,7 @@ function useContextMenuTargets() {
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const rawLines = useProjectStore((s) => s.lines);
 
-  const lines = useMemo(() => getEffectiveLines(rawLines), [rawLines]);
+  const lines = contextMenu ? timelineEffectiveLines(rawLines) : NO_EFFECTIVE_LINES;
 
   const explicitToggleContext = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
@@ -127,16 +132,15 @@ function useContextMenuTargets() {
   }, [contextMenu, rawLines]);
 
   const mergeInfo = useMemo(() => {
+    if (!contextMenu) return null;
     const run = contiguousSelectionRun(selectedWords);
     if (!run) return null;
 
-    const line = lines.find((l) => l.id === run.lineId);
-    if (!line || !trackWords(line, run.type)) return null;
     const rawLine = rawLines.find((l) => l.id === run.lineId);
-    const kind = rawLine ? mergeRunKind(rawLine, run) : "words";
+    if (!rawLine || !trackWords(getEffectiveLine(rawLine), run.type)) return null;
 
-    return { indices: run.indices, lineId: run.lineId, type: run.type, kind };
-  }, [selectedWords, lines, rawLines]);
+    return { indices: run.indices, lineId: run.lineId, type: run.type, kind: mergeRunKind(rawLine, run) };
+  }, [contextMenu, selectedWords, rawLines]);
 
   const groupedWordInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;

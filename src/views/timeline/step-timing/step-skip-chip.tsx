@@ -1,11 +1,11 @@
 import type { LinkGroup } from "@/domain/group/template";
+import { instanceKey } from "@/domain/instance/key";
 import { instanceName } from "@/domain/instance/name";
 import { useProjectStore } from "@/stores/project";
 import { Tooltip } from "@/ui/tooltip";
 import { BannerTag } from "@/views/timeline/banner-tag";
-import { StepNextContext } from "@/views/timeline/step-timing/step-next";
+import { useStepView } from "@/views/timeline/step-timing/step-next";
 import { IconPlayerSkipForward } from "@tabler/icons-react";
-import { use } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -17,7 +17,7 @@ interface StepSkipChipProps {
 // -- Components ----------------------------------------------------------------
 
 const StepSkipChip: React.FC<StepSkipChipProps> = ({ group, instanceIdx }) => {
-  const follows = use(StepNextContext)?.follows.get(`${group.id}:${instanceIdx}`);
+  const follows = useStepView((view) => view?.follows.get(instanceKey(group.id, instanceIdx)));
   const name = useProjectStore((s) => (follows ? instanceName(s.lines, group, instanceIdx) : ""));
   if (!follows) return null;
   return (

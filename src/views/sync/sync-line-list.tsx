@@ -6,30 +6,15 @@ import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { SkippedInstance } from "@/domain/sync/skipped-instances";
-import type { useSyncHandlers } from "@/hooks/useSyncHandlers";
+import { useScrollParent } from "@/hooks/use-scroll-parent";
+import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { ScrollableLine, type ScrollableLineLinkInfo } from "@/views/sync/scrollable-line";
 import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
-import { Fragment, useMemo } from "react";
+import { type SyncLineListHandlers, useRowCallbacks } from "@/views/sync/use-row-callbacks";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ListItem, Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 
 // -- Interfaces ---------------------------------------------------------------
-
-type SyncLineListHandlers = Pick<
-  ReturnType<typeof useSyncHandlers>,
-  | "handleJumpToLine"
-  | "handleJumpToWord"
-  | "handleJumpToBgWord"
-  | "handleNudgeWord"
-  | "handleSetWordTime"
-  | "handleNudgeWordEnd"
-  | "handleSetWordEndTime"
-  | "handleNudgeLine"
-  | "handleSetLineTime"
-  | "handleSplitWord"
-  | "handleNudgeBgWord"
-  | "handleSetBgWordTime"
-  | "handleNudgeBgWordEnd"
-  | "handleSetBgWordEndTime"
->;
 
 interface SyncLineListProps {
   lines: readonly LyricLine[];
@@ -44,7 +29,27 @@ interface SyncLineListProps {
   skippedLineIds: ReadonlySet<string>;
   skippedByLastLineId: ReadonlyMap<string, SkippedInstance>;
   handlers: SyncLineListHandlers;
-  scrollContainerRef: React.Ref<HTMLDivElement>;
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>;
+  splitCharacter: string;
+}
+
+// -- Constants ----------------------------------------------------------------
+
+// Rows this far past the viewport stay mounted, so a nearby current line scrolls into place as one smooth move.
+const MOUNTED_BEYOND_VIEWPORT_PX = 600;
+
+// -- Functions ----------------------------------------------------------------
+
+function lineKey(_index: number, line: LyricLine): string {
+  return line.id;
+}
+
+function mountedRow(scrollParent: HTMLElement, index: number): Element | null {
+  return scrollParent.querySelector(`[data-sync-line="${index + 1}"]`);
+}
+
+function centreRow(row: Element) {
+  row.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 // -- Components ---------------------------------------------------------------
@@ -63,9 +68,10 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
   skippedByLastLineId,
   handlers,
   scrollContainerRef,
+  splitCharacter,
 }) => {
+  const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
   const linkInfoByLineId = useMemo(() => {
-    const groupsById = new Map(groups.map((g) => [g.id, g]));
     const positions = instancePositionsByLineId(lines);
     const out = new Map<string, ScrollableLineLinkInfo>();
     for (const line of lines) {
@@ -82,84 +88,112 @@ const SyncLineList: React.FC<SyncLineListProps> = ({
       });
     }
     return out;
-  }, [lines, groups, skippedLineIds]);
+  }, [lines, groupsById, skippedLineIds]);
 
-  const {
-    handleJumpToLine,
-    handleJumpToWord,
-    handleJumpToBgWord,
-    handleNudgeWord,
-    handleSetWordTime,
-    handleNudgeWordEnd,
-    handleSetWordEndTime,
-    handleNudgeLine,
-    handleSetLineTime,
-    handleSplitWord,
-    handleNudgeBgWord,
-    handleSetBgWordTime,
-    handleNudgeBgWordEnd,
-    handleSetBgWordEndTime,
-  } = handlers;
+  const rowCallbacks = useRowCallbacks(handlers);
+  const { handleJumpToLine } = handlers;
+  const currentLineIndex = editMode ? playingLineIndex : cursorLineIndex;
+
+  const virtuosoRef = useRef<VirtuosoHandle>(null);
+  const [scrollParent, keepScrollParent] = useScrollParent();
+  const [rowsRendered, setRowsRendered] = useState(false);
+  const attachScrollParent = useCallback(
+    (element: HTMLDivElement | null) => {
+      scrollContainerRef.current = element;
+      keepScrollParent(element);
+    },
+    [scrollContainerRef, keepScrollParent],
+  );
+  const farRevealIndex = useRef<number | null>(null);
+  const noteRowsRendered = useCallback(
+    (items: ListItem<LyricLine>[]) => {
+      if (items.length > 0) setRowsRendered(true);
+      const index = farRevealIndex.current;
+      if (index === null || !items.some((item) => item.index === index)) return;
+      farRevealIndex.current = null;
+      nextFrame(() => {
+        const row = scrollContainerRef.current && mountedRow(scrollContainerRef.current, index);
+        if (row) centreRow(row);
+      });
+    },
+    [scrollContainerRef],
+  );
+
+  const centredLineIndex = useRef<number | null>(null);
+  // Smooth scrollToIndex over unmeasured rows aims at an estimate and gives up after a second, short of the line.
+  // Activity re-runs this on every reveal; the list then stays where it was left unless the current line moved.
+  useEffect(() => {
+    if (!rowsRendered || !scrollParent || currentLineIndex < 0 || currentLineIndex === centredLineIndex.current) return;
+    const frame = nextFrame(() => {
+      centredLineIndex.current = currentLineIndex;
+      const row = mountedRow(scrollParent, currentLineIndex);
+      if (row) return centreRow(row);
+      farRevealIndex.current = currentLineIndex;
+      virtuosoRef.current?.scrollToIndex({ index: currentLineIndex, align: "center" });
+    });
+    return () => {
+      cancelNextFrame(frame);
+      farRevealIndex.current = null;
+    };
+  }, [rowsRendered, scrollParent, currentLineIndex]);
+
+  const renderLine = (index: number, line: LyricLine) => {
+    const displayLine = displayLines[index];
+    const timing = effectiveBounds(line);
+    const skipped = skippedByLastLineId.get(line.id);
+    const skippedGroup = skipped && groupsById.get(skipped.groupId);
+    return (
+      <>
+        <ScrollableLine
+          {...rowCallbacks(index)}
+          lineId={line.id}
+          lineNumber={index + 1}
+          text={line.text}
+          displayText={displayLine.text}
+          displayWordTexts={displayLine.wordTexts}
+          isCurrent={index === currentLineIndex}
+          agentId={line.agentId}
+          backgroundText={line.backgroundText}
+          displayBackgroundText={displayLine.backgroundText}
+          displayBackgroundWordTexts={displayLine.backgroundWordTexts}
+          backgroundWords={displayLine.backgroundWords ?? line.backgroundWords}
+          words={displayLine.words ?? line.words}
+          lineBegin={timing?.begin}
+          lineEnd={timing?.end}
+          lineSynced={isLineSynced(line)}
+          granularity={granularity}
+          currentTime={currentTime}
+          editMode={editMode}
+          linkInfo={linkInfoByLineId.get(line.id)}
+          splitCharacter={splitCharacter}
+        />
+        {skipped && skippedGroup && !isComplete && (
+          <SkippedInstanceBand
+            groupId={skipped.groupId}
+            instanceIdx={skipped.instanceIdx}
+            firstLineIndex={skipped.firstLineIndex}
+            skippedCount={skipped.syncableLineCount}
+            color={skippedGroup.color}
+            onJumpToLine={handleJumpToLine}
+          />
+        )}
+      </>
+    );
+  };
 
   return (
-    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overscroll-none">
-      <div>
-        {lines.map((line, index) => {
-          const displayLine = displayLines[index];
-          const timing = effectiveBounds(line);
-          const skipped = skippedByLastLineId.get(line.id);
-          const skippedGroup = skipped && groups.find((group) => group.id === skipped.groupId);
-          return (
-            <Fragment key={line.id}>
-              <ScrollableLine
-                lineId={line.id}
-                lineNumber={index + 1}
-                text={line.text}
-                displayText={displayLine.text}
-                displayWordTexts={displayLine.wordTexts}
-                isCurrent={index === (editMode ? playingLineIndex : cursorLineIndex)}
-                agentId={line.agentId}
-                backgroundText={line.backgroundText}
-                displayBackgroundText={displayLine.backgroundText}
-                displayBackgroundWordTexts={displayLine.backgroundWordTexts}
-                backgroundWords={displayLine.backgroundWords ?? line.backgroundWords}
-                words={displayLine.words ?? line.words}
-                lineBegin={timing?.begin}
-                lineEnd={timing?.end}
-                lineSynced={isLineSynced(line)}
-                granularity={granularity}
-                currentTime={currentTime}
-                editMode={editMode}
-                linkInfo={linkInfoByLineId.get(line.id)}
-                onClick={() => handleJumpToLine(index)}
-                onClickWord={(wordIdx) => handleJumpToWord(index, wordIdx)}
-                onClickBgWord={(wordIdx) => handleJumpToBgWord(index, wordIdx)}
-                onNudgeWord={(wordIdx, delta) => handleNudgeWord(index, wordIdx, delta)}
-                onSetWordTime={(wordIdx, newBegin) => handleSetWordTime(index, wordIdx, newBegin)}
-                onNudgeWordEnd={(wordIdx, delta) => handleNudgeWordEnd(index, wordIdx, delta)}
-                onSetWordEndTime={(wordIdx, newEnd) => handleSetWordEndTime(index, wordIdx, newEnd)}
-                onNudgeLine={(delta) => handleNudgeLine(index, delta)}
-                onSetLineTime={(newBegin) => handleSetLineTime(index, newBegin)}
-                onSplitWord={(wordIdx, newWords) => handleSplitWord(index, wordIdx, newWords)}
-                onNudgeBgWord={(wordIdx, delta) => handleNudgeBgWord(index, wordIdx, delta)}
-                onSetBgWordTime={(wordIdx, newBegin) => handleSetBgWordTime(index, wordIdx, newBegin)}
-                onNudgeBgWordEnd={(wordIdx, delta) => handleNudgeBgWordEnd(index, wordIdx, delta)}
-                onSetBgWordEndTime={(wordIdx, newEnd) => handleSetBgWordEndTime(index, wordIdx, newEnd)}
-              />
-              {skipped && skippedGroup && !isComplete && (
-                <SkippedInstanceBand
-                  groupId={skipped.groupId}
-                  instanceIdx={skipped.instanceIdx}
-                  firstLineIndex={skipped.firstLineIndex}
-                  skippedCount={skipped.syncableLineCount}
-                  color={skippedGroup.color}
-                  onJumpToLine={handleJumpToLine}
-                />
-              )}
-            </Fragment>
-          );
-        })}
-      </div>
+    <div ref={attachScrollParent} className="flex-1 overflow-y-auto overscroll-none">
+      {scrollParent && (
+        <Virtuoso
+          ref={virtuosoRef}
+          data={lines}
+          computeItemKey={lineKey}
+          itemContent={renderLine}
+          itemsRendered={noteRowsRendered}
+          customScrollParent={scrollParent}
+          increaseViewportBy={MOUNTED_BEYOND_VIEWPORT_PX}
+        />
+      )}
     </div>
   );
 };

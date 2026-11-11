@@ -1,4 +1,3 @@
-import { getLanguageDisplayLine } from "@/domain/language/display";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { playingLineIndex } from "@/domain/line/playing-line";
 import { isSyncComplete, syncProgress } from "@/domain/line/sync-progress";
@@ -24,6 +23,7 @@ import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
 import { SyncHeader } from "@/views/sync/sync-header";
 import { type RippleTarget, SyncLane } from "@/views/sync/sync-lane";
 import { usePlacementPreroll } from "@/views/sync/use-placement-preroll";
+import { useDisplayLines } from "@/views/sync/use-display-lines";
 import { useSharedSyncView } from "@/views/sync/use-shared-sync-view";
 import { useSyncCountIn } from "@/views/sync/use-sync-count-in";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -37,7 +37,6 @@ const SyncPanel: React.FC = () => {
   const agents = useProjectStore((s) => s.agents);
   const undo = useProjectStore((s) => s.undo);
   const redo = useProjectStore((s) => s.redo);
-  const activeTab = useProjectStore((s) => s.activeTab);
   const granularity = useProjectStore((s) => s.granularity);
   const setGranularity = useProjectStore((s) => s.setGranularity);
   const source = useAudioStore((s) => s.source);
@@ -49,20 +48,14 @@ const SyncPanel: React.FC = () => {
   const audioElement = useAudioStore((s) => s.audioElement);
   const seekTo = useAudioStore((s) => s.seekTo);
   const textVariant = useTimelineStore((s) => s.textVariant);
+  const splitCharacter = useSettingsStore((s) => s.splitCharacter);
   const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
   const toggleReadingText = useCallback(() => {
     toggleTextVariant();
     if (useTimelineStore.getState().textVariant === "transliteration") noteGuideSignal("languages.showWhileSyncing");
   }, [toggleTextVariant]);
   const linesHaveTransliteration = useMemo(() => hasTransliteration(lines), [lines]);
-  const displayLines = useMemo(
-    () =>
-      lines.map((line) => ({
-        ...line,
-        ...getLanguageDisplayLine(line, textVariant),
-      })),
-    [lines, textVariant],
-  );
+  const displayLines = useDisplayLines(lines, textVariant);
 
   const [syncState, setSyncState] = useState<SyncState>({
     position: { lineIndex: 0, wordIndex: 0 },
@@ -107,9 +100,12 @@ const SyncPanel: React.FC = () => {
     cursor,
     skippedInstances,
   );
+  const showLineList = (!isPlaying && !countIn.countingIn) || editMode;
+  const showsLane = !showLineList && !isComplete;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: buildLaneRows splits words by the split character
   const laneRows = useMemo(
-    () => buildLaneRows({ lines, displayLines, agents, groupTags, folded }),
-    [lines, displayLines, agents, groupTags, folded],
+    () => (showsLane ? buildLaneRows({ lines, displayLines, agents, groupTags, folded }) : []),
+    [showsLane, lines, displayLines, agents, groupTags, folded, splitCharacter],
   );
 
   const stopSessionAtSongEnd = useEffectEvent(() => {
@@ -197,7 +193,10 @@ const SyncPanel: React.FC = () => {
     if (source && lines.length > 0) handleToggleEdit();
   });
 
-  const playingLine = useMemo(() => playingLineIndex(lines, currentTime), [lines, currentTime]);
+  const playingLine = useMemo(
+    () => (editMode ? playingLineIndex(lines, currentTime) : -1),
+    [editMode, lines, currentTime],
+  );
 
   const { lineIndex, wordIndex } = cursor;
   const noteSyncUndo = useEffectEvent(() => noteGuideSignal("sync.undoTap", lines[lineIndex]?.id));
@@ -292,7 +291,6 @@ const SyncPanel: React.FC = () => {
     [endHold],
   );
 
-  const showLineList = (!isPlaying && !countIn.countingIn) || editMode;
   const showGestureCircles = !isComplete && !editMode && isPlaying;
 
   // The release handlers live on the hold circle, so a hold outliving that
@@ -307,7 +305,7 @@ const SyncPanel: React.FC = () => {
 
   // Effect events read the latest state, so the listeners attach once instead of on every hold or edit toggle.
   const onSyncKeyDown = useEffectEvent((e: KeyboardEvent) => {
-    if (activeTab !== "sync") return;
+    if (useProjectStore.getState().activeTab !== "sync") return;
     if (isAnyModalOpen()) return;
 
     const runHistory = (action: "undo" | "redo") => {
@@ -355,7 +353,7 @@ const SyncPanel: React.FC = () => {
   });
 
   const onSyncKeyUp = useEffectEvent((e: KeyboardEvent) => {
-    if (activeTab !== "sync" || !isHolding) return;
+    if (useProjectStore.getState().activeTab !== "sync" || !isHolding) return;
     if (isAnyModalOpen()) return;
 
     if (e.code === heldKeyCodeRef.current) {
@@ -433,6 +431,7 @@ const SyncPanel: React.FC = () => {
           skippedByLastLineId={skippedByLastLineId}
           handlers={syncHandlers}
           scrollContainerRef={scrollContainerRef}
+          splitCharacter={splitCharacter}
         />
       ) : isComplete ? (
         <SyncEndScreen syncComplete={syncComplete} />

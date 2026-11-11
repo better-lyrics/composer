@@ -1,4 +1,5 @@
 import { linesOfInstance } from "@/domain/instance/enumerate";
+import { instanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 
@@ -35,7 +36,7 @@ function findMatchingTemplate(
   const seen = new Set<string>();
   for (const line of lines) {
     if (!isLinked(line)) continue;
-    const key = `${line.groupId}:${line.instanceIdx}`;
+    const key = instanceKey(line.groupId, line.instanceIdx);
     if (seen.has(key)) continue;
     seen.add(key);
     const instanceLines = linesOfInstance(lines, line.groupId, line.instanceIdx).toSorted(

@@ -1,23 +1,16 @@
 import { getAgentColor } from "@/domain/agent/colors";
 import { cn } from "@/utils/cn";
-import { stripSplitCharacter } from "@/utils/split-character";
+import { withoutSplitCharacter } from "@/utils/split-character";
 import { LinePreviewActions } from "@/views/edit/line-preview-actions";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { IconLink } from "@tabler/icons-react";
-import { useCallback } from "react";
+import { memo, useCallback } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
-interface LinePreviewProps {
-  line: ParsedLine;
-  agents: { id: string; name?: string }[];
-  isSelected: boolean;
-  hasMultipleSelected: boolean;
-  groupColor?: string;
-  groupTooltip?: string;
+interface LinePreviewRowHandlers {
   onSelect: (lineNumber: number, shiftKey: boolean) => void;
   onAgentChange: (lineId: string, agentId: string) => void;
-  onBulkAgentChange: (agentId: string) => void;
   onBackgroundChange: (lineId: string, text: string) => void;
   onExtractLine: (lineId: string) => void;
   onGutterMouseDown: (lineNumber: number, e: React.MouseEvent) => void;
@@ -25,9 +18,22 @@ interface LinePreviewProps {
   didDragRef: React.MutableRefObject<boolean>;
 }
 
+interface LinePreviewProps extends LinePreviewRowHandlers {
+  line: ParsedLine;
+  agents: { id: string; name?: string }[];
+  isSelected: boolean;
+  splitCharacter: string;
+  groupColor?: string;
+  groupTooltip?: string;
+  /** Set only on a selected row while several lines are selected: its agent pick then edits them all. */
+  onBulkAgentChange?: (agentId: string) => void;
+}
+
 // -- Constants ----------------------------------------------------------------
 
 const LINE_COLUMN = "line-cell flex justify-center w-11 shrink-0 font-mono font-medium";
+// 28px is min-h-7: every row is one line tall.
+const PREVIEW_ROW_HEIGHT = 28;
 const ROW_BODY = "flex flex-1 min-w-0 items-center gap-2 pl-3 pr-2 border-b border-(--divider) bg-clip-padding";
 
 // -- Helpers ------------------------------------------------------------------
@@ -36,6 +42,18 @@ function rowBodyTone(isSelected: boolean, hasBrackets: boolean, inGroup: boolean
   if (isSelected) return "bg-composer-accent/15";
   if (hasBrackets) return "bg-composer-warning/8";
   return inGroup ? "bg-[color-mix(in_oklab,var(--group)_4%,transparent)]" : "group-hover:bg-(--layer-1)";
+}
+
+function sameParsedLine(a: ParsedLine, b: ParsedLine): boolean {
+  if (a === b) return true;
+  const keys = Object.keys(a) as (keyof ParsedLine)[];
+  return keys.length === Object.keys(b).length && keys.every((key) => a[key] === b[key]);
+}
+
+function sameLinePreviewProps(prev: LinePreviewProps, next: LinePreviewProps): boolean {
+  const keys = Object.keys(next) as (keyof LinePreviewProps)[];
+  if (keys.length !== Object.keys(prev).length) return false;
+  return keys.every((key) => (key === "line" ? sameParsedLine(prev.line, next.line) : Object.is(prev[key], next[key])));
 }
 
 // -- Components ---------------------------------------------------------------
@@ -81,11 +99,11 @@ const EmptyLinePreview: React.FC<{
   </div>
 );
 
-const LinePreview: React.FC<LinePreviewProps> = ({
+const LinePreviewRow: React.FC<LinePreviewProps> = ({
   line,
   agents,
   isSelected,
-  hasMultipleSelected,
+  splitCharacter,
   groupColor,
   groupTooltip,
   onSelect,
@@ -179,7 +197,7 @@ const LinePreview: React.FC<LinePreviewProps> = ({
               : "text-composer-text",
           )}
         >
-          {stripSplitCharacter(line.text)}
+          {withoutSplitCharacter(line.text, splitCharacter)}
         </span>
 
         {line.backgroundText && (
@@ -195,7 +213,6 @@ const LinePreview: React.FC<LinePreviewProps> = ({
           line={line}
           agents={agents}
           agentColor={agentColor}
-          editsSelection={isSelected && hasMultipleSelected}
           onAgentChange={onAgentChange}
           onBulkAgentChange={onBulkAgentChange}
           onBackgroundChange={onBackgroundChange}
@@ -206,6 +223,9 @@ const LinePreview: React.FC<LinePreviewProps> = ({
   );
 };
 
+const LinePreview = memo(LinePreviewRow, sameLinePreviewProps);
+
 // -- Exports ------------------------------------------------------------------
 
-export { LinePreview, PreviewGroupHeader };
+export type { LinePreviewRowHandlers };
+export { LinePreview, PREVIEW_ROW_HEIGHT, PreviewGroupHeader };

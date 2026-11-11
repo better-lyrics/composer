@@ -1,9 +1,11 @@
 import { useEffect, useRef } from "react";
 import { decodeAudioToWav, needsWavConversion } from "@/audio/audio-decode";
+import { releaseDecodedSource } from "@/audio/decoded-source-audio";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { resyncPlaybackClock } from "@/audio/playback-clock";
 import { notePlaybackTime } from "@/audio/playback-ranges";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
+import { STEM_SLOTS } from "@/domain/stems/stem-slot";
 import { seekInPlaceToResume } from "@/audio/seek-reveal-intent";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -93,7 +95,7 @@ const AudioEngine: React.FC = () => {
         setIsLoading(true);
       }, SLOW_DECODE_MS);
       try {
-        const wavBlob = await decodeAudioToWav(playableFile);
+        const wavBlob = await decodeAudioToWav(playableFile, true);
         return { url: URL.createObjectURL(wavBlob), stripped: true };
       } catch (err) {
         console.warn(LOG_PREFIX, "audio decode failed, using original file", err);
@@ -113,6 +115,7 @@ const AudioEngine: React.FC = () => {
       }
       if (aborted) {
         URL.revokeObjectURL(objectUrl);
+        releaseDecodedSource(playableFile);
         return;
       }
 
@@ -226,6 +229,7 @@ const AudioEngine: React.FC = () => {
   }, [currentStem, stemUrls, audioElement, setIsPlaying]);
 
   useEffect(() => {
+    scrubStemRouter.setStemsAvailable(STEM_SLOTS.some((slot) => stemUrls[slot] !== undefined));
     scrubStemRouter.selectStem(currentStem, (stem) => stemUrls[stem]);
   }, [currentStem, stemUrls]);
 

@@ -1,4 +1,4 @@
-import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-words";
+import { effectiveTrackWords, getEffectiveLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { LoupeSize } from "@/domain/spectrum/loupe-size";
 import { useProjectStore } from "@/stores/project";
@@ -31,7 +31,7 @@ const LOUPE_CARD_SURFACE =
 function editedWordText(lines: readonly LyricLine[], target: LoupeTarget): string {
   const line = lines.find((candidate) => candidate.id === target.lineId);
   if (!line) return "";
-  const [effective] = getEffectiveLines([line]);
+  const effective = getEffectiveLine(line);
   return effectiveTrackWords(effective, target.track)?.[target.wordIndex]?.text.trim() ?? "";
 }
 

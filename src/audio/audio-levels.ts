@@ -28,7 +28,7 @@ async function analyseLevels(source: Blob, signal: AbortSignal): Promise<LevelEn
   const startFrame = primingToCrop(priming, decoded);
   const channelCount = Math.min(2, decoded.numberOfChannels);
   const channels = Array.from({ length: channelCount }, (_, channel) =>
-    decoded.getChannelData(channel).slice(startFrame),
+    decoded.getChannelData(channel).subarray(startFrame),
   );
   return computeLevelEnvelopeOffThread(channels, decoded.sampleRate, signal);
 }

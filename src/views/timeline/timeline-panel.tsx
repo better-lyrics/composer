@@ -1,7 +1,6 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { getAgentColor } from "@/domain/agent/colors";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
-import { getEffectiveLines } from "@/domain/line/effective-words";
 import { trackWords } from "@/domain/line/tracks";
 import { isWordSelected } from "@/domain/selection/identity";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
@@ -27,15 +26,16 @@ import { SelectionPlaybackBar } from "@/views/timeline/selection-playback-bar";
 import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
-import { StepNextContext, useStepNext } from "@/views/timeline/step-timing/step-next";
+import { StepViewPublisher } from "@/views/timeline/step-timing/step-next";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
+import { useTimelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { BoundaryModeChip } from "@/views/timeline/boundary-mode-chip";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
-import { isPlaybackStyleWrite } from "@/views/timeline/playback-style-mutation";
+import { keepsTimelineScrollSize } from "@/views/timeline/scroll-size-mutation";
 import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { TimelineRuler } from "@/views/timeline/timeline-ruler";
 import { syncViewScroll, viewScrollLeft } from "@/views/timeline/view-scroll";
@@ -81,8 +81,7 @@ const TimelinePanel: React.FC = () => {
   const [rulerMarkerHost, setRulerMarkerHost] = useState<HTMLDivElement | null>(null);
   const openImportModal = useImportModal();
 
-  const effectiveLines = useMemo(() => getEffectiveLines(lines), [lines]);
-  const stepNext = useStepNext(effectiveLines);
+  const effectiveLines = useTimelineEffectiveLines(lines);
   const stepTiming = useTimelineStore((s) => s.stepTiming);
   const timelineShown = !!source && lines.length > 0;
 
@@ -94,7 +93,7 @@ const TimelinePanel: React.FC = () => {
         autoHide: "scroll",
         autoHideDelay: 800,
       },
-      update: { ignoreMutation: isPlaybackStyleWrite },
+      update: { ignoreMutation: keepsTimelineScrollSize },
     },
   });
 
@@ -112,6 +111,8 @@ const TimelinePanel: React.FC = () => {
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
   const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
   const dragZoom = useTimelineStore((s) => (activeDrag ? s.zoom : null));
+  // DndContext runs the snap modifier only when it renders, so a bypass change during a held drag must re-render it.
+  useTimelineStore((s) => activeDrag !== null && s.isBypassing);
   const { dragSnapModifier, beginGesture, endGesture, syncDragSnap } = useTimelineSnap();
   const lastDragPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const getLastDragPointer = useCallback(() => lastDragPointerRef.current, []);
@@ -294,9 +295,8 @@ const TimelinePanel: React.FC = () => {
                   <BeatGridCorner />
                   <TimelineWaveform />
 
-                  <StepNextContext value={stepNext}>
-                    <TimelineRows scrollContainerRef={scrollContainerRef} />
-                  </StepNextContext>
+                  <StepViewPublisher lines={effectiveLines} />
+                  <TimelineRows scrollContainerRef={scrollContainerRef} />
                 </div>
 
                 <TimelinePlayhead

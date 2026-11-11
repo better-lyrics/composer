@@ -24,6 +24,20 @@ describe("findExplicitWords", () => {
     expect(result[0].wordIndices).toEqual([1]);
   });
 
+  it("regression: going back to earlier lyrics reuses their scan instead of scanning again", () => {
+    const before = [lineWithText("L1", "we light this shit on fire"), lineWithText("L2", "damn the morning rain")];
+    const after = [lineWithText("L1", "we light this town on fire"), before[1]];
+
+    const first = findExplicitWords(before);
+    findExplicitWords(after);
+    const again = findExplicitWords(before);
+
+    expect(again).toEqual(first);
+    const firstHit = first.find((suggestion) => suggestion.lineId === "L1");
+    const againHit = again.find((suggestion) => suggestion.lineId === "L1");
+    expect(againHit?.wordIndices).toBe(firstHit?.wordIndices);
+  });
+
   it("returns no suggestions for clean lyrics", () => {
     const result = findExplicitWords([lineWithText("L1", "I love you so much")]);
     expect(result).toHaveLength(0);

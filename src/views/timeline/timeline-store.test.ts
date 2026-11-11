@@ -144,6 +144,13 @@ describe("loopRegion", () => {
     expect(useTimelineStore.getState().loopRegion).toEqual(region);
   });
 
+  it("clearing an already empty selection keeps the same array", () => {
+    const empty = useTimelineStore.getState().selectedWords;
+    useTimelineStore.getState().setSelectedWords([]);
+    useTimelineStore.getState().clearSelection();
+    expect(useTimelineStore.getState().selectedWords).toBe(empty);
+  });
+
   it("is project scoped", () => {
     useTimelineStore.getState().setLoopRegion(region);
     useTimelineStore.getState().setLoopRegionDrag({ edge: "end", snappedTo: null, draft: null });

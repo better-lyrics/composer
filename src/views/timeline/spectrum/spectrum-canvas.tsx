@@ -29,6 +29,7 @@ import {
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { scrollContainerOf } from "@/views/timeline/scroll-container-of";
 import { viewScrollLeft } from "@/views/timeline/view-scroll";
 
 // -- Constants -----------------------------------------------------------------
@@ -71,6 +72,8 @@ const SpectrumCanvas: React.FC = () => {
   const drawnRef = useRef<string | null>(null);
   const stripRef = useRef<Strip | null>(null);
   const releaseRef = useRef<(() => void) | null>(null);
+  const viewportWidthRef = useRef<number | null>(null);
+  const translateRef = useRef<number | null>(null);
   const [warmUp] = useState(createWarmUp);
   const [refine] = useState(createZoomRefine);
   const reducedMotion = useReducedMotion() ?? false;
@@ -85,15 +88,19 @@ const SpectrumCanvas: React.FC = () => {
     };
   }, [warmUp, refine]);
 
-  useFrameLoop(() => {
+  const readViewportWidth = () => {
+    const container = scrollContainerOf(canvasRef.current);
+    viewportWidthRef.current = container ? Math.max(0, container.clientWidth - GUTTER_WIDTH) : null;
+  };
+
+  const draw = () => {
     const canvas = canvasRef.current;
-    const container = canvas?.closest<HTMLElement>("[data-scroll-container]");
-    if (!canvas || !container) return;
+    const viewportWidth = viewportWidthRef.current;
+    if (!canvas || viewportWidth === null) return;
     const look = spectrumLookOf(useSettingsStore.getState());
     const palette = resolveSpectrumPalette(look.spectrumPalette);
     const pixelsPerSecond = useTimelineStore.getState().zoom;
     const scrollLeft = viewScrollLeft();
-    const viewportWidth = Math.max(0, container.clientWidth - GUTTER_WIDTH);
     // Every refine frame redraws the whole canvas, so a zoom keeps it one view wide.
     const strip = stripFor(
       stripRef.current,
@@ -113,6 +120,7 @@ const SpectrumCanvas: React.FC = () => {
       heightCss: currentOverviewBandHeight() - BAND_BORDER,
       scrollLeft: strip.start,
       viewportWidth: strip.width,
+      shownTiles: visibleTileRange(scrollLeft, viewportWidth),
     };
     const lookId = lookKey(view);
     const signature = drawingSignature(view, lookId);
@@ -132,8 +140,10 @@ const SpectrumCanvas: React.FC = () => {
       beginRefineIfZoomed(refine, canvas, frame, now, reducedMotion);
 
     sizeCanvas(canvas, view.viewportWidth, view.heightCss, view.pixelRatio);
-    const translate = `${strip.start}px 0`;
-    if (canvas.style.translate !== translate) canvas.style.translate = translate;
+    if (translateRef.current !== strip.start) {
+      translateRef.current = strip.start;
+      canvas.style.translate = `${strip.start}px 0`;
+    }
     const context = canvas.getContext("2d");
     if (!context) return;
     context.setTransform(view.pixelRatio, 0, 0, view.pixelRatio, 0, 0);
@@ -174,7 +184,9 @@ const SpectrumCanvas: React.FC = () => {
     } else {
       releaseRef.current ??= animateFrames("spectrum tiles");
     }
-  }, "spectrum canvas");
+  };
+
+  useFrameLoop({ read: readViewportWidth, write: draw }, "spectrum canvas");
 
   return <canvas ref={canvasRef} data-spectrum-canvas className="absolute top-0 left-0 bg-black" />;
 };

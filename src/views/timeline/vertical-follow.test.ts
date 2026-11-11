@@ -1,8 +1,15 @@
+import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 import { createLine } from "@/test/factories";
 import { computeRowLayout } from "@/views/timeline/utils";
-import { type FollowInput, createFollowMemory, followScrollTop, followStep } from "@/views/timeline/vertical-follow";
+import {
+  type FollowInput,
+  createFollowMemory,
+  followScrollTop,
+  followStep,
+  lineAtTime,
+} from "@/views/timeline/vertical-follow";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -274,5 +281,31 @@ describe("followStep", () => {
       followStep(memory, { ...input, selection: [word(lines, "too-hot", 1)] });
       expect(followStep(memory, { ...input, selection: [word(lines, "too-hot", 1)] })).toEqual(rowOf("too-hot"));
     });
+  });
+});
+
+describe("lineAtTime", () => {
+  const lines = [
+    ...verse,
+    createLine({ id: "untimed", text: "Hold on to the radio" }),
+    createLine({ id: "ad-lib", text: "Hey hey", begin: 24.5, end: 26.2 }),
+  ];
+
+  function firstLineAt(time: number, lineIds: ReadonlySet<string> | null): LyricLine | null {
+    for (const line of lines) {
+      if (lineIds && !lineIds.has(line.id)) continue;
+      const bounds = effectiveBounds(line);
+      if (bounds !== null && time >= bounds.begin && time < bounds.end) return line;
+    }
+    return null;
+  }
+
+  it("finds the same line as a scan in line order, before, inside, on edges, in gaps and after every line", () => {
+    const times = [5, 19.0, 19.3, 20.97, 21.1, 22.0, 23.0, 23.2, 23.4, 25.0, 25.8, 26.1, 28.4, 40];
+    for (const lineIds of [null, new Set(["too-hot", "ad-lib"])]) {
+      for (const time of times) {
+        expect(lineAtTime(lines, time, lineIds)?.id, `${time}`).toBe(firstLineAt(time, lineIds)?.id);
+      }
+    }
   });
 });

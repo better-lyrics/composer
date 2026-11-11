@@ -20,40 +20,69 @@ interface TabStripProps<T extends string> {
   children?: React.ReactNode;
 }
 
+interface TabBox {
+  left: number;
+  width: number;
+}
+
+// -- Helpers -------------------------------------------------------------------
+
+function measureTabs(nav: HTMLElement, boxes: Map<string, TabBox>): void {
+  boxes.clear();
+  for (const tab of nav.querySelectorAll<HTMLElement>("[data-tab]")) {
+    if (tab.dataset.tab) boxes.set(tab.dataset.tab, { left: tab.offsetLeft, width: tab.offsetWidth });
+  }
+}
+
+function placeCap(cap: HTMLElement, box: TabBox): void {
+  cap.style.width = `${box.width}px`;
+  cap.style.transform = `translateX(${box.left}px)`;
+}
+
 // -- Hooks ---------------------------------------------------------------------
 
-function useSlidingCap(active: string) {
+// Tab boxes are measured when the strip or a tab resizes, so a tab switch writes the cap without reading layout.
+function useSlidingCap(active: string, tabIds: string) {
   const navRef = useRef<HTMLElement>(null);
   const capRef = useRef<HTMLSpanElement>(null);
+  const activeRef = useRef(active);
+  const boxesRef = useRef(new Map<string, TabBox>());
+  const placedRef = useRef<TabBox | null>(null);
+
+  useLayoutEffect(() => {
+    activeRef.current = active;
+    const nav = navRef.current;
+    const cap = capRef.current;
+    if (!nav || !cap) return;
+    if (!boxesRef.current.has(active)) measureTabs(nav, boxesRef.current);
+    const box = boxesRef.current.get(active);
+    if (!box) return;
+    placeCap(cap, box);
+    placedRef.current = box;
+    cap.dataset.placed = "";
+  }, [active]);
 
   useLayoutEffect(() => {
     const nav = navRef.current;
     const cap = capRef.current;
-    if (!nav || !cap) return;
-    const place = () => {
-      const tab = nav.querySelector<HTMLElement>(`[data-tab="${active}"]`);
-      if (!tab) return;
-      cap.style.width = `${tab.offsetWidth}px`;
-      cap.style.transform = `translateX(${tab.offsetLeft}px)`;
-    };
-    place();
-    cap.dataset.placed = "";
+    if (!nav || !cap || tabIds === "") return;
     // Only a tab change glides; a tab that resizes in place (a status icon growing in) carries the cap with it.
-    let observedOnce = false;
     const follow = () => {
-      if (!observedOnce) {
-        observedOnce = true;
-        return;
-      }
+      measureTabs(nav, boxesRef.current);
+      const box = boxesRef.current.get(activeRef.current);
+      const placed = placedRef.current;
+      if (!box || (placed && placed.left === box.left && placed.width === box.width)) return;
       delete cap.dataset.placed;
-      place();
+      placeCap(cap, box);
+      placedRef.current = box;
       void cap.offsetWidth;
       cap.dataset.placed = "";
     };
     const observer = new ResizeObserver(follow);
     observer.observe(nav);
+    for (const tab of nav.querySelectorAll("[data-tab]")) observer.observe(tab, { box: "border-box" });
     return () => observer.disconnect();
-  }, [active]);
+  }, [tabIds]);
 
   return { navRef, capRef };
 }
@@ -69,7 +98,7 @@ function TabStrip<T extends string>({
   navAttributes,
   children,
 }: TabStripProps<T>) {
-  const { navRef, capRef } = useSlidingCap(active);
+  const { navRef, capRef } = useSlidingCap(active, tabs.map((tab) => tab.id).join(" "));
 
   return (
     <nav

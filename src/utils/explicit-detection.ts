@@ -1,5 +1,6 @@
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import { getSplitCharacter } from "@/utils/split-character";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from "obscenity";
 
@@ -28,12 +29,15 @@ interface ExplicitSuggestion {
   linked?: LinkedInfo;
 }
 
-interface RawHit {
+interface FieldHit {
+  wordIndices: number[];
+  word: string;
+}
+
+interface RawHit extends FieldHit {
   line: LyricLine;
   lineIndex: number;
   field: "words" | "backgroundWords";
-  wordIndices: number[];
-  word: string;
 }
 
 // -- Matcher (singleton) -------------------------------------------------------
@@ -126,19 +130,12 @@ function linkedFingerprint(
 
 // -- Detection -----------------------------------------------------------------
 
-function scanField(
-  line: LyricLine,
-  lineIndex: number,
-  field: "words" | "backgroundWords",
-  source: string,
-  matcher: RegExpMatcher,
-  alreadyMarked: Set<number>,
-  out: RawHit[],
-): void {
+function scanField(source: string, alreadyMarked: Set<number>): FieldHit[] {
   const { canonical, ranges } = buildWordRanges(source);
-  if (canonical.length === 0) return;
-  const matches = matcher.getAllMatches(canonical, true);
+  if (canonical.length === 0) return [];
+  const matches = getMatcher().getAllMatches(canonical, true);
   const seenStart = new Set<number>();
+  const hits: FieldHit[] = [];
   for (const m of matches) {
     const range = rangeForOffset(ranges, m.startIndex);
     if (!range) continue;
@@ -146,13 +143,32 @@ function scanField(
     const allMarked = range.syllableIndices.every((idx) => alreadyMarked.has(idx));
     if (allMarked) continue;
     seenStart.add(range.start);
-    out.push({
-      line,
-      lineIndex,
-      field,
-      wordIndices: range.syllableIndices,
-      word: range.text,
-    });
+    hits.push({ wordIndices: range.syllableIndices, word: range.text });
+  }
+  return hits;
+}
+
+// Earlier lyrics kept beside the current ones: about two full rewrites of a 2000 line song.
+const RETAINED_EARLIER_FIELDS = 4096;
+
+let scannedSplitChar = "";
+const hitsByField = new Map<string, FieldHit[]>();
+
+function fieldHits(source: string, words: LyricLine["words"]): FieldHit[] {
+  const marked = alreadyMarkedSet(words);
+  const key = `${[...marked].join(",")}\u0000${source}`;
+  const cached = hitsByField.get(key);
+  if (cached) hitsByField.delete(key);
+  const hits = cached ?? scanField(source, marked);
+  hitsByField.set(key, hits);
+  return hits;
+}
+
+function forgetOldestFields(fieldsInRun: number): void {
+  let excess = hitsByField.size - fieldsInRun - RETAINED_EARLIER_FIELDS;
+  for (const key of hitsByField.keys()) {
+    if (excess-- <= 0) return;
+    hitsByField.delete(key);
   }
 }
 
@@ -170,18 +186,30 @@ function isLinked(line: LyricLine): boolean {
 }
 
 function findExplicitWords(lines: LyricLine[], groups: LinkGroup[] = []): ExplicitSuggestion[] {
-  const matcher = getMatcher();
+  const splitChar = getSplitCharacter();
+  if (splitChar !== scannedSplitChar) {
+    hitsByField.clear();
+    scannedSplitChar = splitChar;
+  }
   const raw: RawHit[] = [];
+  let fieldsInRun = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.text && line.text.trim().length > 0) {
-      scanField(line, i, "words", line.text, matcher, alreadyMarkedSet(line.words), raw);
+      fieldsInRun++;
+      for (const hit of fieldHits(line.text, line.words)) {
+        raw.push({ ...hit, line, lineIndex: i, field: "words" });
+      }
     }
     if (line.backgroundText && line.backgroundText.trim().length > 0) {
-      scanField(line, i, "backgroundWords", line.backgroundText, matcher, alreadyMarkedSet(line.backgroundWords), raw);
+      fieldsInRun++;
+      for (const hit of fieldHits(line.backgroundText, line.backgroundWords)) {
+        raw.push({ ...hit, line, lineIndex: i, field: "backgroundWords" });
+      }
     }
   }
+  forgetOldestFields(fieldsInRun);
 
   const groupLabelById = new Map(groups.map((g) => [g.id, g.label]));
   const linkedBuckets = new Map<string, RawHit[]>();
