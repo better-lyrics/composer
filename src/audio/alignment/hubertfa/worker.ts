@@ -13,8 +13,7 @@ import type {
   LineRequest,
   OutboundMessage,
 } from "@/audio/alignment/hubertfa/worker-protocol";
-import { ctcLineBounds } from "@/audio/alignment/hubertfa/ctc-bounds";
-import { CTC_BLANK } from "@/audio/alignment/hubertfa/ctc-viterbi";
+import { ctcSpan, findLine, isLineFinder, lineFeeds, linesAround } from "@/audio/alignment/hubertfa/line-search";
 import {
   type PhoneSequence,
   buildPhoneSequence,
@@ -148,7 +147,7 @@ async function handleInit(assets: AlignmentAssets, forceWasm?: boolean, japanese
     }
     ort = runtime;
     activeBackend = backend;
-    post({ type: "init-done", backend });
+    post({ type: "init-done", backend, findsLines: isLineFinder(session) });
   } catch (err) {
     log("alignment init failed:", err);
     post({ type: "error", code: "ort-failed", message: describeError(err) });
@@ -173,9 +172,16 @@ async function fallBackToWasm(reason: unknown): Promise<void> {
   activeBackend = "wasm";
 }
 
-async function runModel(samples: Float32Array) {
+// The lines around the request's and what a model that finds lines is given beside the audio; null for any other.
+async function lineInputs(request: LineRequest, own: PhoneSequence) {
+  if (!session || !ort || !isLineFinder(session)) return null;
+  const context = await linesAround(request, (words) => prepareLine({ ...request, words, transliteration: null }));
+  return { context, feeds: lineFeeds(ort, own, context, request.tap) };
+}
+
+async function runModel(samples: Float32Array, extra: Record<string, OrtTensor> = {}) {
   if (!session || !ort) throw new Error("Alignment model is not loaded.");
-  const feeds = { waveform: new ort.Tensor("float32", samples, [1, samples.length]) };
+  const feeds = { waveform: new ort.Tensor("float32", samples, [1, samples.length]), ...extra };
   try {
     return await session.run(feeds);
   } catch (err) {
@@ -228,7 +234,7 @@ async function handleAlign(request: LineRequest, anchor: string[] | null) {
   }
   const { samples, sampleRate } = request;
   try {
-    const outputs = await runModel(samples);
+    const outputs = await runModel(samples, (await lineInputs(request, line.sequence))?.feeds);
     const logits = outputs.ph_frame_logits;
     const phones = decodeAlignment({
       frameLogits: logits.data,
@@ -257,25 +263,17 @@ async function handleAlign(request: LineRequest, anchor: string[] | null) {
   }
 }
 
-// Where the line's phones are in the window, by CTC Viterbi; null, without a model run, when it has no CTC output.
+// Where the line is in the window; null, without a model run, when the model neither finds lines nor has CTC output.
 async function handleLocate(request: LineRequest) {
   const line = await prepareLine(request);
   if (!line) return;
   let bounds: WordInterval | null = null;
   try {
-    if (line.kind === "ready" && session?.outputNames.includes("ctc_logits")) {
-      const ctc = (await runModel(request.samples)).ctc_logits as OrtTensor | undefined;
-      const found =
-        ctc &&
-        ctcLineBounds({
-          logits: ctc.data,
-          outputFrames: ctc.dims[2],
-          numSamples: request.samples.length,
-          hopSize: HOP_SIZE,
-          phoneIds: line.sequence.phoneIds.filter((id) => id !== CTC_BLANK),
-        });
-      const frame = HOP_SIZE / request.sampleRate;
-      if (found) bounds = { begin: found.first * frame, end: found.end * frame };
+    const inputs = line.kind === "ready" ? await lineInputs(request, line.sequence) : null;
+    if (line.kind === "ready" && inputs) {
+      bounds = findLine(line.units, inputs.context, request, await runModel(request.samples, inputs.feeds));
+    } else if (line.kind === "ready" && session?.outputNames.includes("ctc_logits")) {
+      bounds = ctcSpan(line.sequence, request, (await runModel(request.samples)).ctc_logits);
     }
   } catch (err) {
     post({ type: "error", code: "ort-failed", message: describeError(err) });
