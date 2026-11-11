@@ -6,7 +6,7 @@ import { withDerivedText } from "@/domain/line/reconstruct-text";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { notifySharedTimingCopied } from "@/lib/shared-timing-signals";
-import { freezeInDevelopment } from "@/stores/project/deep-freeze";
+import { deepFreeze } from "@/stores/project/deep-freeze";
 import type { HistoryEntry, ProjectState } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
 import { isStructurallyEqual } from "@/utils/structural-equal";
@@ -20,7 +20,7 @@ const MAX_HISTORY_SIZE = 100;
 type SnapshotFields = Pick<HistoryEntry, "lines" | "groups" | "agents" | "customSnapPoints" | "beatGrid">;
 
 function snapshotEntry(fields: SnapshotFields): HistoryEntry {
-  return freezeInDevelopment({
+  return deepFreeze({
     lines: fields.lines,
     groups: fields.groups,
     agents: fields.agents,

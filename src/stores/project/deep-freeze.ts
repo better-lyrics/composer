@@ -1,5 +1,6 @@
 // -- Freezing -----------------------------------------------------------------
 
+// History entries share objects with the store, so an in-place write must throw at its source instead of corrupting undo.
 function deepFreeze<T>(value: T): T {
   if (typeof value !== "object" || value === null || Object.isFrozen(value) || ArrayBuffer.isView(value)) {
     return value;
@@ -9,11 +10,6 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
-// History entries share objects with the store; in development an in-place write throws at its source.
-function freezeInDevelopment<T>(value: T): T {
-  return import.meta.env.DEV ? deepFreeze(value) : value;
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export { freezeInDevelopment };
+export { deepFreeze };
