@@ -59,4 +59,4 @@ function jumpToAdjacentGridLine(direction: 1 | -1, isRepeat: boolean): void {
 
 // -- Exports -------------------------------------------------------------------
 
-export { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar, jumpToAdjacentGridLine };
+export { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar, jumpToAdjacentGridLine, toastUnlessRepeat };

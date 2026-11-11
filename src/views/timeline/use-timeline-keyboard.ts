@@ -37,7 +37,12 @@ import { isInFocus } from "@/views/timeline/group-focus";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
-import { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar, jumpToAdjacentGridLine } from "@/views/timeline/jump-to-bar";
+import {
+  NO_BEAT_GRID_MESSAGE,
+  jumpToAdjacentBar,
+  jumpToAdjacentGridLine,
+  toastUnlessRepeat,
+} from "@/views/timeline/jump-to-bar";
 import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { showLoupeAfterKeyEdit, storedEdgeTime } from "@/views/timeline/loupe/loupe-target";
 import { isPartialSyllableSelection, mergeSelectedWords } from "@/views/timeline/merge-selected-words";
@@ -575,11 +580,11 @@ function useTimelineKeyboard(
             ? { groupId: focus.groupId, instanceIdx: focus.hearInstanceIdx }
             : currentInstanceFromSelection(projectLines, useTimelineStore.getState().selectedWords);
           if (!inst) {
-            toast.error("Select words inside one instance first");
+            toastUnlessRepeat("Select words inside one instance first", e.repeat);
             break;
           }
           if (instanceCount(projectLines, inst.groupId) < 2) {
-            toast.error("This group has only one instance");
+            toastUnlessRepeat("This group has only one instance", e.repeat);
             break;
           }
           e.preventDefault();
