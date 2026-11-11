@@ -69,7 +69,7 @@ function hasNativeTextUndo(target: EventTarget | null): boolean {
 // A control in a popover, or one tabbed to, gets its own Enter and Space. A button left focused by a click does not, so Enter still plays after one.
 function focusedControlOwnsKey(event: KeyboardEvent): boolean {
   if (!ACTIVATION_KEYS.has(event.key) || event.defaultPrevented) return false;
-  if (event.altKey || event.ctrlKey || event.metaKey) return false;
+  if (event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return false;
   const { target } = event;
   if (!(target instanceof HTMLElement) || !target.matches(ACTIVATABLE_CONTROL)) return false;
   if (isInPopover(target)) return true;
