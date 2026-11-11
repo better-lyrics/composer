@@ -40,6 +40,8 @@ interface PlannedLine {
   guide: WordInterval;
   /** The previous and next lyric lines' words by position in the lyrics (empty at either end). */
   context: { previous: string[][]; next: string[][] };
+  /** Whether the guide ends at the next line's begin, as Line mode leaves it, not at an end of the line's own. */
+  endsAtNextTap: boolean;
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -97,6 +99,7 @@ function planLines(lines: readonly LyricLine[], lineIds: readonly string[] | und
         previous,
         previousId,
         context: { previous: wordsAt(i - 1), next: wordsAt(i + 1) },
+        endsAtNextTap: plan.guide.end === nextBegin[i],
       });
     }
     if (bounds[i]) previous = bounds[i];

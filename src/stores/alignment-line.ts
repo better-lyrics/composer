@@ -106,7 +106,7 @@ async function alignLine(plan: PlannedLine, ctx: LineContext, chain: AnchorChain
   const taps = guideTaps(plan, duration);
   const plain = plainWindow(plan, duration);
   if (ctx.aligner.findsLines()) {
-    const search = lineSearchWindow(taps, duration);
+    const search = lineSearchWindow(taps, duration, plan.endsAtNextTap);
     const span = await locate(segmentIn(plan, hanReading, pcm, search), ctx);
     const window = spanWindow(plain, search, span);
     const result = await ctx.aligner.align(segmentIn(plan, hanReading, pcm, window), ctx.signal);
