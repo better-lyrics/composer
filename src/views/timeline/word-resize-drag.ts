@@ -18,7 +18,12 @@ import { noteWordDragShift } from "@/views/timeline/tiny-drag-signal";
 import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
-import { type DragState, displayedBounds, liveWordBounds, resizeChangedTiming } from "@/views/timeline/word-resize-state";
+import {
+  type DragState,
+  displayedBounds,
+  liveWordBounds,
+  resizeChangedTiming,
+} from "@/views/timeline/word-resize-state";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
