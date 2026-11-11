@@ -5,6 +5,7 @@ import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { resyncPlaybackClock } from "@/audio/playback-clock";
 import { notePlaybackTime } from "@/audio/playback-ranges";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
+import { STEM_SLOTS } from "@/domain/stems/stem-slot";
 import { seekInPlaceToResume } from "@/audio/seek-reveal-intent";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -228,6 +229,7 @@ const AudioEngine: React.FC = () => {
   }, [currentStem, stemUrls, audioElement, setIsPlaying]);
 
   useEffect(() => {
+    scrubStemRouter.setStemsAvailable(STEM_SLOTS.some((slot) => stemUrls[slot] !== undefined));
     scrubStemRouter.selectStem(currentStem, (stem) => stemUrls[stem]);
   }, [currentStem, stemUrls]);
 

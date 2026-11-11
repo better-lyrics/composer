@@ -3,6 +3,7 @@ import {
   keepDecodedSource,
   releaseDecodedSource,
   takeDecodedSource,
+  withDecodedSource,
 } from "@/audio/decoded-source-audio";
 import { scrubPreview } from "@/audio/scrub-preview";
 import type { ScrubBuffer } from "@/audio/scrub-stretch";
@@ -20,14 +21,31 @@ const cache: Map<Stem, CachedStem> = new Map();
 let activeStem: Stem | null = null;
 let originalSource: Blob | null = null;
 let originalInScrub = false;
+let stemsAvailable = false;
 
 // -- Helpers -------------------------------------------------------------------
 function scrubBufferOf({ duration, channels }: DecodedSource): ScrubBuffer {
   return { duration, numberOfChannels: channels.length, getChannelData: (channel) => channels[channel] };
 }
 
+function lentScrubBufferOf(decoded: DecodedSource): ScrubBuffer {
+  return { ...scrubBufferOf(decoded), lent: true };
+}
+
+// With stems to switch between, the original stays decoded beside the node, so every way back to it is instant.
+function originalScrubBuffer(source: Blob): Promise<ScrubBuffer> {
+  if (stemsAvailable) {
+    return keepDecodedSource(source).then(() => withDecodedSource(source, lentScrubBufferOf));
+  }
+  originalInScrub = true;
+  return takeDecodedSource(source, scrubBufferOf);
+}
+
 // The stem bytes are kept, never the decoded audio: scrub preview moves the samples into its node.
-function lazyAudio(readSource: () => Promise<Blob>, onTaken: () => void = () => {}): LazyAudio {
+function lazyAudio(
+  readSource: () => Promise<Blob>,
+  decode: (source: Blob) => Promise<ScrubBuffer> = (source) => takeDecodedSource(source, scrubBufferOf),
+): LazyAudio {
   let reading: Promise<Blob> | null = null;
   return () => {
     if (!reading) {
@@ -37,8 +55,7 @@ function lazyAudio(readSource: () => Promise<Blob>, onTaken: () => void = () => 
         if (reading === attempt) reading = null;
       });
     }
-    onTaken();
-    return reading.then((source) => takeDecodedSource(source, scrubBufferOf));
+    return reading.then(decode);
   };
 }
 
@@ -78,12 +95,7 @@ function setOriginalSource(source: Blob | null): void {
     originalInScrub = false;
   }
   if (source) {
-    const audio = lazyAudio(
-      async () => source,
-      () => {
-        originalInScrub = true;
-      },
-    );
+    const audio = lazyAudio(async () => source, originalScrubBuffer);
     cache.set("original", { url: null, audio });
     if (activeStem === "original" || activeStem === null) {
       activate("original", audio);
@@ -130,6 +142,10 @@ function selectStem(stem: Stem, getUrl: (stem: Stem) => string | undefined): voi
   activate(stem, audio);
 }
 
+function setStemsAvailable(available: boolean): void {
+  stemsAvailable = available;
+}
+
 function clearCache(): void {
   if (originalSource) releaseDecodedSource(originalSource);
   originalSource = null;
@@ -147,6 +163,13 @@ function getActiveStem(): Stem | null {
   return activeStem;
 }
 
-const scrubStemRouter = { setOriginalSource, selectStem, clearCache, getActiveStem, getCachedStems };
+const scrubStemRouter = {
+  setOriginalSource,
+  setStemsAvailable,
+  selectStem,
+  clearCache,
+  getActiveStem,
+  getCachedStems,
+};
 
 export { scrubStemRouter };

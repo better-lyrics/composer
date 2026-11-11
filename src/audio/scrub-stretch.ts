@@ -9,7 +9,7 @@ interface Stretch {
   gain: GainNode;
 }
 
-type ScrubBuffer = Pick<AudioBuffer, "duration" | "numberOfChannels" | "getChannelData">;
+type ScrubBuffer = Pick<AudioBuffer, "duration" | "numberOfChannels" | "getChannelData"> & { lent?: boolean };
 
 interface ScrubMove {
   buffer: ScrubBuffer;
@@ -61,7 +61,7 @@ function createStretch(): Promise<Stretch> {
   return stretchPromise;
 }
 
-// The samples move into the node, leaving the buffer empty, so it is loaded once and dropped when the buffer goes.
+// The samples move into the node, leaving the buffer empty, unless the buffer is lent: then the node gets a copy.
 // A failed load is logged and forgotten so the next call retries; `loading` itself never rejects.
 function loadInto(node: StretchNode, buffer: ScrubBuffer | null): Promise<void> {
   if (loadedBuffer === buffer) return loading;
@@ -71,7 +71,12 @@ function loadInto(node: StretchNode, buffer: ScrubBuffer | null): Promise<void> 
     : [];
   loading = loading
     .then(() => node.dropBuffers())
-    .then(() => (channels.length > 0 ? node.addBuffers(channels, [...new Set(channels.map((c) => c.buffer))]) : 0))
+    .then(() => {
+      if (channels.length === 0) return 0;
+      return buffer?.lent
+        ? node.addBuffers(channels)
+        : node.addBuffers(channels, [...new Set(channels.map((c) => c.buffer))]);
+    })
     .then(
       () => undefined,
       (err: unknown) => {
