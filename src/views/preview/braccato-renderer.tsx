@@ -82,6 +82,8 @@ function decorateAlternateTracks(el: BraccatoLyricsElement, lyrics: Lyric[]): vo
   if (decorated) renderer.relayout();
 }
 
+function skipWritePhase(): void {}
+
 function timedLines(el: BraccatoLyricsElement): TimedLineElement[] {
   return (el.renderer?.lines ?? []).map((line) => ({ element: line.lyricElement, startSeconds: line.time }));
 }
@@ -226,12 +228,19 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({
 
   // Binding `source` would make braccato own the clock, and it only polls during
   // playback, freezing the preview whenever the timeline is scrubbed paused.
-  useFrameLoop(() => {
-    const el = elementRef.current;
-    const audio = playback.sample();
-    if (!el || !audio) return;
-    appliedTickRef.current = tickBraccato(el, audio, appliedTickRef.current);
-  }, "braccato-renderer");
+  // The tick reads the scroller before it writes, so it runs in the read phase, ahead of every frame-loop write.
+  useFrameLoop(
+    {
+      read: () => {
+        const el = elementRef.current;
+        const audio = playback.sample();
+        if (!el || !audio) return;
+        appliedTickRef.current = tickBraccato(el, audio, appliedTickRef.current);
+      },
+      write: skipWritePhase,
+    },
+    "braccato-renderer",
+  );
 
   return (
     <div data-lyrics-layout={layout} className="relative flex flex-col flex-1 min-h-0">
