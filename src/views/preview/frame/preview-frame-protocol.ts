@@ -7,6 +7,8 @@ interface FrameClock {
   playing: boolean;
   followsAudio: boolean;
   rate: number;
+  // Absent from older parents, which never scrub.
+  scrubbing?: boolean;
   // performance.timeOrigin + the frame time the clock was read for, so the frame can run it forward.
   sentAt: number;
 }
