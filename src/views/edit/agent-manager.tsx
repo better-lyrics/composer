@@ -7,10 +7,13 @@ import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { INPUT_STYLES } from "@/ui/input-styles";
+import { focusFirstControlIfFocusLost } from "@/ui/focus-if-focus-lost";
 import { Popover } from "@/ui/popover";
 import { Select } from "@/ui/select";
 import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
+import { focusAndSelectOnMount } from "@/utils/focus-and-select-on-mount";
+import { focusOnMount } from "@/utils/focus-on-mount";
 import { pluralize } from "@/utils/pluralize";
 import { IconChevronDown, IconChevronLeft, IconMicrophone2, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
@@ -65,10 +68,17 @@ const EditAgentForm: React.FC<{
   }, [updateAgent, agent.id, name, type, onDone]);
 
   return (
-    <div className="flex flex-col gap-2 p-1.5">
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        handleSave();
+      }}
+      className="flex flex-col gap-2 p-1.5"
+    >
       <FormHeader title="Edit agent" id={agent.id} onBack={onBack} />
       <input
         type="text"
+        ref={focusAndSelectOnMount}
         aria-label="Agent name"
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -85,7 +95,7 @@ const EditAgentForm: React.FC<{
         className="w-full h-8 pl-2.5 pr-2 rounded-lg text-[13px]"
       />
       <div className="flex gap-2 mt-0.5">
-        <Button variant="primary" onClick={handleSave} className="flex-1 h-[30px]">
+        <Button type="submit" variant="primary" className="flex-1 h-[30px]">
           Save
         </Button>
         {removable && (
@@ -101,7 +111,7 @@ const EditAgentForm: React.FC<{
           />
         )}
       </div>
-    </div>
+    </form>
   );
 };
 
@@ -120,7 +130,13 @@ const AddAgentForm: React.FC<{ onDone: () => void; onBack: () => void }> = ({ on
   };
 
   return (
-    <div className="flex flex-col gap-2 p-1.5">
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        handleAddCustom();
+      }}
+      className="flex flex-col gap-2 p-1.5"
+    >
       <FormHeader title="Add agent" onBack={onBack} />
       {availablePresets.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
@@ -142,6 +158,7 @@ const AddAgentForm: React.FC<{ onDone: () => void; onBack: () => void }> = ({ on
       )}
       <input
         type="text"
+        ref={focusOnMount}
         aria-label="Custom agent name"
         value={customName}
         onChange={(e) => setCustomName(e.target.value)}
@@ -157,10 +174,10 @@ const AddAgentForm: React.FC<{ onDone: () => void; onBack: () => void }> = ({ on
         appearance="pick"
         className="w-full h-8 pl-2.5 pr-2 rounded-lg text-[13px]"
       />
-      <Button variant="primary" onClick={handleAddCustom} disabled={!customName.trim()} className="h-[30px] mt-0.5">
+      <Button type="submit" variant="primary" disabled={!customName.trim()} className="h-[30px] mt-0.5">
         Add Custom Agent
       </Button>
-    </div>
+    </form>
   );
 };
 
@@ -168,7 +185,7 @@ const AgentList: React.FC<{ onEdit: (agent: Agent) => void; onAdd: () => void }>
   const agents = useProjectStore((s) => s.agents);
   const lines = useProjectStore((s) => s.lines);
   return (
-    <div>
+    <div ref={focusFirstControlIfFocusLost}>
       <p className="px-2 pt-2 pb-1.5 text-[13.5px] font-bold text-composer-text">Agents</p>
       <div className="grid grid-cols-[minmax(0,max-content)_1fr_auto] max-h-74 overflow-x-hidden overflow-y-auto overscroll-none">
         {agents.map((agent) => {

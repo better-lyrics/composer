@@ -259,12 +259,13 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   return (
     <div
       ref={lineRef}
+      // react-doctor-disable-next-line react-doctor/role-button-requires-complete-keyboard-activation -- never in tab order, and Space is the Sync tap key, so a Space handler would also jump the cursor on every tap
       role="button"
       tabIndex={-1}
       aria-current={isCurrent || undefined}
       onClick={onClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter") onClick();
+        if (e.key === "Enter" && e.target === e.currentTarget) onClick();
       }}
       className={cn("group/row flex w-full text-left cursor-pointer", isCurrent && "bg-composer-accent/7")}
     >
