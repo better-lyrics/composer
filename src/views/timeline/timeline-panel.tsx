@@ -35,7 +35,7 @@ import { BoundaryModeChip } from "@/views/timeline/boundary-mode-chip";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
-import { isPlaybackStyleWrite } from "@/views/timeline/playback-style-mutation";
+import { keepsTimelineScrollSize } from "@/views/timeline/scroll-size-mutation";
 import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { TimelineRuler } from "@/views/timeline/timeline-ruler";
 import { syncViewScroll, viewScrollLeft } from "@/views/timeline/view-scroll";
@@ -93,7 +93,7 @@ const TimelinePanel: React.FC = () => {
         autoHide: "scroll",
         autoHideDelay: 800,
       },
-      update: { ignoreMutation: isPlaybackStyleWrite },
+      update: { ignoreMutation: keepsTimelineScrollSize },
     },
   });
 

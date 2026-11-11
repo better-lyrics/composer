@@ -8,6 +8,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
 import { claimArrival, forgetArrival, playPitchArrival } from "@/views/timeline/pitch/pitch-arrival";
 import { pitchSession } from "@/views/timeline/pitch/pitch-session";
+import { SIZED_ROWS_PROPS } from "@/views/timeline/scroll-size-mutation";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useReducedMotion } from "motion/react";
 import { type RefObject, createContext, useContext, useEffect, useMemo, useRef } from "react";
@@ -76,7 +77,7 @@ const PitchRowsScope: React.FC<PitchRowsScopeProps> = ({ style, viewportRef, chi
   }, [track, mode, viewportRef, reducedMotion]);
 
   return (
-    <div ref={scopeRef} data-pitch={shown ? mode : "off"} style={style}>
+    <div ref={scopeRef} data-pitch={shown ? mode : "off"} {...SIZED_ROWS_PROPS} style={style}>
       <PitchRowsContext value={rows}>{children}</PitchRowsContext>
     </div>
   );
