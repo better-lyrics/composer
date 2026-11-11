@@ -20,10 +20,18 @@ interface TileView {
   heightCss: number;
   scrollLeft: number;
   viewportWidth: number;
+  // Tiles outside it build one per frame; omitted, every tile counts as on screen.
+  shownTiles?: TileRange;
+}
+
+interface TileRange {
+  first: number;
+  last: number;
 }
 
 interface TileBudget {
   remaining: number;
+  offscreen: number;
   deadline: number;
   built: number;
 }
@@ -51,6 +59,7 @@ interface DrawResult {
 
 const TILE_CACHE_BYTES = 160 * 1024 * 1024;
 const TILE_BUILD_BUDGET = 10;
+const OFFSCREEN_TILE_BUILDS_PER_FRAME = 1;
 const MAX_ROW_TABLES = 8;
 const MAX_PENDING_TILES = 32;
 
@@ -103,6 +112,11 @@ function tileProgress(session: TileView["session"]): number {
   return session.readyChunks + session.rawChunks;
 }
 
+function isOffscreen(view: TileView, index: number): boolean {
+  const shown = view.shownTiles;
+  return shown !== undefined && (index < shown.first || index > shown.last);
+}
+
 // Incomplete tiles stay out of the cache; they are reused only until the next chunk lands.
 function tileAt(
   view: TileView,
@@ -133,7 +147,10 @@ function tileAt(
   const pending = pendingTiles.get(key);
   if (pending && pending.progress === tileProgress(view.session)) return { canvas: pending.canvas, complete: false };
   const overTime = budget.built > 0 && performance.now() >= budget.deadline;
-  if (budget.remaining <= 0 || overTime) return pending ? { canvas: pending.canvas, complete: false } : null;
+  const offscreen = isOffscreen(view, index);
+  if (budget.remaining <= 0 || overTime || (offscreen && budget.offscreen <= 0))
+    return pending ? { canvas: pending.canvas, complete: false } : null;
+  if (offscreen) budget.offscreen--;
   budget.remaining--;
   budget.built++;
   const rendered = renderTile({
@@ -178,6 +195,7 @@ function drawTiles(
   requestRawPhaseForTiles(view, first, last);
   const budget: TileBudget = {
     remaining: TILE_BUILD_BUDGET,
+    offscreen: OFFSCREEN_TILE_BUILDS_PER_FRAME,
     deadline: refine?.deadline ?? Number.POSITIVE_INFINITY,
     built: 0,
   };

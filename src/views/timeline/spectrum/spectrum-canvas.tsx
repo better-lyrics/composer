@@ -120,6 +120,7 @@ const SpectrumCanvas: React.FC = () => {
       heightCss: currentOverviewBandHeight() - BAND_BORDER,
       scrollLeft: strip.start,
       viewportWidth: strip.width,
+      shownTiles: visibleTileRange(scrollLeft, viewportWidth),
     };
     const lookId = lookKey(view);
     const signature = drawingSignature(view, lookId);
