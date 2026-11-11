@@ -1,4 +1,9 @@
-import { type DecodedSource, withDecodedSource } from "@/audio/decoded-source-audio";
+import {
+  type DecodedSource,
+  keepDecodedSource,
+  releaseDecodedSource,
+  takeDecodedSource,
+} from "@/audio/decoded-source-audio";
 import { scrubPreview } from "@/audio/scrub-preview";
 import type { ScrubBuffer } from "@/audio/scrub-stretch";
 import type { Stem } from "@/audio/separation/types";
@@ -13,6 +18,8 @@ const LOG_PREFIX = "[ScrubStemRouter]";
 // -- State ---------------------------------------------------------------------
 const cache: Map<Stem, CachedStem> = new Map();
 let activeStem: Stem | null = null;
+let originalSource: Blob | null = null;
+let originalInScrub = false;
 
 // -- Helpers -------------------------------------------------------------------
 function scrubBufferOf({ duration, channels }: DecodedSource): ScrubBuffer {
@@ -20,7 +27,7 @@ function scrubBufferOf({ duration, channels }: DecodedSource): ScrubBuffer {
 }
 
 // The stem bytes are kept, never the decoded audio: scrub preview moves the samples into its node.
-function lazyAudio(readSource: () => Promise<Blob>): LazyAudio {
+function lazyAudio(readSource: () => Promise<Blob>, onTaken: () => void = () => {}): LazyAudio {
   let reading: Promise<Blob> | null = null;
   return () => {
     if (!reading) {
@@ -30,8 +37,18 @@ function lazyAudio(readSource: () => Promise<Blob>): LazyAudio {
         if (reading === attempt) reading = null;
       });
     }
-    return reading.then((source) => withDecodedSource(source, scrubBufferOf));
+    onTaken();
+    return reading.then((source) => takeDecodedSource(source, scrubBufferOf));
   };
+}
+
+// The original's samples leave with it when scrub moves to a stem, so they are decoded again and kept for the way back.
+function keepOriginalForReturn(): void {
+  if (!originalSource || !originalInScrub) return;
+  originalInScrub = false;
+  keepDecodedSource(originalSource).catch((err: unknown) =>
+    console.warn(LOG_PREFIX, "could not keep the original audio for scrub preview", err),
+  );
 }
 
 async function fetchStem(url: string): Promise<Blob> {
@@ -43,6 +60,7 @@ async function fetchStem(url: string): Promise<Blob> {
 }
 
 function activate(stem: Stem, audio: LazyAudio): void {
+  if (activeStem === "original" && stem !== "original") keepOriginalForReturn();
   scrubPreview.useLazyBuffer(audio);
   activeStem = stem;
 }
@@ -54,8 +72,18 @@ function deactivate(): void {
 
 // -- Public API ----------------------------------------------------------------
 function setOriginalSource(source: Blob | null): void {
+  if (source !== originalSource) {
+    if (originalSource) releaseDecodedSource(originalSource);
+    originalSource = source;
+    originalInScrub = false;
+  }
   if (source) {
-    const audio = lazyAudio(async () => source);
+    const audio = lazyAudio(
+      async () => source,
+      () => {
+        originalInScrub = true;
+      },
+    );
     cache.set("original", { url: null, audio });
     if (activeStem === "original" || activeStem === null) {
       activate("original", audio);
@@ -103,6 +131,9 @@ function selectStem(stem: Stem, getUrl: (stem: Stem) => string | undefined): voi
 }
 
 function clearCache(): void {
+  if (originalSource) releaseDecodedSource(originalSource);
+  originalSource = null;
+  originalInScrub = false;
   cache.clear();
   activeStem = null;
   scrubPreview.useBuffer(null);

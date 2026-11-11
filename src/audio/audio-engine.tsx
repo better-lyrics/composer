@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { decodeAudioToWav, needsWavConversion } from "@/audio/audio-decode";
+import { releaseDecodedSource } from "@/audio/decoded-source-audio";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { resyncPlaybackClock } from "@/audio/playback-clock";
 import { notePlaybackTime } from "@/audio/playback-ranges";
@@ -93,7 +94,7 @@ const AudioEngine: React.FC = () => {
         setIsLoading(true);
       }, SLOW_DECODE_MS);
       try {
-        const wavBlob = await decodeAudioToWav(playableFile);
+        const wavBlob = await decodeAudioToWav(playableFile, true);
         return { url: URL.createObjectURL(wavBlob), stripped: true };
       } catch (err) {
         console.warn(LOG_PREFIX, "audio decode failed, using original file", err);
@@ -113,6 +114,7 @@ const AudioEngine: React.FC = () => {
       }
       if (aborted) {
         URL.revokeObjectURL(objectUrl);
+        releaseDecodedSource(playableFile);
         return;
       }
 

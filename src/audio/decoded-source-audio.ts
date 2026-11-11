@@ -29,6 +29,7 @@ const NO_CROP: PrimingCrop = { beforeSeconds: 0, nowSeconds: 0 };
 
 const cropBySource = new WeakMap<Blob, PrimingCrop>();
 let previousUse: Promise<void> = Promise.resolve();
+let kept: { source: Blob; decoded: DecodedSource } | null = null;
 
 // -- Decoding -----------------------------------------------------------------
 
@@ -49,19 +50,53 @@ async function decodeWithoutPriming(source: Blob): Promise<DecodedSource> {
   };
 }
 
-// A decoded song is a full copy of the audio, so only one is alive at a time and nothing keeps it after its use
-// settles. The use owns the channels and may transfer them.
-function withDecodedSource<T>(source: Blob, use: DecodedSourceUse<T>): Promise<T> {
-  const run = previousUse.then(async () => use(await decodeWithoutPriming(source)));
-  previousUse = run.then(
+function queued<T>(run: () => Promise<T>): Promise<T> {
+  const next = previousUse.then(run);
+  previousUse = next.then(
     () => undefined,
     () => undefined,
   );
-  return run;
+  return next;
 }
 
-function croppedAudioBuffer(decoded: DecodedSource): AudioBuffer {
-  return cropAudioBufferHead(decoded.audio, decoded.startFrame, sharedAudioContext());
+function keptFor(source: Blob): DecodedSource | null {
+  return kept?.source === source ? kept.decoded : null;
+}
+
+// A decoded song is a full copy of the audio, so one is decoded at a time and at most one is kept, for the song
+// whose first scrub will take it. A use that only reads may get the kept copy; it must not move its channels.
+function withDecodedSource<T>(source: Blob, use: DecodedSourceUse<T>): Promise<T> {
+  return queued(async () => use(keptFor(source) ?? (await decodeWithoutPriming(source))));
+}
+
+// The use owns the channels and may transfer them: it gets the kept copy, which is then no longer kept.
+function takeDecodedSource<T>(source: Blob, use: DecodedSourceUse<T>): Promise<T> {
+  return queued(async () => {
+    const decoded = keptFor(source);
+    if (decoded) kept = null;
+    return use(decoded ?? (await decodeWithoutPriming(source)));
+  });
+}
+
+function keepDecoded(source: Blob, decoded: DecodedSource): void {
+  kept = { source, decoded };
+}
+
+function keepDecodedSource(source: Blob): Promise<void> {
+  return withDecodedSource(source, (decoded) => keepDecoded(source, decoded));
+}
+
+function releaseDecodedSource(source: Blob): void {
+  if (kept?.source === source) kept = null;
+}
+
+// A kept copy may have lent its channels out and back, which leaves the AudioBuffer itself empty.
+function croppedAudioBuffer({ audio, startFrame, channels, sampleRate }: DecodedSource): AudioBuffer {
+  if (audio.getChannelData(0).length === audio.length)
+    return cropAudioBufferHead(audio, startFrame, sharedAudioContext());
+  const cropped = sharedAudioContext().createBuffer(channels.length, channels[0]?.length ?? 0, sampleRate);
+  channels.forEach((channel, index) => cropped.copyToChannel(channel, index));
+  return cropped;
 }
 
 async function decodePrimingCrop(source: Blob): Promise<PrimingCrop> {
@@ -77,5 +112,14 @@ async function primingDecodeTag(source: Blob): Promise<string> {
 
 // -- Exports ------------------------------------------------------------------
 
-export { croppedAudioBuffer, decodePrimingCrop, primingDecodeTag, withDecodedSource };
+export {
+  croppedAudioBuffer,
+  decodePrimingCrop,
+  keepDecoded,
+  keepDecodedSource,
+  primingDecodeTag,
+  releaseDecodedSource,
+  takeDecodedSource,
+  withDecodedSource,
+};
 export type { DecodedSource };

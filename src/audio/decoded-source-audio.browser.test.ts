@@ -1,4 +1,10 @@
-import { primingDecodeTag, withDecodedSource } from "@/audio/decoded-source-audio";
+import {
+  keepDecodedSource,
+  primingDecodeTag,
+  releaseDecodedSource,
+  takeDecodedSource,
+  withDecodedSource,
+} from "@/audio/decoded-source-audio";
 import { createMp3File, encodeWav, makeSineBuffer } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { describe, expect, it, vi } from "vitest";
@@ -49,7 +55,7 @@ describe("withDecodedSource", () => {
   });
 
   describe("invariants", () => {
-    it("runs one decode at a time and keeps none after its use settles", async () => {
+    it("runs one decode at a time and keeps none a use did not keep", async () => {
       const decode = vi.spyOn(BaseAudioContext.prototype, "decodeAudioData");
       const source = sineWav(0.5);
       let releaseFirst = () => {};
@@ -73,6 +79,33 @@ describe("withDecodedSource", () => {
 
       expect(decode).toHaveBeenCalledTimes(2);
       expect(secondDecoded.audio).not.toBe(firstDecoded.audio);
+      decode.mockRestore();
+    });
+    it("keeps one decode, lends it to readers and hands it to the next use that takes it", async () => {
+      const decode = vi.spyOn(BaseAudioContext.prototype, "decodeAudioData");
+      const kept = sineWav(0.5);
+      const other = sineWav(0.5);
+      await keepDecodedSource(other);
+      await keepDecodedSource(kept);
+      expect(decode).toHaveBeenCalledTimes(2);
+
+      expect(await withDecodedSource(kept, (decoded) => decoded.duration)).toBeCloseTo(0.5, 1);
+      expect(await takeDecodedSource(kept, (decoded) => decoded.duration)).toBeCloseTo(0.5, 1);
+      expect(decode).toHaveBeenCalledTimes(2);
+
+      await takeDecodedSource(kept, () => null);
+      await withDecodedSource(other, () => null);
+      expect(decode).toHaveBeenCalledTimes(4);
+      decode.mockRestore();
+    });
+
+    it("decodes again after the kept decode is released", async () => {
+      const source = sineWav(0.5);
+      await keepDecodedSource(source);
+      releaseDecodedSource(source);
+      const decode = vi.spyOn(BaseAudioContext.prototype, "decodeAudioData");
+      await withDecodedSource(source, () => null);
+      expect(decode).toHaveBeenCalledTimes(1);
       decode.mockRestore();
     });
   });
