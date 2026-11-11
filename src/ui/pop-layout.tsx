@@ -52,13 +52,15 @@ const SET_BY_HAND_BUTTON = "[data-set-by-hand]";
 // -- Helpers -------------------------------------------------------------------
 
 // A view swap unmounts the focused control, so the new view takes focus unless one of its controls already did.
-function focusIfFocusLost(body: HTMLDivElement | null, selector: string): void {
+function focusIfFocusLost(body: HTMLElement | null, selector: string): void {
   if (!body || (document.activeElement !== null && document.activeElement !== document.body)) return;
   (body.querySelector<HTMLElement>(selector) ?? body.querySelector<HTMLElement>(FOCUSABLE_CONTROL))?.focus();
 }
 
+const focusFirstControlIfFocusLost = (view: HTMLElement | null) => focusIfFocusLost(view, FOCUSABLE_CONTROL);
+
 const FOCUS_ON_ENTER = {
-  "first-control": (body: HTMLDivElement | null) => focusIfFocusLost(body, FOCUSABLE_CONTROL),
+  "first-control": focusFirstControlIfFocusLost,
   "set-by-hand": (body: HTMLDivElement | null) => focusIfFocusLost(body, SET_BY_HAND_BUTTON),
 } as const;
 
@@ -189,6 +191,7 @@ const SetByHandButton: React.FC<{ variant?: ButtonProps["variant"]; onClick: () 
 // -- Exports -------------------------------------------------------------------
 
 export {
+  focusFirstControlIfFocusLost,
   PopActions,
   PopBody,
   PopButton,
