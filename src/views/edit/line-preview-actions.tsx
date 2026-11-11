@@ -43,7 +43,7 @@ const BackgroundTextInput: React.FC<{
       onChange={(e) => setText(e.target.value)}
       onBlur={commitIfEdited}
       onKeyDown={(e) => {
-        e.stopPropagation();
+        if (e.key !== "Escape") e.stopPropagation();
         if (e.key === "Enter") {
           e.preventDefault();
           commitIfEdited();
