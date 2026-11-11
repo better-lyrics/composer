@@ -12,6 +12,8 @@ import { Popover } from "@/ui/popover";
 import { Select } from "@/ui/select";
 import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
+import { focusAndSelectOnMount } from "@/utils/focus-and-select-on-mount";
+import { focusOnMount } from "@/utils/focus-on-mount";
 import { pluralize } from "@/utils/pluralize";
 import { IconChevronDown, IconChevronLeft, IconMicrophone2, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
@@ -71,12 +73,12 @@ const EditAgentForm: React.FC<{
         event.preventDefault();
         handleSave();
       }}
-      ref={focusFirstControlIfFocusLost}
       className="flex flex-col gap-2 p-1.5"
     >
       <FormHeader title="Edit agent" id={agent.id} onBack={onBack} />
       <input
         type="text"
+        ref={focusAndSelectOnMount}
         aria-label="Agent name"
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -133,7 +135,6 @@ const AddAgentForm: React.FC<{ onDone: () => void; onBack: () => void }> = ({ on
         event.preventDefault();
         handleAddCustom();
       }}
-      ref={focusFirstControlIfFocusLost}
       className="flex flex-col gap-2 p-1.5"
     >
       <FormHeader title="Add agent" onBack={onBack} />
@@ -157,6 +158,7 @@ const AddAgentForm: React.FC<{ onDone: () => void; onBack: () => void }> = ({ on
       )}
       <input
         type="text"
+        ref={focusOnMount}
         aria-label="Custom agent name"
         value={customName}
         onChange={(e) => setCustomName(e.target.value)}
