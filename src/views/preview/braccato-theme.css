@@ -9,6 +9,7 @@
   --blyrics-font-weight: 600;
   --blyrics-padding: 1.25rem;
   --blyrics-wobble-duration: 1s;
+  --blyrics-glow-color: color(display-p3 1 1 1 / 0.0001);
   --blyrics-word-wobble-transform-from: translateY(0);
   --blyrics-word-wobble-transform-peak: translateY(-0.005em);
   --blyrics-word-wobble-transform-settle: translateY(-0.028em);
