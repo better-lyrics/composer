@@ -1,8 +1,7 @@
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { getEffectiveBinding } from "@/stores/shortcut-bindings";
-import { focusedControlOwnsKey, popoverFieldOwnsShortcut } from "@/utils/focused-control-key";
 import { findMatchingShortcut, isCommandBinding } from "@/utils/shortcut-matcher";
-import { isTypingTarget } from "@/utils/typing-target";
+import { focusedControlOwnsKey, isTypingTarget, popoverFieldOwnsShortcut } from "@/utils/typing-target";
 import { useEffect, useEffectEvent } from "react";
 
 // -- Types --------------------------------------------------------------------

@@ -3,7 +3,7 @@ import { isTypingTarget } from "@/hooks/useKeyboardShortcuts";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
-import { isInPopover } from "@/utils/focused-control-key";
+import { isInPopover } from "@/utils/typing-target";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { type InstanceRef, selectedBannerInstance } from "@/views/timeline/selected-banner";

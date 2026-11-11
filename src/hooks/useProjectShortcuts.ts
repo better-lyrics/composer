@@ -1,7 +1,7 @@
 import { createProject } from "@/lib/open-project";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useUIStore } from "@/stores/ui";
-import { popoverFieldOwnsShortcut } from "@/utils/focused-control-key";
+import { popoverFieldOwnsShortcut } from "@/utils/typing-target";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { useEffect } from "react";
 
