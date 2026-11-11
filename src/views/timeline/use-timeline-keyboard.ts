@@ -580,11 +580,11 @@ function useTimelineKeyboard(
             ? { groupId: focus.groupId, instanceIdx: focus.hearInstanceIdx }
             : currentInstanceFromSelection(projectLines, useTimelineStore.getState().selectedWords);
           if (!inst) {
-            toastUnlessRepeat("Select words inside one instance first", e.repeat);
+            toastUnlessRepeat("Select words inside one instance first", e.repeat, toast.error);
             break;
           }
           if (instanceCount(projectLines, inst.groupId) < 2) {
-            toastUnlessRepeat("This group has only one instance", e.repeat);
+            toastUnlessRepeat("This group has only one instance", e.repeat, toast.error);
             break;
           }
           e.preventDefault();

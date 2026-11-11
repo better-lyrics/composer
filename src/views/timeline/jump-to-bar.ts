@@ -13,8 +13,8 @@ const HIDDEN_BEAT_GRID_MESSAGE = "Show the beat grid to step through its lines."
 
 // -- Helpers -------------------------------------------------------------------
 
-function toastUnlessRepeat(message: string, isRepeat: boolean): void {
-  if (!isRepeat) toast(message);
+function toastUnlessRepeat(message: string, isRepeat: boolean, show: (message: string) => unknown = toast): void {
+  if (!isRepeat) show(message);
 }
 
 // -- Actions -------------------------------------------------------------------
