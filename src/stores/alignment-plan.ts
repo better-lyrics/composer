@@ -38,6 +38,8 @@ interface PlannedLine {
    * behind), from its begin to the next line's, or on to the song's end.
    */
   guide: WordInterval;
+  /** The previous and next lyric lines' words by position in the lyrics (empty at either end). */
+  context: { previous: string[][]; next: string[][] };
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -80,10 +82,23 @@ function planLines(lines: readonly LyricLine[], lineIds: readonly string[] | und
   }
   const planned: PlannedLine[] = [];
   let previous: WordInterval | null = null;
+  const wordsAt = (i: number): string[][] => {
+    if (i < 0 || i >= lines.length) return [];
+    const { parts, trailingSpace } = splitIntoWordsWithMeta(lines[i].text);
+    return groupAlignmentWords(parts, trailingSpace).map((word) => word.parts);
+  };
   lines.forEach((line, i) => {
     const plan = !wanted || wanted.has(line.id) ? planLine(line, realign, nextBegin[i]) : null;
     const previousId = i > 0 && bounds[i - 1] ? lines[i - 1].id : null;
-    if (plan) planned.push({ line, ...plan, previous, previousId });
+    if (plan) {
+      planned.push({
+        line,
+        ...plan,
+        previous,
+        previousId,
+        context: { previous: wordsAt(i - 1), next: wordsAt(i + 1) },
+      });
+    }
     if (bounds[i]) previous = bounds[i];
   });
   return planned;
@@ -125,6 +140,7 @@ function segmentIn(
     samples: sliceWindow(pcm.samples, pcm.sampleRate, window),
     sampleRate: pcm.sampleRate,
     ...(anchor ? { anchor } : {}),
+    context: plan.context,
   };
 }
 
