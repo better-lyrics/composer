@@ -12,6 +12,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { useAltHeld } from "@/views/timeline/alt-key-held";
+import { toggleStepLane } from "@/views/timeline/step-timing/press-step-key";
 import { useStepTrack } from "@/views/timeline/step-timing/use-step-track";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -98,7 +99,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   }, []);
 
   const handleTrackClick = () => {
-    if (step.stepTiming) return step.toggleLane(lineIndex, words.length);
+    if (step.stepTiming) return toggleStepLane(lineId, lineIndex, trackType, words.length);
     setSelectedWords([]);
   };
 
@@ -250,8 +251,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
               !step.stepTiming &&
               ((hasSelection && !isSelected) || (playingRegion !== null && !overlapsLoopRegion(display, playingRegion)))
             }
-            isStepNext={step.isNext(wordIndex)}
-            isStepQueued={step.isQueued(wordIndex)}
+            isStepNext={wordIndex === step.nextWordIndex}
+            isStepQueued={step.queuedIndices.has(wordIndex)}
             isSelected={isSelected}
             isExplicit={word.explicit === true}
             syllablePosition={syllablePosition}

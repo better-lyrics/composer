@@ -1,4 +1,4 @@
-import { createContext, useMemo } from "react";
+import { useLayoutEffect, useMemo, useSyncExternalStore } from "react";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { WordSelection } from "@/domain/selection/model";
 import { nextCursorSlot } from "@/domain/step-timing/step-cursor";
@@ -15,17 +15,36 @@ interface StepView extends StepSkipView {
   next: WordSelection | null;
 }
 
-// -- Context ------------------------------------------------------------------
+// -- Constants ----------------------------------------------------------------
 
-const StepNextContext = createContext<StepView | null>(null);
+const NO_SELECTION: WordSelection[] = [];
+
+// -- State --------------------------------------------------------------------
+
+// One step view for the whole Timeline: rows read their own slice of it, so a step re-renders only the rows it touches.
+let shownView: StepView | null = null;
+const listeners = new Set<() => void>();
+
+// -- Functions ----------------------------------------------------------------
+
+function publishStepView(view: StepView | null): void {
+  if (view === shownView) return;
+  shownView = view;
+  for (const listener of listeners) listener();
+}
+
+function subscribeStepView(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
 
 // -- Hooks --------------------------------------------------------------------
 
 function useStepNext(lines: readonly ReadableLine[]): StepView | null {
   const stepTiming = useTimelineStore((s) => s.stepTiming);
-  const selected = useTimelineStore((s) => s.selectedWords);
-  const focusedGroup = useTimelineStore((s) => s.focusedGroup);
-  const queue = useTimelineStore((s) => s.stepQueue);
+  const selected = useTimelineStore((s) => (s.stepTiming ? s.selectedWords : NO_SELECTION));
+  const focusedGroup = useTimelineStore((s) => (s.stepTiming ? s.focusedGroup : null));
+  const queue = useTimelineStore((s) => (s.stepTiming ? s.stepQueue : null));
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const groups = useProjectStore((s) => s.groups);
   const withBackground = useSettingsStore((s) => s.stepTimingBackground);
@@ -40,7 +59,21 @@ function useStepNext(lines: readonly ReadableLine[]): StepView | null {
   }, [stepTiming, selected, queue, lines, focusedGroup, groups, collapsedInstances, withBackground]);
 }
 
+// The selector must return a primitive or a stable value, or every reader re-renders on each publish.
+function useStepView<T>(select: (view: StepView | null) => T): T {
+  return useSyncExternalStore(subscribeStepView, () => select(shownView));
+}
+
+// -- Components ---------------------------------------------------------------
+
+const StepViewPublisher: React.FC<{ lines: readonly ReadableLine[] }> = ({ lines }) => {
+  const view = useStepNext(lines);
+  useLayoutEffect(() => publishStepView(view), [view]);
+  useLayoutEffect(() => () => publishStepView(null), []);
+  return null;
+};
+
 // -- Exports ------------------------------------------------------------------
 
 export type { StepView };
-export { StepNextContext, useStepNext };
+export { StepViewPublisher, useStepView };

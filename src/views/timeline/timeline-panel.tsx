@@ -26,7 +26,7 @@ import { SelectionPlaybackBar } from "@/views/timeline/selection-playback-bar";
 import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
-import { StepNextContext, useStepNext } from "@/views/timeline/step-timing/step-next";
+import { StepViewPublisher } from "@/views/timeline/step-timing/step-next";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
@@ -82,7 +82,6 @@ const TimelinePanel: React.FC = () => {
   const openImportModal = useImportModal();
 
   const effectiveLines = useTimelineEffectiveLines(lines);
-  const stepNext = useStepNext(effectiveLines);
   const stepTiming = useTimelineStore((s) => s.stepTiming);
   const timelineShown = !!source && lines.length > 0;
 
@@ -296,9 +295,8 @@ const TimelinePanel: React.FC = () => {
                   <BeatGridCorner />
                   <TimelineWaveform />
 
-                  <StepNextContext value={stepNext}>
-                    <TimelineRows scrollContainerRef={scrollContainerRef} />
-                  </StepNextContext>
+                  <StepViewPublisher lines={effectiveLines} />
+                  <TimelineRows scrollContainerRef={scrollContainerRef} />
                 </div>
 
                 <TimelinePlayhead
