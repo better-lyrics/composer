@@ -192,4 +192,21 @@ describe("history snapshot integrity", () => {
     expect(() => store().lines.push(createLine({ id: "b" }))).toThrow(TypeError);
     expect(store().lines.map((entry) => entry.text)).toEqual(["kept"]);
   });
+
+  it("an in-place write to a committed store line throws, and undo then redo give back the same objects", () => {
+    const store = useProjectStore.getState;
+    store().setLinesWithHistory([createLine({ id: "a", text: "first" })]);
+    store().updateLineWithHistory("a", { text: "second" });
+    const committedLines = store().lines;
+
+    expect(() => {
+      store().lines[0].text = "changed in place";
+    }).toThrow(TypeError);
+    store().undo();
+    store().redo();
+
+    expect(store().lines).toBe(committedLines);
+    expect(store().lines[0]).toBe(committedLines[0]);
+    expect(store().lines[0].text).toBe("second");
+  });
 });
