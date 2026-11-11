@@ -7,7 +7,7 @@ import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { INPUT_STYLES } from "@/ui/input-styles";
-import { focusFirstControlIfFocusLost } from "@/ui/pop-layout";
+import { focusFirstControlIfFocusLost } from "@/ui/focus-if-focus-lost";
 import { Popover } from "@/ui/popover";
 import { Select } from "@/ui/select";
 import { SingerTag } from "@/ui/singer-tag";
