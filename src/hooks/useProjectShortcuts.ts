@@ -1,6 +1,7 @@
 import { createProject } from "@/lib/open-project";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useUIStore } from "@/stores/ui";
+import { popoverFieldOwnsShortcut } from "@/utils/focused-control-key";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { useEffect } from "react";
 
@@ -17,6 +18,7 @@ function useProjectShortcuts(enabled = true): void {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.repeat || isAnyModalOpen()) return;
       const matched = findMatchingShortcut(event, "global");
+      if (matched !== null && popoverFieldOwnsShortcut(event, matched)) return;
       if (matched === SWITCHER_SHORTCUT_ID) {
         event.preventDefault();
         useUIStore.getState().setProjectSwitcherOpen(true);

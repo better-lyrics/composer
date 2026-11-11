@@ -1,6 +1,6 @@
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { getEffectiveBinding } from "@/stores/shortcut-bindings";
-import { focusedControlOwnsKey } from "@/utils/focused-control-key";
+import { focusedControlOwnsKey, popoverFieldOwnsShortcut } from "@/utils/focused-control-key";
 import { findMatchingShortcut, isCommandBinding } from "@/utils/shortcut-matcher";
 import { isTypingTarget } from "@/utils/typing-target";
 import { useEffect, useEffectEvent } from "react";
@@ -28,6 +28,7 @@ function useKeyboardShortcuts(actions: ShortcutActions, options: ShortcutOptions
 
     const binding = getEffectiveBinding(id);
     if (!isCommandBinding(binding) && (isTypingTarget(event.target) || focusedControlOwnsKey(event))) return;
+    if (popoverFieldOwnsShortcut(event, id)) return;
 
     event.preventDefault();
     action();

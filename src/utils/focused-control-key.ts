@@ -1,3 +1,6 @@
+import { getShortcutById } from "@/stores/shortcut-registry";
+import { isTypingTarget } from "@/utils/typing-target";
+
 // -- Constants ----------------------------------------------------------------
 
 const ACTIVATION_KEYS = new Set(["Enter", " "]);
@@ -41,10 +44,19 @@ function focusedControlOwnsKey(event: KeyboardEvent): boolean {
   if (!ACTIVATION_KEYS.has(event.key)) return false;
   const { target } = event;
   if (!(target instanceof HTMLElement) || !target.matches(ACTIVATABLE_CONTROL)) return false;
-  if (target.closest(FLOATING_LAYER) !== null) return true;
+  if (isInPopover(target)) return true;
   return !focusedByPointer && target.tabIndex >= 0;
+}
+
+function isInPopover(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest(FLOATING_LAYER) !== null;
+}
+
+// A field in a popover keeps every key except the shortcuts made to work while typing, such as play.
+function popoverFieldOwnsShortcut(event: KeyboardEvent, id: string): boolean {
+  return isTypingTarget(event.target) && isInPopover(event.target) && !getShortcutById(id)?.needsCommandKey;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { focusedControlOwnsKey };
+export { focusedControlOwnsKey, isInPopover, popoverFieldOwnsShortcut };
