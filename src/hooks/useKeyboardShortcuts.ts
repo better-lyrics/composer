@@ -1,5 +1,6 @@
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { getEffectiveBinding } from "@/stores/shortcut-bindings";
+import { focusedControlOwnsKey } from "@/utils/focused-control-key";
 import { findMatchingShortcut, isCommandBinding } from "@/utils/shortcut-matcher";
 import { isTypingTarget } from "@/utils/typing-target";
 import { useEffect, useEffectEvent } from "react";
@@ -26,7 +27,7 @@ function useKeyboardShortcuts(actions: ShortcutActions, options: ShortcutOptions
     if (!id || !action) return;
 
     const binding = getEffectiveBinding(id);
-    if (isTypingTarget(event.target) && !isCommandBinding(binding)) return;
+    if (!isCommandBinding(binding) && (isTypingTarget(event.target) || focusedControlOwnsKey(event))) return;
 
     event.preventDefault();
     action();
