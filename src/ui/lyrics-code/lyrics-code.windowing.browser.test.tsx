@@ -55,4 +55,18 @@ describe("LyricsCode windowing", () => {
     await expect.poll(() => isHighlighted(lastBlock)).toBe(true);
     expect(pre.textContent).toBe(LRC);
   });
+
+  it("regression: selecting across block seams copies the source text with no extra line breaks", async () => {
+    const screen = await render(
+      <div style={{ height: 200, overflow: "auto" }}>
+        <LyricsCode code={LRC} format="lrc" />
+      </div>,
+    );
+    const pre = codeIn(screen.container);
+    const selection = window.getSelection();
+    if (!selection) throw new Error("no selection API");
+    selection.selectAllChildren(pre);
+    expect(selection.toString()).toBe(LRC);
+    selection.removeAllRanges();
+  });
 });

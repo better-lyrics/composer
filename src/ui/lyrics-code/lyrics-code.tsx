@@ -20,6 +20,7 @@ interface WindowedCodeProps {
 interface CodeBlockSpanProps {
   block: CodeBlock;
   index: number;
+  isLast: boolean;
   highlighted: boolean;
   observeBlock: (element: HTMLElement) => () => void;
 }
@@ -45,8 +46,9 @@ const Tokens: React.FC<{ tokens: readonly Token[] }> = ({ tokens }) =>
 
 // Blocks away from the view hold their text unstyled, so copy and find still see every line.
 // Each block is its own block box, so a highlight swap re-lays out that block instead of the whole document.
-const CodeBlockSpan = memo<CodeBlockSpanProps>(({ block, index, highlighted, observeBlock }) => (
-  <span ref={observeBlock} data-code-block={index} className="block">
+// The last one stays inline: WebKit copies an extra line break after a final block box.
+const CodeBlockSpan = memo<CodeBlockSpanProps>(({ block, index, isLast, highlighted, observeBlock }) => (
+  <span ref={observeBlock} data-code-block={index} className={isLast ? "inline" : "block"}>
     {highlighted ? (
       // One wrapper is built off the page and inserted once, instead of one insertion per token.
       <span>
@@ -69,6 +71,7 @@ const WindowedCode: React.FC<WindowedCodeProps> = ({ blocks, className }) => {
           key={`${index}:${block.text}`}
           block={block}
           index={index}
+          isLast={index === blocks.length - 1}
           highlighted={highlightedSet.has(index)}
           observeBlock={observeBlock}
         />
