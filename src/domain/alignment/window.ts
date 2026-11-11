@@ -40,9 +40,10 @@ const SEARCH_TAIL = 0.3;
 const CTC_MARGIN = 0.3;
 const CTC_START_GATE = 0.5;
 const MIN_REFINED_SECONDS = 0.1;
-// A model that finds lines looks from 2.5 s before the begin tap to 2 s after the end tap, so a tap a couple of
-// seconds off at either end still has the whole line in view, and the line is then aligned from 0.2 s before the
-// span it found to 0.3 s after (hubertfa-posttrain results/trainv3/line_head_release).
+// A model that finds lines looks from 2.5 s before the begin tap, so a tap a couple of seconds late still has the
+// line's start in view. Where the line ends at the next line's tap, which may be early too, it looks 2 s past it;
+// an end tap of the line's own keeps the usual tail. The line is then aligned from 0.2 s before the span it found
+// to 0.3 s after (hubertfa-posttrain results/trainv3/line_head_release).
 const LINE_SEARCH_LEAD_IN = 2.5;
 const LINE_SEARCH_TAIL = 2;
 const LINE_SPAN_MARGIN = { before: 0.2, after: 0.3 };
@@ -79,8 +80,8 @@ function searchWindow(taps: LineTaps, duration: number, leadIn = SEARCH_LEAD_IN,
 }
 
 /** Where a model that finds lines looks for one. */
-function lineSearchWindow(taps: LineTaps, duration: number): AlignmentWindow {
-  return searchWindow(taps, duration, LINE_SEARCH_LEAD_IN, LINE_SEARCH_TAIL);
+function lineSearchWindow(taps: LineTaps, duration: number, endsAtNextTap: boolean): AlignmentWindow {
+  return searchWindow(taps, duration, LINE_SEARCH_LEAD_IN, endsAtNextTap ? LINE_SEARCH_TAIL : SEARCH_TAIL);
 }
 
 /**
