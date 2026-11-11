@@ -3,6 +3,8 @@ import {
   adjacentSnapPoint,
   computeCoveredOnsets,
   isTimeOnOnset,
+  onsetIndicesInView,
+  onsetWindowStep,
   snapTimeToPoints,
 } from "@/views/timeline/snap-marker-math";
 
@@ -229,5 +231,19 @@ describe("adjacentSnapPoint", () => {
     it("handles the timeline origin as a target", () => {
       expect(adjacentSnapPoint([0, 3], -0.5, 1)).toBe(0);
     });
+  });
+});
+
+describe("onsetIndicesInView", () => {
+  it("mounts only onsets near the view, keeping their song indices", () => {
+    const onsets = Array.from({ length: 3600 }, (_, index) => index * 0.25);
+    const zoom = 100;
+    const scrollLeft = 40_000;
+    const step = onsetWindowStep(scrollLeft);
+    const indices = onsetIndicesInView(onsets, zoom, step, step, 1440);
+    const shown = indices.map((index) => onsets[index] * zoom);
+    expect(indices.length).toBeLessThan(onsets.length / 10);
+    expect(Math.min(...shown)).toBeLessThanOrEqual(scrollLeft - 1);
+    expect(Math.max(...shown)).toBeGreaterThanOrEqual(scrollLeft + 1440);
   });
 });

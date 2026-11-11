@@ -3,6 +3,7 @@ import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useBandEmpty } from "@/views/timeline/band-empty";
+import { OnsetLines } from "@/views/timeline/onset-lines";
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { computeCoveredOnsets, isTimeOnOnset } from "@/views/timeline/snap-marker-math";
 import { SnapMarkerPin } from "@/views/timeline/snap-marker-pin";
@@ -18,11 +19,6 @@ interface SnapMarkersOverlayProps {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
   headHost: HTMLElement | null;
 }
-
-// -- Constants -----------------------------------------------------------------
-
-const ONSET_STAGGER_STEP_MS = 24;
-const ONSET_STAGGER_CAP_MS = 900;
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -93,23 +89,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
         style={{ transform: `translate3d(${GUTTER_WIDTH}px, 0, 0)` }}
       >
         {showOnsets && (
-          <div className="absolute inset-0 pointer-events-none z-10">
-            {vocalOnsetSnapPoints.map((time, index) => (
-              <div
-                key={`${time}-${index}`}
-                data-snap-marker="onset"
-                data-covered={coveredOnsets.has(index) ? "" : undefined}
-                className={`snap-onset-line snap-onset-enter absolute top-0 -translate-x-1/2 pointer-events-none ${
-                  coveredOnsets.has(index) ? "snap-onset-covered" : ""
-                }`}
-                style={{
-                  left: time * zoom,
-                  height: bandHeight,
-                  animationDelay: `${Math.min(index * ONSET_STAGGER_STEP_MS, ONSET_STAGGER_CAP_MS)}ms`,
-                }}
-              />
-            ))}
-          </div>
+          <OnsetLines onsets={vocalOnsetSnapPoints} coveredOnsets={coveredOnsets} zoom={zoom} bandHeight={bandHeight} />
         )}
         <div className="absolute inset-0 pointer-events-none z-20">
           <AnimatePresence>
