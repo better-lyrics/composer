@@ -66,15 +66,15 @@ const DeletedProjectSaveButton: React.FC = () => {
   const deletedElsewhere = useOpenProjectDeleted();
   if (!deletedElsewhere) return null;
   return (
-    <Tooltip content="Keep as new project" placement="bottom" className="shrink-0">
+    <Tooltip content="Not saved ・ Keep as new project" placement="bottom" className="shrink-0">
       <Button
         variant="ghost"
         size="sm"
         aria-label="Not saved, keep as new project"
         onClick={keepOpenProjectAsNew}
-        className="-ml-1 shrink-0 px-1.5 whitespace-nowrap"
+        className="-ml-1 shrink-0 px-1.5"
       >
-        <NotSavedLabel />
+        <IconAlertTriangle aria-hidden="true" className="size-3.5 text-composer-warning" />
       </Button>
     </Tooltip>
   );
