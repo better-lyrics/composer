@@ -7,7 +7,7 @@ import { spacedFromWords, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { parseProjectFileContents } from "@/lib/project-file-read";
-import { linesFromSaved } from "@/lib/saved-project";
+import { type SavedLine, linesFromSaved, savedLines } from "@/lib/saved-project";
 import { EDITED_TTML_PROJECTS, type EditedTtmlProject } from "@/test/edited-ttml-projects";
 import {
   buildAlternateBackgroundLanguageTtml,
@@ -42,6 +42,19 @@ function projectFromTtml(ttml: string): EditedTtmlProject {
 
 function fixtureProjects(): EditedTtmlProject[] {
   return [...EDITED_TTML_PROJECTS.map((build) => build()), ...TTML_FIXTURES.map((build) => projectFromTtml(build()))];
+}
+
+interface SavedRecord {
+  name: string;
+  lines: SavedLine[];
+}
+
+function realRecords(): SavedRecord[] {
+  return REAL_PROJECT_FILES.flatMap((path) => {
+    const contents = parseProjectFileContents(readFileSync(path, "utf8"));
+    const files = contents.kind === "bundle" ? contents.projects : [contents.project];
+    return files.map(({ metadata, lines }) => ({ name: `${path}: ${metadata.title}`, lines }));
+  });
 }
 
 function realProjects(): EditedTtmlProject[] {
@@ -82,6 +95,12 @@ function throughSyllables(line: LyricLine): LyricLine {
   return reconcileLine({ ...line, ...(words && { words }), ...(backgroundWords && { backgroundWords }) });
 }
 
+function expectSaveAndLoadKeepEverything(project: EditedTtmlProject, record: SavedRecord): void {
+  const storeLines = linesFromSaved(record.lines);
+  expect(savedLines(storeLines), record.name).toEqual(record.lines);
+  expect(exportOf({ ...project, lines: storeLines }), record.name).toBe(exportOf(project));
+}
+
 function exportOf(project: EditedTtmlProject): string {
   return generateProjectTtml(project, EXPORT_DURATION_SECONDS);
 }
@@ -93,6 +112,22 @@ describe("insync export equality", () => {
     const projects = fixtureProjects();
     expect(projects.every((project) => exportOf(project) !== "")).toBe(true);
     expectRoundTripKeepsExport(projects);
+  });
+
+  it("a v3 save and load keeps every word and exported byte", () => {
+    for (const project of fixtureProjects()) {
+      expectSaveAndLoadKeepEverything(project, { name: project.name, lines: savedLines(project.lines) });
+    }
+  });
+
+  it.runIf(REAL_PROJECT_FILES.length > 0)("a v3 save and load keeps real projects", () => {
+    const records = realRecords();
+    const projects = realProjects();
+    expect(records.length).toBeGreaterThan(0);
+    records.forEach((record, index) => {
+      const reloaded = { ...projects[index], lines: linesFromSaved(savedLines(projects[index].lines)) };
+      expectSaveAndLoadKeepEverything(reloaded, record);
+    });
   });
 
   it.runIf(REAL_PROJECT_FILES.length > 0)("syllable round trip keeps the export of real projects", () => {
