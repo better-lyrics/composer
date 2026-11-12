@@ -4,7 +4,7 @@ import { FieldError } from "@/ui/field-error";
 import { IconField } from "@/ui/icon-field";
 import { FLOATING_INPUT_STYLES } from "@/ui/input-styles";
 import { cn } from "@/utils/cn";
-import { extractVideoId } from "@/utils/youtube-url";
+import { EMPTY_YOUTUBE_LINK_MESSAGE, extractVideoId } from "@/utils/youtube-url";
 import { IconLink } from "@tabler/icons-react";
 import { useId, useState } from "react";
 
@@ -42,6 +42,10 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (adding || busy) return;
+    if (link.trim() === "") {
+      linkField.showError(EMPTY_YOUTUBE_LINK_MESSAGE);
+      return;
+    }
     const videoId = extractVideoId(link);
     if (!videoId) {
       linkField.showError(INVALID_LINK_MESSAGE);
@@ -77,7 +81,7 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({
           wrapperClassName="flex-1 min-w-0"
           className={cn(floating && FLOATING_INPUT_STYLES, "h-8 pl-8 pr-3 rounded-lg text-[13px]")}
         />
-        <Button type="submit" size="md" variant="secondary" disabled={disabled || adding || busy || link.trim() === ""}>
+        <Button type="submit" size="md" variant="secondary" disabled={disabled || adding || busy}>
           Add
         </Button>
       </div>
