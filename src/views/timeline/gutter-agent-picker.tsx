@@ -138,7 +138,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
               onClick={() => handleAddNew(close)}
             />
           </div>
-          <FieldError {...errorProps} className="px-1 pt-1" />
+          <FieldError {...errorProps} className="pt-1" />
         </div>
       )}
     </Popover>
