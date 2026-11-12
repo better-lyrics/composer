@@ -25,6 +25,7 @@ interface UploadSectionProps {
 
 const UploadSection: React.FC<UploadSectionProps> = ({ onFile, field, onSwitchToSearch, onSwitchToPaste }) => {
   const [isDragOver, setIsDragOver] = useState(false);
+  const { "aria-invalid": invalid, ...dropZoneProps } = field.fieldProps;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const acceptFile = useCallback(
@@ -95,7 +96,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, field, onSwitchTo
       <button
         type="button"
         data-upload-dropzone
-        {...field.fieldProps}
+        {...dropZoneProps}
         aria-label="Drop a lyrics file here or click to browse"
         onClick={handleClickToBrowse}
         onDragEnter={handleDragEnter}
@@ -105,7 +106,11 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, field, onSwitchTo
         className={cn(
           "flex flex-col items-center justify-center gap-2 px-4 py-7 rounded-lg text-center cursor-pointer w-full",
           "bg-(--well) border border-dashed transition-colors",
-          isDragOver ? "border-composer-accent bg-composer-accent/8" : "border-(--edge-strong) hover:border-(--muted)",
+          isDragOver
+            ? "border-composer-accent bg-composer-accent/8"
+            : invalid
+              ? "border-composer-negative"
+              : "border-(--edge-strong) hover:border-(--muted)",
         )}
       >
         <IconMusic size={32} stroke={1.5} className="text-composer-text opacity-50 mb-0.5" />

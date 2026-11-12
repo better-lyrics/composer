@@ -12,7 +12,7 @@ import { SuggestedField } from "@/views/export/musicbrainz/suggested-value";
 import { useMusicBrainzPanel } from "@/views/export/musicbrainz/use-musicbrainz-panel";
 import { DETAILS_FIELD_STYLES, DETAILS_LABEL_STYLES } from "@/views/export/song-details-styles";
 import { useNormalizedDraft } from "@/views/export/use-normalized-draft";
-import { useId, useRef } from "react";
+import { useRef } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -25,7 +25,6 @@ const MetadataPanel: React.FC = () => {
   const metadata = useProjectStore((s) => s.metadata);
   const setMetadata = useProjectStore((s) => s.setMetadata);
 
-  const languageHintId = useId();
   const titleRef = useRef<HTMLHeadingElement>(null);
   // These actions unmount the button that ran them, so focus moves to the stable panel title.
   const thenFocusTitle = (action: () => void) => () => {
@@ -46,7 +45,6 @@ const MetadataPanel: React.FC = () => {
   const trimmedLanguage = languageValue.trim();
   const languageInvalid = trimmedLanguage !== "" && !isValidLanguageTag(trimmedLanguage);
   const languageField = useFieldError(languageInvalid ? INVALID_LANGUAGE_MESSAGE : null);
-  const languageErrorId = languageField.fieldProps["aria-describedby"];
 
   const handleLanguageChange = (value: string) => {
     setLanguageDraft(value);
@@ -107,7 +105,7 @@ const MetadataPanel: React.FC = () => {
             suggestion={suggestions.isrc}
             onUseSuggestion={(isrc) => musicBrainz.accept({ isrc: normalizeIsrc(isrc) })}
           >
-            <FieldError {...isrcField.errorProps} />
+            <FieldError {...isrcField.errorProps} reserveLine />
           </SuggestedField>
         </div>
 
@@ -117,16 +115,13 @@ const MetadataPanel: React.FC = () => {
             type="text"
             aria-label="Language"
             {...languageField.fieldProps}
-            aria-describedby={languageErrorId ? `${languageErrorId} ${languageHintId}` : languageHintId}
+            aria-describedby={languageField.errorProps.id}
             value={languageValue}
             placeholder="e.g. en, ja, pt-BR"
             onChange={(e) => handleLanguageChange(e.target.value)}
             className={DETAILS_FIELD_STYLES}
           />
-          <FieldError {...languageField.errorProps} />
-          <span id={languageHintId} className="text-xs text-(--muted) select-none">
-            BCP-47 tag ・ leave blank to let players detect it
-          </span>
+          <FieldError {...languageField.errorProps} hint="BCP-47 tag ・ leave blank to let players detect it" />
         </label>
 
         <div data-check-target="artist" className="relative">

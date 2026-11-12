@@ -10,6 +10,7 @@ import { importProjectFile, importProjectFromInput } from "@/lib/project-import"
 import { Button } from "@/ui/button";
 import { DropTileContent } from "@/ui/drop-tile";
 import { DROP_TILE_STYLES, RECESSED_TINT } from "@/ui/drop-tile-styles";
+import { FieldError } from "@/ui/field-error";
 import { IconField } from "@/ui/icon-field";
 import { EDITOR_PATH } from "@/utils/app-routes";
 import { cn } from "@/utils/cn";
@@ -29,9 +30,8 @@ const PANEL_STYLES =
 // -- Sub-components -------------------------------------------------------------
 
 const NewSongLink: React.FC<{ onCreate: (videoId: string) => void }> = ({ onCreate }) => {
-  const hintId = useId();
   const [value, setValue] = useState("");
-  const { error, showError, clearError, fieldProps } = useFieldError();
+  const { showError, clearError, fieldProps, errorProps } = useFieldError();
 
   const submit = () => {
     if (value.trim() === "") {
@@ -65,8 +65,8 @@ const NewSongLink: React.FC<{ onCreate: (videoId: string) => void }> = ({ onCrea
           value={value}
           placeholder="youtube.com/watch?v=…"
           autoCapitalize="off"
-          aria-invalid={error !== null}
-          aria-describedby={hintId}
+          aria-invalid={fieldProps["aria-invalid"]}
+          aria-describedby={errorProps.id}
           onChange={(event) => {
             setValue(event.target.value);
             clearError();
@@ -78,13 +78,7 @@ const NewSongLink: React.FC<{ onCreate: (videoId: string) => void }> = ({ onCrea
           Create
         </Button>
       </div>
-      <p
-        id={hintId}
-        aria-live="polite"
-        className={cn("mt-2 text-xs", error ? "text-composer-negative select-text" : "text-composer-text-muted")}
-      >
-        {error ?? "Each song gets its own project."}
-      </p>
+      <FieldError {...errorProps} hint="Each song gets its own project." className="mt-2" />
     </form>
   );
 };

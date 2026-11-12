@@ -1,10 +1,11 @@
 import { IconAlertTriangle, IconCopy, IconDownload, IconExternalLink } from "@tabler/icons-react";
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { acceptedExtensionsFor } from "@/domain/lyrics-file/supported-formats";
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import type { ConversionResult } from "@/pages/converters/convert-via-parser";
 import type { OutputFormat } from "@/pages/converters/output-formats";
 import { Button } from "@/ui/button";
+import { FieldError } from "@/ui/field-error";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { LinkButton } from "@/ui/link-button";
 import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
@@ -51,6 +52,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
   const [input, setInput] = useState("");
   const [filename, setFilename] = useState(() => downloadFilename);
   const [fileError, setFileError] = useState<string | null>(null);
+  const fileErrorId = useId();
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const acceptedExtensions = acceptedExtensionsFor(inputExtension);
@@ -174,6 +176,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
           <LyricsCodeEditor
             id="converter-input"
             aria-label="Converter input"
+            aria-describedby={fileError === null ? undefined : fileErrorId}
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder={inputPlaceholder}
@@ -181,11 +184,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
             frameClassName="flex-auto min-h-[280px] md:min-h-[420px] resize-y overflow-hidden"
             className="font-mono text-sm p-3 focus:outline-none cursor-text select-text"
           />
-          {fileError && (
-            <p role="alert" className="mt-2 text-xs text-composer-error-text select-text cursor-text">
-              {fileError}
-            </p>
-          )}
+          <FieldError id={fileErrorId} message={fileError} className="mt-2" />
           <div className="mt-3 flex items-center gap-2">
             <label htmlFor="converter-filename" className="text-xs text-(--muted) select-none">
               Filename

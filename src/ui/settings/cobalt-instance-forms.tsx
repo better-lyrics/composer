@@ -1,6 +1,7 @@
 import { useFieldError } from "@/hooks/useFieldError";
 import { Button } from "@/ui/button";
 import { FieldError } from "@/ui/field-error";
+import { INPUT_STYLES } from "@/ui/input-styles";
 import { cn } from "@/utils/cn";
 import { focusOnMount } from "@/utils/focus-on-mount";
 import { displayHostFromUrl, ensureHttpScheme, isValidHttpUrl } from "@/utils/url";
@@ -11,8 +12,6 @@ import { useState } from "react";
 const EMPTY_NAME_MESSAGE = "Type a name first";
 const INVALID_URL_MESSAGE = "Enter a valid http(s) URL.";
 const LABEL_STYLES = "text-xs text-composer-text-muted select-none";
-const INPUT_BASE_STYLES =
-  "w-full px-2 text-xs rounded-md bg-(--well) border focus:outline-none text-composer-text placeholder:text-composer-text-muted";
 
 // -- Hooks --------------------------------------------------------------------
 
@@ -57,10 +56,9 @@ const InstanceFields: React.FC<{
   inputHeight: string;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   focusName?: boolean;
+  reserveErrorLine?: boolean;
   children: React.ReactNode;
-}> = ({ draft, inputHeight, onKeyDown, focusName = false, children }) => {
-  const borderFor = (error: string | null) =>
-    error === null ? "border-(--edge) focus:border-composer-accent" : "border-composer-error";
+}> = ({ draft, inputHeight, onKeyDown, focusName = false, reserveErrorLine = false, children }) => {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-end gap-2">
@@ -73,7 +71,7 @@ const InstanceFields: React.FC<{
             value={draft.label}
             onChange={(e) => draft.changeLabel(e.target.value)}
             onKeyDown={onKeyDown}
-            className={cn(INPUT_BASE_STYLES, inputHeight, borderFor(draft.nameField.error))}
+            className={cn(INPUT_STYLES, "w-full py-0", inputHeight)}
           />
         </label>
         <label className="flex flex-col gap-1 flex-1 min-w-0">
@@ -86,13 +84,15 @@ const InstanceFields: React.FC<{
             value={draft.url}
             onChange={(e) => draft.changeUrl(e.target.value)}
             onKeyDown={onKeyDown}
-            className={cn(INPUT_BASE_STYLES, "font-mono", inputHeight, borderFor(draft.urlField.error))}
+            className={cn(INPUT_STYLES, "w-full py-0 font-mono", inputHeight)}
           />
         </label>
         {children}
       </div>
-      <FieldError {...draft.nameField.errorProps} className="text-[11px]" />
-      <FieldError {...draft.urlField.errorProps} className="text-[11px]" />
+      <div className={reserveErrorLine ? "min-h-4" : "contents"}>
+        <FieldError {...draft.nameField.errorProps} />
+        <FieldError {...draft.urlField.errorProps} />
+      </div>
     </div>
   );
 };
@@ -147,7 +147,7 @@ const CobaltInstanceAddForm: React.FC<{
 
   return (
     <div className="mt-4">
-      <InstanceFields draft={draft} inputHeight="h-7" onKeyDown={handleKeyDown}>
+      <InstanceFields draft={draft} inputHeight="h-7" onKeyDown={handleKeyDown} reserveErrorLine>
         <Button size="sm" variant="primary" onClick={draft.submit}>
           Add
         </Button>

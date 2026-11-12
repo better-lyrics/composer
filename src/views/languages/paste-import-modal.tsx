@@ -10,6 +10,7 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { clearModalDraft, readModalDraft, writeModalDraft } from "@/lib/modal-drafts";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
+import { FieldError } from "@/ui/field-error";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { Modal } from "@/ui/modal";
 import { SegmentedControl } from "@/ui/segmented-control";
@@ -229,20 +230,9 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
                     aria-describedby={errors[index] ? `${rowErrorIdPrefix}-${index}` : undefined}
                     value={mappedLines[index] ?? ""}
                     onChange={(event) => updateMappedLine(index, event.target.value)}
-                    className={cn(
-                      INPUT_STYLES,
-                      "w-full",
-                      errors[index] && "border-composer-error focus:border-composer-error",
-                    )}
+                    className={cn(INPUT_STYLES, "w-full")}
                   />
-                  {errors[index] && (
-                    <p
-                      id={`${rowErrorIdPrefix}-${index}`}
-                      className="mt-1 text-xs text-composer-error-text select-text cursor-text"
-                    >
-                      {errors[index]}
-                    </p>
-                  )}
+                  <FieldError id={`${rowErrorIdPrefix}-${index}`} message={errors[index] || null} className="mt-1" />
                 </div>
               </div>
             ))}

@@ -1,9 +1,10 @@
 import { Button } from "@/ui/button";
+import { FieldError } from "@/ui/field-error";
 import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import { Scroll } from "@/ui/scroll";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
 import { TtmlDiffViewer } from "@/views/export/ttml-diff-viewer";
-import { type ReactNode, useDeferredValue, useMemo, useState } from "react";
+import { type ReactNode, useDeferredValue, useId, useMemo, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -17,6 +18,7 @@ interface TtmlEditorProps {
 // -- Components ---------------------------------------------------------------
 
 const TtmlEditor: React.FC<TtmlEditorProps> = ({ value, generatedTtml, onChange, head }) => {
+  const errorId = useId();
   const [showDiff, setShowDiff] = useState(false);
   const canDiff = value !== generatedTtml;
   const viewingDiff = showDiff && canDiff;
@@ -25,6 +27,7 @@ const TtmlEditor: React.FC<TtmlEditorProps> = ({ value, generatedTtml, onChange,
     () => (settledValue !== generatedTtml ? validateTtml(settledValue) : null),
     [settledValue, generatedTtml],
   );
+  const xmlError = validation?.ok === false ? `XML error: ${validation.message}` : null;
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-3.5">
@@ -47,17 +50,15 @@ const TtmlEditor: React.FC<TtmlEditorProps> = ({ value, generatedTtml, onChange,
           value={value}
           format="ttml"
           aria-label="Edit TTML content"
+          aria-invalid={xmlError !== null}
+          aria-describedby={xmlError === null ? undefined : errorId}
           onChange={(event) => onChange(event.target.value)}
           frameClassName="flex-1 min-h-0 [border-color:var(--edge)] focus-within:[border-color:var(--lit-ring)]"
           className="px-4 py-3.5 font-mono text-xs leading-5 focus:outline-none"
           spellCheck={false}
         />
       )}
-      {validation?.ok === false && (
-        <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
-          XML error: {validation.message}
-        </span>
-      )}
+      <FieldError id={errorId} message={xmlError} />
     </div>
   );
 };

@@ -59,6 +59,7 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, field, onS
         ref={focusOnMount}
         aria-label="Lyrics text"
         {...field.fieldProps}
+        aria-describedby={field.errorProps.id}
         value={value}
         onChange={(e) => {
           onChange(e.target.value);
@@ -72,12 +73,16 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, field, onS
         frameClassName="h-32"
         className="p-3 font-mono text-sm focus:outline-none"
       />
-      <FieldError {...field.errorProps} />
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] text-composer-text-muted">
-          Use <code className="font-mono text-[10.5px] px-1 py-px rounded bg-(--layer-2) text-(--label)">|</code> to
-          split syllables (e.g. beau|ti|ful)
-        </span>
+      <div className="flex items-center justify-between gap-3">
+        <FieldError
+          {...field.errorProps}
+          hint={
+            <>
+              Use <code className="font-mono text-[10.5px] px-1 py-px rounded bg-(--layer-2) text-(--label)">|</code> to
+              split syllables (e.g. beau|ti|ful)
+            </>
+          }
+        />
         {lineCount > 0 && (
           <span className="text-xs text-composer-text-muted select-text">{pluralize(lineCount, "line")}</span>
         )}

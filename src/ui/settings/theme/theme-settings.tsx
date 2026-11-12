@@ -2,8 +2,10 @@ import { useFieldError } from "@/hooks/useFieldError";
 import { useThemeStore } from "@/stores/theme";
 import { Button } from "@/ui/button";
 import { FieldError } from "@/ui/field-error";
+import { INPUT_STYLES } from "@/ui/input-styles";
 import { type EditorTarget, ThemeEditor } from "@/ui/settings/theme/theme-editor";
 import { ThemePresetGallery } from "@/ui/settings/theme/theme-preset-gallery";
+import { cn } from "@/utils/cn";
 import { IconDownload } from "@tabler/icons-react";
 import { useState } from "react";
 
@@ -68,7 +70,7 @@ const ThemeSettings: React.FC = () => {
             placeholder="ctm1:dark:..."
             aria-label="Theme code"
             spellCheck={false}
-            className="min-w-0 flex-1 h-9 rounded-[10px] border border-(--edge) bg-(--well) px-2.5 font-mono text-xs text-composer-text placeholder:text-(--muted) outline-none cursor-text select-text focus:border-(--lit-ring)"
+            className={cn(INPUT_STYLES, "min-w-0 flex-1 h-9 py-0 rounded-[10px] font-mono text-xs select-text")}
           />
           <Button size="lg" variant="secondary" hasIcon onClick={handleImport}>
             <IconDownload className="size-4" />

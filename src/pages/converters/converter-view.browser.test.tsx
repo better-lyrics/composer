@@ -383,7 +383,7 @@ describe("loading a file into the converter", () => {
 
       dropFile(textarea.element(), new File(["1\n00:00:01,000 --> 00:00:02,000\nhi"], "clip.srt"));
 
-      await expect.element(screen.getByRole("alert")).toHaveTextContent("Use a .lrc file");
+      await expect.element(textarea).toHaveAccessibleDescription(/Use a \.lrc file/);
       await expect.element(textarea).toHaveValue("[00:01.00]typed");
       await expect.element(screen.getByRole("textbox", { name: "Filename" })).toHaveValue("lyrics.ttml");
     });
@@ -393,11 +393,11 @@ describe("loading a file into the converter", () => {
       const textarea = screen.getByRole("textbox", { name: "Converter input" });
 
       dropFile(textarea.element(), new File(["x"], "clip.srt"));
-      await expect.element(screen.getByRole("alert")).toBeInTheDocument();
+      await expect.element(screen.getByText(/Unsupported file type/)).toBeInTheDocument();
       dropFile(textarea.element(), new File([LRC_FILE_TEXT], "song.lrc"));
 
       await expect.element(textarea).toHaveValue(LRC_FILE_TEXT);
-      expect(screen.container.querySelector('[role="alert"]')).toBeNull();
+      await expect.element(screen.getByText(/Unsupported file type/)).not.toBeInTheDocument();
     });
 
     it("ignores a drop that carries no file", async () => {

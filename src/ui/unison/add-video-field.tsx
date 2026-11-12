@@ -6,7 +6,7 @@ import { FLOATING_INPUT_STYLES } from "@/ui/input-styles";
 import { cn } from "@/utils/cn";
 import { EMPTY_YOUTUBE_LINK_MESSAGE, extractVideoId } from "@/utils/youtube-url";
 import { IconLink } from "@tabler/icons-react";
-import { useId, useState } from "react";
+import { useState } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -22,7 +22,6 @@ interface AddVideoFieldProps {
 // -- Constants -----------------------------------------------------------------
 
 const INVALID_LINK_MESSAGE = "That isn't a YouTube link or video id. Paste a link like youtube.com/watch?v=…";
-const MESSAGE_STYLES = "px-0.5 text-xs leading-[18px] text-pretty select-text cursor-text";
 
 // -- Component -----------------------------------------------------------------
 
@@ -36,7 +35,6 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({
   const [link, setLink] = useState("");
   const linkField = useFieldError();
   const [adding, setAdding] = useState(false);
-  const disabledReasonId = useId();
   const disabled = Boolean(disabledReason);
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -70,7 +68,7 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({
           aria-label="YouTube link to add"
           {...linkField.fieldProps}
           aria-invalid={!disabled && linkField.fieldProps["aria-invalid"]}
-          aria-describedby={disabledReason ? disabledReasonId : linkField.fieldProps["aria-describedby"]}
+          aria-describedby={disabledReason ? linkField.errorProps.id : linkField.fieldProps["aria-describedby"]}
           placeholder={placeholder}
           value={link}
           disabled={disabled}
@@ -85,12 +83,12 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({
           Add
         </Button>
       </div>
-      {disabledReason && (
-        <p id={disabledReasonId} className={cn(MESSAGE_STYLES, "text-(--muted)")}>
-          {disabledReason}
-        </p>
-      )}
-      {!disabledReason && <FieldError {...linkField.errorProps} className={MESSAGE_STYLES} />}
+      <FieldError
+        id={linkField.errorProps.id}
+        message={disabled ? null : linkField.error}
+        hint={disabledReason}
+        className="px-0.5"
+      />
     </form>
   );
 };

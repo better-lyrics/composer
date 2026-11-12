@@ -1,3 +1,4 @@
+import { FieldError } from "@/ui/field-error";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { cn } from "@/utils/cn";
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
@@ -67,15 +68,10 @@ const LanguageField: React.FC<LanguageFieldProps> = ({
             INPUT_STYLES,
             "h-8 py-0",
             mono && "font-mono",
-            tone === "error" && "border-composer-error focus:border-composer-error",
             tone === "review" && "border-composer-warning/40",
           )}
         />
-        {error && (
-          <span id={errorId} role="alert" className="text-xs text-composer-error-text select-text cursor-text">
-            {error}
-          </span>
-        )}
+        <FieldError id={errorId} message={error || null} />
       </div>
       <div className="flex min-h-8 items-center">{action}</div>
     </div>
