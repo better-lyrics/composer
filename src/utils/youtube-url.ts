@@ -5,6 +5,7 @@ const YOUTUBE_HOSTS = new Set(["youtube.com", "www.youtube.com", "m.youtube.com"
 const YOUTU_BE_HOST = "youtu.be";
 const PATH_PREFIX_VIDEO_ID: Record<string, true> = { shorts: true, embed: true, live: true, v: true };
 const INVALID_YOUTUBE_LINK_MESSAGE = "That doesn't look like a valid YouTube URL or ID";
+const EMPTY_YOUTUBE_LINK_MESSAGE = "Paste a YouTube link first";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -52,4 +53,4 @@ function extractVideoId(input: string): string | null {
 
 // -- Exports ------------------------------------------------------------------
 
-export { extractVideoId, INVALID_YOUTUBE_LINK_MESSAGE };
+export { extractVideoId, EMPTY_YOUTUBE_LINK_MESSAGE, INVALID_YOUTUBE_LINK_MESSAGE };

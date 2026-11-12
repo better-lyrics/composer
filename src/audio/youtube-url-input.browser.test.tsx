@@ -24,24 +24,17 @@ function simulateTunnelFailure(message: string): void {
 }
 
 describe("YouTubeUrlInput", () => {
-  it("renders the input and a disabled Load button when empty", async () => {
+  it("asks for a link and focuses the input when Load is pressed empty", async () => {
     const screen = await render(<YouTubeUrlInput />);
-    const input = screen.getByPlaceholder(/YouTube URL/i);
-    await expect.element(input).toBeInTheDocument();
-    const loadButton = screen.getByRole("button", { name: /Load$/ });
-    expect((loadButton.element() as HTMLButtonElement).disabled).toBe(true);
+    const input = screen.getByRole("textbox", { name: "YouTube URL or video ID" });
+    await screen.getByRole("button", { name: /Load$/ }).click();
+    await expect.element(input).toHaveAccessibleDescription("Paste a YouTube link first");
+    expect(document.activeElement).toBe(input.element());
   });
 
   it("labels the URL input", async () => {
     const screen = await render(<YouTubeUrlInput />);
     await expect.element(screen.getByRole("textbox", { name: "YouTube URL or video ID" })).toBeInTheDocument();
-  });
-
-  it("enables the Load button once a non-empty value is entered", async () => {
-    const screen = await render(<YouTubeUrlInput />);
-    await screen.getByPlaceholder(/YouTube URL/i).fill(VALID_VIDEO_ID);
-    const loadButton = screen.getByRole("button", { name: /Load$/ });
-    expect((loadButton.element() as HTMLButtonElement).disabled).toBe(false);
   });
 
   it("shows an error message when an invalid input is submitted", async () => {

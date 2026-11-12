@@ -202,7 +202,7 @@ describe("LyricsImportModal paste section commit", () => {
     textarea.focus();
     await userEvent.fill(textarea, "   \n  \n");
     await screen.getByRole("button", { name: /^Import$/ }).click();
-    await expect.element(screen.getByRole("alert")).toHaveTextContent("Paste some lyrics first");
+    await expect.element(screen.getByText("Paste some lyrics first")).toBeInTheDocument();
     expect(document.activeElement).toBe(textarea);
     expect(useImportModalStore.getState().isOpen).toBe(true);
   });
@@ -271,7 +271,7 @@ describe("LyricsImportModal upload section commit", () => {
     openModal({ section: "upload" });
     const dropzone = await waitForDropzone();
     await screen.getByRole("button", { name: /^Import$/ }).click();
-    await expect.element(screen.getByRole("alert")).toHaveTextContent("Choose a lyrics file first");
+    await expect.element(screen.getByText("Choose a lyrics file first")).toBeInTheDocument();
     expect(document.activeElement).toBe(dropzone);
     expect(useImportModalStore.getState().isOpen).toBe(true);
   });

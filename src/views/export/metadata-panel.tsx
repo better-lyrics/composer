@@ -1,5 +1,7 @@
 import { isValidLanguageTag, normalizeLanguageTag } from "@/domain/project/language";
+import { useFieldError } from "@/hooks/useFieldError";
 import { useProjectStore } from "@/stores/project";
+import { FieldError } from "@/ui/field-error";
 import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
 import { ExtraFieldList } from "@/views/export/extra-field-list";
 import { MetadataFieldList } from "@/views/export/metadata-field-list";
@@ -11,6 +13,11 @@ import { useMusicBrainzPanel } from "@/views/export/musicbrainz/use-musicbrainz-
 import { DETAILS_FIELD_STYLES, DETAILS_LABEL_STYLES } from "@/views/export/song-details-styles";
 import { useNormalizedDraft } from "@/views/export/use-normalized-draft";
 import { useId, useRef } from "react";
+
+// -- Constants ----------------------------------------------------------------
+
+const INVALID_ISRC_MESSAGE = "Invalid ISRC ・ expected 12 characters like USQX91700001";
+const INVALID_LANGUAGE_MESSAGE = "Invalid language ・ expected a BCP-47 tag like en or pt-BR";
 
 // -- Component ----------------------------------------------------------------
 
@@ -28,6 +35,7 @@ const MetadataPanel: React.FC = () => {
   const [isrcValue, setIsrcDraft] = useNormalizedDraft(metadata.isrc, normalizeIsrc);
   const trimmedIsrc = isrcValue.trim();
   const isrcInvalid = trimmedIsrc !== "" && !isValidIsrc(trimmedIsrc);
+  const isrcField = useFieldError(isrcInvalid ? INVALID_ISRC_MESSAGE : null);
 
   const handleIsrcChange = (value: string) => {
     setIsrcDraft(value);
@@ -37,6 +45,8 @@ const MetadataPanel: React.FC = () => {
   const [languageValue, setLanguageDraft] = useNormalizedDraft(metadata.language, normalizeLanguageTag);
   const trimmedLanguage = languageValue.trim();
   const languageInvalid = trimmedLanguage !== "" && !isValidLanguageTag(trimmedLanguage);
+  const languageField = useFieldError(languageInvalid ? INVALID_LANGUAGE_MESSAGE : null);
+  const languageErrorId = languageField.fieldProps["aria-describedby"];
 
   const handleLanguageChange = (value: string) => {
     setLanguageDraft(value);
@@ -90,18 +100,14 @@ const MetadataPanel: React.FC = () => {
           <SuggestedField
             fieldName="ISRC"
             className="font-mono font-medium tabular-nums"
-            aria-invalid={isrcInvalid}
+            {...isrcField.fieldProps}
             value={isrcValue}
             placeholder="e.g. USQX91700001"
             onChange={(e) => handleIsrcChange(e.target.value)}
             suggestion={suggestions.isrc}
             onUseSuggestion={(isrc) => musicBrainz.accept({ isrc: normalizeIsrc(isrc) })}
           >
-            {isrcInvalid && (
-              <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
-                Invalid ISRC ・ expected 12 characters like USQX91700001
-              </span>
-            )}
+            <FieldError {...isrcField.errorProps} />
           </SuggestedField>
         </div>
 
@@ -110,18 +116,14 @@ const MetadataPanel: React.FC = () => {
           <input
             type="text"
             aria-label="Language"
-            aria-describedby={languageHintId}
-            aria-invalid={languageInvalid}
+            {...languageField.fieldProps}
+            aria-describedby={languageErrorId ? `${languageErrorId} ${languageHintId}` : languageHintId}
             value={languageValue}
             placeholder="e.g. en, ja, pt-BR"
             onChange={(e) => handleLanguageChange(e.target.value)}
             className={DETAILS_FIELD_STYLES}
           />
-          {languageInvalid && (
-            <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
-              Invalid language ・ expected a BCP-47 tag like en or pt-BR
-            </span>
-          )}
+          <FieldError {...languageField.errorProps} />
           <span id={languageHintId} className="text-xs text-(--muted) select-none">
             BCP-47 tag ・ leave blank to let players detect it
           </span>

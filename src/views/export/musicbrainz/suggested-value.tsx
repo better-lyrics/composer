@@ -67,9 +67,11 @@ const SuggestedField: React.FC<SuggestedFieldProps> = ({
   placeholder,
   className,
   children,
+  id,
   ...inputProps
 }) => {
-  const inputId = useId();
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
   const filling = suggestion?.kind === "fill";
   return (
     <div className="flex flex-col gap-1.5">

@@ -13,7 +13,7 @@ import { DROP_TILE_STYLES, RECESSED_TINT } from "@/ui/drop-tile-styles";
 import { IconField } from "@/ui/icon-field";
 import { EDITOR_PATH } from "@/utils/app-routes";
 import { cn } from "@/utils/cn";
-import { extractVideoId, INVALID_YOUTUBE_LINK_MESSAGE } from "@/utils/youtube-url";
+import { EMPTY_YOUTUBE_LINK_MESSAGE, INVALID_YOUTUBE_LINK_MESSAGE, extractVideoId } from "@/utils/youtube-url";
 
 // -- Types --------------------------------------------------------------------
 
@@ -22,8 +22,6 @@ interface NewSongPanelProps {
 }
 
 // -- Constants ----------------------------------------------------------------
-
-const EMPTY_LINK_MESSAGE = "Paste a YouTube link first";
 
 const PANEL_STYLES =
   "flex flex-col gap-4 p-5 rounded-xl bg-(--layer-1) shadow-[inset_0_0_0_1px_var(--edge)] select-none";
@@ -37,7 +35,7 @@ const NewSongLink: React.FC<{ onCreate: (videoId: string) => void }> = ({ onCrea
 
   const submit = () => {
     if (value.trim() === "") {
-      showError(EMPTY_LINK_MESSAGE);
+      showError(EMPTY_YOUTUBE_LINK_MESSAGE);
       return;
     }
     const videoId = extractVideoId(value);

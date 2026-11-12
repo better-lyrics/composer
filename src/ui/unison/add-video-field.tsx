@@ -1,4 +1,6 @@
+import { useFieldError } from "@/hooks/useFieldError";
 import { Button } from "@/ui/button";
+import { FieldError } from "@/ui/field-error";
 import { IconField } from "@/ui/icon-field";
 import { FLOATING_INPUT_STYLES } from "@/ui/input-styles";
 import { cn } from "@/utils/cn";
@@ -32,25 +34,28 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({
   busy = false,
 }) => {
   const [link, setLink] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const linkField = useFieldError();
   const [adding, setAdding] = useState(false);
-  const messageId = useId();
+  const disabledReasonId = useId();
   const disabled = Boolean(disabledReason);
-  const message = disabledReason ?? error;
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (adding || busy) return;
     const videoId = extractVideoId(link);
     if (!videoId) {
-      setError(INVALID_LINK_MESSAGE);
+      linkField.showError(INVALID_LINK_MESSAGE);
       return;
     }
     setAdding(true);
     const failure = await onAdd(videoId);
     setAdding(false);
-    setError(failure);
-    if (!failure) setLink("");
+    if (failure) {
+      linkField.showError(failure);
+    } else {
+      linkField.clearError();
+      setLink("");
+    }
   };
 
   return (
@@ -59,14 +64,15 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({
         <IconField
           icon={IconLink}
           aria-label="YouTube link to add"
-          aria-invalid={error !== null && !disabled}
-          aria-describedby={message ? messageId : undefined}
+          {...linkField.fieldProps}
+          aria-invalid={!disabled && linkField.fieldProps["aria-invalid"]}
+          aria-describedby={disabledReason ? disabledReasonId : linkField.fieldProps["aria-describedby"]}
           placeholder={placeholder}
           value={link}
           disabled={disabled}
           onChange={(event) => {
             setLink(event.target.value);
-            setError(null);
+            linkField.clearError();
           }}
           wrapperClassName="flex-1 min-w-0"
           className={cn(floating && FLOATING_INPUT_STYLES, "h-8 pl-8 pr-3 rounded-lg text-[13px]")}
@@ -76,15 +82,11 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({
         </Button>
       </div>
       {disabledReason && (
-        <p id={messageId} className={cn(MESSAGE_STYLES, "text-(--muted)")}>
+        <p id={disabledReasonId} className={cn(MESSAGE_STYLES, "text-(--muted)")}>
           {disabledReason}
         </p>
       )}
-      {!disabledReason && error && (
-        <p id={messageId} role="alert" className={cn(MESSAGE_STYLES, "text-composer-negative")}>
-          {error}
-        </p>
-      )}
+      {!disabledReason && <FieldError {...linkField.errorProps} className={MESSAGE_STYLES} />}
     </form>
   );
 };
