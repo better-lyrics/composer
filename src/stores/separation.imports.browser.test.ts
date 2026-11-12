@@ -1,3 +1,4 @@
+import { storedDataBytes } from "@/domain/storage/stored-data";
 import { forkOpenProject } from "@/lib/open-project";
 import { adoptOpenProjectId } from "@/lib/open-project-session";
 import { removeProjectData } from "@/lib/project-repository";
@@ -123,7 +124,7 @@ describe("imported stems", () => {
 
     const stems = await loadProjectStems("import-fill");
     expect(stems?.slots.vocals).toMatchObject({ origin: "imported", name: "acapella.wav" });
-    expect(stems?.slots.vocals?.data.byteLength).toBe(acapella.size);
+    expect(stems?.slots.vocals && storedDataBytes(stems.slots.vocals.data)).toBe(acapella.size);
     expect(stems?.slots.instrumental?.origin).toBe("separated");
   });
 

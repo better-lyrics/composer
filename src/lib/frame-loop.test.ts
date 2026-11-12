@@ -6,6 +6,7 @@ import { advanceFrames, type FrameLoopModule, loadFrameLoop } from "@/test/frame
 let subscribeFrame: FrameLoopModule["subscribeFrame"];
 let holdFrames: FrameLoopModule["holdFrames"];
 let wake: FrameLoopModule["wake"];
+let wakeForOneFrame: FrameLoopModule["wakeForOneFrame"];
 let nextFrame: FrameLoopModule["nextFrame"];
 let cancelNextFrame: FrameLoopModule["cancelNextFrame"];
 let tailFrames: number;
@@ -26,6 +27,7 @@ beforeEach(async () => {
   subscribeFrame = frameLoop.subscribeFrame;
   holdFrames = frameLoop.holdFrames;
   wake = frameLoop.wake;
+  wakeForOneFrame = frameLoop.wakeForOneFrame;
   nextFrame = frameLoop.nextFrame;
   cancelNextFrame = frameLoop.cancelNextFrame;
   tailFrames = frameLoop.TAIL_FRAMES;
@@ -76,6 +78,26 @@ describe("frame-loop", () => {
     it("runs exactly TAIL_FRAMES frames after a wake with no hold", () => {
       const probe = countingSubscriber();
       const unsubscribe = probe.subscribe();
+      advanceFrames(100);
+      expect(probe.calls()).toBe(tailFrames);
+      unsubscribe();
+    });
+
+    it("runs exactly one frame after a wake asking for one with no hold", () => {
+      const probe = countingSubscriber();
+      const unsubscribe = probe.subscribe();
+      advanceFrames(100);
+      wakeForOneFrame();
+      advanceFrames(100);
+      expect(probe.calls()).toBe(tailFrames + 1);
+      unsubscribe();
+    });
+
+    it("keeps the full tail when a one-frame wake arrives mid-tail", () => {
+      const probe = countingSubscriber();
+      const unsubscribe = probe.subscribe();
+      advanceFrames(1);
+      wakeForOneFrame();
       advanceFrames(100);
       expect(probe.calls()).toBe(tailFrames);
       unsubscribe();

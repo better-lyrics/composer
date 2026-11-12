@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,6 +14,14 @@ function* walkSourceFiles(root: string): Generator<string> {
     const full = join(root, entry.name);
     if (entry.isDirectory()) yield* walkSourceFiles(full);
     else if (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx")) yield full;
+  }
+}
+
+function* walkStylesheets(root: string): Generator<string> {
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    const full = join(root, entry.name);
+    if (entry.isDirectory()) yield* walkStylesheets(full);
+    else if (entry.name.endsWith(".css")) yield full;
   }
 }
 
@@ -38,4 +46,4 @@ function findProductionMatches(pattern: RegExp, allowed: (relPath: string) => bo
 
 // -- Exports ------------------------------------------------------------------
 
-export { SRC_ROOT, findProductionMatches, isTestFile, walkSourceFiles };
+export { findProductionMatches, isTestFile, SRC_ROOT, walkSourceFiles, walkStylesheets };

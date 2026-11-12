@@ -1,3 +1,5 @@
+import { type BlockBox, WORD_BLOCK_SELECTOR, type WordBlockBoxes, blockBox } from "@/views/timeline/word-block-boxes";
+
 // -- Constants -----------------------------------------------------------------
 
 const MASK_DIM_ALPHA = 0.5;
@@ -18,21 +20,34 @@ function cornerYInset(distFromEdge: number, radius: number): number {
   return radius - Math.sqrt(radius * radius - d * d);
 }
 
-function buildPlayheadMask(root: ParentNode, playheadCenterXViewport: number, containerTopViewport: number): string {
-  const wordBlocks = root.querySelectorAll("[data-word-block]");
+// Word blocks outside the scroll container (the drag ghost) are few and move with the pointer, so they are read every frame.
+function boxesOutside(container: Element, originLeft: number, originTop: number): BlockBox[] {
+  const boxes: BlockBox[] = [];
+  const root = playheadMaskRoot(container);
+  let node: Element = container;
+  while (node !== root && node.parentNode) {
+    const parent: ParentNode = node.parentNode;
+    for (const sibling of parent.children) {
+      if (sibling === node) continue;
+      for (const block of sibling.querySelectorAll<HTMLElement>(WORD_BLOCK_SELECTOR)) {
+        boxes.push(blockBox(block, originLeft, originTop));
+      }
+    }
+    if (parent === root || !(parent instanceof Element)) break;
+    node = parent;
+  }
+  return boxes;
+}
+
+function buildPlayheadMask(boxes: readonly BlockBox[], playheadX: number, containerTop: number): string {
   const ranges: { top: number; bottom: number }[] = [];
-  for (const wb of wordBlocks) {
-    const el = wb as HTMLElement;
-    const r = el.getBoundingClientRect();
-    if (playheadCenterXViewport < r.left || playheadCenterXViewport > r.right) continue;
-    const corners = getComputedStyle(el);
+  for (const box of boxes) {
+    if (playheadX < box.left || playheadX > box.right) continue;
+    const corners = getComputedStyle(box.block);
     const leftR = Number.parseFloat(corners.borderTopLeftRadius) || 0;
     const rightR = Number.parseFloat(corners.borderTopRightRadius) || 0;
-    const yInset = Math.max(
-      cornerYInset(playheadCenterXViewport - r.left, leftR),
-      cornerYInset(r.right - playheadCenterXViewport, rightR),
-    );
-    ranges.push({ top: r.top - containerTopViewport + yInset, bottom: r.bottom - containerTopViewport - yInset });
+    const yInset = Math.max(cornerYInset(playheadX - box.left, leftR), cornerYInset(box.right - playheadX, rightR));
+    ranges.push({ top: box.top - containerTop + yInset, bottom: box.bottom - containerTop - yInset });
   }
 
   if (ranges.length === 0) return "";
@@ -55,6 +70,18 @@ function buildPlayheadMask(root: ParentNode, playheadCenterXViewport: number, co
   return `linear-gradient(to bottom, ${stops.join(", ")})`;
 }
 
+function playheadMask(
+  wordBlocks: Pick<WordBlockBoxes, "boxes" | "originLeft" | "originTop">,
+  container: HTMLElement,
+  playheadX: number,
+  overlayTop: number,
+): string {
+  const { boxes, originLeft, originTop } = wordBlocks;
+  const outside = boxesOutside(container, originLeft, originTop);
+  const allBoxes = outside.length === 0 ? boxes : [...boxes, ...outside];
+  return buildPlayheadMask(allBoxes, playheadX - originLeft, overlayTop - originTop);
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { buildPlayheadMask, playheadMaskRoot };
+export { buildPlayheadMask, playheadMask, playheadMaskRoot };

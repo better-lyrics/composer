@@ -61,7 +61,9 @@ function decorateAlternateTracks(el: BraccatoLyricsElement, lyrics: Lyric[]): vo
   const renderer = el.renderer;
   if (!renderer) return;
 
-  let decorated = false;
+  // Lines already carrying the same decoration are left untouched, and only a changed line needs a relayout.
+  const decorations = new MutationObserver(skipMutations);
+  decorations.observe(el, { childList: true, subtree: true });
   for (let index = 0; index < lyrics.length; index++) {
     const lyric = lyrics[index];
     const line = renderer.lines[index];
@@ -69,18 +71,20 @@ function decorateAlternateTracks(el: BraccatoLyricsElement, lyrics: Lyric[]): vo
 
     if (lyric.romanization && !alternateMatchesMainText(lyric.romanization, lyric.words)) {
       injectRomanization(el.ownerDocument, line.lyricElement, line, lyric.romanization, lyric.timedRomanization);
-      decorated = true;
     }
 
     const translation = lyric.translation?.text ?? Object.values(lyric.translations ?? {})[0];
     if (translation && !alternateMatchesMainText(translation, lyric.words)) {
       injectTranslation(el.ownerDocument, line.lyricElement, translation);
-      decorated = true;
     }
   }
 
-  if (decorated) renderer.relayout();
+  const changed = decorations.takeRecords().length > 0;
+  decorations.disconnect();
+  if (changed) renderer.relayout();
 }
+
+function skipMutations(): void {}
 
 function skipWritePhase(): void {}
 

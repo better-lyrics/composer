@@ -85,9 +85,9 @@ const SpectrumReadout: React.FC = () => {
       readout.hidden = false;
       line.hidden = false;
       const flip = x > box.width - FLIP_ROOM;
-      const left = flip ? x - POINTER_GAP - readout.offsetWidth : x + POINTER_GAP;
+      const left = flip ? `calc(${x - POINTER_GAP}px - 100%)` : `${x + POINTER_GAP}px`;
       const top = Math.min(height - READOUT_HEIGHT - EDGE_INSET, Math.max(EDGE_INSET, y - READOUT_HEIGHT / 2));
-      readout.style.transform = `translate(${left}px, ${top}px)`;
+      readout.style.transform = `translate(${left}, ${top}px)`;
       line.style.top = `${Math.round(y)}px`;
     };
 

@@ -9,7 +9,11 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 // -- Helpers ------------------------------------------------------------------
 
 function writeText(element: HTMLElement | null, text: string): void {
-  if (element && element.textContent !== text) element.textContent = text;
+  if (!element) return;
+  const node = element.firstChild;
+  if (node instanceof Text) {
+    if (node.nodeValue !== text) node.nodeValue = text;
+  } else element.textContent = text;
 }
 
 // -- Component ----------------------------------------------------------------

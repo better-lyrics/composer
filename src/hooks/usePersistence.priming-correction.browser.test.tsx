@@ -1,5 +1,7 @@
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import type { SavedProjectStems } from "@/domain/stems/saved-stems";
+import { storedDataBytes } from "@/domain/storage/stored-data";
 import type { WordTiming } from "@/domain/word/timing";
 import { saveAudioFile } from "@/lib/persistence";
 import { PROJECT_STEMS_STORE_NAME } from "@/lib/persistence-idb";
@@ -10,6 +12,13 @@ import { allowConsole } from "@/test/console-guard";
 import { croppedMp3StemWrite, saveStemFromOldBuild } from "@/test/legacy-stems";
 import { loadOpenProjectForRestore, seedSavedProject } from "@/test/priming-projects";
 import { describe, expect, it, vi } from "vitest";
+
+// -- Helpers ------------------------------------------------------------------
+
+function vocalBytes(stems: SavedProjectStems | undefined): number {
+  const vocals = stems?.slots.vocals;
+  return vocals ? storedDataBytes(vocals.data) : 0;
+}
 
 // -- Tests --------------------------------------------------------------------
 
@@ -96,7 +105,7 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
     const padded = await loadProjectStems(id);
     await loadOpenProjectForRestore();
 
-    expect(padded?.slots.vocals?.data.byteLength).toBe((before?.slots.vocals?.data.byteLength ?? 0) + 1104 * 2);
+    expect(vocalBytes(padded)).toBe(vocalBytes(before) + 1104 * 2);
     expect(padded?.slots.instrumental).toEqual(before?.slots.instrumental);
     expect(await loadProjectStems(id)).toEqual(padded);
   });
@@ -123,7 +132,7 @@ describe("loadProjectForRestore · corrected MP3 decode", () => {
     await loadOpenProjectForRestore();
 
     const after = await loadProjectStems(id);
-    expect(after?.slots.vocals?.data.byteLength).toBe((before?.slots.vocals?.data.byteLength ?? 0) + 1104 * 2);
+    expect(vocalBytes(after)).toBe(vocalBytes(before) + 1104 * 2);
   });
 
   it("opens a corrected project with nothing to repair without decoding or writing stems", async () => {

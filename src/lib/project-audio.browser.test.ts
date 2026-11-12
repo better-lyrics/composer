@@ -211,6 +211,18 @@ describe("deleteProjectAudio", () => {
   });
 });
 
+describe("saving project audio", () => {
+  it("regression: saves audio larger than the IndexedDB value limit", async () => {
+    const audio = new File([new Uint8Array(130 * 1024 * 1024)], "long.wav", { type: "audio/wav" });
+    await seedStoredProject("large", { audio });
+    await saveProjectRecordWithAudio("large-record", storedProject(), audio);
+    for (const id of ["large", "large-record"]) {
+      expect((await loadProjectAudio(id))?.size).toBe(audio.size);
+      expect((await loadProjectIndexEntry(id))?.storedAudioBytes).toBe(audio.size);
+    }
+  });
+});
+
 describe("unindexedAudioBytes", () => {
   it("counts audio that has no index entry yet and ignores indexed audio", async () => {
     await seedLocal("indexed");

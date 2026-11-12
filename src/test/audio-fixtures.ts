@@ -88,6 +88,20 @@ function makeVocalBurstBuffer(durationS: number, sampleRate = 44100): AudioBuffe
   return audioBuffer;
 }
 
+// Right channel is a full-scale 1 kHz square: resampling it to 8 kHz rings past 1.0, as a loud master does.
+function makeClippedStereoBuffer(durationS: number, sampleRate = 44100): AudioBuffer {
+  const length = Math.max(1, Math.round(sampleRate * durationS));
+  const audioBuffer = new AudioBuffer({ numberOfChannels: 2, length, sampleRate });
+  const left = audioBuffer.getChannelData(0);
+  const right = audioBuffer.getChannelData(1);
+  for (let i = 0; i < length; i++) {
+    const phase = (1000 * i) / sampleRate;
+    left[i] = 0.5 * Math.sin(2 * Math.PI * phase);
+    right[i] = phase % 1 < 0.5 ? 1 : -1;
+  }
+  return audioBuffer;
+}
+
 function encodeWav(audioBuffer: AudioBuffer): ArrayBuffer {
   const channelCount = audioBuffer.numberOfChannels;
   const sampleRate = audioBuffer.sampleRate;
@@ -135,6 +149,7 @@ export {
   createMp3File,
   createUnplayableAudioFile,
   encodeWav,
+  makeClippedStereoBuffer,
   makeSineBuffer,
   makeVocalBurstBuffer,
 };

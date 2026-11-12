@@ -17,6 +17,7 @@ import { noteReplaySpot } from "@/views/timeline/replay-spot-signal";
 import { clearLoopRegion } from "@/views/timeline/selection-playback";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WaveformFocusShade } from "@/views/timeline/waveform-focus-shade";
+import { keepWaveformData, mediaSource, readWaveformData } from "@/views/timeline/waveform-data-cache";
 import { WaveformBackground, WaveformSkeleton } from "@/views/timeline/waveform-loading-layers";
 import { WAVEFORM_WINDOW_WIDTH, useWaveformWindow } from "@/views/timeline/waveform-window";
 import WavesurferPlayer from "@wavesurfer/react";
@@ -27,6 +28,7 @@ import type WaveSurfer from "wavesurfer.js";
 
 interface WaveformBarsProps {
   media: HTMLAudioElement;
+  source: string;
   width: number;
   shown: boolean;
   colors: { wave: string; progress: string };
@@ -46,6 +48,7 @@ const WAVEFORM_BARS_HEIGHT = 54;
 
 const WaveformBars: React.FC<WaveformBarsProps> = ({
   media,
+  source,
   width,
   shown,
   colors,
@@ -53,34 +56,49 @@ const WaveformBars: React.FC<WaveformBarsProps> = ({
   hostRef,
   onDestroy,
   onReady,
-}) => (
-  <div
-    data-waveform-fade
-    className="pt-[13px] overflow-clip transition-opacity duration-150 ease-in"
-    style={{ width, opacity: shown ? 1 : 0 }}
-  >
-    <div ref={hostRef} className="[&_div::part(scroll)]:overflow-x-hidden!" style={{ width: WAVEFORM_WINDOW_WIDTH }}>
-      <WavesurferPlayer
-        height={WAVEFORM_BARS_HEIGHT}
-        waveColor={colors.wave}
-        progressColor={colors.progress}
-        cursorColor="transparent"
-        barWidth={2}
-        barGap={1}
-        barRadius={12}
-        media={media}
-        interact={false}
-        hideScrollbar={true}
-        fillParent={false}
-        autoScroll={false}
-        autoCenter={false}
-        minPxPerSec={initialZoom}
-        onDestroy={onDestroy}
-        onReady={onReady}
-      />
+}) => {
+  // Read again only when the instance is destroyed (a hidden tab), so the options never change while it lives.
+  const [decoded, setDecoded] = useState(() => readWaveformData(source));
+  const handleDestroy = useCallback(
+    (wavesurfer: WaveSurfer) => {
+      keepWaveformData(source, media, wavesurfer.getDecodedData(), () => setDecoded(null));
+      setDecoded(readWaveformData(source));
+      onDestroy();
+    },
+    [media, source, onDestroy],
+  );
+  return (
+    <div
+      data-waveform-fade
+      className="pt-[13px] overflow-clip transition-opacity duration-150 ease-in"
+      style={{ width, opacity: shown ? 1 : 0 }}
+    >
+      <div ref={hostRef} className="[&_div::part(scroll)]:overflow-x-hidden!" style={{ width: WAVEFORM_WINDOW_WIDTH }}>
+        <WavesurferPlayer
+          height={WAVEFORM_BARS_HEIGHT}
+          waveColor={colors.wave}
+          progressColor={colors.progress}
+          cursorColor="transparent"
+          barWidth={2}
+          barGap={1}
+          barRadius={12}
+          media={media}
+          interact={false}
+          hideScrollbar={true}
+          fillParent={false}
+          autoScroll={false}
+          autoCenter={false}
+          minPxPerSec={initialZoom}
+          peaks={decoded?.peaks}
+          duration={decoded?.duration}
+          barHeight={decoded?.barHeight}
+          onDestroy={handleDestroy}
+          onReady={onReady}
+        />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const TimelineWaveform: React.FC = () => {
   const bandHeight = useOverviewBandHeight();
@@ -128,7 +146,7 @@ const TimelineWaveform: React.FC = () => {
     },
     [audioElement],
   );
-  const readMediaSource = () => audioElement?.currentSrc || audioElement?.src || "no-audio";
+  const readMediaSource = () => mediaSource(audioElement);
   const waveformKey = useSyncExternalStore(subscribeToMediaSource, readMediaSource, readMediaSource);
 
   const [initialColors] = useState(() => ({
@@ -214,6 +232,7 @@ const TimelineWaveform: React.FC = () => {
         <WaveformBars
           key={waveformKey}
           media={audioElement}
+          source={waveformKey}
           width={totalWidth}
           shown={ws !== null && !showSpectrum}
           colors={initialColors}

@@ -10,9 +10,10 @@ import { clampScrollLeft } from "@/views/timeline/group-focus";
 import { createRowLayoutCache } from "@/views/timeline/row-layout-cache";
 import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { createTimelineLights, paintTimelineLights } from "@/views/timeline/timeline-lights";
-import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
+import { playheadMask } from "@/views/timeline/timeline-playhead-mask";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { readViewScroll, scrollView, viewScrollLeft, viewScrollTop } from "@/views/timeline/view-scroll";
+import { createWordBlockBoxes, refreshWordBlockBoxes, releaseWordBlockBoxes } from "@/views/timeline/word-block-boxes";
 import { createFollowMemory, followScrollTop, followStep, resetFollowMemory } from "@/views/timeline/vertical-follow";
 import { pinCutWordLabels } from "@/views/timeline/word-label-pin";
 import type { RefObject } from "react";
@@ -44,7 +45,7 @@ interface PlayheadFrame {
   currentTime: number;
   scrollLeft: number;
   contentHeight: number;
-  blocks: HTMLElement[];
+  wordBlocks: ReturnType<typeof createWordBlockBoxes>;
   lines: readonly LyricLine[];
   mask: string | null;
   written: WrittenPositions;
@@ -77,7 +78,7 @@ function createPlayheadFrame(): PlayheadFrame {
     currentTime: 0,
     scrollLeft: 0,
     contentHeight: 0,
-    blocks: [],
+    wordBlocks: createWordBlockBoxes(),
     lines: [],
     mask: null,
     written: { playhead: null, playheadX: Number.NaN, cap: null, capX: Number.NaN },
@@ -128,17 +129,15 @@ function readPlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): vo
   frame.currentTime = currentTime;
   frame.displayTime = isDraggingPlayhead ? dragTime : currentTime;
   // A zoom clamps the scroller during layout with no scroll event until next frame; write callbacks read this refresh.
-  const actualScrollLeft = container ? readViewScroll(container).left : viewScrollLeft();
+  const scroll = container ? readViewScroll(container) : null;
+  const actualScrollLeft = scroll ? scroll.left : viewScrollLeft();
   frame.position = timeToX(frame.displayTime, zoom, actualScrollLeft) - 1;
 
-  frame.blocks.length = 0;
-  if (container) {
+  if (container && scroll) {
     frame.contentHeight = container.scrollHeight;
     frame.scrollLeft = actualScrollLeft;
     frame.lines = useProjectStore.getState().lines;
-    for (const block of container.querySelectorAll<HTMLElement>("[data-word-block][data-begin]")) {
-      frame.blocks.push(block);
-    }
+    refreshWordBlockBoxes(frame.wordBlocks, container, scroll);
   }
 
   frame.mask = null;
@@ -148,7 +147,7 @@ function readPlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): vo
     frame.playheadCenterXLocal = playheadCenterXLocal;
     frame.containerLeft = overlayRect.left;
     frame.mask = container
-      ? buildPlayheadMask(playheadMaskRoot(container), playheadCenterXLocal + overlayRect.left, overlayRect.top)
+      ? playheadMask(frame.wordBlocks, container, playheadCenterXLocal + overlayRect.left, overlayRect.top)
       : "";
   }
   frame.ready = true;
@@ -203,8 +202,8 @@ function writePlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): v
   if (container) {
     const height = `${frame.contentHeight}px`;
     if (playhead.style.height !== height) playhead.style.height = height;
-    paintTimelineLights(frame.lights, container, frame.blocks, frame.lines, frame.displayTime);
-    pinCutWordLabels(frame.blocks, frame.scrollLeft, frame.pinnedLabels);
+    paintTimelineLights(frame.lights, container, frame.wordBlocks.blocks, frame.lines, frame.displayTime);
+    pinCutWordLabels(frame.wordBlocks.blocks, frame.scrollLeft, frame.pinnedLabels);
     const rulerTrack = elements.rulerTrack?.current;
     if (rulerTrack) followRulerScroll(rulerTrack, frame.scrollLeft);
   }
@@ -220,4 +219,8 @@ function writePlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): v
 
 // -- Exports -------------------------------------------------------------------
 
-export { createPlayheadFrame, readPlayheadFrame, writePlayheadFrame };
+function releasePlayheadFrame(frame: PlayheadFrame): void {
+  releaseWordBlockBoxes(frame.wordBlocks);
+}
+
+export { createPlayheadFrame, readPlayheadFrame, releasePlayheadFrame, writePlayheadFrame };

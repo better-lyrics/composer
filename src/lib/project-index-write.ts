@@ -4,6 +4,7 @@ import type { LanguageTextVariant } from "@/domain/language/display";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { ProjectTab } from "@/domain/project/tab";
 import { type SavedProjectStems, storedStemBytes } from "@/domain/stems/saved-stems";
+import { storedDataBytes } from "@/domain/storage/stored-data";
 import { PROJECT_AUDIO_STORE_NAME, PROJECT_INDEX_STORE_NAME, PROJECT_STEMS_STORE_NAME } from "@/lib/persistence-idb";
 import type { SavedAudioFile, SavedProject } from "@/lib/saved-project";
 
@@ -78,7 +79,7 @@ function writeIndexEntry(tx: IDBTransaction, { id, project, view = {}, onFirstEn
       stems.onsuccess = () => {
         const saved = audio.result as SavedAudioFile | undefined;
         const carried = {
-          storedAudioBytes: saved?.data.byteLength ?? 0,
+          storedAudioBytes: saved ? storedDataBytes(saved.data) : 0,
           storedStemBytes: storedStemBytes(stems.result as SavedProjectStems | undefined),
           openedAt: project.savedAt,
           ...view,

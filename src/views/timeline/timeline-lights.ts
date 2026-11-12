@@ -20,6 +20,8 @@ interface TimelineLights {
 const MIN_LIT_SECONDS = 0.08;
 // The current line turns over slightly before it starts, as the eye moves ahead.
 const CURRENT_LINE_LEAD_SECONDS = 0.15;
+// Every attribute the lights write; none of them changes a box.
+const LIGHT_ATTRIBUTES: ReadonlySet<string> = new Set(["data-lit", "data-speaking", "data-hit", "data-current"]);
 
 // -- Functions -----------------------------------------------------------------
 
@@ -98,4 +100,4 @@ function paintTimelineLights(
 
 // -- Exports -------------------------------------------------------------------
 
-export { createTimelineLights, paintTimelineLights };
+export { LIGHT_ATTRIBUTES, createTimelineLights, paintTimelineLights };

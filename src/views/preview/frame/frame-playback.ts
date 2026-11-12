@@ -1,4 +1,4 @@
-import { frameTime, holdFrames, wake } from "@/lib/frame-loop";
+import { frameTime, holdFrames, wake, wakeForOneFrame } from "@/lib/frame-loop";
 import type { FrameClock, FromFrameMessage } from "@/views/preview/frame/preview-frame-protocol";
 import type { PlaybackSample, RendererPlayback } from "@/views/preview/renderer-playback";
 
@@ -47,7 +47,8 @@ function createFramePlayback(post: (message: FromFrameMessage) => void): FramePl
       transitMs = Math.min(MAX_TRANSIT_MS, Math.max(0, performance.timeOrigin + receivedAt - next.sentAt));
       if (next.playing) releasePlayback ??= holdFrames("preview frame playback");
       else releaseHold();
-      wake();
+      if (next.scrubbing === true && !next.playing) wakeForOneFrame();
+      else wake();
     },
     stop: () => {
       if (!clock) return;

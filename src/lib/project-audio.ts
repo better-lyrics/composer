@@ -1,5 +1,6 @@
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { isCachedYouTubeAudio } from "@/domain/storage/stored-audio";
+import { storedDataBytes } from "@/domain/storage/stored-data";
 import {
   APP_STATE_STORE_NAME,
   PROJECT_AUDIO_STORE_NAME,
@@ -32,12 +33,11 @@ const NEVER_IN_USE: ProjectInUse = () => false;
 // -- Writes -------------------------------------------------------------------
 
 async function saveProjectAudio(id: string, file: File): Promise<void> {
-  const data = await file.arrayBuffer();
-  const saved: SavedAudioFile = { name: file.name, type: file.type, data };
+  const saved: SavedAudioFile = { name: file.name, type: file.type, data: file };
   await runTransaction([...AUDIO_STORES, APP_STATE_STORE_NAME], "readwrite", (tx, abort) => {
     whenProjectWritable(tx, abort, id, () => {
       tx.objectStore(PROJECT_AUDIO_STORE_NAME).put(saved, id);
-      patchIndexEntry(tx, id, { storedAudioBytes: data.byteLength });
+      patchIndexEntry(tx, id, { storedAudioBytes: storedDataBytes(saved.data) });
     });
   });
   notifyProjectIndexChanged();
@@ -87,7 +87,8 @@ async function unindexedAudioBytes(): Promise<number> {
         if (indexed.has(String(key))) continue;
         const request = audio.get(key);
         request.onsuccess = () => {
-          total += (request.result as SavedAudioFile | undefined)?.data.byteLength ?? 0;
+          const saved = request.result as SavedAudioFile | undefined;
+          if (saved) total += storedDataBytes(saved.data);
         };
       }
     };

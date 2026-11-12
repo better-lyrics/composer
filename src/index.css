@@ -217,8 +217,17 @@ braccato-lyrics .blyrics-container {
   filter: opacity(0.3);
 }
 
-/* Text selection */
-::selection {
+/* Text selection. Excludes animated Timeline and lyric parts: a match restyles their subtree on every animation frame */
+:not(
+  .word-face,
+  [data-timeline-row],
+  .blyrics--line,
+  .blyrics-word-group,
+  .blyrics-sweep-cell,
+  .blyrics-sweep-mask,
+  .blyrics-sweep-text,
+  .blyrics-sweep-glow
+)::selection {
   background-color: color-mix(in srgb, var(--color-composer-accent) 40%, transparent);
   color: var(--color-composer-text);
 }
@@ -919,8 +928,8 @@ braccato-lyrics .blyrics-container {
 }
 
 /* Range input styling */
-/* Help search matches, painted with the Custom Highlight API; mirrors HighlightMatches */
-::highlight(help-match) {
+/* Help search matches (Custom Highlight API), scoped to results so animating elements are not restyled */
+[data-help-result-section] ::highlight(help-match) {
   color: var(--color-composer-accent-text);
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, var(--color-composer-accent) 70%, transparent);
@@ -1016,7 +1025,8 @@ braccato-lyrics .blyrics-container {
   .word-face {
     --selection-ring: color-mix(in oklab, var(--agent) 80%, var(--ink));
     padding: 0 8px;
-    border-radius: 10px;
+    --word-radius: 10px;
+    border-radius: var(--word-radius);
     overflow: hidden;
     font-size: 13px;
     font-weight: 500;
@@ -1045,7 +1055,7 @@ braccato-lyrics .blyrics-container {
     &[data-fit="tick"] {
       padding: 0;
       font-size: 0;
-      border-radius: 4px;
+      --word-radius: 4px;
     }
     &[data-lane="bg"] {
       opacity: 0.72;

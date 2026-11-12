@@ -1,3 +1,4 @@
+import { type StoredData, storedDataBytes } from "@/domain/storage/stored-data";
 import { STEM_SLOTS, type StemOrigin, type StemSlot } from "@/domain/stems/stem-slot";
 
 // -- Types --------------------------------------------------------------------
@@ -6,7 +7,7 @@ interface SavedProjectStem {
   origin: StemOrigin;
   name: string;
   type: string;
-  data: ArrayBuffer;
+  data: StoredData;
   durationSeconds: number;
   revision: number;
   // Set on every stem written by a build with the corrected MP3 decode.
@@ -23,7 +24,10 @@ interface SavedProjectStems {
 
 function storedStemBytes(stems: SavedProjectStems | undefined): number {
   let total = 0;
-  for (const slot of STEM_SLOTS) total += stems?.slots[slot]?.data.byteLength ?? 0;
+  for (const slot of STEM_SLOTS) {
+    const stem = stems?.slots[slot];
+    if (stem) total += storedDataBytes(stem.data);
+  }
   return total;
 }
 

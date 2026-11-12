@@ -4,7 +4,7 @@ import { PREVIEW_SIDEBAR_WIDTH } from "@/utils/preview-sidebar-width";
 import { LyricsRenderer } from "@/views/preview/lyrics-renderer";
 import { useFocusRange } from "@/views/timeline/use-focus-range";
 import { usePreviewSidebarResize } from "@/views/timeline/use-preview-sidebar-resize";
-import { memo, useId } from "react";
+import { memo, useId, useRef } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -19,7 +19,8 @@ interface PreviewSidebarContentProps {
 // -- Components ---------------------------------------------------------------
 
 const PreviewSidebarShell: React.FC<PreviewSidebarShellProps> = ({ children }) => {
-  const { width, onPointerDown, onDoubleClick, onKeyDown } = usePreviewSidebarResize();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { width, contentWidth, onPointerDown, onDoubleClick, onKeyDown } = usePreviewSidebarResize(contentRef);
   const sidebarId = useId();
 
   return (
@@ -43,7 +44,13 @@ const PreviewSidebarShell: React.FC<PreviewSidebarShellProps> = ({ children }) =
         onKeyDown={onKeyDown}
         className="absolute inset-y-0 left-0 z-20 w-1.5 cursor-ew-resize select-none hover:bg-composer-border focus-visible:bg-composer-border"
       />
-      {children}
+      <div
+        ref={contentRef}
+        style={contentWidth === null ? undefined : { width: contentWidth }}
+        className="flex flex-col flex-1 min-h-0"
+      >
+        {children}
+      </div>
     </aside>
   );
 };

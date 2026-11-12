@@ -99,9 +99,7 @@ function restoreDeletedProjectRecord(id: string, project: SavedProject): Promise
 }
 
 async function saveProjectRecordWithAudio(id: string, project: SavedProject, audio: File | undefined): Promise<void> {
-  const saved: SavedAudioFile | undefined = audio
-    ? { name: audio.name, type: audio.type, data: await audio.arrayBuffer() }
-    : undefined;
+  const saved: SavedAudioFile | undefined = audio ? { name: audio.name, type: audio.type, data: audio } : undefined;
   let createdFirstEntry = false;
   await runTransaction(RECORD_WRITE_STORES, "readwrite", (tx, abort) => {
     whenProjectWritable(tx, abort, id, () => {

@@ -196,6 +196,12 @@ function wake(): void {
   schedule();
 }
 
+function wakeForOneFrame(): void {
+  tailFrames = Math.max(tailFrames, 1);
+  framesSinceWake = 0;
+  schedule();
+}
+
 function retain(counts: Map<string, number>, label: string): () => void {
   counts.set(label, (counts.get(label) ?? 0) + 1);
   wake();
@@ -273,5 +279,6 @@ export {
   nextFrame,
   subscribeFrame,
   wake,
+  wakeForOneFrame,
 };
 export type { FrameCallback, FramePhases };
