@@ -63,31 +63,33 @@ const MainVideoChoice: React.FC<MainVideoChoiceProps> = ({ durationSeconds, onCh
   };
 
   return (
-    <PanelSection title="Video">
-      <p className="text-xs leading-[18px] text-(--muted) text-pretty">{CHOICE_HINT}</p>
-      {suggestions.length > 0 && (
-        <ul aria-label="Matching videos" className="-mx-1.5 flex min-w-0 flex-col gap-2">
-          {suggestions.map((suggestion) => (
-            <SuggestionRow
-              key={suggestion.videoId}
-              suggestion={suggestion}
-              songSeconds={songSeconds}
-              onUse={() => void chooseSuggestion(suggestion)}
-            />
-          ))}
-        </ul>
-      )}
-      <AddVideoField
-        placeholder="Paste the YouTube link"
-        onAdd={(videoId) => {
-          const suggestion = suggestions.find((candidate) => candidate.videoId === videoId);
-          const lengthNote = suggestionLengthNote(suggestion, songSeconds);
-          if (!lengthNote)
-            onChoose({ videoId, suggestion: suggestion ?? null, origin: suggestion ? "chosen" : "pasted" });
-          return lengthNote;
-        }}
-      />
-    </PanelSection>
+    <div data-check-target="video" className="relative">
+      <PanelSection title="Video">
+        <p className="text-xs leading-[18px] text-(--muted) text-pretty">{CHOICE_HINT}</p>
+        {suggestions.length > 0 && (
+          <ul aria-label="Matching videos" className="-mx-1.5 flex min-w-0 flex-col gap-2">
+            {suggestions.map((suggestion) => (
+              <SuggestionRow
+                key={suggestion.videoId}
+                suggestion={suggestion}
+                songSeconds={songSeconds}
+                onUse={() => void chooseSuggestion(suggestion)}
+              />
+            ))}
+          </ul>
+        )}
+        <AddVideoField
+          placeholder="Paste the YouTube link"
+          onAdd={(videoId) => {
+            const suggestion = suggestions.find((candidate) => candidate.videoId === videoId);
+            const lengthNote = suggestionLengthNote(suggestion, songSeconds);
+            if (!lengthNote)
+              onChoose({ videoId, suggestion: suggestion ?? null, origin: suggestion ? "chosen" : "pasted" });
+            return lengthNote;
+          }}
+        />
+      </PanelSection>
+    </div>
   );
 };
 

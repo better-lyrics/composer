@@ -1,15 +1,15 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   isLineFullyTimed,
   isLineTimed,
   isProjectFullySynced,
-  isSyncComplete,
   isSyncableLine,
+  syncGaps,
   syncProgress,
   wordSlotCount,
 } from "@/domain/line/sync-progress";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 
@@ -81,21 +81,16 @@ describe("syncProgress", () => {
   });
 });
 
-describe("isSyncComplete", () => {
+describe("isProjectFullySynced", () => {
   it("is true only when every syncable line is fully timed", () => {
     const done = [createLine({ text: "a", words: [word("a", 1, 2)] }), createLine({ text: "" })];
-    expect(isSyncComplete(done)).toBe(true);
+    expect(isProjectFullySynced(done)).toBe(true);
   });
   it("regression U3: a partially timed line means the sync is not complete", () => {
-    expect(isSyncComplete([createLine({ text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 3)] })])).toBe(false);
+    expect(isProjectFullySynced([createLine({ text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 3)] })])).toBe(
+      false,
+    );
   });
-  it("is false with no syncable lines", () => {
-    expect(isSyncComplete([])).toBe(false);
-    expect(isSyncComplete([createLine({ text: "" })])).toBe(false);
-  });
-});
-
-describe("isProjectFullySynced", () => {
   it("is true when every line with lyrics is fully timed, ignoring blank lines", () => {
     const lines = [
       createLine({ text: "a b", words: [word("a ", 1, 2), word("b", 2, 3)] }),
@@ -147,7 +142,6 @@ describe("isProjectFullySynced", () => {
   describe("invariants", () => {
     it("never holds when the sync is not complete", () => {
       const partial = [createLine({ text: "a b", words: [word("a ", 1, 2)] })];
-      expect(isSyncComplete(partial)).toBe(false);
       expect(isProjectFullySynced(partial)).toBe(false);
     });
   });
@@ -174,9 +168,72 @@ describe("per-line cache", () => {
       lines[2],
     ];
     expect(syncProgress(tapped, "word")).toEqual(syncProgress(structuredClone(tapped), "word"));
-    expect(isSyncComplete(tapped)).toBe(isSyncComplete(structuredClone(tapped)));
+    expect(isProjectFullySynced(tapped)).toBe(isProjectFullySynced(structuredClone(tapped)));
 
     useSettingsStore.setState({ splitCharacter: "/" });
     expect(wordSlotCount(tapped[0])).toBe(2);
+  });
+});
+
+describe("syncGaps", () => {
+  beforeEach(() => useSettingsStore.setState({ splitCharacter: "|" }));
+
+  it("regression: a timed word that covers two slots is a gap, and the count agrees with the pass rule", () => {
+    const line = createLine({
+      text: "pada hal ke|cil",
+      words: [word("pada ", 1, 2), word("hal ke", 2, 3), word("cil", 3, 4)],
+    });
+    expect(syncGaps([line])).toEqual([
+      {
+        lineId: line.id,
+        lineIndex: 0,
+        track: "main",
+        kind: "partial",
+        timedSlots: 2,
+        slotCount: 4,
+        problemSlots: [1, 2],
+      },
+    ]);
+    expect(isProjectFullySynced([line])).toBe(false);
+  });
+
+  it("marks the untimed tail of a partly synced line", () => {
+    const line = createLine({ text: "aku sayang kamu", words: [word("aku ", 1, 2)] });
+    expect(syncGaps([line])[0]).toMatchObject({ kind: "partial", timedSlots: 1, slotCount: 3, problemSlots: [1, 2] });
+  });
+
+  it("reports background vocals as their own track", () => {
+    const line = createLine({
+      text: "aku sayang",
+      words: [word("aku ", 1, 2), word("sayang", 2, 3)],
+      backgroundText: "(ooh, na-na, yeah)",
+      backgroundWords: [word("(ooh, ", 2, 3)],
+    });
+    expect(syncGaps([line])).toEqual([
+      expect.objectContaining({ track: "background", kind: "partial", problemSlots: [1, 2] }),
+    ]);
+  });
+
+  it("reports untimed background vocals on a word-synced line", () => {
+    const line = createLine({ text: "aku", words: [word("aku", 1, 2)], backgroundText: "(ooh)" });
+    expect(syncGaps([line])).toEqual([
+      expect.objectContaining({ track: "background", kind: "untimed", timedSlots: 0, slotCount: 1 }),
+    ]);
+    expect(isProjectFullySynced([line])).toBe(false);
+  });
+
+  it("reports an untimed line and background vocals with no main lyrics", () => {
+    const untimed = createLine({ text: "aku sayang" });
+    const backgroundOnly = createLine({ text: "", backgroundText: "(ooh)" });
+    expect(syncGaps([untimed, backgroundOnly]).map((gap) => [gap.lineIndex, gap.track, gap.kind])).toEqual([
+      [0, "main", "untimed"],
+      [1, "background", "background-only"],
+    ]);
+  });
+
+  it("is empty for a fully synced project, and that is the pass rule", () => {
+    const line = createLine({ text: "aku", words: [word("aku", 1, 2)] });
+    expect(syncGaps([line])).toEqual([]);
+    expect(isProjectFullySynced([line])).toBe(true);
   });
 });

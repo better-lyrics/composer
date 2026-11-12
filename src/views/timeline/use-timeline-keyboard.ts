@@ -5,7 +5,7 @@ import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing"
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceCount, linesOfInstance } from "@/domain/instance/enumerate";
-import { instanceKey, lineInstanceKey, parseInstanceKey } from "@/domain/instance/key";
+import { instanceKey, parseInstanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
 import { currentInstanceFromSelection } from "@/domain/instance/selection-instance";
 import { effectiveBounds } from "@/domain/line/bounds";
@@ -27,6 +27,7 @@ import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
 import { focusedControlOwnsKey, isTypingTarget } from "@/utils/typing-target";
+import { centreLineRow } from "@/views/timeline/centre-line-row";
 import { centerTimeScrollLeft } from "@/views/timeline/coords";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
@@ -258,47 +259,15 @@ function useTimelineKeyboard(
           if (!scrollContainer) return;
 
           const currentTime = playheadTime();
-          const { zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
+          const { zoom } = useTimelineStore.getState();
 
           scrollView(scrollContainer, centerTimeScrollLeft(currentTime, zoom, scrollContainer.clientWidth));
 
-          let activeLineIndex = -1;
-          for (let i = 0; i < lines.length; i++) {
-            const timing = effectiveBounds(lines[i]);
-            if (timing && currentTime >= timing.begin && currentTime < timing.end) {
-              activeLineIndex = i;
-              break;
-            }
-          }
-
-          if (activeLineIndex >= 0) {
-            const line = lines[activeLineIndex];
-            const { collapsedInstances, focusedGroup } = useTimelineStore.getState();
-            const layout = computeRowLayout({
-              lines,
-              rowHeights,
-              defaultRowHeight,
-              collapsedInstances,
-              focusedGroup,
-              waveformHeight: currentOverviewBandHeight(),
-              groupHeaderHeight: GROUP_HEADER_HEIGHT,
-            });
-            const headerKey = lineInstanceKey(line);
-            const pos =
-              headerKey && collapsedInstances[headerKey]
-                ? layout.headerTops.get(headerKey)
-                : layout.lineTops.get(line.id);
-
-            if (pos) {
-              const viewportHeight = scrollContainer.clientHeight;
-              const rowCenter = pos.top + pos.height / 2;
-              const targetTop = Math.max(
-                0,
-                Math.min(scrollContainer.scrollHeight - viewportHeight, rowCenter - viewportHeight / 2),
-              );
-              scrollView(scrollContainer, null, targetTop);
-            }
-          }
+          const activeLine = lines.find((line) => {
+            const timing = effectiveBounds(line);
+            return timing !== null && currentTime >= timing.begin && currentTime < timing.end;
+          });
+          if (activeLine) centreLineRow(scrollContainer, lines, activeLine);
           break;
         }
         case "timeline.selectWordAtPlayhead": {
