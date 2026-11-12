@@ -1,5 +1,4 @@
 import { displayArtists, displayTitle, hasArtists } from "@/domain/project/display-title";
-import { useShortcutTitle } from "@/hooks/use-shortcut-title";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { Button } from "@/ui/button";
@@ -8,6 +7,8 @@ import { Popover } from "@/ui/popover";
 import { ProjectArt } from "@/ui/projects/project-art";
 import { ProjectSwitcher } from "@/ui/projects/project-switcher";
 import { DeletedProjectSaveButton, SaveStatusAnnouncer, SaveStatusGlyph } from "@/ui/projects/save-status-label";
+import { ShortcutTip } from "@/ui/shortcut-tip";
+import { Tooltip } from "@/ui/tooltip";
 import { LIBRARY_PATH } from "@/utils/app-routes";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
 
@@ -24,7 +25,6 @@ const ProjectBreadcrumb: React.FC = () => {
   const isOpen = useUIStore((state) => state.projectSwitcherOpen);
   const setOpen = useUIStore((state) => state.setProjectSwitcherOpen);
   const shownTitle = displayTitle(title);
-  const switchTitle = useShortcutTitle("Switch project", SWITCHER_SHORTCUT_ID);
 
   return (
     <div className="flex items-center min-w-0 select-none">
@@ -33,37 +33,43 @@ const ProjectBreadcrumb: React.FC = () => {
           Projects
         </LinkButton>
         <IconChevronRight aria-hidden="true" className="-ml-1.5 -mr-2 size-3.5 shrink-0 text-composer-text-faint" />
-        <Popover
-          open={isOpen}
-          onOpenChange={setOpen}
-          placement="bottom-start"
-          aria-label="Switch project"
-          trigger={
-            <Button
-              variant="ghost"
-              aria-label={`${shownTitle}, switch project`}
-              title={switchTitle}
-              className="group gap-2.5 h-10 max-w-[380px] min-w-0 pl-[5px] pr-3 py-0 rounded-xl text-composer-text hover:text-composer-text aria-expanded:bg-(--layer-1)"
-            >
-              <ProjectArt src={thumbnail} size="sm" />
-              <span className="flex flex-col min-w-0 leading-[1.15] text-left">
-                <span className="flex items-center gap-1.5 min-w-0 text-sm font-bold">
-                  <span className="truncate">{shownTitle}</span>
-                  <SaveStatusGlyph />
-                </span>
-                {hasArtists(artists) && (
-                  <span className="truncate text-xs font-normal text-(--muted)">{displayArtists(artists)}</span>
-                )}
-              </span>
-              <IconChevronDown
-                aria-hidden="true"
-                className="size-[15px] shrink-0 text-(--muted) transition-[rotate] duration-150 motion-reduce:transition-none group-aria-expanded:rotate-180"
-              />
-            </Button>
-          }
+        <Tooltip
+          content={<ShortcutTip label="Switch project" shortcut={SWITCHER_SHORTCUT_ID} />}
+          placement="bottom"
+          disabled={isOpen}
+          className="min-w-0"
         >
-          {(close) => <ProjectSwitcher onClose={close} />}
-        </Popover>
+          <Popover
+            open={isOpen}
+            onOpenChange={setOpen}
+            placement="bottom-start"
+            aria-label="Switch project"
+            trigger={
+              <Button
+                variant="ghost"
+                aria-label={`${shownTitle}, switch project`}
+                className="group gap-2.5 h-10 max-w-[380px] min-w-0 pl-[5px] pr-3 py-0 rounded-xl text-composer-text hover:text-composer-text aria-expanded:bg-(--layer-1)"
+              >
+                <ProjectArt src={thumbnail} size="sm" />
+                <span className="flex flex-col min-w-0 leading-[1.15] text-left">
+                  <span className="flex items-center gap-1.5 min-w-0 text-sm font-bold">
+                    <span className="truncate">{shownTitle}</span>
+                    <SaveStatusGlyph />
+                  </span>
+                  {hasArtists(artists) && (
+                    <span className="truncate text-xs font-normal text-(--muted)">{displayArtists(artists)}</span>
+                  )}
+                </span>
+                <IconChevronDown
+                  aria-hidden="true"
+                  className="size-[15px] shrink-0 text-(--muted) transition-[rotate] duration-150 motion-reduce:transition-none group-aria-expanded:rotate-180"
+                />
+              </Button>
+            }
+          >
+            {(close) => <ProjectSwitcher onClose={close} />}
+          </Popover>
+        </Tooltip>
         <DeletedProjectSaveButton />
       </nav>
       <SaveStatusAnnouncer />

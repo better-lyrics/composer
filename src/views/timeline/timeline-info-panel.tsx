@@ -4,13 +4,14 @@ import type { ReadableLine } from "@/domain/line/effective-words";
 import type { WordSelection } from "@/domain/selection/model";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
-import { useShortcutTitle } from "@/hooks/use-shortcut-title";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
+import { ShortcutTip } from "@/ui/shortcut-tip";
 import { SingerTag } from "@/ui/singer-tag";
+import { Tooltip } from "@/ui/tooltip";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
 import { BackgroundTextEditor } from "@/views/timeline/background-text-editor";
@@ -80,42 +81,42 @@ interface SingleWordInfoProps {
   onSetEnd: () => void;
 }
 
-const SingleWordInfo: React.FC<SingleWordInfoProps> = ({ selection, line, item, highlight, onSetBegin, onSetEnd }) => {
-  const setBeginTitle = useShortcutTitle("Set begin to cursor", "timeline.setWordBegin");
-  const setEndTitle = useShortcutTitle("Set end to cursor", "timeline.setWordEnd");
-  return (
-    <div className="relative flex items-center gap-6 px-6 py-3 border-t border-(--divider) bg-(--pop)">
-      {highlight && <GroupBadge highlight={highlight} title="This word belongs to a linked group" />}
-      <SingerTag color={getAgentColor(line.agentId)}>
-        {selection.type === "bg" ? `Line ${selection.lineIndex + 1} ・ Background` : `Line ${selection.lineIndex + 1}`}
-      </SingerTag>
+const SingleWordInfo: React.FC<SingleWordInfoProps> = ({ selection, line, item, highlight, onSetBegin, onSetEnd }) => (
+  <div className="relative flex items-center gap-6 px-6 py-3 border-t border-(--divider) bg-(--pop)">
+    {highlight && <GroupBadge highlight={highlight} title="This word belongs to a linked group" />}
+    <SingerTag color={getAgentColor(line.agentId)}>
+      {selection.type === "bg" ? `Line ${selection.lineIndex + 1} ・ Background` : `Line ${selection.lineIndex + 1}`}
+    </SingerTag>
 
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-composer-text">{item.text}</span>
-      </div>
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-medium text-composer-text">{item.text}</span>
+    </div>
 
-      <div className="flex items-center gap-4 text-sm">
-        <TimeField label="Begin:" value={formatTime(item.begin)} />
-        <TimeField label="End:" value={formatTime(item.end)} />
-        <TimeField label="Duration:" value={formatTime(item.end - item.begin)} />
-      </div>
+    <div className="flex items-center gap-4 text-sm">
+      <TimeField label="Begin:" value={formatTime(item.begin)} />
+      <TimeField label="End:" value={formatTime(item.end)} />
+      <TimeField label="Duration:" value={formatTime(item.end - item.begin)} />
+    </div>
 
-      <BackgroundTextEditor lineId={line.id} backgroundText={line.backgroundText} />
+    <BackgroundTextEditor lineId={line.id} backgroundText={line.backgroundText} />
 
-      <div className="flex items-center gap-2 ml-auto">
-        <Button variant="secondary" size="sm" hasIcon onClick={onSetBegin} title={setBeginTitle}>
+    <div className="flex items-center gap-2 ml-auto">
+      <Tooltip content={<ShortcutTip label="Set begin to cursor" shortcut="timeline.setWordBegin" />}>
+        <Button variant="secondary" size="sm" hasIcon onClick={onSetBegin}>
           <IconBracketsContainStart className="size-3.5" />
           <span>Set Begin</span>
         </Button>
-        <Button variant="secondary" size="sm" hasIcon onClick={onSetEnd} title={setEndTitle}>
+      </Tooltip>
+      <Tooltip content={<ShortcutTip label="Set end to cursor" shortcut="timeline.setWordEnd" />}>
+        <Button variant="secondary" size="sm" hasIcon onClick={onSetEnd}>
           <IconBracketsContainEnd className="size-3.5" />
           <span>Set End</span>
         </Button>
-        <SelectionMenuButton />
-      </div>
+      </Tooltip>
+      <SelectionMenuButton />
     </div>
-  );
-};
+  </div>
+);
 
 const TimelineInfoPanel: React.FC = () => {
   const rawLines = useProjectStore((s) => s.lines);
