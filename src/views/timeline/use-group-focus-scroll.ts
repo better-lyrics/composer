@@ -2,6 +2,7 @@ import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { currentFocusScrollRange, scrollToFocusStart, useEffectiveFocus } from "@/views/timeline/effective-focus";
 import { type GroupFocus, clampScrollLeft, fittedFocusZoom, focusBounds } from "@/views/timeline/group-focus";
+import { hasPendingLineReveal } from "@/views/timeline/line-reveal-request";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type RefObject, useEffect, useRef } from "react";
@@ -32,6 +33,8 @@ function useGroupFocusScroll(scrollContainerRef: RefObject<HTMLDivElement | null
       if (!previous) return;
       if (songZoomRef.current !== null) useTimelineStore.getState().setZoom(songZoomRef.current);
       songZoomRef.current = null;
+      // A line reveal closed the group to show its own line, so it owns the scroll.
+      if (hasPendingLineReveal()) return;
       const frame = nextFrame(() => scrollToInstanceHeader(previous.groupId, previous.hearInstanceIdx));
       return () => cancelNextFrame(frame);
     }

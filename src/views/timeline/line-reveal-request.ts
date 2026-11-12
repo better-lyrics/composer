@@ -38,6 +38,10 @@ function snapshot(): LineRevealRequest | null {
   return pendingRequest;
 }
 
+function hasPendingLineReveal(): boolean {
+  return pendingRequest !== null;
+}
+
 function settle(request: LineRevealRequest): void {
   if (pendingRequest === request) publish(null);
 }
@@ -103,4 +107,4 @@ function useLineRevealRequest(scrollContainerRef: RefObject<HTMLDivElement | nul
 
 // -- Exports -------------------------------------------------------------------
 
-export { revealLineInTimeline, useLineRevealRequest };
+export { hasPendingLineReveal, revealLineInTimeline, useLineRevealRequest };
