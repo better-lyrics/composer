@@ -375,7 +375,7 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
   {
     id: "timeline.expandAll",
     scope: "timeline",
-    description: "Expand all lines",
+    description: "Split lines into words",
     defaultBinding: { key: "x" },
   },
   {
@@ -405,7 +405,7 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
   {
     id: "timeline.toggleAllCollapsed",
     scope: "timeline",
-    description: "Collapse / expand all instances",
+    description: "Collapse / expand groups",
     defaultBinding: { key: "c", shift: true },
   },
   {

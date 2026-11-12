@@ -230,7 +230,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
           {hasUnexpandedLines && (
             <HeaderAction
               onClick={handleExpandAll}
-              label="Expand All"
+              label="Split lines into words"
               shortcut="timeline.expandAll"
               showHint={showHints}
             >
@@ -241,8 +241,8 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
           {hasGroups && (
             <HeaderAction
               onClick={handleToggleAllCollapsed}
-              label={anyExpanded ? "Collapse all" : "Expand all"}
-              description={anyExpanded ? "Collapse all groups" : "Expand all groups"}
+              label={anyExpanded ? "Collapse groups" : "Expand groups"}
+              description={anyExpanded ? "Collapse every group" : "Expand every group"}
               shortcut="timeline.toggleAllCollapsed"
               showHint={showHints}
               guideSpot="collapseAll"
