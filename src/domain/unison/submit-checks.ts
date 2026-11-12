@@ -17,7 +17,7 @@ type SubmitMode = "new" | "update";
 type TtmlCheckProblem = UnisonTtmlProblem | "malformed";
 
 type LineIssue = SyncGap | ZeroLengthWordIssue;
-type CheckField = "title" | "artist" | "isrc" | "language" | "album";
+type CheckField = "title" | "artist" | "isrc" | "language";
 type CheckFix =
   | { kind: "lines"; issues: readonly LineIssue[] }
   | { kind: "field"; field: CheckField }
