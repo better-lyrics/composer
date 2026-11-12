@@ -136,11 +136,6 @@ function useSpectrumSession(): void {
   }, []);
 }
 
-// The editor screen owns the analysis lifetime: leaving it for the Library or Unison releases everything.
-function useReleaseSpectrumWithEditor(): void {
-  useEffect(() => releaseSpectrumAnalysis, []);
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export { requestSpectrumRawPhase, useReleaseSpectrumWithEditor, useSpectrumSession };
+export { releaseSpectrumAnalysis, requestSpectrumRawPhase, useSpectrumSession };

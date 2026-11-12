@@ -12,8 +12,8 @@ import { ImportPanel } from "@/views/import";
 import { LanguagesPanel } from "@/views/languages";
 import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
+import { useReleaseTimelineCachesWithEditor } from "@/views/timeline/release-timeline-caches";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
-import { useReleaseSpectrumWithEditor } from "@/views/timeline/spectrum/use-spectrum-session";
 import { cn } from "@/utils/cn";
 import { Activity, memo, useState } from "react";
 
@@ -62,7 +62,7 @@ const TabPanel = memo<TabPanelProps>(({ tab, Panel, isActive }) => (
 
 const EditorScreen: React.FC = () => {
   useMissingAudioNotice();
-  useReleaseSpectrumWithEditor();
+  useReleaseTimelineCachesWithEditor();
   const activeTab = useProjectStore((state) => state.activeTab);
   const showPlayer = useTransportDeckShown();
   const showGuide = useSettingsStore((state) => state.showGuide);

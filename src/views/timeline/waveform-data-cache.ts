@@ -17,6 +17,7 @@ type DecodedAudio = Pick<AudioBuffer, "numberOfChannels" | "duration" | "getChan
 // -- State ---------------------------------------------------------------------
 
 let cached: CachedWaveformData | null = null;
+let accepting = true;
 
 // -- Functions -----------------------------------------------------------------
 
@@ -47,16 +48,23 @@ function mediaSource(media: HTMLAudioElement | null): string {
   return media?.currentSrc || media?.src || "no-audio";
 }
 
+function openWaveformCache(): void {
+  accepting = true;
+}
+
+function closeWaveformCache(): void {
+  accepting = false;
+  cached = null;
+}
+
 function readWaveformData(source: string): WaveformData | null {
   return cached?.source === source ? cached : null;
 }
 
 // Scales the samples in place, so call it only once the instance that drew them is destroyed.
 function keepWaveformData(source: string, media: HTMLAudioElement, decoded: DecodedAudio | null): void {
-  if (useAudioStore.getState().audioElement !== media || mediaSource(media) !== source || cached?.source === source) {
-    return;
-  }
-  if (!decoded || decoded.numberOfChannels === 0 || decoded.duration <= 0) return;
+  if (!accepting || useAudioStore.getState().audioElement !== media || mediaSource(media) !== source) return;
+  if (cached?.source === source || !decoded || decoded.numberOfChannels === 0 || decoded.duration <= 0) return;
   const peaks = Array.from({ length: decoded.numberOfChannels }, (_, channel) => decoded.getChannelData(channel));
   // WaveSurfer rescales peaks outside [-1, 1]; a power of two scale undone by barHeight rounds every bar to the same pixels.
   const scale = peaks[0].length > 0 ? unitRangeScale(peaks[0]) : null;
@@ -71,4 +79,4 @@ function keepWaveformData(source: string, media: HTMLAudioElement, decoded: Deco
 
 // -- Exports -------------------------------------------------------------------
 
-export { keepWaveformData, mediaSource, readWaveformData };
+export { closeWaveformCache, keepWaveformData, mediaSource, openWaveformCache, readWaveformData };
