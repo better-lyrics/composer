@@ -217,8 +217,8 @@ braccato-lyrics .blyrics-container {
   filter: opacity(0.3);
 }
 
-/* Text selection */
-::selection {
+/* Text selection. Not on words and rows: they hold no text, and matching them restyles their subtree on every fade frame. */
+:not(.word-face, [data-timeline-row])::selection {
   background-color: color-mix(in srgb, var(--color-composer-accent) 40%, transparent);
   color: var(--color-composer-text);
 }
@@ -919,8 +919,8 @@ braccato-lyrics .blyrics-container {
 }
 
 /* Range input styling */
-/* Help search matches, painted with the Custom Highlight API; mirrors HighlightMatches */
-::highlight(help-match) {
+/* Help search matches, painted with the Custom Highlight API; mirrors HighlightMatches. Scoped to the results: a global highlight rule restyles the subtree of every animating element. */
+[data-help-result-section] ::highlight(help-match) {
   color: var(--color-composer-accent-text);
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, var(--color-composer-accent) 70%, transparent);
