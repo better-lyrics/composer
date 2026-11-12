@@ -113,4 +113,3 @@ function startSharedCopiesHint(words: readonly DraggedWord[], clientX: number, c
 // -- Exports ------------------------------------------------------------------
 
 export { attachSharedCopiesChip, sharedCopiesHintSnapshot, startSharedCopiesHint, subscribeSharedCopiesHint };
-export type { DraggedWord };

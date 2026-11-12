@@ -33,4 +33,3 @@ function sharedCopyTargets(
 // -- Exports ------------------------------------------------------------------
 
 export { sharedCopyTargets };
-export type { SharedCopyTarget };

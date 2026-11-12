@@ -62,4 +62,3 @@ function alsoMovesLabel(names: readonly string[]): string | null {
 // -- Exports ------------------------------------------------------------------
 
 export { alsoMovesLabel, copiesMovedWith };
-export type { MovedCopies };
