@@ -2,6 +2,7 @@ import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { Button } from "@/ui/button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
+import { isMac } from "@/utils/platform";
 import { isInPopover, isTypingTarget } from "@/utils/typing-target";
 import { isKeyboardContextMenu } from "@/views/timeline/keyboard-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -52,7 +53,7 @@ const SelectionMenuButton: React.FC = () => {
     <Button ref={buttonRef} variant="secondary" size="sm" hasIcon onClick={toggleMenu} {...menuTriggerProps(isOpen)}>
       <IconDots className="size-3.5" />
       <span>More</span>
-      <InlineKeyBadge keys={KEYBOARD_MENU_KEYS} />
+      {!isMac && <InlineKeyBadge keys={KEYBOARD_MENU_KEYS} />}
     </Button>
   );
 };
