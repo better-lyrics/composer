@@ -11,7 +11,7 @@ type AudioSource =
   | { type: "file"; file: File }
   | { type: "youtube"; videoId: string; file?: File; details?: SourceMetadata }
   | null;
-type YouTubeLoadFailure = "bridge-unreachable" | "fetch-failed";
+type YouTubeLoadFailure = "bridge-unreachable" | "fetch-failed" | "cancelled";
 
 interface AudioState {
   source: AudioSource;
@@ -37,6 +37,7 @@ interface AudioActions {
   setYouTubeFile: (file: File, details?: SourceMetadata) => void;
   expectProjectAudio: (saved: SavedAudioSource) => void;
   failYouTubeLoad: (error: string, failure?: YouTubeLoadFailure) => void;
+  cancelYouTubeLoad: () => void;
   setIsPlaying: (isPlaying: boolean) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
@@ -92,6 +93,18 @@ function fallbackExpectedAudioBeforeYouTubeLoad(state: AudioState): SavedAudioSo
   return state.expectedAudio ?? state.youtubeFallbackExpectedAudio;
 }
 
+function revertYouTubeLoad(state: AudioState): Partial<AudioState> {
+  return {
+    source: state.youtubeFallbackSource,
+    currentTime: 0,
+    duration: 0,
+    isPlaying: false,
+    youtubeFallbackSource: null,
+    youtubeFallbackExpectedAudio: null,
+    expectedAudio: fallbackExpectedAudioBeforeYouTubeLoad(state),
+  };
+}
+
 // -- Store --------------------------------------------------------------------
 
 const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
@@ -145,17 +158,9 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
       expectedAudio: saved,
     }),
   failYouTubeLoad: (error, failure = "fetch-failed") =>
-    set((s) => ({
-      source: s.youtubeFallbackSource,
-      currentTime: 0,
-      duration: 0,
-      isPlaying: false,
-      youtubeLoadError: error,
-      youtubeLoadFailure: failure,
-      youtubeFallbackSource: null,
-      youtubeFallbackExpectedAudio: null,
-      expectedAudio: fallbackExpectedAudioBeforeYouTubeLoad(s),
-    })),
+    set((s) => ({ ...revertYouTubeLoad(s), youtubeLoadError: error, youtubeLoadFailure: failure })),
+  cancelYouTubeLoad: () =>
+    set((s) => ({ ...revertYouTubeLoad(s), youtubeLoadError: null, youtubeLoadFailure: "cancelled" })),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setCurrentTime: (currentTime) => set({ currentTime }),
   setDuration: (duration) => set({ duration }),

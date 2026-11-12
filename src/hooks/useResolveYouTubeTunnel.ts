@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createElement, useEffect, useRef } from "react";
+import { YOUTUBE_TUNNEL_QUERY_KEY, beginDownloadProgress } from "@/audio/youtube-download";
 import { metadataForNewSource } from "@/domain/project/source-metadata";
 import { useEnsureAuth } from "@/hooks/useEnsureAuth";
 import { correctPrimingForProjectAudio } from "@/lib/attach-audio-priming";
@@ -27,6 +28,7 @@ import {
   getAudioFromBridge,
   isBridgeUnreachable,
 } from "@/utils/composer-bridge-api";
+import { type BodyProgress, readBodyWithProgress } from "@/utils/read-response-body";
 import { toast } from "@/utils/toast";
 import { isYouTubeSourceFor } from "@/utils/youtube-source";
 
@@ -83,10 +85,17 @@ function buildAudioFile(buffer: ArrayBuffer, filename: string | undefined, video
   return new File([buffer], `${safeName}.opus`, { type: AUDIO_MIME });
 }
 
-async function fetchViaBridge(videoId: string, signal: AbortSignal): Promise<TunnelResult> {
+type ReportProgress = (progress: BodyProgress) => void;
+
+async function fetchViaBridge(videoId: string, signal: AbortSignal, onProgress: ReportProgress): Promise<TunnelResult> {
   const baseUrl = useSettingsStore.getState().composerBridgeUrl;
   try {
-    const { buffer, mimeType, title, artist, album, isrc } = await getAudioFromBridge(baseUrl, videoId, signal);
+    const { buffer, mimeType, title, artist, album, isrc } = await getAudioFromBridge(
+      baseUrl,
+      videoId,
+      signal,
+      onProgress,
+    );
     if (signal.aborted) throw new DOMException("aborted", "AbortError");
     const filename = [artist, title].filter(Boolean).join(" - ") || title;
     return {
@@ -101,7 +110,9 @@ async function fetchViaBridge(videoId: string, signal: AbortSignal): Promise<Tun
       wasDefault: false,
     };
   } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") throw err;
+    if (signal.aborted || (err instanceof DOMException && err.name === "AbortError")) {
+      throw new DOMException("aborted", "AbortError");
+    }
     throw new TunnelError(err, BRIDGE_INSTANCE_ID, BRIDGE_INSTANCE_LABEL, false);
   }
 }
@@ -110,6 +121,7 @@ async function fetchViaCobalt(
   videoId: string,
   signal: AbortSignal,
   ensureAuth: () => Promise<string>,
+  onProgress: ReportProgress,
 ): Promise<TunnelResult> {
   const instanceAtStart = getActiveCobaltInstance();
   const wasDefault = isUsingDefaultCobaltInstance();
@@ -128,7 +140,7 @@ async function fetchViaCobalt(
 
     const res = await fetch(tunnelUrl, { signal });
     if (!res.ok) throw new CobaltApiError("cobalt_failed", res.status);
-    const buffer = await res.arrayBuffer();
+    const buffer = await readBodyWithProgress(res, onProgress);
     if (signal.aborted) throw new DOMException("aborted", "AbortError");
     if (buffer.byteLength === 0) throw new CobaltApiError("empty_audio", res.status);
 
@@ -145,11 +157,20 @@ async function fetchViaCobalt(
   }
 }
 
-function fetchTunnel(videoId: string, signal: AbortSignal, ensureAuth: () => Promise<string>): Promise<TunnelResult> {
-  if (useSettingsStore.getState().experiments.youtubeBridge) {
-    return fetchViaBridge(videoId, signal);
+async function fetchTunnel(
+  videoId: string,
+  signal: AbortSignal,
+  ensureAuth: () => Promise<string>,
+): Promise<TunnelResult> {
+  const progress = beginDownloadProgress();
+  try {
+    if (useSettingsStore.getState().experiments.youtubeBridge) {
+      return await fetchViaBridge(videoId, signal, progress.report);
+    }
+    return await fetchViaCobalt(videoId, signal, ensureAuth, progress.report);
+  } finally {
+    progress.end();
   }
-  return fetchViaCobalt(videoId, signal, ensureAuth);
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -165,7 +186,7 @@ function useResolveYouTubeTunnel(): void {
   const videoId = source?.type === "youtube" && !source.file ? source.videoId : null;
 
   const query = useQuery<TunnelResult>({
-    queryKey: ["youtube-tunnel", videoId, bridgeEnabled, bridgeUrl],
+    queryKey: [YOUTUBE_TUNNEL_QUERY_KEY, videoId, bridgeEnabled, bridgeUrl],
     enabled: videoId !== null,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 0,

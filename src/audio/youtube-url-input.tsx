@@ -1,18 +1,33 @@
-import { isYouTubeLoadError, isYouTubeLoadFailure, useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
+import type { YouTubeDownloadProgress } from "@/audio/youtube-download";
+import {
+  isYouTubeLoadCancelled,
+  isYouTubeLoadError,
+  isYouTubeLoadFailure,
+  useLoadYouTubeSource,
+} from "@/hooks/useLoadYouTubeSource";
+import { useYouTubeDownload } from "@/hooks/useYouTubeDownload";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import { FLOATING_INPUT_STYLES, INPUT_STYLES } from "@/ui/input-styles";
+import { ProgressBar } from "@/ui/progress-bar";
 import { cn } from "@/utils/cn";
 import { focusOnMount } from "@/utils/focus-on-mount";
 import { INVALID_YOUTUBE_LINK_MESSAGE, extractVideoId } from "@/utils/youtube-url";
-import { IconBrandYoutube, IconLoader2 } from "@tabler/icons-react";
+import { IconBrandYoutube, IconLoader2, IconX } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[YouTubeUrlInput]";
 
-// -- Component ----------------------------------------------------------------
+// -- Components ---------------------------------------------------------------
+
+const DownloadProgress: React.FC<{ progress: YouTubeDownloadProgress }> = ({ progress }) => (
+  <div className="flex flex-col gap-1.5">
+    {progress.percent !== null && <ProgressBar percent={progress.percent} label="YouTube download" className="h-1.5" />}
+    <span className="text-[12px] text-(--muted) tabular-nums">{progress.label}</span>
+  </div>
+);
 
 interface YouTubeUrlInputProps {
   placeholder?: string;
@@ -34,6 +49,7 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
   const isLoading = useAudioStore((s) => s.isLoading);
   const youtubeLoadError = useAudioStore((s) => s.youtubeLoadError);
   const loadYouTubeSource = useLoadYouTubeSource();
+  const download = useYouTubeDownload();
 
   const handleSubmit = useCallback(async () => {
     const videoId = extractVideoId(value);
@@ -46,6 +62,7 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
       await (onLoadVideo ?? loadYouTubeSource)(videoId);
       setValue("");
     } catch (error) {
+      if (isYouTubeLoadCancelled(error)) return;
       if (isYouTubeLoadError(error) && !isYouTubeLoadFailure(error)) {
         console.info(LOG_PREFIX, "ignored a superseded video load", error);
         return;
@@ -85,18 +102,26 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
           ref={focusOnOpen ? focusOnMount : undefined}
           className={cn(surface === "floating" ? FLOATING_INPUT_STYLES : INPUT_STYLES, "flex-1 h-9 select-text")}
         />
-        <Button
-          variant="primary"
-          size="lg"
-          hasIcon
-          onClick={handleSubmit}
-          disabled={isLoading || trimmed.length === 0}
-          className="rounded-lg"
-        >
-          {isLoading ? <IconLoader2 size={16} className="animate-spin" /> : <IconBrandYoutube size={16} />}
-          {isLoading ? "Loading" : "Load"}
-        </Button>
+        {download.downloading ? (
+          <Button variant="secondary" size="lg" hasIcon onClick={download.cancel} className="rounded-lg">
+            <IconX size={16} />
+            Cancel
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            size="lg"
+            hasIcon
+            onClick={handleSubmit}
+            disabled={isLoading || trimmed.length === 0}
+            className="rounded-lg"
+          >
+            {isLoading ? <IconLoader2 size={16} className="animate-spin" /> : <IconBrandYoutube size={16} />}
+            {isLoading ? "Loading" : "Load"}
+          </Button>
+        )}
       </div>
+      {download.downloading && download.progress && <DownloadProgress progress={download.progress} />}
       {error && <p className="text-xs text-composer-negative select-text">{error}</p>}
     </div>
   );
