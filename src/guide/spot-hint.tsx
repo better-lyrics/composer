@@ -1,7 +1,8 @@
 import { hideOnPressElsewhere, hideSpotHint, spotHintSnapshot, subscribeSpotHint } from "@/guide/spot-hint-store";
 import { guideChipVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
-import { AnimatePresence, MotionConfig, m } from "motion/react";
+import { MotionFloatingChip } from "@/ui/floating-chip";
+import { AnimatePresence, MotionConfig } from "motion/react";
 import { useEffect, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
@@ -29,7 +30,7 @@ const SpotHint: React.FC = () => {
     <MotionConfig reducedMotion="user">
       <AnimatePresence>
         {hint && (
-          <m.div
+          <MotionFloatingChip
             key={hint.id}
             role="status"
             variants={guideChipVariants}
@@ -38,14 +39,14 @@ const SpotHint: React.FC = () => {
             exit="exit"
             style={{ left: hint.x, top: hint.y }}
             className={cn(
-              "surface-floating layer-floating pointer-events-none fixed flex h-8 max-w-[min(420px,calc(100vw-2rem))] items-center gap-2 rounded-full border border-transparent px-2.5 text-xs whitespace-nowrap select-none",
+              "max-w-[min(420px,calc(100vw-2rem))] px-2.5",
               hint.fromRight && "-translate-x-full",
               !hint.below && "-translate-y-full",
             )}
           >
             <hint.icon className="size-4 shrink-0 text-composer-accent-text" stroke={1.75} />
             <span className="truncate">{hint.text}</span>
-          </m.div>
+          </MotionFloatingChip>
         )}
       </AnimatePresence>
     </MotionConfig>,

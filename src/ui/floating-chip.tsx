@@ -4,7 +4,7 @@ import { m } from "motion/react";
 // -- Interfaces ----------------------------------------------------------------
 
 interface FloatingChipProps extends React.HTMLAttributes<HTMLDivElement> {
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   ref?: React.Ref<HTMLDivElement>;
 }
 
@@ -18,9 +18,11 @@ const FloatingChip: React.FC<FloatingChipProps> = ({ icon, className, children, 
     )}
     {...rest}
   >
-    <span className="relative flex size-5 shrink-0 items-center justify-center rounded-full bg-(--layer-2)">
-      {icon}
-    </span>
+    {icon && (
+      <span className="relative flex size-5 shrink-0 items-center justify-center rounded-full bg-(--layer-2)">
+        {icon}
+      </span>
+    )}
     {children}
   </div>
 );
