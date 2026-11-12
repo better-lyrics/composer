@@ -1,5 +1,5 @@
-import type { WordTiming } from "@/domain/word/timing";
 import { nanoid } from "nanoid";
+import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
@@ -133,18 +133,36 @@ function absorbDeletedSyllablesIntoNeighbors(words: WordTiming[], deletedIndices
     }
   }
 
-  if (beginExtensions.size === 0 && endExtensions.size === 0) return words;
+  const spacedIndices = survivorsBeforeDeletedSpace(words, deleted);
+  if (beginExtensions.size === 0 && endExtensions.size === 0 && spacedIndices.size === 0) return words;
 
   return words.map((w, i) => {
     const newBegin = beginExtensions.get(i);
     const newEnd = endExtensions.get(i);
-    if (newBegin === undefined && newEnd === undefined) return w;
+    const spaced = spacedIndices.has(i);
+    if (newBegin === undefined && newEnd === undefined && !spaced) return w;
     return {
       ...w,
+      text: spaced ? `${w.text} ` : w.text,
       begin: newBegin !== undefined && newBegin < w.begin ? newBegin : w.begin,
       end: newEnd !== undefined && newEnd > w.end ? newEnd : w.end,
     };
   });
+}
+
+// Deleting spans never joins the words on either side: when a deleted run held a word boundary, the
+// surviving span before it takes the boundary.
+function survivorsBeforeDeletedSpace(words: WordTiming[], deleted: Set<number>): Set<number> {
+  const spaced = new Set<number>();
+  for (let i = 0; i < words.length; i++) {
+    if (!deleted.has(i) || deleted.has(i - 1) || i === 0) continue;
+    let end = i;
+    while (deleted.has(end + 1)) end++;
+    const survivorAfter = end + 1 < words.length;
+    const runEndsWord = words.slice(i, end + 1).some((w) => w.text.endsWith(" "));
+    if (survivorAfter && runEndsWord && !words[i - 1].text.endsWith(" ")) spaced.add(i - 1);
+  }
+  return spaced;
 }
 
 function inferSyllableGroupIds(words: WordTiming[]): WordTiming[] {
@@ -190,6 +208,7 @@ function closeIntraGroupGaps(words: WordTiming[]): WordTiming[] {
 
 // -- Exports ------------------------------------------------------------------
 
+export type { SyllablePosition };
 export {
   absorbDeletedSyllablesIntoNeighbors,
   closeIntraGroupGaps,
@@ -200,4 +219,3 @@ export {
   hasIntraGroupGap,
   inferSyllableGroupIds,
 };
-export type { SyllablePosition };
