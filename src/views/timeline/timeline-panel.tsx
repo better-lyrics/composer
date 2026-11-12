@@ -42,6 +42,7 @@ import { syncViewScroll, viewScrollLeft } from "@/views/timeline/view-scroll";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
+import { useLineRevealRequest } from "@/views/timeline/line-reveal-request";
 import { useGestureInputReplay } from "@/views/timeline/use-gesture-input-replay";
 import { useGroupFocusScroll } from "@/views/timeline/use-group-focus-scroll";
 import { useGroupFocusShortcuts } from "@/views/timeline/use-group-focus-shortcuts";
@@ -131,6 +132,7 @@ const TimelinePanel: React.FC = () => {
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
   const openLyricsModal = useCallback(() => openImportModal(), [openImportModal]);
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
+  useLineRevealRequest(scrollContainerRef, effectiveLines);
   useGroupFocusShortcuts();
   useGroupFocusScroll(scrollContainerRef);
   useTimelineWheel(scrollContainerRef, timelineShown);

@@ -1,9 +1,8 @@
 import { alignmentReview } from "@/domain/alignment/review-state";
-import { effectiveBounds } from "@/domain/line/bounds";
-import { useAudioStore } from "@/stores/audio";
 import { FINISH_OPEN_PROMPT_FIRST, askChoice } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { UNREVIEWED_REASON, UNREVIEWED_TITLE } from "@/views/export/alignment-review-copy";
+import { revealLineInTimeline } from "@/views/timeline/line-reveal-request";
 import { useCallback, useMemo } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -31,11 +30,8 @@ function useAlignmentReview() {
         : null;
 
   const reviewInTimeline = useCallback(() => {
-    const project = useProjectStore.getState();
-    const line = project.lines.find((candidate) => candidate.id === review.firstUntouchedLineId);
-    const begin = line ? effectiveBounds(line)?.begin : undefined;
-    project.setActiveTab("timeline");
-    if (begin !== undefined) useAudioStore.getState().seekTo(begin, "centre");
+    if (review.firstUntouchedLineId) revealLineInTimeline(review.firstUntouchedLineId, null);
+    else useProjectStore.getState().setActiveTab("timeline");
   }, [review.firstUntouchedLineId]);
 
   const confirmExport = useCallback(
