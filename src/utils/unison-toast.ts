@@ -1,9 +1,9 @@
 import { isUnisonNotFound, isUnisonSessionEnded, UnisonError } from "@/lib/unison/client";
-import { useProjectStore } from "@/stores/project";
 import { settingEntry } from "@/stores/settings-catalog";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { pluralize } from "@/utils/pluralize";
 import { toast } from "@/utils/toast";
+import { showUndoToast } from "@/utils/undo-toast";
 
 // -- Types --------------------------------------------------------------------
 
@@ -104,10 +104,7 @@ function showUpdateSentToast(goesLive: boolean): void {
 }
 
 function showRevisionLoadedToast(revNo: number, skippedLines: number): void {
-  toast.success(`Loaded revision ${revNo}`, {
-    description: skippedLines > 0 ? skippedLinesMessage(skippedLines) : undefined,
-    action: { label: "Undo", onClick: () => useProjectStore.getState().undo() },
-  });
+  showUndoToast(`Loaded revision ${revNo}`, skippedLines > 0 ? skippedLinesMessage(skippedLines) : undefined);
 }
 
 function showRevisionRestoredToast(revNo: number, goesLive: boolean): void {
