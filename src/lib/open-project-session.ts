@@ -95,6 +95,11 @@ function openProjectIdSnapshot(): string | undefined {
   return knownOpenProjectId;
 }
 
+// Changes only on a deliberate switch or forget, never when a first save gives the session its id.
+function openProjectSessionGeneration(): number {
+  return sessionGeneration;
+}
+
 function subscribeOpenProjectId(listener: () => void): () => void {
   listeners.add(listener);
   return () => {
@@ -140,6 +145,7 @@ export {
   adoptOpenProjectId,
   forgetOpenProjectId,
   openProjectIdSnapshot,
+  openProjectSessionGeneration,
   subscribeOpenProjectId,
   bindSaveTarget,
   beginOpeningProject,

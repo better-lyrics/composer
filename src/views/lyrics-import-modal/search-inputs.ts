@@ -1,11 +1,21 @@
 import { namedArtists } from "@/domain/project/display-title";
-import { openProjectIdSnapshot } from "@/lib/open-project-session";
+import { readModalDraft, writeModalDraft } from "@/lib/modal-drafts";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
-import { type SearchInputs, useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { fileNameWithoutExtension } from "@/utils/file-name";
 import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 import { formatDuration } from "@/views/lyrics-import-modal/duration-input-utils";
+
+// -- Interfaces ---------------------------------------------------------------
+
+interface SearchInputs {
+  track: string;
+  artist: string;
+  album: string;
+  duration: string;
+  videoId: string;
+  isrc?: string;
+}
 
 // -- Constants ----------------------------------------------------------------
 
@@ -46,16 +56,14 @@ function projectSearchQuery(): LyricsSearchQuery {
 }
 
 function initialSearchInputs(prefill: LyricsSearchQuery | null): SearchInputs {
-  const draft = useImportModalStore.getState().searchDraft;
-  if (draft !== null && draft.projectId === openProjectIdSnapshot()) return draft.inputs;
-  return inputsFromQuery(prefill ?? projectSearchQuery());
+  return readModalDraft("lyrics-search") ?? inputsFromQuery(prefill ?? projectSearchQuery());
 }
 
-// Callers pass the project the fields were loaded for, so a project switch while the modal is open cannot relabel them.
-function saveSearchDraft(projectId: string | undefined, inputs: SearchInputs): void {
-  useImportModalStore.getState().setSearchDraft({ projectId, inputs });
+function saveSearchDraft(inputs: SearchInputs): void {
+  writeModalDraft("lyrics-search", inputs);
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export { EMPTY_SEARCH_INPUTS, initialSearchInputs, saveSearchDraft };
+export type { SearchInputs };

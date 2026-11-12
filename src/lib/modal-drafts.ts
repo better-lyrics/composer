@@ -1,10 +1,12 @@
-import { openProjectIdSnapshot, subscribeOpenProjectId } from "@/lib/open-project-session";
+import { openProjectSessionGeneration, subscribeOpenProjectId } from "@/lib/open-project-session";
+import type { SearchInputs } from "@/views/lyrics-import-modal/search-inputs";
 
 // -- Interfaces ---------------------------------------------------------------
 
 interface ModalDrafts {
   "paste-translations": { pastedText: string; text: string; manualRows: string[] | null };
   "import-lyrics": { text: string };
+  "lyrics-search": SearchInputs;
 }
 
 type ModalDraftKey = keyof ModalDrafts;
@@ -12,7 +14,7 @@ type ModalDraftKey = keyof ModalDrafts;
 // -- Module state -------------------------------------------------------------
 
 let drafts: Partial<ModalDrafts> = {};
-let draftProjectId = openProjectIdSnapshot();
+let draftGeneration = openProjectSessionGeneration();
 
 // -- Public API ---------------------------------------------------------------
 
@@ -32,10 +34,9 @@ function clearModalDraft(key: ModalDraftKey): void {
 // -- Wiring -------------------------------------------------------------------
 
 subscribeOpenProjectId(() => {
-  const openId = openProjectIdSnapshot();
-  // A first save gives the unsaved session its id; the drafts still belong to it.
-  if (draftProjectId !== undefined) drafts = {};
-  draftProjectId = openId;
+  const generation = openProjectSessionGeneration();
+  if (generation !== draftGeneration) drafts = {};
+  draftGeneration = generation;
 });
 
 // -- Exports ------------------------------------------------------------------

@@ -1,3 +1,4 @@
+import { clearModalDraft } from "@/lib/modal-drafts";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 import type { ImportSourceInfo } from "@/views/lyrics-import-modal/import-lyrics";
@@ -12,24 +13,9 @@ interface LastImportResult {
   source: ImportSourceInfo;
 }
 
-interface SearchInputs {
-  track: string;
-  artist: string;
-  album: string;
-  duration: string;
-  videoId: string;
-  isrc?: string;
-}
-
-interface SearchDraft {
-  projectId: string | undefined;
-  inputs: SearchInputs;
-}
-
 interface ImportModalState {
   isOpen: boolean;
   prefill: LyricsSearchQuery | null;
-  searchDraft: SearchDraft | null;
   initialSection: ImportModalSection | null;
   lastImportResult: LastImportResult | null;
 }
@@ -42,7 +28,6 @@ interface OpenArgs {
 interface ImportModalStore extends ImportModalState {
   open: (args?: OpenArgs) => void;
   close: () => void;
-  setSearchDraft: (draft: SearchDraft) => void;
   recordImportResult: (parsed: ParseResult, source: ImportSourceInfo) => void;
   clearImportResult: () => void;
 }
@@ -52,7 +37,6 @@ interface ImportModalStore extends ImportModalState {
 const INITIAL_STATE: ImportModalState = {
   isOpen: false,
   prefill: null,
-  searchDraft: null,
   initialSection: null,
   lastImportResult: null,
 };
@@ -64,20 +48,16 @@ const useImportModalStore = create<ImportModalStore>()((set) => ({
 
   open: (args) => {
     const explicit = args?.prefill;
+    if (explicit) clearModalDraft("lyrics-search");
     set({
       isOpen: true,
       prefill: explicit ?? null,
       initialSection: args?.section ?? null,
-      ...(explicit ? { searchDraft: null } : {}),
     });
   },
 
   close: () => {
     set({ isOpen: false, prefill: null, initialSection: null });
-  },
-
-  setSearchDraft: (draft) => {
-    set({ searchDraft: draft });
   },
 
   recordImportResult: (parsed, source) => {
@@ -95,7 +75,7 @@ function useImportModal(): (args?: OpenArgs) => void {
   return useImportModalStore.getState().open;
 }
 
-function useImportModalState(): Omit<ImportModalState, "lastImportResult" | "searchDraft"> {
+function useImportModalState(): Omit<ImportModalState, "lastImportResult"> {
   const isOpen = useImportModalStore((s) => s.isOpen);
   const prefill = useImportModalStore((s) => s.prefill);
   const initialSection = useImportModalStore((s) => s.initialSection);
@@ -109,4 +89,4 @@ function useLastImportResult(): LastImportResult | null {
 // -- Exports ------------------------------------------------------------------
 
 export { INITIAL_STATE, useImportModal, useImportModalState, useImportModalStore, useLastImportResult };
-export type { ImportModalSection, SearchInputs };
+export type { ImportModalSection };

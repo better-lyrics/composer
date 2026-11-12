@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { readModalDraft, writeModalDraft } from "@/lib/modal-drafts";
 import { INITIAL_STATE, useImportModal, useImportModalStore } from "@/stores/import-modal-store";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -148,23 +149,20 @@ describe("import-modal-store", () => {
   });
 });
 
-describe("import-modal-store · searchDraft", () => {
-  const draft = {
-    projectId: "p1",
-    inputs: { track: "Typed", artist: "", album: "", duration: "3:4", videoId: "" },
-  };
+describe("import-modal-store · search draft", () => {
+  const inputs = { track: "Typed", artist: "", album: "", duration: "3:4", videoId: "" };
 
   it("close() keeps the search draft so reopening the modal restores it", () => {
     useImportModalStore.getState().open();
-    useImportModalStore.getState().setSearchDraft(draft);
+    writeModalDraft("lyrics-search", inputs);
     useImportModalStore.getState().close();
     useImportModalStore.getState().open();
-    expect(useImportModalStore.getState().searchDraft).toEqual(draft);
+    expect(readModalDraft("lyrics-search")).toEqual(inputs);
   });
 
   it("open({ prefill }) discards the draft so the explicit prefill wins", () => {
-    useImportModalStore.getState().setSearchDraft(draft);
+    writeModalDraft("lyrics-search", inputs);
     useImportModalStore.getState().open({ prefill: { track: "Override" } });
-    expect(useImportModalStore.getState().searchDraft).toBeNull();
+    expect(readModalDraft("lyrics-search")).toBeUndefined();
   });
 });

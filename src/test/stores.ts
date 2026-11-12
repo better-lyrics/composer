@@ -1,3 +1,4 @@
+import { clearModalDraft } from "@/lib/modal-drafts";
 import { cancelCountIn } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useAuthStore } from "@/stores/auth";
@@ -47,6 +48,7 @@ async function resetAllStores(): Promise<void> {
   useConfirmStore.setState({ isOpen: false, options: null, resolve: null, queue: [] });
   useChoiceStore.setState({ request: null, checked: false, resolveIndex: null });
   useImportModalStore.setState({ ...IMPORT_MODAL_INITIAL_STATE });
+  clearModalDraft("lyrics-search");
   useEscapeLayerStackStore.setState({ layers: [] });
   useUIStore.setState({ ...UI_INITIAL_STATE });
 
