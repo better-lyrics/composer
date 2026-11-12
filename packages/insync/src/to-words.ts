@@ -14,7 +14,13 @@ interface WordsOutput {
 function wordsFromSyllables(track: SyllableTrack): WordsOutput[] {
   return track.flatMap((syllable) =>
     syllable.span
-      ? [{ text: syllable.text + syllable.sep, begin: secondsFromMs(syllable.span[0]), end: secondsFromMs(syllable.span[1]) }]
+      ? [
+          {
+            text: syllable.text + syllable.sep,
+            begin: secondsFromMs(syllable.span[0]),
+            end: secondsFromMs(syllable.span[1]),
+          },
+        ]
       : [],
   );
 }
