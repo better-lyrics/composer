@@ -1436,6 +1436,10 @@ braccato-lyrics .blyrics-container {
     border-color: var(--color-composer-accent);
   }
 
+  &:has(textarea[aria-invalid="true"]) {
+    border-color: var(--color-composer-negative);
+  }
+
   & > .bh-edit {
     display: grid;
     min-height: 0;
