@@ -190,8 +190,14 @@ function pump(stamp: number): void {
   if (import.meta.env.DEV) reportRunawayFrames(rescheduling);
 }
 
-function wake(frames = TAIL_FRAMES): void {
-  tailFrames = Math.max(tailFrames, frames);
+function wake(): void {
+  tailFrames = TAIL_FRAMES;
+  framesSinceWake = 0;
+  schedule();
+}
+
+function wakeForOneFrame(): void {
+  tailFrames = Math.max(tailFrames, 1);
   framesSinceWake = 0;
   schedule();
 }
@@ -273,5 +279,6 @@ export {
   nextFrame,
   subscribeFrame,
   wake,
+  wakeForOneFrame,
 };
 export type { FrameCallback, FramePhases };

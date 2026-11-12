@@ -6,6 +6,7 @@ import { advanceFrames, type FrameLoopModule, loadFrameLoop } from "@/test/frame
 let subscribeFrame: FrameLoopModule["subscribeFrame"];
 let holdFrames: FrameLoopModule["holdFrames"];
 let wake: FrameLoopModule["wake"];
+let wakeForOneFrame: FrameLoopModule["wakeForOneFrame"];
 let nextFrame: FrameLoopModule["nextFrame"];
 let cancelNextFrame: FrameLoopModule["cancelNextFrame"];
 let tailFrames: number;
@@ -26,6 +27,7 @@ beforeEach(async () => {
   subscribeFrame = frameLoop.subscribeFrame;
   holdFrames = frameLoop.holdFrames;
   wake = frameLoop.wake;
+  wakeForOneFrame = frameLoop.wakeForOneFrame;
   nextFrame = frameLoop.nextFrame;
   cancelNextFrame = frameLoop.cancelNextFrame;
   tailFrames = frameLoop.TAIL_FRAMES;
@@ -85,7 +87,7 @@ describe("frame-loop", () => {
       const probe = countingSubscriber();
       const unsubscribe = probe.subscribe();
       advanceFrames(100);
-      wake(1);
+      wakeForOneFrame();
       advanceFrames(100);
       expect(probe.calls()).toBe(tailFrames + 1);
       unsubscribe();
@@ -95,7 +97,7 @@ describe("frame-loop", () => {
       const probe = countingSubscriber();
       const unsubscribe = probe.subscribe();
       advanceFrames(1);
-      wake(1);
+      wakeForOneFrame();
       advanceFrames(100);
       expect(probe.calls()).toBe(tailFrames);
       unsubscribe();
