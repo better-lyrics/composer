@@ -1,10 +1,10 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 /**
  * @vitest-environment node
  */
 import { useProjectStore } from "@/stores/project";
-import { beforeEach, describe, expect, it } from "vitest";
 
 // text/words single source of truth. Whenever a store mutation writes
 // a words/backgroundWords array, the paired text/backgroundText is re-derived
@@ -49,6 +49,22 @@ describe("history writes derive text only for the lines they change", () => {
 
     const partial = useProjectStore.getState().lines.find((line) => line.id === "partial");
     expect(partial?.text).toBe("hello world");
+  });
+
+  it("regression: an edit on a partly synced line keeps its untimed words", () => {
+    useProjectStore.getState().setLines([
+      reconcileLine({
+        id: "partial",
+        text: "every night in my dreams",
+        agentId: "v1",
+        words: [w("every ", 0, 1), w("night ", 1, 2), w("in ", 2, 3)],
+      }),
+    ]);
+
+    useProjectStore.getState().toggleWordExplicit("partial", "words", [0]);
+    useProjectStore.getState().snapSyllablesFlush("partial", "words");
+
+    expect(useProjectStore.getState().lines[0].text).toBe("every night in my dreams");
   });
 });
 
