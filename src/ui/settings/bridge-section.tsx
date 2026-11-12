@@ -13,14 +13,31 @@ import { useEffect, useMemo } from "react";
 // -- Constants ----------------------------------------------------------------
 
 const HEALTH_REFETCH_INTERVAL = 8000;
+const LOG_PREFIX = "[BridgeSection]";
+
+// -- Types --------------------------------------------------------------------
+
+type HealthCheck = { health: BridgeHealth } | { errorMessage: string };
+
+// -- Helpers ------------------------------------------------------------------
+
+// A failed check resolves instead of throwing: TanStack resets a dataless query to pending on every refetch, which blinked the error steps.
+function checkHealthSettled(url: string, signal: AbortSignal): Promise<HealthCheck> {
+  return checkBridgeHealth(url, signal).then(
+    (health) => ({ health }),
+    (error: unknown) => {
+      console.debug(LOG_PREFIX, "health check failed", error);
+      return { errorMessage: error instanceof Error ? error.message : "bridge unreachable" };
+    },
+  );
+}
 
 // -- Sub-components -----------------------------------------------------------
 
 const StatusBadge: React.FC<{
   state: "checking" | "ok" | "error";
   data: BridgeHealth | undefined;
-  errorMessage: string | undefined;
-}> = ({ state, data, errorMessage }) => {
+}> = ({ state, data }) => {
   if (state === "checking") {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-composer-text-muted">
@@ -38,10 +55,7 @@ const StatusBadge: React.FC<{
     );
   }
   return (
-    <span
-      className="inline-flex items-center gap-1.5 text-xs text-rose-500"
-      title={errorMessage ?? "bridge unreachable"}
-    >
+    <span className="inline-flex items-center gap-1.5 text-xs text-rose-500">
       <IconExclamationCircle size={12} />
       Not running
     </span>
@@ -89,7 +103,7 @@ const BridgeSection: React.FC = () => {
 
   const health = useQuery({
     queryKey: [HEALTH_QUERY_KEY, bridgeUrl],
-    queryFn: ({ signal }) => checkBridgeHealth(bridgeUrl, signal),
+    queryFn: ({ signal }) => checkHealthSettled(bridgeUrl, signal),
     enabled,
     staleTime: 0,
     gcTime: 0,
@@ -97,13 +111,15 @@ const BridgeSection: React.FC = () => {
     retry: false,
   });
 
-  useEffect(() => {
-    if (health.data) markBridgeDetected();
-  }, [health.data]);
+  const check = health.data;
+  const healthData = check && "health" in check ? check.health : undefined;
+  const errorMessage = check && "errorMessage" in check ? check.errorMessage : undefined;
 
-  const state: "checking" | "ok" | "error" =
-    health.isFetching && !health.data ? "checking" : health.data ? "ok" : "error";
-  const errorMessage = health.error instanceof Error ? health.error.message : undefined;
+  useEffect(() => {
+    if (healthData) markBridgeDetected();
+  }, [healthData]);
+
+  const state: "checking" | "ok" | "error" = healthData ? "ok" : errorMessage !== undefined ? "error" : "checking";
 
   return (
     <div data-testid="bridge-section" className="py-3">
@@ -134,8 +150,13 @@ const BridgeSection: React.FC = () => {
         <div className="flex flex-col gap-2 px-3 py-3 rounded-md bg-(--well) border border-(--edge)">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-composer-text">Bridge status</span>
-            <StatusBadge state={state} data={health.data} errorMessage={errorMessage} />
+            <StatusBadge state={state} data={healthData} />
           </div>
+          {state === "error" && errorMessage && (
+            <p className="text-[11px] text-composer-text-muted font-mono break-all select-text cursor-text">
+              {errorMessage}
+            </p>
+          )}
 
           <BridgeUrlField
             key={bridgeUrl}
