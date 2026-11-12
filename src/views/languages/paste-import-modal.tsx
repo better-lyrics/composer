@@ -240,7 +240,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
           <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-(--divider) select-none">
             <div className="flex items-center gap-3">
               {showClearDraft && (
-                <Button variant="ghost" onClick={clearDraft}>
+                <Button variant="ghost" size="sm" onClick={clearDraft} className="-ml-3">
                   Clear draft
                 </Button>
               )}
