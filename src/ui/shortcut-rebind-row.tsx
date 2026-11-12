@@ -11,6 +11,7 @@ import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { KeyBadge } from "@/ui/shortcut-reference";
 import { cn } from "@/utils/cn";
+import { focusOnMount } from "@/utils/focus-on-mount";
 import { MOD_KEY } from "@/utils/platform";
 import {
   bindingFromKeyboardEvent,
@@ -69,7 +70,7 @@ function spokenKeys(keys: string[]): string {
 const NoticeKeys: React.FC<{ keys: string[] }> = ({ keys }) => (
   <>
     <span aria-hidden="true">
-      <InlineKeyBadge keys={keys} className="ml-0 align-[-2px]" />
+      <InlineKeyBadge keys={keys} className="ml-0" />
     </span>
     <span className="sr-only">{spokenKeys(keys)}</span>
   </>
@@ -100,14 +101,20 @@ const CaptureNotice: React.FC<CaptureNoticeProps> = ({ message, currentKeys, new
     <div className="flex shrink-0 items-center gap-1.5">
       <Button
         size="sm"
-        variant="ghost"
+        variant="secondary"
         aria-label={currentKeys.length === 0 ? "Keep unbound" : `Keep ${spokenKeys(currentKeys)}`}
         onClick={onKeep}
       >
         Keep
         <InlineKeyBadge keys={currentKeys} className="ml-0" />
       </Button>
-      <Button size="sm" variant="secondary" aria-label={`Use ${spokenKeys(newKeys)} here`} onClick={onUse}>
+      <Button
+        size="sm"
+        variant="secondary"
+        aria-label={`Use ${spokenKeys(newKeys)} here`}
+        onClick={onUse}
+        ref={focusOnMount}
+      >
         Use
         <InlineKeyBadge keys={newKeys} className="ml-0" />
         here

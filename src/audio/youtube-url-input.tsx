@@ -22,18 +22,21 @@ import { useCallback, useState } from "react";
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[YouTubeUrlInput]";
-const PROGRESS_TRACK = "h-1.5 bg-(--well) shadow-(--well-edge)";
 
 // -- Components ---------------------------------------------------------------
 
-const DownloadProgress: React.FC<{ progress: YouTubeDownloadProgress | null }> = ({ progress }) => (
-  <div className="flex flex-col gap-1.5">
-    {progress?.percent != null ? (
-      <ProgressBar percent={progress.percent} label="YouTube download" className={PROGRESS_TRACK} />
-    ) : (
-      <div className={cn("rounded-full", PROGRESS_TRACK)} />
+const FieldDownloadProgress: React.FC<{ progress: YouTubeDownloadProgress | null }> = ({ progress }) => (
+  <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
+    <span className="absolute inset-y-0 right-3 flex items-center text-xs text-(--muted) tabular-nums">
+      {progress?.label}
+    </span>
+    {progress?.percent != null && (
+      <ProgressBar
+        percent={progress.percent}
+        label="YouTube download"
+        className="absolute inset-x-0 bottom-0 h-0.5 rounded-none bg-transparent"
+      />
     )}
-    <span className="h-4 text-xs text-(--muted) tabular-nums">{progress?.label}</span>
   </div>
 );
 
@@ -95,25 +98,32 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
   return (
     <div className={cn("flex flex-col gap-1.5 w-full", className)}>
       <div className="flex gap-2">
-        <input
-          type="text"
-          aria-label="YouTube URL or video ID"
-          {...linkField.fieldProps}
-          value={value}
-          onChange={(e) => {
-            setValue(e.target.value);
-            clearError();
-            if (youtubeLoadError) useAudioStore.getState().setYouTubeLoadError(null);
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={isLoading}
-          spellCheck={false}
-          autoCapitalize="off"
-          autoComplete="off"
-          ref={focusOnOpen ? focusOnMount : undefined}
-          className={cn(surface === "floating" ? FLOATING_INPUT_STYLES : INPUT_STYLES, "flex-1 h-9 select-text")}
-        />
+        <div className="relative flex-1">
+          <input
+            type="text"
+            aria-label="YouTube URL or video ID"
+            {...linkField.fieldProps}
+            value={value}
+            onChange={(e) => {
+              setValue(e.target.value);
+              clearError();
+              if (youtubeLoadError) useAudioStore.getState().setYouTubeLoadError(null);
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            disabled={isLoading}
+            spellCheck={false}
+            autoCapitalize="off"
+            autoComplete="off"
+            ref={focusOnOpen ? focusOnMount : undefined}
+            className={cn(
+              surface === "floating" ? FLOATING_INPUT_STYLES : INPUT_STYLES,
+              "w-full h-9 select-text",
+              download.downloading && "pr-28",
+            )}
+          />
+          {download.downloading && <FieldDownloadProgress progress={download.progress} />}
+        </div>
         {download.downloading ? (
           <Button variant="secondary" size="lg" hasIcon onClick={download.cancel} className="rounded-lg">
             <IconX size={16} />
@@ -133,7 +143,6 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
           </Button>
         )}
       </div>
-      {download.downloading && <DownloadProgress progress={download.progress} />}
       <FieldError {...linkField.errorProps} />
     </div>
   );
