@@ -1,3 +1,4 @@
+import { lineInstanceKey } from "@/domain/instance/key";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import { lineWordSelections } from "@/domain/selection/line-selections";
@@ -48,18 +49,24 @@ function revealLineInTimeline(lineId: string, track: LineRevealRequest["track"])
   publish({ lineId, track });
 }
 
-// Returns false when the group focus had to close first: the row exists only after the next render.
+// Returns false when a group focus or a collapsed instance hid the row: it exists only after the next render.
 function revealLine(
   container: HTMLElement,
   lines: ReadableLine[],
   request: LineRevealRequest,
   focusedGroup: GroupFocus | null,
+  collapsedInstances: Record<string, boolean>,
 ): boolean {
   const lineIndex = lines.findIndex((line) => line.id === request.lineId);
   const line = lines[lineIndex];
   if (!line) return true;
   if (!isInFocus(line, focusedGroup)) {
     useTimelineStore.getState().closeGroup();
+    return false;
+  }
+  const instance = lineInstanceKey(line);
+  if (instance && collapsedInstances[instance]) {
+    useTimelineStore.getState().setInstanceCollapsed(instance, false);
     return false;
   }
 
@@ -81,16 +88,17 @@ function useLineRevealRequest(scrollContainerRef: RefObject<HTMLDivElement | nul
   const request = useSyncExternalStore(subscribe, snapshot, snapshot);
   const timelineActive = useIsActiveTab("timeline");
   const focusedGroup = useTimelineStore((state) => state.focusedGroup);
+  const collapsedInstances = useTimelineStore((state) => state.collapsedInstances);
 
   useEffect(() => {
     if (!request || !timelineActive) return;
     const frame = nextFrame(() => {
       const container = scrollContainerRef.current;
       if (!container) return;
-      if (revealLine(container, lines, request, focusedGroup)) settle(request);
+      if (revealLine(container, lines, request, focusedGroup, collapsedInstances)) settle(request);
     });
     return () => cancelNextFrame(frame);
-  }, [request, timelineActive, lines, focusedGroup, scrollContainerRef]);
+  }, [request, timelineActive, lines, focusedGroup, collapsedInstances, scrollContainerRef]);
 }
 
 // -- Exports -------------------------------------------------------------------
