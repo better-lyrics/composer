@@ -53,13 +53,6 @@ const CONFIRMATIONS_CATALOG_ENTRIES = {
     description: "Show a warning before clearing every word and line timing in the sync view.",
     settingKey: "confirmSyncReset",
   },
-  confirmClearProject: {
-    section: "confirmations",
-    group: "Resets",
-    label: "Confirm clearing project",
-    description: "Show a warning before discarding the current project, metadata, and audio file.",
-    settingKey: "confirmClearProject",
-  },
   confirmResetSettings: {
     section: "confirmations",
     group: "Resets",

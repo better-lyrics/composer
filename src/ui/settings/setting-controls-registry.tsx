@@ -194,7 +194,6 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   },
   confirmReplaceLyrics: TOGGLE,
   confirmSyncReset: TOGGLE,
-  confirmClearProject: TOGGLE,
   confirmResetSettings: TOGGLE,
   shortcutPreset: { kind: "custom", Component: ShortcutPresetGallery },
   confirmResetShortcuts: TOGGLE,

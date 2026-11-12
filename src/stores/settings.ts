@@ -88,7 +88,6 @@ interface SettingsState extends SnapSettings, SpectrumSettings, UnisonSettings {
 
   confirmReplaceLyrics: boolean;
   confirmSyncReset: boolean;
-  confirmClearProject: boolean;
   confirmResetSettings: boolean;
   confirmResetShortcuts: boolean;
   confirmGroupDissolution: boolean;
@@ -183,7 +182,6 @@ const DEFAULTS: SettingsState = {
 
   confirmReplaceLyrics: true,
   confirmSyncReset: true,
-  confirmClearProject: true,
   confirmResetSettings: true,
   confirmResetShortcuts: true,
   confirmGroupDissolution: true,
@@ -227,7 +225,6 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           ...DEFAULTS,
           confirmReplaceLyrics: state.confirmReplaceLyrics,
           confirmSyncReset: state.confirmSyncReset,
-          confirmClearProject: state.confirmClearProject,
           confirmResetSettings: state.confirmResetSettings,
           confirmResetShortcuts: state.confirmResetShortcuts,
           confirmGroupDissolution: state.confirmGroupDissolution,

@@ -1,10 +1,13 @@
 import { useProjectFileActions } from "@/hooks/useProjectFileActions";
 import { PROJECT_FILE_ACCEPT } from "@/lib/project-file-read";
+import { deleteOpenProjectWithUndo } from "@/lib/project-library-actions";
 import { Button } from "@/ui/button";
 import { Menu, type MenuAnchor, MenuItem, MenuSeparator } from "@/ui/menu";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
+import { LIBRARY_PATH } from "@/utils/app-routes";
 import { IconChevronDown, IconFolder, IconFolderOpen, IconTrash, IconUpload } from "@tabler/icons-react";
 import { useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // -- Hooks --------------------------------------------------------------------
 
@@ -27,6 +30,14 @@ function useProjectFileInput() {
 
 // -- Components ---------------------------------------------------------------
 
+const DeleteProjectMenuItem: React.FC = () => {
+  const navigate = useNavigate();
+  const deleteProject = () => {
+    if (deleteOpenProjectWithUndo() === "scheduled") navigate(LIBRARY_PATH);
+  };
+  return <MenuItem icon={IconTrash} label="Delete project" tone="danger" onSelect={deleteProject} />;
+};
+
 const ProjectMenuButton: React.FC = () => {
   const [trigger, setTrigger] = useState<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -35,7 +46,7 @@ const ProjectMenuButton: React.FC = () => {
     [open, trigger],
   );
   const { input, pickFile } = useProjectFileInput();
-  const { handleExportProject, handleClearProject } = useProjectFileActions();
+  const { handleExportProject } = useProjectFileActions();
 
   return (
     <>
@@ -64,7 +75,7 @@ const ProjectMenuButton: React.FC = () => {
           <MenuItem icon={IconFolderOpen} label="Import project" onSelect={pickFile} />
           <MenuItem icon={IconUpload} label="Export project" onSelect={handleExportProject} />
           <MenuSeparator />
-          <MenuItem icon={IconTrash} label="Clear project" tone="danger" onSelect={handleClearProject} />
+          <DeleteProjectMenuItem />
         </Menu>
       )}
     </>

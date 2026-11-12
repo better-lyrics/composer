@@ -23,8 +23,8 @@ const ExportSection: React.FC = () => (
         with collaborators or back things up.
       </li>
       <li>
-        <strong>Clear project</strong>: In the same Project menu, wipes the current project. This is permanent, so it
-        asks for confirmation.
+        <strong>Delete project</strong>: In the same Project menu, removes the current project and takes you back to
+        your projects. Click Undo on the notice right after to bring it back.
       </li>
     </ul>
     <p className={PROSE}>

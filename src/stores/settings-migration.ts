@@ -12,6 +12,7 @@ import { SNAP_DISTANCE_SETTING } from "@/stores/settings-snap";
 
 interface RetiredSettings {
   confirmReplaceProjectFromHash?: boolean;
+  confirmClearProject?: boolean;
   defaultRollingEdit?: unknown;
   defaultPreviewSidebar?: unknown;
   timelineSnapThreshold?: unknown;
@@ -19,7 +20,7 @@ interface RetiredSettings {
 
 // -- Constants ----------------------------------------------------------------
 
-const SETTINGS_PERSIST_VERSION = 17;
+const SETTINGS_PERSIST_VERSION = 18;
 
 // -- Migration ----------------------------------------------------------------
 
@@ -27,6 +28,7 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   if (!persistedState || typeof persistedState !== "object") return persistedState;
   const {
     confirmReplaceProjectFromHash: _retired,
+    confirmClearProject: _retiredClearProject,
     defaultRollingEdit,
     defaultPreviewSidebar,
     timelineSnapThreshold,

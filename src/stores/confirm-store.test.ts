@@ -10,7 +10,6 @@ beforeEach(() => {
   useSettingsStore.setState({
     confirmReplaceLyrics: true,
     confirmSyncReset: true,
-    confirmClearProject: true,
     confirmResetSettings: true,
     confirmResetShortcuts: true,
     confirmGroupDissolution: true,

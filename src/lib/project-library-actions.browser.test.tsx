@@ -1,16 +1,18 @@
 import { usePersistence } from "@/hooks/usePersistence";
 import { restoreOpenProject } from "@/lib/open-project";
+import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { hiddenProjectIdsSnapshot } from "@/lib/pending-deletions";
 import { debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import { DB_NAME, DB_VERSION } from "@/lib/persistence-idb";
 import { loadProjectAudio } from "@/lib/project-audio";
 import {
+  deleteOpenProjectWithUndo,
   deleteProjectsWithUndo,
   duplicateProject,
   exportProjectFiles,
   renameProject,
 } from "@/lib/project-library-actions";
-import { loadProjectIndexEntry, removeProjectData } from "@/lib/project-repository";
+import { listProjectIndex, loadProjectIndexEntry, removeProjectData } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { useProjectStore } from "@/stores/project";
@@ -217,6 +219,32 @@ describe("deleteProjectsWithUndo", () => {
       await expect.element(screen.getByText("Deleted “Alpha”")).toBeInTheDocument();
       expect(hiddenProjectIdsSnapshot()).toEqual(new Set(["a"]));
       expect(screen.getByText("Deleted 0 projects").query()).toBeNull();
+    });
+  });
+});
+
+describe("deleteOpenProjectWithUndo", () => {
+  it("with nothing saved yet, discards the pending save and leaves a blank editor", async () => {
+    useSettingsStore.setState({ autoSaveDelay: 60_000 });
+    useProjectStore.getState().setMetadata({ title: "Unsaved" });
+    debouncedSave(saveInputTitled("Unsaved"));
+    deleteOpenProjectWithUndo();
+    await flushPendingSave();
+    expect(useProjectStore.getState().metadata.title).toBe("");
+    expect(await listProjectIndex()).toEqual([]);
+  });
+
+  describe("regressions", () => {
+    it("regression: project menu delete is undoable", async () => {
+      await seedStoredProject("a", { open: true, project: songTitled("Alpha") });
+      await restoreOpenProject();
+      const screen = await render(<Toaster />);
+      deleteOpenProjectWithUndo();
+      expect(hiddenProjectIdsSnapshot().has("a")).toBe(true);
+      await screen.getByRole("button", { name: "Undo" }).click();
+      expect(hiddenProjectIdsSnapshot().has("a")).toBe(false);
+      expect(await loadProjectIndexEntry("a")).toBeDefined();
+      expect(openProjectIdSnapshot()).toBe("a");
     });
   });
 });

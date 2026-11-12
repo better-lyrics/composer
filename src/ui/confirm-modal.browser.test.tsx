@@ -71,7 +71,7 @@ describe("ConfirmModalHost", () => {
 
   it("renders the 'Don't ask again' checkbox when settingsKey is provided", async () => {
     const screen = await render(<ConfirmModalHost />);
-    useConfirmStore.getState().open({ title: "OK?", settingsKey: "confirmClearProject" });
+    useConfirmStore.getState().open({ title: "OK?", settingsKey: "confirmSyncReset" });
     await expect.element(screen.getByText(/Don't ask again/)).toBeInTheDocument();
   });
 
@@ -83,24 +83,24 @@ describe("ConfirmModalHost", () => {
   });
 
   it("writes the settings key when 'Don't ask again' is checked and Confirm is clicked", async () => {
-    expect(useSettingsStore.getState().confirmClearProject).toBe(true);
+    expect(useSettingsStore.getState().confirmSyncReset).toBe(true);
     const screen = await render(<ConfirmModalHost />);
-    const result = useConfirmStore.getState().open({ title: "OK?", settingsKey: "confirmClearProject" });
+    const result = useConfirmStore.getState().open({ title: "OK?", settingsKey: "confirmSyncReset" });
     await expect.element(screen.getByText(/Don't ask again/)).toBeInTheDocument();
     await screen.getByLabelText(/Don't ask again/).click();
     await screen.getByRole("button", { name: "Confirm" }).click();
     expect(await result).toBe(true);
-    expect(useSettingsStore.getState().confirmClearProject).toBe(false);
+    expect(useSettingsStore.getState().confirmSyncReset).toBe(false);
   });
 
   it("does NOT write the settings key when 'Don't ask again' is checked and Cancel is clicked", async () => {
     const screen = await render(<ConfirmModalHost />);
-    const result = useConfirmStore.getState().open({ title: "OK?", settingsKey: "confirmClearProject" });
+    const result = useConfirmStore.getState().open({ title: "OK?", settingsKey: "confirmSyncReset" });
     await expect.element(screen.getByText(/Don't ask again/)).toBeInTheDocument();
     await screen.getByLabelText(/Don't ask again/).click();
     await screen.getByRole("button", { name: "Cancel" }).click();
     expect(await result).toBe(false);
-    expect(useSettingsStore.getState().confirmClearProject).toBe(true);
+    expect(useSettingsStore.getState().confirmSyncReset).toBe(true);
   });
 
   it("renders custom confirm and cancel labels", async () => {

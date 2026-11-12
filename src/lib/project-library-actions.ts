@@ -1,9 +1,10 @@
 import { displayTitle } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { noteGuideSignal } from "@/lib/guide-signals";
+import { createProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { schedulePendingDeletion } from "@/lib/pending-deletions";
-import { flushPendingSave, saveOpenProjectNow } from "@/lib/persistence-debounce";
+import { cancelPendingSave, flushPendingSave, saveOpenProjectNow } from "@/lib/persistence-debounce";
 import { loadProjectAudio } from "@/lib/project-audio";
 import { copyProjectStems, loadProjectStems } from "@/lib/project-stems";
 import { downloadProjectFile, projectFileFrom } from "@/lib/project-file";
@@ -78,7 +79,18 @@ function deleteProjectsWithUndo(projects: readonly DeletableProject[]): void {
   );
 }
 
+function deleteOpenProjectWithUndo(): "scheduled" | "cleared" {
+  const id = openProjectIdSnapshot();
+  if (!id) {
+    cancelPendingSave();
+    createProject();
+    return "cleared";
+  }
+  deleteProjectsWithUndo([{ id, title: useProjectStore.getState().metadata.title }]);
+  return "scheduled";
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { renameProject, duplicateProject, exportProjectFiles, deleteProjectsWithUndo };
+export { renameProject, duplicateProject, exportProjectFiles, deleteProjectsWithUndo, deleteOpenProjectWithUndo };
 export type { DeletableProject };
