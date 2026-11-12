@@ -1,8 +1,9 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/domain/line/model";
+
 import { describe, expect, it } from "vitest";
+import type { LyricLine } from "@/domain/line/model";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
 import { textToLyricLines } from "./lyrics-text";
 
@@ -268,13 +269,22 @@ describe("textToLyricLines · group attrs preservation", () => {
     expect(result[0].backgroundText).toBe("ooh");
   });
 
-  it("drops carried backgroundText on an exact-text match whose text contains parentheses", () => {
-    const existing: LyricLine[] = [{ id: "L1", text: "Hello (ooh) world", agentId: "v1", backgroundText: "ooh" }];
-    const result = textToLyricLines("Hello (ooh) world", "v1", existing);
+  it("regression: a row the edit did not change keeps its timed background, parentheses or not", () => {
+    const timedBackground = [{ text: "hold on", begin: 1, end: 2 }];
+    const existing: LyricLine[] = [
+      {
+        id: "L1",
+        text: "Hold on (hold on)",
+        agentId: "v1",
+        backgroundText: "hold on",
+        backgroundWords: timedBackground,
+      },
+      { id: "L2", text: "Never let go", agentId: "v1" },
+    ];
+    const result = textToLyricLines("Hold on (hold on)\nNever let it go", "v1", existing);
     expect(result[0].id).toBe("L1");
-    expect(result[0].text).toBe("Hello (ooh) world");
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].backgroundWords).toBeUndefined();
+    expect(result[0].backgroundWords).toEqual(timedBackground);
+    expect(result[0].backgroundText).toBe("hold on");
   });
 
   it("drops carried backgroundWords when re-pasted text reintroduces parentheses", () => {

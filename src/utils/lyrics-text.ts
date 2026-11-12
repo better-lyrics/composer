@@ -58,14 +58,19 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
     if (exactMatch) claim(index, exactMatch);
   });
 
+  const sources: Array<LyricLine | undefined> = new Array(newLines.length);
   const mapped = cleanedTexts.map((cleanedText, index) => {
     const matched = claimed[index];
-    if (matched) return reconcileMatchedTiming(matched, cleanedText);
+    if (matched) {
+      sources[index] = matched;
+      return reconcileMatchedTiming(matched, cleanedText);
+    }
 
     if (allowPositionMatch) {
       const positionMatch = existingLines[index];
       if (!usedExistingIds.has(positionMatch.id)) {
         usedExistingIds.add(positionMatch.id);
+        sources[index] = positionMatch;
         return reconcileMatchedTiming(positionMatch, cleanedText);
       }
     }
@@ -77,10 +82,12 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
     };
   });
 
-  // Raw parentheses in `text` are the source of truth for background vocals;
-  // a carried-over extracted backgroundText would double on re-extraction.
-  return mapped.map((line) =>
-    carriesBackground(line) && /\([^)]*\)/.test(line.text) ? { ...line, ...CLEARED_BACKGROUND } : line,
+  // Parentheses typed into a row stand for its background vocals, so the carried-over background would
+  // double on re-extraction. A row the edit left unchanged keeps what it had.
+  return mapped.map((line, index) =>
+    carriesBackground(line) && sources[index]?.text !== line.text && /\([^)]*\)/.test(line.text)
+      ? { ...line, ...CLEARED_BACKGROUND }
+      : line,
   );
 }
 
