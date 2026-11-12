@@ -1,13 +1,14 @@
-import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { useSettingsStore } from "@/stores/settings";
 import { settingEntry } from "@/stores/settings-catalog";
+import { DelayedSpinner } from "@/ui/delayed-spinner";
 import { BridgeInstallGuide } from "@/ui/settings/bridge-install-guide";
 import { BridgeUrlField } from "@/ui/settings/bridge-url-field";
+import { StatusChip } from "@/ui/status-chip";
 import { Switch } from "@/ui/switch";
 import { hasBridgeEverBeenDetected, markBridgeDetected } from "@/utils/bridge-detection";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-url";
 import { BRIDGE_REPO_URL, type BridgeHealth, HEALTH_QUERY_KEY, checkBridgeHealth } from "@/utils/composer-bridge-api";
-import { IconCheck, IconExclamationCircle, IconLoader2 } from "@tabler/icons-react";
+import { IconCheck, IconExclamationCircle } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 
@@ -39,28 +40,30 @@ const StatusBadge: React.FC<{
   state: "checking" | "ok" | "error";
   data: BridgeHealth | undefined;
 }> = ({ state, data }) => {
-  const showSpinner = useDelayedBusy(state === "checking");
   if (state === "checking") {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-composer-text-muted">
-        {showSpinner && <IconLoader2 size={12} className="animate-spin" />}
+        <DelayedSpinner busy className="size-3" />
         Checking…
       </span>
     );
   }
   if (state === "ok" && data) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-emerald-500" title={`yt-dlp ${data.ytdlp}`}>
-        <IconCheck size={12} />
-        Running · bridge {data.bridge} · yt-dlp {data.ytdlp}
+      <span className="inline-flex items-center gap-2 min-w-0">
+        <span className="text-xs text-composer-text-muted tabular-nums truncate select-text cursor-text">
+          bridge {data.bridge} ・ yt-dlp {data.ytdlp}
+        </span>
+        <StatusChip tone="positive" icon={IconCheck}>
+          Running
+        </StatusChip>
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-rose-500">
-      <IconExclamationCircle size={12} />
+    <StatusChip tone="error" icon={IconExclamationCircle}>
       Not running
-    </span>
+    </StatusChip>
   );
 };
 
@@ -155,8 +158,8 @@ const BridgeSection: React.FC = () => {
             <StatusBadge state={state} data={healthData} />
           </div>
           {state === "error" && errorMessage && (
-            <p className="text-[11px] text-composer-text-muted font-mono break-all select-text cursor-text">
-              {errorMessage}
+            <p className="text-xs text-composer-text-muted select-text cursor-text">
+              The browser reported: <span className="font-mono text-[11px] break-all">{errorMessage}</span>
             </p>
           )}
 
