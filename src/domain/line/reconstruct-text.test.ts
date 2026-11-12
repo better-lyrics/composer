@@ -136,6 +136,11 @@ describe("withDerivedText on a partly synced line", () => {
     expect(derivedText(previous, ["la "])).toBe("la la la");
   });
 
+  it("regression: deleting a timed word keeps an untimed repeat of the word after it", () => {
+    const previous = partly("a b b", ["a ", "b "]);
+    expect(derivedText(previous, ["b "])).toBe("b b");
+  });
+
   it("does not repeat untimed words that new timed words now cover", () => {
     const previous = partly("every night in my dreams", ["every ", "night ", "in "]);
     expect(derivedText(previous, ["every ", "night ", "in ", "my ", "dreams"], "every night in my dreams")).toBe(

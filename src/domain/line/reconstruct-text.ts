@@ -1,5 +1,7 @@
 import type { LyricLine } from "@/domain/line/model";
+import { lcsPairs } from "@/domain/word/alignment";
 import type { WordTiming } from "@/domain/word/timing";
+import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 
 // -- Text reconstruction ------------------------------------------------------
 
@@ -44,69 +46,44 @@ function wordContentSpans(words: WordTiming[], splitChar: string): WordContentSp
 
 // -- Untimed tail -------------------------------------------------------------
 
-const WHITESPACE_RUN = /\s+/;
-
-function isWhitespace(char: string): boolean {
-  return char !== "" && char.trim() === "";
-}
-
-function tokenEnds(text: string, splitChar: string): { token: string; end: number }[] {
-  const tokens: { token: string; end: number }[] = [];
-  let start = -1;
-  let i = 0;
-  const close = (end: number) => {
-    if (start >= 0) tokens.push({ token: text.slice(start, end), end });
-    start = -1;
-  };
-  while (i < text.length) {
-    if (isWhitespace(text[i])) {
-      close(i);
-      i++;
-    } else if (splitChar !== "" && text.startsWith(splitChar, i)) {
-      close(i);
-      i += splitChar.length;
-    } else {
-      if (start < 0) start = i;
-      i++;
-    }
-  }
-  close(text.length);
-  return tokens;
-}
-
 function wordAtoms(words: WordTiming[]): string[] {
-  return words.flatMap((word) => word.text.split(WHITESPACE_RUN).filter((atom) => atom.length > 0));
+  return words.flatMap((word) => splitIntoWordsWithMeta(word.text).parts);
+}
+
+function joinedParts(tokens: { parts: string[]; trailingSpace: boolean[] }, from: number, splitChar: string): string {
+  let joined = "";
+  for (let i = from; i < tokens.parts.length; i++) {
+    joined += tokens.parts[i];
+    if (i < tokens.parts.length - 1) joined += tokens.trailingSpace[i] ? " " : splitChar;
+  }
+  return joined;
 }
 
 // The words of a partly synced track cover the start of its text; the rest is lyrics not timed yet.
-// Untimed words that the new timed words now end with were just timed, so they leave the tail.
+// Words added after the last surviving timed word that spell the start of that rest were just timed,
+// so they leave it. Returns the rest with the separator that leads into it, or "" when nothing is left.
 function untimedTail(text: string, previousWords: WordTiming[], words: WordTiming[], splitChar: string): string {
+  const written = splitIntoWordsWithMeta(text);
   const covered = wordAtoms(previousWords);
-  const tokens = tokenEnds(text, splitChar);
-  if (covered.length === 0 || covered.length >= tokens.length) return "";
-  if (covered.some((atom, i) => atom !== tokens[i].token)) return "";
+  if (covered.length === 0 || covered.length >= written.parts.length) return "";
+  if (covered.some((atom, i) => atom !== written.parts[i])) return "";
   const timed = wordAtoms(words);
-  let shared = 0;
-  while (shared < covered.length && shared < timed.length && covered[shared] === timed[shared]) shared++;
-  const added = timed.slice(shared);
-  const tail = tokens.slice(covered.length).map((entry) => entry.token);
+  const pairs = lcsPairs(covered, timed);
+  const added = timed.slice(pairs.length > 0 ? pairs[pairs.length - 1][1] + 1 : 0);
+  const tail = written.parts.slice(covered.length);
   let nowTimed = Math.min(added.length, tail.length);
   while (nowTimed > 0 && added.slice(added.length - nowTimed).some((atom, i) => atom !== tail[i])) nowTimed--;
-  if (nowTimed === tail.length) return "";
-  return text.slice(tokens[covered.length + nowTimed - 1].end);
+  const start = covered.length + nowTimed;
+  if (start >= written.parts.length) return "";
+  const separator = written.trailingSpace[start - 1] ? " " : splitChar;
+  return `${separator}${joinedParts(written, start, splitChar)}`;
 }
 
 function withTail(timedText: string, tail: string, splitChar: string): string {
   if (tail === "") return timedText;
-  let start = 0;
-  while (start < tail.length) {
-    if (isWhitespace(tail[start])) start++;
-    else if (splitChar !== "" && tail.startsWith(splitChar, start)) start += splitChar.length;
-    else break;
-  }
-  const content = tail.slice(start);
-  if (isWhitespace(tail[0])) return `${timedText.trimEnd()} ${content}`;
-  return isWhitespace(timedText.at(-1) ?? "") ? `${timedText}${content}` : `${timedText}${splitChar}${content}`;
+  const endsWithSpace = timedText.trimEnd() !== timedText;
+  if (tail.startsWith(" ")) return `${timedText.trimEnd()}${tail}`;
+  return endsWithSpace ? `${timedText}${tail.slice(splitChar.length)}` : `${timedText}${tail}`;
 }
 
 interface TrackSnapshot {

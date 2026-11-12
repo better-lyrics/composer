@@ -278,6 +278,16 @@ describe("textToLyricLines · group attrs preservation", () => {
     expect(result[0].backgroundWords).toBeUndefined();
   });
 
+  it("regression: an unchanged row with doubled spaces keeps its timed background", () => {
+    const timedBackground = [{ text: "oh", begin: 1, end: 2 }];
+    const existing: LyricLine[] = [
+      { id: "L1", text: "Hold  on (hold on)", agentId: "v1", backgroundText: "oh", backgroundWords: timedBackground },
+      { id: "L2", text: "Never let go", agentId: "v1" },
+    ];
+    const result = textToLyricLines("Hold  on (hold on)\nNever let it go", "v1", existing);
+    expect(result[0].backgroundWords).toEqual(timedBackground);
+  });
+
   it("regression: a row the edit did not change keeps its timed background, parentheses or not", () => {
     const timedBackground = [{ text: "hold on", begin: 1, end: 2 }];
     const existing: LyricLine[] = [

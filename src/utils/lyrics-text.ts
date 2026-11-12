@@ -16,7 +16,8 @@ function carriesBackground(line: LyricLine): boolean {
 }
 
 function keepsNoTimedBackground(line: LyricLine, source: LyricLine | undefined): boolean {
-  return source?.text !== line.text || !line.backgroundWords?.length;
+  const sourceText = source && cleanSplitCharacters(source.text.trim());
+  return sourceText !== line.text || !line.backgroundWords?.length;
 }
 
 function textToLyricLines(text: string, defaultAgentId: string, existingLines: LyricLine[] = []): LyricLine[] {
