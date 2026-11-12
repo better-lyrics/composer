@@ -19,7 +19,6 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HighlightMatches } from "@/ui/highlight-matches";
 import { BrowserWarningModal, ConflictModal } from "@/ui/shortcut-conflict-modals";
-import { SETTING_ROW_SURFACE } from "@/ui/settings/setting-row-layout";
 import { useSettingsSearchQuery } from "@/ui/settings/settings-search-query";
 
 // -- Types --------------------------------------------------------------------
@@ -153,7 +152,7 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
 
   return (
     <>
-      <div ref={rowRef} className={cn(SETTING_ROW_SURFACE, "flex items-center justify-between gap-6 py-1.5")}>
+      <div ref={rowRef} className="flex items-center justify-between gap-6 py-1.5">
         <span className="text-sm text-composer-text-secondary">
           <HighlightMatches text={definition.description} query={searchQuery} />
         </span>
