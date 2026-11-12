@@ -4,7 +4,6 @@ import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
 import { youtubeSourceTitle } from "@/domain/project/display-title";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
-import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { useBridgeThumb } from "@/hooks/useBridgeThumb";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { PROJECT_FILE_EXTENSIONS_LABEL } from "@/lib/project-file-read";
@@ -12,12 +11,13 @@ import { importProjectFile } from "@/lib/project-import";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { DelayedSpinner } from "@/ui/delayed-spinner";
 import { fileExtensionLabel, fileNameWithoutExtension } from "@/utils/file-name";
 import { formatFileSize } from "@/utils/format-file-size";
 import { IMPORT_AREA, ImportZone, OrDivider, SourceCard } from "@/views/import/import-layout";
 import { MissingAudioPanel } from "@/views/import/missing-audio-panel";
 import { ReplaceAudioMenu } from "@/views/import/replace-audio-menu";
-import { IconBrandYoutube, IconFileMusic, IconFileUpload, IconLoader2, IconMusic } from "@tabler/icons-react";
+import { IconBrandYoutube, IconFileMusic, IconFileUpload, IconMusic } from "@tabler/icons-react";
 import { useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
@@ -98,13 +98,12 @@ interface SourceDurationProps {
 }
 
 const SourceDuration: React.FC<SourceDurationProps> = ({ loading, duration }) => {
-  const showSpinner = useDelayedBusy(loading);
   if (!loading) {
     return <span className="shrink-0 font-mono tabular-nums whitespace-nowrap">{formatDuration(duration)}</span>;
   }
   return (
     <span className="flex shrink-0 items-center gap-[5px]">
-      {showSpinner && <IconLoader2 size={13} className="animate-spin text-composer-accent-text" />}
+      <DelayedSpinner busy={loading} className="size-[13px] text-composer-accent-text" />
       <span className="font-mono tabular-nums whitespace-nowrap">--:--</span>
     </span>
   );

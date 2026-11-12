@@ -1,11 +1,11 @@
-import { IconAlertCircle, IconLoader2 } from "@tabler/icons-react";
+import { IconAlertCircle } from "@tabler/icons-react";
 import { useRef, useState } from "react";
-import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import type { BetterLyricsDetection } from "@/hooks/unison/useBetterLyricsDetection";
 import { BETTER_LYRICS_EXTENSION_ID } from "@/lib/unison/extension-port";
 import type { StoredUnisonSession } from "@/lib/unison/session";
 import { SupersededSignInError, signInWithExtension } from "@/lib/unison/sign-in";
 import { Button } from "@/ui/button";
+import { DelayedSpinner } from "@/ui/delayed-spinner";
 import { BetterLyricsMark } from "@/ui/unison/better-lyrics-mark";
 import { EXTENSION_FAILURE_MESSAGES, type ExtensionFailure, extensionFailureOf } from "@/ui/unison/extension-failure";
 import { IdentityFileDrop } from "@/ui/unison/identity-file-drop";
@@ -61,7 +61,6 @@ const ExtensionButton: React.FC<{ waiting: boolean; disabled: boolean; onClick: 
   disabled,
   onClick,
 }) => {
-  const showSpinner = useDelayedBusy(waiting);
   return (
     <Button
       size="lg"
@@ -71,11 +70,7 @@ const ExtensionButton: React.FC<{ waiting: boolean; disabled: boolean; onClick: 
       onClick={onClick}
       className="w-full text-composer-text"
     >
-      {showSpinner ? (
-        <IconLoader2 aria-hidden="true" className="size-[18px] animate-spin motion-reduce:animate-none" />
-      ) : (
-        <BetterLyricsMark />
-      )}
+      <DelayedSpinner busy={waiting} className="size-[18px]" idle={<BetterLyricsMark />} />
       Continue with Better Lyrics
     </Button>
   );

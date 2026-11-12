@@ -1,10 +1,11 @@
-import { IconAlertCircle, IconFileText, IconLoader2 } from "@tabler/icons-react";
+import { IconAlertCircle, IconFileText } from "@tabler/icons-react";
 import { useId, useRef, useState } from "react";
 import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { IdentityFileError } from "@/domain/unison/identity-file";
 import { UnisonError } from "@/lib/unison/client";
 import type { StoredUnisonSession } from "@/lib/unison/session";
 import { SupersededSignInError, signInWithIdentityFile } from "@/lib/unison/sign-in";
+import { DelayedSpinner } from "@/ui/delayed-spinner";
 import { DropTileContent } from "@/ui/drop-tile";
 import { DROP_TILE_STYLES } from "@/ui/drop-tile-styles";
 import { cn } from "@/utils/cn";
@@ -104,11 +105,11 @@ const IdentityFileDrop: React.FC<IdentityFileDropProps> = ({ disabled, onPending
       >
         <DropTileContent
           icon={
-            showSpinner ? (
-              <IconLoader2 aria-hidden="true" className="size-[18px] animate-spin motion-reduce:animate-none" />
-            ) : (
-              <IconFileText aria-hidden="true" className="size-[18px]" />
-            )
+            <DelayedSpinner
+              busy={reading}
+              className="size-[18px]"
+              idle={<IconFileText aria-hidden="true" className="size-[18px]" />}
+            />
           }
           title="Use your identity file"
           detail={showSpinner ? "Connecting to Unison" : "From Better Lyrics settings, never stored"}

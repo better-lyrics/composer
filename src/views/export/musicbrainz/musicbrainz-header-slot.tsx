@@ -1,6 +1,6 @@
-import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
+import { DelayedSpinner } from "@/ui/delayed-spinner";
 import { IconButton } from "@/ui/icon-button";
 import { LinkButton } from "@/ui/link-button";
 import { cn } from "@/utils/cn";
@@ -10,7 +10,6 @@ import type { MusicBrainzPanel } from "@/views/export/musicbrainz/use-musicbrain
 import {
   IconCheck,
   IconExternalLink,
-  IconLoader2,
   IconRefresh,
   IconSearch,
   IconSparkles,
@@ -31,15 +30,12 @@ const SLOT_BUTTON = "h-6";
 
 // -- Components ---------------------------------------------------------------
 
-const LookingUp: React.FC<{ title: string }> = ({ title }) => {
-  const showSpinner = useDelayedBusy(true);
-  return (
-    <span className={cn("flex items-center gap-2 pr-1", SLOT_TEXT)}>
-      {showSpinner && <IconLoader2 className="size-3.5 opacity-70 motion-safe:animate-spin" />}
-      Looking up {title}
-    </span>
-  );
-};
+const LookingUp: React.FC<{ title: string }> = ({ title }) => (
+  <span className={cn("flex items-center gap-2 pr-1", SLOT_TEXT)}>
+    <DelayedSpinner busy className="size-3.5 opacity-70" />
+    Looking up {title}
+  </span>
+);
 
 const DidNotAnswer: React.FC<{ retry: () => void }> = ({ retry }) => (
   <>

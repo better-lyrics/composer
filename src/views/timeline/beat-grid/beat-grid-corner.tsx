@@ -1,10 +1,10 @@
-import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { tempoStats } from "@/domain/tempo/tempo-stats";
 import { useAudioStore } from "@/stores/audio";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { DelayedSpinner } from "@/ui/delayed-spinner";
 import { Popover } from "@/ui/popover";
 import { Tooltip } from "@/ui/tooltip";
 import { cn } from "@/utils/cn";
@@ -15,7 +15,7 @@ import { usePlayheadBeat } from "@/views/timeline/beat-grid/use-playhead-beat";
 import { usePlayheadTempo } from "@/views/timeline/beat-grid/use-playhead-tempo";
 import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { FrequencyAxis } from "@/views/timeline/spectrum/frequency-axis";
-import { IconAlertTriangle, IconLoader2, IconWaveSine } from "@tabler/icons-react";
+import { IconAlertTriangle, IconWaveSine } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 
 // -- Constants -----------------------------------------------------------------
@@ -64,17 +64,11 @@ const CornerFace: React.FC<{ compact: boolean }> = ({ compact }) => {
   const percent = useBeatDetectionStore(detectionPercent);
   const stats = grid ? tempoStats(grid) : null;
   const running = isDetectionRunning(status);
-  const showSpinner = useDelayedBusy(running);
 
   if (running) {
     return (
       <>
-        {!compact && showSpinner && (
-          <IconLoader2
-            aria-hidden="true"
-            className="size-4 text-composer-accent-text animate-spin motion-reduce:animate-none"
-          />
-        )}
+        {!compact && <DelayedSpinner busy className="size-4 text-composer-accent-text" />}
         <span className="font-mono text-xs font-semibold leading-none tabular-nums text-(--label)">{percent}%</span>
       </>
     );

@@ -31,6 +31,7 @@ interface PopNavButtonProps {
   label: string;
   icon: Icon;
   summary: React.ReactNode;
+  busy?: boolean;
   onClick: () => void;
 }
 
@@ -134,11 +135,12 @@ const PopRow: React.FC<PopRowProps> = ({ label, icon: RowIcon, hint, dimmed, chi
   </div>
 );
 
-const PopNavButton: React.FC<PopNavButtonProps> = ({ label, icon: NavIcon, summary, onClick }) => (
+const PopNavButton: React.FC<PopNavButtonProps> = ({ label, icon: NavIcon, summary, busy, onClick }) => (
   <Button
     variant="ghost"
     size="lg"
     hasIcon
+    aria-busy={busy || undefined}
     onClick={onClick}
     className="group justify-start gap-3 w-full h-auto min-h-9 pl-2.5 pr-1 rounded-lg text-left hover:bg-(--layer-2)"
   >

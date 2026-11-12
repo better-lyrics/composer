@@ -1,6 +1,6 @@
-import { useDelayedBusy } from "@/hooks/use-delayed-busy";
+import { DelayedSpinner } from "@/ui/delayed-spinner";
 import { DETECTING_VOCAL_ONSETS } from "@/ui/vocal-onset-status-copy";
-import { IconChevronUp, IconLoader2 } from "@tabler/icons-react";
+import { IconChevronUp } from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -14,7 +14,6 @@ interface StemPickLabelProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 // -- Components ---------------------------------------------------------------
 
 const StemPickLabel: React.FC<StemPickLabelProps> = ({ name, label, busy, ...props }) => {
-  const showSpinner = useDelayedBusy(busy);
   return (
     <button
       type="button"
@@ -31,12 +30,7 @@ const StemPickLabel: React.FC<StemPickLabelProps> = ({ name, label, busy, ...pro
         />
       </span>
       <span className="flex items-center gap-1 w-full text-[13px] tabular-nums whitespace-nowrap text-composer-text">
-        {showSpinner && (
-          <IconLoader2
-            aria-hidden="true"
-            className="size-3.5 text-composer-accent-text animate-spin motion-reduce:animate-none"
-          />
-        )}
+        <DelayedSpinner busy={busy} className="size-3.5 text-composer-accent-text" />
         {label}
       </span>
     </button>

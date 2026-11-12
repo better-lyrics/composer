@@ -1,4 +1,3 @@
-import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { tempoStats } from "@/domain/tempo/tempo-stats";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
@@ -8,6 +7,7 @@ import { settingEntry } from "@/stores/settings-catalog";
 import { SNAP_DEFAULTS, SNAP_DISTANCE_SETTING, SNAP_SWITCH_SETTING, type SnapSource } from "@/stores/settings-snap";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { BEAT_GRID_LINE_OPTIONS } from "@/ui/beat-grid-line-options";
+import { DelayedSpinner } from "@/ui/delayed-spinner";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { Switch } from "@/ui/switch";
 import { describeOnsetStatus } from "@/ui/vocal-onset-status-copy";
@@ -16,7 +16,7 @@ import { PopGroup, PopHead, PopNavButton, PopRow } from "@/ui/pop-layout";
 import { isDetectionRunning } from "@/views/timeline/beat-grid/detection-progress";
 import { SNAP_SOURCE_DISPLAY, SNAP_SOURCES } from "@/views/timeline/snap-source-display";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { IconAdjustmentsHorizontal, IconArrowsHorizontal, IconLoader2, IconRuler2 } from "@tabler/icons-react";
+import { IconAdjustmentsHorizontal, IconArrowsHorizontal, IconRuler2 } from "@tabler/icons-react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -117,24 +117,35 @@ const SnapOffNote: React.FC = () => {
   );
 };
 
-const BeatGridSummary: React.FC = () => {
+const BeatGridSummary: React.FC<{ running: boolean }> = ({ running }) => {
   const grid = useProjectStore((s) => s.beatGrid);
-  const running = useBeatDetectionStore((s) => isDetectionRunning(s.status));
-  const showSpinner = useDelayedBusy(running);
   const stats = grid ? tempoStats(grid) : null;
-  if (running) {
-    if (!showSpinner) return null;
-    return (
-      <IconLoader2
-        aria-label="Finding beats"
-        className="size-4 text-composer-accent-text animate-spin motion-reduce:animate-none"
-      />
-    );
-  }
   return (
-    <span className="text-[12.5px] text-(--muted) tabular-nums">
-      {stats ? `${formatBpm(stats.bpm)} BPM` : "Set up"}
-    </span>
+    <>
+      <DelayedSpinner
+        busy={running}
+        className="size-4 text-composer-accent-text"
+        idle={
+          <span className="text-[12.5px] text-(--muted) tabular-nums">
+            {stats ? `${formatBpm(stats.bpm)} BPM` : "Set up"}
+          </span>
+        }
+      />
+      {running && <span className="sr-only">Finding beats</span>}
+    </>
+  );
+};
+
+const BeatGridNavButton: React.FC<{ onClick: () => void }> = ({ onClick }) => {
+  const running = useBeatDetectionStore((s) => isDetectionRunning(s.status));
+  return (
+    <PopNavButton
+      label="Beat grid"
+      icon={IconAdjustmentsHorizontal}
+      summary={<BeatGridSummary running={running} />}
+      busy={running}
+      onClick={onClick}
+    />
   );
 };
 
@@ -167,12 +178,7 @@ const SnapMenu: React.FC<SnapMenuProps> = ({ onOpenBeatGrid, onOpenSnapDistance 
           summary={<span className="text-[12.5px] text-(--muted) tabular-nums">{distanceSummary}</span>}
           onClick={onOpenSnapDistance}
         />
-        <PopNavButton
-          label="Beat grid"
-          icon={IconAdjustmentsHorizontal}
-          summary={<BeatGridSummary />}
-          onClick={onOpenBeatGrid}
-        />
+        <BeatGridNavButton onClick={onOpenBeatGrid} />
       </PopGroup>
     </>
   );
