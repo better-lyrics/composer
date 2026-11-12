@@ -382,7 +382,7 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     id: "timeline.importLyrics",
     scope: "timeline",
     description: "Import lyrics",
-    defaultBinding: { key: "v", mod: true, shift: true },
+    defaultBinding: { key: "v", shift: true },
   },
   {
     id: "timeline.createGroup",

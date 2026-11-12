@@ -123,7 +123,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["G"], description: "Turn step timing on or off", shortcutId: "timeline.stepTimingOff" },
       { keys: ["Mod", "Z"], description: "Undo", shortcutId: "global.undo" },
       { keys: ["Mod", "Shift", "Z"], description: "Redo", shortcutId: "global.redo" },
-      { keys: ["Mod", "Shift", "V"], description: "Import lyrics", shortcutId: "timeline.importLyrics" },
+      { keys: ["Shift", "V"], description: "Import lyrics", shortcutId: "timeline.importLyrics" },
       { keys: ["Mod", "Scroll"], description: "Zoom in / out" },
       { keys: ["Middle", "Drag"], description: "Pan timeline" },
       { keys: ["Shift", "Middle", "Drag"], description: "Pan locked to axis" },
