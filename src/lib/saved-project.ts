@@ -7,6 +7,7 @@ import type { SavedAudioSource } from "@/domain/project/audio-source";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
+import type { StoredData } from "@/domain/storage/stored-data";
 import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { GranularityMode } from "@/stores/project";
@@ -46,7 +47,7 @@ interface SavedProject {
 interface SavedAudioFile {
   name: string;
   type: string;
-  data: ArrayBuffer;
+  data: StoredData;
 }
 
 // -- Constants ----------------------------------------------------------------
