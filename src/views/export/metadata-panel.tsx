@@ -65,7 +65,7 @@ const MetadataPanel: React.FC = () => {
           />
         )}
 
-        <label className="flex flex-col gap-1.5">
+        <label data-check-target="title" className="relative flex flex-col gap-1.5">
           <span className={DETAILS_LABEL_STYLES}>Title</span>
           <input
             type="text"
@@ -86,24 +86,26 @@ const MetadataPanel: React.FC = () => {
           onUseSuggestion={(album) => musicBrainz.accept({ album })}
         />
 
-        <SuggestedField
-          fieldName="ISRC"
-          className="font-mono font-medium tabular-nums"
-          aria-invalid={isrcInvalid}
-          value={isrcValue}
-          placeholder="e.g. USQX91700001"
-          onChange={(e) => handleIsrcChange(e.target.value)}
-          suggestion={suggestions.isrc}
-          onUseSuggestion={(isrc) => musicBrainz.accept({ isrc: normalizeIsrc(isrc) })}
-        >
-          {isrcInvalid && (
-            <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
-              Invalid ISRC ・ expected 12 characters like USQX91700001
-            </span>
-          )}
-        </SuggestedField>
+        <div data-check-target="isrc" className="relative">
+          <SuggestedField
+            fieldName="ISRC"
+            className="font-mono font-medium tabular-nums"
+            aria-invalid={isrcInvalid}
+            value={isrcValue}
+            placeholder="e.g. USQX91700001"
+            onChange={(e) => handleIsrcChange(e.target.value)}
+            suggestion={suggestions.isrc}
+            onUseSuggestion={(isrc) => musicBrainz.accept({ isrc: normalizeIsrc(isrc) })}
+          >
+            {isrcInvalid && (
+              <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
+                Invalid ISRC ・ expected 12 characters like USQX91700001
+              </span>
+            )}
+          </SuggestedField>
+        </div>
 
-        <label className="flex flex-col gap-1.5">
+        <label data-check-target="language" className="relative flex flex-col gap-1.5">
           <span className={DETAILS_LABEL_STYLES}>Language</span>
           <input
             type="text"
@@ -125,15 +127,17 @@ const MetadataPanel: React.FC = () => {
           </span>
         </label>
 
-        <MetadataFieldList
-          label="Artists"
-          itemNoun="Artist"
-          placeholder="Artist name"
-          values={metadata.artists}
-          onChange={(next) => setMetadata({ artists: next })}
-          suggestion={suggestions.artists}
-          onUseSuggestion={(artists) => musicBrainz.accept({ artists })}
-        />
+        <div data-check-target="artist" className="relative">
+          <MetadataFieldList
+            label="Artists"
+            itemNoun="Artist"
+            placeholder="Artist name"
+            values={metadata.artists}
+            onChange={(next) => setMetadata({ artists: next })}
+            suggestion={suggestions.artists}
+            onUseSuggestion={(artists) => musicBrainz.accept({ artists })}
+          />
+        </div>
 
         <MetadataFieldList
           label="Songwriters"
