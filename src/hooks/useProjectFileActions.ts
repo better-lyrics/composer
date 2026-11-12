@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { createProject, deleteProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
@@ -7,8 +8,7 @@ import { downloadProjectFile, projectFileFrom } from "@/lib/project-file";
 import { importProjectFromInput } from "@/lib/project-import";
 import { currentSaveInput } from "@/lib/project-snapshot";
 import { useConfirm } from "@/stores/confirm-store";
-import { useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Constants ----------------------------------------------------------------
 

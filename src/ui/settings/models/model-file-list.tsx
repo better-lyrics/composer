@@ -1,17 +1,17 @@
-import { type ModelFile, type ModelKind, groupModelFiles, modelFilesBytes } from "@/domain/models/model-files";
+import { type Icon, IconMetronome, IconMicrophone2, IconWand } from "@tabler/icons-react";
+import { groupModelFiles, type ModelFile, type ModelKind, modelFilesBytes } from "@/domain/models/model-files";
 import { useStorageReport } from "@/hooks/useStorageReport";
 import { knownModelUrls, modelKindBusy, removeModelFiles, vocalVariantOfFile } from "@/lib/model-files";
 import { useAlignmentStore } from "@/stores/alignment";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
-import { type SettingId, settingEntry } from "@/stores/settings-catalog";
 import { useSeparationStore } from "@/stores/separation";
-import { type VocalModelVariant, useSettingsStore } from "@/stores/settings";
+import { useSettingsStore, type VocalModelVariant } from "@/stores/settings";
+import { type SettingId, settingEntry } from "@/stores/settings-catalog";
 import { ModelFileRow } from "@/ui/settings/models/model-file-row";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
 import { VOCAL_MODEL_LABELS } from "@/ui/settings/vocal-model-setting";
-import { type Icon, IconMetronome, IconMicrophone2, IconWand } from "@tabler/icons-react";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Constants ----------------------------------------------------------------
 

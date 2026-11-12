@@ -2,9 +2,9 @@ import { barTimes } from "@/domain/tempo/beat-grid";
 import { notePlacement } from "@/lib/replay-cue";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { toast } from "@/utils/toast";
 import { visibleBeatPoints } from "@/views/timeline/point-snap-anchors";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
-import { toast } from "sonner";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -59,4 +59,4 @@ function jumpToAdjacentGridLine(direction: 1 | -1, isRepeat: boolean): void {
 
 // -- Exports -------------------------------------------------------------------
 
-export { NO_BEAT_GRID_MESSAGE, jumpToAdjacentBar, jumpToAdjacentGridLine, toastUnlessRepeat };
+export { jumpToAdjacentBar, jumpToAdjacentGridLine, NO_BEAT_GRID_MESSAGE, toastUnlessRepeat };

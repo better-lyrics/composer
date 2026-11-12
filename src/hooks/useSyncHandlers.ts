@@ -1,3 +1,4 @@
+import { useCallback, useRef } from "react";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { splitWordsKeepingTransliteration } from "@/domain/language/reconcile-syllable-split";
 import { effectiveBounds } from "@/domain/line/bounds";
@@ -6,9 +7,9 @@ import { hasAnyTiming } from "@/domain/line/predicates";
 import { shiftLineTiming } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { anchorGesture } from "@/domain/sync/anchor-gesture";
-import { type PlacementSkip, placementSkipTarget } from "@/domain/sync/placement-skip";
-import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
+import { commitGesture, type SyncGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot } from "@/domain/sync/cursor";
+import { type PlacementSkip, placementSkipTarget } from "@/domain/sync/placement-skip";
 import type { WordTiming } from "@/domain/word/timing";
 import { keptSyncReRecording, syncReRecordingAt, useSyncCursor } from "@/hooks/useSyncCursor";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -18,12 +19,11 @@ import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showPlacementBlockedToast } from "@/utils/group-toast";
-import { type SyncState, formatTimeMs, splitIntoWords } from "@/utils/sync-helpers";
+import { formatTimeMs, type SyncState, splitIntoWords } from "@/utils/sync-helpers";
 import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
-import { useCallback, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Types --------------------------------------------------------------------
 

@@ -9,9 +9,9 @@ import type { AudioSource } from "@/stores/audio";
 import { storeSeparatedStems } from "@/stores/separated-stem-write";
 import { runModelDownload } from "@/stores/separation-model-download";
 import { separateSongFile } from "@/stores/separation-pipeline";
-import { type VocalModelVariant, useSettingsStore } from "@/stores/settings";
+import { useSettingsStore, type VocalModelVariant } from "@/stores/settings";
 import { songKeyFor } from "@/stores/stem-sources";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Types --------------------------------------------------------------------
 

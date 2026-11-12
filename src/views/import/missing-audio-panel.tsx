@@ -1,5 +1,6 @@
-import { FileDropZone } from "@/audio/file-drop-zone";
+import { IconAlertTriangle, IconFileAlert, IconRefresh } from "@tabler/icons-react";
 import { FileDropArea } from "@/audio/file-drop-area";
+import { FileDropZone } from "@/audio/file-drop-zone";
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { youtubeSourceTitle } from "@/domain/project/display-title";
@@ -8,9 +9,8 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { Button } from "@/ui/button";
+import { toast } from "@/utils/toast";
 import { IMPORT_AREA, ImportZone, OrDivider, SourceCard } from "@/views/import/import-layout";
-import { IconAlertTriangle, IconFileAlert, IconRefresh } from "@tabler/icons-react";
-import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 

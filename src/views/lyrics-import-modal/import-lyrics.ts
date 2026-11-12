@@ -1,7 +1,8 @@
+import { useMemo } from "react";
+import { detectNonLatinLanguage } from "@/domain/language/script-detection";
 import { withSeededBackground } from "@/domain/line/background";
 import type { RawLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
-import { detectNonLatinLanguage } from "@/domain/language/script-detection";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { importableMetadata } from "@/domain/project/imported-metadata";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
@@ -16,17 +17,16 @@ import { type SettingsState, useSettingsStore } from "@/stores/settings";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
 import { PARSERS, parseLyricsFile } from "@/utils/lyrics-parsers";
 import {
+  hasUnsupportedTags,
   type ParseIssue,
   type ParseResult,
-  UNSUPPORTED_LRC_TAGS_MESSAGE,
-  hasUnsupportedTags,
   skippedLineCount,
   skippedLinesMessage,
+  UNSUPPORTED_LRC_TAGS_MESSAGE,
 } from "@/utils/lyrics-parsers/shared";
 import { pluralize } from "@/utils/pluralize";
+import { toast } from "@/utils/toast";
 import { distributeLinesTiming } from "@/views/timeline/utils";
-import { useMemo } from "react";
-import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 
@@ -237,6 +237,7 @@ function useImportContext(sourceLabel: string): ImportContext {
 
 // -- Exports ------------------------------------------------------------------
 
+export type { ImportContext, ImportSourceInfo, LyricsRead };
 export {
   currentImportContext,
   importLyrics,
@@ -246,4 +247,3 @@ export {
   replaceWithParsedLyrics,
   useImportContext,
 };
-export type { ImportContext, ImportSourceInfo, LyricsRead };

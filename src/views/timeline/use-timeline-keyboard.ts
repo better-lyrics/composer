@@ -1,5 +1,4 @@
 import { type RefObject, useCallback, useEffect } from "react";
-import { toast } from "sonner";
 import { withNewInstance } from "@/domain/group/own-timing";
 import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
 import { pickedTemplateSource } from "@/domain/group/template-source";
@@ -26,6 +25,7 @@ import { historyShortcutAction } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
+import { toast } from "@/utils/toast";
 import { focusedControlOwnsKey, isTypingTarget } from "@/utils/typing-target";
 import { centreLineRow } from "@/views/timeline/centre-line-row";
 import { centerTimeScrollLeft } from "@/views/timeline/coords";

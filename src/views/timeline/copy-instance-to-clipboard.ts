@@ -1,9 +1,9 @@
 import { belongsToInstance } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { toast } from "@/utils/toast";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { toast } from "sonner";
 
 // Builds a ClipboardData payload covering every word and bg word of the
 // (groupId, instanceIdx) instance, then sets it as the active clipboard and

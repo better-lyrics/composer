@@ -1,6 +1,6 @@
 import { muteGuideCategory, unmuteGuideCategories } from "@/lib/guide-signals";
 import { SettingLink } from "@/ui/setting-link";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Actions ------------------------------------------------------------------
 

@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import type { ProjectTab } from "@/domain/project/tab";
 import { openProject } from "@/lib/open-project";
 import {
@@ -11,9 +13,7 @@ import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { EDITOR_PATH } from "@/utils/app-routes";
 import { reportOpenProjectFailure } from "@/utils/project-toast";
-import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Types --------------------------------------------------------------------
 

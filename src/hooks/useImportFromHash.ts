@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
@@ -9,8 +10,7 @@ import { isFromNewerComposer } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { IMPORT_HASH_PREFIX } from "@/utils/incoming-link";
 import { showNewProjectToast, showNewerLinkToast } from "@/utils/project-toast";
-import { useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Types --------------------------------------------------------------------
 

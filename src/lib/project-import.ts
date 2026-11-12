@@ -1,4 +1,5 @@
-import { type ProjectIndexEntry, buildIndexEntry } from "@/domain/project/index-entry";
+import type { ChangeEvent } from "react";
+import { buildIndexEntry, type ProjectIndexEntry } from "@/domain/project/index-entry";
 import { byMostRecentlyEdited } from "@/domain/project/library-order";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -21,8 +22,7 @@ import { reportStorageWriteError } from "@/lib/storage-signals";
 import { askImportConflict } from "@/ui/projects/import-conflict-choice";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
 import { formatProjectCount } from "@/utils/project-count";
-import type { ChangeEvent } from "react";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Types --------------------------------------------------------------------
 
@@ -264,16 +264,16 @@ async function importProjectFromInput(event: ChangeEvent<HTMLInputElement>): Pro
 
 // -- Exports ------------------------------------------------------------------
 
+export type { BundleRestore, ImportConflict, ProjectFileSummary };
 export {
   findImportConflict,
-  projectFileSummary,
-  replaceProjectFromFile,
-  restoreProjectBundle,
-  showBundleRestoreToast,
   importProjectContents,
-  restoreBundleContents,
   importProjectFile,
   importProjectFromInput,
+  projectFileSummary,
+  replaceProjectFromFile,
   reportUnreadableProjectFile,
+  restoreBundleContents,
+  restoreProjectBundle,
+  showBundleRestoreToast,
 };
-export type { ImportConflict, BundleRestore, ProjectFileSummary };

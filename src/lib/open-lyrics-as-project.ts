@@ -3,8 +3,8 @@ import { createProject } from "@/lib/open-project";
 import { useProjectStore } from "@/stores/project";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
+import { toast } from "@/utils/toast";
 import { readLyricsFile, replaceWithParsedLyrics } from "@/views/lyrics-import-modal/import-lyrics";
-import { toast } from "sonner";
 
 // -- Constants ----------------------------------------------------------------
 

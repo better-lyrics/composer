@@ -3,7 +3,7 @@ import { startSongInNewProject } from "@/lib/open-project";
 import { useProjectStore } from "@/stores/project";
 import { EDITOR_PATH } from "@/utils/app-routes";
 import { showNewProjectToast } from "@/utils/project-toast";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Types ---------------------------------------------------------------------
 

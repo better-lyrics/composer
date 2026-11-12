@@ -2,7 +2,7 @@ import type { PitchLineMode } from "@/domain/pitch/pitch-line-mode";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Constants -----------------------------------------------------------------
 

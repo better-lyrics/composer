@@ -1,3 +1,5 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { isSealed } from "@/domain/unison/lyric-status";
 import { invalidateLyricWrite } from "@/hooks/unison/query-keys";
 import { fetchRevisionContent } from "@/hooks/unison/useRevisions";
@@ -7,11 +9,9 @@ import { readUnisonLyric, withUnisonDetails } from "@/lib/unison/open-unison-lyr
 import type { RevisionSummary } from "@/lib/unison/revision-types";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
+import { toast } from "@/utils/toast";
 import { showRevisionLoadedToast, showRevisionRestoredToast, showUnisonFailureToast } from "@/utils/unison-toast";
 import { replaceWithParsedLyrics } from "@/views/lyrics-import-modal/import-lyrics";
-import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { toast } from "sonner";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -112,5 +112,5 @@ function useRevisionActions(lyric: UnisonLyric, keyId: string, onRestored: (revN
 
 // -- Exports -------------------------------------------------------------------
 
-export { useRevisionActions };
 export type { RevisionActions };
+export { useRevisionActions };

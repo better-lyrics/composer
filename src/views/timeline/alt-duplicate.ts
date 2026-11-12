@@ -1,24 +1,24 @@
+import type { DragEndEvent } from "@dnd-kit/core";
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type ReadableLine, effectiveMainWordEdit } from "@/domain/line/effective-words";
+import { effectiveMainWordEdit, type ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
+import { toast } from "@/utils/toast";
 import { cloneWord } from "@/utils/word-timing";
 import {
   DRAG_X_MIN_THRESHOLD,
   type DragData,
-  LINE_SYNCED_REJECT_MESSAGE,
   expandSelectionsAcrossLines,
   groupSelectionsByLine,
+  LINE_SYNCED_REJECT_MESSAGE,
   resolveWordsToOperate,
 } from "@/views/timeline/drag-handlers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import type { DragEndEvent } from "@dnd-kit/core";
-import { toast } from "sonner";
 
 // -- Alt duplicate -------------------------------------------------------------
 

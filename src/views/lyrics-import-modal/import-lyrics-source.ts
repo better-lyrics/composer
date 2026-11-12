@@ -1,17 +1,17 @@
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { FINISH_IMPORT_FIRST } from "@/lib/import-busy-message";
-import { type ProjectFileContents, isProjectFileName, parseProjectFileContents } from "@/lib/project-file-read";
+import { isProjectFileName, type ProjectFileContents, parseProjectFileContents } from "@/lib/project-file-read";
 import { importProjectContents, reportUnreadableProjectFile, restoreBundleContents } from "@/lib/project-import";
-import { type ChoiceRequest, askChoice } from "@/stores/choice-store";
+import { askChoice, type ChoiceRequest } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import { pluralize } from "@/utils/pluralize";
 import { formatProjectCount } from "@/utils/project-count";
-import { UNSUPPORTED_LYRICS_IMPORT_MESSAGE, isLyricsImportFileName } from "@/views/lyrics-import-modal/accepted-files";
+import { toast } from "@/utils/toast";
+import { isLyricsImportFileName, UNSUPPORTED_LYRICS_IMPORT_MESSAGE } from "@/views/lyrics-import-modal/accepted-files";
 import { type ImportContext, importLyrics, importProjectLyrics } from "@/views/lyrics-import-modal/import-lyrics";
-import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 
@@ -143,11 +143,11 @@ async function importLyricsText(text: string, ctx: ImportContext): Promise<boole
 // -- Exports ------------------------------------------------------------------
 
 export {
-  OPEN_PROJECT_LABEL,
-  USE_PROJECT_LYRICS_LABEL,
   importLyricsFile,
   importLyricsText,
   importPastedLyrics,
   importProjectFileForLyrics,
+  OPEN_PROJECT_LABEL,
   readProjectFileText,
+  USE_PROJECT_LYRICS_LABEL,
 };

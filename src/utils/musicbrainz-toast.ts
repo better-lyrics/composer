@@ -2,7 +2,7 @@ import type { ProjectMetadata } from "@/domain/project/metadata";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { useProjectStore } from "@/stores/project";
 import { pluralize } from "@/utils/pluralize";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Functions ----------------------------------------------------------------
 

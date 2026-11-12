@@ -1,3 +1,5 @@
+import { IconTrash } from "@tabler/icons-react";
+import { createElement } from "react";
 import { quotedTitle } from "@/domain/project/display-title";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { deleteProject, forkOpenProject, openProject } from "@/lib/open-project";
@@ -6,15 +8,11 @@ import type { PendingDeletion } from "@/lib/pending-deletions";
 import { NewerProjectError } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { formatProjectCount } from "@/utils/project-count";
-import { IconTrash } from "@tabler/icons-react";
-import { createElement } from "react";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[ProjectToast]";
-const NEW_PROJECT_TOAST_DURATION_MS = 10_000;
-const DELETE_UNDO_DURATION_MS = 8_000;
 
 // -- Switching back -----------------------------------------------------------
 
@@ -43,7 +41,6 @@ async function switchBackToPreviousProject(previousId: string, newId: string): P
 function showSwitchBackToast(message: string, description: string, previousId: string, newId: string): void {
   toast(message, {
     description,
-    duration: NEW_PROJECT_TOAST_DURATION_MS,
     action: {
       label: "Switch back",
       onClick: () => {
@@ -136,7 +133,6 @@ function showDeletedProjectsToast(titles: readonly string[], deletion: PendingDe
   };
   toast(deletedMessage(titles), {
     icon: createElement(IconTrash, { "aria-hidden": true, className: "size-[18px] text-composer-text opacity-60" }),
-    duration: DELETE_UNDO_DURATION_MS,
     closeButton: true,
     action: { label: "Undo", onClick: () => deletion.undo() },
     onAutoClose: commit,

@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from "react";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { useAutoAlign } from "@/hooks/use-auto-align";
@@ -8,12 +9,11 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { ShortcutTip } from "@/ui/shortcut-tip";
 import { SplitLatch } from "@/ui/split-latch";
+import { toast } from "@/utils/toast";
 import { AutoAlignPanel } from "@/views/sync/auto-align-panel";
 import { AutoAlignStatus } from "@/views/sync/auto-align-status";
 import { HeaderAction } from "@/views/timeline/header-action";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 
 // -- Constants -----------------------------------------------------------------
 

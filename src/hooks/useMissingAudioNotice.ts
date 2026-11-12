@@ -1,8 +1,8 @@
+import { useEffect, useRef } from "react";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Constants ----------------------------------------------------------------
 

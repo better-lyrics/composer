@@ -1,20 +1,20 @@
+import { useCallback } from "react";
 import { probeAudioFile } from "@/audio/probe-audio-file";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
+import { sourceSwapPatch } from "@/domain/project/source-metadata";
 import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
 import { adoptPrimingForNewAudio } from "@/lib/attach-audio-priming";
-import { startSongInNewProject } from "@/lib/open-project";
 import { noteGuideSignal } from "@/lib/guide-signals";
+import { startSongInNewProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { relinkProjectAudioFile } from "@/lib/relink-audio";
-import { sourceSwapPatch } from "@/domain/project/source-metadata";
 import { beginSourceSwap, fileSourceMetadata, readAudioTags, settleSourceSwap } from "@/lib/source-metadata";
 import { type AudioSource, isActiveAudioFile, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { fileIdentityKey } from "@/utils/file-identity";
 import { fileNameWithoutExtension } from "@/utils/file-name";
 import { showNewProjectToast } from "@/utils/project-toast";
-import { useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -150,5 +150,5 @@ function useLoadAudioFile(): (file: File, mode?: AudioFileLoadMode) => Promise<v
 
 // -- Exports ------------------------------------------------------------------
 
-export { useLoadAudioFile };
 export type { AudioFileLoadMode, AudioLoadMode };
+export { useLoadAudioFile };

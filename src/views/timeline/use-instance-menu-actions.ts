@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { withNewInstance } from "@/domain/group/own-timing";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
@@ -7,14 +8,13 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast } from "@/utils/group-toast";
+import { toast } from "@/utils/toast";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
 import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { pingGroup } from "@/views/timeline/ping-group";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useCallback } from "react";
-import { toast } from "sonner";
 
 // -- Hook ---------------------------------------------------------------------
 

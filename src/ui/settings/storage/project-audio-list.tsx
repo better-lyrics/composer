@@ -1,3 +1,5 @@
+import { IconBrandYoutube, IconMicrophone2 } from "@tabler/icons-react";
+import { useCallback, useMemo, useState } from "react";
 import { quotedTitle } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { type AudioFilter, hasStoredYouTubeAudio, storedAudioProjects } from "@/domain/storage/stored-audio";
@@ -10,9 +12,7 @@ import { SettingText } from "@/ui/settings/setting-text";
 import { ProjectAudioRow } from "@/ui/settings/storage/project-audio-row";
 import { AUDIO_FILTER_OPTIONS } from "@/ui/settings/storage/storage-options";
 import { formatProjectCount } from "@/utils/project-count";
-import { IconBrandYoutube, IconMicrophone2 } from "@tabler/icons-react";
-import { useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Types --------------------------------------------------------------------
 

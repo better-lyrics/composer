@@ -1,9 +1,9 @@
+import { useEffect } from "react";
 import { forkOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot, subscribeOpenProjectId } from "@/lib/open-project-session";
 import { cancelPendingSave } from "@/lib/persistence-debounce";
 import { subscribeProjectsDeleted } from "@/lib/project-channel";
-import { useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Constants ----------------------------------------------------------------
 

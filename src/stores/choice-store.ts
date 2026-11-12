@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { toast } from "sonner";
 import { create } from "zustand";
+import { toast } from "@/utils/toast";
 
 // -- Types --------------------------------------------------------------------
 
@@ -96,5 +96,5 @@ function askChoiceWithCheckbox<T extends string>(request: CheckboxChoiceRequest<
 
 // -- Exports ------------------------------------------------------------------
 
-export { FINISH_OPEN_PROMPT_FIRST, askChoice, askChoiceWithCheckbox, useChoiceStore };
 export type { ChoiceRequest };
+export { askChoice, askChoiceWithCheckbox, FINISH_OPEN_PROMPT_FIRST, useChoiceStore };

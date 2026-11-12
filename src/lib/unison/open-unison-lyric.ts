@@ -1,4 +1,3 @@
-import { toast } from "sonner";
 import { artistCredit } from "@/domain/project/display-title";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
@@ -8,6 +7,7 @@ import { useProjectStore } from "@/stores/project";
 import { normalizeIsrc } from "@/utils/isrc";
 import type { ParseResult } from "@/utils/lyrics-parsers";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
+import { toast } from "@/utils/toast";
 import { type LyricsRead, readLyricsFile, replaceWithParsedLyrics } from "@/views/lyrics-import-modal/import-lyrics";
 
 // -- Types ---------------------------------------------------------------------

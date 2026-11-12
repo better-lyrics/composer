@@ -1,16 +1,16 @@
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type ReadableLine, effectiveMainWordEdit } from "@/domain/line/effective-words";
+import { effectiveMainWordEdit, type ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
 import { isWordSelected } from "@/domain/selection/identity";
 import type { WordSelection } from "@/domain/selection/model";
-import { type WordMove, applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
+import { applyWordMoveAcrossLines, type WordMove } from "@/domain/word/move-across-lines";
 import { reorderWordTrack } from "@/domain/word/reorder-track";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { useProjectStore } from "@/stores/project";
+import { toast } from "@/utils/toast";
 import { cloneWord } from "@/utils/word-timing";
-import { toast } from "sonner";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -221,13 +221,13 @@ function applyCrossLineMove(args: CrossLineMoveArgs) {
 
 // -- Exports -------------------------------------------------------------------
 
+export type { DragData };
 export {
-  DRAG_X_MIN_THRESHOLD,
-  LINE_SYNCED_REJECT_MESSAGE,
   applyCrossLineMove,
   applySameLineReorder,
+  DRAG_X_MIN_THRESHOLD,
   expandSelectionsAcrossLines,
   groupSelectionsByLine,
+  LINE_SYNCED_REJECT_MESSAGE,
   resolveWordsToOperate,
 };
-export type { DragData };

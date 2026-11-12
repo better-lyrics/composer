@@ -1,33 +1,33 @@
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { probeAudioFile } from "@/audio/probe-audio-file";
 import { type AudioFileLoadMode, useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import {
-  type LinkProjectOutcome,
   getPersistenceSettled,
   getQueryImportSettled,
+  type LinkProjectOutcome,
   markLinkedFilesSettled,
 } from "@/lib/persistence-settled";
 import { isActiveAudioFile } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { composeAbortSignals } from "@/utils/abort-signals";
 import {
+  hasLinkedFileParams,
   LINKED_FILE_PARAM_NAMES,
   type LinkedFileParam,
-  hasLinkedFileParams,
   linkedFileName,
   readLinkedFileUrl,
   readTrimmed,
 } from "@/utils/incoming-link";
-import { composeAbortSignals } from "@/utils/abort-signals";
 import { showNewProjectToast } from "@/utils/project-toast";
+import { toast } from "@/utils/toast";
 import { stripQueryParams } from "@/utils/url-params";
 import { readYouTubeParam } from "@/utils/youtube-link-params";
 import { isLyricsImportFileName } from "@/views/lyrics-import-modal/accepted-files";
-import { type ImportContext, currentImportContext } from "@/views/lyrics-import-modal/import-lyrics";
+import { currentImportContext, type ImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile, importLyricsText } from "@/views/lyrics-import-modal/import-lyrics-source";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 

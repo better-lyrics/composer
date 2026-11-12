@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { ProjectTab } from "@/domain/project/tab";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
@@ -8,9 +9,8 @@ import type { ShortcutScope } from "@/stores/shortcut-registry";
 import { applyShortcutsWithUndo } from "@/ui/settings/shortcuts/switch-shortcut-preset";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { shouldOfferSpaceHint } from "@/utils/space-habit-hint";
+import { toast } from "@/utils/toast";
 import { isTypingTarget } from "@/utils/typing-target";
-import { useEffect } from "react";
-import { toast } from "sonner";
 
 // -- State --------------------------------------------------------------------
 

@@ -1,3 +1,4 @@
+import { IconDownload, IconTrash } from "@tabler/icons-react";
 import { deleteAllProjects } from "@/lib/delete-all-projects";
 import { backUpAllProjects } from "@/lib/storage-actions";
 import { useConfirm } from "@/stores/confirm-store";
@@ -5,8 +6,7 @@ import { Button } from "@/ui/button";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
 import { formatProjectCount } from "@/utils/project-count";
-import { IconDownload, IconTrash } from "@tabler/icons-react";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Constants ----------------------------------------------------------------
 

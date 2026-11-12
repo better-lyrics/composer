@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import { createElement, useEffect, useRef } from "react";
 import { metadataForNewSource } from "@/domain/project/source-metadata";
 import { useEnsureAuth } from "@/hooks/useEnsureAuth";
 import { correctPrimingForProjectAudio } from "@/lib/attach-audio-priming";
@@ -25,10 +27,8 @@ import {
   getAudioFromBridge,
   isBridgeUnreachable,
 } from "@/utils/composer-bridge-api";
+import { toast } from "@/utils/toast";
 import { isYouTubeSourceFor } from "@/utils/youtube-source";
-import { useQuery } from "@tanstack/react-query";
-import { createElement, useEffect, useRef } from "react";
-import { toast } from "sonner";
 
 // -- Constants ----------------------------------------------------------------
 

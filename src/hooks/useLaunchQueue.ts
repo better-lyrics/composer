@@ -1,3 +1,5 @@
+import { useEffect, useEffectEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { ONE_SONG_AT_A_TIME_MESSAGE } from "@/audio/use-file-drop";
 import { useStartNewSong } from "@/hooks/useStartNewSong";
 import { bootLocationHref } from "@/lib/boot-entry";
@@ -5,12 +7,10 @@ import { firstLaunchedFile, isWindowOpeningLaunch, launchTargetAction } from "@/
 import { openLyricsFileAsNewProject } from "@/lib/open-lyrics-as-project";
 import { flushPendingSave, saveNow } from "@/lib/persistence-debounce";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
-import { canSaveOpenProject } from "@/lib/save-open-project";
 import { importProjectFile } from "@/lib/project-import";
+import { canSaveOpenProject } from "@/lib/save-open-project";
 import { EDITOR_PATH } from "@/utils/app-routes";
-import { useEffect, useEffectEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Types --------------------------------------------------------------------
 

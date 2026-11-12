@@ -1,13 +1,13 @@
+import { useCallback } from "react";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import { trackWords } from "@/domain/line/tracks";
 import { pluralize } from "@/utils/pluralize";
+import { toast } from "@/utils/toast";
 import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
 import { selectedBannerInstance } from "@/views/timeline/selected-banner";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useCallback } from "react";
-import { toast } from "sonner";
 
 // -- Hook ---------------------------------------------------------------------
 

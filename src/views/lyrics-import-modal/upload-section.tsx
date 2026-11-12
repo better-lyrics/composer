@@ -1,14 +1,14 @@
+import { IconArrowLeft, IconClipboardText, IconMusic } from "@tabler/icons-react";
+import { useCallback, useRef, useState } from "react";
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
+import { toast } from "@/utils/toast";
 import {
+  isLyricsImportFileName,
   LYRICS_IMPORT_ACCEPT_ATTRIBUTE,
   LYRICS_IMPORT_FORMATS_COMPACT,
   UNSUPPORTED_LYRICS_IMPORT_MESSAGE,
-  isLyricsImportFileName,
 } from "@/views/lyrics-import-modal/accepted-files";
-import { IconArrowLeft, IconClipboardText, IconMusic } from "@tabler/icons-react";
-import { useCallback, useRef, useState } from "react";
-import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 

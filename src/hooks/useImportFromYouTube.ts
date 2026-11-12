@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react";
-import { toast } from "sonner";
 import { isYouTubeLoadError, loadVideoWithRollback, useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
-import { type VideoProjectOutcome, openProjectForVideo } from "@/lib/open-video-project";
+import { openProjectForVideo, type VideoProjectOutcome } from "@/lib/open-video-project";
 import { getPersistenceSettled, getQueryImportSettled, markLinkProjectSettled } from "@/lib/persistence-settled";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { showLinkedProjectToast } from "@/utils/project-toast";
-import { hasLoadedYouTubeSourceFor } from "@/utils/youtube-source";
+import { toast } from "@/utils/toast";
 import { readYouTubeParam, stripYouTubeParams } from "@/utils/youtube-link-params";
+import { hasLoadedYouTubeSourceFor } from "@/utils/youtube-source";
 import { extractVideoId } from "@/utils/youtube-url";
 
 // -- Constants ----------------------------------------------------------------

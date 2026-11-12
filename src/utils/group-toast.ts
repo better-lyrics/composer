@@ -1,8 +1,8 @@
 import type { KeptOwnTiming, RealignRefusal } from "@/domain/group/shared-placement";
 import type { LinkGroup } from "@/domain/group/template";
 import { useProjectStore } from "@/stores/project";
-import { pluralWord, pluralize } from "@/utils/pluralize";
-import { toast } from "sonner";
+import { pluralize, pluralWord } from "@/utils/pluralize";
+import { toast } from "@/utils/toast";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -34,7 +34,6 @@ type SharingPlace = "edit" | "timeline";
 
 function showGroupActionToast(message: string, undoFn?: () => void): void {
   toast.success(message, {
-    duration: GROUP_TOAST_DURATION_MS,
     action: {
       label: "Undo",
       onClick: undoFn ?? (() => useProjectStore.getState().undo()),
@@ -55,8 +54,9 @@ function showKeptOwnTimingToast(keptOwnTiming: readonly KeptOwnTiming[], place: 
   const [refusal] = refusals;
   const reason = refusals.size === 1 ? keptOwnTimingReason(refusal, count, place) : MIXED_KEPT_OWN_TIMING_REASON[place];
   toast(`${pluralize(count, "instance")} kept ${pluralWord(count, "its", "their")} own timing${reason}`, {
-    duration: GROUP_TOAST_DURATION_MS,
-    ...(offerUndo ? { action: { label: "Undo", onClick: () => useProjectStore.getState().undo() } } : {}),
+    ...(offerUndo
+      ? { action: { label: "Undo", onClick: () => useProjectStore.getState().undo() } }
+      : { duration: GROUP_TOAST_DURATION_MS }),
   });
 }
 
@@ -98,8 +98,8 @@ export {
   showGroupActionToast,
   showGroupedToast,
   showKeptOwnTimingToast,
-  showSharedSongEdgeToast,
   showPlacementBlockedToast,
   showReplacedOwnTimingToast,
+  showSharedSongEdgeToast,
   showSharingBlockedToast,
 };

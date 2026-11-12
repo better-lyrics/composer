@@ -1,3 +1,5 @@
+import { IconFileImport, IconUpload } from "@tabler/icons-react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { type ImportModalSection, useImportModalState, useImportModalStore } from "@/stores/import-modal-store";
 import { Button } from "@/ui/button";
@@ -5,10 +7,11 @@ import { Modal } from "@/ui/modal";
 import { isAbortError } from "@/utils/abort-error";
 import { cn } from "@/utils/cn";
 import { isFileDrag } from "@/utils/file-drag";
+import { toast } from "@/utils/toast";
 import {
+  isLyricsImportFileName,
   LYRICS_IMPORT_FORMATS_COMPACT,
   UNSUPPORTED_LYRICS_IMPORT_MESSAGE,
-  isLyricsImportFileName,
 } from "@/views/lyrics-import-modal/accepted-files";
 import { importLyrics, useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile, importLyricsText } from "@/views/lyrics-import-modal/import-lyrics-source";
@@ -16,9 +19,6 @@ import { PasteSection } from "@/views/lyrics-import-modal/paste-section";
 import { SearchSection } from "@/views/lyrics-import-modal/search-section";
 import { payloadToContent, syntheticFilenameForResult } from "@/views/lyrics-import-modal/shell-helpers";
 import { UploadSection } from "@/views/lyrics-import-modal/upload-section";
-import { IconFileImport, IconUpload } from "@tabler/icons-react";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 
 // -- Component ----------------------------------------------------------------
 

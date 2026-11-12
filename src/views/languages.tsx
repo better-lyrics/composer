@@ -1,3 +1,5 @@
+import { IconChevronDown } from "@tabler/icons-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { pastedRows } from "@/domain/language/paste-import";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
@@ -5,6 +7,8 @@ import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
 import { Select } from "@/ui/select";
+import { pluralize, pluralWord } from "@/utils/pluralize";
+import { toast } from "@/utils/toast";
 import { watchGenerationEdits } from "@/views/languages/generation-edit-guard";
 import { LANGUAGE_OPTIONS, SOURCE_LANGUAGE_OPTIONS } from "@/views/languages/language-options";
 import { LanguageTrackBar } from "@/views/languages/language-track-bar";
@@ -15,10 +19,6 @@ import { RegenerateLanguageControl } from "@/views/languages/regenerate-language
 import { requestLanguageGeneration } from "@/views/languages/request-language-generation";
 import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
 import { useLanguageTargets } from "@/views/languages/use-language-targets";
-import { pluralWord, pluralize } from "@/utils/pluralize";
-import { IconChevronDown } from "@tabler/icons-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 
 // -- Interfaces ---------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 import { useUIStore } from "@/stores/ui";
 import { formatFileSize } from "@/utils/format-file-size";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Constants ----------------------------------------------------------------
 

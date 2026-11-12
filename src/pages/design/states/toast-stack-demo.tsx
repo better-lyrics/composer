@@ -2,7 +2,7 @@ import { DesignSection } from "@/pages/design/design-section";
 import { StateCell } from "@/pages/design/state-cell";
 import { type StateChip, StateChips } from "@/pages/design/state-chips";
 import { Button } from "@/ui/button";
-import { toast, useSonner } from "sonner";
+import { toast, useSonner } from "@/utils/toast";
 
 // -- Types ---------------------------------------------------------------------
 

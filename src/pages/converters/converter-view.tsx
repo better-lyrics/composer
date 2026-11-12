@@ -1,3 +1,5 @@
+import { IconAlertTriangle, IconCopy, IconDownload, IconExternalLink } from "@tabler/icons-react";
+import { useMemo, useRef, useState } from "react";
 import { acceptedExtensionsFor } from "@/domain/lyrics-file/supported-formats";
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import type { ConversionResult } from "@/pages/converters/convert-via-parser";
@@ -15,9 +17,7 @@ import { fileNameWithoutExtension } from "@/utils/file-name";
 import { IMPORT_HASH_PREFIX } from "@/utils/incoming-link";
 import type { LyricsFileType } from "@/utils/lyrics-parsers/detect";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
-import { IconAlertTriangle, IconCopy, IconDownload, IconExternalLink } from "@tabler/icons-react";
-import { useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 interface ConvertArgs {
   input: string;
@@ -255,5 +255,5 @@ const ConverterView: React.FC<ConverterViewProps> = ({
   );
 };
 
-export { ConverterView };
 export type { ConvertArgs };
+export { ConverterView };

@@ -1,8 +1,8 @@
-import { type StorageProtection, readStorageProtection, requestStorageProtection } from "@/lib/browser-storage";
-import { BROWSER_KIND, type BrowserKind } from "@/utils/platform";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { readStorageProtection, requestStorageProtection, type StorageProtection } from "@/lib/browser-storage";
+import { BROWSER_KIND, type BrowserKind } from "@/utils/platform";
+import { toast } from "@/utils/toast";
 
 // -- Types --------------------------------------------------------------------
 

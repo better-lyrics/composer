@@ -1,6 +1,6 @@
 import type { GuideSignal } from "@/domain/guide/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
-import { FINISH_OPEN_PROMPT_FIRST, askChoice } from "@/stores/choice-store";
+import { askChoice, FINISH_OPEN_PROMPT_FIRST } from "@/stores/choice-store";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { bindingToKeys, getShortcutDescription, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { clashingOverrides, overridesAfterSwitch } from "@/stores/shortcut-preset-switch";
@@ -8,7 +8,7 @@ import { presetBinding, type ShortcutPresetId, shortcutPreset } from "@/stores/s
 import { getShortcutById, type ShortcutBinding } from "@/stores/shortcut-registry";
 import { formatShortcut } from "@/utils/format-key";
 import { pluralize, pluralWord } from "@/utils/pluralize";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Constants -----------------------------------------------------------------
 

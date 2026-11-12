@@ -3,11 +3,11 @@ import type { WordTrack } from "@/domain/line/tracks";
 import type { WordSelection } from "@/domain/selection/model";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { MenuItem } from "@/ui/menu";
+import { toast } from "@/utils/toast";
 import { commitPasteAt } from "@/views/timeline/commit-paste";
 import { selectWordUnlessSelected } from "@/views/timeline/selection-playback";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
-import { toast } from "sonner";
 
 // -- Interfaces ----------------------------------------------------------------
 

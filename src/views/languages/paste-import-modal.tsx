@@ -1,6 +1,8 @@
+import { IconAlertTriangle, IconArrowRight, IconCheck, IconFileImport } from "@tabler/icons-react";
+import { useId, useMemo, useRef, useState } from "react";
 import { alignTrackToLine, validateTransliterationAlignment } from "@/domain/language/align";
-import { wholeLineSegments } from "@/domain/language/manual-segments";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { wholeLineSegments } from "@/domain/language/manual-segments";
 import type { TranslationTrack, TransliterationTrack } from "@/domain/language/model";
 import { alignPastedLanguageLines } from "@/domain/language/paste-import";
 import type { LyricLine } from "@/domain/line/model";
@@ -14,9 +16,7 @@ import { Select } from "@/ui/select";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
-import { IconAlertTriangle, IconArrowRight, IconCheck, IconFileImport } from "@tabler/icons-react";
-import { useId, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Interfaces ---------------------------------------------------------------
 

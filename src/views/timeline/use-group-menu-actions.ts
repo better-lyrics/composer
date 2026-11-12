@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { withNewInstance } from "@/domain/group/own-timing";
 import { instanceCount } from "@/domain/instance/enumerate";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -6,13 +7,12 @@ import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast, showGroupedToast } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
+import { toast } from "@/utils/toast";
 import { type ConformFailure, conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
-import { useCallback } from "react";
-import { toast } from "sonner";
 
 // -- Constants ----------------------------------------------------------------
 

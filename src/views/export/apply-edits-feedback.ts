@@ -1,6 +1,6 @@
-import { toast } from "sonner";
 import type { ProjectPart } from "@/domain/project/edited-lyrics";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
+import { toast } from "@/utils/toast";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 
 // -- Constants ----------------------------------------------------------------

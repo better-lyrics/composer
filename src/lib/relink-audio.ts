@@ -1,13 +1,13 @@
 import { probeAudioFile } from "@/audio/probe-audio-file";
-import { correctPrimingForProjectAudio } from "@/lib/attach-audio-priming";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { waitForYouTubeLoad } from "@/hooks/useLoadYouTubeSource";
+import { correctPrimingForProjectAudio } from "@/lib/attach-audio-priming";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { saveOpenProjectNow } from "@/lib/persistence-debounce";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirmStore } from "@/stores/confirm-store";
-import { toast } from "sonner";
+import { toast } from "@/utils/toast";
 
 // -- Helpers ------------------------------------------------------------------
 

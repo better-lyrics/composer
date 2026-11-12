@@ -1,9 +1,9 @@
-import { toast } from "sonner";
 import { isUnisonNotFound, isUnisonSessionEnded, UnisonError } from "@/lib/unison/client";
 import { useProjectStore } from "@/stores/project";
 import { settingEntry } from "@/stores/settings-catalog";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { pluralize } from "@/utils/pluralize";
+import { toast } from "@/utils/toast";
 
 // -- Types --------------------------------------------------------------------
 

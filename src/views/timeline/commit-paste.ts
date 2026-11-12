@@ -1,4 +1,3 @@
-import { toast } from "sonner";
 import { withNewInstance } from "@/domain/group/own-timing";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LineTemplate } from "@/domain/group/template";
@@ -11,6 +10,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { pluralize } from "@/utils/pluralize";
+import { toast } from "@/utils/toast";
 import { applyPasteToLines, clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { instanceToTemplate } from "@/views/timeline/group-ops";

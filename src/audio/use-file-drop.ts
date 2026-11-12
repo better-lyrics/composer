@@ -1,8 +1,8 @@
-import { UNSUPPORTED_AUDIO_FILE_MESSAGE, isSupportedAudioFile } from "@/domain/audio-file/supported-formats";
-import { PROJECT_FILE_EXTENSIONS_LABEL, isProjectFileName } from "@/lib/project-file-read";
-import { isFileDrag } from "@/utils/file-drag";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { isSupportedAudioFile, UNSUPPORTED_AUDIO_FILE_MESSAGE } from "@/domain/audio-file/supported-formats";
+import { isProjectFileName, PROJECT_FILE_EXTENSIONS_LABEL } from "@/lib/project-file-read";
+import { isFileDrag } from "@/utils/file-drag";
+import { toast } from "@/utils/toast";
 
 // -- Types --------------------------------------------------------------------
 
