@@ -2,7 +2,12 @@ import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { GUTTER_WIDTH } from "@/views/timeline/coords";
 import { CueFlash } from "@/views/timeline/cue-flash";
-import { createPlayheadFrame, readPlayheadFrame, writePlayheadFrame } from "@/views/timeline/playhead-frame";
+import {
+  createPlayheadFrame,
+  readPlayheadFrame,
+  releasePlayheadFrame,
+  writePlayheadFrame,
+} from "@/views/timeline/playhead-frame";
 import { createPlayheadDrag } from "@/views/timeline/playhead-drag";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -80,6 +85,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
   );
 
   useFrameLoop(phases, "timeline-playhead");
+  useEffect(() => () => releasePlayheadFrame(frame), [frame]);
 
   useEffect(() => {
     let yielded = false;
