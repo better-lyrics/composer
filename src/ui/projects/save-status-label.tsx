@@ -3,6 +3,7 @@ import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { keepOpenProjectAsNew } from "@/lib/open-project-deleted";
 import { type SaveStatus, getSaveStatus, subscribeSaveStatus } from "@/lib/save-status";
 import { Button } from "@/ui/button";
+import { ShortcutTip } from "@/ui/shortcut-tip";
 import { Tooltip } from "@/ui/tooltip";
 import { IconAlertTriangle, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { useState, useSyncExternalStore } from "react";
@@ -66,7 +67,11 @@ const DeletedProjectSaveButton: React.FC = () => {
   const deletedElsewhere = useOpenProjectDeleted();
   if (!deletedElsewhere) return null;
   return (
-    <Tooltip content="Not saved ・ Keep as new project" placement="bottom" className="shrink-0">
+    <Tooltip
+      content={<ShortcutTip label="Not saved" description="Click to keep as new project" />}
+      placement="bottom"
+      className="shrink-0"
+    >
       <Button
         variant="ghost"
         size="sm"
