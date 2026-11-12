@@ -217,8 +217,17 @@ braccato-lyrics .blyrics-container {
   filter: opacity(0.3);
 }
 
-/* Text selection. Excludes animated words and rows: a match restyles their subtree on every fade frame */
-:not(.word-face, [data-timeline-row])::selection {
+/* Text selection. Excludes animated Timeline and lyric parts: a match restyles their subtree on every animation frame */
+:not(
+  .word-face,
+  [data-timeline-row],
+  .blyrics--line,
+  .blyrics-word-group,
+  .blyrics-sweep-cell,
+  .blyrics-sweep-mask,
+  .blyrics-sweep-text,
+  .blyrics-sweep-glow
+)::selection {
   background-color: color-mix(in srgb, var(--color-composer-accent) 40%, transparent);
   color: var(--color-composer-text);
 }
