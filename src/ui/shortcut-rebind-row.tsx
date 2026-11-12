@@ -38,9 +38,12 @@ type CaptureState =
 
 const IDLE: CaptureState = { status: "idle" };
 
-const BINDING_SLOT_BASE = "h-7 -mr-[7px] inline-flex items-center justify-end gap-0.5 rounded-lg border cursor-pointer";
+const BINDING_SLOT_BASE = "h-7 inline-flex items-center justify-end gap-0.5 rounded-lg border cursor-pointer";
 
-const BINDING_SLOT_IDLE = cn(BINDING_SLOT_BASE, "px-1.5 border-transparent transition-colors hover:bg-(--layer-1)");
+const BINDING_SLOT_IDLE = cn(
+  BINDING_SLOT_BASE,
+  "-mr-[7px] px-1.5 border-transparent transition-colors hover:bg-(--layer-1)",
+);
 
 const BINDING_SLOT_LISTENING = cn(
   INPUT_STYLES,
