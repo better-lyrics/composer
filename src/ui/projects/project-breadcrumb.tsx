@@ -1,6 +1,6 @@
 import { displayArtists, displayTitle, hasArtists } from "@/domain/project/display-title";
+import { useShortcutTitle } from "@/hooks/use-shortcut-title";
 import { useProjectStore } from "@/stores/project";
-import { getEffectiveKeysArray, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { useUIStore } from "@/stores/ui";
 import { Button } from "@/ui/button";
 import { LinkButton } from "@/ui/link-button";
@@ -9,7 +9,6 @@ import { ProjectArt } from "@/ui/projects/project-art";
 import { ProjectSwitcher } from "@/ui/projects/project-switcher";
 import { DeletedProjectSaveButton, SaveStatusAnnouncer, SaveStatusGlyph } from "@/ui/projects/save-status-label";
 import { LIBRARY_PATH } from "@/utils/app-routes";
-import { formatShortcut } from "@/utils/format-key";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
 
 // -- Constants ----------------------------------------------------------------
@@ -25,8 +24,7 @@ const ProjectBreadcrumb: React.FC = () => {
   const isOpen = useUIStore((state) => state.projectSwitcherOpen);
   const setOpen = useUIStore((state) => state.setProjectSwitcherOpen);
   const shownTitle = displayTitle(title);
-  const switchKeys = useShortcutBindingsStore(() => formatShortcut(getEffectiveKeysArray(SWITCHER_SHORTCUT_ID)));
-  const switchTitle = switchKeys ? `Switch project (${switchKeys})` : "Switch project";
+  const switchTitle = useShortcutTitle("Switch project", SWITCHER_SHORTCUT_ID);
 
   return (
     <div className="flex items-center min-w-0 select-none">

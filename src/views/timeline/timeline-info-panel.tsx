@@ -4,14 +4,13 @@ import type { ReadableLine } from "@/domain/line/effective-words";
 import type { WordSelection } from "@/domain/selection/model";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
+import { useShortcutTitle } from "@/hooks/use-shortcut-title";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { getEffectiveKeysArray, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { SingerTag } from "@/ui/singer-tag";
-import { formatShortcut } from "@/utils/format-key";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
 import { BackgroundTextEditor } from "@/views/timeline/background-text-editor";
@@ -29,13 +28,6 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { formatTime } from "@/views/timeline/utils";
 import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
 import { useCallback, useMemo } from "react";
-
-// -- Hooks ---------------------------------------------------------------------
-
-function useShortcutTitle(label: string, shortcutId: string): string {
-  const keys = useShortcutBindingsStore(() => formatShortcut(getEffectiveKeysArray(shortcutId)));
-  return keys ? `${label} (${keys})` : label;
-}
 
 // -- Components ----------------------------------------------------------------
 
