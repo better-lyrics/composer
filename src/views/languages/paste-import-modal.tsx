@@ -238,15 +238,17 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
             ))}
           </div>
           <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-(--divider) select-none">
-            <span className="text-xs text-composer-text-muted tabular-nums">
-              {mappedCount} of {lines.length} lines ready
-            </span>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-3">
               {showClearDraft && (
                 <Button variant="ghost" onClick={clearDraft}>
                   Clear draft
                 </Button>
               )}
+              <span className="text-xs text-composer-text-muted tabular-nums">
+                {mappedCount} of {lines.length} lines ready
+              </span>
+            </div>
+            <div className="flex gap-2">
               <Button onClick={onClose}>Cancel</Button>
               <Button hasIcon variant="primary" disabled={errorCount > 0 || mappedCount === 0} onClick={importContent}>
                 <IconFileImport className="size-4" />

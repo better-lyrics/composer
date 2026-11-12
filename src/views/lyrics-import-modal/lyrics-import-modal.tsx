@@ -248,7 +248,7 @@ const LyricsImportModalShell: React.FC = () => {
 
         <div className="flex justify-end gap-2">
           {showClearDraft && currentSection === "paste" && (
-            <Button variant="ghost" size="sm" onClick={clearDraft}>
+            <Button variant="ghost" size="sm" onClick={clearDraft} className="mr-auto">
               Clear draft
             </Button>
           )}
