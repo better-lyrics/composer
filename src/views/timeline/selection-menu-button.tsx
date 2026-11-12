@@ -54,7 +54,10 @@ const SelectionMenuButton: React.FC = () => {
   };
 
   return (
-    <Tooltip content={<ShortcutTip label="More actions" keys={KEYBOARD_MENU_KEYS} />} disabled={isOpen}>
+    <Tooltip
+      content={<ShortcutTip label="More actions" keys={KEYBOARD_MENU_KEYS} />}
+      disabled={isOpen || !KEYBOARD_MENU_KEYS}
+    >
       <Button
         ref={buttonRef}
         variant="secondary"
