@@ -13,6 +13,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { useAltHeld } from "@/views/timeline/alt-key-held";
+import { contextMenuPoint } from "@/views/timeline/keyboard-context-menu";
 import { selectWordUnlessSelected } from "@/views/timeline/selection-playback";
 import { toggleStepLane } from "@/views/timeline/step-timing/press-step-key";
 import { useStepTrack } from "@/views/timeline/step-timing/use-step-track";
@@ -156,8 +157,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     (e: React.MouseEvent, wordIndex: number) => {
       selectWordUnlessSelected({ lineId, lineIndex, wordIndex, type: trackType });
       useTimelineStore.getState().setContextMenu({
-        x: e.clientX,
-        y: e.clientY,
+        ...contextMenuPoint(e),
         target: { kind: "word", lineId, lineIndex, wordIndex, type: trackType },
       });
     },

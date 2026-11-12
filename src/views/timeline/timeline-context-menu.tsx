@@ -9,11 +9,12 @@ import type { WordSelection } from "@/domain/selection/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { Menu, type MenuAnchor, MenuItem, MenuLabel, MenuRadioItem, MenuSeparator } from "@/ui/menu";
+import { Menu, MenuItem, MenuLabel, MenuRadioItem, MenuSeparator } from "@/ui/menu";
 import { SingerTag } from "@/ui/singer-tag";
 import { GROUP_COLORS } from "@/utils/group-colors";
 import { pluralize } from "@/utils/pluralize";
 import { CopyCutMenuItems, PasteHereMenuItem } from "@/views/timeline/clipboard-menu-items";
+import { contextMenuAnchor } from "@/views/timeline/keyboard-context-menu";
 import {
   loopSelection,
   playSelection,
@@ -443,10 +444,7 @@ const TimelineContextMenu: React.FC = () => {
   const contextMenu = useTimelineStore((s) => s.contextMenu);
   const clearContextMenu = useTimelineStore((s) => s.clearContextMenu);
   const targets = useContextMenuTargets();
-  const anchor = useMemo<MenuAnchor | null>(
-    () => (contextMenu ? { kind: "point", x: contextMenu.x, y: contextMenu.y, within: document.body } : null),
-    [contextMenu],
-  );
+  const anchor = useMemo(() => (contextMenu ? contextMenuAnchor(contextMenu) : null), [contextMenu]);
 
   if (!contextMenu || !anchor) return null;
 

@@ -8,8 +8,10 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { getEffectiveKeysArray, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { SingerTag } from "@/ui/singer-tag";
+import { formatShortcut } from "@/utils/format-key";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
 import { BackgroundTextEditor } from "@/views/timeline/background-text-editor";
@@ -21,11 +23,19 @@ import {
   selectionCountLabel,
   selectionGroupHighlight,
 } from "@/views/timeline/selection-info";
+import { SelectionMenuButton } from "@/views/timeline/selection-menu-button";
 import { useTimelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { formatTime } from "@/views/timeline/utils";
 import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
 import { useCallback, useMemo } from "react";
+
+// -- Hooks ---------------------------------------------------------------------
+
+function useShortcutTitle(label: string, shortcutId: string): string {
+  const keys = useShortcutBindingsStore(() => formatShortcut(getEffectiveKeysArray(shortcutId)));
+  return keys ? `${label} (${keys})` : label;
+}
 
 // -- Components ----------------------------------------------------------------
 
@@ -63,6 +73,9 @@ const MultiSelectionInfo: React.FC<{ summary: MultiSelectionSummary; highlight: 
       <TimeField label="Range:" value={`${formatTime(summary.begin)} - ${formatTime(summary.end)}`} />
       <TimeField label="Span:" value={formatTime(summary.end - summary.begin)} />
     </div>
+    <div className="ml-auto">
+      <SelectionMenuButton />
+    </div>
   </div>
 );
 
@@ -75,37 +88,42 @@ interface SingleWordInfoProps {
   onSetEnd: () => void;
 }
 
-const SingleWordInfo: React.FC<SingleWordInfoProps> = ({ selection, line, item, highlight, onSetBegin, onSetEnd }) => (
-  <div className="relative flex items-center gap-6 px-6 py-3 border-t border-(--divider) bg-(--pop)">
-    {highlight && <GroupBadge highlight={highlight} title="This word belongs to a linked group" />}
-    <SingerTag color={getAgentColor(line.agentId)}>
-      {selection.type === "bg" ? `Line ${selection.lineIndex + 1} ・ Background` : `Line ${selection.lineIndex + 1}`}
-    </SingerTag>
+const SingleWordInfo: React.FC<SingleWordInfoProps> = ({ selection, line, item, highlight, onSetBegin, onSetEnd }) => {
+  const setBeginTitle = useShortcutTitle("Set begin to cursor", "timeline.setWordBegin");
+  const setEndTitle = useShortcutTitle("Set end to cursor", "timeline.setWordEnd");
+  return (
+    <div className="relative flex items-center gap-6 px-6 py-3 border-t border-(--divider) bg-(--pop)">
+      {highlight && <GroupBadge highlight={highlight} title="This word belongs to a linked group" />}
+      <SingerTag color={getAgentColor(line.agentId)}>
+        {selection.type === "bg" ? `Line ${selection.lineIndex + 1} ・ Background` : `Line ${selection.lineIndex + 1}`}
+      </SingerTag>
 
-    <div className="flex items-center gap-2">
-      <span className="text-sm font-medium text-composer-text">{item.text}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium text-composer-text">{item.text}</span>
+      </div>
+
+      <div className="flex items-center gap-4 text-sm">
+        <TimeField label="Begin:" value={formatTime(item.begin)} />
+        <TimeField label="End:" value={formatTime(item.end)} />
+        <TimeField label="Duration:" value={formatTime(item.end - item.begin)} />
+      </div>
+
+      <BackgroundTextEditor lineId={line.id} backgroundText={line.backgroundText} />
+
+      <div className="flex items-center gap-2 ml-auto">
+        <Button variant="secondary" size="sm" hasIcon onClick={onSetBegin} title={setBeginTitle}>
+          <IconBracketsContainStart className="size-3.5" />
+          <span>Set Begin</span>
+        </Button>
+        <Button variant="secondary" size="sm" hasIcon onClick={onSetEnd} title={setEndTitle}>
+          <IconBracketsContainEnd className="size-3.5" />
+          <span>Set End</span>
+        </Button>
+        <SelectionMenuButton />
+      </div>
     </div>
-
-    <div className="flex items-center gap-4 text-sm">
-      <TimeField label="Begin:" value={formatTime(item.begin)} />
-      <TimeField label="End:" value={formatTime(item.end)} />
-      <TimeField label="Duration:" value={formatTime(item.end - item.begin)} />
-    </div>
-
-    <BackgroundTextEditor lineId={line.id} backgroundText={line.backgroundText} />
-
-    <div className="flex items-center gap-2 ml-auto">
-      <Button variant="secondary" size="sm" hasIcon onClick={onSetBegin} title="Set begin to cursor ([)">
-        <IconBracketsContainStart className="size-3.5" />
-        <span>Set Begin</span>
-      </Button>
-      <Button variant="secondary" size="sm" hasIcon onClick={onSetEnd} title="Set end to cursor (])">
-        <IconBracketsContainEnd className="size-3.5" />
-        <span>Set End</span>
-      </Button>
-    </div>
-  </div>
-);
+  );
+};
 
 const TimelineInfoPanel: React.FC = () => {
   const rawLines = useProjectStore((s) => s.lines);

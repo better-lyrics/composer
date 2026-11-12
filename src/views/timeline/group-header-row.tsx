@@ -3,6 +3,7 @@ import { instanceKey } from "@/domain/instance/key";
 import { useProjectStore } from "@/stores/project";
 import { focusAndSelectOnMount } from "@/utils/focus-and-select-on-mount";
 import { GroupBanner } from "@/views/timeline/group-banner";
+import { contextMenuPoint } from "@/views/timeline/keyboard-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { memo, useCallback, useState } from "react";
 
@@ -90,7 +91,8 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      openGroupMenuAt(e.clientX, e.clientY);
+      const { x, y } = contextMenuPoint(e);
+      openGroupMenuAt(x, y);
     },
     [openGroupMenuAt],
   );

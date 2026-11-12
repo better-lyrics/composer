@@ -28,6 +28,7 @@ type ContextMenuTarget =
 interface ContextMenuState {
   x: number;
   y: number;
+  anchorElement?: Element;
   target: ContextMenuTarget;
 }
 

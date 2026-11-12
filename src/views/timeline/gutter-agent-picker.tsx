@@ -9,6 +9,7 @@ import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
 import { SingerTag } from "@/ui/singer-tag";
 import { cn } from "@/utils/cn";
+import { contextMenuPoint } from "@/views/timeline/keyboard-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconCheck, IconPlus } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
@@ -68,8 +69,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
             e.stopPropagation();
             const { setContextMenu } = useTimelineStore.getState();
             setContextMenu({
-              x: e.clientX,
-              y: e.clientY,
+              ...contextMenuPoint(e),
               target: { kind: "gutter", lineId, lineIndex },
             });
           }}
