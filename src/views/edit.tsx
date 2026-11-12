@@ -9,23 +9,22 @@ import type { WordTiming } from "@/domain/word/timing";
 import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { noteGuideSignal } from "@/lib/guide-signals";
-import { useConfirm } from "@/stores/confirm-store";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { historyShortcutAction } from "@/utils/history-shortcut";
+import { showUndoToast } from "@/utils/undo-toast";
 import { Button } from "@/ui/button";
 import {
   extractBackgroundVocals,
   extractInlineAcrossLinkedLines,
   lineHasInlineParens,
 } from "@/utils/background-vocal-extraction";
-import { pluralWord, pluralize } from "@/utils/pluralize";
+import { pluralWord } from "@/utils/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { useCanExtractBackgroundVocals } from "@/views/edit/can-extract-background";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
-import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { linesToEditText } from "@/views/edit/edit-text";
 import { EditNotices } from "@/views/edit/edit-notices";
 import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
@@ -68,7 +67,6 @@ const EditPanel: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
   const isActive = useIsActiveTab("edit");
-  const confirm = useConfirm();
   const openImportModal = useImportModal();
   const lastImportResult = useLastImportResult();
   const dropImportContext = useImportContext("Drop");
@@ -79,7 +77,6 @@ const EditPanel: React.FC = () => {
   const { textareaRef, showEditText } = useEditTextCaret(rawText, setRawText);
   useFocusLyricsShortcut(textareaRef, isActive);
   const linesSetByUs = useRef<LyricLine[] | null>(null);
-  const modalPendingRef = useRef(false);
   const pastedRef = useRef(false);
   const runBaselineRef = useRef<{ lines: LyricLine[]; wasDirty: boolean } | null>(null);
   const debounceRef = useRef<number | null>(null);
@@ -294,56 +291,12 @@ const EditPanel: React.FC = () => {
       pastedRef.current = false;
 
       const text = textarea.value;
-      const action = decideEditTextAction({
-        text,
-        defaultAgentId,
-        lines,
-        groups,
-        modalPending: modalPendingRef.current,
-      });
+      const action = decideEditTextAction({ text, defaultAgentId, lines, groups });
 
-      // Snap the controlled DOM input back to the source-of-truth rawText whenever
-      // we choose not to setRawText. Without this, React skips reconciling the
-      // textarea on a state-less return path and the user's keystrokes persist
-      // visually even though the store rejected them.
-      const snapBack = () => {
-        if (textarea.value !== rawText) {
-          textarea.value = rawText;
-        }
-      };
-
-      if (action.kind === "ignore-modal-pending") {
-        snapBack();
-        return;
-      }
-
-      if (action.kind === "needs-confirm") {
-        snapBack();
-        modalPendingRef.current = true;
-        const labelText =
-          action.labels.length === 0
-            ? pluralize(action.impacted.length, "instance")
-            : action.labels.length === 1
-              ? `[${action.labels[0]}]`
-              : action.labels.map((l) => `[${l}]`).join(", ");
-
-        confirm({
-          title: `Detach ${labelText} to apply this edit?`,
-          description: `Adding or removing rows inside ${
-            action.labels.length === 1 ? `the ${labelText} group` : "these groups"
-          } will detach ${action.impacted.length === 1 ? "this instance" : "these instances"} from the link. Other instances stay linked.`,
-          confirmLabel: "Detach and apply",
-          variant: "destructive",
-          recoverable: true,
-        }).then((ok) => {
-          modalPendingRef.current = false;
-          if (!ok) return;
-          const detached = detachInstancesFromLines(action.lyricLines, action.impacted);
-          const remainingGroupIds = new Set(detached.flatMap((l) => (l.groupId ? [l.groupId] : [])));
-          const nextGroups = groups.filter((g) => remainingGroupIds.has(g.id));
-          finalizeRun();
-          commitLinesWithHistory(detached, nextGroups);
-        });
+      if (action.kind === "detach") {
+        finalizeRun();
+        commitLinesWithHistory(action.finalLines, action.groups);
+        showUndoToast(`Detached ${action.detachedNames.join(", ")}`);
         return;
       }
 
@@ -383,17 +336,7 @@ const EditPanel: React.FC = () => {
       useProjectStore.getState().setLines(finalLines);
       scheduleRunFinalize();
     },
-    [
-      confirm,
-      defaultAgentId,
-      groups,
-      lines,
-      rawText,
-      scheduleRunFinalize,
-      commitLinesWithHistory,
-      finalizeRun,
-      showEditText,
-    ],
+    [defaultAgentId, groups, lines, scheduleRunFinalize, commitLinesWithHistory, finalizeRun, showEditText],
   );
   const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText);
   const handlePaste = useSmartPaste({ typedPasteRef: pastedRef, onBeforeImport: finalizeRun });

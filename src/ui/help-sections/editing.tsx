@@ -81,9 +81,9 @@ const EditSection: React.FC = () => {
           them in the Sync view.
         </p>
         <p className={`${PROSE} mt-2`}>
-          Adding or removing rows inside a grouped instance asks you to confirm: that one instance detaches from the
-          group so the structural change can land, while every sibling instance stays linked. Decline to revert. Edits
-          to non-grouped lines never prompt.
+          Adding or removing rows inside a grouped instance detaches that one instance from the group so the change can
+          land, while every sibling instance stays linked. Undo links it again. Edits to non-grouped lines never detach
+          anything.
         </p>
       </HelpTopic>
     </div>

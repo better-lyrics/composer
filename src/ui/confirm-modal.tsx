@@ -4,7 +4,6 @@ import { Button } from "@/ui/button";
 import { Checkbox } from "@/ui/checkbox";
 import { Modal } from "@/ui/modal";
 import { cn } from "@/utils/cn";
-import { UndoHint } from "@/ui/undo-hint";
 
 // -- Component ----------------------------------------------------------------
 
@@ -35,7 +34,6 @@ const ConfirmModalHost: React.FC = () => {
     cancelLabel = "Cancel",
     variant = "destructive",
     settingsKey,
-    recoverable = false,
   } = options;
 
   const showDontAskAgain = Boolean(settingsKey);
@@ -54,7 +52,6 @@ const ConfirmModalHost: React.FC = () => {
             {description}
           </div>
         )}
-        {recoverable && <UndoHint />}
 
         <div className={cn("flex items-center pt-2", showDontAskAgain ? "justify-between" : "justify-end")}>
           {showDontAskAgain && (

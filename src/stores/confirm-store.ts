@@ -15,7 +15,6 @@ interface ConfirmOptions {
   cancelLabel?: string;
   variant?: "destructive" | "primary";
   settingsKey?: SettingsBoolKey;
-  recoverable?: boolean;
 }
 
 interface QueuedConfirm {

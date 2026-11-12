@@ -4,7 +4,6 @@ import { reconcileLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
 import { render } from "@/test/render";
-import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { EditPanel } from "@/views/edit";
 
 // -- Helpers ------------------------------------------------------------------
@@ -25,25 +24,16 @@ function linkedProjectLines(): LyricLine[] {
 
 // -- Tests --------------------------------------------------------------------
 
-describe("editor detach-confirm undo", () => {
+describe("editor detach undo", () => {
   it("commits a detach as one undo entry restoring lines and groups", async () => {
     useProjectStore.setState({
       lines: linkedProjectLines(),
       groups: [createGroup({ id: "g1", label: "Chorus" })],
     });
-    const screen = await render(
-      <>
-        <EditPanel />
-        <ConfirmModalHost />
-      </>,
-    );
+    const screen = await render(<EditPanel />);
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
 
     setTextareaValue(textarea, "Verse one\nVerse two\nVerse one");
-
-    const confirmButton = screen.getByRole("button", { name: "Detach and apply" });
-    await expect.element(confirmButton).toBeInTheDocument();
-    await confirmButton.click();
 
     await expect
       .poll(() => useProjectStore.getState().lines.map((l) => l.text))
