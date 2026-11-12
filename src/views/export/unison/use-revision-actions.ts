@@ -11,7 +11,7 @@ import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { toast } from "@/utils/toast";
 import { showRevisionLoadedToast, showRevisionRestoredToast, showUnisonFailureToast } from "@/utils/unison-toast";
-import { replaceWithParsedLyrics } from "@/views/lyrics-import-modal/import-lyrics";
+import { replaceWithParsedLyrics, songDetailsBeforeReplace } from "@/views/lyrics-import-modal/import-lyrics";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -84,7 +84,9 @@ function useRevisionActions(lyric: UnisonLyric, keyId: string, onRestored: (revN
           isrc: content.isrc ?? undefined,
           language: content.language ?? undefined,
         };
-        showRevisionLoadedToast(revision.revNo, replaceWithParsedLyrics(withUnisonDetails(read.parsed, details)));
+        const restoreSongDetails = songDetailsBeforeReplace();
+        const skipped = replaceWithParsedLyrics(withUnisonDetails(read.parsed, details));
+        showRevisionLoadedToast(revision.revNo, skipped, restoreSongDetails);
       },
       `Could not load revision ${revision.revNo}`,
     );

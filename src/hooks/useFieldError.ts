@@ -36,7 +36,7 @@ function useFieldError(formatError: string | null = null) {
       fieldProps: {
         id: fieldId,
         "aria-invalid": error !== null,
-        "aria-describedby": error === null ? undefined : errorId,
+        "aria-describedby": errorId,
         onBlur: revealFormatError,
       },
       errorProps: { id: errorId, message: error },

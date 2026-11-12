@@ -92,6 +92,9 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
       };
     }),
 
+  restoreReplacedSongDetails: ({ metadata, importedMetadataKeys, hasUnexportedImport, ttmlEditState }) =>
+    set({ metadata, importedMetadataKeys, hasUnexportedImport, ttmlEditState, isDirty: true }),
+
   applyEditedLyricsWithHistory: (edited) =>
     set((state) => {
       const write = editedLyricsWrite(state, edited);

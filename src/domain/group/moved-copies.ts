@@ -30,13 +30,24 @@ function copiesMovedWith(
   const sources = new Set(sourceLineIds);
   const namesByInstance = new Map<string, string>();
   const lineIdsBySource = new Map<string, string[]>();
+  const instancesByGroup = new Map<string, ReturnType<typeof sharedInstancesInLineOrder>>();
+  const offsets = new Map<string, number | null>();
   for (const sourceId of sources) {
     const source = linesById.get(sourceId);
     if (!source || !isLinked(source) || !isSharedLine(source, groupsById)) continue;
     const group = groupsById.get(source.groupId);
     if (!group) continue;
-    const offsetTo = (targetIdx: number) => instanceOffset(lines, group.id, source.instanceIdx, targetIdx);
-    const targets = sharedCopyTargets(lines, source, sharedInstancesInLineOrder(lines, group), offsetTo)
+    const offsetTo = (targetIdx: number) => {
+      const key = `${group.id}:${source.instanceIdx}:${targetIdx}`;
+      if (!offsets.has(key)) offsets.set(key, instanceOffset(lines, group.id, source.instanceIdx, targetIdx));
+      return offsets.get(key) ?? null;
+    };
+    let instances = instancesByGroup.get(group.id);
+    if (!instances) {
+      instances = sharedInstancesInLineOrder(lines, group);
+      instancesByGroup.set(group.id, instances);
+    }
+    const targets = sharedCopyTargets(lines, source, instances, offsetTo)
       .map(({ target }) => target)
       .filter((target) => !sources.has(target.id));
     if (targets.length === 0) continue;

@@ -107,6 +107,7 @@ interface MetadataActions {
     agents: Agent[] | undefined;
     metadata: Partial<ProjectMetadata>;
   }) => void;
+  restoreReplacedSongDetails: (details: Omit<MetadataState, "projectSession">) => void;
   applyEditedLyricsWithHistory: (edited: EditedLyrics) => void;
   markSongDetailsImported: () => void;
   restoreImportedMetadataKeys: (keys: MetadataKey[]) => void;

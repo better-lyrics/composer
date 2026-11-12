@@ -4,6 +4,10 @@ import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
 import { lcsPairs } from "@/domain/word/alignment";
 import { cleanSplitCharacters, stripSplitCharacter } from "@/utils/split-character";
 
+// -- Constants ----------------------------------------------------------------
+
+const MAX_ROW_DIFF_CELLS = 250_000;
+
 // -- Helpers ------------------------------------------------------------------
 
 function matchKey(text: string): string {
@@ -32,10 +36,13 @@ function unchangedRowPairs(existingKeys: string[], typedKeys: string[]): Array<[
   ) {
     tail++;
   }
-  const middle = lcsPairs(
-    existingKeys.slice(head, existingKeys.length - tail),
-    typedKeys.slice(head, typedKeys.length - tail),
-  ).map(([existingIndex, typedIndex]): [number, number] => [existingIndex + head, typedIndex + head]);
+  const existingMiddle = existingKeys.slice(head, existingKeys.length - tail);
+  const typedMiddle = typedKeys.slice(head, typedKeys.length - tail);
+  // Past the cap the middle rows fall back to matching by text, so a huge paste never costs quadratic work.
+  const withinCap = existingMiddle.length * typedMiddle.length <= MAX_ROW_DIFF_CELLS;
+  const middle = (withinCap ? lcsPairs(existingMiddle, typedMiddle) : []).map(
+    ([existingIndex, typedIndex]): [number, number] => [existingIndex + head, typedIndex + head],
+  );
   const prefix = Array.from({ length: head }, (_, index): [number, number] => [index, index]);
   const suffix = Array.from({ length: tail }, (_, offset): [number, number] => [
     existingKeys.length - tail + offset,
@@ -73,8 +80,7 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
     usedExistingIds.add(line.id);
   };
 
-  // Unchanged rows keep their own line, in order, before any row matches by text,
-  // so a repeated line cannot be claimed by a copy at another place in the song.
+  // Unchanged rows claim first, so a repeated line is never taken by a copy elsewhere in the song.
   if (allowPositionMatch) {
     cleanedKeys.forEach((_, index) => {
       if (existingKeys[index] === cleanedKeys[index]) claim(index, existingLines[index]);

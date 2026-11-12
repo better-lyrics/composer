@@ -78,6 +78,14 @@ function searchResultMetadata(result: LyricsSearchResult | undefined): Partial<P
   };
 }
 
+function songDetailsBeforeReplace(): () => void {
+  const { metadata, importedMetadataKeys, hasUnexportedImport, ttmlEditState } = useProjectStore.getState();
+  return () =>
+    useProjectStore
+      .getState()
+      .restoreReplacedSongDetails({ metadata, importedMetadataKeys, hasUnexportedImport, ttmlEditState });
+}
+
 function replaceLyrics(
   parsed: ParseResult,
   lines: RawLine[] = parsed.lines,
@@ -118,8 +126,9 @@ function importLyrics(input: ImportLyricsInput, ctx: ImportContext): boolean {
     workingLines = distributeLinesTiming(workingLines, ctx.audioDuration).map(withSeededBackground);
   }
 
+  const restoreSongDetails = songDetailsBeforeReplace();
   const reported = replaceLyrics(parsed, workingLines, searchResultMetadata(input.searchResult));
-  if (replacesLines) showUndoToast("Replaced the lyrics");
+  if (replacesLines) showUndoToast("Replaced the lyrics", undefined, restoreSongDetails);
 
   const skipped = skippedLineCount(parsed.issues);
   if (skipped > 0) toast.warning(partialImportMessage(workingLines.length, skipped));
@@ -222,5 +231,6 @@ export {
   readLyricsFile,
   readTtmlLyrics,
   replaceWithParsedLyrics,
+  songDetailsBeforeReplace,
   useImportContext,
 };

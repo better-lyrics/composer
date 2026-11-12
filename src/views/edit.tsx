@@ -108,12 +108,15 @@ const EditPanel: React.FC = () => {
   );
   const canExtractBackgroundVocals = useCanExtractBackgroundVocals(lines, extractOptions);
 
-  const commitLinesWithHistory = useCallback((nextLines: LyricLine[], nextGroups?: LinkGroup[]) => {
-    useProjectStore.getState().setLinesWithHistory(nextLines, nextGroups);
-    const committed = useProjectStore.getState().lines;
-    linesSetByUs.current = committed;
-    setRawText(linesToEditText(committed));
-  }, []);
+  const commitLinesWithHistory = useCallback(
+    (nextLines: LyricLine[], nextGroups?: LinkGroup[]) => {
+      useProjectStore.getState().setLinesWithHistory(nextLines, nextGroups);
+      const committed = useProjectStore.getState().lines;
+      linesSetByUs.current = committed;
+      showChangedText(linesToEditText(committed));
+    },
+    [showChangedText],
+  );
 
   const handleExtractBackgroundVocals = useCallback(() => {
     const current = useProjectStore.getState().lines;

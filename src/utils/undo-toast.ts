@@ -21,7 +21,7 @@ function isLatestStep(state: ProjectState, step: HistoryStep): boolean {
   );
 }
 
-function showUndoToast(message: string, description?: string): void {
+function showUndoToast(message: string, description?: string, afterUndo?: () => void): void {
   const step = currentStep(useProjectStore.getState());
   const stopWatching = () => unsubscribe();
   const toastId = toast.success(message, {
@@ -30,7 +30,9 @@ function showUndoToast(message: string, description?: string): void {
       label: "Undo",
       onClick: () => {
         stopWatching();
-        if (isLatestStep(useProjectStore.getState(), step)) useProjectStore.getState().undo();
+        if (!isLatestStep(useProjectStore.getState(), step)) return;
+        useProjectStore.getState().undo();
+        afterUndo?.();
       },
     },
     onDismiss: stopWatching,

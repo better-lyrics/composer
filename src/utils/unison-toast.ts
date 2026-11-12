@@ -103,8 +103,12 @@ function showUpdateSentToast(goesLive: boolean): void {
   toast.success(goesLive ? "Update is live on Unison." : "Edit sent to the council.");
 }
 
-function showRevisionLoadedToast(revNo: number, skippedLines: number): void {
-  showUndoToast(`Loaded revision ${revNo}`, skippedLines > 0 ? skippedLinesMessage(skippedLines) : undefined);
+function showRevisionLoadedToast(revNo: number, skippedLines: number, restoreSongDetails: () => void): void {
+  showUndoToast(
+    `Loaded revision ${revNo}`,
+    skippedLines > 0 ? skippedLinesMessage(skippedLines) : undefined,
+    restoreSongDetails,
+  );
 }
 
 function showRevisionRestoredToast(revNo: number, goesLive: boolean): void {

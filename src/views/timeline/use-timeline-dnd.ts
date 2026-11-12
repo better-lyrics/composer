@@ -64,15 +64,26 @@ function useTimelineDnd(lines: ReadableLine[]) {
         pointerXRef.current = event.activatorEvent.clientX;
         pointerYRef.current = event.activatorEvent.clientY;
       }
+      const duplicatesWords = event.activatorEvent instanceof PointerEvent && event.activatorEvent.altKey;
+      const showCopiesHint = (shiftKey: boolean) => {
+        stopSharedCopiesHintRef.current?.();
+        stopSharedCopiesHintRef.current = null;
+        if (duplicatesWords) return;
+        const movingWords = wordsDraggedTogether(lines, data, shiftKey, useTimelineStore.getState().selectedWords);
+        stopSharedCopiesHintRef.current = startSharedCopiesHint(movingWords, pointerXRef.current, pointerYRef.current);
+      };
+      const followShift = (shiftKey: boolean) => {
+        if (shiftKey === dragShiftRef.current) return;
+        dragShiftRef.current = shiftKey;
+        showCopiesHint(shiftKey);
+      };
       const onPointer = (e: PointerEvent) => {
-        dragShiftRef.current = e.shiftKey;
         pointerXRef.current = e.clientX;
         pointerYRef.current = e.clientY;
         useTimelineStore.getState().setWordDragHover(hitTestTrack(e.clientX, e.clientY));
+        followShift(e.shiftKey);
       };
-      const onKey = (e: KeyboardEvent) => {
-        dragShiftRef.current = e.shiftKey;
-      };
+      const onKey = (e: KeyboardEvent) => followShift(e.shiftKey);
       useTimelineStore.getState().setWordDragHover(hitTestTrack(pointerXRef.current, pointerYRef.current));
       window.addEventListener("pointermove", onPointer);
       document.addEventListener("keydown", onKey);
@@ -82,11 +93,7 @@ function useTimelineDnd(lines: ReadableLine[]) {
         document.removeEventListener("keydown", onKey);
         document.removeEventListener("keyup", onKey);
       };
-      const duplicatesWords = event.activatorEvent instanceof PointerEvent && event.activatorEvent.altKey;
-      if (duplicatesWords) return;
-      const { selectedWords } = useTimelineStore.getState();
-      const movingWords = wordsDraggedTogether(lines, data, initialShiftKey, selectedWords);
-      stopSharedCopiesHintRef.current = startSharedCopiesHint(movingWords, pointerXRef.current, pointerYRef.current);
+      showCopiesHint(initialShiftKey);
     },
     [lines],
   );

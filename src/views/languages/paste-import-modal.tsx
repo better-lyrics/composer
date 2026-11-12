@@ -80,7 +80,10 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
       ),
     [lines, pastedText],
   );
-  const [manualRows, setManualRows] = useState<string[] | null>(restoredDraft?.manualRows ?? null);
+  const [manualRows, setManualRows] = useState<string[] | null>(() => {
+    const rows = restoredDraft?.manualRows;
+    return rows?.length === lines.length ? rows : null;
+  });
   const mappedLines = manualRows ?? alignment.mappedLines;
   const errors = useMemo(
     () =>
