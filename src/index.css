@@ -653,7 +653,7 @@ braccato-lyrics .blyrics-container {
 }
 
 @utility surface-modal {
-  animation: modal-pop-in 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: modal-pop-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
   [data-handoff] > & {
     animation: none;
   }
