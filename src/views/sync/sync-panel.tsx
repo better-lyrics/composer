@@ -1,6 +1,7 @@
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { playingLineIndex } from "@/domain/line/playing-line";
-import { isSyncComplete, syncProgress } from "@/domain/line/sync-progress";
+import { isProjectFullySynced, syncProgress } from "@/domain/line/sync-progress";
 import { previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
@@ -14,20 +15,19 @@ import { setSyncEditMode, useSyncEditModeStore } from "@/stores/sync-edit-mode";
 import { EmptyState } from "@/ui/empty-state";
 import { runHistoryShortcut } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
-import { type SyncState, getNudgeAmount } from "@/utils/sync-helpers";
+import { getNudgeAmount, type SyncState } from "@/utils/sync-helpers";
 import { focusedControlOwnsKey, isTypingTarget } from "@/utils/typing-target";
 import { buildLaneRows } from "@/views/sync/lane-rows";
 import { SyncEndScreen } from "@/views/sync/sync-end-screen";
-import { SyncLineList } from "@/views/sync/sync-line-list";
 import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
 import { SyncHeader } from "@/views/sync/sync-header";
 import { type RippleTarget, SyncLane } from "@/views/sync/sync-lane";
-import { usePlacementPreroll } from "@/views/sync/use-placement-preroll";
+import { SyncLineList } from "@/views/sync/sync-line-list";
 import { useDisplayLines } from "@/views/sync/use-display-lines";
+import { usePlacementPreroll } from "@/views/sync/use-placement-preroll";
 import { useSharedSyncView } from "@/views/sync/use-shared-sync-view";
 import { useSyncCountIn } from "@/views/sync/use-sync-count-in";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 
 // -- Components ---------------------------------------------------------------
 
@@ -172,7 +172,7 @@ const SyncPanel: React.FC = () => {
   );
 
   const progress = useMemo(() => syncProgress(lines, granularity), [lines, granularity]);
-  const syncComplete = useMemo(() => isSyncComplete(lines), [lines]);
+  const syncComplete = useMemo(() => isProjectFullySynced(lines), [lines]);
 
   const handleGranularityChange = useCallback(
     (newGranularity: "line" | "word") => {

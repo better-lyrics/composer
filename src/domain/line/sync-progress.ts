@@ -172,35 +172,15 @@ function syncProgress(lines: readonly LyricLine[], granularity: SyncGranularity)
   return { done, total };
 }
 
-function isSyncComplete(lines: readonly LyricLine[]): boolean {
-  let syncableCount = 0;
-  for (const line of lines) {
-    const facts = lineSyncFacts(line);
-    if (!facts.syncable) continue;
-    if (!facts.fullyTimed) return false;
-    syncableCount += 1;
-  }
-  return syncableCount > 0;
-}
-
 function syncGaps(lines: readonly LyricLine[]): SyncGap[] {
   return lines.flatMap((line, lineIndex) => lineSyncFacts(line).trackGaps.map((gap) => ({ ...gap, lineIndex })));
 }
 
 function isProjectFullySynced(lines: readonly LyricLine[]): boolean {
-  return isSyncComplete(lines) && lines.every((line) => lineSyncFacts(line).backgroundComplete);
+  return lines.some(isSyncableLine) && lines.every((line) => lineSyncFacts(line).trackGaps.length === 0);
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export type { SyncGap, SyncGapKind, SyncGapTrack, SyncGranularity };
-export {
-  isLineFullyTimed,
-  isLineTimed,
-  isProjectFullySynced,
-  isSyncableLine,
-  isSyncComplete,
-  syncGaps,
-  syncProgress,
-  wordSlotCount,
-};
+export { isLineFullyTimed, isLineTimed, isProjectFullySynced, isSyncableLine, syncGaps, syncProgress, wordSlotCount };

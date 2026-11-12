@@ -4,7 +4,6 @@ import {
   isLineTimed,
   isProjectFullySynced,
   isSyncableLine,
-  isSyncComplete,
   syncGaps,
   syncProgress,
   wordSlotCount,
@@ -82,21 +81,16 @@ describe("syncProgress", () => {
   });
 });
 
-describe("isSyncComplete", () => {
+describe("isProjectFullySynced", () => {
   it("is true only when every syncable line is fully timed", () => {
     const done = [createLine({ text: "a", words: [word("a", 1, 2)] }), createLine({ text: "" })];
-    expect(isSyncComplete(done)).toBe(true);
+    expect(isProjectFullySynced(done)).toBe(true);
   });
   it("regression U3: a partially timed line means the sync is not complete", () => {
-    expect(isSyncComplete([createLine({ text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 3)] })])).toBe(false);
+    expect(isProjectFullySynced([createLine({ text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 3)] })])).toBe(
+      false,
+    );
   });
-  it("is false with no syncable lines", () => {
-    expect(isSyncComplete([])).toBe(false);
-    expect(isSyncComplete([createLine({ text: "" })])).toBe(false);
-  });
-});
-
-describe("isProjectFullySynced", () => {
   it("is true when every line with lyrics is fully timed, ignoring blank lines", () => {
     const lines = [
       createLine({ text: "a b", words: [word("a ", 1, 2), word("b", 2, 3)] }),
@@ -148,7 +142,6 @@ describe("isProjectFullySynced", () => {
   describe("invariants", () => {
     it("never holds when the sync is not complete", () => {
       const partial = [createLine({ text: "a b", words: [word("a ", 1, 2)] })];
-      expect(isSyncComplete(partial)).toBe(false);
       expect(isProjectFullySynced(partial)).toBe(false);
     });
   });
@@ -175,7 +168,7 @@ describe("per-line cache", () => {
       lines[2],
     ];
     expect(syncProgress(tapped, "word")).toEqual(syncProgress(structuredClone(tapped), "word"));
-    expect(isSyncComplete(tapped)).toBe(isSyncComplete(structuredClone(tapped)));
+    expect(isProjectFullySynced(tapped)).toBe(isProjectFullySynced(structuredClone(tapped)));
 
     useSettingsStore.setState({ splitCharacter: "/" });
     expect(wordSlotCount(tapped[0])).toBe(2);
