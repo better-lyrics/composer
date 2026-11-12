@@ -78,11 +78,11 @@ class NewerProjectError extends Error {
 // -- Lines ----------------------------------------------------------------------
 
 function storeLine(line: SavedLine): LyricLine {
-  const { words, backgroundWords } = line;
+  const { words, backgroundWords, ...fields } = line;
   return reconcileLine({
-    ...line,
+    ...fields,
     words: words && wordsFromSpaced(words),
-    backgroundWords: backgroundWords && wordsFromSpaced(backgroundWords),
+    ...(backgroundWords && { backgroundWords: wordsFromSpaced(backgroundWords) }),
   });
 }
 
