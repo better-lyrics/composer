@@ -74,7 +74,7 @@ const EditPanel: React.FC = () => {
   const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
   const [rawText, setRawText] = useState(() => linesToEditText(lines));
-  const { textareaRef, showEditText } = useEditTextCaret(rawText, setRawText);
+  const { textareaRef, showEditText, showChangedText } = useEditTextCaret(rawText, setRawText);
   useFocusLyricsShortcut(textareaRef, isActive);
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const pastedRef = useRef(false);
@@ -92,8 +92,8 @@ const EditPanel: React.FC = () => {
       linesSetByUs.current = null;
       return;
     }
-    setRawText(linesToEditText(lines));
-  }, [lines]);
+    showChangedText(linesToEditText(lines));
+  }, [lines, showChangedText]);
 
   const defaultAgentId = agents?.[0]?.id ?? "v1";
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);

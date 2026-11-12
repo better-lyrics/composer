@@ -31,4 +31,18 @@ function shiftCaretPastRewrittenRows(typedText: string, displayedText: string, c
   return caret + shift;
 }
 
-export { editTextWithRewrittenRows, linesToEditText, shiftCaretPastRewrittenRows };
+function caretAfterTextChange(previousText: string, nextText: string): number {
+  const shorter = Math.min(previousText.length, nextText.length);
+  let prefix = 0;
+  while (prefix < shorter && previousText[prefix] === nextText[prefix]) prefix++;
+  let suffix = 0;
+  while (
+    suffix < shorter - prefix &&
+    previousText[previousText.length - 1 - suffix] === nextText[nextText.length - 1 - suffix]
+  ) {
+    suffix++;
+  }
+  return nextText.length - suffix;
+}
+
+export { caretAfterTextChange, editTextWithRewrittenRows, linesToEditText, shiftCaretPastRewrittenRows };

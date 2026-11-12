@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { reconcileLine } from "@/domain/line/model";
-import { editTextWithRewrittenRows, linesToEditText, shiftCaretPastRewrittenRows } from "@/views/edit/edit-text";
+import {
+  caretAfterTextChange,
+  editTextWithRewrittenRows,
+  linesToEditText,
+  shiftCaretPastRewrittenRows,
+} from "@/views/edit/edit-text";
 
 const line = (id: string, text: string) => reconcileLine({ id, text, agentId: "v1" });
 
@@ -56,5 +61,15 @@ describe("shiftCaretPastRewrittenRows", () => {
 
   it("keeps the caret when the displayed text has more rows than the typed text", () => {
     expect(shiftCaretPastRewrittenRows("a\nb", "abc\nb\nc", 3)).toBe(3);
+  });
+});
+
+describe("caretAfterTextChange", () => {
+  it("regression: an undo puts the caret at the restored edit, not the end of the text", () => {
+    const edited = "Snow on the hill\nWind in the reeds";
+    const restored = "Snow on the quiet hill\nWind in the reeds";
+    expect(caretAfterTextChange(edited, restored)).toBe("Snow on the quiet ".length);
+    expect(caretAfterTextChange(restored, edited)).toBe("Snow on the ".length);
+    expect(caretAfterTextChange("aaa", "aa")).toBe(2);
   });
 });

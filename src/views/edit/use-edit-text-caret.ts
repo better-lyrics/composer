@@ -1,8 +1,7 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
-import { shiftCaretPastRewrittenRows } from "@/views/edit/edit-text";
+import { caretAfterTextChange, shiftCaretPastRewrittenRows } from "@/views/edit/edit-text";
 
 interface PendingCaret {
-  typedText: string;
   start: number;
   end: number;
 }
@@ -16,23 +15,35 @@ function useEditTextCaret(rawText: string, setRawText: (text: string) => void) {
     const textarea = textareaRef.current;
     if (!pending || !textarea) return;
     pendingCaretRef.current = null;
-    textarea.setSelectionRange(
-      shiftCaretPastRewrittenRows(pending.typedText, rawText, pending.start),
-      shiftCaretPastRewrittenRows(pending.typedText, rawText, pending.end),
-    );
+    textarea.setSelectionRange(pending.start, pending.end);
   }, [rawText]);
 
   const showEditText = useCallback(
     (typedText: string, editText: string, textarea: HTMLTextAreaElement) => {
       if (editText !== typedText) {
-        pendingCaretRef.current = { typedText, start: textarea.selectionStart, end: textarea.selectionEnd };
+        pendingCaretRef.current = {
+          start: shiftCaretPastRewrittenRows(typedText, editText, textarea.selectionStart),
+          end: shiftCaretPastRewrittenRows(typedText, editText, textarea.selectionEnd),
+        };
       }
       setRawText(editText);
     },
     [setRawText],
   );
 
-  return { textareaRef, showEditText };
+  const showChangedText = useCallback(
+    (nextText: string) => {
+      const textarea = textareaRef.current;
+      if (textarea && textarea === document.activeElement && textarea.value !== nextText) {
+        const caret = caretAfterTextChange(textarea.value, nextText);
+        pendingCaretRef.current = { start: caret, end: caret };
+      }
+      setRawText(nextText);
+    },
+    [setRawText],
+  );
+
+  return { textareaRef, showEditText, showChangedText };
 }
 
 function useComposedTextareaChange(
