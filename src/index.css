@@ -232,11 +232,6 @@ braccato-lyrics .blyrics-container {
   color: var(--color-composer-text);
 }
 
-/* Focus visible indicators - minimal for utility app */
-:focus-visible {
-  outline: none;
-}
-
 /* Forced colours drop background tints, so focus falls back to a system outline there. */
 @media (forced-colors: active) {
   :focus-visible:not([tabindex="-1"]) {
@@ -245,8 +240,12 @@ braccato-lyrics .blyrics-container {
   }
 }
 
-/* Keyboard focus tints the control like hover; tabindex="-1" click surfaces (waveform, words) never tint. */
+/* Keyboard focus tints the control and draws a thin inner edge so it never reads as hover; tabindex="-1" click surfaces (waveform, words) never show it. */
 @layer base {
+  :focus-visible {
+    outline: none;
+  }
+
   :where(
     a[href],
     button,
@@ -264,6 +263,8 @@ braccato-lyrics .blyrics-container {
     [tabindex="0"]
   ):not([tabindex="-1"]):focus-visible {
     background-image: linear-gradient(var(--focus-tint), var(--focus-tint));
+    outline: 1px solid color-mix(in oklab, var(--ink) 45%, transparent);
+    outline-offset: -1px;
   }
 }
 
