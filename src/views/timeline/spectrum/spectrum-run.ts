@@ -63,7 +63,9 @@ function decodeMono(target: SpectrumTarget): Promise<MonoAudio> {
     ]);
     return { ...mono, decodeTag };
   })();
-  decoding.catch(() => monoCache.delete(target.sourceKey));
+  decoding.catch(() => {
+    if (monoCache.get(target.sourceKey) === decoding) monoCache.delete(target.sourceKey);
+  });
   monoCache.set(target.sourceKey, decoding);
   for (const key of monoCache.keys()) {
     if (monoCache.size <= MONO_CACHE_SIZE) break;
@@ -102,6 +104,7 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
   let sentFocusChunk = 0;
   let cacheRead = false;
   const rawQueue = new Set<number>();
+  const rawSent = new Set<number>();
   let shown = true;
   let working = true;
   let release: (() => void) | null = null;
@@ -119,6 +122,14 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
   };
   const chunkAt = (seconds: number) =>
     mono ? Math.max(0, Math.floor((seconds * mono.sampleRate) / target.hop / CHUNK_FRAMES)) : 0;
+  const readyChunkList = () => {
+    const ready = spectrumSession.chunkReady;
+    return ready ? Array.from({ length: ready.length }, (_, chunk) => chunk).filter((chunk) => ready[chunk] === 1) : [];
+  };
+  const sendRawPhase = (worker: SpectrumAnalysis, chunks: readonly number[]) => {
+    worker.requestRawPhase(chunks);
+    for (const chunk of chunks) rawSent.add(chunk);
+  };
   const fail = (error: unknown) => {
     if (cancelled) return;
     console.error(LOG_PREFIX, "analysis failed", error);
@@ -140,6 +151,7 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
       skipChunks,
       onChunk: (result) => {
         storeWorkerChunk(result);
+        if (result.rawPhase) rawSent.delete(result.chunk);
         if (shown) wake();
         writer?.add(result.chunk, result.magnitude, result.phaseChange);
       },
@@ -149,7 +161,7 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
       },
       onError: fail,
     });
-    if (rawQueue.size > 0) analysis.requestRawPhase([...rawQueue]);
+    if (rawQueue.size > 0) sendRawPhase(analysis, [...rawQueue]);
     rawQueue.clear();
   };
 
@@ -157,16 +169,16 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
   const pause = () => {
     analysis?.dispose();
     analysis = null;
+    for (const chunk of rawSent) rawQueue.add(chunk);
+    rawSent.clear();
     void writer?.flush();
     finish();
   };
   const resume = () => {
     const ready = spectrumSession.chunkReady;
-    if (cancelled || analysis || !cacheRead || !mono || !ready || spectrumSession.readyChunks === ready.length) return;
-    startAnalysis(
-      mono,
-      Array.from({ length: ready.length }, (_, chunk) => chunk).filter((chunk) => ready[chunk] === 1),
-    );
+    if (cancelled || analysis || !cacheRead || !mono || !ready) return;
+    if (spectrumSession.readyChunks === ready.length && rawQueue.size === 0) return;
+    startAnalysis(mono, readyChunkList());
   };
 
   setSpectrumStatus("decoding");
@@ -207,16 +219,10 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
     },
     requestRawPhase: (chunks) => {
       if (cancelled) return;
-      if (analysis) analysis.requestRawPhase(chunks);
+      if (analysis) sendRawPhase(analysis, chunks);
       else {
         for (const chunk of chunks) rawQueue.add(chunk);
-        if (cacheRead && mono && spectrumSession.chunkReady) {
-          const ready = spectrumSession.chunkReady;
-          startAnalysis(
-            mono,
-            Array.from({ length: ready.length }, (_, chunk) => chunk),
-          );
-        }
+        if (shown && cacheRead && mono && spectrumSession.chunkReady) startAnalysis(mono, readyChunkList());
       }
     },
     setShown: (next) => {
