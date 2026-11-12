@@ -5,7 +5,7 @@ import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import type { LinkSuggestion, UnsureLink } from "@/domain/unison/link-suggestions";
 import { loadProjectRecord } from "@/lib/project-storage";
-import type { SavedProject } from "@/lib/saved-project";
+import { type SavedProject, linesFromSaved } from "@/lib/saved-project";
 import type { UnisonLyric } from "@/lib/unison/api-types";
 import { readUnisonLyric, withUnisonDetails } from "@/lib/unison/open-unison-lyric";
 
@@ -30,15 +30,16 @@ function matchesLiveLyric(project: SavedProject, lyric: UnisonLyric): boolean {
   const read = readUnisonLyric(lyric);
   if (read.status === "unreadable") return false;
   const parsed = withUnisonDetails(read.parsed, lyric);
+  const lines = linesFromSaved(project.lines);
   const current: ProjectLyrics = {
-    lines: project.lines,
+    lines,
     groups: project.groups ?? [],
     agents: project.agents,
     metadata: normalizeLoadedMetadata(project.metadata),
   };
   const liveDetails = importableMetadata(parsed.metadata);
   const write = editedLyricsWrite(current, {
-    lines: mergeEditedTtmlLines(project.lines, parsed),
+    lines: mergeEditedTtmlLines(lines, parsed),
     groups: parsed.groups ?? [],
     agents: parsed.agents,
     metadata: liveDetails,

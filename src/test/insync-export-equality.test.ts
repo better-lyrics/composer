@@ -6,6 +6,7 @@ import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { parseProjectFileContents } from "@/lib/project-file-read";
+import { linesFromSaved } from "@/lib/saved-project";
 import { EDITED_TTML_PROJECTS, type EditedTtmlProject } from "@/test/edited-ttml-projects";
 import {
   buildAlternateBackgroundLanguageTtml,
@@ -48,7 +49,7 @@ function realProjects(): EditedTtmlProject[] {
     const files = contents.kind === "bundle" ? contents.projects : [contents.project];
     return files.map(({ metadata, lines, groups, agents }) => ({
       name: `${path}: ${metadata.title}`,
-      lines,
+      lines: linesFromSaved(lines),
       groups: groups ?? [],
       agents,
       metadata,

@@ -3,6 +3,7 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { FINISH_IMPORT_FIRST } from "@/lib/import-busy-message";
 import { type ProjectFileContents, isProjectFileName, parseProjectFileContents } from "@/lib/project-file-read";
 import { importProjectContents, reportUnreadableProjectFile, restoreBundleContents } from "@/lib/project-import";
+import { linesFromSaved } from "@/lib/saved-project";
 import { type ChoiceRequest, askChoice } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
@@ -55,7 +56,7 @@ function projectFileChoice(
     };
   }
   const title = choiceTitle(fileName, "Composer project");
-  if (!hasLyricLines(contents.project.lines)) {
+  if (!hasLyricLines(linesFromSaved(contents.project.lines))) {
     return {
       title,
       body: "It has no lyrics yet, so it can only open as its own project.",
