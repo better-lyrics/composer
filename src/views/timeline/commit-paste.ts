@@ -2,12 +2,12 @@ import { withNewInstance } from "@/domain/group/own-timing";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LineTemplate } from "@/domain/group/template";
 import { templateSourceInstance } from "@/domain/group/template-source";
-import { instanceCount } from "@/domain/instance/enumerate";
+import { nextInstanceName } from "@/domain/instance/name";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/tracks";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
-import { useConfirmStore } from "@/stores/confirm-store";
+import { askChoice, FINISH_OPEN_PROMPT_FIRST } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { pluralize } from "@/utils/pluralize";
 import { toast } from "@/utils/toast";
@@ -87,20 +87,22 @@ async function commitPasteAt(target: PasteTarget): Promise<PasteOutcome> {
 
   if (clipboard.candidateLines && clipboard.candidateLines.length > 0) {
     const match = findMatchingTemplate(clipboard.candidateLines, lines);
-    if (match) {
-      const group = useProjectStore.getState().groups.find((g) => g.id === match.groupId);
-      const groupLabel = group?.label ?? "group";
-      const matchedInstances = instanceCount(lines, match.groupId);
-      const ok = await useConfirmStore.getState().open({
-        title: `Link as another ${groupLabel}?`,
-        description: `These ${clipboard.candidateLines.length} lines look like a ${groupLabel} (matches ${pluralize(matchedInstances, "instance")}). Link as another instance, or paste as plain words?`,
-        confirmLabel: "Link as instance",
-        cancelLabel: "Paste as words",
+    const group = match && useProjectStore.getState().groups.find((g) => g.id === match.groupId);
+    if (match && group) {
+      const answer = await askChoice({
+        title: `These lines match ${group.label}`,
+        body: `Link them to share ${group.label} timing, or paste them as their own words.`,
+        busyMessage: FINISH_OPEN_PROMPT_FIRST,
+        options: [
+          { value: "words", label: "Paste as words", variant: "secondary" },
+          { value: "link", label: `Link as ${nextInstanceName(lines, group)}`, variant: "primary" },
+        ],
       });
-      if (ok) {
+      if (answer === "cancel") return "no-change";
+      if (answer === "link") {
         const sourceIdx = templateSourceInstance(lines, group, match.instanceIdx);
         const template = instanceToTemplate(lines, match.groupId, sourceIdx);
-        return placeInstance(lines, target, match.groupId, template, `Linked as another ${groupLabel}`);
+        return placeInstance(lines, target, match.groupId, template, `Linked as another ${group.label}`);
       }
     }
   }

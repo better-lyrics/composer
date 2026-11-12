@@ -8,7 +8,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
-import { ConfirmModalHost } from "@/ui/confirm-modal";
+import { ChoiceModalHost } from "@/ui/choice-modal";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { PastePreview } from "@/views/timeline/paste-preview";
 import { wordBlockWidth } from "@/views/timeline/row-geometry";
@@ -64,7 +64,7 @@ function Harness({ clipboard }: { clipboard: ClipboardData }) {
         </div>
         <PastePreview clipboard={clipboard} scrollContainerRef={ref} />
       </div>
-      <ConfirmModalHost />
+      <ChoiceModalHost />
     </>
   );
 }
@@ -146,7 +146,7 @@ describe("PastePreview · paste into a group that shares timing", () => {
     const screen = await render(<Harness clipboard={{ entries: entriesOf(copied), candidateLines: [copied] }} />);
 
     await pasteOnEmptyRow(screen);
-    await screen.getByRole("button", { name: "Link as instance" }).click();
+    await screen.getByRole("button", { name: /^Link as / }).click();
 
     await expect.poll(() => lineById("e")?.instanceIdx).toBe(1);
     expect(lineById("e")?.words?.[1].begin).toBe(PASTE_TIME + 1);
