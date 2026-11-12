@@ -1,6 +1,7 @@
 import { IconFileImport, IconUpload } from "@tabler/icons-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
+import { clearModalDraft, readModalDraft, writeModalDraft } from "@/lib/modal-drafts";
 import { type ImportModalSection, useImportModalState, useImportModalStore } from "@/stores/import-modal-store";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
@@ -27,8 +28,12 @@ const LyricsImportModalShell: React.FC = () => {
   const { prefill, initialSection } = useImportModalState();
   const importContext = useImportContext("File");
 
-  const [currentSection, setCurrentSection] = useState<ImportModalSection>(initialSection ?? "search");
-  const [pasteText, setPasteText] = useState("");
+  const [restoredText] = useState(() => readModalDraft("import-lyrics")?.text ?? "");
+  const [currentSection, setCurrentSection] = useState<ImportModalSection>(
+    initialSection ?? (restoredText ? "paste" : "search"),
+  );
+  const [pasteText, setPasteText] = useState(restoredText);
+  const [showClearDraft, setShowClearDraft] = useState(restoredText !== "");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [selectingResultId, setSelectingResultId] = useState<string | null>(null);
   const [isModalDragOver, setIsModalDragOver] = useState(false);
@@ -48,17 +53,33 @@ const LyricsImportModalShell: React.FC = () => {
     setSelectingResultId(null);
   }, []);
 
+  const finishImport = useCallback(() => {
+    clearModalDraft("import-lyrics");
+    close();
+  }, [close]);
+
+  const changePasteText = useCallback((text: string) => {
+    setPasteText(text);
+    if (text.trim() === "") clearModalDraft("import-lyrics");
+    else writeModalDraft("import-lyrics", { text });
+  }, []);
+
+  const clearDraft = useCallback(() => {
+    changePasteText("");
+    setShowClearDraft(false);
+  }, [changePasteText]);
+
   const handleImportPaste = useCallback(async () => {
     if (pasteText.trim().length === 0) return;
     const ok = await importLyricsText(pasteText, { ...importContext, sourceLabel: "Paste" });
-    if (ok) close();
-  }, [close, importContext, pasteText]);
+    if (ok) finishImport();
+  }, [finishImport, importContext, pasteText]);
 
   const handleImportUpload = useCallback(async () => {
     if (!pendingFile) return;
     const ok = await importLyricsFile(pendingFile, importContext);
-    if (ok) close();
-  }, [close, importContext, pendingFile]);
+    if (ok) finishImport();
+  }, [finishImport, importContext, pendingFile]);
 
   const handleSearchSelect = useCallback(
     async (result: LyricsSearchResult) => {
@@ -95,9 +116,9 @@ const LyricsImportModalShell: React.FC = () => {
       const ok = importLyrics({ filename, content, searchResult: result }, importContext);
       if (selectionAbortRef.current === controller) selectionAbortRef.current = null;
       setSelectingResultId((prev) => (prev === result.id ? null : prev));
-      if (ok) close();
+      if (ok) finishImport();
     },
-    [close, importContext],
+    [finishImport, importContext],
   );
 
   const handleFilePicked = useCallback((file: File) => {
@@ -158,7 +179,7 @@ const LyricsImportModalShell: React.FC = () => {
       return (
         <PasteSection
           value={pasteText}
-          onChange={setPasteText}
+          onChange={changePasteText}
           onSwitchToSearch={switchToSearch}
           onSwitchToUpload={switchToUpload}
         />
@@ -168,6 +189,7 @@ const LyricsImportModalShell: React.FC = () => {
       <UploadSection onFile={handleFilePicked} onSwitchToSearch={switchToSearch} onSwitchToPaste={switchToPaste} />
     );
   }, [
+    changePasteText,
     currentSection,
     expectedDurationSec,
     handleFilePicked,
@@ -208,6 +230,11 @@ const LyricsImportModalShell: React.FC = () => {
         )}
 
         <div className="flex justify-end gap-2">
+          {showClearDraft && currentSection === "paste" && (
+            <Button variant="ghost" size="sm" onClick={clearDraft}>
+              Clear draft
+            </Button>
+          )}
           <Button variant="secondary" size="sm" onClick={close}>
             Cancel
           </Button>

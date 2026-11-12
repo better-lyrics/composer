@@ -7,6 +7,7 @@ import type { TranslationTrack, TransliterationTrack } from "@/domain/language/m
 import { alignPastedLanguageLines } from "@/domain/language/paste-import";
 import type { LyricLine } from "@/domain/line/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
+import { clearModalDraft, readModalDraft, writeModalDraft } from "@/lib/modal-drafts";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { INPUT_STYLES } from "@/ui/input-styles";
@@ -61,7 +62,12 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
   const updateLinesWithHistory = useProjectStore((state) => state.updateLinesWithHistory);
   const [kind, setKind] = useState<"transliteration" | "translation">(defaultKind);
   const [targetLanguage, setTargetLanguage] = useState(defaultTargetLanguage);
-  const [pastedText, setPastedText] = useState(initialText);
+  const [restoredDraft] = useState(() => {
+    const draft = readModalDraft("paste-translations");
+    return draft?.pastedText === initialText ? draft : undefined;
+  });
+  const [showClearDraft, setShowClearDraft] = useState(restoredDraft !== undefined);
+  const [pastedText, setPastedText] = useState(restoredDraft?.text ?? initialText);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const alignment = useMemo(
     () =>
@@ -71,7 +77,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
       ),
     [lines, pastedText],
   );
-  const [manualRows, setManualRows] = useState<string[] | null>(null);
+  const [manualRows, setManualRows] = useState<string[] | null>(restoredDraft?.manualRows ?? null);
   const mappedLines = manualRows ?? alignment.mappedLines;
   const errors = useMemo(
     () =>
@@ -85,10 +91,23 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
   const mappedCount = mappedLines.filter((line) => line.trim()).length;
   const languageSelectOptions = languageOptions.map(([value, label]) => ({ value, label }));
 
+  const editDraft = (text: string, rows: string[] | null) => {
+    setPastedText(text);
+    setManualRows(rows);
+    writeModalDraft("paste-translations", { pastedText: initialText, text, manualRows: rows });
+  };
+
   const updateMappedLine = (index: number, value: string) => {
     const next = mappedLines.slice();
     next[index] = value;
-    setManualRows(next);
+    editDraft(pastedText, next);
+  };
+
+  const clearDraft = () => {
+    setPastedText(initialText);
+    setManualRows(null);
+    setShowClearDraft(false);
+    clearModalDraft("paste-translations");
   };
 
   const importContent = () => {
@@ -125,6 +144,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
     if (kind === "transliteration") noteGuideSignal("languages.romanize");
     if (kind === "translation") onImportedTranslation(targetLanguage);
     toast.success(`Imported ${pluralize(mappedCount, "line")}`);
+    clearModalDraft("paste-translations");
     onClose();
   };
 
@@ -158,10 +178,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
             <textarea
               ref={textareaRef}
               value={pastedText}
-              onChange={(event) => {
-                setPastedText(event.target.value);
-                setManualRows(null);
-              }}
+              onChange={(event) => editDraft(event.target.value, null)}
               spellCheck={false}
               className={cn(INPUT_STYLES, "flex-1 min-h-52 p-3 font-mono leading-6 resize-none")}
             />
@@ -235,6 +252,11 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
               {mappedCount} of {lines.length} lines ready
             </span>
             <div className="flex gap-2">
+              {showClearDraft && (
+                <Button variant="ghost" onClick={clearDraft}>
+                  Clear draft
+                </Button>
+              )}
               <Button onClick={onClose}>Cancel</Button>
               <Button hasIcon variant="primary" disabled={errorCount > 0 || mappedCount === 0} onClick={importContent}>
                 <IconFileImport className="size-4" />
