@@ -107,8 +107,11 @@ file to its allowlist without the maintainer's approval.
 - `timeline-scroll-ownership`: the Timeline scroll position is read and written only through
   `views/timeline/view-scroll.ts`.
 - `performance-ownership`: per-edit and per-frame work goes through its owner. History never
-  deep-copies state, effective lines and the grouping scan are derived only by their owners, and
-  every Timeline frame callback that writes a style is declared.
+  deep-copies state, effective lines and the grouping scan are derived only by their owners,
+  every Timeline frame callback that writes a style is declared, `::selection` and `::highlight()`
+  live only in `src/index.css`, and nothing inherits a non-inherited property explicitly.
+- `stored-media`: a module that opens an IndexedDB object store never reads a file into an
+  `ArrayBuffer`.
 - `timeline-subscriptions`: Timeline rows and per-row hooks never subscribe to the whole selection
   or the whole store, and only listed files subscribe to `zoom` or the scroll position.
 - `tab-visibility-ownership`: tab panels read visibility only through `useIsActiveTab`.
@@ -132,6 +135,8 @@ before writing a new one.
 - Never set `innerHTML`.
 - No em dashes in code, copy or commit messages.
 - Commit messages are one line: `type: brief description` (for example `fix: timing offset`).
+- Media in IndexedDB is stored as a `File` or `Blob`, never an `ArrayBuffer`: Chromium caps one
+  value at 127 MiB. Read its size with `storedDataBytes` (`domain/storage/stored-data.ts`).
 
 ## Settings
 
@@ -189,6 +194,14 @@ that touches it:
   take its scroll parent from `hooks/use-scroll-parent.ts`, which never clears it.
 - Undo history shares unchanged objects between steps, and entries are frozen in every build. Never
   write to an object that came from the project store. Build a new one.
+- Keep `::selection` and `::highlight()` rules in `src/index.css`, scoped away from animated parts.
+  In Chromium, an animated element that matches a global highlight rule restyles its whole subtree
+  on every animation tick. The `::selection` rule excludes words, rows and Braccato's animated parts.
+- Never inherit a non-inherited property explicitly (`rounded-[inherit]`, `border-radius: inherit`)
+  on anything whose parent restyles often. The child restyles with its parent; on Timeline words
+  that was every zoom step. Share a custom property instead (`--word-radius`).
+- Removing layout reads from frame callbacks does not cut forced style; find what dirties style
+  (main-thread transitions).
 - Measure against a master build with interleaved runs, at the display size you ship for. Main
   thread frame times do not show GPU drops: check presented frames for anything that draws.
 
