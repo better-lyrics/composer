@@ -241,9 +241,7 @@ export {
   applyCrossLineMove,
   applySameLineReorder,
   DRAG_X_MIN_THRESHOLD,
-  expandSelectionsAcrossLines,
   groupSelectionsByLine,
   LINE_SYNCED_REJECT_MESSAGE,
-  resolveWordsToOperate,
   wordsDraggedTogether,
 };

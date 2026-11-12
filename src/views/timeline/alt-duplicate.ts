@@ -13,10 +13,9 @@ import { cloneWord } from "@/utils/word-timing";
 import {
   DRAG_X_MIN_THRESHOLD,
   type DragData,
-  expandSelectionsAcrossLines,
   groupSelectionsByLine,
   LINE_SYNCED_REJECT_MESSAGE,
-  resolveWordsToOperate,
+  wordsDraggedTogether,
 } from "@/views/timeline/drag-handlers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -34,7 +33,7 @@ function handleAltDuplicate(
   if (Math.abs(delta.x) < DRAG_X_MIN_THRESHOLD) return;
 
   const { selectedWords } = useTimelineStore.getState();
-  const wordsToDuplicate = expandSelectionsAcrossLines(lines, resolveWordsToOperate(activeData, selectedWords));
+  const wordsToDuplicate = wordsDraggedTogether(lines, activeData, false, selectedWords);
 
   const timeDelta = delta.x / zoom;
   const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
