@@ -1,6 +1,7 @@
 import { IconFolderOpen } from "@tabler/icons-react";
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { fullySyncedLineCount } from "@/domain/line/sync-progress";
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useUnisonFeatures } from "@/hooks/unison/useUnisonFeatures";
 import { useUnisonSession } from "@/hooks/useUnisonSession";
@@ -50,6 +51,7 @@ const ExportPanel: React.FC = () => {
   } = useExportTtml();
 
   const projectSession = useProjectStore((state) => state.projectSession);
+  const fullySyncedLines = useProjectStore((state) => fullySyncedLineCount(state.lines));
   const unisonEnabled = useUnisonFeatures().enabled;
   const signedInToUnison = useUnisonSession() !== null && unisonEnabled;
   const [copied, setCopied] = useState(false);
@@ -198,7 +200,7 @@ const ExportPanel: React.FC = () => {
   return (
     <div data-tour="export-panel" className="flex flex-col flex-1 overflow-hidden">
       <ExportHeader
-        syncedLineCount={syncedLineCount}
+        syncedLineCount={fullySyncedLines}
         lineCount={lineCount}
         isEdited={editedContent !== null}
         isEditing={isEditing}

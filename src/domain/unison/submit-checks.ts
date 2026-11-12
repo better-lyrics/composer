@@ -1,6 +1,6 @@
 import type { AlignmentReview } from "@/domain/alignment/review-state";
 import type { LyricLine } from "@/domain/line/model";
-import { isSyncableLine, type SyncGap, syncGaps } from "@/domain/line/sync-progress";
+import { fullySyncedLineCount, isSyncableLine, type SyncGap, syncGaps } from "@/domain/line/sync-progress";
 import { type ZeroLengthWordIssue, zeroLengthWordIssues } from "@/domain/line/zero-length-words";
 import { namedArtists } from "@/domain/project/display-title";
 import { normalizeLanguageTag } from "@/domain/project/language";
@@ -97,8 +97,7 @@ function songCheck({ title, artists }: SubmitCheckInput): SubmitCheck {
 function syncedCheck({ lines }: SubmitCheckInput): SubmitCheck {
   const gaps = syncGaps(lines);
   const lineCount = lines.filter(isSyncableLine).length;
-  const linesWithGaps = new Set(gaps.flatMap((gap) => (gap.kind === "background-only" ? [] : [gap.lineId]))).size;
-  const syncedLineCount = lineCount - linesWithGaps;
+  const syncedLineCount = fullySyncedLineCount(lines);
   if (lineCount > 0 && gaps.length === 0) return { id: "synced", status: "pass", syncedLineCount, lineCount };
   return { id: "synced", status: "fail", syncedLineCount, lineCount, fix: { kind: "lines", issues: gaps } };
 }

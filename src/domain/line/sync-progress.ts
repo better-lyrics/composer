@@ -191,6 +191,12 @@ function syncProgress(lines: readonly LyricLine[], granularity: SyncGranularity)
   return { done, total };
 }
 
+function fullySyncedLineCount(lines: readonly LyricLine[]): number {
+  let count = 0;
+  for (const line of lines) if (isSyncableLine(line) && lineSyncFacts(line).trackGaps.length === 0) count += 1;
+  return count;
+}
+
 function syncGaps(lines: readonly LyricLine[]): SyncGap[] {
   return lines.flatMap((line, lineIndex) => lineSyncFacts(line).trackGaps.map((gap) => ({ ...gap, lineIndex })));
 }
@@ -203,6 +209,7 @@ function isProjectFullySynced(lines: readonly LyricLine[]): boolean {
 
 export type { SyncGap, SyncGapTrack, SyncGranularity };
 export {
+  fullySyncedLineCount,
   isLineFullyTimed,
   isLineTimed,
   isProjectFullySynced,
