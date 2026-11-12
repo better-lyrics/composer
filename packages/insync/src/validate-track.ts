@@ -2,7 +2,13 @@ import type { SyllableTrack } from "./track";
 
 // -- Types --------------------------------------------------------------------
 
-type TrackRule = "empty-text" | "negative-begin" | "begin-after-end" | "last-joins-next" | "overlaps-previous";
+type TrackRule =
+  | "empty-text"
+  | "non-finite-time"
+  | "negative-begin"
+  | "begin-after-end"
+  | "last-joins-next"
+  | "overlaps-previous";
 
 interface TrackFinding {
   index: number;
@@ -22,7 +28,9 @@ function validateTrack(track: SyllableTrack): TrackReport {
   let previousEnd: number | undefined;
   track.forEach((syllable, index) => {
     if (syllable.text === "") errors.push({ index, rule: "empty-text" });
-    if (syllable.span) {
+    if (syllable.span && !syllable.span.every(Number.isFinite)) {
+      errors.push({ index, rule: "non-finite-time" });
+    } else if (syllable.span) {
       const [begin, end] = syllable.span;
       if (begin < 0) errors.push({ index, rule: "negative-begin" });
       if (begin > end) errors.push({ index, rule: "begin-after-end" });

@@ -21,6 +21,14 @@ describe("validateTrack", () => {
     ]);
   });
 
+  it("reports times that are not finite numbers", () => {
+    const result = validateTrack([timed("we", Number.NaN, Number.NaN), timed("glow", 0, Number.POSITIVE_INFINITY)]);
+    expect(result.errors).toEqual([
+      { index: 0, rule: "non-finite-time" },
+      { index: 1, rule: "non-finite-time" },
+    ]);
+  });
+
   it("reports imported overlap as a warning only", () => {
     const result = validateTrack([timed("we", 0, 500), timed("glow", 300, 600)]);
     expect(result).toEqual({ errors: [], warnings: [{ index: 1, rule: "overlaps-previous" }] });

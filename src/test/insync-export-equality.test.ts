@@ -65,8 +65,12 @@ function expectRoundTripKeepsExport(projects: readonly EditedTtmlProject[]): voi
 }
 
 function wordsThroughSyllables(words: readonly WordTiming[]): WordTiming[] {
-  const roundTripped = wordsFromSyllables(syllablesFromWords(words));
+  const track = syllablesFromWords(words);
+  const roundTripped = wordsFromSyllables(track);
   expect(roundTripped).toHaveLength(words.length);
+  expect(syllablesFromWords(roundTripped).map((syllable) => syllable.joinsNext)).toEqual(
+    track.map((syllable) => syllable.joinsNext),
+  );
   return words.map((word, index) => ({ ...word, ...roundTripped[index] }));
 }
 
