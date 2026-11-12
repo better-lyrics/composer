@@ -1,8 +1,9 @@
 import { quotedTitle } from "@/domain/project/display-title";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
-import { deleteProject, openProject } from "@/lib/open-project";
-import { openProjectIdSnapshot } from "@/lib/open-project-session";
+import { deleteProject, forkOpenProject, openProject } from "@/lib/open-project";
+import { openProjectIdSnapshot, subscribeOpenProjectId } from "@/lib/open-project-session";
 import type { PendingDeletion } from "@/lib/pending-deletions";
+import { NewerProjectError } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { formatProjectCount } from "@/utils/project-count";
 import { IconTrash } from "@tabler/icons-react";
@@ -70,6 +71,54 @@ function showLinkedProjectToast(title: string, previousTitle: string, previousId
   );
 }
 
+// -- Newer saves --------------------------------------------------------------
+
+function showNeedsNewerComposerToast(message: string, description: string): void {
+  toast.error(message, {
+    description,
+    closeButton: true,
+    action: { label: "Reload", onClick: () => window.location.reload() },
+  });
+}
+
+function showNewerProjectToast(): void {
+  showNeedsNewerComposerToast(
+    "This project needs a newer Composer",
+    "It was saved by a newer version. Reload to update, then open it again.",
+  );
+}
+
+function showNewerLinkToast(): void {
+  showNeedsNewerComposerToast("This link needs a newer Composer", "Reload to update and open it.");
+}
+
+function keepChangesAsNewProject(projectId: string): void {
+  if (openProjectIdSnapshot() !== projectId) return;
+  forkOpenProject().catch((error: unknown) => {
+    console.error(LOG_PREFIX, "could not keep the changes as a new project", error);
+    toast.error("Couldn't save your changes as a new project");
+  });
+}
+
+function showNewerSaveRefusedToast(projectId: string): void {
+  const toastId = toast.error("A newer Composer saved this project in another tab", {
+    description: "Your changes here can't be saved over it. Keep them as a new project, or reload to update.",
+    closeButton: true,
+    action: { label: "Keep as new project", onClick: () => keepChangesAsNewProject(projectId) },
+  });
+  const stopWatching = subscribeOpenProjectId(() => {
+    if (openProjectIdSnapshot() === projectId) return;
+    toast.dismiss(toastId);
+    stopWatching();
+  });
+}
+
+function reportOpenProjectFailure(error: unknown): void {
+  console.error(LOG_PREFIX, "could not open the project", error);
+  if (error instanceof NewerProjectError) showNewerProjectToast();
+  else toast.error("Couldn't open that project");
+}
+
 // -- Deleting -----------------------------------------------------------------
 
 function deletedMessage(titles: readonly string[]): string {
@@ -97,4 +146,12 @@ function showDeletedProjectsToast(titles: readonly string[], deletion: PendingDe
 
 // -- Exports ------------------------------------------------------------------
 
-export { showNewProjectToast, showLinkedProjectToast, showDeletedProjectsToast };
+export {
+  showNewProjectToast,
+  showLinkedProjectToast,
+  showDeletedProjectsToast,
+  showNewerProjectToast,
+  showNewerLinkToast,
+  showNewerSaveRefusedToast,
+  reportOpenProjectFailure,
+};

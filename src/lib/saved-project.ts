@@ -54,7 +54,23 @@ interface SavedAudioFile {
 
 const SAVED_PROJECT_VERSION = 3;
 
+// -- Errors -------------------------------------------------------------------
+
+class NewerProjectError extends Error {
+  readonly projectId: string;
+
+  constructor(projectId: string) {
+    super(`Project ${projectId} was saved by a newer version of Composer`);
+    this.name = "NewerProjectError";
+    this.projectId = projectId;
+  }
+}
+
 // -- Upgrade ------------------------------------------------------------------
+
+function isFromNewerComposer(saved: { version?: unknown } | undefined): boolean {
+  return typeof saved?.version === "number" && saved.version > SAVED_PROJECT_VERSION;
+}
 
 function upgradeSavedProject(project: SavedProject): boolean {
   if (project.version >= SAVED_PROJECT_VERSION) return false;
@@ -66,4 +82,4 @@ function upgradeSavedProject(project: SavedProject): boolean {
 // -- Exports ------------------------------------------------------------------
 
 export type { SavedAudioFile, SavedProject };
-export { SAVED_PROJECT_VERSION, upgradeSavedProject };
+export { NewerProjectError, SAVED_PROJECT_VERSION, isFromNewerComposer, upgradeSavedProject };

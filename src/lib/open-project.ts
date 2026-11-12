@@ -30,6 +30,7 @@ import { clearAllProjects } from "@/lib/project-storage";
 import { ProjectDeletedError, isProjectDeleted } from "@/lib/project-tombstones";
 import { saveResumePositionNow } from "@/lib/resume-position";
 import { awaitInFlightSaves, trackSave } from "@/lib/save-status";
+import { NewerProjectError } from "@/lib/saved-project";
 import { useGuideStore } from "@/stores/guide";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -76,7 +77,13 @@ async function restoreOpenProject(): Promise<void> {
   const baseline = openProjectChanges;
   const id = await findOpenProjectId();
   if (!id) return;
-  const payload = await loadProjectForRestore(id);
+  let payload: RestorePayload;
+  try {
+    payload = await loadProjectForRestore(id);
+  } catch (error) {
+    if (error instanceof NewerProjectError && openProjectChanges === baseline) openEmptyProject();
+    throw error;
+  }
   if (openProjectChanges !== baseline || !hasRestorableContent(payload)) return;
   applyProjectToStores(payload);
   markProjectOpened(id, Date.now()).catch(logFailure("could not record when the project was opened"));
@@ -125,10 +132,14 @@ async function openProject(id: string): Promise<void> {
 }
 
 function createProject(): string {
-  claimRequest();
-  markOpenProjectChanged();
   flushPendingSaveQuietly();
   saveResumePositionNow();
+  return openEmptyProject();
+}
+
+function openEmptyProject(): string {
+  claimRequest();
+  markOpenProjectChanged();
   const id = createProjectId();
   adoptOpenProjectId(id);
   applyProjectToStores(EMPTY_RESTORE);

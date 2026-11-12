@@ -1,7 +1,6 @@
 import { IconArrowRight, IconPlus, IconSearch } from "@tabler/icons-react";
 import { useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
 import { displayArtists, displayTitle } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { recentProjects } from "@/domain/project/recent-projects";
@@ -20,6 +19,7 @@ import { Scroll } from "@/ui/scroll";
 import { LIBRARY_PATH } from "@/utils/app-routes";
 import { cn } from "@/utils/cn";
 import { formatRelativeTime } from "@/utils/format-relative-time";
+import { reportOpenProjectFailure } from "@/utils/project-toast";
 
 // -- Types --------------------------------------------------------------------
 
@@ -38,7 +38,6 @@ interface SwitcherRowProps {
 
 // -- Constants ----------------------------------------------------------------
 
-const LOG_PREFIX = "[ProjectSwitcher]";
 const SWITCHER_LIMIT = 6;
 
 // -- Sub-components -----------------------------------------------------------
@@ -99,10 +98,7 @@ const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({ onClose }) => {
 
   const choose = (id: string) => {
     onClose();
-    openProject(id).catch((error: unknown) => {
-      console.error(LOG_PREFIX, "could not open the project", error);
-      toast.error("Couldn't open that project");
-    });
+    openProject(id).catch(reportOpenProjectFailure);
   };
 
   const startNewProject = () => {
