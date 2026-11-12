@@ -64,4 +64,28 @@ describe("showUndoToast", () => {
     expect(state.ttmlEditState).toEqual(keptEdit);
     expect(state.hasUnexportedImport).toBe(false);
   });
+
+  it("regression: Undo after a lyrics import keeps a title typed after the import", async () => {
+    commitLines("Our own words");
+    const keptEdit = { source: "<tt/>", content: "<tt>edited</tt>" };
+    useProjectStore.getState().setMetadata({ title: "Our Title" });
+    useProjectStore.getState().setTtmlEditState(keptEdit);
+    const screen = await render(<Toaster />);
+    importLyrics(
+      { filename: "song.lrc", content: "[ti:Imported Title]\n[00:01.00]Imported words" },
+      {
+        audioDuration: 0,
+        applyBackgroundExtraction: false,
+        backgroundExtractionMergeStandalone: false,
+        backgroundExtractionPreserveBrackets: false,
+        sourceLabel: "Test",
+      },
+    );
+    useProjectStore.getState().setMetadata({ title: "Typed Later" });
+    await screen.getByRole("button", { name: "Undo" }).click();
+    const state = useProjectStore.getState();
+    expect(currentText()).toBe("Our own words");
+    expect(state.metadata.title).toBe("Typed Later");
+    expect(state.ttmlEditState).toEqual(keptEdit);
+  });
 });

@@ -12,6 +12,7 @@ import type { ProjectFile } from "@/lib/project-file";
 import { useAudioStore } from "@/stores/audio";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
+import type { MetadataState } from "@/stores/project/types";
 import { type SettingsState, useSettingsStore } from "@/stores/settings";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
 import { PARSERS, parseLyricsFile } from "@/utils/lyrics-parsers";
@@ -78,12 +79,30 @@ function searchResultMetadata(result: LyricsSearchResult | undefined): Partial<P
   };
 }
 
-function songDetailsBeforeReplace(): () => void {
+type SongDetails = Omit<MetadataState, "projectSession">;
+
+function currentSongDetails(): SongDetails {
   const { metadata, importedMetadataKeys, hasUnexportedImport, ttmlEditState } = useProjectStore.getState();
-  return () =>
-    useProjectStore
-      .getState()
-      .restoreReplacedSongDetails({ metadata, importedMetadataKeys, hasUnexportedImport, ttmlEditState });
+  return { metadata, importedMetadataKeys, hasUnexportedImport, ttmlEditState };
+}
+
+// Undo puts back only the details the replace changed and nobody has edited since.
+function replaceKeepingSongDetailsUndo<T>(replace: () => T): { result: T; restoreSongDetails: () => void } {
+  const before = currentSongDetails();
+  const result = replace();
+  const after = currentSongDetails();
+  const pick = <K extends keyof SongDetails>(key: K, now: SongDetails): SongDetails[K] =>
+    now[key] === after[key] ? before[key] : now[key];
+  const restoreSongDetails = () => {
+    const now = currentSongDetails();
+    useProjectStore.getState().restoreReplacedSongDetails({
+      metadata: pick("metadata", now),
+      importedMetadataKeys: pick("importedMetadataKeys", now),
+      hasUnexportedImport: pick("hasUnexportedImport", now),
+      ttmlEditState: pick("ttmlEditState", now),
+    });
+  };
+  return { result, restoreSongDetails };
 }
 
 function replaceLyrics(
@@ -126,8 +145,9 @@ function importLyrics(input: ImportLyricsInput, ctx: ImportContext): boolean {
     workingLines = distributeLinesTiming(workingLines, ctx.audioDuration).map(withSeededBackground);
   }
 
-  const restoreSongDetails = songDetailsBeforeReplace();
-  const reported = replaceLyrics(parsed, workingLines, searchResultMetadata(input.searchResult));
+  const { result: reported, restoreSongDetails } = replaceKeepingSongDetailsUndo(() =>
+    replaceLyrics(parsed, workingLines, searchResultMetadata(input.searchResult)),
+  );
   if (replacesLines) showUndoToast("Replaced the lyrics", undefined, restoreSongDetails);
 
   const skipped = skippedLineCount(parsed.issues);
@@ -230,7 +250,7 @@ export {
   importProjectLyrics,
   readLyricsFile,
   readTtmlLyrics,
+  replaceKeepingSongDetailsUndo,
   replaceWithParsedLyrics,
-  songDetailsBeforeReplace,
   useImportContext,
 };

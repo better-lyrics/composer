@@ -64,7 +64,6 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({
           aria-label="YouTube link to add"
           {...linkField.fieldProps}
           aria-invalid={!disabled && linkField.fieldProps["aria-invalid"]}
-          aria-describedby={disabledReason ? linkField.errorProps.id : linkField.fieldProps["aria-describedby"]}
           placeholder={placeholder}
           value={link}
           disabled={disabled}
@@ -75,16 +74,17 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({
           wrapperClassName="flex-1 min-w-0"
           className={cn(floating && FLOATING_INPUT_STYLES, "h-8 pl-8 pr-3 rounded-lg text-[13px]")}
         />
-        <Button type="submit" size="md" variant="secondary" disabled={disabled || adding || busy}>
+        <Button
+          type="submit"
+          size="md"
+          variant="secondary"
+          disabled={adding || busy}
+          disabledReason={disabledReason ?? undefined}
+        >
           Add
         </Button>
       </div>
-      <FieldError
-        id={linkField.errorProps.id}
-        message={disabled ? null : linkField.error}
-        hint={disabledReason}
-        className="px-0.5"
-      />
+      <FieldError id={linkField.errorProps.id} message={disabled ? null : linkField.error} className="px-0.5" />
     </form>
   );
 };
