@@ -1,8 +1,15 @@
+import { storedDataBuffer, storedDataBytes } from "@/domain/storage/stored-data";
 import { PROJECT_STEMS_STORE_NAME } from "@/lib/persistence-idb";
-import type { SavedProjectStem } from "@/domain/stems/saved-stems";
+import { type SavedProjectStem, storedStemBytes } from "@/domain/stems/saved-stems";
 import { duplicateProject } from "@/lib/project-library-actions";
 import { loadProjectIndexEntry, removeProjectData } from "@/lib/project-repository";
-import { deleteProjectStem, loadProjectStems, repairOldProjectStems, saveProjectStem } from "@/lib/project-stems";
+import {
+  deleteProjectStem,
+  loadProjectStems,
+  repairOldProjectStems,
+  saveProjectStem,
+  stemFile,
+} from "@/lib/project-stems";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { croppedMp3StemWrite, saveStemFromOldBuild } from "@/test/legacy-stems";
@@ -27,6 +34,15 @@ describe("project stems", () => {
     expect(stems?.slots.vocals).toMatchObject({ origin: "imported", name: "acapella.wav", durationSeconds: 60 });
     expect(stems?.slots.instrumental).toBeUndefined();
     expect((await loadProjectIndexEntry("stems-save"))?.storedStemBytes).toBe(write.file.size);
+  });
+
+  it("regression: saves a stem larger than the IndexedDB value limit", async () => {
+    await seedStoredProject("stems-large");
+    const file = new File([new Uint8Array(130 * 1024 * 1024)], "long.wav", { type: "audio/wav" });
+    await saveProjectStem("stems-large", "h", { ...importedVocals(), file });
+    const saved = (await loadProjectStems("stems-large"))?.slots.vocals;
+    expect(saved && stemFile(saved).size).toBe(file.size);
+    expect((await loadProjectIndexEntry("stems-large"))?.storedStemBytes).toBe(file.size);
   });
 
   it("keeps the other slot and raises the revision on every write", async () => {
@@ -77,7 +93,7 @@ describe("project stems", () => {
     const copyId = await duplicateProject("stems-original");
     const copy = await loadProjectStems(copyId);
     expect(copy?.slots.vocals).toMatchObject({ origin: "imported", name: "acapella.wav" });
-    expect(copy?.slots.vocals?.data.byteLength).toBe(write.file.size);
+    expect(storedStemBytes(copy)).toBe(write.file.size);
     expect((await loadProjectIndexEntry(copyId))?.storedStemBytes).toBe(write.file.size);
   });
 
@@ -138,7 +154,7 @@ describe("project stems", () => {
     expect(after?.slots.vocals?.origin).toBe("imported");
     expect(after?.slots.instrumental).toBeUndefined();
     expect(after?.revision).toBe((before?.revision ?? 0) + 1);
-    expect((await loadProjectIndexEntry("stems-drop"))?.storedStemBytes).toBe(after?.slots.vocals?.data.byteLength);
+    expect((await loadProjectIndexEntry("stems-drop"))?.storedStemBytes).toBe(storedStemBytes(after));
   });
 
   it("leaves a project without separated stems untouched", async () => {
@@ -158,7 +174,7 @@ describe("project stems", () => {
   }
 
   function silentFramesAdded(before: SavedProjectStem | undefined, after: SavedProjectStem | undefined): number {
-    return ((after?.data.byteLength ?? 0) - (before?.data.byteLength ?? 0)) / 2;
+    return ((after ? storedDataBytes(after.data) : 0) - (before ? storedDataBytes(before.data) : 0)) / 2;
   }
 
   it("pads an old imported mp3 stem by its measured crop and leaves other stems alone", async () => {
@@ -172,14 +188,16 @@ describe("project stems", () => {
     const after = await loadProjectStems("stems-pad");
     expect(silentFramesAdded(before?.slots.vocals, after?.slots.vocals)).toBe(1104);
     expect(
-      new Int16Array(after?.slots.vocals?.data ?? new ArrayBuffer(0), 44, 1104).every((sample) => sample === 0),
+      new Int16Array(
+        after?.slots.vocals ? await storedDataBuffer(after.slots.vocals.data) : new ArrayBuffer(0),
+        44,
+        1104,
+      ).every((sample) => sample === 0),
     ).toBe(true);
     expect(after?.slots.vocals?.durationSeconds).toBe(before?.slots.vocals?.durationSeconds);
     expect(after?.slots.vocals?.revision).toBe((before?.revision ?? 0) + 1);
     expect(after?.slots.instrumental).toEqual(before?.slots.instrumental);
-    expect((await loadProjectIndexEntry("stems-pad"))?.storedStemBytes).toBe(
-      (after?.slots.vocals?.data.byteLength ?? 0) + (after?.slots.instrumental?.data.byteLength ?? 0),
-    );
+    expect((await loadProjectIndexEntry("stems-pad"))?.storedStemBytes).toBe(storedStemBytes(after));
   });
 
   it("pads a 48 kHz stem by its measured crop", async () => {

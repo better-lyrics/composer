@@ -1,5 +1,6 @@
 import { projectStemJobKey } from "@/audio/separation/stem-job-liveness";
 import { getStem, hasStems, stemJobKey, stemLookupOrder } from "@/audio/separation/stem-store";
+import { storedDataBytes } from "@/domain/storage/stored-data";
 import { STEM_SLOTS, type StemOrigin, type StemSlot } from "@/domain/stems/stem-slot";
 import { loadProjectStems, stemFile } from "@/lib/project-stems";
 import type { AudioSource } from "@/stores/audio";
@@ -72,7 +73,7 @@ async function resolveStems(
       file: stemFile(stem),
       origin: stem.origin,
       key: `${projectId}|${slot}|r${stem.revision}`,
-      details: { name: stem.name, durationSeconds: stem.durationSeconds, bytes: stem.data.byteLength },
+      details: { name: stem.name, durationSeconds: stem.durationSeconds, bytes: storedDataBytes(stem.data) },
     };
   }
   return { jobKey: projectStemJobKey(projectId, stems.slots.vocals?.revision ?? 0), slots };

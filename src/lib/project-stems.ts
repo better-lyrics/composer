@@ -1,4 +1,5 @@
 import { type SavedProjectStem, type SavedProjectStems, storedStemBytes } from "@/domain/stems/saved-stems";
+import { isInlineData } from "@/domain/storage/stored-data";
 import { readWavLayout, withLeadingSilence } from "@/audio/wav-encode";
 import { measuredPrimingFrames } from "@/domain/stems/priming-evidence";
 import { STEM_SLOTS, type StemOrigin, type StemSlot } from "@/domain/stems/stem-slot";
@@ -54,6 +55,7 @@ function isUncheckedSeparated(stem: SavedProjectStem | undefined): boolean {
 // An imported mp3 was stored as the WAV of its decode, so the name is the only record of its format.
 function measuredMp3StemPriming(stem: SavedProjectStem | undefined): number | null {
   if (stem?.origin !== "imported" || stem.primingCorrected || fileExtensionLabel(stem.name, "") !== "MP3") return null;
+  if (!isInlineData(stem.data)) return null;
   const layout = readWavLayout(stem.data);
   return layout ? measuredPrimingFrames({ durationSeconds: stem.durationSeconds, ...layout }) : null;
 }
@@ -78,7 +80,7 @@ function repairedSlot(
     return separated === "drop" ? null : { ...stem, primingCorrected: true };
   }
   const cropped = measuredMp3StemPriming(stem);
-  const data = cropped === null ? null : withLeadingSilence(stem.data, cropped);
+  const data = cropped === null || !isInlineData(stem.data) ? null : withLeadingSilence(stem.data, cropped);
   return data ? { ...stem, data, revision, primingCorrected: true } : stem;
 }
 
@@ -146,7 +148,7 @@ async function saveProjectStem(id: string, songKey: string, write: ProjectStemWr
     origin: write.origin,
     name: write.file.name,
     type: write.file.type,
-    data: await write.file.arrayBuffer(),
+    data: write.file,
     durationSeconds: write.durationSeconds,
     primingCorrected: true,
   };
