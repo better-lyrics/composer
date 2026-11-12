@@ -7,6 +7,8 @@ import {
 } from "@/stores/shortcut-bindings";
 import type { ShortcutBinding, ShortcutDefinition } from "@/stores/shortcut-registry";
 import { Button } from "@/ui/button";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { INPUT_STYLES } from "@/ui/input-styles";
 import { KeyBadge } from "@/ui/shortcut-reference";
 import { cn } from "@/utils/cn";
 import { MOD_KEY } from "@/utils/platform";
@@ -18,6 +20,7 @@ import {
 } from "@/utils/shortcut-matcher";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HighlightMatches } from "@/ui/highlight-matches";
+import { SETTING_ROW_SURFACE } from "@/ui/settings/setting-row-layout";
 import { useSettingsSearchQuery } from "@/ui/settings/settings-search-query";
 
 // -- Types --------------------------------------------------------------------
@@ -33,7 +36,7 @@ type CaptureState =
   | { status: "conflict"; newBinding: ShortcutBinding; conflicts: ShortcutDefinition[] };
 
 interface CaptureNoticeProps {
-  message: string;
+  message: React.ReactNode;
   currentKeys: string[];
   newKeys: string[];
   onKeep: () => void;
@@ -44,6 +47,16 @@ interface CaptureNoticeProps {
 
 const IDLE: CaptureState = { status: "idle" };
 
+const BINDING_SLOT_BASE = "h-7 -mr-[7px] inline-flex items-center justify-end gap-0.5 rounded-lg border cursor-pointer";
+
+const BINDING_SLOT_IDLE = cn(BINDING_SLOT_BASE, "px-1.5 border-transparent transition-colors hover:bg-(--layer-1)");
+
+const BINDING_SLOT_LISTENING = cn(
+  INPUT_STYLES,
+  BINDING_SLOT_BASE,
+  "py-0 text-[12.5px] text-(--muted) cursor-pointer bg-[color-mix(in_oklab,var(--ink)_6%,var(--well))]",
+);
+
 // -- Helpers ------------------------------------------------------------------
 
 function spokenKeys(keys: string[]): string {
@@ -51,30 +64,55 @@ function spokenKeys(keys: string[]): string {
   return keys.map((key) => (key === "Mod" ? MOD_KEY : key)).join("+");
 }
 
-function captureMessage(state: CaptureState, newKeys: string[]): string {
-  if (state.status === "warning") return `${spokenKeys(newKeys)} may be taken by the browser.`;
-  if (state.status === "conflict") {
-    const owners = state.conflicts.map((conflict) => conflict.description).join(", ");
-    return `${spokenKeys(newKeys)} is already used by ${owners}.`;
-  }
-  return "";
-}
-
 // -- Components ---------------------------------------------------------------
 
+const NoticeKeys: React.FC<{ keys: string[] }> = ({ keys }) => (
+  <>
+    <span aria-hidden="true">
+      <InlineKeyBadge keys={keys} className="ml-0 align-[-2px]" />
+    </span>
+    <span className="sr-only">{spokenKeys(keys)}</span>
+  </>
+);
+
+const CaptureMessage: React.FC<{ state: CaptureState; newKeys: string[] }> = ({ state, newKeys }) => {
+  if (state.status === "warning") {
+    return (
+      <>
+        <NoticeKeys keys={newKeys} /> may be taken by the browser.
+      </>
+    );
+  }
+  if (state.status !== "conflict") return null;
+  const owners = state.conflicts.map((conflict) => conflict.description).join(", ");
+  return (
+    <>
+      <NoticeKeys keys={newKeys} /> is already used by {owners}.
+    </>
+  );
+};
+
 const CaptureNotice: React.FC<CaptureNoticeProps> = ({ message, currentKeys, newKeys, onKeep, onUse }) => (
-  <div className="flex items-center justify-between gap-3 text-[12.5px] text-(--muted)">
-    <span role="status" className="select-text">
+  <div className="flex items-center justify-between gap-3">
+    <p role="status" className="min-w-0 text-[12.5px] leading-[1.45] text-(--muted) text-pretty select-text">
       {message}
-    </span>
-    <span className="flex shrink-0 gap-1.5">
-      <Button size="sm" variant="ghost" onClick={onKeep}>
-        {currentKeys.length === 0 ? "Keep unbound" : `Keep ${spokenKeys(currentKeys)}`}
+    </p>
+    <div className="flex shrink-0 items-center gap-1.5">
+      <Button
+        size="sm"
+        variant="ghost"
+        aria-label={currentKeys.length === 0 ? "Keep unbound" : `Keep ${spokenKeys(currentKeys)}`}
+        onClick={onKeep}
+      >
+        Keep
+        <InlineKeyBadge keys={currentKeys} className="ml-0" />
       </Button>
-      <Button size="sm" variant="secondary" onClick={onUse}>
-        {`Use ${spokenKeys(newKeys)} here`}
+      <Button size="sm" variant="secondary" aria-label={`Use ${spokenKeys(newKeys)} here`} onClick={onUse}>
+        Use
+        <InlineKeyBadge keys={newKeys} className="ml-0" />
+        here
       </Button>
-    </span>
+    </div>
   </div>
 );
 
@@ -83,14 +121,8 @@ const BindingDisplay: React.FC<{ isListening: boolean; needsCommandKey: boolean;
   needsCommandKey,
   keys,
 }) => {
-  if (isListening) {
-    return (
-      <span className="h-7 px-2.5 grid place-items-center rounded-md bg-(--well) text-[12.5px] text-(--muted)">
-        {needsCommandKey ? `Press keys with ${MOD_KEY}…` : "Press keys…"}
-      </span>
-    );
-  }
-  if (keys.length === 0) return <span className="text-xs text-composer-text-muted italic">Unbound</span>;
+  if (isListening) return needsCommandKey ? `Press keys with ${MOD_KEY}…` : "Press keys…";
+  if (keys.length === 0) return <InlineKeyBadge keys={keys} className="ml-0" />;
   return keys.map((key) => <KeyBadge key={key} keyName={key} />);
 };
 
@@ -180,56 +212,56 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
   }, [captureState.status, cancelCapture, applyCapturedBinding, definition.needsCommandKey]);
 
   const isActive = captureState.status !== "idle";
+  const isListening = captureState.status === "listening";
 
   return (
-    <div
-      ref={rowRef}
-      className={cn("flex flex-col gap-1.5 -mx-3 px-3 py-2.5 rounded-lg", isActive && "bg-(--layer-1)")}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-composer-text-secondary">
-          <HighlightMatches text={definition.description} query={searchQuery} />
-        </span>
-        <div className="flex items-center gap-2">
-          {isOverridden && !isActive && (
+    <div ref={rowRef}>
+      <div className={cn(SETTING_ROW_SURFACE, "flex flex-col gap-1 py-1.5")}>
+        <div className="flex items-center justify-between gap-6">
+          <span className="text-sm text-composer-text-secondary">
+            <HighlightMatches text={definition.description} query={searchQuery} />
+          </span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {isOverridden && !isActive && (
+              <button
+                type="button"
+                onClick={() => resetBinding(definition.id)}
+                className="text-[12.5px] text-composer-accent-text hover:underline cursor-pointer"
+              >
+                Reset
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => resetBinding(definition.id)}
-              className="text-xs text-composer-text-muted hover:text-composer-text cursor-pointer transition-colors"
+              aria-label={`Change shortcut for ${definition.description}, currently ${spokenKeys(keys)}`}
+              aria-pressed={isListening}
+              onClick={startCapture}
+              onBlur={cancelListening}
+              className={isListening ? BINDING_SLOT_LISTENING : BINDING_SLOT_IDLE}
             >
-              Reset
+              <BindingDisplay
+                isListening={isListening}
+                needsCommandKey={definition.needsCommandKey === true}
+                keys={shownKeys}
+              />
             </button>
-          )}
-          <button
-            type="button"
-            aria-label={`Change shortcut for ${definition.description}, currently ${spokenKeys(keys)}`}
-            aria-pressed={captureState.status === "listening"}
-            onClick={startCapture}
-            onBlur={cancelListening}
-            className="flex items-center gap-1 cursor-pointer rounded px-1 py-0.5 -mx-1 transition-colors hover:bg-composer-button/50"
-          >
-            <BindingDisplay
-              isListening={captureState.status === "listening"}
-              needsCommandKey={definition.needsCommandKey === true}
-              keys={shownKeys}
-            />
-          </button>
+          </div>
         </div>
-      </div>
 
-      {(captureState.status === "warning" || captureState.status === "conflict") && (
-        <CaptureNotice
-          message={captureMessage(captureState, pendingKeys)}
-          currentKeys={keys}
-          newKeys={pendingKeys}
-          onKeep={cancelCapture}
-          onUse={() =>
-            captureState.status === "warning"
-              ? applyCapturedBinding(captureState.newBinding)
-              : replaceConflicts(captureState.newBinding)
-          }
-        />
-      )}
+        {(captureState.status === "warning" || captureState.status === "conflict") && (
+          <CaptureNotice
+            message={<CaptureMessage state={captureState} newKeys={pendingKeys} />}
+            currentKeys={keys}
+            newKeys={pendingKeys}
+            onKeep={cancelCapture}
+            onUse={() =>
+              captureState.status === "warning"
+                ? applyCapturedBinding(captureState.newBinding)
+                : replaceConflicts(captureState.newBinding)
+            }
+          />
+        )}
+      </div>
     </div>
   );
 };

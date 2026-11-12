@@ -2,9 +2,10 @@ import { Slider } from "@/ui/slider";
 import { useSettingsStore } from "@/stores/settings";
 import { type SettingId, settingEntry, settingKeyOf } from "@/stores/settings-catalog";
 import { Select, type SelectOption } from "@/ui/select";
-import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
+import { SETTING_ROW_SURFACE, SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
 import { Switch } from "@/ui/switch";
+import { cn } from "@/utils/cn";
 import { useId } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -32,7 +33,7 @@ const SliderSetting: React.FC<SliderSettingProps> = ({ id, min, max, step, forma
   const value = typeof stored === "number" ? stored : min;
 
   return (
-    <div className="flex flex-col gap-3 py-3.5 -mx-2.5 px-2.5 rounded-[10px] transition-colors has-[:not(input,textarea):focus-visible]:bg-(--focus-tint)">
+    <div className={cn(SETTING_ROW_SURFACE, "flex flex-col gap-3 py-3.5")}>
       <SettingRowLayout className="py-0 mx-0 px-0 has-[:not(input,textarea):focus-visible]:bg-transparent">
         <SettingText id={id} />
         <div className="flex items-center gap-2">
