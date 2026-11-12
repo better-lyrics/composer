@@ -39,6 +39,8 @@ function bars(channelData: Float32Array[], barHeight: number | undefined, pixels
   });
 }
 
+function releaseNothing(): void {}
+
 // -- Tests --------------------------------------------------------------------
 
 describe("keepWaveformData", () => {
@@ -49,11 +51,16 @@ describe("keepWaveformData", () => {
 
     const media = new Audio("blob:http://localhost/loud-master");
     useAudioStore.getState().registerAudioElement(media);
-    keepWaveformData(mediaSource(media), media, {
-      numberOfChannels: 2,
-      duration: 12,
-      getChannelData: (channel) => decoded[channel],
-    });
+    keepWaveformData(
+      mediaSource(media),
+      media,
+      {
+        numberOfChannels: 2,
+        duration: 12,
+        getChannelData: (channel) => decoded[channel],
+      },
+      releaseNothing,
+    );
     const kept = readWaveformData(mediaSource(media));
 
     expect(kept?.peaks[0].every((sample) => sample >= -1 && sample <= 1)).toBe(true);
@@ -69,11 +76,16 @@ describe("keepWaveformData", () => {
 
     const media = new Audio("blob:http://localhost/loud-right-channel");
     useAudioStore.getState().registerAudioElement(media);
-    keepWaveformData(mediaSource(media), media, {
-      numberOfChannels: 2,
-      duration: 4,
-      getChannelData: (channel) => decoded[channel].slice(),
-    });
+    keepWaveformData(
+      mediaSource(media),
+      media,
+      {
+        numberOfChannels: 2,
+        duration: 4,
+        getChannelData: (channel) => decoded[channel].slice(),
+      },
+      releaseNothing,
+    );
     const kept = readWaveformData(mediaSource(media));
 
     expect(kept?.peaks.every((channel) => channel.every((sample) => sample >= -1 && sample <= 1))).toBe(true);
@@ -87,11 +99,16 @@ describe("keepWaveformData", () => {
     media.src = "blob:http://localhost/vocal-stem";
 
     const decoded = loudMaster(2, 0.9);
-    keepWaveformData(original, media, {
-      numberOfChannels: 2,
-      duration: 2,
-      getChannelData: (channel) => decoded[channel],
-    });
+    keepWaveformData(
+      original,
+      media,
+      {
+        numberOfChannels: 2,
+        duration: 2,
+        getChannelData: (channel) => decoded[channel],
+      },
+      releaseNothing,
+    );
 
     expect(readWaveformData(mediaSource(media))).toBeNull();
     expect(readWaveformData(original)).toBeNull();

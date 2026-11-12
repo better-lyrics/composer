@@ -18,18 +18,27 @@ type DecodedAudio = Pick<AudioBuffer, "numberOfChannels" | "duration" | "getChan
 
 let cached: CachedWaveformData | null = null;
 let accepting = true;
+let releaseHeldData: (() => void) | null = null;
 
 // -- Functions -----------------------------------------------------------------
 
+// The waveform keeps the same peaks in its own state, so it must let go too or a hidden editor retains them.
+function dropCached(): void {
+  cached = null;
+  const release = releaseHeldData;
+  releaseHeldData = null;
+  release?.();
+}
+
 function dropIfSourceChanged(this: HTMLAudioElement): void {
-  if (cached && this.currentSrc !== cached.source) cached = null;
+  if (cached && this.currentSrc !== cached.source) dropCached();
 }
 
 useAudioStore.subscribe((state, previous) => {
   if (state.audioElement === previous.audioElement) return;
   previous.audioElement?.removeEventListener("loadstart", dropIfSourceChanged);
   state.audioElement?.addEventListener("loadstart", dropIfSourceChanged);
-  cached = null;
+  dropCached();
 });
 
 function unitRangeScale(channels: Float32Array[]): number | null {
@@ -56,7 +65,7 @@ function openWaveformCache(): void {
 
 function closeWaveformCache(): void {
   accepting = false;
-  cached = null;
+  dropCached();
 }
 
 function readWaveformData(source: string): WaveformData | null {
@@ -64,7 +73,13 @@ function readWaveformData(source: string): WaveformData | null {
 }
 
 // Scales the samples in place, so call it only once the instance that drew them is destroyed.
-function keepWaveformData(source: string, media: HTMLAudioElement, decoded: DecodedAudio | null): void {
+function keepWaveformData(
+  source: string,
+  media: HTMLAudioElement,
+  decoded: DecodedAudio | null,
+  release: () => void,
+): void {
+  releaseHeldData = release;
   if (!accepting || useAudioStore.getState().audioElement !== media || mediaSource(media) !== source) return;
   if (cached?.source === source || !decoded || decoded.numberOfChannels === 0 || decoded.duration <= 0) return;
   const peaks = Array.from({ length: decoded.numberOfChannels }, (_, channel) => decoded.getChannelData(channel));

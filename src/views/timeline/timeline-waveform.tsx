@@ -61,7 +61,7 @@ const WaveformBars: React.FC<WaveformBarsProps> = ({
   const [decoded, setDecoded] = useState(() => readWaveformData(source));
   const handleDestroy = useCallback(
     (wavesurfer: WaveSurfer) => {
-      keepWaveformData(source, media, wavesurfer.getDecodedData());
+      keepWaveformData(source, media, wavesurfer.getDecodedData(), () => setDecoded(null));
       setDecoded(readWaveformData(source));
       onDestroy();
     },
