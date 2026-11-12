@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { boxesOutside, buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
+import { buildPlayheadMask, playheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
 import { WORD_BLOCK_SELECTOR, blockBox } from "@/views/timeline/word-block-boxes";
 
 // -- Constants -----------------------------------------------------------------
@@ -70,7 +70,7 @@ function productionMask(scrollContainer: HTMLElement): string {
   const inside = [...scrollContainer.querySelectorAll<HTMLElement>(WORD_BLOCK_SELECTOR)].map((block) =>
     blockBox(block, 0, 0),
   );
-  return buildPlayheadMask([...inside, ...boxesOutside(scrollContainer, 0, 0)], PLAYHEAD_X, CONTAINER_TOP);
+  return playheadMask({ boxes: inside, originLeft: 0, originTop: 0 }, scrollContainer, PLAYHEAD_X, CONTAINER_TOP);
 }
 
 afterEach(() => {

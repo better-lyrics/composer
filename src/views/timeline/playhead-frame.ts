@@ -10,7 +10,7 @@ import { clampScrollLeft } from "@/views/timeline/group-focus";
 import { createRowLayoutCache } from "@/views/timeline/row-layout-cache";
 import { followRulerScroll } from "@/views/timeline/ruler-scroll";
 import { createTimelineLights, paintTimelineLights } from "@/views/timeline/timeline-lights";
-import { boxesOutside, buildPlayheadMask } from "@/views/timeline/timeline-playhead-mask";
+import { playheadMask } from "@/views/timeline/timeline-playhead-mask";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { readViewScroll, scrollView, viewScrollLeft, viewScrollTop } from "@/views/timeline/view-scroll";
 import { createWordBlockBoxes, refreshWordBlockBoxes, releaseWordBlockBoxes } from "@/views/timeline/word-block-boxes";
@@ -106,13 +106,6 @@ function followPlayback(frame: PlayheadFrame, container: HTMLDivElement, current
   }
 }
 
-function playheadMask(frame: PlayheadFrame, container: HTMLElement, playheadX: number, overlayTop: number): string {
-  const { boxes, originLeft, originTop } = frame.wordBlocks;
-  const outside = boxesOutside(container, originLeft, originTop);
-  const allBoxes = outside.length === 0 ? boxes : [...boxes, ...outside];
-  return buildPlayheadMask(allBoxes, playheadX - originLeft, overlayTop - originTop);
-}
-
 // Follow scrolling happens here: a scroll write leaves layout clean, and every later read in the frame sees it.
 function readPlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): void {
   frame.ready = false;
@@ -154,7 +147,7 @@ function readPlayheadFrame(frame: PlayheadFrame, elements: PlayheadElements): vo
     frame.playheadCenterXLocal = playheadCenterXLocal;
     frame.containerLeft = overlayRect.left;
     frame.mask = container
-      ? playheadMask(frame, container, playheadCenterXLocal + overlayRect.left, overlayRect.top)
+      ? playheadMask(frame.wordBlocks, container, playheadCenterXLocal + overlayRect.left, overlayRect.top)
       : "";
   }
   frame.ready = true;

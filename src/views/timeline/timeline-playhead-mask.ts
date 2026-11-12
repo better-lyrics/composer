@@ -1,4 +1,4 @@
-import { type BlockBox, WORD_BLOCK_SELECTOR, blockBox } from "@/views/timeline/word-block-boxes";
+import { type BlockBox, WORD_BLOCK_SELECTOR, type WordBlockBoxes, blockBox } from "@/views/timeline/word-block-boxes";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -70,6 +70,18 @@ function buildPlayheadMask(boxes: readonly BlockBox[], playheadX: number, contai
   return `linear-gradient(to bottom, ${stops.join(", ")})`;
 }
 
+function playheadMask(
+  wordBlocks: Pick<WordBlockBoxes, "boxes" | "originLeft" | "originTop">,
+  container: HTMLElement,
+  playheadX: number,
+  overlayTop: number,
+): string {
+  const { boxes, originLeft, originTop } = wordBlocks;
+  const outside = boxesOutside(container, originLeft, originTop);
+  const allBoxes = outside.length === 0 ? boxes : [...boxes, ...outside];
+  return buildPlayheadMask(allBoxes, playheadX - originLeft, overlayTop - originTop);
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { boxesOutside, buildPlayheadMask, playheadMaskRoot };
+export { buildPlayheadMask, playheadMask, playheadMaskRoot };
