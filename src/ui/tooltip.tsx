@@ -99,7 +99,7 @@ const Tooltip: React.FC<TooltipProps> = ({
           <div ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()} className="layer-floating">
             <div
               style={entranceStyles}
-              className="w-max max-w-48 select-none px-2 py-1.5 text-xs text-center leading-snug rounded-lg text-composer-text surface-floating"
+              className="w-max max-w-48 select-none px-2 py-1.5 text-xs text-center text-balance leading-snug rounded-lg text-composer-text surface-floating"
             >
               {content}
               <FloatingArrow
