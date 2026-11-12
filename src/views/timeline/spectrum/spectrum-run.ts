@@ -153,6 +153,22 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
     rawQueue.clear();
   };
 
+  // Hidden, no worker runs; ready chunks stay, and a return analyses only the missing ones.
+  const pause = () => {
+    analysis?.dispose();
+    analysis = null;
+    void writer?.flush();
+    finish();
+  };
+  const resume = () => {
+    const ready = spectrumSession.chunkReady;
+    if (cancelled || analysis || !cacheRead || !mono || !ready || spectrumSession.readyChunks === ready.length) return;
+    startAnalysis(
+      mono,
+      Array.from({ length: ready.length }, (_, chunk) => chunk).filter((chunk) => ready[chunk] === 1),
+    );
+  };
+
   setSpectrumStatus("decoding");
   void (async () => {
     const audio = await decodeMono(target);
@@ -175,7 +191,7 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
       ? createSpectrumChunkWriter(target.jobKey, target.source, audio.decodeTag, audio.sampleRate, target.fftSize)
       : null;
     cacheRead = true;
-    if (cached.size === total && rawQueue.size === 0) return finish();
+    if ((cached.size === total && rawQueue.size === 0) || !shown) return finish();
     startAnalysis(
       audio,
       Array.from({ length: total }, (_, chunk) => chunk).filter((chunk) => cached.has(chunk)),
@@ -205,7 +221,8 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
     },
     setShown: (next) => {
       shown = next;
-      syncHold();
+      if (shown) resume();
+      else pause();
     },
     cancel: () => {
       cancelled = true;
@@ -215,7 +232,11 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
   };
 }
 
+function forgetSpectrumAudio(): void {
+  monoCache.clear();
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { startSpectrumRun };
+export { forgetSpectrumAudio, startSpectrumRun };
 export type { SpectrumRun, SpectrumTarget };

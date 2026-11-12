@@ -4,7 +4,12 @@ import { playableFile, useAudioStore } from "@/stores/audio";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { fileIdentityKey } from "@/utils/file-identity";
-import { type SpectrumRun, type SpectrumTarget, startSpectrumRun } from "@/views/timeline/spectrum/spectrum-run";
+import {
+  type SpectrumRun,
+  type SpectrumTarget,
+  forgetSpectrumAudio,
+  startSpectrumRun,
+} from "@/views/timeline/spectrum/spectrum-run";
 import { clearSpectrumSession, spectrumSession } from "@/views/timeline/spectrum/spectrum-session";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect } from "react";
@@ -42,12 +47,17 @@ function dropAnalysis(): void {
   clearSpectrumSession();
 }
 
+function stopWatchingWhileHidden(): void {
+  stopWatchingHidden?.();
+  stopWatchingHidden = null;
+}
+
 // Hidden, the band keeps its analysis until what it would analyse changes.
-function dropWhenStale(): () => void {
+function watchWhileHidden(): void {
   const check = () => {
     if (targetKey(desiredTarget()) === appliedKey) return;
     dropAnalysis();
-    stopWatching();
+    stopWatchingWhileHidden();
   };
   const unsubscribes = [
     useSettingsStore.subscribe(check),
@@ -56,10 +66,15 @@ function dropWhenStale(): () => void {
       if (state.source !== prev.source) check();
     }),
   ];
-  const stopWatching = () => {
+  stopWatchingHidden = () => {
     for (const unsubscribe of unsubscribes) unsubscribe();
   };
-  return stopWatching;
+}
+
+function releaseSpectrumAnalysis(): void {
+  stopWatchingWhileHidden();
+  dropAnalysis();
+  forgetSpectrumAudio();
 }
 
 function focusTime(): number {
@@ -76,9 +91,7 @@ function requestSpectrumRawPhase(chunks: readonly number[]): boolean {
 // The only driver of spectrum analysis: it follows visibility, source, window and stem job.
 function useSpectrumSession(): void {
   useEffect(() => {
-    stopWatchingHidden?.();
-    stopWatchingHidden = null;
-    activeRun?.setShown(true);
+    stopWatchingWhileHidden();
 
     const sync = () => {
       const target = desiredTarget();
@@ -91,6 +104,8 @@ function useSpectrumSession(): void {
     };
 
     sync();
+    activeRun?.setFocusTime(focusTime());
+    activeRun?.setShown(true);
     const unsubscribeTimeline = useTimelineStore.subscribe((state, prev) => {
       if (state.scrollLeft !== prev.scrollLeft || state.zoom !== prev.zoom) activeRun?.setFocusTime(focusTime());
     });
@@ -116,11 +131,16 @@ function useSpectrumSession(): void {
       unsubscribeSeparation();
       unsubscribeAudio();
       activeRun?.setShown(false);
-      stopWatchingHidden = dropWhenStale();
+      if (appliedKey !== null) watchWhileHidden();
     };
   }, []);
 }
 
+// The editor screen owns the analysis lifetime: leaving it for the Library or Unison releases everything.
+function useReleaseSpectrumWithEditor(): void {
+  useEffect(() => releaseSpectrumAnalysis, []);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { requestSpectrumRawPhase, useSpectrumSession };
+export { requestSpectrumRawPhase, useReleaseSpectrumWithEditor, useSpectrumSession };
