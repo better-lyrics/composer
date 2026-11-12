@@ -104,7 +104,7 @@ const Menu: React.FC<MenuProps> = ({
     middleware: [
       offset(isPoint ? 0 : 8),
       flip({ padding: 8 }),
-      shift({ padding: 8 }),
+      shift({ padding: 8, crossAxis: true }),
       size({
         padding: 8,
         apply: ({ availableHeight, elements }) => {
