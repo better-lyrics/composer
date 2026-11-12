@@ -1,3 +1,4 @@
+import { nextFrame } from "@/lib/frame-loop";
 import { useCallback, useId, useMemo, useState } from "react";
 
 // -- Hook ---------------------------------------------------------------------
@@ -12,7 +13,11 @@ function useFieldError(formatError: string | null = null) {
   if (formatErrorShown && formatError === null) setFormatErrorShown(false);
   const error = submitError ?? (formatErrorShown ? formatError : null);
 
-  const focusField = useCallback(() => document.getElementById(fieldId)?.focus(), [fieldId]);
+  const focusField = useCallback(() => {
+    document.getElementById(fieldId)?.focus();
+    // Focus scrolls only the field into view; the message renders below it on the next frame.
+    nextFrame(() => document.getElementById(errorId)?.scrollIntoView({ block: "nearest" }));
+  }, [fieldId, errorId]);
   const showError = useCallback(
     (message: string) => {
       setSubmitError(message);

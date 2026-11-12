@@ -18,7 +18,7 @@ const FieldError: React.FC<FieldErrorProps> = ({ id, message, hint, reserveLine 
     id={id}
     aria-live="polite"
     className={cn(
-      "block text-xs text-pretty",
+      "block text-xs text-pretty scroll-mb-4",
       reserveLine ? "min-h-4" : "empty:sr-only",
       message === null ? "text-composer-text-muted select-none" : "text-composer-negative select-text cursor-text",
       className,
