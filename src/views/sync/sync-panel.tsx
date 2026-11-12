@@ -13,6 +13,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { setSyncEditMode, useSyncEditModeStore } from "@/stores/sync-edit-mode";
 import { EmptyState } from "@/ui/empty-state";
+import { GoToTabButton } from "@/ui/go-to-tab-button";
 import { runHistoryShortcut } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { getNudgeAmount, type SyncState } from "@/utils/sync-helpers";
@@ -387,7 +388,11 @@ const SyncPanel: React.FC = () => {
   if (!source) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No audio loaded" hint="Import audio in the Import tab first" />
+        <EmptyState
+          message="No audio loaded"
+          hint="You time each line while the song plays."
+          action={<GoToTabButton tab="import">Import audio</GoToTabButton>}
+        />
       </div>
     );
   }
@@ -395,7 +400,11 @@ const SyncPanel: React.FC = () => {
   if (lines.length === 0) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No lyrics to sync" hint="Add lyrics in the Edit tab first" />
+        <EmptyState
+          message="No lyrics to sync"
+          hint="Add the words first, then time them here."
+          action={<GoToTabButton tab="edit">Add lyrics</GoToTabButton>}
+        />
       </div>
     );
   }

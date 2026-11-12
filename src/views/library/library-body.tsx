@@ -1,5 +1,6 @@
 import type { LibraryView } from "@/domain/project/library-preferences";
 import type { LibraryFilter } from "@/domain/project/library-view";
+import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { LibraryEmpty } from "@/views/library/library-empty";
 import { ProjectGrid } from "@/views/library/project-grid";
@@ -33,7 +34,15 @@ const LibraryBody: React.FC<LibraryBodyProps> = ({
   if (state === "failed") {
     return (
       <div className="flex py-18">
-        <EmptyState message="Couldn't load your projects" hint="Reload the page to try again." />
+        <EmptyState
+          message="Couldn't load your projects"
+          hint="Reloading the page usually fixes this."
+          action={
+            <Button variant="primary" className="mt-2" onClick={() => window.location.reload()}>
+              Reload
+            </Button>
+          }
+        />
       </div>
     );
   }

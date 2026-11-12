@@ -1,6 +1,7 @@
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useAudioStore } from "@/stores/audio";
 import { EmptyState } from "@/ui/empty-state";
+import { GoToTabButton } from "@/ui/go-to-tab-button";
 import { LyricsRenderer } from "@/views/preview/lyrics-renderer";
 
 // -- Components ---------------------------------------------------------------
@@ -14,7 +15,11 @@ const PreviewPanel: React.FC = () => {
   if (!source) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No audio loaded" hint="Import audio in the Import tab first" />
+        <EmptyState
+          message="No audio loaded"
+          hint="Preview plays your lyrics against the song."
+          action={<GoToTabButton tab="import">Import audio</GoToTabButton>}
+        />
       </div>
     );
   }
@@ -22,7 +27,11 @@ const PreviewPanel: React.FC = () => {
   if (lineCount === 0) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No lyrics to preview" hint="Add lyrics in the Edit tab first" />
+        <EmptyState
+          message="No lyrics to preview"
+          hint="Preview shows your lyrics as they will look."
+          action={<GoToTabButton tab="edit">Add lyrics</GoToTabButton>}
+        />
       </div>
     );
   }
@@ -30,7 +39,11 @@ const PreviewPanel: React.FC = () => {
   if (!hasSyncedContent) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No synced content" hint="Sync lyrics in the Sync tab first" />
+        <EmptyState
+          message="No synced content"
+          hint="Lyrics need timing before they can play in step."
+          action={<GoToTabButton tab="sync">Sync lyrics</GoToTabButton>}
+        />
       </div>
     );
   }

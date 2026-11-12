@@ -10,6 +10,7 @@ import { outgoingTtml } from "@/lib/outgoing-ttml";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
+import { GoToTabButton } from "@/ui/go-to-tab-button";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
 import { toast } from "@/utils/toast";
 import { AlignmentReviewNotice } from "@/views/export/alignment-review-notice";
@@ -184,7 +185,16 @@ const ExportPanel: React.FC = () => {
   if (lineCount === 0) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No lyrics to export" hint="Add lyrics in the Edit tab first" action={importAction} />
+        <EmptyState
+          message="No lyrics to export"
+          hint="Export writes your synced lyrics to a file."
+          action={
+            <div className="flex gap-2">
+              <GoToTabButton tab="edit">Add lyrics</GoToTabButton>
+              {importAction}
+            </div>
+          }
+        />
       </div>
     );
   }
@@ -192,7 +202,16 @@ const ExportPanel: React.FC = () => {
   if (!hasSyncedContent) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No synced content" hint="Sync lyrics in the Sync tab first" action={importAction} />
+        <EmptyState
+          message="No synced content"
+          hint="Lyrics need timing before they can be exported."
+          action={
+            <div className="flex gap-2">
+              <GoToTabButton tab="sync">Sync lyrics</GoToTabButton>
+              {importAction}
+            </div>
+          }
+        />
       </div>
     );
   }

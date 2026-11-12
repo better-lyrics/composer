@@ -5,6 +5,7 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
+import { GoToTabButton } from "@/ui/go-to-tab-button";
 import { Scroll } from "@/ui/scroll";
 import { Select } from "@/ui/select";
 import { pluralize, pluralWord } from "@/utils/pluralize";
@@ -159,7 +160,13 @@ const LanguagesPanel: React.FC = () => {
   };
 
   if (lines.length === 0) {
-    return <EmptyState message="No lyrics to translate" hint="Add some in the Edit tab first." />;
+    return (
+      <EmptyState
+        message="No lyrics to translate"
+        hint="Translations follow each lyric line."
+        action={<GoToTabButton tab="edit">Add lyrics</GoToTabButton>}
+      />
+    );
   }
 
   return (
