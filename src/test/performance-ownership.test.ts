@@ -31,6 +31,7 @@ const OUTSIDE_SCROLL_VIEWPORT = new Map<string, string>([
   ["views/timeline/cue-flash.tsx", "rendered by the playhead, a sibling of the scroll container"],
   ["views/timeline/snap-markers-overlay.tsx", "a sibling of the scroll container in timeline-panel.tsx"],
   ["views/timeline/loupe/edit-loupe.tsx", "the loupe card renders in a FloatingPortal"],
+  ["views/timeline/shared-copies-hint.ts", "the drag chip is portalled to document.body"],
 ]);
 const WRITES_ONLY_ON_STRIP_MOVE = new Map<string, string>([
   ["views/timeline/waveform-window.ts", "moves the WaveSurfer host only when its 8000 px window shifts"],

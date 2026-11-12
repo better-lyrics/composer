@@ -2,6 +2,7 @@ import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { wordBlockId } from "@/views/timeline/word-block-id";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveWordTextEdit, getEffectiveLine } from "@/domain/line/effective-words";
 import { trackWords } from "@/domain/line/tracks";
@@ -36,7 +37,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
     const container = scrollContainerRef.current;
     if (!container || !word) return;
 
-    const key = `${lineId}-${type}-${wordIndex}`;
+    const key = wordBlockId(lineId, type, wordIndex);
 
     const zoom = useTimelineStore.getState().zoom;
     const expectedLeft = word.begin * zoom;

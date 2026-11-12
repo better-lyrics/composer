@@ -11,6 +11,7 @@ import { settleLoupe, showLoupeEdit } from "@/views/timeline/loupe/loupe-target"
 import { setLiveWordEdit } from "@/views/timeline/pitch/live-word-edit";
 import { pointerTravelSeconds } from "@/views/timeline/pointer-travel";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
+import { startSharedCopiesHint } from "@/views/timeline/shared-copies-hint";
 import { selfKey } from "@/views/timeline/snap";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -134,11 +135,15 @@ function useWordResizeDrag({
       });
 
       const travelSeconds = pointerTravelSeconds(track, startX);
+      let stopSharedCopiesHint = () => {};
 
       const handleMouseMove = (e: PointerEvent) => {
         const zoom = useTimelineStore.getState().zoom;
         const rawDeltaPx = travelSeconds(e.clientX) * zoom;
-        if (Math.abs(rawDeltaPx) >= DRAG_THRESHOLD_PX) draggedRef.current = true;
+        if (!draggedRef.current && Math.abs(rawDeltaPx) >= DRAG_THRESHOLD_PX) {
+          draggedRef.current = true;
+          stopSharedCopiesHint = startSharedCopiesHint([{ lineId, wordIndex, type: trackType }], e.clientX, e.clientY);
+        }
         lastPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
         if (!draggedRef.current) return;
         const originalWord = words[wordIndex];
@@ -190,6 +195,7 @@ function useWordResizeDrag({
       };
 
       const handleMouseUp = () => {
+        stopSharedCopiesHint();
         setResizing(false);
         endGesture();
 
@@ -231,6 +237,7 @@ function useWordResizeDrag({
       };
 
       cleanupRef.current = () => {
+        stopSharedCopiesHint();
         endBoundaryDrag(null);
         setResizing(false);
         setLiveWordEdit(null);

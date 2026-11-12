@@ -1,6 +1,5 @@
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
-import type { WordSelection } from "@/domain/selection/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useAudioStore } from "@/stores/audio";
@@ -12,9 +11,9 @@ import {
   type DragData,
   applyCrossLineMove,
   applySameLineReorder,
-  expandSelectionsAcrossLines,
-  resolveWordsToOperate,
+  wordsDraggedTogether,
 } from "@/views/timeline/drag-handlers";
+import { startSharedCopiesHint } from "@/views/timeline/shared-copies-hint";
 import { noteWordDragShift } from "@/views/timeline/tiny-drag-signal";
 import { noteLoneWordMove } from "@/views/timeline/word-by-word-signal";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -32,10 +31,12 @@ function useTimelineDnd(lines: ReadableLine[]) {
   const pointerXRef = useRef(0);
   const pointerYRef = useRef(0);
   const dragListenersCleanupRef = useRef<(() => void) | null>(null);
+  const stopSharedCopiesHintRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     return () => {
       dragListenersCleanupRef.current?.();
+      stopSharedCopiesHintRef.current?.();
       useTimelineStore.getState().setWordDragHover(null);
     };
   }, []);
@@ -48,39 +49,45 @@ function useTimelineDnd(lines: ReadableLine[]) {
     }),
   );
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const data = event.active.data.current as DragData | undefined;
-    if (!data) return;
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const data = event.active.data.current as DragData | undefined;
+      if (!data) return;
 
-    const initialShiftKey = event.activatorEvent instanceof PointerEvent ? event.activatorEvent.shiftKey : false;
-    setActiveDrag({ ...data, initialShiftKey });
-    document.body.style.cursor = "grabbing";
+      const initialShiftKey = event.activatorEvent instanceof PointerEvent ? event.activatorEvent.shiftKey : false;
+      setActiveDrag({ ...data, initialShiftKey });
+      document.body.style.cursor = "grabbing";
 
-    dragListenersCleanupRef.current?.();
-    dragShiftRef.current = initialShiftKey;
-    if (event.activatorEvent instanceof PointerEvent) {
-      pointerXRef.current = event.activatorEvent.clientX;
-      pointerYRef.current = event.activatorEvent.clientY;
-    }
-    const onPointer = (e: PointerEvent) => {
-      dragShiftRef.current = e.shiftKey;
-      pointerXRef.current = e.clientX;
-      pointerYRef.current = e.clientY;
-      useTimelineStore.getState().setWordDragHover(hitTestTrack(e.clientX, e.clientY));
-    };
-    const onKey = (e: KeyboardEvent) => {
-      dragShiftRef.current = e.shiftKey;
-    };
-    useTimelineStore.getState().setWordDragHover(hitTestTrack(pointerXRef.current, pointerYRef.current));
-    window.addEventListener("pointermove", onPointer);
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("keyup", onKey);
-    dragListenersCleanupRef.current = () => {
-      window.removeEventListener("pointermove", onPointer);
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("keyup", onKey);
-    };
-  }, []);
+      dragListenersCleanupRef.current?.();
+      dragShiftRef.current = initialShiftKey;
+      if (event.activatorEvent instanceof PointerEvent) {
+        pointerXRef.current = event.activatorEvent.clientX;
+        pointerYRef.current = event.activatorEvent.clientY;
+      }
+      const onPointer = (e: PointerEvent) => {
+        dragShiftRef.current = e.shiftKey;
+        pointerXRef.current = e.clientX;
+        pointerYRef.current = e.clientY;
+        useTimelineStore.getState().setWordDragHover(hitTestTrack(e.clientX, e.clientY));
+      };
+      const onKey = (e: KeyboardEvent) => {
+        dragShiftRef.current = e.shiftKey;
+      };
+      useTimelineStore.getState().setWordDragHover(hitTestTrack(pointerXRef.current, pointerYRef.current));
+      window.addEventListener("pointermove", onPointer);
+      document.addEventListener("keydown", onKey);
+      document.addEventListener("keyup", onKey);
+      dragListenersCleanupRef.current = () => {
+        window.removeEventListener("pointermove", onPointer);
+        document.removeEventListener("keydown", onKey);
+        document.removeEventListener("keyup", onKey);
+      };
+      const { selectedWords } = useTimelineStore.getState();
+      const movingWords = wordsDraggedTogether(lines, data, initialShiftKey, selectedWords);
+      stopSharedCopiesHintRef.current = startSharedCopiesHint(movingWords, pointerXRef.current, pointerYRef.current);
+    },
+    [lines],
+  );
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -95,6 +102,8 @@ function useTimelineDnd(lines: ReadableLine[]) {
       dragListenersCleanupRef.current?.();
       dragListenersCleanupRef.current = null;
       dragShiftRef.current = false;
+      stopSharedCopiesHintRef.current?.();
+      stopSharedCopiesHintRef.current = null;
 
       const { active, delta, activatorEvent } = event;
       const isAltDrag = activatorEvent instanceof PointerEvent && activatorEvent.altKey;
@@ -118,18 +127,7 @@ function useTimelineDnd(lines: ReadableLine[]) {
       if (!targetLine) return;
 
       const { selectedWords } = useTimelineStore.getState();
-      const draggedOnly: WordSelection[] = [
-        {
-          lineId: activeData.lineId,
-          lineIndex: activeData.lineIndex,
-          wordIndex: activeData.wordIndex,
-          type: activeData.trackType,
-        },
-      ];
-      const wordsToMove = expandSelectionsAcrossLines(
-        lines,
-        isShiftDrag ? draggedOnly : resolveWordsToOperate(activeData, selectedWords),
-      );
+      const wordsToMove = wordsDraggedTogether(lines, activeData, isShiftDrag, selectedWords);
       const timeDelta = delta.x / zoom;
 
       const sameLine = targetLine.id === activeData.lineId;
@@ -165,6 +163,8 @@ function useTimelineDnd(lines: ReadableLine[]) {
     dragListenersCleanupRef.current?.();
     dragListenersCleanupRef.current = null;
     dragShiftRef.current = false;
+    stopSharedCopiesHintRef.current?.();
+    stopSharedCopiesHintRef.current = null;
   }, []);
 
   return { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel };

@@ -1,3 +1,4 @@
+import { sharedCopyTargets } from "@/domain/group/shared-copy-targets";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceKey } from "@/domain/instance/key";
@@ -200,13 +201,8 @@ function sharedTimingFanOut(
     const claimKey = `${group.id}:${source.templateLineIdx}`;
     if (claimedTemplateLines.has(claimKey)) continue;
     claimedTemplateLines.add(claimKey);
-    for (const targetIdx of instanceOrder) {
-      const offset = targetIdx === source.instanceIdx ? null : offsetBefore(group.id, source.instanceIdx, targetIdx);
-      if (offset === null) continue;
-      const target = attachedLinesOfInstance(after, group.id, targetIdx).find(
-        (line) => line.templateLineIdx === source.templateLineIdx,
-      );
-      if (!target) continue;
+    const offsetTo = (targetIdx: number) => offsetBefore(group.id, source.instanceIdx, targetIdx);
+    for (const { target, offset } of sharedCopyTargets(after, source, instanceOrder, offsetTo)) {
       const updates = offsetTimingFields(source, offset);
       if (hasNegativeTime(updates)) return { ...unchanged, rejected: true };
       const copied = reconcileLine({ ...target, ...updates });

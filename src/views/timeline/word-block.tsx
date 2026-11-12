@@ -128,6 +128,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
       className={cn(
         "word-face absolute flex items-center justify-center whitespace-nowrap select-none cursor-grab",
         "inset-y-[5px]",
+        "data-moves-with-drag:outline-1 data-moves-with-drag:-outline-offset-1 data-moves-with-drag:outline-dashed data-moves-with-drag:outline-composer-accent-text",
         SYLLABLE_RADIUS[syllablePosition],
         isDimmed && "opacity-30",
         isDragging && "opacity-50 cursor-grabbing z-50",

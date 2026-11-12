@@ -1,9 +1,6 @@
 import type { ProviderName } from "@/domain/lyrics-search/result";
 import { getProviders } from "@/utils/lyrics-search/registry";
-
-// -- Constants ----------------------------------------------------------------
-
-const PROVIDER_LIST_FORMATTER = new Intl.ListFormat("en", { style: "long", type: "conjunction" });
+import { proseList } from "@/utils/prose-list";
 
 // -- Labels -------------------------------------------------------------------
 
@@ -12,7 +9,7 @@ function formatProviderName(name: ProviderName): string {
 }
 
 function providerLabelsProse(): string {
-  return PROVIDER_LIST_FORMATTER.format(getProviders().map((provider) => provider.sourceLabel));
+  return proseList(getProviders().map((provider) => provider.sourceLabel));
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -72,6 +72,21 @@ function expandSelectionsAcrossLines(lines: readonly ReadableLine[], selections:
   return result;
 }
 
+function wordsDraggedTogether(
+  lines: readonly ReadableLine[],
+  activeData: DragData,
+  onlyDragged: boolean,
+  selectedWords: WordSelection[],
+): WordSelection[] {
+  const dragged: WordSelection = {
+    lineId: activeData.lineId,
+    lineIndex: activeData.lineIndex,
+    wordIndex: activeData.wordIndex,
+    type: activeData.trackType,
+  };
+  return expandSelectionsAcrossLines(lines, onlyDragged ? [dragged] : resolveWordsToOperate(activeData, selectedWords));
+}
+
 function groupSelectionsByLine(selections: WordSelection[]): Map<string, WordSelection[]> {
   const grouped = new Map<string, WordSelection[]>();
   for (const sel of selections) {
@@ -230,4 +245,5 @@ export {
   groupSelectionsByLine,
   LINE_SYNCED_REJECT_MESSAGE,
   resolveWordsToOperate,
+  wordsDraggedTogether,
 };

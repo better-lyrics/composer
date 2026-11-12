@@ -9,6 +9,7 @@ import { LOUPE_CARD_SURFACE, LoupeCardBody } from "@/views/timeline/loupe/loupe-
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
 import { placeLoupe } from "@/views/timeline/loupe/place-loupe";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { wordBlockId } from "@/views/timeline/word-block-id";
 import { FloatingPortal } from "@floating-ui/react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { type RefObject, useCallback, useLayoutEffect, useMemo, useRef } from "react";
@@ -30,7 +31,7 @@ function placeCard(card: HTMLDivElement, container: HTMLElement, target: LoupeTa
   if (card.firstElementChild instanceof HTMLElement) {
     card.firstElementChild.style.width = `${loupeCanvas(size).width + LOUPE_FIXED.cardX}px`;
   }
-  const key = `${target.lineId}-${target.track}-${target.wordIndex}`;
+  const key = wordBlockId(target.lineId, target.track, target.wordIndex);
   const block = container.querySelector<HTMLElement>(`[data-word-block][id="${CSS.escape(key)}"]`);
   const lane = block?.parentElement;
   if (!block || !lane) {

@@ -21,6 +21,7 @@ import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTrackSelection } from "@/views/timeline/track-selection";
 import { WordBlock } from "@/views/timeline/word-block";
+import { wordBlockId } from "@/views/timeline/word-block-id";
 import { type UpdateWord, useWordResizeDrag } from "@/views/timeline/word-resize-drag";
 
 // -- Types ---------------------------------------------------------------------
@@ -221,7 +222,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     >
       {words.map((word, wordIndex) => {
         const display = displays[wordIndex];
-        const wordKey = `${lineId}-${trackType}-${wordIndex}`;
+        const wordKey = wordBlockId(lineId, trackType, wordIndex);
         const syllablePosition = showSyllableIndicators ? syllablePositions[wordIndex] : "none";
         const inGroup = syllablePosition !== "none";
         const gapBefore = inGroup && syllablePosition !== "first" && displays[wordIndex - 1].end < display.begin;
