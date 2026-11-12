@@ -84,7 +84,9 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
           .map((word) => word.text)
           .join("")
           .trim()}`,
-        badge: hasEverySplit(pointsByGroup[index], candidate.words) ? undefined : "Unfinished",
+        ...(hasEverySplit(pointsByGroup[index], candidate.words)
+          ? {}
+          : { badge: "Unfinished", badgeTone: "warning" as const }),
       })),
     [groups, pointsByGroup],
   );

@@ -6,7 +6,7 @@ import { Popover, type PopoverAnchor } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
 import { OptionGroup } from "@/ui/select-option-groups";
 import { optionRuns } from "@/ui/select-option-runs";
-import { StatusChip } from "@/ui/status-chip";
+import { StatusChip, type StatusTone } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -18,6 +18,7 @@ interface SelectOption {
   detail?: string;
   /** A short tag after the label, such as "Recommended". */
   badge?: string;
+  badgeTone?: StatusTone;
   /** Listed but not pickable; the detail line says why. */
   disabled?: boolean;
   /** Consecutive options with the same group are listed under its name. */
@@ -120,21 +121,27 @@ const fieldTrigger = ({
 
 // -- Components ---------------------------------------------------------------
 
+const OptionBadge: React.FC<{ option: SelectOption }> = ({ option }) =>
+  option.badge ? (
+    <StatusChip tone={option.badgeTone ?? "accent"} className="ml-1.5 align-[1px]">
+      {option.badge}
+    </StatusChip>
+  ) : null;
+
 const OptionLabel: React.FC<{ option: SelectOption }> = ({ option }) =>
   option.detail ? (
     <span className="flex flex-col gap-0.5 min-w-0">
       <span className="text-pretty">
         {option.label}
-        {option.badge && (
-          <StatusChip tone="accent" className="ml-1.5 align-[1px]">
-            {option.badge}
-          </StatusChip>
-        )}
+        <OptionBadge option={option} />
       </span>
       <span className="text-xs text-(--muted) tabular-nums">{option.detail}</span>
     </span>
   ) : (
-    <span className="truncate">{option.label}</span>
+    <span className="flex items-center min-w-0">
+      <span className="truncate">{option.label}</span>
+      <OptionBadge option={option} />
+    </span>
   );
 
 interface OptionRowProps {
