@@ -30,6 +30,12 @@ interface SyncGap {
   problemSlots: readonly number[];
 }
 
+// Slot indexes [start, end) into `splitIntoWordsWithMeta(text).parts` that one timed word covers.
+interface SlotRange {
+  start: number;
+  end: number;
+}
+
 type TrackGap = Omit<SyncGap, "lineIndex">;
 
 interface LineSyncFacts {
@@ -58,17 +64,30 @@ function slotsCoveredBy(parts: readonly string[], slot: number, timed: WordTimin
   return joined === letters ? end - slot : 1;
 }
 
-function problemSlotsOf(parts: readonly string[], words: readonly WordTiming[], splitCharacter: string): number[] {
-  const problems: number[] = [];
+function slotRangesOf(parts: readonly string[], words: readonly WordTiming[], splitCharacter: string): SlotRange[] {
+  const ranges: SlotRange[] = [];
   let slot = 0;
   for (const timed of words) {
     if (slot >= parts.length) break;
-    const covered = slotsCoveredBy(parts, slot, timed, splitCharacter);
-    if (covered > 1) for (let index = slot; index < slot + covered; index++) problems.push(index);
-    slot += covered;
+    const end = slot + slotsCoveredBy(parts, slot, timed, splitCharacter);
+    ranges.push({ start: slot, end });
+    slot = end;
   }
-  for (let index = slot; index < parts.length; index++) problems.push(index);
+  return ranges;
+}
+
+function problemSlotsOf(parts: readonly string[], words: readonly WordTiming[], splitCharacter: string): number[] {
+  const problems: number[] = [];
+  const ranges = slotRangesOf(parts, words, splitCharacter);
+  for (const { start, end } of ranges) {
+    if (end - start > 1) for (let index = start; index < end; index++) problems.push(index);
+  }
+  for (let index = ranges.at(-1)?.end ?? 0; index < parts.length; index++) problems.push(index);
   return problems;
+}
+
+function timedWordSlotRanges(text: string, words: readonly WordTiming[]): SlotRange[] {
+  return slotRangesOf(splitIntoWordsWithMeta(text).parts, words, getSplitCharacter());
 }
 
 function trackGap(
@@ -182,5 +201,14 @@ function isProjectFullySynced(lines: readonly LyricLine[]): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { SyncGap, SyncGapKind, SyncGapTrack, SyncGranularity };
-export { isLineFullyTimed, isLineTimed, isProjectFullySynced, isSyncableLine, syncGaps, syncProgress, wordSlotCount };
+export type { SlotRange, SyncGap, SyncGapKind, SyncGapTrack, SyncGranularity };
+export {
+  isLineFullyTimed,
+  isLineTimed,
+  isProjectFullySynced,
+  isSyncableLine,
+  syncGaps,
+  syncProgress,
+  timedWordSlotRanges,
+  wordSlotCount,
+};

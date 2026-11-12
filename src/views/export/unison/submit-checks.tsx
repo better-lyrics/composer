@@ -1,6 +1,5 @@
 import type { AlignmentReview } from "@/domain/alignment/review-state";
-import type { SubmitCheck, SubmitCheckStatus } from "@/domain/unison/submit-checks";
-import type { UnisonTtmlProblem } from "@/domain/unison/ttml-precheck";
+import type { SubmitCheck, SubmitCheckStatus, TtmlCheckProblem } from "@/domain/unison/submit-checks";
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
@@ -35,16 +34,18 @@ const CHECK_ICONS: Record<SubmitCheckStatus, { icon: typeof IconCircleCheckFille
   note: { icon: IconInfoCircleFilled, className: "text-(--muted)" },
 };
 
-const TTML_PROBLEMS: Record<UnisonTtmlProblem, { title: string; detail: string }> = {
+const TTML_PROBLEMS: Record<TtmlCheckProblem, { title: string; detail: string }> = {
   "line-breaks": { title: "has line breaks between words", detail: "Unison takes TTML on one line only." },
   "padded-words": {
     title: "has spaces inside word timing",
     detail: "Unison takes the space after a word, not inside it.",
   },
   "zero-length-words": { title: "has words with no length", detail: "Give each word its own start and end time." },
+  malformed: { title: "is not valid XML", detail: "Regenerate it, or fix the XML." },
 };
 
 const SONG_DETAILS_HINT = "Add it in Song details below.";
+const SONG_DETAILS_FIX_HINT = "Fix it in Song details below.";
 
 // -- Copy ----------------------------------------------------------------------
 
@@ -94,9 +95,14 @@ function checkCopy(check: SubmitCheck, props: CheckListProps): CheckCopy {
       };
     }
     case "isrc":
+      if (check.status === "fail") return { title: "ISRC looks wrong", detail: SONG_DETAILS_FIX_HINT };
       return check.status === "pass"
         ? { title: "ISRC", detail: props.isrc?.trim() }
         : { title: "No ISRC (optional, helps matching)" };
+    case "language":
+      return check.status === "pass"
+        ? { title: "Language", detail: check.tag }
+        : { title: "Language tag looks wrong", detail: SONG_DETAILS_FIX_HINT };
   }
 }
 

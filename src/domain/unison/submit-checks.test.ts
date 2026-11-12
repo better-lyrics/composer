@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type SubmitCheckInput, submitChecks } from "@/domain/unison/submit-checks";
+import { createLine } from "@/test/factories";
 
 // -- Fixtures ------------------------------------------------------------------
 
@@ -13,6 +14,18 @@ const PRETTY_TTML =
   '<span begin="0:00.0" end="0:01.0">Hello</span>\n  <span begin="0:01.0" end="0:02.0">world</span>' +
   "</p></div></body></tt>";
 
+const ZERO_LENGTH_TTML =
+  '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="0:01.0" end="0:02.0">' +
+  '<span begin="0:01.0" end="0:01.0">ka</span><span begin="0:01.0" end="0:02.0">mu</span>' +
+  "</p></div></body></tt>";
+
+const word = (text: string, begin: number, end: number) => ({ text, begin, end });
+
+const SYNCED_LINES = [
+  createLine({ text: "aku sayang", words: [word("aku ", 1, 2), word("sayang", 2, 3)] }),
+  createLine({ text: "kamu", words: [word("kamu", 3, 4)] }),
+];
+
 function readyInput(overrides: Partial<SubmitCheckInput> = {}): SubmitCheckInput {
   return {
     mode: "new",
@@ -20,13 +33,12 @@ function readyInput(overrides: Partial<SubmitCheckInput> = {}): SubmitCheckInput
     durationSeconds: 355.2,
     title: "Bohemian Rhapsody",
     artists: ["Queen"],
-    syncedLineCount: 54,
-    lineCount: 54,
-    fullySynced: true,
+    lines: SYNCED_LINES,
     alignmentTier: "reviewed",
     content: CLEAN_TTML,
     contentIsEdited: false,
     isrc: "GBUM71029604",
+    language: undefined,
     ...overrides,
   };
 }
@@ -69,6 +81,21 @@ describe("submitChecks", () => {
     });
   });
 
+  describe("synced lines", () => {
+    it("regression: the synced count follows the pass rule", () => {
+      const merged = createLine({
+        text: "pada hal ke|cil",
+        words: [word("pada ", 5, 6), word("hal ke", 6, 7), word("cil", 7, 8)],
+      });
+      expect(checkOf(readyInput({ lines: [...SYNCED_LINES, merged] }), "synced")).toMatchObject({
+        status: "fail",
+        syncedLineCount: 2,
+        lineCount: 3,
+        fix: { kind: "lines", issues: [{ lineId: merged.id, lineIndex: 2, track: "main", problemSlots: [1, 2] }] },
+      });
+    });
+  });
+
   describe("auto-align review", () => {
     it("blocks untouched auto-align output", () => {
       const result = submitChecks(readyInput({ alignmentTier: "untouched" }));
@@ -89,6 +116,28 @@ describe("submitChecks", () => {
         status: "fail",
         problem: "line-breaks",
         edited: true,
+      });
+    });
+  });
+
+  describe("generated TTML with zero-length words", () => {
+    it("lists every track that has a word with no length", () => {
+      const line = createLine({
+        text: "ka|mu",
+        words: [word("ka", 1, 1), word("mu", 1, 2)],
+        backgroundText: "(ooh yeah)",
+        backgroundWords: [word("(ooh ", 1, 1.5), word("yeah)", 1.5, 1.5)],
+      });
+      expect(checkOf(readyInput({ lines: [line], content: ZERO_LENGTH_TTML }), "ttml")).toMatchObject({
+        status: "fail",
+        problem: "zero-length-words",
+        fix: {
+          kind: "lines",
+          issues: [
+            { lineId: line.id, lineIndex: 0, track: "main", kind: "zero-length", count: 1, problemSlots: [0] },
+            { lineId: line.id, lineIndex: 0, track: "background", kind: "zero-length", count: 1, problemSlots: [1] },
+          ],
+        },
       });
     });
   });
@@ -114,12 +163,27 @@ describe("submitChecks", () => {
   });
 
   describe("invariants", () => {
+    it("every failed check carries a fix", () => {
+      const broken = readyInput({
+        videoId: undefined,
+        title: "",
+        lines: [...SYNCED_LINES, createLine({ text: "aku sayang" })],
+        alignmentTier: "untouched",
+        content: PRETTY_TTML,
+        isrc: "not-an-isrc",
+        language: "xx_yy",
+      });
+      const failed = submitChecks(broken).checks.filter((check) => check.status === "fail");
+      for (const check of failed) expect(check.fix).toBeDefined();
+      expect(failed).toHaveLength(7);
+    });
+
     it("canSubmit is false exactly when a check fails", () => {
       const inputs: SubmitCheckInput[] = [
         readyInput(),
         readyInput({ videoId: undefined }),
         readyInput({ title: "" }),
-        readyInput({ fullySynced: false }),
+        readyInput({ lines: [createLine({ text: "aku sayang" })] }),
         readyInput({ alignmentTier: "untouched" }),
         readyInput({ alignmentTier: "mostly-untouched", isrc: undefined }),
         readyInput({ content: PRETTY_TTML, contentIsEdited: true }),
