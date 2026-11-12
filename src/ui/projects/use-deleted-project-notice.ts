@@ -18,7 +18,7 @@ const DELETED_PROJECT_NOTICE: NoticeKind = {
       key: "deleted",
       fingerprints: [],
       title: "This project was deleted in another tab",
-      detail: "Changes here are not being saved.",
+      detail: "Composer stopped saving this project.",
       accept: KEEP_ACTION,
       dismissedLabel: "deleted project notice",
     },

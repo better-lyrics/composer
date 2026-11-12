@@ -36,7 +36,7 @@ const LibraryBody: React.FC<LibraryBodyProps> = ({
       <div className="flex py-18">
         <EmptyState
           message="Couldn't load your projects"
-          hint="Reloading the page usually fixes this."
+          hint="Reload the page to try again."
           action={
             <Button variant="primary" className="mt-2" onClick={() => window.location.reload()}>
               Reload

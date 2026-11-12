@@ -66,7 +66,7 @@ const FileName: React.FC<{ name: string }> = ({ name }) => (
 const YOUTUBE_FAILURE_DETAIL: Record<YouTubeLoadFailure, string> = {
   "bridge-unreachable": "Start Composer Bridge, then try again.",
   "fetch-failed": "Couldn't load the audio from YouTube.",
-  cancelled: "Download cancelled. Try again when you're ready.",
+  cancelled: "Download cancelled.",
 };
 
 // -- Component ----------------------------------------------------------------

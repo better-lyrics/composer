@@ -163,7 +163,7 @@ const LanguagesPanel: React.FC = () => {
     return (
       <EmptyState
         message="No lyrics to translate"
-        hint="Translations follow each lyric line."
+        hint="Each translation belongs to a lyric line."
         action={<GoToTabButton tab="edit">Add lyrics</GoToTabButton>}
       />
     );
