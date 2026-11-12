@@ -110,6 +110,9 @@ file to its allowlist without the maintainer's approval.
   deep-copies state, effective lines and the grouping scan are derived only by their owners,
   every Timeline frame callback that writes a style is declared, `::selection` and `::highlight()`
   live only in `src/index.css`, and nothing inherits a non-inherited property explicitly.
+- `per-frame-work`: Timeline frame callbacks never query every word block; they read boxes through
+  `views/timeline/word-block-boxes.ts`. The preview container glow colour stays above 0 and below
+  0.5/255 alpha.
 - `stored-media`: a module that opens an IndexedDB object store never reads a file into an
   `ArrayBuffer`.
 - `timeline-subscriptions`: Timeline rows and per-row hooks never subscribe to the whole selection
@@ -200,6 +203,18 @@ that touches it:
 - Never inherit a non-inherited property explicitly (`rounded-[inherit]`, `border-radius: inherit`)
   on anything whose parent restyles often. The child restyles with its parent; on Timeline words
   that was every zoom step. Share a custom property instead (`--word-radius`).
+- Word block boxes for the playhead mask, lights and label pins come from
+  `views/timeline/word-block-boxes.ts`, in content coordinates, re-read after a DOM mutation under
+  the scroll container or when a sentinel block moves. Never query or measure every block in a frame
+  callback.
+- `views/timeline/waveform-data-cache.ts` keeps the decoded waveform across tab returns. WaveSurfer
+  rescales peaks above 1 in place; the cache works around it with a power-of-two scale and
+  `barHeight`. Its unit test runs WaveSurfer's own drawing code, so run `waveform-data-cache.test.ts`
+  and `timeline-waveform.cache.browser.test.tsx` on every WaveSurfer upgrade.
+- Data kept for hidden tabs (spectrum analysis, waveform peaks) is released when the editor closes,
+  through `views/timeline/release-timeline-caches.ts`. A new cache that outlives a tab joins it.
+- The preview theme keeps the container glow colour near invisible (alpha above 0, below 0.5/255),
+  so Braccato skips glow work on short words. At 0 the glow on long words stops animating.
 - Removing layout reads from frame callbacks does not cut forced style; find what dirties style
   (main-thread transitions).
 - Measure against a master build with interleaved runs, at the display size you ship for. Main
