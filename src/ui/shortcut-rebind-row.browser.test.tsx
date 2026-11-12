@@ -112,35 +112,32 @@ describe("ShortcutRebindRow", () => {
 
 const FOLLOW = getShortcutById("timeline.toggleFollow") as ShortcutDefinition;
 
-function bindingButton(screen: Awaited<ReturnType<typeof render>>) {
-  return screen.getByRole("button", { name: /^Change shortcut for/ });
-}
-
 describe("capturing a new key combination", () => {
-  it("U5: Use here leaves no other shortcut on the same key", async () => {
+  it("U5: Replace leaves no other shortcut on the same key", async () => {
     const screen = await render(<ShortcutRebindRow definition={FOLLOW} />);
     await openCapture(screen);
     await userEvent.keyboard("p");
-    await expect.element(screen.getByText(/is already used by/)).toBeInTheDocument();
-    await screen.getByRole("button", { name: "Use P here" }).click();
+    await expect.element(screen.getByText("is already used by:")).toBeInTheDocument();
+    await screen.getByRole("button", { name: "Replace" }).click();
 
     expect(detectConflicts(FOLLOW.id, getEffectiveBinding(FOLLOW.id)).map((d) => d.id)).toEqual([]);
   });
 
-  it("lowercase badge: a clash shows the key uppercased like every other badge", async () => {
+  it("lowercase badge: conflict modal shows the key uppercased like every other badge", async () => {
     const screen = await render(<ShortcutRebindRow definition={FOLLOW} />);
     await openCapture(screen);
     await userEvent.keyboard("p");
-    await expect.element(screen.getByText(/is already used by/)).toBeInTheDocument();
-    expect(bindingButton(screen).element().textContent).toBe("P");
+    await expect.element(screen.getByText("is already used by:")).toBeInTheDocument();
+    const badgeText = document.querySelector("dialog span.inline-flex > span")?.textContent;
+    expect(badgeText).toBe("P");
   });
 
-  it("Keep ends a clash without changing either shortcut", async () => {
+  it("Cancel ends a clash without changing either shortcut", async () => {
     const screen = await render(<ShortcutRebindRow definition={FOLLOW} />);
     await openCapture(screen);
     await userEvent.keyboard("p");
-    await screen.getByRole("button", { name: /^Keep / }).click();
-    await expect.element(screen.getByText(/is already used by/)).not.toBeInTheDocument();
+    await screen.getByRole("button", { name: "Cancel" }).click();
+    await expect.element(screen.getByText("is already used by:")).not.toBeInTheDocument();
     expect(useShortcutBindingsStore.getState().overrides).toEqual({});
   });
 
@@ -171,8 +168,9 @@ describe("capturing a new key combination", () => {
     await openCapture(screen);
     const modifier = isMac ? { metaKey: true } : { ctrlKey: true };
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "t", code: "KeyT", ...modifier, bubbles: true }));
-    await expect.element(screen.getByText(/may be taken by the browser/)).toBeInTheDocument();
-    expect(bindingButton(screen).element().lastElementChild?.textContent).toBe("T");
+    await expect.element(screen.getByText("may be reserved by the browser.")).toBeInTheDocument();
+    const badges = Array.from(document.querySelectorAll("dialog span.inline-flex > span")).map((el) => el.textContent);
+    expect(badges.at(-1)).toBe("T");
   });
 
   it("regression: re-recording the default save binding shows no browser warning", async () => {
@@ -182,7 +180,7 @@ describe("capturing a new key combination", () => {
     const modifier = isMac ? { metaKey: true } : { ctrlKey: true };
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "s", code: "KeyS", ...modifier, bubbles: true }));
     await expect.element(screen.getByText(RECORDING_TEXT)).not.toBeInTheDocument();
-    expect(screen.getByText(/may be taken by the browser/).elements()).toHaveLength(0);
+    expect(screen.getByText("may be reserved by the browser.").elements()).toHaveLength(0);
     expect(getEffectiveBinding(saveNow.id)).toEqual(saveNow.defaultBinding);
   });
 });

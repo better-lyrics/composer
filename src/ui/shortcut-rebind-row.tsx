@@ -1,17 +1,14 @@
 import {
   assignBinding,
-  bindingToKeys,
   detectConflicts,
   getEffectiveKeysArray,
   useShortcutBindingsStore,
 } from "@/stores/shortcut-bindings";
 import type { ShortcutBinding, ShortcutDefinition } from "@/stores/shortcut-registry";
-import { Button } from "@/ui/button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { KeyBadge } from "@/ui/shortcut-reference";
 import { cn } from "@/utils/cn";
-import { focusOnMount } from "@/utils/focus-on-mount";
 import { MOD_KEY } from "@/utils/platform";
 import {
   bindingFromKeyboardEvent,
@@ -21,6 +18,7 @@ import {
 } from "@/utils/shortcut-matcher";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HighlightMatches } from "@/ui/highlight-matches";
+import { BrowserWarningModal, ConflictModal } from "@/ui/shortcut-conflict-modals";
 import { SETTING_ROW_SURFACE } from "@/ui/settings/setting-row-layout";
 import { useSettingsSearchQuery } from "@/ui/settings/settings-search-query";
 
@@ -35,14 +33,6 @@ type CaptureState =
   | { status: "listening" }
   | { status: "warning"; newBinding: ShortcutBinding }
   | { status: "conflict"; newBinding: ShortcutBinding; conflicts: ShortcutDefinition[] };
-
-interface CaptureNoticeProps {
-  message: React.ReactNode;
-  currentKeys: string[];
-  newKeys: string[];
-  onKeep: () => void;
-  onUse: () => void;
-}
 
 // -- Constants ----------------------------------------------------------------
 
@@ -67,62 +57,6 @@ function spokenKeys(keys: string[]): string {
 
 // -- Components ---------------------------------------------------------------
 
-const NoticeKeys: React.FC<{ keys: string[] }> = ({ keys }) => (
-  <>
-    <span aria-hidden="true">
-      <InlineKeyBadge keys={keys} className="ml-0" />
-    </span>
-    <span className="sr-only">{spokenKeys(keys)}</span>
-  </>
-);
-
-const CaptureMessage: React.FC<{ state: CaptureState; newKeys: string[] }> = ({ state, newKeys }) => {
-  if (state.status === "warning") {
-    return (
-      <>
-        <NoticeKeys keys={newKeys} /> may be taken by the browser.
-      </>
-    );
-  }
-  if (state.status !== "conflict") return null;
-  const owners = state.conflicts.map((conflict) => conflict.description).join(", ");
-  return (
-    <>
-      <NoticeKeys keys={newKeys} /> is already used by {owners}.
-    </>
-  );
-};
-
-const CaptureNotice: React.FC<CaptureNoticeProps> = ({ message, currentKeys, newKeys, onKeep, onUse }) => (
-  <div className="flex items-center justify-between gap-3">
-    <p role="status" className="min-w-0 text-[12.5px] leading-[1.45] text-(--muted) text-pretty select-text">
-      {message}
-    </p>
-    <div className="flex shrink-0 items-center gap-1.5">
-      <Button
-        size="sm"
-        variant="secondary"
-        aria-label={currentKeys.length === 0 ? "Keep unbound" : `Keep ${spokenKeys(currentKeys)}`}
-        onClick={onKeep}
-      >
-        Keep
-        <InlineKeyBadge keys={currentKeys} className="ml-0" />
-      </Button>
-      <Button
-        size="sm"
-        variant="secondary"
-        aria-label={`Use ${spokenKeys(newKeys)} here`}
-        onClick={onUse}
-        ref={focusOnMount}
-      >
-        Use
-        <InlineKeyBadge keys={newKeys} className="ml-0" />
-        here
-      </Button>
-    </div>
-  </div>
-);
-
 const BindingDisplay: React.FC<{ isListening: boolean; needsCommandKey: boolean; keys: string[] }> = ({
   isListening,
   needsCommandKey,
@@ -143,11 +77,6 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
   const isOverridden = definition.id in overrides;
 
   const keys = getEffectiveKeysArray(definition.id);
-  const pendingKeys =
-    captureState.status === "warning" || captureState.status === "conflict"
-      ? bindingToKeys(captureState.newBinding)
-      : [];
-  const shownKeys = pendingKeys.length > 0 ? pendingKeys : keys;
 
   const startCapture = useCallback(() => setCaptureState({ status: "listening" }), []);
   const cancelCapture = useCallback(() => setCaptureState(IDLE), []);
@@ -178,12 +107,10 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
   );
 
   useEffect(() => {
-    if (captureState.status === "idle") return;
-    const isListening = captureState.status === "listening";
+    if (captureState.status !== "listening") return;
 
     // Window capture runs before every app key handler and the Settings Escape layer, so recorded keys reach nothing else.
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isListening && e.key !== "Escape") return;
       e.preventDefault();
       e.stopPropagation();
 
@@ -222,54 +149,55 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
   const isListening = captureState.status === "listening";
 
   return (
-    <div ref={rowRef}>
-      <div className={cn(SETTING_ROW_SURFACE, "flex flex-col gap-1 py-1.5")}>
-        <div className="flex items-center justify-between gap-6">
-          <span className="text-sm text-composer-text-secondary">
-            <HighlightMatches text={definition.description} query={searchQuery} />
-          </span>
-          <div className="flex shrink-0 items-center gap-1.5">
-            {isOverridden && !isActive && (
-              <button
-                type="button"
-                onClick={() => resetBinding(definition.id)}
-                className="text-[12.5px] text-composer-accent-text hover:underline cursor-pointer"
-              >
-                Reset
-              </button>
-            )}
+    <>
+      <div ref={rowRef} className={cn(SETTING_ROW_SURFACE, "flex items-center justify-between gap-6 py-1.5")}>
+        <span className="text-sm text-composer-text-secondary">
+          <HighlightMatches text={definition.description} query={searchQuery} />
+        </span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {isOverridden && !isActive && (
             <button
               type="button"
-              aria-label={`Change shortcut for ${definition.description}, currently ${spokenKeys(keys)}`}
-              aria-pressed={isListening}
-              onClick={startCapture}
-              onBlur={cancelListening}
-              className={isListening ? BINDING_SLOT_LISTENING : BINDING_SLOT_IDLE}
+              onClick={() => resetBinding(definition.id)}
+              className="text-[12.5px] text-composer-accent-text hover:underline cursor-pointer"
             >
-              <BindingDisplay
-                isListening={isListening}
-                needsCommandKey={definition.needsCommandKey === true}
-                keys={shownKeys}
-              />
+              Reset
             </button>
-          </div>
+          )}
+          <button
+            type="button"
+            aria-label={`Change shortcut for ${definition.description}, currently ${spokenKeys(keys)}`}
+            aria-pressed={isListening}
+            onClick={startCapture}
+            onBlur={cancelListening}
+            className={isListening ? BINDING_SLOT_LISTENING : BINDING_SLOT_IDLE}
+          >
+            <BindingDisplay
+              isListening={isListening}
+              needsCommandKey={definition.needsCommandKey === true}
+              keys={keys}
+            />
+          </button>
         </div>
-
-        {(captureState.status === "warning" || captureState.status === "conflict") && (
-          <CaptureNotice
-            message={<CaptureMessage state={captureState} newKeys={pendingKeys} />}
-            currentKeys={keys}
-            newKeys={pendingKeys}
-            onKeep={cancelCapture}
-            onUse={() =>
-              captureState.status === "warning"
-                ? applyCapturedBinding(captureState.newBinding)
-                : replaceConflicts(captureState.newBinding)
-            }
-          />
-        )}
       </div>
-    </div>
+
+      {captureState.status === "warning" && (
+        <BrowserWarningModal
+          binding={captureState.newBinding}
+          onContinue={() => applyCapturedBinding(captureState.newBinding)}
+          onCancel={cancelCapture}
+        />
+      )}
+
+      {captureState.status === "conflict" && (
+        <ConflictModal
+          newBinding={captureState.newBinding}
+          conflicts={captureState.conflicts}
+          onReplace={() => replaceConflicts(captureState.newBinding)}
+          onCancel={cancelCapture}
+        />
+      )}
+    </>
   );
 };
 
