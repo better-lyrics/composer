@@ -1,5 +1,4 @@
 import type { AlignmentReview } from "@/domain/alignment/review-state";
-import { isProjectFullySynced } from "@/domain/line/sync-progress";
 import { namedArtists } from "@/domain/project/display-title";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import { type SubmitCheck, type SubmitChecks, type SubmitMode, submitChecks } from "@/domain/unison/submit-checks";
@@ -19,8 +18,6 @@ interface UnisonExportSource {
   isEdited: boolean;
   videoId: string | undefined;
   durationSeconds: number;
-  lineCount: number;
-  syncedLineCount: number;
   review: AlignmentReview;
   reviewInTimeline: () => void;
   regenerate: () => void;
@@ -56,8 +53,7 @@ function passedVideo(checks: SubmitChecks): PassedVideoCheck | undefined {
 function useSubmitChecks(mode: SubmitMode, source: UnisonExportSource): SubmitChecks {
   const metadata = useProjectStore((state) => state.metadata);
   const lines = useProjectStore((state) => state.lines);
-  const fullySynced = useMemo(() => isProjectFullySynced(lines), [lines]);
-  const { videoId, durationSeconds, syncedLineCount, lineCount, content, isEdited } = source;
+  const { videoId, durationSeconds, content, isEdited } = source;
   const alignmentTier = source.review.tier;
   return useMemo(
     () =>
@@ -67,26 +63,14 @@ function useSubmitChecks(mode: SubmitMode, source: UnisonExportSource): SubmitCh
         durationSeconds: durationSeconds || metadata.duration,
         title: metadata.title,
         artists: metadata.artists,
-        syncedLineCount,
-        lineCount,
-        fullySynced,
+        lines,
         alignmentTier,
         content,
         contentIsEdited: isEdited,
         isrc: metadata.isrc,
+        language: metadata.language,
       }),
-    [
-      mode,
-      videoId,
-      durationSeconds,
-      syncedLineCount,
-      lineCount,
-      alignmentTier,
-      content,
-      isEdited,
-      metadata,
-      fullySynced,
-    ],
+    [mode, videoId, durationSeconds, lines, alignmentTier, content, isEdited, metadata],
   );
 }
 

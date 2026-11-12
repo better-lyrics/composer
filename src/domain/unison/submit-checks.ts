@@ -1,6 +1,12 @@
 import type { AlignmentReview } from "@/domain/alignment/review-state";
+import type { LyricLine } from "@/domain/line/model";
+import { fullySyncedLineCount, isSyncableLine, type SyncGap, syncGaps } from "@/domain/line/sync-progress";
+import { type ZeroLengthWordIssue, zeroLengthWordIssues } from "@/domain/line/zero-length-words";
 import { namedArtists } from "@/domain/project/display-title";
+import { normalizeLanguageTag } from "@/domain/project/language";
 import { type UnisonTtmlProblem, precheckUnisonTtml } from "@/domain/unison/ttml-precheck";
+import { isValidIsrc } from "@/utils/isrc";
+import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -8,6 +14,16 @@ type SubmitCheckStatus = "pass" | "fail" | "note";
 type VideoProblem = "no-video" | "no-duration" | "duration-out-of-range";
 type SongProblem = "no-title" | "no-artist";
 type SubmitMode = "new" | "update";
+type TtmlCheckProblem = UnisonTtmlProblem | "malformed";
+
+type LineIssue = SyncGap | ZeroLengthWordIssue;
+type CheckField = "title" | "artist" | "isrc" | "language";
+type CheckFix =
+  | { kind: "lines"; issues: readonly LineIssue[] }
+  | { kind: "field"; field: CheckField }
+  | { kind: "video" }
+  | { kind: "action"; action: "load-audio" | "review-alignment" | "regenerate" }
+  | { kind: "none" };
 
 interface SubmitCheckInput {
   mode: SubmitMode;
@@ -15,25 +31,30 @@ interface SubmitCheckInput {
   durationSeconds: number;
   title: string;
   artists: readonly string[];
-  syncedLineCount: number;
-  lineCount: number;
-  fullySynced: boolean;
+  lines: readonly LyricLine[];
   alignmentTier: AlignmentReview["tier"];
   content: string;
   contentIsEdited: boolean;
   isrc: string | undefined;
+  language: string | undefined;
 }
 
+// Every failing variant names its fix, so a check that cannot tell the user where to look does not compile.
 type SubmitCheck =
   | { id: "video"; status: "pass"; videoId: string; durationSeconds: number }
-  | { id: "video"; status: "fail"; problem: VideoProblem }
+  | { id: "video"; status: "fail"; problem: VideoProblem; fix: CheckFix }
   | { id: "song"; status: "pass" }
-  | { id: "song"; status: "fail"; problem: SongProblem }
-  | { id: "synced"; status: "pass" | "fail"; syncedLineCount: number; lineCount: number }
-  | { id: "alignment"; status: "pass" | "fail" }
+  | { id: "song"; status: "fail"; problem: SongProblem; fix: CheckFix }
+  | { id: "synced"; status: "pass"; syncedLineCount: number; lineCount: number }
+  | { id: "synced"; status: "fail"; syncedLineCount: number; lineCount: number; fix: CheckFix }
+  | { id: "alignment"; status: "pass" }
+  | { id: "alignment"; status: "fail"; fix: CheckFix }
   | { id: "ttml"; status: "pass" }
-  | { id: "ttml"; status: "fail"; problem: UnisonTtmlProblem; edited: boolean }
-  | { id: "isrc"; status: "pass" | "note" };
+  | { id: "ttml"; status: "fail"; problem: TtmlCheckProblem; edited: boolean; fix: CheckFix }
+  | { id: "isrc"; status: "pass" | "note" }
+  | { id: "isrc"; status: "fail"; problem: "invalid"; fix: CheckFix }
+  | { id: "language"; status: "pass"; tag: string }
+  | { id: "language"; status: "fail"; problem: "invalid"; fix: CheckFix };
 
 interface SubmitChecks {
   checks: SubmitCheck[];
@@ -54,44 +75,94 @@ function submitDurationSeconds(durationSeconds: number): number {
 }
 
 function videoCheck({ videoId, durationSeconds }: SubmitCheckInput): SubmitCheck {
-  if (!videoId) return { id: "video", status: "fail", problem: "no-video" };
-  if (!(durationSeconds > 0)) return { id: "video", status: "fail", problem: "no-duration" };
+  if (!videoId) return { id: "video", status: "fail", problem: "no-video", fix: { kind: "video" } };
+  if (!(durationSeconds > 0)) {
+    return { id: "video", status: "fail", problem: "no-duration", fix: { kind: "action", action: "load-audio" } };
+  }
   const seconds = submitDurationSeconds(durationSeconds);
   if (seconds < UNISON_DURATION_RANGE.min || seconds > UNISON_DURATION_RANGE.max) {
-    return { id: "video", status: "fail", problem: "duration-out-of-range" };
+    return { id: "video", status: "fail", problem: "duration-out-of-range", fix: { kind: "none" } };
   }
   return { id: "video", status: "pass", videoId, durationSeconds: seconds };
 }
 
 function songCheck({ title, artists }: SubmitCheckInput): SubmitCheck {
-  if (!title.trim()) return { id: "song", status: "fail", problem: "no-title" };
-  if (namedArtists(artists).length === 0) return { id: "song", status: "fail", problem: "no-artist" };
+  if (!title.trim()) return { id: "song", status: "fail", problem: "no-title", fix: { kind: "field", field: "title" } };
+  if (namedArtists(artists).length === 0) {
+    return { id: "song", status: "fail", problem: "no-artist", fix: { kind: "field", field: "artist" } };
+  }
   return { id: "song", status: "pass" };
 }
 
-function ttmlCheck({ content, contentIsEdited }: SubmitCheckInput): SubmitCheck {
+function syncedCheck({ lines }: SubmitCheckInput): SubmitCheck {
+  const gaps = syncGaps(lines);
+  const lineCount = lines.filter(isSyncableLine).length;
+  const syncedLineCount = fullySyncedLineCount(lines);
+  if (lineCount > 0 && gaps.length === 0) return { id: "synced", status: "pass", syncedLineCount, lineCount };
+  return { id: "synced", status: "fail", syncedLineCount, lineCount, fix: { kind: "lines", issues: gaps } };
+}
+
+function alignmentCheck({ alignmentTier }: SubmitCheckInput): SubmitCheck {
+  if (alignmentTier !== "untouched") return { id: "alignment", status: "pass" };
+  return { id: "alignment", status: "fail", fix: { kind: "action", action: "review-alignment" } };
+}
+
+function ttmlProblem({ content, contentIsEdited }: SubmitCheckInput): TtmlCheckProblem | null {
+  if (contentIsEdited && !validateTtml(content).ok) return "malformed";
   const precheck = precheckUnisonTtml(content);
-  if (precheck.ok) return { id: "ttml", status: "pass" };
-  return { id: "ttml", status: "fail", problem: precheck.problem, edited: contentIsEdited };
+  return precheck.ok ? null : precheck.problem;
+}
+
+function ttmlFix(problem: TtmlCheckProblem, input: SubmitCheckInput): CheckFix {
+  if (input.contentIsEdited) return { kind: "action", action: "regenerate" };
+  // Generated word timing comes from the user's own words; other generated format problems are Composer's to fix.
+  if (problem === "zero-length-words") return { kind: "lines", issues: zeroLengthWordIssues(input.lines) };
+  return { kind: "none" };
+}
+
+function ttmlCheck(input: SubmitCheckInput): SubmitCheck {
+  const problem = ttmlProblem(input);
+  if (problem === null) return { id: "ttml", status: "pass" };
+  return { id: "ttml", status: "fail", problem, edited: input.contentIsEdited, fix: ttmlFix(problem, input) };
+}
+
+function isrcCheck({ isrc }: SubmitCheckInput): SubmitCheck {
+  const value = isrc?.trim();
+  if (!value) return { id: "isrc", status: "note" };
+  if (isValidIsrc(value)) return { id: "isrc", status: "pass" };
+  return { id: "isrc", status: "fail", problem: "invalid", fix: { kind: "field", field: "isrc" } };
+}
+
+function languageChecks({ language }: SubmitCheckInput): SubmitCheck[] {
+  if (!language?.trim()) return [];
+  const tag = normalizeLanguageTag(language);
+  if (tag) return [{ id: "language", status: "pass", tag }];
+  return [{ id: "language", status: "fail", problem: "invalid", fix: { kind: "field", field: "language" } }];
 }
 
 function submitChecks(input: SubmitCheckInput): SubmitChecks {
   const checks: SubmitCheck[] = [
     ...(input.mode === "new" ? [videoCheck(input), songCheck(input)] : []),
-    {
-      id: "synced",
-      status: input.fullySynced ? "pass" : "fail",
-      syncedLineCount: input.syncedLineCount,
-      lineCount: input.lineCount,
-    },
-    { id: "alignment", status: input.alignmentTier === "untouched" ? "fail" : "pass" },
+    syncedCheck(input),
+    alignmentCheck(input),
     ttmlCheck(input),
-    { id: "isrc", status: input.isrc?.trim() ? "pass" : "note" },
+    isrcCheck(input),
+    ...languageChecks(input),
   ];
   return { checks, canSubmit: !checks.some((check) => check.status === "fail") };
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export type { SubmitCheck, SubmitCheckInput, SubmitChecks, SubmitCheckStatus, SubmitMode };
+export type {
+  CheckField,
+  CheckFix,
+  LineIssue,
+  SubmitCheck,
+  SubmitCheckInput,
+  SubmitCheckStatus,
+  SubmitChecks,
+  SubmitMode,
+  TtmlCheckProblem,
+};
 export { submitChecks, submitDurationSeconds, UNISON_VARIANT_CAP };

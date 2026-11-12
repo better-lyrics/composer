@@ -1,21 +1,15 @@
 import type { AlignmentReview } from "@/domain/alignment/review-state";
-import type { SubmitCheck, SubmitCheckStatus } from "@/domain/unison/submit-checks";
-import type { UnisonTtmlProblem } from "@/domain/unison/ttml-precheck";
-import { Button } from "@/ui/button";
+import type { CheckFix, SubmitCheck, SubmitCheckStatus, TtmlCheckProblem } from "@/domain/unison/submit-checks";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
 import { pluralize } from "@/utils/pluralize";
 import { UNREVIEWED_REASON, UNREVIEWED_TITLE } from "@/views/export/alignment-review-copy";
+import { type CheckFixActions, CheckFixView } from "@/views/export/unison/check-fix-view";
 import { IconChevronDown, IconCircleCheckFilled, IconCircleXFilled, IconInfoCircleFilled } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
-interface CheckActions {
-  reviewInTimeline: () => void;
-  regenerate: () => void;
-}
-
-interface CheckListProps extends CheckActions {
+interface CheckListProps extends CheckFixActions {
   checks: readonly SubmitCheck[];
   alignmentTier: AlignmentReview["tier"];
   isrc: string | undefined;
@@ -24,7 +18,6 @@ interface CheckListProps extends CheckActions {
 interface CheckCopy {
   title: string;
   detail?: string;
-  action?: { label: string; run: () => void };
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -35,16 +28,18 @@ const CHECK_ICONS: Record<SubmitCheckStatus, { icon: typeof IconCircleCheckFille
   note: { icon: IconInfoCircleFilled, className: "text-(--muted)" },
 };
 
-const TTML_PROBLEMS: Record<UnisonTtmlProblem, { title: string; detail: string }> = {
+const TTML_PROBLEMS: Record<TtmlCheckProblem, { title: string; detail: string }> = {
   "line-breaks": { title: "has line breaks between words", detail: "Unison takes TTML on one line only." },
   "padded-words": {
     title: "has spaces inside word timing",
     detail: "Unison takes the space after a word, not inside it.",
   },
   "zero-length-words": { title: "has words with no length", detail: "Give each word its own start and end time." },
+  malformed: { title: "is not valid XML", detail: "Regenerate it, or fix the XML." },
 };
 
 const SONG_DETAILS_HINT = "Add it in Song details below.";
+const SONG_DETAILS_FIX_HINT = "Fix it in Song details below.";
 
 // -- Copy ----------------------------------------------------------------------
 
@@ -58,9 +53,10 @@ function checkCopy(check: SubmitCheck, props: CheckListProps): CheckCopy {
         };
       }
       if (check.problem === "no-video") {
-        return { title: "No YouTube video chosen", detail: "Unison matches lyrics to a video. Choose it under Video." };
+        return { title: "No YouTube video chosen", detail: "Unison matches lyrics to a video." };
       }
-      if (check.problem === "no-duration") return { title: "Song length unknown", detail: "Load the song's audio." };
+      if (check.problem === "no-duration")
+        return { title: "Song length unknown", detail: "Composer reads it from the audio." };
       return { title: "Song length out of range", detail: "Unison takes songs up to 1 hour long." };
     case "song":
       if (check.status === "pass") return { title: "Title and artist filled in" };
@@ -68,17 +64,10 @@ function checkCopy(check: SubmitCheck, props: CheckListProps): CheckCopy {
     case "synced":
       return check.status === "pass"
         ? { title: `All ${pluralize(check.lineCount, "line")} synced` }
-        : {
-            title: `${check.syncedLineCount} of ${pluralize(check.lineCount, "line")} synced`,
-            detail: "Sync every line.",
-          };
+        : { title: `${check.syncedLineCount} of ${pluralize(check.lineCount, "line")} synced` };
     case "alignment":
       if (check.status === "fail") {
-        return {
-          title: UNREVIEWED_TITLE,
-          detail: UNREVIEWED_REASON,
-          action: { label: "Review in Timeline", run: props.reviewInTimeline },
-        };
+        return { title: UNREVIEWED_TITLE, detail: UNREVIEWED_REASON };
       }
       return {
         title:
@@ -90,19 +79,29 @@ function checkCopy(check: SubmitCheck, props: CheckListProps): CheckCopy {
       return {
         title: `${check.edited ? "Edited TTML" : "TTML"} ${problem.title}`,
         detail: problem.detail,
-        action: check.edited ? { label: "Regenerate", run: props.regenerate } : undefined,
       };
     }
     case "isrc":
+      if (check.status === "fail") return { title: "ISRC is not valid", detail: SONG_DETAILS_FIX_HINT };
       return check.status === "pass"
         ? { title: "ISRC", detail: props.isrc?.trim() }
         : { title: "No ISRC (optional, helps matching)" };
+    case "language":
+      return check.status === "pass"
+        ? { title: "Language", detail: check.tag }
+        : { title: "Language tag is not valid", detail: SONG_DETAILS_FIX_HINT };
   }
 }
 
 // -- Components ----------------------------------------------------------------
 
-const CheckRow: React.FC<{ status: SubmitCheckStatus; copy: CheckCopy }> = ({ status, copy }) => {
+interface CheckRowProps extends CheckFixActions {
+  status: SubmitCheckStatus;
+  copy: CheckCopy;
+  fix: CheckFix | undefined;
+}
+
+const CheckRow: React.FC<CheckRowProps> = ({ status, copy, fix, ...actions }) => {
   const { icon: CheckIcon, className } = CHECK_ICONS[status];
   const failed = status === "fail";
   return (
@@ -128,13 +127,7 @@ const CheckRow: React.FC<{ status: SubmitCheckStatus; copy: CheckCopy }> = ({ st
             {copy.detail}
           </span>
         )}
-        {copy.action && (
-          <span>
-            <Button size="sm" variant="secondary" onClick={copy.action.run} className="mt-1">
-              {copy.action.label}
-            </Button>
-          </span>
-        )}
+        {fix && <CheckFixView fix={fix} {...actions} />}
       </div>
     </li>
   );
@@ -170,7 +163,14 @@ const CheckList: React.FC<CheckListProps> = (props) => {
       {needsYou.length > 0 && (
         <ul aria-label="Checks that need you" className="flex flex-col gap-2">
           {needsYou.map(({ check, copy }) => (
-            <CheckRow key={check.id} status={check.status} copy={copy} />
+            <CheckRow
+              key={check.id}
+              status={check.status}
+              copy={copy}
+              fix={check.status === "fail" ? check.fix : undefined}
+              reviewInTimeline={props.reviewInTimeline}
+              regenerate={props.regenerate}
+            />
           ))}
         </ul>
       )}

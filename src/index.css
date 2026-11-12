@@ -1409,6 +1409,14 @@ braccato-lyrics .blyrics-container {
   --bh-placeholder: var(--color-composer-text-muted);
 }
 
+@utility problem-words {
+  background: none;
+  color: var(--color-composer-error-text);
+  text-decoration: underline wavy color-mix(in oklab, var(--color-composer-negative) 70%, transparent);
+  text-underline-offset: 2px;
+  text-decoration-skip-ink: none;
+}
+
 @utility lyrics-code-surface {
   box-sizing: border-box;
   border-width: 1px;
