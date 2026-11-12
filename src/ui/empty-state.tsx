@@ -16,7 +16,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ message, hint, action, icon: St
     {StateIcon && <StateIcon aria-hidden="true" className="size-8 mb-1.5 text-composer-text opacity-50" />}
     <p className="text-lg text-composer-text-secondary">{message}</p>
     <p className="text-sm text-composer-text-muted">{hint}</p>
-    {action}
+    {action && <div className="flex flex-col items-center gap-2 mt-2">{action}</div>}
   </div>
 );
 

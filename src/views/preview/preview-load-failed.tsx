@@ -39,7 +39,7 @@ const PreviewLoadFailed: React.FC = () => {
       hint="A new version of Composer may have shipped while you were working. Reload to get it."
       action={
         <>
-          <Button variant="secondary" hasIcon onClick={handleReload} className="mt-2">
+          <Button variant="secondary" hasIcon onClick={handleReload}>
             <IconRefresh className="size-4" />
             Reload
           </Button>

@@ -12,7 +12,7 @@ interface GoToTabButtonProps {
 // -- Components ----------------------------------------------------------------
 
 const GoToTabButton: React.FC<GoToTabButtonProps> = ({ tab, children }) => (
-  <Button variant="primary" className="mt-2" onClick={() => useProjectStore.getState().setActiveTab(tab)}>
+  <Button variant="primary" onClick={() => useProjectStore.getState().setActiveTab(tab)}>
     {children}
   </Button>
 );

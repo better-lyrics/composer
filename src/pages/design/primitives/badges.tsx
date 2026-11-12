@@ -82,7 +82,7 @@ const EmptyStateBlock: React.FC = () => (
           message="No projects yet"
           hint="Drop an audio file to start one."
           action={
-            <Button hasIcon size="sm" className="mt-2">
+            <Button hasIcon size="sm">
               <IconPlus aria-hidden="true" className="size-4" />
               New project
             </Button>

@@ -38,7 +38,7 @@ const LibraryBody: React.FC<LibraryBodyProps> = ({
           message="Couldn't load your projects"
           hint="Reload the page to try again."
           action={
-            <Button variant="primary" className="mt-2" onClick={() => window.location.reload()}>
+            <Button variant="primary" onClick={() => window.location.reload()}>
               Reload
             </Button>
           }

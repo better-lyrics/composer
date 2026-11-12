@@ -34,7 +34,7 @@ const LibraryEmpty: React.FC<LibraryEmptyProps> = ({ query, filter, onClearSearc
         message={<NoMatchMessage noun="projects" query={trimmed} />}
         hint="Search looks at titles, artists, and albums."
         action={
-          <Button size="sm" onClick={onClearSearch} className="mt-3">
+          <Button size="sm" onClick={onClearSearch}>
             Clear search
           </Button>
         }
@@ -46,7 +46,7 @@ const LibraryEmpty: React.FC<LibraryEmptyProps> = ({ query, filter, onClearSearc
         message={EMPTY_FILTER_MESSAGES[filter]}
         hint={filter === "unison" ? "Submit a synced project from its Export tab." : "Try another filter."}
         action={
-          <Button size="sm" onClick={onShowAll} className="mt-3">
+          <Button size="sm" onClick={onShowAll}>
             Show all
           </Button>
         }

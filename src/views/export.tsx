@@ -175,7 +175,7 @@ const ExportPanel: React.FC = () => {
   const importAction = (
     <>
       {projectFile.input}
-      <Button hasIcon variant="secondary" onClick={projectFile.pickFile} className="mt-2">
+      <Button hasIcon variant="secondary" onClick={projectFile.pickFile}>
         <IconFolderOpen className="size-4 text-composer-text opacity-50" />
         Import project
       </Button>
