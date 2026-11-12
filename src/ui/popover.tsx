@@ -101,7 +101,7 @@ const Popover: React.FC<PopoverProps> = ({
     middleware: [
       offset(offsetPx),
       flip(),
-      shift({ padding: 8 }),
+      shift({ padding: 8, crossAxis: true }),
       size({
         padding: 8,
         apply: ({ availableHeight, elements }) => {
