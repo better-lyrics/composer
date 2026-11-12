@@ -1,7 +1,6 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { SRC_ROOT, walkStylesheets } from "@/test/source-files";
 
 // CI guard for compositor-safe animation. Blink can run transform, opacity and
 // filter on the compositor thread; everything else forces a style recalc and a
@@ -37,25 +36,12 @@ interface InfiniteAnimation {
 
 // -- Constants ----------------------------------------------------------------
 
-const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const COMPOSITABLE = new Set(["transform", "translate", "rotate", "scale", "opacity", "filter", "backdrop-filter"]);
 const KEYFRAMES_PRELUDE = /^@(?:-\w+-)?keyframes\s+(\S+)/;
 const STATE_GATE = /\[[^\]]+\]|:(?:hover|focus|focus-visible|focus-within|active|checked|disabled|target)\b/;
 const VENDOR_PREFIX = /^-\w+-/;
 
 // -- Stylesheet parsing -------------------------------------------------------
-
-function* walkStylesheets(dir: string): Generator<string> {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) {
-      if (entry === "node_modules" || entry === "dist" || entry === ".git") continue;
-      yield* walkStylesheets(full);
-      continue;
-    }
-    if (entry.endsWith(".css")) yield full;
-  }
-}
 
 function toDeclaration(raw: string): CssDeclaration | null {
   const text = raw.trim();

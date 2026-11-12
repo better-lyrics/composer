@@ -1,5 +1,5 @@
-import { type ScannedSource, matchLines, productionSources } from "@/test/source-scan";
 import { describe, expect, it } from "vitest";
+import { matchLines, productionSources, type ScannedSource, stylesheetSources } from "@/test/source-scan";
 
 // Each rule pins one fix that keeps cost following the viewport instead of the song. A regression is invisible
 // on a small project and costs seconds per edit on a 2000-line one, so these fail CI instead of waiting for a profile.
@@ -37,6 +37,38 @@ const WRITES_ONLY_ON_STRIP_MOVE = new Map<string, string>([
   ["views/timeline/spectrum/spectrum-canvas.tsx", "moves the canvas only when its 2-screen strip shifts"],
 ]);
 
+const HIGHLIGHT_PSEUDO = /::selection|::highlight\(/;
+const HIGHLIGHT_RULES_OWNER = "index.css";
+const SELECTION_EXCLUSIONS = [
+  ".word-face",
+  "[data-timeline-row]",
+  ".blyrics-word-group",
+  ".blyrics-sweep-cell",
+  ".blyrics-sweep-mask",
+  ".blyrics-sweep-text",
+  ".blyrics-sweep-glow",
+];
+const GLOBAL_ANCESTOR = /^(?:\*|:root|html|body)?$/;
+
+const INHERITED_ARBITRARY_VALUE = /-\[inherit\]/;
+const INHERIT_DECLARATION = /:\s*inherit\s*[;}]/g;
+const CSS_BLOCK_NAME = /^[ \t]*(@utility\s+[\w-]+|\.[\w-]+)\s*\{/gm;
+const STATIC_INHERIT_SOURCES = new Map<string, string>([
+  ["ui/popover.tsx", "the panel restyles only when it opens or resizes"],
+  ["ui/projects/project-art.tsx", "a static artwork frame"],
+  ["views/library/project-card.tsx", "Library cards restyle only on hover"],
+  ["views/library/project-row.tsx", "Library rows restyle only on hover"],
+  ["views/library/resume-card.tsx", "the resume card restyles only on hover"],
+  ["views/sync/sync-lane-line.tsx", "the lane line restyles only when the current line changes"],
+  ["views/unison/profile-header.tsx", "a static header"],
+]);
+const STATIC_INHERIT_BLOCKS = new Map<string, string>([
+  ["@utility surface-modal", "a modal restyles only when it opens or closes"],
+  ["@utility workspace-card", "the editor and Library card restyle only on a layout change"],
+  ["@utility banner-elevation", "a group banner restyles only while its ping runs"],
+  [".key", "a key restyles only on hover and press"],
+]);
+
 // -- Helpers ------------------------------------------------------------------
 
 function offendersOf(sources: ScannedSource[], pattern: RegExp, allowed: (relPath: string) => boolean): string[] {
@@ -51,6 +83,43 @@ function report(offenders: string[], ...guidance: string[]): string {
 
 function staleEntries(allowed: Iterable<string>, stillMatching: (relPath: string) => boolean): string[] {
   return [...allowed].filter((relPath) => !stillMatching(relPath));
+}
+
+function topLevelParts(selectorList: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let index = 0; index < selectorList.length; index++) {
+    const char = selectorList[index];
+    if (char === "(") depth++;
+    else if (char === ")") depth--;
+    else if (char === "," && depth === 0) {
+      parts.push(selectorList.slice(start, index));
+      start = index + 1;
+    }
+  }
+  return [...parts, selectorList.slice(start)].map((part) => part.trim());
+}
+
+// Every selector in the stylesheet that ends in the pseudo, with the line it starts on.
+function pseudoSelectors(css: string, pseudo: string): { line: number; selector: string }[] {
+  const found: { line: number; selector: string }[] = [];
+  for (let at = css.indexOf(pseudo); at !== -1; at = css.indexOf(pseudo, css.indexOf("{", at))) {
+    const start = Math.max(css.lastIndexOf("{", at), css.lastIndexOf("}", at), css.lastIndexOf(";", at)) + 1;
+    const line = css.slice(0, start).split("\n").length;
+    for (const selector of topLevelParts(css.slice(start, css.indexOf("{", at)))) {
+      if (selector.includes(pseudo)) found.push({ line, selector });
+    }
+  }
+  return found;
+}
+
+// Each `prop: inherit` declaration with the @utility or class block it sits in.
+function inheritDeclarations(css: string): { line: number; block: string }[] {
+  return [...css.matchAll(INHERIT_DECLARATION)].map(({ index }) => ({
+    line: css.slice(0, index).split("\n").length,
+    block: [...css.slice(0, index).matchAll(CSS_BLOCK_NAME)].at(-1)?.[1] ?? "<top level>",
+  }));
 }
 
 function framedStyleWriters(): ScannedSource[] {
@@ -146,5 +215,87 @@ describe("per-frame style writes in the Timeline are declared", () => {
       ...WRITES_ONLY_ON_STRIP_MOVE.keys(),
     ];
     expect(staleEntries(allListed, (relPath) => writerPaths.has(relPath))).toEqual([]);
+  });
+});
+
+describe("highlight pseudo rules stay off animated subtrees", () => {
+  const stylesheets = stylesheetSources();
+  const ownerCss = stylesheets.find(({ relPath }) => relPath === HIGHLIGHT_RULES_OWNER)?.code ?? "";
+  const guidance = [
+    "In Chromium, an animated element that matches a global ::selection or ::highlight() rule restyles its whole",
+    "subtree on every animation tick. Keep these rules in src/index.css, scoped away from animated parts.",
+  ];
+
+  it(`declares ::selection and ::highlight() only in src/${HIGHLIGHT_RULES_OWNER}`, () => {
+    const offenders = offendersOf(
+      [...stylesheets, ...productionSources(".")],
+      HIGHLIGHT_PSEUDO,
+      (relPath) => relPath === HIGHLIGHT_RULES_OWNER,
+    );
+    expect(report(offenders, ...guidance)).toBe("");
+  });
+
+  it("keeps one ::selection rule that excludes the animated Timeline and Braccato parts", () => {
+    const rules = pseudoSelectors(ownerCss, "::selection");
+    const excluding = rules.filter(({ selector }) => selector.startsWith(":not("));
+    const problems = [
+      ...rules.flatMap(({ line, selector }) =>
+        excluding.length === 1 && selector.startsWith(":not(")
+          ? []
+          : [`src/${HIGHLIGHT_RULES_OWNER}:${line} ${selector}`],
+      ),
+      ...SELECTION_EXCLUSIONS.filter((part) => !excluding[0]?.selector.includes(part)).map(
+        (part) => `${part} not excluded`,
+      ),
+    ];
+    expect(
+      report(problems, "Keep one ::selection rule whose :not() list names every animated part.", ...guidance),
+    ).toBe("");
+  });
+
+  it("scopes every ::highlight() rule under an ancestor", () => {
+    const rules = pseudoSelectors(ownerCss, "::highlight(");
+    expect(rules.length).toBeGreaterThan(0);
+    const unscoped = rules.flatMap(({ line, selector }) =>
+      GLOBAL_ANCESTOR.test(selector.slice(0, selector.indexOf("::highlight(")).trim())
+        ? [`src/${HIGHLIGHT_RULES_OWNER}:${line} ${selector}`]
+        : [],
+    );
+    expect(report(unscoped, ...guidance)).toBe("");
+  });
+});
+
+describe("non-inherited properties are never inherited explicitly", () => {
+  const guidance = [
+    "An explicit inherit of a non-inherited property (border-radius, align-items, max-height) restyles the child",
+    "whenever its parent restyles; on Timeline words that was every zoom step. Share a custom property instead",
+    "(--word-radius on .word-face in src/index.css), or add the file with the reason it never restyles per frame.",
+  ];
+
+  it("uses no -[inherit] arbitrary values outside static surfaces", () => {
+    const offenders = offendersOf(productionSources("."), INHERITED_ARBITRARY_VALUE, (relPath) =>
+      STATIC_INHERIT_SOURCES.has(relPath),
+    );
+    expect(report(offenders, ...guidance)).toBe("");
+  });
+
+  it("declares inherit in stylesheets only inside static blocks", () => {
+    const offenders = stylesheetSources().flatMap(({ relPath, code }) =>
+      inheritDeclarations(code).flatMap(({ line, block }) =>
+        STATIC_INHERIT_BLOCKS.has(block) ? [] : [`src/${relPath}:${line} in ${block}`],
+      ),
+    );
+    expect(report(offenders, ...guidance)).toBe("");
+  });
+
+  it("lists only files and blocks that still inherit", () => {
+    const inheriting = new Set(
+      offendersOf(productionSources("."), INHERITED_ARBITRARY_VALUE, () => false).map((at) => at.split(":")[0]),
+    );
+    const blocks = new Set(
+      stylesheetSources().flatMap(({ code }) => inheritDeclarations(code).map(({ block }) => block)),
+    );
+    expect(staleEntries(STATIC_INHERIT_SOURCES.keys(), (relPath) => inheriting.has(`src/${relPath}`))).toEqual([]);
+    expect(staleEntries(STATIC_INHERIT_BLOCKS.keys(), (block) => blocks.has(block))).toEqual([]);
   });
 });

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { SRC_ROOT, isTestFile, walkSourceFiles } from "@/test/source-files";
+import { isTestFile, SRC_ROOT, walkSourceFiles, walkStylesheets } from "@/test/source-files";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -17,6 +17,7 @@ interface HookCall {
 // -- Constants ----------------------------------------------------------------
 
 const NOT_NEWLINE = /[^\n]/g;
+const CSS_COMMENT = /\/\*[\s\S]*?\*\//g;
 const LINE_COMMENT_PRECEDERS = new Set(["", " ", "\t", "\n", ";", ",", "{", "}", "(", ")"]);
 const REGEX_PRECEDERS = new Set(["", "(", ",", "=", ":", "[", "!", "&", "|", "?", "{", "}", ";"]);
 
@@ -115,6 +116,13 @@ function productionSources(...dirs: string[]): ScannedSource[] {
   );
 }
 
+function stylesheetSources(): ScannedSource[] {
+  return [...walkStylesheets(SRC_ROOT)].map((file) => ({
+    relPath: relative(SRC_ROOT, file).split("\\").join("/"),
+    code: readFileSync(file, "utf8").replace(CSS_COMMENT, (comment) => comment.replace(NOT_NEWLINE, " ")),
+  }));
+}
+
 function lineAt(code: string, index: number): number {
   return code.slice(0, index).split("\n").length;
 }
@@ -142,5 +150,5 @@ function hookCalls(code: string, hook: string): HookCall[] {
 
 // -- Exports ------------------------------------------------------------------
 
-export { hookCalls, matchLines, productionSources, withoutComments };
 export type { ScannedSource };
+export { hookCalls, matchLines, productionSources, stylesheetSources, withoutComments };
