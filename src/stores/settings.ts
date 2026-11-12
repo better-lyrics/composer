@@ -86,13 +86,7 @@ interface SettingsState extends SnapSettings, SpectrumSettings, UnisonSettings {
   mergeStandaloneBackgroundLines: boolean;
   preserveBracketsOnExtraction: boolean;
 
-  confirmReplaceLyrics: boolean;
-  confirmSyncReset: boolean;
   confirmResetSettings: boolean;
-  confirmResetShortcuts: boolean;
-  confirmGroupDissolution: boolean;
-  confirmApplyToAllSyllableSplit: boolean;
-  confirmConformToGroup: boolean;
   confirmClearImportedSongDetails: boolean;
   linkedDivergenceAction: LinkedDivergenceAction;
 
@@ -180,13 +174,7 @@ const DEFAULTS: SettingsState = {
   mergeStandaloneBackgroundLines: true,
   preserveBracketsOnExtraction: true,
 
-  confirmReplaceLyrics: true,
-  confirmSyncReset: true,
   confirmResetSettings: true,
-  confirmResetShortcuts: true,
-  confirmGroupDissolution: true,
-  confirmApplyToAllSyllableSplit: true,
-  confirmConformToGroup: true,
   confirmClearImportedSongDetails: true,
   linkedDivergenceAction: "ask",
 
@@ -223,13 +211,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
       resetToDefaults: () =>
         set((state) => ({
           ...DEFAULTS,
-          confirmReplaceLyrics: state.confirmReplaceLyrics,
-          confirmSyncReset: state.confirmSyncReset,
           confirmResetSettings: state.confirmResetSettings,
-          confirmResetShortcuts: state.confirmResetShortcuts,
-          confirmGroupDissolution: state.confirmGroupDissolution,
-          confirmApplyToAllSyllableSplit: state.confirmApplyToAllSyllableSplit,
-          confirmConformToGroup: state.confirmConformToGroup,
           confirmClearImportedSongDetails: state.confirmClearImportedSongDetails,
           linkedDivergenceAction: state.linkedDivergenceAction,
           cobaltInstances: state.cobaltInstances,

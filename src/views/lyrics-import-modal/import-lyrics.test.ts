@@ -1,7 +1,6 @@
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
-import type { ConfirmOptions } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import { generateTTML } from "@/utils/ttml";
@@ -33,7 +32,6 @@ function agentTag(agent: Agent): string {
 
 function buildContext(overrides: Partial<ImportContext> = {}): ImportContext {
   return {
-    confirm: async () => true,
     audioDuration: 0,
     applyBackgroundExtraction: false,
     backgroundExtractionMergeStandalone: false,
@@ -80,80 +78,12 @@ describe("importLyrics empty input", () => {
 
 // -- Confirm replace ----------------------------------------------------------
 
-describe("importLyrics confirm flow", () => {
-  it("does not prompt when no existing lines are present", async () => {
-    let promptCount = 0;
-    const result = await importLyrics(
-      HELLO_WORLD,
-      buildContext({
-        confirm: async () => {
-          promptCount++;
-          return true;
-        },
-      }),
-    );
-    expect(result).toBe(true);
-    expect(promptCount).toBe(0);
-    expect(useProjectStore.getState().lines.length).toBe(2);
-  });
-
-  it("prompts when existing lines are present and rejects the import on cancel", async () => {
+describe("importLyrics replace", () => {
+  it("replaces existing lines at once", async () => {
     useProjectStore.getState().setLines([lineFactory("existing", "Old")]);
-    let promptCount = 0;
-    const result = await importLyrics(
-      HELLO_WORLD,
-      buildContext({
-        confirm: async () => {
-          promptCount++;
-          return false;
-        },
-      }),
-    );
-    expect(result).toBe(false);
-    expect(promptCount).toBe(1);
-    expect(useProjectStore.getState().lines.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].text).toBe("Old");
-  });
-
-  it("replaces lines when the user confirms", async () => {
-    useProjectStore.getState().setLines([lineFactory("existing", "Old")]);
-    const result = await importLyrics(HELLO_WORLD, buildContext({ confirm: async () => true }));
+    const result = await importLyrics(HELLO_WORLD, buildContext());
     expect(result).toBe(true);
-    expect(useProjectStore.getState().lines.length).toBe(2);
     expect(useProjectStore.getState().lines.map((l) => l.text)).toEqual(["Hello", "World"]);
-  });
-
-  it("says the replace can be undone instead of claiming it cannot", async () => {
-    useProjectStore.getState().setLines([lineFactory("a", "Old"), lineFactory("b", "Older")]);
-    const prompts: ConfirmOptions[] = [];
-    await importLyrics(
-      HELLO_WORLD,
-      buildContext({
-        confirm: async (options) => {
-          prompts.push(options);
-          return true;
-        },
-      }),
-    );
-    expect(prompts[0].title).toBe("Replace existing lyrics?");
-    expect(prompts[0].description).not.toContain("cannot be undone");
-    expect(prompts[0].description).toBe("This replaces your 2 existing lines.");
-    expect(prompts[0].recoverable).toBe(true);
-  });
-
-  it("uses the singular for one existing line", async () => {
-    useProjectStore.getState().setLines([lineFactory("a", "Old")]);
-    const prompts: ConfirmOptions[] = [];
-    await importLyrics(
-      HELLO_WORLD,
-      buildContext({
-        confirm: async (options) => {
-          prompts.push(options);
-          return true;
-        },
-      }),
-    );
-    expect(prompts[0].description).toBe("This replaces your 1 existing line.");
   });
 
   it("undoes the whole import in one step", async () => {
@@ -352,15 +282,6 @@ describe("importLyrics metadata", () => {
       expect(useProjectStore.getState().hasUnexportedImport).toBe(false);
     });
 
-    it("does not mark song details when the import is rejected", async () => {
-      useProjectStore.getState().setLines([lineFactory("existing", "Old")]);
-      await importLyrics(
-        { filename: "a.lrc", content: `[ti:Bohemian Rhapsody]\n${LRC_WITHOUT_TAGS}` },
-        buildContext({ confirm: async () => false }),
-      );
-      expect(useProjectStore.getState().hasUnexportedImport).toBe(false);
-    });
-
     it("skips an empty album on the search result", async () => {
       await importLyrics(
         { filename: "lrclib-42.lrc", content: LRC_WITHOUT_TAGS, searchResult: searchResult({ album: undefined }) },
@@ -456,19 +377,6 @@ describe("importLyrics onResult", () => {
       buildContext({ onResult: (result) => reported.push(result) }),
     );
     expect(reported[0].metadata).toEqual({ title: "Song" });
-  });
-
-  it("does not call onResult when import was rejected via confirm", async () => {
-    useProjectStore.getState().setLines([lineFactory("existing", "Old")]);
-    let calls = 0;
-    await importLyrics(
-      HELLO_WORLD,
-      buildContext({
-        confirm: async () => false,
-        onResult: () => calls++,
-      }),
-    );
-    expect(calls).toBe(0);
   });
 
   it("does not call onResult when parsed has no lines", async () => {

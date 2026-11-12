@@ -1,10 +1,9 @@
 import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAlignmentStore } from "@/stores/alignment";
-import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-options";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import { splitMatchingWords } from "@/utils/split-matching-words";
 import {
   type PairedSplitPoints,
   togglePrimarySplitPoint,
@@ -31,7 +30,7 @@ interface UseSyllableSplitterStateResult {
   toggleTransliterationSplit: (index: number) => void;
   setApplyToAll: (next: boolean) => void;
   setCaseInsensitive: (next: boolean) => void;
-  confirmSplit: (close: () => void, identicalCount: number) => Promise<void>;
+  confirmSplit: (close: () => void, identicalCount: number) => void;
   cancelSplit: (close: () => void) => void;
 }
 
@@ -52,8 +51,6 @@ function useSyllableSplitterState({
   const { splitPoints, transliterationSplitPoints } = pairedSplitPoints;
   const [applyToAll, setApplyToAll] = useState(word.transliteration ? false : initialDefaults.applyToAll);
   const [caseInsensitive, setCaseInsensitive] = useState(initialDefaults.caseInsensitive);
-
-  const confirm = useConfirm();
 
   const toggleSplit = useCallback(
     (index: number) => {
@@ -78,7 +75,7 @@ function useSyllableSplitterState({
   }, [word, splitPoints, transliterationSplitPoints, wordIndex, onSplit]);
 
   const confirmSplit = useCallback(
-    async (close: () => void, identicalCount: number) => {
+    (close: () => void, identicalCount: number) => {
       const store = useProjectStore.getState();
       store.setSyllableSplitDefaults({ applyToAll, caseInsensitive });
       // With the alignment model kept in memory, the new syllables are timed from the audio.
@@ -86,14 +83,7 @@ function useSyllableSplitterState({
       const retime = () => void useAlignmentStore.getState().retimeNewSyllables(before);
 
       if (applyToAll && identicalCount > 0) {
-        const sourceText = word.text.trimEnd();
-        const ok = await confirm(buildApplyToAllConfirmOptions({ identicalCount, sourceText }));
-        if (!ok) return;
-        useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-          source: { lineId, wordIndex, type },
-          splitPoints,
-          caseInsensitive,
-        });
+        splitMatchingWords({ source: { lineId, wordIndex, type }, splitPoints, caseInsensitive }, identicalCount + 1);
         noteGuideSignal("sync.split");
         retime();
         setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
@@ -106,7 +96,7 @@ function useSyllableSplitterState({
       setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
       close();
     },
-    [applyToAll, caseInsensitive, word.text, confirm, lineId, wordIndex, type, splitPoints, splitSingleWord],
+    [applyToAll, caseInsensitive, lineId, wordIndex, type, splitPoints, splitSingleWord],
   );
 
   const cancelSplit = useCallback((close: () => void) => {

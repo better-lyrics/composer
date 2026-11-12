@@ -76,7 +76,7 @@ const ShortcutChangesPopover: React.FC<ShortcutChangesPopoverProps> = ({
                   icon={IconRefresh}
                   onClick={() => {
                     close();
-                    void resetMyShortcutChanges();
+                    resetMyShortcutChanges();
                   }}
                 >
                   Reset my changes

@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
-import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
@@ -80,12 +78,7 @@ function openGutterMenu(lineIds: string[]) {
 }
 
 function renderMenu() {
-  return render(
-    <>
-      <TimelineContextMenu />
-      <ConfirmModalHost />
-    </>,
-  );
+  return render(<TimelineContextMenu />);
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -139,7 +132,6 @@ describe("TimelineContextMenu conform to group", () => {
     const screen = await renderMenu();
 
     await screen.getByRole("menuitem", { name: "Bridge", exact: true }).click();
-    await screen.getByRole("button", { name: "Conform", exact: true }).click();
 
     await expect.poll(() => useProjectStore.getState().lines[2].groupId).toBe("g2");
     const [, , third, fourth] = useProjectStore.getState().lines;
@@ -149,12 +141,11 @@ describe("TimelineContextMenu conform to group", () => {
     expect(fourth.instanceIdx).toBe(1);
   });
 
-  it("conforms the selection into a new instance once confirmed", async () => {
+  it("conforms the selection into a new instance", async () => {
     openGutterMenu(["l3", "l4"]);
     const screen = await renderMenu();
 
     await screen.getByRole("menuitem", { name: 'Conform to "Chorus"' }).click();
-    await screen.getByRole("button", { name: "Conform", exact: true }).click();
 
     await expect.poll(() => useProjectStore.getState().lines[2].groupId).toBe("g1");
     const [, , third, fourth] = useProjectStore.getState().lines;
@@ -173,7 +164,6 @@ describe("TimelineContextMenu conform to group", () => {
     const screen = await renderMenu();
 
     await screen.getByRole("menuitem", { name: 'Conform to "Chorus"' }).click();
-    await screen.getByRole("button", { name: "Conform", exact: true }).click();
     await expect.poll(() => useProjectStore.getState().lines[2].groupId).toBe("g1");
 
     useProjectStore.getState().undo();
@@ -183,29 +173,6 @@ describe("TimelineContextMenu conform to group", () => {
     expect(third.text).toBe("we were dancin in the dark");
     expect(third.words?.[0].begin).toBe(20);
     expect(fourth.text).toBe("till mornin came");
-  });
-
-  it("skips the confirmation when the setting is off", async () => {
-    useSettingsStore.setState({ confirmConformToGroup: false });
-    openGutterMenu(["l3", "l4"]);
-    const screen = await renderMenu();
-
-    await screen.getByRole("menuitem", { name: 'Conform to "Chorus"' }).click();
-
-    await expect.poll(() => useProjectStore.getState().lines[2].groupId).toBe("g1");
-    expect(document.querySelector("dialog")).toBeNull();
-  });
-
-  it("changes nothing when the confirmation is cancelled", async () => {
-    openGutterMenu(["l3", "l4"]);
-    const before = useProjectStore.getState().lines;
-    const screen = await renderMenu();
-
-    await screen.getByRole("menuitem", { name: 'Conform to "Chorus"' }).click();
-    await screen.getByRole("button", { name: "Cancel" }).click();
-
-    await expect.poll(() => document.querySelector("dialog")).toBeNull();
-    expect(useProjectStore.getState().lines).toBe(before);
   });
 
   it("dismisses the menu on Escape without conforming", async () => {
@@ -257,7 +224,6 @@ describe("TimelineContextMenu conform to a group that shares timing", () => {
     openGutterMenu(["l3", "l4"]);
     const screen = await renderMenu();
     await screen.getByRole("menuitem", { name: 'Conform to "Chorus"' }).click();
-    await screen.getByRole("button", { name: "Conform", exact: true }).click();
     await expect.poll(() => useProjectStore.getState().lines[2].groupId).toBe("g1");
   }
 

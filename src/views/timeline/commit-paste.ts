@@ -11,6 +11,7 @@ import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { pluralize } from "@/utils/pluralize";
 import { toast } from "@/utils/toast";
+import { showUndoToast } from "@/utils/undo-toast";
 import { applyPasteToLines, clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
@@ -21,7 +22,7 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
 
-type PasteOutcome = "pasted" | "overlap" | "no-line" | "cancelled" | "no-change";
+type PasteOutcome = "pasted" | "overlap" | "no-line" | "no-change";
 
 interface PasteTarget {
   clipboard: ClipboardData;
@@ -38,13 +39,13 @@ function finishPaste(): void {
   noteGuideSignal("timeline.copy");
 }
 
-async function placeInstance(
+function placeInstance(
   lines: LyricLine[],
   target: PasteTarget,
   groupId: string,
   template: LineTemplate[],
   successMessage: string,
-): Promise<PasteOutcome> {
+): PasteOutcome {
   if (template.length === 0) {
     toast.error("Could not derive instance template");
     return "no-change";
@@ -67,20 +68,9 @@ async function placeInstance(
     toast.success(successMessage);
     return "pasted";
   }
-  const ok = await useConfirmStore.getState().open({
-    title: `Insert ${pluralize(template.length, "new row")} here?`,
-    description: `There ${template.length === 1 ? "isn't an empty row" : `aren't ${template.length} empty rows`} at this position. Inserting will shift every row below down by ${template.length}.`,
-    confirmLabel: "Insert and paste",
-    cancelLabel: "Cancel",
-    variant: "destructive",
-  });
-  if (!ok) {
-    useTimelineStore.getState().setPasteMode({ status: "idle" });
-    return "cancelled";
-  }
   useProjectStore.getState().addInstance(groupId, template, decision.instanceStart, decision.insertAt);
   finishPaste();
-  toast.success(successMessage);
+  showUndoToast(`Inserted ${pluralize(template.length, "row")}`);
   return "pasted";
 }
 

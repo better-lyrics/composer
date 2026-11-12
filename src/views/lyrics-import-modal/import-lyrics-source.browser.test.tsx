@@ -27,7 +27,6 @@ const TTML_DOCUMENT =
 
 function fileImportContext(): ImportContext {
   return {
-    confirm: useConfirmStore.getState().open,
     audioDuration: 0,
     applyBackgroundExtraction: false,
     backgroundExtractionMergeStandalone: false,

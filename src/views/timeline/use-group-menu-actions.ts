@@ -1,16 +1,14 @@
 import { useCallback } from "react";
 import { withNewInstance } from "@/domain/group/own-timing";
-import { instanceCount } from "@/domain/instance/enumerate";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime } from "@/stores/audio";
-import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { showGroupedToast } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
 import { toast } from "@/utils/toast";
 import { showUndoToast } from "@/utils/undo-toast";
 import { type ConformFailure, conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
-import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
+import { deleteGroup } from "@/views/timeline/delete-group";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
@@ -33,7 +31,6 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
   const contextMenu = useTimelineStore((s) => s.contextMenu);
   const setRenamingGroupId = useTimelineStore((s) => s.setRenamingGroupId);
   const groups = useProjectStore((s) => s.groups);
-  const confirm = useConfirm();
 
   const handleJumpToGroupFromBanner = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
@@ -52,22 +49,12 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
   }, [groupableSelection, clearContextMenu]);
 
   const handleConformToGroup = useCallback(
-    async (groupId: string) => {
+    (groupId: string) => {
       if (!conformableSelection) return;
       const option = conformableSelection.options.find((o) => o.group.id === groupId);
       if (!option) return;
       const { selectedLineIds, count } = conformableSelection;
       clearContextMenu();
-
-      const ok = await confirm({
-        title: `Conform ${pluralize(count, "line")} to "${option.group.label}"?`,
-        description: "Their current text, timing, agent and background vocals are replaced by the group's.",
-        confirmLabel: "Conform",
-        variant: "destructive",
-        settingsKey: "confirmConformToGroup",
-        recoverable: true,
-      });
-      if (!ok) return;
 
       const projectState = useProjectStore.getState();
       if (!projectState.groups.some((g) => g.id === groupId)) {
@@ -92,18 +79,15 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
       );
       showUndoToast(`Conformed ${pluralize(count, "line")} to "${option.group.label}"`);
     },
-    [conformableSelection, confirm, clearContextMenu],
+    [conformableSelection, clearContextMenu],
   );
 
-  const handleDeleteGroup = useCallback(async () => {
+  const handleDeleteGroup = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
     const { groupId } = contextMenu.target;
-    const group = groups.find((g) => g.id === groupId);
-    if (!group) return;
-    const count = instanceCount(useProjectStore.getState().lines, groupId);
-
+    if (!groups.some((g) => g.id === groupId)) return;
     clearContextMenu();
-    await deleteGroupWithConfirm({ groupId, groupLabel: group.label, instanceCount: count });
+    deleteGroup(groupId);
   }, [contextMenu, groups, clearContextMenu]);
 
   const handleRenameStart = useCallback(() => {

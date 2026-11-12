@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
-import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { SplitModeContent } from "@/views/sync/split-mode-content";
@@ -147,16 +145,13 @@ function makeLine(id: string, wordText: string, beginOffset: number) {
 
 async function openSplitterFor(lineId: string, wordText: string) {
   const screen = await render(
-    <>
-      <SyllableSplitter
-        lineId={lineId}
-        type="word"
-        word={{ text: wordText, begin: 0, end: 1 }}
-        wordIndex={0}
-        onSplit={() => {}}
-      />
-      <ConfirmModalHost />
-    </>,
+    <SyllableSplitter
+      lineId={lineId}
+      type="word"
+      word={{ text: wordText, begin: 0, end: 1 }}
+      wordIndex={0}
+      onSplit={() => {}}
+    />,
   );
   await screen.getByRole("button", { name: /Split into syllables/i }).click();
   return screen;
@@ -202,39 +197,11 @@ describe("SyllableSplitter wiring", () => {
     await expect.element(screen.getByText(/This will also split 1 other "running"/)).toBeInTheDocument();
   });
 
-  it("applies to all matches via the store action when confirm is accepted", async () => {
+  it("applies to all matches via the store action", async () => {
     useProjectStore.setState({
       lines: [makeLine("l1", "running", 0), makeLine("l2", "running", 2)],
       syllableSplitDefaults: { applyToAll: false, caseInsensitive: false },
     });
-    const screen = await openSplitterFor("l1", "running");
-    await screen.getByRole("button", { name: "Split point 3" }).click();
-    await screen.getByLabelText("Apply to all identical words").click();
-    await screen.getByRole("button", { name: "Split all" }).click();
-    await screen.getByRole("button", { name: "Split" }).click();
-    await expect.poll(() => useProjectStore.getState().lines[1].words?.length).toBe(2);
-  });
-
-  it("leaves the project unchanged when the confirm modal is cancelled", async () => {
-    useProjectStore.setState({
-      lines: [makeLine("l1", "running", 0), makeLine("l2", "running", 2)],
-      syllableSplitDefaults: { applyToAll: false, caseInsensitive: false },
-    });
-    const before = useProjectStore.getState().lines;
-    const screen = await openSplitterFor("l1", "running");
-    await screen.getByRole("button", { name: "Split point 3" }).click();
-    await screen.getByLabelText("Apply to all identical words").click();
-    await screen.getByRole("button", { name: "Split all" }).click();
-    await screen.getByRole("button", { name: "Cancel" }).click();
-    expect(useProjectStore.getState().lines).toBe(before);
-  });
-
-  it("skips the confirm modal when confirmApplyToAllSyllableSplit is off", async () => {
-    useProjectStore.setState({
-      lines: [makeLine("l1", "running", 0), makeLine("l2", "running", 2)],
-      syllableSplitDefaults: { applyToAll: false, caseInsensitive: false },
-    });
-    useSettingsStore.setState({ confirmApplyToAllSyllableSplit: false });
     const screen = await openSplitterFor("l1", "running");
     await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByLabelText("Apply to all identical words").click();
@@ -249,16 +216,13 @@ describe("SyllableSplitter wiring", () => {
     });
     const onSplit = vi.fn();
     const screen = await render(
-      <>
-        <SyllableSplitter
-          lineId="l1"
-          type="word"
-          word={{ text: "running", begin: 0, end: 1 }}
-          wordIndex={0}
-          onSplit={onSplit}
-        />
-        <ConfirmModalHost />
-      </>,
+      <SyllableSplitter
+        lineId="l1"
+        type="word"
+        word={{ text: "running", begin: 0, end: 1 }}
+        wordIndex={0}
+        onSplit={onSplit}
+      />,
     );
     await screen.getByRole("button", { name: /Split into syllables/i }).click();
     await screen.getByRole("button", { name: "Split point 3" }).click();
@@ -276,52 +240,6 @@ describe("SyllableSplitter wiring", () => {
     await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByLabelText("Apply to all identical words").click();
     await screen.getByRole("button", { name: "Split all" }).click();
-    await screen.getByRole("button", { name: "Split" }).click();
     await expect.poll(() => useProjectStore.getState().syllableSplitDefaults.applyToAll).toBe(true);
-  });
-});
-
-describe("regressions: apply-to-all confirm stacking", () => {
-  it("regression U1: the confirm Split button is the topmost element at its own centre", async () => {
-    useProjectStore.setState({
-      lines: [
-        createLine({ id: "l1", text: "running", words: [{ text: "running", begin: 0, end: 1 }] }),
-        createLine({ id: "l2", text: "running", words: [{ text: "running", begin: 2, end: 3 }] }),
-      ],
-      syllableSplitDefaults: { applyToAll: true, caseInsensitive: false },
-    });
-    const screen = await render(
-      <>
-        <SyllableSplitter
-          lineId="l1"
-          type="word"
-          word={{ text: "running", begin: 0, end: 1 }}
-          wordIndex={0}
-          onSplit={() => {}}
-        />
-        <ConfirmModalHost />
-      </>,
-    );
-    await screen.getByRole("button", { name: /Split into syllables/i }).click();
-    await screen.getByRole("button", { name: "Split point 3" }).click();
-    const popoverSplit = screen.getByRole("button", { name: "Split all" });
-    await popoverSplit.click();
-    const dialog = document.querySelector<HTMLDialogElement>("dialog[open]");
-    await expect
-      .poll(() => dialog?.textContent ?? document.querySelector("dialog[open]")?.textContent)
-      .toContain("matching");
-    const openDialog = document.querySelector<HTMLDialogElement>("dialog[open]");
-    if (!openDialog) throw new Error("no open confirm dialog");
-    const confirmButton = [...openDialog.querySelectorAll("button")].find((b) => b.textContent === "Split");
-    if (!confirmButton) throw new Error("no confirm Split button");
-    const rect = confirmButton.getBoundingClientRect();
-    const topmost = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-    const popoverStillOpen = document.querySelector(".z-100") !== null;
-    expect({
-      popoverStillOpen,
-      topmostIsConfirm: topmost === confirmButton || confirmButton.contains(topmost),
-      topmostInPopover: !!topmost?.closest(".z-100"),
-      activeElement: document.activeElement?.textContent,
-    }).toEqual({ popoverStillOpen: false, topmostIsConfirm: true, topmostInPopover: false, activeElement: "Split" });
   });
 });

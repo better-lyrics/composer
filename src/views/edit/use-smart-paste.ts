@@ -36,11 +36,7 @@ function useSmartPaste({ typedPasteRef, onBeforeImport }: SmartPasteOptions) {
       event.preventDefault();
       onBeforeImport();
       if (pasted.kind === "project-file") void importProjectFileForLyrics(pasted.contents, null, pasteContext);
-      else {
-        void importPastedLyrics(text, pasted.parsed, pasteContext).then(
-          (imported) => imported && noteGuideSignal("edit.smartPaste"),
-        );
-      }
+      else if (importPastedLyrics(text, pasted.parsed, pasteContext)) noteGuideSignal("edit.smartPaste");
     },
     [onBeforeImport, typedPasteRef, pasteContext],
   );

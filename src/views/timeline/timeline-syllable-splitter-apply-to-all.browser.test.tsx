@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
-import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
@@ -19,12 +17,7 @@ function makeLine(id: string, wordText: string, beginOffset: number) {
 }
 
 async function renderSplitter() {
-  return render(
-    <>
-      <TimelineSyllableSplitter />
-      <ConfirmModalHost />
-    </>,
-  );
+  return render(<TimelineSyllableSplitter />);
 }
 
 function selectFirstWord(lineId: string) {
@@ -87,44 +80,9 @@ describe("TimelineSyllableSplitter apply-to-all wiring", () => {
     await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByLabelText("Apply to all identical words").click();
     await screen.getByRole("button", { name: "Split all" }).click();
-    await screen.getByRole("button", { name: "Split" }).click();
 
     await expect.poll(() => useProjectStore.getState().lines[1].words?.length).toBe(2);
     await expect.poll(() => document.querySelector("dialog")).toBeNull();
-  });
-
-  it("confirm-cancel keeps the modal open and does not mutate lines", async () => {
-    useProjectStore.setState({
-      lines: [makeLine("l1", "running", 0), makeLine("l2", "running", 2)],
-      syllableSplitDefaults: { applyToAll: false, caseInsensitive: false },
-    });
-    selectFirstWord("l1");
-    const before = useProjectStore.getState().lines;
-    const screen = await renderSplitter();
-    window.dispatchEvent(new Event("timeline:split-syllable"));
-    await screen.getByRole("button", { name: "Split point 3" }).click();
-    await screen.getByLabelText("Apply to all identical words").click();
-    await screen.getByRole("button", { name: "Split all" }).click();
-    await screen.getByRole("button", { name: "Cancel" }).click();
-
-    expect(useProjectStore.getState().lines).toBe(before);
-    await expect.element(screen.getByRole("heading", { name: /Split "running"/ })).toBeInTheDocument();
-  });
-
-  it("settings gate off skips the confirm modal", async () => {
-    useProjectStore.setState({
-      lines: [makeLine("l1", "running", 0), makeLine("l2", "running", 2)],
-      syllableSplitDefaults: { applyToAll: false, caseInsensitive: false },
-    });
-    useSettingsStore.setState({ confirmApplyToAllSyllableSplit: false });
-    selectFirstWord("l1");
-    const screen = await renderSplitter();
-    window.dispatchEvent(new Event("timeline:split-syllable"));
-    await screen.getByRole("button", { name: "Split point 3" }).click();
-    await screen.getByLabelText("Apply to all identical words").click();
-    await screen.getByRole("button", { name: "Split all" }).click();
-
-    await expect.poll(() => useProjectStore.getState().lines[1].words?.length).toBe(2);
   });
 
   it("single-word path (apply-to-all off) writes via the divergence-aware flow", async () => {
@@ -153,7 +111,6 @@ describe("TimelineSyllableSplitter apply-to-all wiring", () => {
     await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByLabelText("Apply to all identical words").click();
     await screen.getByRole("button", { name: "Split all" }).click();
-    await screen.getByRole("button", { name: "Split" }).click();
 
     await expect.poll(() => useProjectStore.getState().syllableSplitDefaults.applyToAll).toBe(true);
   });

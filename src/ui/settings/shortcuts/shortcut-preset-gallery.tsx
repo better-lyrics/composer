@@ -31,7 +31,7 @@ const ShortcutPresetGallery: React.FC = () => {
               variant="ghost"
               hasIcon
               className={HEADER_ACTION_BUTTON}
-              onClick={() => void resetMyShortcutChanges()}
+              onClick={() => resetMyShortcutChanges()}
             >
               <IconRefresh className="size-3.5" />
               Reset my changes

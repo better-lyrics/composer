@@ -133,9 +133,8 @@ const GroupsExtras: React.FC = () => (
 
     <HelpTopic title="Deleting a group">
       <p className={PROSE}>
-        Right-click any banner and pick <strong>Delete group</strong>. A confirmation modal warns you that all instances
-        will become standalone (text and timing survive, they just stop syncing). Tick "Don't ask again" to skip the
-        modal next time, or restore the prompt from <SettingLink setting="confirmGroupDissolution" />.
+        Right-click any banner and pick <strong>Delete group</strong>. Every instance becomes standalone lines. Text and
+        timing stay, they just stop syncing. Undo brings the group back.
       </p>
     </HelpTopic>
 

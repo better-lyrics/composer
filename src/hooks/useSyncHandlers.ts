@@ -15,7 +15,6 @@ import { keptSyncReRecording, syncReRecordingAt, useSyncCursor } from "@/hooks/u
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { requestPlayback } from "@/lib/sync-count-in";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
-import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showPlacementBlockedToast } from "@/utils/group-toast";
@@ -23,7 +22,9 @@ import { formatTimeMs, type SyncState, splitIntoWords } from "@/utils/sync-helpe
 import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
+import { pluralize } from "@/utils/pluralize";
 import { toast } from "@/utils/toast";
+import { showUndoToast } from "@/utils/undo-toast";
 
 // -- Types --------------------------------------------------------------------
 
@@ -70,7 +71,6 @@ function useSyncHandlers({
   const seekTo = useAudioStore((s) => s.seekTo);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const updateLinesWithHistory = useProjectStore((s) => s.updateLinesWithHistory);
-  const confirm = useConfirm();
 
   const ignoreNextHoldEndRef = useRef(false);
   const { cursor, jumped, skippedInstances } = useSyncCursor(lines, syncState, granularity);
@@ -165,20 +165,9 @@ function useSyncHandlers({
     noteGuideSignal("sync.holdTap");
   }, [runGesture, setShowPulse]);
 
-  const handleReset = useCallback(async () => {
+  const handleReset = useCallback(() => {
     ignoreNextHoldEndRef.current = false;
-    if (lines.some(hasAnyTiming)) {
-      const ok = await confirm({
-        title: "Reset all sync timing?",
-        description: "Clear every word and line timing in this project.",
-        confirmLabel: "Reset",
-        variant: "destructive",
-        settingsKey: "confirmSyncReset",
-        recoverable: true,
-      });
-      if (!ok) return;
-    }
-
+    const timedCount = lines.filter(hasAnyTiming).length;
     const updates = lines.map((line) => ({
       id: line.id,
       updates: {
@@ -188,9 +177,13 @@ function useSyncHandlers({
         backgroundWords: undefined,
       },
     }));
+    const before = useProjectStore.getState().lines;
     useProjectStore.getState().updateLinesWithHistory(updates, { propagateToSiblings: false });
     setSyncState({ position: { lineIndex: 0, wordIndex: 0 }, isActive: false });
-  }, [lines, setSyncState, confirm]);
+    if (timedCount > 0 && useProjectStore.getState().lines !== before) {
+      showUndoToast(`Reset timing on ${pluralize(timedCount, "line")}`);
+    }
+  }, [lines, setSyncState]);
 
   const handleStartSync = useCallback(() => {
     const { lineIndex: cursorLine, wordIndex: cursorWord } = cursor;

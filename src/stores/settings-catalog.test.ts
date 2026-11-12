@@ -70,10 +70,6 @@ describe("SETTINGS_CATALOG", () => {
       expect(settingIdsInSection("confirmations")).toContain("linkedDivergenceAction");
       expect(settingKeyOf("linkedDivergenceAction")).toBe("linkedDivergenceAction");
     });
-
-    it("regression: lists the group deletion prompt under Confirmations", () => {
-      expect(settingIdsInSection("confirmations")).toContain("confirmGroupDissolution");
-    });
   });
 
   it("files snap and spectrum settings in their own sections", () => {

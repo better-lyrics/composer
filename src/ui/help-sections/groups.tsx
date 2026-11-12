@@ -71,8 +71,7 @@ const GroupsSection: React.FC = () => (
         A third route is <strong>Conform</strong>: select contiguous ungrouped lines, right-click, and pick "Conform to
         [Chorus]". The item only shows when the selection is exactly as long as the group. It swaps those lines' text,
         timing, agent and background vocals for the group's, landing where the selection already sat, or at the playhead
-        when those lines had no timing yet. Composer asks before overwriting, and{" "}
-        <InlineKeyBadge keys={getEffectiveKeysArray("global.undo")} /> undoes it.
+        when those lines had no timing yet. <InlineKeyBadge keys={getEffectiveKeysArray("global.undo")} /> undoes it.
       </p>
     </HelpTopic>
 
@@ -147,8 +146,7 @@ const GroupsSection: React.FC = () => (
           the group.
         </li>
         <li>
-          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.deleteGroup")} />: delete the current group (asks for
-          confirmation first).
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.deleteGroup")} />: delete the current group.
         </li>
         <li>
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.shiftInstanceToPlayhead")} />: shift the current
@@ -193,8 +191,8 @@ const GroupsSection: React.FC = () => (
       </ul>
       <p className={`${PROSE} mt-2`}>
         In both cases the destination is filled in place if there are enough empty rows starting at the cursor. If there
-        aren't, Composer asks before inserting new rows, since that would shift everything below down by N. Add rows in
-        the Edit view first if you want predictable layout.
+        aren't, Composer inserts new rows, which shifts everything below down by N. Undo takes them out again. Add rows
+        in the Edit view first if you want predictable layout.
       </p>
     </HelpTopic>
 

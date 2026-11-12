@@ -8,12 +8,11 @@ import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime } from "@/stores/audio";
 import { useAlignmentStore } from "@/stores/alignment";
-import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-options";
 import { findIdenticalWords } from "@/utils/identical-word-matcher";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { getSplitCharacter } from "@/utils/split-character";
+import { splitMatchingWords } from "@/utils/split-matching-words";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { splitWordIntoWords } from "@/utils/word-split";
 import { splitSourceWord } from "@/utils/word-timing";
@@ -47,7 +46,7 @@ interface UseTimelineSyllableSplitterStateResult {
   setCaseInsensitive: (next: boolean) => void;
   identicalCount: number;
   sourceText: string;
-  confirmSplit: () => Promise<void>;
+  confirmSplit: () => void;
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -73,7 +72,6 @@ function useTimelineSyllableSplitterState({
   }, [targetKey]);
 
   const lines = useProjectStore((s) => s.lines);
-  const confirm = useConfirm();
 
   const identicalCount = useMemo(() => {
     if (!target || target.mode === "word") return 0;
@@ -163,7 +161,7 @@ function useTimelineSyllableSplitterState({
     return placedByEar ? undefined : done;
   }, [target, splitPoints, transliterationSplitPoints]);
 
-  const confirmSplit = useCallback(async () => {
+  const confirmSplit = useCallback(() => {
     if (!target || splitPoints.length === 0) return;
 
     useProjectStore.getState().setSyllableSplitDefaults({ applyToAll, caseInsensitive });
@@ -172,13 +170,14 @@ function useTimelineSyllableSplitterState({
     const retime = () => void useAlignmentStore.getState().retimeNewSyllables(before);
 
     if (target.mode === "syllable" && !target.word.transliteration && applyToAll && identicalCount > 0) {
-      const ok = await confirm(buildApplyToAllConfirmOptions({ identicalCount, sourceText }));
-      if (!ok) return;
-      useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-        source: { lineId: target.lineId, wordIndex: target.wordIndex, type: target.type },
-        splitPoints,
-        caseInsensitive,
-      });
+      splitMatchingWords(
+        {
+          source: { lineId: target.lineId, wordIndex: target.wordIndex, type: target.type },
+          splitPoints,
+          caseInsensitive,
+        },
+        identicalCount + 1,
+      );
       noteGuideSignal("timeline.split");
       retime();
       resetSplitPoints();
@@ -195,8 +194,6 @@ function useTimelineSyllableSplitterState({
     applyToAll,
     caseInsensitive,
     identicalCount,
-    sourceText,
-    confirm,
     applySingleWordSplit,
     resetSplitPoints,
     closeModal,

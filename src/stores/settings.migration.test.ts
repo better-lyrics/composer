@@ -83,11 +83,11 @@ describe("retired confirmReplaceProjectFromHash", () => {
 
   it("keeps the other confirmations while dropping it", () => {
     const migrated = migrateSettings(
-      legacyBlob({ confirmReplaceProjectFromHash: false, confirmReplaceLyrics: false }),
+      legacyBlob({ confirmReplaceProjectFromHash: false, confirmResetSettings: false }),
       6,
     ) as Record<string, unknown>;
     expect(migrated).not.toHaveProperty("confirmReplaceProjectFromHash");
-    expect(migrated.confirmReplaceLyrics).toBe(false);
+    expect(migrated.confirmResetSettings).toBe(false);
   });
 });
 

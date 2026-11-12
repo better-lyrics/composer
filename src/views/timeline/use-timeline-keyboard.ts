@@ -32,7 +32,7 @@ import { centreLineRow } from "@/views/timeline/centre-line-row";
 import { centerTimeScrollLeft } from "@/views/timeline/coords";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
-import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
+import { deleteGroup } from "@/views/timeline/delete-group";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
 import { currentEffectiveFocus, scrollToFocusStart } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
@@ -565,11 +565,9 @@ function useTimelineKeyboard(
             toast.error("Select words inside one instance first");
             break;
           }
-          const group = useProjectStore.getState().groups.find((g) => g.id === inst.groupId);
-          if (!group) break;
+          if (!useProjectStore.getState().groups.some((g) => g.id === inst.groupId)) break;
           e.preventDefault();
-          const count = instanceCount(projectLines, inst.groupId);
-          void deleteGroupWithConfirm({ groupId: inst.groupId, groupLabel: group.label, instanceCount: count });
+          deleteGroup(inst.groupId);
           break;
         }
         case "timeline.pingSiblings": {

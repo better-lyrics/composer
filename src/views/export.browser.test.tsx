@@ -1,7 +1,6 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
 import { LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
 import { stubClipboard } from "@/test/clipboard";
@@ -318,7 +317,6 @@ describe("ExportPanel · project file keeps the hand-edited TTML with its projec
   }
 
   async function renderWithProjectA(): Promise<Awaited<ReturnType<typeof render>>> {
-    useSettingsStore.setState({ confirmReplaceLyrics: false });
     useProjectStore.setState({
       lines: [createLine({ text: "A", words: [createWord({ text: "A", begin: 0, end: 1 })] })],
       ttmlEditState: STALE_EDIT,

@@ -31,7 +31,6 @@ let providerSnapshot: readonly LyricsSearchProvider[] = [];
 beforeEach(() => {
   providerSnapshot = snapshotProvidersForTests();
   restoreProvidersForTests([]);
-  useSettingsStore.setState({ confirmReplaceLyrics: false });
 });
 
 afterEach(() => {

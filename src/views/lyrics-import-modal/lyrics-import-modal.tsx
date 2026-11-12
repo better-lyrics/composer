@@ -92,7 +92,7 @@ const LyricsImportModalShell: React.FC = () => {
       }
 
       const filename = syntheticFilenameForResult(result);
-      const ok = await importLyrics({ filename, content, searchResult: result }, importContext);
+      const ok = importLyrics({ filename, content, searchResult: result }, importContext);
       if (selectionAbortRef.current === controller) selectionAbortRef.current = null;
       setSelectingResultId((prev) => (prev === result.id ? null : prev));
       if (ok) close();

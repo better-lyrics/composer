@@ -7,13 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 beforeEach(() => {
   useConfirmStore.setState({ isOpen: false, options: null, resolve: null, queue: [] });
-  useSettingsStore.setState({
-    confirmReplaceLyrics: true,
-    confirmSyncReset: true,
-    confirmResetSettings: true,
-    confirmResetShortcuts: true,
-    confirmGroupDissolution: true,
-  });
+  useSettingsStore.setState({ confirmResetSettings: true });
 });
 
 describe("confirm-store", () => {
@@ -65,21 +59,21 @@ describe("confirm-store", () => {
   });
 
   it("auto-resolves true when settingsKey is disabled (no modal pops at all)", async () => {
-    useSettingsStore.setState({ confirmGroupDissolution: false });
+    useSettingsStore.setState({ confirmResetSettings: false });
     const result = await useConfirmStore
       .getState()
-      .open({ title: "delete group", settingsKey: "confirmGroupDissolution" });
+      .open({ title: "reset settings", settingsKey: "confirmResetSettings" });
     expect(result).toBe(true);
     expect(useConfirmStore.getState().isOpen).toBe(false);
   });
 
   it("queued entry that gets auto-skipped (settings key off) doesn't block subsequent queued entries", async () => {
     const p1 = useConfirmStore.getState().open({ title: "live" });
-    const p2 = useConfirmStore.getState().open({ title: "auto", settingsKey: "confirmGroupDissolution" });
+    const p2 = useConfirmStore.getState().open({ title: "auto", settingsKey: "confirmResetSettings" });
     const p3 = useConfirmStore.getState().open({ title: "live again" });
 
     // Disable the gate while p2 is still queued
-    useSettingsStore.setState({ confirmGroupDissolution: false });
+    useSettingsStore.setState({ confirmResetSettings: false });
 
     useConfirmStore.getState().resolveAndClose(true, false);
     expect(await p1).toBe(true);
@@ -95,26 +89,26 @@ describe("confirm-store", () => {
   });
 
   it("dontAskAgain on a non-cancel resolution writes the settings key", async () => {
-    const p = useConfirmStore.getState().open({ title: "x", settingsKey: "confirmGroupDissolution" });
+    const p = useConfirmStore.getState().open({ title: "x", settingsKey: "confirmResetSettings" });
     useConfirmStore.getState().resolveAndClose(true, true);
     expect(await p).toBe(true);
-    expect(useSettingsStore.getState().confirmGroupDissolution).toBe(false);
+    expect(useSettingsStore.getState().confirmResetSettings).toBe(false);
   });
 
   it("dontAskAgain on a cancel resolution does NOT write the settings key", async () => {
-    const p = useConfirmStore.getState().open({ title: "x", settingsKey: "confirmGroupDissolution" });
+    const p = useConfirmStore.getState().open({ title: "x", settingsKey: "confirmResetSettings" });
     useConfirmStore.getState().resolveAndClose(false, true);
     expect(await p).toBe(false);
-    expect(useSettingsStore.getState().confirmGroupDissolution).toBe(true);
+    expect(useSettingsStore.getState().confirmResetSettings).toBe(true);
   });
 
   it("drains consecutive auto-skip queued entries without opening any of them as a modal", async () => {
     const p1 = useConfirmStore.getState().open({ title: "live" });
-    const p2 = useConfirmStore.getState().open({ title: "auto-1", settingsKey: "confirmGroupDissolution" });
-    const p3 = useConfirmStore.getState().open({ title: "auto-2", settingsKey: "confirmGroupDissolution" });
-    const p4 = useConfirmStore.getState().open({ title: "auto-3", settingsKey: "confirmGroupDissolution" });
+    const p2 = useConfirmStore.getState().open({ title: "auto-1", settingsKey: "confirmResetSettings" });
+    const p3 = useConfirmStore.getState().open({ title: "auto-2", settingsKey: "confirmResetSettings" });
+    const p4 = useConfirmStore.getState().open({ title: "auto-3", settingsKey: "confirmResetSettings" });
 
-    useSettingsStore.setState({ confirmGroupDissolution: false });
+    useSettingsStore.setState({ confirmResetSettings: false });
 
     useConfirmStore.getState().resolveAndClose(true, false);
 
@@ -128,11 +122,11 @@ describe("confirm-store", () => {
 
   it("drains a mix of auto-skip and live entries, opening only the live ones", async () => {
     const p1 = useConfirmStore.getState().open({ title: "live-1" });
-    const p2 = useConfirmStore.getState().open({ title: "auto-a", settingsKey: "confirmGroupDissolution" });
-    const p3 = useConfirmStore.getState().open({ title: "auto-b", settingsKey: "confirmGroupDissolution" });
+    const p2 = useConfirmStore.getState().open({ title: "auto-a", settingsKey: "confirmResetSettings" });
+    const p3 = useConfirmStore.getState().open({ title: "auto-b", settingsKey: "confirmResetSettings" });
     const p4 = useConfirmStore.getState().open({ title: "live-2" });
 
-    useSettingsStore.setState({ confirmGroupDissolution: false });
+    useSettingsStore.setState({ confirmResetSettings: false });
 
     useConfirmStore.getState().resolveAndClose(true, false);
     expect(await p1).toBe(true);

@@ -77,11 +77,8 @@ function projectFileChoice(
 
 // -- Actions ------------------------------------------------------------------
 
-async function importLyricsNotingGuide(
-  input: Parameters<typeof importLyrics>[0],
-  ctx: ImportContext,
-): Promise<boolean> {
-  const imported = await importLyrics(input, ctx);
+function importLyricsNotingGuide(input: Parameters<typeof importLyrics>[0], ctx: ImportContext): boolean {
+  const imported = importLyrics(input, ctx);
   if (imported) noteGuideSignal("edit.lyrics");
   return imported;
 }
@@ -130,7 +127,7 @@ async function importLyricsFile(file: File, ctx: ImportContext): Promise<boolean
   return importLyricsNotingGuide({ filename: file.name, content: text }, ctx);
 }
 
-function importPastedLyrics(content: string, parsed: ParseResult, ctx: ImportContext): Promise<boolean> {
+function importPastedLyrics(content: string, parsed: ParseResult, ctx: ImportContext): boolean {
   return importLyrics({ filename: PASTED_TEXT_NAME, content, parsed }, ctx);
 }
 

@@ -35,7 +35,7 @@ function dropOnModalChrome(file: File): void {
 }
 
 beforeEach(() => {
-  useSettingsStore.setState({ confirmReplaceLyrics: false, autoExtractBackgroundVocals: false });
+  useSettingsStore.setState({ autoExtractBackgroundVocals: false });
   useProjectStore.setState({ lines: [] });
 });
 

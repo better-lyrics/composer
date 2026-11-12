@@ -72,14 +72,13 @@ describe("EditPanel smart paste", () => {
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(84);
   });
 
-  it("asks before replacing existing lyrics, and the paste is one undo step", async () => {
+  it("replaces existing lyrics at once, and the paste is one undo step", async () => {
     useProjectStore.setState({
       activeTab: "edit",
       lines: [createLine({ text: "Old one" }), createLine({ text: "Old two" })],
     });
-    const { screen, textarea } = await renderEdit();
+    const { textarea } = await renderEdit();
     pasteText(textarea, LRC);
-    await screen.getByRole("button", { name: "Replace" }).click();
     await expect.poll(lineTexts).toEqual(["Is this the real life", "Is this just fantasy"]);
     textarea.focus();
     await userEvent.keyboard("{ControlOrMeta>}z{/ControlOrMeta}");
@@ -87,7 +86,6 @@ describe("EditPanel smart paste", () => {
   });
 
   it("keeps a typing run and a pasted file as two undo steps", async () => {
-    useSettingsStore.setState({ confirmReplaceLyrics: false });
     useProjectStore.setState({ activeTab: "edit", lines: [createLine({ text: "First" })] });
     const { textarea } = await renderEdit();
     Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(textarea, "First\nTyped");
@@ -100,15 +98,6 @@ describe("EditPanel smart paste", () => {
     expect(lineTexts()).toEqual(["First", "Typed"]);
     useProjectStore.getState().undo();
     expect(lineTexts()).toEqual(["First"]);
-  });
-
-  it("keeps the lyrics and the text when the replace is cancelled", async () => {
-    useProjectStore.setState({ lines: [createLine({ text: "Keep me" })] });
-    const { screen, textarea } = await renderEdit();
-    pasteText(textarea, TTML);
-    await screen.getByRole("button", { name: "Cancel" }).click();
-    expect(lineTexts()).toEqual(["Keep me"]);
-    expect(textarea.value).toBe("Keep me");
   });
 
   it("warns about lines it could not read", async () => {
@@ -154,10 +143,9 @@ describe("EditPanel smart paste", () => {
 
     it("regression: pastes lyrics with a bracketed number pair as typed text, never as QRC", async () => {
       useProjectStore.setState({ lines: [createLine({ text: "Keep me" })] });
-      const { screen, textarea } = await renderEdit();
+      const { textarea } = await renderEdit();
       expect(pasteText(textarea, "Verse [1,2] repeated twice\nAnd again").defaultPrevented).toBe(false);
       expect(lineTexts()).toEqual(["Keep me"]);
-      expect(screen.getByRole("button", { name: "Replace" }).query()).toBeNull();
     });
   });
 

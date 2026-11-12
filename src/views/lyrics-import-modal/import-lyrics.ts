@@ -10,7 +10,6 @@ import type { ProjectMetadata } from "@/domain/project/metadata";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import type { ProjectFile } from "@/lib/project-file";
 import { useAudioStore } from "@/stores/audio";
-import { type ConfirmOptions, useConfirm, useConfirmStore } from "@/stores/confirm-store";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { type SettingsState, useSettingsStore } from "@/stores/settings";
@@ -26,11 +25,10 @@ import {
 } from "@/utils/lyrics-parsers/shared";
 import { pluralize } from "@/utils/pluralize";
 import { toast } from "@/utils/toast";
+import { showUndoToast } from "@/utils/undo-toast";
 import { distributeLinesTiming } from "@/views/timeline/utils";
 
 // -- Types --------------------------------------------------------------------
-
-type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
 
 interface ImportSourceInfo {
   label: string;
@@ -38,7 +36,6 @@ interface ImportSourceInfo {
 }
 
 interface ImportContext {
-  confirm: ConfirmFn;
   audioDuration: number;
   applyBackgroundExtraction: boolean;
   backgroundExtractionMergeStandalone: boolean;
@@ -72,19 +69,6 @@ function partialImportMessage(imported: number, skipped: number): string {
 
 // -- Helpers ------------------------------------------------------------------
 
-function confirmReplace(confirm: ConfirmFn): Promise<boolean> {
-  const existing = useProjectStore.getState().lines.length;
-  if (existing === 0) return Promise.resolve(true);
-  return confirm({
-    title: "Replace existing lyrics?",
-    description: `This replaces your ${pluralize(existing, "existing line")}.`,
-    confirmLabel: "Replace",
-    variant: "destructive",
-    settingsKey: "confirmReplaceLyrics",
-    recoverable: true,
-  });
-}
-
 function searchResultMetadata(result: LyricsSearchResult | undefined): Partial<ProjectMetadata> {
   if (!result) return {};
   return {
@@ -112,7 +96,7 @@ function replaceLyrics(
 
 // -- Action -------------------------------------------------------------------
 
-async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promise<boolean> {
+function importLyrics(input: ImportLyricsInput, ctx: ImportContext): boolean {
   const parsed =
     input.parsed ??
     parseLyricsFile(input.filename, input.content, ctx.audioDuration > 0 ? ctx.audioDuration : undefined);
@@ -121,7 +105,7 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
     return false;
   }
 
-  if (!(await confirmReplace(ctx.confirm))) return false;
+  const replacesLines = useProjectStore.getState().lines.length > 0;
 
   let workingLines = ctx.applyBackgroundExtraction
     ? extractBackgroundVocals(parsed.lines, {
@@ -135,6 +119,7 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
   }
 
   const reported = replaceLyrics(parsed, workingLines, searchResultMetadata(input.searchResult));
+  if (replacesLines) showUndoToast("Replaced the lyrics");
 
   const skipped = skippedLineCount(parsed.issues);
   if (skipped > 0) toast.warning(partialImportMessage(workingLines.length, skipped));
@@ -187,14 +172,8 @@ type ExtractionSettings = Pick<
   "autoExtractBackgroundVocals" | "mergeStandaloneBackgroundLines" | "preserveBracketsOnExtraction"
 >;
 
-function buildImportContext(
-  sourceLabel: string,
-  audioDuration: number,
-  confirm: ConfirmFn,
-  settings: ExtractionSettings,
-): ImportContext {
+function buildImportContext(sourceLabel: string, audioDuration: number, settings: ExtractionSettings): ImportContext {
   return {
-    confirm,
     audioDuration,
     applyBackgroundExtraction: settings.autoExtractBackgroundVocals,
     backgroundExtractionMergeStandalone: settings.mergeStandaloneBackgroundLines,
@@ -205,13 +184,12 @@ function buildImportContext(
 }
 
 function currentImportContext(sourceLabel: string, audioDuration: number): ImportContext {
-  return buildImportContext(sourceLabel, audioDuration, useConfirmStore.getState().open, useSettingsStore.getState());
+  return buildImportContext(sourceLabel, audioDuration, useSettingsStore.getState());
 }
 
 // -- Hook ---------------------------------------------------------------------
 
 function useImportContext(sourceLabel: string): ImportContext {
-  const confirm = useConfirm();
   const audioDuration = useAudioStore((s) => s.duration);
   const autoExtractBackgroundVocals = useSettingsStore((s) => s.autoExtractBackgroundVocals);
   const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
@@ -219,13 +197,12 @@ function useImportContext(sourceLabel: string): ImportContext {
 
   return useMemo(
     () =>
-      buildImportContext(sourceLabel, audioDuration, confirm, {
+      buildImportContext(sourceLabel, audioDuration, {
         autoExtractBackgroundVocals,
         mergeStandaloneBackgroundLines,
         preserveBracketsOnExtraction,
       }),
     [
-      confirm,
       audioDuration,
       autoExtractBackgroundVocals,
       mergeStandaloneBackgroundLines,

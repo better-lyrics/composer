@@ -67,7 +67,7 @@ beforeEach(() => {
   restoreProvidersForTests([]);
   currentProvider = makeFixtureProvider();
   registerProviderForTests(currentProvider);
-  useSettingsStore.setState({ confirmReplaceLyrics: false, autoExtractBackgroundVocals: false });
+  useSettingsStore.setState({ autoExtractBackgroundVocals: false });
 });
 
 afterEach(() => {
@@ -233,8 +233,7 @@ describe("LyricsImportModal search section commit", () => {
     await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
   });
 
-  it("confirm-replace runs when project already has lines (cancel keeps existing)", async () => {
-    useSettingsStore.setState({ confirmReplaceLyrics: true });
+  it("replaces existing lines at once", async () => {
     useProjectStore.setState({
       lines: [{ id: "existing", text: "Old line", agentId: "v1" }],
     });
@@ -245,10 +244,8 @@ describe("LyricsImportModal search section commit", () => {
     entry.resolve([buildSearchResult()]);
     await expect.element(screen.getByText("Bohemian Rhapsody")).toBeInTheDocument();
     await screen.getByRole("option").click();
-    await expect.element(screen.getByText(/Replace existing lyrics/i)).toBeInTheDocument();
-    await screen.getByRole("button", { name: /Cancel/i }).click();
-    await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].text).toBe("Old line");
+    await expect.poll(() => useProjectStore.getState().lines.some((line) => line.id === "existing")).toBe(false);
+    await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
   });
 });
 

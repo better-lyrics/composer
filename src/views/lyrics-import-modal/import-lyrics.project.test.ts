@@ -48,9 +48,6 @@ function recordingContext(): { ctx: ImportContext; results: { parsed: ParseResul
   return {
     results,
     ctx: {
-      confirm: async () => {
-        throw new Error("a project file import must not ask to confirm a replace");
-      },
       audioDuration: 0,
       applyBackgroundExtraction: true,
       backgroundExtractionMergeStandalone: false,
