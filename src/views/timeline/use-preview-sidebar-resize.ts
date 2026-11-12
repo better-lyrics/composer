@@ -1,6 +1,6 @@
 import { useSettingsStore } from "@/stores/settings";
 import { PREVIEW_SIDEBAR_WIDTH, clampPreviewSidebarWidth } from "@/utils/preview-sidebar-width";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -25,9 +25,11 @@ function keyboardWidth(key: string, width: number): number | null {
 
 // -- Hook ---------------------------------------------------------------------
 
-function usePreviewSidebarResize() {
+// The content keeps its width until release: every width the lyrics see relayouts every line.
+function usePreviewSidebarResize(contentRef: RefObject<HTMLElement | null>) {
   const storedWidth = useSettingsStore((s) => s.previewSidebarWidth);
   const [dragWidth, setDragWidth] = useState<number | null>(null);
+  const [contentWidth, setContentWidth] = useState<number | null>(null);
   const width = dragWidth ?? clampPreviewSidebarWidth(storedWidth);
   const cleanupRef = useRef<(() => void) | null>(null);
 
@@ -42,6 +44,7 @@ function usePreviewSidebarResize() {
       if (e.button !== 0) return;
       e.preventDefault();
       cleanupRef.current?.();
+      setContentWidth(contentRef.current?.clientWidth ?? null);
       const startX = e.clientX;
       const startWidth = width;
       const widthAt = (clientX: number) => clampPreviewSidebarWidth(startWidth - (clientX - startX));
@@ -56,6 +59,7 @@ function usePreviewSidebarResize() {
       cleanupRef.current = () => {
         cleanupRef.current = null;
         setDragWidth(null);
+        setContentWidth(null);
         document.removeEventListener("pointermove", handlePointerMove);
         document.removeEventListener("pointerup", handlePointerUp);
         document.removeEventListener("pointercancel", handlePointerCancel);
@@ -64,7 +68,7 @@ function usePreviewSidebarResize() {
       document.addEventListener("pointerup", handlePointerUp);
       document.addEventListener("pointercancel", handlePointerCancel);
     },
-    [width, persistWidth],
+    [width, persistWidth, contentRef],
   );
 
   const onDoubleClick = useCallback(() => persistWidth(PREVIEW_SIDEBAR_WIDTH.default), [persistWidth]);
@@ -80,7 +84,7 @@ function usePreviewSidebarResize() {
     [width, persistWidth],
   );
 
-  return { width, onPointerDown, onDoubleClick, onKeyDown };
+  return { width, contentWidth, onPointerDown, onDoubleClick, onKeyDown };
 }
 
 // -- Exports ------------------------------------------------------------------
