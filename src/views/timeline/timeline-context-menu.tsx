@@ -27,6 +27,7 @@ import { useInstanceMenuActions } from "@/views/timeline/use-instance-menu-actio
 import { useLineMenuActions } from "@/views/timeline/use-line-menu-actions";
 import { useSharedTimingMenuActions } from "@/views/timeline/use-shared-timing-menu-actions";
 import { useWordMenuActions } from "@/views/timeline/use-word-menu-actions";
+import { WordEditMenuItems } from "@/views/timeline/word-edit-menu-items";
 
 // -- Grouping section ---------------------------------------------------------
 
@@ -167,26 +168,9 @@ type WordTarget = Extract<ContextMenuTarget, { kind: "word" }>;
 
 function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & { target: WordTarget }) {
   const selectedWords = useTimelineStore((s) => s.selectedWords);
-  const {
-    mergeInfo,
-    groupedWordInfo,
-    snapNeededInfo,
-    splitIntoWordsInfo,
-    autoAlignInfo,
-    explicitToggle,
-    wordCommandTargets,
-    clickedSelectionCount,
-  } = targets;
-  const {
-    handleEditWord,
-    handleSplitSyllables,
-    handleSplitWord,
-    handleToggleExplicit,
-    handleDeleteWord,
-    handleMergeSyllables,
-    handleSnapSyllables,
-    handleMergeWords,
-  } = useWordMenuActions(targets, clearContextMenu);
+  const { groupedWordInfo, splitIntoWordsInfo, autoAlignInfo, explicitToggle, clickedSelectionCount } = targets;
+  const actions = useWordMenuActions(targets, clearContextMenu);
+  const { handleToggleExplicit, handleDeleteWord } = actions;
   const { handleSplitIntoWords, handleAutoAlign } = useLineMenuActions(targets, clearContextMenu);
   const word: WordSelection = {
     lineId: target.lineId,
@@ -207,40 +191,7 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
         select={() => selectWordUnlessSelected(word)}
         clearContextMenu={clearContextMenu}
       />
-      {wordCommandTargets?.editable && (
-        <MenuItem label="Edit text" shortcut={getEffectiveKeysArray("timeline.editWord")} onSelect={handleEditWord} />
-      )}
-      {wordCommandTargets?.splittable && (
-        <>
-          <MenuItem
-            label="Split syllables"
-            shortcut={getEffectiveKeysArray("timeline.splitSyllable")}
-            onSelect={handleSplitSyllables}
-          />
-          <MenuItem
-            label="Split word"
-            shortcut={getEffectiveKeysArray("timeline.splitWord")}
-            onSelect={handleSplitWord}
-          />
-        </>
-      )}
-      {mergeInfo && (
-        <MenuItem
-          label={mergeInfo.kind === "syllables" ? "Merge syllables" : "Merge words"}
-          shortcut={getEffectiveKeysArray(
-            mergeInfo.kind === "syllables" ? "timeline.mergeSyllablesIntoWord" : "timeline.mergeWords",
-          )}
-          onSelect={handleMergeWords}
-        />
-      )}
-      {!mergeInfo && wordCommandTargets?.syllableMerge && (
-        <MenuItem
-          label="Merge syllables"
-          shortcut={getEffectiveKeysArray("timeline.mergeSyllablesIntoWord")}
-          onSelect={handleMergeSyllables}
-        />
-      )}
-      {snapNeededInfo && <MenuItem label="Snap syllables flush" onSelect={handleSnapSyllables} />}
+      <WordEditMenuItems targets={targets} actions={actions} />
       {splitIntoWordsInfo && (
         <>
           <MenuSeparator />
