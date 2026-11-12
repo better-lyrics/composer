@@ -20,8 +20,14 @@ interface WordEdgeHandleProps {
 // -- Constants -----------------------------------------------------------------
 
 const EDGE_CLASSES: Record<WordEdge, string> = {
-  left: "left-0 rounded-tl-[inherit] rounded-bl-[inherit]",
-  right: "right-0 rounded-tr-[inherit] rounded-br-[inherit]",
+  left: "left-0",
+  right: "right-0",
+};
+
+// Matches the word's corner without `inherit`: an inherited radius makes every word restyle its edges on each zoom step.
+const OPEN_CORNER_CLASSES: Record<WordEdge, string> = {
+  left: "rounded-l-(--word-radius)",
+  right: "rounded-r-(--word-radius)",
 };
 
 const SYLLABLE_JOINS_AT: Record<WordEdge, ReadonlySet<SyllablePosition>> = {
@@ -41,7 +47,8 @@ const WordEdgeHandle: React.FC<WordEdgeHandleProps> = ({
   onResizeStart,
   onEdgeHover,
 }) => {
-  const joinsNeighbour = (syllableEdgesJoin && SYLLABLE_JOINS_AT[edge].has(syllablePosition)) || conjoined;
+  const squareCorner = SYLLABLE_JOINS_AT[edge].has(syllablePosition);
+  const joinsNeighbour = (syllableEdgesJoin && squareCorner) || conjoined;
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
@@ -59,6 +66,7 @@ const WordEdgeHandle: React.FC<WordEdgeHandleProps> = ({
       className={cn(
         "absolute top-0 bottom-0 w-2 max-w-1/2 z-10",
         EDGE_CLASSES[edge],
+        !squareCorner && OPEN_CORNER_CLASSES[edge],
         showGrip
           ? "cursor-ew-resize bg-composer-text/10 hover:bg-composer-text/20"
           : [

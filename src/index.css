@@ -1016,7 +1016,8 @@ braccato-lyrics .blyrics-container {
   .word-face {
     --selection-ring: color-mix(in oklab, var(--agent) 80%, var(--ink));
     padding: 0 8px;
-    border-radius: 10px;
+    --word-radius: 10px;
+    border-radius: var(--word-radius);
     overflow: hidden;
     font-size: 13px;
     font-weight: 500;
@@ -1045,7 +1046,7 @@ braccato-lyrics .blyrics-container {
     &[data-fit="tick"] {
       padding: 0;
       font-size: 0;
-      border-radius: 4px;
+      --word-radius: 4px;
     }
     &[data-lane="bg"] {
       opacity: 0.72;
