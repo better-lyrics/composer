@@ -44,8 +44,11 @@ function wordContentSpans(words: WordTiming[], splitChar: string): WordContentSp
 
 // -- Untimed tail -------------------------------------------------------------
 
-const WHITESPACE = /\s/;
 const WHITESPACE_RUN = /\s+/;
+
+function isWhitespace(char: string): boolean {
+  return char !== "" && char.trim() === "";
+}
 
 function tokenEnds(text: string, splitChar: string): { token: string; end: number }[] {
   const tokens: { token: string; end: number }[] = [];
@@ -56,7 +59,7 @@ function tokenEnds(text: string, splitChar: string): { token: string; end: numbe
     start = -1;
   };
   while (i < text.length) {
-    if (WHITESPACE.test(text[i])) {
+    if (isWhitespace(text[i])) {
       close(i);
       i++;
     } else if (splitChar !== "" && text.startsWith(splitChar, i)) {
@@ -84,13 +87,13 @@ function withTail(timedText: string, tail: string, splitChar: string): string {
   if (tail === "") return timedText;
   let start = 0;
   while (start < tail.length) {
-    if (WHITESPACE.test(tail[start])) start++;
+    if (isWhitespace(tail[start])) start++;
     else if (splitChar !== "" && tail.startsWith(splitChar, start)) start += splitChar.length;
     else break;
   }
   const content = tail.slice(start);
-  if (WHITESPACE.test(tail[0])) return `${timedText.trimEnd()} ${content}`;
-  return WHITESPACE.test(timedText.at(-1) ?? "") ? `${timedText}${content}` : `${timedText}${splitChar}${content}`;
+  if (isWhitespace(tail[0])) return `${timedText.trimEnd()} ${content}`;
+  return isWhitespace(timedText.at(-1) ?? "") ? `${timedText}${content}` : `${timedText}${splitChar}${content}`;
 }
 
 interface TrackSnapshot {
