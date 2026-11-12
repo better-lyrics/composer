@@ -60,39 +60,35 @@ const InstanceFields: React.FC<{
   children: React.ReactNode;
 }> = ({ draft, inputHeight, onKeyDown, focusName = false, reserveErrorLine = false, children }) => {
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-end gap-2">
-        <label className="flex flex-col gap-1 w-32">
-          <span className={LABEL_STYLES}>Name</span>
-          <input
-            ref={focusName ? focusOnMount : undefined}
-            type="text"
-            {...draft.nameField.fieldProps}
-            value={draft.label}
-            onChange={(e) => draft.changeLabel(e.target.value)}
-            onKeyDown={onKeyDown}
-            className={cn(INPUT_STYLES, "w-full py-0", inputHeight)}
-          />
-        </label>
-        <label className="flex flex-col gap-1 flex-1 min-w-0">
-          <span className={LABEL_STYLES}>URL</span>
-          <input
-            type="url"
-            inputMode="url"
-            {...draft.urlField.fieldProps}
-            placeholder="https://your-cobalt-instance"
-            value={draft.url}
-            onChange={(e) => draft.changeUrl(e.target.value)}
-            onKeyDown={onKeyDown}
-            className={cn(INPUT_STYLES, "w-full py-0 font-mono", inputHeight)}
-          />
-        </label>
-        {children}
-      </div>
-      <div className={reserveErrorLine ? "min-h-4" : "contents"}>
-        <FieldError {...draft.nameField.errorProps} />
-        <FieldError {...draft.urlField.errorProps} />
-      </div>
+    <div className="grid grid-cols-[8rem_minmax(0,1fr)_auto] gap-x-2">
+      <label className="flex flex-col gap-1">
+        <span className={LABEL_STYLES}>Name</span>
+        <input
+          ref={focusName ? focusOnMount : undefined}
+          type="text"
+          {...draft.nameField.fieldProps}
+          value={draft.label}
+          onChange={(e) => draft.changeLabel(e.target.value)}
+          onKeyDown={onKeyDown}
+          className={cn(INPUT_STYLES, "w-full py-0", inputHeight)}
+        />
+      </label>
+      <label className="flex flex-col gap-1 min-w-0">
+        <span className={LABEL_STYLES}>URL</span>
+        <input
+          type="url"
+          inputMode="url"
+          {...draft.urlField.fieldProps}
+          placeholder="https://your-cobalt-instance"
+          value={draft.url}
+          onChange={(e) => draft.changeUrl(e.target.value)}
+          onKeyDown={onKeyDown}
+          className={cn(INPUT_STYLES, "w-full py-0 font-mono", inputHeight)}
+        />
+      </label>
+      <div className="flex items-end gap-2">{children}</div>
+      <FieldError {...draft.nameField.errorProps} reserveLine={reserveErrorLine} className="mt-1.5" />
+      <FieldError {...draft.urlField.errorProps} reserveLine={reserveErrorLine} className="mt-1.5" />
     </div>
   );
 };
