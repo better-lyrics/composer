@@ -1,6 +1,3 @@
-/**
- * @vitest-environment node
- */
 import { useProjectStore } from "@/stores/project";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it } from "vitest";
