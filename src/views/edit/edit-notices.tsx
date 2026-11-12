@@ -1,5 +1,6 @@
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { HeaderNotices } from "@/ui/notices/header-notices";
+import { useDeletedProjectNotice } from "@/ui/projects/use-deleted-project-notice";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { useBracketNotice } from "@/views/edit/use-bracket-notice";
 import { useGroupingNotice } from "@/views/grouping/use-grouping-notice";
@@ -8,10 +9,11 @@ import { useGroupingNotice } from "@/views/grouping/use-grouping-notice";
 
 // Grouping waits while the lyrics are typed; the bracket warning follows every keystroke.
 const EditNotices: React.FC<{ parsed: readonly ParsedLine[]; isTyping: boolean }> = ({ parsed, isTyping }) => {
+  const deleted = useDeletedProjectNotice();
   const brackets = useBracketNotice(parsed);
   const grouping = useGroupingNotice(!isTyping);
   const projectId = useOpenProjectId();
-  return <HeaderNotices key={projectId} kinds={[brackets, grouping]} noun="notices" />;
+  return <HeaderNotices key={projectId} kinds={[deleted, brackets, grouping]} noun="notices" />;
 };
 
 // -- Exports ------------------------------------------------------------------

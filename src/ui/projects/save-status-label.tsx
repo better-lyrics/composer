@@ -1,5 +1,8 @@
+import { useOpenProjectDeleted } from "@/hooks/useOpenProjectDeleted";
 import { useOpenProjectId } from "@/hooks/useOpenProjectId";
+import { keepOpenProjectAsNew } from "@/lib/open-project-deleted";
 import { type SaveStatus, getSaveStatus, subscribeSaveStatus } from "@/lib/save-status";
+import { Button } from "@/ui/button";
 import { IconAlertTriangle, IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { useState, useSyncExternalStore } from "react";
 
@@ -25,15 +28,15 @@ function nextAnnouncement(status: SaveStatus, previous: string): string {
 
 // -- Components ---------------------------------------------------------------
 
+const NotSavedLabel: React.FC = () => (
+  <span className="inline-flex items-center gap-[3px] text-[11.5px] font-medium text-composer-warning">
+    <IconAlertTriangle aria-hidden="true" className="size-3.5" />
+    {SAVE_STATUS_COPY.failed}
+  </span>
+);
+
 const SaveStatusIcon: React.FC<{ status: SaveStatus }> = ({ status }) => {
-  if (status === "failed") {
-    return (
-      <span className="inline-flex items-center gap-[3px] text-[11.5px] font-medium text-composer-warning">
-        <IconAlertTriangle aria-hidden="true" className="size-3.5" />
-        {SAVE_STATUS_COPY.failed}
-      </span>
-    );
-  }
+  if (status === "failed") return <NotSavedLabel />;
   if (status === "saving") {
     return (
       <IconLoader2
@@ -52,8 +55,27 @@ const SaveStatusIcon: React.FC<{ status: SaveStatus }> = ({ status }) => {
 const SaveStatusGlyph: React.FC = () => {
   const status = useSaveStatus();
   const openId = useOpenProjectId();
-  if (!openId) return null;
+  const deletedElsewhere = useOpenProjectDeleted();
+  if (!openId || deletedElsewhere) return null;
   return <SaveStatusIcon status={status} />;
+};
+
+// Rendered beside the project switcher trigger, never inside it: a button cannot hold another button.
+const DeletedProjectSaveButton: React.FC = () => {
+  const deletedElsewhere = useOpenProjectDeleted();
+  if (!deletedElsewhere) return null;
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      aria-label="Not saved, keep as new project"
+      title="Keep as new project"
+      onClick={keepOpenProjectAsNew}
+      className="-ml-1 px-1.5"
+    >
+      <NotSavedLabel />
+    </Button>
+  );
 };
 
 const SaveStatusAnnouncer: React.FC = () => {
@@ -70,4 +92,4 @@ const SaveStatusAnnouncer: React.FC = () => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { SAVE_STATUS_COPY, SaveStatusAnnouncer, SaveStatusGlyph, SaveStatusIcon };
+export { DeletedProjectSaveButton, SAVE_STATUS_COPY, SaveStatusAnnouncer, SaveStatusGlyph, SaveStatusIcon };

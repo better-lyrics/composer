@@ -1,6 +1,7 @@
 import { useProjectChannel } from "@/hooks/useProjectChannel";
 import { createProject, openProject, restoreOpenProject } from "@/lib/open-project";
-import { forgetOpenProjectId, openProjectIdSnapshot } from "@/lib/open-project-session";
+import { isOpenProjectDeletedElsewhere, keepOpenProjectAsNew } from "@/lib/open-project-deleted";
+import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import { PROJECT_CHANNEL_NAME, subscribeProjectsDeleted } from "@/lib/project-channel";
 import { listProjectIndex, removeProjectData } from "@/lib/project-repository";
@@ -11,8 +12,10 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
+import { HeaderNotices } from "@/ui/notices/header-notices";
+import { DeletedProjectSaveButton } from "@/ui/projects/save-status-label";
+import { useDeletedProjectNotice } from "@/ui/projects/use-deleted-project-notice";
 import { nanoid } from "nanoid";
-import { Toaster, toast } from "sonner";
 import { afterEach, describe, expect, it } from "vitest";
 
 // -- Constants ----------------------------------------------------------------
@@ -23,7 +26,12 @@ const DELETED_NOTICE = "This project was deleted in another tab";
 
 const ChannelHost: React.FC = () => {
   useProjectChannel();
-  return <Toaster />;
+  return (
+    <>
+      <HeaderNotices kinds={[useDeletedProjectNotice()]} />
+      <DeletedProjectSaveButton />
+    </>
+  );
 };
 
 const openChannels: BroadcastChannel[] = [];
@@ -46,8 +54,8 @@ function afterHookHears(count: number): Promise<void> {
   });
 }
 
-function deletedNotices(): number {
-  return toast.getToasts().filter((entry) => "title" in entry && entry.title === DELETED_NOTICE).length;
+function deletedNotices(container: HTMLElement): number {
+  return Array.from(container.querySelectorAll("span")).filter((span) => span.textContent === DELETED_NOTICE).length;
 }
 
 async function openAlpha(): Promise<void> {
@@ -57,12 +65,6 @@ async function openAlpha(): Promise<void> {
 
 async function seedBravo(): Promise<void> {
   await seedStoredProject("b", { project: songTitled("Bravo") });
-}
-
-function findButtonByText(container: HTMLElement, text: string): HTMLButtonElement {
-  const button = Array.from(container.querySelectorAll("button")).find((candidate) => candidate.textContent === text);
-  if (!button) throw new Error(`button not found: ${text}`);
-  return button;
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -76,8 +78,26 @@ describe("useProjectChannel", () => {
     await openAlpha();
     const screen = await render(<ChannelHost />);
     deleteInOtherTab(["a"]);
-    await expect.element(screen.getByText("This project was deleted in another tab")).toBeInTheDocument();
-    await expect.element(screen.getByText("Changes here are not being saved.")).toBeInTheDocument();
+    await expect.element(screen.getByText(DELETED_NOTICE)).toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Keep as new project", exact: true })).toBeInTheDocument();
+  });
+
+  it("Not saved keeps the work in a new saved project and clears the notice", async () => {
+    await openAlpha();
+    const screen = await render(<ChannelHost />);
+    await removeProjectData("a");
+    deleteInOtherTab(["a"]);
+    await expect.element(screen.getByText(DELETED_NOTICE)).toBeInTheDocument();
+    useProjectStore.getState().setMetadata({ title: "Alpha (kept)" });
+    await screen.getByRole("button", { name: "Not saved, keep as new project" }).click();
+    await expect.poll(openProjectIdSnapshot).not.toBe("a");
+    const id = openProjectIdSnapshot() ?? "";
+    await expect.poll(async () => (await loadProjectRecord(id))?.metadata.title).toBe("Alpha (kept)");
+    expect(isOpenProjectDeletedElsewhere()).toBe(false);
+    await expect.element(screen.getByText(DELETED_NOTICE)).not.toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("button", { name: "Not saved, keep as new project" }))
+      .not.toBeInTheDocument();
   });
 
   it("Keep as new project saves what is on screen under a new id", async () => {
@@ -87,7 +107,7 @@ describe("useProjectChannel", () => {
     deleteInOtherTab(["a"]);
     await expect.element(screen.getByText("This project was deleted in another tab")).toBeInTheDocument();
     useProjectStore.getState().setMetadata({ title: "Alpha (edited)" });
-    await screen.getByRole("button", { name: "Keep as new project" }).click();
+    await screen.getByRole("button", { name: "Keep as new project", exact: true }).click();
     await expect.poll(openProjectIdSnapshot).not.toBe("a");
     const id = openProjectIdSnapshot() ?? "";
     await expect.poll(async () => (await loadProjectRecord(id))?.metadata.title).toBe("Alpha (edited)");
@@ -111,22 +131,22 @@ describe("useProjectChannel", () => {
   describe("edge cases", () => {
     it("stays quiet when another project is deleted", async () => {
       await openAlpha();
-      await render(<ChannelHost />);
+      const screen = await render(<ChannelHost />);
       const heard = afterHookHears(1);
       deleteInOtherTab(["b"]);
       await heard;
-      expect(deletedNotices()).toBe(0);
+      expect(deletedNotices(screen.container)).toBe(0);
     });
 
     it("Keep as new project adds the kept copy next to the existing projects", async () => {
       await openAlpha();
       const screen = await render(<ChannelHost />);
       deleteInOtherTab(["a"]);
-      await screen.getByRole("button", { name: "Keep as new project" }).click();
+      await screen.getByRole("button", { name: "Keep as new project", exact: true }).click();
       await expect.poll(async () => (await listProjectIndex()).length).toBe(2);
     });
 
-    it("shows one toast when the same project is announced deleted twice", async () => {
+    it("shows one notice when the same project is announced deleted twice", async () => {
       const id = nanoid();
       await seedStoredProject(id, { open: true, project: songTitled("Alpha") });
       await restoreOpenProject();
@@ -136,7 +156,7 @@ describe("useProjectChannel", () => {
       deleteInOtherTab([id]);
       await heard;
       await expect.element(screen.getByText(DELETED_NOTICE)).toBeInTheDocument();
-      expect(deletedNotices()).toBe(1);
+      expect(deletedNotices(screen.container)).toBe(1);
     });
   });
 
@@ -151,25 +171,18 @@ describe("useProjectChannel", () => {
       await expect.element(screen.getByText("This project was deleted in another tab")).not.toBeInTheDocument();
     });
 
-    it("regression: an unmounted hook no longer dismisses its notice when the open project changes", async () => {
-      await openAlpha();
-      const screen = await render(<ChannelHost />);
-      deleteInOtherTab(["a"]);
-      await expect.element(screen.getByText(DELETED_NOTICE)).toBeInTheDocument();
-      await screen.unmount();
-      forgetOpenProjectId();
-      expect(deletedNotices()).toBe(1);
-    });
-
     it("regression: switching away from the deleted project makes Keep as new project a no-op", async () => {
       await openAlpha();
       const screen = await render(<ChannelHost />);
       deleteInOtherTab(["a"]);
-      await expect.element(screen.getByRole("button", { name: "Keep as new project" })).toBeInTheDocument();
+      await expect
+        .element(screen.getByRole("button", { name: "Keep as new project", exact: true }))
+        .toBeInTheDocument();
       createProject();
       useProjectStore.getState().setMetadata({ title: "Should not be saved" });
       const newId = openProjectIdSnapshot();
-      findButtonByText(screen.container, "Keep as new project").click();
+      await expect.element(screen.getByText(DELETED_NOTICE)).not.toBeInTheDocument();
+      keepOpenProjectAsNew();
       expect(openProjectIdSnapshot()).toBe(newId);
       expect(getSaveStatus()).toBe("saved");
       expect(await listProjectIndex()).toHaveLength(1);

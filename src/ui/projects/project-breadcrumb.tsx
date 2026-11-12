@@ -7,7 +7,7 @@ import { LinkButton } from "@/ui/link-button";
 import { Popover } from "@/ui/popover";
 import { ProjectArt } from "@/ui/projects/project-art";
 import { ProjectSwitcher } from "@/ui/projects/project-switcher";
-import { SaveStatusAnnouncer, SaveStatusGlyph } from "@/ui/projects/save-status-label";
+import { DeletedProjectSaveButton, SaveStatusAnnouncer, SaveStatusGlyph } from "@/ui/projects/save-status-label";
 import { LIBRARY_PATH } from "@/utils/app-routes";
 import { formatShortcut } from "@/utils/format-key";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
@@ -66,6 +66,7 @@ const ProjectBreadcrumb: React.FC = () => {
         >
           {(close) => <ProjectSwitcher onClose={close} />}
         </Popover>
+        <DeletedProjectSaveButton />
       </nav>
       <SaveStatusAnnouncer />
     </div>

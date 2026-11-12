@@ -2,7 +2,7 @@ import type { Icon } from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------
 
-type NoticeKindId = "brackets" | "explicit" | "grouping" | "sharing";
+type NoticeKindId = "deleted" | "brackets" | "explicit" | "grouping" | "sharing";
 
 interface NoticeAction {
   label: string;
@@ -37,7 +37,7 @@ interface NoticeKind {
 
 // -- Constants ----------------------------------------------------------------
 
-const KIND_ORDER: readonly NoticeKindId[] = ["brackets", "explicit", "grouping", "sharing"];
+const KIND_ORDER: readonly NoticeKindId[] = ["deleted", "brackets", "explicit", "grouping", "sharing"];
 
 // -- Functions ----------------------------------------------------------------
 

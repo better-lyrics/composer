@@ -54,7 +54,8 @@ const FullPill: React.FC<{ kinds: readonly NoticeKind[]; onDismissAll: (kind: No
 }) => {
   const [first, ...rest] = kinds;
   const dismissable = kinds.filter((kind) => kind.dismiss);
-  const direct = dismissable.length === 1 && dismissable[0].rows.length === 1 ? dismissable[0].singleAction : undefined;
+  const actionable = kinds.length === 1 ? kinds : dismissable;
+  const direct = actionable.length === 1 && actionable[0].rows.length === 1 ? actionable[0].singleAction : undefined;
 
   return (
     <>
