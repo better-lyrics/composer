@@ -131,7 +131,7 @@ describe("ExportPanel · project file customSnapPoints", () => {
       lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
       customSnapPoints: snapPoints([3, 9]),
     });
-    const screen = await render(<ExportPanel />);
+    const screen = await render(<ExportPanel />, { withRouter: true });
 
     const originalCreate = URL.createObjectURL;
     const originalRevoke = URL.revokeObjectURL;
@@ -322,7 +322,7 @@ describe("ExportPanel · project file keeps the hand-edited TTML with its projec
       ttmlEditState: STALE_EDIT,
       importedMetadataKeys: ["title"],
     });
-    return render(<ExportPanel />);
+    return render(<ExportPanel />, { withRouter: true });
   }
 
   async function exportedProjectText(screen: Awaited<ReturnType<typeof render>>): Promise<string> {
