@@ -1,6 +1,7 @@
 import { CLEARED_BACKGROUND } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
+import { lcsPairs } from "@/domain/word/alignment";
 import { cleanSplitCharacters, stripSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
@@ -18,6 +19,29 @@ function carriesBackground(line: LyricLine): boolean {
 function keepsNoTimedBackground(line: LyricLine, source: LyricLine | undefined): boolean {
   const sourceText = source && cleanSplitCharacters(source.text.trim());
   return sourceText !== line.text || !line.backgroundWords?.length;
+}
+
+function unchangedRowPairs(existingKeys: string[], typedKeys: string[]): Array<[number, number]> {
+  let head = 0;
+  while (head < existingKeys.length && head < typedKeys.length && existingKeys[head] === typedKeys[head]) head++;
+  let tail = 0;
+  while (
+    tail < existingKeys.length - head &&
+    tail < typedKeys.length - head &&
+    existingKeys[existingKeys.length - 1 - tail] === typedKeys[typedKeys.length - 1 - tail]
+  ) {
+    tail++;
+  }
+  const middle = lcsPairs(
+    existingKeys.slice(head, existingKeys.length - tail),
+    typedKeys.slice(head, typedKeys.length - tail),
+  ).map(([existingIndex, typedIndex]): [number, number] => [existingIndex + head, typedIndex + head]);
+  const prefix = Array.from({ length: head }, (_, index): [number, number] => [index, index]);
+  const suffix = Array.from({ length: tail }, (_, offset): [number, number] => [
+    existingKeys.length - tail + offset,
+    typedKeys.length - tail + offset,
+  ]);
+  return [...prefix, ...middle, ...suffix];
 }
 
 function textToLyricLines(text: string, defaultAgentId: string, existingLines: LyricLine[] = []): LyricLine[] {
@@ -49,12 +73,16 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
     usedExistingIds.add(line.id);
   };
 
-  // Rows still showing their own line's text keep that line before any row can
-  // match it by text, so fixing a line into a later duplicate cannot steal it.
+  // Unchanged rows keep their own line, in order, before any row matches by text,
+  // so a repeated line cannot be claimed by a copy at another place in the song.
   if (allowPositionMatch) {
     cleanedKeys.forEach((_, index) => {
       if (existingKeys[index] === cleanedKeys[index]) claim(index, existingLines[index]);
     });
+  } else {
+    for (const [existingIndex, typedIndex] of unchangedRowPairs(existingKeys, cleanedKeys)) {
+      claim(typedIndex, existingLines[existingIndex]);
+    }
   }
 
   cleanedKeys.forEach((_, index) => {

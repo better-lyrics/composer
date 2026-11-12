@@ -92,8 +92,6 @@ describe("decideEditTextAction", () => {
 
   it("returns detach when a chorus instance loses a row", () => {
     const lines = chorusLines();
-    // Drop a chorus line from the textarea. textToLyricLines greedily reassigns the matching
-    // existing line, so the LAST chorus instance is the one detected as impacted (c2b is orphaned).
     const text = ["I love you", "verse line", "I love you", "more than words"].join("\n");
     const action = decideEditTextAction({
       text,
@@ -103,7 +101,7 @@ describe("decideEditTextAction", () => {
     });
     expect(action.kind).toBe("detach");
     if (action.kind !== "detach") return;
-    expect(action.detachedNames).toEqual(["Chorus 2"]);
+    expect(action.detachedNames).toEqual(["Chorus 1"]);
     expect(action.finalLines.filter((line) => line.groupId === "g1")).toHaveLength(2);
   });
 
@@ -207,10 +205,37 @@ describe("regressions", () => {
     useProjectStore.getState().setLinesWithHistory(action.finalLines, action.groups);
 
     expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(text.split("\n"));
-    expect(action.detachedNames).toEqual(["Chorus 2"]);
+    expect(action.detachedNames).toEqual(["Chorus 1"]);
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines).toEqual(lines);
     expect(useProjectStore.getState().groups).toEqual([groupChorus]);
+  });
+
+  it("regression: enter inside one copy of identical linked lines detaches only that copy", () => {
+    const verse = (id: string, text: string): LyricLine => ({ id, text, agentId: "v1" });
+    const chorus = (instanceIdx: number): LyricLine[] =>
+      ["Hold the line and let it ring", "Every echo finds its way home"].map((text, templateLineIdx) => ({
+        id: `c${instanceIdx}-${templateLineIdx}`,
+        text,
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx,
+        templateLineIdx,
+      }));
+    const lines = [
+      verse("v1", "Lanterns lean against the gate"),
+      ...chorus(0),
+      verse("v2", "Paper boats along the drain"),
+      ...chorus(1),
+      verse("v3", "Morning folds the city small"),
+      ...chorus(2),
+    ];
+    const text = baseText(lines).replace("Hold the line and let it ring", "Hold the\nline and let it ring");
+    const action = decideEditTextAction({ text, defaultAgentId: "v1", lines, groups: [groupChorus] });
+    if (action.kind !== "detach") throw new Error(`expected detach, got ${action.kind}`);
+    expect(action.detachedNames).toEqual(["Chorus 1"]);
+    expect(action.finalLines.slice(1, 4).filter((line) => line.groupId !== undefined)).toEqual([]);
+    expect(action.finalLines.slice(5)).toEqual(lines.slice(4));
   });
 
   it("regression: restores the neighbour word timing after the added word is removed", () => {
