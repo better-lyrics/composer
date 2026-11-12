@@ -1,5 +1,6 @@
 import { useFieldError } from "@/hooks/useFieldError";
 import { Button } from "@/ui/button";
+import { EMPTY_NAME_MESSAGE } from "@/ui/empty-name-message";
 import { FieldError } from "@/ui/field-error";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { cn } from "@/utils/cn";
@@ -9,7 +10,6 @@ import { useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
-const EMPTY_NAME_MESSAGE = "Type a name first";
 const INVALID_URL_MESSAGE = "Enter a valid http(s) URL.";
 const LABEL_STYLES = "text-xs text-composer-text-muted select-none";
 

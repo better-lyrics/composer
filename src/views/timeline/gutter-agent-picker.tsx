@@ -4,7 +4,7 @@ import { nextAgentId } from "@/domain/agent/next-agent-id";
 import { useFieldError } from "@/hooks/useFieldError";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
-import { EMPTY_AGENT_NAME_MESSAGE } from "@/ui/agent-name-copy";
+import { EMPTY_NAME_MESSAGE } from "@/ui/empty-name-message";
 import { FieldError } from "@/ui/field-error";
 import { IconButton } from "@/ui/icon-button";
 import { INPUT_STYLES } from "@/ui/input-styles";
@@ -49,7 +49,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
   const handleAddNew = useCallback(
     (close: () => void) => {
       if (!newAgentName.trim()) {
-        showError(EMPTY_AGENT_NAME_MESSAGE);
+        showError(EMPTY_NAME_MESSAGE);
         return;
       }
       const newId = nextAgentId(agents);

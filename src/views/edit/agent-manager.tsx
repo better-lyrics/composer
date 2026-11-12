@@ -5,7 +5,7 @@ import { AGENT_PRESETS, getAgentColor } from "@/domain/agent/colors";
 import { nextAgentId } from "@/domain/agent/next-agent-id";
 import type { Agent, AgentType } from "@/domain/agent/model";
 import { useProjectStore } from "@/stores/project";
-import { EMPTY_AGENT_NAME_MESSAGE } from "@/ui/agent-name-copy";
+import { EMPTY_NAME_MESSAGE } from "@/ui/empty-name-message";
 import { Button } from "@/ui/button";
 import { FieldError } from "@/ui/field-error";
 import { IconButton } from "@/ui/icon-button";
@@ -128,7 +128,7 @@ const AddAgentForm: React.FC<{ onDone: () => void; onBack: () => void }> = ({ on
 
   const handleAddCustom = () => {
     if (!customName.trim()) {
-      nameField.showError(EMPTY_AGENT_NAME_MESSAGE);
+      nameField.showError(EMPTY_NAME_MESSAGE);
       return;
     }
     addAgent({ id: nextAgentId(agents), type: customType, name: customName.trim() });

@@ -14,7 +14,7 @@ import { FieldError } from "@/ui/field-error";
 import { IconField } from "@/ui/icon-field";
 import { EDITOR_PATH } from "@/utils/app-routes";
 import { cn } from "@/utils/cn";
-import { EMPTY_YOUTUBE_LINK_MESSAGE, INVALID_YOUTUBE_LINK_MESSAGE, extractVideoId } from "@/utils/youtube-url";
+import { readYouTubeLink } from "@/utils/youtube-url";
 
 // -- Types --------------------------------------------------------------------
 
@@ -34,13 +34,9 @@ const NewSongLink: React.FC<{ onCreate: (videoId: string) => void }> = ({ onCrea
   const { showError, clearError, fieldProps, errorProps } = useFieldError();
 
   const submit = () => {
-    if (value.trim() === "") {
-      showError(EMPTY_YOUTUBE_LINK_MESSAGE);
-      return;
-    }
-    const videoId = extractVideoId(value);
-    if (!videoId) {
-      showError(INVALID_YOUTUBE_LINK_MESSAGE);
+    const { videoId, error } = readYouTubeLink(value);
+    if (error !== undefined) {
+      showError(error);
       return;
     }
     clearError();

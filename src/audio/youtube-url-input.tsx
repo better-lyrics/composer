@@ -15,7 +15,7 @@ import { FLOATING_INPUT_STYLES, INPUT_STYLES } from "@/ui/input-styles";
 import { ProgressBar } from "@/ui/progress-bar";
 import { cn } from "@/utils/cn";
 import { focusOnMount } from "@/utils/focus-on-mount";
-import { EMPTY_YOUTUBE_LINK_MESSAGE, INVALID_YOUTUBE_LINK_MESSAGE, extractVideoId } from "@/utils/youtube-url";
+import { readYouTubeLink } from "@/utils/youtube-url";
 import { IconBrandYoutube, IconX } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
 
@@ -64,13 +64,9 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
   const download = useYouTubeDownload();
 
   const handleSubmit = useCallback(async () => {
-    if (value.trim() === "") {
-      showError(EMPTY_YOUTUBE_LINK_MESSAGE);
-      return;
-    }
-    const videoId = extractVideoId(value);
-    if (!videoId) {
-      showError(INVALID_YOUTUBE_LINK_MESSAGE);
+    const { videoId, error } = readYouTubeLink(value);
+    if (error !== undefined) {
+      showError(error);
       return;
     }
     clearError();

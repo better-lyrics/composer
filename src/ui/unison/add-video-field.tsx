@@ -4,7 +4,7 @@ import { FieldError } from "@/ui/field-error";
 import { IconField } from "@/ui/icon-field";
 import { FLOATING_INPUT_STYLES } from "@/ui/input-styles";
 import { cn } from "@/utils/cn";
-import { EMPTY_YOUTUBE_LINK_MESSAGE, extractVideoId } from "@/utils/youtube-url";
+import { readYouTubeLink } from "@/utils/youtube-url";
 import { IconLink } from "@tabler/icons-react";
 import { useState } from "react";
 
@@ -40,13 +40,9 @@ const AddVideoField: React.FC<AddVideoFieldProps> = ({
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (adding || busy) return;
-    if (link.trim() === "") {
-      linkField.showError(EMPTY_YOUTUBE_LINK_MESSAGE);
-      return;
-    }
-    const videoId = extractVideoId(link);
-    if (!videoId) {
-      linkField.showError(INVALID_LINK_MESSAGE);
+    const { videoId, error } = readYouTubeLink(link, INVALID_LINK_MESSAGE);
+    if (error !== undefined) {
+      linkField.showError(error);
       return;
     }
     setAdding(true);

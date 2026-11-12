@@ -13,8 +13,7 @@ interface AnchoredContextMenu extends ContextMenuPoint {
 
 // -- Functions -----------------------------------------------------------------
 
-// Chromium and Firefox send button 0 for the ContextMenu key and Shift+F10, and 2 for a right click.
-// A Mac Control-click also sends 0, so it is told apart by ctrlKey; a touch long press by its pointerType.
+// Keyboard opens send button 0; so do Control-click (ctrlKey) and a touch long press (pointerType).
 function isKeyboardContextMenu(event: MouseEvent): boolean {
   const fromTouchOrPen =
     event instanceof PointerEvent && (event.pointerType === "touch" || event.pointerType === "pen");

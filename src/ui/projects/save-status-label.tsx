@@ -3,9 +3,10 @@ import { useOpenProjectId } from "@/hooks/useOpenProjectId";
 import { keepOpenProjectAsNew } from "@/lib/open-project-deleted";
 import { type SaveStatus, getSaveStatus, subscribeSaveStatus } from "@/lib/save-status";
 import { Button } from "@/ui/button";
+import { DelayedSpinner } from "@/ui/delayed-spinner";
 import { ShortcutTip } from "@/ui/shortcut-tip";
 import { Tooltip } from "@/ui/tooltip";
-import { IconAlertTriangle, IconCheck, IconLoader2 } from "@tabler/icons-react";
+import { IconAlertTriangle, IconCheck } from "@tabler/icons-react";
 import { useState, useSyncExternalStore } from "react";
 
 // -- Constants ----------------------------------------------------------------
@@ -39,14 +40,7 @@ const NotSavedLabel: React.FC = () => (
 
 const SaveStatusIcon: React.FC<{ status: SaveStatus }> = ({ status }) => {
   if (status === "failed") return <NotSavedLabel />;
-  if (status === "saving") {
-    return (
-      <IconLoader2
-        aria-hidden="true"
-        className="size-3.5 text-composer-text-faint animate-[spin_900ms_linear_infinite] motion-reduce:animate-none"
-      />
-    );
-  }
+  if (status === "saving") return <DelayedSpinner busy className="size-3.5 text-composer-text-faint" />;
   return (
     <span title={SAVE_STATUS_COPY.saved} className="inline-flex">
       <IconCheck aria-hidden="true" className="size-3.5 text-composer-text-faint" />

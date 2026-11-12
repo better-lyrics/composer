@@ -1,5 +1,10 @@
 import { bindingToKeys } from "@/stores/shortcut-bindings";
-import type { ShortcutBinding, ShortcutDefinition } from "@/stores/shortcut-registry";
+import {
+  SHORTCUT_SCOPE_GROUPS,
+  type ShortcutBinding,
+  type ShortcutDefinition,
+  type ShortcutScope,
+} from "@/stores/shortcut-registry";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import { KeyBadge } from "@/ui/shortcut-reference";
@@ -43,11 +48,7 @@ const BrowserWarningModal: React.FC<{
 
 // -- Conflict Modal -----------------------------------------------------------
 
-const SCOPE_LABELS: Record<string, string> = {
-  global: "General",
-  sync: "Sync Mode",
-  timeline: "Timeline Mode",
-};
+const scopeTitle = (scope: ShortcutScope) => SHORTCUT_SCOPE_GROUPS.find((group) => group.scope === scope)?.title;
 
 const ConflictModal: React.FC<{
   newBinding: ShortcutBinding;
@@ -73,7 +74,7 @@ const ConflictModal: React.FC<{
           {conflicts.map((c) => (
             <div key={c.id} className="flex items-center justify-between px-3 py-2.5">
               <span className="text-sm text-composer-text">{c.description}</span>
-              <span className="text-xs text-composer-text-muted">{SCOPE_LABELS[c.scope] ?? c.scope}</span>
+              <span className="text-xs text-composer-text-muted">{scopeTitle(c.scope)}</span>
             </div>
           ))}
         </div>

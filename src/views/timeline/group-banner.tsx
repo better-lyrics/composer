@@ -10,6 +10,7 @@ import { BannerTag } from "@/views/timeline/banner-tag";
 import { registerBanner } from "@/views/timeline/banner-progress-registry";
 import { StepSkipChip } from "@/views/timeline/step-timing/step-skip-chip";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { contextMenuPoint } from "@/views/timeline/keyboard-context-menu";
 import { useBannerDrag } from "@/views/timeline/use-banner-drag";
 import { IconChevronDown, IconClock, IconLink } from "@tabler/icons-react";
 import { m } from "motion/react";
@@ -94,8 +95,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
       e.preventDefault();
       e.stopPropagation();
       setContextMenu({
-        x: e.clientX,
-        y: e.clientY,
+        ...contextMenuPoint(e),
         target: { kind: "group-banner", groupId: group.id, instanceIdx, source: "banner" },
       });
     },

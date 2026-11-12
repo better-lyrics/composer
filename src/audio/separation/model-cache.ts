@@ -1,4 +1,5 @@
 import type { ModelDescriptor } from "@/audio/separation/model-registry";
+import { readBodyWithProgress } from "@/utils/read-response-body";
 
 const MODEL_CACHE_NAME = "composer-vocal-model-v1";
 const LOG_PREFIX = "[ModelCache]";
@@ -64,42 +65,12 @@ async function fetchAndCacheModel(
     throw new Error(`Model fetch failed (${response.status} ${response.statusText})`);
   }
 
-  const contentLengthHeader = response.headers.get("content-length");
-  const total = contentLengthHeader ? Number(contentLengthHeader) : model.approxBytes;
-
-  const reader = response.body?.getReader();
-  if (!reader) {
-    const buf = await response.arrayBuffer();
-    onProgress(buf.byteLength, buf.byteLength);
-    await verifyAndCache(model, buf);
-    return buf;
-  }
-
-  const chunks: Uint8Array[] = [];
-  let loaded = 0;
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (signal.aborted) {
-      reader.cancel().catch(() => {});
-      throw new DOMException("Aborted", "AbortError");
-    }
-    if (done) break;
-    if (value) {
-      chunks.push(value);
-      loaded += value.byteLength;
-      onProgress(loaded, total);
-    }
-  }
-
-  const merged = new Uint8Array(loaded);
-  let offset = 0;
-  for (const chunk of chunks) {
-    merged.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-
-  await verifyAndCache(model, merged);
-  return merged.buffer;
+  const bytes = await readBodyWithProgress(response, ({ received, total }) =>
+    onProgress(received, total ?? model.approxBytes),
+  );
+  onProgress(bytes.byteLength, bytes.byteLength);
+  await verifyAndCache(model, bytes);
+  return bytes;
 }
 
 export { MODEL_CACHE_NAME, hasCachedModel, readCachedModel, fetchAndCacheModel };

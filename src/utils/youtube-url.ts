@@ -53,4 +53,12 @@ function extractVideoId(input: string): string | null {
 
 // -- Exports ------------------------------------------------------------------
 
-export { extractVideoId, EMPTY_YOUTUBE_LINK_MESSAGE, INVALID_YOUTUBE_LINK_MESSAGE };
+type YouTubeLinkRead = { videoId: string; error?: never } | { videoId?: never; error: string };
+
+function readYouTubeLink(value: string, invalidMessage = INVALID_YOUTUBE_LINK_MESSAGE): YouTubeLinkRead {
+  if (value.trim() === "") return { error: EMPTY_YOUTUBE_LINK_MESSAGE };
+  const videoId = extractVideoId(value);
+  return videoId ? { videoId } : { error: invalidMessage };
+}
+
+export { extractVideoId, readYouTubeLink };
