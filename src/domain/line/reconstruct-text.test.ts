@@ -1,7 +1,8 @@
-import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
+import { describe, expect, it } from "vitest";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { reconstructLineText, withDerivedText, wordContentSpans } from "@/domain/line/reconstruct-text";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -120,5 +121,27 @@ describe("wordContentSpans", () => {
     for (let i = 0; i < words.length; i++) {
       expect(reconstructed.slice(spans[i].start, spans[i].end)).toBe(words[i].text.trim());
     }
+  });
+});
+
+// -- withDerivedText ----------------------------------------------------------
+
+describe("withDerivedText on a partly synced line", () => {
+  const partly = (text: string, words: string[]): LyricLine => ({ id: "l1", agentId: "v1", text, words: words.map(w) });
+  const derivedText = (previous: LyricLine, words: string[], text = previous.text) =>
+    withDerivedText(reconcileLine({ ...previous, text, words: words.map(w) }), "|", previous).text;
+
+  it("keeps the untimed words when the timed words only change in place", () => {
+    const previous = partly("la la la", ["la "]);
+    expect(derivedText(previous, ["la "])).toBe("la la la");
+  });
+
+  it("does not repeat untimed words that new timed words now cover", () => {
+    const previous = partly("every night in my dreams", ["every ", "night ", "in "]);
+    expect(derivedText(previous, ["every ", "night ", "in ", "my ", "dreams"], "every night in my dreams")).toBe(
+      "every night in my dreams",
+    );
+    const placeholder = partly("every night in ... my dreams", ["every ", "night ", "in ", "... "]);
+    expect(derivedText(placeholder, ["every ", "night ", "in ", "my "])).toBe("every night in my dreams");
   });
 });

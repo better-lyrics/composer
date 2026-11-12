@@ -25,10 +25,8 @@ const WordEditMenuItems: React.FC<WordEditMenuItemsProps> = ({ targets, actions 
   return (
     <>
       {wordCommandTargets?.editable && (
-        <MenuItem label="Edit text" shortcut={getEffectiveKeysArray("timeline.editWord")} onSelect={handleEditWord} />
-      )}
-      {wordCommandTargets?.splittable && (
         <>
+          <MenuItem label="Edit text" shortcut={getEffectiveKeysArray("timeline.editWord")} onSelect={handleEditWord} />
           <MenuItem
             label="Split syllables"
             shortcut={getEffectiveKeysArray("timeline.splitSyllable")}

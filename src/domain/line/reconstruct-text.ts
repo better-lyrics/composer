@@ -74,13 +74,26 @@ function tokenEnds(text: string, splitChar: string): { token: string; end: numbe
   return tokens;
 }
 
+function wordAtoms(words: WordTiming[]): string[] {
+  return words.flatMap((word) => word.text.split(WHITESPACE_RUN).filter((atom) => atom.length > 0));
+}
+
 // The words of a partly synced track cover the start of its text; the rest is lyrics not timed yet.
-function untimedTail(text: string, words: WordTiming[], splitChar: string): string {
-  const covered = words.flatMap((word) => word.text.split(WHITESPACE_RUN).filter((atom) => atom.length > 0));
+// Untimed words that the new timed words now end with were just timed, so they leave the tail.
+function untimedTail(text: string, previousWords: WordTiming[], words: WordTiming[], splitChar: string): string {
+  const covered = wordAtoms(previousWords);
   const tokens = tokenEnds(text, splitChar);
   if (covered.length === 0 || covered.length >= tokens.length) return "";
   if (covered.some((atom, i) => atom !== tokens[i].token)) return "";
-  return text.slice(tokens[covered.length - 1].end);
+  const timed = wordAtoms(words);
+  let shared = 0;
+  while (shared < covered.length && shared < timed.length && covered[shared] === timed[shared]) shared++;
+  const added = timed.slice(shared);
+  const tail = tokens.slice(covered.length).map((entry) => entry.token);
+  let nowTimed = Math.min(added.length, tail.length);
+  while (nowTimed > 0 && added.slice(added.length - nowTimed).some((atom, i) => atom !== tail[i])) nowTimed--;
+  if (nowTimed === tail.length) return "";
+  return text.slice(tokens[covered.length + nowTimed - 1].end);
 }
 
 function withTail(timedText: string, tail: string, splitChar: string): string {
@@ -109,7 +122,7 @@ function derivedTrackText(
 ): string | undefined {
   if (!track.words || track.words.length === 0) return track.text;
   const keepsTail = previous?.words && track.text !== undefined && track.text === previous.text;
-  const tail = keepsTail && previous.words ? untimedTail(track.text ?? "", previous.words, splitChar) : "";
+  const tail = keepsTail && previous.words ? untimedTail(track.text ?? "", previous.words, track.words, splitChar) : "";
   return withTail(reconstructLineText(track.words, splitChar), tail, splitChar);
 }
 

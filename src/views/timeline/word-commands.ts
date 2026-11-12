@@ -1,5 +1,4 @@
 import type { LyricLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
 import { type TrackField, trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun, type SelectionRun } from "@/domain/selection/contiguous";
 import type { WordSelection } from "@/domain/selection/model";
@@ -29,14 +28,6 @@ interface WordMerge {
 
 function singleSelectedWord(selection: WordSelection[]): WordSelection | null {
   return selection.length === 1 ? selection[0] : null;
-}
-
-function splittableWord(selection: WordSelection[], lines: LyricLine[]): WordSelection | null {
-  const word = singleSelectedWord(selection);
-  if (!word) return null;
-  const line = lines.find((candidate) => candidate.id === word.lineId);
-  if (!line || (word.type === "word" && isLineSynced(line))) return null;
-  return word;
 }
 
 function wordMergeTarget(selection: WordSelection[], lines: LyricLine[]): WordMerge | null {
@@ -95,7 +86,6 @@ export {
   runSyllableMerge,
   runWordMerge,
   singleSelectedWord,
-  splittableWord,
   syllableMergeTarget,
   wordMergeTarget,
 };

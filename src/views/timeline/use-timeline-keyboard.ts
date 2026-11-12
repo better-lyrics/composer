@@ -66,7 +66,6 @@ import {
   runSyllableMerge,
   runWordMerge,
   singleSelectedWord,
-  splittableWord,
   syllableMergeTarget,
   wordMergeTarget,
 } from "@/views/timeline/word-commands";
@@ -409,8 +408,7 @@ function useTimelineKeyboard(
         }
         case "timeline.splitSyllable":
         case "timeline.splitWord": {
-          const projectLines = useProjectStore.getState().lines;
-          if (!splittableWord(useTimelineStore.getState().selectedWords, projectLines)) break;
+          if (!singleSelectedWord(useTimelineStore.getState().selectedWords)) break;
           e.preventDefault();
           const eventName = matched === "timeline.splitWord" ? "timeline:split-word" : "timeline:split-syllable";
           window.dispatchEvent(new CustomEvent(eventName));

@@ -15,6 +15,10 @@ function carriesBackground(line: LyricLine): boolean {
   );
 }
 
+function keepsNoTimedBackground(line: LyricLine, source: LyricLine | undefined): boolean {
+  return source?.text !== line.text || !line.backgroundWords?.length;
+}
+
 function textToLyricLines(text: string, defaultAgentId: string, existingLines: LyricLine[] = []): LyricLine[] {
   const textToCandidates = new Map<string, LyricLine[]>();
   const existingKeys = existingLines.map((line) => matchKey(line.text));
@@ -82,10 +86,10 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
     };
   });
 
-  // Parentheses typed into a row stand for its background vocals, so the carried-over background would
-  // double on re-extraction. A row the edit left unchanged keeps what it had.
+  // Parentheses in a row stand for its background vocals, so a carried-over background would double on
+  // re-extraction. Timed background words on a row the edit left unchanged are kept.
   return mapped.map((line, index) =>
-    carriesBackground(line) && sources[index]?.text !== line.text && /\([^)]*\)/.test(line.text)
+    carriesBackground(line) && keepsNoTimedBackground(line, sources[index]) && /\([^)]*\)/.test(line.text)
       ? { ...line, ...CLEARED_BACKGROUND }
       : line,
   );

@@ -31,7 +31,6 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
   explicitToggleTarget,
   singleSelectedWord,
-  splittableWord,
   syllableMergeTarget,
   wordMergeTarget,
 } from "@/views/timeline/word-commands";
@@ -68,7 +67,6 @@ function useContextMenuTargets() {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
     return {
       editable: singleSelectedWord(selectedWords),
-      splittable: splittableWord(selectedWords, rawLines),
       syllableMerge: syllableMergeTarget(selectedWords, rawLines),
     };
   }, [contextMenu, selectedWords, rawLines]);

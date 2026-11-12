@@ -269,6 +269,15 @@ describe("textToLyricLines · group attrs preservation", () => {
     expect(result[0].backgroundText).toBe("ooh");
   });
 
+  it("drops carried backgroundText on an exact-text match whose text contains parentheses", () => {
+    const existing: LyricLine[] = [{ id: "L1", text: "Hello (ooh) world", agentId: "v1", backgroundText: "ooh" }];
+    const result = textToLyricLines("Hello (ooh) world", "v1", existing);
+    expect(result[0].id).toBe("L1");
+    expect(result[0].text).toBe("Hello (ooh) world");
+    expect(result[0].backgroundText).toBeUndefined();
+    expect(result[0].backgroundWords).toBeUndefined();
+  });
+
   it("regression: a row the edit did not change keeps its timed background, parentheses or not", () => {
     const timedBackground = [{ text: "hold on", begin: 1, end: 2 }];
     const existing: LyricLine[] = [

@@ -36,7 +36,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   // The splitter picks the word up from the selection when the menu event arrives.
   const splitFromMenu = useCallback(
     (eventName: "timeline:split-syllable" | "timeline:split-word") => {
-      if (!wordCommandTargets?.splittable) return;
+      if (!wordCommandTargets?.editable) return;
       useTimelineStore.getState().setEditingWord(null);
       clearContextMenu();
       window.dispatchEvent(new CustomEvent(eventName));
