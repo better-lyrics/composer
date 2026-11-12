@@ -25,6 +25,7 @@ interface WordBlockBoxes {
 // -- Constants -----------------------------------------------------------------
 
 const WORD_BLOCK_SELECTOR = "[data-word-block]";
+const SENTINEL_TOLERANCE_PX = 0.5;
 
 // -- Functions -----------------------------------------------------------------
 
@@ -65,6 +66,17 @@ function blockBox(block: HTMLElement, originLeft: number, originTop: number): Bl
   };
 }
 
+// Layout above the rows (the band's min-height transition) moves every block without a mutation in the container.
+function sentinelMoved(state: WordBlockBoxes): boolean {
+  const cached = state.boxes[0];
+  if (!cached.block.isConnected) return true;
+  const rect = cached.block.getBoundingClientRect();
+  return (
+    Math.abs(rect.left - state.originLeft - cached.left) > SENTINEL_TOLERANCE_PX ||
+    Math.abs(rect.top - state.originTop - cached.top) > SENTINEL_TOLERANCE_PX
+  );
+}
+
 function measureBlocks(state: WordBlockBoxes, container: HTMLElement): void {
   state.blocks.length = 0;
   state.boxes.length = 0;
@@ -86,6 +98,7 @@ function refreshWordBlockBoxes(
   const rect = container.getBoundingClientRect();
   state.originLeft = rect.left - scroll.left;
   state.originTop = rect.top - scroll.top;
+  if (!state.stale && state.boxes.length > 0 && sentinelMoved(state)) state.stale = true;
   if (!state.stale) return;
   measureBlocks(state, container);
   // A hidden container lays every block out at zero, so measure again once it shows.

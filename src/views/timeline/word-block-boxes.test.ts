@@ -10,12 +10,14 @@ import {
 
 const CONTAINER = { left: 50, top: 80, width: 1000, height: 600 };
 const BLOCK_HEIGHT = 40;
+const SENTINEL_READS = 1;
 
 // -- Helpers -------------------------------------------------------------------
 
 interface Fixture {
   container: HTMLElement;
   scroll: { left: number; top: number };
+  layoutAbove: { height: number };
   addBlock: (contentLeft: number, contentTop: number, width: number) => HTMLElement;
   rectReads: () => number;
 }
@@ -38,6 +40,7 @@ function freshRects(fixture: Fixture): { left: number; right: number; top: numbe
 
 function createFixture(): Fixture {
   const scroll = { left: 0, top: 0 };
+  const layoutAbove = { height: 0 };
   const container = document.createElement("div");
   container.getBoundingClientRect = () => new DOMRect(CONTAINER.left, CONTAINER.top, CONTAINER.width, CONTAINER.height);
   document.body.appendChild(container);
@@ -45,6 +48,7 @@ function createFixture(): Fixture {
   return {
     container,
     scroll,
+    layoutAbove,
     rectReads: () => reads,
     addBlock: (contentLeft, contentTop, width) => {
       const block = document.createElement("div");
@@ -55,7 +59,7 @@ function createFixture(): Fixture {
         reads++;
         return new DOMRect(
           CONTAINER.left + Number.parseFloat(block.style.left) - scroll.left,
-          CONTAINER.top + contentTop - scroll.top,
+          CONTAINER.top + layoutAbove.height + contentTop - scroll.top,
           Number.parseFloat(block.style.width),
           BLOCK_HEIGHT,
         );
@@ -88,22 +92,35 @@ describe("refreshWordBlockBoxes", () => {
     fixture.scroll.top = 33;
     refreshWordBlockBoxes(boxes, fixture.container, fixture.scroll);
 
-    expect(fixture.rectReads()).toBe(readsAfterMeasure);
+    expect(fixture.rectReads()).toBe(readsAfterMeasure + SENTINEL_READS);
     expect(viewportBox(boxes)).toEqual(freshRects(fixture));
   });
 
   it("measures again after a block moves, but not after a playback light", () => {
     const fixture = createFixture();
     const block = fixture.addBlock(100, 20, 300);
+    fixture.addBlock(600, 70, 80);
     refreshWordBlockBoxes(boxes, fixture.container, fixture.scroll);
     const readsAfterMeasure = fixture.rectReads();
 
     block.setAttribute("data-lit", "");
     refreshWordBlockBoxes(boxes, fixture.container, fixture.scroll);
-    expect(fixture.rectReads()).toBe(readsAfterMeasure);
+    expect(fixture.rectReads()).toBe(readsAfterMeasure + SENTINEL_READS);
 
     block.style.left = "180px";
     refreshWordBlockBoxes(boxes, fixture.container, fixture.scroll);
+    expect(viewportBox(boxes)).toEqual(freshRects(fixture));
+  });
+
+  it("regression: measures again after layout above the rows moves them with no mutation in the container", () => {
+    const fixture = createFixture();
+    fixture.addBlock(100, 20, 300);
+    fixture.addBlock(600, 70, 80);
+    refreshWordBlockBoxes(boxes, fixture.container, fixture.scroll);
+
+    fixture.layoutAbove.height = 96;
+    refreshWordBlockBoxes(boxes, fixture.container, fixture.scroll);
+
     expect(viewportBox(boxes)).toEqual(freshRects(fixture));
   });
 });
