@@ -17,15 +17,16 @@ function carriesBackground(line: LyricLine): boolean {
 
 function textToLyricLines(text: string, defaultAgentId: string, existingLines: LyricLine[] = []): LyricLine[] {
   const textToCandidates = new Map<string, LyricLine[]>();
-  for (const line of existingLines) {
-    const key = matchKey(line.text);
+  const existingKeys = existingLines.map((line) => matchKey(line.text));
+  existingLines.forEach((line, index) => {
+    const key = existingKeys[index];
     let bucket = textToCandidates.get(key);
     if (!bucket) {
       bucket = [];
       textToCandidates.set(key, bucket);
     }
     bucket.push(line);
-  }
+  });
 
   const usedExistingIds = new Set<string>();
   const newLines = text.split("\n");
@@ -36,6 +37,7 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
   const allowPositionMatch = newLines.length === existingLines.length;
 
   const cleanedTexts = newLines.map((lineText) => cleanSplitCharacters(lineText.trim()));
+  const cleanedKeys = cleanedTexts.map(matchKey);
   const claimed: Array<LyricLine | undefined> = new Array(newLines.length);
   const claim = (index: number, line: LyricLine) => {
     claimed[index] = line;
@@ -45,14 +47,14 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
   // Rows still showing their own line's text keep that line before any row can
   // match it by text, so fixing a line into a later duplicate cannot steal it.
   if (allowPositionMatch) {
-    cleanedTexts.forEach((cleanedText, index) => {
-      if (matchKey(existingLines[index].text) === matchKey(cleanedText)) claim(index, existingLines[index]);
+    cleanedKeys.forEach((_, index) => {
+      if (existingKeys[index] === cleanedKeys[index]) claim(index, existingLines[index]);
     });
   }
 
-  cleanedTexts.forEach((cleanedText, index) => {
+  cleanedKeys.forEach((_, index) => {
     if (claimed[index]) return;
-    const exactMatch = textToCandidates.get(matchKey(cleanedText))?.find((line) => !usedExistingIds.has(line.id));
+    const exactMatch = textToCandidates.get(cleanedKeys[index])?.find((line) => !usedExistingIds.has(line.id));
     if (exactMatch) claim(index, exactMatch);
   });
 
