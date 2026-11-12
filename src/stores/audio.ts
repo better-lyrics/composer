@@ -241,4 +241,4 @@ export {
   toggledPlaybackRate,
   useAudioStore,
 };
-export type { AudioSource };
+export type { AudioSource, YouTubeLoadFailure };

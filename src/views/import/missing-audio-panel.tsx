@@ -5,7 +5,7 @@ import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { youtubeSourceTitle } from "@/domain/project/display-title";
 import { relinkProjectAudioFile, relinkProjectVideo, retryProjectAudio } from "@/lib/relink-audio";
-import { useAudioStore } from "@/stores/audio";
+import { useAudioStore, type YouTubeLoadFailure } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { Button } from "@/ui/button";
@@ -63,6 +63,12 @@ const FileName: React.FC<{ name: string }> = ({ name }) => (
   </code>
 );
 
+const YOUTUBE_FAILURE_DETAIL: Record<YouTubeLoadFailure, string> = {
+  "bridge-unreachable": "Start Composer Bridge, then try again.",
+  "fetch-failed": "Couldn't load the audio from YouTube.",
+  cancelled: "Download cancelled. Try again when you're ready.",
+};
+
 // -- Component ----------------------------------------------------------------
 
 const MissingAudioPanel: React.FC<MissingAudioPanelProps> = ({ expected }) => {
@@ -83,9 +89,7 @@ const MissingAudioPanel: React.FC<MissingAudioPanelProps> = ({ expected }) => {
         ) : (
           <WarningSourceRow
             name={youtubeSourceTitle(title, expected.videoId)}
-            detail={
-              bridgeUnreachable ? "Start Composer Bridge, then try again." : "Couldn't load the audio from YouTube."
-            }
+            detail={YOUTUBE_FAILURE_DETAIL[failure ?? "fetch-failed"]}
           >
             {bridgeUnreachable && (
               <Button variant="ghost" size="sm" onClick={openBridgeSettings} className="px-3 text-[13px]">
