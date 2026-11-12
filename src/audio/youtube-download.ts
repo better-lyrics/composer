@@ -29,9 +29,7 @@ function publish(progress: YouTubeDownloadProgress | null): void {
 }
 
 function progressLabel({ received, total }: BodyProgress): string {
-  return total === null
-    ? `Downloading ${formatApproximateFileSize(received)}`
-    : `Downloading ${formatMegabytesOf(received, total)}`;
+  return total === null ? formatApproximateFileSize(received) : formatMegabytesOf(received, total);
 }
 
 // -- Reporting ----------------------------------------------------------------

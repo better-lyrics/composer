@@ -5,30 +5,35 @@ import {
   isYouTubeLoadFailure,
   useLoadYouTubeSource,
 } from "@/hooks/useLoadYouTubeSource";
-import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { useFieldError } from "@/hooks/useFieldError";
 import { useYouTubeDownload } from "@/hooks/useYouTubeDownload";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
+import { DelayedSpinner } from "@/ui/delayed-spinner";
 import { FieldError } from "@/ui/field-error";
 import { FLOATING_INPUT_STYLES, INPUT_STYLES } from "@/ui/input-styles";
 import { ProgressBar } from "@/ui/progress-bar";
 import { cn } from "@/utils/cn";
 import { focusOnMount } from "@/utils/focus-on-mount";
 import { EMPTY_YOUTUBE_LINK_MESSAGE, INVALID_YOUTUBE_LINK_MESSAGE, extractVideoId } from "@/utils/youtube-url";
-import { IconBrandYoutube, IconLoader2, IconX } from "@tabler/icons-react";
+import { IconBrandYoutube, IconX } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[YouTubeUrlInput]";
+const PROGRESS_TRACK = "h-1.5 bg-(--well) shadow-(--well-edge)";
 
 // -- Components ---------------------------------------------------------------
 
-const DownloadProgress: React.FC<{ progress: YouTubeDownloadProgress }> = ({ progress }) => (
+const DownloadProgress: React.FC<{ progress: YouTubeDownloadProgress | null }> = ({ progress }) => (
   <div className="flex flex-col gap-1.5">
-    {progress.percent !== null && <ProgressBar percent={progress.percent} label="YouTube download" className="h-1.5" />}
-    <span className="text-[12px] text-(--muted) tabular-nums">{progress.label}</span>
+    {progress?.percent != null ? (
+      <ProgressBar percent={progress.percent} label="YouTube download" className={PROGRESS_TRACK} />
+    ) : (
+      <div className={cn("rounded-full", PROGRESS_TRACK)} />
+    )}
+    <span className="h-4 text-xs text-(--muted) tabular-nums">{progress?.label}</span>
   </div>
 );
 
@@ -51,7 +56,6 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
   const linkField = useFieldError();
   const { showError, clearError } = linkField;
   const isLoading = useAudioStore((s) => s.isLoading);
-  const showSpinner = useDelayedBusy(isLoading);
   const youtubeLoadError = useAudioStore((s) => s.youtubeLoadError);
   const loadYouTubeSource = useLoadYouTubeSource();
   const download = useYouTubeDownload();
@@ -124,12 +128,12 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
             disabled={isLoading}
             className="rounded-lg"
           >
-            {showSpinner ? <IconLoader2 size={16} className="animate-spin" /> : <IconBrandYoutube size={16} />}
+            <DelayedSpinner busy={isLoading} className="size-4" idle={<IconBrandYoutube size={16} />} />
             Load
           </Button>
         )}
       </div>
-      {download.downloading && download.progress && <DownloadProgress progress={download.progress} />}
+      {download.downloading && <DownloadProgress progress={download.progress} />}
       <FieldError {...linkField.errorProps} />
     </div>
   );
