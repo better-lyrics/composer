@@ -1,16 +1,17 @@
+import { type RefObject, useCallback, useEffect } from "react";
+import { toast } from "sonner";
 import { withNewInstance } from "@/domain/group/own-timing";
 import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
-import { currentInstanceFromSelection } from "@/domain/instance/selection-instance";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceCount, linesOfInstance } from "@/domain/instance/enumerate";
 import { instanceKey, lineInstanceKey, parseInstanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
+import { currentInstanceFromSelection } from "@/domain/instance/selection-instance";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import { trackField, trackWords } from "@/domain/line/tracks";
-import { contiguousSelectionRun } from "@/domain/selection/contiguous";
+import { trackWords } from "@/domain/line/tracks";
 import type { WordSelection } from "@/domain/selection/model";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -32,20 +33,18 @@ import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
 import { currentEffectiveFocus, scrollToFocusStart } from "@/views/timeline/effective-focus";
-import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import { isInFocus } from "@/views/timeline/group-focus";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import {
-  NO_BEAT_GRID_MESSAGE,
   jumpToAdjacentBar,
   jumpToAdjacentGridLine,
+  NO_BEAT_GRID_MESSAGE,
   toastUnlessRepeat,
 } from "@/views/timeline/jump-to-bar";
 import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { showLoupeAfterKeyEdit, storedEdgeTime } from "@/views/timeline/loupe/loupe-target";
-import { isPartialSyllableSelection, mergeSelectedWords } from "@/views/timeline/merge-selected-words";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { pingGroup } from "@/views/timeline/ping-group";
 import { togglePitchLine } from "@/views/timeline/pitch/pitch-line-toggle";
@@ -55,14 +54,22 @@ import { clearLoopRegion, playSelection } from "@/views/timeline/selection-playb
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
 import { escapeStepTiming, pressStepShortcut } from "@/views/timeline/step-timing/press-step-key";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { AUTO_ALIGN_EVENT } from "@/views/timeline/timeline-auto-align";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
 import { computeRowLayout, partitionNudgeSelections, shiftSelectionsTogether } from "@/views/timeline/utils";
-import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
-import { type RefObject, useCallback, useEffect } from "react";
-import { toast } from "sonner";
 import { readViewScroll, scrollView, smoothScrollView } from "@/views/timeline/view-scroll";
+import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
+import {
+  explicitToggleTarget,
+  runExplicitToggle,
+  runSyllableMerge,
+  runWordMerge,
+  singleSelectedWord,
+  splittableWord,
+  syllableMergeTarget,
+  wordMergeTarget,
+} from "@/views/timeline/word-commands";
 
 // -- Hook ----------------------------------------------------------------------
 
@@ -391,59 +398,37 @@ function useTimelineKeyboard(
           break;
         }
         case "timeline.editWord": {
-          const { selectedWords: eSel } = useTimelineStore.getState();
-          if (eSel.length === 1) {
-            e.preventDefault();
-            useTimelineStore.getState().setEditingWord({
-              lineId: eSel[0].lineId,
-              wordIndex: eSel[0].wordIndex,
-              type: eSel[0].type,
-            });
-            noteGuideSignal("timeline.editTextDirect");
-          }
+          const editable = singleSelectedWord(useTimelineStore.getState().selectedWords);
+          if (!editable) break;
+          e.preventDefault();
+          useTimelineStore
+            .getState()
+            .setEditingWord({ lineId: editable.lineId, wordIndex: editable.wordIndex, type: editable.type });
+          noteGuideSignal("timeline.editTextDirect");
           break;
         }
-        case "timeline.splitSyllable": {
-          const { selectedWords: sSel } = useTimelineStore.getState();
-          if (sSel.length === 1) {
-            e.preventDefault();
-            window.dispatchEvent(new CustomEvent("timeline:split-syllable"));
-          }
-          break;
-        }
+        case "timeline.splitSyllable":
         case "timeline.splitWord": {
-          const { selectedWords: swSel } = useTimelineStore.getState();
-          if (swSel.length === 1) {
-            e.preventDefault();
-            window.dispatchEvent(new CustomEvent("timeline:split-word"));
-          }
+          const projectLines = useProjectStore.getState().lines;
+          if (!splittableWord(useTimelineStore.getState().selectedWords, projectLines)) break;
+          e.preventDefault();
+          const eventName = matched === "timeline.splitWord" ? "timeline:split-word" : "timeline:split-syllable";
+          window.dispatchEvent(new CustomEvent(eventName));
           break;
         }
         case "timeline.mergeWords": {
-          const run = contiguousSelectionRun(useTimelineStore.getState().selectedWords);
-          if (!run) break;
+          const merge = wordMergeTarget(useTimelineStore.getState().selectedWords, useProjectStore.getState().lines);
+          if (!merge) break;
           e.preventDefault();
-          void mergeSelectedWords(run.lineId, run.type, run.indices);
+          runWordMerge(merge);
           break;
         }
         case "timeline.mergeSyllablesIntoWord": {
-          const { selectedWords: mSel } = useTimelineStore.getState();
-          if (mSel.length === 0) break;
-          const first = mSel[0];
-          if (!mSel.every((w) => w.lineId === first.lineId && w.type === first.type)) break;
-          const field = trackField(first.type);
+          const projectLines = useProjectStore.getState().lines;
+          const merge = syllableMergeTarget(useTimelineStore.getState().selectedWords, projectLines);
+          if (!merge) break;
           e.preventDefault();
-          const run = contiguousSelectionRun(mSel);
-          const runLine = useProjectStore.getState().lines.find((l) => l.id === first.lineId);
-          if (run && runLine && isPartialSyllableSelection(runLine, run)) {
-            void mergeSelectedWords(run.lineId, run.type, run.indices);
-            break;
-          }
-          useProjectStore.getState().mergeSyllableGroupIntoWord(
-            first.lineId,
-            field,
-            mSel.map((s) => s.wordIndex),
-          );
+          runSyllableMerge(merge);
           break;
         }
         case "timeline.splitIntoWords": {
@@ -679,13 +664,13 @@ function useTimelineKeyboard(
           break;
         }
         case "timeline.toggleExplicit": {
-          const { selectedWords: explicitSel } = useTimelineStore.getState();
-          if (explicitSel.length === 0) break;
+          const toggle = explicitToggleTarget(
+            useTimelineStore.getState().selectedWords,
+            useProjectStore.getState().lines,
+          );
+          if (!toggle) break;
           e.preventDefault();
-          const { targets, value } = resolveExplicitSelectionToggle(useProjectStore.getState().lines, explicitSel);
-          if (targets.length === 0) break;
-          useProjectStore.getState().markWordsExplicit(targets, value);
-          noteGuideSignal("timeline.explicit");
+          runExplicitToggle(toggle);
           break;
         }
         case "timeline.shiftInstanceToPlayhead": {

@@ -1,3 +1,4 @@
+import { memo, useCallback, useMemo, useState } from "react";
 import { timedTransliterationSlice } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { isWordSelected } from "@/domain/selection/identity";
@@ -12,6 +13,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { useAltHeld } from "@/views/timeline/alt-key-held";
+import { selectWordUnlessSelected } from "@/views/timeline/selection-playback";
 import { toggleStepLane } from "@/views/timeline/step-timing/press-step-key";
 import { useStepTrack } from "@/views/timeline/step-timing/use-step-track";
 import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
@@ -19,7 +21,6 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTrackSelection } from "@/views/timeline/track-selection";
 import { WordBlock } from "@/views/timeline/word-block";
 import { type UpdateWord, useWordResizeDrag } from "@/views/timeline/word-resize-drag";
-import { memo, useCallback, useMemo, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -153,6 +154,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   const handleWordContextMenu = useCallback(
     (e: React.MouseEvent, wordIndex: number) => {
+      selectWordUnlessSelected({ lineId, lineIndex, wordIndex, type: trackType });
       useTimelineStore.getState().setContextMenu({
         x: e.clientX,
         y: e.clientY,
@@ -280,4 +282,5 @@ const WordTrack: React.FC<WordTrackProps> = ({
 // -- Exports -------------------------------------------------------------------
 
 const MemoizedWordTrack = memo(WordTrack);
+
 export { MemoizedWordTrack as WordTrack };
