@@ -23,6 +23,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
+import { NO_TRANSLITERATION_REASON } from "@/ui/text-variant-copy";
 import { TooltipGroup } from "@/ui/tooltip";
 import { memoByIdentity } from "@/utils/memo-by-identity";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -149,7 +150,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
               stateInLabel
               shortcut="timeline.toggleTextVariant"
               onClick={toggleTextVariant}
-              disabled={!linesHaveTransliteration}
+              disabledReason={linesHaveTransliteration ? undefined : NO_TRANSLITERATION_REASON}
               description="Toggle original / transliteration labels"
               iconOnly
             >

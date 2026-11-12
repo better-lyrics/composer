@@ -195,14 +195,16 @@ describe("LyricsImportModal paste section commit", () => {
     expect(line?.words?.map((word) => word.text)).toEqual(["Hel", "lo"]);
   });
 
-  it("disables Import when paste is whitespace only", async () => {
+  it("asks for lyrics and refocuses the field when Import is pressed with whitespace only", async () => {
     const screen = await render(withQueryClient(<LyricsImportModalHost />));
     openModal({ section: "paste" });
     const textarea = await waitForTextarea();
     textarea.focus();
     await userEvent.fill(textarea, "   \n  \n");
-    const importBtn = screen.getByRole("button", { name: /^Import$/ });
-    await expect.poll(() => (importBtn.element() as HTMLButtonElement).disabled).toBe(true);
+    await screen.getByRole("button", { name: /^Import$/ }).click();
+    await expect.element(screen.getByRole("alert")).toHaveTextContent("Paste some lyrics first");
+    expect(document.activeElement).toBe(textarea);
+    expect(useImportModalStore.getState().isOpen).toBe(true);
   });
 
   it("clears paste text after commit (reopen shows empty textarea)", async () => {
@@ -264,12 +266,14 @@ describe("LyricsImportModal upload section commit", () => {
     await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
   });
 
-  it("disables Import when no file is pending", async () => {
+  it("asks for a file and focuses the drop zone when Import is pressed with no file pending", async () => {
     const screen = await render(withQueryClient(<LyricsImportModalHost />));
     openModal({ section: "upload" });
-    await waitForDropzone();
-    const importBtn = screen.getByRole("button", { name: /^Import$/ });
-    await expect.poll(() => (importBtn.element() as HTMLButtonElement).disabled).toBe(true);
+    const dropzone = await waitForDropzone();
+    await screen.getByRole("button", { name: /^Import$/ }).click();
+    await expect.element(screen.getByRole("alert")).toHaveTextContent("Choose a lyrics file first");
+    expect(document.activeElement).toBe(dropzone);
+    expect(useImportModalStore.getState().isOpen).toBe(true);
   });
 
   it("clears pending file after commit (reopen shows none)", async () => {

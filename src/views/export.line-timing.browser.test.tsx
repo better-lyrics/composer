@@ -84,13 +84,16 @@ describe("ExportPanel · line timing", () => {
     it("locks Edit while Line is picked, so Done can never strip the word timing", async () => {
       useProjectStore.setState({ exportTiming: "line" });
       const screen = await renderPanel();
-      await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeDisabled();
+      const edit = screen.getByRole("button", { name: /Edit$/ });
+      await expect.element(edit).toHaveAttribute("aria-disabled", "true");
+      await edit.hover();
+      await expect.element(screen.getByRole("tooltip")).toHaveTextContent("Switch to Word timing to edit");
     });
 
     it("locks Line while editing", async () => {
       const screen = await renderPanel();
       await screen.getByRole("button", { name: /Edit$/ }).click();
-      await expect.element(screen.getByRole("button", { name: "Line" })).toBeDisabled();
+      await expect.element(screen.getByRole("button", { name: "Line" })).toHaveAttribute("aria-disabled", "true");
     });
 
     it("exports the edited TTML and locks Line while an edit exists", async () => {
@@ -101,7 +104,7 @@ describe("ExportPanel · line timing", () => {
         ttmlEditState: { source: generated, content: generated.replace("baby", "lady") },
       });
 
-      await expect.element(screen.getByRole("button", { name: "Line" })).toBeDisabled();
+      await expect.element(screen.getByRole("button", { name: "Line" })).toHaveAttribute("aria-disabled", "true");
       expect(shownTtml(screen.container)).toContain(">lady</span>");
       expect(screen.getByRole("button", { name: "Word" }).element().getAttribute("aria-pressed")).toBe("true");
     });

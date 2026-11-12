@@ -44,6 +44,10 @@ function groupBoundaryPoints(words: WordTiming[]): number[] {
   });
 }
 
+function hasEverySplit(points: number[] | undefined, words: WordTiming[]): boolean {
+  return (points?.length ?? 0) === Math.max(0, words.length - 1);
+}
+
 // -- Component ----------------------------------------------------------------
 
 const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps> = ({ line, field, onClose }) => {
@@ -70,9 +74,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
   const required = Math.max(0, (group?.words.length ?? 1) - 1);
   const slices = splitTransliterationAtBoundaries(reading, points, { preserveEdgeDashes: true });
   const currentValid = points.length === required && slices.length === (group?.words.length ?? 0);
-  const allValid =
-    pointsByGroup.length === groups.length &&
-    groups.every((candidate, index) => (pointsByGroup[index]?.length ?? 0) === candidate.words.length - 1);
+  const firstIncomplete = groups.findIndex((candidate, index) => !hasEverySplit(pointsByGroup[index], candidate.words));
 
   const wordOptions = useMemo(
     () =>
@@ -82,8 +84,9 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
           .map((word) => word.text)
           .join("")
           .trim()}`,
+        badge: hasEverySplit(pointsByGroup[index], candidate.words) ? undefined : "Unfinished",
       })),
-    [groups],
+    [groups, pointsByGroup],
   );
   const togglePoint = (point: number) =>
     setPointsByGroup((current) =>
@@ -97,7 +100,11 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
     );
 
   const save = () => {
-    if (!track || !sourceWords || !allValid) return;
+    if (!track || !sourceWords) return;
+    if (firstIncomplete !== -1) {
+      setGroupIndex(firstIncomplete);
+      return;
+    }
     const nextWords = plannedWords.slice();
     for (let index = 0; index < groups.length; index++) {
       const current = groups[index];
@@ -199,7 +206,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
         <SplitPickerLegend kinds={separatorKinds([reading], "literal")} />
         <div className="ml-auto flex gap-2 select-none">
           <Button onClick={onClose}>Cancel</Button>
-          <Button variant="primary" hasIcon disabled={!allValid} onClick={save}>
+          <Button variant="primary" hasIcon onClick={save}>
             <IconCheck className="size-4" />
             Save
           </Button>

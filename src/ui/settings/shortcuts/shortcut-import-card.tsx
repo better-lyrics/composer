@@ -1,5 +1,7 @@
+import { useFieldError } from "@/hooks/useFieldError";
 import { decodeShortcutCode } from "@/stores/shortcut-code";
 import { shortcutPreset } from "@/stores/shortcut-presets";
+import { FieldError } from "@/ui/field-error";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { PopActions, PopBody, PopButton, PopHead, PopText } from "@/ui/pop-layout";
 import { Popover } from "@/ui/popover";
@@ -21,16 +23,20 @@ function importedDescription(presetName: string, changedCount: number): string {
 
 const ImportCodeForm: React.FC<{ onImported: () => void }> = ({ onImported }) => {
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const { showError, clearError, fieldProps, errorProps } = useFieldError();
 
   const handleImport = () => {
+    if (code.trim() === "") {
+      showError("Paste a shortcuts code first");
+      return;
+    }
     try {
       const { preset, overrides } = decodeShortcutCode(code);
       const description = importedDescription(shortcutPreset(preset).name, Object.keys(overrides).length);
       applyShortcutsWithUndo(preset, overrides, "Imported shortcuts", description);
       onImported();
     } catch (importError) {
-      setError(importError instanceof Error ? importError.message : String(importError));
+      showError(importError instanceof Error ? importError.message : String(importError));
     }
   };
 
@@ -44,24 +50,21 @@ const ImportCodeForm: React.FC<{ onImported: () => void }> = ({ onImported }) =>
       <div className="px-2.5 mt-2.5 flex flex-col gap-1.5">
         <input
           type="text"
+          {...fieldProps}
           value={code}
           onChange={(event) => {
             setCode(event.target.value);
-            setError(null);
+            clearError();
           }}
           placeholder="csk1:editor:..."
           aria-label="Shortcuts code"
           spellCheck={false}
           className={cn(INPUT_STYLES, "w-full h-8 font-mono text-xs select-text")}
         />
-        {error && (
-          <span role="alert" className="text-xs text-composer-error select-text cursor-text">
-            {error}
-          </span>
-        )}
+        <FieldError {...errorProps} />
       </div>
       <PopActions className="mt-3">
-        <PopButton type="submit" variant="primary" disabled={code.trim() === ""}>
+        <PopButton type="submit" variant="primary">
           Import
         </PopButton>
       </PopActions>

@@ -1,6 +1,8 @@
 import { IconArrowLeft, IconClipboardText, IconMusic } from "@tabler/icons-react";
 import { useCallback, useRef, useState } from "react";
+import type { FieldErrorState } from "@/hooks/useFieldError";
 import { Button } from "@/ui/button";
+import { FieldError } from "@/ui/field-error";
 import { cn } from "@/utils/cn";
 import { toast } from "@/utils/toast";
 import {
@@ -14,13 +16,14 @@ import {
 
 interface UploadSectionProps {
   onFile: (file: File) => void | Promise<void>;
+  field: FieldErrorState;
   onSwitchToSearch: () => void;
   onSwitchToPaste: () => void;
 }
 
 // -- Component ----------------------------------------------------------------
 
-const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch, onSwitchToPaste }) => {
+const UploadSection: React.FC<UploadSectionProps> = ({ onFile, field, onSwitchToSearch, onSwitchToPaste }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -92,6 +95,8 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
       <button
         type="button"
         data-upload-dropzone
+        id={field.fieldProps.id}
+        aria-describedby={field.fieldProps["aria-describedby"]}
         aria-label="Drop a lyrics file here or click to browse"
         onClick={handleClickToBrowse}
         onDragEnter={handleDragEnter}
@@ -113,6 +118,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
           {LYRICS_IMPORT_FORMATS_COMPACT}
         </div>
       </button>
+      <FieldError {...field.errorProps} />
       <input
         ref={fileInputRef}
         type="file"

@@ -1,5 +1,7 @@
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
+import type { FieldErrorState } from "@/hooks/useFieldError";
 import { Button } from "@/ui/button";
+import { FieldError } from "@/ui/field-error";
 import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import { cn } from "@/utils/cn";
 import { focusOnMount } from "@/utils/focus-on-mount";
@@ -12,6 +14,7 @@ import { IconArrowLeft, IconUpload } from "@tabler/icons-react";
 interface PasteSectionProps {
   value: string;
   onChange: (text: string) => void;
+  field: FieldErrorState;
   onSwitchToSearch: () => void;
   onSwitchToUpload: () => void;
 }
@@ -33,7 +36,7 @@ const PASTE_PLACEHOLDER = `Paste lyrics here, one line per line. Use | to split 
 
 // -- Component ----------------------------------------------------------------
 
-const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchToSearch, onSwitchToUpload }) => {
+const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, field, onSwitchToSearch, onSwitchToUpload }) => {
   const lineCount = countNonEmptyLines(value);
 
   return (
@@ -55,8 +58,12 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
       <LyricsCodeEditor
         ref={focusOnMount}
         aria-label="Lyrics text"
+        {...field.fieldProps}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          field.clearError();
+        }}
         onKeyDown={(e) => {
           if (e.key !== "Escape") e.stopPropagation();
         }}
@@ -65,6 +72,7 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
         frameClassName="h-32"
         className="p-3 font-mono text-sm focus:outline-none"
       />
+      <FieldError {...field.errorProps} />
       <div className="flex items-center justify-between">
         <span className="text-[11px] text-composer-text-muted">
           Use <code className="font-mono text-[10.5px] px-1 py-px rounded bg-(--layer-2) text-(--label)">|</code> to

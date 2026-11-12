@@ -5,6 +5,7 @@ import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { ShortcutTip } from "@/ui/shortcut-tip";
 import { ToggleButton } from "@/ui/toggle-button";
 import { Tooltip } from "@/ui/tooltip";
+import { unavailableProps } from "@/ui/unavailable-props";
 import { cn } from "@/utils/cn";
 import { useEffect } from "react";
 
@@ -16,7 +17,8 @@ interface ShortcutToggleButtonProps {
   shortcut: string;
   onClick: () => void;
   children: React.ReactNode;
-  disabled?: boolean;
+  /** Makes the latch unavailable; the tooltip and a press of its shortcut say why. */
+  disabledReason?: string;
   description?: string;
   className?: string;
   stateInLabel?: boolean;
@@ -32,22 +34,28 @@ const ShortcutToggleButton: React.FC<ShortcutToggleButtonProps> = ({
   shortcut,
   onClick,
   children,
-  disabled,
+  disabledReason,
   description,
   className,
   stateInLabel,
   iconOnly,
 }) => {
   const showHints = useSettingsStore((s) => s.showShortcutHints);
-  useEffect(() => (disabled ? disableShortcut(shortcut) : undefined), [disabled, shortcut]);
+  useEffect(
+    () => (disabledReason === undefined ? undefined : disableShortcut(shortcut, disabledReason)),
+    [disabledReason, shortcut],
+  );
   return (
-    <Tooltip content={<ShortcutTip label={label} shortcut={shortcut} description={description} />} placement="bottom">
+    <Tooltip
+      content={<ShortcutTip label={label} shortcut={shortcut} description={disabledReason ?? description} />}
+      placement="bottom"
+    >
       <ToggleButton
         pressed={active}
         stateInLabel={stateInLabel}
         size="sm"
         onClick={onClick}
-        disabled={disabled}
+        {...unavailableProps(disabledReason)}
         hasIcon
         aria-label={iconOnly ? label : undefined}
         className={cn(

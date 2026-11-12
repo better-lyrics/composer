@@ -5,6 +5,7 @@ import { Button } from "@/ui/button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SegmentedControl } from "@/ui/segmented-control";
 import { ShortcutToggleButton } from "@/ui/shortcut-toggle-button";
+import { NO_TRANSLITERATION_REASON } from "@/ui/text-variant-copy";
 import { AutoAlignDropdown } from "@/views/sync/auto-align-dropdown";
 import { IconLanguage, IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
 
@@ -62,7 +63,7 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
             stateInLabel
             shortcut="sync.toggleTextVariant"
             onClick={toggleTextVariant}
-            disabled={!hasTransliteration}
+            disabledReason={hasTransliteration ? undefined : NO_TRANSLITERATION_REASON}
             description="Toggle original / transliteration text"
           >
             <IconLanguage />

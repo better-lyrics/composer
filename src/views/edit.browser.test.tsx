@@ -51,14 +51,16 @@ describe("EditPanel", () => {
 });
 
 describe("background vocal extraction", () => {
-  it("disables the header button when no line has parentheses", async () => {
+  it("makes the header button unavailable and says why when no line has parentheses", async () => {
     useProjectStore.setState({
       lines: [createLine({ text: "Hello world" }), createLine({ text: "No parens here" })],
     });
     const screen = await render(<EditPanel />);
 
     const button = screen.getByRole("button", { name: "Extract background vocals" });
-    await expect.element(button).toBeDisabled();
+    await expect.element(button).toHaveAttribute("aria-disabled", "true");
+    await button.hover();
+    await expect.element(screen.getByRole("tooltip")).toHaveTextContent("Add (parentheses) to the lyrics first");
   });
 
   it("enables the header button and converts inline parentheses on click", async () => {

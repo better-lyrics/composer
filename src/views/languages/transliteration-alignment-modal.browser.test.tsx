@@ -113,12 +113,12 @@ describe("TransliterationAlignmentModal", () => {
         words: [{ text: "가", begin: 0, end: 1 }],
         transliterationText: "ga",
       });
-      const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
-      const save = screen.getByRole("button", { name: "Save", exact: true });
-      await expect.element(save).toBeEnabled();
+      const onClose = vi.fn();
+      const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={onClose} />);
       await screen.getByRole("button", { name: "Transliteration split point 1" }).click();
-      await expect.element(save).toBeDisabled();
+      await screen.getByRole("button", { name: "Save", exact: true }).click();
       await expect.element(screen.getByText("Pick 0 split points (1 so far).")).toBeInTheDocument();
+      expect(onClose).not.toHaveBeenCalled();
     });
 
     it("renders nothing without a transliteration track", async () => {
@@ -164,18 +164,22 @@ describe("TransliterationAlignmentModal", () => {
   });
 
   describe("invariants", () => {
-    it("keeps Save disabled until the picked boundary count matches the required count", async () => {
+    it("saves only once the picked boundary count matches the required count", async () => {
       const line = setupLine();
-      const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
+      const onClose = vi.fn();
+      const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={onClose} />);
+      const save = screen.getByRole("button", { name: "Save", exact: true });
       const point = screen.getByRole("button", { name: "Transliteration split point 2", exact: true });
       await expect.element(point).toHaveAttribute("aria-pressed", "true");
       await point.click();
       await expect.element(point).toHaveAttribute("aria-pressed", "false");
-      await expect.element(screen.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+      await save.click();
       await expect.element(screen.getByText("Pick 1 split point (0 so far).")).toBeInTheDocument();
+      expect(onClose).not.toHaveBeenCalled();
       await point.click();
       await expect.element(point).toHaveAttribute("aria-pressed", "true");
-      await expect.element(screen.getByRole("button", { name: "Save", exact: true })).not.toBeDisabled();
+      await save.click();
+      expect(onClose).toHaveBeenCalledOnce();
     });
   });
 
@@ -220,7 +224,7 @@ describe("TransliterationAlignmentModal", () => {
       });
       await expect.element(pronunciationBreak).toHaveAttribute("aria-pressed", "true");
       await pronunciationBreak.click();
-      await expect.element(screen.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+      await expect.element(screen.getByText("Pick 2 split points (1 so far).")).toBeInTheDocument();
       await pronunciationBreak.click();
       await expect.element(pronunciationBreak).toHaveAttribute("aria-pressed", "true");
 

@@ -1,10 +1,13 @@
 import { noteGuideSignal } from "@/lib/guide-signals";
+import { useFieldError } from "@/hooks/useFieldError";
 import { agentDisplayName } from "@/domain/agent/display-name";
 import { AGENT_PRESETS, getAgentColor } from "@/domain/agent/colors";
 import { nextAgentId } from "@/domain/agent/next-agent-id";
 import type { Agent, AgentType } from "@/domain/agent/model";
 import { useProjectStore } from "@/stores/project";
+import { EMPTY_AGENT_NAME_MESSAGE } from "@/ui/agent-name-copy";
 import { Button } from "@/ui/button";
+import { FieldError } from "@/ui/field-error";
 import { IconButton } from "@/ui/icon-button";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { focusFirstControlIfFocusLost } from "@/ui/focus-if-focus-lost";
@@ -121,9 +124,13 @@ const AddAgentForm: React.FC<{ onDone: () => void; onBack: () => void }> = ({ on
   const [customName, setCustomName] = useState("");
   const [customType, setCustomType] = useState<AgentType>("person");
   const availablePresets = AGENT_PRESETS.filter((preset) => !agents.some((a) => a.id === preset.id));
+  const nameField = useFieldError();
 
   const handleAddCustom = () => {
-    if (!customName.trim()) return;
+    if (!customName.trim()) {
+      nameField.showError(EMPTY_AGENT_NAME_MESSAGE);
+      return;
+    }
     addAgent({ id: nextAgentId(agents), type: customType, name: customName.trim() });
     noteGuideSignal("edit.singer");
     onDone();
@@ -160,11 +167,16 @@ const AddAgentForm: React.FC<{ onDone: () => void; onBack: () => void }> = ({ on
         type="text"
         ref={focusOnMount}
         aria-label="Custom agent name"
+        {...nameField.fieldProps}
         value={customName}
-        onChange={(e) => setCustomName(e.target.value)}
+        onChange={(e) => {
+          setCustomName(e.target.value);
+          nameField.clearError();
+        }}
         placeholder="Agent name"
         className={FIELD}
       />
+      <FieldError {...nameField.errorProps} />
       <Select
         aria-label="Custom agent type"
         value={customType}
@@ -174,7 +186,7 @@ const AddAgentForm: React.FC<{ onDone: () => void; onBack: () => void }> = ({ on
         appearance="pick"
         className="w-full h-8 pl-2.5 pr-2 rounded-lg text-[13px]"
       />
-      <Button type="submit" variant="primary" disabled={!customName.trim()} className="h-[30px] mt-0.5">
+      <Button type="submit" variant="primary" className="h-[30px] mt-0.5">
         Add Custom Agent
       </Button>
     </form>

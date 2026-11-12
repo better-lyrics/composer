@@ -1,9 +1,10 @@
 import { hasLatinLetter } from "@/domain/language/script-detection";
-import { isShortcutDisabled } from "@/lib/disabled-shortcuts";
+import { announceDisabledShortcut, isShortcutDisabled } from "@/lib/disabled-shortcuts";
 import { bindingsEqual } from "@/stores/shortcut-binding-compare";
 import { getEffectiveBinding } from "@/stores/shortcut-bindings";
 import { type ShortcutBinding, type ShortcutScope, getShortcutsByScope } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
+import { isTypingTarget } from "@/utils/typing-target";
 import { US_PUNCTUATION_BY_CODE } from "@/utils/us-punctuation";
 
 // -- Matching -----------------------------------------------------------------
@@ -115,8 +116,11 @@ function findMatchingShortcut(event: KeyboardEvent, scope: ShortcutScope): strin
   const shortcuts = getShortcutsByScope(scope);
   for (const shortcut of shortcuts) {
     const binding = getEffectiveBinding(shortcut.id);
-    if (matchesBinding(event, binding))
-      return isShortcutDisabled(shortcut.id) || (event.repeat && !shortcut.repeatable) ? null : shortcut.id;
+    if (!matchesBinding(event, binding)) continue;
+    if (event.repeat && !shortcut.repeatable) return null;
+    if (!isShortcutDisabled(shortcut.id)) return shortcut.id;
+    if (!isTypingTarget(event.target)) announceDisabledShortcut(shortcut.id);
+    return null;
   }
   return null;
 }

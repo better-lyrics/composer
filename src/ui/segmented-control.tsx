@@ -1,3 +1,5 @@
+import { Tooltip } from "@/ui/tooltip";
+import { unavailableProps } from "@/ui/unavailable-props";
 import { cn } from "@/utils/cn";
 import type { Icon } from "@tabler/icons-react";
 
@@ -10,6 +12,8 @@ interface SegmentedOption<T extends string> {
   count?: number;
   iconOnly?: boolean;
   disabled?: boolean;
+  /** Makes the option unavailable and explains why in a tooltip. */
+  disabledReason?: string;
 }
 
 type SegmentedControlSize = "md" | "sm";
@@ -57,7 +61,7 @@ function SegmentedControl<T extends string>({
       {options.map((option) => {
         const isSelected = option.value === value;
         const OptionIcon = option.icon;
-        return (
+        const button = (
           <button
             key={option.value}
             type="button"
@@ -66,11 +70,12 @@ function SegmentedControl<T extends string>({
             title={option.iconOnly ? option.label : undefined}
             disabled={option.disabled}
             onClick={() => onChange(option.value)}
+            {...unavailableProps(option.disabledReason)}
             className={cn(
               "inline-flex items-center justify-center gap-1.5 font-medium whitespace-nowrap transition-[color,background-color,box-shadow] cursor-pointer",
               OPTION_SIZE_STYLES[size],
               option.iconOnly && "w-7 px-0",
-              "disabled:cursor-not-allowed disabled:text-composer-text-faint disabled:line-through",
+              "unavailable:cursor-not-allowed unavailable:text-composer-text-faint unavailable:line-through",
               isSelected
                 ? "latch-on [&_svg]:text-composer-accent-text"
                 : "text-[var(--muted)] hover:text-[var(--label)] hover:bg-[var(--layer-1)]",
@@ -89,6 +94,13 @@ function SegmentedControl<T extends string>({
               </span>
             )}
           </button>
+        );
+        return option.disabledReason === undefined ? (
+          button
+        ) : (
+          <Tooltip key={option.value} content={option.disabledReason}>
+            {button}
+          </Tooltip>
         );
       })}
     </div>

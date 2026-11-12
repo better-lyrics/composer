@@ -375,8 +375,7 @@ const EditPanel: React.FC = () => {
             size="lg"
             data-guide-spot="extractAll"
             onClick={handleExtractBackgroundVocals}
-            disabled={!canExtractBackgroundVocals}
-            title={canExtractBackgroundVocals ? undefined : "No parentheses to extract"}
+            disabledReason={canExtractBackgroundVocals ? undefined : "Add (parentheses) to the lyrics first"}
           >
             <IconMicrophone className="size-4" />
             Extract background vocals

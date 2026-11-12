@@ -15,12 +15,12 @@ interface ButtonStyleOptions {
 // -- Styles -------------------------------------------------------------------
 
 const BASE_STYLES =
-  "inline-flex items-center justify-center gap-1.5 font-medium rounded-lg transition-[background-color,color,scale] cursor-pointer will-change-[scale] active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100";
+  "inline-flex items-center justify-center gap-1.5 font-medium rounded-lg transition-[background-color,color,scale] cursor-pointer will-change-[scale] active:scale-[0.96] unavailable:opacity-50 unavailable:cursor-not-allowed unavailable:active:scale-100";
 
 const VARIANT_STYLES: Record<ButtonVariant, string> = {
   primary: "btn-lit",
   secondary:
-    "btn-raised text-[var(--label)] hover:text-composer-text disabled:opacity-100 disabled:[background:var(--layer-1)] disabled:text-[color-mix(in_oklab,var(--label)_50%,transparent)] disabled:hover:text-[color-mix(in_oklab,var(--label)_50%,transparent)]",
+    "btn-raised text-[var(--label)] hover:text-composer-text unavailable:opacity-100 unavailable:[background:var(--layer-1)] unavailable:text-[color-mix(in_oklab,var(--label)_50%,transparent)] unavailable:hover:text-[color-mix(in_oklab,var(--label)_50%,transparent)]",
   ghost: "text-[var(--muted)] hover:text-[var(--label)] hover:bg-[var(--layer-1)]",
   latch: "latch-on [&_svg]:text-composer-accent-text [&_[data-inline-key-badge]]:text-composer-accent-text",
   quiet:

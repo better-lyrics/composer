@@ -1,6 +1,7 @@
 import { IconFileImport, IconUpload } from "@tabler/icons-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
+import { useFieldError } from "@/hooks/useFieldError";
 import { clearModalDraft, readModalDraft, writeModalDraft } from "@/lib/modal-drafts";
 import { type ImportModalSection, useImportModalState, useImportModalStore } from "@/stores/import-modal-store";
 import { Button } from "@/ui/button";
@@ -40,6 +41,8 @@ const LyricsImportModalShell: React.FC = () => {
   const closedRef = useRef(false);
   const selectionAbortRef = useRef<AbortController | null>(null);
   const dragCountRef = useRef(0);
+  const pasteField = useFieldError();
+  const uploadField = useFieldError();
 
   const close = useCallback(() => {
     closedRef.current = true;
@@ -70,16 +73,22 @@ const LyricsImportModalShell: React.FC = () => {
   }, [changePasteText]);
 
   const handleImportPaste = useCallback(async () => {
-    if (pasteText.trim().length === 0) return;
+    if (pasteText.trim().length === 0) {
+      pasteField.showError("Paste some lyrics first");
+      return;
+    }
     const ok = await importLyricsText(pasteText, { ...importContext, sourceLabel: "Paste" });
     if (ok) finishImport();
-  }, [finishImport, importContext, pasteText]);
+  }, [finishImport, importContext, pasteField, pasteText]);
 
   const handleImportUpload = useCallback(async () => {
-    if (!pendingFile) return;
+    if (!pendingFile) {
+      uploadField.showError("Choose a lyrics file first");
+      return;
+    }
     const ok = await importLyricsFile(pendingFile, importContext);
     if (ok) finishImport();
-  }, [finishImport, importContext, pendingFile]);
+  }, [finishImport, importContext, pendingFile, uploadField]);
 
   const handleSearchSelect = useCallback(
     async (result: LyricsSearchResult) => {
@@ -121,9 +130,13 @@ const LyricsImportModalShell: React.FC = () => {
     [finishImport, importContext],
   );
 
-  const handleFilePicked = useCallback((file: File) => {
-    setPendingFile(file);
-  }, []);
+  const handleFilePicked = useCallback(
+    (file: File) => {
+      setPendingFile(file);
+      uploadField.clearError();
+    },
+    [uploadField],
+  );
 
   const switchToSearch = useCallback(() => setCurrentSection("search"), []);
   const switchToPaste = useCallback(() => setCurrentSection("paste"), []);
@@ -180,13 +193,19 @@ const LyricsImportModalShell: React.FC = () => {
         <PasteSection
           value={pasteText}
           onChange={changePasteText}
+          field={pasteField}
           onSwitchToSearch={switchToSearch}
           onSwitchToUpload={switchToUpload}
         />
       );
     }
     return (
-      <UploadSection onFile={handleFilePicked} onSwitchToSearch={switchToSearch} onSwitchToPaste={switchToPaste} />
+      <UploadSection
+        onFile={handleFilePicked}
+        field={uploadField}
+        onSwitchToSearch={switchToSearch}
+        onSwitchToPaste={switchToPaste}
+      />
     );
   }, [
     changePasteText,
@@ -194,18 +213,16 @@ const LyricsImportModalShell: React.FC = () => {
     expectedDurationSec,
     handleFilePicked,
     handleSearchSelect,
+    pasteField,
     pasteText,
     prefill,
     switchToPaste,
     switchToSearch,
     switchToUpload,
+    uploadField,
   ]);
 
   const showImportButton = currentSection !== "search";
-  const importDisabled =
-    (currentSection === "paste" && pasteText.trim().length === 0) ||
-    (currentSection === "upload" && pendingFile === null) ||
-    selectingResultId !== null;
 
   const handleImportClick = currentSection === "paste" ? handleImportPaste : handleImportUpload;
 
@@ -239,7 +256,13 @@ const LyricsImportModalShell: React.FC = () => {
             Cancel
           </Button>
           {showImportButton && (
-            <Button variant="primary" size="sm" hasIcon disabled={importDisabled} onClick={handleImportClick}>
+            <Button
+              variant="primary"
+              size="sm"
+              hasIcon
+              disabled={selectingResultId !== null}
+              onClick={handleImportClick}
+            >
               <IconFileImport size={16} />
               Import
             </Button>

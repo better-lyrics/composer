@@ -1,8 +1,11 @@
 import { agentDisplayName } from "@/domain/agent/display-name";
 import { getAgentColor } from "@/domain/agent/colors";
 import { nextAgentId } from "@/domain/agent/next-agent-id";
+import { useFieldError } from "@/hooks/useFieldError";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
+import { EMPTY_AGENT_NAME_MESSAGE } from "@/ui/agent-name-copy";
+import { FieldError } from "@/ui/field-error";
 import { IconButton } from "@/ui/icon-button";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { Popover } from "@/ui/popover";
@@ -30,6 +33,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
   const addAgent = useProjectStore((s) => s.addAgent);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const [newAgentName, setNewAgentName] = useState("");
+  const { showError, clearError, fieldProps, errorProps } = useFieldError();
 
   const handleAssign = useCallback(
     (newAgentId: string, close: () => void) => {
@@ -44,7 +48,10 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
 
   const handleAddNew = useCallback(
     (close: () => void) => {
-      if (!newAgentName.trim()) return;
+      if (!newAgentName.trim()) {
+        showError(EMPTY_AGENT_NAME_MESSAGE);
+        return;
+      }
       const newId = nextAgentId(agents);
       addAgent({ id: newId, type: "person", name: newAgentName.trim() });
       updateLineWithHistory(lineId, { agentId: newId });
@@ -52,7 +59,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
       setNewAgentName("");
       close();
     },
-    [lineId, agents, newAgentName, addAgent, updateLineWithHistory],
+    [lineId, agents, newAgentName, addAgent, updateLineWithHistory, showError],
   );
 
   return (
@@ -111,8 +118,12 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
             <input
               type="text"
               aria-label="New agent name"
+              {...fieldProps}
               value={newAgentName}
-              onChange={(e) => setNewAgentName(e.target.value)}
+              onChange={(e) => {
+                setNewAgentName(e.target.value);
+                clearError();
+              }}
               onKeyDown={(e) => {
                 if (e.key !== "Escape") e.stopPropagation();
                 if (e.key === "Enter") handleAddNew(close);
@@ -125,9 +136,9 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
               icon={<IconPlus size={16} />}
               variant="ghost"
               onClick={() => handleAddNew(close)}
-              disabled={!newAgentName.trim()}
             />
           </div>
+          <FieldError {...errorProps} className="px-1 pt-1" />
         </div>
       )}
     </Popover>

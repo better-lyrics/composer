@@ -1,5 +1,7 @@
+import { useFieldError } from "@/hooks/useFieldError";
 import { useThemeStore } from "@/stores/theme";
 import { Button } from "@/ui/button";
+import { FieldError } from "@/ui/field-error";
 import { type EditorTarget, ThemeEditor } from "@/ui/settings/theme/theme-editor";
 import { ThemePresetGallery } from "@/ui/settings/theme/theme-preset-gallery";
 import { IconDownload } from "@tabler/icons-react";
@@ -10,7 +12,7 @@ import { useState } from "react";
 const ThemeSettings: React.FC = () => {
   const [editor, setEditor] = useState<EditorTarget | null>(null);
   const [importValue, setImportValue] = useState("");
-  const [importError, setImportError] = useState<string | null>(null);
+  const codeField = useFieldError();
 
   const handleCustomize = () => {
     setEditor({ mode: "create", baseId: useThemeStore.getState().activeThemeId });
@@ -27,12 +29,16 @@ const ThemeSettings: React.FC = () => {
   };
 
   const handleImport = () => {
+    if (importValue.trim() === "") {
+      codeField.showError("Paste a theme code first");
+      return;
+    }
     try {
       useThemeStore.getState().importThemeCode(importValue.trim());
       setImportValue("");
-      setImportError(null);
+      codeField.clearError();
     } catch (error) {
-      setImportError(error instanceof Error ? error.message : "Invalid theme code");
+      codeField.showError(error instanceof Error ? error.message : "Invalid theme code");
     }
   };
 
@@ -53,23 +59,23 @@ const ThemeSettings: React.FC = () => {
         <div className="flex items-center gap-2">
           <input
             type="text"
+            {...codeField.fieldProps}
             value={importValue}
-            onChange={(event) => setImportValue(event.target.value)}
+            onChange={(event) => {
+              setImportValue(event.target.value);
+              codeField.clearError();
+            }}
             placeholder="ctm1:dark:..."
             aria-label="Theme code"
             spellCheck={false}
             className="min-w-0 flex-1 h-9 rounded-[10px] border border-(--edge) bg-(--well) px-2.5 font-mono text-xs text-composer-text placeholder:text-(--muted) outline-none cursor-text select-text focus:border-(--lit-ring)"
           />
-          <Button size="lg" variant="secondary" hasIcon onClick={handleImport} disabled={importValue.trim() === ""}>
+          <Button size="lg" variant="secondary" hasIcon onClick={handleImport}>
             <IconDownload className="size-4" />
             Import
           </Button>
         </div>
-        {importError && (
-          <span role="alert" className="text-xs text-composer-error select-text cursor-text">
-            {importError}
-          </span>
-        )}
+        <FieldError {...codeField.errorProps} />
       </div>
     </div>
   );

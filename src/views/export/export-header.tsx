@@ -22,12 +22,17 @@ interface ExportHeaderProps {
   downloadIsPrimary: boolean;
 }
 
+// -- Constants ----------------------------------------------------------------
+
+const LINE_LOCKED_REASON = "Off while your TTML edit is kept";
+const EDIT_NEEDS_WORD_REASON = "Switch to Word timing to edit";
+
 // -- Helpers ------------------------------------------------------------------
 
 function exportTimingOptions(lineLocked: boolean): SegmentedOption<TimingGranularity>[] {
   return [
     { value: "word", label: "Word" },
-    { value: "line", label: "Line", disabled: lineLocked },
+    { value: "line", label: "Line", disabledReason: lineLocked ? LINE_LOCKED_REASON : undefined },
   ];
 }
 
@@ -74,7 +79,7 @@ const ExportHeader: React.FC<ExportHeaderProps> = ({
         hasIcon
         size="lg"
         variant={isEditing ? "primary" : "secondary"}
-        disabled={exportTiming === "line"}
+        disabledReason={exportTiming === "line" ? EDIT_NEEDS_WORD_REASON : undefined}
         onClick={onEdit}
       >
         <IconEdit className="size-4" />

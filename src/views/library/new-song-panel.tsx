@@ -3,6 +3,7 @@ import { useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
+import { useFieldError } from "@/hooks/useFieldError";
 import { useStartNewSong } from "@/hooks/useStartNewSong";
 import { PROJECT_FILE_ACCEPT } from "@/lib/project-file-read";
 import { importProjectFile, importProjectFromInput } from "@/lib/project-import";
@@ -22,24 +23,29 @@ interface NewSongPanelProps {
 
 // -- Constants ----------------------------------------------------------------
 
+const EMPTY_LINK_MESSAGE = "Paste a YouTube link first";
+
 const PANEL_STYLES =
   "flex flex-col gap-4 p-5 rounded-xl bg-(--layer-1) shadow-[inset_0_0_0_1px_var(--edge)] select-none";
 
 // -- Sub-components -------------------------------------------------------------
 
 const NewSongLink: React.FC<{ onCreate: (videoId: string) => void }> = ({ onCreate }) => {
-  const inputId = useId();
   const hintId = useId();
   const [value, setValue] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const { error, showError, clearError, fieldProps } = useFieldError();
 
   const submit = () => {
-    const videoId = extractVideoId(value);
-    if (!videoId) {
-      setError(INVALID_YOUTUBE_LINK_MESSAGE);
+    if (value.trim() === "") {
+      showError(EMPTY_LINK_MESSAGE);
       return;
     }
-    setError(null);
+    const videoId = extractVideoId(value);
+    if (!videoId) {
+      showError(INVALID_YOUTUBE_LINK_MESSAGE);
+      return;
+    }
+    clearError();
     setValue("");
     onCreate(videoId);
   };
@@ -51,12 +57,12 @@ const NewSongLink: React.FC<{ onCreate: (videoId: string) => void }> = ({ onCrea
         submit();
       }}
     >
-      <label htmlFor={inputId} className="block mb-2 text-xs text-(--muted)">
+      <label htmlFor={fieldProps.id} className="block mb-2 text-xs text-(--muted)">
         Or paste a YouTube link
       </label>
       <div className="flex gap-2">
         <IconField
-          id={inputId}
+          id={fieldProps.id}
           icon={IconLink}
           value={value}
           placeholder="youtube.com/watch?v=…"
@@ -65,12 +71,12 @@ const NewSongLink: React.FC<{ onCreate: (videoId: string) => void }> = ({ onCrea
           aria-describedby={hintId}
           onChange={(event) => {
             setValue(event.target.value);
-            if (error) setError(null);
+            clearError();
           }}
           wrapperClassName="flex-1"
           className={cn("h-9 rounded-[10px]", RECESSED_TINT)}
         />
-        <Button type="submit" variant="secondary" size="lg" disabled={value.trim() === ""}>
+        <Button type="submit" variant="secondary" size="lg">
           Create
         </Button>
       </div>
