@@ -99,15 +99,18 @@ interface TrackSnapshot {
   words: WordTiming[] | undefined;
 }
 
-// A writer that left the text alone changed only the timed words, so the untimed tail is still the user's.
+// A writer that left the text alone changed only the timed words, so the untimed rest of the old text
+// is still the user's. A writer that rewrote the text owns it, so its own untimed rest is kept.
 function derivedTrackText(
   track: TrackSnapshot,
   previous: TrackSnapshot | undefined,
   splitChar: string,
 ): string | undefined {
   if (!track.words || track.words.length === 0) return track.text;
-  const keepsTail = previous?.words && track.text !== undefined && track.text === previous.text;
-  const tail = keepsTail && previous.words ? untimedTail(track.text ?? "", previous.words, track.words) : "";
+  const text = track.text ?? "";
+  const textUnchanged = previous?.words !== undefined && track.text === previous.text;
+  const coveredWords = textUnchanged && previous.words ? previous.words : track.words;
+  const tail = track.text === undefined ? "" : untimedTail(text, coveredWords, track.words);
   return withTail(reconstructLineText(track.words, splitChar), tail, splitChar);
 }
 

@@ -51,6 +51,27 @@ describe("history writes derive text only for the lines they change", () => {
     expect(partial?.text).toBe("hello world");
   });
 
+  it("regression: a history write after a timed word is deleted keeps the untimed words", () => {
+    useProjectStore.getState().setLines([
+      reconcileLine({
+        id: "partial",
+        text: "every night in my dreams",
+        agentId: "v1",
+        words: [w("every ", 0, 1), w("night ", 1, 2), w("in ", 2, 3)],
+      }),
+    ]);
+    const afterDelete = reconcileLine({
+      id: "partial",
+      text: "every in my dreams",
+      agentId: "v1",
+      words: [w("every ", 0, 2), w("in ", 2, 3)],
+    });
+
+    useProjectStore.getState().setLinesWithHistory([afterDelete]);
+
+    expect(useProjectStore.getState().lines[0].text).toBe("every in my dreams");
+  });
+
   it("regression: an edit on a partly synced line keeps its untimed words", () => {
     useProjectStore.getState().setLines([
       reconcileLine({
