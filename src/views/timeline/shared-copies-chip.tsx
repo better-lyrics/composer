@@ -20,7 +20,7 @@ const SharedCopiesChip: React.FC = () => {
     <div
       ref={attachSharedCopiesChip}
       role="status"
-      className="surface-floating layer-floating pointer-events-none fixed top-0 left-0 flex h-6 items-center gap-1.5 rounded-md pr-2.5 pl-2 text-xs whitespace-nowrap text-(--label) select-none will-change-transform"
+      className="surface-floating layer-floating pointer-events-none fixed top-0 left-0 flex h-6 items-center gap-1.5 rounded-md pr-2.5 pl-2 text-xs whitespace-nowrap text-(--label) select-none"
     >
       <IconLink className="size-3.5 text-composer-accent-text" stroke={2} />
       {label}
