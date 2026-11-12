@@ -1,8 +1,9 @@
 import { sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { replacedOwnTimingNote, showGroupActionToast, showKeptOwnTimingToast } from "@/utils/group-toast";
+import { replacedOwnTimingNote, showKeptOwnTimingToast } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
+import { showUndoToast } from "@/utils/undo-toast";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -20,7 +21,7 @@ function shareGroupTimingWithUndo(groupId: string): void {
   showKeptOwnTimingToast(keptOwnTiming, "timeline");
   const count = sharedInstancesInLineOrder(lines, group).length;
   const shared = `${group.label} shares timing in ${pluralize(count, "instance")}`;
-  showGroupActionToast(replaced.length ? `${shared}. ${replacedOwnTimingNote(replaced.length)}` : shared);
+  showUndoToast(replaced.length ? `${shared}. ${replacedOwnTimingNote(replaced.length)}` : shared);
 }
 
 // -- Exports ------------------------------------------------------------------

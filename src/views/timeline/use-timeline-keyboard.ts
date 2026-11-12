@@ -20,13 +20,14 @@ import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
-import { showGroupActionToast, showGroupedToast, showSharedSongEdgeToast } from "@/utils/group-toast";
+import { showGroupedToast, showSharedSongEdgeToast } from "@/utils/group-toast";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
 import { toast } from "@/utils/toast";
 import { focusedControlOwnsKey, isTypingTarget } from "@/utils/typing-target";
+import { showUndoToast } from "@/utils/undo-toast";
 import { centreLineRow } from "@/views/timeline/centre-line-row";
 import { centerTimeScrollLeft } from "@/views/timeline/coords";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
@@ -554,7 +555,7 @@ function useTimelineKeyboard(
           }
           e.preventDefault();
           useProjectStore.getState().removeInstance(inst.groupId, inst.instanceIdx);
-          showGroupActionToast("Instance detached");
+          showUndoToast("Instance detached");
           break;
         }
         case "timeline.deleteGroup": {

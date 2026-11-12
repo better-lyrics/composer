@@ -32,15 +32,6 @@ type SharingPlace = "edit" | "timeline";
 
 // -- Functions -----------------------------------------------------------------
 
-function showGroupActionToast(message: string, undoFn?: () => void): void {
-  toast.success(message, {
-    action: {
-      label: "Undo",
-      onClick: undoFn ?? (() => useProjectStore.getState().undo()),
-    },
-  });
-}
-
 function keptOwnTimingReason(refusal: RealignRefusal, count: number, place: SharingPlace): string {
   const timelineReason = place === "timeline" ? KEPT_IN_THE_TIMELINE_REASONS[refusal] : undefined;
   return (timelineReason ?? KEPT_OWN_TIMING_REASONS[refusal])(count);
@@ -95,7 +86,6 @@ function showSharedSongEdgeToast(): void {
 
 export {
   replacedOwnTimingNote,
-  showGroupActionToast,
   showGroupedToast,
   showKeptOwnTimingToast,
   showPlacementBlockedToast,

@@ -5,9 +5,10 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import { showGroupActionToast, showGroupedToast } from "@/utils/group-toast";
+import { showGroupedToast } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
 import { toast } from "@/utils/toast";
+import { showUndoToast } from "@/utils/undo-toast";
 import { type ConformFailure, conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
@@ -89,7 +90,7 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
         result.updatedLines,
         withNewInstance(projectState.groups, groupId, result.instanceIdx),
       );
-      showGroupActionToast(`Conformed ${pluralize(count, "line")} to "${option.group.label}"`);
+      showUndoToast(`Conformed ${pluralize(count, "line")} to "${option.group.label}"`);
     },
     [conformableSelection, confirm, clearContextMenu],
   );

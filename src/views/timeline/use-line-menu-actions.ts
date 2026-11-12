@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { isSharedLine } from "@/domain/group/shared-timing";
 import { instanceName } from "@/domain/instance/name";
 import { isLinked } from "@/domain/instance/predicates";
@@ -7,13 +8,13 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { showGroupActionToast, showPlacementBlockedToast } from "@/utils/group-toast";
+import { showPlacementBlockedToast } from "@/utils/group-toast";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { showUndoToast } from "@/utils/undo-toast";
 import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { splitLinesIntoWords, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
-import { useCallback } from "react";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -77,14 +78,14 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const sharedName = sharedInstanceNameOf(rawLines, lineId);
     const newLines = rawLines.filter((l) => l.id !== lineId);
     setLinesWithHistory(newLines);
-    if (sharedName) showGroupActionToast(`Line deleted from ${sharedName}. Its timing no longer copies there.`);
+    if (sharedName) showUndoToast(`Line deleted from ${sharedName}. Its timing no longer copies there.`);
     clearContextMenu();
   }, [contextMenu, rawLines, setLinesWithHistory, clearContextMenu]);
 
   const handleDetachLine = useCallback(() => {
     if (!gutterLineGroupInfo) return;
     useProjectStore.getState().detachLine(gutterLineGroupInfo.lineId);
-    showGroupActionToast("Line detached");
+    showUndoToast("Line detached");
     clearContextMenu();
   }, [gutterLineGroupInfo, clearContextMenu]);
 

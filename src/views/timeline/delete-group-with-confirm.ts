@@ -1,7 +1,7 @@
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import { showGroupActionToast } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
+import { showUndoToast } from "@/utils/undo-toast";
 
 // -- Types --------------------------------------------------------------------
 
@@ -24,7 +24,7 @@ async function deleteGroupWithConfirm({ groupId, groupLabel, instanceCount }: De
   });
   if (!ok) return;
   useProjectStore.getState().removeGroup(groupId);
-  showGroupActionToast("Group deleted");
+  showUndoToast("Group deleted");
 }
 
 // -- Exports -------------------------------------------------------------------

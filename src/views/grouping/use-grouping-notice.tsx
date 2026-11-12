@@ -1,19 +1,15 @@
+import { IconBulb, IconLink } from "@tabler/icons-react";
+import { useMemo } from "react";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { type NoticeKind, hiddenByDismissal } from "@/ui/notices/notice-model";
-import {
-  replacedOwnTimingNote,
-  showGroupActionToast,
-  showKeptOwnTimingToast,
-  showReplacedOwnTimingToast,
-} from "@/utils/group-toast";
+import { hiddenByDismissal, type NoticeKind } from "@/ui/notices/notice-model";
+import { replacedOwnTimingNote, showKeptOwnTimingToast, showReplacedOwnTimingToast } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
+import { showUndoToast } from "@/utils/undo-toast";
 import { groupingSuggestions } from "@/views/grouping/grouping-suggestions";
 import type { RepeatingSection } from "@/views/grouping/repeating-sections";
-import { IconBulb, IconLink } from "@tabler/icons-react";
-import { useMemo } from "react";
 
 const MODAL_LINE_MAX = 80;
 const MODAL_LINE_LIMIT = 6;
@@ -85,7 +81,7 @@ function groupSections(sections: readonly RepeatingSection[]): number {
 
 function acceptOne(section: RepeatingSection): void {
   const replaced = groupSections([section]);
-  if (replaced > 0) showGroupActionToast(replacedOwnTimingNote(replaced));
+  if (replaced > 0) showUndoToast(replacedOwnTimingNote(replaced));
 }
 
 const BlockPreview: React.FC<{ lines: string[] }> = ({ lines }) => {

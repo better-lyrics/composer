@@ -4,9 +4,9 @@ import { useAlignmentStore } from "@/stores/alignment";
 import { useSeparationStore } from "@/stores/separation";
 import { alignmentErrorCopy } from "@/ui/alignment-error-copy";
 import { formatWholeMegabytes } from "@/utils/format-file-size";
-import { showGroupActionToast } from "@/utils/group-toast";
 import { pluralize, pluralWord } from "@/utils/pluralize";
 import { toast } from "@/utils/toast";
+import { showUndoToast } from "@/utils/undo-toast";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -84,7 +84,7 @@ function useAutoAlign() {
       return;
     }
     if (result.aligned > 0) {
-      showGroupActionToast(alignedMessage(result.aligned, result.skipped));
+      showUndoToast(alignedMessage(result.aligned, result.skipped));
       noteGuideSignal("sync.autoAlign");
     }
     if (result.fellBack > 0) {

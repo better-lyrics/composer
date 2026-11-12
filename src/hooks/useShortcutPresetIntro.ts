@@ -7,8 +7,6 @@ import { toast } from "@/utils/toast";
 
 // -- Constants ----------------------------------------------------------------
 
-const PRESET_INTRO_DURATION_MS = 10_000;
-
 // -- Helpers ------------------------------------------------------------------
 
 function presetIntroDescription(): string {
@@ -30,7 +28,6 @@ function useShortcutPresetIntro(enabled: boolean): void {
     dismissPresetIntro();
     toast("Shortcuts now come in presets", {
       description: presetIntroDescription(),
-      duration: PRESET_INTRO_DURATION_MS,
       action: {
         label: "See presets",
         onClick: () => useUIStore.getState().openSettings({ target: { setting: "shortcutPreset" } }),

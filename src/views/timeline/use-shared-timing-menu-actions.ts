@@ -1,12 +1,13 @@
+import { useCallback } from "react";
 import { replacedInstances } from "@/domain/group/replaced-instances";
 import { sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceName } from "@/domain/instance/name";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { showGroupActionToast, showSharingBlockedToast } from "@/utils/group-toast";
+import { showSharingBlockedToast } from "@/utils/group-toast";
+import { showUndoToast } from "@/utils/undo-toast";
 import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
-import { useCallback } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -33,7 +34,7 @@ function applySharingMenuAction(action: SharingMenuAction, group: LinkGroup, ins
   const name = instanceName(store.lines, group, instanceIdx);
   if (action === "use-own-timing") {
     store.setInstanceOwnTiming(group.id, instanceIdx, true, useAudioStore.getState().duration);
-    showGroupActionToast(`${name} uses its own timing`);
+    showUndoToast(`${name} uses its own timing`);
     return;
   }
   if (action === "share-timing") {
@@ -44,7 +45,7 @@ function applySharingMenuAction(action: SharingMenuAction, group: LinkGroup, ins
     }
     const after = useProjectStore.getState().lines;
     const replaced = replacedInstances(store.lines, after).length > 0;
-    showGroupActionToast(
+    showUndoToast(
       replaced ? `${name} shares timing again. Its own timing was replaced.` : `${name} shares timing again`,
     );
     return;
@@ -68,4 +69,4 @@ function useSharedTimingMenuActions(groupId: string, instanceIdx: number, clearC
 
 // -- Exports ------------------------------------------------------------------
 
-export { SHARING_MENU_LABELS, applySharingMenuAction, sharingMenuAction, useSharedTimingMenuActions };
+export { applySharingMenuAction, SHARING_MENU_LABELS, sharingMenuAction, useSharedTimingMenuActions };

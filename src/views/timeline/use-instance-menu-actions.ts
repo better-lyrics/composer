@@ -7,8 +7,8 @@ import { instanceKey } from "@/domain/instance/key";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { showGroupActionToast } from "@/utils/group-toast";
 import { toast } from "@/utils/toast";
+import { showUndoToast } from "@/utils/undo-toast";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
@@ -25,7 +25,7 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
     if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
     const { groupId, instanceIdx } = contextMenu.target;
     useProjectStore.getState().removeInstance(groupId, instanceIdx);
-    showGroupActionToast("Instance detached");
+    showUndoToast("Instance detached");
     clearContextMenu();
   }, [contextMenu, clearContextMenu]);
 
