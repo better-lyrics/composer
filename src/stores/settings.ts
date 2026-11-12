@@ -202,7 +202,7 @@ const DEFAULTS: SettingsState = {
   selectedCobaltInstanceId: DEFAULT_COBALT_INSTANCE_ID,
   cobaltInstanceStatus: {},
 
-  experiments: { youtubeBridge: false },
+  experiments: { youtubeBridge: import.meta.env.DEV && import.meta.env.MODE !== "test" },
   composerBridgeUrl: DEFAULT_BRIDGE_URL,
 };
 
