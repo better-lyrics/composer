@@ -15,7 +15,6 @@ import { toast } from "sonner";
 // -- Types --------------------------------------------------------------------
 
 interface ImportPayload {
-  version?: number;
   metadata: ProjectMetadata;
   agents: Agent[];
   lines: LyricLine[];
@@ -89,14 +88,14 @@ function useImportFromHash(): void {
         const encoded = hash.slice(IMPORT_HASH_PREFIX.length);
         const decoded = decodeURIComponent(encoded);
         const payload: unknown = JSON.parse(decoded);
+        if (typeof payload === "object" && payload !== null && isFromNewerComposer(payload)) {
+          console.warn(LOG_PREFIX, "import link was made by a newer version of Composer");
+          showNewerLinkToast();
+          return;
+        }
         if (!isValidPayload(payload)) {
           console.error(LOG_PREFIX, "Invalid import payload structure");
           toast.error("Could not import converter result");
-          return;
-        }
-        if (isFromNewerComposer(payload)) {
-          console.warn(LOG_PREFIX, "import link was made by a newer version of Composer", payload.version);
-          showNewerLinkToast();
           return;
         }
 

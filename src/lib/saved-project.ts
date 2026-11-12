@@ -68,8 +68,8 @@ class NewerProjectError extends Error {
 
 // -- Upgrade ------------------------------------------------------------------
 
-function isFromNewerComposer(saved: { version?: number } | undefined): boolean {
-  return (saved?.version ?? 0) > SAVED_PROJECT_VERSION;
+function isFromNewerComposer(saved: { version?: unknown } | undefined): boolean {
+  return typeof saved?.version === "number" && saved.version > SAVED_PROJECT_VERSION;
 }
 
 function upgradeSavedProject(project: SavedProject): boolean {

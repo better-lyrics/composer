@@ -81,7 +81,7 @@ async function restoreOpenProject(): Promise<void> {
   try {
     payload = await loadProjectForRestore(id);
   } catch (error) {
-    if (error instanceof NewerProjectError && openProjectChanges === baseline) createProject();
+    if (error instanceof NewerProjectError && openProjectChanges === baseline) openEmptyProject();
     throw error;
   }
   if (openProjectChanges !== baseline || !hasRestorableContent(payload)) return;
@@ -132,10 +132,14 @@ async function openProject(id: string): Promise<void> {
 }
 
 function createProject(): string {
-  claimRequest();
-  markOpenProjectChanged();
   flushPendingSaveQuietly();
   saveResumePositionNow();
+  return openEmptyProject();
+}
+
+function openEmptyProject(): string {
+  claimRequest();
+  markOpenProjectChanged();
   const id = createProjectId();
   adoptOpenProjectId(id);
   applyProjectToStores(EMPTY_RESTORE);

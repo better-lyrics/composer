@@ -1,6 +1,6 @@
 import { quotedTitle } from "@/domain/project/display-title";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
-import { deleteProject, openProject } from "@/lib/open-project";
+import { deleteProject, forkOpenProject, openProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import type { PendingDeletion } from "@/lib/pending-deletions";
 import { NewerProjectError } from "@/lib/saved-project";
@@ -92,6 +92,21 @@ function showNewerLinkToast(): void {
   showNeedsNewerComposerToast("This link needs a newer Composer", "Reload to update and open it.");
 }
 
+function keepChangesAsNewProject(): void {
+  forkOpenProject().catch((error: unknown) => {
+    console.error(LOG_PREFIX, "could not keep the changes as a new project", error);
+    toast.error("Couldn't save your changes as a new project");
+  });
+}
+
+function showNewerSaveRefusedToast(): void {
+  toast.error("A newer Composer saved this project in another tab", {
+    description: "Your changes here can't be saved over it. Keep them as a new project, or reload to update.",
+    closeButton: true,
+    action: { label: "Keep as new project", onClick: keepChangesAsNewProject },
+  });
+}
+
 function reportOpenProjectFailure(error: unknown): void {
   console.error(LOG_PREFIX, "could not open the project", error);
   if (error instanceof NewerProjectError) showNewerProjectToast();
@@ -131,5 +146,6 @@ export {
   showDeletedProjectsToast,
   showNewerProjectToast,
   showNewerLinkToast,
+  showNewerSaveRefusedToast,
   reportOpenProjectFailure,
 };

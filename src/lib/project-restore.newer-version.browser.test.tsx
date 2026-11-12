@@ -5,7 +5,12 @@ import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { flushPendingSave } from "@/lib/persistence-debounce";
 import { getFromStore, PROJECT_RECORD_STORE_NAME, setInStore } from "@/lib/persistence-idb";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
-import { saveProjectRecord, updateProjectRecord } from "@/lib/project-repository";
+import {
+  loadProjectIndexEntry,
+  saveProjectRecord,
+  setProjectResumePosition,
+  updateProjectRecord,
+} from "@/lib/project-repository";
 import { NewerProjectError, SAVED_PROJECT_VERSION } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -48,6 +53,8 @@ describe("a project saved by a newer Composer", () => {
 
   it("regression: a reload with it open neither loads it nor saves over it", async () => {
     const newer = await seedNewerProject("future", { open: true });
+    const resumePosition = { time: 42, zoom: 180 };
+    await setProjectResumePosition("future", resumePosition);
     await render(<App />, { withRouter: { initialEntries: ["/editor"] } });
     await getPersistenceSettled();
 
@@ -56,6 +63,7 @@ describe("a project saved by a newer Composer", () => {
     useProjectStore.getState().setLines([createLine({ text: "Typed after the reload" })]);
     await flushPendingSave();
     expect(await storedRecord("future")).toEqual(newer);
+    expect((await loadProjectIndexEntry("future"))?.resumePosition).toEqual(resumePosition);
   });
 
   it("refuses to open it from the library", async () => {

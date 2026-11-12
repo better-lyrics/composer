@@ -1,5 +1,6 @@
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
+import { NewerProjectError } from "@/lib/saved-project";
 import { reportStorageWriteError } from "@/lib/storage-signals";
 
 // -- Types --------------------------------------------------------------------
@@ -15,6 +16,7 @@ const failedKinds = new Set<SaveKind>();
 let status: SaveStatus = "saved";
 const listeners = new Set<() => void>();
 const inFlightSaves = new Set<Promise<void>>();
+const newerRefusalListeners = new Set<(projectId: string) => void>();
 
 // -- Publishing ---------------------------------------------------------------
 
@@ -60,6 +62,7 @@ function trackSave(kind: SaveKind, write: Promise<void>): Promise<void> {
       },
       (error: unknown) => {
         reportStorageWriteError(error);
+        if (error instanceof NewerProjectError) for (const listener of newerRefusalListeners) listener(error.projectId);
         if (isRefusedForClosedProject(error)) return;
         failedKinds.add(kind);
         throw error;
@@ -72,6 +75,13 @@ function trackSave(kind: SaveKind, write: Promise<void>): Promise<void> {
     });
   inFlightSaves.add(tracked);
   return tracked;
+}
+
+function onSaveRefusedAsNewer(listener: (projectId: string) => void): () => void {
+  newerRefusalListeners.add(listener);
+  return () => {
+    newerRefusalListeners.delete(listener);
+  };
 }
 
 function awaitInFlightSaves(): Promise<void> {
@@ -88,5 +98,13 @@ function resetSaveStatus(): void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { getSaveStatus, subscribeSaveStatus, setSavePending, trackSave, awaitInFlightSaves, resetSaveStatus };
+export {
+  getSaveStatus,
+  subscribeSaveStatus,
+  setSavePending,
+  trackSave,
+  awaitInFlightSaves,
+  resetSaveStatus,
+  onSaveRefusedAsNewer,
+};
 export type { SaveStatus };
