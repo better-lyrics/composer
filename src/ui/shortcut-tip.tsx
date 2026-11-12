@@ -6,20 +6,24 @@ import { InlineKeyBadge } from "@/ui/inline-key-badge";
 interface ShortcutTipProps {
   label: string;
   shortcut?: string;
+  keys?: string[];
   description?: string;
 }
 
 // -- Components ----------------------------------------------------------------
 
-const ShortcutTip: React.FC<ShortcutTipProps> = ({ label, shortcut, description }) => (
-  <span className="flex flex-col items-center gap-0.5">
-    <span className="inline-flex items-center whitespace-nowrap">
-      {label}
-      {shortcut && <InlineKeyBadge keys={getEffectiveKeysArray(shortcut)} />}
+const ShortcutTip: React.FC<ShortcutTipProps> = ({ label, shortcut, keys, description }) => {
+  const shownKeys = shortcut ? getEffectiveKeysArray(shortcut) : keys;
+  return (
+    <span className="flex flex-col items-center gap-0.5">
+      <span className="inline-flex items-center whitespace-nowrap">
+        {label}
+        {shownKeys && <InlineKeyBadge keys={shownKeys} />}
+      </span>
+      {description && <span className="text-(--muted)">{description}</span>}
     </span>
-    {description && <span className="text-(--muted)">{description}</span>}
-  </span>
-);
+  );
+};
 
 // -- Exports -------------------------------------------------------------------
 

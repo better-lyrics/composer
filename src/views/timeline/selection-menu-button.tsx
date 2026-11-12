@@ -1,7 +1,10 @@
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
+import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { menuTriggerProps } from "@/ui/menu-trigger-props";
+import { ShortcutTip } from "@/ui/shortcut-tip";
+import { Tooltip } from "@/ui/tooltip";
 import { isMac } from "@/utils/platform";
 import { isInPopover, isTypingTarget } from "@/utils/typing-target";
 import { isKeyboardContextMenu } from "@/views/timeline/keyboard-context-menu";
@@ -11,7 +14,7 @@ import { useEffect, useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
-const KEYBOARD_MENU_KEYS = ["Shift", "F10"];
+const KEYBOARD_MENU_KEYS = isMac ? undefined : ["Shift", "F10"];
 
 // -- Functions -----------------------------------------------------------------
 
@@ -33,6 +36,7 @@ function ownsKeyboardContextMenu(event: MouseEvent): boolean {
 const SelectionMenuButton: React.FC = () => {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const isOpen = useTimelineStore((s) => s.contextMenu?.anchorElement !== undefined);
+  const showHints = useSettingsStore((s) => s.showShortcutHints);
 
   useEffect(() => {
     const openFromKeyboard = (event: MouseEvent) => {
@@ -50,11 +54,21 @@ const SelectionMenuButton: React.FC = () => {
   };
 
   return (
-    <Button ref={buttonRef} variant="secondary" size="sm" hasIcon onClick={toggleMenu} {...menuTriggerProps(isOpen)}>
-      <IconDots className="size-3.5" />
-      <span>More</span>
-      {!isMac && <InlineKeyBadge keys={KEYBOARD_MENU_KEYS} />}
-    </Button>
+    <Tooltip content={<ShortcutTip label="More actions" keys={KEYBOARD_MENU_KEYS} />} disabled={isOpen}>
+      <Button
+        ref={buttonRef}
+        variant="secondary"
+        size="sm"
+        hasIcon
+        onClick={toggleMenu}
+        className="[&>[data-inline-key-badge]]:ml-0"
+        {...menuTriggerProps(isOpen)}
+      >
+        <IconDots className="size-3.5" />
+        <span>More</span>
+        {showHints && KEYBOARD_MENU_KEYS && <InlineKeyBadge keys={KEYBOARD_MENU_KEYS} />}
+      </Button>
+    </Tooltip>
   );
 };
 
