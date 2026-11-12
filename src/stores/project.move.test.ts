@@ -48,7 +48,7 @@ describe("moveWordToBg", () => {
     useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.[1].text).toBe("world");
+    expect(line.words?.[1]).toMatchObject({ text: "world", sep: "" });
   });
 
   it("moves multiple selected words at once", () => {

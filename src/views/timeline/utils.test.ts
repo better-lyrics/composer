@@ -54,7 +54,7 @@ describe("distributeWordsInLine", () => {
     const words = distributeWordsInLine("Hello    World", 0, 10);
     expect(words).toHaveLength(2);
     expect(words[0]).toMatchObject({ text: "Hello", sep: " " });
-    expect(words[1].text).toBe("World");
+    expect(words[1]).toMatchObject({ text: "World", sep: "" });
   });
 
   it("handles non-zero begin time", () => {

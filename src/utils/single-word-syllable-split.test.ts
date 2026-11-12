@@ -96,6 +96,6 @@ describe("splitWordIntoSyllables", () => {
       word: { text: "abc", sep: "", begin: 0, end: 1 },
       splitPoints: [1],
     });
-    expect(result[1].text).toBe("bc");
+    expect(result[1]).toMatchObject({ text: "bc", sep: "" });
   });
 });

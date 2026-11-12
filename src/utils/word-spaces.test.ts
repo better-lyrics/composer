@@ -14,7 +14,7 @@ describe("trimTrailingSpaceFromLast", () => {
 
   it("trims trailing space from the last word", () => {
     const result = trimTrailingSpaceFromLast([{ text: "hello", sep: " ", begin: 0, end: 1 }]);
-    expect(result[0].text).toBe("hello");
+    expect(result[0]).toMatchObject({ text: "hello", sep: "" });
   });
 
   it("leaves a single word without trailing space alone", () => {
@@ -37,7 +37,7 @@ describe("trimTrailingSpaceFromLast", () => {
       { text: "world", sep: " ", begin: 1, end: 2 },
     ]);
     expect(result[0]).toMatchObject({ text: "hello", sep: " " });
-    expect(result[1].text).toBe("world");
+    expect(result[1]).toMatchObject({ text: "world", sep: "" });
   });
 
   it("preserves the trailing-space pattern of every non-last syllable in a group", () => {
