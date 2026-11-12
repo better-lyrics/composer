@@ -60,6 +60,26 @@ describe("keepWaveformData", () => {
     expect(zooms.map((zoom) => bars(kept?.peaks ?? [], kept?.barHeight, zoom))).toEqual(decodedBars);
   });
 
+  it("brings every channel into full scale when a later channel is the loudest", () => {
+    const [quiet] = loudMaster(4, 0.8);
+    const [, loud] = loudMaster(4, 1.3);
+    const decoded = [quiet, loud];
+    const zooms = [0.004, 0.02, 0.1];
+    const decodedBars = zooms.map((zoom) => bars(decoded, undefined, zoom));
+
+    const media = new Audio("blob:http://localhost/loud-right-channel");
+    useAudioStore.getState().registerAudioElement(media);
+    keepWaveformData(mediaSource(media), media, {
+      numberOfChannels: 2,
+      duration: 4,
+      getChannelData: (channel) => decoded[channel].slice(),
+    });
+    const kept = readWaveformData(mediaSource(media));
+
+    expect(kept?.peaks.every((channel) => channel.every((sample) => sample >= -1 && sample <= 1))).toBe(true);
+    expect(zooms.map((zoom) => bars(kept?.peaks ?? [], kept?.barHeight, zoom))).toEqual(decodedBars);
+  });
+
   it("regression: an instance destroyed by a stem switch never keeps its samples for the stem", () => {
     const media = new Audio("blob:http://localhost/original-mix");
     useAudioStore.getState().registerAudioElement(media);

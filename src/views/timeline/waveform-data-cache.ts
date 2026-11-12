@@ -32,11 +32,13 @@ useAudioStore.subscribe((state, previous) => {
   cached = null;
 });
 
-function unitRangeScale(channel: Float32Array): number | null {
+function unitRangeScale(channels: Float32Array[]): number | null {
   let peak = 0;
-  for (let i = 0; i < channel.length; i++) {
-    const magnitude = Math.abs(channel[i]);
-    if (magnitude > peak) peak = magnitude;
+  for (const channel of channels) {
+    for (let i = 0; i < channel.length; i++) {
+      const magnitude = Math.abs(channel[i]);
+      if (magnitude > peak) peak = magnitude;
+    }
   }
   if (!Number.isFinite(peak)) return null;
   let scale = 1;
@@ -67,7 +69,7 @@ function keepWaveformData(source: string, media: HTMLAudioElement, decoded: Deco
   if (cached?.source === source || !decoded || decoded.numberOfChannels === 0 || decoded.duration <= 0) return;
   const peaks = Array.from({ length: decoded.numberOfChannels }, (_, channel) => decoded.getChannelData(channel));
   // WaveSurfer rescales peaks outside [-1, 1]; a power of two scale undone by barHeight rounds every bar to the same pixels.
-  const scale = peaks[0].length > 0 ? unitRangeScale(peaks[0]) : null;
+  const scale = peaks[0].length > 0 ? unitRangeScale(peaks) : null;
   if (scale === null) return;
   if (scale !== 1) {
     for (const channel of peaks) {
