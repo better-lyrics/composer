@@ -50,33 +50,41 @@ function wordAtoms(words: WordTiming[]): string[] {
   return words.flatMap((word) => splitIntoWordsWithMeta(word.text).parts);
 }
 
-function joinedParts(tokens: { parts: string[]; trailingSpace: boolean[] }, from: number, splitChar: string): string {
-  let joined = "";
-  for (let i = from; i < tokens.parts.length; i++) {
-    joined += tokens.parts[i];
-    if (i < tokens.parts.length - 1) joined += tokens.trailingSpace[i] ? " " : splitChar;
+// Where each part of the text ends, found by walking the parts the shared tokenizer returned.
+function partEnds(text: string, parts: string[]): number[] {
+  const ends: number[] = [];
+  let cursor = 0;
+  for (const part of parts) {
+    cursor = text.indexOf(part, cursor) + part.length;
+    ends.push(cursor);
   }
-  return joined;
+  return ends;
+}
+
+// The last new word that matches an old one, aligning old words as early as they can go, so a word
+// repeated later in the line is never mistaken for the one that was already timed.
+function lastSurvivingIndex(covered: string[], timed: string[]): number {
+  const reversedPairs = lcsPairs(covered.toReversed(), timed.toReversed());
+  if (reversedPairs.length === 0) return -1;
+  return timed.length - 1 - Math.min(...reversedPairs.map(([, timedIndex]) => timedIndex));
 }
 
 // The words of a partly synced track cover the start of its text; the rest is lyrics not timed yet.
 // Words added after the last surviving timed word that spell the start of that rest were just timed,
-// so they leave it. Returns the rest with the separator that leads into it, or "" when nothing is left.
-function untimedTail(text: string, previousWords: WordTiming[], words: WordTiming[], splitChar: string): string {
+// so they leave it. Returns the rest as typed, with the separator that leads into it.
+function untimedTail(text: string, previousWords: WordTiming[], words: WordTiming[]): string {
   const written = splitIntoWordsWithMeta(text);
   const covered = wordAtoms(previousWords);
   if (covered.length === 0 || covered.length >= written.parts.length) return "";
   if (covered.some((atom, i) => atom !== written.parts[i])) return "";
   const timed = wordAtoms(words);
-  const pairs = lcsPairs(covered, timed);
-  const added = timed.slice(pairs.length > 0 ? pairs[pairs.length - 1][1] + 1 : 0);
+  const added = timed.slice(lastSurvivingIndex(covered, timed) + 1);
   const tail = written.parts.slice(covered.length);
   let nowTimed = Math.min(added.length, tail.length);
   while (nowTimed > 0 && added.slice(added.length - nowTimed).some((atom, i) => atom !== tail[i])) nowTimed--;
   const start = covered.length + nowTimed;
   if (start >= written.parts.length) return "";
-  const separator = written.trailingSpace[start - 1] ? " " : splitChar;
-  return `${separator}${joinedParts(written, start, splitChar)}`;
+  return text.slice(partEnds(text, written.parts)[start - 1]);
 }
 
 function withTail(timedText: string, tail: string, splitChar: string): string {
@@ -99,7 +107,7 @@ function derivedTrackText(
 ): string | undefined {
   if (!track.words || track.words.length === 0) return track.text;
   const keepsTail = previous?.words && track.text !== undefined && track.text === previous.text;
-  const tail = keepsTail && previous.words ? untimedTail(track.text ?? "", previous.words, track.words, splitChar) : "";
+  const tail = keepsTail && previous.words ? untimedTail(track.text ?? "", previous.words, track.words) : "";
   return withTail(reconstructLineText(track.words, splitChar), tail, splitChar);
 }
 

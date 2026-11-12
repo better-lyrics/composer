@@ -141,6 +141,16 @@ describe("withDerivedText on a partly synced line", () => {
     expect(derivedText(previous, ["b "])).toBe("b b");
   });
 
+  it("regression: timing a placeholder as a repeated word drops only that word from the untimed rest", () => {
+    const previous = partly("a ... a b", ["a ", "... "]);
+    expect(derivedText(previous, ["a ", "a "])).toBe("a a b");
+  });
+
+  it("regression: keeps the spacing of the untimed rest as the user typed it", () => {
+    const previous = partly("a b  c", ["a "]);
+    expect(derivedText(previous, ["a "])).toBe("a b  c");
+  });
+
   it("does not repeat untimed words that new timed words now cover", () => {
     const previous = partly("every night in my dreams", ["every ", "night ", "in "]);
     expect(derivedText(previous, ["every ", "night ", "in ", "my ", "dreams"], "every night in my dreams")).toBe(
