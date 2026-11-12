@@ -36,6 +36,7 @@ interface MonoAudio {
 interface SpectrumRun {
   setFocusTime(seconds: number): void;
   requestRawPhase(chunks: readonly number[]): void;
+  setShown(shown: boolean): void;
   cancel(): void;
 }
 
@@ -101,10 +102,20 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
   let sentFocusChunk = 0;
   let cacheRead = false;
   const rawQueue = new Set<number>();
-  let release: (() => void) | null = holdFrames("spectrum analysis");
+  let shown = true;
+  let working = true;
+  let release: (() => void) | null = null;
+  const syncHold = () => {
+    if (shown && working) release ??= holdFrames("spectrum analysis");
+    else {
+      release?.();
+      release = null;
+    }
+  };
+  syncHold();
   const finish = () => {
-    release?.();
-    release = null;
+    working = false;
+    syncHold();
   };
   const chunkAt = (seconds: number) =>
     mono ? Math.max(0, Math.floor((seconds * mono.sampleRate) / target.hop / CHUNK_FRAMES)) : 0;
@@ -117,7 +128,8 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
 
   // A worker starts for missing chunks, or later on demand when raw phase is wanted for cached ones.
   const startAnalysis = (audio: MonoAudio, skipChunks: readonly number[]) => {
-    release ??= holdFrames("spectrum analysis");
+    working = true;
+    syncHold();
     sentFocusChunk = focusChunk;
     analysis = startSpectrumAnalysis({
       pcm: audio.pcm.slice(),
@@ -128,7 +140,7 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
       skipChunks,
       onChunk: (result) => {
         storeWorkerChunk(result);
-        wake();
+        if (shown) wake();
         writer?.add(result.chunk, result.magnitude, result.phaseChange);
       },
       onDone: () => {
@@ -190,6 +202,10 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
           );
         }
       }
+    },
+    setShown: (next) => {
+      shown = next;
+      syncHold();
     },
     cancel: () => {
       cancelled = true;

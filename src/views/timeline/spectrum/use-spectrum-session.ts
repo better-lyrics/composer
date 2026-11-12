@@ -5,13 +5,15 @@ import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { fileIdentityKey } from "@/utils/file-identity";
 import { type SpectrumRun, type SpectrumTarget, startSpectrumRun } from "@/views/timeline/spectrum/spectrum-run";
-import { clearSpectrumSession } from "@/views/timeline/spectrum/spectrum-session";
+import { clearSpectrumSession, spectrumSession } from "@/views/timeline/spectrum/spectrum-session";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect } from "react";
 
 // -- State --------------------------------------------------------------------
 
 let activeRun: SpectrumRun | null = null;
+let appliedKey: string | null = null;
+let stopWatchingHidden: (() => void) | null = null;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -29,6 +31,37 @@ function desiredTarget(): SpectrumTarget | null {
   return { ...analysis, sourceKey: `mix:${fileIdentityKey(file)}`, audio: file, jobKey };
 }
 
+function targetKey(target: SpectrumTarget | null): string | null {
+  return target ? `${target.sourceKey}|${target.fftSize}|${target.jobKey}` : null;
+}
+
+function dropAnalysis(): void {
+  activeRun?.cancel();
+  activeRun = null;
+  appliedKey = null;
+  clearSpectrumSession();
+}
+
+// Hidden, the band keeps its analysis until what it would analyse changes.
+function dropWhenStale(): () => void {
+  const check = () => {
+    if (targetKey(desiredTarget()) === appliedKey) return;
+    dropAnalysis();
+    stopWatching();
+  };
+  const unsubscribes = [
+    useSettingsStore.subscribe(check),
+    useSeparationStore.subscribe(check),
+    useAudioStore.subscribe((state, prev) => {
+      if (state.source !== prev.source) check();
+    }),
+  ];
+  const stopWatching = () => {
+    for (const unsubscribe of unsubscribes) unsubscribe();
+  };
+  return stopWatching;
+}
+
 function focusTime(): number {
   const { scrollLeft, zoom } = useTimelineStore.getState();
   return zoom > 0 ? scrollLeft / zoom : 0;
@@ -43,21 +76,18 @@ function requestSpectrumRawPhase(chunks: readonly number[]): boolean {
 // The only driver of spectrum analysis: it follows visibility, source, window and stem job.
 function useSpectrumSession(): void {
   useEffect(() => {
-    let appliedKey: string | null = null;
-
-    const stop = () => {
-      activeRun?.cancel();
-      activeRun = null;
-    };
+    stopWatchingHidden?.();
+    stopWatchingHidden = null;
+    activeRun?.setShown(true);
 
     const sync = () => {
       const target = desiredTarget();
-      const key = target ? `${target.sourceKey}|${target.fftSize}|${target.jobKey}` : null;
-      if (key === appliedKey) return;
+      const key = targetKey(target);
+      if (key === appliedKey && spectrumSession.status !== "error") return;
+      dropAnalysis();
+      if (!target) return;
+      activeRun = startSpectrumRun(target, focusTime());
       appliedKey = key;
-      stop();
-      clearSpectrumSession();
-      if (target) activeRun = startSpectrumRun(target, focusTime());
     };
 
     sync();
@@ -85,8 +115,8 @@ function useSpectrumSession(): void {
       unsubscribeSettings();
       unsubscribeSeparation();
       unsubscribeAudio();
-      stop();
-      clearSpectrumSession();
+      activeRun?.setShown(false);
+      stopWatchingHidden = dropWhenStale();
     };
   }, []);
 }
