@@ -1,6 +1,6 @@
 import { alsoMovesLabel, copiesMovedWith } from "@/domain/group/moved-copies";
 import type { WordSelection } from "@/domain/selection/model";
-import { subscribeFrame, wake } from "@/lib/frame-loop";
+import { subscribeFrame, wakeForOneFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { wordBlockId } from "@/views/timeline/word-block-id";
 
@@ -88,7 +88,7 @@ function startSharedCopiesHint(words: readonly DraggedWord[], clientX: number, c
   const onPointerMove = (e: PointerEvent) => {
     pointerX = e.clientX;
     pointerY = e.clientY;
-    wake();
+    wakeForOneFrame();
   };
   const unsubscribeFrame = subscribeFrame(placeChip, CHIP_FRAME_LABEL);
 

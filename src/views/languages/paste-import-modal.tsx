@@ -7,7 +7,7 @@ import type { TranslationTrack, TransliterationTrack } from "@/domain/language/m
 import { alignPastedLanguageLines } from "@/domain/language/paste-import";
 import type { LyricLine } from "@/domain/line/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
-import { clearModalDraft, readModalDraft, writeModalDraft } from "@/lib/modal-drafts";
+import { type PasteTranslationsDraft, clearModalDraft, readModalDraft, writeModalDraft } from "@/lib/modal-drafts";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { FieldError } from "@/ui/field-error";
@@ -36,6 +36,8 @@ interface PasteImportModalProps {
 
 // -- Constants ----------------------------------------------------------------
 
+type PasteKind = PasteTranslationsDraft["kind"];
+
 const KIND_OPTIONS = [
   { value: "transliteration", label: "Transliteration" },
   { value: "translation", label: "Translation" },
@@ -61,12 +63,12 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
   onImportedTranslation,
 }) => {
   const updateLinesWithHistory = useProjectStore((state) => state.updateLinesWithHistory);
-  const [kind, setKind] = useState<"transliteration" | "translation">(defaultKind);
-  const [targetLanguage, setTargetLanguage] = useState(defaultTargetLanguage);
   const [restoredDraft] = useState(() => {
     const draft = readModalDraft("paste-translations");
     return draft?.pastedText === initialText ? draft : undefined;
   });
+  const [kind, setKind] = useState<PasteKind>(restoredDraft?.kind ?? defaultKind);
+  const [targetLanguage, setTargetLanguage] = useState(restoredDraft?.targetLanguage ?? defaultTargetLanguage);
   const [showClearDraft, setShowClearDraft] = useState(restoredDraft !== undefined);
   const [pastedText, setPastedText] = useState(restoredDraft?.text ?? initialText);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -92,10 +94,30 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
   const mappedCount = mappedLines.filter((line) => line.trim()).length;
   const languageSelectOptions = languageOptions.map(([value, label]) => ({ value, label }));
 
+  const saveDraft = (patch: Partial<Omit<PasteTranslationsDraft, "pastedText">>) =>
+    writeModalDraft("paste-translations", {
+      pastedText: initialText,
+      text: pastedText,
+      manualRows,
+      kind,
+      targetLanguage,
+      ...patch,
+    });
+
   const editDraft = (text: string, rows: string[] | null) => {
     setPastedText(text);
     setManualRows(rows);
-    writeModalDraft("paste-translations", { pastedText: initialText, text, manualRows: rows });
+    saveDraft({ text, manualRows: rows });
+  };
+
+  const changeKind = (next: PasteKind) => {
+    setKind(next);
+    saveDraft({ kind: next });
+  };
+
+  const changeTargetLanguage = (next: string) => {
+    setTargetLanguage(next);
+    saveDraft({ targetLanguage: next });
   };
 
   const updateMappedLine = (index: number, value: string) => {
@@ -163,12 +185,12 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
       <div className="grid h-[min(78vh,48rem)] min-h-0 overflow-y-auto overscroll-none lg:overflow-hidden lg:grid-cols-[minmax(20rem,0.8fr)_minmax(32rem,1.4fr)]">
         <div className="flex min-h-0 flex-col gap-4 p-5 border-b lg:border-b-0 lg:border-r border-(--divider)">
           <div className="flex items-center justify-between gap-3">
-            <SegmentedControl aria-label="Import as" value={kind} options={KIND_OPTIONS} onChange={setKind} />
+            <SegmentedControl aria-label="Import as" value={kind} options={KIND_OPTIONS} onChange={changeKind} />
             {kind === "translation" && (
               <Select
                 aria-label="Imported translation language"
                 value={targetLanguage}
-                onChange={setTargetLanguage}
+                onChange={changeTargetLanguage}
                 options={languageSelectOptions}
                 className="h-8"
               />

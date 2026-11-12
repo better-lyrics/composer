@@ -82,6 +82,8 @@ function useTimelineDnd(lines: ReadableLine[]) {
         document.removeEventListener("keydown", onKey);
         document.removeEventListener("keyup", onKey);
       };
+      const duplicatesWords = event.activatorEvent instanceof PointerEvent && event.activatorEvent.altKey;
+      if (duplicatesWords) return;
       const { selectedWords } = useTimelineStore.getState();
       const movingWords = wordsDraggedTogether(lines, data, initialShiftKey, selectedWords);
       stopSharedCopiesHintRef.current = startSharedCopiesHint(movingWords, pointerXRef.current, pointerYRef.current);

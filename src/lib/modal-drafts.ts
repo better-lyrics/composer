@@ -4,12 +4,19 @@ import type { SearchInputs } from "@/views/lyrics-import-modal/search-inputs";
 // -- Interfaces ---------------------------------------------------------------
 
 interface ModalDrafts {
-  "paste-translations": { pastedText: string; text: string; manualRows: string[] | null };
+  "paste-translations": {
+    pastedText: string;
+    text: string;
+    manualRows: string[] | null;
+    kind: "transliteration" | "translation";
+    targetLanguage: string;
+  };
   "import-lyrics": { text: string };
   "lyrics-search": SearchInputs;
 }
 
 type ModalDraftKey = keyof ModalDrafts;
+type PasteTranslationsDraft = ModalDrafts["paste-translations"];
 
 // -- Module state -------------------------------------------------------------
 
@@ -42,3 +49,4 @@ subscribeOpenProjectId(() => {
 // -- Exports ------------------------------------------------------------------
 
 export { clearModalDraft, readModalDraft, writeModalDraft };
+export type { PasteTranslationsDraft };
