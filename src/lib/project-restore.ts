@@ -7,7 +7,7 @@ import { migratePrimingTimings, repairProjectStems } from "@/lib/priming-migrati
 import { loadProjectAudio } from "@/lib/project-audio";
 import { loadProjectIndexEntry, saveProjectRecord } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
-import { type SavedProject, upgradeSavedProject } from "@/lib/saved-project";
+import { NewerProjectError, type SavedProject, isFromNewerComposer, upgradeSavedProject } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
@@ -47,6 +47,7 @@ async function loadProjectForRestore(id: string): Promise<RestorePayload> {
     loadProjectAudio(id),
     loadProjectIndexEntry(id),
   ]);
+  if (isFromNewerComposer(project)) throw new NewerProjectError(id);
   if (project) {
     const upgraded = upgradeSavedProject(project);
     const migrated = await migratePrimingTimings(project, audio);

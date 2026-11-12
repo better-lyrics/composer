@@ -16,9 +16,11 @@ import { watchProjectTextVariant } from "@/lib/project-text-variant";
 import { watchResumePosition } from "@/lib/resume-position";
 import { buildSaveInput, hadStoredAudio, openProjectView, storedAudioFile } from "@/lib/project-snapshot";
 import { getSaveStatus, trackSave } from "@/lib/save-status";
+import { NewerProjectError } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
+import { showNewerProjectToast } from "@/utils/project-toast";
 import { useEffect } from "react";
 
 // -- Constants ----------------------------------------------------------------
@@ -59,6 +61,7 @@ function usePersistence(): void {
     restoreOpenProject()
       .catch((err) => {
         console.error(`${LOG_PREFIX} initial load failed:`, err);
+        if (err instanceof NewerProjectError) showNewerProjectToast();
       })
       .finally(() => {
         if (import.meta.env.DEV) {

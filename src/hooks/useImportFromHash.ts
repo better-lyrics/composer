@@ -5,15 +5,17 @@ import type { ProjectMetadata } from "@/domain/project/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { startSongInNewProject } from "@/lib/open-project";
 import { getPersistenceSettled, markHashImportSettled } from "@/lib/persistence-settled";
+import { isFromNewerComposer } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { IMPORT_HASH_PREFIX } from "@/utils/incoming-link";
-import { showNewProjectToast } from "@/utils/project-toast";
+import { showNewProjectToast, showNewerLinkToast } from "@/utils/project-toast";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 
 interface ImportPayload {
+  version?: number;
   metadata: ProjectMetadata;
   agents: Agent[];
   lines: LyricLine[];
@@ -90,6 +92,11 @@ function useImportFromHash(): void {
         if (!isValidPayload(payload)) {
           console.error(LOG_PREFIX, "Invalid import payload structure");
           toast.error("Could not import converter result");
+          return;
+        }
+        if (isFromNewerComposer(payload)) {
+          console.warn(LOG_PREFIX, "import link was made by a newer version of Composer", payload.version);
+          showNewerLinkToast();
           return;
         }
 

@@ -10,6 +10,7 @@ import {
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { EDITOR_PATH } from "@/utils/app-routes";
+import { reportOpenProjectFailure } from "@/utils/project-toast";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -46,13 +47,10 @@ function useLibraryActions(): LibraryActions {
   return useMemo(
     () => ({
       open: (id: string, tab?: ProjectTab) => {
-        openProject(id).then(
-          () => {
-            if (tab) useProjectStore.getState().setActiveTab(tab);
-            navigate(EDITOR_PATH);
-          },
-          reportFailure("could not open the project", "Couldn't open that project"),
-        );
+        openProject(id).then(() => {
+          if (tab) useProjectStore.getState().setActiveTab(tab);
+          navigate(EDITOR_PATH);
+        }, reportOpenProjectFailure);
       },
       rename: (id: string, title: string) => {
         renameProject(id, title).catch(reportFailure("could not rename the project", "Couldn't rename that project"));
