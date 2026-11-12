@@ -7,7 +7,7 @@ import { SPECTRUM_SETTING_DEFAULTS, type SpectrumSettings } from "@/domain/spect
 import type { KeepYouTubeAudio } from "@/domain/storage/audio-retention";
 import type { StorageLimit } from "@/domain/storage/storage-limit";
 import type { CobaltInstance, CobaltInstanceStatus } from "@/stores/settings-cobalt";
-import { RUNS_LOCALLY, mergeSettingsForLocalBridge } from "@/stores/settings-local-bridge";
+import { RUNS_LOCALLY, mergeLocalBridge } from "@/stores/settings-local-bridge";
 import { SETTINGS_PERSIST_VERSION, migrateSettings } from "@/stores/settings-migration";
 import { SNAP_DEFAULTS, type SnapSettings } from "@/stores/settings-snap";
 import { UNISON_SETTING_DEFAULTS, type UnisonSettings } from "@/stores/settings-unison";
@@ -269,12 +269,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           },
         })),
     }),
-    {
-      name: "composer-settings",
-      version: SETTINGS_PERSIST_VERSION,
-      migrate: migrateSettings,
-      merge: mergeSettingsForLocalBridge,
-    },
+    { name: "composer-settings", version: SETTINGS_PERSIST_VERSION, migrate: migrateSettings, merge: mergeLocalBridge },
   ),
 );
 
