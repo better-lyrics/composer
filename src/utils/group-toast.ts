@@ -1,8 +1,8 @@
 import type { KeptOwnTiming, RealignRefusal } from "@/domain/group/shared-placement";
 import type { LinkGroup } from "@/domain/group/template";
-import { useProjectStore } from "@/stores/project";
 import { pluralize, pluralWord } from "@/utils/pluralize";
 import { toast } from "@/utils/toast";
+import { showUndoToast } from "@/utils/undo-toast";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -44,11 +44,9 @@ function showKeptOwnTimingToast(keptOwnTiming: readonly KeptOwnTiming[], place: 
   const refusals = new Set(keptOwnTiming.map((kept) => kept.refusal));
   const [refusal] = refusals;
   const reason = refusals.size === 1 ? keptOwnTimingReason(refusal, count, place) : MIXED_KEPT_OWN_TIMING_REASON[place];
-  toast(`${pluralize(count, "instance")} kept ${pluralWord(count, "its", "their")} own timing${reason}`, {
-    ...(offerUndo
-      ? { action: { label: "Undo", onClick: () => useProjectStore.getState().undo() } }
-      : { duration: GROUP_TOAST_DURATION_MS }),
-  });
+  const message = `${pluralize(count, "instance")} kept ${pluralWord(count, "its", "their")} own timing${reason}`;
+  if (offerUndo) showUndoToast(message);
+  else toast(message, { duration: GROUP_TOAST_DURATION_MS });
 }
 
 function replacedOwnTimingNote(count: number): string {
