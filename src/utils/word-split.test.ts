@@ -4,11 +4,11 @@ import type { WordTiming } from "@/domain/word/timing";
 import { splitWordIntoWords } from "@/utils/word-split";
 
 describe("splitWordIntoWords", () => {
-  const source: WordTiming = { text: "everyday", begin: 1, end: 2 };
+  const source: WordTiming = { text: "everyday", sep: "", begin: 1, end: 2 };
 
   it("splits into independent words with a trailing space on the non-final word", () => {
     const out = splitWordIntoWords(source, [5]);
-    expect(out.map((w) => w.text)).toEqual(["every ", "day"]);
+    expect(out.map((w) => w.text + w.sep)).toEqual(["every ", "day"]);
     expect(out[0].syllableGroupId).toBeUndefined();
     expect(out[1].syllableGroupId).toBeUndefined();
   });
@@ -19,8 +19,8 @@ describe("splitWordIntoWords", () => {
   });
 
   it("preserves the source trailing space on the final word", () => {
-    const out = splitWordIntoWords({ ...source, text: "everyday " }, [5]);
-    expect(out.map((w) => w.text)).toEqual(["every ", "day "]);
+    const out = splitWordIntoWords({ ...source, text: "everyday", sep: " " }, [5]);
+    expect(out.map((w) => w.text + w.sep)).toEqual(["every ", "day "]);
   });
 
   it("distributes timing across the source span", () => {
@@ -37,36 +37,36 @@ describe("splitWordIntoWords", () => {
 
   it("output is NOT a syllable group when the line also has a syllableGroupId word", () => {
     const out = splitWordIntoWords(source, [5]);
-    const line = [...out, { text: "x", begin: 2, end: 3, syllableGroupId: "g1" }];
+    const line = [...out, { text: "x", sep: "", begin: 2, end: 3, syllableGroupId: "g1" }];
     expect(getSyllablePositions(line).slice(0, 2)).toEqual(["none", "none"]);
   });
 });
 
 describe("splitWordIntoWords · text containing spaces", () => {
-  const line = { text: "It hurts for me", begin: 10, end: 12 };
+  const line = { text: "It hurts for me", sep: "", begin: 10, end: 12 };
 
   it("regression: splitting right before a space does not leave a leading space on the next word", () => {
     const out = splitWordIntoWords(line, [2, 8]);
-    expect(out.map((w) => w.text)).toEqual(["It ", "hurts ", "for me"]);
+    expect(out.map((w) => w.text + w.sep)).toEqual(["It ", "hurts ", "for me"]);
   });
 
   it("regression: splitting right after a space does not leave a trailing double space", () => {
     const out = splitWordIntoWords(line, [3, 9]);
-    expect(out.map((w) => w.text)).toEqual(["It ", "hurts ", "for me"]);
+    expect(out.map((w) => w.text + w.sep)).toEqual(["It ", "hurts ", "for me"]);
   });
 
   describe("edge cases", () => {
     it("drops a whitespace-only part and gives its time to the previous word", () => {
       const out = splitWordIntoWords(line, [2, 3]);
-      expect(out.map((w) => w.text)).toEqual(["It ", "hurts for me"]);
+      expect(out.map((w) => w.text + w.sep)).toEqual(["It ", "hurts for me"]);
       expect(out[0].begin).toBe(10);
       expect(out[0].end).toBe(out[1].begin);
       expect(out[1].end).toBe(12);
     });
 
     it("keeps the source trailing space on the final word", () => {
-      const out = splitWordIntoWords({ ...line, text: "It hurts " }, [2]);
-      expect(out.map((w) => w.text)).toEqual(["It ", "hurts "]);
+      const out = splitWordIntoWords({ ...line, text: "It hurts", sep: " " }, [2]);
+      expect(out.map((w) => w.text + w.sep)).toEqual(["It ", "hurts "]);
     });
   });
 
@@ -91,7 +91,8 @@ describe("splitWordIntoWords · text containing spaces", () => {
 
 describe("splitWordIntoWords · transliteration", () => {
   const word: WordTiming = {
-    text: "приветмир ",
+    text: "приветмир",
+    sep: " ",
     begin: 3,
     end: 4,
     transliteration: "privet mir",
@@ -100,7 +101,7 @@ describe("splitWordIntoWords · transliteration", () => {
 
   it("regression: parts never copy the parent's transliteration (#283)", () => {
     const out = splitWordIntoWords(word, [6]);
-    expect(out.map((w) => w.text)).toEqual(["привет ", "мир "]);
+    expect(out.map((w) => w.text + w.sep)).toEqual(["привет ", "мир "]);
     for (const part of out) {
       expect(part).not.toHaveProperty("transliteration");
       expect(part).not.toHaveProperty("transliterationJoinerAfter");

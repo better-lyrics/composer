@@ -22,13 +22,14 @@ function propagateWordChanges(
     if (sourceAfter.length === siblingWords.length) {
       let changed = false;
       const next = siblingWords.map((w, i) => {
-        if (w.text === sourceAfter[i].text) return w;
+        const { text, sep } = sourceAfter[i];
+        if (w.text === text && w.sep === sep) return w;
         changed = true;
-        return { ...w, text: sourceAfter[i].text };
+        return { ...w, text, sep };
       });
       return changed ? next : undefined;
     }
-    if (sourceAfter.every((w, i) => w.text === sourceBefore[i].text)) return undefined;
+    if (sourceAfter.every((w, i) => w.text === sourceBefore[i].text && w.sep === sourceBefore[i].sep)) return undefined;
   }
 
   const result = applySiblingWords(sourceAfter, sourceBefore, siblingWords);

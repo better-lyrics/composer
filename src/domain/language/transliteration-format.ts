@@ -60,7 +60,7 @@ function timingLexicalWordGroups(words: WordTiming[]): TimingWordGroup[] {
   const result: TimingWordGroup[] = [];
   let startIndex = 0;
   for (let index = 0; index < words.length; index++) {
-    if (!words[index].text.endsWith(" ") && index < words.length - 1) continue;
+    if (!words[index].sep.endsWith(" ") && index < words.length - 1) continue;
     result.push({ words: words.slice(startIndex, index + 1), startIndex });
     startIndex = index + 1;
   }
@@ -127,7 +127,7 @@ function splitTransliterationAtBoundaries(
 }
 
 function hasLexicalBoundaryAfter(words: WordTiming[], index: number): boolean {
-  return index < words.length - 1 && words[index].text.endsWith(" ");
+  return index < words.length - 1 && words[index].sep.endsWith(" ");
 }
 
 export {

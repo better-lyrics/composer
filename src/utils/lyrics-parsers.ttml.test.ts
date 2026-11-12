@@ -14,7 +14,7 @@ describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
     const firstLine = result.lines[0];
     expect(firstLine.words).toBeDefined();
     expect(firstLine.words?.length).toBe(7);
-    expect(firstLine.words?.[0].text).toBe("Hell ");
+    expect(firstLine.words?.[0]).toMatchObject({ text: "Hell", sep: " " });
     expect(firstLine.words?.[0].begin).toBeCloseTo(1.277, 3);
     expect(firstLine.words?.[6].text).toBe("man");
     expect(firstLine.words?.[6].end).toBeCloseTo(2.621, 3);

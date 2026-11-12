@@ -1,3 +1,4 @@
+import { splitTrailingWhitespace } from "insync/from-words";
 import { withSeededBackground } from "@/domain/line/background";
 import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
@@ -157,7 +158,7 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
   const end = nextWord && nextWord.begin >= begin ? Math.min(provisional, nextWord.begin) : provisional;
 
   let words = [...existing];
-  words[cursor.wordIndex] = { ...existing[cursor.wordIndex], text, begin, end };
+  words[cursor.wordIndex] = { ...existing[cursor.wordIndex], ...splitTrailingWhitespace(text), begin, end };
 
   const closeAt = closingTime(lines, slot, begin, { open, jumped: ctx.jumped });
   const sameLine = slot && slot.lineIndex === cursor.lineIndex ? slot : null;

@@ -1,9 +1,10 @@
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { type GestureCommit, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
+import { wordFromSpaced } from "@/domain/word/spaced-words";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
-const word = (text: string, begin: number, end: number) => ({ text, begin, end });
+const word = (text: string, begin: number, end: number) => wordFromSpaced({ text, begin, end });
 const DUR = 0.3;
 
 function run(lines: LyricLine[], gesture: SyncGesture, cursor: [number, number], time: number, jumped = false) {
@@ -91,7 +92,7 @@ describe("tap-word", () => {
     const after = apply(lines, commit);
     expect(commit?.clampedTo).toBe(4);
     for (const w of after[0].words?.slice(0, 3) ?? []) expect(w.end - w.begin).toBeGreaterThan(0);
-    expect(after[0].words?.map((w) => w.text)).toEqual(texts);
+    expect(after[0].words?.map((w) => w.text + w.sep)).toEqual(texts);
   });
 
   it("a jumped tap after the previous end leaves the previous word untouched", () => {
@@ -330,7 +331,7 @@ describe("hold gestures", () => {
       createLine({ id: "l1", text: "c d", words: [word("c ", 10, 11), word("d", 11, 12)] }),
     ];
     const after = apply(lines, run(lines, "hold-tap", [0, 1], 3));
-    expect(after[1].words?.map((w) => w.text)).toEqual(["c ", "d"]);
+    expect(after[1].words?.map((w) => w.text + w.sep)).toEqual(["c ", "d"]);
     expect(after[1].words?.[0]).toEqual(word("c ", 3, 3));
     expect(after[0].words?.[1]).toEqual(word("b", 2, 3));
   });
@@ -466,7 +467,14 @@ describe("ported behaviour", () => {
       createLine({ id: "l0", text: "one", words: [{ ...word("one", 5, 5), explicit: true, syllableGroupId: "g1" }] }),
     ];
     const after = apply(lines, run(lines, "hold-end", [0, 0], 6));
-    expect(after[0].words?.[0]).toEqual({ text: "one", begin: 5, end: 6, explicit: true, syllableGroupId: "g1" });
+    expect(after[0].words?.[0]).toEqual({
+      text: "one",
+      sep: "",
+      begin: 5,
+      end: 6,
+      explicit: true,
+      syllableGroupId: "g1",
+    });
   });
 });
 

@@ -3,6 +3,7 @@ import { wordsFromSyllables } from "insync/to-words";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { spacedFromWords, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { parseProjectFileContents } from "@/lib/project-file-read";
@@ -66,10 +67,10 @@ function expectRoundTripKeepsExport(projects: readonly EditedTtmlProject[]): voi
 }
 
 function wordsThroughSyllables(words: readonly WordTiming[]): WordTiming[] {
-  const track = syllablesFromWords(words);
-  const roundTripped = wordsFromSyllables(track);
+  const track = syllablesFromWords(spacedFromWords(words));
+  const roundTripped = wordsFromSpaced(wordsFromSyllables(track));
   expect(roundTripped).toHaveLength(words.length);
-  expect(syllablesFromWords(roundTripped).map((syllable) => syllable.joinsNext)).toEqual(
+  expect(syllablesFromWords(spacedFromWords(roundTripped)).map((syllable) => syllable.joinsNext)).toEqual(
     track.map((syllable) => syllable.joinsNext),
   );
   return words.map((word, index) => ({ ...word, ...roundTripped[index] }));

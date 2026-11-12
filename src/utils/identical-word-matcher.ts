@@ -53,7 +53,7 @@ function collectTrackMatches(
     if (word.syllableGroupId !== undefined) continue;
     const isSource = line.id === source.lineId && type === source.type && wordIndex === source.wordIndex;
     if (options.excludeSource && isSource) continue;
-    const trimmed = word.text.trimEnd();
+    const trimmed = word.text;
     if (trimmed.length < minLength) continue;
     const candidate = options.caseInsensitive ? trimmed.toLocaleLowerCase() : trimmed;
     if (candidate !== targetText) continue;

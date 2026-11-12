@@ -76,7 +76,7 @@ describe("parseLyricsFile - enhanced LRC (eLRC)", () => {
     const line1 = result.lines[0];
     expect(line1.words).toBeDefined();
     expect(line1.words).toHaveLength(2);
-    expect(line1.words?.[0].text).toBe("Hello ");
+    expect(line1.words?.[0]).toMatchObject({ text: "Hello", sep: " " });
     expect(line1.words?.[0].begin).toBeCloseTo(12.0, 2);
     expect(line1.words?.[0].end).toBeCloseTo(12.5, 2);
     expect(line1.words?.[1].text).toBe("world");
@@ -116,7 +116,7 @@ describe("parseLyricsFile - enhanced LRC (eLRC)", () => {
     const result = parseLyricsFile("song.lrc", content);
 
     expect(result.lines[0].words).toHaveLength(2);
-    expect(result.lines[0].words?.[0].text).toBe("Hello ");
+    expect(result.lines[0].words?.[0]).toMatchObject({ text: "Hello", sep: " " });
     expect(result.lines[0].words?.[0].begin).toBeCloseTo(12.0, 2);
     expect(result.lines[0].words?.[0].end).toBeCloseTo(12.5, 2);
     expect(result.lines[0].words?.[1].end).toBeCloseTo(13.0, 2);
@@ -127,7 +127,7 @@ describe("parseLyricsFile - enhanced LRC (eLRC)", () => {
     const result = parseLyricsFile("song.lrc", content);
 
     expect(result.lines[0].text).toBe("Hello beautiful world");
-    expect(result.lines[0].words?.map((w) => w.text).join("")).toBe("Hello beautiful world");
+    expect(result.lines[0].words?.map((w) => w.text + w.sep).join("")).toBe("Hello beautiful world");
   });
 
   it("falls back to line-level timing and strips inline tags when a line has multiple line timestamps", () => {

@@ -16,8 +16,8 @@ describe("mainBounds", () => {
       mainBounds(
         line({
           words: [
-            { text: "a", begin: 2, end: 5 },
-            { text: "b", begin: 5, end: 8 },
+            { text: "a", sep: "", begin: 2, end: 5 },
+            { text: "b", sep: "", begin: 5, end: 8 },
           ],
         }),
       ),
@@ -42,7 +42,7 @@ describe("mainBounds", () => {
         line({
           begin: 0,
           end: 999,
-          words: [{ text: "a", begin: 2, end: 5 }],
+          words: [{ text: "a", sep: "", begin: 2, end: 5 }],
         }),
       ),
     ).toEqual({ begin: 2, end: 5 });
@@ -61,8 +61,8 @@ describe("bgBounds", () => {
       bgBounds(
         line({
           backgroundWords: [
-            { text: "a", begin: 6, end: 9 },
-            { text: "b", begin: 9, end: 12 },
+            { text: "a", sep: "", begin: 6, end: 9 },
+            { text: "b", sep: "", begin: 9, end: 12 },
           ],
         }),
       ),
@@ -86,8 +86,8 @@ describe("effectiveBounds", () => {
       effectiveBounds(
         line({
           words: [
-            { text: "a", begin: 2, end: 5 },
-            { text: "b", begin: 5, end: 8 },
+            { text: "a", sep: "", begin: 2, end: 5 },
+            { text: "b", sep: "", begin: 5, end: 8 },
           ],
         }),
       ),
@@ -107,12 +107,12 @@ describe("effectiveBounds", () => {
       effectiveBounds(
         line({
           words: [
-            { text: "a", begin: 2, end: 5 },
-            { text: "b", begin: 5, end: 8 },
+            { text: "a", sep: "", begin: 2, end: 5 },
+            { text: "b", sep: "", begin: 5, end: 8 },
           ],
           backgroundWords: [
-            { text: "c", begin: 6, end: 9 },
-            { text: "d", begin: 9, end: 12 },
+            { text: "c", sep: "", begin: 6, end: 9 },
+            { text: "d", sep: "", begin: 9, end: 12 },
           ],
         }),
       ),
@@ -123,8 +123,8 @@ describe("effectiveBounds", () => {
     expect(
       effectiveBounds(
         line({
-          words: [{ text: "a", begin: 5, end: 8 }],
-          backgroundWords: [{ text: "b", begin: 3, end: 6 }],
+          words: [{ text: "a", sep: "", begin: 5, end: 8 }],
+          backgroundWords: [{ text: "b", sep: "", begin: 3, end: 6 }],
         }),
       ),
     ).toEqual({ begin: 3, end: 8 });
@@ -136,7 +136,7 @@ describe("effectiveBounds", () => {
         line({
           begin: 3,
           end: 7,
-          backgroundWords: [{ text: "b", begin: 6, end: 10 }],
+          backgroundWords: [{ text: "b", sep: "", begin: 6, end: 10 }],
         }),
       ),
     ).toEqual({ begin: 3, end: 10 });
@@ -146,8 +146,8 @@ describe("effectiveBounds", () => {
     expect(
       effectiveBounds(
         line({
-          words: [{ text: "a", begin: 2, end: 10 }],
-          backgroundWords: [{ text: "b", begin: 4, end: 7 }],
+          words: [{ text: "a", sep: "", begin: 2, end: 10 }],
+          backgroundWords: [{ text: "b", sep: "", begin: 4, end: 7 }],
         }),
       ),
     ).toEqual({ begin: 2, end: 10 });
@@ -157,7 +157,7 @@ describe("effectiveBounds", () => {
     expect(
       effectiveBounds(
         line({
-          words: [{ text: "a", begin: 2, end: 5 }],
+          words: [{ text: "a", sep: "", begin: 2, end: 5 }],
           backgroundWords: [],
         }),
       ),
@@ -168,7 +168,7 @@ describe("effectiveBounds", () => {
     expect(
       effectiveBounds(
         line({
-          backgroundWords: [{ text: "b", begin: 3, end: 6 }],
+          backgroundWords: [{ text: "b", sep: "", begin: 3, end: 6 }],
         }),
       ),
     ).toBeNull();
@@ -184,7 +184,7 @@ describe("effectiveBounds", () => {
         line({
           begin: 0,
           end: 999,
-          words: [{ text: "a", begin: 2, end: 5 }],
+          words: [{ text: "a", sep: "", begin: 2, end: 5 }],
         }),
       ),
     ).toEqual({ begin: 2, end: 5 });

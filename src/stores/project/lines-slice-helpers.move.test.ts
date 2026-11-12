@@ -15,9 +15,9 @@ function mainLine(overrides: Partial<LooseLine> = {}): LyricLine {
     text: "hello world goodbye",
     agentId: "v1",
     words: [
-      { text: "hello ", begin: 0, end: 1 },
-      { text: "world ", begin: 1, end: 2 },
-      { text: "goodbye", begin: 2, end: 3 },
+      { text: "hello", sep: " ", begin: 0, end: 1 },
+      { text: "world", sep: " ", begin: 1, end: 2 },
+      { text: "goodbye", sep: "", begin: 2, end: 3 },
     ],
     ...overrides,
   });
@@ -35,7 +35,7 @@ describe("applyMoveToBg", () => {
 
   it("flips an extraction-sourced background to manual when merging words in", () => {
     const line = mainLine({
-      backgroundWords: [{ text: "yeah", begin: 5, end: 6 }],
+      backgroundWords: [{ text: "yeah", sep: "", begin: 5, end: 6 }],
       backgroundText: "yeah",
       backgroundTextSource: "extraction",
     });
@@ -45,12 +45,12 @@ describe("applyMoveToBg", () => {
 
   it("moves words into an existing background, keeping main timing intact", () => {
     const line = mainLine({
-      backgroundWords: [{ text: "ah", begin: 8, end: 9 }],
+      backgroundWords: [{ text: "ah", sep: "", begin: 8, end: 9 }],
       backgroundText: "ah",
       backgroundTextSource: "manual",
     });
     const result = applyMoveToBg(line, [2], 0, DURATION);
-    expect(result?.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
+    expect(result?.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
     expect(result?.backgroundWords?.length).toBe(2);
   });
 
@@ -67,7 +67,7 @@ describe("applyMoveToBg", () => {
 
   it("does not mutate the input line's existing background array", () => {
     const line = mainLine({
-      backgroundWords: [{ text: "ah", begin: 8, end: 9 }],
+      backgroundWords: [{ text: "ah", sep: "", begin: 8, end: 9 }],
       backgroundText: "ah",
       backgroundTextSource: "manual",
     });
@@ -82,7 +82,7 @@ describe("applyMoveToBg", () => {
 describe("applyMoveFromBg", () => {
   it("clears all three background fields when no background words remain", () => {
     const line = mainLine({
-      backgroundWords: [{ text: "ooh", begin: 10, end: 11 }],
+      backgroundWords: [{ text: "ooh", sep: "", begin: 10, end: 11 }],
       backgroundText: "ooh",
       backgroundTextSource: "extraction",
     });
@@ -95,8 +95,8 @@ describe("applyMoveFromBg", () => {
   it("stamps a manual provenance on the surviving background", () => {
     const line = mainLine({
       backgroundWords: [
-        { text: "ah ", begin: 5, end: 6 },
-        { text: "ooh", begin: 6, end: 7 },
+        { text: "ah", sep: " ", begin: 5, end: 6 },
+        { text: "ooh", sep: "", begin: 6, end: 7 },
       ],
       backgroundText: "ahooh",
       backgroundTextSource: "extraction",
@@ -109,7 +109,7 @@ describe("applyMoveFromBg", () => {
 
   it("returns null when no indices match", () => {
     const line = mainLine({
-      backgroundWords: [{ text: "ooh", begin: 10, end: 11 }],
+      backgroundWords: [{ text: "ooh", sep: "", begin: 10, end: 11 }],
       backgroundText: "ooh",
     });
     expect(applyMoveFromBg(line, [], 0, DURATION)).toBeNull();
@@ -122,8 +122,8 @@ describe("applyMoveFromBg", () => {
   it("does not mutate the input line", () => {
     const line = mainLine({
       backgroundWords: [
-        { text: "ah ", begin: 5, end: 6 },
-        { text: "ooh", begin: 6, end: 7 },
+        { text: "ah", sep: " ", begin: 5, end: 6 },
+        { text: "ooh", sep: "", begin: 6, end: 7 },
       ],
       backgroundText: "ahooh",
       backgroundTextSource: "extraction",
@@ -138,7 +138,7 @@ describe("applyMoveFromBg", () => {
       begin: 5,
       end: 10,
       words: [],
-      backgroundWords: [{ text: "ooh", begin: 6, end: 7 }],
+      backgroundWords: [{ text: "ooh", sep: "", begin: 6, end: 7 }],
       backgroundText: "ooh",
     });
     const result = applyMoveFromBg(line, [0], 0, DURATION);

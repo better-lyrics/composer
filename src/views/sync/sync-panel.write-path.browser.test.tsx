@@ -53,7 +53,7 @@ function lines(): LyricLine[] {
 }
 
 function wordTexts(i: number): string[] {
-  return (lines()[i].words ?? []).map((w) => w.text);
+  return (lines()[i].words ?? []).map((w) => w.text + w.sep);
 }
 
 function assertMonotonic(allLines: LyricLine[]): void {
@@ -132,7 +132,7 @@ describe("D3 re-record from a clicked word", () => {
     await tapAt(2.6);
     await tapAt(2.9);
     const words = lines()[0].words ?? [];
-    expect(words.map((w) => w.text)).toEqual(["I ", "heard ", "the ", "rumors ", "going ", "round"]);
+    expect(words.map((w) => w.text + w.sep)).toEqual(["I ", "heard ", "the ", "rumors ", "going ", "round"]);
     for (const w of words.slice(0, 3)) expect(w.end - w.begin, `${w.text} keeps duration`).toBeGreaterThan(0);
   });
 
@@ -226,7 +226,7 @@ describe("T3 tap then hold across a line boundary", () => {
           id: "l0",
           text: "a b",
           words: [
-            { text: "a ", begin: 1, end: 2 },
+            { text: "a", sep: " ", begin: 1, end: 2 },
             { text: "b", begin: 2, end: 3 },
           ],
         }),
@@ -234,7 +234,7 @@ describe("T3 tap then hold across a line boundary", () => {
           id: "l1",
           text: "c d",
           words: [
-            { text: "c ", begin: 10, end: 11 },
+            { text: "c", sep: " ", begin: 10, end: 11 },
             { text: "d", begin: 11, end: 12 },
           ],
         }),
@@ -263,7 +263,7 @@ describe("T4 nudge targets the last tapped word", () => {
         id: "l1",
         text: "c d",
         words: [
-          { text: "c ", begin: 10, end: 11 },
+          { text: "c", sep: " ", begin: 10, end: 11 },
           { text: "d", begin: 11, end: 12 },
         ],
       }),
@@ -287,7 +287,7 @@ describe("T5 background vocals after re-syncing the main line", () => {
         end: 28,
         backgroundText: "oh oh",
         backgroundWords: [
-          createWord({ text: "oh ", begin: 26.5, end: 27.25 }),
+          createWord({ text: "oh", sep: " ", begin: 26.5, end: 27.25 }),
           createWord({ text: "oh", begin: 27.25, end: 28 }),
         ],
       }),
@@ -308,7 +308,7 @@ describe("T10 line-mode tap on a word-synced line", () => {
           id: "l0",
           text: "a b",
           words: [
-            { text: "a ", begin: 20, end: 21 },
+            { text: "a", sep: " ", begin: 20, end: 21 },
             { text: "b", begin: 21, end: 22 },
           ],
         }),

@@ -11,10 +11,10 @@ function alignedLine(id: string, offset: number): LyricLine {
     id,
     text: "Is this the real life?",
     words: [
-      { text: "Is ", begin: 12.41 + offset, end: 12.77 + offset },
-      { text: "this ", begin: 12.77 + offset, end: 13.02 + offset },
-      { text: "the ", begin: 13.02 + offset, end: 13.39 + offset },
-      { text: "real ", begin: 13.39 + offset, end: 14.11 + offset },
+      { text: "Is", sep: " ", begin: 12.41 + offset, end: 12.77 + offset },
+      { text: "this", sep: " ", begin: 12.77 + offset, end: 13.02 + offset },
+      { text: "the", sep: " ", begin: 13.02 + offset, end: 13.39 + offset },
+      { text: "real", sep: " ", begin: 13.39 + offset, end: 14.11 + offset },
       { text: "life?", begin: 14.11 + offset, end: 15.88 + offset },
     ],
   });
@@ -73,7 +73,7 @@ describe("alignmentReview", () => {
       }),
     );
     const edited = withBackground.map((line, i) =>
-      i < 3 ? { ...line, backgroundWords: [{ text: "ooh", begin: 15.1, end: 15.5 }] } : line,
+      i < 3 ? { ...line, backgroundWords: [{ text: "ooh", sep: "", begin: 15.1, end: 15.5 }] } : line,
     );
     expect(alignmentReview(edited, fingerprintsOf(withBackground)).tier).toBe("reviewed");
   });

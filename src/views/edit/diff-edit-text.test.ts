@@ -35,7 +35,7 @@ describe("diffEditTextChange", () => {
         id: "L1",
         text: "I love",
         agentId: "v1",
-        words: [{ text: "I love", begin: 0, end: 1 }],
+        words: [{ text: "I love", sep: "", begin: 0, end: 1 }],
       },
     ];
     const next: LyricLine[] = [{ id: "L1", text: "I luv", agentId: "v1" }];
@@ -193,7 +193,7 @@ describe("propagateContentUpdates", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ text: "I love", begin: 10, end: 11 }],
+        words: [{ text: "I love", sep: "", begin: 10, end: 11 }],
       },
     ];
     const out = propagateContentUpdates(lines, lines, [
@@ -248,9 +248,9 @@ describe("propagateContentUpdates", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "I ", begin: 10, end: 10.4 },
-          { text: "love ", begin: 10.4, end: 10.8 },
-          { text: "you", begin: 10.8, end: 11.2 },
+          { text: "I", sep: " ", begin: 10, end: 10.4 },
+          { text: "love", sep: " ", begin: 10.4, end: 10.8 },
+          { text: "you", sep: "", begin: 10.8, end: 11.2 },
         ],
       },
       {
@@ -261,9 +261,9 @@ describe("propagateContentUpdates", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { text: "I ", begin: 30, end: 30.5 },
-          { text: "love ", begin: 30.5, end: 31.0 },
-          { text: "you", begin: 31.0, end: 31.5 },
+          { text: "I", sep: " ", begin: 30, end: 30.5 },
+          { text: "love", sep: " ", begin: 30.5, end: 31.0 },
+          { text: "you", sep: "", begin: 31.0, end: 31.5 },
         ],
       },
     ];
@@ -272,9 +272,9 @@ describe("propagateContentUpdates", () => {
         ...oldLines[0],
         text: "I luv you",
         words: [
-          { text: "I ", begin: 10, end: 10.4 },
-          { text: "luv ", begin: 10.4, end: 10.8 },
-          { text: "you", begin: 10.8, end: 11.2 },
+          { text: "I", sep: " ", begin: 10, end: 10.4 },
+          { text: "luv", sep: " ", begin: 10.4, end: 10.8 },
+          { text: "you", sep: "", begin: 10.8, end: 11.2 },
         ],
       }),
       oldLines[1],
@@ -291,10 +291,10 @@ describe("propagateContentUpdates", () => {
     ]);
 
     expect(out[1].text).toBe("I luv you");
-    expect(out[1].words?.[1].text).toBe("luv ");
+    expect(out[1].words?.[1]).toMatchObject({ text: "luv", sep: " " });
     expect(out[1].words?.[1].begin).toBe(30.5);
     expect(out[1].words?.[1].end).toBe(31.0);
-    expect(out[1].words?.[0].text).toBe("I ");
+    expect(out[1].words?.[0]).toMatchObject({ text: "I", sep: " " });
     expect(out[1].words?.[0].begin).toBe(30);
   });
 

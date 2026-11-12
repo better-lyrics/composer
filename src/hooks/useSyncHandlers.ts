@@ -9,6 +9,7 @@ import { anchorGesture } from "@/domain/sync/anchor-gesture";
 import { type PlacementSkip, placementSkipTarget } from "@/domain/sync/placement-skip";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot } from "@/domain/sync/cursor";
+import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { keptSyncReRecording, syncReRecordingAt, useSyncCursor } from "@/hooks/useSyncCursor";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -383,10 +384,7 @@ function useSyncHandlers({
 
       const split = splitWordsKeepingTransliteration(line, "word", wordIdx, newWords);
       if (!split) return;
-      const newLineText = split.words
-        .map((w) => w.text)
-        .join("")
-        .trimEnd();
+      const newLineText = spacedText(split.words).trimEnd();
       updateLineWithHistory(line.id, {
         words: split.words,
         text: newLineText,

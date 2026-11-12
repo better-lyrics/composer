@@ -46,8 +46,8 @@ describe("ScrollableLine", () => {
       <ScrollableLine
         {...BASE_PROPS}
         words={[
-          { text: "Hello ", begin: 0, end: 0.5 },
-          { text: "world", begin: 0.5, end: 1 },
+          { text: "Hello", sep: " ", begin: 0, end: 0.5 },
+          { text: "world", sep: "", begin: 0.5, end: 1 },
         ]}
         onClick={() => {
           lineClicks++;
@@ -113,8 +113,8 @@ describe("ScrollableLine line-synced row in Word mode", () => {
         {...LINE_SYNCED_PROPS}
         backgroundText="ooh ah"
         backgroundWords={[
-          { text: "ooh ", begin: 1, end: 2 },
-          { text: "ah", begin: 2, end: 3 },
+          { text: "ooh", sep: " ", begin: 1, end: 2 },
+          { text: "ah", sep: "", begin: 2, end: 3 },
         ]}
       />,
     );

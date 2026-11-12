@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
+import { wordFromSpaced } from "@/domain/word/spaced-words";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { applyPasteToLines, clipboardInLane, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import type { ClipboardData } from "@/views/timeline/selection-types";
@@ -21,14 +22,14 @@ describe("applyPasteToLines", () => {
         line(
           "l1",
           [
-            { text: "a ", begin: 0, end: 0.5 },
-            { text: "b", begin: 0.5, end: 1 },
+            { text: "a", sep: " ", begin: 0, end: 0.5 },
+            { text: "b", sep: "", begin: 0.5, end: 1 },
           ],
           "a b",
         ),
       ];
       const clipboard: ClipboardData = {
-        entries: [{ word: { text: "z", begin: 2, end: 2.5 }, lineOffset: 0, trackType: "word" }],
+        entries: [{ word: { text: "z", sep: "", begin: 2, end: 2.5 }, lineOffset: 0, trackType: "word" }],
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 0, rangeOf: wholeSong(10) });
       expect(updates).not.toBeNull();
@@ -38,9 +39,9 @@ describe("applyPasteToLines", () => {
     });
 
     it("re-derives bg text on bg paste", () => {
-      const lines = [line("l1", [{ text: "a", begin: 0, end: 0.5 }], "a")];
+      const lines = [line("l1", [{ text: "a", sep: "", begin: 0, end: 0.5 }], "a")];
       const clipboard: ClipboardData = {
-        entries: [{ word: { text: "bgw", begin: 1, end: 1.5 }, lineOffset: 0, trackType: "bg" }],
+        entries: [{ word: { text: "bgw", sep: "", begin: 1, end: 1.5 }, lineOffset: 0, trackType: "bg" }],
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 0, rangeOf: wholeSong(10) });
       expect(updates).not.toBeNull();
@@ -49,13 +50,13 @@ describe("applyPasteToLines", () => {
 
     it("distributes entries across multiple destination lines via lineOffset", () => {
       const lines = [
-        line("l1", [{ text: "a", begin: 0, end: 0.5 }], "a"),
-        line("l2", [{ text: "b", begin: 0, end: 0.5 }], "b"),
+        line("l1", [{ text: "a", sep: "", begin: 0, end: 0.5 }], "a"),
+        line("l2", [{ text: "b", sep: "", begin: 0, end: 0.5 }], "b"),
       ];
       const clipboard: ClipboardData = {
         entries: [
-          { word: { text: "x", begin: 1, end: 1.5 }, lineOffset: 0, trackType: "word" },
-          { word: { text: "y", begin: 2, end: 2.5 }, lineOffset: 1, trackType: "word" },
+          { word: { text: "x", sep: "", begin: 1, end: 1.5 }, lineOffset: 0, trackType: "word" },
+          { word: { text: "y", sep: "", begin: 2, end: 2.5 }, lineOffset: 1, trackType: "word" },
         ],
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 0, rangeOf: wholeSong(10) });
@@ -69,18 +70,18 @@ describe("applyPasteToLines", () => {
 
   describe("edge cases", () => {
     it("returns null when an entry would land at an out-of-bounds line index", () => {
-      const lines = [line("l1", [{ text: "a", begin: 0, end: 1 }], "a")];
+      const lines = [line("l1", [{ text: "a", sep: "", begin: 0, end: 1 }], "a")];
       const clipboard: ClipboardData = {
-        entries: [{ word: { text: "z", begin: 0, end: 0.5 }, lineOffset: 5, trackType: "word" }],
+        entries: [{ word: { text: "z", sep: "", begin: 0, end: 0.5 }, lineOffset: 5, trackType: "word" }],
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 0, rangeOf: wholeSong(10) });
       expect(updates).toBeNull();
     });
 
     it("returns null when targetLineIndex is negative", () => {
-      const lines = [line("l1", [{ text: "a", begin: 0, end: 1 }], "a")];
+      const lines = [line("l1", [{ text: "a", sep: "", begin: 0, end: 1 }], "a")];
       const clipboard: ClipboardData = {
-        entries: [{ word: { text: "z", begin: 0, end: 0.5 }, lineOffset: 0, trackType: "word" }],
+        entries: [{ word: { text: "z", sep: "", begin: 0, end: 0.5 }, lineOffset: 0, trackType: "word" }],
       };
       const updates = applyPasteToLines({
         lines,
@@ -95,7 +96,7 @@ describe("applyPasteToLines", () => {
     it("clamps new word times to [0, duration]", () => {
       const lines = [line("l1", [], "")];
       const clipboard: ClipboardData = {
-        entries: [{ word: { text: "z", begin: -5, end: 100 }, lineOffset: 0, trackType: "word" }],
+        entries: [{ word: { text: "z", sep: "", begin: -5, end: 100 }, lineOffset: 0, trackType: "word" }],
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 0, rangeOf: wholeSong(10) });
       expect(updates?.[0].updates.words?.[0].begin).toBe(0);
@@ -103,11 +104,11 @@ describe("applyPasteToLines", () => {
     });
 
     it("handles a clipboard with mixed word and bg entries on the same line", () => {
-      const lines = [line("l1", [{ text: "a", begin: 0, end: 0.5 }], "a")];
+      const lines = [line("l1", [{ text: "a", sep: "", begin: 0, end: 0.5 }], "a")];
       const clipboard: ClipboardData = {
         entries: [
-          { word: { text: "mw", begin: 1, end: 1.5 }, lineOffset: 0, trackType: "word" },
-          { word: { text: "bw", begin: 2, end: 2.5 }, lineOffset: 0, trackType: "bg" },
+          { word: { text: "mw", sep: "", begin: 1, end: 1.5 }, lineOffset: 0, trackType: "word" },
+          { word: { text: "bw", sep: "", begin: 2, end: 2.5 }, lineOffset: 0, trackType: "bg" },
         ],
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 0, rangeOf: wholeSong(10) });
@@ -122,10 +123,10 @@ describe("applyPasteToLines", () => {
 
   describe("invariants", () => {
     it("does not mutate input lines", () => {
-      const lines = [line("l1", [{ text: "a", begin: 0, end: 1 }], "a")];
+      const lines = [line("l1", [{ text: "a", sep: "", begin: 0, end: 1 }], "a")];
       const before = JSON.stringify(lines);
       const clipboard: ClipboardData = {
-        entries: [{ word: { text: "z", begin: 1, end: 1.5 }, lineOffset: 0, trackType: "word" }],
+        entries: [{ word: { text: "z", sep: "", begin: 1, end: 1.5 }, lineOffset: 0, trackType: "word" }],
       };
       applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 0, rangeOf: wholeSong(10) });
       expect(JSON.stringify(lines)).toBe(before);
@@ -134,7 +135,7 @@ describe("applyPasteToLines", () => {
     it("applies timeDelta to all pasted entries", () => {
       const lines = [line("l1", [], "")];
       const clipboard: ClipboardData = {
-        entries: [{ word: { text: "z", begin: 1, end: 2 }, lineOffset: 0, trackType: "word" }],
+        entries: [{ word: { text: "z", sep: "", begin: 1, end: 2 }, lineOffset: 0, trackType: "word" }],
       };
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 2, rangeOf: wholeSong(10) });
       expect(updates?.[0].updates.words?.[0].begin).toBe(3);
@@ -146,7 +147,7 @@ describe("applyPasteToLines", () => {
 describe("pasting onto a line-synced row", () => {
   const lineSynced: LyricLine = { id: "ls", agentId: "a", text: "It hurts for me", begin: 10, end: 12 };
   const clipboardAt = (begin: number, end: number): ClipboardData => ({
-    entries: [{ word: { text: "never", begin, end }, lineOffset: 0, trackType: "word" }],
+    entries: [{ word: { text: "never", sep: "", begin, end }, lineOffset: 0, trackType: "word" }],
   });
 
   it("regression: pasting after the line's span keeps its text and timing as the first word", () => {
@@ -158,8 +159,8 @@ describe("pasting onto a line-synced row", () => {
       rangeOf: wholeSong(60),
     });
     expect(updates?.[0].updates.words).toEqual([
-      { text: "It hurts for me ", begin: 10, end: 12 },
-      { text: "never", begin: 13, end: 13.5 },
+      { text: "It hurts for me", sep: " ", begin: 10, end: 12 },
+      { text: "never", sep: "", begin: 13, end: 13.5 },
     ]);
     expect(updates?.[0].updates.text).toContain("It hurts for me");
     expect(updates?.[0].updates.text).toContain("never");
@@ -180,21 +181,21 @@ describe("pasteOverlaps", () => {
     agentId: "a",
     text: "a b",
     words: [
-      { text: "a ", begin: 0, end: 1 },
-      { text: "b", begin: 1, end: 2 },
+      { text: "a", sep: " ", begin: 0, end: 1 },
+      { text: "b", sep: "", begin: 1, end: 2 },
     ],
   };
 
   it("reports an overlap with an existing word", () => {
     const clipboard: ClipboardData = {
-      entries: [{ word: { text: "z", begin: 0.5, end: 1.5 }, lineOffset: 0, trackType: "word" }],
+      entries: [{ word: { text: "z", sep: "", begin: 0.5, end: 1.5 }, lineOffset: 0, trackType: "word" }],
     };
     expect(pasteOverlaps(clipboard, 0, 0, [wordLine], wholeSong(10))).toBe(true);
   });
 
   it("allows a paste into free space", () => {
     const clipboard: ClipboardData = {
-      entries: [{ word: { text: "z", begin: 3, end: 4 }, lineOffset: 0, trackType: "word" }],
+      entries: [{ word: { text: "z", sep: "", begin: 3, end: 4 }, lineOffset: 0, trackType: "word" }],
     };
     expect(pasteOverlaps(clipboard, 0, 0, [wordLine], wholeSong(10))).toBe(false);
   });
@@ -202,14 +203,14 @@ describe("pasteOverlaps", () => {
   describe("edge cases", () => {
     it("treats a target line index out of range as blocked", () => {
       const clipboard: ClipboardData = {
-        entries: [{ word: { text: "z", begin: 3, end: 4 }, lineOffset: 1, trackType: "word" }],
+        entries: [{ word: { text: "z", sep: "", begin: 3, end: 4 }, lineOffset: 1, trackType: "word" }],
       };
       expect(pasteOverlaps(clipboard, 0, 0, [wordLine], wholeSong(10))).toBe(true);
     });
 
     it("treats a word clamped to zero width at the song end as blocked", () => {
       const clipboard: ClipboardData = {
-        entries: [{ word: { text: "z", begin: 12, end: 13 }, lineOffset: 0, trackType: "word" }],
+        entries: [{ word: { text: "z", sep: "", begin: 12, end: 13 }, lineOffset: 0, trackType: "word" }],
       };
       expect(pasteOverlaps(clipboard, 0, 0, [wordLine], wholeSong(10))).toBe(true);
     });
@@ -217,7 +218,7 @@ describe("pasteOverlaps", () => {
     it("ignores an untimed target line", () => {
       const untimed: LyricLine = { id: "u", agentId: "a", text: "free text" };
       const clipboard: ClipboardData = {
-        entries: [{ word: { text: "z", begin: 3, end: 4 }, lineOffset: 0, trackType: "word" }],
+        entries: [{ word: { text: "z", sep: "", begin: 3, end: 4 }, lineOffset: 0, trackType: "word" }],
       };
       expect(pasteOverlaps(clipboard, 0, 0, [untimed], wholeSong(10))).toBe(false);
     });
@@ -231,7 +232,7 @@ describe("pasting onto a line of a group that shares timing", () => {
       id,
       text: "go now",
       words: [
-        createWord({ text: "go ", begin, end: begin + 1 }),
+        createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
         createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
       ],
       groupId: "g1",
@@ -246,7 +247,7 @@ describe("pasting onto a line of a group that shares timing", () => {
       SONG_END,
     );
   const clipboardAt = (begin: number, end: number, trackType: "word" | "bg" = "word"): ClipboardData => ({
-    entries: [{ word: { text: "z", begin, end }, lineOffset: 0, trackType }],
+    entries: [{ word: { text: "z", sep: "", begin, end }, lineOffset: 0, trackType }],
   });
   const paste = (clipboard: ClipboardData, targetLineIndex: number, sharesTiming = true) =>
     applyPasteToLines({ lines: chorusLines, clipboard, targetLineIndex, timeDelta: 0, rangeOf: rangeOf(sharesTiming) });
@@ -276,13 +277,13 @@ describe("pasting onto a line of a group that shares timing", () => {
     it("measures each target line against its own range", () => {
       const clipboard: ClipboardData = {
         entries: [
-          { word: { text: "x", begin: 6.5, end: 7.5 }, lineOffset: 0, trackType: "word" },
-          { word: { text: "y", begin: 16, end: 16.5 }, lineOffset: 1, trackType: "word" },
+          { word: { text: "x", sep: "", begin: 6.5, end: 7.5 }, lineOffset: 0, trackType: "word" },
+          { word: { text: "y", sep: "", begin: 16, end: 16.5 }, lineOffset: 1, trackType: "word" },
         ],
       };
       const updates = paste(clipboard, 0);
-      expect(updates?.[0].updates.words?.[2]).toMatchObject({ text: "x", begin: 6.5, end: 7.5 });
-      expect(updates?.[1].updates.words?.[2]).toMatchObject({ text: "y", begin: 16, end: 16.5 });
+      expect(updates?.[0].updates.words?.[2]).toMatchObject({ text: "x", sep: "", begin: 6.5, end: 7.5 });
+      expect(updates?.[1].updates.words?.[2]).toMatchObject({ text: "y", sep: "", begin: 16, end: 16.5 });
     });
   });
 
@@ -299,7 +300,7 @@ describe("pasting onto a line of a group that shares timing", () => {
 
 describe("pasting into the hovered lane", () => {
   const mainWord = (text: string, begin: number, lineOffset = 0) => ({
-    word: { text, begin, end: begin + 0.5 },
+    word: wordFromSpaced({ text, begin, end: begin + 0.5 }),
     lineOffset,
     trackType: "word" as const,
   });
@@ -307,7 +308,7 @@ describe("pasting into the hovered lane", () => {
     ...mainWord(text, begin, lineOffset),
     trackType: "bg" as const,
   });
-  const target = () => [line("l1", [{ text: "a", begin: 0, end: 0.5 }], "a")];
+  const target = () => [line("l1", [{ text: "a", sep: "", begin: 0, end: 0.5 }], "a")];
   const pasteInto = (clipboard: ClipboardData, lane: "word" | "bg") =>
     applyPasteToLines({
       lines: target(),
@@ -319,7 +320,7 @@ describe("pasting into the hovered lane", () => {
 
   it("regression: words copied from a main lane paste into the hovered background lane", () => {
     const updates = pasteInto({ entries: [mainWord("you", 2)] }, "bg");
-    expect(updates?.[0].updates.backgroundWords).toEqual([{ text: "you", begin: 2, end: 2.5 }]);
+    expect(updates?.[0].updates.backgroundWords).toEqual([{ text: "you", sep: "", begin: 2, end: 2.5 }]);
     expect(updates?.[0].updates.words).toBeUndefined();
   });
 

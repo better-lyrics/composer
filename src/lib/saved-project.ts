@@ -10,16 +10,16 @@ import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defa
 import type { StoredData } from "@/domain/storage/stored-data";
 import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SnapPoint } from "@/domain/snap-point/model";
-import type { WordTiming } from "@/domain/word/timing";
+import { type SpacedWord, spacedFromWords, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { GranularityMode } from "@/stores/project";
 import type { TtmlEditState } from "@/stores/project/types";
 
 // -- Types --------------------------------------------------------------------
 
-// A line as saved in a version 3 record or link.
+// A line as saved in a version 3 record or link: words keep their separator inside `text`.
 type SavedLine = Omit<LineFields, "backgroundWords"> & {
-  words?: WordTiming[];
-  backgroundWords?: WordTiming[];
+  words?: SpacedWord[];
+  backgroundWords?: SpacedWord[];
   begin?: number;
   end?: number;
 };
@@ -77,12 +77,29 @@ class NewerProjectError extends Error {
 
 // -- Lines ----------------------------------------------------------------------
 
+function storeLine(line: SavedLine): LyricLine {
+  const { words, backgroundWords } = line;
+  return reconcileLine({
+    ...line,
+    words: words && wordsFromSpaced(words),
+    backgroundWords: backgroundWords && wordsFromSpaced(backgroundWords),
+  });
+}
+
+function savedLine(line: LyricLine): SavedLine {
+  return {
+    ...line,
+    ...(line.words && { words: spacedFromWords(line.words) }),
+    ...(line.backgroundWords && { backgroundWords: spacedFromWords(line.backgroundWords) }),
+  };
+}
+
 function linesFromSaved(lines: readonly SavedLine[]): LyricLine[] {
-  return lines.map((line) => reconcileLine(line));
+  return lines.map(storeLine);
 }
 
 function savedLines(lines: readonly LyricLine[]): SavedLine[] {
-  return lines.map((line) => ({ ...line }));
+  return lines.map(savedLine);
 }
 
 // -- Upgrade ------------------------------------------------------------------

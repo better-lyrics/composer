@@ -29,10 +29,10 @@ function splitKoreanLine(overrides: Partial<LooseLine> = {}): LyricLine {
     agentId: "v1",
     text: "Uh 일|단은 나",
     words: [
-      { text: "Uh ", begin: 0, end: 0.5 },
-      { text: "일", begin: 0.5, end: 0.8, syllableGroupId: "g1" },
-      { text: "단은 ", begin: 0.8, end: 1.5, syllableGroupId: "g1" },
-      { text: "나", begin: 1.5, end: 2 },
+      { text: "Uh", sep: " ", begin: 0, end: 0.5 },
+      { text: "일", sep: "", begin: 0.5, end: 0.8, syllableGroupId: "g1" },
+      { text: "단은", sep: " ", begin: 0.8, end: 1.5, syllableGroupId: "g1" },
+      { text: "나", sep: "", begin: 1.5, end: 2 },
     ],
     transliteration: track,
     ...overrides,
@@ -53,7 +53,7 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
       useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [1]);
 
       const merged = lineById("line-1");
-      expect(merged?.words?.map((word) => word.text)).toEqual(["Uh ", "일단은 ", "나"]);
+      expect(merged?.words?.map((word) => word.text + word.sep)).toEqual(["Uh ", "일단은 ", "나"]);
       expect(merged?.words?.[1].transliteration).toBe("ildan eun");
       expect(merged?.transliteration).toEqual(track);
     });
@@ -61,9 +61,10 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
     it("regression: keeps the last syllable's joiner on the merged word (#283)", () => {
       const line = splitKoreanLine({
         words: [
-          { text: "Uh ", begin: 0, end: 0.5, transliteration: "Uh", transliterationJoinerAfter: "  " },
+          { text: "Uh", sep: " ", begin: 0, end: 0.5, transliteration: "Uh", transliterationJoinerAfter: "  " },
           {
             text: "일",
+            sep: "",
             begin: 0.5,
             end: 0.8,
             syllableGroupId: "g1",
@@ -71,14 +72,15 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
             transliterationJoinerAfter: "",
           },
           {
-            text: "단은 ",
+            text: "단은",
+            sep: " ",
             begin: 0.8,
             end: 1.5,
             syllableGroupId: "g1",
             transliteration: "dan eun",
             transliterationJoinerAfter: "  ",
           },
-          { text: "나", begin: 1.5, end: 2, transliteration: "na" },
+          { text: "나", sep: "", begin: 1.5, end: 2, transliteration: "na" },
         ],
       });
       useProjectStore.getState().setLines([line]);
@@ -95,9 +97,9 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
         splitKoreanLine({
           backgroundText: "그|래 yeah",
           backgroundWords: [
-            { text: "그", begin: 2, end: 2.2, syllableGroupId: "b1" },
-            { text: "래 ", begin: 2.2, end: 2.5, syllableGroupId: "b1" },
-            { text: "yeah", begin: 2.5, end: 3 },
+            { text: "그", sep: "", begin: 2, end: 2.2, syllableGroupId: "b1" },
+            { text: "래", sep: " ", begin: 2.2, end: 2.5, syllableGroupId: "b1" },
+            { text: "yeah", sep: "", begin: 2.5, end: 3 },
           ],
         }),
       ]);
@@ -105,7 +107,7 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
       useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "backgroundWords", [0]);
 
       const merged = lineById("line-1");
-      expect(merged?.backgroundWords?.map((word) => word.text)).toEqual(["그래 ", "yeah"]);
+      expect(merged?.backgroundWords?.map((word) => word.text + word.sep)).toEqual(["그래 ", "yeah"]);
       expect(merged?.backgroundWords?.map((word) => word.transliteration)).toEqual(["geurae", "yeah"]);
       expect(merged?.transliteration).toEqual(track);
     });
@@ -122,10 +124,10 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
           instanceIdx: 1,
           ...linked,
           words: [
-            { text: "Uh ", begin: 10, end: 10.5 },
-            { text: "일", begin: 10.5, end: 10.8, syllableGroupId: "g2" },
-            { text: "단은 ", begin: 10.8, end: 11.5, syllableGroupId: "g2" },
-            { text: "나", begin: 11.5, end: 12 },
+            { text: "Uh", sep: " ", begin: 10, end: 10.5 },
+            { text: "일", sep: "", begin: 10.5, end: 10.8, syllableGroupId: "g2" },
+            { text: "단은", sep: " ", begin: 10.8, end: 11.5, syllableGroupId: "g2" },
+            { text: "나", sep: "", begin: 11.5, end: 12 },
           ],
           transliteration: { ...track, text: "Uh  ilttan eun  na" },
         }),
@@ -134,7 +136,7 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
       useProjectStore.getState().mergeSyllableGroupIntoWord("a0", "words", [1]);
 
       expect(lineById("a0")?.words?.[1].transliteration).toBe("ildan eun");
-      expect(lineById("a1")?.words?.map((word) => word.text)).toEqual(["Uh ", "일단은 ", "나"]);
+      expect(lineById("a1")?.words?.map((word) => word.text + word.sep)).toEqual(["Uh ", "일단은 ", "나"]);
       expect(lineById("a1")?.words?.[1].transliteration).toBe("ilttan eun");
     });
   });
@@ -147,9 +149,9 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
       useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [1]);
 
       expect(lineById("line-1")?.words).toEqual([
-        { text: "Uh ", begin: 0, end: 0.5 },
-        { text: "일단은 ", begin: 0.5, end: 1.5 },
-        { text: "나", begin: 1.5, end: 2 },
+        { text: "Uh", sep: " ", begin: 0, end: 0.5 },
+        { text: "일단은", sep: " ", begin: 0.5, end: 1.5 },
+        { text: "나", sep: "", begin: 1.5, end: 2 },
       ]);
     });
   });

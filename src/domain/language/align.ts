@@ -9,6 +9,7 @@ import {
   twoSpaceSeparatorRegions,
 } from "@/domain/language/transliteration-format";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 
 interface TransliterationAlignmentPlan {
@@ -148,9 +149,7 @@ function planTransliterationAlignment(
   }
 
   const lexicalGroups = timingLexicalWordGroups(words);
-  const groupWeights = lexicalGroups.map((group) =>
-    group.words.reduce((sum, word) => sum + [...word.text.trimEnd()].length, 0),
-  );
+  const groupWeights = lexicalGroups.map((group) => group.words.reduce((sum, word) => sum + [...word.text].length, 0));
   const grouped = groupRegions(text, lexicalGroups.length, groupWeights);
   if (!grouped) {
     return {
@@ -168,7 +167,7 @@ function planTransliterationAlignment(
     const localText = text.slice(region.start, region.end);
     const local = inferredBoundaries(
       localText,
-      group.words.map((word) => [...word.text.trimEnd()].length),
+      group.words.map((word) => [...word.text].length),
     );
     if (!local) {
       return {
@@ -194,7 +193,7 @@ function planTransliterationAlignment(
 
 function timedPrefixText(originalText: string, words: WordTiming[], text: string): string {
   const sourceCount = sourceWordCount(originalText);
-  const timedCount = sourceWordCount(words.map((word) => word.text).join(""));
+  const timedCount = sourceWordCount(spacedText(words));
   if (timedCount >= sourceCount) return text;
   const groups = transliterationWordGroups(text);
   return groups.length === sourceCount ? groups.slice(0, timedCount).join("  ") : text;

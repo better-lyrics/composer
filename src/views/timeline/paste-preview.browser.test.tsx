@@ -25,7 +25,7 @@ const chorusLine = (id: string, instanceIdx: number, begin: number, secondWordAt
     id,
     text: "go now",
     words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
+      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
       createWord({ text: "now", begin: begin + secondWordAt, end: begin + secondWordAt + 1 }),
     ],
     groupId: "g1",
@@ -270,7 +270,7 @@ describe("PastePreview · paste into the hovered lane", () => {
 
     await pasteOnRow(screen, "l", 10, "bg");
 
-    await expect.poll(() => lineById("l")?.backgroundWords?.map((word) => word.text)).toEqual(["you"]);
+    await expect.poll(() => lineById("l")?.backgroundWords?.map((word) => word.text + word.sep)).toEqual(["you"]);
     expect(lineById("l")?.words).toEqual(ownTimingChorus.words);
   });
 });

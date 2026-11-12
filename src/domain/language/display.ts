@@ -5,6 +5,7 @@ import {
   timedTransliterationSlice,
 } from "@/domain/language/transliteration-format";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { spacedText, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -26,11 +27,13 @@ interface LanguageDisplayLine {
 
 function sourceSlots(text: string): WordTiming[] {
   const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
-  return parts.map((part, index) => ({
-    text: trailingSpace[index] ? `${part} ` : part,
-    begin: index,
-    end: index + 1,
-  }));
+  return wordsFromSpaced(
+    parts.map((part, index) => ({
+      text: trailingSpace[index] ? `${part} ` : part,
+      begin: index,
+      end: index + 1,
+    })),
+  );
 }
 
 function comparableText(value: string): string {
@@ -39,7 +42,7 @@ function comparableText(value: string): string {
 
 function displayText(word: WordTiming, index: number, words: WordTiming[]): string {
   return timedTransliterationSlice({
-    text: word.transliteration || word.text.trimEnd(),
+    text: word.transliteration || word.text,
     joinerAfter: index < words.length - 1 ? word.transliterationJoinerAfter : undefined,
   }).text;
 }
@@ -50,7 +53,7 @@ function displayAlignedText(words: WordTiming[], index: number, fallback: string
   if (index === words.length - 1) return text;
   const timed = timedTransliterationSlice({
     text,
-    joinerAfter: word.transliterationJoinerAfter ?? (word.text.endsWith(" ") ? "  " : " "),
+    joinerAfter: word.transliterationJoinerAfter ?? (word.sep.endsWith(" ") ? "  " : " "),
   });
   return `${timed.text}${timed.joinerAfter ?? ""}`;
 }
@@ -63,25 +66,21 @@ function displayTrackTexts(
   const sourceTexts = alignedSourceSlots?.map(displayText) ?? [];
   if (!alignedWords?.length) return sourceTexts;
 
-  const coversFullTrack =
-    comparableText(alignedWords.map((word) => word.text).join("")) === comparableText(originalText);
+  const coversFullTrack = comparableText(spacedText(alignedWords)) === comparableText(originalText);
   if (coversFullTrack) {
     const canUseSourceFallbackByIndex = alignedWords.length === sourceTexts.length;
     return alignedWords.map((word, index) =>
-      displayAlignedText(alignedWords, index, canUseSourceFallbackByIndex ? sourceTexts[index] : word.text.trimEnd()),
+      displayAlignedText(alignedWords, index, canUseSourceFallbackByIndex ? sourceTexts[index] : word.text),
     );
   }
 
   // A partially synced line still needs labels for its untimed suffix. Render
   // every canonical timing slot first (including syllable splits), then append
   // the synthetic labels for source words that have not been timed yet.
-  const coveredSourceSlots = Math.min(
-    sourceWordCount(alignedWords.map((word) => word.text).join("")),
-    sourceTexts.length,
-  );
+  const coveredSourceSlots = Math.min(sourceWordCount(spacedText(alignedWords)), sourceTexts.length);
   const canUseSourceFallbackByIndex = alignedWords.length === coveredSourceSlots;
   const timedTexts = alignedWords.map((word, index) =>
-    displayAlignedText(alignedWords, index, canUseSourceFallbackByIndex ? sourceTexts[index] : word.text.trimEnd()),
+    displayAlignedText(alignedWords, index, canUseSourceFallbackByIndex ? sourceTexts[index] : word.text),
   );
   return [...timedTexts, ...sourceTexts.slice(coveredSourceSlots)];
 }

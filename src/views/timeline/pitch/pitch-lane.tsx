@@ -159,7 +159,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
       return {
         begin,
         end,
-        tick: wordFit(word.text, wordBlockWidth(begin, end, zoom)).fit === "tick",
+        tick: wordFit(word.text + word.sep, wordBlockWidth(begin, end, zoom)).fit === "tick",
         selected: selectedSet.has(index),
       };
     });

@@ -29,7 +29,7 @@ function chorusLines(instanceIdx: number): LyricLine[] {
       instanceIdx,
       templateLineIdx: 0,
       words: [
-        createWord({ text: "I ", begin: start, end: start + 0.4 }),
+        createWord({ text: "I", sep: " ", begin: start, end: start + 0.4 }),
         createWord({ text: "want", begin: start + 0.5, end: start + 1 }),
       ],
       backgroundText: "oh",
@@ -42,7 +42,7 @@ function chorusLines(instanceIdx: number): LyricLine[] {
       instanceIdx,
       templateLineIdx: 1,
       words: [
-        createWord({ text: "you ", begin: start + 1.2, end: start + 1.6 }),
+        createWord({ text: "you", sep: " ", begin: start + 1.2, end: start + 1.6 }),
         createWord({ text: "now", begin: start + 1.7, end: start + 2.2 }),
       ],
     }),

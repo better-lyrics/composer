@@ -27,9 +27,9 @@ function lineBody(line: WritableLine): string {
   const tagged = line.words
     .map((word) => {
       latestEnd = Math.max(latestEnd, word.end);
-      if (word.begin < lastTag) return word.text;
+      if (word.begin < lastTag) return word.text + word.sep;
       lastTag = word.begin;
-      return `<${lrcClock(word.begin)}>${word.text}`;
+      return `<${lrcClock(word.begin)}>${word.text}${word.sep}`;
     })
     .join("");
   return `${tagged}<${lrcClock(latestEnd)}>`;

@@ -14,9 +14,9 @@ function seedLine(overrides: Partial<LooseLine> = {}): LyricLine {
     text: "hello world goodbye",
     agentId: "v1",
     words: [
-      { text: "hello ", begin: 0, end: 1 },
-      { text: "world ", begin: 1, end: 2 },
-      { text: "goodbye", begin: 2, end: 3 },
+      { text: "hello", sep: " ", begin: 0, end: 1 },
+      { text: "world", sep: " ", begin: 1, end: 2 },
+      { text: "goodbye", sep: "", begin: 2, end: 3 },
     ],
     ...overrides,
   });
@@ -36,9 +36,9 @@ describe("moveWordToBg", () => {
     useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
+    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
     expect(line.backgroundWords).toHaveLength(1);
-    expect(line.backgroundWords?.[0]).toEqual({ text: "goodbye", begin: 7, end: 8 });
+    expect(line.backgroundWords?.[0]).toEqual({ text: "goodbye", sep: "", begin: 7, end: 8 });
     expect(line.backgroundText).toBe("goodbye");
   });
 
@@ -58,7 +58,7 @@ describe("moveWordToBg", () => {
 
     const line = useProjectStore.getState().lines[0];
     expect(line.words?.map((w) => w.text)).toEqual(["world"]);
-    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["hello ", "goodbye"]);
+    expect(line.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["hello ", "goodbye"]);
     expect(line.backgroundText).toBe("hello goodbye");
   });
 
@@ -66,8 +66,8 @@ describe("moveWordToBg", () => {
     useProjectStore.getState().setLines([
       seedLine({
         backgroundWords: [
-          { text: "ah", begin: 0, end: 0.5 },
-          { text: "ooh", begin: 0.5, end: 1 },
+          { text: "ah", sep: "", begin: 0, end: 0.5 },
+          { text: "ooh", sep: "", begin: 0.5, end: 1 },
         ],
         backgroundText: "ah|ooh",
       }),
@@ -76,14 +76,14 @@ describe("moveWordToBg", () => {
     useProjectStore.getState().moveWordToBg("line-1", [2], 7, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ah", "ooh ", "goodbye"]);
+    expect(line.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["ah", "ooh ", "goodbye"]);
     expect(line.backgroundText).toBe("ah|ooh goodbye");
   });
 
   it("resolves overlap when moved word collides with an existing bg word", () => {
     useProjectStore.getState().setLines([
       seedLine({
-        backgroundWords: [{ text: "yeah", begin: 5, end: 6 }],
+        backgroundWords: [{ text: "yeah", sep: "", begin: 5, end: 6 }],
         backgroundText: "yeah",
       }),
     ]);
@@ -113,7 +113,7 @@ describe("moveWordToBg · background provenance", () => {
   it("flips an extraction-sourced background to manual when more words are moved in", () => {
     useProjectStore.getState().setLines([
       seedLine({
-        backgroundWords: [{ text: "yeah", begin: 5, end: 6 }],
+        backgroundWords: [{ text: "yeah", sep: "", begin: 5, end: 6 }],
         backgroundText: "yeah",
         backgroundTextSource: "extraction",
       }),
@@ -132,7 +132,7 @@ describe("moveWordFromBg", () => {
   it("moves a single bg word back to main and applies timeDelta", () => {
     useProjectStore.getState().setLines([
       seedLine({
-        backgroundWords: [{ text: "ooh", begin: 10, end: 11 }],
+        backgroundWords: [{ text: "ooh", sep: "", begin: 10, end: 11 }],
         backgroundText: "ooh",
       }),
     ]);
@@ -152,8 +152,8 @@ describe("moveWordFromBg", () => {
     useProjectStore.getState().setLines([
       seedLine({
         backgroundWords: [
-          { text: "ah ", begin: 5, end: 6 },
-          { text: "ooh", begin: 6, end: 7 },
+          { text: "ah", sep: " ", begin: 5, end: 6 },
+          { text: "ooh", sep: "", begin: 6, end: 7 },
         ],
         backgroundText: "ahooh",
       }),
@@ -171,9 +171,9 @@ describe("moveWordFromBg", () => {
       seedLine({
         words: [],
         backgroundWords: [
-          { text: "ah ", begin: 5, end: 6 },
-          { text: "ooh ", begin: 6, end: 7 },
-          { text: "yeah", begin: 7, end: 8 },
+          { text: "ah", sep: " ", begin: 5, end: 6 },
+          { text: "ooh", sep: " ", begin: 6, end: 7 },
+          { text: "yeah", sep: "", begin: 7, end: 8 },
         ],
         backgroundText: "ah ooh yeah",
       }),
@@ -183,7 +183,7 @@ describe("moveWordFromBg", () => {
 
     const line = useProjectStore.getState().lines[0];
     expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ooh"]);
-    expect(line.words?.map((w) => w.text)).toEqual(["ah ", "yeah"]);
+    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["ah ", "yeah"]);
   });
 });
 
@@ -191,7 +191,7 @@ describe("moveWordFromBg · background provenance", () => {
   it("clears backgroundTextSource when no background words remain", () => {
     useProjectStore.getState().setLines([
       seedLine({
-        backgroundWords: [{ text: "ooh", begin: 10, end: 11 }],
+        backgroundWords: [{ text: "ooh", sep: "", begin: 10, end: 11 }],
         backgroundText: "ooh",
         backgroundTextSource: "extraction",
       }),
@@ -209,8 +209,8 @@ describe("moveWordFromBg · background provenance", () => {
     useProjectStore.getState().setLines([
       seedLine({
         backgroundWords: [
-          { text: "ah ", begin: 5, end: 6 },
-          { text: "ooh", begin: 6, end: 7 },
+          { text: "ah", sep: " ", begin: 5, end: 6 },
+          { text: "ooh", sep: "", begin: 6, end: 7 },
         ],
         backgroundText: "ahooh",
         backgroundTextSource: "extraction",
@@ -245,7 +245,7 @@ describe("cross-track moves and history", () => {
   it("moveWordFromBg is undoable and redoable", () => {
     useProjectStore.getState().setLines([
       seedLine({
-        backgroundWords: [{ text: "ooh", begin: 10, end: 11 }],
+        backgroundWords: [{ text: "ooh", sep: "", begin: 10, end: 11 }],
         backgroundText: "ooh",
       }),
     ]);
@@ -256,7 +256,7 @@ describe("cross-track moves and history", () => {
 
     useProjectStore.getState().undo();
     const undone = useProjectStore.getState().lines[0];
-    expect(undone.backgroundWords).toEqual([{ text: "ooh", begin: 10, end: 11 }]);
+    expect(undone.backgroundWords).toEqual([{ text: "ooh", sep: "", begin: 10, end: 11 }]);
     expect(useProjectStore.getState().canRedo()).toBe(true);
 
     useProjectStore.getState().redo();
@@ -283,10 +283,10 @@ describe("cross-track moves and history", () => {
         text: "every world",
         agentId: "v1",
         words: [
-          { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
-          { text: "er", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
-          { text: "y", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
-          { text: "world", begin: 0.7, end: 1 },
+          { text: "ev", sep: "", begin: 0, end: 0.2, syllableGroupId: "g1" },
+          { text: "er", sep: "", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
+          { text: "y", sep: "", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
+          { text: "world", sep: "", begin: 0.7, end: 1 },
         ],
       },
     ]);
@@ -305,11 +305,11 @@ describe("cross-track moves and history", () => {
         text: "every world",
         agentId: "v1",
         words: [
-          { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
-          { text: "er", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
-          { text: "y", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
+          { text: "ev", sep: "", begin: 0, end: 0.2, syllableGroupId: "g1" },
+          { text: "er", sep: "", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
+          { text: "y", sep: "", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
         ],
-        backgroundWords: [{ text: "ah", begin: 5, end: 5.5 }],
+        backgroundWords: [{ text: "ah", sep: "", begin: 5, end: 5.5 }],
         backgroundText: "ah",
       },
     ]);
@@ -329,7 +329,7 @@ describe("cross-track moves and history", () => {
         agentId: "v1",
         begin: 5,
         end: 10,
-        backgroundWords: [{ text: "ooh", begin: 6, end: 7 }],
+        backgroundWords: [{ text: "ooh", sep: "", begin: 6, end: 7 }],
         backgroundText: "ooh",
       },
     ]);
@@ -357,9 +357,9 @@ describe("moveWordToBg · linked propagation", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "hello ", begin: 0, end: 1 },
-          { text: "world ", begin: 1, end: 2 },
-          { text: "goodbye", begin: 2, end: 3 },
+          { text: "hello", sep: " ", begin: 0, end: 1 },
+          { text: "world", sep: " ", begin: 1, end: 2 },
+          { text: "goodbye", sep: "", begin: 2, end: 3 },
         ],
       },
       {
@@ -370,9 +370,9 @@ describe("moveWordToBg · linked propagation", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { text: "hello ", begin: 10, end: 11 },
-          { text: "world ", begin: 11, end: 12 },
-          { text: "goodbye", begin: 12, end: 13 },
+          { text: "hello", sep: " ", begin: 10, end: 11 },
+          { text: "world", sep: " ", begin: 11, end: 12 },
+          { text: "goodbye", sep: "", begin: 12, end: 13 },
         ],
       },
     ]);
@@ -387,11 +387,11 @@ describe("moveWordToBg · linked propagation", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0?.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
-    expect(a0?.backgroundWords).toEqual([{ text: "goodbye", begin: 2, end: 3 }]);
+    expect(a0?.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
+    expect(a0?.backgroundWords).toEqual([{ text: "goodbye", sep: "", begin: 2, end: 3 }]);
 
-    expect(a1?.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
-    expect(a1?.backgroundWords).toEqual([{ text: "goodbye", begin: 12, end: 13 }]);
+    expect(a1?.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
+    expect(a1?.backgroundWords).toEqual([{ text: "goodbye", sep: "", begin: 12, end: 13 }]);
   });
 
   it("does not propagate to detached siblings", () => {
@@ -415,8 +415,8 @@ describe("moveWordToBg · linked propagation", () => {
           ? reconcileLine({
               ...l,
               words: [
-                { text: "hello ", begin: 10, end: 11 },
-                { text: "goodbye", begin: 12, end: 13 },
+                { text: "hello", sep: " ", begin: 10, end: 11 },
+                { text: "goodbye", sep: "", begin: 12, end: 13 },
               ],
             })
           : l,
@@ -440,9 +440,9 @@ describe("moveWordToBg · linked propagation", () => {
           text: "hello world goodbye",
           agentId: "v1",
           words: [
-            { text: "hello ", begin: 20, end: 21 },
-            { text: "world ", begin: 21, end: 22 },
-            { text: "goodbye", begin: 22, end: 23 },
+            { text: "hello", sep: " ", begin: 20, end: 21 },
+            { text: "world", sep: " ", begin: 21, end: 22 },
+            { text: "goodbye", sep: "", begin: 22, end: 23 },
           ],
         },
       ],
@@ -466,9 +466,9 @@ describe("moveWordToBg · linked propagation", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
-          { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_a0" },
-          { text: "y", begin: 0.6, end: 1, syllableGroupId: "g_a0" },
+          { text: "ev", sep: "", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
+          { text: "er", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g_a0" },
+          { text: "y", sep: "", begin: 0.6, end: 1, syllableGroupId: "g_a0" },
         ],
       },
       {
@@ -479,9 +479,9 @@ describe("moveWordToBg · linked propagation", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { text: "ev ", begin: 10, end: 10.3 },
-          { text: "er ", begin: 10.3, end: 10.6 },
-          { text: "y", begin: 10.6, end: 11 },
+          { text: "ev", sep: " ", begin: 10, end: 10.3 },
+          { text: "er", sep: " ", begin: 10.3, end: 10.6 },
+          { text: "y", sep: "", begin: 10.6, end: 11 },
         ],
       },
     ]);
@@ -510,11 +510,11 @@ describe("cross-track moves auto-expand to syllable groupmates", () => {
         text: "hello every world",
         agentId: "v1",
         words: [
-          { text: "hello ", begin: 0, end: 1 },
-          { text: "ev", begin: 1, end: 1.2, syllableGroupId: "g_every" },
-          { text: "er", begin: 1.2, end: 1.5, syllableGroupId: "g_every" },
-          { text: "y", begin: 1.5, end: 1.8, syllableGroupId: "g_every" },
-          { text: "world", begin: 1.8, end: 2.5 },
+          { text: "hello", sep: " ", begin: 0, end: 1 },
+          { text: "ev", sep: "", begin: 1, end: 1.2, syllableGroupId: "g_every" },
+          { text: "er", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "g_every" },
+          { text: "y", sep: "", begin: 1.5, end: 1.8, syllableGroupId: "g_every" },
+          { text: "world", sep: "", begin: 1.8, end: 2.5 },
         ],
       },
     ]);
@@ -522,7 +522,7 @@ describe("cross-track moves auto-expand to syllable groupmates", () => {
     useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
+    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
     expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
     expect(getSyllablePositions(line.backgroundWords ?? [])).toEqual(["first", "middle", "last"]);
   });
@@ -535,9 +535,9 @@ describe("cross-track moves auto-expand to syllable groupmates", () => {
         agentId: "v1",
         words: [],
         backgroundWords: [
-          { text: "ev", begin: 5, end: 5.2, syllableGroupId: "g_every" },
-          { text: "er", begin: 5.2, end: 5.5, syllableGroupId: "g_every" },
-          { text: "y", begin: 5.5, end: 5.8, syllableGroupId: "g_every" },
+          { text: "ev", sep: "", begin: 5, end: 5.2, syllableGroupId: "g_every" },
+          { text: "er", sep: "", begin: 5.2, end: 5.5, syllableGroupId: "g_every" },
+          { text: "y", sep: "", begin: 5.5, end: 5.8, syllableGroupId: "g_every" },
         ],
         backgroundText: "every",
       },
@@ -560,9 +560,9 @@ describe("moveWordToBg clears line.begin/end when main empties", () => {
         text: "beautiful",
         agentId: "v1",
         words: [
-          { text: "beau", begin: 9.51, end: 11.463, syllableGroupId: "g_beautiful" },
-          { text: "ti", begin: 11.463, end: 13.58, syllableGroupId: "g_beautiful" },
-          { text: "ful", begin: 13.58, end: 15.335, syllableGroupId: "g_beautiful" },
+          { text: "beau", sep: "", begin: 9.51, end: 11.463, syllableGroupId: "g_beautiful" },
+          { text: "ti", sep: "", begin: 11.463, end: 13.58, syllableGroupId: "g_beautiful" },
+          { text: "ful", sep: "", begin: 13.58, end: 15.335, syllableGroupId: "g_beautiful" },
         ],
       },
     ]);
@@ -585,11 +585,11 @@ describe("cross-track moves preserve syllable bonds", () => {
         text: "hello every world",
         agentId: "v1",
         words: [
-          { text: "hello ", begin: 0, end: 1 },
-          { text: "ev", begin: 1, end: 1.2 },
-          { text: "er", begin: 1.2, end: 1.5 },
-          { text: "y ", begin: 1.5, end: 1.8 },
-          { text: "world", begin: 1.8, end: 2.5 },
+          { text: "hello", sep: " ", begin: 0, end: 1 },
+          { text: "ev", sep: "", begin: 1, end: 1.2 },
+          { text: "er", sep: "", begin: 1.2, end: 1.5 },
+          { text: "y", sep: " ", begin: 1.5, end: 1.8 },
+          { text: "world", sep: "", begin: 1.8, end: 2.5 },
         ],
       },
     ]);
@@ -597,7 +597,7 @@ describe("cross-track moves preserve syllable bonds", () => {
     useProjectStore.getState().moveWordToBg("line-1", [4], 5, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text)).toEqual(["hello ", "ev", "er", "y"]);
+    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "ev", "er", "y"]);
     expect(getSyllablePositions(line.words ?? [])).toEqual(["none", "first", "middle", "last"]);
   });
 
@@ -608,11 +608,11 @@ describe("cross-track moves preserve syllable bonds", () => {
         text: "hello every world",
         agentId: "v1",
         words: [
-          { text: "hello ", begin: 0, end: 1 },
-          { text: "ev", begin: 1, end: 1.2 },
-          { text: "er", begin: 1.2, end: 1.5 },
-          { text: "y ", begin: 1.5, end: 1.8 },
-          { text: "world", begin: 1.8, end: 2.5 },
+          { text: "hello", sep: " ", begin: 0, end: 1 },
+          { text: "ev", sep: "", begin: 1, end: 1.2 },
+          { text: "er", sep: "", begin: 1.2, end: 1.5 },
+          { text: "y", sep: " ", begin: 1.5, end: 1.8 },
+          { text: "world", sep: "", begin: 1.8, end: 2.5 },
         ],
       },
     ]);
@@ -620,7 +620,7 @@ describe("cross-track moves preserve syllable bonds", () => {
     useProjectStore.getState().moveWordToBg("line-1", [1, 2, 3], 5, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
+    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
     expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
     expect(getSyllablePositions(line.backgroundWords ?? [])).toEqual(["first", "middle", "last"]);
   });
@@ -631,8 +631,8 @@ describe("cross-track moves preserve syllable bonds", () => {
         id: "line-1",
         text: "hello",
         agentId: "v1",
-        words: [{ text: "hello", begin: 0, end: 1 }],
-        backgroundWords: [{ text: "world", begin: 2, end: 3 }],
+        words: [{ text: "hello", sep: "", begin: 0, end: 1 }],
+        backgroundWords: [{ text: "world", sep: "", begin: 2, end: 3 }],
         backgroundText: "world",
       },
     ]);
@@ -640,7 +640,7 @@ describe("cross-track moves preserve syllable bonds", () => {
     useProjectStore.getState().moveWordFromBg("line-1", [0], 0, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
+    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
     expect(line.backgroundWords).toBeUndefined();
   });
 
@@ -652,9 +652,9 @@ describe("cross-track moves preserve syllable bonds", () => {
         agentId: "v1",
         words: [],
         backgroundWords: [
-          { text: "ev", begin: 5, end: 5.2 },
-          { text: "er", begin: 5.2, end: 5.5 },
-          { text: "y", begin: 5.5, end: 5.8 },
+          { text: "ev", sep: "", begin: 5, end: 5.2 },
+          { text: "er", sep: "", begin: 5.2, end: 5.5 },
+          { text: "y", sep: "", begin: 5.5, end: 5.8 },
         ],
         backgroundText: "every",
       },
@@ -681,10 +681,10 @@ describe("moveWordFromBg · linked propagation", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "hello ", begin: 0, end: 1 },
-          { text: "world", begin: 1, end: 2 },
+          { text: "hello", sep: " ", begin: 0, end: 1 },
+          { text: "world", sep: "", begin: 1, end: 2 },
         ],
-        backgroundWords: [{ text: "ooh", begin: 2, end: 3 }],
+        backgroundWords: [{ text: "ooh", sep: "", begin: 2, end: 3 }],
         backgroundText: "ooh",
       },
       {
@@ -695,10 +695,10 @@ describe("moveWordFromBg · linked propagation", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { text: "hello ", begin: 10, end: 11 },
-          { text: "world", begin: 11, end: 12 },
+          { text: "hello", sep: " ", begin: 10, end: 11 },
+          { text: "world", sep: "", begin: 11, end: 12 },
         ],
-        backgroundWords: [{ text: "ooh", begin: 12, end: 13 }],
+        backgroundWords: [{ text: "ooh", sep: "", begin: 12, end: 13 }],
         backgroundText: "ooh",
       },
     ]);
@@ -728,8 +728,8 @@ describe("cross-track moves space the merge seam", () => {
     useProjectStore.getState().setLines([
       seedLine({
         backgroundWords: [
-          { text: "ah ", begin: 0, end: 0.5 },
-          { text: "ooh", begin: 5, end: 5.5 },
+          { text: "ah", sep: " ", begin: 0, end: 0.5 },
+          { text: "ooh", sep: "", begin: 5, end: 5.5 },
         ],
         backgroundText: "ah ooh",
       }),
@@ -738,7 +738,7 @@ describe("cross-track moves space the merge seam", () => {
     useProjectStore.getState().moveWordToBg("line-1", [2], 0, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ah ", "goodbye ", "ooh"]);
+    expect(line.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["ah ", "goodbye ", "ooh"]);
     const groups = computeSyllableGroups(line.backgroundWords ?? []);
     expect(groups.some((g) => g.startIndex <= 1 && g.endIndex >= 2)).toBe(false);
   });
@@ -747,10 +747,10 @@ describe("cross-track moves space the merge seam", () => {
     useProjectStore.getState().setLines([
       seedLine({
         words: [
-          { text: "hello ", begin: 0, end: 1 },
-          { text: "world", begin: 2, end: 3 },
+          { text: "hello", sep: " ", begin: 0, end: 1 },
+          { text: "world", sep: "", begin: 2, end: 3 },
         ],
-        backgroundWords: [{ text: "ooh", begin: 1.2, end: 1.6 }],
+        backgroundWords: [{ text: "ooh", sep: "", begin: 1.2, end: 1.6 }],
         backgroundText: "ooh",
       }),
     ]);
@@ -758,7 +758,7 @@ describe("cross-track moves space the merge seam", () => {
     useProjectStore.getState().moveWordFromBg("line-1", [0], 0, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.map((w) => w.text)).toEqual(["hello ", "ooh ", "world"]);
+    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "ooh ", "world"]);
     const groups = computeSyllableGroups(line.words ?? []);
     expect(groups.some((g) => g.startIndex <= 1 && g.endIndex >= 2)).toBe(false);
   });

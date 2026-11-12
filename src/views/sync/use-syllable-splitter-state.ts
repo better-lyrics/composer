@@ -86,7 +86,7 @@ function useSyllableSplitterState({
       const retime = () => void useAlignmentStore.getState().retimeNewSyllables(before);
 
       if (applyToAll && identicalCount > 0) {
-        const sourceText = word.text.trimEnd();
+        const sourceText = word.text;
         const ok = await confirm(buildApplyToAllConfirmOptions({ identicalCount, sourceText }));
         if (!ok) return;
         useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({

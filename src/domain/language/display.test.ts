@@ -7,10 +7,10 @@ const line: LyricLine = {
   agentId: "v1",
   text: "걸음은 Like a dance",
   words: [
-    { text: "걸음은 ", begin: 0, end: 1 },
-    { text: "Like ", begin: 1, end: 2 },
-    { text: "a ", begin: 2, end: 3 },
-    { text: "dance", begin: 3, end: 4 },
+    { text: "걸음은", sep: " ", begin: 0, end: 1 },
+    { text: "Like", sep: " ", begin: 1, end: 2 },
+    { text: "a", sep: " ", begin: 2, end: 3 },
+    { text: "dance", sep: "", begin: 3, end: 4 },
   ],
   transliteration: {
     language: "ko-Latn",
@@ -24,8 +24,8 @@ const line: LyricLine = {
 describe("language display alignment", () => {
   it("includes literal dashes in untimed Sync labels as well as timed foreground and background slots", () => {
     const words = [
-      { text: "空", begin: 0, end: 1, transliteration: "so", transliterationJoinerAfter: "-" },
-      { text: "風", begin: 1, end: 2, transliteration: "ra" },
+      { text: "空", sep: "", begin: 0, end: 1, transliteration: "so", transliterationJoinerAfter: "-" },
+      { text: "風", sep: "", begin: 1, end: 2, transliteration: "ra" },
     ];
     const dashed: LyricLine = {
       ...line,
@@ -48,9 +48,9 @@ describe("language display alignment", () => {
     const backgroundOnly: LyricLine = {
       ...line,
       text: "Hello",
-      words: [{ text: "Hello", begin: 1, end: 2, transliteration: "stale" }],
+      words: [{ text: "Hello", sep: "", begin: 1, end: 2, transliteration: "stale" }],
       backgroundText: "空",
-      backgroundWords: [{ text: "空", begin: 1, end: 2 }],
+      backgroundWords: [{ text: "空", sep: "", begin: 1, end: 2 }],
       transliteration: { ...line.transliteration!, text: "", backgroundText: "sora", segments: [] },
     };
     const display = getLanguageDisplayLine(backgroundOnly, "transliteration");
@@ -86,8 +86,8 @@ describe("language display alignment", () => {
       agentId: "v1",
       text: "한국 노래",
       words: [
-        { text: "한국 ", transliteration: "hanguk", begin: 0, end: 1 },
-        { text: "노래", transliteration: "norae", begin: 1, end: 2 },
+        { text: "한국", sep: " ", transliteration: "hanguk", begin: 0, end: 1 },
+        { text: "노래", sep: "", transliteration: "norae", begin: 1, end: 2 },
       ],
       transliteration: {
         language: "ko-Latn",

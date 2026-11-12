@@ -3,6 +3,7 @@ import { trackWords } from "@/domain/line/tracks";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { SyncCursor } from "@/domain/sync/cursor";
 import type { ReRecording } from "@/domain/sync/skipped-instances";
+import { wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { formatTime } from "@/utils/format-time";
@@ -92,11 +93,13 @@ function convertLineToWord<T extends ConvertibleLine>(line: T): T {
   const duration = lineEnd - lineBegin;
   const wordDuration = duration / wordTexts.length;
 
-  const words: WordTiming[] = wordTexts.map((text, i) => ({
-    text: trailingSpace[i] ? `${text} ` : text,
-    begin: lineBegin + i * wordDuration,
-    end: lineBegin + (i + 1) * wordDuration,
-  }));
+  const words = wordsFromSpaced(
+    wordTexts.map((text, i) => ({
+      text: trailingSpace[i] ? `${text} ` : text,
+      begin: lineBegin + i * wordDuration,
+      end: lineBegin + (i + 1) * wordDuration,
+    })),
+  );
 
   return { ...line, words, begin: undefined, end: undefined };
 }
@@ -113,16 +116,18 @@ function distributeWordsInLine(text: string, begin: number, end: number): WordTi
   const duration = end - begin;
 
   let currentTime = begin;
-  return words.map((word, i) => {
-    const wordDuration = (word.length / totalChars) * duration;
-    const wordTiming: WordTiming = {
-      text: trailingSpace[i] ? `${word} ` : word,
-      begin: currentTime,
-      end: currentTime + wordDuration,
-    };
-    currentTime += wordDuration;
-    return wordTiming;
-  });
+  return wordsFromSpaced(
+    words.map((word, i) => {
+      const wordDuration = (word.length / totalChars) * duration;
+      const wordTiming = {
+        text: trailingSpace[i] ? `${word} ` : word,
+        begin: currentTime,
+        end: currentTime + wordDuration,
+      };
+      currentTime += wordDuration;
+      return wordTiming;
+    }),
+  );
 }
 
 // -- BG Word Creation ---------------------------------------------------------

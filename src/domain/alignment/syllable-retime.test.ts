@@ -1,14 +1,16 @@
 // @vitest-environment node
 import { newSyllableGroups, retimeInnerBoundaries } from "@/domain/alignment/syllable-retime";
+import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
 
-const word = (text: string, begin: number, end: number, syllableGroupId?: string): WordTiming => ({
-  text,
-  begin,
-  end,
-  ...(syllableGroupId ? { syllableGroupId } : {}),
-});
+const word = (text: string, begin: number, end: number, syllableGroupId?: string): WordTiming =>
+  wordFromSpaced({
+    text,
+    begin,
+    end,
+    ...(syllableGroupId ? { syllableGroupId } : {}),
+  });
 
 describe("newSyllableGroups", () => {
   it("finds the groups a split made, not the ones already there", () => {
