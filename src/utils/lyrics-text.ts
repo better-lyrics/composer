@@ -15,6 +15,11 @@ function carriesBackground(line: LyricLine): boolean {
   );
 }
 
+function keepsNoTimedBackground(line: LyricLine, source: LyricLine | undefined): boolean {
+  const sourceText = source && cleanSplitCharacters(source.text.trim());
+  return sourceText !== line.text || !line.backgroundWords?.length;
+}
+
 function textToLyricLines(text: string, defaultAgentId: string, existingLines: LyricLine[] = []): LyricLine[] {
   const textToCandidates = new Map<string, LyricLine[]>();
   const existingKeys = existingLines.map((line) => matchKey(line.text));
@@ -58,14 +63,19 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
     if (exactMatch) claim(index, exactMatch);
   });
 
+  const sources: Array<LyricLine | undefined> = new Array(newLines.length);
   const mapped = cleanedTexts.map((cleanedText, index) => {
     const matched = claimed[index];
-    if (matched) return reconcileMatchedTiming(matched, cleanedText);
+    if (matched) {
+      sources[index] = matched;
+      return reconcileMatchedTiming(matched, cleanedText);
+    }
 
     if (allowPositionMatch) {
       const positionMatch = existingLines[index];
       if (!usedExistingIds.has(positionMatch.id)) {
         usedExistingIds.add(positionMatch.id);
+        sources[index] = positionMatch;
         return reconcileMatchedTiming(positionMatch, cleanedText);
       }
     }
@@ -77,10 +87,12 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
     };
   });
 
-  // Raw parentheses in `text` are the source of truth for background vocals;
-  // a carried-over extracted backgroundText would double on re-extraction.
-  return mapped.map((line) =>
-    carriesBackground(line) && /\([^)]*\)/.test(line.text) ? { ...line, ...CLEARED_BACKGROUND } : line,
+  // Parentheses in a row stand for its background vocals, so a carried-over background would double on
+  // re-extraction. Timed background words on a row the edit left unchanged are kept.
+  return mapped.map((line, index) =>
+    carriesBackground(line) && keepsNoTimedBackground(line, sources[index]) && /\([^)]*\)/.test(line.text)
+      ? { ...line, ...CLEARED_BACKGROUND }
+      : line,
   );
 }
 

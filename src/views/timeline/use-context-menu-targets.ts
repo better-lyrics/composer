@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   instanceStart,
   isInstanceFullyTimed,
@@ -7,9 +8,8 @@ import {
 import { templateSourceInstance } from "@/domain/group/template-source";
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
-import { type EffectiveLine, getEffectiveLine } from "@/domain/line/effective-words";
+import type { EffectiveLine } from "@/domain/line/effective-words";
 import { trackField, trackWords } from "@/domain/line/tracks";
-import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { isWordSelected } from "@/domain/selection/identity";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
 import { isAutoAlignAvailable } from "@/stores/alignment";
@@ -24,12 +24,16 @@ import {
   lineIdsAreContiguous,
   selectionTouchesAnyGroup,
 } from "@/views/timeline/group-ops";
-import { mergeRunKind } from "@/views/timeline/merge-selected-words";
 import { computeSplitIntoWordsUpdates, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
 import { timelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
 import type { ContextMenuTarget } from "@/views/timeline/timeline-store";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useMemo } from "react";
+import {
+  explicitToggleTarget,
+  singleSelectedWord,
+  syllableMergeTarget,
+  wordMergeTarget,
+} from "@/views/timeline/word-commands";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -54,24 +58,18 @@ function useContextMenuTargets() {
 
   const lines = contextMenu ? timelineEffectiveLines(rawLines) : NO_EFFECTIVE_LINES;
 
-  const explicitToggleContext = useMemo(() => {
+  const explicitToggle = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
-    const { lineId, wordIndex, type } = contextMenu.target;
-    const line = rawLines.find((l) => l.id === lineId);
-    if (!line) return null;
-    const field = trackField(type);
-    const wordsArray = trackWords(line, type);
-    if (!wordsArray || wordsArray.length === 0) return null;
+    return explicitToggleTarget(selectedWords, rawLines);
+  }, [contextMenu, selectedWords, rawLines]);
 
-    const selectedWords = useTimelineStore.getState().selectedWords;
-    const indices =
-      isWordSelected(selectedWords, lineId, wordIndex, type) && selectedWords.length > 1
-        ? selectedWords.flatMap((w) => (w.lineId === lineId && w.type === type ? [w.wordIndex] : []))
-        : [wordIndex];
-
-    const allMarked = indices.every((i) => wordsArray[i]?.explicit === true);
-    return { lineId, field, indices, allMarked };
-  }, [contextMenu, rawLines]);
+  const wordCommandTargets = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word") return null;
+    return {
+      editable: singleSelectedWord(selectedWords),
+      syllableMerge: syllableMergeTarget(selectedWords, rawLines),
+    };
+  }, [contextMenu, selectedWords, rawLines]);
 
   const clickedSelectionCount = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
@@ -133,13 +131,7 @@ function useContextMenuTargets() {
 
   const mergeInfo = useMemo(() => {
     if (!contextMenu) return null;
-    const run = contiguousSelectionRun(selectedWords);
-    if (!run) return null;
-
-    const rawLine = rawLines.find((l) => l.id === run.lineId);
-    if (!rawLine || !trackWords(getEffectiveLine(rawLine), run.type)) return null;
-
-    return { indices: run.indices, lineId: run.lineId, type: run.type, kind: mergeRunKind(rawLine, run) };
+    return wordMergeTarget(selectedWords, rawLines);
   }, [contextMenu, selectedWords, rawLines]);
 
   const groupedWordInfo = useMemo(() => {
@@ -204,7 +196,8 @@ function useContextMenuTargets() {
   return {
     lines,
     autoAlignInfo,
-    explicitToggleContext,
+    explicitToggle,
+    wordCommandTargets,
     clickedSelectionCount,
     gutterLineGroupInfo,
     groupableSelection,
@@ -222,5 +215,5 @@ type ContextMenuTargets = ReturnType<typeof useContextMenuTargets>;
 
 // -- Exports ------------------------------------------------------------------
 
-export { useContextMenuTargets };
 export type { ContextMenuTargets };
+export { useContextMenuTargets };

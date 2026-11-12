@@ -1,5 +1,6 @@
-import { agentDisplayName } from "@/domain/agent/display-name";
+import { useMemo } from "react";
 import { getAgentColor } from "@/domain/agent/colors";
+import { agentDisplayName } from "@/domain/agent/display-name";
 import { instanceKey } from "@/domain/instance/key";
 import type { LyricLine } from "@/domain/line/model";
 import { selectionBounds } from "@/domain/selection/bounds";
@@ -26,7 +27,7 @@ import { useInstanceMenuActions } from "@/views/timeline/use-instance-menu-actio
 import { useLineMenuActions } from "@/views/timeline/use-line-menu-actions";
 import { useSharedTimingMenuActions } from "@/views/timeline/use-shared-timing-menu-actions";
 import { useWordMenuActions } from "@/views/timeline/use-word-menu-actions";
-import { useMemo } from "react";
+import { WordEditMenuItems } from "@/views/timeline/word-edit-menu-items";
 
 // -- Grouping section ---------------------------------------------------------
 
@@ -80,11 +81,9 @@ function GroupingMenuSection({
 
 // -- Labels -------------------------------------------------------------------
 
-type ExplicitToggleContext = NonNullable<ContextMenuTargets["explicitToggleContext"]>;
-
-function explicitToggleLabel({ allMarked, indices }: ExplicitToggleContext): string {
-  if (indices.length > 1) return `${allMarked ? "Unmark" : "Mark"} ${indices.length} as explicit`;
-  return allMarked ? "Unmark explicit" : "Mark as explicit";
+function explicitToggleLabel(marks: boolean, count: number): string {
+  if (count > 1) return `${marks ? "Mark" : "Unmark"} ${count} as explicit`;
+  return marks ? "Mark as explicit" : "Unmark explicit";
 }
 
 function splitIntoWordsLabel(count: number): string {
@@ -169,25 +168,9 @@ type WordTarget = Extract<ContextMenuTarget, { kind: "word" }>;
 
 function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & { target: WordTarget }) {
   const selectedWords = useTimelineStore((s) => s.selectedWords);
-  const {
-    mergeInfo,
-    groupedWordInfo,
-    snapNeededInfo,
-    splitIntoWordsInfo,
-    autoAlignInfo,
-    explicitToggleContext,
-    clickedSelectionCount,
-  } = targets;
-  const {
-    handleEditWord,
-    handleSplitSyllables,
-    handleSplitWord,
-    handleToggleExplicit,
-    handleDeleteWord,
-    handleMergeSyllables,
-    handleSnapSyllables,
-    handleMergeWords,
-  } = useWordMenuActions(targets, clearContextMenu);
+  const { groupedWordInfo, splitIntoWordsInfo, autoAlignInfo, explicitToggle, clickedSelectionCount } = targets;
+  const actions = useWordMenuActions(targets, clearContextMenu);
+  const { handleToggleExplicit, handleDeleteWord } = actions;
   const { handleSplitIntoWords, handleAutoAlign } = useLineMenuActions(targets, clearContextMenu);
   const word: WordSelection = {
     lineId: target.lineId,
@@ -208,30 +191,7 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
         select={() => selectWordUnlessSelected(word)}
         clearContextMenu={clearContextMenu}
       />
-      <MenuItem label="Edit text" shortcut={getEffectiveKeysArray("timeline.editWord")} onSelect={handleEditWord} />
-      <MenuItem
-        label="Split syllables"
-        shortcut={getEffectiveKeysArray("timeline.splitSyllable")}
-        onSelect={handleSplitSyllables}
-      />
-      <MenuItem label="Split word" shortcut={getEffectiveKeysArray("timeline.splitWord")} onSelect={handleSplitWord} />
-      {mergeInfo && (
-        <MenuItem
-          label={mergeInfo.kind === "syllables" ? "Merge syllables" : "Merge words"}
-          shortcut={getEffectiveKeysArray(
-            mergeInfo.kind === "syllables" ? "timeline.mergeSyllablesIntoWord" : "timeline.mergeWords",
-          )}
-          onSelect={handleMergeWords}
-        />
-      )}
-      {!mergeInfo && groupedWordInfo && (
-        <MenuItem
-          label="Merge syllables"
-          shortcut={getEffectiveKeysArray("timeline.mergeSyllablesIntoWord")}
-          onSelect={handleMergeSyllables}
-        />
-      )}
-      {snapNeededInfo && <MenuItem label="Snap syllables flush" onSelect={handleSnapSyllables} />}
+      <WordEditMenuItems targets={targets} actions={actions} />
       {splitIntoWordsInfo && (
         <>
           <MenuSeparator />
@@ -253,11 +213,11 @@ function WordMenuSection({ targets, clearContextMenu, target }: SectionProps & {
         </>
       )}
       <SelectionGrouping targets={targets} clearContextMenu={clearContextMenu} />
-      {explicitToggleContext && (
+      {explicitToggle && (
         <>
           <MenuSeparator />
           <MenuItem
-            label={explicitToggleLabel(explicitToggleContext)}
+            label={explicitToggleLabel(explicitToggle.value, selectedWords.length)}
             shortcut={getEffectiveKeysArray("timeline.toggleExplicit")}
             onSelect={handleToggleExplicit}
           />

@@ -1,12 +1,30 @@
 /**
  * @vitest-environment node
  */
+
+import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
-import { describe, expect, it } from "vitest";
 import { applyWordDeletion, type DeletionSelection } from "./apply-word-deletion";
 
 describe("applyWordDeletion", () => {
+  it("regression: deleting a timed word on a partly synced line keeps the untimed lyrics", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "l1",
+        text: "every night in my dreams",
+        agentId: "v1",
+        words: [
+          { text: "every ", begin: 0, end: 0.3 },
+          { text: "night ", begin: 0.3, end: 0.6 },
+          { text: "in ", begin: 0.6, end: 1 },
+        ],
+      },
+    ];
+    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 1 }]);
+    expect(result[0].text).toBe("every in my dreams");
+  });
+
   it("removes selected words from a word-timed line, leaving the line in place", () => {
     const lines: LyricLine[] = [
       {

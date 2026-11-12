@@ -1,6 +1,8 @@
 /**
  * @vitest-environment node
  */
+
+import { describe, expect, it } from "vitest";
 import {
   absorbDeletedSyllablesIntoNeighbors,
   closeIntraGroupGaps,
@@ -10,7 +12,6 @@ import {
   hasIntraGroupGap,
   inferSyllableGroupIds,
 } from "@/domain/word/syllable-groups";
-import { describe, expect, it } from "vitest";
 
 // -- id-mode -------------------------------------------------------------------
 
@@ -98,6 +99,18 @@ describe("getSyllablePositions · trailing-space fallback", () => {
 // -- computeSyllableGroups (lower-level invariants) ----------------------------
 
 describe("absorbDeletedSyllablesIntoNeighbors", () => {
+  it("regression: deleting a word's last syllable keeps that word apart from the next one", () => {
+    const words = [
+      { text: "beau", begin: 0, end: 1, syllableGroupId: "g1" },
+      { text: "ti", begin: 1, end: 2, syllableGroupId: "g1" },
+      { text: "ful ", begin: 2, end: 3, syllableGroupId: "g1" },
+      { text: "day", begin: 3, end: 4 },
+    ];
+    const remaining = absorbDeletedSyllablesIntoNeighbors(words, [2]).filter((_, i) => i !== 2);
+    expect(remaining.map((w) => w.text)).toEqual(["beau", "ti ", "day"]);
+    expect(remaining[1].end).toBe(3);
+  });
+
   it("extends the left neighbor's end when a middle syllable is deleted", () => {
     const result = absorbDeletedSyllablesIntoNeighbors(
       [

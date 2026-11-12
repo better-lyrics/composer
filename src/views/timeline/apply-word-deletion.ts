@@ -1,11 +1,11 @@
 import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
 import { lineInstanceKey } from "@/domain/instance/key";
 import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
-import { getSplitCharacter } from "@/utils/split-character";
+import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
+import { getSplitCharacter } from "@/utils/split-character";
 
 interface DeletionSelection {
   lineId: string;
@@ -77,7 +77,10 @@ function deleteFromLines(lines: LyricLine[], selections: ReadonlyArray<DeletionS
     const updatedLine = reconcileLine({
       ...line,
       words: nextMain,
-      text: nextMain && nextMain.length > 0 ? reconstructLineText(nextMain, splitChar) : line.text,
+      text:
+        nextMain && nextMain.length > 0
+          ? withDerivedText(reconcileLine({ ...line, words: nextMain }), splitChar, line).text
+          : line.text,
       ...bgFields,
       ...(willHaveNoMainWords ? { begin: undefined, end: undefined } : {}),
     });
@@ -143,5 +146,5 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
   return unlinkLines(result, (line) => emptied.has(lineInstanceKey(line) ?? ""));
 }
 
-export { applyWordDeletion };
 export type { DeletionSelection };
+export { applyWordDeletion };

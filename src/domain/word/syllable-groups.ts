@@ -1,5 +1,5 @@
-import type { WordTiming } from "@/domain/word/timing";
 import { nanoid } from "nanoid";
+import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
@@ -133,18 +133,37 @@ function absorbDeletedSyllablesIntoNeighbors(words: WordTiming[], deletedIndices
     }
   }
 
-  if (beginExtensions.size === 0 && endExtensions.size === 0) return words;
+  const handedBoundaries = boundariesHandedBack(words, deleted);
+  if (beginExtensions.size === 0 && endExtensions.size === 0 && handedBoundaries.size === 0) return words;
 
   return words.map((w, i) => {
     const newBegin = beginExtensions.get(i);
     const newEnd = endExtensions.get(i);
-    if (newBegin === undefined && newEnd === undefined) return w;
+    const boundary = handedBoundaries.get(i);
+    if (newBegin === undefined && newEnd === undefined && boundary === undefined) return w;
     return {
       ...w,
+      text: boundary === undefined ? w.text : `${w.text}${boundary}`,
       begin: newBegin !== undefined && newBegin < w.begin ? newBegin : w.begin,
       end: newEnd !== undefined && newEnd > w.end ? newEnd : w.end,
     };
   });
+}
+
+// Deleting spans never joins the words on either side: when a deleted run held a word boundary, the
+// surviving span before it takes that boundary's whitespace.
+function boundariesHandedBack(words: WordTiming[], deleted: Set<number>): Map<number, string> {
+  const handed = new Map<number, string>();
+  for (let i = 1; i < words.length; i++) {
+    if (!deleted.has(i) || deleted.has(i - 1)) continue;
+    let end = i;
+    while (deleted.has(end + 1)) end++;
+    const boundaryText = words.slice(i, end + 1).findLast((w) => w.text.endsWith(" "))?.text;
+    const boundary = boundaryText?.slice(boundaryText.trimEnd().length);
+    const survivorAfter = end + 1 < words.length;
+    if (survivorAfter && boundary && !words[i - 1].text.endsWith(" ")) handed.set(i - 1, boundary);
+  }
+  return handed;
 }
 
 function inferSyllableGroupIds(words: WordTiming[]): WordTiming[] {
@@ -190,6 +209,7 @@ function closeIntraGroupGaps(words: WordTiming[]): WordTiming[] {
 
 // -- Exports ------------------------------------------------------------------
 
+export type { SyllablePosition };
 export {
   absorbDeletedSyllablesIntoNeighbors,
   closeIntraGroupGaps,
@@ -200,4 +220,3 @@ export {
   hasIntraGroupGap,
   inferSyllableGroupIds,
 };
-export type { SyllablePosition };

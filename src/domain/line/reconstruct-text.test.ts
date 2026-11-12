@@ -1,7 +1,8 @@
-import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
+import { describe, expect, it } from "vitest";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { reconstructLineText, withDerivedText, wordContentSpans } from "@/domain/line/reconstruct-text";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -120,5 +121,42 @@ describe("wordContentSpans", () => {
     for (let i = 0; i < words.length; i++) {
       expect(reconstructed.slice(spans[i].start, spans[i].end)).toBe(words[i].text.trim());
     }
+  });
+});
+
+// -- withDerivedText ----------------------------------------------------------
+
+describe("withDerivedText on a partly synced line", () => {
+  const partly = (text: string, words: string[]): LyricLine => ({ id: "l1", agentId: "v1", text, words: words.map(w) });
+  const derivedText = (previous: LyricLine, words: string[], text = previous.text) =>
+    withDerivedText(reconcileLine({ ...previous, text, words: words.map(w) }), "|", previous).text;
+
+  it("keeps the untimed words when the timed words only change in place", () => {
+    const previous = partly("la la la", ["la "]);
+    expect(derivedText(previous, ["la "])).toBe("la la la");
+  });
+
+  it("regression: deleting a timed word keeps an untimed repeat of the word after it", () => {
+    const previous = partly("a b b", ["a ", "b "]);
+    expect(derivedText(previous, ["b "])).toBe("b b");
+  });
+
+  it("regression: timing a placeholder as a repeated word drops only that word from the untimed rest", () => {
+    const previous = partly("a ... a b", ["a ", "... "]);
+    expect(derivedText(previous, ["a ", "a "])).toBe("a a b");
+  });
+
+  it("regression: keeps the spacing of the untimed rest as the user typed it", () => {
+    const previous = partly("a b  c", ["a "]);
+    expect(derivedText(previous, ["a "])).toBe("a b  c");
+  });
+
+  it("does not repeat untimed words that new timed words now cover", () => {
+    const previous = partly("every night in my dreams", ["every ", "night ", "in "]);
+    expect(derivedText(previous, ["every ", "night ", "in ", "my ", "dreams"], "every night in my dreams")).toBe(
+      "every night in my dreams",
+    );
+    const placeholder = partly("every night in ... my dreams", ["every ", "night ", "in ", "... "]);
+    expect(derivedText(placeholder, ["every ", "night ", "in ", "my "])).toBe("every night in my dreams");
   });
 });

@@ -1,7 +1,7 @@
 import type { LyricLine } from "@/domain/line/model";
 import { trackField, trackWords } from "@/domain/line/tracks";
-import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordSelection } from "@/domain/selection/model";
+import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -51,4 +51,5 @@ function resolveExplicitSelectionToggle(lines: LyricLine[], selection: WordSelec
 
 // -- Exports -------------------------------------------------------------------
 
+export type { ExplicitToggleResolution };
 export { resolveExplicitSelectionToggle };
