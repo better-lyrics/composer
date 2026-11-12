@@ -140,6 +140,13 @@ describe("submitChecks", () => {
         },
       });
     });
+
+    it("regression: a word that rounds to no length in the file is listed", () => {
+      const line = createLine({ text: "ka mu", words: [word("ka ", 1.0001, 1.0004), word("mu", 1.1, 2)] });
+      expect(checkOf(readyInput({ lines: [line], content: ZERO_LENGTH_TTML }), "ttml")).toMatchObject({
+        fix: { kind: "lines", issues: [{ lineId: line.id, problemSlots: [0] }] },
+      });
+    });
   });
 
   describe("ISRC", () => {

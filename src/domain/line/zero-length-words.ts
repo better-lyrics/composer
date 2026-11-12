@@ -15,6 +15,11 @@ interface ZeroLengthWordIssue {
 
 // -- Functions -----------------------------------------------------------------
 
+// TTML writes whole milliseconds, so compare at that precision.
+function hasNoLengthInFile(timed: WordTiming): boolean {
+  return Math.round(timed.end * 1000) <= Math.round(timed.begin * 1000);
+}
+
 function trackIssue(
   line: LyricLine,
   lineIndex: number,
@@ -22,7 +27,7 @@ function trackIssue(
   text: string,
   words: readonly WordTiming[],
 ): ZeroLengthWordIssue | null {
-  const zeroLength = words.flatMap((timed, wordIndex) => (timed.end <= timed.begin ? [wordIndex] : []));
+  const zeroLength = words.flatMap((timed, wordIndex) => (hasNoLengthInFile(timed) ? [wordIndex] : []));
   if (zeroLength.length === 0) return null;
   const ranges = timedWordSlotRanges(text, words);
   const problemSlots = zeroLength.flatMap((wordIndex) => {

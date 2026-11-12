@@ -6,6 +6,7 @@ import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { centreLineRow } from "@/views/timeline/centre-line-row";
+import { type GroupFocus, isInFocus } from "@/views/timeline/group-focus";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { type RefObject, useEffect, useSyncExternalStore } from "react";
 
@@ -47,10 +48,20 @@ function revealLineInTimeline(lineId: string, track: LineRevealRequest["track"])
   publish({ lineId, track });
 }
 
-function revealLine(container: HTMLElement, lines: ReadableLine[], request: LineRevealRequest): void {
+// Returns false when the group focus had to close first: the row exists only after the next render.
+function revealLine(
+  container: HTMLElement,
+  lines: ReadableLine[],
+  request: LineRevealRequest,
+  focusedGroup: GroupFocus | null,
+): boolean {
   const lineIndex = lines.findIndex((line) => line.id === request.lineId);
   const line = lines[lineIndex];
-  if (!line) return;
+  if (!line) return true;
+  if (!isInFocus(line, focusedGroup)) {
+    useTimelineStore.getState().closeGroup();
+    return false;
+  }
 
   centreLineRow(container, lines, line);
   const bounds = effectiveBounds(line);
@@ -61,6 +72,7 @@ function revealLine(container: HTMLElement, lines: ReadableLine[], request: Line
       .getState()
       .setSelectedWords(lineWordSelections(line, lineIndex).filter((selection) => selection.type === track));
   }
+  return true;
 }
 
 // -- Hook ----------------------------------------------------------------------
@@ -68,17 +80,17 @@ function revealLine(container: HTMLElement, lines: ReadableLine[], request: Line
 function useLineRevealRequest(scrollContainerRef: RefObject<HTMLDivElement | null>, lines: ReadableLine[]): void {
   const request = useSyncExternalStore(subscribe, snapshot, snapshot);
   const timelineActive = useIsActiveTab("timeline");
+  const focusedGroup = useTimelineStore((state) => state.focusedGroup);
 
   useEffect(() => {
     if (!request || !timelineActive) return;
     const frame = nextFrame(() => {
       const container = scrollContainerRef.current;
       if (!container) return;
-      revealLine(container, lines, request);
-      settle(request);
+      if (revealLine(container, lines, request, focusedGroup)) settle(request);
     });
     return () => cancelNextFrame(frame);
-  }, [request, timelineActive, lines, scrollContainerRef]);
+  }, [request, timelineActive, lines, focusedGroup, scrollContainerRef]);
 }
 
 // -- Exports -------------------------------------------------------------------
