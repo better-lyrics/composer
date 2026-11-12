@@ -201,7 +201,7 @@ function isProjectFullySynced(lines: readonly LyricLine[]): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { SlotRange, SyncGap, SyncGapKind, SyncGapTrack, SyncGranularity };
+export type { SyncGap, SyncGapTrack, SyncGranularity };
 export {
   isLineFullyTimed,
   isLineTimed,
