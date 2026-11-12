@@ -258,7 +258,7 @@ describe("ImportPanel: file source", () => {
       duration: 0,
     });
     const screen = await render(withQueryClient(<ImportPanel />));
-    expect(screen.container.querySelector(".animate-spin")).not.toBeNull();
+    await expect.poll(() => screen.container.querySelector(".animate-spin")).not.toBeNull();
   });
 
   it("shows the clock and resolved duration for a loaded file source", async () => {
@@ -292,7 +292,7 @@ describe("ImportPanel: YouTube title", () => {
       isLoading: true,
     });
     const screen = await render(withQueryClient(<ImportPanel />));
-    expect(screen.container.querySelector(".animate-spin")).not.toBeNull();
+    await expect.poll(() => screen.container.querySelector(".animate-spin")).not.toBeNull();
   });
 
   it("shows a pulsing skeleton instead of the bare videoId while downloading and no title set", async () => {

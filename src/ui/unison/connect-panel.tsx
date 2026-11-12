@@ -1,5 +1,6 @@
 import { IconAlertCircle, IconLoader2 } from "@tabler/icons-react";
 import { useRef, useState } from "react";
+import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import type { BetterLyricsDetection } from "@/hooks/unison/useBetterLyricsDetection";
 import { BETTER_LYRICS_EXTENSION_ID } from "@/lib/unison/extension-port";
 import type { StoredUnisonSession } from "@/lib/unison/session";
@@ -59,23 +60,26 @@ const ExtensionButton: React.FC<{ waiting: boolean; disabled: boolean; onClick: 
   waiting,
   disabled,
   onClick,
-}) => (
-  <Button
-    size="lg"
-    variant="secondary"
-    hasIcon
-    disabled={disabled}
-    onClick={onClick}
-    className="w-full text-composer-text"
-  >
-    {waiting ? (
-      <IconLoader2 aria-hidden="true" className="size-[18px] animate-spin motion-reduce:animate-none" />
-    ) : (
-      <BetterLyricsMark />
-    )}
-    {waiting ? "Waiting for Better Lyrics" : "Continue with Better Lyrics"}
-  </Button>
-);
+}) => {
+  const showSpinner = useDelayedBusy(waiting);
+  return (
+    <Button
+      size="lg"
+      variant="secondary"
+      hasIcon
+      disabled={disabled}
+      onClick={onClick}
+      className="w-full text-composer-text"
+    >
+      {showSpinner ? (
+        <IconLoader2 aria-hidden="true" className="size-[18px] animate-spin motion-reduce:animate-none" />
+      ) : (
+        <BetterLyricsMark />
+      )}
+      Continue with Better Lyrics
+    </Button>
+  );
+};
 
 const ConnectPanel: React.FC<ConnectPanelProps> = ({
   detection,

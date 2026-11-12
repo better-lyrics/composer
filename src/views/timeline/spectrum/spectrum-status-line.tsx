@@ -1,3 +1,4 @@
+import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { useSettingsStore } from "@/stores/settings";
 import { type SpectrumStatusView, useSpectrumStatus } from "@/views/timeline/spectrum/spectrum-session";
 import { IconLoader2 } from "@tabler/icons-react";
@@ -21,13 +22,14 @@ function statusText(view: SpectrumStatusView, visible: boolean): string {
 const SpectrumStatusLine: React.FC = () => {
   const view = useSpectrumStatus();
   const visible = useSettingsStore((s) => s.showSpectrum);
+  const busy = visible && (view.status === "decoding" || view.status === "analysing");
+  const showSpinner = useDelayedBusy(busy);
   if (visible && view.status === "error") {
     return <p className="text-[12.5px] text-composer-warning select-text cursor-text">{view.error}</p>;
   }
-  const busy = visible && (view.status === "decoding" || view.status === "analysing");
   return (
     <p className="flex items-center gap-1.5 text-[12.5px] text-(--muted) tabular-nums">
-      {busy && (
+      {showSpinner && (
         <IconLoader2
           aria-hidden="true"
           className="size-3.5 text-composer-accent-text animate-spin motion-reduce:animate-none"

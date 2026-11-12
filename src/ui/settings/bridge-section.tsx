@@ -1,3 +1,4 @@
+import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { useSettingsStore } from "@/stores/settings";
 import { settingEntry } from "@/stores/settings-catalog";
 import { BridgeInstallGuide } from "@/ui/settings/bridge-install-guide";
@@ -38,10 +39,11 @@ const StatusBadge: React.FC<{
   state: "checking" | "ok" | "error";
   data: BridgeHealth | undefined;
 }> = ({ state, data }) => {
+  const showSpinner = useDelayedBusy(state === "checking");
   if (state === "checking") {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-composer-text-muted">
-        <IconLoader2 size={12} className="animate-spin" />
+        {showSpinner && <IconLoader2 size={12} className="animate-spin" />}
         Checking…
       </span>
     );

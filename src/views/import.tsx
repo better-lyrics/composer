@@ -4,6 +4,7 @@ import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
 import { youtubeSourceTitle } from "@/domain/project/display-title";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
+import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { useBridgeThumb } from "@/hooks/useBridgeThumb";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { PROJECT_FILE_EXTENSIONS_LABEL } from "@/lib/project-file-read";
@@ -96,15 +97,18 @@ interface SourceDurationProps {
   duration: number;
 }
 
-const SourceDuration: React.FC<SourceDurationProps> = ({ loading, duration }) =>
-  loading ? (
+const SourceDuration: React.FC<SourceDurationProps> = ({ loading, duration }) => {
+  const showSpinner = useDelayedBusy(loading);
+  if (!loading) {
+    return <span className="shrink-0 font-mono tabular-nums whitespace-nowrap">{formatDuration(duration)}</span>;
+  }
+  return (
     <span className="flex shrink-0 items-center gap-[5px]">
-      <IconLoader2 size={13} className="animate-spin text-composer-accent-text" />
+      {showSpinner && <IconLoader2 size={13} className="animate-spin text-composer-accent-text" />}
       <span className="font-mono tabular-nums whitespace-nowrap">--:--</span>
     </span>
-  ) : (
-    <span className="shrink-0 font-mono tabular-nums whitespace-nowrap">{formatDuration(duration)}</span>
   );
+};
 
 const DetailSeparator: React.FC = () => (
   <span aria-hidden="true" className="shrink-0">

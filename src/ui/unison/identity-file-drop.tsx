@@ -1,5 +1,6 @@
 import { IconAlertCircle, IconFileText, IconLoader2 } from "@tabler/icons-react";
 import { useId, useRef, useState } from "react";
+import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { IdentityFileError } from "@/domain/unison/identity-file";
 import { UnisonError } from "@/lib/unison/client";
 import type { StoredUnisonSession } from "@/lib/unison/session";
@@ -40,6 +41,7 @@ const IdentityFileDrop: React.FC<IdentityFileDropProps> = ({ disabled, onPending
   const [reading, setReading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const showSpinner = useDelayedBusy(reading);
 
   const connectWith = async (file: File) => {
     setError(null);
@@ -102,14 +104,14 @@ const IdentityFileDrop: React.FC<IdentityFileDropProps> = ({ disabled, onPending
       >
         <DropTileContent
           icon={
-            reading ? (
+            showSpinner ? (
               <IconLoader2 aria-hidden="true" className="size-[18px] animate-spin motion-reduce:animate-none" />
             ) : (
               <IconFileText aria-hidden="true" className="size-[18px]" />
             )
           }
           title="Use your identity file"
-          detail={reading ? "Connecting to Unison" : "From Better Lyrics settings, never stored"}
+          detail={showSpinner ? "Connecting to Unison" : "From Better Lyrics settings, never stored"}
         />
       </button>
       <input

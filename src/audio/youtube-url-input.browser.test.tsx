@@ -63,12 +63,12 @@ describe("YouTubeUrlInput", () => {
     await expect.element(screen.getByText(/doesn't look like a valid YouTube/)).toBeInTheDocument();
   });
 
-  it("disables the input and shows 'Loading' while isLoading is true", async () => {
+  it("disables the input and the Load button while isLoading is true", async () => {
     useAudioStore.setState({ isLoading: true });
     const screen = await render(<YouTubeUrlInput />);
     const input = screen.getByPlaceholder(/YouTube URL/i).element() as HTMLInputElement;
     expect(input.disabled).toBe(true);
-    await expect.element(screen.getByRole("button", { name: /Loading/ })).toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: /Load$/ })).toBeDisabled();
   });
 
   it("clears the input after a successful YouTube load", async () => {

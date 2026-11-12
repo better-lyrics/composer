@@ -1,3 +1,4 @@
+import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { tempoStats } from "@/domain/tempo/tempo-stats";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useBeatDetectionStore } from "@/stores/beat-detection";
@@ -119,8 +120,10 @@ const SnapOffNote: React.FC = () => {
 const BeatGridSummary: React.FC = () => {
   const grid = useProjectStore((s) => s.beatGrid);
   const running = useBeatDetectionStore((s) => isDetectionRunning(s.status));
+  const showSpinner = useDelayedBusy(running);
   const stats = grid ? tempoStats(grid) : null;
   if (running) {
+    if (!showSpinner) return null;
     return (
       <IconLoader2
         aria-label="Finding beats"

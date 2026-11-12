@@ -5,6 +5,7 @@ import {
   isYouTubeLoadFailure,
   useLoadYouTubeSource,
 } from "@/hooks/useLoadYouTubeSource";
+import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { useFieldError } from "@/hooks/useFieldError";
 import { useYouTubeDownload } from "@/hooks/useYouTubeDownload";
 import { useAudioStore } from "@/stores/audio";
@@ -50,6 +51,7 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
   const linkField = useFieldError();
   const { showError, clearError } = linkField;
   const isLoading = useAudioStore((s) => s.isLoading);
+  const showSpinner = useDelayedBusy(isLoading);
   const youtubeLoadError = useAudioStore((s) => s.youtubeLoadError);
   const loadYouTubeSource = useLoadYouTubeSource();
   const download = useYouTubeDownload();
@@ -122,8 +124,8 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
             disabled={isLoading}
             className="rounded-lg"
           >
-            {isLoading ? <IconLoader2 size={16} className="animate-spin" /> : <IconBrandYoutube size={16} />}
-            {isLoading ? "Loading" : "Load"}
+            {showSpinner ? <IconLoader2 size={16} className="animate-spin" /> : <IconBrandYoutube size={16} />}
+            Load
           </Button>
         )}
       </div>

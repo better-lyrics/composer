@@ -1,3 +1,4 @@
+import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { hasUsableDuration } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { cn } from "@/utils/cn";
@@ -104,6 +105,7 @@ const ResultRow: React.FC<ResultRowProps> = ({
   onSelect,
 }) => {
   const isActive = isHovered || isFocused;
+  const showSpinner = useDelayedBusy(isSelecting);
 
   const selectIfIdle = () => {
     if (isSelecting) return;
@@ -137,7 +139,7 @@ const ResultRow: React.FC<ResultRowProps> = ({
           <DurationDisplay actualSec={result.durationSec} expectedSec={expectedDurationSec} />
         ) : null}
         <SyncTypeBadge syncType={result.syncType} sourceLabel={result.sourceLabel} />
-        {isSelecting ? (
+        {showSpinner ? (
           <IconLoader2 size={12} className="animate-spin text-composer-accent-text" aria-label="Loading" />
         ) : null}
       </span>

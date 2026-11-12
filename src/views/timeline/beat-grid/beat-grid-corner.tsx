@@ -1,3 +1,4 @@
+import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import { tempoStats } from "@/domain/tempo/tempo-stats";
 import { useAudioStore } from "@/stores/audio";
@@ -62,11 +63,13 @@ const CornerFace: React.FC<{ compact: boolean }> = ({ compact }) => {
   const status = useBeatDetectionStore((s) => s.status);
   const percent = useBeatDetectionStore(detectionPercent);
   const stats = grid ? tempoStats(grid) : null;
+  const running = isDetectionRunning(status);
+  const showSpinner = useDelayedBusy(running);
 
-  if (isDetectionRunning(status)) {
+  if (running) {
     return (
       <>
-        {!compact && (
+        {!compact && showSpinner && (
           <IconLoader2
             aria-hidden="true"
             className="size-4 text-composer-accent-text animate-spin motion-reduce:animate-none"

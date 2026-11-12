@@ -1,3 +1,4 @@
+import { useDelayedBusy } from "@/hooks/use-delayed-busy";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { Popover } from "@/ui/popover";
@@ -106,44 +107,47 @@ const RegenerateLanguageControl: React.FC<RegenerateLanguageControlProps> = ({
   languageNames,
   onRegenerateAll,
   onRegenerateSelection,
-}) => (
-  <div className="flex items-center">
-    <Button
-      hasIcon
-      size="lg"
-      variant="primary"
-      disabled={isGenerating}
-      onClick={onRegenerateAll}
-      className="rounded-r-none"
-    >
-      <IconRefresh className={cn("size-4", isGenerating && "animate-spin")} />
-      {isGenerating ? "Generating…" : hasGenerated ? "Regenerate all" : "Generate all"}
-    </Button>
-    <Popover
-      placement="bottom-end"
-      trigger={
-        <IconButton
-          label="Choose what to regenerate"
-          icon={<IconChevronDown className="size-4" />}
-          variant="primary"
-          disabled={isGenerating}
-          className="h-9 w-8 rounded-l-none rounded-r-xl shadow-[inset_1px_0_0_rgb(255_255_255/0.22)]"
-        />
-      }
-    >
-      {(close) => (
-        <RegenerateSelectionMenu
-          translations={translations}
-          languageNames={languageNames}
-          onRegenerate={(selection) => {
-            close();
-            onRegenerateSelection(selection);
-          }}
-        />
-      )}
-    </Popover>
-  </div>
-);
+}) => {
+  const showSpinner = useDelayedBusy(isGenerating);
+  return (
+    <div className="flex items-center">
+      <Button
+        hasIcon
+        size="lg"
+        variant="primary"
+        disabled={isGenerating}
+        onClick={onRegenerateAll}
+        className="rounded-r-none"
+      >
+        <IconRefresh className={cn("size-4", showSpinner && "animate-spin")} />
+        {hasGenerated ? "Regenerate all" : "Generate all"}
+      </Button>
+      <Popover
+        placement="bottom-end"
+        trigger={
+          <IconButton
+            label="Choose what to regenerate"
+            icon={<IconChevronDown className="size-4" />}
+            variant="primary"
+            disabled={isGenerating}
+            className="h-9 w-8 rounded-l-none rounded-r-xl shadow-[inset_1px_0_0_rgb(255_255_255/0.22)]"
+          />
+        }
+      >
+        {(close) => (
+          <RegenerateSelectionMenu
+            translations={translations}
+            languageNames={languageNames}
+            onRegenerate={(selection) => {
+              close();
+              onRegenerateSelection(selection);
+            }}
+          />
+        )}
+      </Popover>
+    </div>
+  );
+};
 
 // -- Exports ------------------------------------------------------------------
 
