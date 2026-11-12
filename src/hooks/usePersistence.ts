@@ -126,7 +126,7 @@ function usePersistence(): void {
     return onSaveRefusedAsNewer((projectId) => {
       if (warned.has(projectId)) return;
       warned.add(projectId);
-      showNewerSaveRefusedToast();
+      showNewerSaveRefusedToast(projectId);
     });
   }, []);
 
