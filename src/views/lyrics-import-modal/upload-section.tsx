@@ -95,8 +95,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, field, onSwitchTo
       <button
         type="button"
         data-upload-dropzone
-        id={field.fieldProps.id}
-        aria-describedby={field.fieldProps["aria-describedby"]}
+        {...field.fieldProps}
         aria-label="Drop a lyrics file here or click to browse"
         onClick={handleClickToBrowse}
         onDragEnter={handleDragEnter}
