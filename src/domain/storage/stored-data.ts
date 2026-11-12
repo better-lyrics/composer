@@ -5,17 +5,17 @@ type StoredData = Blob | ArrayBuffer;
 
 // -- Reads --------------------------------------------------------------------
 
-function storedDataBytes(data: StoredData): number {
-  return data instanceof Blob ? data.size : data.byteLength;
+function storedDataBytes(stored: StoredData): number {
+  return stored instanceof Blob ? stored.size : stored.byteLength;
 }
 
 // Only builds before Blob storage wrote inline bytes, so only they can hold data an old repair still has to read.
-function isInlineData(data: StoredData): data is ArrayBuffer {
-  return !(data instanceof Blob);
+function isInlineData(stored: StoredData): stored is ArrayBuffer {
+  return !(stored instanceof Blob);
 }
 
-function storedDataBuffer(data: StoredData): Promise<ArrayBuffer> {
-  return data instanceof Blob ? data.arrayBuffer() : Promise.resolve(data);
+function storedDataBuffer(stored: StoredData): Promise<ArrayBuffer> {
+  return stored instanceof Blob ? stored.arrayBuffer() : Promise.resolve(stored);
 }
 
 // -- Exports ------------------------------------------------------------------
