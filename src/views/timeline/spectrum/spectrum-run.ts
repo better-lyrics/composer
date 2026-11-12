@@ -98,6 +98,7 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
   let mono: MonoAudio | null = null;
   let writer: SpectrumChunkWriter | null = null;
   let focusChunk = 0;
+  let sentFocusChunk = 0;
   let cacheRead = false;
   const rawQueue = new Set<number>();
   let release: (() => void) | null = holdFrames("spectrum analysis");
@@ -117,6 +118,7 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
   // A worker starts for missing chunks, or later on demand when raw phase is wanted for cached ones.
   const startAnalysis = (audio: MonoAudio, skipChunks: readonly number[]) => {
     release ??= holdFrames("spectrum analysis");
+    sentFocusChunk = focusChunk;
     analysis = startSpectrumAnalysis({
       pcm: audio.pcm.slice(),
       sampleRate: audio.sampleRate,
@@ -171,7 +173,9 @@ function startSpectrumRun(target: SpectrumTarget, focusTime: number): SpectrumRu
   return {
     setFocusTime: (seconds) => {
       focusChunk = chunkAt(seconds);
-      analysis?.setFocus(focusChunk);
+      if (!analysis || focusChunk === sentFocusChunk) return;
+      sentFocusChunk = focusChunk;
+      analysis.setFocus(focusChunk);
     },
     requestRawPhase: (chunks) => {
       if (cancelled) return;
