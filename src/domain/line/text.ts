@@ -4,10 +4,11 @@ import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------
 
-// What follows a syllable in the text: its separator, and the split character where no space parts it from the next.
+// What follows a syllable in the text: its separator, and the split character when it joins the next with no
+// whitespace between them (old saves join whole lines, spaces included).
 function syllableJoint(syllables: readonly Syllable[], index: number, splitChar: string): string {
-  const { sep } = syllables[index];
-  return index < syllables.length - 1 && !sep.endsWith(" ") ? sep + splitChar : sep;
+  const { sep, joinsNext } = syllables[index];
+  return index < syllables.length - 1 && joinsNext && sep.trimEnd() === sep ? sep + splitChar : sep;
 }
 
 function syllablesText(syllables: readonly Syllable[], splitChar: string): string {

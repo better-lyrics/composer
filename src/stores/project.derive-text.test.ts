@@ -28,6 +28,11 @@ function w(text: string, begin: number, end: number): WordTiming {
   return wordFromSpaced({ id: newWordId(), text, begin, end });
 }
 
+// A syllable split from its word, joined to the next.
+function joined(text: string, begin: number, end: number): WordTiming {
+  return wordFromSpaced({ id: newWordId(), text, begin, end, joinsNext: true });
+}
+
 function wordSyncedLine(overrides: Partial<LineFields> = {}): LyricLine {
   return lineFromFields({
     id: "l1",
@@ -121,7 +126,7 @@ describe("updateLineWithHistory derives text from words", () => {
           {
             id: "l1",
             updates: {
-              words: [w("hello ", 0, 1), w("wor", 1, 1.5), w("ld", 1.5, 2)],
+              words: [w("hello ", 0, 1), joined("wor", 1, 1.5), w("ld", 1.5, 2)],
             },
           },
         ]),
@@ -169,7 +174,7 @@ describe("updateLineWithHistory derives text from words", () => {
           {
             id: "l1",
             updates: {
-              backgroundWords: [w("oh ", 0, 1), w("ye", 1, 1.5), w("ah", 1.5, 2)],
+              backgroundWords: [w("oh ", 0, 1), joined("ye", 1, 1.5), w("ah", 1.5, 2)],
             },
           },
         ]),
@@ -245,7 +250,7 @@ describe("updateLine derives text from words", () => {
             {
               id: "l1",
               updates: {
-                words: [w("hello ", 0, 1), w("wor", 1, 1.5), w("ld", 1.5, 2)],
+                words: [w("hello ", 0, 1), joined("wor", 1, 1.5), w("ld", 1.5, 2)],
               },
             },
           ]),
@@ -266,7 +271,7 @@ describe("applyWordCountChange derives text from words", () => {
 
     useProjectStore
       .getState()
-      .commit(applyWordCountChange("l1", [w("hello ", 0, 1), w("wor", 1, 1.5), w("ld", 1.5, 2)], "words", "apply"));
+      .commit(applyWordCountChange("l1", [w("hello ", 0, 1), joined("wor", 1, 1.5), w("ld", 1.5, 2)], "words", "apply"));
 
     expect(lineText(useProjectStore.getState().lines[0])).toBe("hello wor|ld");
   });

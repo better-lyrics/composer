@@ -264,7 +264,7 @@ describe("effectiveWordTextEdit", () => {
   it("writes words for a raw line with no timing", () => {
     const words = [{ id: "w15", text: "z", sep: "", begin: 1, end: 2, joinsNext: false }];
     const raw = createLine({ text: "a" });
-    expect(patchOf(effectiveWordTextEdit(raw, words), raw)).toEqual({ words, text: "z|a" });
+    expect(patchOf(effectiveWordTextEdit(raw, words), raw)).toEqual({ words, text: "za" });
   });
 
   it("accepts a raw line-synced line", () => {

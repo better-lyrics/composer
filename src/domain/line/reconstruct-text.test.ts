@@ -12,8 +12,9 @@ import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 
 // -- Helpers ------------------------------------------------------------------
 
+// A piece with no space after it is a syllable joined to the next.
 function w(text: string): WordTiming {
-  return wordFromSpaced({ text, begin: 0, end: 1 });
+  return wordFromSpaced({ text, begin: 0, end: 1, joinsNext: text === text.trimEnd() });
 }
 
 // -- syllablesText ------------------------------------------------------------

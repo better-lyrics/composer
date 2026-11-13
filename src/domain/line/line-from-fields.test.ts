@@ -31,3 +31,10 @@ describe("lineFromFields on a partly synced line", () => {
     expect(timedSyllables(mainTrack(line)).map((word) => word.joinsNext)).toEqual([true]);
   });
 });
+
+describe("text joints", () => {
+  it("regression: an ideographic space between untimed words gets no split mark", () => {
+    const line = lineFromFields({ id: "cjk", agentId: "v1", text: "你好\u3000世界" });
+    expect(lineText(line)).toBe("你好\u3000世界");
+  });
+});

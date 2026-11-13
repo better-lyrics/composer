@@ -150,6 +150,12 @@ describe("writeLrc", () => {
       for (const word of words) expect(word.end).toBeGreaterThanOrEqual(word.begin);
     });
 
+    it("regression: a tab between untimed background words is written without a split mark", () => {
+      const line = createLine({ text: "Main", begin: 1, end: 2, backgroundText: "ooh\tyeah" });
+
+      expect(writeLrc(doc([line]))).toContain("[00:01.00]Main (ooh\tyeah)");
+    });
+
     it("keeps parentheses the background text already carries", () => {
       const line = createLine({ text: "Main", begin: 1, end: 2, backgroundText: "(oh)" });
 
