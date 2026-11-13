@@ -20,7 +20,7 @@ function linkedLine(id: string, instanceIdx: number) {
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
-    words: [createWord({ text: "la ", begin: instanceIdx * 10, end: instanceIdx * 10 + 1 })],
+    words: [createWord({ text: "la", sep: " ", begin: instanceIdx * 10, end: instanceIdx * 10 + 1 })],
   });
 }
 
@@ -89,7 +89,7 @@ describe("multiSelectionSummary", () => {
   const wordLine = createLine({
     id: "w",
     text: "a b",
-    words: [createWord({ text: "a ", begin: 1, end: 2 }), createWord({ text: "b", begin: 2, end: 3 })],
+    words: [createWord({ text: "a", sep: " ", begin: 1, end: 2 }), createWord({ text: "b", begin: 2, end: 3 })],
   });
   const syncedRow = createLine({ id: "s", text: "row", begin: 5, end: 7 });
 

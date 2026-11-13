@@ -32,7 +32,7 @@ beforeEach(() => {
         id: "l0",
         text: "a a",
         words: [
-          { text: "a ", begin: 3, end: 4 },
+          { text: "a", sep: " ", begin: 3, end: 4 },
           { text: "a", begin: 4, end: 5 },
         ],
       }),
@@ -40,7 +40,7 @@ beforeEach(() => {
         id: "l1",
         text: "b b",
         words: [
-          { text: "b ", begin: 8, end: 9 },
+          { text: "b", sep: " ", begin: 8, end: 9 },
           { text: "b", begin: 9, end: 10 },
         ],
         backgroundText: "oh",

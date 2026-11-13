@@ -1,3 +1,4 @@
+import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { withTrailingSpace } from "@/utils/word-spaces";
 
@@ -18,17 +19,18 @@ function bracketWordList(words: WordTiming[]): WordTiming[] {
   if (words.length === 0) return words;
   if (words.length === 1) {
     const only = words[0];
-    const core = stripTrailingSpace(only.text);
-    const trail = trailingSpaceOf(only.text);
-    return [{ ...only, text: `(${core})${trail}` }];
+    const spaced = only.text + only.sep;
+    return [wordFromSpaced({ ...only, text: `(${stripTrailingSpace(spaced)})${trailingSpaceOf(spaced)}` })];
   }
   const first = words[0];
   const last = words[words.length - 1];
-  const lastCore = stripTrailingSpace(last.text);
-  const lastTrail = trailingSpaceOf(last.text);
+  const lastSpaced = last.text + last.sep;
   const out = [...words];
   out[0] = { ...first, text: `(${first.text}` };
-  out[out.length - 1] = { ...last, text: `${lastCore})${lastTrail}` };
+  out[out.length - 1] = wordFromSpaced({
+    ...last,
+    text: `${stripTrailingSpace(lastSpaced)})${trailingSpaceOf(lastSpaced)}`,
+  });
   return out;
 }
 
@@ -44,8 +46,9 @@ function joinBracketedCarriedWords(
   if (carried.length === 0) return baseWords;
   const lastBase = baseWords[baseWords.length - 1];
   const firstCarry = carried[0];
-  const lastBaseStripped = stripTrailingSpace(lastBase.text);
-  const lastBaseTrail = trailingSpaceOf(lastBase.text);
+  const lastBaseSpaced = lastBase.text + lastBase.sep;
+  const lastBaseStripped = stripTrailingSpace(lastBaseSpaced);
+  const lastBaseTrail = trailingSpaceOf(lastBaseSpaced);
   const lastEndsBracket = lastBaseStripped.endsWith(")");
   const firstStartsBracket = firstCarry.text.startsWith("(");
   if (!lastEndsBracket || !firstStartsBracket) return [...withTrailingSpace(baseWords), ...carried];
@@ -53,7 +56,7 @@ function joinBracketedCarriedWords(
   const firstCarryText = firstCarry.text.slice(1);
   return [
     ...baseWords.slice(0, -1),
-    { ...lastBase, text: lastBaseText },
+    wordFromSpaced({ ...lastBase, text: lastBaseText }),
     { ...firstCarry, text: firstCarryText },
     ...carried.slice(1),
   ];

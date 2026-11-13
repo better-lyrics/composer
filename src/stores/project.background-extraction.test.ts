@@ -86,8 +86,8 @@ describe("project store · background extraction on linked lines", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "Hello ", begin: 0, end: 1 },
-          { text: "(ooh)", begin: 1, end: 2 },
+          { text: "Hello", sep: " ", begin: 0, end: 1 },
+          { text: "(ooh)", sep: "", begin: 1, end: 2 },
         ],
       },
       {
@@ -98,8 +98,8 @@ describe("project store · background extraction on linked lines", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { text: "Hello ", begin: 30, end: 31.5 },
-          { text: "(ooh)", begin: 31.5, end: 33 },
+          { text: "Hello", sep: " ", begin: 30, end: 31.5 },
+          { text: "(ooh)", sep: "", begin: 31.5, end: 33 },
         ],
       },
     ]);
@@ -215,11 +215,11 @@ describe("project store · background extraction on linked lines", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ text: "Hello", begin: 0, end: 1 }],
+        words: [{ text: "Hello", sep: "", begin: 0, end: 1 }],
         backgroundText: "ooh aah",
         backgroundWords: [
-          { text: "ooh ", begin: 1, end: 1.5 },
-          { text: "aah", begin: 1.5, end: 2 },
+          { text: "ooh", sep: " ", begin: 1, end: 1.5 },
+          { text: "aah", sep: "", begin: 1.5, end: 2 },
         ],
         backgroundTextSource: "extraction",
       },
@@ -230,19 +230,19 @@ describe("project store · background extraction on linked lines", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ text: "Hello", begin: 30, end: 31 }],
+        words: [{ text: "Hello", sep: "", begin: 30, end: 31 }],
         backgroundText: "ooh aah",
         backgroundWords: [
-          { text: "ooh ", begin: 31, end: 31.5 },
-          { text: "aah", begin: 31.5, end: 32 },
+          { text: "ooh", sep: " ", begin: 31, end: 31.5 },
+          { text: "aah", sep: "", begin: 31.5, end: 32 },
         ],
         backgroundTextSource: "extraction",
       },
     ]);
 
     const edited = [
-      { text: "ooh ", begin: 1, end: 1.5 },
-      { text: "aah", begin: 1.5, end: 1.8 },
+      { text: "ooh", sep: " ", begin: 1, end: 1.5 },
+      { text: "aah", sep: "", begin: 1.5, end: 1.8 },
     ];
     useProjectStore.getState().updateLineWithHistory("a0", manualBackgroundWordEdit(edited));
 
@@ -255,7 +255,7 @@ describe("project store · background extraction on linked lines", () => {
     expect(a0?.backgroundWords?.[1].end).toBe(1.8);
     // Sibling keeps its own instance-local timing, only the word structure mirrors.
     expect(a1?.backgroundWords?.[0].begin).toBe(31);
-    expect(a1?.backgroundWords?.map((w) => w.text)).toEqual(["ooh ", "aah"]);
+    expect(a1?.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["ooh ", "aah"]);
   });
 
   it("produces a single undoable history entry covering source + sibling", () => {

@@ -13,7 +13,7 @@ describe("TimelineContextMenu selection scope", () => {
   it("offers only commands that act on the whole selection when several words are selected", async () => {
     const line = createLine({
       text: "every day",
-      words: [createWord({ text: "every ", begin: 0, end: 1 }), createWord({ text: "day", begin: 1, end: 2 })],
+      words: [createWord({ text: "every", sep: " ", begin: 0, end: 1 }), createWord({ text: "day", begin: 1, end: 2 })],
     });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({

@@ -52,7 +52,7 @@ function emitTransliterationSpans(word: WordTiming, text: string): string {
 
 function alignedTransliterationChunks(words: WordTiming[]): string[] {
   return words.map((word, index) => {
-    const text = word.transliteration?.trim() || word.text.trimEnd();
+    const text = word.transliteration?.trim() || word.text;
     if (index === words.length - 1) return emitTransliterationSpans(word, text);
     const joiner = word.transliterationJoinerAfter ?? (hasLexicalBoundaryAfter(words, index) ? "  " : " ");
     const timed = timedTransliterationSlice({ text, joinerAfter: joiner });

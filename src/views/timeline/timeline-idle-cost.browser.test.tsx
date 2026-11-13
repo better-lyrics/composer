@@ -49,8 +49,8 @@ function seedTimeline(): void {
         id: `line-${i}`,
         text: `lyric line ${i}`,
         words: [
-          createWord({ text: "lyric ", begin: i * 2, end: i * 2 + 0.5 }),
-          createWord({ text: "line ", begin: i * 2 + 0.5, end: i * 2 + 1 }),
+          createWord({ text: "lyric", sep: " ", begin: i * 2, end: i * 2 + 0.5 }),
+          createWord({ text: "line", sep: " ", begin: i * 2 + 0.5, end: i * 2 + 1 }),
           createWord({ text: `${i}`, begin: i * 2 + 1, end: i * 2 + 1.5 }),
         ],
         backgroundText: i % 4 === 0 ? "ooh" : undefined,

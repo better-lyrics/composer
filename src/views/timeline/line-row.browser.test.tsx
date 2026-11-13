@@ -11,7 +11,10 @@ import { render } from "@/test/render";
 describe("LineRow", () => {
   it("renders one word block per word on a synced line", async () => {
     const line = createLine({
-      words: [createWord({ text: "hello ", begin: 0, end: 1 }), createWord({ text: "world", begin: 1, end: 2 })],
+      words: [
+        createWord({ text: "hello", sep: " ", begin: 0, end: 1 }),
+        createWord({ text: "world", begin: 1, end: 2 }),
+      ],
     });
     useProjectStore.setState({ lines: [line] });
     const screen = await render(
@@ -177,7 +180,7 @@ describe("LineRow", () => {
     dropZone?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 100 }));
 
     await expect
-      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text))
+      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text + w.sep))
       .toEqual(["ah ", "ah"]);
     const after = useProjectStore.getState().lines[0];
     expect(after.backgroundText).toBe("ah ah");
@@ -228,7 +231,7 @@ describe("LineRow", () => {
       hitTestedEvent(zone, "dblclick");
 
       await expect
-        .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text))
+        .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text + w.sep))
         .toEqual(["ooh ", "ah"]);
     });
 

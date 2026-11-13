@@ -22,7 +22,7 @@ const chorus = createLine({
   groupId: "g1",
   instanceIdx: 0,
   templateLineIdx: 0,
-  words: [createWord({ text: "go ", begin: 3, end: 4 }), createWord({ text: "now", begin: 4, end: 5 })],
+  words: [createWord({ text: "go", sep: " ", begin: 3, end: 4 }), createWord({ text: "now", begin: 4, end: 5 })],
 });
 
 const chorusSelection: WordSelection[] = [
@@ -93,7 +93,10 @@ describe("useTimelineKeyboard · shared timing", () => {
       groupId: "g1",
       instanceIdx: 2,
       templateLineIdx: 0,
-      words: [createWord({ text: "go ", begin: 40, end: 41 }), createWord({ text: "now", begin: 41.5, end: 42.5 })],
+      words: [
+        createWord({ text: "go", sep: " ", begin: 40, end: 41 }),
+        createWord({ text: "now", begin: 41.5, end: 42.5 }),
+      ],
     });
     await armTimeline({
       lines: [chorus, createLine({ id: "e", text: "" }), sharedChorus],

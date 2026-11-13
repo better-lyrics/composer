@@ -16,7 +16,7 @@ const timedChorus = (instanceIdx: number, begin: number) =>
     id: `c${instanceIdx}`,
     text: "go now",
     words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
+      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
       createWord({ text: "now", begin: begin + 1.5, end: begin + 2 }),
     ],
     groupId: "g1",

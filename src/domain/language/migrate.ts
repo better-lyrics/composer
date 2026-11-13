@@ -4,6 +4,7 @@ import type { TransliterationTrack } from "@/domain/language/model";
 import { languageSourceText } from "@/domain/language/source-text";
 import { DASHES, normalizeTransliterationForEditing, sourceWordCount } from "@/domain/language/transliteration-format";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 
 const SOFT_MARKER = "\uE004";
@@ -11,7 +12,7 @@ const WORD_MARKER = "\uE005";
 
 function completeMappedText(sourceText: string, words?: WordTiming[]): string | null {
   if (!words?.length) return null;
-  const coveredText = words.map((word) => word.text).join("");
+  const coveredText = spacedText(words);
   if (
     sourceWordCount(coveredText) !== sourceWordCount(sourceText) ||
     languageSourceText(coveredText) !== languageSourceText(sourceText)

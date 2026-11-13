@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 /**
  * @vitest-environment node
@@ -11,7 +12,7 @@ import { useProjectStore } from "@/stores/project";
 // via reconstructLineText. A line with no words keeps text as its primary field.
 
 function w(text: string, begin: number, end: number): WordTiming {
-  return { text, begin, end };
+  return wordFromSpaced({ text, begin, end });
 }
 
 function wordSyncedLine(overrides: Partial<LooseLine> = {}): LyricLine {
@@ -37,9 +38,9 @@ describe("history writes derive text only for the lines they change", () => {
         text: "beautiful",
         agentId: "v1",
         words: [
-          { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g1" },
-          { text: "ti", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
-          { text: "ful", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+          { text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
+          { text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+          { text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
         ],
       }),
       reconcileLine({ id: "partial", text: "hello world", agentId: "v1", words: [w("hello ", 1, 1.5)] }),

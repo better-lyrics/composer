@@ -53,9 +53,9 @@ function wordSplitOffsets(words: readonly WordTiming[], plain: string): Set<numb
   const offsets = new Set<number>();
   let at = plain.length - plain.trimStart().length;
   for (const word of words) {
-    const content = word.text.trimEnd();
-    if (content === "" || content.trim() !== content || !plain.startsWith(word.text, at)) return null;
-    at += word.text.length;
+    const spaced = word.text + word.sep;
+    if (word.text === "" || word.text.trim() !== word.text || !plain.startsWith(spaced, at)) return null;
+    at += spaced.length;
     if (!isSpace(plain[at - 1]) && at < plain.length) offsets.add(at);
   }
   return offsets;
@@ -130,8 +130,8 @@ function wordSplitPoints(words: readonly WordTiming[], plain: string, offsets: R
   let at = plain.length - plain.trimStart().length;
   return words.map((word) => {
     const start = at;
-    at += word.text.length;
-    const contentEnd = start + word.text.trimEnd().length;
+    at += word.text.length + word.sep.length;
+    const contentEnd = start + word.text.length;
     return [...offsets].filter((offset) => offset > start && offset < contentEnd).map((offset) => offset - start);
   });
 }
@@ -190,7 +190,12 @@ function withEvenSyllableSplits(
     if (!mainTargets || !backgroundTargets) return null;
     for (const start of starts) {
       const copy = lines[start + offset];
-      const evened = evenedTrack(evenedTrack(copy, MAIN_TRACK, mainTargets, splitChar), BACKGROUND_TRACK, backgroundTargets, splitChar);
+      const evened = evenedTrack(
+        evenedTrack(copy, MAIN_TRACK, mainTargets, splitChar),
+        BACKGROUND_TRACK,
+        backgroundTargets,
+        splitChar,
+      );
       result[start + offset] = evened;
     }
   }

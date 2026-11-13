@@ -6,6 +6,7 @@ import { hasAnyTiming } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { matchAllLineHeaders, matchAllWordTags, rawLyricContent, stripWordTags } from "@/domain/lyrics-file/qrc-syntax";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { type SpacedWord, spacedText, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import {
   MS_PER_SECOND,
@@ -70,14 +71,14 @@ function toSeconds(beginMs: string, durationMs: string): { begin: number; end: n
 // A word tag trails the word it times, so each word is the slice between the
 // previous tag and this one. Whatever follows the last tag is the residue.
 function parseWords(body: string): QrcLineBody {
-  const words: WordTiming[] = [];
+  const words: SpacedWord[] = [];
   let cursor = 0;
   for (const match of matchAllWordTags(body)) {
     const { begin, end } = toSeconds(match[1], match[2]);
     words.push({ text: body.slice(cursor, match.index), begin, end });
     cursor = match.index + match[0].length;
   }
-  return { words, residue: body.slice(cursor) };
+  return { words: wordsFromSpaced(words), residue: body.slice(cursor) };
 }
 
 function tokenizeLines(lyricContent: string): QrcLine[] {
@@ -99,7 +100,7 @@ function tokenizeLines(lyricContent: string): QrcLine[] {
       end,
       words,
       text: reconstructLineText(words, splitChar),
-      plainText: words.map((word) => word.text).join(""),
+      plainText: spacedText(words),
     };
   });
 }

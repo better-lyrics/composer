@@ -15,8 +15,8 @@ import { describe, expect, it } from "vitest";
 describe("WordTrack selection stretch", () => {
   it("commits a left-anchored stretch from the right edge of the last selected word", async () => {
     const words = [
-      createWord({ text: "我 ", begin: 0, end: 1 }),
-      createWord({ text: "爱 ", begin: 1, end: 2 }),
+      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
+      createWord({ text: "爱", sep: " ", begin: 1, end: 2 }),
       createWord({ text: "你", begin: 5, end: 6 }),
     ];
     const { blocks } = await renderStretchTrack(words, [0, 1]);
@@ -35,8 +35,8 @@ describe("WordTrack selection stretch", () => {
 
   it("previews live in the store during the drag and settles on release", async () => {
     const words = [
-      createWord({ text: "我 ", begin: 0, end: 1 }),
-      createWord({ text: "爱 ", begin: 1, end: 2 }),
+      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
+      createWord({ text: "爱", sep: " ", begin: 1, end: 2 }),
       createWord({ text: "你", begin: 5, end: 6 }),
     ];
     const { blocks } = await renderStretchTrack(words, [0, 1]);
@@ -55,8 +55,8 @@ describe("WordTrack selection stretch", () => {
 
   it("commits a right-anchored stretch from the left edge of the first selected word", async () => {
     const words = [
-      createWord({ text: "前 ", begin: 0, end: 1 }),
-      createWord({ text: "爱 ", begin: 2, end: 3 }),
+      createWord({ text: "前", sep: " ", begin: 0, end: 1 }),
+      createWord({ text: "爱", sep: " ", begin: 2, end: 3 }),
       createWord({ text: "你", begin: 3, end: 4 }),
     ];
     const { blocks } = await renderStretchTrack(words, [1, 2]);
@@ -74,7 +74,10 @@ describe("WordTrack selection stretch", () => {
   });
 
   it("keeps plain resize for a single selected block (no stretch writes)", async () => {
-    const words = [createWord({ text: "我 ", begin: 0, end: 1 }), createWord({ text: "爱", begin: 1, end: 2 })];
+    const words = [
+      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
+      createWord({ text: "爱", begin: 1, end: 2 }),
+    ];
     let resizeCommitted = false;
     const { blocks, original } = await renderStretchTrack(words, [1], {
       onUpdateWord: () => {
@@ -92,8 +95,8 @@ describe("WordTrack selection stretch", () => {
 
   it("restores the snapshot when Escape cancels the drag", async () => {
     const words = [
-      createWord({ text: "我 ", begin: 0, end: 1 }),
-      createWord({ text: "爱 ", begin: 1, end: 2 }),
+      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
+      createWord({ text: "爱", sep: " ", begin: 1, end: 2 }),
       createWord({ text: "你", begin: 5, end: 6 }),
     ];
     const { blocks, original } = await renderStretchTrack(words, [0, 1]);
@@ -108,8 +111,8 @@ describe("WordTrack selection stretch", () => {
 
   it("commits nothing when the pointer never crosses the drag threshold", async () => {
     const words = [
-      createWord({ text: "我 ", begin: 0, end: 1 }),
-      createWord({ text: "爱 ", begin: 1, end: 2 }),
+      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
+      createWord({ text: "爱", sep: " ", begin: 1, end: 2 }),
       createWord({ text: "你", begin: 5, end: 6 }),
     ];
     const { blocks, original } = await renderStretchTrack(words, [0, 1]);
@@ -121,7 +124,7 @@ describe("WordTrack selection stretch", () => {
 
   it("snaps the dragged edge onto an unselected neighbour boundary when snapping is on", async () => {
     const words = [
-      createWord({ text: "我 ", begin: 0, end: 1 }),
+      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
       createWord({ text: "爱", begin: 1, end: 2 }),
       createWord({ text: "远", begin: 5, end: 6 }),
     ];
@@ -142,8 +145,8 @@ describe("WordTrack selection stretch", () => {
 
   it("keeps an external mid-drag lines write instead of restoring the snapshot", async () => {
     const words = [
-      createWord({ text: "我 ", begin: 0, end: 1 }),
-      createWord({ text: "爱 ", begin: 1, end: 2 }),
+      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
+      createWord({ text: "爱", sep: " ", begin: 1, end: 2 }),
       createWord({ text: "你", begin: 5, end: 6 }),
     ];
     const { blocks } = await renderStretchTrack(words, [0, 1]);
@@ -166,8 +169,8 @@ describe("WordTrack selection stretch", () => {
 
   it("renders grips on the outer edges of a multi-block selection", async () => {
     const words = [
-      createWord({ text: "我 ", begin: 0, end: 1 }),
-      createWord({ text: "爱 ", begin: 1, end: 2 }),
+      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
+      createWord({ text: "爱", sep: " ", begin: 1, end: 2 }),
       createWord({ text: "你", begin: 5, end: 6 }),
     ];
     const { blocks } = await renderStretchTrack(words, [0, 1]);
@@ -183,7 +186,10 @@ describe("WordTrack selection stretch", () => {
   });
 
   it("renders no grips for a single-block selection", async () => {
-    const words = [createWord({ text: "我 ", begin: 0, end: 1 }), createWord({ text: "爱", begin: 1, end: 2 })];
+    const words = [
+      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
+      createWord({ text: "爱", begin: 1, end: 2 }),
+    ];
     const { blocks } = await renderStretchTrack(words, [1]);
 
     expect(gripEdge(blocks[1], "left")).toBeNull();

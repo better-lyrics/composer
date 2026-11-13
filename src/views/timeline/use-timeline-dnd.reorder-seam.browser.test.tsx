@@ -25,9 +25,9 @@ describe("useTimelineDnd · within-track reorder seam", () => {
           text: "word1 word2 word3",
           agentId: "v1",
           words: [
-            { text: "word1 ", begin: 0, end: 0.5 },
-            { text: "word2 ", begin: 1, end: 1.5 },
-            { text: "word3", begin: 2, end: 2.5 },
+            { text: "word1", sep: " ", begin: 0, end: 0.5 },
+            { text: "word2", sep: " ", begin: 1, end: 1.5 },
+            { text: "word3", sep: "", begin: 2, end: 2.5 },
           ],
         },
       ],
@@ -53,8 +53,8 @@ describe("useTimelineDnd · within-track reorder seam", () => {
     expect(computeSyllableGroups(words)).toEqual([]);
 
     const word3 = words.find((w) => w.text.trim() === "word3");
-    expect(word3?.text).toBe("word3 ");
-    expect(words[words.length - 1].text.endsWith(" ")).toBe(false);
+    expect(word3).toMatchObject({ text: "word3", sep: " " });
+    expect(words[words.length - 1].sep.endsWith(" ")).toBe(false);
 
     expect(words.map((w) => w.text.trim())).toEqual(["word1", "word3", "word2"]);
   });

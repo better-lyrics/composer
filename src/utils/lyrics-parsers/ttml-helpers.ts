@@ -1,3 +1,4 @@
+import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Constants ----------------------------------------------------------------
@@ -80,7 +81,7 @@ function readExplicitFlag(el: Element): boolean {
 }
 
 function extractTimedWords(parent: Element, excludeContainer?: Element | null): WordTiming[] {
-  const words: WordTiming[] = [];
+  const words: SpacedWord[] = [];
 
   for (const node of parent.childNodes) {
     if (node.nodeType === Node.ELEMENT_NODE) {
@@ -96,7 +97,7 @@ function extractTimedWords(parent: Element, excludeContainer?: Element | null): 
         const end = parseTtmlTimestamp(el.getAttribute("end") ?? "");
         const text = el.textContent ?? "";
         if (text.trim()) {
-          const word: WordTiming = { text, begin, end };
+          const word: SpacedWord = { text, begin, end };
           if (readExplicitFlag(el)) word.explicit = true;
           words.push(word);
         }
@@ -113,7 +114,7 @@ function extractTimedWords(parent: Element, excludeContainer?: Element | null): 
     }
   }
 
-  return words;
+  return wordsFromSpaced(words);
 }
 
 // -- Exports ------------------------------------------------------------------

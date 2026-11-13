@@ -25,7 +25,9 @@ describe("playPlain", () => {
     useProjectStore.setState({
       activeTab: "timeline",
       groups: [createGroup({ id: "g1" })],
-      lines: [createLine({ id: "a", groupId: "g1", instanceIdx: 0, words: [{ text: "la ", begin: 10, end: 12 }] })],
+      lines: [
+        createLine({ id: "a", groupId: "g1", instanceIdx: 0, words: [{ text: "la", sep: " ", begin: 10, end: 12 }] }),
+      ],
     });
     useTimelineStore.setState({
       selectionPlayback: null,

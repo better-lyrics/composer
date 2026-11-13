@@ -85,7 +85,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
       return;
     }
 
-    const newWord: WordTiming = { text: "... ", begin: slot.begin, end: slot.end };
+    const newWord: WordTiming = { text: "...", sep: " ", begin: slot.begin, end: slot.end };
     const words = mergeWordsIntoTrack(existingWords ?? [], [newWord]);
     const newIndex = words.findIndex((w) => w.begin === newWord.begin);
 

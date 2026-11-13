@@ -14,7 +14,7 @@ const chorus = (instanceIdx: number, begin: number, secondWordOffset = 1.5) =>
     id: `c${instanceIdx}`,
     text: "go now",
     words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
+      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
       createWord({ text: "now", begin: begin + secondWordOffset, end: begin + 2 }),
     ],
     groupId: "g1",

@@ -16,7 +16,7 @@ const wordSynced = createLine({
   id: "word-synced",
   text: "Good night",
   words: [
-    { text: "Good ", begin: 4, end: 5 },
+    { text: "Good", sep: " ", begin: 4, end: 5 },
     { text: "night", begin: 5, end: 6 },
   ],
 });
@@ -91,7 +91,9 @@ describe("SyncPanel granularity switch", () => {
       setCurrentTime(1.5);
       window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, cancelable: true }));
 
-      await expect.poll(() => useProjectStore.getState().lines[0].words?.map((word) => word.text)).toEqual(["Hello "]);
+      await expect
+        .poll(() => useProjectStore.getState().lines[0].words?.map((word) => word.text + word.sep))
+        .toEqual(["Hello "]);
       const [tapped, next] = useProjectStore.getState().lines;
       expect(tapped.words?.[0].begin).toBe(1.5);
       expect(isLineSynced(tapped)).toBe(false);

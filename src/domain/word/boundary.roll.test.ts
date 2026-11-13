@@ -1,9 +1,10 @@
 import { shouldRollNeighbour } from "@/domain/word/boundary";
+import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
 
-const w = (text: string, begin: number, end: number): WordTiming => ({ text, begin, end });
+const w = (text: string, begin: number, end: number): WordTiming => wordFromSpaced({ text, begin, end });
 
 describe("shouldRollNeighbour", () => {
   const flush: WordTiming[] = [w("a ", 0, 1), w("b ", 1, 2), w("c", 2, 3)];

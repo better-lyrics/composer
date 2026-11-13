@@ -15,7 +15,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 function mappedWords(fragments: string[], start: number): WordTiming[] {
   const joiners = ["", "-", "", "  "];
   return fragments.map((transliteration, index) => ({
-    text: ["あ", "い", "う", "え ", "お"][index],
+    text: ["あ", "い", "う", "え", "お"][index],
+    sep: index === 3 ? " " : "",
     begin: start + index,
     end: start + index + 0.75,
     explicit: true,

@@ -1,8 +1,9 @@
 import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
+import { wordFromSpaced } from "@/domain/word/spaced-words";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
-const word = (text: string, begin: number, end: number) => ({ text, begin, end });
+const word = (text: string, begin: number, end: number) => wordFromSpaced({ text, begin, end });
 
 describe("shiftWords", () => {
   it("moves every word by the delta", () => {

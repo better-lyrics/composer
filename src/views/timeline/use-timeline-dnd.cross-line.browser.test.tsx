@@ -52,8 +52,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           text: "hello world",
           agentId: "v1",
           words: [
-            { text: "hello ", begin: 0.1, end: 0.5 },
-            { text: "world", begin: 0.5, end: 0.9 },
+            { text: "hello", sep: " ", begin: 0.1, end: 0.5 },
+            { text: "world", sep: "", begin: 0.5, end: 0.9 },
           ],
         },
       ],
@@ -88,11 +88,11 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           id: "l1",
           text: "hello",
           agentId: "v1",
-          words: [{ text: "hello", begin: 0.1, end: 0.4 }],
+          words: [{ text: "hello", sep: "", begin: 0.1, end: 0.4 }],
           backgroundText: "ooh aah",
           backgroundWords: [
-            { text: "ooh ", begin: 1.0, end: 1.4 },
-            { text: "aah", begin: 1.5, end: 1.9 },
+            { text: "ooh", sep: " ", begin: 1.0, end: 1.4 },
+            { text: "aah", sep: "", begin: 1.5, end: 1.9 },
           ],
           backgroundTextSource: "manual",
         },
@@ -129,15 +129,15 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           text: "alpha beta",
           agentId: "v1",
           words: [
-            { text: "alpha ", begin: 0.1, end: 0.4 },
-            { text: "beta", begin: 0.4, end: 0.7 },
+            { text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
+            { text: "beta", sep: "", begin: 0.4, end: 0.7 },
           ],
         },
         {
           id: "lB",
           text: "delta",
           agentId: "v1",
-          words: [{ text: "delta", begin: 5.0, end: 5.4 }],
+          words: [{ text: "delta", sep: "", begin: 5.0, end: 5.4 }],
         },
       ],
     });
@@ -173,15 +173,15 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           text: "alpha beta",
           agentId: "v1",
           words: [
-            { text: "alpha ", begin: 0.1, end: 0.4 },
-            { text: "beta", begin: 0.4, end: 0.7 },
+            { text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
+            { text: "beta", sep: "", begin: 0.4, end: 0.7 },
           ],
         },
         {
           id: "lB",
           text: "delta",
           agentId: "v1",
-          words: [{ text: "delta", begin: 5.0, end: 5.4 }],
+          words: [{ text: "delta", sep: "", begin: 5.0, end: 5.4 }],
         },
       ],
     });
@@ -219,8 +219,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           groupId: "g1",
           instanceIdx: 0,
           words: [
-            { text: "alpha ", begin: 0.1, end: 0.4 },
-            { text: "beta", begin: 0.4, end: 0.7 },
+            { text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
+            { text: "beta", sep: "", begin: 0.4, end: 0.7 },
           ],
         },
         {
@@ -229,12 +229,12 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           agentId: "v1",
           groupId: "g1",
           instanceIdx: 1,
-          words: [{ text: "delta", begin: 5.0, end: 5.4 }],
+          words: [{ text: "delta", sep: "", begin: 5.0, end: 5.4 }],
         },
       ],
     });
     const lines = useProjectStore.getState().lines;
-    const before = lines.map((l) => l.words?.map((w) => w.text).join("|"));
+    const before = lines.map((l) => l.words?.map((w) => w.text + w.sep).join("|"));
     const baseline = toast.getHistory().length;
     const { result } = await renderHook(() => useTimelineDnd(lines));
 
@@ -252,7 +252,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
       deltaY: 0,
     });
 
-    const after = useProjectStore.getState().lines.map((l) => l.words?.map((w) => w.text).join("|"));
+    const after = useProjectStore.getState().lines.map((l) => l.words?.map((w) => w.text + w.sep).join("|"));
     expect(after).toEqual(before);
     const fired = toast.getHistory().slice(baseline);
     expect(fired.some((t) => "title" in t && /Detach the line first/.test(String(t.title)))).toBe(true);
@@ -266,8 +266,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           text: "alpha beta",
           agentId: "v1",
           words: [
-            { text: "alpha ", begin: 0.1, end: 0.4 },
-            { text: "beta", begin: 0.4, end: 0.7 },
+            { text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
+            { text: "beta", sep: "", begin: 0.4, end: 0.7 },
           ],
         },
         {
@@ -312,15 +312,15 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           text: "alpha beta",
           agentId: "v1",
           words: [
-            { text: "alpha ", begin: 0.1, end: 0.4 },
-            { text: "beta", begin: 0.4, end: 0.7 },
+            { text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
+            { text: "beta", sep: "", begin: 0.4, end: 0.7 },
           ],
         },
         {
           id: "lB",
           text: "delta",
           agentId: "v1",
-          words: [{ text: "delta", begin: 6.0, end: 6.6 }],
+          words: [{ text: "delta", sep: "", begin: 6.0, end: 6.6 }],
         },
       ],
     });
@@ -357,8 +357,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           text: "hello world",
           agentId: "v1",
           words: [
-            { text: "hello ", begin: 0.1, end: 0.5 },
-            { text: "world", begin: 0.5, end: 0.9 },
+            { text: "hello", sep: " ", begin: 0.1, end: 0.5 },
+            { text: "world", sep: "", begin: 0.5, end: 0.9 },
           ],
         },
       ],
@@ -392,9 +392,9 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           id: "l1",
           text: "hello",
           agentId: "v1",
-          words: [{ text: "hello", begin: 0.1, end: 0.4 }],
+          words: [{ text: "hello", sep: "", begin: 0.1, end: 0.4 }],
           backgroundText: "ooh",
-          backgroundWords: [{ text: "ooh", begin: 1.0, end: 1.4 }],
+          backgroundWords: [{ text: "ooh", sep: "", begin: 1.0, end: 1.4 }],
           backgroundTextSource: "manual",
         },
       ],
@@ -429,15 +429,15 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           text: "alpha beta",
           agentId: "v1",
           words: [
-            { text: "alpha ", begin: 0.1, end: 0.4 },
-            { text: "beta", begin: 0.4, end: 0.7 },
+            { text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
+            { text: "beta", sep: "", begin: 0.4, end: 0.7 },
           ],
         },
         {
           id: "lB",
           text: "delta",
           agentId: "v1",
-          words: [{ text: "delta", begin: 5.0, end: 5.4 }],
+          words: [{ text: "delta", sep: "", begin: 5.0, end: 5.4 }],
         },
       ],
     });
@@ -499,8 +499,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             groupId: "g1",
             instanceIdx: 0,
             words: [
-              { text: "alpha ", begin: 0.1, end: 0.4 },
-              { text: "beta", begin: 0.4, end: 0.7 },
+              { text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
+              { text: "beta", sep: "", begin: 0.4, end: 0.7 },
             ],
           },
           {
@@ -510,8 +510,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             groupId: "g1",
             instanceIdx: 1,
             words: [
-              { text: "alpha ", begin: 5.1, end: 5.4 },
-              { text: "beta", begin: 5.4, end: 5.7 },
+              { text: "alpha", sep: " ", begin: 5.1, end: 5.4 },
+              { text: "beta", sep: "", begin: 5.4, end: 5.7 },
             ],
           },
         ],
@@ -552,8 +552,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             groupId: "g1",
             instanceIdx: 0,
             words: [
-              { text: "alpha ", begin: 0.1, end: 0.4 },
-              { text: "beta", begin: 0.4, end: 0.7 },
+              { text: "alpha", sep: " ", begin: 0.1, end: 0.4 },
+              { text: "beta", sep: "", begin: 0.4, end: 0.7 },
             ],
           },
           {
@@ -563,8 +563,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             groupId: "g1",
             instanceIdx: 0,
             words: [
-              { text: "gamma ", begin: 1.0, end: 1.4 },
-              { text: "delta", begin: 1.4, end: 1.7 },
+              { text: "gamma", sep: " ", begin: 1.0, end: 1.4 },
+              { text: "delta", sep: "", begin: 1.4, end: 1.7 },
             ],
           },
           {
@@ -574,8 +574,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             groupId: "g1",
             instanceIdx: 1,
             words: [
-              { text: "alpha ", begin: 10.1, end: 10.4 },
-              { text: "beta", begin: 10.4, end: 10.7 },
+              { text: "alpha", sep: " ", begin: 10.1, end: 10.4 },
+              { text: "beta", sep: "", begin: 10.4, end: 10.7 },
             ],
           },
           {
@@ -585,8 +585,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             groupId: "g1",
             instanceIdx: 1,
             words: [
-              { text: "gamma ", begin: 11.0, end: 11.4 },
-              { text: "delta", begin: 11.4, end: 11.7 },
+              { text: "gamma", sep: " ", begin: 11.0, end: 11.4 },
+              { text: "delta", sep: "", begin: 11.4, end: 11.7 },
             ],
           },
         ],

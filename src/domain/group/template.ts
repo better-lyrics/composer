@@ -13,6 +13,7 @@ interface LinkGroup {
 
 interface WordTemplate {
   text: string;
+  sep: string;
   relativeBegin: number;
   relativeEnd: number;
   explicit?: true;

@@ -1,5 +1,6 @@
 import { splitCjkPart } from "@/domain/alignment/cjk";
 import type { WordTiming } from "@/domain/word/timing";
+import { splitTrailingWhitespace } from "insync/from-words";
 import { nanoid } from "nanoid";
 
 // -- Types --------------------------------------------------------------------
@@ -56,9 +57,8 @@ function groupTimedWords(timings: readonly WordTiming[]): AlignmentWord[] {
   const words: AlignmentWord[] = [];
   let current: string[] = [];
   for (let i = 0; i < timings.length; i++) {
-    const text = timings[i].text;
-    current.push(text.trimEnd());
-    const trailingSpace = /\s$/.test(text);
+    current.push(timings[i].text);
+    const trailingSpace = timings[i].sep !== "";
     if (trailingSpace || i === timings.length - 1) {
       words.push({ text: current.join(""), parts: current, trailingSpace });
       current = [];
@@ -111,7 +111,12 @@ function timingsFromParts(
     const groupId = pieces.length > 1 ? nanoid(8) : undefined;
     pieces.forEach((piece, k) => {
       const text = k === pieces.length - 1 && trailingSpace ? `${piece.text} ` : piece.text;
-      timings.push({ text, begin: piece.begin, end: piece.end, ...(groupId ? { syllableGroupId: groupId } : {}) });
+      timings.push({
+        ...splitTrailingWhitespace(text),
+        begin: piece.begin,
+        end: piece.end,
+        ...(groupId ? { syllableGroupId: groupId } : {}),
+      });
     });
   }
   return timings;

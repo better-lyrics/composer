@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 
 const line: LyricLine = { id: "a", text: "hello", agentId: "v1" };
 
-const bgWord: WordTiming = { text: "ooh", begin: 1.2, end: 1.8 };
+const bgWord: WordTiming = { text: "ooh", sep: "", begin: 1.2, end: 1.8 };
 
 describe("backgroundFields", () => {
   it("stamps the provenance flag alongside the text", () => {
@@ -136,8 +136,8 @@ describe("applyBackground immutability and field preservation", () => {
       text: "hello world",
       agentId: "v1",
       words: [
-        { text: "hello ", begin: 0, end: 0.5 },
-        { text: "world", begin: 0.5, end: 1 },
+        { text: "hello", sep: " ", begin: 0, end: 0.5 },
+        { text: "world", sep: "", begin: 0.5, end: 1 },
       ],
     };
     const result = applyBackground(wordSynced, { text: "ooh", source: "manual" });
@@ -189,8 +189,8 @@ describe("applyBackground overwriting", () => {
 describe("manualBackgroundWordEdit", () => {
   it("stamps source manual and keeps the word array intact", () => {
     const words: WordTiming[] = [
-      { text: "ooh ", begin: 0, end: 0.5 },
-      { text: "aah", begin: 0.5, end: 1 },
+      { text: "ooh", sep: " ", begin: 0, end: 0.5 },
+      { text: "aah", sep: "", begin: 0.5, end: 1 },
     ];
     const fields = manualBackgroundWordEdit(words);
     expect(fields.backgroundWords).toEqual(words);
@@ -199,16 +199,16 @@ describe("manualBackgroundWordEdit", () => {
 
   it("derives backgroundText coherently from the word array", () => {
     const fields = manualBackgroundWordEdit([
-      { text: "ooh ", begin: 0, end: 0.5 },
-      { text: "aah", begin: 0.5, end: 1 },
+      { text: "ooh", sep: " ", begin: 0, end: 0.5 },
+      { text: "aah", sep: "", begin: 0.5, end: 1 },
     ]);
     expect(fields.backgroundText).toBe("ooh aah");
   });
 
   it("reinserts the split character between syllables with no trailing space", () => {
     const fields = manualBackgroundWordEdit([
-      { text: "oh", begin: 0, end: 0.5 },
-      { text: "oh", begin: 0.5, end: 1 },
+      { text: "oh", sep: "", begin: 0, end: 0.5 },
+      { text: "oh", sep: "", begin: 0.5, end: 1 },
     ]);
     expect(fields.backgroundText).toBe("oh|oh");
   });

@@ -2,6 +2,7 @@ import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { type ParseIssue, type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -42,7 +43,7 @@ function parseInlineWordTags(text: string, lineBegin: number): InlineWordParseRe
 
   if (markers.length === 0) return null;
 
-  const words: WordTiming[] = [];
+  const words: SpacedWord[] = [];
 
   const leadingText = text.substring(0, markers[0].matchStart);
   if (leadingText.trim().length > 0) {
@@ -65,7 +66,8 @@ function parseInlineWordTags(text: string, lineBegin: number): InlineWordParseRe
 
   if (words.length === 0) return null;
 
-  return { cleanText: reconstructLineText(words, getSplitCharacter()), words };
+  const timed = wordsFromSpaced(words);
+  return { cleanText: reconstructLineText(timed, getSplitCharacter()), words: timed };
 }
 
 function applyMetadataTag(metadata: Partial<ProjectMetadata>, tag: string, rawValue: string): void {

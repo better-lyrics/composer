@@ -1,8 +1,10 @@
+import { splitTrailingWhitespace } from "insync/from-words";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Field policy for WordTiming creation flows -------------------------------
 //
-//   text             per-word, comes from source/import context
+//   text, sep        per-word, comes from source/import context; a split piece
+//                    takes its own trailing whitespace as sep
 //   begin, end       positional, computed from context
 //   explicit         source-positional: copied from the source word in matched/split flows;
 //                    set explicitly when user marks
@@ -21,6 +23,7 @@ import type { WordTiming } from "@/domain/word/timing";
 
 interface BracketedSynthesisInput {
   text: string;
+  sep: string;
   begin: number;
   end: number;
   leftBracket?: WordTiming;
@@ -41,7 +44,7 @@ function cloneWord(source: WordTiming, overrides: Partial<WordTiming>): WordTimi
 }
 
 function synthesizeBracketedWord(input: BracketedSynthesisInput): WordTiming {
-  const { text, begin, end, leftBracket, rightBracket, explicit } = input;
+  const { text, sep, begin, end, leftBracket, rightBracket, explicit } = input;
   const leftId = leftBracket?.syllableGroupId;
   const rightId = rightBracket?.syllableGroupId;
   const inheritedGroupId =
@@ -50,7 +53,7 @@ function synthesizeBracketedWord(input: BracketedSynthesisInput): WordTiming {
       : rightId !== undefined && leftBracket === undefined
         ? rightId
         : undefined;
-  const result: WordTiming = { text, begin, end };
+  const result: WordTiming = { text, sep, begin, end };
   if (explicit) result.explicit = true;
   if (inheritedGroupId !== undefined) result.syllableGroupId = inheritedGroupId;
   return result;
@@ -59,7 +62,7 @@ function synthesizeBracketedWord(input: BracketedSynthesisInput): WordTiming {
 function splitSourceWord(source: WordTiming, subPartitions: SubPartition[]): WordTiming[] {
   return subPartitions.map((sub) => ({
     ...source,
-    text: sub.text,
+    ...splitTrailingWhitespace(sub.text),
     begin: sub.begin,
     end: sub.end,
   }));
@@ -68,3 +71,4 @@ function splitSourceWord(source: WordTiming, subPartitions: SubPartition[]): Wor
 // -- Exports ------------------------------------------------------------------
 
 export { cloneWord, splitSourceWord, synthesizeBracketedWord };
+export type { SubPartition };

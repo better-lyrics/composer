@@ -241,8 +241,8 @@ describe("createLanguageAutoRefresh", () => {
       useProjectStore.getState().updateLine("a", {
         text: "Здравствуй, мир",
         words: [
-          { text: "Здравствуй, ", begin: 1, end: 2, transliteration: "Privet," },
-          { text: "мир", begin: 2, end: 3, transliteration: "mir" },
+          { text: "Здравствуй,", sep: " ", begin: 1, end: 2, transliteration: "Privet," },
+          { text: "мир", sep: "", begin: 2, end: 3, transliteration: "mir" },
         ],
       });
 

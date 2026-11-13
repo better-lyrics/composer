@@ -13,9 +13,9 @@ function wordSyncedLines() {
       id: "L1",
       text: "Comin' at you, baby",
       words: [
-        createWord({ text: "Comin' ", begin: 1.437, end: 2.067 }),
-        createWord({ text: "at ", begin: 2.067, end: 2.382 }),
-        createWord({ text: "you, ", begin: 2.382, end: 2.649 }),
+        createWord({ text: "Comin'", sep: " ", begin: 1.437, end: 2.067 }),
+        createWord({ text: "at", sep: " ", begin: 2.067, end: 2.382 }),
+        createWord({ text: "you,", sep: " ", begin: 2.382, end: 2.649 }),
         createWord({ text: "baby", begin: 2.649, end: 3.012 }),
       ],
     }),
