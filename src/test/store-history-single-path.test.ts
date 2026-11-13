@@ -17,6 +17,19 @@ const HISTORY_WRITE_CALL = /\b(?:commitHistory|amendCurrentStep)\(/;
 const LYRIC_FIELD = /\b(?:lines|groups|agents)\b/;
 const GENERIC_LINE_SETTER =
   /\b(?:setLines|setLinesWithHistory|updateLine|updateLineWithHistory|updateLinesWithHistory|editLines|patchLines|replaceLines)\b/;
+const BURST_INTERNALS = /\b(?:commitPendingLineEdit|applyLineUpdatesToCurrentStep|isDirtySinceHistory)\b/;
+const NAMED_COMMAND_VIEWS = [
+  "views/edit",
+  "views/languages",
+  "views/sync",
+  "views/lyrics-import-modal",
+  "views/export",
+  "views/grouping",
+  "hooks/useSyncHandlers.ts",
+  "lib/language-auto-refresh.ts",
+  "stores/alignment",
+  "utils/timing",
+];
 const LYRIC_WRITE_OWNERS = new Set(["stores/project/commit.ts", "stores/project/history-helpers.ts"]);
 const NON_LYRIC_HISTORY_WRITERS = new Map<string, string>([
   ["stores/project/beat-grid-slice.ts", "writes the beat grid only"],
@@ -76,6 +89,19 @@ describe("the Timeline changes lyrics only through named commands", () => {
     const offenders = productionSources("views/timeline").flatMap(({ relPath, code }) =>
       matchLines(code, GENERIC_LINE_SETTER).map((line) => `${relPath}:${line}`),
     );
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("the other views change lyrics only through named commands", () => {
+  it("never call the generic line setters or read the pending burst", () => {
+    const offenders = productionSources("")
+      .filter(({ relPath }) => NAMED_COMMAND_VIEWS.some((prefix) => relPath.startsWith(prefix)))
+      .flatMap(({ relPath, code }) =>
+        [...matchLines(code, GENERIC_LINE_SETTER), ...matchLines(code, BURST_INTERNALS)].map(
+          (line) => `${relPath}:${line}`,
+        ),
+      );
     expect(offenders).toEqual([]);
   });
 });
