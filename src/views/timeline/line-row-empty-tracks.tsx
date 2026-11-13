@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { IconPlus } from "@tabler/icons-react";
 import type { TimeRange } from "@/domain/group/shared-timing";
+import { placeLineAt } from "@/domain/commands/line-timing";
 import { fillEmptyTrack } from "@/domain/commands/word-structure";
 import type { LyricLine } from "@/domain/line/model";
 import { addressOf } from "@/domain/selection/resolve";
@@ -108,10 +109,7 @@ const SyncLineButton: React.FC<{ lineId: string; wordCount: number }> = ({ lineI
       const wordDuration = useSettingsStore.getState().defaultWordDuration;
       const lineDuration = Math.max(wordCount, 1) * wordDuration;
 
-      useProjectStore.getState().updateLineWithHistory(lineId, {
-        begin: currentTime,
-        end: currentTime + lineDuration,
-      });
+      useProjectStore.getState().commit(placeLineAt(lineId, currentTime, currentTime + lineDuration));
     },
     [lineId, wordCount],
   );

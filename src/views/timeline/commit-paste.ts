@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { withNewInstance } from "@/domain/group/own-timing";
+import { fillInstanceRows, pasteLines } from "@/domain/commands/instance-rows";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LineTemplate } from "@/domain/group/template";
 import { templateSourceInstance } from "@/domain/group/template-source";
@@ -61,8 +61,7 @@ async function placeInstance(
     return "no-line";
   }
   if (decision.kind === "fill") {
-    const { groups, setLinesWithHistory } = useProjectStore.getState();
-    setLinesWithHistory(decision.updatedLines, withNewInstance(groups, groupId, decision.instanceIdx));
+    useProjectStore.getState().commit(fillInstanceRows(groupId, decision.instanceIdx, decision.updatedLines));
     finishPaste();
     toast.success(successMessage);
     return "pasted";
@@ -125,7 +124,7 @@ async function commitPasteAt(target: PasteTarget): Promise<PasteOutcome> {
   const updates = applyPasteToLines({ lines, clipboard: wordsInLane, targetLineIndex: lineIndex, timeDelta, rangeOf });
   if (!updates || updates.length === 0) return "no-change";
 
-  useProjectStore.getState().updateLinesWithHistory(updates);
+  useProjectStore.getState().commit(pasteLines(updates));
   finishPaste();
   return "pasted";
 }

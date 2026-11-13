@@ -1,7 +1,7 @@
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { nudgeSelection, setWordBoundary } from "@/domain/commands/word-timing";
-import { withNewInstance } from "@/domain/group/own-timing";
+import { fillInstanceRows } from "@/domain/commands/instance-rows";
 import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
@@ -465,10 +465,7 @@ function useTimelineKeyboard(
             playheadTime: playheadAt,
           });
           if (placement.kind === "fill") {
-            projectState.setLinesWithHistory(
-              placement.updatedLines,
-              withNewInstance(projectState.groups, groupId, placement.instanceIdx),
-            );
+            projectState.commit(fillInstanceRows(groupId, placement.instanceIdx, placement.updatedLines));
             toast.success("Linked instance placed in empty rows");
           } else if (placement.kind === "insert") {
             projectState.addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);

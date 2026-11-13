@@ -1,4 +1,4 @@
-import { withNewInstance } from "@/domain/group/own-timing";
+import { conformToInstance } from "@/domain/commands/instance-rows";
 import { instanceCount } from "@/domain/instance/enumerate";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime } from "@/stores/audio";
@@ -85,10 +85,7 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
         toast.error(result.reason ? CONFORM_FAILURE_MESSAGE[result.reason] : "Could not conform those lines");
         return;
       }
-      projectState.setLinesWithHistory(
-        result.updatedLines,
-        withNewInstance(projectState.groups, groupId, result.instanceIdx),
-      );
+      projectState.commit(conformToInstance(groupId, result.instanceIdx, result.updatedLines));
       showGroupActionToast(`Conformed ${pluralize(count, "line")} to "${option.group.label}"`);
     },
     [conformableSelection, confirm, clearContextMenu],

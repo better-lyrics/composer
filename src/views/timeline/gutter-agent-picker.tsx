@@ -1,3 +1,4 @@
+import { assignSinger } from "@/domain/commands/singer";
 import { agentDisplayName } from "@/domain/agent/display-name";
 import { getAgentColor } from "@/domain/agent/colors";
 import { nextAgentId } from "@/domain/agent/next-agent-id";
@@ -27,18 +28,17 @@ interface GutterAgentPickerProps {
 const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex, agentId, numberHeight }) => {
   const agents = useProjectStore((s) => s.agents);
   const addAgent = useProjectStore((s) => s.addAgent);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const [newAgentName, setNewAgentName] = useState("");
 
   const handleAssign = useCallback(
     (newAgentId: string, close: () => void) => {
       if (newAgentId !== agentId) {
-        updateLineWithHistory(lineId, { agentId: newAgentId });
+        useProjectStore.getState().commit(assignSinger(lineId, newAgentId));
         noteGuideSignal("edit.singer");
       }
       close();
     },
-    [lineId, agentId, updateLineWithHistory],
+    [lineId, agentId],
   );
 
   const handleAddNew = useCallback(
@@ -46,12 +46,12 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
       if (!newAgentName.trim()) return;
       const newId = nextAgentId(agents);
       addAgent({ id: newId, type: "person", name: newAgentName.trim() });
-      updateLineWithHistory(lineId, { agentId: newId });
+      useProjectStore.getState().commit(assignSinger(lineId, newId));
       noteGuideSignal("edit.singer");
       setNewAgentName("");
       close();
     },
-    [lineId, agents, newAgentName, addAgent, updateLineWithHistory],
+    [lineId, agents, newAgentName, addAgent],
   );
 
   return (
