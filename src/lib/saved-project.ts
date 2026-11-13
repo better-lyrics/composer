@@ -2,6 +2,15 @@ import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
+import {
+  type V3LanguageFields,
+  type V3Piece,
+  languagesFromV3,
+  v3Languages,
+  v3PiecesOf,
+  v3WordPieces,
+  withoutV3Piece,
+} from "@/domain/language/v3-languages";
 import { withTrailingJoinFromText } from "@/domain/line/line-from-fields";
 import { type LineFields, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { withSplitMarksFromWords } from "@/domain/line/reconstruct-text";
@@ -20,13 +29,16 @@ import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
-// A line as saved in a version 3 record or link: words keep their separator inside `text`.
-type SavedLine = Omit<LineFields, "backgroundWords"> & {
-  words?: SpacedWord[];
-  backgroundWords?: SpacedWord[];
-  begin?: number;
-  end?: number;
-};
+type SavedWord = SpacedWord & V3Piece;
+
+// A line as saved in a version 3 record or link: words keep their separator inside `text` and their reading.
+type SavedLine = Omit<LineFields, "backgroundWords" | "languages"> &
+  V3LanguageFields & {
+    words?: SavedWord[];
+    backgroundWords?: SavedWord[];
+    begin?: number;
+    end?: number;
+  };
 
 interface SavedProject {
   version: 1 | 2 | 3;
@@ -82,12 +94,16 @@ class NewerProjectError extends Error {
 // -- Lines ----------------------------------------------------------------------
 
 // Ids are session-only: anything already on saved words came from outside and is never trusted.
-function wordsFromSaved(words: readonly SpacedWord[]): WordTiming[] {
-  return wordsFromSpaced(words.map(({ id: _id, ...word }) => word));
+function wordsFromSaved(words: readonly SavedWord[]): WordTiming[] {
+  return wordsFromSpaced(words.map(({ id: _id, ...word }) => withoutV3Piece(word)));
+}
+
+function savedWords(words: readonly WordTiming[], pieces: readonly V3Piece[] | undefined): SavedWord[] {
+  return spacedFromWords(words).map((word, index) => ({ ...word, ...pieces?.[index] }));
 }
 
 function storeLine(line: SavedLine, splitChar: string): LyricLine {
-  const { words, backgroundWords, ...fields } = line;
+  const { words, backgroundWords, translations, transliteration, ...fields } = line;
   const storeWords = words && wordsFromSaved(words);
   const storeBackgroundWords = backgroundWords && wordsFromSaved(backgroundWords);
   const text = storeWords?.length ? withSplitMarksFromWords(fields.text, storeWords, splitChar) : fields.text;
@@ -95,22 +111,32 @@ function storeLine(line: SavedLine, splitChar: string): LyricLine {
     storeBackgroundWords?.length && fields.backgroundText !== undefined
       ? withSplitMarksFromWords(fields.backgroundText, storeBackgroundWords, splitChar)
       : fields.backgroundText;
+  const mainWords = storeWords && withTrailingJoinFromText(text, storeWords);
+  const bgWords = storeBackgroundWords && withTrailingJoinFromText(backgroundText ?? "", storeBackgroundWords);
+  const languages = languagesFromV3(
+    { translations, transliteration },
+    { main: v3PiecesOf(words), bg: v3PiecesOf(backgroundWords) },
+    { words: mainWords, backgroundWords: bgWords },
+  );
   return reconcileLine({
     ...fields,
     text,
     ...(backgroundText !== undefined && { backgroundText }),
-    words: storeWords && withTrailingJoinFromText(text, storeWords),
-    ...(storeBackgroundWords && {
-      backgroundWords: withTrailingJoinFromText(backgroundText ?? "", storeBackgroundWords),
-    }),
+    words: mainWords,
+    ...(bgWords && { backgroundWords: bgWords }),
+    ...(languages && { languages }),
   });
 }
 
 function savedLine(line: LyricLine): SavedLine {
+  const { languages, ...fields } = line;
   return {
-    ...line,
-    ...(line.words && { words: spacedFromWords(line.words) }),
-    ...(line.backgroundWords && { backgroundWords: spacedFromWords(line.backgroundWords) }),
+    ...fields,
+    ...(line.words && { words: savedWords(line.words, v3WordPieces(line.words, languages, "main")) }),
+    ...(line.backgroundWords && {
+      backgroundWords: savedWords(line.backgroundWords, v3WordPieces(line.backgroundWords, languages, "bg")),
+    }),
+    ...v3Languages(languages),
   };
 }
 

@@ -15,8 +15,16 @@ function paragraphs(ttml: string): string[] {
 function translated(id: string, text: string, begin: number, translation: string, origin: "manual" | "google") {
   return {
     ...createLine({ id, text, begin, end: begin + 1 }),
-    translations: {
-      es: { language: "es", text: translation, origin, sourceFingerprint: `fp-${id}`, stale: origin === "google" },
+    languages: {
+      translations: {
+        es: {
+          language: "es",
+          main: { text: translation },
+          origin,
+          sourceFingerprint: `fp-${id}`,
+          stale: origin === "google",
+        },
+      },
     },
   } satisfies LyricLine;
 }
@@ -62,7 +70,7 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
         ["c0", "Hold me closer"],
       ]);
       expect(merged[0]).toBe(stored[1]);
-      expect(merged[1]?.translations?.es).toEqual(stored[0]?.translations?.es);
+      expect(merged[1]?.languages?.translations?.es).toEqual(stored[0]?.languages?.translations?.es);
     });
   });
 
@@ -76,7 +84,7 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
       expect(merged[0]).toBe(stored[0]);
       expect(lineText(merged[1]!)).toBe("Bravo again");
       expect(merged[1]?.id).not.toBe("b");
-      expect(merged[1]?.translations).toBeUndefined();
+      expect(merged[1]?.languages?.translations).toBeUndefined();
     });
   });
 
@@ -93,7 +101,7 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
       expect(merged.map((line) => lineText(line))).toEqual(["Delta copy", "Charlie", "Delta"]);
       expect(merged[2]).toBe(stored[1]);
       expect(merged[0]?.id).not.toBe("d");
-      expect(merged[0]?.translations).toBeUndefined();
+      expect(merged[0]?.languages?.translations).toBeUndefined();
     });
 
     it("pairs the first copy when no copy exports like the stored line", () => {
@@ -110,7 +118,7 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
         [merged[1]?.id, "Delta two"],
       ]);
       expect(merged[1]?.id).not.toBe("d");
-      expect(merged[0]?.translations?.es).toEqual(stored[0]?.translations?.es);
+      expect(merged[0]?.languages?.translations?.es).toEqual(stored[0]?.languages?.translations?.es);
     });
   });
 

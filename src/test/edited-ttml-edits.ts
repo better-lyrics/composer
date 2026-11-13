@@ -1,4 +1,5 @@
 import { expect } from "vitest";
+import { lineTranslations, lineTransliteration } from "@/domain/language/line-languages";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { lineText } from "@/domain/line/text";
@@ -85,8 +86,8 @@ function editLineText(
 ): Pick<EditCase, "edited" | "expectTaken"> {
   const words = timedSyllables(mainTrack(line));
   const expectStoredDataKept = (after: LyricLine) => {
-    expect(after.translations).toEqual(line.translations);
-    expect(after.transliteration?.origin).toBe(line.transliteration?.origin);
+    expect(lineTranslations(after)).toEqual(lineTranslations(line));
+    expect(lineTransliteration(after)?.origin).toBe(lineTransliteration(line)?.origin);
     expect(backgroundTrack(after)?.source).toBe(backgroundTrack(line)?.source);
   };
   if (isWordSynced(line)) {

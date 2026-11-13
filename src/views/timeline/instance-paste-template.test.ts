@@ -35,4 +35,27 @@ describe("instancePasteClipboard", () => {
       ]);
     });
   });
+
+  it("carries each syllable's reading", () => {
+    const source = createLine({
+      id: "a",
+      text: "海",
+      words: [{ text: "海", begin: 4, end: 5 }],
+      groupId: "g",
+      instanceIdx: 0,
+    });
+    const [sea] = source.words ?? [];
+    const transliteration = {
+      language: "ja-Latn",
+      origin: "manual" as const,
+      sourceFingerprint: "",
+      main: { text: "umi", pieces: { [sea.id]: { text: "umi" } } },
+    };
+    const lines = [{ ...source, templateLineIdx: 0, languages: { transliteration } }];
+    const clipboard = { entries: [], sourceInstance: { groupId: "g", instanceIdx: 0 } };
+
+    const placed = instancePasteClipboard(lines, [createGroup({ id: "g" })], clipboard);
+
+    expect(placed.entries.map((entry) => entry.piece)).toEqual([{ text: "umi" }]);
+  });
 });

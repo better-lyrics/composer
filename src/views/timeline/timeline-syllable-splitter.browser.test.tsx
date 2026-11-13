@@ -8,6 +8,7 @@ import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord, createWords } from "@/test/factories";
+import { legacyLine, legacyWords } from "@/test/legacy-languages";
 import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -260,7 +261,7 @@ describe("TimelineSyllableSplitter", () => {
   });
 
   it("writes manually selected transliteration boundaries back to the language track", async () => {
-    const line: LyricLine = {
+    const line: LyricLine = legacyLine({
       id: "line-transliteration-split",
       agentId: "v1",
       text: "일단은",
@@ -272,7 +273,7 @@ describe("TimelineSyllableSplitter", () => {
         origin: "google" as const,
         sourceFingerprint: "source",
       },
-    };
+    });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
       selectedWords: [storedWordAddress(line.id, 0, "word")],
@@ -288,17 +289,19 @@ describe("TimelineSyllableSplitter", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(3);
     const saved = useProjectStore.getState().lines[0];
-    expect(saved.transliteration?.text).toBe("ildan eun");
-    expect(timedSyllables(mainTrack(saved)).map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
-    expect(timedSyllables(mainTrack(saved)).map((word) => word.transliterationJoinerAfter)).toEqual([
-      "",
-      " ",
-      undefined,
-    ]);
+    expect(saved.languages?.transliteration?.main.text).toBe("ildan eun");
+    expect(
+      (legacyWords(timedSyllables(mainTrack(saved)), saved.languages) ?? []).map((word) => word.transliteration),
+    ).toEqual(["i", "ldan", "eun"]);
+    expect(
+      (legacyWords(timedSyllables(mainTrack(saved)), saved.languages) ?? []).map(
+        (word) => word.transliterationJoinerAfter,
+      ),
+    ).toEqual(["", " ", undefined]);
   });
 
   it("re-stamps a manual transliteration after a word split", async () => {
-    const line: LyricLine = {
+    const line: LyricLine = legacyLine({
       id: "line-word-split",
       agentId: "v1",
       text: "хорошо",
@@ -310,7 +313,7 @@ describe("TimelineSyllableSplitter", () => {
         origin: "manual",
         sourceFingerprint: languageSourceFingerprint("хорошо"),
       },
-    };
+    });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
       selectedWords: [storedWordAddress(line.id, 0, "word")],
@@ -324,13 +327,13 @@ describe("TimelineSyllableSplitter", () => {
     await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
     const saved = useProjectStore.getState().lines[0];
     expect(lineText(saved)).toBe("хор ошо");
-    expect(saved.transliteration?.text).toBe("khorosho");
-    expect(saved.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint("хор ошо"));
+    expect(saved.languages?.transliteration?.main.text).toBe("khorosho");
+    expect(saved.languages?.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint("хор ошо"));
     expect(getLanguageReviewTracks(saved)).toEqual([]);
   });
 
   it("keeps a literal transliteration dash when splitting into words at it", async () => {
-    const line: LyricLine = {
+    const line: LyricLine = legacyLine({
       id: "line-dash-word-split",
       agentId: "v1",
       text: "to-do",
@@ -342,7 +345,7 @@ describe("TimelineSyllableSplitter", () => {
         origin: "manual",
         sourceFingerprint: languageSourceFingerprint("to-do"),
       },
-    };
+    });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
       selectedWords: [storedWordAddress(line.id, 0, "word")],
@@ -355,12 +358,12 @@ describe("TimelineSyllableSplitter", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
     const saved = useProjectStore.getState().lines[0];
-    expect(saved.transliteration?.text).toBe("to-do");
+    expect(saved.languages?.transliteration?.main.text).toBe("to-do");
     expect(getLanguageReviewTracks(saved)).toEqual([]);
   });
 
   it("preserves a literal transliteration dash when the playhead sets the timing boundary", async () => {
-    const line: LyricLine = {
+    const line: LyricLine = legacyLine({
       id: "line-dash-split",
       agentId: "v1",
       text: "to-do",
@@ -372,7 +375,7 @@ describe("TimelineSyllableSplitter", () => {
         origin: "google",
         sourceFingerprint: "source",
       },
-    };
+    });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
       selectedWords: [storedWordAddress(line.id, 0, "word")],
@@ -386,7 +389,9 @@ describe("TimelineSyllableSplitter", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
     const result = useProjectStore.getState().lines[0];
-    expect(timedSyllables(mainTrack(result)).map((word) => word.transliteration)).toEqual(["to", "do"]);
-    expect(result.transliteration?.text).toBe("to-do");
+    expect(
+      (legacyWords(timedSyllables(mainTrack(result)), result.languages) ?? []).map((word) => word.transliteration),
+    ).toEqual(["to", "do"]);
+    expect(result.languages?.transliteration?.main.text).toBe("to-do");
   });
 });

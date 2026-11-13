@@ -1,5 +1,7 @@
 import { IconSeparatorVertical } from "@tabler/icons-react";
 import { alignTrackToLine } from "@/domain/language/align";
+import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/language/line-languages";
+import type { LineLanguage } from "@/domain/language/model";
 import { alignmentNeedsReview, isTransliterationSourceStale } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText } from "@/domain/line/text";
@@ -56,92 +58,90 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
   update,
   clearTransliteration,
   onAlign,
-}) => (
-  <div className="mt-1 flex flex-col gap-1.5 pt-2 border-t border-dashed border-(--divider)">
-    <p className="text-xs text-composer-text-muted select-none">Background</p>
-    <Field
-      label="Transliteration"
-      ariaLabel="Background transliteration"
-      mono
-      value={line.transliteration?.backgroundText ?? ""}
-      status={
-        isTransliterationSourceStale(line, "backgroundWords") ||
-        alignmentNeedsReview(line.transliteration, "background")
-          ? "review"
-          : undefined
-      }
-      error={error}
-      pasteKind="transliteration"
-      action={
-        timedSyllables(backgroundTrack(line)).length && line.transliteration?.backgroundText && !error ? (
-          <AlignButton
-            ariaLabel="Align background timing"
-            needsReview={alignmentNeedsReview(line.transliteration, "background")}
-            onClick={() => onAlign("backgroundWords")}
-          />
-        ) : null
-      }
-      onChange={(value) => {
-        const current = line.transliteration;
-        if (!value && !current?.text) {
-          clearTransliteration();
-          return;
+}) => {
+  const transliteration = lineTransliteration(line);
+  return (
+    <div className="mt-1 flex flex-col gap-1.5 pt-2 border-t border-dashed border-(--divider)">
+      <p className="text-xs text-composer-text-muted select-none">Background</p>
+      <Field
+        label="Transliteration"
+        ariaLabel="Background transliteration"
+        mono
+        value={transliteration?.bg?.text ?? ""}
+        status={
+          isTransliterationSourceStale(line, "backgroundWords") || alignmentNeedsReview(transliteration, "background")
+            ? "review"
+            : undefined
         }
-        update(
-          alignTrackToLine(line, {
-            language: `${sourceLanguage || "und"}-Latn`,
-            text: "",
-            segments: [],
-            ...current,
-            backgroundText: value,
-            backgroundSegments: value.trim()
-              ? [{ original: backgroundText(line) ?? "", transliteration: value.trim() }]
-              : [],
-            origin: "manual",
-            sourceFingerprint: fingerprint,
-            reviewedSourceFingerprint: undefined,
-            backgroundReviewedSourceFingerprint: undefined,
-          }),
-        );
-      }}
-    />
-    {targets.map((language) => {
-      const track = line.translations?.[language];
-      const name = languageNames.get(language) ?? language;
-      return (
-        <Field
-          key={language}
-          label={name}
-          ariaLabel={`Background ${name}`}
-          value={track?.backgroundText ?? ""}
-          pasteKind="translation"
-          pasteLanguage={language}
-          onChange={(value) => {
-            const translations = { ...line.translations };
-            if (!value && !track?.text) {
-              delete translations[language];
-              update({ translations });
-              return;
-            }
-            update({
-              translations: {
-                ...translations,
-                [language]: {
-                  language,
-                  text: "",
-                  ...track,
-                  backgroundText: value,
-                  origin: "manual",
-                  sourceFingerprint: fingerprint,
-                },
+        error={error}
+        pasteKind="transliteration"
+        action={
+          timedSyllables(backgroundTrack(line)).length && transliteration?.bg?.text && !error ? (
+            <AlignButton
+              ariaLabel="Align background timing"
+              needsReview={alignmentNeedsReview(transliteration, "background")}
+              onClick={() => onAlign("backgroundWords")}
+            />
+          ) : null
+        }
+        onChange={(value) => {
+          const current = transliteration;
+          if (!value && !current?.main.text) {
+            clearTransliteration();
+            return;
+          }
+          const main = current?.main ?? { text: "", segments: [] };
+          update(
+            alignTrackToLine(line, {
+              language: `${sourceLanguage || "und"}-Latn`,
+              ...current,
+              main: { ...main, reviewedSourceFingerprint: undefined },
+              bg: {
+                ...current?.bg,
+                text: value,
+                segments: value.trim() ? [{ original: backgroundText(line) ?? "", transliteration: value.trim() }] : [],
+                reviewedSourceFingerprint: undefined,
               },
-            });
-          }}
-        />
-      );
-    })}
-  </div>
-);
+              origin: "manual",
+              sourceFingerprint: fingerprint,
+            }),
+          );
+        }}
+      />
+      {targets.map((language) => {
+        const track = lineTranslations(line)?.[language];
+        const name = languageNames.get(language) ?? language;
+        return (
+          <Field
+            key={language}
+            label={name}
+            ariaLabel={`Background ${name}`}
+            value={track?.bg?.text ?? ""}
+            pasteKind="translation"
+            pasteLanguage={language}
+            onChange={(value) => {
+              const translations = { ...lineTranslations(line) };
+              if (!value && !track?.main.text) {
+                delete translations[language];
+                update(withLanguages(line, { translations }));
+                return;
+              }
+              const translation: LineLanguage = {
+                language,
+                main: { text: "" },
+                ...track,
+                bg: { ...track?.bg, text: value },
+                origin: "manual",
+                sourceFingerprint: fingerprint,
+              };
+              update(withLanguages(line, { translations: { ...translations, [language]: translation } }));
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+};
 
 // -- Exports ------------------------------------------------------------------
 

@@ -6,6 +6,7 @@ import { withoutSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { SyllableGroup } from "@/views/sync/syllable-group";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
+import type { SyllableSplitHandler } from "@/views/sync/use-syllable-splitter-state";
 import { type WordHandlers, WordRenderer } from "@/views/sync/word-renderer";
 import { IconLink } from "@tabler/icons-react";
 import { memo, useMemo } from "react";
@@ -51,7 +52,7 @@ interface ScrollableLineProps {
   onSetWordEndTime?: (wordIndex: number, newEnd: number) => void;
   onNudgeLine?: (delta: number) => void;
   onSetLineTime?: (newBegin: number) => void;
-  onSplitWord?: (wordIndex: number, newWords: WordTiming[]) => void;
+  onSplitWord?: SyllableSplitHandler;
   onNudgeBgWord?: (wordIndex: number, delta: number) => void;
   onSetBgWordTime?: (wordIndex: number, newBegin: number) => void;
   onNudgeBgWordEnd?: (wordIndex: number, delta: number) => void;

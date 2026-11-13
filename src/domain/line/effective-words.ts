@@ -1,6 +1,6 @@
-import { getLanguageDisplayLine } from "@/domain/language/display";
+import { withAlignedTransliteration } from "@/domain/language/align";
 import { mainWordEditFields } from "@/domain/line/main-words";
-import { type LyricLine, effectiveLineBrand, reconcileLine } from "@/domain/line/model";
+import { type LyricLine, effectiveLineBrand } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { trackWords } from "@/domain/line/tracks";
 import { lineTimingWordId } from "@/domain/word/id";
@@ -50,14 +50,7 @@ function isEffectiveLine(line: ReadableLine): line is EffectiveLine {
 }
 
 function computeEffectiveLine(line: LyricLine): EffectiveLine {
-  const effectiveLine = withEffectiveWords(line);
-  const display = getLanguageDisplayLine(effectiveLine, "transliteration");
-  const displayed = reconcileLine({
-    ...effectiveLine,
-    ...(display.words ? { words: display.words } : {}),
-    ...(display.backgroundWords ? { backgroundWords: display.backgroundWords } : {}),
-  });
-  return brand(displayed, timingSourceOf(line));
+  return brand(withAlignedTransliteration(withEffectiveWords(line)), timingSourceOf(line));
 }
 
 interface CachedEffectiveLine {

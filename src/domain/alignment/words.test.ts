@@ -129,7 +129,7 @@ describe("timingsFromParts", () => {
 describe("retimeWords", () => {
   it("keeps every part's metadata and only changes its times", () => {
     const existing = [
-      { id: "w1", text: "hel", sep: "", begin: 0, end: 1, transliteration: "x", joinsNext: true },
+      { id: "w1", text: "hel", sep: "", begin: 0, end: 1, explicit: true as const, joinsNext: true },
       { id: "w2", text: "lo", sep: " ", begin: 1, end: 2, joinsNext: false },
       { id: "w3", text: "you", sep: "", begin: 2, end: 3, joinsNext: false },
     ];
@@ -144,6 +144,6 @@ describe("retimeWords", () => {
       ["lo ", 5.3, 5.5],
       ["you", 6, 6.3],
     ]);
-    expect(retimed[0].transliteration).toBe("x");
+    expect([retimed[0].id, retimed[0].explicit]).toEqual(["w1", true]);
   });
 });

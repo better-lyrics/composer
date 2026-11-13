@@ -9,10 +9,12 @@ import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/mod
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
+import type { WordTiming } from "@/domain/word/timing";
 import { useChoiceStore } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { createWords } from "@/test/factories";
-import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import { legacyLine, legacyWords } from "@/test/legacy-languages";
+import { splitSyllablePieces, splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { mergeSelectedWords } from "@/views/timeline/merge-selected-words";
 
 beforeEach(() => {
@@ -63,7 +65,7 @@ describe("mergeSyllableGroupIntoWord", () => {
   });
 
   it("rejoins every transliteration fragment when collapsing a syllable group", () => {
-    const line: LyricLine = {
+    const line: LyricLine = legacyLine({
       id: "line-1",
       text: "일|단|은",
       agentId: "v1",
@@ -97,42 +99,63 @@ describe("mergeSyllableGroupIntoWord", () => {
         origin: "manual",
         sourceFingerprint: "test",
       },
-    };
+    });
     useProjectStore.getState().restoreLyrics({ lines: [line] });
 
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [1]));
 
     const merged = useProjectStore.getState().lines[0];
-    expect(timedSyllables(mainTrack(merged))).toEqual([
+    expect(legacyWords(timedSyllables(mainTrack(merged)), merged.languages)).toEqual([
       { text: "일단은", sep: "", transliteration: "ildan eun", begin: 0, end: 0.9, joinsNext: false },
     ]);
     expect(lineText(merged)).toBe("일단은");
-    expect(merged.transliteration?.text).toBe("ildan eun");
+    expect(merged.languages?.transliteration?.main.text).toBe("ildan eun");
   });
 
   it("restores an unseparated transliteration without adding a space", () => {
-    const words = splitWordIntoSyllables({
-      word: { id: "w7", text: "今日", sep: "", transliteration: "kyouhi", begin: 0, end: 1, joinsNext: true },
-      splitPoints: [1],
-      transliterationSplitPoints: [4],
+    const word: WordTiming = { id: "w7", text: "今日", sep: "", begin: 0, end: 1, joinsNext: true };
+    const words = splitWordIntoSyllables({ word, splitPoints: [1] });
+    const pieces = splitSyllablePieces({ text: "kyouhi" }, [4], words.length);
+    const line = legacyLine({
+      id: "line-1",
+      text: "今|日",
+      agentId: "v1",
+      words: words.map((syllable, index) => ({
+        ...syllable,
+        transliteration: pieces?.[index]?.text,
+        transliterationJoinerAfter: pieces?.[index]?.joinerAfter,
+      })),
+      transliteration: {
+        language: "ja-Latn",
+        text: "kyouhi",
+        segments: [],
+        origin: "manual",
+        sourceFingerprint: "test",
+      },
     });
-    useProjectStore.getState().restoreLyrics({ lines: [{ id: "line-1", text: "今|日", agentId: "v1", words }] });
-
-    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0]));
-
-    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].transliteration).toBe("kyouhi");
-  });
-
-  it("does not keep a partial transliteration when one fragment is missing", () => {
-    const line = seedGroupedLine();
-    if (!line.words) throw new Error("expected word-synced fixture");
-    timedSyllables(mainTrack(line))[0].transliteration = "beau";
-    timedSyllables(mainTrack(line))[2].transliteration = "ful";
     useProjectStore.getState().restoreLyrics({ lines: [line] });
 
     useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0]));
 
-    expect(useProjectStore.getState().lines[0].words?.[0].transliteration).toBeUndefined();
+    const merged = useProjectStore.getState().lines[0];
+    expect(legacyWords(timedSyllables(mainTrack(merged)), merged.languages)?.[0].transliteration).toBe("kyouhi");
+  });
+
+  it("does not keep a partial transliteration when one fragment is missing", () => {
+    const seeded = seedGroupedLine();
+    const [beau, ti, ful] = timedSyllables(mainTrack(seeded));
+    // A reading the syllables cannot be aligned to leaves the partial stored pieces as they are.
+    const line = legacyLine({
+      ...seeded,
+      words: [{ ...beau, transliteration: "beau" }, ti, { ...ful, transliteration: "ful" }],
+      transliteration: { language: "en-Latn", text: "x", segments: [], origin: "manual", sourceFingerprint: "test" },
+    });
+    useProjectStore.getState().restoreLyrics({ lines: [line] });
+
+    useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [0]));
+
+    const merged = useProjectStore.getState().lines[0];
+    expect(legacyWords(merged.words, merged.languages)?.[0].transliteration).toBeUndefined();
   });
 
   it("collapses the whole group when only one syllable is selected", () => {

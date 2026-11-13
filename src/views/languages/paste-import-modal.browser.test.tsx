@@ -1,6 +1,8 @@
 import { validateTransliterationAlignment } from "@/domain/language/align";
+import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { type LegacyLine, legacyView } from "@/test/legacy-languages";
 import { render } from "@/test/render";
 import { PasteImportModal } from "@/views/languages/paste-import-modal";
 import { userEvent } from "vitest/browser";
@@ -31,6 +33,11 @@ function buildProps(overrides: Partial<Props> & Pick<Props, "lines">): Props {
   };
 }
 
+function legacyLineAt(lines: readonly LyricLine[], id: string): LegacyLine | undefined {
+  const line = lines.find((candidate) => candidate.id === id);
+  return line && legacyView(line);
+}
+
 // -- Tests --------------------------------------------------------------------
 
 describe("PasteImportModal", () => {
@@ -45,11 +52,11 @@ describe("PasteImportModal", () => {
 
     expect(props.onClose).toHaveBeenCalledTimes(1);
     const updated = useProjectStore.getState().lines;
-    expect(updated.find((line) => line.id === "l0")?.transliteration).toMatchObject({
+    expect(legacyLineAt(updated, "l0")?.transliteration).toMatchObject({
       language: "ko-Latn",
       text: "Bonjour",
     });
-    expect(updated.find((line) => line.id === "l1")?.transliteration).toMatchObject({ text: "Monde" });
+    expect(legacyLineAt(updated, "l1")?.transliteration).toMatchObject({ text: "Monde" });
     const fired = toast.getHistory();
     expect(fired.some((entry) => "title" in entry && entry.title === "Imported 2 lines")).toBe(true);
   });
@@ -71,7 +78,7 @@ describe("PasteImportModal", () => {
 
     expect(props.onImportedTranslation).toHaveBeenCalledWith("en");
     const updated = useProjectStore.getState().lines;
-    expect(updated.find((line) => line.id === "l0")?.translations?.en).toMatchObject({ text: "Bonjour" });
+    expect(legacyLineAt(updated, "l0")?.translations?.en).toMatchObject({ text: "Bonjour" });
   });
 
   it("switches between transliteration and translation controls", async () => {
@@ -112,8 +119,8 @@ describe("PasteImportModal", () => {
     await screen.getByRole("button", { name: "Import 1 line" }).click();
     expect(props.onImportedTranslation).toHaveBeenCalledWith("en");
     const updated = useProjectStore.getState().lines;
-    expect(updated.find((line) => line.id === "l0")?.translations?.en).toMatchObject({ text: "Bonjour" });
-    expect(updated.find((line) => line.id === "l0")?.translations?.es).toBeUndefined();
+    expect(legacyLineAt(updated, "l0")?.translations?.en).toMatchObject({ text: "Bonjour" });
+    expect(legacyLineAt(updated, "l0")?.translations?.es).toBeUndefined();
   });
 
   it("shows a positive chip and drops blank source lines when pasted rows are shorter", async () => {
@@ -130,9 +137,9 @@ describe("PasteImportModal", () => {
     await screen.getByRole("button", { name: "Import 2 lines" }).click();
 
     const updated = useProjectStore.getState().lines;
-    expect(updated.find((line) => line.id === "l0")?.transliteration).toMatchObject({ text: "Bonjour" });
-    expect(updated.find((line) => line.id === "l2")?.transliteration).toMatchObject({ text: "Monde" });
-    expect(updated.find((line) => line.id === "l1")?.transliteration).toBeUndefined();
+    expect(legacyLineAt(updated, "l0")?.transliteration).toMatchObject({ text: "Bonjour" });
+    expect(legacyLineAt(updated, "l2")?.transliteration).toMatchObject({ text: "Monde" });
+    expect(legacyLineAt(updated, "l1")?.transliteration).toBeUndefined();
   });
 
   it("shows a warning chip for a manual mapping and lets the user fix it before importing", async () => {
@@ -157,7 +164,7 @@ describe("PasteImportModal", () => {
     await screen.getByRole("button", { name: "Import 3 lines" }).click();
 
     const updated = useProjectStore.getState().lines;
-    expect(updated.find((line) => line.id === "l2")?.transliteration).toMatchObject({ text: "C" });
+    expect(legacyLineAt(updated, "l2")?.transliteration).toMatchObject({ text: "C" });
   });
 
   describe("edge cases", () => {
@@ -183,9 +190,9 @@ describe("PasteImportModal", () => {
 
       await screen.getByRole("button", { name: "Import 1 line" }).click();
       const updated = useProjectStore.getState().lines;
-      expect(updated.find((line) => line.id === "l0")?.transliteration).toMatchObject({ text: "Uno" });
-      expect(updated.find((line) => line.id === "l1")?.transliteration).toBeUndefined();
-      expect(updated.find((line) => line.id === "l2")?.transliteration).toBeUndefined();
+      expect(legacyLineAt(updated, "l0")?.transliteration).toMatchObject({ text: "Uno" });
+      expect(legacyLineAt(updated, "l1")?.transliteration).toBeUndefined();
+      expect(legacyLineAt(updated, "l2")?.transliteration).toBeUndefined();
     });
 
     it("ignores extra pasted rows when more lines are pasted than lyric lines", async () => {
@@ -195,8 +202,8 @@ describe("PasteImportModal", () => {
 
       await screen.getByRole("button", { name: "Import 2 lines" }).click();
       const updated = useProjectStore.getState().lines;
-      expect(updated.find((line) => line.id === "l0")?.transliteration).toMatchObject({ text: "A" });
-      expect(updated.find((line) => line.id === "l1")?.transliteration).toMatchObject({ text: "B" });
+      expect(legacyLineAt(updated, "l0")?.transliteration).toMatchObject({ text: "A" });
+      expect(legacyLineAt(updated, "l1")?.transliteration).toMatchObject({ text: "B" });
     });
 
     it("disables importing when a transliteration cannot be aligned to its timing", async () => {

@@ -22,23 +22,24 @@ function lineWithTracks(
     id,
     agentId: "v1",
     text,
-    ...(transliteration
-      ? {
-          transliteration: {
-            language: "ru-Latn",
-            text: "privet",
-            segments: [],
-            origin: transliteration,
-            sourceFingerprint,
-          },
-        }
-      : {}),
-    translations: Object.fromEntries(
-      Object.entries(translations).map(([language, origin]) => [
-        language,
-        { language, text: "hello", origin, sourceFingerprint },
-      ]),
-    ),
+    languages: {
+      ...(transliteration
+        ? {
+            transliteration: {
+              language: "ru-Latn",
+              main: { text: "privet", segments: [] },
+              origin: transliteration,
+              sourceFingerprint,
+            },
+          }
+        : {}),
+      translations: Object.fromEntries(
+        Object.entries(translations).map(([language, origin]) => [
+          language,
+          { language, main: { text: "hello" }, origin, sourceFingerprint },
+        ]),
+      ),
+    },
   };
 }
 

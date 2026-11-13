@@ -1,3 +1,4 @@
+import { withKeptSyllablePieces } from "@/domain/language/pieces";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
@@ -39,10 +40,19 @@ function applyTargetsToLine(line: LyricLine, targets: SplitTarget[], splitPoints
     }
   }
 
+  const mainLanguages =
+    mainTrack && line.words && mainTrack !== line.words
+      ? { ...line, languages: withKeptSyllablePieces(line, "main", line.words, mainTrack) }
+      : line;
+  const languages =
+    bgTrack && line.backgroundWords && bgTrack !== line.backgroundWords
+      ? withKeptSyllablePieces(mainLanguages, "bg", line.backgroundWords, bgTrack)
+      : mainLanguages.languages;
   return reconcileLine({
     ...line,
     ...(mainTrack !== line.words ? { words: mainTrack } : {}),
     ...(bgTrack && bgTrack !== line.backgroundWords ? manualBackgroundWordEdit(bgTrack) : {}),
+    ...(languages !== line.languages && { languages }),
   });
 }
 

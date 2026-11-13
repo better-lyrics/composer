@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import { belongsToInstance } from "@/domain/instance/predicates";
+import { pieceOf, trackPieces } from "@/domain/language/pieces";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
@@ -27,11 +28,14 @@ function copyInstanceToClipboardAndPreview(lines: LyricLine[], groupId: string, 
 
   for (const lineIdx of instanceLineIndices) {
     const line = lines[lineIdx];
+    const lineOffset = lineIdx - minLineIndex;
     for (const word of timedSyllables(mainTrack(line))) {
-      entries.push({ word: { ...word }, lineOffset: lineIdx - minLineIndex, trackType: "word" });
+      const piece = pieceOf(trackPieces(line, "main"), word);
+      entries.push({ word: { ...word }, lineOffset, trackType: "word", ...(piece && { piece }) });
     }
     for (const word of timedSyllables(backgroundTrack(line))) {
-      entries.push({ word: { ...word }, lineOffset: lineIdx - minLineIndex, trackType: "bg" });
+      const piece = pieceOf(trackPieces(line, "bg"), word);
+      entries.push({ word: { ...word }, lineOffset, trackType: "bg", ...(piece && { piece }) });
     }
   }
 

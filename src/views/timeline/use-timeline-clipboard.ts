@@ -1,3 +1,4 @@
+import { languageSide, pieceOf, trackPieces } from "@/domain/language/pieces";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import { trackWords } from "@/domain/line/tracks";
 import { resolveAddresses } from "@/domain/selection/resolve";
@@ -33,10 +34,12 @@ function useTimelineClipboard(lines: readonly ReadableLine[]) {
       const wordsArray = trackWords(line, sel.type);
       if (!wordsArray?.[sel.wordIndex]) continue;
 
+      const piece = pieceOf(trackPieces(line, languageSide(sel.type)), wordsArray[sel.wordIndex]);
       entries.push({
         word: copiedSyllable(wordsArray, sel.wordIndex, copiedByTrack.get(`${sel.lineIndex}:${sel.type}`) ?? new Set()),
         lineOffset: sel.lineIndex - minLineIndex,
         trackType: sel.type,
+        ...(piece && { piece }),
       });
     }
 

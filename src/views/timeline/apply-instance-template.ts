@@ -1,4 +1,4 @@
-import { type LineTemplate, offsetTemplateWords } from "@/domain/group/template";
+import { type LineTemplate, offsetTemplateWords, templateLanguages } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 
@@ -42,6 +42,8 @@ function applyInstanceTemplate({
   const updatedLines = lines.map((line, idx) => {
     if (idx < startIndex || idx >= endIndex) return line;
     const tplLine = template[idx - startIndex];
+    const words = tplLine.words && offsetTemplateWords(tplLine.words, instanceStart);
+    const backgroundWords = tplLine.backgroundWords && offsetTemplateWords(tplLine.backgroundWords, instanceStart);
     return reconcileLine({
       ...line,
       text: tplLine.text,
@@ -54,16 +56,13 @@ function applyInstanceTemplate({
         ? { begin: tplLine.relativeBegin + instanceStart }
         : { begin: undefined }),
       ...(tplLine.relativeEnd !== undefined ? { end: tplLine.relativeEnd + instanceStart } : { end: undefined }),
-      ...(tplLine.words ? { words: offsetTemplateWords(tplLine.words, instanceStart) } : { words: undefined }),
+      words,
       ...(tplLine.backgroundText !== undefined
         ? { backgroundText: tplLine.backgroundText }
         : { backgroundText: undefined }),
-      ...(tplLine.backgroundWords
-        ? { backgroundWords: offsetTemplateWords(tplLine.backgroundWords, instanceStart) }
-        : { backgroundWords: undefined }),
+      backgroundWords,
       backgroundTextSource: tplLine.backgroundTextSource,
-      translations: tplLine.translations && structuredClone(tplLine.translations),
-      transliteration: tplLine.transliteration && structuredClone(tplLine.transliteration),
+      languages: templateLanguages(tplLine, words, backgroundWords),
     });
   });
 

@@ -4,6 +4,7 @@ import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { mergeEditedExport, ownExportLines } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
+import { legacyLine } from "@/test/legacy-languages";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -85,7 +86,7 @@ describe("holdsEveryLine", () => {
     const stored = [
       createLine({ id: "a", text: "Hel|lo world", begin: 1, end: 2, backgroundText: "ooh" }),
       createLine({ id: "blank", text: "" }),
-      {
+      legacyLine({
         ...createLine({
           id: "b",
           text: "wo|rld",
@@ -98,7 +99,7 @@ describe("holdsEveryLine", () => {
           es: SPANISH,
           fr: { language: "fr", text: "", origin: "manual" as const, sourceFingerprint: "x" },
         },
-      },
+      }),
     ];
     expect(holdsEveryLine(stored, ownExportLines(stored))).toBe(true);
   });

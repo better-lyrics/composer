@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { TransliterationTrack } from "@/domain/language/model";
+import type { LineLanguage } from "@/domain/language/model";
 import {
   alignmentNeedsReview,
   confirmTransliterationAlignment,
@@ -8,13 +8,15 @@ import {
   getLanguageReviewTracks,
   isTransliterationSourceStale,
 } from "@/domain/language/review";
+import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
+import { legacyLine, legacyTrack } from "@/test/legacy-languages";
 
 describe("getLanguageReviewItems", () => {
   it("reports stale alternate-language tracks by line", () => {
     const lines: LyricLine[] = [
-      {
+      legacyLine({
         id: "l1",
         text: "changed lyric",
         agentId: "v1",
@@ -33,7 +35,7 @@ describe("getLanguageReviewItems", () => {
             sourceFingerprint: "old-source",
           },
         },
-      },
+      }),
     ];
 
     expect(getLanguageReviewItems(lines)).toEqual([
@@ -52,7 +54,7 @@ describe("getLanguageReviewItems", () => {
   it("ignores stale flags when the source fingerprint still matches", () => {
     const fingerprint = languageSourceFingerprint("to-do");
     const lines: LyricLine[] = [
-      {
+      legacyLine({
         id: "l1",
         text: "to-|do",
         agentId: "v1",
@@ -64,7 +66,7 @@ describe("getLanguageReviewItems", () => {
           sourceFingerprint: fingerprint,
           stale: true,
         },
-      },
+      }),
     ];
 
     expect(getLanguageReviewItems(lines)).toEqual([]);
@@ -72,15 +74,16 @@ describe("getLanguageReviewItems", () => {
 });
 
 describe("alignmentNeedsReview", () => {
-  const track = (overrides: Partial<TransliterationTrack>): TransliterationTrack => ({
-    language: "ja-Latn",
-    text: "kimi",
-    backgroundText: "sora",
-    segments: [],
-    origin: "manual",
-    sourceFingerprint: "fp",
-    ...overrides,
-  });
+  const track = (overrides: Partial<V3TransliterationTrack>): LineLanguage =>
+    legacyTrack({
+      language: "ja-Latn",
+      text: "kimi",
+      backgroundText: "sora",
+      segments: [],
+      origin: "manual",
+      sourceFingerprint: "fp",
+      ...overrides,
+    });
 
   it("flags the main part when its alignment needs review", () => {
     expect(alignmentNeedsReview(track({ alignmentStatus: "needs-review" }), "main")).toBe(true);
@@ -112,7 +115,7 @@ describe("alignmentNeedsReview", () => {
 });
 
 function reviewLine(): LyricLine {
-  return {
+  return legacyLine({
     id: "review",
     agentId: "v1",
     text: "가나",
@@ -128,15 +131,31 @@ function reviewLine(): LyricLine {
       backgroundAlignmentStatus: "inferred",
       stale: true,
     },
-  };
+  });
+}
+
+function transliterationOf(line: LyricLine): LineLanguage {
+  const track = line.languages?.transliteration;
+  if (!track) throw new Error("line has no transliteration");
+  return track;
+}
+
+function backgroundOf(line: LyricLine): NonNullable<LineLanguage["bg"]> {
+  const background = transliterationOf(line).bg;
+  if (!background) throw new Error("line has no background transliteration");
+  return background;
+}
+
+function confirmed(line: LyricLine, field: "words" | "backgroundWords"): LyricLine["languages"] {
+  return { transliteration: confirmTransliterationAlignment(line, field) };
 }
 
 describe("transliteration review", () => {
   it("distinguishes inferred alignment from alignment needing review", () => {
     const line = reviewLine();
-    line.transliteration!.sourceFingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
+    transliterationOf(line).sourceFingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
     expect(getLanguageReviewTracks(line)).toEqual([{ kind: "transliteration", reasons: ["alignment"] }]);
-    line.transliteration!.alignmentStatus = "inferred";
+    transliterationOf(line).main.alignmentStatus = "inferred";
     expect(getLanguageReviewTracks(line)).toEqual([]);
   });
 
@@ -148,42 +167,42 @@ describe("transliteration review", () => {
 
   it("acknowledges only the side that was aligned, even if the other had a confirmed mapping", () => {
     const line = reviewLine();
-    line.transliteration!.backgroundAlignmentStatus = "confirmed";
-    line.transliteration = confirmTransliterationAlignment(line, "words");
+    backgroundOf(line).alignmentStatus = "confirmed";
+    line.languages = confirmed(line, "words");
     expect(isTransliterationSourceStale(line, "words")).toBe(false);
     expect(isTransliterationSourceStale(line, "backgroundWords")).toBe(true);
-    expect(line.transliteration!.sourceFingerprint).toBe("old-source");
+    expect(transliterationOf(line).sourceFingerprint).toBe("old-source");
     expect(getLanguageReviewTracks(line)).toEqual([{ kind: "transliteration", reasons: ["source-changed"] }]);
   });
 
   it("refreshes the shared fingerprint after both sides are reviewed, in either order", () => {
     for (const first of ["words", "backgroundWords"] as const) {
       const line = reviewLine();
-      line.transliteration = confirmTransliterationAlignment(line, first);
-      line.transliteration = confirmTransliterationAlignment(line, first === "words" ? "backgroundWords" : "words");
-      expect(line.transliteration!.sourceFingerprint).toBe(
+      line.languages = confirmed(line, first);
+      line.languages = confirmed(line, first === "words" ? "backgroundWords" : "words");
+      expect(transliterationOf(line).sourceFingerprint).toBe(
         languageSourceFingerprint(lineText(line), backgroundText(line)),
       );
-      expect(line.transliteration!.reviewedSourceFingerprint).toBeUndefined();
-      expect(line.transliteration!.backgroundReviewedSourceFingerprint).toBeUndefined();
-      expect(line.transliteration!.stale).toBeUndefined();
+      expect(transliterationOf(line).main.reviewedSourceFingerprint).toBeUndefined();
+      expect(transliterationOf(line).bg?.reviewedSourceFingerprint).toBeUndefined();
+      expect(transliterationOf(line).stale).toBeUndefined();
       expect(getLanguageReviewTracks(line)).toEqual([]);
     }
   });
 
   it("does not clear an independent alignment warning when the source is already current", () => {
     const line = reviewLine();
-    line.transliteration!.sourceFingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
-    line.transliteration!.backgroundAlignmentStatus = "needs-review";
-    line.transliteration = confirmTransliterationAlignment(line, "words");
+    transliterationOf(line).sourceFingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
+    backgroundOf(line).alignmentStatus = "needs-review";
+    line.languages = confirmed(line, "words");
     expect(getLanguageReviewTracks(line)).toEqual([{ kind: "transliteration", reasons: ["alignment"] }]);
   });
 
   it("refreshes a single populated side without reviewing empty background content", () => {
     const line = reviewLine();
-    line.transliteration!.backgroundText = undefined;
-    line.transliteration = confirmTransliterationAlignment(line, "words");
-    expect(line.transliteration!.sourceFingerprint).toBe(
+    delete backgroundOf(line).text;
+    line.languages = confirmed(line, "words");
+    expect(transliterationOf(line).sourceFingerprint).toBe(
       languageSourceFingerprint(lineText(line), backgroundText(line)),
     );
     expect(getLanguageReviewTracks(line)).toEqual([]);
@@ -191,7 +210,7 @@ describe("transliteration review", () => {
 
   it("invalidates a side acknowledgement when the lyrics change again", () => {
     const line = reviewLine();
-    line.transliteration = confirmTransliterationAlignment(line, "words");
+    line.languages = confirmed(line, "words");
     line.text = "마나";
     expect(isTransliterationSourceStale(line, "words")).toBe(true);
   });

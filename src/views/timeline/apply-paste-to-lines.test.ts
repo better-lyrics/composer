@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { pieceOf } from "@/domain/language/pieces";
 import type { LyricLine } from "@/domain/line/model";
 import { newWordId } from "@/domain/word/id";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
@@ -18,6 +19,36 @@ const wholeSong = (duration: number) => timeRangeResolver([], [], duration);
 
 describe("applyPasteToLines", () => {
   describe("happy paths", () => {
+    it("gives a pasted syllable its reading on lines with and without a romanization", () => {
+      const reading = {
+        language: "ja-Latn",
+        origin: "manual" as const,
+        sourceFingerprint: "",
+        main: { text: "umi" },
+      };
+      const romanized = { ...line("l1", [], ""), languages: { transliteration: reading } };
+      const plain = line("l2", [], "");
+      const clipboard: ClipboardData = {
+        entries: [0, 1].map((lineOffset) => ({
+          word: { id: `w${lineOffset}`, text: "海", sep: "", begin: 1, end: 1.5, joinsNext: false },
+          piece: { text: "umi" },
+          lineOffset,
+          trackType: "word" as const,
+        })),
+      };
+      const updates = applyPasteToLines({
+        lines: [romanized, plain],
+        clipboard,
+        targetLineIndex: 0,
+        timeDelta: 0,
+        rangeOf: wholeSong(10),
+      });
+      const [word] = updates?.[0].updates.words ?? [];
+      expect(pieceOf(updates?.[0].updates.languages?.transliteration?.main.pieces, word)).toEqual({ text: "umi" });
+      const [plainWord] = updates?.[1].updates.words ?? [];
+      expect(pieceOf(updates?.[1].updates.languages?.heldReadings?.main, plainWord)).toEqual({ text: "umi" });
+    });
+
     it("re-derives main text from the new words after pasting onto an existing line", () => {
       const lines = [
         line(

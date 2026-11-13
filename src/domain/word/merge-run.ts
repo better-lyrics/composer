@@ -20,18 +20,6 @@ function mergeWordText(texts: string[]): string {
   return texts.map((text, index) => (index === texts.length - 1 ? text : text.trimEnd())).join("");
 }
 
-function mergedTransliteration(words: WordTiming[]): string | undefined {
-  const parts: string[] = [];
-  for (let index = 0; index < words.length; index++) {
-    const word = words[index];
-    const part = word.transliteration?.trim();
-    if (!part) return undefined;
-    if (index > 0) parts.push(words[index - 1].transliterationJoinerAfter ?? " ");
-    parts.push(part);
-  }
-  return parts.join("");
-}
-
 function runSpan(words: WordTiming[], indices: number[]): IndexSpan | null {
   if (indices.length < 2) return null;
   const start = Math.min(...indices);
@@ -67,22 +55,17 @@ function expandedToWholeGroups(words: WordTiming[], span: IndexSpan): IndexSpan 
   };
 }
 
-// A merged run ends where its last word ended, so it joins the next word only when that one did.
+// A merged run ends where its last word ended, so it joins the next word only when that one did. It keeps the
+// first word's id, which is how the run's language pieces find it.
 function mergedWord(run: WordTiming[]): WordTiming {
   const first = run[0];
   const last = run[run.length - 1];
-  const { transliteration: _transliteration, transliterationJoinerAfter: _joiner, ...rest } = first;
-  const transliteration = mergedTransliteration(run);
   return {
-    ...rest,
+    ...first,
     ...splitTrailingWhitespace(mergeWordText(run.map((word) => word.text + word.sep))),
     begin: first.begin,
     end: last.end,
     joinsNext: last.joinsNext,
-    ...(transliteration ? { transliteration } : {}),
-    ...(last.transliterationJoinerAfter !== undefined
-      ? { transliterationJoinerAfter: last.transliterationJoinerAfter }
-      : {}),
   };
 }
 
@@ -127,12 +110,4 @@ function copyMergeCover(source: WordTiming[], sourceIndices: number[], target: W
 
 // -- Exports ------------------------------------------------------------------
 
-export {
-  copyMergeCover,
-  isPartialSyllableRun,
-  isWholeSyllableGroupRun,
-  mergeWordRun,
-  mergeWordText,
-  mergedTransliteration,
-  mergedWord,
-};
+export { copyMergeCover, isPartialSyllableRun, isWholeSyllableGroupRun, mergeWordRun, mergeWordText, mergedWord };

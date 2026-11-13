@@ -1,4 +1,5 @@
 import { googleLanguageProvider, normalizeGoogleTransliteration } from "@/services/google-language-provider";
+import { legacyLine } from "@/test/legacy-languages";
 import { generatedLanguageUpdates } from "@/views/languages/generated-language-updates";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -115,7 +116,7 @@ describe("Google partial request failures", () => {
           : googleLanguageProvider.transliterate([{ id: "line", text: source }], "en");
       const result = await run();
       expect(result.lines[0]).toMatchObject({ id: "line", text: null, failed: true });
-      const line = {
+      const line = legacyLine({
         id: "line",
         agentId: "v1",
         text: source,
@@ -129,7 +130,7 @@ describe("Google partial request failures", () => {
         translations: {
           en: { language: "en", text: "keep translation", origin: "google" as const, sourceFingerprint: "old" },
         },
-      };
+      });
       const updates = generatedLanguageUpdates(line, {
         force: true,
         transliteration: {
@@ -139,8 +140,7 @@ describe("Google partial request failures", () => {
         },
         translations: [{ language: "en", main: new Map([["line", result.lines[0]]]), background: new Map() }],
       });
-      expect(updates).not.toHaveProperty("transliteration");
-      expect(updates).not.toHaveProperty("translations");
+      expect(updates).not.toHaveProperty("languages");
 
       fetchMock.mockImplementation(
         async () => new Response(JSON.stringify([[["retry value", source, "retry value"]], null, "en"])),

@@ -1,6 +1,14 @@
-import type { TransliterationAlignmentStatus, TransliterationTrack } from "@/domain/language/model";
+import { lineTransliteration, withLanguages } from "@/domain/language/line-languages";
+import type {
+  BackgroundLanguage,
+  LanguagePieces,
+  LanguageSide,
+  LineLanguage,
+  TransliterationAlignmentStatus,
+} from "@/domain/language/model";
+import { mappedTransliteration, slicedPieces, trackPieces } from "@/domain/language/pieces";
+import { withPiecesOn, withSidePieces, withTrackPieces } from "@/domain/language/side-pieces";
 import {
-  hasLexicalBoundaryAfter,
   normalizeTransliterationForEditing,
   sourceWordCount,
   splitTransliterationAtBoundaries,
@@ -8,12 +16,12 @@ import {
   transliterationWordGroups,
   twoSpaceSeparatorRegions,
 } from "@/domain/language/transliteration-format";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 
 interface TransliterationAlignmentPlan {
-  words: WordTiming[];
+  pieces: LanguagePieces | undefined;
   status: TransliterationAlignmentStatus;
   message?: string;
 }
@@ -74,25 +82,6 @@ function inferredBoundaries(value: string, slotWeights: number[]): { boundaries:
   return { boundaries, exact: false };
 }
 
-function legacyJoiner(words: WordTiming[], index: number): string {
-  return words[index].transliterationJoinerAfter ?? (hasLexicalBoundaryAfter(words, index) ? "  " : " ");
-}
-
-function mappedTransliteration(words: WordTiming[]): string | null {
-  if (!words.length || words.some((word) => word.transliteration === undefined)) return null;
-  return words
-    .map((word, index) => `${word.transliteration}${index < words.length - 1 ? legacyJoiner(words, index) : ""}`)
-    .join("");
-}
-
-function applySlices(words: WordTiming[], slices: ReturnType<typeof splitTransliterationAtBoundaries>): WordTiming[] {
-  return words.map((word, index) => ({
-    ...word,
-    transliteration: slices[index]?.text ?? "",
-    ...(index < words.length - 1 ? { transliterationJoinerAfter: slices[index]?.joinerAfter ?? "" } : {}),
-  }));
-}
-
 function groupRegions(
   text: string,
   groupCount: number,
@@ -127,23 +116,21 @@ function groupRegions(
 
 function planTransliterationAlignment(
   words: WordTiming[],
+  pieces: LanguagePieces | undefined,
   rawText: string,
   previousStatus?: TransliterationAlignmentStatus,
 ): TransliterationAlignmentPlan {
   const text = normalizeTransliterationForEditing(rawText);
   if (!text) {
-    return {
-      words: words.map(({ transliteration: _text, transliterationJoinerAfter: _joiner, ...word }) => word),
-      status: "inferred",
-    };
+    return { pieces: undefined, status: "inferred" };
   }
-  if (words.length === 0) return { words, status: "inferred" };
+  if (words.length === 0) return { pieces, status: "inferred" };
 
-  const existing = mappedTransliteration(words);
+  const existing = mappedTransliteration(words, pieces);
   if (existing !== null && normalizeTransliterationForEditing(existing) === text) {
     // Matching text preserves the mapping, but does not constitute manual review.
     return {
-      words,
+      pieces,
       status: previousStatus === "confirmed" || previousStatus === "needs-review" ? previousStatus : "inferred",
     };
   }
@@ -153,7 +140,7 @@ function planTransliterationAlignment(
   const grouped = groupRegions(text, lexicalGroups.length, groupWeights);
   if (!grouped) {
     return {
-      words,
+      pieces,
       status: "unresolved",
       message: "This transliteration doesn't match the timed syllables.",
     };
@@ -171,7 +158,7 @@ function planTransliterationAlignment(
     );
     if (!local) {
       return {
-        words,
+        pieces,
         status: "unresolved",
         message: `Word ${groupIndex + 1} has more timed syllables than the transliteration has parts.`,
       };
@@ -183,10 +170,10 @@ function planTransliterationAlignment(
 
   const slices = splitTransliterationAtBoundaries(text, allBoundaries);
   if (slices.length !== words.length) {
-    return { words, status: "unresolved", message: "Some syllables have no transliteration yet." };
+    return { pieces, status: "unresolved", message: "Some syllables have no transliteration yet." };
   }
   return {
-    words: applySlices(words, slices),
+    pieces: slicedPieces(words, slices, pieces),
     status: exact ? "inferred" : "needs-review",
   };
 }
@@ -203,76 +190,95 @@ function validateTransliterationAlignment(
   _originalText: string,
   transliteration: string,
   words?: WordTiming[],
+  pieces?: LanguagePieces,
 ): string | null {
   if (!transliteration.trim() || !words?.length) return null;
-  const plan = planTransliterationAlignment(words, transliteration);
+  const plan = planTransliterationAlignment(words, pieces, transliteration);
   return plan.status === "unresolved" ? (plan.message ?? "Press Align to match this to the timing.") : null;
 }
 
-function withAlignedTransliteration(line: LyricLine): LyricLine {
-  const track = line.transliteration;
-  if (!track) return line;
-  return {
-    ...line,
-    ...(line.words
-      ? { words: planTransliterationAlignment(line.words, timedPrefixText(line.text, line.words, track.text)).words }
-      : {}),
-    ...(line.backgroundWords
-      ? {
-          backgroundWords: planTransliterationAlignment(
-            line.backgroundWords,
-            timedPrefixText(line.backgroundText ?? "", line.backgroundWords, track.backgroundText ?? ""),
-          ).words,
-        }
-      : {}),
-  } as LyricLine;
+interface SideSource {
+  text: string;
+  words: WordTiming[] | undefined;
 }
 
-function alignTrackToLine(line: LyricLine, track: TransliterationTrack): Partial<LyricLine> {
-  // Regeneration and text edits may build a fresh track object. When its reading
-  // is unchanged, retain the old mapping's review state rather than laundering
-  // an estimated mapping through the existing-fragments shortcut.
-  const mainStatus =
-    track.alignmentStatus ??
-    (line.transliteration &&
-    normalizeTransliterationForEditing(line.transliteration.text) === normalizeTransliterationForEditing(track.text)
-      ? line.transliteration.alignmentStatus
-      : undefined);
-  const backgroundStatus =
-    track.backgroundAlignmentStatus ??
-    (line.transliteration &&
-    normalizeTransliterationForEditing(line.transliteration.backgroundText ?? "") ===
-      normalizeTransliterationForEditing(track.backgroundText ?? "")
-      ? line.transliteration.backgroundAlignmentStatus
-      : undefined);
-  const main = line.words?.length
-    ? planTransliterationAlignment(line.words, timedPrefixText(line.text, line.words, track.text), mainStatus)
-    : null;
-  const background = line.backgroundWords?.length
-    ? planTransliterationAlignment(
-        line.backgroundWords,
-        timedPrefixText(line.backgroundText ?? "", line.backgroundWords, track.backgroundText ?? ""),
-        backgroundStatus,
-      )
-    : null;
-  return {
-    transliteration: {
-      ...track,
-      alignmentStatus: main?.status ?? "inferred",
-      backgroundAlignmentStatus: track.backgroundText ? (background?.status ?? "inferred") : undefined,
-    },
-    ...(main ? { words: main.words } : {}),
-    ...(background ? { backgroundWords: background.words } : {}),
-  };
+function sideSource(line: LyricLine, side: LanguageSide): SideSource {
+  return side === "main"
+    ? { text: line.text, words: line.words }
+    : { text: line.backgroundText ?? "", words: line.backgroundWords };
+}
+
+function sidePlan(
+  line: LyricLine,
+  side: LanguageSide,
+  track: BackgroundLanguage | undefined,
+  status?: TransliterationAlignmentStatus,
+): TransliterationAlignmentPlan | null {
+  const { text, words } = sideSource(line, side);
+  if (!words?.length) return null;
+  const pieces = trackPieces(line, side);
+  return planTransliterationAlignment(words, pieces, timedPrefixText(text, words, track?.text ?? ""), status);
+}
+
+function withPlannedPieces(
+  language: LineLanguage,
+  side: LanguageSide,
+  plan: TransliterationAlignmentPlan | null,
+): LineLanguage {
+  return plan ? withTrackPieces(language, side, plan.pieces) : language;
+}
+
+function withAlignedTransliteration(line: LyricLine): LyricLine {
+  const track = lineTransliteration(line);
+  if (!track) return line;
+  const main = withPlannedPieces(track, "main", sidePlan(line, "main", track.main));
+  const aligned = withPlannedPieces(main, "bg", sidePlan(line, "bg", track.bg));
+  return aligned === track ? line : { ...line, ...withLanguages(line, { transliteration: aligned }) };
+}
+
+function sameReading(a: BackgroundLanguage | undefined, b: BackgroundLanguage | undefined): boolean {
+  return normalizeTransliterationForEditing(a?.text ?? "") === normalizeTransliterationForEditing(b?.text ?? "");
+}
+
+// Regeneration and text edits may build a fresh track object. When its reading
+// is unchanged, retain the old mapping's review state rather than laundering
+// an estimated mapping through the existing-fragments shortcut.
+function sidePlanKeepingReview(
+  line: LyricLine,
+  sideTrack: BackgroundLanguage | undefined,
+  side: LanguageSide,
+): TransliterationAlignmentPlan | null {
+  const current = lineTransliteration(line)?.[side];
+  const status = sideTrack?.alignmentStatus ?? (sameReading(current, sideTrack) ? current?.alignmentStatus : undefined);
+  return sidePlan(line, side, sideTrack, status);
+}
+
+function alignedSide<T extends BackgroundLanguage>(
+  sideTrack: T,
+  plan: TransliterationAlignmentPlan | null,
+  alignmentStatus: TransliterationAlignmentStatus | undefined,
+): T {
+  return { ...withSidePieces(sideTrack, plan ? plan.pieces : sideTrack.pieces), alignmentStatus };
+}
+
+function alignTrackToLine(line: LyricLine, track: LineLanguage): Pick<LyricLine, "languages"> {
+  const mainPlan = sidePlanKeepingReview(line, track.main, "main");
+  const main = alignedSide(track.main, mainPlan, mainPlan?.status ?? "inferred");
+  const bgPlan = sidePlanKeepingReview(line, track.bg, "bg");
+  const bg = track.bg && alignedSide(track.bg, bgPlan, track.bg.text ? (bgPlan?.status ?? "inferred") : undefined);
+  const { bg: _bg, ...rest } = track;
+  const { languages } = withLanguages(line, { transliteration: { ...rest, main, ...(bg && { bg }) } });
+  const planned = mainPlan ? withPiecesOn(languages, "main", mainPlan.pieces) : languages;
+  return { languages: bgPlan && !bg ? withPiecesOn(planned, "bg", bgPlan.pieces) : planned };
 }
 
 function withAlignedWords(line: LyricLine): LyricLine {
-  return line.transliteration ? reconcileLine({ ...line, ...alignTrackToLine(line, line.transliteration) }) : line;
+  const track = lineTransliteration(line);
+  return track ? { ...line, ...alignTrackToLine(line, track) } : line;
 }
 
 export {
   alignTrackToLine,
-  mappedTransliteration,
   planTransliterationAlignment,
   validateTransliterationAlignment,
   withAlignedTransliteration,

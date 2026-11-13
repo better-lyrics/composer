@@ -1,5 +1,5 @@
-import type { TranslationTracks, TransliterationTrack } from "@/domain/language/model";
 import { mainBounds } from "@/domain/line/bounds";
+import { mergedLanguages } from "@/domain/line/edited-ttml-languages";
 import { pairEditedLines } from "@/domain/line/edited-ttml-pairing";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isSyncableLine } from "@/domain/line/sync-progress";
@@ -8,7 +8,6 @@ import { formatTime } from "@/utils/format-time";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import { generateLineTtml } from "@/utils/ttml";
-import { hasAlternateText } from "@/utils/ttml-alternate-content";
 import { type LineKeyIds, lineKeyIds } from "@/utils/ttml-line-keys";
 
 // -- Types ------------------------------------------------------------------
@@ -66,39 +65,7 @@ function mergedWords(stored: WordTiming[] | undefined, edited: WordTiming[] | un
   });
 }
 
-function sameAlternateText(
-  stored: { text: string; backgroundText?: string } | undefined,
-  edited: { text: string; backgroundText?: string } | undefined,
-): boolean {
-  return (
-    stored !== undefined &&
-    edited !== undefined &&
-    stored.text === edited.text &&
-    (stored.backgroundText ?? "") === (edited.backgroundText ?? "")
-  );
-}
-
 // -- Field merges -------------------------------------------------------------
-
-function mergedTranslations(stored: LyricLine, edited: LyricLine): TranslationTracks | undefined {
-  const merged: TranslationTracks = {};
-  for (const [language, track] of Object.entries(stored.translations ?? {})) {
-    if (!hasAlternateText(track) && !edited.translations?.[language]) merged[language] = track;
-  }
-  for (const [language, track] of Object.entries(edited.translations ?? {})) {
-    const kept = stored.translations?.[language];
-    merged[language] = kept && sameAlternateText(kept, track) ? kept : track;
-  }
-  if (Object.keys(merged).length > 0) return merged;
-  return stored.translations && Object.keys(stored.translations).length === 0 ? stored.translations : undefined;
-}
-
-function mergedTransliteration(stored: LyricLine, edited: LyricLine): TransliterationTrack | undefined {
-  const kept = stored.transliteration;
-  const track = edited.transliteration;
-  if (!track) return kept && !hasAlternateText(kept) ? kept : undefined;
-  return kept && kept.language === track.language && sameAlternateText(kept, track) ? kept : track;
-}
 
 function hasSeededBackgroundWords(storedWords: readonly WordTiming[] | undefined, edited: LyricLine): boolean {
   const words = edited.backgroundWords;
@@ -143,17 +110,20 @@ function mergedText(stored: LyricLine, edited: LyricLine): string {
 }
 
 function fieldMergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
-  const { translations: _translations, transliteration: _transliteration, ...editedFields } = edited;
-  const translations = mergedTranslations(stored, edited);
-  const transliteration = mergedTransliteration(stored, edited);
+  const { languages: _languages, ...editedFields } = edited;
+  const background = mergedBackground(stored, edited);
+  const timing = mergedTiming(stored, edited);
+  const languages = mergedLanguages(stored, edited, {
+    words: timing.words,
+    backgroundWords: background.backgroundWords,
+  });
   return reconcileLine({
     ...editedFields,
     text: mergedText(stored, edited),
-    ...mergedBackground(stored, edited),
-    ...mergedTiming(stored, edited),
+    ...background,
+    ...timing,
     id: stored.id,
-    ...(translations ? { translations } : {}),
-    ...(transliteration ? { transliteration } : {}),
+    ...(languages ? { languages } : {}),
   });
 }
 

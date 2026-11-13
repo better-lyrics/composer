@@ -12,7 +12,7 @@ interface EditedLinePairs {
 // -- Helpers ------------------------------------------------------------------
 
 function withoutAlternates(line: LyricLine): LyricLine {
-  const { translations: _translations, transliteration: _transliteration, ...main } = line;
+  const { languages: _languages, ...main } = line;
   return main;
 }
 
@@ -31,8 +31,7 @@ function indexesByKey(editedKeys: readonly (string | undefined)[]): Map<string, 
 function withAlternatesOf(line: LyricLine, source: LyricLine): LyricLine {
   return {
     ...withoutAlternates(line),
-    ...(source.translations ? { translations: source.translations } : {}),
-    ...(source.transliteration ? { transliteration: source.transliteration } : {}),
+    ...(source.languages ? { languages: source.languages } : {}),
   };
 }
 

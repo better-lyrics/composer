@@ -5,6 +5,8 @@ type LanguageContentOrigin = "google" | "import" | "manual";
 /** Confirmed requires manual alignment; inferred is automatically accepted without a review warning. */
 type TransliterationAlignmentStatus = "confirmed" | "inferred" | "needs-review" | "unresolved";
 
+type LanguageSide = "main" | "bg";
+
 interface LanguageContentMeta {
   origin: LanguageContentOrigin;
   sourceFingerprint: string;
@@ -16,34 +18,58 @@ interface TransliterationSegment {
   transliteration: string;
 }
 
-interface TransliterationTrack extends LanguageContentMeta {
-  language: string;
+/** The reading of one syllable, and the exact separator to restore after it when syllables merge. */
+interface LanguagePiece {
+  text?: string;
+  joinerAfter?: string;
+}
+
+/** Pieces by syllable id. A cache of the track text: the text is the truth. */
+type LanguagePieces = Readonly<Record<string, LanguagePiece>>;
+
+interface TrackLanguage {
   text: string;
-  backgroundText?: string;
-  segments: TransliterationSegment[];
-  backgroundSegments?: TransliterationSegment[];
-  /** The mapping itself lives on WordTiming.transliteration. */
+  segments?: TransliterationSegment[];
+  pieces?: LanguagePieces;
   alignmentStatus?: TransliterationAlignmentStatus;
-  backgroundAlignmentStatus?: TransliterationAlignmentStatus;
-  /** Source acknowledged by manually aligning one side while the other may still be stale. */
+  /** Source acknowledged by manually aligning this side while the other may still be stale. */
   reviewedSourceFingerprint?: string;
-  backgroundReviewedSourceFingerprint?: string;
 }
 
-interface TranslationTrack extends LanguageContentMeta {
+/** Saved records can hold background segments or a status with no background text, so the text is optional here. */
+type BackgroundLanguage = Omit<TrackLanguage, "text"> & { text?: string };
+
+interface LineLanguage extends LanguageContentMeta {
   language: string;
-  text: string;
-  backgroundText?: string;
+  main: TrackLanguage;
+  bg?: BackgroundLanguage;
 }
 
-type TranslationTracks = Record<string, TranslationTrack>;
+type LineTranslations = Record<string, LineLanguage>;
+
+/** Syllable readings a saved line holds with no romanization; kept only so a save writes them back. */
+interface HeldReadings {
+  main?: LanguagePieces;
+  bg?: LanguagePieces;
+}
+
+interface LineLanguages {
+  translations?: LineTranslations;
+  transliteration?: LineLanguage;
+  heldReadings?: HeldReadings;
+}
 
 export type {
+  BackgroundLanguage,
   LanguageContentMeta,
   LanguageContentOrigin,
+  LanguagePiece,
+  LanguagePieces,
+  LanguageSide,
+  LineLanguage,
+  LineLanguages,
+  LineTranslations,
+  TrackLanguage,
   TransliterationAlignmentStatus,
-  TranslationTrack,
-  TranslationTracks,
   TransliterationSegment,
-  TransliterationTrack,
 };

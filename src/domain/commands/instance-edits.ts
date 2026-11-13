@@ -4,7 +4,7 @@ import { unlinkLines } from "@/domain/group/linking";
 import { withNewInstance, withOwnTiming } from "@/domain/group/own-timing";
 import { placeSharedInstance, realignSharedInstance } from "@/domain/group/shared-placement";
 import { wholeSongRange } from "@/domain/group/shared-timing";
-import { type LineTemplate, offsetTemplateWords } from "@/domain/group/template";
+import { type LineTemplate, offsetTemplateWords, templateLanguages } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance, isAttachedToInstance } from "@/domain/instance/predicates";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
@@ -26,6 +26,9 @@ function instanceLine(
   templateLineIdx: number,
   instanceStart: number,
 ): LyricLine {
+  const words = template.words && offsetTemplateWords(template.words, instanceStart);
+  const backgroundWords = template.backgroundWords && offsetTemplateWords(template.backgroundWords, instanceStart);
+  const languages = templateLanguages(template, words, backgroundWords);
   return reconcileLine({
     id,
     text: template.text,
@@ -35,14 +38,11 @@ function instanceLine(
     templateLineIdx,
     ...(template.relativeBegin !== undefined ? { begin: template.relativeBegin + instanceStart } : {}),
     ...(template.relativeEnd !== undefined ? { end: template.relativeEnd + instanceStart } : {}),
-    ...(template.words ? { words: offsetTemplateWords(template.words, instanceStart) } : {}),
+    ...(words ? { words } : {}),
     ...(template.backgroundText !== undefined ? { backgroundText: template.backgroundText } : {}),
-    ...(template.backgroundWords
-      ? { backgroundWords: offsetTemplateWords(template.backgroundWords, instanceStart) }
-      : {}),
+    ...(backgroundWords ? { backgroundWords } : {}),
     ...(template.backgroundTextSource !== undefined ? { backgroundTextSource: template.backgroundTextSource } : {}),
-    ...(template.translations ? { translations: structuredClone(template.translations) } : {}),
-    ...(template.transliteration ? { transliteration: structuredClone(template.transliteration) } : {}),
+    ...(languages ? { languages } : {}),
   });
 }
 

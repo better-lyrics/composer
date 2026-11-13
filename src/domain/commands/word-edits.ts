@@ -1,6 +1,7 @@
 import type { LyricCommand } from "@/domain/commands/command";
 import { type LyricRoot, type Outcome, applied, refused, withLines } from "@/domain/commands/outcome";
 import { extractLinkedFields, getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
+import { withOwnPieces } from "@/domain/language/pieces";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { type ExplicitTarget, applyMarkWordsExplicit, applyMergeSyllableGroup } from "@/domain/line/word-track-edits";
@@ -47,6 +48,7 @@ function wordCountChange(
     if (isLinkedSibling(line, linkScope)) {
       const propagated = applySiblingWords(newWords, sourceBefore, line[field]);
       const siblingUpdates: Partial<LooseLine> = { ...(linkedExtras ?? {}) };
+      if ("languages" in siblingUpdates) siblingUpdates.languages = withOwnPieces(siblingUpdates.languages, line);
       if (propagated) siblingUpdates[field] = propagated;
       if (Object.keys(siblingUpdates).length > 0) return reconcileLine({ ...line, ...siblingUpdates });
     }
