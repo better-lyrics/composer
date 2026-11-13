@@ -28,6 +28,19 @@ describe("syncAddressPosition", () => {
     expect(syncAddressPosition([convertLineToWord(untimed)], stored)).toEqual({ lineIndex: 0, wordIndex: 0 });
   });
 
+  it("regression: stays on its untimed word when text after it is deleted", () => {
+    const stored = syncAddressAt([tideLine([SLOW, TIDE])], { lineIndex: 0, wordIndex: 2 });
+    const trimmed = tideLine([SLOW, TIDE], "Slow tide pulls the harbour");
+    expect(syncAddressPosition([trimmed], stored)).toEqual({ lineIndex: 0, wordIndex: 2 });
+  });
+
+  it("stays on an untimed syllable inside its word when an earlier word is split", () => {
+    const text = "Slow tide pulls the har|bour lights";
+    const stored = syncAddressAt([tideLine([SLOW, TIDE], text)], { lineIndex: 0, wordIndex: 5 });
+    const split = tideLine([SLOW, TIDE], "Slow ti|de pulls the har|bour lights");
+    expect(syncAddressPosition([split], stored)).toEqual({ lineIndex: 0, wordIndex: 6 });
+  });
+
   it("follows a timed word the cursor sits on when a line is added above", () => {
     const line = tideLine([SLOW, TIDE, PULLS]);
     const stored = syncAddressAt([line], { lineIndex: 0, wordIndex: 1 });
