@@ -4,6 +4,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { assignBinding } from "@/stores/shortcut-bindings";
 import { snapPoints } from "@/test/factories";
 import { createLine } from "@/test/factories";
+import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { createRef } from "react";
@@ -153,10 +154,7 @@ describe("useTimelineKeyboard", () => {
     });
     useProjectStore.setState({ activeTab: "timeline", lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [
-        { lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" },
-        { lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" },
-      ],
+      selectedWords: [storedWordAddress(line.id, 0, "word"), storedWordAddress(line.id, 1, "word")],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 10));
@@ -345,7 +343,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     const hoveredId = useProjectStore.getState().customSnapPoints[0].id; // the 5 pin
     useTimelineStore.setState({
       hoveredSnapPointId: hoveredId,
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
@@ -368,7 +366,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     useProjectStore.setState({ activeTab: "timeline", lines: [line], customSnapPoints: snapPoints([5]) });
     useTimelineStore.setState({
       hoveredSnapPointId: null,
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
@@ -388,7 +386,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
       ],
     });
     useProjectStore.setState({ activeTab: "timeline", lines: [line] });
-    useTimelineStore.setState({ selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }] });
+    useTimelineStore.setState({ selectedWords: [storedWordAddress(line.id, 0, "word")] });
     assignBinding("timeline.deleteSelection", { key: "F2" });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
@@ -412,7 +410,7 @@ describe("useTimelineKeyboard · background provenance", () => {
     });
     useProjectStore.setState({ activeTab: "timeline", lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "bg" }],
+      selectedWords: [storedWordAddress(line.id, 0, "bg")],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 10));
@@ -437,10 +435,7 @@ describe("useTimelineKeyboard · background provenance", () => {
     });
     useProjectStore.setState({ activeTab: "timeline", lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [
-        { lineId: line.id, lineIndex: 0, wordIndex: 0, type: "bg" },
-        { lineId: line.id, lineIndex: 0, wordIndex: 1, type: "bg" },
-      ],
+      selectedWords: [storedWordAddress(line.id, 0, "bg"), storedWordAddress(line.id, 1, "bg")],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 10));
@@ -463,7 +458,7 @@ describe("useTimelineKeyboard · background provenance", () => {
     });
     useProjectStore.setState({ activeTab: "timeline", lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 10));

@@ -10,7 +10,8 @@ import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import type { EffectiveLine } from "@/domain/line/effective-words";
 import { trackField, trackWords } from "@/domain/line/tracks";
-import { isWordSelected } from "@/domain/selection/identity";
+import { isAddressed } from "@/domain/selection/identity";
+import { resolveAddress } from "@/domain/selection/resolve";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
 import { isAutoAlignAvailable } from "@/stores/alignment";
 import { countAlignableLines } from "@/stores/alignment-plan";
@@ -73,8 +74,8 @@ function useContextMenuTargets() {
 
   const clickedSelectionCount = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
-    const { lineId, wordIndex, type } = contextMenu.target;
-    return isWordSelected(selectedWords, lineId, wordIndex, type) ? selectedWords.length : null;
+    const { lineId, type, syllableId } = contextMenu.target;
+    return isAddressed(selectedWords, lineId, type, syllableId) ? selectedWords.length : null;
   }, [contextMenu, selectedWords]);
 
   const gutterLineGroupInfo = useMemo(() => {
@@ -136,13 +137,12 @@ function useContextMenuTargets() {
 
   const groupedWordInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
-    const { lineId, wordIndex, type } = contextMenu.target;
-    const line = rawLines.find((l) => l.id === lineId);
-    if (!line) return null;
-    const field = trackField(type);
-    const word = trackWords(line, type)?.[wordIndex];
+    const resolved = resolveAddress(rawLines, contextMenu.target);
+    if (!resolved) return null;
+    const { lineId, type, wordIndex } = resolved;
+    const word = trackWords(rawLines[resolved.lineIndex], type)?.[wordIndex];
     if (!word || word.syllableGroupId === undefined) return null;
-    return { lineId, field, wordIndex };
+    return { lineId, field: trackField(type), wordIndex };
   }, [contextMenu, rawLines]);
 
   const snapNeededInfo = useMemo(() => {

@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { trackWords } from "@/domain/line/tracks";
+import { addressOf, toAddress } from "@/domain/selection/resolve";
 import { newWordId } from "@/domain/word/id";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import type { WordTiming } from "@/domain/word/timing";
@@ -27,9 +28,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   const handleEditWord = useCallback(() => {
     const editable = wordCommandTargets?.editable;
     if (!editable) return;
-    useTimelineStore
-      .getState()
-      .setEditingWord({ lineId: editable.lineId, wordIndex: editable.wordIndex, type: editable.type });
+    useTimelineStore.getState().setEditingWord(editable);
     noteGuideSignal("timeline.menuEditText");
     clearContextMenu();
   }, [wordCommandTargets, clearContextMenu]);
@@ -56,8 +55,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   const handleDeleteWord = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return;
     if (clickedSelectionCount === null) {
-      const { lineId, lineIndex, wordIndex, type } = contextMenu.target;
-      useTimelineStore.getState().setSelectedWords([{ lineId, lineIndex, wordIndex, type }]);
+      useTimelineStore.getState().setSelectedWords([toAddress(contextMenu.target)]);
     }
     deleteSelectedWords();
     noteGuideSignal("timeline.menuDelete");
@@ -88,7 +86,6 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
     const newWord: WordTiming = { id: newWordId(), text: "...", sep: " ", begin: slot.begin, end: slot.end };
     const words = mergeWordsIntoTrack(existingWords ?? [], [newWord]);
-    const newIndex = words.findIndex((w) => w.begin === newWord.begin);
 
     if (type === "word") {
       updateLineWithHistory(lineId, { words });
@@ -97,7 +94,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     }
     const timeline = useTimelineStore.getState();
     timeline.clearSelection();
-    timeline.setEditingWord({ lineId, wordIndex: newIndex, type });
+    timeline.setEditingWord(addressOf(line, type, newWord));
     clearContextMenu();
   }, [contextMenu, lines, duration, updateLineWithHistory, clearContextMenu]);
 

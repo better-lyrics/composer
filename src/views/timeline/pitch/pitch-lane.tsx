@@ -62,13 +62,13 @@ interface PitchLaneProps {
 
 // -- Helpers -------------------------------------------------------------------
 
-function selectedIndices(
+function selectedIds(
   selections: ReturnType<typeof useTimelineStore.getState>["selectedWords"],
   lineId: string,
   kind: PitchLaneKind,
 ): string {
   return selections
-    .flatMap((selection) => (selection.lineId === lineId && selection.type === kind ? [selection.wordIndex] : []))
+    .flatMap((selection) => (selection.lineId === lineId && selection.type === kind ? [selection.syllableId] : []))
     .join();
 }
 
@@ -122,7 +122,7 @@ function otherTracksCoverage(
 
 const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line, kind, height, color, rows }) => {
   const zoom = useTimelineStore((s) => s.zoom);
-  const selected = useTimelineStore((s) => selectedIndices(s.selectedWords, line.id, kind));
+  const selected = useTimelineStore((s) => selectedIds(s.selectedWords, line.id, kind));
   const live = useLiveWordEdit(line.id, kind);
   const sparkRef = useRef<HTMLCanvasElement>(null);
   const sungRef = useRef<HTMLCanvasElement>(null);
@@ -153,14 +153,14 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
     const lineBounds = effectiveBounds(line);
     const words = effectiveTrackWords(line, kind) ?? [];
     if (!spark || !sung || !ghost || !lineBounds || words.length === 0) return;
-    const selectedSet = new Set(selected.split(",").filter(Boolean).map(Number));
+    const selectedSet = new Set(selected.split(","));
     const laneWords: LaneWord[] = words.map((word, index) => {
       const { begin, end } = live?.words.get(index) ?? word;
       return {
         begin,
         end,
         tick: wordFit(word.text + word.sep, wordBlockWidth(begin, end, zoom)).fit === "tick",
-        selected: selectedSet.has(index),
+        selected: selectedSet.has(word.id),
       };
     });
     const window = laneWindow(

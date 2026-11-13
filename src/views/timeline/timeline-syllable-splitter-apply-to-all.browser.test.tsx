@@ -5,6 +5,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -29,7 +30,7 @@ async function renderSplitter() {
 
 function selectFirstWord(lineId: string) {
   useTimelineStore.setState({
-    selectedWords: [{ lineId, lineIndex: 0, wordIndex: 0, type: "word" }],
+    selectedWords: [storedWordAddress(lineId, 0, "word")],
   });
 }
 

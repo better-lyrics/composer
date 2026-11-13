@@ -6,7 +6,7 @@ import { type LoupeCanvas, type LoupeFrame, colour, xOf } from "@/views/timeline
 interface LoupeLaneWords {
   main: readonly WordTiming[];
   background: readonly WordTiming[];
-  edited: { track: "word" | "bg"; wordIndex: number };
+  edited: { track: "word" | "bg"; syllableId: string };
   agentColour: string;
   playheadSeconds: number;
 }
@@ -77,12 +77,12 @@ function drawLoupeLanes(frame: LoupeFrame, lanes: LoupeLaneWords): void {
   for (const track of ["word", "bg"] as const) {
     const row = rows[track];
     const words = track === "word" ? lanes.main : lanes.background;
-    words.forEach((word, wordIndex) => {
+    for (const word of words) {
       const x = xOf(frame, word.begin) + 0.5;
       const width = Math.max(xOf(frame, word.end) - xOf(frame, word.begin) - 1, MIN_BLOCK_WIDTH);
-      if (x > frame.canvas.width || x + width < 0) return;
+      if (x > frame.canvas.width || x + width < 0) continue;
       const active = lanes.playheadSeconds >= word.begin && lanes.playheadSeconds < word.end;
-      const edited = lanes.edited.track === track && lanes.edited.wordIndex === wordIndex;
+      const edited = lanes.edited.track === track && lanes.edited.syllableId === word.id;
       context.save();
       context.globalAlpha = row.alpha;
       context.beginPath();
@@ -111,7 +111,7 @@ function drawLoupeLanes(frame: LoupeFrame, lanes: LoupeLaneWords): void {
         context.fillText(word.text.trim(), (shownLeft + shownRight) / 2, row.y + row.height / 2 + 0.5);
       }
       context.restore();
-    });
+    }
   }
 }
 

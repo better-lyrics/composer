@@ -1,10 +1,13 @@
 import { toast } from "sonner";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { effectiveTrackWords, type ReadableLine } from "@/domain/line/effective-words";
+import type { LyricLine } from "@/domain/line/model";
+import type { WordTrack } from "@/domain/line/tracks";
+import { addressOf, toAddress } from "@/domain/selection/resolve";
 import { nextCursorSlot, nextStepSlot } from "@/domain/step-timing/step-cursor";
 import { chainedNext } from "@/domain/step-timing/step-queue";
-import type { WordSelection } from "@/domain/selection/model";
 import type { StepKey, StepRefusal } from "@/domain/step-timing/step-write";
+import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -102,7 +105,7 @@ function pressStepKey(key: StepKey, lines: ReadableLine[], duration: number): vo
   if (queue && key !== "start" && !next) noteGuideSignal("timeline.stepQueueEnd");
   // The queue outlives its last word, so the keys never leave the chosen words.
   timeline.setSelectedWords([next ?? cursor]);
-  rememberStepPress({ selectedWords: [cursor], stepQueue: queue });
+  rememberStepPress({ selectedWords: [toAddress(cursor)], stepQueue: queue });
 }
 
 function setStepTimingMode(on: boolean): void {
@@ -135,8 +138,8 @@ function escapeStepTiming(): boolean {
   return true;
 }
 
-function toggleStepLane(lineId: string, lineIndex: number, type: WordSelection["type"], wordCount: number): void {
-  const lane = Array.from({ length: wordCount }, (_, wordIndex) => ({ lineId, lineIndex, wordIndex, type }));
+function toggleStepLane(line: Pick<LyricLine, "id">, type: WordTrack, words: readonly WordTiming[]): void {
+  const lane = words.map((word) => addressOf(line, type, word));
   const { stepQueue, selectedWords, setSelectedWords } = useTimelineStore.getState();
   const clearing = isWholeLane(stepQueue ?? selectedWords, lane);
   setSelectedWords(clearing ? [] : lane, true);

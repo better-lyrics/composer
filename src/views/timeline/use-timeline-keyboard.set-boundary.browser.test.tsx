@@ -3,6 +3,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
+import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { createRef } from "react";
@@ -34,9 +35,7 @@ async function armTimeline(options: {
   useProjectStore.setState({ activeTab: "timeline", lines: [options.line] });
   useSettingsStore.setState({ rollingEdit: options.rolling });
   useTimelineStore.setState({
-    selectedWords: [
-      { lineId: options.line.id, lineIndex: 0, wordIndex: options.wordIndex, type: options.type ?? "word" },
-    ],
+    selectedWords: [storedWordAddress(options.line.id, options.wordIndex, options.type ?? "word")],
   });
   const scrollContainerRef = createRef<HTMLDivElement | null>();
   await renderHook(() => useTimelineKeyboard(scrollContainerRef, [options.line], duration));

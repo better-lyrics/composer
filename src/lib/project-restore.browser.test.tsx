@@ -120,7 +120,7 @@ describe("project-restore", () => {
       project: { audioSource: { kind: "file", name: "city.wav" } },
     });
     applyProjectToStores(await loadProjectForRestore("p1"));
-    useTimelineStore.getState().setSelectedWords([{ lineId: "x", lineIndex: 0, wordIndex: 0, type: "word" }]);
+    useTimelineStore.getState().setSelectedWords([{ lineId: "x", type: "word", syllableId: "x-word" }]);
     applyProjectToStores(EMPTY_RESTORE);
     expect(useProjectStore.getState().lines).toEqual([]);
     expect(useProjectStore.getState().metadata.title).toBe("");

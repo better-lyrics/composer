@@ -1,13 +1,14 @@
 import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
-import { isWordSelected } from "@/domain/selection/identity";
+import { sameAddress } from "@/domain/selection/identity";
+import { addressAt, resolveAddresses } from "@/domain/selection/resolve";
 import {
   type SyllablePosition,
   expandSelectionToGroupmates,
   getSyllablePositions,
 } from "@/domain/word/syllable-groups";
 import type { DragGhostCell } from "@/views/timeline/drag-ghost";
-import type { DragData } from "@/views/timeline/drag-handlers";
+import { type DragData, type DragWord, draggedWord } from "@/views/timeline/drag-handlers";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { currentOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { bgTrackHeight, wordBlockWidth, wordInsetPx } from "@/views/timeline/row-geometry";
@@ -27,7 +28,8 @@ interface DragGhostCells {
 // The dragged word, or every selected word with its syllable groupmates, laid out relative to the grabbed block.
 function dragGhostCells(activeDrag: DragData, zoom: number, effectiveLines: LyricLine[]): DragGhostCells {
   const { selectedWords, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
-  const inSelection = isWordSelected(selectedWords, activeDrag.lineId, activeDrag.wordIndex, activeDrag.trackType);
+  const dragged = addressAt(effectiveLines, activeDrag.lineId, activeDrag.trackType, activeDrag.wordIndex);
+  const inSelection = dragged !== null && selectedWords.some((selected) => sameAddress(selected, dragged));
 
   const layout = computeRowLayout({
     lines: effectiveLines,
@@ -59,21 +61,14 @@ function dragGhostCells(activeDrag: DragData, zoom: number, effectiveLines: Lyri
   const anchorHeight =
     activeDrag.trackType === "bg" ? rowBgHeights[activeDrag.lineId] : rowMainHeights[activeDrag.lineId];
 
-  const baseSelections =
+  const baseSelections: DragWord[] =
     inSelection && selectedWords.length > 1
-      ? selectedWords
-      : [
-          {
-            lineId: activeDrag.lineId,
-            lineIndex: activeDrag.lineIndex,
-            wordIndex: activeDrag.wordIndex,
-            type: activeDrag.trackType,
-          },
-        ];
+      ? resolveAddresses(effectiveLines, selectedWords)
+      : [draggedWord(activeDrag)];
 
   const lineById = new Map(effectiveLines.map((l) => [l.id, l]));
 
-  const wordsToShow: typeof baseSelections = [];
+  const wordsToShow: DragWord[] = [];
   const seen = new Set<string>();
   for (const sel of baseSelections) {
     const line = lineById.get(sel.lineId);

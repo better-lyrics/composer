@@ -1,8 +1,8 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { getAgentColor } from "@/domain/agent/colors";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
-import { trackWords } from "@/domain/line/tracks";
-import { isWordSelected } from "@/domain/selection/identity";
+import { sameAddress } from "@/domain/selection/identity";
+import { addressAt, resolveAddresses } from "@/domain/selection/resolve";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { useAudioStore } from "@/stores/audio";
 import { useImportModal } from "@/stores/import-modal-store";
@@ -141,19 +141,6 @@ const TimelinePanel: React.FC = () => {
   useResumeView(scrollContainerRef, timelineShown && duration > 0);
 
   useEffect(() => {
-    const { selectedWords } = useTimelineStore.getState();
-    if (selectedWords.length === 0) return;
-    const valid = selectedWords.filter((sel) => {
-      const line = effectiveLines[sel.lineIndex];
-      if (!line || line.id !== sel.lineId) return false;
-      return !!trackWords(line, sel.type)?.[sel.wordIndex];
-    });
-    if (valid.length < selectedWords.length) {
-      useTimelineStore.getState().setSelectedWords(valid);
-    }
-  }, [effectiveLines]);
-
-  useEffect(() => {
     if (!timelineShown || !contentRef.current) return;
     const observer = new ResizeObserver((entries) => {
       setContentHeight(entries[0].contentRect.height);
@@ -234,11 +221,11 @@ const TimelinePanel: React.FC = () => {
         if (!data?.snap) return;
         const { selectedWords } = useTimelineStore.getState();
         const lines = useProjectStore.getState().lines;
-        const isLeaderInSelection = isWordSelected(selectedWords, data.lineId, data.wordIndex, data.trackType);
-        const draggedSet =
-          isLeaderInSelection && selectedWords.length > 0
-            ? selectedWords
-            : [{ lineId: data.lineId, lineIndex: 0, wordIndex: data.wordIndex, type: data.trackType }];
+        const leader = addressAt(lines, data.lineId, data.trackType, data.wordIndex);
+        const isLeaderInSelection = leader !== null && selectedWords.some((selected) => sameAddress(selected, leader));
+        const draggedSet = isLeaderInSelection
+          ? resolveAddresses(lines, selectedWords)
+          : [{ lineId: data.lineId, wordIndex: data.wordIndex, type: data.trackType }];
         const selfIds = new Set(draggedSet.map((s) => selfKey(s.lineId, s.wordIndex, s.type)));
         const leaderKey = selfKey(data.lineId, data.wordIndex, data.trackType);
         beginGesture({
@@ -324,7 +311,7 @@ const TimelinePanel: React.FC = () => {
                 {editingWord && (
                   <WordEditOverlay
                     lineId={editingWord.lineId}
-                    wordIndex={editingWord.wordIndex}
+                    syllableId={editingWord.syllableId}
                     type={editingWord.type}
                     scrollContainerRef={scrollContainerRef}
                   />

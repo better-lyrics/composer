@@ -1,19 +1,38 @@
 import { describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
-import { resolveSelections } from "@/domain/selection/resolve";
+import { liveAddresses, resolveAddresses } from "@/domain/selection/resolve";
 import { createLine } from "@/test/factories";
 
-const line = (id: string, words: string[]): LyricLine =>
-  createLine({ id, text: words.join(" "), words: words.map((text, i) => ({ text, begin: i, end: i + 0.5 })) });
+const afterSplit = createLine({
+  id: "a",
+  text: "e|ver seen",
+  words: [
+    { id: "y1", text: "e", sep: "", begin: 1, end: 1.5 },
+    { id: "y9", text: "ver", sep: " ", begin: 1.5, end: 2 },
+    { id: "y2", text: "seen", begin: 2, end: 3 },
+  ],
+});
+const kept = { lineId: "a", type: "word" as const, syllableId: "y2" };
+const gone = { lineId: "a", type: "word" as const, syllableId: "gone" };
 
-describe("resolveSelections", () => {
-  it("follows a line that moved and drops words that no longer exist", () => {
-    const lines = [line("new", ["fresh"]), line("a", ["one", "two"])];
-    const stale = [
-      { lineId: "a", lineIndex: 0, wordIndex: 1, type: "word" as const },
-      { lineId: "a", lineIndex: 0, wordIndex: 2, type: "word" as const },
-      { lineId: "gone", lineIndex: 3, wordIndex: 0, type: "word" as const },
-    ];
-    expect(resolveSelections(lines, stale)).toEqual([{ lineId: "a", lineIndex: 1, wordIndex: 1, type: "word" }]);
+describe("resolveAddresses", () => {
+  it("follows a word through a split before it and drops a word that is gone", () => {
+    expect(resolveAddresses([createLine({ id: "new", text: "fresh" }), afterSplit], [kept, gone])).toEqual([
+      { ...kept, lineIndex: 1, wordIndex: 2 },
+    ]);
+  });
+
+  it("names the one word of a line-synced row", () => {
+    const lineSynced = createLine({ id: "c", text: "Whole line", begin: 6, end: 8 });
+    expect(resolveAddresses([lineSynced], [{ lineId: "c", type: "word", syllableId: "c:line" }])).toEqual([
+      { lineId: "c", type: "word", syllableId: "c:line", lineIndex: 0, wordIndex: 0 },
+    ]);
+  });
+});
+
+describe("liveAddresses", () => {
+  it("keeps the same array while every word exists, and drops the ones that are gone", () => {
+    const addresses = [kept];
+    expect(liveAddresses([afterSplit], addresses)).toBe(addresses);
+    expect(liveAddresses([afterSplit], [kept, gone])).toEqual([kept]);
   });
 });

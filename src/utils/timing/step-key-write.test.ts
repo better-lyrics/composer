@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
+import type { WordTrack } from "@/domain/line/tracks";
+import { type ResolvedAddress, resolvedAt } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
 import { writeStepKey } from "@/utils/timing/step-key-write";
@@ -20,15 +21,14 @@ const chorus = (id: string, instanceIdx: number, begin: number): LyricLine =>
       word("light", begin + 0.66, begin + 1.5),
     ],
   });
-const slot = (lineId: string, lineIndex: number, wordIndex: number): WordSelection => ({
-  lineId,
-  lineIndex,
-  wordIndex,
-  type: "word",
-});
+const slot = (_lineId: string, lineIndex: number, wordIndex: number, type: WordTrack = "word"): ResolvedAddress => {
+  const resolved = resolvedAt(useProjectStore.getState().lines, lineIndex, type, wordIndex);
+  if (!resolved) throw new Error("no word there");
+  return resolved;
+};
 const store = () => useProjectStore.getState();
 const lineById = (id: string) => store().lines.find((line) => line.id === id);
-const press = (cursor: WordSelection, startNext: WordSelection | null, time: number) =>
+const press = (cursor: ResolvedAddress, startNext: ResolvedAddress | null, time: number) =>
   writeStepKey({
     lines: store().lines,
     groups: store().groups,
@@ -115,7 +115,7 @@ describe("writeStepKey", () => {
       words: [word("Fold ", 33, 33.4), word("the ", 33.5, 34)],
     });
     useProjectStore.setState({ lines: [echo, next], groups: [] });
-    press({ lineId: "e", lineIndex: 0, wordIndex: 0, type: "bg" }, null, 30.7);
+    press(slot("e", 0, 0, "bg"), null, 30.7);
     expect(lineById("e")?.backgroundWords?.[0].end).toBe(30.7);
     expect(lineById("n")?.words?.[0].begin).toBe(33);
   });
