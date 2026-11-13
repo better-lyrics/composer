@@ -387,7 +387,7 @@ describe("mergeWordsIntoTrack syllable groups", () => {
     expect(result.map((w) => w.text.trim())).toEqual(["x", "a", "b"]);
   });
 
-  it("a joined group is atomic, so an incoming word in its gap lands after it", () => {
+  it("keeps time order: an incoming word in a joined group's gap splits it and ends the word before", () => {
     const existing: WordTiming[] = [
       { id: "w82", text: "ti", sep: "", begin: 1, end: 1.4, joinsNext: true },
       { id: "w83", text: "tle", sep: "", begin: 2, end: 2.4, joinsNext: false },
@@ -395,6 +395,7 @@ describe("mergeWordsIntoTrack syllable groups", () => {
     const result = mergeWordsIntoTrack(existing, [
       { id: "w84", text: "x", sep: "", begin: 1.5, end: 1.8, joinsNext: false },
     ]);
-    expect(result.map((w) => w.text + w.sep)).toEqual(["ti", "tle ", "x"]);
+    expect(result.map((w) => w.text + w.sep)).toEqual(["ti ", "x ", "tle"]);
+    expect(result.map((w) => w.joinsNext)).toEqual([false, false, false]);
   });
 });
