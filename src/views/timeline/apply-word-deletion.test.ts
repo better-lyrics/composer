@@ -169,6 +169,22 @@ describe("applyWordDeletion", () => {
     expect(roleWords(result[0], "main")?.length).toBe(1);
   });
 
+  it("regression: deleting every timed bg word keeps the untimed rest of the background", () => {
+    const lines: LyricLine[] = [
+      lineFromFields({
+        id: "l1",
+        text: "main",
+        agentId: "v1",
+        words: [{ id: "w19", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
+        backgroundText: "stay with me",
+        backgroundWords: [{ id: "w20", text: "stay", sep: " ", begin: 0, end: 0.5, joinsNext: false }],
+      }),
+    ];
+    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "bg", wordIndex: 0 }]);
+    expect(roleWords(result[0], "bg")).toBeUndefined();
+    expect(backgroundText(result[0])).toBe("with me");
+  });
+
   it("does not remove the line when only some bg words are removed", () => {
     const lines: LyricLine[] = [
       lineFromFields({

@@ -1,6 +1,6 @@
 import { getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
 import { lineInstanceKey } from "@/domain/instance/key";
-import { withManualBackgroundWords, withoutBackground } from "@/domain/line/background";
+import { withManualBackgroundWords } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming, isLineSynced } from "@/domain/line/predicates";
 import { mainTrack, roleWords } from "@/domain/line/track";
@@ -63,8 +63,7 @@ function deleteFromLines(lines: LyricLine[], selections: ReadonlyArray<DeletionS
     if (bgWords.length > 0 && bgIdxs.size > 0) {
       const absorbed = absorbDeletedSyllablesIntoNeighbors(bgWords, bgIdxs);
       const remaining = absorbed.filter((_, i) => !bgIdxs.has(i));
-      updatedLine =
-        remaining.length > 0 ? withManualBackgroundWords(updatedLine, remaining) : withoutBackground(updatedLine);
+      updatedLine = withManualBackgroundWords(updatedLine, remaining);
     }
 
     updatedById.set(lineId, updatedLine);
