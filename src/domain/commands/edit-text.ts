@@ -1,6 +1,6 @@
 import type { HistoryNote, LyricCommand } from "@/domain/commands/command";
 import { lineEditCommand } from "@/domain/commands/line-edits";
-import { type LyricRoot, type Refusal, applied, changedLineIds, refused } from "@/domain/commands/outcome";
+import { type LyricRoot, type Refusal, applied, refused } from "@/domain/commands/outcome";
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/domain/edit-text/diff-edit-text";
 import type { LinkGroup } from "@/domain/group/template";
@@ -45,7 +45,8 @@ function wholeLinesEdit(
       if ("refused" in edited) return edited;
       const groups = edited.groups ?? root.groups;
       if (sameLines(root.lines, edited.lines) && groups === root.groups) return applied(root, []);
-      return applied({ ...root, lines: edited.lines, groups }, changedLineIds(root.lines, edited.lines));
+      // Whole-text edits never run the shared timing copy, the only reader of touched ids, so skip the per-keystroke scan.
+      return applied({ ...root, lines: edited.lines, groups }, []);
     },
   };
 }
