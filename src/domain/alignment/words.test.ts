@@ -14,8 +14,8 @@ describe("groupAlignmentWords", () => {
   it("joins syllable parts back into the words they belong to", () => {
     const words = groupAlignmentWords(["hel", "lo", "there"], [false, true, false]);
     expect(words).toEqual([
-      { text: "hello", parts: ["hel", "lo"], trailingSpace: true },
-      { text: "there", parts: ["there"], trailingSpace: false },
+      { text: "hello", parts: ["hel", "lo"], seps: ["", " "] },
+      { text: "there", parts: ["there"], seps: [""] },
     ]);
   });
 
@@ -95,6 +95,26 @@ describe("timingsFromParts", () => {
         { text: "you", sep: "", begin: 2, end: 2.4 },
       ]),
     );
+  });
+
+  it("keeps each part's own separator inside a joined word", () => {
+    const words = groupTimedWords(
+      createWords([
+        { text: "far", sep: " ", begin: 1, end: 1.2, joinsNext: true },
+        { text: "away", sep: " ", begin: 1.2, end: 1.6, joinsNext: false },
+        { text: "now", sep: "", begin: 2, end: 2.4 },
+      ]),
+    );
+    const timings = timingsFromParts(words, [
+      { begin: 1, end: 1.3 },
+      { begin: 1.3, end: 1.5 },
+      { begin: 2, end: 2.4 },
+    ]);
+    expect(timings.map((t) => [t.text, t.sep, t.joinsNext])).toEqual([
+      ["far", " ", true],
+      ["away", " ", false],
+      ["now", "", false],
+    ]);
   });
 
   it("splits unspaced Chinese and Japanese into one part per character", () => {
