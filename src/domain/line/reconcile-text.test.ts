@@ -343,4 +343,31 @@ describe("reconcileMatchedTiming · regressions", () => {
       expect(lineText(line)).toBe("Да, твои глаза new как море");
     });
   });
+
+  describe("an edit across the timed part leaves new words after it untimed", () => {
+    const halfSynced = () =>
+      lineFromFields({
+        id: "half",
+        text: "steady rain falls slow",
+        agentId: "v1",
+        words: [
+          { id: "w1", text: "steady", sep: " ", begin: 4, end: 4.5, joinsNext: false },
+          { id: "w2", text: "rain", sep: " ", begin: 4.5, end: 5, joinsNext: false },
+        ],
+      });
+    const timedTexts = (text: string) =>
+      timedSyllables(mainTrack(reconcileMatchedTiming(halfSynced(), text))).map((word) => word.text);
+
+    it("regression: a word typed after the last timed word stays untimed when an earlier timed word changed", () => {
+      expect(timedTexts("steadier rain now falls slow")).toEqual(["steadier", "rain"]);
+    });
+
+    it("regression: words typed over the timed and untimed parts at once stay untimed", () => {
+      expect(timedTexts("steady snow drifts slow")).toEqual(["steady"]);
+    });
+
+    it("regression: words typed over the untimed tail stay untimed when an earlier timed word changed", () => {
+      expect(timedTexts("steadier rain now here")).toEqual(["steadier", "rain"]);
+    });
+  });
 });

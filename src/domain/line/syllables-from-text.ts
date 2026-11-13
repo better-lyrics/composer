@@ -49,19 +49,17 @@ function untimedKeepingIds(
   });
 }
 
-// The typed parts up to the last one that matches a timed syllable keep the fully timed rule. When a keystroke
-// inside a timed word broke its match, the typed parts up to the untimed rest take its timing too.
+// The typed parts end at the one aligned with the last timed syllable. When that syllable lost its match, the
+// typed parts in its place replace it only if the run they replace was all timed; otherwise nothing new is timed.
 function lastTimedPart(old: readonly Syllable[], oldIndexOf: readonly (number | undefined)[]): number {
-  const matchesTimed = (oldIndex: number | undefined) => oldIndex !== undefined && isTimedSyllable(old[oldIndex]);
-  const lastTimed = oldIndexOf.findLastIndex(matchesTimed);
-  if (lastTimed === -1) {
-    const firstUntimed = oldIndexOf.findIndex((oldIndex) => oldIndex !== undefined);
-    return (firstUntimed === -1 ? oldIndexOf.length : firstUntimed) - 1;
-  }
-  const unmatchedTimed = old.filter(isTimedSyllable).length - oldIndexOf.filter(matchesTimed).length;
-  const untimedAfter = oldIndexOf.findIndex((oldIndex, index) => index > lastTimed && oldIndex !== undefined);
-  const limit = (untimedAfter === -1 ? oldIndexOf.length : untimedAfter) - 1;
-  return unmatchedTimed > 0 ? Math.max(lastTimed, limit) : lastTimed;
+  const lastTimed = old.findLastIndex(isTimedSyllable);
+  const aligned = oldIndexOf.indexOf(lastTimed);
+  if (aligned !== -1) return aligned;
+  const before = oldIndexOf.findLastIndex((oldIndex) => oldIndex !== undefined && oldIndex < lastTimed);
+  const after = oldIndexOf.findIndex((oldIndex) => oldIndex !== undefined && oldIndex > lastTimed);
+  const replacedRunEnd = (oldIndexOf[after] ?? old.length) - 1;
+  if (replacedRunEnd !== lastTimed) return before;
+  return (after === -1 ? oldIndexOf.length : after) - 1;
 }
 
 // -- Functions ----------------------------------------------------------------
