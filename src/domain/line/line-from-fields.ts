@@ -40,26 +40,39 @@ const TEXT_WORD = /\S+/g;
 
 const isLetter = (char: string | undefined) => char !== undefined && LETTER.test(char);
 
-// The text after the timed words, matched letter by letter so split marks of any character and unmarked splits
-// still line up. A load never drops text: when the words do not spell the start of the text, all of it stays.
-function untimedRest(text: string, words: readonly WordTiming[], splitChar: string): string {
-  const letters = words
-    .map((word) => word.text)
-    .join("")
-    .replace(/\s+/g, "");
-  let at = 0;
+const folded = (text: string) => text.normalize("NFC").toLocaleLowerCase();
+
+// The text after its first `count` words, with the space that leads into it.
+function textAfterWords(text: string, count: number): string {
+  let seen = 0;
   for (const { 0: token, index } of text.matchAll(TEXT_WORD)) {
+    if (++seen === count) return text.slice(index + token.length);
+  }
+  return "";
+}
+
+// The text after the timed words, matched letter by letter (any case, any normal form) so split marks of any
+// character and unmarked splits still line up. A load never drops or repeats text: words that cover as many text
+// words as the text has leave no rest, and words that do not spell the text keep the text words after theirs.
+function untimedRest(text: string, words: readonly WordTiming[], splitChar: string): string {
+  const spelled = words.map((word) => word.text + word.sep).join("");
+  const covered = [...spelled.matchAll(TEXT_WORD)].length;
+  if ([...text.matchAll(TEXT_WORD)].length <= covered) return "";
+  const letters = folded(spelled.replace(/\s+/g, ""));
+  let at = 0;
+  for (const { 0: original, index } of text.matchAll(TEXT_WORD)) {
+    const token = folded(original);
     let offset = 0;
     for (; offset < token.length && at < letters.length; offset++) {
       const char = token[offset];
       while (at < letters.length && letters[at] !== char && !isLetter(letters[at])) at++;
       if (letters[at] === char) at++;
-      else if (isLetter(char)) return text;
+      else if (isLetter(char)) return textAfterWords(text, covered);
     }
     if (at < letters.length) continue;
-    const remainder = token.slice(offset);
-    const rest = text.slice(index + token.length);
-    if (remainder === "") return rest.trim() === "" ? "" : rest;
+    const rest = text.slice(index + original.length);
+    if (offset === token.length) return rest.trim() === "" ? "" : rest;
+    const remainder = original.normalize("NFC").slice(offset);
     return isLetter(remainder[0]) ? splitChar + remainder + rest : remainder + rest;
   }
   return "";

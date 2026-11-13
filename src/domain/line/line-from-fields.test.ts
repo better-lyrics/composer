@@ -59,9 +59,28 @@ describe("a load never drops the untimed rest", () => {
     expect(syllableTexts(line)).toEqual(["hel", "lo", "world"]);
   });
 
-  it("keeps the whole text after the timed words when the words do not spell it", () => {
-    const line = lineFromFields({ id: "l1", agentId: "v1", text: "goodbye moon", words: helLo() }, "|");
-    expect(syllableTexts(line)).toEqual(["hel", "lo", "goodbye", "moon"]);
+  it("keeps the text words after the ones the timed words cover when the words do not spell them", () => {
+    const line = lineFromFields({ id: "l1", agentId: "v1", text: "goodbye moon tonight", words: helLo() }, "|");
+    expect(syllableTexts(line)).toEqual(["hel", "lo", "moon", "tonight"]);
+  });
+
+  describe("a fully synced line adds nothing", () => {
+    const words = (...texts: string[]) =>
+      createWords(texts.map((text, index) => ({ text, sep: index < texts.length - 1 ? " " : "", begin: index, end: index + 1 })));
+    const loaded = (text: string, timed: ReturnType<typeof words>) =>
+      syllableTexts(lineFromFields({ id: "l1", agentId: "v1", text, words: timed }, "|"));
+
+    it("regression: words that differ from the text only in case", () => {
+      expect(loaded("Hello world", words("Hello", "World"))).toEqual(["Hello", "World"]);
+    });
+
+    it("regression: words and text in different Unicode normal forms", () => {
+      expect(loaded("cafe\u0301 noir", words("caf\u00e9", "noir"))).toEqual(["caf\u00e9", "noir"]);
+    });
+
+    it("regression: text with punctuation the words do not carry", () => {
+      expect(loaded("hello world!", words("hello", "world"))).toEqual(["hello", "world"]);
+    });
   });
 });
 

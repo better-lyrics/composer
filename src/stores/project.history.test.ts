@@ -198,6 +198,7 @@ describe("updateLinesWithHistory", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
         seedLine("a", {
+          text: "hi",
           words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1, joinsNext: false }],
           backgroundWords: [{ id: "w2", text: "ah", sep: "", begin: 0, end: 0.5, joinsNext: false }],
           backgroundText: "ah",
