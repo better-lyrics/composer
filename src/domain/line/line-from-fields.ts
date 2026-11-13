@@ -61,7 +61,7 @@ function untimedRest(text: string, words: WordTiming[]): string {
 function withTrailingJoinFromText(text: string, words: WordTiming[]): WordTiming[] {
   if (untimedRest(text, words) === "") return words;
   const last = words.length - 1;
-  const joinsNext = !splitIntoWordsWithMeta(text).trailingSpace[last];
+  const joinsNext = !splitIntoWordsWithMeta(text).trailingSpace[wordAtoms(words).length - 1];
   return words[last].joinsNext === joinsNext ? words : words.with(last, { ...words[last], joinsNext });
 }
 
