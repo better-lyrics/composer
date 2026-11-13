@@ -18,7 +18,9 @@ function chorusLine(id: string, instanceIdx: number, begin: number, reading: str
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
-    words: [{ id: `${id}-w`, text: "하늘", sep: "", begin, end: begin + 1, transliteration: reading, joinsNext: false }],
+    words: [
+      { id: `${id}-w`, text: "하늘", sep: "", begin, end: begin + 1, transliteration: reading, joinsNext: false },
+    ],
     transliteration: {
       language: "ko-Latn",
       text: "haneul",
