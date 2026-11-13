@@ -40,5 +40,4 @@ function writingLyrics<T>(read: () => LyricState, cause: LyricChangeCause, write
 
 // -- Exports ------------------------------------------------------------------
 
-export type { LyricChange, LyricChangeCause };
 export { onLyricsChanged, writingLyrics };
