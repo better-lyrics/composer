@@ -1,5 +1,6 @@
 import { placeSharedInstance, realignSharedInstance, realignSharedInstances } from "@/domain/group/shared-placement";
 import type { LyricLine } from "@/domain/line/model";
+import { newWordId } from "@/domain/word/id";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
@@ -278,7 +279,7 @@ describe("realignSharedInstance", () => {
     it("realigns background vocals the reference has timing for", () => {
       const background = (begin: number) => ({
         backgroundText: "oh",
-        backgroundWords: [{ text: "oh", sep: "", begin, end: begin + 0.4 }],
+        backgroundWords: [{ id: newWordId(), text: "oh", sep: "", begin, end: begin + 0.4 }],
       });
       const lines = [
         { ...chorus(0, 0, 10), ...background(10.2) },

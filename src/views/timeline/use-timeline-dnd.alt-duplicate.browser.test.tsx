@@ -18,8 +18,8 @@ describe("useTimelineDnd · alt-drag duplicate", () => {
           text: "Hello world",
           agentId: "v1",
           words: [
-            { text: "Hello", sep: " ", begin: 0, end: 0.5 },
-            { text: "world", sep: "", begin: 2, end: 2.5 },
+            { id: "w1", text: "Hello", sep: " ", begin: 0, end: 0.5 },
+            { id: "w2", text: "world", sep: "", begin: 2, end: 2.5 },
           ],
         },
       ],

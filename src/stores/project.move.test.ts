@@ -1,4 +1,5 @@
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { newWordId } from "@/domain/word/id";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 /**
  * @vitest-environment node
@@ -14,9 +15,9 @@ function seedLine(overrides: Partial<LooseLine> = {}): LyricLine {
     text: "hello world goodbye",
     agentId: "v1",
     words: [
-      { text: "hello", sep: " ", begin: 0, end: 1 },
-      { text: "world", sep: " ", begin: 1, end: 2 },
-      { text: "goodbye", sep: "", begin: 2, end: 3 },
+      { id: newWordId(), text: "hello", sep: " ", begin: 0, end: 1 },
+      { id: newWordId(), text: "world", sep: " ", begin: 1, end: 2 },
+      { id: newWordId(), text: "goodbye", sep: "", begin: 2, end: 3 },
     ],
     ...overrides,
   });
@@ -66,8 +67,8 @@ describe("moveWordToBg", () => {
     useProjectStore.getState().setLines([
       seedLine({
         backgroundWords: [
-          { text: "ah", sep: "", begin: 0, end: 0.5 },
-          { text: "ooh", sep: "", begin: 0.5, end: 1 },
+          { id: "w1", text: "ah", sep: "", begin: 0, end: 0.5 },
+          { id: "w2", text: "ooh", sep: "", begin: 0.5, end: 1 },
         ],
         backgroundText: "ah|ooh",
       }),
@@ -83,7 +84,7 @@ describe("moveWordToBg", () => {
   it("resolves overlap when moved word collides with an existing bg word", () => {
     useProjectStore.getState().setLines([
       seedLine({
-        backgroundWords: [{ text: "yeah", sep: "", begin: 5, end: 6 }],
+        backgroundWords: [{ id: "w3", text: "yeah", sep: "", begin: 5, end: 6 }],
         backgroundText: "yeah",
       }),
     ]);
@@ -113,7 +114,7 @@ describe("moveWordToBg · background provenance", () => {
   it("flips an extraction-sourced background to manual when more words are moved in", () => {
     useProjectStore.getState().setLines([
       seedLine({
-        backgroundWords: [{ text: "yeah", sep: "", begin: 5, end: 6 }],
+        backgroundWords: [{ id: "w4", text: "yeah", sep: "", begin: 5, end: 6 }],
         backgroundText: "yeah",
         backgroundTextSource: "extraction",
       }),
@@ -132,7 +133,7 @@ describe("moveWordFromBg", () => {
   it("moves a single bg word back to main and applies timeDelta", () => {
     useProjectStore.getState().setLines([
       seedLine({
-        backgroundWords: [{ text: "ooh", sep: "", begin: 10, end: 11 }],
+        backgroundWords: [{ id: "w5", text: "ooh", sep: "", begin: 10, end: 11 }],
         backgroundText: "ooh",
       }),
     ]);
@@ -152,8 +153,8 @@ describe("moveWordFromBg", () => {
     useProjectStore.getState().setLines([
       seedLine({
         backgroundWords: [
-          { text: "ah", sep: " ", begin: 5, end: 6 },
-          { text: "ooh", sep: "", begin: 6, end: 7 },
+          { id: "w6", text: "ah", sep: " ", begin: 5, end: 6 },
+          { id: "w7", text: "ooh", sep: "", begin: 6, end: 7 },
         ],
         backgroundText: "ahooh",
       }),
@@ -171,9 +172,9 @@ describe("moveWordFromBg", () => {
       seedLine({
         words: [],
         backgroundWords: [
-          { text: "ah", sep: " ", begin: 5, end: 6 },
-          { text: "ooh", sep: " ", begin: 6, end: 7 },
-          { text: "yeah", sep: "", begin: 7, end: 8 },
+          { id: "w8", text: "ah", sep: " ", begin: 5, end: 6 },
+          { id: "w9", text: "ooh", sep: " ", begin: 6, end: 7 },
+          { id: "w10", text: "yeah", sep: "", begin: 7, end: 8 },
         ],
         backgroundText: "ah ooh yeah",
       }),
@@ -191,7 +192,7 @@ describe("moveWordFromBg · background provenance", () => {
   it("clears backgroundTextSource when no background words remain", () => {
     useProjectStore.getState().setLines([
       seedLine({
-        backgroundWords: [{ text: "ooh", sep: "", begin: 10, end: 11 }],
+        backgroundWords: [{ id: "w11", text: "ooh", sep: "", begin: 10, end: 11 }],
         backgroundText: "ooh",
         backgroundTextSource: "extraction",
       }),
@@ -209,8 +210,8 @@ describe("moveWordFromBg · background provenance", () => {
     useProjectStore.getState().setLines([
       seedLine({
         backgroundWords: [
-          { text: "ah", sep: " ", begin: 5, end: 6 },
-          { text: "ooh", sep: "", begin: 6, end: 7 },
+          { id: "w12", text: "ah", sep: " ", begin: 5, end: 6 },
+          { id: "w13", text: "ooh", sep: "", begin: 6, end: 7 },
         ],
         backgroundText: "ahooh",
         backgroundTextSource: "extraction",
@@ -245,7 +246,7 @@ describe("cross-track moves and history", () => {
   it("moveWordFromBg is undoable and redoable", () => {
     useProjectStore.getState().setLines([
       seedLine({
-        backgroundWords: [{ text: "ooh", sep: "", begin: 10, end: 11 }],
+        backgroundWords: [{ id: "w14", text: "ooh", sep: "", begin: 10, end: 11 }],
         backgroundText: "ooh",
       }),
     ]);
@@ -283,10 +284,10 @@ describe("cross-track moves and history", () => {
         text: "every world",
         agentId: "v1",
         words: [
-          { text: "ev", sep: "", begin: 0, end: 0.2, syllableGroupId: "g1" },
-          { text: "er", sep: "", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
-          { text: "y", sep: "", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
-          { text: "world", sep: "", begin: 0.7, end: 1 },
+          { id: "w15", text: "ev", sep: "", begin: 0, end: 0.2, syllableGroupId: "g1" },
+          { id: "w16", text: "er", sep: "", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
+          { id: "w17", text: "y", sep: "", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
+          { id: "w18", text: "world", sep: "", begin: 0.7, end: 1 },
         ],
       },
     ]);
@@ -305,11 +306,11 @@ describe("cross-track moves and history", () => {
         text: "every world",
         agentId: "v1",
         words: [
-          { text: "ev", sep: "", begin: 0, end: 0.2, syllableGroupId: "g1" },
-          { text: "er", sep: "", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
-          { text: "y", sep: "", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
+          { id: "w19", text: "ev", sep: "", begin: 0, end: 0.2, syllableGroupId: "g1" },
+          { id: "w20", text: "er", sep: "", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
+          { id: "w21", text: "y", sep: "", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
         ],
-        backgroundWords: [{ text: "ah", sep: "", begin: 5, end: 5.5 }],
+        backgroundWords: [{ id: "w22", text: "ah", sep: "", begin: 5, end: 5.5 }],
         backgroundText: "ah",
       },
     ]);
@@ -329,7 +330,7 @@ describe("cross-track moves and history", () => {
         agentId: "v1",
         begin: 5,
         end: 10,
-        backgroundWords: [{ text: "ooh", sep: "", begin: 6, end: 7 }],
+        backgroundWords: [{ id: "w23", text: "ooh", sep: "", begin: 6, end: 7 }],
         backgroundText: "ooh",
       },
     ]);
@@ -357,9 +358,9 @@ describe("moveWordToBg · linked propagation", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "hello", sep: " ", begin: 0, end: 1 },
-          { text: "world", sep: " ", begin: 1, end: 2 },
-          { text: "goodbye", sep: "", begin: 2, end: 3 },
+          { id: "w24", text: "hello", sep: " ", begin: 0, end: 1 },
+          { id: "w25", text: "world", sep: " ", begin: 1, end: 2 },
+          { id: "w26", text: "goodbye", sep: "", begin: 2, end: 3 },
         ],
       },
       {
@@ -370,9 +371,9 @@ describe("moveWordToBg · linked propagation", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { text: "hello", sep: " ", begin: 10, end: 11 },
-          { text: "world", sep: " ", begin: 11, end: 12 },
-          { text: "goodbye", sep: "", begin: 12, end: 13 },
+          { id: "w27", text: "hello", sep: " ", begin: 10, end: 11 },
+          { id: "w28", text: "world", sep: " ", begin: 11, end: 12 },
+          { id: "w29", text: "goodbye", sep: "", begin: 12, end: 13 },
         ],
       },
     ]);
@@ -415,8 +416,8 @@ describe("moveWordToBg · linked propagation", () => {
           ? reconcileLine({
               ...l,
               words: [
-                { text: "hello", sep: " ", begin: 10, end: 11 },
-                { text: "goodbye", sep: "", begin: 12, end: 13 },
+                { id: newWordId(), text: "hello", sep: " ", begin: 10, end: 11 },
+                { id: newWordId(), text: "goodbye", sep: "", begin: 12, end: 13 },
               ],
             })
           : l,
@@ -440,9 +441,9 @@ describe("moveWordToBg · linked propagation", () => {
           text: "hello world goodbye",
           agentId: "v1",
           words: [
-            { text: "hello", sep: " ", begin: 20, end: 21 },
-            { text: "world", sep: " ", begin: 21, end: 22 },
-            { text: "goodbye", sep: "", begin: 22, end: 23 },
+            { id: newWordId(), text: "hello", sep: " ", begin: 20, end: 21 },
+            { id: newWordId(), text: "world", sep: " ", begin: 21, end: 22 },
+            { id: newWordId(), text: "goodbye", sep: "", begin: 22, end: 23 },
           ],
         },
       ],
@@ -466,9 +467,9 @@ describe("moveWordToBg · linked propagation", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "ev", sep: "", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
-          { text: "er", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g_a0" },
-          { text: "y", sep: "", begin: 0.6, end: 1, syllableGroupId: "g_a0" },
+          { id: "w30", text: "ev", sep: "", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
+          { id: "w31", text: "er", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g_a0" },
+          { id: "w32", text: "y", sep: "", begin: 0.6, end: 1, syllableGroupId: "g_a0" },
         ],
       },
       {
@@ -479,9 +480,9 @@ describe("moveWordToBg · linked propagation", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { text: "ev", sep: " ", begin: 10, end: 10.3 },
-          { text: "er", sep: " ", begin: 10.3, end: 10.6 },
-          { text: "y", sep: "", begin: 10.6, end: 11 },
+          { id: "w33", text: "ev", sep: " ", begin: 10, end: 10.3 },
+          { id: "w34", text: "er", sep: " ", begin: 10.3, end: 10.6 },
+          { id: "w35", text: "y", sep: "", begin: 10.6, end: 11 },
         ],
       },
     ]);
@@ -510,11 +511,11 @@ describe("cross-track moves auto-expand to syllable groupmates", () => {
         text: "hello every world",
         agentId: "v1",
         words: [
-          { text: "hello", sep: " ", begin: 0, end: 1 },
-          { text: "ev", sep: "", begin: 1, end: 1.2, syllableGroupId: "g_every" },
-          { text: "er", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "g_every" },
-          { text: "y", sep: "", begin: 1.5, end: 1.8, syllableGroupId: "g_every" },
-          { text: "world", sep: "", begin: 1.8, end: 2.5 },
+          { id: "w36", text: "hello", sep: " ", begin: 0, end: 1 },
+          { id: "w37", text: "ev", sep: "", begin: 1, end: 1.2, syllableGroupId: "g_every" },
+          { id: "w38", text: "er", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "g_every" },
+          { id: "w39", text: "y", sep: "", begin: 1.5, end: 1.8, syllableGroupId: "g_every" },
+          { id: "w40", text: "world", sep: "", begin: 1.8, end: 2.5 },
         ],
       },
     ]);
@@ -535,9 +536,9 @@ describe("cross-track moves auto-expand to syllable groupmates", () => {
         agentId: "v1",
         words: [],
         backgroundWords: [
-          { text: "ev", sep: "", begin: 5, end: 5.2, syllableGroupId: "g_every" },
-          { text: "er", sep: "", begin: 5.2, end: 5.5, syllableGroupId: "g_every" },
-          { text: "y", sep: "", begin: 5.5, end: 5.8, syllableGroupId: "g_every" },
+          { id: "w41", text: "ev", sep: "", begin: 5, end: 5.2, syllableGroupId: "g_every" },
+          { id: "w42", text: "er", sep: "", begin: 5.2, end: 5.5, syllableGroupId: "g_every" },
+          { id: "w43", text: "y", sep: "", begin: 5.5, end: 5.8, syllableGroupId: "g_every" },
         ],
         backgroundText: "every",
       },
@@ -560,9 +561,9 @@ describe("moveWordToBg clears line.begin/end when main empties", () => {
         text: "beautiful",
         agentId: "v1",
         words: [
-          { text: "beau", sep: "", begin: 9.51, end: 11.463, syllableGroupId: "g_beautiful" },
-          { text: "ti", sep: "", begin: 11.463, end: 13.58, syllableGroupId: "g_beautiful" },
-          { text: "ful", sep: "", begin: 13.58, end: 15.335, syllableGroupId: "g_beautiful" },
+          { id: "w44", text: "beau", sep: "", begin: 9.51, end: 11.463, syllableGroupId: "g_beautiful" },
+          { id: "w45", text: "ti", sep: "", begin: 11.463, end: 13.58, syllableGroupId: "g_beautiful" },
+          { id: "w46", text: "ful", sep: "", begin: 13.58, end: 15.335, syllableGroupId: "g_beautiful" },
         ],
       },
     ]);
@@ -585,11 +586,11 @@ describe("cross-track moves preserve syllable bonds", () => {
         text: "hello every world",
         agentId: "v1",
         words: [
-          { text: "hello", sep: " ", begin: 0, end: 1 },
-          { text: "ev", sep: "", begin: 1, end: 1.2 },
-          { text: "er", sep: "", begin: 1.2, end: 1.5 },
-          { text: "y", sep: " ", begin: 1.5, end: 1.8 },
-          { text: "world", sep: "", begin: 1.8, end: 2.5 },
+          { id: "w47", text: "hello", sep: " ", begin: 0, end: 1 },
+          { id: "w48", text: "ev", sep: "", begin: 1, end: 1.2 },
+          { id: "w49", text: "er", sep: "", begin: 1.2, end: 1.5 },
+          { id: "w50", text: "y", sep: " ", begin: 1.5, end: 1.8 },
+          { id: "w51", text: "world", sep: "", begin: 1.8, end: 2.5 },
         ],
       },
     ]);
@@ -608,11 +609,11 @@ describe("cross-track moves preserve syllable bonds", () => {
         text: "hello every world",
         agentId: "v1",
         words: [
-          { text: "hello", sep: " ", begin: 0, end: 1 },
-          { text: "ev", sep: "", begin: 1, end: 1.2 },
-          { text: "er", sep: "", begin: 1.2, end: 1.5 },
-          { text: "y", sep: " ", begin: 1.5, end: 1.8 },
-          { text: "world", sep: "", begin: 1.8, end: 2.5 },
+          { id: "w52", text: "hello", sep: " ", begin: 0, end: 1 },
+          { id: "w53", text: "ev", sep: "", begin: 1, end: 1.2 },
+          { id: "w54", text: "er", sep: "", begin: 1.2, end: 1.5 },
+          { id: "w55", text: "y", sep: " ", begin: 1.5, end: 1.8 },
+          { id: "w56", text: "world", sep: "", begin: 1.8, end: 2.5 },
         ],
       },
     ]);
@@ -631,8 +632,8 @@ describe("cross-track moves preserve syllable bonds", () => {
         id: "line-1",
         text: "hello",
         agentId: "v1",
-        words: [{ text: "hello", sep: "", begin: 0, end: 1 }],
-        backgroundWords: [{ text: "world", sep: "", begin: 2, end: 3 }],
+        words: [{ id: "w57", text: "hello", sep: "", begin: 0, end: 1 }],
+        backgroundWords: [{ id: "w58", text: "world", sep: "", begin: 2, end: 3 }],
         backgroundText: "world",
       },
     ]);
@@ -652,9 +653,9 @@ describe("cross-track moves preserve syllable bonds", () => {
         agentId: "v1",
         words: [],
         backgroundWords: [
-          { text: "ev", sep: "", begin: 5, end: 5.2 },
-          { text: "er", sep: "", begin: 5.2, end: 5.5 },
-          { text: "y", sep: "", begin: 5.5, end: 5.8 },
+          { id: "w59", text: "ev", sep: "", begin: 5, end: 5.2 },
+          { id: "w60", text: "er", sep: "", begin: 5.2, end: 5.5 },
+          { id: "w61", text: "y", sep: "", begin: 5.5, end: 5.8 },
         ],
         backgroundText: "every",
       },
@@ -681,10 +682,10 @@ describe("moveWordFromBg · linked propagation", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "hello", sep: " ", begin: 0, end: 1 },
-          { text: "world", sep: "", begin: 1, end: 2 },
+          { id: "w62", text: "hello", sep: " ", begin: 0, end: 1 },
+          { id: "w63", text: "world", sep: "", begin: 1, end: 2 },
         ],
-        backgroundWords: [{ text: "ooh", sep: "", begin: 2, end: 3 }],
+        backgroundWords: [{ id: "w64", text: "ooh", sep: "", begin: 2, end: 3 }],
         backgroundText: "ooh",
       },
       {
@@ -695,10 +696,10 @@ describe("moveWordFromBg · linked propagation", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { text: "hello", sep: " ", begin: 10, end: 11 },
-          { text: "world", sep: "", begin: 11, end: 12 },
+          { id: "w65", text: "hello", sep: " ", begin: 10, end: 11 },
+          { id: "w66", text: "world", sep: "", begin: 11, end: 12 },
         ],
-        backgroundWords: [{ text: "ooh", sep: "", begin: 12, end: 13 }],
+        backgroundWords: [{ id: "w67", text: "ooh", sep: "", begin: 12, end: 13 }],
         backgroundText: "ooh",
       },
     ]);
@@ -728,8 +729,8 @@ describe("cross-track moves space the merge seam", () => {
     useProjectStore.getState().setLines([
       seedLine({
         backgroundWords: [
-          { text: "ah", sep: " ", begin: 0, end: 0.5 },
-          { text: "ooh", sep: "", begin: 5, end: 5.5 },
+          { id: "w68", text: "ah", sep: " ", begin: 0, end: 0.5 },
+          { id: "w69", text: "ooh", sep: "", begin: 5, end: 5.5 },
         ],
         backgroundText: "ah ooh",
       }),
@@ -747,10 +748,10 @@ describe("cross-track moves space the merge seam", () => {
     useProjectStore.getState().setLines([
       seedLine({
         words: [
-          { text: "hello", sep: " ", begin: 0, end: 1 },
-          { text: "world", sep: "", begin: 2, end: 3 },
+          { id: "w70", text: "hello", sep: " ", begin: 0, end: 1 },
+          { id: "w71", text: "world", sep: "", begin: 2, end: 3 },
         ],
-        backgroundWords: [{ text: "ooh", sep: "", begin: 1.2, end: 1.6 }],
+        backgroundWords: [{ id: "w72", text: "ooh", sep: "", begin: 1.2, end: 1.6 }],
         backgroundText: "ooh",
       }),
     ]);

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fingerprintChanged, readAlignedTimings, timingFingerprint } from "@/domain/alignment/fingerprint";
 import { alignmentBreakdown, alignmentReview } from "@/domain/alignment/review-state";
 import type { LyricLine } from "@/domain/line/model";
+import { newWordId } from "@/domain/word/id";
 import { createLine } from "@/test/factories";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -73,7 +74,7 @@ describe("alignmentReview", () => {
       }),
     );
     const edited = withBackground.map((line, i) =>
-      i < 3 ? { ...line, backgroundWords: [{ text: "ooh", sep: "", begin: 15.1, end: 15.5 }] } : line,
+      i < 3 ? { ...line, backgroundWords: [{ id: newWordId(), text: "ooh", sep: "", begin: 15.1, end: 15.5 }] } : line,
     );
     expect(alignmentReview(edited, fingerprintsOf(withBackground)).tier).toBe("reviewed");
   });

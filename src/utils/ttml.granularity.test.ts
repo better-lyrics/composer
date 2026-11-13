@@ -12,8 +12,8 @@ const wordSynced: LyricLine = {
   text: "Hello world",
   agentId: "v1",
   words: [
-    { text: "Hello", sep: " ", begin: 1, end: 1.5 },
-    { text: "world", sep: "", begin: 1.5, end: 2 },
+    { id: "w1", text: "Hello", sep: " ", begin: 1, end: 1.5 },
+    { id: "w2", text: "world", sep: "", begin: 1.5, end: 2 },
   ],
 };
 const lineSynced: LyricLine = { id: "l", text: "Line only", agentId: "v1", begin: 3, end: 4 };
@@ -47,7 +47,7 @@ describe("generateTTML timing granularity", () => {
       const withBackground: LyricLine = {
         ...lineSynced,
         backgroundText: "(yeah)",
-        backgroundWords: [{ text: "(yeah)", sep: "", begin: 3.5, end: 4 }],
+        backgroundWords: [{ id: "w3", text: "(yeah)", sep: "", begin: 3.5, end: 4 }],
       };
       const [paragraph] = paragraphs(generateTTML({ metadata, agents, lines: [withBackground] }));
       expect(paragraph).toContain('<span ttm:role="x-bg"><span begin="0:03.500" end="0:04.000">(yeah)</span></span>');

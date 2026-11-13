@@ -31,14 +31,14 @@ function wordTimedLine(): LyricLine {
     text: "I love you",
     agentId: "v1",
     words: [
-      { text: "I", sep: " ", begin: 0, end: 0.3 },
-      { text: "love", sep: " ", begin: 0.3, end: 0.6 },
-      { text: "you", sep: "", begin: 0.6, end: 1 },
+      { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3 },
+      { id: "w2", text: "love", sep: " ", begin: 0.3, end: 0.6 },
+      { id: "w3", text: "you", sep: "", begin: 0.6, end: 1 },
     ],
     backgroundText: "oh yeah",
     backgroundWords: [
-      { text: "oh", sep: " ", begin: 0.4, end: 0.55 },
-      { text: "yeah", sep: "", begin: 0.55, end: 0.8 },
+      { id: "w4", text: "oh", sep: " ", begin: 0.4, end: 0.55 },
+      { id: "w5", text: "yeah", sep: "", begin: 0.55, end: 0.8 },
     ],
   };
 }

@@ -1,3 +1,4 @@
+import { newWordId } from "@/domain/word/id";
 import {
   copyMergeCover,
   isPartialSyllableRun,
@@ -13,7 +14,7 @@ import { describe, expect, it } from "vitest";
 // -- Fixtures -----------------------------------------------------------------
 
 const syl = (text: string, begin: number, end: number, extra: Partial<WordTiming> = {}): WordTiming => ({
-  ...wordFromSpaced({ text, begin, end }),
+  ...wordFromSpaced({ id: newWordId(), text, begin, end }),
   syllableGroupId: "g",
   ...extra,
 });
@@ -36,8 +37,8 @@ describe("mergedTransliteration", () => {
   it("joins the pieces with the joiner stored after each piece", () => {
     expect(
       mergedTransliteration([
-        { text: "a", sep: "", begin: 0, end: 1, transliteration: "ka", transliterationJoinerAfter: "-" },
-        { text: "b", sep: "", begin: 1, end: 2, transliteration: "na" },
+        { id: "w1", text: "a", sep: "", begin: 0, end: 1, transliteration: "ka", transliterationJoinerAfter: "-" },
+        { id: "w2", text: "b", sep: "", begin: 1, end: 2, transliteration: "na" },
       ]),
     ).toBe("ka-na");
   });
@@ -46,8 +47,8 @@ describe("mergedTransliteration", () => {
 describe("mergeWordRun", () => {
   it("merges two plain words into one", () => {
     const words = [
-      { text: "Hello", sep: " ", begin: 1, end: 1.5 },
-      { text: "world", sep: " ", begin: 1.5, end: 2 },
+      { id: "w3", text: "Hello", sep: " ", begin: 1, end: 1.5 },
+      { id: "w4", text: "world", sep: " ", begin: 1.5, end: 2 },
     ];
     expect(mergeWordRun(words, [0, 1])).toEqual([{ text: "Helloworld", sep: " ", begin: 1, end: 2 }]);
   });
@@ -62,8 +63,8 @@ describe("mergeWordRun", () => {
 
   it("keeps the words outside the run in place", () => {
     const words = [
-      { text: "so", sep: " ", begin: 0, end: 1 },
-      { text: "very", sep: " ", begin: 1, end: 2 },
+      { id: "w5", text: "so", sep: " ", begin: 0, end: 1 },
+      { id: "w6", text: "very", sep: " ", begin: 1, end: 2 },
       ...beautiful().map((w) => ({ ...w, begin: w.begin + 2, end: w.end + 2 })),
     ];
     expect(mergeWordRun(words, [3, 4])).toEqual([
@@ -76,15 +77,15 @@ describe("mergeWordRun", () => {
 
   describe("edge cases", () => {
     it("expands a run that crosses into a split word to the whole word", () => {
-      const words = [{ text: "so", sep: " ", begin: 0, end: 1 }, ...beautiful()];
+      const words = [{ id: "w7", text: "so", sep: " ", begin: 0, end: 1 }, ...beautiful()];
       expect(mergeWordRun(words, [0, 1])).toEqual([{ text: "sobeautiful", sep: " ", begin: 0, end: 1.8 }]);
     });
 
     it("expands by syllable group id, never by trailing spaces", () => {
       const words = [
-        { text: "no", sep: "", begin: 0, end: 1 },
-        { text: "space", sep: " ", begin: 1, end: 2 },
-        { text: "here", sep: " ", begin: 2, end: 3 },
+        { id: "w8", text: "no", sep: "", begin: 0, end: 1 },
+        { id: "w9", text: "space", sep: " ", begin: 1, end: 2 },
+        { id: "w10", text: "here", sep: " ", begin: 2, end: 3 },
       ];
       expect(mergeWordRun(words, [1, 2])).toEqual([
         { text: "no", sep: "", begin: 0, end: 1 },
@@ -93,11 +94,11 @@ describe("mergeWordRun", () => {
     });
 
     it("returns null for a run shorter than two words", () => {
-      expect(mergeWordRun([{ text: "a", sep: "", begin: 0, end: 1 }], [0])).toBeNull();
+      expect(mergeWordRun([{ id: "w11", text: "a", sep: "", begin: 0, end: 1 }], [0])).toBeNull();
     });
 
     it("returns null for a run outside the words", () => {
-      expect(mergeWordRun([{ text: "a", sep: "", begin: 0, end: 1 }], [3, 4])).toBeNull();
+      expect(mergeWordRun([{ id: "w12", text: "a", sep: "", begin: 0, end: 1 }], [3, 4])).toBeNull();
     });
   });
 
@@ -144,13 +145,13 @@ describe("isPartialSyllableRun", () => {
   });
 
   it("is false for plain words and for a run across two words", () => {
-    const words = [{ text: "so", sep: " ", begin: 0, end: 1 }, ...beautiful()];
+    const words = [{ id: "w13", text: "so", sep: " ", begin: 0, end: 1 }, ...beautiful()];
     expect(isPartialSyllableRun(words, [0, 1])).toBe(false);
     expect(
       isPartialSyllableRun(
         [
-          { text: "a", sep: " ", begin: 0, end: 1 },
-          { text: "b", sep: "", begin: 1, end: 2 },
+          { id: "w14", text: "a", sep: " ", begin: 0, end: 1 },
+          { id: "w15", text: "b", sep: "", begin: 1, end: 2 },
         ],
         [0, 1],
       ),
@@ -162,17 +163,17 @@ describe("isWholeSyllableGroupRun", () => {
   it("is true only when the run is exactly one split word", () => {
     expect(isWholeSyllableGroupRun(beautiful(), [0, 1, 2])).toBe(true);
     expect(isWholeSyllableGroupRun(beautiful(), [1, 2])).toBe(false);
-    expect(isWholeSyllableGroupRun([{ text: "so", sep: " ", begin: 0, end: 1 }, ...beautiful()], [0, 1, 2, 3])).toBe(
-      false,
-    );
+    expect(
+      isWholeSyllableGroupRun([{ id: "w16", text: "so", sep: " ", begin: 0, end: 1 }, ...beautiful()], [0, 1, 2, 3]),
+    ).toBe(false);
   });
 });
 
 describe("copyMergeCover", () => {
   const source: WordTiming[] = [
-    { text: "one", sep: " ", begin: 0, end: 1 },
-    { text: "two", sep: " ", begin: 1, end: 2 },
-    { text: "three", sep: "", begin: 2, end: 3 },
+    { id: "w17", text: "one", sep: " ", begin: 0, end: 1 },
+    { id: "w18", text: "two", sep: " ", begin: 1, end: 2 },
+    { id: "w19", text: "three", sep: "", begin: 2, end: 3 },
   ];
 
   it("maps a run onto a copy split the same way", () => {
@@ -181,48 +182,48 @@ describe("copyMergeCover", () => {
 
   it("maps a run onto every word of a copy that covers the same text", () => {
     const copy: WordTiming[] = [
-      { text: "o", sep: "", begin: 10, end: 10.4 },
-      { text: "ne", sep: " ", begin: 10.4, end: 11 },
-      { text: "two", sep: " ", begin: 11, end: 12 },
-      { text: "three", sep: "", begin: 12, end: 13 },
+      { id: "w20", text: "o", sep: "", begin: 10, end: 10.4 },
+      { id: "w21", text: "ne", sep: " ", begin: 10.4, end: 11 },
+      { id: "w22", text: "two", sep: " ", begin: 11, end: 12 },
+      { id: "w23", text: "three", sep: "", begin: 12, end: 13 },
     ];
     expect(copyMergeCover(source, [0, 1], copy)).toEqual({ inside: [0, 1, 2], overlapping: [0, 1, 2] });
   });
 
   it("regression: maps the run after it grows to the whole split word", () => {
     const grouped: WordTiming[] = [
-      { text: "so", sep: " ", begin: 0, end: 1 },
-      { text: "beau", sep: "", begin: 1, end: 1.2, syllableGroupId: "g" },
-      { text: "ti", sep: "", begin: 1.2, end: 1.4, syllableGroupId: "g" },
-      { text: "ful", sep: "", begin: 1.4, end: 1.8, syllableGroupId: "g" },
+      { id: "w24", text: "so", sep: " ", begin: 0, end: 1 },
+      { id: "w25", text: "beau", sep: "", begin: 1, end: 1.2, syllableGroupId: "g" },
+      { id: "w26", text: "ti", sep: "", begin: 1.2, end: 1.4, syllableGroupId: "g" },
+      { id: "w27", text: "ful", sep: "", begin: 1.4, end: 1.8, syllableGroupId: "g" },
     ];
     const copy: WordTiming[] = [
-      { text: "so", sep: " ", begin: 10, end: 11 },
-      { text: "be", sep: "", begin: 11, end: 11.1 },
-      { text: "au", sep: "", begin: 11.1, end: 11.2 },
-      { text: "ti", sep: "", begin: 11.2, end: 11.4 },
-      { text: "ful", sep: "", begin: 11.4, end: 11.8 },
+      { id: "w28", text: "so", sep: " ", begin: 10, end: 11 },
+      { id: "w29", text: "be", sep: "", begin: 11, end: 11.1 },
+      { id: "w30", text: "au", sep: "", begin: 11.1, end: 11.2 },
+      { id: "w31", text: "ti", sep: "", begin: 11.2, end: 11.4 },
+      { id: "w32", text: "ful", sep: "", begin: 11.4, end: 11.8 },
     ];
     expect(copyMergeCover(grouped, [0, 1], copy).inside).toEqual([0, 1, 2, 3, 4]);
   });
 
   it("regression: reports a copy whose blocks cross the merged text", () => {
     const grouped: WordTiming[] = [
-      { text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g" },
-      { text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g" },
-      { text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g" },
+      { id: "w33", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g" },
+      { id: "w34", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g" },
+      { id: "w35", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g" },
     ];
     const copy: WordTiming[] = [
-      { text: "be", sep: "", begin: 10, end: 10.2, syllableGroupId: "h" },
-      { text: "aut", sep: "", begin: 10.2, end: 10.5, syllableGroupId: "h" },
-      { text: "iful", sep: "", begin: 10.5, end: 10.9, syllableGroupId: "h" },
+      { id: "w36", text: "be", sep: "", begin: 10, end: 10.2, syllableGroupId: "h" },
+      { id: "w37", text: "aut", sep: "", begin: 10.2, end: 10.5, syllableGroupId: "h" },
+      { id: "w38", text: "iful", sep: "", begin: 10.5, end: 10.9, syllableGroupId: "h" },
     ];
     expect(copyMergeCover(grouped, [0, 1], copy)).toEqual({ inside: [0, 1], overlapping: [0, 1, 2] });
   });
 
   describe("edge cases", () => {
     it("returns no indices when the copy has not reached the run yet", () => {
-      expect(copyMergeCover(source, [1, 2], [{ text: "one", sep: " ", begin: 0, end: 1 }])).toEqual({
+      expect(copyMergeCover(source, [1, 2], [{ id: "w1", text: "one", sep: " ", begin: 0, end: 1 }])).toEqual({
         inside: [],
         overlapping: [],
       });

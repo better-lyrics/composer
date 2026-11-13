@@ -8,6 +8,7 @@ import {
 } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/tracks";
+import { withNewId } from "@/domain/word/id";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
@@ -79,7 +80,7 @@ function applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, range
     const newBgWords: WordTiming[] = [];
 
     for (const entry of entries) {
-      const newWord = { ...entry.word, ...pastedWordBounds(entry.word, timeDelta, range) };
+      const newWord = withNewId({ ...entry.word, ...pastedWordBounds(entry.word, timeDelta, range) });
       if (entry.trackType === "word") newWords.push(newWord);
       else newBgWords.push(newWord);
     }

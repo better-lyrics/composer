@@ -75,8 +75,8 @@ describe("SyncPanel", () => {
           agentId: "v1",
           text: "한국 노래",
           words: [
-            { text: "한국", sep: " ", transliteration: "hanguk", begin: 0, end: 1 },
-            { text: "노래", sep: "", transliteration: "norae", begin: 1, end: 2 },
+            { id: "w1", text: "한국", sep: " ", transliteration: "hanguk", begin: 0, end: 1 },
+            { id: "w2", text: "노래", sep: "", transliteration: "norae", begin: 1, end: 2 },
           ],
           transliteration: {
             language: "ko-Latn",

@@ -119,8 +119,8 @@ describe("effectiveBounds (legacy call site coverage)", () => {
       text: "Hello",
       agentId: "v1",
       words: [
-        { text: "Hello", sep: "", begin: 2, end: 5 },
-        { text: "World", sep: "", begin: 5, end: 8 },
+        { id: "w1", text: "Hello", sep: "", begin: 2, end: 5 },
+        { id: "w2", text: "World", sep: "", begin: 5, end: 8 },
       ],
     };
 
@@ -162,7 +162,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
       id: "1",
       text: "Hello",
       agentId: "v1",
-      words: [{ text: "Hello", sep: "", begin: 2, end: 5 }],
+      words: [{ id: "w3", text: "Hello", sep: "", begin: 2, end: 5 }],
     };
 
     const timing = effectiveBounds(line);
@@ -189,13 +189,13 @@ describe("effectiveBounds (legacy call site coverage)", () => {
       text: "Hello",
       agentId: "v1",
       words: [
-        { text: "Hello", sep: "", begin: 2, end: 5 },
-        { text: "World", sep: "", begin: 5, end: 8 },
+        { id: "w4", text: "Hello", sep: "", begin: 2, end: 5 },
+        { id: "w5", text: "World", sep: "", begin: 5, end: 8 },
       ],
       backgroundText: "echo",
       backgroundWords: [
-        { text: "ech", sep: "", begin: 6, end: 9 },
-        { text: "o", sep: "", begin: 9, end: 12 },
+        { id: "w6", text: "ech", sep: "", begin: 6, end: 9 },
+        { id: "w7", text: "o", sep: "", begin: 9, end: 12 },
       ],
     };
 
@@ -209,9 +209,9 @@ describe("effectiveBounds (legacy call site coverage)", () => {
       id: "1",
       text: "Hello",
       agentId: "v1",
-      words: [{ text: "Hello", sep: "", begin: 5, end: 8 }],
+      words: [{ id: "w8", text: "Hello", sep: "", begin: 5, end: 8 }],
       backgroundText: "ooh",
-      backgroundWords: [{ text: "ooh", sep: "", begin: 3, end: 6 }],
+      backgroundWords: [{ id: "w9", text: "ooh", sep: "", begin: 3, end: 6 }],
     };
 
     const timing = effectiveBounds(line);
@@ -227,7 +227,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
       begin: 3,
       end: 7,
       backgroundText: "ahh",
-      backgroundWords: [{ text: "ahh", sep: "", begin: 6, end: 10 }],
+      backgroundWords: [{ id: "w10", text: "ahh", sep: "", begin: 6, end: 10 }],
     };
 
     const timing = effectiveBounds(line);
@@ -240,9 +240,9 @@ describe("effectiveBounds (legacy call site coverage)", () => {
       id: "1",
       text: "Hello",
       agentId: "v1",
-      words: [{ text: "Hello", sep: "", begin: 2, end: 10 }],
+      words: [{ id: "w11", text: "Hello", sep: "", begin: 2, end: 10 }],
       backgroundText: "yeah",
-      backgroundWords: [{ text: "yeah", sep: "", begin: 4, end: 7 }],
+      backgroundWords: [{ id: "w12", text: "yeah", sep: "", begin: 4, end: 7 }],
     };
 
     const timing = effectiveBounds(line);
@@ -255,7 +255,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
       id: "1",
       text: "Hello",
       agentId: "v1",
-      words: [{ text: "Hello", sep: "", begin: 2, end: 5 }],
+      words: [{ id: "w13", text: "Hello", sep: "", begin: 2, end: 5 }],
       backgroundWords: [],
     };
 
@@ -270,7 +270,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
       text: "Hello",
       agentId: "v1",
       backgroundText: "ooh",
-      backgroundWords: [{ text: "ooh", sep: "", begin: 3, end: 6 }],
+      backgroundWords: [{ id: "w14", text: "ooh", sep: "", begin: 3, end: 6 }],
     };
 
     const timing = effectiveBounds(line);
@@ -316,25 +316,30 @@ describe("getEffectiveRows", () => {
 
   it("interleaves a header before each instance run", () => {
     const lines: LyricLine[] = [
-      l("a", { groupId: "g1", instanceIdx: 0, templateLineIdx: 0, words: [{ text: "I", sep: "", begin: 0, end: 1 }] }),
+      l("a", {
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [{ id: "w15", text: "I", sep: "", begin: 0, end: 1 }],
+      }),
       l("b", {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 1,
-        words: [{ text: "you", sep: "", begin: 1, end: 2 }],
+        words: [{ id: "w16", text: "you", sep: "", begin: 1, end: 2 }],
       }),
       l("c"),
       l("d", {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ text: "I", sep: "", begin: 30, end: 31 }],
+        words: [{ id: "w17", text: "I", sep: "", begin: 30, end: 31 }],
       }),
       l("e", {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 1,
-        words: [{ text: "you", sep: "", begin: 31, end: 32 }],
+        words: [{ id: "w18", text: "you", sep: "", begin: 31, end: 32 }],
       }),
     ];
 
@@ -398,7 +403,7 @@ describe("getEffectiveRows", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        backgroundWords: [{ text: "ah", sep: "", begin: 4, end: 5 }],
+        backgroundWords: [{ id: "w19", text: "ah", sep: "", begin: 4, end: 5 }],
       }),
     ];
     const rows = getEffectiveRows(lines);
@@ -418,7 +423,7 @@ describe("getEffectiveRows", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ text: "x", sep: "", begin: 30, end: 31 }],
+        words: [{ id: "w20", text: "x", sep: "", begin: 30, end: 31 }],
       }),
     ];
     const rows = getEffectiveRows(lines);
@@ -428,7 +433,12 @@ describe("getEffectiveRows", () => {
   it("suppresses header for partially-empty instance only when ALL of its lines have no timing", () => {
     // Instance has line A timed and line B empty: header still appears (instance is partially alive)
     const lines: LyricLine[] = [
-      l("a", { groupId: "g1", instanceIdx: 0, templateLineIdx: 0, words: [{ text: "x", sep: "", begin: 5, end: 6 }] }),
+      l("a", {
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [{ id: "w21", text: "x", sep: "", begin: 5, end: 6 }],
+      }),
       l("b", { groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
     ];
     const rows = getEffectiveRows(lines);
@@ -446,10 +456,10 @@ describe("instanceBounds (legacy call site coverage)", () => {
         text: "x",
         agentId: "v1",
         words: [
-          { text: "hello", sep: " ", begin: 5, end: 6 },
-          { text: "world", sep: "", begin: 6, end: 7 },
+          { id: "w22", text: "hello", sep: " ", begin: 5, end: 6 },
+          { id: "w23", text: "world", sep: "", begin: 6, end: 7 },
         ],
-        backgroundWords: [{ text: "yeah", sep: "", begin: 4, end: 4.5 }],
+        backgroundWords: [{ id: "w24", text: "yeah", sep: "", begin: 4, end: 4.5 }],
       },
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 4, end: 7 });
@@ -462,8 +472,8 @@ describe("instanceBounds (legacy call site coverage)", () => {
         text: "x",
         agentId: "v1",
         words: [
-          { text: "hello", sep: "", begin: 5, end: 6 },
-          { text: "world", sep: "", begin: 6, end: 7 },
+          { id: "w25", text: "hello", sep: "", begin: 5, end: 6 },
+          { id: "w26", text: "world", sep: "", begin: 6, end: 7 },
         ],
       },
     ];
@@ -478,7 +488,7 @@ describe("instanceBounds (legacy call site coverage)", () => {
         agentId: "v1",
         begin: 10,
         end: 20,
-        backgroundWords: [{ text: "ah", sep: "", begin: 5, end: 6 }],
+        backgroundWords: [{ id: "w27", text: "ah", sep: "", begin: 5, end: 6 }],
       },
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 5, end: 6 });
@@ -495,7 +505,7 @@ describe("instanceBounds (legacy call site coverage)", () => {
         id: "a",
         text: "x",
         agentId: "v1",
-        words: [{ text: "hello", sep: "", begin: 5, end: 6 }],
+        words: [{ id: "w28", text: "hello", sep: "", begin: 5, end: 6 }],
       },
       { id: "b", text: "y", agentId: "v1", begin: 10, end: 12 },
     ];
@@ -514,10 +524,10 @@ describe("getWordsInInstance", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "I", sep: " ", begin: 0, end: 1 },
-          { text: "love", sep: "", begin: 1, end: 2 },
+          { id: "w29", text: "I", sep: " ", begin: 0, end: 1 },
+          { id: "w30", text: "love", sep: "", begin: 1, end: 2 },
         ],
-        backgroundWords: [{ text: "yeah", sep: "", begin: 0.5, end: 1.5 }],
+        backgroundWords: [{ id: "w31", text: "yeah", sep: "", begin: 0.5, end: 1.5 }],
       },
       {
         id: "b",
@@ -526,7 +536,7 @@ describe("getWordsInInstance", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 1,
-        words: [{ text: "you", sep: "", begin: 2, end: 3 }],
+        words: [{ id: "w32", text: "you", sep: "", begin: 2, end: 3 }],
       },
       // Other instance
       {
@@ -536,7 +546,7 @@ describe("getWordsInInstance", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ text: "I", sep: "", begin: 30, end: 31 }],
+        words: [{ id: "w33", text: "I", sep: "", begin: 30, end: 31 }],
       },
     ];
 
@@ -562,9 +572,9 @@ describe("nudgeSelectedWords", () => {
   it("shifts a single word right preserving duration", () => {
     const lines = [
       makeLine("L", [
-        { text: "a", sep: " ", begin: 0, end: 1 },
-        { text: "b", sep: " ", begin: 1, end: 2 },
-        { text: "c", sep: "", begin: 5, end: 6 },
+        { id: "w34", text: "a", sep: " ", begin: 0, end: 1 },
+        { id: "w35", text: "b", sep: " ", begin: 1, end: 2 },
+        { id: "w36", text: "c", sep: "", begin: 5, end: 6 },
       ]),
     ];
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], 0.05, wholeSong(10));
@@ -580,8 +590,8 @@ describe("nudgeSelectedWords", () => {
   it("shifts a single word left preserving duration", () => {
     const lines = [
       makeLine("L", [
-        { text: "a", sep: " ", begin: 0, end: 1 },
-        { text: "b", sep: "", begin: 3, end: 4 },
+        { id: "w37", text: "a", sep: " ", begin: 0, end: 1 },
+        { id: "w38", text: "b", sep: "", begin: 3, end: 4 },
       ]),
     ];
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, wholeSong(10));
@@ -593,8 +603,8 @@ describe("nudgeSelectedWords", () => {
   it("clamps to neighbor end when partial room left", () => {
     const lines = [
       makeLine("L", [
-        { text: "a", sep: " ", begin: 0, end: 1 },
-        { text: "b", sep: "", begin: 1.02, end: 2 },
+        { id: "w39", text: "a", sep: " ", begin: 0, end: 1 },
+        { id: "w40", text: "b", sep: "", begin: 1.02, end: 2 },
       ]),
     ];
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, wholeSong(10));
@@ -606,8 +616,8 @@ describe("nudgeSelectedWords", () => {
   it("is a no-op when already touching previous word", () => {
     const lines = [
       makeLine("L", [
-        { text: "a", sep: " ", begin: 0, end: 1 },
-        { text: "b", sep: "", begin: 1, end: 2 },
+        { id: "w41", text: "a", sep: " ", begin: 0, end: 1 },
+        { id: "w42", text: "b", sep: "", begin: 1, end: 2 },
       ]),
     ];
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, wholeSong(10));
@@ -618,8 +628,8 @@ describe("nudgeSelectedWords", () => {
   it("is a no-op when already touching next word", () => {
     const lines = [
       makeLine("L", [
-        { text: "a", sep: " ", begin: 0, end: 1 },
-        { text: "b", sep: "", begin: 1, end: 2 },
+        { id: "w43", text: "a", sep: " ", begin: 0, end: 1 },
+        { id: "w44", text: "b", sep: "", begin: 1, end: 2 },
       ]),
     ];
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], 0.05, wholeSong(10));
@@ -628,7 +638,7 @@ describe("nudgeSelectedWords", () => {
   });
 
   it("clamps to 0 for the first word", () => {
-    const lines = [makeLine("L", [{ text: "a", sep: "", begin: 0.02, end: 1 }])];
+    const lines = [makeLine("L", [{ id: "w45", text: "a", sep: "", begin: 0.02, end: 1 }])];
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], -0.05, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(-0.02);
     expect(result.updates[0].updates.words![0].begin).toBeCloseTo(0);
@@ -636,7 +646,7 @@ describe("nudgeSelectedWords", () => {
   });
 
   it("clamps to duration for the last word", () => {
-    const lines = [makeLine("L", [{ text: "a", sep: "", begin: 8, end: 9.98 }])];
+    const lines = [makeLine("L", [{ id: "w46", text: "a", sep: "", begin: 8, end: 9.98 }])];
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], 0.05, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(0.02);
     expect(result.updates[0].updates.words![0].end).toBeCloseTo(10);
@@ -645,10 +655,10 @@ describe("nudgeSelectedWords", () => {
   it("shifts consecutive selected words as a block", () => {
     const lines = [
       makeLine("L", [
-        { text: "a", sep: " ", begin: 0, end: 1 },
-        { text: "b", sep: " ", begin: 1, end: 2 },
-        { text: "c", sep: " ", begin: 2, end: 3 },
-        { text: "d", sep: "", begin: 5, end: 6 },
+        { id: "w47", text: "a", sep: " ", begin: 0, end: 1 },
+        { id: "w48", text: "b", sep: " ", begin: 1, end: 2 },
+        { id: "w49", text: "c", sep: " ", begin: 2, end: 3 },
+        { id: "w50", text: "d", sep: "", begin: 5, end: 6 },
       ]),
     ];
     const result = nudgeSelectedWords(
@@ -673,10 +683,10 @@ describe("nudgeSelectedWords", () => {
   it("clamps a block to the most-restrictive non-selected neighbor", () => {
     const lines = [
       makeLine("L", [
-        { text: "a", sep: " ", begin: 0, end: 1 },
-        { text: "b", sep: " ", begin: 1, end: 2 },
-        { text: "c", sep: " ", begin: 2, end: 3 },
-        { text: "d", sep: "", begin: 3.02, end: 4 },
+        { id: "w51", text: "a", sep: " ", begin: 0, end: 1 },
+        { id: "w52", text: "b", sep: " ", begin: 1, end: 2 },
+        { id: "w53", text: "c", sep: " ", begin: 2, end: 3 },
+        { id: "w54", text: "d", sep: "", begin: 3.02, end: 4 },
       ]),
     ];
     const result = nudgeSelectedWords(
@@ -699,11 +709,11 @@ describe("nudgeSelectedWords", () => {
         id: "L",
         text: "a",
         agentId: "v1",
-        words: [{ text: "a", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w55", text: "a", sep: "", begin: 0, end: 1 }],
         backgroundText: "ooh",
         backgroundWords: [
-          { text: "ooh", sep: "", begin: 2, end: 3 },
-          { text: "ah", sep: "", begin: 5, end: 6 },
+          { id: "w56", text: "ooh", sep: "", begin: 2, end: 3 },
+          { id: "w57", text: "ah", sep: "", begin: 5, end: 6 },
         ],
       },
     ];
@@ -716,8 +726,8 @@ describe("nudgeSelectedWords", () => {
 
   it("applies the same clamped delta across multiple lines", () => {
     const lines = [
-      makeLine("L1", [{ text: "a", sep: "", begin: 0, end: 1 }]),
-      makeLine("L2", [{ text: "b", sep: "", begin: 5, end: 5.04 }]),
+      makeLine("L1", [{ id: "w58", text: "a", sep: "", begin: 0, end: 1 }]),
+      makeLine("L2", [{ id: "w59", text: "b", sep: "", begin: 5, end: 5.04 }]),
     ];
     const result = nudgeSelectedWords(
       lines,
@@ -733,14 +743,14 @@ describe("nudgeSelectedWords", () => {
   });
 
   it("returns no-op for empty selection", () => {
-    const lines = [makeLine("L", [{ text: "a", sep: "", begin: 0, end: 1 }])];
+    const lines = [makeLine("L", [{ id: "w60", text: "a", sep: "", begin: 0, end: 1 }])];
     const result = nudgeSelectedWords(lines, [], 0.05, wholeSong(10));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
 
   it("returns no-op for zero delta", () => {
-    const lines = [makeLine("L", [{ text: "a", sep: "", begin: 0, end: 1 }])];
+    const lines = [makeLine("L", [{ id: "w61", text: "a", sep: "", begin: 0, end: 1 }])];
     const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], 0, wholeSong(10));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
@@ -760,8 +770,8 @@ describe("nudgeSelectedWords as instance shift", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "I", sep: " ", begin: 10, end: 10.3 },
-          { text: "love", sep: "", begin: 10.3, end: 10.8 },
+          { id: "w62", text: "I", sep: " ", begin: 10, end: 10.3 },
+          { id: "w63", text: "love", sep: "", begin: 10.3, end: 10.8 },
         ],
       },
       {
@@ -772,12 +782,12 @@ describe("nudgeSelectedWords as instance shift", () => {
         instanceIdx: 0,
         templateLineIdx: 1,
         words: [
-          { text: "all", sep: " ", begin: 11, end: 11.4 },
-          { text: "night", sep: "", begin: 11.4, end: 12 },
+          { id: "w64", text: "all", sep: " ", begin: 11, end: 11.4 },
+          { id: "w65", text: "night", sep: "", begin: 11.4, end: 12 },
         ],
       },
       // Standalone line OUTSIDE the instance, must NOT be touched
-      { id: "C", text: "outside", agentId: "v1", words: [{ text: "outside", sep: "", begin: 30, end: 31 }] },
+      { id: "C", text: "outside", agentId: "v1", words: [{ id: "w66", text: "outside", sep: "", begin: 30, end: 31 }] },
     ];
     const allInstanceSelections = [
       { lineId: "A", type: "word" as const, wordIndex: 0 },
@@ -798,7 +808,7 @@ describe("nudgeSelectedWords as instance shift", () => {
 
   it("clamps shift to song duration when selection touches the end", () => {
     const lines: LyricLine[] = [
-      { id: "A", text: "x", agentId: "v1", words: [{ text: "x", sep: "", begin: 59.7, end: 60 }] },
+      { id: "A", text: "x", agentId: "v1", words: [{ id: "w67", text: "x", sep: "", begin: 59.7, end: 60 }] },
     ];
     const result = nudgeSelectedWords(lines, [{ lineId: "A", type: "word", wordIndex: 0 }], 0.5, wholeSong(60));
     expect(result.appliedDelta).toBe(0);
@@ -810,7 +820,7 @@ describe("nudgeSelectedWords as instance shift", () => {
 describe("partitionNudgeSelections", () => {
   it("classifies word-synced lines as wordSynced", () => {
     const lines: LyricLine[] = [
-      { id: "L1", text: "hello", agentId: "v1", words: [{ text: "hello", sep: "", begin: 0, end: 1 }] },
+      { id: "L1", text: "hello", agentId: "v1", words: [{ id: "w68", text: "hello", sep: "", begin: 0, end: 1 }] },
     ];
     const sels = [{ lineId: "L1", type: "word" as const, wordIndex: 0 }];
     const result = partitionNudgeSelections(lines, sels);
@@ -848,7 +858,7 @@ describe("partitionNudgeSelections", () => {
         agentId: "v1",
         begin: 5,
         end: 7,
-        backgroundWords: [{ text: "ah", sep: "", begin: 5.2, end: 5.6 }],
+        backgroundWords: [{ id: "w69", text: "ah", sep: "", begin: 5.2, end: 5.6 }],
       },
     ];
     const sels = [{ lineId: "L1", type: "bg" as const, wordIndex: 0 }];
@@ -860,7 +870,12 @@ describe("partitionNudgeSelections", () => {
   it("handles mixed selections across line-synced and word-synced rows", () => {
     const lines: LyricLine[] = [
       { id: "A", text: "synced", agentId: "v1", begin: 0, end: 1 },
-      { id: "B", text: "with words", agentId: "v1", words: [{ text: "with words", sep: "", begin: 1, end: 2 }] },
+      {
+        id: "B",
+        text: "with words",
+        agentId: "v1",
+        words: [{ id: "w70", text: "with words", sep: "", begin: 1, end: 2 }],
+      },
     ];
     const sels = [
       { lineId: "A", type: "word" as const, wordIndex: 0 },
@@ -891,9 +906,9 @@ describe("partitionNudgeSelections", () => {
         text: "every",
         agentId: "v1",
         words: [
-          { text: "ev", sep: "", begin: 0, end: 0.3, syllableGroupId: "g_every" },
-          { text: "er", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g_every" },
-          { text: "y", sep: "", begin: 0.6, end: 1, syllableGroupId: "g_every" },
+          { id: "w71", text: "ev", sep: "", begin: 0, end: 0.3, syllableGroupId: "g_every" },
+          { id: "w72", text: "er", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g_every" },
+          { id: "w73", text: "y", sep: "", begin: 0.6, end: 1, syllableGroupId: "g_every" },
         ],
       },
     ];
@@ -976,7 +991,7 @@ describe("shiftSelectionsTogether", () => {
     // If they apply different deltas, the group banner stretches asymmetrically.
     const lines: LyricLine[] = [
       // Word-synced row whose first word starts at 0.05 → max left shift = 0.05
-      { id: "A", text: "x", agentId: "v1", words: [{ text: "x", sep: "", begin: 0.05, end: 1 }] },
+      { id: "A", text: "x", agentId: "v1", words: [{ id: "w74", text: "x", sep: "", begin: 0.05, end: 1 }] },
       // Line-synced row with much more left headroom (begin=10)
       { id: "B", text: "y", agentId: "v1", begin: 10, end: 11 },
     ];
@@ -1004,7 +1019,7 @@ describe("shiftSelectionsTogether", () => {
 
   it("works when only the word-synced partition has selections", () => {
     const lines: LyricLine[] = [
-      { id: "A", text: "x", agentId: "v1", words: [{ text: "x", sep: "", begin: 5, end: 6 }] },
+      { id: "A", text: "x", agentId: "v1", words: [{ id: "w75", text: "x", sep: "", begin: 5, end: 6 }] },
     ];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
     const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
@@ -1021,7 +1036,7 @@ describe("shiftSelectionsTogether", () => {
   it("clamps to the smaller of word-synced and line-synced headroom (line-synced wins)", () => {
     const lines: LyricLine[] = [
       // Word-synced row with tons of headroom on both sides
-      { id: "A", text: "x", agentId: "v1", words: [{ text: "x", sep: "", begin: 30, end: 31 }] },
+      { id: "A", text: "x", agentId: "v1", words: [{ id: "w76", text: "x", sep: "", begin: 30, end: 31 }] },
       // Line-synced row with only 0.01s headroom on the right (close to duration=60)
       { id: "B", text: "y", agentId: "v1", begin: 58.99, end: 59.99 },
     ];
@@ -1035,7 +1050,7 @@ describe("shiftSelectionsTogether", () => {
 
   it("preserves direction when clamping (negative requestedDelta yields negative applied)", () => {
     const lines: LyricLine[] = [
-      { id: "A", text: "x", agentId: "v1", words: [{ text: "x", sep: "", begin: 0.05, end: 1 }] },
+      { id: "A", text: "x", agentId: "v1", words: [{ id: "w77", text: "x", sep: "", begin: 0.05, end: 1 }] },
     ];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
     const result = shiftSelectionsTogether(lines, partitioned, -0.5, wholeSong(60));
@@ -1055,8 +1070,8 @@ describe("shiftSelectionsTogether", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "I", sep: " ", begin: 10, end: 10.3 },
-          { text: "love", sep: "", begin: 10.3, end: 10.8 },
+          { id: "w78", text: "I", sep: " ", begin: 10, end: 10.3 },
+          { id: "w79", text: "love", sep: "", begin: 10.3, end: 10.8 },
         ],
       },
       {
@@ -1067,8 +1082,8 @@ describe("shiftSelectionsTogether", () => {
         instanceIdx: 0,
         templateLineIdx: 1,
         words: [
-          { text: "all", sep: " ", begin: 11, end: 11.4 },
-          { text: "night", sep: "", begin: 11.4, end: 12 },
+          { id: "w80", text: "all", sep: " ", begin: 11, end: 11.4 },
+          { id: "w81", text: "night", sep: "", begin: 11.4, end: 12 },
         ],
       },
     ];
@@ -1104,9 +1119,9 @@ describe("shiftSelectionsTogether · background provenance", () => {
         id: "A",
         text: "main",
         agentId: "v1",
-        words: [{ text: "main", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w82", text: "main", sep: "", begin: 0, end: 1 }],
         backgroundText: "ooh",
-        backgroundWords: [{ text: "ooh", sep: "", begin: 2, end: 3 }],
+        backgroundWords: [{ id: "w83", text: "ooh", sep: "", begin: 2, end: 3 }],
         backgroundTextSource: "extraction",
       },
     ];
@@ -1123,11 +1138,11 @@ describe("shiftSelectionsTogether · background provenance", () => {
         id: "A",
         text: "main",
         agentId: "v1",
-        words: [{ text: "main", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w84", text: "main", sep: "", begin: 0, end: 1 }],
         backgroundText: "ooh aah",
         backgroundWords: [
-          { text: "ooh", sep: " ", begin: 2, end: 2.5 },
-          { text: "aah", sep: "", begin: 2.5, end: 3 },
+          { id: "w85", text: "ooh", sep: " ", begin: 2, end: 2.5 },
+          { id: "w86", text: "aah", sep: "", begin: 2.5, end: 3 },
         ],
         backgroundTextSource: "extraction",
       },
@@ -1153,9 +1168,9 @@ describe("shiftSelectionsTogether · background provenance", () => {
         id: "A",
         text: "main",
         agentId: "v1",
-        words: [{ text: "main", sep: "", begin: 5, end: 6 }],
+        words: [{ id: "w87", text: "main", sep: "", begin: 5, end: 6 }],
         backgroundText: "ooh",
-        backgroundWords: [{ text: "ooh", sep: "", begin: 2, end: 3 }],
+        backgroundWords: [{ id: "w88", text: "ooh", sep: "", begin: 2, end: 3 }],
         backgroundTextSource: "extraction",
       },
     ];

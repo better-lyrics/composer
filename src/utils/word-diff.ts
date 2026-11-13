@@ -1,3 +1,4 @@
+import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { lcsPairs, wordKey } from "@/domain/word/alignment";
 import { insertSlot } from "@/domain/word/remap-text";
@@ -14,6 +15,7 @@ function proportionalRemap(sourceAfter: WordTiming[], siblingWords: WordTiming[]
   const siblingSpan = siblingEnd - siblingStart;
   if (siblingSpan <= 0) return null;
   return sourceAfter.map((w) => ({
+    id: newWordId(),
     text: w.text,
     sep: w.sep,
     begin: siblingStart + ((w.begin - sourceStart) / sourceSpan) * siblingSpan,

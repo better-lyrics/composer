@@ -10,9 +10,9 @@ import { reorderWordTrack } from "./reorder-track";
 describe("reorderWordTrack", () => {
   it("keeps three separate words separate when the last word is dragged before the middle word", () => {
     const track: WordTiming[] = [
-      { text: "one", sep: " ", begin: 0, end: 1 },
-      { text: "two", sep: " ", begin: 2, end: 3 },
-      { text: "three", sep: "", begin: 4, end: 5 },
+      { id: "w1", text: "one", sep: " ", begin: 0, end: 1 },
+      { id: "w2", text: "two", sep: " ", begin: 2, end: 3 },
+      { id: "w3", text: "three", sep: "", begin: 4, end: 5 },
     ];
 
     const result = reorderWordTrack(track, new Set([2]), -2.5, { min: 0, max: 10 });
@@ -27,9 +27,9 @@ describe("reorderWordTrack", () => {
 
   it("keeps words separate when the first word is dragged to the end", () => {
     const track: WordTiming[] = [
-      { text: "alpha", sep: " ", begin: 0, end: 1 },
-      { text: "beta", sep: " ", begin: 2, end: 3 },
-      { text: "gamma", sep: "", begin: 4, end: 5 },
+      { id: "w4", text: "alpha", sep: " ", begin: 0, end: 1 },
+      { id: "w5", text: "beta", sep: " ", begin: 2, end: 3 },
+      { id: "w6", text: "gamma", sep: "", begin: 4, end: 5 },
     ];
 
     const result = reorderWordTrack(track, new Set([0]), 6, { min: 0, max: 12 });
@@ -43,9 +43,9 @@ describe("reorderWordTrack", () => {
 
   it("keeps spacing correct when a middle word is nudged without changing order", () => {
     const track: WordTiming[] = [
-      { text: "first", sep: " ", begin: 0, end: 1 },
-      { text: "second", sep: " ", begin: 2, end: 3 },
-      { text: "third", sep: "", begin: 4, end: 5 },
+      { id: "w7", text: "first", sep: " ", begin: 0, end: 1 },
+      { id: "w8", text: "second", sep: " ", begin: 2, end: 3 },
+      { id: "w9", text: "third", sep: "", begin: 4, end: 5 },
     ];
 
     const result = reorderWordTrack(track, new Set([1]), 0.2, { min: 0, max: 10 });
@@ -57,10 +57,10 @@ describe("reorderWordTrack", () => {
 
   it("reinserts boundaries for a multi-word dragged set with non-adjacent indices", () => {
     const track: WordTiming[] = [
-      { text: "one", sep: " ", begin: 0, end: 1 },
-      { text: "two", sep: " ", begin: 2, end: 3 },
-      { text: "three", sep: " ", begin: 4, end: 5 },
-      { text: "four", sep: "", begin: 6, end: 7 },
+      { id: "w10", text: "one", sep: " ", begin: 0, end: 1 },
+      { id: "w11", text: "two", sep: " ", begin: 2, end: 3 },
+      { id: "w12", text: "three", sep: " ", begin: 4, end: 5 },
+      { id: "w13", text: "four", sep: "", begin: 6, end: 7 },
     ];
 
     const result = reorderWordTrack(track, new Set([0, 2]), 4, { min: 0, max: 20 });
@@ -73,9 +73,9 @@ describe("reorderWordTrack", () => {
 
   it("gives the original spaceless last word a trailing space when it lands mid-track", () => {
     const track: WordTiming[] = [
-      { text: "head", sep: " ", begin: 0, end: 1 },
-      { text: "body", sep: " ", begin: 5, end: 6 },
-      { text: "tail", sep: "", begin: 8, end: 9 },
+      { id: "w14", text: "head", sep: " ", begin: 0, end: 1 },
+      { id: "w15", text: "body", sep: " ", begin: 5, end: 6 },
+      { id: "w16", text: "tail", sep: "", begin: 8, end: 9 },
     ];
 
     const result = reorderWordTrack(track, new Set([2]), -6, { min: 0, max: 12 });
@@ -91,9 +91,9 @@ describe("reorderWordTrack", () => {
 
   it("shifts the whole track uniformly when every index is dragged", () => {
     const track: WordTiming[] = [
-      { text: "one", sep: " ", begin: 1, end: 2 },
-      { text: "two", sep: " ", begin: 3, end: 4 },
-      { text: "three", sep: "", begin: 5, end: 6 },
+      { id: "w17", text: "one", sep: " ", begin: 1, end: 2 },
+      { id: "w18", text: "two", sep: " ", begin: 3, end: 4 },
+      { id: "w19", text: "three", sep: "", begin: 5, end: 6 },
     ];
 
     const result = reorderWordTrack(track, new Set([0, 1, 2]), 2, { min: 0, max: 20 });
@@ -106,9 +106,9 @@ describe("reorderWordTrack", () => {
 
   it("preserves the internal syllable structure of a multi-syllable word dragged past another word", () => {
     const track: WordTiming[] = [
-      { text: "sun", sep: "", begin: 0, end: 0.5, syllableGroupId: "g1" },
-      { text: "shine", sep: " ", begin: 0.5, end: 1, syllableGroupId: "g1" },
-      { text: "bright", sep: "", begin: 2, end: 3 },
+      { id: "w20", text: "sun", sep: "", begin: 0, end: 0.5, syllableGroupId: "g1" },
+      { id: "w21", text: "shine", sep: " ", begin: 0.5, end: 1, syllableGroupId: "g1" },
+      { id: "w22", text: "bright", sep: "", begin: 2, end: 3 },
     ];
 
     const result = reorderWordTrack(track, new Set([0, 1]), 4, { min: 0, max: 12 });
@@ -125,8 +125,8 @@ describe("reorderWordTrack", () => {
 
   it("pushes a later overlapping word forward so the result has no overlap", () => {
     const track: WordTiming[] = [
-      { text: "early", sep: " ", begin: 0, end: 1 },
-      { text: "late", sep: "", begin: 8, end: 9 },
+      { id: "w23", text: "early", sep: " ", begin: 0, end: 1 },
+      { id: "w24", text: "late", sep: "", begin: 8, end: 9 },
     ];
 
     const result = reorderWordTrack(track, new Set([1]), -7.5, { min: 0, max: 20 });
@@ -138,8 +138,8 @@ describe("reorderWordTrack", () => {
 
   it("clamps a word's end to duration when the timeDelta would push it past the end", () => {
     const track: WordTiming[] = [
-      { text: "stay", sep: " ", begin: 0, end: 1 },
-      { text: "move", sep: "", begin: 2, end: 3 },
+      { id: "w25", text: "stay", sep: " ", begin: 0, end: 1 },
+      { id: "w26", text: "move", sep: "", begin: 2, end: 3 },
     ];
 
     const result = reorderWordTrack(track, new Set([1]), 100, { min: 0, max: 10 });
@@ -150,8 +150,8 @@ describe("reorderWordTrack", () => {
 
   it("clamps a word's begin to zero when a negative timeDelta would push it before zero", () => {
     const track: WordTiming[] = [
-      { text: "early", sep: " ", begin: 3, end: 4 },
-      { text: "later", sep: "", begin: 6, end: 7 },
+      { id: "w27", text: "early", sep: " ", begin: 3, end: 4 },
+      { id: "w28", text: "later", sep: "", begin: 6, end: 7 },
     ];
 
     const result = reorderWordTrack(track, new Set([0]), -100, { min: 0, max: 10 });
@@ -162,7 +162,7 @@ describe("reorderWordTrack", () => {
   });
 
   it("keeps begin non-negative when a single word is longer than the duration", () => {
-    const track: WordTiming[] = [{ text: "long", sep: "", begin: 0, end: 100 }];
+    const track: WordTiming[] = [{ id: "w29", text: "long", sep: "", begin: 0, end: 100 }];
 
     const result = reorderWordTrack(track, new Set([0]), 5, { min: 0, max: 30 });
 
@@ -172,8 +172,8 @@ describe("reorderWordTrack", () => {
 
   it("preserves the explicit flag through the reorder", () => {
     const track: WordTiming[] = [
-      { text: "one", sep: " ", begin: 0, end: 1, explicit: true },
-      { text: "two", sep: "", begin: 2, end: 3, explicit: true },
+      { id: "w30", text: "one", sep: " ", begin: 0, end: 1, explicit: true },
+      { id: "w31", text: "two", sep: "", begin: 2, end: 3, explicit: true },
     ];
 
     const result = reorderWordTrack(track, new Set([1]), -2, { min: 0, max: 10 });
@@ -188,7 +188,7 @@ describe("reorderWordTrack edge cases and invariants", () => {
   });
 
   it("returns a single word for a single-word track that is dragged", () => {
-    const track: WordTiming[] = [{ text: "solo", sep: "", begin: 1, end: 2 }];
+    const track: WordTiming[] = [{ id: "w32", text: "solo", sep: "", begin: 1, end: 2 }];
 
     const result = reorderWordTrack(track, new Set([0]), 2, { min: 0, max: 20 });
 
@@ -198,9 +198,9 @@ describe("reorderWordTrack edge cases and invariants", () => {
 
   it("does not mutate the input track or its word objects", () => {
     const track: WordTiming[] = [
-      { text: "one", sep: " ", begin: 0, end: 1, syllableGroupId: "g" },
-      { text: "two", sep: " ", begin: 2, end: 3, syllableGroupId: "g" },
-      { text: "three", sep: "", begin: 4, end: 5 },
+      { id: "w33", text: "one", sep: " ", begin: 0, end: 1, syllableGroupId: "g" },
+      { id: "w34", text: "two", sep: " ", begin: 2, end: 3, syllableGroupId: "g" },
+      { id: "w35", text: "three", sep: "", begin: 4, end: 5 },
     ];
     const trackBefore = track.map((w) => ({ ...w }));
 
@@ -211,8 +211,8 @@ describe("reorderWordTrack edge cases and invariants", () => {
 
   it("returns the track unchanged in shape when no indices are dragged", () => {
     const track: WordTiming[] = [
-      { text: "one", sep: " ", begin: 0, end: 1 },
-      { text: "two", sep: "", begin: 2, end: 3 },
+      { id: "w36", text: "one", sep: " ", begin: 0, end: 1 },
+      { id: "w37", text: "two", sep: "", begin: 2, end: 3 },
     ];
 
     const result = reorderWordTrack(track, new Set(), 5, { min: 0, max: 10 });
@@ -223,9 +223,9 @@ describe("reorderWordTrack edge cases and invariants", () => {
 
   it("returns words sorted by begin after a reorder", () => {
     const track: WordTiming[] = [
-      { text: "one", sep: " ", begin: 0, end: 1 },
-      { text: "two", sep: " ", begin: 2, end: 3 },
-      { text: "three", sep: "", begin: 4, end: 5 },
+      { id: "w38", text: "one", sep: " ", begin: 0, end: 1 },
+      { id: "w39", text: "two", sep: " ", begin: 2, end: 3 },
+      { id: "w40", text: "three", sep: "", begin: 4, end: 5 },
     ];
 
     const result = reorderWordTrack(track, new Set([0]), 5, { min: 0, max: 12 });
@@ -236,9 +236,9 @@ describe("reorderWordTrack edge cases and invariants", () => {
 
   it("regenerates syllable group ids while keeping groupmates sharing one id", () => {
     const track: WordTiming[] = [
-      { text: "ti", sep: "", begin: 0, end: 0.4, syllableGroupId: "shared" },
-      { text: "tle", sep: " ", begin: 0.4, end: 0.8, syllableGroupId: "shared" },
-      { text: "next", sep: "", begin: 2, end: 3 },
+      { id: "w41", text: "ti", sep: "", begin: 0, end: 0.4, syllableGroupId: "shared" },
+      { id: "w42", text: "tle", sep: " ", begin: 0.4, end: 0.8, syllableGroupId: "shared" },
+      { id: "w43", text: "next", sep: "", begin: 2, end: 3 },
     ];
 
     const result = reorderWordTrack(track, new Set([0, 1]), 4, { min: 0, max: 12 });
@@ -251,8 +251,8 @@ describe("reorderWordTrack edge cases and invariants", () => {
 
   it("ignores dragged indices that fall outside the track", () => {
     const track: WordTiming[] = [
-      { text: "one", sep: " ", begin: 0, end: 1 },
-      { text: "two", sep: "", begin: 2, end: 3 },
+      { id: "w44", text: "one", sep: " ", begin: 0, end: 1 },
+      { id: "w45", text: "two", sep: "", begin: 2, end: 3 },
     ];
 
     const result = reorderWordTrack(track, new Set([5, 9]), 4, { min: 0, max: 10 });
@@ -263,10 +263,10 @@ describe("reorderWordTrack edge cases and invariants", () => {
 
   it("spaces every seam when a dragged block interleaves with the rest on a timing collision", () => {
     const track: WordTiming[] = [
-      { text: "hel", sep: " ", begin: 0, end: 0.5 },
-      { text: "lo", sep: " ", begin: 0.5, end: 1 },
-      { text: "sun", sep: " ", begin: 2, end: 2.5 },
-      { text: "shine", sep: "", begin: 2.5, end: 3 },
+      { id: "w46", text: "hel", sep: " ", begin: 0, end: 0.5 },
+      { id: "w47", text: "lo", sep: " ", begin: 0.5, end: 1 },
+      { id: "w48", text: "sun", sep: " ", begin: 2, end: 2.5 },
+      { id: "w49", text: "shine", sep: "", begin: 2.5, end: 3 },
     ];
 
     const result = reorderWordTrack(track, new Set([2, 3]), -2, { min: 0, max: 12 });
@@ -283,9 +283,9 @@ describe("reorderWordTrack edge cases and invariants", () => {
 
 describe("regressions: T9 syllable drag past a neighbor", () => {
   const track: WordTiming[] = [
-    { text: "Hel", sep: "", begin: 0, end: 0.25, syllableGroupId: "g1" },
-    { text: "lo", sep: " ", begin: 0.25, end: 0.5, syllableGroupId: "g1" },
-    { text: "there", sep: "", begin: 0.5, end: 1.0 },
+    { id: "w50", text: "Hel", sep: "", begin: 0, end: 0.25, syllableGroupId: "g1" },
+    { id: "w51", text: "lo", sep: " ", begin: 0.25, end: 0.5, syllableGroupId: "g1" },
+    { id: "w52", text: "there", sep: "", begin: 0.5, end: 1.0 },
   ];
 
   it("a drag of 'lo' moves its groupmate 'Hel' too (expandSelectionToGroupmates)", () => {

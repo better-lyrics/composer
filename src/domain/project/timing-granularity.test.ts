@@ -7,8 +7,8 @@ const wordSynced: LyricLine = {
   text: "Hello world",
   agentId: "v1",
   words: [
-    { text: "Hello", sep: " ", begin: 1, end: 1.5 },
-    { text: "world", sep: "", begin: 1.5, end: 2 },
+    { id: "w1", text: "Hello", sep: " ", begin: 1, end: 1.5 },
+    { id: "w2", text: "world", sep: "", begin: 1.5, end: 2 },
   ],
 };
 const lineSynced: LyricLine = { id: "l", text: "Line only", agentId: "v1", begin: 3, end: 4 };
@@ -34,7 +34,7 @@ describe("timingGranularityOf", () => {
       const withBackgroundWords: LyricLine = {
         ...lineSynced,
         backgroundText: "(yeah)",
-        backgroundWords: [{ text: "(yeah)", sep: "", begin: 3.5, end: 4 }],
+        backgroundWords: [{ id: "w3", text: "(yeah)", sep: "", begin: 3.5, end: 4 }],
       };
       expect(timingGranularityOf([withBackgroundWords])).toBe("line");
     });

@@ -2,6 +2,7 @@
  * @vitest-environment node
  */
 import type { LyricLine } from "@/domain/line/model";
+import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { applyWordDeletion, type DeletionSelection } from "@/views/timeline/apply-word-deletion";
 import { describe, expect, it } from "vitest";
@@ -15,9 +16,9 @@ function chorusLine(
 ): LyricLine {
   const templateLineIdx = opts.templateLineIdx ?? 0;
   const words = opts.words ?? [
-    { text: "hold", sep: " ", begin: offset, end: offset + 0.5 },
-    { text: "me", sep: " ", begin: offset + 0.5, end: offset + 1 },
-    { text: "now", sep: "", begin: offset + 1, end: offset + 1.5 },
+    { id: newWordId(), text: "hold", sep: " ", begin: offset, end: offset + 0.5 },
+    { id: newWordId(), text: "me", sep: " ", begin: offset + 0.5, end: offset + 1 },
+    { id: newWordId(), text: "now", sep: "", begin: offset + 1, end: offset + 1.5 },
   ];
   return {
     id: opts.id ?? `c${instanceIdx}-${templateLineIdx}`,
@@ -70,8 +71,8 @@ describe("applyWordDeletion · linked instances", () => {
       ...chorusLine(instanceIdx, offset),
       backgroundText: "oh yeah",
       backgroundWords: [
-        { text: "oh", sep: " ", begin: offset, end: offset + 0.5 },
-        { text: "yeah", sep: "", begin: offset + 0.5, end: offset + 1 },
+        { id: newWordId(), text: "oh", sep: " ", begin: offset, end: offset + 0.5 },
+        { id: newWordId(), text: "yeah", sep: "", begin: offset + 0.5, end: offset + 1 },
       ],
     });
     const lines = [withBg(0, 10), withBg(1, 40)];
@@ -84,8 +85,8 @@ describe("applyWordDeletion · linked instances", () => {
 
   it("absorbs a deleted syllable into its neighbor inside each instance", () => {
     const syllables = (offset: number): WordTiming[] => [
-      { text: "hel", sep: "", begin: offset, end: offset + 0.5, syllableGroupId: "s" },
-      { text: "lo", sep: "", begin: offset + 0.5, end: offset + 1, syllableGroupId: "s" },
+      { id: newWordId(), text: "hel", sep: "", begin: offset, end: offset + 0.5, syllableGroupId: "s" },
+      { id: newWordId(), text: "lo", sep: "", begin: offset + 0.5, end: offset + 1, syllableGroupId: "s" },
     ];
     const lines = [chorusLine(0, 10, { words: syllables(10) }), chorusLine(1, 40, { words: syllables(40) })];
 
@@ -118,9 +119,9 @@ describe("applyWordDeletion · linked instances", () => {
 
     it("spreads a delete on one line of a multi-line instance when the instance keeps other words", () => {
       const lines = [
-        chorusLine(0, 10, { templateLineIdx: 0, words: [{ text: "hey", sep: "", begin: 10, end: 11 }] }),
+        chorusLine(0, 10, { templateLineIdx: 0, words: [{ id: "w1", text: "hey", sep: "", begin: 10, end: 11 }] }),
         chorusLine(0, 12, { templateLineIdx: 1 }),
-        chorusLine(1, 40, { templateLineIdx: 0, words: [{ text: "hey", sep: "", begin: 40, end: 41 }] }),
+        chorusLine(1, 40, { templateLineIdx: 0, words: [{ id: "w2", text: "hey", sep: "", begin: 40, end: 41 }] }),
         chorusLine(1, 42, { templateLineIdx: 1 }),
       ];
 
@@ -217,7 +218,7 @@ describe("applyWordDeletion · linked instances", () => {
     it("leaves an instance whose words no longer line up with the source", () => {
       const lines = [
         chorusLine(0, 10),
-        chorusLine(1, 40, { words: [{ text: "hold me now", sep: "", begin: 40, end: 41 }] }),
+        chorusLine(1, 40, { words: [{ id: "w3", text: "hold me now", sep: "", begin: 40, end: 41 }] }),
       ];
 
       const result = applyWordDeletion(lines, [del("c0-0", 1)]);

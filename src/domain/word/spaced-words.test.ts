@@ -21,4 +21,13 @@ describe("spaced words", () => {
     expect(words.every((word) => word.text === word.text.trimEnd())).toBe(true);
     expect(spacedFromWords(words)).toEqual(spaced);
   });
+
+  it("never writes ids into saved words", () => {
+    const words = wordsFromSpaced([
+      { text: "Paper ", begin: 1, end: 2 },
+      { text: "lanterns", begin: 2, end: 3 },
+    ]);
+    expect(words.every((word) => word.id.length > 0)).toBe(true);
+    expect(spacedFromWords(words).some((word) => "id" in word)).toBe(false);
+  });
 });
