@@ -153,6 +153,8 @@ describe("linked group alternate-language mappings", () => {
     expect(result.ok).toBe(true);
     expect(result.updatedLines![1].transliteration).toBeUndefined();
     expect(result.updatedLines![1].translations).toBeUndefined();
+    expect(result.updatedLines![1].words).toBeDefined();
+    expect(result.updatedLines![1].backgroundWords).toBeDefined();
     expect(timedSyllables(mainTrack(result.updatedLines![1])).every((word) => word.transliteration === undefined)).toBe(
       true,
     );

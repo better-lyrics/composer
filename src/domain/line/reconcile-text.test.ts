@@ -155,12 +155,12 @@ describe("reconcileMatchedTiming · edge cases", () => {
       words: originalWords,
     };
     const beforeText = lineText(line);
-    const beforeWords = timedSyllables(mainTrack(line));
-    const beforeWordsSnapshot = JSON.parse(JSON.stringify(timedSyllables(mainTrack(line))));
+    const beforeWords = line.words;
+    const beforeWordsSnapshot = JSON.parse(JSON.stringify(line.words));
     reconcileMatchedTiming(line, "Dengar|lah rin|du");
     expect(lineText(line)).toBe(beforeText);
-    expect(timedSyllables(mainTrack(line))).toBe(beforeWords);
-    expect(timedSyllables(mainTrack(line))).toEqual(beforeWordsSnapshot);
+    expect(line.words).toBe(beforeWords);
+    expect(line.words).toEqual(beforeWordsSnapshot);
   });
 
   it("preserves background-vocal fields on the remap path", () => {

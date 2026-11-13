@@ -644,8 +644,8 @@ describe("extractInlineFromLine: word-synced extraction", () => {
     const line: LyricLine = { id: "1", text: "Hello (ooh) world", agentId: "v1", words };
     extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(lineText(line)).toBe("Hello (ooh) world");
-    expect(timedSyllables(mainTrack(line))).toBe(words);
-    expect(timedSyllables(mainTrack(line))).toEqual([
+    expect(line.words).toBe(words);
+    expect(line.words).toEqual([
       { text: "Hello", sep: " ", begin: 0, end: 1 },
       { text: "(ooh)", sep: " ", begin: 1, end: 2 },
       { text: "world", sep: "", begin: 2, end: 3 },
@@ -1024,8 +1024,8 @@ describe("extractBackgroundVocals: input not mutated", () => {
     extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(lines).toHaveLength(2);
     expect(lineText(lines[1])).toBe("(ooh yeah)");
-    expect(timedSyllables(mainTrack(lines[1]))).toBe(standaloneWordsRef);
-    expect(timedSyllables(mainTrack(lines[1]))).toEqual([
+    expect(lines[1].words).toBe(standaloneWordsRef);
+    expect(lines[1].words).toEqual([
       { text: "(ooh", sep: " ", begin: 5.0, end: 5.6 },
       { text: "yeah)", sep: "", begin: 5.6, end: 6.2 },
     ]);

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import { createLine } from "@/test/factories";
 import { bgOps, retimeInto, makeLine, wordsOps } from "@/test/word-timing-harness";
@@ -248,7 +247,7 @@ describe("createWordTimingOps: setBoundary", () => {
       const line = makeLine();
       const snapshot = structuredClone(line.words);
       const { calls } = run({ line, wordIdx: 1, edge: "begin", time: 1.5, rolling: true });
-      expect(timedSyllables(mainTrack(line))).toEqual(snapshot);
+      expect(line.words).toEqual(snapshot);
       expect(calls[0].updates.words).not.toBe(line.words);
     });
   });
