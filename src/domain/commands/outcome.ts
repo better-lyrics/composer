@@ -24,7 +24,7 @@ type Refusal =
   | { reason: "uneven-syllable-splits" }
   | { reason: "needs-detach-confirm"; impacted: string[] }
   | { reason: "needs-one-word"; selected: number }
-  | { reason: "needs-one-run" }
+  | { reason: "needs-one-run"; across: "lines" | "tracks" }
   | { reason: "step"; refusal: StepRefusal }
   | { reason: "move"; reject: MoveRejectReason };
 
