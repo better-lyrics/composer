@@ -7,6 +7,7 @@ import {
   planRepeatingSections,
 } from "@/domain/group/group-plans";
 import { unlinkLines } from "@/domain/group/linking";
+import type { SharingOutcome } from "@/domain/group/shared-placement";
 import type { LinkGroup } from "@/domain/group/template";
 import type { RawLine } from "@/domain/line/model";
 
@@ -55,22 +56,31 @@ function removeGroup(id: string): LyricCommand {
   }));
 }
 
-function groupRepeatingSections(sections: RepeatingSections): LyricCommand {
+// `report` receives the plan's sharing outcome, so the caller never plans a second time.
+function reported(plan: GroupPlan, report?: (sharing: SharingOutcome) => void): GroupPlan {
+  report?.(plan.sharing);
+  return plan;
+}
+
+function groupRepeatingSections(sections: RepeatingSections, report?: (sharing: SharingOutcome) => void): LyricCommand {
   return {
     note: { command: "group sections", args: [sections.length, ...sections.starts] },
     derivesText: false,
     copiesSharedTiming: false,
     run: (root, ctx) =>
-      appliedPlan(root, planRepeatingSections(root, sections, ctx.splitChar, ctx.shareTimingInNewGroups)),
+      appliedPlan(
+        root,
+        reported(planRepeatingSections(root, sections, ctx.splitChar, ctx.shareTimingInNewGroups), report),
+      ),
   };
 }
 
-function shareGroupTiming(groupId: string, duration: number): LyricCommand {
+function shareGroupTiming(groupId: string, duration: number, report?: (sharing: SharingOutcome) => void): LyricCommand {
   return {
     note: { command: "share group timing", args: [groupId] },
     derivesText: false,
     copiesSharedTiming: false,
-    run: (root) => appliedPlan(root, planGroupSharing(root, groupId, duration)),
+    run: (root) => appliedPlan(root, reported(planGroupSharing(root, groupId, duration), report)),
   };
 }
 
