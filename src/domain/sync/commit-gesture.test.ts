@@ -70,12 +70,27 @@ describe("tap-word", () => {
     expectMonotonic(apply(lines, commit));
   });
 
-  it("regression D5: across lines, never writes end < begin", () => {
+  it("starts a line before the previous line's last word and leaves that word alone", () => {
     const lines = [
       createLine({ id: "l0", text: "a b", words: [word("a ", 5, 6), word("b", 6, 6.3)] }),
       createLine({ id: "l1", text: "c d" }),
     ];
-    expectMonotonic(apply(lines, run(lines, "tap-word", [1, 0], 2)));
+    const commit = run(lines, "tap-word", [1, 0], 2);
+    expect(commit?.clampedTo).toBeNull();
+    expect(commit?.lineUpdates).toEqual([{ id: "l1", updates: { words: [word("c ", 2, 2 + DUR)] } }]);
+  });
+
+  it("gives a held last word the default length when the next line starts before it", () => {
+    const lines = [
+      createLine({ id: "l0", text: "a b", words: [word("a ", 5, 6), word("b", 6, 6)] }),
+      createLine({ id: "l1", text: "c d" }),
+    ];
+    const commit = run(lines, "tap-word", [1, 0], 2);
+    expect(commit?.lineUpdates).toContainEqual({
+      id: "l0",
+      updates: { words: [word("a ", 5, 6), word("b", 6, 6 + DUR)] },
+    });
+    expect(commit?.clampedTo).toBeNull();
   });
 
   it("regression D3: a jumped re-record leaves earlier words intact and clamps to the previous end", () => {
@@ -572,5 +587,53 @@ describe("re-record after a jump · regressions", () => {
       createLine({ id: "l1", text: "b", words: [word("b", 3, 4)] }),
     ];
     expect(run(lines, "tap-word", [1, 0], 2.5, true)?.lineUpdates.map((u) => u.id)).toEqual(["l1"]);
+  });
+});
+
+describe("how a gesture ends the previous slot", () => {
+  it("regression: re-recording a line inside the previous line's set last word leaves that word alone", () => {
+    const lines = [
+      createLine({ id: "l0", text: "a b", words: [word("a ", 1, 2), word("b", 2, 9)] }),
+      createLine({ id: "l1", text: "c d", words: [word("c ", 6, 6.5), word("d", 6.5, 7)] }),
+    ];
+    expect(run(lines, "tap-word", [1, 0], 5)?.lineUpdates.map((u) => u.id)).toEqual(["l1"]);
+    expect(run(lines, "hold-start", [1, 0], 5)?.lineUpdates.map((u) => u.id)).toEqual(["l1"]);
+  });
+
+  it("moves a previous end that was joined to the start being re-recorded", () => {
+    const lines = [
+      createLine({ id: "l0", text: "a b", words: [word("a ", 1, 2), word("b", 2, 6)] }),
+      createLine({ id: "l1", text: "c d", words: [word("c ", 6, 6.5), word("d", 6.5, 7)] }),
+    ];
+    expect(run(lines, "tap-word", [1, 0], 5.5)?.lineUpdates).toContainEqual({
+      id: "l0",
+      updates: { words: [word("a ", 1, 2), word("b", 2, 5.5)] },
+    });
+  });
+
+  it("keeps the gap a held word left before the next tap, across lines and inside a line", () => {
+    const acrossLines = [
+      createLine({ id: "l0", text: "a b", words: [word("a ", 1, 2), word("b", 2, 2.8)] }),
+      createLine({ id: "l1", text: "c d" }),
+    ];
+    expect(run(acrossLines, "tap-word", [1, 0], 3.5)?.lineUpdates.map((u) => u.id)).toEqual(["l1"]);
+
+    const insideLine = [createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 2.8)] })];
+    const commit = run(insideLine, "tap-word", [0, 2], 3.5);
+    expect(commit?.lineUpdates[0].updates.words?.slice(0, 2)).toEqual([word("a ", 1, 2), word("b ", 2, 2.8)]);
+  });
+
+  it("still cuts a set word inside the same line at the tap, so words never overlap", () => {
+    const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 5)] })];
+    expect(run(lines, "tap-word", [0, 2], 3)?.lineUpdates[0].updates.words?.[1]).toEqual(word("b ", 2, 3));
+  });
+
+  it("regression: a Line mode pass over timed lines ends each line at the next tap", () => {
+    const lines = [
+      createLine({ id: "l0", text: "first", begin: 10, end: 12 }),
+      createLine({ id: "l1", text: "second", begin: 12, end: 15 }),
+    ];
+    const shifted = apply(lines, run(lines, "tap-line", [0, 0], 11));
+    expect(run(shifted, "tap-line", [1, 0], 12.5)?.lineUpdates).toContainEqual({ id: "l0", updates: { end: 12.5 } });
   });
 });

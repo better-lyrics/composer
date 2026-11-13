@@ -1,3 +1,4 @@
+import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -11,6 +12,8 @@ import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { Activity } from "react";
 import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { renderHook } from "vitest-browser-react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -128,5 +131,34 @@ describe("SyncLineList", () => {
       .poll(() => rowOffsetFromCentre(scroller(), lineRow(screen.container, 301)))
       .toBeLessThan(CENTRED_WITHIN_PX);
     expect(lineRow(screen.container, 301)?.getAttribute("aria-current")).toBe("true");
+  });
+
+  it("regression: Enter after clicking a line plays from the rewound time, not the line start", async () => {
+    useSettingsStore.setState({ syncCountIn: 0, redoPreroll: 1.5 });
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 30, currentTime: 0 });
+    useProjectStore.setState({
+      lines: [
+        createLine({ text: "paper lanterns drifting", begin: 2, end: 6 }),
+        createLine({ text: "over quiet harbor", begin: 6, end: 10 }),
+        createLine({ text: "counting every ember", begin: 18, end: 22 }),
+      ],
+      activeTab: "sync",
+      granularity: "word",
+    });
+    const screen = await renderBoundedPanel();
+    await renderHook(() =>
+      useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {} }),
+    );
+    await expect.poll(() => lineRow(screen.container, 3)).not.toBeNull();
+    const row = lineRow(screen.container, 3);
+    if (!row) throw new Error("no third sync line");
+
+    await userEvent.click(row);
+    await expect.poll(() => useAudioStore.getState().currentTime).toBe(16.5);
+    setCurrentTime(12);
+    await userEvent.keyboard("{Enter}");
+
+    expect(useAudioStore.getState().isPlaying).toBe(true);
+    expect(useAudioStore.getState().currentTime).toBe(12);
   });
 });

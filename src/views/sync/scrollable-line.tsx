@@ -4,6 +4,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { withoutSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
+import { focusedControlOwnsKey } from "@/utils/typing-target";
 import { SyllableGroup } from "@/views/sync/syllable-group";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
 import { type WordHandlers, WordRenderer } from "@/views/sync/word-renderer";
@@ -262,7 +263,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
       aria-current={isCurrent || undefined}
       onClick={onClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter" && e.target === e.currentTarget) onClick();
+        if (e.key === "Enter" && e.target === e.currentTarget && focusedControlOwnsKey(e.nativeEvent)) onClick();
       }}
       className={cn("group/row flex w-full text-left cursor-pointer", isCurrent && "bg-composer-accent/7")}
     >
