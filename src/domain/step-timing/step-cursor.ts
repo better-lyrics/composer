@@ -1,4 +1,4 @@
-import { effectiveTrackWords } from "@/domain/line/effective-words";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { type ResolvedAddress, resolveAddress, resolvedAt } from "@/domain/selection/resolve";
@@ -11,7 +11,7 @@ type LineFilter = (line: LyricLine) => boolean;
 // -- Helpers ------------------------------------------------------------------
 
 function mainBlocks(line: LyricLine): number {
-  return effectiveTrackWords(line, "word")?.length ?? 0;
+  return drawnSyllables(line, "main").length;
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -36,7 +36,7 @@ function nextSlotWithBackground(
   include: LineFilter,
 ): ResolvedAddress | null {
   const line = lines[cursor.lineIndex];
-  const leadWords = line ? effectiveTrackWords(line, "word") : undefined;
+  const leadWords = line ? drawnSyllables(line, "main") : undefined;
   const leadEnds = cursor.type === "word" && cursor.wordIndex + 1 === leadWords?.length;
   const firstBackground = leadEnds ? resolvedAt(lines, cursor.lineIndex, "bg", 0) : null;
   return firstBackground ?? nextStepSlot(lines, cursor, include);

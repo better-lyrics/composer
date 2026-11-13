@@ -1,3 +1,4 @@
+import type { LyricLine } from "@/domain/line/model";
 import type { LyricCommand } from "@/domain/commands/command";
 import { type LyricRoot, type Outcome, applied, changedLineIds, refused } from "@/domain/commands/outcome";
 import {
@@ -9,7 +10,6 @@ import {
 import { unlinkLines } from "@/domain/group/linking";
 import type { SharingOutcome } from "@/domain/group/shared-placement";
 import type { LinkGroup } from "@/domain/group/template";
-import type { RawLine } from "@/domain/line/model";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -36,7 +36,7 @@ function addGroup(group: LinkGroup): LyricCommand {
   return groupEdit("add group", [group.id], (root) => ({ ...root, groups: [...root.groups, group] }));
 }
 
-function addGroupWithLines(group: LinkGroup, lines: RawLine[]): LyricCommand {
+function addGroupWithLines(group: LinkGroup, lines: LyricLine[]): LyricCommand {
   return groupEdit("add group", [group.id], (root) => ({ ...root, groups: [...root.groups, group], lines }));
 }
 

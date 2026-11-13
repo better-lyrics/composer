@@ -13,7 +13,7 @@ import { useOverviewBandHeight } from "@/views/timeline/overview-band-height";
 import { PitchRowsScope } from "@/views/timeline/pitch/pitch-rows";
 import { emptyBgRowHeight, lineRowHeight } from "@/views/timeline/row-geometry";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
-import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/effective-rows";
+import { type DrawnRow, getDrawnRows } from "@/views/timeline/drawn-rows";
 import { type RefObject, useCallback, useMemo } from "react";
 import { Virtuoso } from "react-virtuoso";
 
@@ -25,7 +25,7 @@ interface TimelineRowsProps {
 
 // -- Functions -----------------------------------------------------------------
 
-function rowKey(_: number, row: EffectiveRow): string {
+function rowKey(_: number, row: DrawnRow): string {
   return row.kind === "group-header" ? `header:${row.firstLineId}` : row.line.id;
 }
 
@@ -70,11 +70,11 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const openProjectId = useOpenProjectId();
   const splitCharacter = useSettingsStore((s) => s.splitCharacter);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: getEffectiveRows splits words by the split character
-  const allRows = useMemo(() => getEffectiveRows(lines, focusedGroup), [lines, focusedGroup, splitCharacter]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: getDrawnRows splits words by the split character
+  const allRows = useMemo(() => getDrawnRows(lines, focusedGroup), [lines, focusedGroup, splitCharacter]);
 
   const visibleRows = useMemo(() => {
-    const out: EffectiveRow[] = [];
+    const out: DrawnRow[] = [];
     let hideUntilNextNonGroup = false;
     let activeKey: string | null = null;
     for (const row of allRows) {
@@ -100,7 +100,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const groupsById = useMemo(() => new Map((groups ?? []).map((g) => [g.id, g])), [groups]);
 
   const renderRow = useCallback(
-    (_: number, row: EffectiveRow) => {
+    (_: number, row: DrawnRow) => {
       if (row.kind === "group-header") {
         const group = groupsById.get(row.groupId);
         if (!group) return <div style={{ height: GROUP_HEADER_HEIGHT }} />;

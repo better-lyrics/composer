@@ -1,4 +1,4 @@
-import type { ReadableLine } from "@/domain/line/effective-words";
+import type { LyricLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
@@ -12,7 +12,7 @@ import { toast } from "sonner";
 // -- Interfaces ----------------------------------------------------------------
 
 interface CopyCutMenuItemsProps {
-  lines: readonly ReadableLine[];
+  lines: readonly LyricLine[];
   word: SyllableAddress;
   noun: string;
 }

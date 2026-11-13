@@ -5,10 +5,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { markWordsExplicit } from "@/domain/commands/word-edits";
 import type { LinkGroup } from "@/domain/group/template";
-import { effectiveTrackWords } from "@/domain/line/effective-words";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { roleWords } from "@/domain/line/track";
+import { roleWords, trackRole } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
@@ -17,7 +17,7 @@ import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-select
 
 function sel(lines: LyricLine[], lineId: string, wordIndex: number, type: "word" | "bg" = "word"): SyllableAddress {
   const line = lines.find((candidate) => candidate.id === lineId);
-  const word = line ? effectiveTrackWords(line, type)?.[wordIndex] : undefined;
+  const word = line ? drawnSyllables(line, trackRole(type))[wordIndex] : undefined;
   return { lineId, type, syllableId: word?.id ?? `missing-${wordIndex}` };
 }
 

@@ -1,7 +1,7 @@
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { mainTrack } from "@/domain/line/track";
 import { getAgentColor } from "@/domain/agent/colors";
 import { effectiveBounds } from "@/domain/line/bounds";
-import { effectiveTrackWords, getEffectiveLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { PitchTrack } from "@/domain/pitch/track";
 import type { LoupeSize } from "@/domain/spectrum/loupe-size";
@@ -118,12 +118,11 @@ function drawLoupe(
   if (inputs.beatGrid && inputs.beatGridVisible) drawLoupeBeats(frame, inputs.beatGrid, inputs.beatGridLines);
   const { line } = inputs;
   if (line) {
-    const effective = getEffectiveLine(line);
-    const span = effectiveBounds(effective);
+    const span = effectiveBounds(line);
     if (inputs.pitchTrack && span) drawLoupePitch(frame, inputs.pitchTrack, span);
     drawLoupeLanes(frame, {
-      main: withLiveEdge(effectiveTrackWords(effective, "word") ?? [], target, "word"),
-      background: withLiveEdge(effectiveTrackWords(effective, "bg") ?? [], target, "bg"),
+      main: withLiveEdge(drawnSyllables(line, "main"), target, "word"),
+      background: withLiveEdge(drawnSyllables(line, "bg"), target, "bg"),
       edited: { track: target.type, syllableId: target.syllableId },
       agentColour: getAgentColor(mainTrack(line).agentId),
       playheadSeconds: inputs.playhead,

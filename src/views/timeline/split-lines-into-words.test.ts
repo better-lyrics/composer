@@ -3,7 +3,6 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { getEffectiveLines } from "@/domain/line/effective-words";
 import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText } from "@/domain/line/text";
@@ -84,7 +83,7 @@ describe("computeSplitSelections", () => {
     expect(selections.every((s) => s.lineId === "L1" && s.type === "word")).toBe(true);
   });
 
-  it("returns no selections when an update id is absent from the effective lines", () => {
+  it("returns no selections when an update id is absent from the lines", () => {
     const updates = computeSplitIntoWordsUpdates(main("L1"), [lineSynced]);
     const selections = computeSplitSelections(updates, [anotherSynced]);
     expect(selections).toHaveLength(0);
@@ -100,9 +99,9 @@ describe("splitLinesIntoWords (store-mutating)", () => {
 
   it("converts a single line-synced row to word-synced and selects its words", () => {
     useProjectStore.setState({ lines: [{ ...lineSynced }] });
-    const effective = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
 
-    splitLinesIntoWords(main("L1"), effective);
+    splitLinesIntoWords(main("L1"), lines);
 
     const after = useProjectStore.getState().lines[0];
     expect(roleWords(after, "main")?.length).toBeGreaterThan(0);
@@ -113,9 +112,9 @@ describe("splitLinesIntoWords (store-mutating)", () => {
 
   it("converts multiple line-synced rows in one history step", () => {
     useProjectStore.setState({ lines: [{ ...lineSynced }, { ...anotherSynced }] });
-    const effective = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
 
-    splitLinesIntoWords(main("L1", "L3"), effective);
+    splitLinesIntoWords(main("L1", "L3"), lines);
 
     const after = useProjectStore.getState().lines;
     expect(
@@ -134,9 +133,9 @@ describe("splitLinesIntoWords (store-mutating)", () => {
 
   it("leaves a word-synced row untouched and selects nothing", () => {
     useProjectStore.setState({ lines: [{ ...wordSynced }] });
-    const effective = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
 
-    splitLinesIntoWords(main("L2"), effective);
+    splitLinesIntoWords(main("L2"), lines);
 
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toEqual(
       timedSyllables(mainTrack(wordSynced)),
@@ -392,9 +391,9 @@ describe("splitLinesIntoWords · regressions", () => {
 
   it("regression: W splits a bg sentence typed into one placeholder word", () => {
     useProjectStore.setState({ lines: [structuredClone(sentenceBg)] });
-    const effective = getEffectiveLines(useProjectStore.getState().lines);
+    const { lines } = useProjectStore.getState();
 
-    splitLinesIntoWords(bg("L4"), effective);
+    splitLinesIntoWords(bg("L4"), lines);
 
     const after = useProjectStore.getState().lines[0];
     expect(timedSyllables(backgroundTrack(after)).map((w) => w.text + w.sep)).toEqual(["ooh ", "yeah ", "baby"]);

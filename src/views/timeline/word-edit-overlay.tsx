@@ -3,8 +3,8 @@ import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { typeWordText } from "@/domain/commands/word-structure";
-import { getEffectiveLine } from "@/domain/line/effective-words";
-import { trackWords } from "@/domain/line/track";
+import { drawnSyllables } from "@/domain/line/drawn-track";
+import { trackRole } from "@/domain/line/track";
 import { addressOf } from "@/domain/selection/resolve";
 import { wordBlockId } from "@/views/timeline/word-block-id";
 import { FloatingPortal } from "@floating-ui/react";
@@ -23,12 +23,11 @@ interface WordEditOverlayProps {
 
 const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, syllableId, type, scrollContainerRef }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const rawLines = useProjectStore((s) => s.lines);
+  const lines = useProjectStore((s) => s.lines);
   const clearEditingWord = useTimelineStore((s) => s.clearEditingWord);
 
-  const rawLine = rawLines.find((l) => l.id === lineId);
-  const line = rawLine ? getEffectiveLine(rawLine) : undefined;
-  const wordsArray = line ? trackWords(line, type) : undefined;
+  const line = lines.find((l) => l.id === lineId);
+  const wordsArray = line ? drawnSyllables(line, trackRole(type)) : undefined;
   const wordIndex = wordsArray?.findIndex((candidate) => candidate.id === syllableId) ?? -1;
   const word = wordsArray?.[wordIndex];
 

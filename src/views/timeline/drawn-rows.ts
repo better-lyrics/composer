@@ -4,7 +4,7 @@ import { lineInstanceKey } from "@/domain/instance/key";
 import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import { type GroupFocus, effectiveFocus, isInFocus } from "@/views/timeline/group-focus";
-import { timelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
+import { timelineDrawnLines } from "@/views/timeline/timeline-drawn-lines";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -20,26 +20,26 @@ interface GroupHeaderRow {
   firstLineId: string;
 }
 
-interface LineEffectiveRow {
+interface LineDrawnRow {
   kind: "line";
   line: LyricLine;
   lineIndex: number;
 }
 
-type EffectiveRow = GroupHeaderRow | LineEffectiveRow;
+type DrawnRow = GroupHeaderRow | LineDrawnRow;
 
 // -- Functions ----------------------------------------------------------------
 
-function getEffectiveRows(lines: LyricLine[], focus: GroupFocus | null = null): EffectiveRow[] {
-  const effective = timelineEffectiveLines(lines);
+function getDrawnRows(lines: LyricLine[], focus: GroupFocus | null = null): DrawnRow[] {
+  const drawn = timelineDrawnLines(lines);
   const positions = instancePositionsByLineId(lines);
-  const rows: EffectiveRow[] = [];
+  const rows: DrawnRow[] = [];
   let bufferStart = 0;
   let currentKey: string | null = null;
 
   const flushBuffer = (endExclusive: number) => {
     if (bufferStart >= endExclusive) return;
-    const slice = effective.slice(bufferStart, endExclusive);
+    const slice = drawn.slice(bufferStart, endExclusive);
     const first = slice[0];
 
     if (isLinked(first)) {
@@ -64,8 +64,8 @@ function getEffectiveRows(lines: LyricLine[], focus: GroupFocus | null = null): 
     }
   };
 
-  for (let i = 0; i < effective.length; i++) {
-    const line = effective[i];
+  for (let i = 0; i < drawn.length; i++) {
+    const line = drawn[i];
     const key = lineInstanceKey(line);
     if (key !== currentKey) {
       flushBuffer(i);
@@ -73,7 +73,7 @@ function getEffectiveRows(lines: LyricLine[], focus: GroupFocus | null = null): 
       currentKey = key;
     }
   }
-  flushBuffer(effective.length);
+  flushBuffer(drawn.length);
 
   const shownFocus = effectiveFocus(lines, focus);
   if (shownFocus === null) return rows;
@@ -82,5 +82,5 @@ function getEffectiveRows(lines: LyricLine[], focus: GroupFocus | null = null): 
 
 // -- Exports ------------------------------------------------------------------
 
-export { getEffectiveRows };
-export type { EffectiveRow, GroupHeaderRow };
+export { getDrawnRows };
+export type { DrawnRow, GroupHeaderRow };

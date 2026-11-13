@@ -1,11 +1,12 @@
 import { memo, useCallback } from "react";
 import { getAgentColor } from "@/domain/agent/colors";
 import { belongsToInstance } from "@/domain/instance/predicates";
-import { trackPieces } from "@/domain/language/pieces";
 import type { LyricLine } from "@/domain/line/model";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { drawnPieces, drawnSyllables } from "@/domain/line/drawn-track";
+import { mainTrack } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tracks";
@@ -65,8 +66,10 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
     s.wordDragHover?.lineIndex === lineIndex ? s.wordDragHover.track : null,
   );
 
-  const timedMain = timedSyllables(mainTrack(line));
-  const timedBackground = timedSyllables(backgroundTrack(line));
+  // A line-synced block is drawn by the split character, so a new one redraws the row.
+  useSettingsStore((s) => s.splitCharacter);
+  const timedMain = drawnSyllables(line, "main");
+  const timedBackground = drawnSyllables(line, "bg");
   const mainWords = timedMain.length ? timedMain : null;
   const bgWords = timedBackground.length ? timedBackground : null;
 
@@ -109,7 +112,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               lineId={line.id}
               lineIndex={lineIndex}
               words={mainWords}
-              pieces={trackPieces(line, "main")}
+              pieces={drawnPieces(line, "main")}
               color={color}
               trackType="word"
               duration={duration}
@@ -138,7 +141,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               lineId={line.id}
               lineIndex={lineIndex}
               words={bgWords}
-              pieces={trackPieces(line, "bg")}
+              pieces={drawnPieces(line, "bg")}
               color={color}
               trackType="bg"
               duration={duration}

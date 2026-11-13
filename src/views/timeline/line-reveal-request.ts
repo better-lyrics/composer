@@ -1,6 +1,6 @@
+import type { LyricLine } from "@/domain/line/model";
 import { lineInstanceKey } from "@/domain/instance/key";
 import { effectiveBounds } from "@/domain/line/bounds";
-import type { ReadableLine } from "@/domain/line/effective-words";
 import { lineWordSelections } from "@/domain/selection/line-selections";
 import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
@@ -56,7 +56,7 @@ function revealLineInTimeline(lineId: string, track: LineRevealRequest["track"])
 // Returns false when a group focus or a collapsed instance hid the row: it exists only after the next render.
 function revealLine(
   container: HTMLElement,
-  lines: ReadableLine[],
+  lines: LyricLine[],
   request: LineRevealRequest,
   focusedGroup: GroupFocus | null,
   collapsedInstances: Record<string, boolean>,
@@ -87,7 +87,7 @@ function revealLine(
 
 // -- Hook ----------------------------------------------------------------------
 
-function useLineRevealRequest(scrollContainerRef: RefObject<HTMLDivElement | null>, lines: ReadableLine[]): void {
+function useLineRevealRequest(scrollContainerRef: RefObject<HTMLDivElement | null>, lines: LyricLine[]): void {
   const request = useSyncExternalStore(subscribe, snapshot, snapshot);
   const timelineActive = useIsActiveTab("timeline");
   const focusedGroup = useTimelineStore((state) => state.focusedGroup);

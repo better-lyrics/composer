@@ -1,6 +1,10 @@
 /**
  * @vitest-environment node
  */
+import { drawnSyllables } from "@/domain/line/drawn-track";
+import { mainBounds } from "@/domain/line/bounds";
+import { isLineSynced } from "@/domain/line/predicates";
+import { lineText } from "@/domain/line/text";
 import { roleWords } from "@/domain/line/track";
 import { deleteWords, typeWordText } from "@/domain/commands/word-structure";
 import { pasteLyrics } from "@/domain/commands/edit-text";
@@ -45,5 +49,17 @@ describe("word structure commands", () => {
     });
     useProjectStore.getState().commit(deleteWords([tideAddress]));
     expect(Object.keys(trackPieces(useProjectStore.getState().lines[0], "main") ?? {})).toEqual([turns.id]);
+  });
+
+  it("regression: renaming the block of a line-synced row updates text and keeps it line-synced", () => {
+    useProjectStore
+      .getState()
+      .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "l2", text: "Old", begin: 3, end: 5 })]));
+    const [block] = drawnSyllables(useProjectStore.getState().lines[0], "main");
+    useProjectStore.getState().commit(typeWordText(addressOf({ id: "l2" }, "word", block), "New words"));
+    const [line] = useProjectStore.getState().lines;
+    expect(lineText(line)).toBe("New words");
+    expect(isLineSynced(line)).toBe(true);
+    expect(mainBounds(line)).toEqual({ begin: 3, end: 5 });
   });
 });

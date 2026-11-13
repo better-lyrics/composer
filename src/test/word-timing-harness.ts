@@ -1,6 +1,6 @@
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { roleWords } from "@/domain/line/track";
-import { effectiveTimingWrite, rawLineOf } from "@/domain/line/effective-words";
-import { withRoleWords } from "@/domain/line/track-writes";
+import { mainTimingWrite, withRoleWords } from "@/domain/line/track-writes";
 import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import type { BoundaryEdge } from "@/domain/word/boundary";
@@ -28,10 +28,10 @@ function retimeInto(
 
 // -- Factory instances --------------------------------------------------------
 
-const wordsOps = createWordTimingOps({ getWords: (line) => roleWords(line, "main"), writeWords: effectiveTimingWrite });
+const wordsOps = createWordTimingOps({ getWords: (line) => drawnSyllables(line, "main"), writeWords: mainTimingWrite });
 const bgOps = createWordTimingOps({
   getWords: (line) => roleWords(line, "bg"),
-  writeWords: (line, words) => ({ tracks: withRoleWords(rawLineOf(line), "bg", words).tracks }),
+  writeWords: (line, words) => ({ tracks: withRoleWords(line, "bg", words).tracks }),
 });
 
 // -- Fixtures -----------------------------------------------------------------

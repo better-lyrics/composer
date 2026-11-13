@@ -1,6 +1,6 @@
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import type { Agent } from "@/domain/agent/model";
 import { effectiveBounds } from "@/domain/line/bounds";
-import { effectiveWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { backgroundText } from "@/domain/line/text";
@@ -52,7 +52,7 @@ function writableLines(lines: readonly LyricLine[]): WritableLine[] {
   return lines.flatMap((line) => {
     const bounds = effectiveBounds(line);
     if (!bounds) return [];
-    const main = effectiveWords(line).filter((word) => word.text.trim().length > 0);
+    const main = drawnSyllables(line, "main").filter((word) => word.text.trim().length > 0);
     const background = backgroundWordsOf(line, bounds);
     const words = background.length > 0 ? [...withTrailingSpace(main), ...background] : main;
     if (words.length === 0) return [];

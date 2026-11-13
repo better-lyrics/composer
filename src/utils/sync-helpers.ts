@@ -1,6 +1,7 @@
 import type { LyricLine } from "@/domain/line/model";
+import { drawnSyllables } from "@/domain/line/drawn-track";
 import { backgroundText, lineText } from "@/domain/line/text";
-import { trackWords, untimedSyllablesOf } from "@/domain/line/track";
+import { trackRole, untimedSyllablesOf } from "@/domain/line/track";
 import type { SyncAddress } from "@/domain/sync/address";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { ReRecording } from "@/domain/sync/skipped-instances";
@@ -123,7 +124,7 @@ function createTrackWordsFromTextAt(
   maxEnd: number,
 ): WordTiming[] | null {
   const text = type === "word" ? lineText(line) : backgroundText(line);
-  if (!text || trackWords(line, type)?.length) return null;
+  if (!text || drawnSyllables(line, trackRole(type)).length > 0) return null;
   const partDuration = type === "word" ? useSettingsStore.getState().defaultWordDuration : DEFAULT_BG_WORD_DURATION;
   const naturalEnd = begin + splitIntoWords(text).length * partDuration;
   const words = distributeWordsInLine(text, begin, Math.min(maxEnd, naturalEnd));

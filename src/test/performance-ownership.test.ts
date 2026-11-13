@@ -9,11 +9,13 @@ import { matchLines, productionSources, type ScannedSource, stylesheetSources } 
 const DEEP_COPY = /\bstructuredClone\(|JSON\.parse\(\s*JSON\.stringify\(|\b(?:cloneDeep|deepClone|deepCopy)\(/;
 const HISTORY_ENTRY_SHAPE = /\bHistoryEntry\b|\bhistoryIndex\b/;
 
-const EFFECTIVE_LINES_CALL = /\bgetEffectiveLines\(/;
-const EFFECTIVE_LINES_CALLERS = new Map<string, string>([
-  ["views/timeline/timeline-effective-lines.ts", "the owner: one shared array per lines change"],
-  ["views/timeline/use-marquee.ts", "a pointer handler reads the lines once per marquee move, never in render"],
-  ["views/timeline/timeline-syllable-splitter.tsx", "a shortcut handler reads one line when the splitter opens"],
+const DRAWN_LINES_CALL = /\b(?:use)?[tT]imelineDrawnLines\(/;
+const DRAWN_LINES_CALLERS = new Map<string, string>([
+  ["views/timeline/timeline-drawn-lines.ts", "the owner: one shared array per lines change"],
+  ["views/timeline/drawn-rows.ts", "the rows read the shared array once per lines change"],
+  ["views/timeline/timeline-panel.tsx", "the panel reads the shared array and hands it to its handlers"],
+  ["views/timeline/timeline-info-panel.tsx", "the info panel reads the shared array for the selected word"],
+  ["views/timeline/use-context-menu-targets.ts", "the context menu reads the shared array only while it is open"],
 ]);
 
 const GROUPING_SCAN_CALL = /(?<!function )\bfindRepeatingStandaloneSections\(/;
@@ -145,23 +147,23 @@ describe("history shares structure with the store", () => {
   });
 });
 
-describe("timeline effective lines have one computation per consumer group", () => {
+describe("timeline drawn lines have one computation per consumer group", () => {
   const sources = productionSources("views/timeline");
 
-  it("derives effective lines only in the listed files", () => {
-    const offenders = offendersOf(sources, EFFECTIVE_LINES_CALL, (relPath) => EFFECTIVE_LINES_CALLERS.has(relPath));
+  it("derives drawn lines only in the listed files", () => {
+    const offenders = offendersOf(sources, DRAWN_LINES_CALL, (relPath) => DRAWN_LINES_CALLERS.has(relPath));
     expect(
       report(
         offenders,
-        "Timeline components share one array: useTimelineEffectiveLines or timelineEffectiveLines",
-        "(views/timeline/timeline-effective-lines.ts). A second array per render re-renders every row on each edit.",
+        "Timeline components share one array: useTimelineDrawnLines or timelineDrawnLines",
+        "(views/timeline/timeline-drawn-lines.ts). A second array per render re-renders every row on each edit.",
       ),
     ).toBe("");
   });
 
   it("lists only files that still derive them", () => {
-    const callers = new Set(offendersOf(sources, EFFECTIVE_LINES_CALL, () => false).map((at) => at.split(":")[0]));
-    expect(staleEntries(EFFECTIVE_LINES_CALLERS.keys(), (relPath) => callers.has(`src/${relPath}`))).toEqual([]);
+    const callers = new Set(offendersOf(sources, DRAWN_LINES_CALL, () => false).map((at) => at.split(":")[0]));
+    expect(staleEntries(DRAWN_LINES_CALLERS.keys(), (relPath) => callers.has(`src/${relPath}`))).toEqual([]);
   });
 });
 

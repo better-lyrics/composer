@@ -1,5 +1,6 @@
+import { drawnSyllables } from "@/domain/line/drawn-track";
+import { trackRole } from "@/domain/line/track";
 import { effectiveBounds } from "@/domain/line/bounds";
-import { effectiveTrackWords } from "@/domain/line/effective-words";
 import { isLineTimed } from "@/domain/line/sync-progress";
 import type { LyricLine } from "@/domain/line/model";
 import { pitchRangeBetween } from "@/domain/pitch/line-range";
@@ -132,7 +133,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
   const inksRef = useRef<LaneInks | null>(null);
   const otherTracksRef = useRef<OtherTracksCoverage | null>(null);
   const pitchLineOn = useSettingsStore((s) => s.pitchLine !== "off");
-  const hasSungLane = isLineTimed(line) && (effectiveTrackWords(line, kind)?.length ?? 0) > 0;
+  const hasSungLane = isLineTimed(line) && drawnSyllables(line, trackRole(kind)).length > 0;
 
   const revealSung = useCallback(() => {
     const sung = sungRef.current;
@@ -151,7 +152,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
     const sung = sungRef.current;
     const ghost = ghostRef.current;
     const lineBounds = effectiveBounds(line);
-    const words = effectiveTrackWords(line, kind) ?? [];
+    const words = drawnSyllables(line, trackRole(kind));
     if (!spark || !sung || !ghost || !lineBounds || words.length === 0) return;
     const selectedSet = new Set(selected.split(","));
     const laneWords: LaneWord[] = words.map((word, index) => {
@@ -169,7 +170,7 @@ const PitchLaneCanvas: React.FC<PitchLaneProps & { rows: PitchRows }> = ({ line,
       height,
       pitchRangeBetween(rows.track, lineBounds.begin, lineBounds.end),
     );
-    const leadWords = kind === "bg" ? (effectiveTrackWords(line, "word") ?? []) : [];
+    const leadWords = kind === "bg" ? drawnSyllables(line, "main") : [];
     const drawing = { window, runs: laneRuns(rows.track, kind, window, laneWords, leadWords), words: laneWords };
     let coverage = rows.coverage;
     if (live) {

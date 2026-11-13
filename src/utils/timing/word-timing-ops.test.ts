@@ -1,7 +1,6 @@
 import { patchOf, updatedLine } from "@/test/field-updates";
 import { roleWords } from "@/domain/line/track";
 import { describe, expect, it } from "vitest";
-import { getEffectiveLines } from "@/domain/line/effective-words";
 import { createLine } from "@/test/factories";
 import { bgOps, retimeInto, makeLine, wordsOps } from "@/test/word-timing-harness";
 import type { LineUpdate } from "@/domain/line/model";
@@ -131,16 +130,23 @@ describe("createWordTimingOps: write contract", () => {
   });
 });
 
-describe("main-track ops on effective lines", () => {
+describe("main-track ops on drawn lines", () => {
   it("regression [: set begin on a line-synced row writes begin/end, not words", () => {
-    const calls: LineUpdate[] = [];
-    const lines = getEffectiveLines([createLine({ text: "Line synced", begin: 17, end: 20 })]);
-    retimeInto(calls, wordRetimeEdit, "begin", { to: 18 }, lines, 0, 0);
-    expect(patchOf(calls[0].updates, lines[0])).toEqual({ begin: 18 });
+    const line = createLine({ text: "Line synced", begin: 17, end: 20 });
+    const edit = wordBoundaryEdit({
+      line,
+      wordIdx: 0,
+      edge: "begin",
+      time: 18,
+      minDuration: 0.05,
+      rolling: false,
+      syllablesFollowRolling: false,
+    });
+    expect(patchOf(edit?.updates, line)).toEqual({ begin: 18 });
   });
 
   it("regression info panel: set boundary on a line-synced row writes begin/end, not words", () => {
-    const [line] = getEffectiveLines([createLine({ text: "Line synced", begin: 17, end: 20 })]);
+    const line = createLine({ text: "Line synced", begin: 17, end: 20 });
     const edit = wordBoundaryEdit({
       line,
       wordIdx: 0,
@@ -155,7 +161,7 @@ describe("main-track ops on effective lines", () => {
 
   it("writes words and never text for a partially synced line", () => {
     const calls: LineUpdate[] = [];
-    const lines = getEffectiveLines([createLine({ text: "a b", words: [{ text: "a", sep: " ", begin: 1, end: 2 }] })]);
+    const lines = [createLine({ text: "a b", words: [{ text: "a", sep: " ", begin: 1, end: 2 }] })];
     retimeInto(calls, wordRetimeEdit, "end", { by: 0.5 }, lines, 0, 0);
     expect(patchOf(calls[0].updates, lines[0])).toEqual({
       words: [{ text: "a", sep: " ", begin: 1, end: 2.5, joinsNext: false }],

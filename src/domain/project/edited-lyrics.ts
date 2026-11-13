@@ -2,7 +2,7 @@ import { agentsAfterImport } from "@/domain/agent/imported-agents";
 import type { Agent } from "@/domain/agent/model";
 import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
-import type { RawLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { changedMetadata } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { isStructurallyEqual } from "@/utils/structural-equal";
@@ -10,14 +10,14 @@ import { isStructurallyEqual } from "@/utils/structural-equal";
 // -- Types --------------------------------------------------------------------
 
 interface EditedLyrics {
-  lines: RawLine[];
+  lines: LyricLine[];
   groups: LinkGroup[];
   agents: Agent[] | undefined;
   metadata: Partial<ProjectMetadata>;
 }
 
 interface ProjectLyrics {
-  lines: readonly RawLine[];
+  lines: readonly LyricLine[];
   groups: readonly LinkGroup[];
   agents: readonly Agent[];
   metadata: ProjectMetadata;
@@ -26,7 +26,7 @@ interface ProjectLyrics {
 type ProjectPart = "lines" | "metadata" | "agents" | "groups";
 
 interface EditedLyricsWrite {
-  lines: RawLine[];
+  lines: LyricLine[];
   groups: LinkGroup[];
   agents: Agent[];
   metadata: Partial<ProjectMetadata>;

@@ -2,14 +2,11 @@
  * @vitest-environment node
  */
 
-import { beforeEach, describe, expect, expectTypeOf, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLyrics } from "@/domain/commands/edit-text";
-import { getEffectiveLines } from "@/domain/line/effective-words";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { mainTrack, roleWords } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
-
-type StoreState = ReturnType<typeof useProjectStore.getState>;
 
 // These pin the Task 1.4 contract: gutter add/delete operations on a project
 // containing line-synced rows must NOT flip those rows to word-synced.
@@ -45,16 +42,6 @@ describe("gutter add/delete preserves line-sync granularity", () => {
     expect(L1 && roleWords(L1, "main")).toBeUndefined();
     expect(L1 && mainTrack(L1).begin).toBe(5);
     expect(L1 && mainTrack(L1).end).toBe(7);
-  });
-
-  it("regression: writing effective-line synthesised words back is a compile error (the bug shape)", () => {
-    useProjectStore.setState({
-      lines: [lineFromFields({ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 })],
-    });
-    const effective = getEffectiveLines(useProjectStore.getState().lines);
-    // effective[0] now has a synthesised single-word array
-    expect(timedSyllables(mainTrack(effective[0]))).toHaveLength(1);
-    expectTypeOf([...effective]).not.toMatchTypeOf<NonNullable<Parameters<StoreState["restoreLyrics"]>[0]["lines"]>>();
   });
 
   it("deleting a line by id (not effective index) does not perturb other rows", () => {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { V3TransliterationTrack } from "@/domain/language/v3-languages";
-import { getEffectiveLines } from "@/domain/line/effective-words";
+import { drawnLanguages, drawnSyllables } from "@/domain/line/drawn-track";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
@@ -40,6 +40,10 @@ function lineWithoutPieces(): LyricLine {
     ],
     transliteration: track,
   });
+}
+
+function drawnReadings(line: LyricLine): LegacyWord[] {
+  return legacyWords(drawnSyllables(line, "main"), drawnLanguages(line)) ?? [];
 }
 
 function readings(line: LyricLine, side: "main" | "bg" = "main"): LegacyWord[] {
@@ -82,12 +86,7 @@ describe("TimelineSyllableSplitter transliteration", () => {
       await expect.poll(() => roleWords(savedLine(), "main")?.length).toBe(4);
       expect(readings(savedLine()).map((word) => word.transliteration)).toEqual(["Uh", "il", "dan eun", "na"]);
       expect(savedLine().languages?.transliteration?.main.text).toBe("Uh  ildan eun  na");
-      expect(readings(getEffectiveLines([savedLine()])[0]).map((word) => word.transliteration)).toEqual([
-        "Uh",
-        "il",
-        "dan eun",
-        "na",
-      ]);
+      expect(drawnReadings(savedLine()).map((word) => word.transliteration)).toEqual(["Uh", "il", "dan eun", "na"]);
     });
 
     it("regression: keeps the chosen roman split on the background track (#283)", async () => {
@@ -117,12 +116,7 @@ describe("TimelineSyllableSplitter transliteration", () => {
       expect(stored.map((word) => word.text + word.sep)).toEqual(["Uh ", "일단 ", "은 ", "나"]);
       expect(stored.map((word) => word.transliteration)).toEqual(["Uh", "ild", "an eun", "na"]);
       expect(savedLine().languages?.transliteration?.main.text).toBe("Uh  ildan eun  na");
-      expect(readings(getEffectiveLines([savedLine()])[0]).map((word) => word.transliteration)).toEqual([
-        "Uh",
-        "ild",
-        "an eun",
-        "na",
-      ]);
+      expect(drawnReadings(savedLine()).map((word) => word.transliteration)).toEqual(["Uh", "ild", "an eun", "na"]);
     });
   });
 });

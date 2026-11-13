@@ -1,4 +1,3 @@
-import { type ReadableLine, rawLineOf } from "@/domain/line/effective-words";
 import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
@@ -78,11 +77,10 @@ function changedFields(updates: readonly LineUpdate[], lines: readonly LyricLine
   });
 }
 
-// The flat fields one write changes on the stored line behind the line it was made for.
-function patchOf(updates: Partial<LyricLine> | null | undefined, line: ReadableLine): FieldPatch {
+// The flat fields one write changes on the line.
+function patchOf(updates: Partial<LyricLine> | null | undefined, line: LyricLine): FieldPatch {
   if (!updates) throw new Error("patchOf: no write");
-  const raw = rawLineOf(line);
-  return changedFields([{ id: raw.id, updates }], [raw])[0].updates;
+  return changedFields([{ id: line.id, updates }], [line])[0].updates;
 }
 
 // -- Exports ------------------------------------------------------------------

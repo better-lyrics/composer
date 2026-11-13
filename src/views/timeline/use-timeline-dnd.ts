@@ -1,4 +1,4 @@
-import type { ReadableLine } from "@/domain/line/effective-words";
+import type { LyricLine } from "@/domain/line/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { swallowTrailingClick } from "@/lib/swallow-trailing-click";
 import { useAudioStore } from "@/stores/audio";
@@ -21,7 +21,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 // -- Hook ----------------------------------------------------------------------
 
-function useTimelineDnd(lines: ReadableLine[]) {
+function useTimelineDnd(lines: LyricLine[]) {
   const duration = useAudioStore((s) => s.duration);
 
   const [activeDrag, setActiveDrag] = useState<DragData | null>(null);

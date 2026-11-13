@@ -117,11 +117,6 @@ const FORBIDDEN: ForbiddenPattern[] = [
     use: "isLineTimed from @/domain/line/sync-progress or isLineSynced from @/domain/line/predicates",
   },
   {
-    name: "raw main-word edit outside the effective-line owner",
-    regex: /\bmainWordEditFields\(/,
-    use: "effectiveMainWordEdit from @/domain/line/effective-words",
-  },
-  {
     name: "inline instance ordinal",
     regex: /instanceIdx\b(?:\s*\?\?\s*\d+\))?\s*\+\s*1\b/,
     use: "instanceOrdinal from @/domain/instance/enumerate",
