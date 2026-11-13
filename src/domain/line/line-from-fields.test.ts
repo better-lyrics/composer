@@ -13,12 +13,12 @@ describe("tracksFromFields", () => {
         { text: "terns", sep: " ", begin: 1.6, end: 2, syllableGroupId: "g1" },
       ],
     });
-    expect(timedSyllables(mainTrack(line))).toEqual(timedSyllables(mainTrack(line)));
+    expect(timedSyllables(mainTrack(line))).toBe(line.words);
     expect(
       mainTrack(line)
         .syllables.slice(3)
         .map((syllable) => syllable.text),
     ).toEqual(["drifting", "slow"]);
-    expect(lineText(line)).toBe(lineText(line));
+    expect(lineText(line)).toBe("Paper lan|terns drifting slow");
   });
 });

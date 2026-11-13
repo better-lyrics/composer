@@ -48,6 +48,15 @@ function untimedTail(text: string, previousWords: WordTiming[], words: WordTimin
   return text.slice(partEnds(text, written.parts)[start - 1]);
 }
 
+// The words a line already has, read against its own text: the rest after a matching prefix is untimed.
+function untimedRest(text: string, words: WordTiming[]): string {
+  const written = splitIntoWordsWithMeta(text);
+  const covered = wordAtoms(words);
+  if (covered.length === 0 || covered.length >= written.parts.length) return "";
+  if (covered.some((atom, i) => atom !== written.parts[i])) return "";
+  return text.slice(partEnds(text, written.parts)[covered.length - 1]);
+}
+
 // -- Tracks -------------------------------------------------------------------
 
 function untimedSyllables(text: string): UntimedSyllable[] {
@@ -57,7 +66,7 @@ function untimedSyllables(text: string): UntimedSyllable[] {
 
 function syllablesOf(text: string, words: WordTiming[] | undefined): readonly Syllable[] {
   if (!words?.length) return untimedSyllables(text);
-  const tail = untimedTail(text, words, words);
+  const tail = untimedRest(text, words);
   return tail === "" ? words : [...words, ...untimedSyllables(tail)];
 }
 
