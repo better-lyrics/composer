@@ -251,7 +251,7 @@ describe("tap-line", () => {
     ];
     const commit = run(lines, "tap-line", [1, 0], 3);
     expect(commit?.clampedTo).toBe(5);
-    for (const line of apply(lines, commit)) expectMonotonic([line]);
+    expectMonotonic(apply(lines, commit));
   });
 
   it("rule 2: after a jump, a tap before the previous line begins is clamped to that line's end", () => {
@@ -261,12 +261,12 @@ describe("tap-line", () => {
     expect(commit?.lineUpdates).toEqual([{ id: "l1", updates: { begin: 4, end: 4 } }]);
   });
 
-  it("after a jump, a tap inside a set previous line leaves its end", () => {
+  it("after a jump, a tap inside the previous line trims that line's end", () => {
     const lines = [createLine({ id: "l0", text: "first", begin: 1, end: 4 }), createLine({ id: "l1", text: "second" })];
     const commit = run(lines, "tap-line", [1, 0], 3, true);
     expect(commit?.clampedTo).toBeNull();
     expect(apply(lines, commit).map((l) => [l.begin, l.end])).toEqual([
-      [1, 4],
+      [1, 3],
       [3, 3],
     ]);
   });

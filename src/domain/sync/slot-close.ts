@@ -12,6 +12,7 @@ interface Bounds {
 
 interface SlotWriteIntent {
   lineIndex: number;
+  keepsSetEnds: boolean;
   replacedBegin: number | undefined;
   begin: number;
   open: boolean;
@@ -46,8 +47,10 @@ function forwardEnd(previous: Bounds, { begin, open, jumped }: SlotWriteIntent):
 function previousSlotEnd(lines: readonly LyricLine[], slot: SyncSlot | null, intent: SlotWriteIntent): number | null {
   const previous = slot ? slotBounds(lines, slot) : null;
   if (!slot || !previous) return null;
-  if (isSetEnd(previous, intent))
+  if (!intent.keepsSetEnds) return forwardEnd(previous, intent);
+  if (isSetEnd(previous, intent)) {
     return slot.lineIndex === intent.lineIndex ? Math.min(previous.end, intent.begin) : null;
+  }
   if (intent.begin >= previous.begin) return forwardEnd(previous, intent);
   return previous.begin === previous.end ? tapEnd(previous.begin, intent.defaultWordDuration) : null;
 }

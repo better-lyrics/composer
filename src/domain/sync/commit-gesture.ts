@@ -130,6 +130,7 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
 
   const previousEnd = previousSlotEnd(lines, slot, {
     lineIndex: cursor.lineIndex,
+    keepsSetEnds: true,
     replacedBegin: cursor.wordIndex === 0 ? mainBounds(line)?.begin : existing[cursor.wordIndex]?.begin,
     begin,
     open,
@@ -176,8 +177,10 @@ function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): Slo
     closes: closingUpdate(
       lines,
       slot,
+      // A Line mode tap shifts the whole line, end included, so an end this pass moved reads as set.
       previousSlotEnd(lines, slot, {
         lineIndex: cursor.lineIndex,
+        keepsSetEnds: false,
         replacedBegin: oldMain?.begin,
         begin,
         open: false,

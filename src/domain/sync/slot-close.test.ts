@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
@@ -57,11 +57,16 @@ describe("how a gesture ends the previous slot", () => {
     expect(run(lines, "tap-word", [0, 2], 3)?.lineUpdates[0].updates.words?.[1]).toEqual(word("b ", 2, 3));
   });
 
-  it("leaves a set previous line end alone on a Line mode re-tap", () => {
+  it("regression: a Line mode pass over timed lines ends each line at the next tap", () => {
     const lines = [
-      createLine({ id: "l0", text: "first", begin: 1, end: 9 }),
-      createLine({ id: "l1", text: "second", begin: 6, end: 8 }),
+      createLine({ id: "l0", text: "first", begin: 10, end: 12 }),
+      createLine({ id: "l1", text: "second", begin: 12, end: 15 }),
     ];
-    expect(updatedIds(lines, "tap-line", [1, 0], 7)).toEqual(["l1"]);
+    const first = run(lines, "tap-line", [0, 0], 11);
+    const shifted = lines.map((line) => {
+      const update = first?.lineUpdates.find((u) => u.id === line.id);
+      return update ? reconcileLine({ ...line, ...update.updates }) : line;
+    });
+    expect(run(shifted, "tap-line", [1, 0], 12.5)?.lineUpdates).toContainEqual({ id: "l0", updates: { end: 12.5 } });
   });
 });
