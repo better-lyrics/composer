@@ -14,6 +14,7 @@ import {
 } from "@/domain/language/v3-languages";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
+import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Types --------------------------------------------------------------------
 
@@ -36,12 +37,21 @@ function legacyLine({ words, backgroundWords, translations, transliteration, ...
     { main: v3PiecesOf(words), bg: v3PiecesOf(backgroundWords) },
     { words: storeWords, backgroundWords: storeBackgroundWords },
   );
-  return reconcileLine({
+  const line = reconcileLine({
     ...fields,
     ...(storeWords && { words: storeWords }),
     ...(storeBackgroundWords && { backgroundWords: storeBackgroundWords }),
     ...(languages && { languages }),
   });
+  const kept = [
+    ...(legacyWords(line.words, languages) ?? []),
+    ...(legacyWords(line.backgroundWords, languages, "bg") ?? []),
+  ];
+  const given = [...(words ?? []), ...(backgroundWords ?? [])];
+  if (!isStructurallyEqual(v3PiecesOf(kept), v3PiecesOf(given))) {
+    throw new Error(`legacyLine dropped syllable readings of line ${line.id}`);
+  }
+  return line;
 }
 
 function legacyWords(
