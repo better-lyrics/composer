@@ -16,15 +16,15 @@ function beginsInGap(others: readonly WordTiming[], before: WordTiming, after: W
   return others.some((other) => other.begin >= before.end && other.begin < after.begin);
 }
 
-// A group moves as one unit so overlapping syllables stay together, but it breaks where a word of
-// the other side begins in a gap between two of its syllables, so the track stays in time order.
-function mergeUnits(words: WordTiming[], isIncoming: boolean, others: readonly WordTiming[]): TaggedWord[][] {
+// An incoming group moves as one unit so overlapping syllables stay together, but it breaks where an
+// existing word begins in a gap between two of its syllables, so the track stays in time order.
+function incomingUnits(words: WordTiming[], existing: readonly WordTiming[]): TaggedWord[][] {
   const units: TaggedWord[][] = [];
   words.forEach((word, index) => {
     const previous = words[index - 1];
-    const sameUnit = index > 0 && previous.joinsNext && !beginsInGap(others, previous, word);
-    if (sameUnit) units[units.length - 1].push({ word, isIncoming });
-    else units.push([{ word, isIncoming }]);
+    const sameUnit = index > 0 && previous.joinsNext && !beginsInGap(existing, previous, word);
+    if (sameUnit) units[units.length - 1].push({ word, isIncoming: true });
+    else units.push([{ word, isIncoming: true }]);
   });
   return units;
 }
@@ -38,7 +38,8 @@ function mergeWordsIntoTrack(existing: WordTiming[], incoming: WordTiming[]): Wo
   const freshIncoming = withFreeIds(incoming, existing);
   const successor = new Map<WordTiming, WordTiming>();
   for (const words of [existing, freshIncoming]) words.forEach((word, i) => successor.set(word, words[i + 1]));
-  const tagged = [...mergeUnits(existing, false, freshIncoming), ...mergeUnits(freshIncoming, true, existing)]
+  const existingUnits = existing.map((word): TaggedWord[] => [{ word, isIncoming: false }]);
+  const tagged = [...existingUnits, ...incomingUnits(freshIncoming, existing)]
     .sort((a, b) => a[0].word.begin - b[0].word.begin)
     .flat();
 

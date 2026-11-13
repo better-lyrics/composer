@@ -410,4 +410,16 @@ describe("mergeWordsIntoTrack syllable groups", () => {
     expect(result.map((w) => w.text + w.sep)).toEqual(["ti ", "m ", "tle"]);
     expect(result.map((w) => w.joinsNext)).toEqual([false, false, false]);
   });
+
+  it("keeps time order: an incoming word that begins inside a joined syllable lands after that syllable", () => {
+    const result = mergeWordsIntoTrack(
+      [
+        { id: "w88", text: "ti", sep: "", begin: 0, end: 1, joinsNext: true },
+        { id: "w89", text: "tle", sep: "", begin: 2, end: 3, joinsNext: false },
+      ],
+      [{ id: "w90", text: "x", sep: "", begin: 0.5, end: 0.8, joinsNext: false }],
+    );
+    expect(result.map((w) => w.text + w.sep)).toEqual(["ti ", "x ", "tle"]);
+    expect(result.map((w) => w.joinsNext)).toEqual([false, false, false]);
+  });
 });
