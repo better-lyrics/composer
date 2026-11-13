@@ -47,7 +47,7 @@ function createWords(words: readonly FactoryWordOptions[]): WordTiming[] {
     sep === undefined ? word : { ...word, text: word.text + sep },
   );
   return wordsFromSpaced(spaced).map((word, index) => {
-    const joinsNext = words[index].joinsNext;
+    const { joinsNext } = words[index];
     return joinsNext === undefined ? word : { ...word, joinsNext };
   });
 }
