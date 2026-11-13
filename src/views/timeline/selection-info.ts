@@ -60,7 +60,7 @@ function selectedWordTiming(
   lines: readonly ReadableLine[],
 ): Pick<WordTiming, "text" | "begin" | "end"> | null {
   const word = selectedWord(selection, lines);
-  return word ? { text: word.text, begin: word.begin, end: word.end } : null;
+  return word ? { text: word.text + word.sep, begin: word.begin, end: word.end } : null;
 }
 
 function multiSelectionSummary(

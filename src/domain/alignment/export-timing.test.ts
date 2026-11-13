@@ -11,10 +11,10 @@ const ALIGNED = createLine({
   id: "a",
   text: "Lanterns drift across the harbor",
   words: [
-    { text: "Lanterns ", begin: 12.34, end: 12.611 },
-    { text: "drift ", begin: 12.611, end: 12.902 },
-    { text: "across ", begin: 12.902, end: 13.153 },
-    { text: "the ", begin: 13.154, end: 13.48 },
+    { text: "Lanterns", sep: " ", begin: 12.34, end: 12.611 },
+    { text: "drift", sep: " ", begin: 12.611, end: 12.902 },
+    { text: "across", sep: " ", begin: 12.902, end: 13.153 },
+    { text: "the", sep: " ", begin: 13.154, end: 13.48 },
     { text: "harbor", begin: 13.48, end: 14.2 },
     { text: "oh", begin: 14.2, end: 14.204 },
   ],
@@ -24,10 +24,10 @@ const HAND = createLine({
   id: "h",
   text: "Salt on the evening wind",
   words: [
-    { text: "Salt ", begin: 15.012, end: 15.4 },
-    { text: "on ", begin: 15.4, end: 15.61 },
-    { text: "the ", begin: 15.61, end: 15.8 },
-    { text: "evening ", begin: 15.8, end: 16.33 },
+    { text: "Salt", sep: " ", begin: 15.012, end: 15.4 },
+    { text: "on", sep: " ", begin: 15.4, end: 15.61 },
+    { text: "the", sep: " ", begin: 15.61, end: 15.8 },
+    { text: "evening", sep: " ", begin: 15.8, end: 16.33 },
     { text: "wind", begin: 16.33, end: 17.1 },
   ],
 });
@@ -62,9 +62,9 @@ describe("withExportTiming", () => {
       id: "b",
       text: "Home before the tide",
       words: [
-        { text: "Home ", begin: 14.204, end: 14.6 },
-        { text: "before ", begin: 14.6, end: 14.95 },
-        { text: "the ", begin: 14.95, end: 15.2 },
+        { text: "Home", sep: " ", begin: 14.204, end: 14.6 },
+        { text: "before", sep: " ", begin: 14.6, end: 14.95 },
+        { text: "the", sep: " ", begin: 14.95, end: 15.2 },
         { text: "tide", begin: 15.2, end: 15.9 },
       ],
     });

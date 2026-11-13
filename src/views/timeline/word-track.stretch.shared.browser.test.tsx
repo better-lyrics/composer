@@ -9,8 +9,8 @@ import {
 import { describe, expect, it } from "vitest";
 
 const words = () => [
-  createWord({ text: "go ", begin: 1, end: 2 }),
-  createWord({ text: "now ", begin: 2, end: 3 }),
+  createWord({ text: "go", sep: " ", begin: 1, end: 2 }),
+  createWord({ text: "now", sep: " ", begin: 2, end: 3 }),
   createWord({ text: "yeah", begin: 5, end: 6 }),
 ];
 

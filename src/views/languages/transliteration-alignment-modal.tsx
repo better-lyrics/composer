@@ -2,6 +2,7 @@ import { planTransliterationAlignment } from "@/domain/language/align";
 import { confirmTransliterationAlignment } from "@/domain/language/review";
 import { splitTransliterationAtBoundaries, timingLexicalWordGroups } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
+import { spacedText } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -78,10 +79,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
     () =>
       groups.map((candidate, index) => ({
         value: String(index),
-        label: `${index + 1}. ${candidate.words
-          .map((word) => word.text)
-          .join("")
-          .trim()}`,
+        label: `${index + 1}. ${spacedText(candidate.words).trim()}`,
       })),
     [groups],
   );
@@ -161,10 +159,10 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
           <div className="flex flex-wrap gap-1.5">
             {group.words.map((word) => (
               <span
-                key={`${word.begin}-${word.end}-${word.text}`}
+                key={`${word.begin}-${word.end}-${word.text}${word.sep}`}
                 className="inline-flex h-7 items-baseline gap-2 rounded-lg bg-(--layer-2) px-2.5 text-sm leading-7"
               >
-                <span className="select-text">{word.text.trimEnd()}</span>
+                <span className="select-text">{word.text}</span>
                 <span className="font-mono text-[11px] text-composer-text-muted tabular-nums select-text">
                   {formatTime(word.begin)} - {formatTime(word.end)}
                 </span>

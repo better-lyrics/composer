@@ -20,9 +20,9 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fu|cking yeah",
         agentId: "v1",
         words: [
-          { text: "fu", begin: 0, end: 0.2, explicit: true },
-          { text: "cking ", begin: 0.2, end: 0.5 },
-          { text: "yeah", begin: 0.5, end: 1 },
+          { text: "fu", sep: "", begin: 0, end: 0.2, explicit: true },
+          { text: "cking", sep: " ", begin: 0.2, end: 0.5 },
+          { text: "yeah", sep: "", begin: 0.5, end: 1 },
         ],
       },
     ];
@@ -38,9 +38,9 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fu|cking yeah",
         agentId: "v1",
         words: [
-          { text: "fu", begin: 0, end: 0.2, explicit: true },
-          { text: "cking ", begin: 0.2, end: 0.5, explicit: true },
-          { text: "yeah", begin: 0.5, end: 1 },
+          { text: "fu", sep: "", begin: 0, end: 0.2, explicit: true },
+          { text: "cking", sep: " ", begin: 0.2, end: 0.5, explicit: true },
+          { text: "yeah", sep: "", begin: 0.5, end: 1 },
         ],
       },
     ];
@@ -56,8 +56,8 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fuck this",
         agentId: "v1",
         words: [
-          { text: "fuck ", begin: 0, end: 0.5 },
-          { text: "this", begin: 0.5, end: 1 },
+          { text: "fuck", sep: " ", begin: 0, end: 0.5 },
+          { text: "this", sep: "", begin: 0.5, end: 1 },
         ],
       },
     ];
@@ -73,8 +73,8 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fuck this",
         agentId: "v1",
         words: [
-          { text: "fuck ", begin: 0, end: 0.5, explicit: true },
-          { text: "this", begin: 0.5, end: 1 },
+          { text: "fuck", sep: " ", begin: 0, end: 0.5, explicit: true },
+          { text: "this", sep: "", begin: 0.5, end: 1 },
         ],
       },
       {
@@ -82,8 +82,8 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "shit happens",
         agentId: "v1",
         words: [
-          { text: "shit ", begin: 1, end: 1.5 },
-          { text: "happens", begin: 1.5, end: 2 },
+          { text: "shit", sep: " ", begin: 1, end: 1.5 },
+          { text: "happens", sep: "", begin: 1.5, end: 2 },
         ],
       },
     ];
@@ -101,11 +101,11 @@ describe("resolveExplicitSelectionToggle", () => {
         id: "L1",
         text: "main",
         agentId: "v1",
-        words: [{ text: "main", begin: 0, end: 1 }],
+        words: [{ text: "main", sep: "", begin: 0, end: 1 }],
         backgroundText: "oh shit",
         backgroundWords: [
-          { text: "oh ", begin: 1, end: 1.25 },
-          { text: "shit", begin: 1.25, end: 1.5 },
+          { text: "oh", sep: " ", begin: 1, end: 1.25 },
+          { text: "shit", sep: "", begin: 1.25, end: 1.5 },
         ],
       },
     ];
@@ -121,8 +121,8 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fuck this",
         agentId: "v1",
         words: [
-          { text: "fuck ", begin: 0, end: 0.5 },
-          { text: "this", begin: 0.5, end: 1 },
+          { text: "fuck", sep: " ", begin: 0, end: 0.5 },
+          { text: "this", sep: "", begin: 0.5, end: 1 },
         ],
       },
     ];
@@ -154,8 +154,14 @@ describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, i
         instanceIdx: idx,
         templateLineIdx: 0,
         words: [
-          { text: "fuck ", begin: idx * 30, end: idx * 30 + 0.5, ...(explicit ? { explicit: true as const } : {}) },
-          { text: "this", begin: idx * 30 + 0.5, end: idx * 30 + 1 },
+          {
+            text: "fuck",
+            sep: " ",
+            begin: idx * 30,
+            end: idx * 30 + 0.5,
+            ...(explicit ? { explicit: true as const } : {}),
+          },
+          { text: "this", sep: "", begin: idx * 30 + 0.5, end: idx * 30 + 1 },
         ],
       })),
     );

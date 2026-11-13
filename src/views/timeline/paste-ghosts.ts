@@ -82,7 +82,7 @@ function computeGhosts(
     }
 
     ghosts.push({
-      text: entry.word.text,
+      text: entry.word.text + entry.word.sep,
       left,
       width,
       trackTop,

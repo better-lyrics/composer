@@ -180,7 +180,7 @@ describe("TimelineContextMenu background provenance", () => {
       words: [createWord({ text: "main", begin: 0, end: 1 })],
       backgroundText: "ooh aah",
       backgroundWords: [
-        createWord({ text: "ooh ", begin: 1, end: 1.5 }),
+        createWord({ text: "ooh", sep: " ", begin: 1, end: 1.5 }),
         createWord({ text: "aah", begin: 1.5, end: 2 }),
       ],
       backgroundTextSource: "extraction",
@@ -202,7 +202,7 @@ describe("TimelineContextMenu background provenance", () => {
     findButton(/Delete word/i)?.click();
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundWords?.map((w) => w.text)).toEqual(["aah"]);
+    expect(updated.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["aah"]);
     expect(updated.backgroundTextSource).toBe("manual");
   });
 
@@ -279,7 +279,10 @@ describe("TimelineContextMenu background provenance", () => {
     const line = createLine({
       id: "l1",
       text: "I love",
-      words: [createWord({ text: "I ", begin: 0, end: 0.5 }), createWord({ text: "love", begin: 0.5, end: 1 })],
+      words: [
+        createWord({ text: "I", sep: " ", begin: 0, end: 0.5 }),
+        createWord({ text: "love", begin: 0.5, end: 1 }),
+      ],
       backgroundText: "ooh",
       backgroundWords: [createWord({ text: "ooh", begin: 1, end: 2 })],
       backgroundTextSource: "extraction",
@@ -316,7 +319,7 @@ describe("TimelineContextMenu · split into words on the bg track", () => {
   it("regression: offers 'Split into words' on a sentence-long bg word and splits it", async () => {
     const line = createLine({
       text: "main line",
-      words: [createWord({ text: "main ", begin: 0, end: 2 }), createWord({ text: "line", begin: 2, end: 4 })],
+      words: [createWord({ text: "main", sep: " ", begin: 0, end: 2 }), createWord({ text: "line", begin: 2, end: 4 })],
       backgroundText: "ooh yeah baby",
       backgroundWords: [createWord({ text: "ooh yeah baby", begin: 1, end: 4 })],
     });
@@ -329,7 +332,7 @@ describe("TimelineContextMenu · split into words on the bg track", () => {
     splitButton?.click();
 
     await expect
-      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text))
+      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text + w.sep))
       .toEqual(["ooh ", "yeah ", "baby"]);
     expect(useProjectStore.getState().lines[0].words).toEqual(line.words);
   });
@@ -337,9 +340,12 @@ describe("TimelineContextMenu · split into words on the bg track", () => {
   it("hides 'Split into words' on a bg track that is already one word per word", async () => {
     const line = createLine({
       text: "main line",
-      words: [createWord({ text: "main ", begin: 0, end: 2 }), createWord({ text: "line", begin: 2, end: 4 })],
+      words: [createWord({ text: "main", sep: " ", begin: 0, end: 2 }), createWord({ text: "line", begin: 2, end: 4 })],
       backgroundText: "ooh yeah",
-      backgroundWords: [createWord({ text: "ooh ", begin: 1, end: 2 }), createWord({ text: "yeah", begin: 2, end: 3 })],
+      backgroundWords: [
+        createWord({ text: "ooh", sep: " ", begin: 1, end: 2 }),
+        createWord({ text: "yeah", begin: 2, end: 3 }),
+      ],
     });
     useProjectStore.setState({ lines: [line] });
     openBgWordContextMenu(line.id);
@@ -367,7 +373,7 @@ describe("TimelineContextMenu · add word on a bg track with untimed text", () =
     findButton(/Add word here/i)?.click();
 
     await expect
-      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text))
+      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text + w.sep))
       .toEqual(["ooh ", "yeah"]);
     expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh yeah");
     const firstBegin = useProjectStore.getState().lines[0].backgroundWords?.[0].begin ?? -1;
@@ -433,6 +439,6 @@ describe("TimelineContextMenu · add word on a bg track with untimed text", () =
 
     await expect
       .poll(() => useProjectStore.getState().lines[1].words?.[0])
-      .toMatchObject({ text: "hi", begin: 5, end: 6 });
+      .toMatchObject({ text: "hi", sep: "", begin: 5, end: 6 });
   });
 });

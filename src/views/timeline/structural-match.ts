@@ -6,9 +6,12 @@ import type { LyricLine } from "@/domain/line/model";
 // -- Helpers -------------------------------------------------------------------
 
 // Timing may cover only part of a line, so only the words both lines have timed must agree.
-function timedWordsAgree(a: readonly { text: string }[] = [], b: readonly { text: string }[] = []): boolean {
+function timedWordsAgree(
+  a: readonly { text: string; sep: string }[] = [],
+  b: readonly { text: string; sep: string }[] = [],
+): boolean {
   const shared = Math.min(a.length, b.length);
-  for (let i = 0; i < shared; i++) if (a[i].text !== b[i].text) return false;
+  for (let i = 0; i < shared; i++) if (a[i].text !== b[i].text || a[i].sep !== b[i].sep) return false;
   return true;
 }
 

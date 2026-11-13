@@ -1,3 +1,4 @@
+import { splitTrailingWhitespace } from "insync/from-words";
 import { lcsPairs, wordKey } from "@/domain/word/alignment";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -34,7 +35,7 @@ function insertSlot(prevEnd: number, nextBegin: number): { begin: number; end: n
 function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string): WordTiming[] {
   const texts = tokenizeWordTexts(newText);
   if (texts.length === oldWords.length) {
-    return oldWords.map((oldWord, i) => ({ ...oldWord, text: texts[i] }));
+    return oldWords.map((oldWord, i) => ({ ...oldWord, ...splitTrailingWhitespace(texts[i]) }));
   }
 
   const oldIndexOf: Array<number | undefined> = new Array(texts.length);
@@ -49,7 +50,7 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string)
   while (i < texts.length) {
     const matched = oldIndexOf[i];
     if (matched !== undefined) {
-      result.push({ ...oldWords[matched], text: texts[i] });
+      result.push({ ...oldWords[matched], ...splitTrailingWhitespace(texts[i]) });
       i++;
       continue;
     }
@@ -76,7 +77,7 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string)
     for (const [k, { text, begin, end }] of spreadEvenly(runTexts, slot.begin, slot.end).entries()) {
       result.push(
         synthesizeBracketedWord({
-          text,
+          ...splitTrailingWhitespace(text),
           begin,
           end,
           leftBracket: gluedToLeft ? leftBracket : undefined,

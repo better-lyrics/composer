@@ -17,6 +17,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
+import { wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
@@ -103,11 +104,13 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
       } else {
         const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
         if (parts.length === 0) continue;
-        const words: WordTiming[] = parts.map((part, i) => ({
-          text: trailingSpace[i] ? `${part} ` : part,
-          begin: currentTime + i * wordDuration,
-          end: currentTime + (i + 1) * wordDuration,
-        }));
+        const words = wordsFromSpaced(
+          parts.map((part, i) => ({
+            text: trailingSpace[i] ? `${part} ` : part,
+            begin: currentTime + i * wordDuration,
+            end: currentTime + (i + 1) * wordDuration,
+          })),
+        );
         updates.push({ id: line.id, updates: { words } });
       }
     }

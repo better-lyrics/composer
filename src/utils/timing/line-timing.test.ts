@@ -26,7 +26,7 @@ function seedWordSyncedLine(): void {
         id: "l1",
         text: "Hello world",
         words: [
-          { text: "Hello ", begin: 1, end: 1.5 },
+          { text: "Hello", sep: " ", begin: 1, end: 1.5 },
           { text: "world", begin: 1.5, end: 2 },
         ],
       }),
@@ -44,7 +44,7 @@ describe("nudgeLineBegin", () => {
     nudgeLineBegin(store().lines, 0, 0.5, store().updateLineWithHistory);
 
     expect(lineAt(0)).toMatchObject({ begin: 10.5, end: 12.5 });
-    expect(lineAt(0).backgroundWords).toEqual([{ text: "ooh", begin: 10.75, end: 11.25 }]);
+    expect(lineAt(0).backgroundWords).toEqual([{ text: "ooh", sep: "", begin: 10.75, end: 11.25 }]);
   });
 
   it("regression: moves every word of a word-synced line", () => {
@@ -53,20 +53,20 @@ describe("nudgeLineBegin", () => {
     nudgeLineBegin(store().lines, 0, 0.5, store().updateLineWithHistory);
 
     expect(lineAt(0).words).toMatchObject([
-      { text: "Hello ", begin: 1.5, end: 2 },
-      { text: "world", begin: 2, end: 2.5 },
+      { text: "Hello", sep: " ", begin: 1.5, end: 2 },
+      { text: "world", sep: "", begin: 2, end: 2.5 },
     ]);
   });
 
   it("regression: keeps the untimed words of a partly timed line", () => {
     useProjectStore.setState({
-      lines: [createLine({ id: "l1", text: "Hello world", words: [{ text: "Hello ", begin: 1, end: 1.5 }] })],
+      lines: [createLine({ id: "l1", text: "Hello world", words: [{ text: "Hello", sep: " ", begin: 1, end: 1.5 }] })],
     });
 
     nudgeLineBegin(store().lines, 0, 0.5, store().updateLineWithHistory);
 
     expect(lineAt(0).text).toBe("Hello world");
-    expect(lineAt(0).words).toMatchObject([{ text: "Hello ", begin: 1.5, end: 2 }]);
+    expect(lineAt(0).words).toMatchObject([{ text: "Hello", sep: " ", begin: 1.5, end: 2 }]);
   });
 
   describe("edge cases", () => {
@@ -76,7 +76,7 @@ describe("nudgeLineBegin", () => {
       nudgeLineBegin(store().lines, 0, -1, store().updateLineWithHistory);
 
       expect(lineAt(0)).toMatchObject({ begin: 0, end: 1.5 });
-      expect(lineAt(0).backgroundWords).toEqual([{ text: "ooh", begin: 0.25, end: 0.75 }]);
+      expect(lineAt(0).backgroundWords).toEqual([{ text: "ooh", sep: "", begin: 0.25, end: 0.75 }]);
     });
 
     it("leaves an untimed line alone", () => {
@@ -97,7 +97,7 @@ describe("nudgeLineBegin", () => {
       store().undo();
 
       expect(lineAt(0)).toMatchObject({ begin: 10, end: 12 });
-      expect(lineAt(0).backgroundWords).toEqual([{ text: "ooh", begin: 10.25, end: 10.75 }]);
+      expect(lineAt(0).backgroundWords).toEqual([{ text: "ooh", sep: "", begin: 10.25, end: 10.75 }]);
     });
   });
 });
@@ -109,7 +109,7 @@ describe("setLineBegin", () => {
     setLineBegin(store().lines, 0, 20, store().updateLineWithHistory);
 
     expect(lineAt(0)).toMatchObject({ begin: 20, end: 22 });
-    expect(lineAt(0).backgroundWords).toEqual([{ text: "ooh", begin: 20.25, end: 20.75 }]);
+    expect(lineAt(0).backgroundWords).toEqual([{ text: "ooh", sep: "", begin: 20.25, end: 20.75 }]);
   });
 
   it("regression: sets the start of a word-synced line", () => {
@@ -118,8 +118,8 @@ describe("setLineBegin", () => {
     setLineBegin(store().lines, 0, 3, store().updateLineWithHistory);
 
     expect(lineAt(0).words).toMatchObject([
-      { text: "Hello ", begin: 3, end: 3.5 },
-      { text: "world", begin: 3.5, end: 4 },
+      { text: "Hello", sep: " ", begin: 3, end: 3.5 },
+      { text: "world", sep: "", begin: 3.5, end: 4 },
     ]);
   });
 

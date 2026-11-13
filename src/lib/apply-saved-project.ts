@@ -9,7 +9,7 @@ import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { readBeatGrid } from "@/domain/tempo/read-beat-grid";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";
-import type { SavedProject } from "@/lib/saved-project";
+import { type SavedProject, linesFromSaved } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -32,7 +32,7 @@ function malformedFieldsOf(project: SavedProject): string[] {
 function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): string[] {
   const state = useProjectStore.getState();
   state.setMetadata(normalizeLoadedMetadata(project.metadata));
-  state.setLines((project.lines ?? []).map(withSeededBackground));
+  state.setLines(linesFromSaved(project.lines ?? []).map(withSeededBackground));
   state.setGroups(project.groups ?? []);
   state.setGranularity(project.granularity ?? useSettingsStore.getState().defaultGranularity);
   state.setExportTiming(savedExportTiming(project.exportTiming));

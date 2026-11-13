@@ -90,9 +90,9 @@ describe("timingsFromParts", () => {
     const group = timings[0].syllableGroupId;
     expect(group).toBeDefined();
     expect(timings).toEqual([
-      { text: "hel", begin: 1, end: 1.3, syllableGroupId: group },
-      { text: "lo ", begin: 1.3, end: 1.5, syllableGroupId: group },
-      { text: "you", begin: 2, end: 2.4 },
+      { text: "hel", sep: "", begin: 1, end: 1.3, syllableGroupId: group },
+      { text: "lo", sep: " ", begin: 1.3, end: 1.5, syllableGroupId: group },
+      { text: "you", sep: "", begin: 2, end: 2.4 },
     ]);
   });
 
@@ -108,9 +108,9 @@ describe("timingsFromParts", () => {
 describe("retimeWords", () => {
   it("keeps every part's metadata and only changes its times", () => {
     const existing = [
-      { text: "hel", begin: 0, end: 1, transliteration: "x" },
-      { text: "lo ", begin: 1, end: 2 },
-      { text: "you", begin: 2, end: 3 },
+      { text: "hel", sep: "", begin: 0, end: 1, transliteration: "x" },
+      { text: "lo", sep: " ", begin: 1, end: 2 },
+      { text: "you", sep: "", begin: 2, end: 3 },
     ];
     expect(groupTimedWords(existing).map((w) => w.text)).toEqual(["hello", "you"]);
     const retimed = retimeWords(existing, [
@@ -118,7 +118,7 @@ describe("retimeWords", () => {
       { begin: 5.3, end: 5.5 },
       { begin: 6, end: 6.3 },
     ]);
-    expect(retimed.map((w) => [w.text, w.begin, w.end])).toEqual([
+    expect(retimed.map((w) => [w.text + w.sep, w.begin, w.end])).toEqual([
       ["hel", 5, 5.3],
       ["lo ", 5.3, 5.5],
       ["you", 6, 6.3],

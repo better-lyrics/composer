@@ -25,8 +25,9 @@ function sameExportedTime(a: number | undefined, b: number | undefined): boolean
 }
 
 function exportedWordText(words: readonly WordTiming[], index: number): string {
-  const text = words[index]?.text ?? "";
-  return index < words.length - 1 ? text : text.trimEnd();
+  const word = words[index];
+  if (!word) return "";
+  return index < words.length - 1 ? word.text + word.sep : word.text;
 }
 
 function sameExportedWord(stored: readonly WordTiming[], edited: readonly WordTiming[], index: number): boolean {
@@ -46,7 +47,7 @@ function sameWordSpacing(stored: readonly WordTiming[], edited: readonly WordTim
   return (
     stored.length === edited.length &&
     stored.every(
-      (word, index) => index === stored.length - 1 || word.text.endsWith(" ") === edited[index]?.text.endsWith(" "),
+      (word, index) => index === stored.length - 1 || word.sep.endsWith(" ") === edited[index]?.sep.endsWith(" "),
     )
   );
 }

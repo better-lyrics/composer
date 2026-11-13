@@ -21,9 +21,15 @@ const GESTURE_START_X = 200;
 
 // A flush pair whose combined span is shorter than twice the minimum word
 // duration, so no boundary position can satisfy both words' floors.
-const TIGHT_PAIR = [createWord({ text: "a ", begin: 0.99, end: 1 }), createWord({ text: "b", begin: 1, end: 1.02 })];
-const ROOMY_PAIR = [createWord({ text: "a ", begin: 0, end: 1 }), createWord({ text: "b", begin: 1, end: 2 })];
-const GAPPED_PAIR = [createWord({ text: "a ", begin: 0, end: 1 }), createWord({ text: "b", begin: 1.5, end: 2.5 })];
+const TIGHT_PAIR = [
+  createWord({ text: "a", sep: " ", begin: 0.99, end: 1 }),
+  createWord({ text: "b", begin: 1, end: 1.02 }),
+];
+const ROOMY_PAIR = [createWord({ text: "a", sep: " ", begin: 0, end: 1 }), createWord({ text: "b", begin: 1, end: 2 })];
+const GAPPED_PAIR = [
+  createWord({ text: "a", sep: " ", begin: 0, end: 1 }),
+  createWord({ text: "b", begin: 1.5, end: 2.5 }),
+];
 
 async function renderResizableTrack(words: WordTiming[], options: { rolling?: boolean; duration?: number } = {}) {
   const { rolling = true, duration = 3 } = options;

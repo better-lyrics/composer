@@ -19,7 +19,7 @@ function flushPairLine() {
   return createLine({
     id: "l1",
     text: "hello world",
-    words: [createWord({ text: "hello ", begin: 0, end: 1 }), createWord({ text: "world", begin: 1, end: 2 })],
+    words: [createWord({ text: "hello", sep: " ", begin: 0, end: 1 }), createWord({ text: "world", begin: 1, end: 2 })],
   });
 }
 
@@ -239,7 +239,7 @@ describe("TimelineInfoPanel selection copy", () => {
         createLine({
           id: "w",
           text: "a b",
-          words: [createWord({ text: "a ", begin: 0, end: 1 }), createWord({ text: "b", begin: 1, end: 2 })],
+          words: [createWord({ text: "a", sep: " ", begin: 0, end: 1 }), createWord({ text: "b", begin: 1, end: 2 })],
         }),
         { id: "ls", text: "line synced", agentId: "v1", begin: 3, end: 5 },
       ],

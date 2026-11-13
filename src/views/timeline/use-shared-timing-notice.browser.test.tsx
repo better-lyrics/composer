@@ -21,7 +21,7 @@ const member = (instanceIdx: number, begin?: number, groupId = "g1"): LyricLine 
       ? {}
       : {
           words: [
-            createWord({ text: "go ", begin, end: begin + 1 }),
+            createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
             createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
           ],
         }),
@@ -115,7 +115,7 @@ describe("Shared timing notice", () => {
         [OLD_CHORUS],
         [
           member(0, 10),
-          createLine({ ...member(1, 30), words: [createWord({ text: "go ", begin: 30, end: 31.5 })] }),
+          createLine({ ...member(1, 30), words: [createWord({ text: "go", sep: " ", begin: 30, end: 31.5 })] }),
           member(2),
         ],
       );

@@ -1,3 +1,4 @@
+import { splitTrailingWhitespace } from "insync/from-words";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
@@ -22,6 +23,7 @@ interface FactoryLineOptions {
 
 interface FactoryWordOptions {
   text: string;
+  sep?: string;
   begin: number;
   end: number;
   explicit?: true;
@@ -40,9 +42,13 @@ interface FactoryGroupOptions {
 let lineCounter = 0;
 let groupCounter = 0;
 
+// Without an explicit sep, the text is read as saved words spell it: trailing whitespace is the separator.
 function createWord(opts: FactoryWordOptions): WordTiming {
+  const { text, sep } =
+    opts.sep === undefined ? splitTrailingWhitespace(opts.text) : { text: opts.text, sep: opts.sep };
   return {
-    text: opts.text,
+    text,
+    sep,
     begin: opts.begin,
     end: opts.end,
     ...(opts.explicit ? { explicit: opts.explicit } : {}),

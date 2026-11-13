@@ -35,9 +35,9 @@ describe("applySyllableSplitToLines", () => {
   });
 
   it("preserves trailing space on the last syllable when the source had one", () => {
-    const lines = [createLine({ id: "l1", words: [{ text: "running ", begin: 0, end: 1 }] })];
+    const lines = [createLine({ id: "l1", words: [{ text: "running", sep: " ", begin: 0, end: 1 }] })];
     const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "word" }, [3], false);
-    expect(result[0].words?.[1].text).toBe("ning ");
+    expect(result[0].words?.[1]).toMatchObject({ text: "ning", sep: " " });
   });
 
   it("case-insensitive flag finds Capitalized matches", () => {

@@ -85,8 +85,8 @@ describe("generateTTML xml:lang", () => {
       text: "Hello world",
       agentId: "v1",
       words: [
-        { text: "Hello ", begin: 1, end: 1.5 },
-        { text: "world", begin: 1.5, end: 2 },
+        { text: "Hello", sep: " ", begin: 1, end: 1.5 },
+        { text: "world", sep: "", begin: 1.5, end: 2 },
       ],
     };
 

@@ -16,7 +16,7 @@ const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
       ? {}
       : {
           words: [
-            { text: "I ", begin, end: begin + 0.4 },
+            { text: "I", sep: " ", begin, end: begin + 0.4 },
             { text: "want", begin: begin + 0.5, end: begin + 1 },
           ],
         }),
@@ -30,7 +30,7 @@ const verse = (id: string, begin?: number) =>
       ? {}
       : {
           words: [
-            { text: "Walking ", begin, end: begin + 0.5 },
+            { text: "Walking", sep: " ", begin, end: begin + 0.5 },
             { text: "home", begin: begin + 0.6, end: begin + 1 },
           ],
         }),
@@ -83,7 +83,7 @@ describe("anchorGesture", () => {
       id: "v1",
       text: "Walking home",
       words: [
-        { text: "Walking ", begin: 20, end: 20.5 },
+        { text: "Walking", sep: " ", begin: 20, end: 20.5 },
         { text: "home", begin: 38, end: 38 },
       ],
     });
@@ -106,7 +106,7 @@ describe("anchorGesture", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ text: "I ", begin: 40, end: 40 }],
+        words: [{ text: "I", sep: " ", begin: 40, end: 40 }],
       });
       const lines = song().map((line) => (line.id === "c1-0" ? held : line));
       expect(gestureAt(lines, "hold-end", { lineIndex: 3, wordIndex: 0 }, 41).anchor).toBeNull();

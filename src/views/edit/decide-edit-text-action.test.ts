@@ -166,9 +166,9 @@ describe("decideEditTextAction", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { text: "I ", begin: 0, end: 0.4 },
-          { text: "love ", begin: 0.4, end: 0.8 },
-          { text: "you", begin: 0.8, end: 1.2 },
+          { text: "I", sep: " ", begin: 0, end: 0.4 },
+          { text: "love", sep: " ", begin: 0.4, end: 0.8 },
+          { text: "you", sep: "", begin: 0.8, end: 1.2 },
         ],
       },
       {
@@ -179,9 +179,9 @@ describe("decideEditTextAction", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { text: "I ", begin: 30, end: 30.5 },
-          { text: "love ", begin: 30.5, end: 31.0 },
-          { text: "you", begin: 31.0, end: 31.5 },
+          { text: "I", sep: " ", begin: 30, end: 30.5 },
+          { text: "love", sep: " ", begin: 30.5, end: 31.0 },
+          { text: "you", sep: "", begin: 31.0, end: 31.5 },
         ],
       },
     ];
@@ -197,10 +197,10 @@ describe("decideEditTextAction", () => {
     const a = action.finalLines.find((l) => l.id === "a");
     const b = action.finalLines.find((l) => l.id === "b");
     expect(a?.text).toBe("I luv you");
-    expect(a?.words?.[1].text).toBe("luv ");
+    expect(a?.words?.[1]).toMatchObject({ text: "luv", sep: " " });
     expect(a?.words?.[1].begin).toBe(0.4);
     expect(b?.text).toBe("I luv you");
-    expect(b?.words?.[1].text).toBe("luv ");
+    expect(b?.words?.[1]).toMatchObject({ text: "luv", sep: " " });
     expect(b?.words?.[1].begin).toBe(30.5);
   });
 
@@ -220,9 +220,9 @@ describe("decideEditTextAction", () => {
 describe("regressions", () => {
   it("regression: restores the neighbour word timing after the added word is removed", () => {
     const words = [
-      { text: "one ", begin: 0, end: 1 },
-      { text: "two ", begin: 1, end: 2 },
-      { text: "three", begin: 2, end: 3 },
+      { text: "one", sep: " ", begin: 0, end: 1 },
+      { text: "two", sep: " ", begin: 1, end: 2 },
+      { text: "three", sep: "", begin: 2, end: 3 },
     ];
     const lines = [
       createLine({ id: "a", text: "one two three", words, groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),

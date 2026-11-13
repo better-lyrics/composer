@@ -319,8 +319,8 @@ describe("regressions: hand edits keep sync", () => {
           id: "l1",
           text: "Wish I could",
           words: [
-            { text: "Wish ", begin: 1, end: 2 },
-            { text: "I ", begin: 2, end: 3 },
+            { text: "Wish", sep: " ", begin: 1, end: 2 },
+            { text: "I", sep: " ", begin: 2, end: 3 },
             { text: "could", begin: 3, end: 4 },
           ],
         }),
@@ -332,10 +332,10 @@ describe("regressions: hand edits keep sync", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Wish I could now");
     const words = useProjectStore.getState().lines[0].words ?? [];
-    expect(words.map((w) => w.text)).toEqual(["Wish ", "I ", "could ", "now"]);
+    expect(words.map((w) => w.text + w.sep)).toEqual(["Wish ", "I ", "could ", "now"]);
     expect(words.slice(0, 2)).toEqual([
-      { text: "Wish ", begin: 1, end: 2 },
-      { text: "I ", begin: 2, end: 3 },
+      { text: "Wish", sep: " ", begin: 1, end: 2 },
+      { text: "I", sep: " ", begin: 2, end: 3 },
     ]);
     expect(words[2].begin).toBe(3);
     expect(words[3].end).toBe(4);
@@ -348,12 +348,12 @@ describe("regressions: hand edits keep sync", () => {
           id: "l1",
           text: "Hello world",
           words: [
-            { text: "Hello ", begin: 0, end: 1 },
+            { text: "Hello", sep: " ", begin: 0, end: 1 },
             { text: "world", begin: 1, end: 2 },
           ],
           backgroundText: "ooh ah",
           backgroundWords: [
-            { text: "ooh ", begin: 0.5, end: 1 },
+            { text: "ooh", sep: " ", begin: 0.5, end: 1 },
             { text: "ah", begin: 1, end: 1.5 },
           ],
           backgroundTextSource: "manual",
@@ -368,8 +368,8 @@ describe("regressions: hand edits keep sync", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("ooh ah yeah");
     const bg = useProjectStore.getState().lines[0].backgroundWords ?? [];
-    expect(bg.map((w) => w.text)).toEqual(["ooh ", "ah ", "yeah"]);
-    expect(bg[0]).toEqual({ text: "ooh ", begin: 0.5, end: 1 });
+    expect(bg.map((w) => w.text + w.sep)).toEqual(["ooh ", "ah ", "yeah"]);
+    expect(bg[0]).toEqual({ text: "ooh", sep: " ", begin: 0.5, end: 1 });
     expect(bg[2].end).toBe(1.5);
   });
 });
@@ -383,8 +383,8 @@ describe("regressions: typing does not reshuffle duplicate lines", () => {
           id: "chorus-1",
           text: "Wish  I  could",
           words: [
-            { text: "Wish  ", begin: 49, end: 50 },
-            { text: "I  ", begin: 50, end: 51 },
+            { text: "Wish", sep: "  ", begin: 49, end: 50 },
+            { text: "I", sep: "  ", begin: 50, end: 51 },
             { text: "could", begin: 51, end: 52 },
           ],
         }),

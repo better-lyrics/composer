@@ -11,9 +11,9 @@ const lineA: LyricLine = {
   text: "I love you",
   agentId: "v1",
   words: [
-    { text: "I ", begin: 0, end: 1 },
-    { text: "love ", begin: 1, end: 2 },
-    { text: "you", begin: 2, end: 3 },
+    { text: "I", sep: " ", begin: 0, end: 1 },
+    { text: "love", sep: " ", begin: 1, end: 2 },
+    { text: "you", sep: "", begin: 2, end: 3 },
   ],
 };
 
@@ -22,10 +22,10 @@ const lineB: LyricLine = {
   text: "and so do I",
   agentId: "v1",
   words: [
-    { text: "and ", begin: 3, end: 4 },
-    { text: "so ", begin: 4, end: 5 },
-    { text: "do ", begin: 5, end: 6 },
-    { text: "I", begin: 6, end: 7 },
+    { text: "and", sep: " ", begin: 3, end: 4 },
+    { text: "so", sep: " ", begin: 4, end: 5 },
+    { text: "do", sep: " ", begin: 5, end: 6 },
+    { text: "I", sep: "", begin: 6, end: 7 },
   ],
 };
 
@@ -33,9 +33,9 @@ const lineWithBg: LyricLine = {
   id: "c",
   text: "main",
   agentId: "v1",
-  words: [{ text: "main", begin: 0, end: 1 }],
+  words: [{ text: "main", sep: "", begin: 0, end: 1 }],
   backgroundText: "bg",
-  backgroundWords: [{ text: "bg", begin: 0.5, end: 1 }],
+  backgroundWords: [{ text: "bg", sep: "", begin: 0.5, end: 1 }],
 };
 
 function selectAll(line: LyricLine, lineIndex: number): WordSelection[] {

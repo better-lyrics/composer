@@ -194,7 +194,7 @@ describe("importLyrics timing distribution", () => {
     );
     const stored = useProjectStore.getState().lines;
     expect(stored.length).toBe(1);
-    expect(stored[0].words).toEqual([{ text: "Hi", begin: 1, end: 2 }]);
+    expect(stored[0].words).toEqual([{ text: "Hi", sep: "", begin: 1, end: 2 }]);
   });
 
   it("regression: extracted background vocals on distributed lines are stored timed", async () => {

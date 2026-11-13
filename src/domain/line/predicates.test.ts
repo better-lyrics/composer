@@ -16,7 +16,7 @@ describe("isLineSynced", () => {
   });
 
   it("returns false when words array has items, even if begin/end set", () => {
-    expect(isLineSynced(line({ begin: 1, end: 2, words: [{ text: "Hi", begin: 1, end: 2 }] }))).toBe(false);
+    expect(isLineSynced(line({ begin: 1, end: 2, words: [{ text: "Hi", sep: "", begin: 1, end: 2 }] }))).toBe(false);
   });
 
   it("returns false for a word-synced line with an empty words array", () => {
@@ -50,7 +50,7 @@ describe("isLineSynced", () => {
 
 describe("isWordSynced", () => {
   it("returns true when words has items", () => {
-    expect(isWordSynced(line({ words: [{ text: "Hi", begin: 1, end: 2 }] }))).toBe(true);
+    expect(isWordSynced(line({ words: [{ text: "Hi", sep: "", begin: 1, end: 2 }] }))).toBe(true);
   });
 
   it("returns false when words is undefined", () => {
@@ -62,7 +62,7 @@ describe("isWordSynced", () => {
   });
 
   it("returns true even if begin/end also set (words wins)", () => {
-    expect(isWordSynced(line({ begin: 1, end: 2, words: [{ text: "Hi", begin: 1, end: 2 }] }))).toBe(true);
+    expect(isWordSynced(line({ begin: 1, end: 2, words: [{ text: "Hi", sep: "", begin: 1, end: 2 }] }))).toBe(true);
   });
 });
 
@@ -78,11 +78,11 @@ describe("hasAnyTiming", () => {
   });
 
   it("returns true when only word-synced", () => {
-    expect(hasAnyTiming(line({ words: [{ text: "Hi", begin: 1, end: 2 }] }))).toBe(true);
+    expect(hasAnyTiming(line({ words: [{ text: "Hi", sep: "", begin: 1, end: 2 }] }))).toBe(true);
   });
 
   it("returns true when only background words", () => {
-    expect(hasAnyTiming(line({ backgroundWords: [{ text: "ah", begin: 1, end: 2 }] }))).toBe(true);
+    expect(hasAnyTiming(line({ backgroundWords: [{ text: "ah", sep: "", begin: 1, end: 2 }] }))).toBe(true);
   });
 
   it("returns false when only begin is set (incomplete line-sync)", () => {

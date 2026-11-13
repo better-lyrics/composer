@@ -147,7 +147,7 @@ describe("useTimelineKeyboard", () => {
     const line = createLine({
       text: "every day",
       words: [
-        { text: "every ", begin: 1, end: 1.5 },
+        { text: "every", sep: " ", begin: 1, end: 1.5 },
         { text: "day", begin: 1.5, end: 2 },
       ],
     });
@@ -164,7 +164,7 @@ describe("useTimelineKeyboard", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "m", bubbles: true }));
 
     const mergedLine = useProjectStore.getState().lines[0];
-    expect(mergedLine.words).toEqual([{ text: "everyday", begin: 1, end: 2 }]);
+    expect(mergedLine.words).toEqual([{ text: "everyday", sep: "", begin: 1, end: 2 }]);
   });
 
   it("regression: a remapped import lyrics binding opens the import", async () => {
@@ -337,7 +337,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     const line = createLine({
       text: "hi there",
       words: [
-        { text: "hi ", begin: 0, end: 1 },
+        { text: "hi", sep: " ", begin: 0, end: 1 },
         { text: "there", begin: 1, end: 2 },
       ],
     });
@@ -361,7 +361,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     const line = createLine({
       text: "hi there",
       words: [
-        { text: "hi ", begin: 0, end: 1 },
+        { text: "hi", sep: " ", begin: 0, end: 1 },
         { text: "there", begin: 1, end: 2 },
       ],
     });
@@ -383,7 +383,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     const line = createLine({
       text: "hi there",
       words: [
-        { text: "hi ", begin: 0, end: 1 },
+        { text: "hi", sep: " ", begin: 0, end: 1 },
         { text: "there", begin: 1, end: 2 },
       ],
     });
@@ -396,7 +396,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "F2", bubbles: true }));
 
     expect(useTimelineStore.getState().editingWord).toBeNull();
-    expect(useProjectStore.getState().lines[0].words?.map((word) => word.text)).toEqual(["there"]);
+    expect(useProjectStore.getState().lines[0].words?.map((word) => word.text + word.sep)).toEqual(["there"]);
   });
 });
 
@@ -430,7 +430,7 @@ describe("useTimelineKeyboard · background provenance", () => {
       words: [{ text: "main", begin: 0, end: 1 }],
       backgroundText: "ooh aah",
       backgroundWords: [
-        { text: "ooh ", begin: 1, end: 1.5 },
+        { text: "ooh", sep: " ", begin: 1, end: 1.5 },
         { text: "aah", begin: 1.5, end: 2 },
       ],
       backgroundTextSource: "extraction",
@@ -448,7 +448,7 @@ describe("useTimelineKeyboard · background provenance", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "m", bubbles: true }));
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundWords).toEqual([{ text: "oohaah", begin: 1, end: 2 }]);
+    expect(updated.backgroundWords).toEqual([{ text: "oohaah", sep: "", begin: 1, end: 2 }]);
     expect(updated.backgroundTextSource).toBe("manual");
   });
 
