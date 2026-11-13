@@ -32,6 +32,22 @@ describe("propagateWordChanges", () => {
     ]);
   });
 
+  it("regression: a split mark typed on the source joins the linked copy too", () => {
+    const before: WordTiming[] = [
+      { id: "w1", text: "hel", sep: " ", begin: 0, end: 1, joinsNext: false },
+      { id: "w2", text: "lo", sep: "", begin: 1, end: 2, joinsNext: false },
+    ];
+    const after: WordTiming[] = [
+      { id: "w1", text: "hel", sep: "", begin: 0, end: 1, joinsNext: true },
+      { id: "w2", text: "lo", sep: "", begin: 1, end: 2, joinsNext: false },
+    ];
+    const sibling: WordTiming[] = [
+      { id: "w5", text: "hel", sep: " ", begin: 10, end: 11, joinsNext: false },
+      { id: "w6", text: "lo", sep: "", begin: 11, end: 12, joinsNext: false },
+    ];
+    expect(propagateWordChanges(after, before, sibling)?.map((word) => word.joinsNext)).toEqual([true, false]);
+  });
+
   it("fast path: returns undefined when no sibling text actually changed", () => {
     const words: WordTiming[] = [{ id: "w7", text: "I", sep: "", begin: 0, end: 1, joinsNext: false }];
     expect(
