@@ -12,7 +12,8 @@ interface TextSlot {
 // Untimed slots exist only in the line text, so a cursor on one counts whitespace words from the last timed word
 // before it (the line start when there is none), then the syllable inside its word: splits, timing given by another
 // action and edits before the timed word or after the slot leave the count unchanged.
-type SyncSlotAddress = { syllableId: string } | ({ afterSyllableId: string | null } & TextSlot);
+// `lineTextWord` counts from the line start, the fallback when the timed word before the slot is gone.
+type SyncSlotAddress = { syllableId: string } | ({ afterSyllableId: string | null; lineTextWord: number } & TextSlot);
 
 interface SyncAddress {
   lineId: string | null;
@@ -24,7 +25,7 @@ interface SyncAddress {
 
 const SYNC_START: SyncAddress = {
   lineId: null,
-  at: { afterSyllableId: null, textWord: 0, syllable: 0 },
+  at: { afterSyllableId: null, lineTextWord: 0, textWord: 0, syllable: 0 },
   storedAt: { lineIndex: 0, wordIndex: 0 },
 };
 
@@ -61,7 +62,7 @@ function textSlotIndex(text: string, slot: TextSlot): number {
 
 function syncAddressAt(lines: readonly LyricLine[], cursor: SyncCursor): SyncAddress {
   const line = lines[cursor.lineIndex];
-  if (!line) return { lineId: null, at: { afterSyllableId: null, textWord: 0, syllable: 0 }, storedAt: cursor };
+  if (!line) return { ...SYNC_START, storedAt: cursor };
   const words = line.words ?? [];
   const word = words[cursor.wordIndex];
   if (word) return { lineId: line.id, at: { syllableId: word.id }, storedAt: cursor };
@@ -69,7 +70,12 @@ function syncAddressAt(lines: readonly LyricLine[], cursor: SyncCursor): SyncAdd
   const anchorIndex = Math.min(cursor.wordIndex, words.length) - 1;
   const anchor = words[anchorIndex];
   const anchorWord = anchor ? textSlotAt(line.text, anchorIndex).textWord : 0;
-  const at = { afterSyllableId: anchor?.id ?? null, textWord: slot.textWord - anchorWord, syllable: slot.syllable };
+  const at = {
+    afterSyllableId: anchor?.id ?? null,
+    lineTextWord: slot.textWord,
+    textWord: slot.textWord - anchorWord,
+    syllable: slot.syllable,
+  };
   return { lineId: line.id, at, storedAt: cursor };
 }
 
@@ -87,7 +93,9 @@ function syncAddressPosition(lines: readonly LyricLine[], address: SyncAddress):
   }
   if (at.afterSyllableId === null) return { lineIndex, wordIndex: textSlotIndex(line.text, at) };
   const anchorIndex = words.findIndex((word) => word.id === at.afterSyllableId);
-  if (anchorIndex === -1) return { lineIndex, wordIndex: address.storedAt.wordIndex };
+  if (anchorIndex === -1) {
+    return { lineIndex, wordIndex: textSlotIndex(line.text, { textWord: at.lineTextWord, syllable: at.syllable }) };
+  }
   const textWord = textSlotAt(line.text, anchorIndex).textWord + at.textWord;
   return { lineIndex, wordIndex: textSlotIndex(line.text, { textWord, syllable: at.syllable }) };
 }

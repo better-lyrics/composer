@@ -43,6 +43,15 @@ describe("syncAddressPosition", () => {
     expect(syncAddressPosition([prepended], stored)).toEqual({ lineIndex: 0, wordIndex: 3 });
   });
 
+  it("regression: stays on its untimed word when Edit replaces the timed word before it", () => {
+    const stored = syncAddressAt([tideLine([SLOW, TIDE])], { lineIndex: 0, wordIndex: 2 });
+    const replaced = tideLine(
+      [SLOW, { id: "y7", text: "ti", sep: "", begin: 2, end: 2.5 }, { id: "y8", text: "de ", begin: 2.5, end: 3 }],
+      "Slow ti|de pulls the harbour lights",
+    );
+    expect(syncAddressPosition([replaced], stored)).toEqual({ lineIndex: 0, wordIndex: 3 });
+  });
+
   it("stays on an untimed syllable inside its word when an earlier word is split", () => {
     const text = "Slow tide pulls the har|bour lights";
     const stored = syncAddressAt([tideLine([SLOW, TIDE], text)], { lineIndex: 0, wordIndex: 5 });
