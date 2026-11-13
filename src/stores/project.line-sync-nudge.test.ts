@@ -57,7 +57,9 @@ describe("project store · line-sync nudge granularity", () => {
     const store = useProjectStore.getState();
     store.restoreLyrics({ lines: [{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }] });
     store.commit(
-      pasteLines([{ id: "L1", updates: { words: [{ id: "w1", text: "verse", sep: "", begin: 5, end: 7 }] } }]),
+      pasteLines([
+        { id: "L1", updates: { words: [{ id: "w1", text: "verse", sep: "", begin: 5, end: 7, joinsNext: false }] } },
+      ]),
     );
     const after = useProjectStore.getState().lines[0];
     expect(after.words?.length).toBe(1);
@@ -91,8 +93,8 @@ describe("instance shift = nudging every selected word at once", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { id: "w2", text: "I", sep: " ", begin: 10, end: 10.3 },
-            { id: "w3", text: "love", sep: "", begin: 10.3, end: 10.8 },
+            { id: "w2", text: "I", sep: " ", begin: 10, end: 10.3, joinsNext: false },
+            { id: "w3", text: "love", sep: "", begin: 10.3, end: 10.8, joinsNext: false },
           ],
         },
         {
@@ -103,8 +105,8 @@ describe("instance shift = nudging every selected word at once", () => {
           instanceIdx: 0,
           templateLineIdx: 1,
           words: [
-            { id: "w4", text: "all", sep: " ", begin: 11, end: 11.4 },
-            { id: "w5", text: "night", sep: "", begin: 11.4, end: 12 },
+            { id: "w4", text: "all", sep: " ", begin: 11, end: 11.4, joinsNext: false },
+            { id: "w5", text: "night", sep: "", begin: 11.4, end: 12, joinsNext: false },
           ],
         },
       ]),
@@ -116,8 +118,8 @@ describe("instance shift = nudging every selected word at once", () => {
           id: "A",
           updates: {
             words: [
-              { id: "w6", text: "I", sep: " ", begin: 10.5, end: 10.8 },
-              { id: "w7", text: "love", sep: "", begin: 10.8, end: 11.3 },
+              { id: "w6", text: "I", sep: " ", begin: 10.5, end: 10.8, joinsNext: false },
+              { id: "w7", text: "love", sep: "", begin: 10.8, end: 11.3, joinsNext: false },
             ],
           },
         },
@@ -125,8 +127,8 @@ describe("instance shift = nudging every selected word at once", () => {
           id: "B",
           updates: {
             words: [
-              { id: "w8", text: "all", sep: " ", begin: 11.5, end: 11.9 },
-              { id: "w9", text: "night", sep: "", begin: 11.9, end: 12.5 },
+              { id: "w8", text: "all", sep: " ", begin: 11.5, end: 11.9, joinsNext: false },
+              { id: "w9", text: "night", sep: "", begin: 11.9, end: 12.5, joinsNext: false },
             ],
           },
         },
@@ -151,7 +153,7 @@ describe("instance shift = nudging every selected word at once", () => {
           groupId: "g1",
           instanceIdx: 0,
           templateLineIdx: 0,
-          words: [{ id: "w10", text: "x", sep: "", begin: 10, end: 11 }],
+          words: [{ id: "w10", text: "x", sep: "", begin: 10, end: 11, joinsNext: false }],
         },
         {
           id: "A2",
@@ -160,13 +162,15 @@ describe("instance shift = nudging every selected word at once", () => {
           groupId: "g1",
           instanceIdx: 1,
           templateLineIdx: 0,
-          words: [{ id: "w11", text: "x", sep: "", begin: 30, end: 31 }],
+          words: [{ id: "w11", text: "x", sep: "", begin: 30, end: 31, joinsNext: false }],
         },
       ]),
     );
     // Only nudge instance 0
     store.commit(
-      pasteLines([{ id: "A1", updates: { words: [{ id: "w12", text: "x", sep: "", begin: 10.5, end: 11.5 }] } }]),
+      pasteLines([
+        { id: "A1", updates: { words: [{ id: "w12", text: "x", sep: "", begin: 10.5, end: 11.5, joinsNext: false }] } },
+      ]),
     );
     const after = useProjectStore.getState().lines;
     expect(timedSyllables(mainTrack(after.find((l) => l.id === "A1")!))[0].begin).toBeCloseTo(10.5);

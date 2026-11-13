@@ -1,3 +1,4 @@
+import { groupIdsForJoins } from "./from-words";
 import { secondsFromMs } from "./time";
 import type { SyllableTrack } from "./track";
 
@@ -12,20 +13,17 @@ interface WordsOutput {
 
 // -- Conversion ---------------------------------------------------------------
 
-// Ids name each word run so a v3 load restores joinsNext whatever the whitespace.
+// Ids go where a v3 load needs them to restore joinsNext (see groupIdsForJoins).
 function wordsFromSyllables(track: SyllableTrack): WordsOutput[] {
-  const withIds = track.length > 1;
-  let run = 0;
-  return track.flatMap((syllable) => {
-    const syllableGroupId = `w${run}`;
-    if (!syllable.joinsNext) run += 1;
+  const timed = track.flatMap((syllable, index) => {
     if (!syllable.span) return [];
-    const word: WordsOutput = {
-      text: syllable.text + syllable.sep,
-      begin: secondsFromMs(syllable.span[0]),
-      end: secondsFromMs(syllable.span[1]),
-    };
-    return [withIds ? { ...word, syllableGroupId } : word];
+    const joinsNext = syllable.joinsNext && track[index + 1]?.span !== undefined;
+    return [{ text: syllable.text + syllable.sep, joinsNext, span: syllable.span }];
+  });
+  const ids = groupIdsForJoins(timed);
+  return timed.map(({ text, span }, index): WordsOutput => {
+    const word = { text, begin: secondsFromMs(span[0]), end: secondsFromMs(span[1]) };
+    return ids[index] === undefined ? word : { ...word, syllableGroupId: ids[index] };
   });
 }
 

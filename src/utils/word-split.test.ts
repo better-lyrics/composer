@@ -4,13 +4,12 @@ import type { WordTiming } from "@/domain/word/timing";
 import { splitWordIntoWords } from "@/utils/word-split";
 
 describe("splitWordIntoWords", () => {
-  const source: WordTiming = { id: "w1", text: "everyday", sep: "", begin: 1, end: 2 };
+  const source: WordTiming = { id: "w1", text: "everyday", sep: "", begin: 1, end: 2, joinsNext: false };
 
   it("splits into independent words with a trailing space on the non-final word", () => {
     const out = splitWordIntoWords(source, [5]);
     expect(out.map((w) => w.text + w.sep)).toEqual(["every ", "day"]);
-    expect(out[0].syllableGroupId).toBeUndefined();
-    expect(out[1].syllableGroupId).toBeUndefined();
+    expect(out.map((w) => w.joinsNext)).toEqual([false, false]);
   });
 
   it("does not copy the whole word's transliteration onto each piece", () => {
@@ -29,21 +28,21 @@ describe("splitWordIntoWords", () => {
     expect(out[out.length - 1].end).toBe(2);
   });
 
-  it("output is NOT a syllable group when the line has no syllableGroupId", () => {
+  it("output is NOT a syllable group on its own", () => {
     const out = splitWordIntoWords(source, [5]);
     expect(getSyllablePositions(out)).toEqual(["none", "none"]);
     expect(computeSyllableGroups(out)).toEqual([]);
   });
 
-  it("output is NOT a syllable group when the line also has a syllableGroupId word", () => {
+  it("output is NOT a syllable group when another word follows", () => {
     const out = splitWordIntoWords(source, [5]);
-    const line = [...out, { id: "w2", text: "x", sep: "", begin: 2, end: 3, syllableGroupId: "g1" }];
+    const line = [...out, { id: "w2", text: "x", sep: "", begin: 2, end: 3, joinsNext: false }];
     expect(getSyllablePositions(line).slice(0, 2)).toEqual(["none", "none"]);
   });
 });
 
 describe("splitWordIntoWords · text containing spaces", () => {
-  const line = { id: "w3", text: "It hurts for me", sep: "", begin: 10, end: 12 };
+  const line = { id: "w3", text: "It hurts for me", sep: "", begin: 10, end: 12, joinsNext: true };
 
   it("regression: splitting right before a space does not leave a leading space on the next word", () => {
     const out = splitWordIntoWords(line, [2, 8]);
@@ -98,6 +97,7 @@ describe("splitWordIntoWords · transliteration", () => {
     end: 4,
     transliteration: "privet mir",
     transliterationJoinerAfter: "  ",
+    joinsNext: false,
   };
 
   it("regression: parts never copy the parent's transliteration (#283)", () => {

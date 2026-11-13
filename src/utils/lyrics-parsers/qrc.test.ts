@@ -97,9 +97,27 @@ describe("parseQrc", () => {
       const result = parseQrc(WANDERLUST_QRC);
       const first = result.lines.find((line) => lineText(line) === FIRST_LYRIC_TEXT);
       expect(first).toBeDefined();
-      expect(timedSyllables(mainTrack(first!))[0]).toEqual({ text: "Is", sep: " ", begin: 34.059, end: 34.189 });
-      expect(timedSyllables(mainTrack(first!))[1]).toEqual({ text: "it", sep: " ", begin: 34.189, end: 34.309 });
-      expect(timedSyllables(mainTrack(first!)).at(-1)).toEqual({ text: "thing", sep: "", begin: 35.42, end: 36.358 });
+      expect(timedSyllables(mainTrack(first!))[0]).toEqual({
+        text: "Is",
+        sep: " ",
+        begin: 34.059,
+        end: 34.189,
+        joinsNext: false,
+      });
+      expect(timedSyllables(mainTrack(first!))[1]).toEqual({
+        text: "it",
+        sep: " ",
+        begin: 34.189,
+        end: 34.309,
+        joinsNext: false,
+      });
+      expect(timedSyllables(mainTrack(first!)).at(-1)).toEqual({
+        text: "thing",
+        sep: "",
+        begin: 35.42,
+        end: 36.358,
+        joinsNext: false,
+      });
     });
 
     it("converts milliseconds to seconds", () => {
@@ -628,6 +646,7 @@ describe("parseQrc", () => {
         sep: "",
         begin: 1.25,
         end: 3,
+        joinsNext: false,
       });
     });
 
@@ -638,6 +657,7 @@ describe("parseQrc", () => {
         sep: "",
         begin: 1.25,
         end: 5,
+        joinsNext: false,
       });
     });
 
@@ -654,6 +674,7 @@ describe("parseQrc", () => {
           sep: "",
           begin: 1.25,
           end: 1.25,
+          joinsNext: false,
         });
       });
 
@@ -674,7 +695,13 @@ describe("parseQrc", () => {
 
       it("leaves a zero-duration word that is not the last one untouched", () => {
         const result = parseQrc("[1000,500]Hi (1000,0)there(1250,250)\n[3000,500]Next(3000,500)");
-        expect(timedSyllables(mainTrack(result.lines[0]))[0]).toEqual({ text: "Hi", sep: " ", begin: 1, end: 1 });
+        expect(timedSyllables(mainTrack(result.lines[0]))[0]).toEqual({
+          text: "Hi",
+          sep: " ",
+          begin: 1,
+          end: 1,
+          joinsNext: false,
+        });
       });
 
       it("reads the next line's start through a marker line", () => {

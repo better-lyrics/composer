@@ -4,6 +4,7 @@ import { type TrackField, trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun, type SelectionRun } from "@/domain/selection/contiguous";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
+import { isInSyllableGroup } from "@/domain/word/syllable-groups";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import {
@@ -51,7 +52,7 @@ function syllableMergeTarget(addresses: SyllableAddress[], lines: LyricLine[]): 
   if (run && isPartialSyllableSelection(line, run)) return { kind: "run", run };
   const words = trackWords(line, first.type);
   const indices = selection.map((word) => word.wordIndex);
-  if (!indices.some((index) => words?.[index]?.syllableGroupId !== undefined)) return null;
+  if (!indices.some((index) => isInSyllableGroup(words ?? [], index))) return null;
   return { kind: "groups", lineId: first.lineId, field: trackField(first.type), indices };
 }
 

@@ -15,10 +15,10 @@ const wordSynced: LyricLine = {
   text: "Comin' at you, baby",
   agentId: "v1",
   words: [
-    { id: "w1", text: "Comin'", sep: " ", begin: 1.437, end: 2.067 },
-    { id: "w2", text: "at", sep: " ", begin: 2.067, end: 2.382 },
-    { id: "w3", text: "you,", sep: " ", begin: 2.382, end: 2.649 },
-    { id: "w4", text: "baby", sep: "", begin: 2.649, end: 3.012 },
+    { id: "w1", text: "Comin'", sep: " ", begin: 1.437, end: 2.067, joinsNext: false },
+    { id: "w2", text: "at", sep: " ", begin: 2.067, end: 2.382, joinsNext: false },
+    { id: "w3", text: "you,", sep: " ", begin: 2.382, end: 2.649, joinsNext: false },
+    { id: "w4", text: "baby", sep: "", begin: 2.649, end: 3.012, joinsNext: false },
   ],
 };
 const lineSynced: LyricLine = { id: "l", text: "It's been too long", agentId: "v1", begin: 6.833, end: 8.893 };
@@ -51,7 +51,7 @@ describe("generateTTML line timing", () => {
         ...wordSynced,
         text: "Com|in' at you, baby",
         words: [
-          { id: "w5", text: "Com", sep: "", begin: 1, end: 1.2 },
+          { id: "w5", text: "Com", sep: "", begin: 1, end: 1.2, joinsNext: true },
           ...timedSyllables(mainTrack(wordSynced)).map((word) => ({ ...word })),
         ],
       };
@@ -64,8 +64,8 @@ describe("generateTTML line timing", () => {
         ...wordSynced,
         backgroundText: "(coming)",
         backgroundWords: [
-          { id: "w6", text: "(com", sep: "", begin: 2.5, end: 2.8 },
-          { id: "w7", text: "ing)", sep: "", begin: 2.8, end: 3.4 },
+          { id: "w6", text: "(com", sep: "", begin: 2.5, end: 2.8, joinsNext: true },
+          { id: "w7", text: "ing)", sep: "", begin: 2.8, end: 3.4, joinsNext: false },
         ],
       };
       const [paragraph] = paragraphs(generateTTML({ metadata, agents, lines: [withBackground], timing: "line" }));
@@ -96,11 +96,14 @@ describe("generateTTML line timing", () => {
             end: 1.5,
             transliteration: "kyou",
             transliterationJoinerAfter: " ",
+            joinsNext: true,
           },
-          { id: "w9", text: "日", sep: "", begin: 1.5, end: 2, transliteration: "hi" },
+          { id: "w9", text: "日", sep: "", begin: 1.5, end: 2, transliteration: "hi", joinsNext: false },
         ],
         backgroundText: "空",
-        backgroundWords: [{ id: "w10", text: "空", sep: "", begin: 1.2, end: 1.8, transliteration: "sora" }],
+        backgroundWords: [
+          { id: "w10", text: "空", sep: "", begin: 1.2, end: 1.8, transliteration: "sora", joinsNext: false },
+        ],
         transliteration: {
           language: "ja-Latn",
           text: "kyou hi",
@@ -126,8 +129,8 @@ describe("generateTTML line timing", () => {
         ...wordSynced,
         backgroundText: "(oo|ooh)",
         backgroundWords: [
-          { id: "w11", text: "(oo", sep: "", begin: 2.5, end: 2.8 },
-          { id: "w12", text: "ooh)", sep: "", begin: 2.8, end: 3.4 },
+          { id: "w11", text: "(oo", sep: "", begin: 2.5, end: 2.8, joinsNext: true },
+          { id: "w12", text: "ooh)", sep: "", begin: 2.8, end: 3.4, joinsNext: false },
         ],
       };
       const [paragraph] = paragraphs(generateTTML({ metadata, agents, lines: [withBackground], timing: "line" }));

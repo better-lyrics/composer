@@ -14,14 +14,14 @@ const template: LineTemplate[] = [
     agentId: "v1",
     relativeBegin: 0,
     relativeEnd: 1,
-    words: [{ text: "Chorus line 1", sep: "", relativeBegin: 0, relativeEnd: 1 }],
+    words: [{ text: "Chorus line 1", sep: "", relativeBegin: 0, relativeEnd: 1, joinsNext: false }],
   },
   {
     text: "Chorus line 2",
     agentId: "v1",
     relativeBegin: 1,
     relativeEnd: 2,
-    words: [{ text: "Chorus line 2", sep: "", relativeBegin: 1, relativeEnd: 2 }],
+    words: [{ text: "Chorus line 2", sep: "", relativeBegin: 1, relativeEnd: 2, joinsNext: false }],
   },
 ];
 
@@ -40,7 +40,7 @@ describe("isEmptyFillable", () => {
         id: "1",
         text: "x",
         agentId: "v1",
-        words: [{ id: "w1", text: "x", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w1", text: "x", sep: "", begin: 0, end: 1, joinsNext: false }],
       }),
     ).toBe(false);
   });
@@ -62,10 +62,20 @@ describe("isEmptyFillable", () => {
 describe("fillEmptyLinesWithInstance · happy path", () => {
   it("fills exactly N consecutive empty lines and assigns group attrs", () => {
     const lines: LyricLine[] = [
-      { id: "intro", text: "intro", agentId: "v1", words: [{ id: "w2", text: "intro", sep: "", begin: 0, end: 5 }] },
+      {
+        id: "intro",
+        text: "intro",
+        agentId: "v1",
+        words: [{ id: "w2", text: "intro", sep: "", begin: 0, end: 5, joinsNext: false }],
+      },
       { id: "empty1", text: "Chorus line 1", agentId: "v1" },
       { id: "empty2", text: "Chorus line 2", agentId: "v1" },
-      { id: "outro", text: "outro", agentId: "v1", words: [{ id: "w3", text: "outro", sep: "", begin: 30, end: 35 }] },
+      {
+        id: "outro",
+        text: "outro",
+        agentId: "v1",
+        words: [{ id: "w3", text: "outro", sep: "", begin: 30, end: 35, joinsNext: false }],
+      },
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -147,9 +157,9 @@ describe("fillEmptyLinesWithInstance · background provenance", () => {
       agentId: "v1",
       relativeBegin: 0,
       relativeEnd: 1,
-      words: [{ text: "Chorus line 1", sep: "", relativeBegin: 0, relativeEnd: 1 }],
+      words: [{ text: "Chorus line 1", sep: "", relativeBegin: 0, relativeEnd: 1, joinsNext: false }],
       backgroundText: "ooh",
-      backgroundWords: [{ text: "ooh", sep: "", relativeBegin: 0, relativeEnd: 0.5 }],
+      backgroundWords: [{ text: "ooh", sep: "", relativeBegin: 0, relativeEnd: 0.5, joinsNext: false }],
       backgroundTextSource: "extraction",
     },
   ];
@@ -213,7 +223,7 @@ describe("fillEmptyLinesWithInstance · refusal cases (no destructive insert)", 
         id: "synced",
         text: "Chorus line 2",
         agentId: "v1",
-        words: [{ id: "w4", text: "Chorus line 2", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w4", text: "Chorus line 2", sep: "", begin: 0, end: 1, joinsNext: false }],
       },
     ];
     const result = fillEmptyLinesWithInstance({

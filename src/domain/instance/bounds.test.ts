@@ -16,15 +16,15 @@ describe("instanceBounds", () => {
       line({
         id: "a",
         words: [
-          { id: "w1", text: "hi", sep: "", begin: 2, end: 3 },
-          { id: "w2", text: "yo", sep: "", begin: 3, end: 4 },
+          { id: "w1", text: "hi", sep: "", begin: 2, end: 3, joinsNext: true },
+          { id: "w2", text: "yo", sep: "", begin: 3, end: 4, joinsNext: false },
         ],
       }),
       line({
         id: "b",
         words: [
-          { id: "w3", text: "low", sep: "", begin: 5, end: 6 },
-          { id: "w4", text: "high", sep: "", begin: 6, end: 9 },
+          { id: "w3", text: "low", sep: "", begin: 5, end: 6, joinsNext: true },
+          { id: "w4", text: "high", sep: "", begin: 6, end: 9, joinsNext: false },
         ],
       }),
     ];
@@ -39,7 +39,7 @@ describe("instanceBounds", () => {
   it("combines word-synced + line-synced lines correctly", () => {
     const lines: LyricLine[] = [
       line({ id: "a", begin: 1, end: 2 }),
-      line({ id: "b", words: [{ id: "w5", text: "yo", sep: "", begin: 5, end: 8 }] }),
+      line({ id: "b", words: [{ id: "w5", text: "yo", sep: "", begin: 5, end: 8, joinsNext: false }] }),
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 1, end: 8 });
   });
@@ -48,8 +48,8 @@ describe("instanceBounds", () => {
     const lines: LyricLine[] = [
       line({
         id: "a",
-        words: [{ id: "w6", text: "main", sep: "", begin: 5, end: 6 }],
-        backgroundWords: [{ id: "w7", text: "bg", sep: "", begin: 7, end: 10 }],
+        words: [{ id: "w6", text: "main", sep: "", begin: 5, end: 6, joinsNext: false }],
+        backgroundWords: [{ id: "w7", text: "bg", sep: "", begin: 7, end: 10, joinsNext: false }],
       }),
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 5, end: 10 });
@@ -57,8 +57,8 @@ describe("instanceBounds", () => {
 
   it("includes lines whose only timed content is background words", () => {
     const lines: LyricLine[] = [
-      line({ id: "a", backgroundWords: [{ id: "w8", text: "ah", sep: "", begin: 4, end: 5 }] }),
-      line({ id: "b", words: [{ id: "w9", text: "main", sep: "", begin: 10, end: 11 }] }),
+      line({ id: "a", backgroundWords: [{ id: "w8", text: "ah", sep: "", begin: 4, end: 5, joinsNext: false }] }),
+      line({ id: "b", words: [{ id: "w9", text: "main", sep: "", begin: 10, end: 11, joinsNext: false }] }),
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 4, end: 11 });
   });
@@ -79,8 +79,8 @@ describe("instanceBounds", () => {
         begin: 0,
         end: 999,
         words: [
-          { id: "w10", text: "a", sep: "", begin: 2, end: 3 },
-          { id: "w11", text: "b", sep: "", begin: 3, end: 5 },
+          { id: "w10", text: "a", sep: "", begin: 2, end: 3, joinsNext: true },
+          { id: "w11", text: "b", sep: "", begin: 3, end: 5, joinsNext: false },
         ],
       }),
     ];
@@ -93,7 +93,7 @@ describe("instanceBounds", () => {
         id: "a",
         begin: 0,
         end: 999,
-        backgroundWords: [{ id: "w12", text: "b", sep: "", begin: 4, end: 5 }],
+        backgroundWords: [{ id: "w12", text: "b", sep: "", begin: 4, end: 5, joinsNext: false }],
       }),
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 4, end: 5 });
@@ -102,7 +102,7 @@ describe("instanceBounds", () => {
   it("skips untimed lines when others are timed", () => {
     const lines: LyricLine[] = [
       line({ id: "a", text: "untimed" }),
-      line({ id: "b", words: [{ id: "w13", text: "yo", sep: "", begin: 5, end: 8 }] }),
+      line({ id: "b", words: [{ id: "w13", text: "yo", sep: "", begin: 5, end: 8, joinsNext: false }] }),
       line({ id: "c", text: "also untimed" }),
     ];
     expect(instanceBounds(lines)).toEqual({ begin: 5, end: 8 });

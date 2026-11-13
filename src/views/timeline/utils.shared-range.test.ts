@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWords } from "@/test/factories";
 import {
   nudgeSelectedWords,
   partitionNudgeSelections,
@@ -22,10 +22,10 @@ function wordChorus(id: string, instanceIdx: number, begin: number): LyricLine {
     groupId: "g1",
     instanceIdx,
     templateLineIdx: 0,
-    words: [
-      createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
-    ],
+    words: createWords([
+      { text: "go", sep: " ", begin, end: begin + 1 },
+      { text: "now", begin: begin + 1, end: begin + 2 },
+    ]),
   });
 }
 

@@ -86,9 +86,9 @@ const FORBIDDEN: ForbiddenPattern[] = [
     use: "sameWordSelection / isWordSelected from @/domain/selection/identity",
   },
   {
-    name: "inline syllable-group run scan",
-    regex: /\.syllableGroupId (?:===|!==) (?!undefined)/,
-    use: "computeByGroupId / hasIntraGroupGap from @/domain/word/syllable-groups",
+    name: "inline syllable join read",
+    regex: /\.joinsNext\b/,
+    use: "computeSyllableGroups / isInSyllableGroup from @/domain/word/syllable-groups",
   },
   {
     name: "inline snap-point time projection",

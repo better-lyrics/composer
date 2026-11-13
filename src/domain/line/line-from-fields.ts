@@ -57,11 +57,24 @@ function untimedRest(text: string, words: WordTiming[]): string {
   return text.slice(partEnds(text, written.parts)[covered.length - 1]);
 }
 
+// A save cannot spell a join on the last timed word, so the line text decides it once on load.
+function withTrailingJoinFromText(text: string, words: WordTiming[]): WordTiming[] {
+  if (untimedRest(text, words) === "") return words;
+  const last = words.length - 1;
+  const joinsNext = !splitIntoWordsWithMeta(text).trailingSpace[wordAtoms(words).length - 1];
+  return words[last].joinsNext === joinsNext ? words : words.with(last, { ...words[last], joinsNext });
+}
+
 // -- Tracks -------------------------------------------------------------------
 
 function untimedSyllables(text: string): UntimedSyllable[] {
   const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
-  return parts.map((part, index) => ({ id: newWordId(), text: part, sep: trailingSpace[index] ? " " : "" }));
+  return parts.map((part, index) => ({
+    id: newWordId(),
+    text: part,
+    sep: trailingSpace[index] ? " " : "",
+    joinsNext: !trailingSpace[index] && index < parts.length - 1,
+  }));
 }
 
 function syllablesOf(text: string, words: WordTiming[] | undefined): readonly Syllable[] {
@@ -99,4 +112,4 @@ function tracksFromFields(line: LyricLine): readonly [LineTrack] | readonly [Lin
 
 // -- Exports ------------------------------------------------------------------
 
-export { tracksFromFields, untimedTail };
+export { tracksFromFields, untimedTail, withTrailingJoinFromText };

@@ -13,6 +13,7 @@ const wt = (text: string, relativeBegin: number, relativeEnd: number) => ({
   ...splitTrailingWhitespace(text),
   relativeBegin,
   relativeEnd,
+  joinsNext: false,
 });
 
 const template: LineTemplate[] = [
@@ -29,7 +30,7 @@ const wordSyncedLine = (id: string, begin: number, end: number): LyricLine => ({
   id,
   text: "x",
   agentId: "v1",
-  words: [{ id: newWordId(), text: "x", sep: "", begin, end }],
+  words: [{ id: newWordId(), text: "x", sep: "", begin, end, joinsNext: false }],
 });
 
 // A grouped + word-timed line (a "real" group instance line): never fillable
@@ -40,7 +41,7 @@ const groupedTimedLine = (id: string, gid: string, instIdx: number, begin: numbe
   groupId: gid,
   instanceIdx: instIdx,
   templateLineIdx: 0,
-  words: [{ id: newWordId(), text: "x", sep: "", begin, end }],
+  words: [{ id: newWordId(), text: "x", sep: "", begin, end, joinsNext: false }],
 });
 
 // A standalone untimed empty placeholder (no groupId, no words, no begin/end): fillable

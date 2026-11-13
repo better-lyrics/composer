@@ -1,4 +1,3 @@
-import { splitTrailingWhitespace } from "insync/from-words";
 import { withSeededBackground } from "@/domain/line/background";
 import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
@@ -10,10 +9,10 @@ import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shif
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
-import { newWordId } from "@/domain/word/id";
+import { slotWords, withSlotWord } from "@/domain/sync/slot-words";
 import { enforceOrderAround } from "@/domain/word/order";
 import type { WordTiming } from "@/domain/word/timing";
-import { createInitialBgWords, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { createInitialBgWords } from "@/utils/sync-helpers";
 
 // -- Types --------------------------------------------------------------------
 
@@ -134,21 +133,14 @@ function withSeededBackgroundUpdate(line: LyricLine, updates: Partial<LyricLine>
 
 // -- Word slot writing ----------------------------------------------------------
 
-function slotText(line: LyricLine, wordIndex: number): string | null {
-  const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
-  const text = parts[wordIndex];
-  if (!text) return null;
-  return trailingSpace[wordIndex] ? `${text} ` : text;
-}
-
 function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open: boolean): SlotWrite | null {
   const ctx = withJumpPastSkipped(lines, gestureCtx, "word");
   const { cursor } = ctx;
   const line = lines[cursor.lineIndex];
   if (!isSyncableLine(line)) return null;
-  const text = slotText(line, cursor.wordIndex);
+  const slots = slotWords(line);
   const existing = line.words ?? [];
-  if (text === null || cursor.wordIndex > existing.length) return null;
+  if (!slots[cursor.wordIndex]?.text || cursor.wordIndex > existing.length) return null;
 
   const anchor = anchorBefore(lines, ctx, "word");
   const { slot } = anchor;
@@ -158,9 +150,7 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
   const provisional = open ? begin : begin + ctx.defaultWordDuration;
   const end = nextWord && nextWord.begin >= begin ? Math.min(provisional, nextWord.begin) : provisional;
 
-  let words = [...existing];
-  const id = existing[cursor.wordIndex]?.id ?? newWordId();
-  words[cursor.wordIndex] = { ...existing[cursor.wordIndex], id, ...splitTrailingWhitespace(text), begin, end };
+  let words = withSlotWord(existing, slots, cursor.wordIndex, { begin, end });
 
   const closeAt = closingTime(lines, slot, begin, { open, jumped: ctx.jumped });
   const sameLine = slot && slot.lineIndex === cursor.lineIndex ? slot : null;
@@ -295,5 +285,5 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
 
 // -- Exports ------------------------------------------------------------------
 
-export { commitGesture };
 export type { GestureCommit, GestureContext, SyncGesture };
+export { commitGesture };

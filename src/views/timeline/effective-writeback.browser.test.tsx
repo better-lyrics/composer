@@ -19,7 +19,12 @@ describe("effective line write-back", () => {
     useProjectStore.setState({
       activeTab: "timeline",
       lines: [
-        { id: "w", text: "hi", agentId: "v1", words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1 }] },
+        {
+          id: "w",
+          text: "hi",
+          agentId: "v1",
+          words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1, joinsNext: false }],
+        },
         LINE_SYNCED,
       ],
     });

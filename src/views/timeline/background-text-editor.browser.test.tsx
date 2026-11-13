@@ -63,7 +63,7 @@ describe("BackgroundTextEditor", () => {
   it("clears all three background fields when the editor is emptied", async () => {
     const line = seedLine({
       backgroundText: "ooh",
-      backgroundWords: [{ text: "ooh", sep: "", begin: 0, end: 1 }],
+      backgroundWords: [{ text: "ooh", sep: "", begin: 0, end: 1, joinsNext: false }],
       backgroundTextSource: "extraction",
     });
     const screen = await render(<BackgroundTextEditor lineId={line.id} backgroundText={backgroundText(line)} />);

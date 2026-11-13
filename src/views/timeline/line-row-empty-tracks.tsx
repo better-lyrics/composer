@@ -77,7 +77,14 @@ function addTrackWordAt(line: LyricLine, type: WordTrack, time: number): void {
     commit(fillEmptyTrack({ lineId: line.id, type, timedText }));
     return;
   }
-  const placeholder: WordTiming = { id: newWordId(), text: "...", sep: "", begin: slot.begin, end: slot.end };
+  const placeholder: WordTiming = {
+    id: newWordId(),
+    text: "...",
+    sep: "",
+    begin: slot.begin,
+    end: slot.end,
+    joinsNext: false,
+  };
   commit(fillEmptyTrack({ lineId: line.id, type, placeholder }));
   useTimelineStore.getState().setEditingWord(addressOf(line, type, placeholder));
 }

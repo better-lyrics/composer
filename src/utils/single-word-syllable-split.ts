@@ -6,7 +6,6 @@ import {
 import type { WordTiming } from "@/domain/word/timing";
 import { distributeTiming } from "@/utils/syllable-utils";
 import { splitSourceWord } from "@/utils/word-timing";
-import { nanoid } from "nanoid";
 
 // -- Types --------------------------------------------------------------------
 
@@ -14,7 +13,6 @@ interface SplitOneWordParams {
   word: WordTiming;
   splitPoints: number[];
   transliterationSplitPoints?: number[];
-  reuseGroupId?: boolean;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -41,17 +39,10 @@ function splitParts(text: string, splitPoints: number[]): { parts: string[]; joi
   };
 }
 
-function splitWordIntoSyllables({
-  word,
-  splitPoints,
-  transliterationSplitPoints,
-  reuseGroupId = false,
-}: SplitOneWordParams): WordTiming[] {
-  const groupId = reuseGroupId && word.syllableGroupId !== undefined ? word.syllableGroupId : nanoid(8);
+function splitWordIntoSyllables({ word, splitPoints, transliterationSplitPoints }: SplitOneWordParams): WordTiming[] {
   const { transliterationJoinerAfter: outerTransliterationJoiner, ...wordWithoutJoiner } = word;
-  const sourceForSplit: WordTiming = { ...wordWithoutJoiner, syllableGroupId: groupId };
   const partitions = distributeTiming(word.text, splitPoints, word.begin, word.end);
-  const newWords = splitSourceWord(sourceForSplit, partitions);
+  const newWords = splitSourceWord(wordWithoutJoiner, partitions);
   if (word.transliteration && transliterationSplitPoints) {
     const { parts: transliterations, joiners } = splitParts(word.transliteration.trim(), transliterationSplitPoints);
     if (transliterations.length === newWords.length) {

@@ -6,7 +6,7 @@ import { applySiblingWords } from "@/utils/word-diff";
 // Propagates a source line's word change onto one linked sibling.
 //
 // Fast path: when the word count is unchanged this is a pure text rename, so
-// only sibling word texts update and timing stays exact (skips the LCS diff).
+// only sibling word texts, separators and joins update and timing stays exact (skips the LCS diff).
 // Structural change: defers to the smart-sync diff, which preserves sibling
 // timing for words that did not structurally change.
 //
@@ -22,14 +22,18 @@ function propagateWordChanges(
     if (sourceAfter.length === siblingWords.length) {
       let changed = false;
       const next = siblingWords.map((w, i) => {
-        const { text, sep } = sourceAfter[i];
-        if (w.text === text && w.sep === sep) return w;
+        const { text, sep, joinsNext } = sourceAfter[i];
+        if (w.text === text && w.sep === sep && w.joinsNext === joinsNext) return w;
         changed = true;
-        return { ...w, text, sep };
+        return { ...w, text, sep, joinsNext };
       });
       return changed ? next : undefined;
     }
-    if (sourceAfter.every((w, i) => w.text === sourceBefore[i].text && w.sep === sourceBefore[i].sep)) return undefined;
+    const unchanged = sourceAfter.every(
+      (w, i) =>
+        w.text === sourceBefore[i].text && w.sep === sourceBefore[i].sep && w.joinsNext === sourceBefore[i].joinsNext,
+    );
+    if (unchanged) return undefined;
   }
 
   const result = applySiblingWords(sourceAfter, sourceBefore, siblingWords);

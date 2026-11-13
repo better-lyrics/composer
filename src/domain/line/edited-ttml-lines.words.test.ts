@@ -29,7 +29,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
       const words = merged[0]?.words ?? [];
       expect(words[0]).toBe(stored[0]?.words?.[0]);
       expect(words[2]).toBe(stored[0]?.words?.[2]);
-      expect(words[1]).toEqual({ text: "lo", sep: " ", begin: 1.6, end: 2, syllableGroupId: "s1" });
+      expect(words[1]).toEqual({ text: "lo", sep: " ", begin: 1.6, end: 2, joinsNext: false });
       expect(lineText(merged[0]!)).toBe("Hel|lo world");
     });
 
@@ -55,7 +55,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
       );
       const words = merged[0]?.backgroundWords ?? [];
       expect(words[0]).toBe(stored[0]?.backgroundWords?.[0]);
-      expect(words[1]).toEqual({ text: "ahh", sep: "", begin: 2, end: 2.8 });
+      expect(words[1]).toEqual({ text: "ahh", sep: "", begin: 2, end: 2.8, joinsNext: false });
     });
   });
 
@@ -79,7 +79,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
       const words = merged[0]?.backgroundWords ?? [];
       expect(words[0]).toBe(stored[0]?.backgroundWords?.[0]);
       expect(words[1]).toBe(stored[0]?.backgroundWords?.[1]);
-      expect(words[2]).toEqual({ text: "ohh", sep: "", begin: 1.8, end: 2, syllableGroupId: "b1" });
+      expect(words[2]).toEqual({ text: "ohh", sep: "", begin: 1.8, end: 2, joinsNext: false });
       expect(backgroundText(merged[0]!)).toBe("yeah o|ohh");
     });
   });
@@ -96,7 +96,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace("</span><span", "</span> <span"));
       const words = merged[0]?.words ?? [];
       expect(words.map((word) => word.text + word.sep)).toEqual(["Hel ", "lo ", "world"]);
-      expect(words[0]?.syllableGroupId).toBeUndefined();
+      expect(words[0]?.joinsNext).toBe(false);
     });
   });
 

@@ -203,10 +203,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
               .map((word) => word.trim())
               .join("-")
           : group.originalWord;
-        const merge =
-          !isBackground && timings?.[group.startIndex]?.syllableGroupId !== undefined
-            ? { lineId, wordIndex: group.startIndex }
-            : undefined;
+        const merge = isBackground ? undefined : { lineId, wordIndex: group.startIndex };
         elements.push(
           <SyllableGroup key={`${lineNumber}-${prefix}-group-${group.startIndex}`} label={label} merge={merge}>
             {texts.slice(group.startIndex, group.endIndex + 1).map((word, j) => {

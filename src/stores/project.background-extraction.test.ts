@@ -96,8 +96,8 @@ describe("project store · background extraction on linked lines", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { id: "w1", text: "Hello", sep: " ", begin: 0, end: 1 },
-          { id: "w2", text: "(ooh)", sep: "", begin: 1, end: 2 },
+          { id: "w1", text: "Hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+          { id: "w2", text: "(ooh)", sep: "", begin: 1, end: 2, joinsNext: false },
         ],
       },
       {
@@ -108,8 +108,8 @@ describe("project store · background extraction on linked lines", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { id: "w3", text: "Hello", sep: " ", begin: 30, end: 31.5 },
-          { id: "w4", text: "(ooh)", sep: "", begin: 31.5, end: 33 },
+          { id: "w3", text: "Hello", sep: " ", begin: 30, end: 31.5, joinsNext: false },
+          { id: "w4", text: "(ooh)", sep: "", begin: 31.5, end: 33, joinsNext: false },
         ],
       },
     ]);
@@ -239,11 +239,11 @@ describe("project store · background extraction on linked lines", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        words: [{ id: "w5", text: "Hello", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w5", text: "Hello", sep: "", begin: 0, end: 1, joinsNext: false }],
         backgroundText: "ooh aah",
         backgroundWords: [
-          { id: "w6", text: "ooh", sep: " ", begin: 1, end: 1.5 },
-          { id: "w7", text: "aah", sep: "", begin: 1.5, end: 2 },
+          { id: "w6", text: "ooh", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+          { id: "w7", text: "aah", sep: "", begin: 1.5, end: 2, joinsNext: false },
         ],
         backgroundTextSource: "extraction",
       },
@@ -254,19 +254,19 @@ describe("project store · background extraction on linked lines", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ id: "w8", text: "Hello", sep: "", begin: 30, end: 31 }],
+        words: [{ id: "w8", text: "Hello", sep: "", begin: 30, end: 31, joinsNext: false }],
         backgroundText: "ooh aah",
         backgroundWords: [
-          { id: "w9", text: "ooh", sep: " ", begin: 31, end: 31.5 },
-          { id: "w10", text: "aah", sep: "", begin: 31.5, end: 32 },
+          { id: "w9", text: "ooh", sep: " ", begin: 31, end: 31.5, joinsNext: false },
+          { id: "w10", text: "aah", sep: "", begin: 31.5, end: 32, joinsNext: false },
         ],
         backgroundTextSource: "extraction",
       },
     ]);
 
     const edited = [
-      { id: "w11", text: "ooh", sep: " ", begin: 1, end: 1.5 },
-      { id: "w12", text: "aah", sep: "", begin: 1.5, end: 1.8 },
+      { id: "w11", text: "ooh", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+      { id: "w12", text: "aah", sep: "", begin: 1.5, end: 1.8, joinsNext: false },
     ];
     useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: manualBackgroundWordEdit(edited) }]));
 

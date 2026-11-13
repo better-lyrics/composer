@@ -40,8 +40,8 @@ describe("sungTransliteration", () => {
 
   it("joins per-word transliterations when the track has no text", () => {
     const words = [
-      { text: "完", sep: "", begin: 0, end: 1, transliteration: "ka" },
-      { text: "璧", sep: "", begin: 1, end: 2, transliteration: "n peki" },
+      { text: "完", sep: "", begin: 0, end: 1, transliteration: "ka", joinsNext: true },
+      { text: "璧", sep: "", begin: 1, end: 2, transliteration: "n peki", joinsNext: false },
     ];
     const withWords = line("完璧", "", { words, begin: undefined, end: undefined } as Partial<LyricLine>);
     expect(sungTransliteration(withWords)).toBe("ka n peki");

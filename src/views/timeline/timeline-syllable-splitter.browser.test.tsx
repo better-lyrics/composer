@@ -4,9 +4,10 @@ import { getLanguageReviewTracks } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -74,19 +75,16 @@ describe("TimelineSyllableSplitter", () => {
       expect(words.map((w) => w.text + w.sep)).toEqual(["ev", "er", "y"]);
     });
     const wordsAfter = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
-    const ids = wordsAfter.map((w) => w.syllableGroupId);
-    expect(ids[0]).toBeDefined();
-    expect(ids[0]).toBe(ids[1]);
-    expect(ids[1]).toBe(ids[2]);
+    expect(computeSyllableGroups(wordsAfter)).toMatchObject([{ startIndex: 0, endIndex: 2 }]);
   });
 
-  it("preserves the source word's syllableGroupId on re-split (further-split a syllable)", async () => {
+  it("keeps the source word's group on re-split (further-split a syllable)", async () => {
     const line = createLine({
-      words: [
-        createWord({ text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_source" }),
-        createWord({ text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_source" }),
-        createWord({ text: "y", begin: 0.6, end: 1, syllableGroupId: "g_source" }),
-      ],
+      words: createWords([
+        { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_source" },
+        { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_source" },
+        { text: "y", begin: 0.6, end: 1, syllableGroupId: "g_source" },
+      ]),
     });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
@@ -111,7 +109,7 @@ describe("TimelineSyllableSplitter", () => {
       expect(words.length).toBe(4);
     });
     const wordsAfter = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
-    expect(wordsAfter.every((w) => w.syllableGroupId === "g_source")).toBe(true);
+    expect(computeSyllableGroups(wordsAfter)).toMatchObject([{ startIndex: 0, endIndex: 3 }]);
   });
 
   it("opens with a word-split title and splits into independent words", async () => {
@@ -140,7 +138,7 @@ describe("TimelineSyllableSplitter", () => {
     });
     const wordsAfter = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(wordsAfter.map((w) => w.text + w.sep)).toEqual(["hel ", "lo"]);
-    expect(wordsAfter.every((w) => w.syllableGroupId === undefined)).toBe(true);
+    expect(computeSyllableGroups(wordsAfter)).toEqual([]);
   });
 
   it("ignores the split-word event for single-character words", async () => {
@@ -266,7 +264,7 @@ describe("TimelineSyllableSplitter", () => {
       id: "line-transliteration-split",
       agentId: "v1",
       text: "일단은",
-      words: [{ id: "w1", text: "일단은", sep: "", begin: 0, end: 1, transliteration: "ildan eun" }],
+      words: [{ id: "w1", text: "일단은", sep: "", begin: 0, end: 1, transliteration: "ildan eun", joinsNext: false }],
       transliteration: {
         language: "ko-Latn",
         text: "ildan eun",
@@ -304,7 +302,7 @@ describe("TimelineSyllableSplitter", () => {
       id: "line-word-split",
       agentId: "v1",
       text: "хорошо",
-      words: [{ id: "w2", text: "хорошо", sep: "", begin: 0, end: 1 }],
+      words: [{ id: "w2", text: "хорошо", sep: "", begin: 0, end: 1, joinsNext: false }],
       transliteration: {
         language: "ru-Latn",
         text: "khorosho",
@@ -336,7 +334,7 @@ describe("TimelineSyllableSplitter", () => {
       id: "line-dash-word-split",
       agentId: "v1",
       text: "to-do",
-      words: [{ id: "w3", text: "to-do", sep: "", begin: 0, end: 1, transliteration: "to-do" }],
+      words: [{ id: "w3", text: "to-do", sep: "", begin: 0, end: 1, transliteration: "to-do", joinsNext: false }],
       transliteration: {
         language: "en-Latn",
         text: "to-do",
@@ -366,7 +364,7 @@ describe("TimelineSyllableSplitter", () => {
       id: "line-dash-split",
       agentId: "v1",
       text: "to-do",
-      words: [{ id: "w4", text: "to-do", sep: "", begin: 0, end: 1, transliteration: "to-do" }],
+      words: [{ id: "w4", text: "to-do", sep: "", begin: 0, end: 1, transliteration: "to-do", joinsNext: false }],
       transliteration: {
         language: "en-Latn",
         text: "to-do",

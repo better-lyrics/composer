@@ -56,7 +56,7 @@ function joinBracketedCarriedWords(
   const firstCarryText = firstCarry.text.slice(1);
   return [
     ...baseWords.slice(0, -1),
-    wordFromSpaced({ ...lastBase, text: lastBaseText }),
+    wordFromSpaced({ ...lastBase, text: lastBaseText, joinsNext: false }),
     { ...firstCarry, text: firstCarryText },
     ...carried.slice(1),
   ];

@@ -13,7 +13,7 @@ import type { WordTiming } from "@/domain/word/timing";
 
 const line: LyricLine = { id: "a", text: "hello", agentId: "v1" };
 
-const bgWord: WordTiming = { id: "w1", text: "ooh", sep: "", begin: 1.2, end: 1.8 };
+const bgWord: WordTiming = { id: "w1", text: "ooh", sep: "", begin: 1.2, end: 1.8, joinsNext: true };
 
 describe("backgroundFields", () => {
   it("stamps the provenance flag alongside the text", () => {
@@ -138,8 +138,8 @@ describe("applyBackground immutability and field preservation", () => {
       text: "hello world",
       agentId: "v1",
       words: [
-        { id: "w2", text: "hello", sep: " ", begin: 0, end: 0.5 },
-        { id: "w3", text: "world", sep: "", begin: 0.5, end: 1 },
+        { id: "w2", text: "hello", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+        { id: "w3", text: "world", sep: "", begin: 0.5, end: 1, joinsNext: false },
       ],
     };
     const result = applyBackground(wordSynced, { text: "ooh", source: "manual" });
@@ -191,8 +191,8 @@ describe("applyBackground overwriting", () => {
 describe("manualBackgroundWordEdit", () => {
   it("stamps source manual and keeps the word array intact", () => {
     const words: WordTiming[] = [
-      { id: "w4", text: "ooh", sep: " ", begin: 0, end: 0.5 },
-      { id: "w5", text: "aah", sep: "", begin: 0.5, end: 1 },
+      { id: "w4", text: "ooh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+      { id: "w5", text: "aah", sep: "", begin: 0.5, end: 1, joinsNext: false },
     ];
     const fields = manualBackgroundWordEdit(words);
     expect(fields.backgroundWords).toEqual(words);
@@ -201,16 +201,16 @@ describe("manualBackgroundWordEdit", () => {
 
   it("derives backgroundText coherently from the word array", () => {
     const fields = manualBackgroundWordEdit([
-      { id: "w6", text: "ooh", sep: " ", begin: 0, end: 0.5 },
-      { id: "w7", text: "aah", sep: "", begin: 0.5, end: 1 },
+      { id: "w6", text: "ooh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+      { id: "w7", text: "aah", sep: "", begin: 0.5, end: 1, joinsNext: false },
     ]);
     expect(fields.backgroundText).toBe("ooh aah");
   });
 
   it("reinserts the split character between syllables with no trailing space", () => {
     const fields = manualBackgroundWordEdit([
-      { id: "w8", text: "oh", sep: "", begin: 0, end: 0.5 },
-      { id: "w9", text: "oh", sep: "", begin: 0.5, end: 1 },
+      { id: "w8", text: "oh", sep: "", begin: 0, end: 0.5, joinsNext: true },
+      { id: "w9", text: "oh", sep: "", begin: 0.5, end: 1, joinsNext: false },
     ]);
     expect(fields.backgroundText).toBe("oh|oh");
   });

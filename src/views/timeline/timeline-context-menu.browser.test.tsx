@@ -3,7 +3,7 @@ import { backgroundText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
@@ -70,11 +70,11 @@ describe("TimelineContextMenu", () => {
 
   it("shows 'Merge syllables' on a syllable-group word and collapses the group to one word when clicked", async () => {
     const line = createLine({
-      words: [
-        createWord({ text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_every" }),
-        createWord({ text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_every" }),
-        createWord({ text: "y", begin: 0.6, end: 1, syllableGroupId: "g_every" }),
-      ],
+      words: createWords([
+        { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_every" },
+        { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_every" },
+        { text: "y", begin: 0.6, end: 1, syllableGroupId: "g_every" },
+      ]),
     });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
@@ -98,7 +98,7 @@ describe("TimelineContextMenu", () => {
     expect(words[0].text).toBe("every");
     expect(words[0].begin).toBe(0);
     expect(words[0].end).toBe(1);
-    expect(words[0].syllableGroupId).toBeUndefined();
+    expect(words[0].joinsNext).toBe(false);
   });
 
   it("hides 'Merge syllables' on a standalone word", async () => {
@@ -144,11 +144,11 @@ describe("TimelineContextMenu", () => {
 
   it("snaps a gapped syllable group flush when 'Snap syllables flush' is clicked", async () => {
     const line = createLine({
-      words: [
-        createWord({ text: "beau", begin: 0, end: 0.3, syllableGroupId: "g_beau" }),
-        createWord({ text: "ti", begin: 0.5, end: 0.8, syllableGroupId: "g_beau" }),
-        createWord({ text: "ful", begin: 1.0, end: 1.3, syllableGroupId: "g_beau" }),
-      ],
+      words: createWords([
+        { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g_beau" },
+        { text: "ti", begin: 0.5, end: 0.8, syllableGroupId: "g_beau" },
+        { text: "ful", begin: 1.0, end: 1.3, syllableGroupId: "g_beau" },
+      ]),
     });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
@@ -182,10 +182,10 @@ describe("TimelineContextMenu background provenance", () => {
       text: "main",
       words: [createWord({ text: "main", begin: 0, end: 1 })],
       backgroundText: "ooh aah",
-      backgroundWords: [
-        createWord({ text: "ooh", sep: " ", begin: 1, end: 1.5 }),
-        createWord({ text: "aah", begin: 1.5, end: 2 }),
-      ],
+      backgroundWords: createWords([
+        { text: "ooh", sep: " ", begin: 1, end: 1.5 },
+        { text: "aah", begin: 1.5, end: 2 },
+      ]),
       backgroundTextSource: "extraction",
     });
   }
@@ -279,10 +279,10 @@ describe("TimelineContextMenu background provenance", () => {
     const line = createLine({
       id: "l1",
       text: "I love",
-      words: [
-        createWord({ text: "I", sep: " ", begin: 0, end: 0.5 }),
-        createWord({ text: "love", begin: 0.5, end: 1 }),
-      ],
+      words: createWords([
+        { text: "I", sep: " ", begin: 0, end: 0.5 },
+        { text: "love", begin: 0.5, end: 1 },
+      ]),
       backgroundText: "ooh",
       backgroundWords: [createWord({ text: "ooh", begin: 1, end: 2 })],
       backgroundTextSource: "extraction",
@@ -319,7 +319,10 @@ describe("TimelineContextMenu · split into words on the bg track", () => {
   it("regression: offers 'Split into words' on a sentence-long bg word and splits it", async () => {
     const line = createLine({
       text: "main line",
-      words: [createWord({ text: "main", sep: " ", begin: 0, end: 2 }), createWord({ text: "line", begin: 2, end: 4 })],
+      words: createWords([
+        { text: "main", sep: " ", begin: 0, end: 2 },
+        { text: "line", begin: 2, end: 4 },
+      ]),
       backgroundText: "ooh yeah baby",
       backgroundWords: [createWord({ text: "ooh yeah baby", begin: 1, end: 4 })],
     });
@@ -340,12 +343,15 @@ describe("TimelineContextMenu · split into words on the bg track", () => {
   it("hides 'Split into words' on a bg track that is already one word per word", async () => {
     const line = createLine({
       text: "main line",
-      words: [createWord({ text: "main", sep: " ", begin: 0, end: 2 }), createWord({ text: "line", begin: 2, end: 4 })],
+      words: createWords([
+        { text: "main", sep: " ", begin: 0, end: 2 },
+        { text: "line", begin: 2, end: 4 },
+      ]),
       backgroundText: "ooh yeah",
-      backgroundWords: [
-        createWord({ text: "ooh", sep: " ", begin: 1, end: 2 }),
-        createWord({ text: "yeah", begin: 2, end: 3 }),
-      ],
+      backgroundWords: createWords([
+        { text: "ooh", sep: " ", begin: 1, end: 2 },
+        { text: "yeah", begin: 2, end: 3 },
+      ]),
     });
     useProjectStore.setState({ lines: [line] });
     openBgWordContextMenu(line.id);
@@ -436,6 +442,6 @@ describe("TimelineContextMenu · add word on a bg track with untimed text", () =
 
     await expect
       .poll(() => useProjectStore.getState().lines[1].words?.[0])
-      .toMatchObject({ text: "hi", sep: "", begin: 5, end: 6 });
+      .toMatchObject({ text: "hi", sep: "", begin: 5, end: 6, joinsNext: false });
   });
 });

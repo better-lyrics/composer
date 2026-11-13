@@ -28,14 +28,14 @@ function lineWithoutPieces(): LyricLine {
     agentId: "v1",
     text: "Uh 일단은 나",
     words: [
-      { id: "w1", text: "Uh", sep: " ", begin: 0, end: 0.5 },
-      { id: "w2", text: "일단은", sep: " ", begin: 0.5, end: 1.5 },
-      { id: "w3", text: "나", sep: "", begin: 1.5, end: 2 },
+      { id: "w1", text: "Uh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+      { id: "w2", text: "일단은", sep: " ", begin: 0.5, end: 1.5, joinsNext: false },
+      { id: "w3", text: "나", sep: "", begin: 1.5, end: 2, joinsNext: false },
     ],
     backgroundText: "그래 yeah",
     backgroundWords: [
-      { id: "w4", text: "그래", sep: " ", begin: 2, end: 2.5 },
-      { id: "w5", text: "yeah", sep: "", begin: 2.5, end: 3 },
+      { id: "w4", text: "그래", sep: " ", begin: 2, end: 2.5, joinsNext: false },
+      { id: "w5", text: "yeah", sep: "", begin: 2.5, end: 3, joinsNext: false },
     ],
     transliteration: track,
   };

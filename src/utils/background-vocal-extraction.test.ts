@@ -421,19 +421,21 @@ describe("extractInlineFromLine", () => {
       text: "Hi (ooh) there",
       agentId: "v1",
       words: [
-        { id: "w1", text: "Hi", sep: " ", begin: 0, end: 1 },
-        { id: "w2", text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { id: "w3", text: "there", sep: "", begin: 2, end: 3 },
+        { id: "w1", text: "Hi", sep: " ", begin: 0, end: 1, joinsNext: false },
+        { id: "w2", text: "(ooh)", sep: " ", begin: 1, end: 2, joinsNext: false },
+        { id: "w3", text: "there", sep: "", begin: 2, end: 3, joinsNext: false },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(result).not.toBe(line);
     expect(lineText(result)).toBe("Hi there");
     expect(backgroundText(result)).toBe("ooh");
-    expect(timedSyllables(backgroundTrack(result))).toEqual([{ text: "ooh", sep: "", begin: 1, end: 2 }]);
+    expect(timedSyllables(backgroundTrack(result))).toEqual([
+      { text: "ooh", sep: "", begin: 1, end: 2, joinsNext: false },
+    ]);
     expect(timedSyllables(mainTrack(result))).toEqual([
-      { text: "Hi", sep: " ", begin: 0, end: 1 },
-      { text: "there", sep: "", begin: 2, end: 3 },
+      { text: "Hi", sep: " ", begin: 0, end: 1, joinsNext: false },
+      { text: "there", sep: "", begin: 2, end: 3, joinsNext: false },
     ]);
   });
 
@@ -456,7 +458,7 @@ describe("extractInlineFromLine", () => {
       agentId: "v1",
       begin: 1,
       end: 3,
-      backgroundWords: [{ id: "w4", text: "clap", sep: "", begin: 1.2, end: 1.8 }],
+      backgroundWords: [{ id: "w4", text: "clap", sep: "", begin: 1.2, end: 1.8, joinsNext: false }],
     };
     expect(extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false })).toBe(line);
   });
@@ -466,7 +468,7 @@ describe("extractInlineFromLine", () => {
       id: "1",
       text: "Hi (ooh) there",
       agentId: "v1",
-      backgroundWords: [{ id: "w5", text: "clap", sep: "", begin: 1.2, end: 1.8 }],
+      backgroundWords: [{ id: "w5", text: "clap", sep: "", begin: 1.2, end: 1.8, joinsNext: false }],
     };
     expect(extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false })).toBe(line);
   });
@@ -495,19 +497,21 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hello (ooh) world",
       agentId: "v1",
       words: [
-        { id: "w6", text: "Hello", sep: " ", begin: 0.5, end: 1.2 },
-        { id: "w7", text: "(ooh)", sep: " ", begin: 1.2, end: 1.9 },
-        { id: "w8", text: "world", sep: "", begin: 1.9, end: 2.7 },
+        { id: "w6", text: "Hello", sep: " ", begin: 0.5, end: 1.2, joinsNext: false },
+        { id: "w7", text: "(ooh)", sep: " ", begin: 1.2, end: 1.9, joinsNext: false },
+        { id: "w8", text: "world", sep: "", begin: 1.9, end: 2.7, joinsNext: false },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(result).not.toBe(line);
     expect(lineText(result)).toBe("Hello world");
     expect(backgroundText(result)).toBe("ooh");
-    expect(timedSyllables(backgroundTrack(result))).toEqual([{ text: "ooh", sep: "", begin: 1.2, end: 1.9 }]);
+    expect(timedSyllables(backgroundTrack(result))).toEqual([
+      { text: "ooh", sep: "", begin: 1.2, end: 1.9, joinsNext: false },
+    ]);
     expect(timedSyllables(mainTrack(result))).toEqual([
-      { text: "Hello", sep: " ", begin: 0.5, end: 1.2 },
-      { text: "world", sep: "", begin: 1.9, end: 2.7 },
+      { text: "Hello", sep: " ", begin: 0.5, end: 1.2, joinsNext: false },
+      { text: "world", sep: "", begin: 1.9, end: 2.7, joinsNext: false },
     ]);
   });
 
@@ -517,15 +521,15 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hello (ooh)",
       agentId: "v1",
       words: [
-        { id: "w9", text: "Hello", sep: " ", begin: 0, end: 1 },
-        { id: "w10", text: "(ooh)", sep: "", begin: 1, end: 2 },
+        { id: "w9", text: "Hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+        { id: "w10", text: "(ooh)", sep: "", begin: 1, end: 2, joinsNext: false },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(result).not.toBe(line);
     expect(lineText(result)).toBe("Hello");
     expect(backgroundText(result)).toBe("ooh");
-    expect(timedSyllables(mainTrack(result))).toEqual([{ text: "Hello", sep: "", begin: 0, end: 1 }]);
+    expect(timedSyllables(mainTrack(result))).toEqual([{ text: "Hello", sep: "", begin: 0, end: 1, joinsNext: false }]);
   });
 
   it("extracts a multi-token group spanning several words", () => {
@@ -534,10 +538,10 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hello (ooh yeah) world",
       agentId: "v1",
       words: [
-        { id: "w11", text: "Hello", sep: " ", begin: 0, end: 1 },
-        { id: "w12", text: "(ooh", sep: " ", begin: 1, end: 1.5 },
-        { id: "w13", text: "yeah)", sep: " ", begin: 1.5, end: 2 },
-        { id: "w14", text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w11", text: "Hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+        { id: "w12", text: "(ooh", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+        { id: "w13", text: "yeah)", sep: " ", begin: 1.5, end: 2, joinsNext: false },
+        { id: "w14", text: "world", sep: "", begin: 2, end: 3, joinsNext: false },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -545,8 +549,8 @@ describe("extractInlineFromLine: word-synced extraction", () => {
     expect(lineText(result)).toBe("Hello world");
     expect(backgroundText(result)).toBe("ooh yeah");
     expect(timedSyllables(mainTrack(result))).toEqual([
-      { text: "Hello", sep: " ", begin: 0, end: 1 },
-      { text: "world", sep: "", begin: 2, end: 3 },
+      { text: "Hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+      { text: "world", sep: "", begin: 2, end: 3, joinsNext: false },
     ]);
   });
 
@@ -556,8 +560,8 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hello(ooh) world",
       agentId: "v1",
       words: [
-        { id: "w15", text: "Hello(ooh)", sep: " ", begin: 0, end: 1 },
-        { id: "w16", text: "world", sep: "", begin: 1, end: 2 },
+        { id: "w15", text: "Hello(ooh)", sep: " ", begin: 0, end: 1, joinsNext: false },
+        { id: "w16", text: "world", sep: "", begin: 1, end: 2, joinsNext: false },
       ],
     };
     expect(extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false })).toBe(line);
@@ -569,15 +573,15 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hello (ooh) world",
       agentId: "v1",
       words: [
-        { id: "w17", text: "Hello", sep: " ", begin: 0, end: 1, explicit: true, syllableGroupId: "g1" },
-        { id: "w18", text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { id: "w19", text: "world", sep: "", begin: 2, end: 3, explicit: true, syllableGroupId: "g2" },
+        { id: "w17", text: "Hello", sep: " ", begin: 0, end: 1, explicit: true, joinsNext: false },
+        { id: "w18", text: "(ooh)", sep: " ", begin: 1, end: 2, joinsNext: false },
+        { id: "w19", text: "world", sep: "", begin: 2, end: 3, explicit: true, joinsNext: false },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(timedSyllables(mainTrack(result))).toEqual([
-      { text: "Hello", sep: " ", begin: 0, end: 1, explicit: true, syllableGroupId: "g1" },
-      { text: "world", sep: "", begin: 2, end: 3, explicit: true, syllableGroupId: "g2" },
+      { text: "Hello", sep: " ", begin: 0, end: 1, explicit: true, joinsNext: false },
+      { text: "world", sep: "", begin: 2, end: 3, explicit: true, joinsNext: false },
     ]);
   });
 
@@ -587,10 +591,10 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hel|lo (ooh) world",
       agentId: "v1",
       words: [
-        { id: "w20", text: "Hel", sep: "", begin: 0, end: 0.5 },
-        { id: "w21", text: "lo", sep: " ", begin: 0.5, end: 1 },
-        { id: "w22", text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { id: "w23", text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w20", text: "Hel", sep: "", begin: 0, end: 0.5, joinsNext: true },
+        { id: "w21", text: "lo", sep: " ", begin: 0.5, end: 1, joinsNext: false },
+        { id: "w22", text: "(ooh)", sep: " ", begin: 1, end: 2, joinsNext: false },
+        { id: "w23", text: "world", sep: "", begin: 2, end: 3, joinsNext: false },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -598,9 +602,9 @@ describe("extractInlineFromLine: word-synced extraction", () => {
     expect(lineText(result)).toBe("Hel|lo world");
     expect(backgroundText(result)).toBe("ooh");
     expect(timedSyllables(mainTrack(result))).toEqual([
-      { text: "Hel", sep: "", begin: 0, end: 0.5 },
-      { text: "lo", sep: " ", begin: 0.5, end: 1 },
-      { text: "world", sep: "", begin: 2, end: 3 },
+      { text: "Hel", sep: "", begin: 0, end: 0.5, joinsNext: true },
+      { text: "lo", sep: " ", begin: 0.5, end: 1, joinsNext: false },
+      { text: "world", sep: "", begin: 2, end: 3, joinsNext: false },
     ]);
   });
 
@@ -610,11 +614,11 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "Hello (ooh) world",
       agentId: "v1",
       words: [
-        { id: "w24", text: "Hello", sep: " ", begin: 0, end: 1 },
-        { id: "w25", text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { id: "w26", text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w24", text: "Hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+        { id: "w25", text: "(ooh)", sep: " ", begin: 1, end: 2, joinsNext: false },
+        { id: "w26", text: "world", sep: "", begin: 2, end: 3, joinsNext: false },
       ],
-      backgroundWords: [{ id: "w27", text: "ah", sep: "", begin: 0, end: 1 }],
+      backgroundWords: [{ id: "w27", text: "ah", sep: "", begin: 0, end: 1, joinsNext: false }],
     };
     expect(extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false })).toBe(line);
   });
@@ -626,9 +630,9 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       agentId: "v1",
       backgroundText: "ah",
       words: [
-        { id: "w28", text: "Hello", sep: " ", begin: 0, end: 1 },
-        { id: "w29", text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { id: "w30", text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w28", text: "Hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+        { id: "w29", text: "(ooh)", sep: " ", begin: 1, end: 2, joinsNext: false },
+        { id: "w30", text: "world", sep: "", begin: 2, end: 3, joinsNext: false },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -637,18 +641,18 @@ describe("extractInlineFromLine: word-synced extraction", () => {
 
   it("does not mutate the input line or its words array", () => {
     const words = [
-      { id: "w31", text: "Hello", sep: " ", begin: 0, end: 1 },
-      { id: "w32", text: "(ooh)", sep: " ", begin: 1, end: 2 },
-      { id: "w33", text: "world", sep: "", begin: 2, end: 3 },
+      { id: "w31", text: "Hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+      { id: "w32", text: "(ooh)", sep: " ", begin: 1, end: 2, joinsNext: false },
+      { id: "w33", text: "world", sep: "", begin: 2, end: 3, joinsNext: false },
     ];
     const line: LyricLine = { id: "1", text: "Hello (ooh) world", agentId: "v1", words };
     extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(lineText(line)).toBe("Hello (ooh) world");
     expect(line.words).toBe(words);
     expect(line.words).toEqual([
-      { text: "Hello", sep: " ", begin: 0, end: 1 },
-      { text: "(ooh)", sep: " ", begin: 1, end: 2 },
-      { text: "world", sep: "", begin: 2, end: 3 },
+      { text: "Hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+      { text: "(ooh)", sep: " ", begin: 1, end: 2, joinsNext: false },
+      { text: "world", sep: "", begin: 2, end: 3, joinsNext: false },
     ]);
   });
 
@@ -658,8 +662,8 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       text: "(ooh yeah)",
       agentId: "v1",
       words: [
-        { id: "w34", text: "(ooh", sep: " ", begin: 0, end: 1 },
-        { id: "w35", text: "yeah)", sep: "", begin: 1, end: 2 },
+        { id: "w34", text: "(ooh", sep: " ", begin: 0, end: 1, joinsNext: false },
+        { id: "w35", text: "yeah)", sep: "", begin: 1, end: 2, joinsNext: false },
       ],
     };
     expect(extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false })).toBe(line);
@@ -816,8 +820,8 @@ describe("extractBackgroundVocals: timing-aware standalone merge", () => {
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("1");
     expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
-      { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
-      { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
+      { text: "ooh", sep: " ", begin: 5.0, end: 5.6, joinsNext: false },
+      { text: "yeah", sep: "", begin: 5.6, end: 6.2, joinsNext: false },
     ]);
     expect(backgroundText(result[0])).toBe("ooh yeah");
   });
@@ -842,9 +846,9 @@ describe("extractBackgroundVocals: timing-aware standalone merge", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
     expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
-      { text: "ah", sep: " ", begin: 1.0, end: 1.5 },
-      { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
-      { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
+      { text: "ah", sep: " ", begin: 1.0, end: 1.5, joinsNext: false },
+      { text: "ooh", sep: " ", begin: 5.0, end: 5.6, joinsNext: false },
+      { text: "yeah", sep: "", begin: 5.6, end: 6.2, joinsNext: false },
     ]);
     expect(backgroundText(result[0])).toBe("ah ooh yeah");
   });
@@ -908,7 +912,9 @@ describe("extractBackgroundVocals: timing-aware standalone merge", () => {
     expect(result).toHaveLength(2);
     expect(result[0]).toBe(lines[0]);
     expect(result[1]).toBe(lines[1]);
-    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([{ text: "ah", sep: "", begin: 1.0, end: 1.5 }]);
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
+      { text: "ah", sep: "", begin: 1.0, end: 1.5, joinsNext: false },
+    ]);
   });
 
   it("carries matching word timing when standalone word count does not match bg text", () => {
@@ -929,8 +935,8 @@ describe("extractBackgroundVocals: timing-aware standalone merge", () => {
     expect(result).toHaveLength(1);
     expect(backgroundText(result[0])).toBe("ooh yeah");
     expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
-      { text: "ooh", sep: " ", begin: 5.2, end: 5.6 },
-      { text: "yeah", sep: "", begin: 5.6, end: 6.0 },
+      { text: "ooh", sep: " ", begin: 5.2, end: 5.6, joinsNext: false },
+      { text: "yeah", sep: "", begin: 5.6, end: 6.0, joinsNext: false },
     ]);
   });
 });
@@ -1013,8 +1019,8 @@ describe("extractBackgroundVocals: input not mutated", () => {
 
   it("does not mutate a timed standalone line or its words array", () => {
     const standaloneWords = [
-      { id: "w36", text: "(ooh", sep: " ", begin: 5.0, end: 5.6 },
-      { id: "w37", text: "yeah)", sep: "", begin: 5.6, end: 6.2 },
+      { id: "w36", text: "(ooh", sep: " ", begin: 5.0, end: 5.6, joinsNext: false },
+      { id: "w37", text: "yeah)", sep: "", begin: 5.6, end: 6.2, joinsNext: false },
     ];
     const lines = [
       createLine({ id: "1", text: "Real line" }),
@@ -1026,8 +1032,8 @@ describe("extractBackgroundVocals: input not mutated", () => {
     expect(lineText(lines[1])).toBe("(ooh yeah)");
     expect(lines[1].words).toBe(standaloneWordsRef);
     expect(lines[1].words).toEqual([
-      { text: "(ooh", sep: " ", begin: 5.0, end: 5.6 },
-      { text: "yeah)", sep: "", begin: 5.6, end: 6.2 },
+      { text: "(ooh", sep: " ", begin: 5.0, end: 5.6, joinsNext: false },
+      { text: "yeah)", sep: "", begin: 5.6, end: 6.2, joinsNext: false },
     ]);
     expect(lines[0].backgroundWords).toBeUndefined();
   });
@@ -1175,9 +1181,9 @@ describe("extractInlineFromLine: provenance", () => {
       text: "Hello (ooh) world",
       agentId: "v1",
       words: [
-        { id: "w38", text: "Hello", sep: " ", begin: 0, end: 1 },
-        { id: "w39", text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { id: "w40", text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w38", text: "Hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+        { id: "w39", text: "(ooh)", sep: " ", begin: 1, end: 2, joinsNext: false },
+        { id: "w40", text: "world", sep: "", begin: 2, end: 3, joinsNext: false },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -1193,9 +1199,9 @@ describe("extractInlineFromLine: provenance", () => {
       backgroundText: "ooh",
       backgroundTextSource: "extraction",
       words: [
-        { id: "w41", text: "Hello", sep: " ", begin: 0, end: 1 },
-        { id: "w42", text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { id: "w43", text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w41", text: "Hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+        { id: "w42", text: "(ooh)", sep: " ", begin: 1, end: 2, joinsNext: false },
+        { id: "w43", text: "world", sep: "", begin: 2, end: 3, joinsNext: false },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -1211,9 +1217,9 @@ describe("extractInlineFromLine: provenance", () => {
       backgroundText: "clap",
       backgroundTextSource: "manual",
       words: [
-        { id: "w44", text: "Hello", sep: " ", begin: 0, end: 1 },
-        { id: "w45", text: "(ooh)", sep: " ", begin: 1, end: 2 },
-        { id: "w46", text: "world", sep: "", begin: 2, end: 3 },
+        { id: "w44", text: "Hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+        { id: "w45", text: "(ooh)", sep: " ", begin: 1, end: 2, joinsNext: false },
+        { id: "w46", text: "world", sep: "", begin: 2, end: 3, joinsNext: false },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
@@ -1288,8 +1294,8 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
-      { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
-      { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
+      { text: "ooh", sep: " ", begin: 5.0, end: 5.6, joinsNext: false },
+      { text: "yeah", sep: "", begin: 5.6, end: 6.2, joinsNext: false },
     ]);
     expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
@@ -1314,9 +1320,9 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
-      { text: "ah", sep: " ", begin: 1.0, end: 1.5 },
-      { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
-      { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
+      { text: "ah", sep: " ", begin: 1.0, end: 1.5, joinsNext: false },
+      { text: "ooh", sep: " ", begin: 5.0, end: 5.6, joinsNext: false },
+      { text: "yeah", sep: "", begin: 5.6, end: 6.2, joinsNext: false },
     ]);
     expect(backgroundTrack(result[0])?.source).toBe("manual");
   });
@@ -1345,8 +1351,8 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
     expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
-      { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
-      { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
+      { text: "ooh", sep: " ", begin: 5.0, end: 5.6, joinsNext: false },
+      { text: "yeah", sep: "", begin: 5.6, end: 6.2, joinsNext: false },
     ]);
     expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
@@ -1366,8 +1372,8 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(backgroundText(result[0])).toBe("ooh yeah");
     expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
-      { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
-      { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
+      { text: "ooh", sep: " ", begin: 5.0, end: 5.6, joinsNext: false },
+      { text: "yeah", sep: "", begin: 5.6, end: 6.2, joinsNext: false },
     ]);
     expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
@@ -1463,14 +1469,16 @@ describe("extractInlineFromLine: linked lines", () => {
       instanceIdx: 1,
       templateLineIdx: 2,
       words: [
-        { id: "w47", text: "Hello", sep: " ", begin: 30, end: 31 },
-        { id: "w48", text: "(ooh)", sep: "", begin: 31, end: 32 },
+        { id: "w47", text: "Hello", sep: " ", begin: 30, end: 31, joinsNext: false },
+        { id: "w48", text: "(ooh)", sep: "", begin: 31, end: 32, joinsNext: false },
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(lineText(result)).toBe("Hello");
     expect(backgroundText(result)).toBe("ooh");
-    expect(timedSyllables(mainTrack(result))).toEqual([{ text: "Hello", sep: "", begin: 30, end: 31 }]);
+    expect(timedSyllables(mainTrack(result))).toEqual([
+      { text: "Hello", sep: "", begin: 30, end: 31, joinsNext: false },
+    ]);
     expect(result.groupId).toBe("g1");
     expect(result.instanceIdx).toBe(1);
     expect(result.templateLineIdx).toBe(2);
@@ -1506,8 +1514,8 @@ describe("extractBackgroundVocals: linked sibling lines", () => {
       instanceIdx: 0,
       templateLineIdx: 0,
       words: [
-        { id: "w49", text: "Hello", sep: " ", begin: 0, end: 1 },
-        { id: "w50", text: "(ooh)", sep: "", begin: 1, end: 2 },
+        { id: "w49", text: "Hello", sep: " ", begin: 0, end: 1, joinsNext: false },
+        { id: "w50", text: "(ooh)", sep: "", begin: 1, end: 2, joinsNext: false },
       ],
     };
     const s1: LyricLine = {
@@ -1518,8 +1526,8 @@ describe("extractBackgroundVocals: linked sibling lines", () => {
       instanceIdx: 1,
       templateLineIdx: 0,
       words: [
-        { id: "w51", text: "Hello", sep: " ", begin: 30, end: 31.5 },
-        { id: "w52", text: "(ooh)", sep: "", begin: 31.5, end: 33 },
+        { id: "w51", text: "Hello", sep: " ", begin: 30, end: 31.5, joinsNext: false },
+        { id: "w52", text: "(ooh)", sep: "", begin: 31.5, end: 33, joinsNext: false },
       ],
     };
 
@@ -1530,8 +1538,12 @@ describe("extractBackgroundVocals: linked sibling lines", () => {
     expect(lineText(result[1])).toBe("Hello");
     expect(backgroundText(result[0])).toBe("ooh");
     expect(backgroundText(result[1])).toBe("ooh");
-    expect(timedSyllables(mainTrack(result[0]))).toEqual([{ text: "Hello", sep: "", begin: 0, end: 1 }]);
-    expect(timedSyllables(mainTrack(result[1]))).toEqual([{ text: "Hello", sep: "", begin: 30, end: 31.5 }]);
+    expect(timedSyllables(mainTrack(result[0]))).toEqual([
+      { text: "Hello", sep: "", begin: 0, end: 1, joinsNext: false },
+    ]);
+    expect(timedSyllables(mainTrack(result[1]))).toEqual([
+      { text: "Hello", sep: "", begin: 30, end: 31.5, joinsNext: false },
+    ]);
     expect(result[0].groupId).toBe("g1");
     expect(result[1].groupId).toBe("g1");
     expect(result[0].templateLineIdx).toBe(0);
@@ -1733,8 +1745,8 @@ describe("preserveBrackets: word-synced bg", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
     expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
-      { text: "(ooh", sep: " ", begin: 5.0, end: 5.6 },
-      { text: "yeah)", sep: "", begin: 5.6, end: 6.2 },
+      { text: "(ooh", sep: " ", begin: 5.0, end: 5.6, joinsNext: false },
+      { text: "yeah)", sep: "", begin: 5.6, end: 6.2, joinsNext: false },
     ]);
     expect(backgroundText(result[0])).toBe("(ooh yeah)");
   });
@@ -1749,7 +1761,9 @@ describe("preserveBrackets: word-synced bg", () => {
       }),
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
-    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([{ text: "(ooh)", sep: "", begin: 5.0, end: 5.6 }]);
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
+      { text: "(ooh)", sep: "", begin: 5.0, end: 5.6, joinsNext: false },
+    ]);
     expect(backgroundText(result[0])).toBe("(ooh)");
   });
 
@@ -1770,8 +1784,8 @@ describe("preserveBrackets: word-synced bg", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
     expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
-      { text: "(ooh", sep: " ", begin: 5.0, end: 5.5 },
-      { text: "yeah)", sep: "", begin: 5.6, end: 6.1 },
+      { text: "(ooh", sep: " ", begin: 5.0, end: 5.5, joinsNext: false },
+      { text: "yeah)", sep: "", begin: 5.6, end: 6.1, joinsNext: false },
     ]);
     expect(backgroundText(result[0])).toBe("(ooh yeah)");
   });
@@ -1794,8 +1808,8 @@ describe("preserveBrackets: word-synced bg", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
     expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
-      { text: "ah", sep: " ", begin: 1.0, end: 1.5 },
-      { text: "(ooh)", sep: "", begin: 5.0, end: 5.5 },
+      { text: "ah", sep: " ", begin: 1.0, end: 1.5, joinsNext: false },
+      { text: "(ooh)", sep: "", begin: 5.0, end: 5.5, joinsNext: false },
     ]);
   });
 
@@ -1820,8 +1834,8 @@ describe("preserveBrackets: word-synced bg", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
-      { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
-      { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
+      { text: "ooh", sep: " ", begin: 5.0, end: 5.6, joinsNext: false },
+      { text: "yeah", sep: "", begin: 5.6, end: 6.2, joinsNext: false },
     ]);
     expect(backgroundText(result[0])).toBe("ooh yeah");
   });
@@ -1844,8 +1858,8 @@ describe("preserveBrackets: word-synced bg", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
     expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
-      { text: "(clap)", sep: " ", begin: 1.0, end: 1.5 },
-      { text: "(ooh)", sep: "", begin: 5.0, end: 5.5 },
+      { text: "(clap)", sep: " ", begin: 1.0, end: 1.5, joinsNext: false },
+      { text: "(ooh)", sep: "", begin: 5.0, end: 5.5, joinsNext: false },
     ]);
   });
 });
@@ -1942,7 +1956,9 @@ describe("regressions", () => {
       ],
     });
     const extracted = extractInlineFromLine(line, options);
-    expect(timedSyllables(backgroundTrack(extracted))).toEqual([{ text: "ooh", sep: "", begin: 5, end: 6 }]);
+    expect(timedSyllables(backgroundTrack(extracted))).toEqual([
+      { text: "ooh", sep: "", begin: 5, end: 6, joinsNext: false },
+    ]);
   });
 
   it("regression: a timed standalone after an untimed one keeps its own timing", () => {
@@ -1953,7 +1969,13 @@ describe("regressions", () => {
     ];
     const [merged] = extractBackgroundVocals(lines, options);
     expect(backgroundText(merged)).toBe("ooh yeah");
-    expect(timedSyllables(backgroundTrack(merged)).at(-1)).toEqual({ text: "yeah", sep: "", begin: 15, end: 16 });
+    expect(timedSyllables(backgroundTrack(merged)).at(-1)).toEqual({
+      text: "yeah",
+      sep: "",
+      begin: 15,
+      end: 16,
+      joinsNext: false,
+    });
   });
 
   it("regression: an untimed standalone line after an inline word-synced extraction keeps the carried timing", () => {
@@ -1970,7 +1992,13 @@ describe("regressions", () => {
     ];
     const extracted = extractBackgroundVocals(lines, options);
     expect(extracted).toHaveLength(1);
-    expect(timedSyllables(backgroundTrack(extracted[0]))[0]).toEqual({ text: "ooh", sep: " ", begin: 1, end: 2 });
+    expect(timedSyllables(backgroundTrack(extracted[0]))[0]).toEqual({
+      text: "ooh",
+      sep: " ",
+      begin: 1,
+      end: 2,
+      joinsNext: false,
+    });
     expect(backgroundText(extracted[0])).toBe("ooh yeah");
     expect(timedSyllables(backgroundTrack(extracted[0])).map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
   });

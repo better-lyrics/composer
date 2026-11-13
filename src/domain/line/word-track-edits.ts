@@ -3,7 +3,7 @@ import { withAlignedWords } from "@/domain/language/align";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { mergedWord } from "@/domain/word/merge-run";
-import { computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
+import { computeSyllableGroups, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { applySiblingWords } from "@/utils/word-diff";
 
@@ -85,7 +85,7 @@ function applyMergeSyllableGroup(
     const lineWords = withAlignedWords(line)[field];
     if (!lineWords) return line;
 
-    const runs = computeByGroupId(lineWords);
+    const runs = computeSyllableGroups(lineWords);
     const collapsed: WordTiming[] = [];
     let changed = false;
     let runIdx = 0;
@@ -101,7 +101,7 @@ function applyMergeSyllableGroup(
       let touched = false;
       for (let k = run.startIndex; k <= run.endIndex; k++) if (selected.has(k)) touched = true;
       if (touched) {
-        collapsed.push(mergedWord(lineWords.slice(run.startIndex, run.endIndex + 1), undefined));
+        collapsed.push(mergedWord(lineWords.slice(run.startIndex, run.endIndex + 1)));
         changed = true;
       } else {
         for (let k = run.startIndex; k <= run.endIndex; k++) collapsed.push(lineWords[k]);

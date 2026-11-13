@@ -14,7 +14,7 @@ import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { trackField, trackWords } from "@/domain/line/tracks";
 import { isAddressed } from "@/domain/selection/identity";
 import { resolveAddress } from "@/domain/selection/resolve";
-import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
+import { hasIntraGroupGap, isInSyllableGroup } from "@/domain/word/syllable-groups";
 import { isAutoAlignAvailable } from "@/stores/alignment";
 import { countAlignableLines } from "@/stores/alignment-plan";
 import { useAudioStore } from "@/stores/audio";
@@ -142,8 +142,7 @@ function useContextMenuTargets() {
     const resolved = resolveAddress(rawLines, contextMenu.target);
     if (!resolved) return null;
     const { lineId, type, wordIndex } = resolved;
-    const word = trackWords(rawLines[resolved.lineIndex], type)?.[wordIndex];
-    if (!word || word.syllableGroupId === undefined) return null;
+    if (!isInSyllableGroup(trackWords(rawLines[resolved.lineIndex], type) ?? [], wordIndex)) return null;
     return { lineId, field: trackField(type), wordIndex };
   }, [contextMenu, rawLines]);
 

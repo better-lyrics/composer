@@ -23,19 +23,20 @@ describe("transliteration alignment", () => {
             end: 2,
             transliteration: "kyou",
             transliterationJoinerAfter: " ",
+            joinsNext: false,
           },
         ],
         "",
       ).words,
-    ).toEqual([{ text: "今日", sep: "", begin: 1, end: 2 }]);
+    ).toEqual([{ text: "今日", sep: "", begin: 1, end: 2, joinsNext: false }]);
   });
 
   it("maps explicit pronunciation and word spaces to timing slots", () => {
     const words = [
-      { id: "w1", text: "걸", sep: "", begin: 0, end: 0.2 },
-      { id: "w2", text: "음", sep: "", begin: 0.2, end: 0.4 },
-      { id: "w3", text: "은", sep: " ", begin: 0.4, end: 0.6 },
-      { id: "w4", text: "Like", sep: "", begin: 0.6, end: 1 },
+      { id: "w1", text: "걸", sep: "", begin: 0, end: 0.2, joinsNext: true },
+      { id: "w2", text: "음", sep: "", begin: 0.2, end: 0.4, joinsNext: true },
+      { id: "w3", text: "은", sep: " ", begin: 0.4, end: 0.6, joinsNext: false },
+      { id: "w4", text: "Like", sep: "", begin: 0.6, end: 1, joinsNext: false },
     ];
     const plan = planTransliterationAlignment(words, "geol eum eun  Like");
     expect(plan.status).toBe("inferred");
@@ -44,19 +45,20 @@ describe("transliteration alignment", () => {
   });
 
   it("allows Google word spaces inside an unspaced original group", () => {
-    const words = [{ id: "w5", text: "こんにちは世界", sep: "", begin: 0, end: 2 }];
+    const words = [{ id: "w5", text: "こんにちは世界", sep: "", begin: 0, end: 2, joinsNext: false }];
     const plan = planTransliterationAlignment(words, "Kon'nichiwa  sekai");
     expect(plan.status).toBe("inferred");
     expect(plan.words[0].transliteration).toBe("Kon'nichiwa  sekai");
   });
 
   it("keeps a proportional mapping as reviewable rather than changing display text", () => {
-    const words = ["붙", "어", "있", "던"].map((text, index) => ({
+    const words = ["붙", "어", "있", "던"].map((text, index, all) => ({
       id: newWordId(),
       text,
       sep: "",
       begin: index,
       end: index + 1,
+      joinsNext: index < all.length - 1,
     }));
     const plan = planTransliterationAlignment(words, "but eoissdeon");
     expect(plan.status).toBe("needs-review");
@@ -64,20 +66,30 @@ describe("transliteration alignment", () => {
   });
 
   it("reports an unresolved mapping when there are too few graphemes", () => {
-    const words = ["가", "나", "다"].map((text, index) => ({
+    const words = ["가", "나", "다"].map((text, index, all) => ({
       id: newWordId(),
       text,
       sep: "",
       begin: index,
       end: index + 1,
+      joinsNext: index < all.length - 1,
     }));
     expect(planTransliterationAlignment(words, "a").status).toBe("unresolved");
   });
 
   it("preserves an existing confirmed mapping", () => {
     const words = [
-      { id: "w6", text: "今", sep: "", begin: 0, end: 1, transliteration: "kyou", transliterationJoinerAfter: "" },
-      { id: "w7", text: "日", sep: "", begin: 1, end: 2, transliteration: "hi" },
+      {
+        id: "w6",
+        text: "今",
+        sep: "",
+        begin: 0,
+        end: 1,
+        transliteration: "kyou",
+        transliterationJoinerAfter: "",
+        joinsNext: true,
+      },
+      { id: "w7", text: "日", sep: "", begin: 1, end: 2, transliteration: "hi", joinsNext: false },
     ];
     const plan = planTransliterationAlignment(words, "kyouhi", "confirmed");
     expect(plan.status).toBe("confirmed");
@@ -85,12 +97,13 @@ describe("transliteration alignment", () => {
   });
 
   it("does not promote a reused proportional mapping to confirmed", () => {
-    const words = ["붙", "어", "있", "던"].map((text, index) => ({
+    const words = ["붙", "어", "있", "던"].map((text, index, all) => ({
       id: newWordId(),
       text,
       sep: "",
       begin: index,
       end: index + 1,
+      joinsNext: index < all.length - 1,
     }));
     const track: TransliterationTrack = {
       language: "ko-Latn",
@@ -120,8 +133,9 @@ describe("transliteration alignment", () => {
           end: 1,
           transliteration: "ga",
           transliterationJoinerAfter: "",
+          joinsNext: true,
         },
-        { id: newWordId(), text: "나", sep: "", begin: 1, end: 2, transliteration: "na" },
+        { id: newWordId(), text: "나", sep: "", begin: 1, end: 2, transliteration: "na", joinsNext: false },
       ];
       expect(planTransliterationAlignment(words, "gana", status).status).toBe("inferred");
     },
@@ -129,17 +143,26 @@ describe("transliteration alignment", () => {
 
   it("does not reuse manual confirmation when the reading changes", () => {
     const words = [
-      { id: "w8", text: "가", sep: "", begin: 0, end: 1, transliteration: "ga", transliterationJoinerAfter: "" },
-      { id: "w9", text: "나", sep: "", begin: 1, end: 2, transliteration: "na" },
+      {
+        id: "w8",
+        text: "가",
+        sep: "",
+        begin: 0,
+        end: 1,
+        transliteration: "ga",
+        transliterationJoinerAfter: "",
+        joinsNext: true,
+      },
+      { id: "w9", text: "나", sep: "", begin: 1, end: 2, transliteration: "na", joinsNext: false },
     ];
     expect(planTransliterationAlignment(words, "ganna", "confirmed").status).toBe("needs-review");
   });
 
   it("does not label empty or untimed text as manually confirmed", () => {
     expect(planTransliterationAlignment([], "gana").status).toBe("inferred");
-    expect(planTransliterationAlignment([{ id: "w10", text: "가", sep: "", begin: 0, end: 1 }], "").status).toBe(
-      "inferred",
-    );
+    expect(
+      planTransliterationAlignment([{ id: "w10", text: "가", sep: "", begin: 0, end: 1, joinsNext: false }], "").status,
+    ).toBe("inferred");
     const track: TransliterationTrack = {
       language: "ko-Latn",
       text: "ga",
@@ -169,8 +192,8 @@ describe("transliteration alignment", () => {
       agentId: "v1",
       text: "가",
       backgroundText: "나",
-      words: [{ id: "w11", text: "가", sep: "", begin: 0, end: 1, transliteration: "ga" }],
-      backgroundWords: [{ id: "w12", text: "나", sep: "", begin: 0, end: 1, transliteration: "na" }],
+      words: [{ id: "w11", text: "가", sep: "", begin: 0, end: 1, transliteration: "ga", joinsNext: false }],
+      backgroundWords: [{ id: "w12", text: "나", sep: "", begin: 0, end: 1, transliteration: "na", joinsNext: false }],
     };
     expect(alignTrackToLine(line, track).transliteration).toMatchObject({
       alignmentStatus: "confirmed",
@@ -185,14 +208,14 @@ describe("withAlignedWords", () => {
     agentId: "v1",
     text: "Uh 일단은 나",
     words: [
-      { id: "w13", text: "Uh", sep: " ", begin: 0, end: 0.5, transliteration: "Oh" },
-      { id: "w14", text: "일단은", sep: " ", begin: 0.5, end: 1.5, transliteration: "ildaneun" },
-      { id: "w15", text: "나", sep: "", begin: 1.5, end: 2, transliteration: "nah" },
+      { id: "w13", text: "Uh", sep: " ", begin: 0, end: 0.5, transliteration: "Oh", joinsNext: false },
+      { id: "w14", text: "일단은", sep: " ", begin: 0.5, end: 1.5, transliteration: "ildaneun", joinsNext: false },
+      { id: "w15", text: "나", sep: "", begin: 1.5, end: 2, transliteration: "nah", joinsNext: false },
     ],
     backgroundText: "그래 yeah",
     backgroundWords: [
-      { id: "w16", text: "그래", sep: " ", begin: 2, end: 2.5 },
-      { id: "w17", text: "yeah", sep: "", begin: 2.5, end: 3 },
+      { id: "w16", text: "그래", sep: " ", begin: 2, end: 2.5, joinsNext: false },
+      { id: "w17", text: "yeah", sep: "", begin: 2.5, end: 3, joinsNext: false },
     ],
     transliteration: {
       language: "ko-Latn",
@@ -210,7 +233,7 @@ describe("withAlignedWords", () => {
       id: "line",
       agentId: "v1",
       text: "Hello",
-      words: [{ id: "w18", text: "Hello", sep: "", begin: 0, end: 1 }],
+      words: [{ id: "w18", text: "Hello", sep: "", begin: 0, end: 1, joinsNext: false }],
     };
     expect(withAlignedWords(line)).toBe(line);
   });

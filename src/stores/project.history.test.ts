@@ -194,8 +194,8 @@ describe("updateLinesWithHistory", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
         seedLine("a", {
-          words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1 }],
-          backgroundWords: [{ id: "w2", text: "ah", sep: "", begin: 0, end: 0.5 }],
+          words: [{ id: "w1", text: "hi", sep: "", begin: 0, end: 1, joinsNext: false }],
+          backgroundWords: [{ id: "w2", text: "ah", sep: "", begin: 0, end: 0.5, joinsNext: false }],
           backgroundText: "ah",
         }),
       ],
@@ -216,8 +216,10 @@ describe("updateLinesWithHistory", () => {
 
     useProjectStore.getState().undo();
     const restored = useProjectStore.getState().lines[0];
-    expect(timedSyllables(mainTrack(restored))).toEqual([{ text: "hi", sep: "", begin: 0, end: 1 }]);
-    expect(timedSyllables(backgroundTrack(restored))).toEqual([{ text: "ah", sep: "", begin: 0, end: 0.5 }]);
+    expect(timedSyllables(mainTrack(restored))).toEqual([{ text: "hi", sep: "", begin: 0, end: 1, joinsNext: false }]);
+    expect(timedSyllables(backgroundTrack(restored))).toEqual([
+      { text: "ah", sep: "", begin: 0, end: 0.5, joinsNext: false },
+    ]);
   });
 });
 

@@ -4,7 +4,7 @@ import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track"
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { wordAddress } from "@/test/word-address";
 import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tracks";
@@ -217,10 +217,10 @@ describe("empty tracks in a group that shares timing", () => {
       ...(begin === undefined
         ? {}
         : {
-            words: [
-              createWord({ text: "go", sep: " ", begin, end: begin + 1 }),
-              createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
-            ],
+            words: createWords([
+              { text: "go", sep: " ", begin, end: begin + 1 },
+              { text: "now", begin: begin + 1, end: begin + 2 },
+            ]),
           }),
     });
 

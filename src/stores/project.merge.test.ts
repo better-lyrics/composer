@@ -11,6 +11,7 @@ import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track"
 import { newWordId } from "@/domain/word/id";
 import { useChoiceStore } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
+import { createWords } from "@/test/factories";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { mergeSelectedWords } from "@/views/timeline/merge-selected-words";
 
@@ -25,10 +26,10 @@ function seedMainLine(overrides: Partial<LooseLine> = {}): LyricLine {
     text: "ev er y world",
     agentId: "v1",
     words: [
-      { id: newWordId(), text: "ev", sep: " ", begin: 0, end: 0.3 },
-      { id: newWordId(), text: "er", sep: " ", begin: 0.3, end: 0.6 },
-      { id: newWordId(), text: "y", sep: " ", begin: 0.6, end: 0.9 },
-      { id: newWordId(), text: "world", sep: "", begin: 0.9, end: 1.5 },
+      { id: newWordId(), text: "ev", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+      { id: newWordId(), text: "er", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+      { id: newWordId(), text: "y", sep: " ", begin: 0.6, end: 0.9, joinsNext: false },
+      { id: newWordId(), text: "world", sep: "", begin: 0.9, end: 1.5, joinsNext: false },
     ],
     ...overrides,
   });
@@ -43,9 +44,9 @@ describe("mergeSyllableGroupIntoWord", () => {
       text: "beautiful",
       agentId: "v1",
       words: [
-        { id: "w1", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
-        { id: "w2", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
-        { id: "w3", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+        { id: "w1", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+        { id: "w2", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+        { id: "w3", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
       ],
     };
   }
@@ -58,7 +59,7 @@ describe("mergeSyllableGroupIntoWord", () => {
     expect(words[0].text).toBe("beautiful");
     expect(words[0].begin).toBe(0);
     expect(words[0].end).toBe(0.9);
-    expect(words[0].syllableGroupId).toBeUndefined();
+    expect(words[0].joinsNext).toBe(false);
   });
 
   it("rejoins every transliteration fragment when collapsing a syllable group", () => {
@@ -75,7 +76,7 @@ describe("mergeSyllableGroupIntoWord", () => {
           transliterationJoinerAfter: "",
           begin: 0,
           end: 0.3,
-          syllableGroupId: "g1",
+          joinsNext: true,
         },
         {
           id: "w5",
@@ -85,9 +86,9 @@ describe("mergeSyllableGroupIntoWord", () => {
           transliterationJoinerAfter: " ",
           begin: 0.3,
           end: 0.6,
-          syllableGroupId: "g1",
+          joinsNext: true,
         },
-        { id: "w6", text: "은", sep: "", transliteration: "eun", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+        { id: "w6", text: "은", sep: "", transliteration: "eun", begin: 0.6, end: 0.9, joinsNext: false },
       ],
       transliteration: {
         language: "ko-Latn",
@@ -103,7 +104,7 @@ describe("mergeSyllableGroupIntoWord", () => {
 
     const merged = useProjectStore.getState().lines[0];
     expect(timedSyllables(mainTrack(merged))).toEqual([
-      { text: "일단은", sep: "", transliteration: "ildan eun", begin: 0, end: 0.9 },
+      { text: "일단은", sep: "", transliteration: "ildan eun", begin: 0, end: 0.9, joinsNext: false },
     ]);
     expect(lineText(merged)).toBe("일단은");
     expect(merged.transliteration?.text).toBe("ildan eun");
@@ -111,7 +112,7 @@ describe("mergeSyllableGroupIntoWord", () => {
 
   it("restores an unseparated transliteration without adding a space", () => {
     const words = splitWordIntoSyllables({
-      word: { id: "w7", text: "今日", sep: "", transliteration: "kyouhi", begin: 0, end: 1 },
+      word: { id: "w7", text: "今日", sep: "", transliteration: "kyouhi", begin: 0, end: 1, joinsNext: true },
       splitPoints: [1],
       transliterationSplitPoints: [4],
     });
@@ -162,10 +163,10 @@ describe("mergeSyllableGroupIntoWord", () => {
           text: "abcd",
           agentId: "v1",
           words: [
-            { id: "w8", text: "a", sep: "", begin: 0, end: 0.1, syllableGroupId: "g1" },
-            { id: "w9", text: "b", sep: "", begin: 0.1, end: 0.2, syllableGroupId: "g1" },
-            { id: "w10", text: "c", sep: "", begin: 0.2, end: 0.3, syllableGroupId: "g2" },
-            { id: "w11", text: "d", sep: "", begin: 0.3, end: 0.4, syllableGroupId: "g2" },
+            { id: "w8", text: "a", sep: "", begin: 0, end: 0.1, joinsNext: true },
+            { id: "w9", text: "b", sep: "", begin: 0.1, end: 0.2, joinsNext: false },
+            { id: "w10", text: "c", sep: "", begin: 0.2, end: 0.3, joinsNext: true },
+            { id: "w11", text: "d", sep: "", begin: 0.3, end: 0.4, joinsNext: false },
           ],
         },
       ],
@@ -181,10 +182,10 @@ describe("mergeSyllableGroupIntoWord", () => {
           id: "line-1",
           text: "main",
           agentId: "v1",
-          words: [{ id: "w12", text: "main", sep: "", begin: 0, end: 1 }],
+          words: [{ id: "w12", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
           backgroundWords: [
-            { id: "w13", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
-            { id: "w14", text: "oh", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "b1" },
+            { id: "w13", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
+            { id: "w14", text: "oh", sep: "", begin: 1.2, end: 1.5, joinsNext: false },
           ],
           backgroundText: "ooh",
         },
@@ -218,9 +219,9 @@ describe("mergeSyllableGroupIntoWord · linked propagation", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { id: "w15", text: "ev", sep: "", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
-            { id: "w16", text: "er", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g_a0" },
-            { id: "w17", text: "y", sep: "", begin: 0.6, end: 1, syllableGroupId: "g_a0" },
+            { id: "w15", text: "ev", sep: "", begin: 0, end: 0.3, joinsNext: true },
+            { id: "w16", text: "er", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+            { id: "w17", text: "y", sep: "", begin: 0.6, end: 1, joinsNext: false },
           ],
         },
         {
@@ -231,9 +232,9 @@ describe("mergeSyllableGroupIntoWord · linked propagation", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { id: "w18", text: "ev", sep: "", begin: 10, end: 10.3, syllableGroupId: "g_a1" },
-            { id: "w19", text: "er", sep: "", begin: 10.3, end: 10.6, syllableGroupId: "g_a1" },
-            { id: "w20", text: "y", sep: "", begin: 10.6, end: 11, syllableGroupId: "g_a1" },
+            { id: "w18", text: "ev", sep: "", begin: 10, end: 10.3, joinsNext: true },
+            { id: "w19", text: "er", sep: "", begin: 10.3, end: 10.6, joinsNext: true },
+            { id: "w20", text: "y", sep: "", begin: 10.6, end: 11, joinsNext: false },
           ],
         },
       ],
@@ -260,10 +261,10 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
           id: "line-1",
           text: "main",
           agentId: "v1",
-          words: [{ id: "w21", text: "main", sep: "", begin: 0, end: 1 }],
+          words: [{ id: "w21", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
           backgroundWords: [
-            { id: "w22", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
-            { id: "w23", text: "oh", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "b1" },
+            { id: "w22", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
+            { id: "w23", text: "oh", sep: "", begin: 1.2, end: 1.5, joinsNext: false },
           ],
           backgroundText: "ooh",
           backgroundTextSource: "extraction",
@@ -284,11 +285,11 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
           text: "beautiful",
           agentId: "v1",
           words: [
-            { id: "w24", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
-            { id: "w25", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
-            { id: "w26", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+            { id: "w24", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+            { id: "w25", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+            { id: "w26", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
           ],
-          backgroundWords: [{ id: "w27", text: "ooh", sep: "", begin: 1, end: 1.5 }],
+          backgroundWords: [{ id: "w27", text: "ooh", sep: "", begin: 1, end: 1.5, joinsNext: false }],
           backgroundText: "ooh",
           backgroundTextSource: "extraction",
         },
@@ -309,10 +310,10 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
           groupId: "g1",
           instanceIdx: 0,
           templateLineIdx: 0,
-          words: [{ id: "w28", text: "main", sep: "", begin: 0, end: 1 }],
+          words: [{ id: "w28", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
           backgroundWords: [
-            { id: "w29", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b_a0" },
-            { id: "w30", text: "oh", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "b_a0" },
+            { id: "w29", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
+            { id: "w30", text: "oh", sep: "", begin: 1.2, end: 1.5, joinsNext: false },
           ],
           backgroundText: "ooh",
           backgroundTextSource: "extraction",
@@ -324,10 +325,10 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
           groupId: "g1",
           instanceIdx: 1,
           templateLineIdx: 0,
-          words: [{ id: "w31", text: "main", sep: "", begin: 10, end: 11 }],
+          words: [{ id: "w31", text: "main", sep: "", begin: 10, end: 11, joinsNext: false }],
           backgroundWords: [
-            { id: "w32", text: "oo", sep: "", begin: 11, end: 11.2, syllableGroupId: "b_a1" },
-            { id: "w33", text: "oh", sep: "", begin: 11.2, end: 11.5, syllableGroupId: "b_a1" },
+            { id: "w32", text: "oo", sep: "", begin: 11, end: 11.2, joinsNext: true },
+            { id: "w33", text: "oh", sep: "", begin: 11.2, end: 11.5, joinsNext: false },
           ],
           backgroundText: "ooh",
           backgroundTextSource: "extraction",
@@ -348,10 +349,10 @@ describe("mergeSyllableGroupIntoWord · background provenance", () => {
           id: "line-1",
           text: "main",
           agentId: "v1",
-          words: [{ id: "w34", text: "main", sep: "", begin: 0, end: 1 }],
+          words: [{ id: "w34", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
           backgroundWords: [
-            { id: "w35", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
-            { id: "w36", text: "oh", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "b1" },
+            { id: "w35", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
+            { id: "w36", text: "oh", sep: "", begin: 1.2, end: 1.5, joinsNext: false },
           ],
           backgroundText: "ooh",
           backgroundTextSource: "extraction",
@@ -374,9 +375,9 @@ describe("snapSyllablesFlush", () => {
       text: "beautiful",
       agentId: "v1",
       words: [
-        { id: "w37", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
-        { id: "w38", text: "ti", sep: "", begin: 0.5, end: 0.8, syllableGroupId: "g1" },
-        { id: "w39", text: "ful", sep: "", begin: 1.0, end: 1.3, syllableGroupId: "g1" },
+        { id: "w37", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+        { id: "w38", text: "ti", sep: "", begin: 0.5, end: 0.8, joinsNext: true },
+        { id: "w39", text: "ful", sep: "", begin: 1.0, end: 1.3, joinsNext: false },
       ],
     };
   }
@@ -412,9 +413,9 @@ describe("snapSyllablesFlush", () => {
           text: "beautiful",
           agentId: "v1",
           words: [
-            { id: "w40", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
-            { id: "w41", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
-            { id: "w42", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+            { id: "w40", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+            { id: "w41", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+            { id: "w42", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
           ],
         },
       ],
@@ -433,10 +434,10 @@ describe("snapSyllablesFlush", () => {
           id: "line-1",
           text: "main",
           agentId: "v1",
-          words: [{ id: "w43", text: "main", sep: "", begin: 0, end: 1 }],
+          words: [{ id: "w43", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
           backgroundWords: [
-            { id: "w44", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
-            { id: "w45", text: "oh", sep: "", begin: 1.5, end: 1.7, syllableGroupId: "b1" },
+            { id: "w44", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
+            { id: "w45", text: "oh", sep: "", begin: 1.5, end: 1.7, joinsNext: false },
           ],
           backgroundText: "oooh",
         },
@@ -463,9 +464,9 @@ describe("snapSyllablesFlush", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: [
-            { id: "w46", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
-            { id: "w47", text: "ti", sep: "", begin: 0.5, end: 0.8, syllableGroupId: "g_a0" },
-            { id: "w48", text: "ful", sep: "", begin: 1.0, end: 1.3, syllableGroupId: "g_a0" },
+            { id: "w46", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+            { id: "w47", text: "ti", sep: "", begin: 0.5, end: 0.8, joinsNext: true },
+            { id: "w48", text: "ful", sep: "", begin: 1.0, end: 1.3, joinsNext: false },
           ],
         },
         {
@@ -476,9 +477,9 @@ describe("snapSyllablesFlush", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: [
-            { id: "w49", text: "beau", sep: "", begin: 10, end: 10.3, syllableGroupId: "g_a1" },
-            { id: "w50", text: "ti", sep: "", begin: 10.5, end: 10.8, syllableGroupId: "g_a1" },
-            { id: "w51", text: "ful", sep: "", begin: 11.0, end: 11.3, syllableGroupId: "g_a1" },
+            { id: "w49", text: "beau", sep: "", begin: 10, end: 10.3, joinsNext: true },
+            { id: "w50", text: "ti", sep: "", begin: 10.5, end: 10.8, joinsNext: true },
+            { id: "w51", text: "ful", sep: "", begin: 11.0, end: 11.3, joinsNext: false },
           ],
         },
       ],
@@ -517,10 +518,10 @@ describe("snapSyllablesFlush · background provenance", () => {
           id: "line-1",
           text: "main",
           agentId: "v1",
-          words: [{ id: "w52", text: "main", sep: "", begin: 0, end: 1 }],
+          words: [{ id: "w52", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
           backgroundWords: [
-            { id: "w53", text: "oo", sep: "", begin: 1, end: 1.2, syllableGroupId: "b1" },
-            { id: "w54", text: "oh", sep: "", begin: 1.5, end: 1.7, syllableGroupId: "b1" },
+            { id: "w53", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
+            { id: "w54", text: "oh", sep: "", begin: 1.5, end: 1.7, joinsNext: false },
           ],
           backgroundText: "oooh",
           backgroundTextSource: "extraction",
@@ -546,11 +547,11 @@ describe("snapSyllablesFlush · background provenance", () => {
           text: "beautiful",
           agentId: "v1",
           words: [
-            { id: "w55", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
-            { id: "w56", text: "ti", sep: "", begin: 0.5, end: 0.8, syllableGroupId: "g1" },
-            { id: "w57", text: "ful", sep: "", begin: 1.0, end: 1.3, syllableGroupId: "g1" },
+            { id: "w55", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+            { id: "w56", text: "ti", sep: "", begin: 0.5, end: 0.8, joinsNext: true },
+            { id: "w57", text: "ful", sep: "", begin: 1.0, end: 1.3, joinsNext: false },
           ],
-          backgroundWords: [{ id: "w58", text: "ooh", sep: "", begin: 2, end: 2.5 }],
+          backgroundWords: [{ id: "w58", text: "ooh", sep: "", begin: 2, end: 2.5, joinsNext: false }],
           backgroundText: "ooh",
           backgroundTextSource: "extraction",
         },
@@ -579,9 +580,9 @@ describe("mergeSelectedWords", () => {
           text: "beautiful",
           agentId: "v1",
           words: [
-            { id: "w59", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
-            { id: "w60", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
-            { id: "w61", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+            { id: "w59", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+            { id: "w60", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+            { id: "w61", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
           ],
         },
       ],
@@ -590,8 +591,8 @@ describe("mergeSelectedWords", () => {
     await mergeSelectedWords("line-1", "word", [1, 2]);
 
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toEqual([
-      { text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
-      { text: "tiful", sep: "", begin: 0.3, end: 0.9, syllableGroupId: "g1" },
+      { text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+      { text: "tiful", sep: "", begin: 0.3, end: 0.9, joinsNext: false },
     ]);
     useProjectStore.getState().undo();
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((w) => w.text)).toEqual([
@@ -610,11 +611,11 @@ describe("mergeSelectedWords", () => {
       groupId: "g1",
       instanceIdx,
       templateLineIdx: 0,
-      words: [
+      words: createWords([
         { id: newWordId(), text: "ev", sep: "", begin: offset, end: offset + 0.3, syllableGroupId: `g_${id}` },
         { id: newWordId(), text: "er", sep: "", begin: offset + 0.3, end: offset + 0.6, syllableGroupId: `g_${id}` },
         { id: newWordId(), text: "y", sep: "", begin: offset + 0.6, end: offset + 1, syllableGroupId: `g_${id}` },
-      ],
+      ]),
     });
     useProjectStore.getState().restoreLyrics({ lines: [linked("a0", 0, 0), linked("a1", 1, 10)] });
 
@@ -636,12 +637,12 @@ describe("mergeSelectedWords", () => {
       groupId: "g1",
       instanceIdx,
       templateLineIdx: 0,
-      words: [
+      words: createWords([
         { id: newWordId(), text: "so", sep: " ", begin: offset, end: offset + 0.5 },
         { id: newWordId(), text: "beau", sep: "", begin: offset + 0.5, end: offset + 0.8, syllableGroupId: `g_${id}` },
         { id: newWordId(), text: "ti", sep: "", begin: offset + 0.8, end: offset + 1.1, syllableGroupId: `g_${id}` },
         { id: newWordId(), text: "ful", sep: "", begin: offset + 1.1, end: offset + 1.6, syllableGroupId: `g_${id}` },
-      ],
+      ]),
     });
     useProjectStore.getState().restoreLyrics({ lines: [linked("a0", 0, 0), linked("a1", 1, 10)] });
 
@@ -649,9 +650,9 @@ describe("mergeSelectedWords", () => {
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(timedSyllables(mainTrack(a1!))).toEqual([
-      { text: "so", sep: " ", begin: 10, end: 10.5 },
-      { text: "beauti", sep: "", begin: 10.5, end: 11.1, syllableGroupId: "g_a1" },
-      { text: "ful", sep: "", begin: 11.1, end: 11.6, syllableGroupId: "g_a1" },
+      { text: "so", sep: " ", begin: 10, end: 10.5, joinsNext: false },
+      { text: "beauti", sep: "", begin: 10.5, end: 11.1, joinsNext: true },
+      { text: "ful", sep: "", begin: 11.1, end: 11.6, joinsNext: false },
     ]);
     useProjectStore.getState().undo();
     const restored = useProjectStore.getState().lines.find((l) => l.id === "a1");
@@ -672,14 +673,14 @@ describe("mergeSelectedWords", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
         linked("a0", 0, [
-          { id: "w62", text: "every", sep: " ", begin: 0, end: 0.6 },
-          { id: "w63", text: "day", sep: "", begin: 0.6, end: 1 },
+          { id: "w62", text: "every", sep: " ", begin: 0, end: 0.6, joinsNext: false },
+          { id: "w63", text: "day", sep: "", begin: 0.6, end: 1, joinsNext: false },
         ]),
         linked("a1", 1, [
-          { id: "w64", text: "ev", sep: "", begin: 10, end: 10.2 },
-          { id: "w65", text: "er", sep: "", begin: 10.2, end: 10.4 },
-          { id: "w66", text: "y", sep: " ", begin: 10.4, end: 10.6 },
-          { id: "w67", text: "day", sep: "", begin: 10.6, end: 11 },
+          { id: "w64", text: "ev", sep: "", begin: 10, end: 10.2, joinsNext: true },
+          { id: "w65", text: "er", sep: "", begin: 10.2, end: 10.4, joinsNext: true },
+          { id: "w66", text: "y", sep: " ", begin: 10.4, end: 10.6, joinsNext: false },
+          { id: "w67", text: "day", sep: "", begin: 10.6, end: 11, joinsNext: false },
         ]),
       ],
     });
@@ -709,15 +710,15 @@ describe("mergeSelectedWords", () => {
     useProjectStore.getState().restoreLyrics({
       lines: [
         linked("a0", 0, [
-          { id: "w68", text: "one", sep: " ", begin: 0, end: 1 },
-          { id: "w69", text: "two", sep: " ", begin: 1, end: 2 },
-          { id: "w70", text: "three", sep: "", begin: 2, end: 3 },
+          { id: "w68", text: "one", sep: " ", begin: 0, end: 1, joinsNext: false },
+          { id: "w69", text: "two", sep: " ", begin: 1, end: 2, joinsNext: false },
+          { id: "w70", text: "three", sep: "", begin: 2, end: 3, joinsNext: false },
         ]),
         linked("a1", 1, [
-          { id: "w71", text: "o", sep: "", begin: 10, end: 10.4 },
-          { id: "w72", text: "ne", sep: " ", begin: 10.4, end: 11 },
-          { id: "w73", text: "two", sep: " ", begin: 11, end: 12.5 },
-          { id: "w74", text: "three", sep: "", begin: 12.5, end: 13 },
+          { id: "w71", text: "o", sep: "", begin: 10, end: 10.4, joinsNext: true },
+          { id: "w72", text: "ne", sep: " ", begin: 10.4, end: 11, joinsNext: false },
+          { id: "w73", text: "two", sep: " ", begin: 11, end: 12.5, joinsNext: false },
+          { id: "w74", text: "three", sep: "", begin: 12.5, end: 13, joinsNext: false },
         ]),
       ],
     });
@@ -726,8 +727,8 @@ describe("mergeSelectedWords", () => {
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(timedSyllables(mainTrack(a1!))).toEqual([
-      { text: "onetwo", sep: " ", begin: 10, end: 12.5 },
-      { text: "three", sep: "", begin: 12.5, end: 13 },
+      { text: "onetwo", sep: " ", begin: 10, end: 12.5, joinsNext: false },
+      { text: "three", sep: "", begin: 12.5, end: 13, joinsNext: false },
     ]);
   });
   describe("a linked copy whose blocks cross the merged text", () => {
@@ -745,14 +746,14 @@ describe("mergeSelectedWords", () => {
       useProjectStore.getState().restoreLyrics({
         lines: [
           linked("a0", 0, [
-            { id: "w75", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g" },
-            { id: "w76", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g" },
-            { id: "w77", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g" },
+            { id: "w75", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+            { id: "w76", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+            { id: "w77", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
           ]),
           linked("a1", 1, [
-            { id: "w78", text: "be", sep: "", begin: 10, end: 10.2, syllableGroupId: "h" },
-            { id: "w79", text: "aut", sep: "", begin: 10.2, end: 10.5, syllableGroupId: "h" },
-            { id: "w80", text: "iful", sep: "", begin: 10.5, end: 10.9, syllableGroupId: "h" },
+            { id: "w78", text: "be", sep: "", begin: 10, end: 10.2, joinsNext: true },
+            { id: "w79", text: "aut", sep: "", begin: 10.2, end: 10.5, joinsNext: true },
+            { id: "w80", text: "iful", sep: "", begin: 10.5, end: 10.9, joinsNext: false },
           ]),
         ],
       });

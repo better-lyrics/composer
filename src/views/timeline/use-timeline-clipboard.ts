@@ -1,6 +1,7 @@
 import type { ReadableLine } from "@/domain/line/effective-words";
 import { trackWords } from "@/domain/line/tracks";
 import { resolveAddresses } from "@/domain/selection/resolve";
+import { copiedSyllable } from "@/domain/word/syllable-groups";
 import { pluralize } from "@/utils/pluralize";
 import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";
 import { deleteSelectedWords } from "@/views/timeline/delete-selected-words";
@@ -21,15 +22,19 @@ function useTimelineClipboard(lines: readonly ReadableLine[]) {
     const minLineIndex = Math.min(...resolved.map((w) => w.lineIndex));
     const entries: ClipboardEntry[] = [];
 
+    const copiedByTrack = new Map<string, Set<number>>();
+    for (const w of resolved) {
+      const key = `${w.lineIndex}:${w.type}`;
+      copiedByTrack.set(key, (copiedByTrack.get(key) ?? new Set()).add(w.wordIndex));
+    }
     for (const sel of resolved) {
       const line = lines[sel.lineIndex];
       if (!line) continue;
       const wordsArray = trackWords(line, sel.type);
-      const word = wordsArray?.[sel.wordIndex];
-      if (!word) continue;
+      if (!wordsArray?.[sel.wordIndex]) continue;
 
       entries.push({
-        word: { ...word },
+        word: copiedSyllable(wordsArray, sel.wordIndex, copiedByTrack.get(`${sel.lineIndex}:${sel.type}`) ?? new Set()),
         lineOffset: sel.lineIndex - minLineIndex,
         trackType: sel.type,
       });
