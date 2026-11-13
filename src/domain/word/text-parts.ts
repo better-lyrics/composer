@@ -28,5 +28,4 @@ function textParts(text: string, splitChar: string): TextPart[] {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { TextPart };
 export { textParts };
