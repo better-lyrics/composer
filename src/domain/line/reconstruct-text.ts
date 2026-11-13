@@ -1,7 +1,6 @@
+import { untimedTail } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
-import { lcsPairs } from "@/domain/word/alignment";
 import type { WordTiming } from "@/domain/word/timing";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 
 // -- Text reconstruction ------------------------------------------------------
 
@@ -45,47 +44,6 @@ function wordContentSpans(words: WordTiming[], splitChar: string): WordContentSp
 }
 
 // -- Untimed tail -------------------------------------------------------------
-
-function wordAtoms(words: WordTiming[]): string[] {
-  return words.flatMap((word) => splitIntoWordsWithMeta(word.text).parts);
-}
-
-// Where each part of the text ends, found by walking the parts the shared tokenizer returned.
-function partEnds(text: string, parts: string[]): number[] {
-  const ends: number[] = [];
-  let cursor = 0;
-  for (const part of parts) {
-    cursor = text.indexOf(part, cursor) + part.length;
-    ends.push(cursor);
-  }
-  return ends;
-}
-
-// The last new word that matches an old one, aligning old words as early as they can go, so a word
-// repeated later in the line is never mistaken for the one that was already timed.
-function lastSurvivingIndex(covered: string[], timed: string[]): number {
-  const reversedPairs = lcsPairs(covered.toReversed(), timed.toReversed());
-  if (reversedPairs.length === 0) return -1;
-  return timed.length - 1 - Math.min(...reversedPairs.map(([, timedIndex]) => timedIndex));
-}
-
-// The words of a partly synced track cover the start of its text; the rest is lyrics not timed yet.
-// Words added after the last surviving timed word that spell the start of that rest were just timed,
-// so they leave it. Returns the rest as typed, with the separator that leads into it.
-function untimedTail(text: string, previousWords: WordTiming[], words: WordTiming[]): string {
-  const written = splitIntoWordsWithMeta(text);
-  const covered = wordAtoms(previousWords);
-  if (covered.length === 0 || covered.length >= written.parts.length) return "";
-  if (covered.some((atom, i) => atom !== written.parts[i])) return "";
-  const timed = wordAtoms(words);
-  const added = timed.slice(lastSurvivingIndex(covered, timed) + 1);
-  const tail = written.parts.slice(covered.length);
-  let nowTimed = Math.min(added.length, tail.length);
-  while (nowTimed > 0 && added.slice(added.length - nowTimed).some((atom, i) => atom !== tail[i])) nowTimed--;
-  const start = covered.length + nowTimed;
-  if (start >= written.parts.length) return "";
-  return text.slice(partEnds(text, written.parts)[start - 1]);
-}
 
 function withTail(timedText: string, tail: string, splitChar: string): string {
   if (tail === "") return timedText;
