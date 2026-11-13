@@ -1,5 +1,10 @@
+import { wordAt } from "@/domain/selection/resolve";
+import { useProjectStore } from "@/stores/project";
+import { createLine } from "@/test/factories";
+import { resetAllStores } from "@/test/stores";
+import { followLyricLines } from "@/views/timeline/follow-lyric-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 describe("markerMode", () => {
   beforeEach(() => {
@@ -157,5 +162,68 @@ describe("loopRegion", () => {
     useTimelineStore.getState().resetProjectScope();
     expect(useTimelineStore.getState().loopRegion).toBeNull();
     expect(useTimelineStore.getState().loopRegionDrag).toBeNull();
+  });
+});
+
+describe("selection after a lines change", () => {
+  const line = createLine({
+    id: "a",
+    text: "Fall in to place",
+    words: [
+      { id: "w1", text: "Fall", sep: " ", begin: 1, end: 2 },
+      { id: "w2", text: "in", sep: " ", begin: 2, end: 2.5 },
+      { id: "w3", text: "to", sep: " ", begin: 2.5, end: 3 },
+      { id: "w4", text: "place", begin: 3, end: 4 },
+    ],
+  });
+  const address = (syllableId: string) => ({ lineId: "a", type: "word" as const, syllableId });
+  let stopFollowing = () => {};
+
+  function selectedTexts(): (string | undefined)[] {
+    const { lines } = useProjectStore.getState();
+    return useTimelineStore.getState().selectedWords.map((selected) => wordAt(lines, selected)?.text);
+  }
+
+  function splitFirstWord(): void {
+    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
+      source: { lineId: "a", wordIndex: 0, type: "word" },
+      splitPoints: [2],
+      caseInsensitive: false,
+    });
+  }
+
+  beforeEach(async () => {
+    await resetAllStores();
+    useProjectStore.getState().setLines([line]);
+    stopFollowing = followLyricLines();
+  });
+
+  afterEach(() => stopFollowing());
+
+  it("regression: a split before a selected word keeps the selection on that word", () => {
+    useTimelineStore.getState().setSelectedWords([address("w2")]);
+    splitFirstWord();
+    expect(useProjectStore.getState().lines[0].words?.map((word) => word.text)).toEqual([
+      "Fa",
+      "ll",
+      "in",
+      "to",
+      "place",
+    ]);
+    expect(selectedTexts()).toEqual(["in"]);
+  });
+
+  it("drops a selected word that undo removed and keeps the rest, the same array when nothing drops", () => {
+    splitFirstWord();
+    const piece = useProjectStore.getState().lines[0].words?.[1];
+    useTimelineStore.getState().setSelectedWords([address("w1"), address(piece?.id ?? ""), address("w3")]);
+    useTimelineStore.getState().setEditingWord(address(piece?.id ?? ""));
+    useProjectStore.getState().undo();
+    expect(selectedTexts()).toEqual(["Fall", "to"]);
+    expect(useTimelineStore.getState().editingWord).toBeNull();
+
+    const kept = useTimelineStore.getState().selectedWords;
+    useProjectStore.getState().redo();
+    expect(useTimelineStore.getState().selectedWords).toBe(kept);
   });
 });
