@@ -64,7 +64,16 @@ describe("anchorGesture", () => {
   });
 
   it("keeps the closing update of the previous slot and drops the anchor line's own write", () => {
-    const { anchor } = gestureAt(song(), "tap-word", { lineIndex: 3, wordIndex: 0 }, 40);
+    const tappedVerse = createLine({
+      id: "v1",
+      text: "Walking home",
+      words: [
+        { text: "Walking ", begin: 20, end: 20.6 },
+        { text: "home", begin: 20.6, end: 21.1 },
+      ],
+    });
+    const lines = song().map((line) => (line.id === "v1" ? tappedVerse : line));
+    const { anchor } = gestureAt(lines, "tap-word", { lineIndex: 3, wordIndex: 0 }, 40);
     expect(anchor?.precedingUpdates.map((update) => update.id)).toEqual(["v1"]);
   });
 
