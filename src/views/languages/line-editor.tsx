@@ -5,7 +5,12 @@ import { setLanguageFields } from "@/domain/commands/languages";
 import { alignTrackToLine } from "@/domain/language/align";
 import { getLanguageAlignmentErrors } from "@/domain/language/alignment-errors";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/language/line-languages";
+import {
+  lineTranslations,
+  lineTransliteration,
+  withLanguages,
+  withoutTransliteration,
+} from "@/domain/language/line-languages";
 import { manualSegments } from "@/domain/language/manual-segments";
 import type { LineLanguage } from "@/domain/language/model";
 import {
@@ -61,7 +66,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
   );
   const update = (updates: Partial<LyricLine>) =>
     useProjectStore.getState().commit(setLanguageFields(line.id, updates), "pending");
-  const clearTransliteration = () => update(withLanguages(line, { transliteration: undefined }));
+  const clearTransliteration = () => update(withoutTransliteration(line));
 
   return (
     <section

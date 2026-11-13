@@ -127,6 +127,23 @@ describe("generated language updates", () => {
     expect(legacyWords(line.backgroundWords, updates.languages, "bg")?.[0]).not.toHaveProperty("transliteration");
   });
 
+  it("removes the background readings held beside a main-only Google transliteration with it", () => {
+    const { translations: _translations, ...source } = legacyView(sourceLine());
+    const line = legacyLine({
+      ...source,
+      transliteration: { language: "ko-Latn", text: "old main", segments: [], origin: "google", sourceFingerprint: "x" },
+    });
+    expect(legacyWords(line.backgroundWords, line.languages, "bg")?.[0]).toHaveProperty("transliteration", "old bg");
+
+    const updates = generatedLanguageUpdates(line, {
+      force: false,
+      transliteration: { language: "ko-Latn", main: roman(null), background: roman(null) },
+      translations: [],
+    });
+
+    expect(updates).toEqual({ languages: undefined });
+  });
+
   it("removes obsolete Google translations on successful empty results", () => {
     const updates = generatedLanguageUpdates(sourceLine(), {
       force: false,

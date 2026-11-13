@@ -30,6 +30,12 @@ function withLanguages(
   return { languages: languagesWith(line.languages, patch) };
 }
 
+// Removing a romanization takes every syllable reading with it, as clearing its text always did.
+function withoutTransliteration(line: Pick<LyricLine, "languages">): { languages: LineLanguages | undefined } {
+  if (!lineTransliteration(line)) return { languages: line.languages };
+  return withLanguages(line, { transliteration: undefined, heldReadings: undefined });
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { languagesWith, lineTranslations, lineTransliteration, withLanguages };
+export { languagesWith, lineTranslations, lineTransliteration, withLanguages, withoutTransliteration };

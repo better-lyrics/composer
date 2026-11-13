@@ -1,6 +1,11 @@
 import { alignTrackToLine } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/language/line-languages";
+import {
+  lineTranslations,
+  lineTransliteration,
+  withLanguages,
+  withoutTransliteration,
+} from "@/domain/language/line-languages";
 import type { LineLanguage, LineTranslations, TransliterationSegment } from "@/domain/language/model";
 import { withoutPieces } from "@/domain/language/side-pieces";
 import type { LyricLine } from "@/domain/line/model";
@@ -86,7 +91,7 @@ function generatedTransliteration(
   if (!force && transliteration === current) return null;
   return transliteration
     ? alignTrackToLine(line, transliteration)
-    : withLanguages(line, { transliteration: undefined });
+    : withoutTransliteration(line);
 }
 
 function generatedTranslations(
