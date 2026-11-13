@@ -16,6 +16,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { historyShortcutAction } from "@/utils/history-shortcut";
 import { Button } from "@/ui/button";
+import { Tooltip } from "@/ui/tooltip";
 import {
   extractBackgroundVocals,
   extractInlineAcrossLinkedLines,
@@ -427,17 +428,20 @@ const EditPanel: React.FC = () => {
         </div>
         <div className="flex flex-1 min-w-0 items-center justify-end gap-3">
           <EditNotices parsed={parsed} isTyping={isTypingLyrics} />
-          <Button
-            hasIcon
-            size="lg"
-            data-guide-spot="extractAll"
-            onClick={handleExtractBackgroundVocals}
-            disabled={!canExtractBackgroundVocals}
-            title={canExtractBackgroundVocals ? undefined : "No parentheses to extract"}
-          >
-            <IconMicrophone className="size-4" />
-            Extract background vocals
-          </Button>
+          <Tooltip content="No parentheses to extract" disabled={canExtractBackgroundVocals}>
+            <span className="inline-flex">
+              <Button
+                hasIcon
+                size="lg"
+                data-guide-spot="extractAll"
+                onClick={handleExtractBackgroundVocals}
+                disabled={!canExtractBackgroundVocals}
+              >
+                <IconMicrophone className="size-4" />
+                Extract background vocals
+              </Button>
+            </span>
+          </Tooltip>
           <Button
             hasIcon
             size="lg"
