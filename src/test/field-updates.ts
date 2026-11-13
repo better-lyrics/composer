@@ -3,7 +3,7 @@ import { fieldsOfLine, type LineFields, lineFromFields } from "@/domain/line/lin
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { mainTrack } from "@/domain/line/track";
-import { withMainTrack, withTrackText } from "@/domain/line/track-writes";
+import { withMainTrack, withRoleWords, withTrackText } from "@/domain/line/track-writes";
 import { withUntimedIdsOf } from "@/domain/line/untimed-ids";
 import { useProjectStore } from "@/stores/project";
 import { isStructurallyEqual } from "@/utils/structural-equal";
@@ -21,11 +21,23 @@ interface FieldUpdate {
 // -- Functions ----------------------------------------------------------------
 
 // Text patched without words is typed text: it is read against the timed syllables, as Edit reads it.
+// Words patched without their text are a word write: the untimed rest stays, as every word writer keeps it.
 function withFields(line: LyricLine, patch: FieldPatch): LyricLine {
   const typesMain = "text" in patch && !("words" in patch) && !("begin" in patch) && hasAnyTiming(line);
-  const { text, ...rest } = patch;
-  const fielded = withUntimedIdsOf(lineFromFields({ ...fieldsOfLine(line), ...(typesMain ? rest : patch) }), line);
-  return typesMain ? withMainTrack(fielded, withTrackText(mainTrack(fielded), text ?? "")) : fielded;
+  const writesMain = !!patch.words?.length && !("text" in patch);
+  const writesBackground = !!patch.backgroundWords?.length && !("backgroundText" in patch);
+  const { text, words, backgroundWords, ...rest } = patch;
+  const fields = {
+    ...rest,
+    ...(!typesMain && "text" in patch && { text }),
+    ...(!writesMain && "words" in patch && { words }),
+    ...(!writesBackground && "backgroundWords" in patch && { backgroundWords }),
+  };
+  let next = withUntimedIdsOf(lineFromFields({ ...fieldsOfLine(line), ...fields }), line);
+  if (typesMain) next = withMainTrack(next, withTrackText(mainTrack(next), text ?? ""));
+  if (writesMain && words) next = withRoleWords(next, "main", words);
+  if (writesBackground && backgroundWords) next = withRoleWords(next, "bg", backgroundWords);
+  return next;
 }
 
 // The track update a writer makes for a flat patch, against the lines it lands on (the store by default).

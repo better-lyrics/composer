@@ -12,7 +12,6 @@ import { trackText } from "@/domain/line/text";
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 
 // -- Types --------------------------------------------------------------------
 
@@ -36,29 +35,31 @@ interface LineFields {
 
 // -- Untimed rest -------------------------------------------------------------
 
-function wordAtoms(words: readonly WordTiming[]): string[] {
-  return words.flatMap((word) => splitIntoWordsWithMeta(word.text).parts);
-}
+const LETTER = /[\p{L}\p{N}\p{M}]/u;
+const TEXT_WORD = /\S+/g;
 
-// Where each part of the text ends, found by walking the parts the shared tokenizer returned.
-function partEnds(text: string, parts: string[]): number[] {
-  const ends: number[] = [];
-  let cursor = 0;
-  for (const part of parts) {
-    cursor = text.indexOf(part, cursor) + part.length;
-    ends.push(cursor);
+const isLetter = (char: string | undefined) => char !== undefined && LETTER.test(char);
+
+// The text after the timed words, matched letter by letter so split marks of any character and unmarked splits
+// still line up. A load never drops text: when the words do not spell the start of the text, all of it stays.
+function untimedRest(text: string, words: readonly WordTiming[], splitChar: string): string {
+  const letters = words.map((word) => word.text).join("").replace(/\s+/g, "");
+  let at = 0;
+  for (const { 0: token, index } of text.matchAll(TEXT_WORD)) {
+    let offset = 0;
+    for (; offset < token.length && at < letters.length; offset++) {
+      const char = token[offset];
+      while (at < letters.length && letters[at] !== char && !isLetter(letters[at])) at++;
+      if (letters[at] === char) at++;
+      else if (isLetter(char)) return text;
+    }
+    if (at < letters.length) continue;
+    const remainder = token.slice(offset);
+    const rest = text.slice(index + token.length);
+    if (remainder === "") return rest.trim() === "" ? "" : rest;
+    return isLetter(remainder[0]) ? splitChar + remainder + rest : remainder + rest;
   }
-  return ends;
-}
-
-// The words of a partly synced track spell the start of its text; the rest is lyrics not timed yet,
-// returned with the separator that leads into it.
-function untimedRest(text: string, words: readonly WordTiming[]): string {
-  const written = splitIntoWordsWithMeta(text);
-  const covered = wordAtoms(words);
-  if (covered.length === 0 || covered.length >= written.parts.length) return "";
-  if (covered.some((atom, i) => atom !== written.parts[i])) return "";
-  return text.slice(partEnds(text, written.parts)[covered.length - 1]);
+  return "";
 }
 
 // A save cannot spell what joins the last timed word to the untimed rest, so the text decides it once on load.
@@ -81,7 +82,7 @@ function untimedFromText(text: string, splitChar: string): Syllable[] {
 
 function syllablesFromFields(text: string, words: readonly WordTiming[] | undefined, splitChar: string): Syllable[] {
   if (!words?.length) return untimedFromText(text, splitChar);
-  const rest = untimedRest(text, words);
+  const rest = untimedRest(text, words, splitChar);
   if (rest === "") return [...words];
   return [...withClosingJoint(words, rest, splitChar), ...untimedFromText(rest, splitChar)];
 }

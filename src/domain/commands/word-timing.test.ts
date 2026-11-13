@@ -49,14 +49,14 @@ describe("word timing commands", () => {
     const ash = createWord({ text: "Ash", sep: "-", begin: 3, end: 3.4 });
     const partlySynced = createLine({
       id: "p0",
-      text: "Ash-|fall drifting slow",
+      text: "Ash-fall drifting slow",
       words: [ash, createWord({ text: "fall ", begin: 3.4, end: 3.9 })],
     });
     useProjectStore.setState({ lines: [partlySynced] });
 
     useProjectStore.getState().commit(boundary("p0", ash));
 
-    expect(lineText(lineById("p0")!)).toBe("Ash-|fall drifting slow");
+    expect(lineText(lineById("p0")!)).toBe("Ash-fall drifting slow");
   });
 
   it("retimes one copy of a linked line and leaves the other copy alone", () => {

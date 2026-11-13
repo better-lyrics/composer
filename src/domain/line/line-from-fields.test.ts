@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { lineFromFields } from "@/domain/line/line-from-fields";
-import { lineText } from "@/domain/line/text";
+import { lineText, trackText } from "@/domain/line/text";
 import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 import { createLine, createWords } from "@/test/factories";
 
@@ -36,5 +36,31 @@ describe("text joints", () => {
   it("regression: an ideographic space between untimed words gets no split mark", () => {
     const line = lineFromFields({ id: "cjk", agentId: "v1", text: "你好\u3000世界" });
     expect(lineText(line)).toBe("你好\u3000世界");
+  });
+});
+
+describe("a load never drops the untimed rest", () => {
+  const syllableTexts = (line: ReturnType<typeof lineFromFields>) =>
+    mainTrack(line).syllables.map((syllable) => syllable.text);
+  const helLo = () =>
+    createWords([
+      { text: "hel", sep: "", begin: 1, end: 1.2, joinsNext: true },
+      { text: "lo", sep: " ", begin: 1.2, end: 1.5 },
+    ]);
+
+  it("regression: keeps the rest of text saved with another split character", () => {
+    const line = lineFromFields({ id: "l1", agentId: "v1", text: "hel|lo world", words: helLo() }, "/");
+    expect(syllableTexts(line)).toEqual(["hel", "lo", "world"]);
+    expect(trackText(mainTrack(line), "/")).toBe("hel/lo world");
+  });
+
+  it("regression: keeps the rest when the text never marked the split", () => {
+    const line = lineFromFields({ id: "l1", agentId: "v1", text: "hello world", words: helLo() }, "|");
+    expect(syllableTexts(line)).toEqual(["hel", "lo", "world"]);
+  });
+
+  it("keeps the whole text after the timed words when the words do not spell it", () => {
+    const line = lineFromFields({ id: "l1", agentId: "v1", text: "goodbye moon", words: helLo() }, "|");
+    expect(syllableTexts(line)).toEqual(["hel", "lo", "goodbye", "moon"]);
   });
 });
