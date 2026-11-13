@@ -1,6 +1,9 @@
+import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
+import { useCallback, useMemo } from "react";
 import { getAgentColor } from "@/domain/agent/colors";
 import { setWordBoundary } from "@/domain/commands/word-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
+import { backgroundText } from "@/domain/line/text";
 import { type ResolvedAddress, resolveAddress, toAddress } from "@/domain/selection/resolve";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
@@ -22,8 +25,6 @@ import {
 import { useTimelineEffectiveLines } from "@/views/timeline/timeline-effective-lines";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { formatTime } from "@/views/timeline/utils";
-import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
-import { useCallback, useMemo } from "react";
 
 // -- Components ----------------------------------------------------------------
 
@@ -90,7 +91,7 @@ const SingleWordInfo: React.FC<SingleWordInfoProps> = ({ selection, line, item, 
       <TimeField label="Duration:" value={formatTime(item.end - item.begin)} />
     </div>
 
-    <BackgroundTextEditor lineId={line.id} backgroundText={line.backgroundText} />
+    <BackgroundTextEditor lineId={line.id} backgroundText={backgroundText(line)} />
 
     <div className="flex items-center gap-2 ml-auto">
       <Button variant="secondary" size="sm" hasIcon onClick={onSetBegin} title="Set begin to cursor ([)">

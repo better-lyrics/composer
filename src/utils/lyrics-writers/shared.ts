@@ -3,6 +3,8 @@ import { effectiveBounds } from "@/domain/line/bounds";
 import { effectiveWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
+import { backgroundText } from "@/domain/line/text";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { Bounds } from "@/domain/word/bounds";
 import { spacedText } from "@/domain/word/spaced-words";
@@ -36,8 +38,9 @@ function parenthesized(words: WordTiming[]): WordTiming[] {
 }
 
 function backgroundWordsOf(line: LyricLine, bounds: Bounds): WordTiming[] {
-  if (line.backgroundWords?.length) return parenthesized(line.backgroundWords);
-  const text = line.backgroundText?.trim();
+  const timed = timedSyllables(backgroundTrack(line));
+  if (timed.length) return parenthesized(timed);
+  const text = backgroundText(line)?.trim();
   return text ? parenthesized([{ id: "background", text, sep: "", begin: bounds.begin, end: bounds.end }]) : [];
 }
 
@@ -57,7 +60,7 @@ function writableLines(lines: readonly LyricLine[]): WritableLine[] {
         bounds,
         words,
         text: spacedText(words).trim(),
-        hasWordTiming: isWordSynced(line) || Boolean(line.backgroundWords?.length),
+        hasWordTiming: isWordSynced(line) || Boolean(timedSyllables(backgroundTrack(line)).length),
       },
     ];
   });

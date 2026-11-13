@@ -1,9 +1,12 @@
 import type { Agent } from "@/domain/agent/model";
+import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
 import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { syncProgress } from "@/domain/line/sync-progress";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { YOUTUBE_VIDEO_ID_KEY, toComposerMeta } from "@/domain/project/metadata-ttml";
@@ -18,7 +21,6 @@ import {
   renderTransliterationContent,
 } from "@/utils/ttml-alternate-content";
 import { isExportedLine, keyedExportLines } from "@/utils/ttml-line-keys";
-import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import { emitWordSpan, escapeXml, escapeXmlAttribute } from "@/utils/ttml-markup";
 
 // -- Constants ----------------------------------------------------------------
@@ -168,8 +170,8 @@ function generateTTML({
       : "";
     let content = "";
 
-    if (writesWords && isWordSynced(line) && line.words) {
-      const words = line.words;
+    if (writesWords && isWordSynced(line)) {
+      const words = timedSyllables(mainTrack(line));
       const wordCount = words.length;
       for (let i = 0; i < wordCount; i++) {
         const word = words[i];
@@ -177,11 +179,12 @@ function generateTTML({
         content += `${emitWordSpan(word, word.text)}${needsSpace ? " " : ""}`;
       }
     } else {
-      content = escapeXml(stripSplitCharacter(line.text));
+      content = escapeXml(stripSplitCharacter(lineText(line)));
     }
 
-    if (writesWords && line.backgroundText && line.backgroundWords?.length) {
-      const bgWords = line.backgroundWords;
+    const bgText = backgroundText(line);
+    const bgWords = timedSyllables(backgroundTrack(line));
+    if (writesWords && bgText && bgWords.length) {
       const bgCount = bgWords.length;
       let bgContent = "";
       for (let i = 0; i < bgCount; i++) {
@@ -190,9 +193,9 @@ function generateTTML({
         bgContent += `${emitWordSpan(bgWord, bgWord.text)}${needsSpace ? " " : ""}`;
       }
       content += `<span ttm:role="x-bg">${bgContent}</span>`;
-    } else if (line.backgroundText) {
+    } else if (bgText) {
       const bgTiming = bgBounds(line) ?? lineTiming;
-      content += `<span ttm:role="x-bg"><span begin="${formatTime(bgTiming.begin)}" end="${formatTime(bgTiming.end)}">${escapeXml(stripSplitCharacter(line.backgroundText))}</span></span>`;
+      content += `<span ttm:role="x-bg"><span begin="${formatTime(bgTiming.begin)}" end="${formatTime(bgTiming.end)}">${escapeXml(stripSplitCharacter(bgText))}</span></span>`;
     }
 
     parts.push(

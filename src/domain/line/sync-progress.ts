@@ -1,6 +1,8 @@
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { hasMainLyrics, isLineSynced } from "@/domain/line/predicates";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -105,10 +107,10 @@ function trackGap(
 }
 
 function backgroundGap(line: LyricLine, splitCharacter: string): TrackGap | null {
-  const backgroundText = line.backgroundText ?? "";
-  if (!backgroundText.trim()) return null;
-  const parts = splitIntoWordsWithMeta(backgroundText).parts;
-  const backgroundWords = line.backgroundWords ?? [];
+  const bgText = backgroundText(line) ?? "";
+  if (!bgText.trim()) return null;
+  const parts = splitIntoWordsWithMeta(bgText).parts;
+  const backgroundWords = timedSyllables(backgroundTrack(line));
   if (!hasMainLyrics(line)) {
     return {
       lineId: line.id,
@@ -126,7 +128,7 @@ function backgroundGap(line: LyricLine, splitCharacter: string): TrackGap | null
 
 function mainGap(line: LyricLine, parts: readonly string[], splitCharacter: string): TrackGap | null {
   if (!hasMainLyrics(line) || isLineSynced(line)) return null;
-  return trackGap(line.id, "main", parts, line.words ?? [], splitCharacter);
+  return trackGap(line.id, "main", parts, timedSyllables(mainTrack(line)), splitCharacter);
 }
 
 // -- Cache --------------------------------------------------------------------
@@ -138,7 +140,7 @@ function lineSyncFacts(line: LyricLine): LineSyncFacts {
   const splitCharacter = getSplitCharacter();
   const cached = factsByLine.get(line);
   if (cached?.splitCharacter === splitCharacter) return cached;
-  const parts = splitIntoWordsWithMeta(line.text).parts;
+  const parts = splitIntoWordsWithMeta(lineText(line)).parts;
   const slots = parts.length;
   const main = mainGap(line, parts, splitCharacter);
   const background = backgroundGap(line, splitCharacter);

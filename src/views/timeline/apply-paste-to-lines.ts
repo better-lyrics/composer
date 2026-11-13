@@ -7,6 +7,7 @@ import {
   effectiveWords,
 } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import type { WordTrack } from "@/domain/line/tracks";
 import { withNewId } from "@/domain/word/id";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
@@ -91,7 +92,10 @@ function applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, range
       Object.assign(lineUpdates, effectiveMainWordEdit(line, merged, { convertLineSynced: true }));
     }
     if (newBgWords.length > 0) {
-      Object.assign(lineUpdates, manualBackgroundWordEdit(mergeWordsIntoTrack(line.backgroundWords ?? [], newBgWords)));
+      Object.assign(
+        lineUpdates,
+        manualBackgroundWordEdit(mergeWordsIntoTrack(timedSyllables(backgroundTrack(line)), newBgWords)),
+      );
     }
 
     updates.push({ id: line.id, updates: lineUpdates });

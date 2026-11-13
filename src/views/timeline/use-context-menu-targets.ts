@@ -9,6 +9,8 @@ import { templateSourceInstance } from "@/domain/group/template-source";
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import type { EffectiveLine } from "@/domain/line/effective-words";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { trackField, trackWords } from "@/domain/line/tracks";
 import { isAddressed } from "@/domain/selection/identity";
 import { resolveAddress } from "@/domain/selection/resolve";
@@ -158,7 +160,10 @@ function useContextMenuTargets() {
     const trackTarget = contextMenu.target;
     const targetLine = rawLines.find((l) => l.id === trackTarget.lineId);
     if (!targetLine) return null;
-    const canPlace = targetLine.text.trim() !== "" && !targetLine.words?.length && targetLine.begin === undefined;
+    const canPlace =
+      lineText(targetLine).trim() !== "" &&
+      !timedSyllables(mainTrack(targetLine)).length &&
+      targetLine.begin === undefined;
     return canPlace ? targetLine : null;
   }, [contextMenu, rawLines]);
 

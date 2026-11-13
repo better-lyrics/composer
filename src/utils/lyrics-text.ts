@@ -1,6 +1,8 @@
 import { CLEARED_BACKGROUND } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import { cleanSplitCharacters, stripSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
@@ -11,18 +13,20 @@ function matchKey(text: string): string {
 
 function carriesBackground(line: LyricLine): boolean {
   return (
-    line.backgroundText !== undefined || line.backgroundWords !== undefined || line.backgroundTextSource !== undefined
+    backgroundText(line) !== undefined ||
+    line.backgroundWords !== undefined ||
+    backgroundTrack(line)?.source !== undefined
   );
 }
 
 function keepsNoTimedBackground(line: LyricLine, source: LyricLine | undefined): boolean {
-  const sourceText = source && cleanSplitCharacters(source.text.trim());
-  return sourceText !== line.text || !line.backgroundWords?.length;
+  const sourceText = source && cleanSplitCharacters(lineText(source).trim());
+  return sourceText !== lineText(line) || !timedSyllables(backgroundTrack(line)).length;
 }
 
 function textToLyricLines(text: string, defaultAgentId: string, existingLines: LyricLine[] = []): LyricLine[] {
   const textToCandidates = new Map<string, LyricLine[]>();
-  const existingKeys = existingLines.map((line) => matchKey(line.text));
+  const existingKeys = existingLines.map((line) => matchKey(lineText(line)));
   existingLines.forEach((line, index) => {
     const key = existingKeys[index];
     let bucket = textToCandidates.get(key);
@@ -90,7 +94,7 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
   // Parentheses in a row stand for its background vocals, so a carried-over background would double on
   // re-extraction. Timed background words on a row the edit left unchanged are kept.
   return mapped.map((line, index) =>
-    carriesBackground(line) && keepsNoTimedBackground(line, sources[index]) && /\([^)]*\)/.test(line.text)
+    carriesBackground(line) && keepsNoTimedBackground(line, sources[index]) && /\([^)]*\)/.test(lineText(line))
       ? { ...line, ...CLEARED_BACKGROUND }
       : line,
   );

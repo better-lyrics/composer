@@ -2,6 +2,7 @@ import { refreshGeneratedLanguages } from "@/domain/commands/languages";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { staleGeneratedLanguages } from "@/domain/language/stale-generated";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import { isTransientLines } from "@/stores/project/transient-lines";
 import { watchGenerationEdits } from "@/views/languages/generation-edit-guard";
@@ -32,7 +33,7 @@ const LOG_PREFIX = "[LanguageAutoRefresh]";
 // -- Refresh ------------------------------------------------------------------
 
 function sourceKey(line: LyricLine): string {
-  return `${line.id}\u0000${languageSourceFingerprint(line.text, line.backgroundText)}`;
+  return `${line.id}\u0000${languageSourceFingerprint(lineText(line), backgroundText(line))}`;
 }
 
 // A drag preview is never refreshed: the write would end the gesture, and the drag's own commit schedules the next refresh.

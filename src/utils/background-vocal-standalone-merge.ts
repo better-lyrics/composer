@@ -3,6 +3,8 @@ import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { backgroundText } from "@/domain/line/text";
+import { backgroundTrack } from "@/domain/line/track";
 import { lastEnd } from "@/domain/word/bounds";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "@/domain/word/timing";
@@ -58,9 +60,9 @@ function mergeStandaloneInto(
   // prior pass, so the standalone line replaces it. Manual background is kept.
   // Extraction-sourced background produced earlier in this same pass (an
   // already-merged standalone) is fresh, so further standalones append to it.
-  const prevIsExtraction = prev.backgroundTextSource === "extraction";
+  const prevIsExtraction = backgroundTrack(prev)?.source === "extraction";
   const prevIsStaleExtraction = prevIsExtraction && !prevTrailingBracketFromSamePass;
-  const baseText = prevIsStaleExtraction ? undefined : prev.backgroundText;
+  const baseText = prevIsStaleExtraction ? undefined : backgroundText(prev);
   const storedBaseWords = prevIsStaleExtraction ? undefined : prev.backgroundWords;
   const carried = carriedBackgroundWords(
     standalone,

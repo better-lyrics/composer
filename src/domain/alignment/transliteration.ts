@@ -1,4 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -20,11 +22,11 @@ function sungTransliteration(line: LyricLine): string | null {
   if (!track || track.stale) return null;
   const text =
     track.text?.trim() ||
-    line.words
-      ?.map((word) => word.transliteration ?? "")
+    timedSyllables(mainTrack(line))
+      .map((word) => word.transliteration ?? "")
       .join(" ")
       .trim();
-  if (!text || comparable(text) === comparable(line.text)) return null;
+  if (!text || comparable(text) === comparable(lineText(line))) return null;
   return text;
 }
 

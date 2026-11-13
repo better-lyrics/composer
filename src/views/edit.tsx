@@ -1,3 +1,5 @@
+import { IconFileImport, IconMicrophone } from "@tabler/icons-react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { LyricCommand } from "@/domain/commands/command";
 import {
   applyEditTextDetaching,
@@ -8,10 +10,13 @@ import {
   typeLyrics,
 } from "@/domain/commands/edit-text";
 import { assignSinger } from "@/domain/commands/singer";
+import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
+import { linesToEditText } from "@/domain/edit-text/edit-text";
 import { detectNonLatinLanguage } from "@/domain/language/script-detection";
-import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
+import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { useIsActiveTab } from "@/hooks/use-is-active-tab";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -21,27 +26,23 @@ import { useImportModal, useImportModalStore, useLastImportResult } from "@/stor
 import { useProjectStore } from "@/stores/project";
 import type { LyricBurst } from "@/stores/project/history-types";
 import { useSettingsStore } from "@/stores/settings";
-import { historyShortcutAction } from "@/utils/history-shortcut";
 import { Button } from "@/ui/button";
 import { extractBackgroundVocals, lineHasInlineParens } from "@/utils/background-vocal-extraction";
+import { historyShortcutAction } from "@/utils/history-shortcut";
 import { pluralWord, pluralize } from "@/utils/pluralize";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { useCanExtractBackgroundVocals } from "@/views/edit/can-extract-background";
-import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
-import { linesToEditText } from "@/domain/edit-text/edit-text";
 import { EditNotices } from "@/views/edit/edit-notices";
 import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { LinePreviewList } from "@/views/edit/line-preview-list";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
+import { PreviewSelectionBar } from "@/views/edit/preview-selection-bar";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
 import { useSmartPaste } from "@/views/edit/use-smart-paste";
-import { PreviewSelectionBar } from "@/views/edit/preview-selection-bar";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
-import { IconFileImport, IconMicrophone } from "@tabler/icons-react";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -53,7 +54,7 @@ Or paste or drop a whole lyrics file (${LYRICS_FORMATS_PROSE}) or ${PROJECT_FILE
 
 const preventDefaultDragOver = (e: React.DragEvent) => e.preventDefault();
 
-const lyricsText = (lines: readonly LyricLine[]) => lines.map((line) => line.text).join("\n");
+const lyricsText = (lines: readonly LyricLine[]) => lines.map((line) => lineText(line)).join("\n");
 
 const noteTypedLyrics = (lines: readonly LyricLine[]) => {
   if (!hasLyricLines(lines)) return;
