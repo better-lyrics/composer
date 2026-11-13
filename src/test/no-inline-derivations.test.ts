@@ -88,7 +88,7 @@ const FORBIDDEN: ForbiddenPattern[] = [
   {
     name: "inline syllable join read",
     regex: /\.joinsNext\b/,
-    use: "computeSyllableGroups / isInSyllableGroup / syllableRunIndices from @/domain/word/syllable-groups",
+    use: "computeSyllableGroups / isInSyllableGroup from @/domain/word/syllable-groups",
   },
   {
     name: "inline snap-point time projection",

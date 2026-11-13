@@ -191,5 +191,4 @@ export {
   getSyllablePositions,
   hasIntraGroupGap,
   isInSyllableGroup,
-  syllableRunIndices,
 };
