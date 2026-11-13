@@ -138,6 +138,13 @@ describe("buildIndexEntry", () => {
       expect(entry.lineCount).toBe(0);
     });
 
+    it("regression: skips a saved word with no text instead of throwing", () => {
+      const lines = [{ id: "w", text: "Night bus", agentId: "v1", words: [{ begin: 1, end: 2 }, null] }];
+      const entry = buildIndexEntry(input({ lines }));
+      expect(entry.lineCount).toBe(1);
+      expect(entry.hasWordTiming).toBe(false);
+    });
+
     it("regression: treats a line with a non-string text field as having no main lyrics", () => {
       const entry = buildIndexEntry(input({ lines: [{ id: "z", text: 42 }] }));
       expect(entry.lineCount).toBe(0);

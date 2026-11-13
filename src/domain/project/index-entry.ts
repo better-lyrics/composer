@@ -7,7 +7,7 @@ import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import type { ResumePosition } from "@/domain/project/resume-position";
 import type { ProjectTab } from "@/domain/project/tab";
 import { readUnisonLyricId } from "@/domain/unison/lyric-id";
-import { wordsFromSpaced } from "@/domain/word/spaced-words";
+import { type SpacedWord, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -64,8 +64,13 @@ function isStoredLyricLine(line: Record<string, unknown>): boolean {
 }
 
 // Saved words spell their trailing space in the text, so they are read the way a load reads them.
+function isStoredWord(word: unknown): word is SpacedWord {
+  return typeof word === "object" && word !== null && typeof (word as { text?: unknown }).text === "string";
+}
+
+// A malformed saved word counts as no word: the index never throws on a record it can list.
 function storedWords(words: unknown): WordTiming[] | undefined {
-  return Array.isArray(words) ? wordsFromSpaced(words) : undefined;
+  return Array.isArray(words) ? wordsFromSpaced(words.filter(isStoredWord)) : undefined;
 }
 
 function normalizeStoredLines(lines: unknown): LyricLine[] {
