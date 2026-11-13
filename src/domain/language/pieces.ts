@@ -185,6 +185,19 @@ function withAddedPieces(
   return { ...languages, transliteration };
 }
 
+// A line given another line's syllables takes that line's readings too, by position.
+function withReadingsOf(line: LyricLine, source: LyricLine): LineLanguages | undefined {
+  const track = lineTransliteration(line);
+  if (!track) return line.languages;
+  const main = keyedPieces(line.words ?? [], positionalPieces(source.words ?? [], trackPieces(source, "main")));
+  const bg = keyedPieces(
+    line.backgroundWords ?? [],
+    positionalPieces(source.backgroundWords ?? [], trackPieces(source, "bg")),
+  );
+  const copied = withTrackPieces(withTrackPieces(track, "main", main), "bg", bg);
+  return languagesWith(line.languages, { transliteration: copied });
+}
+
 // -- Orphans ------------------------------------------------------------------
 
 function ownedPieces(
@@ -229,6 +242,7 @@ export {
   withOwnPieces,
   withoutOrphanPieces,
   withoutPieces,
+  withReadingsOf,
   withSidePieces,
   withTrackPieces,
 };
