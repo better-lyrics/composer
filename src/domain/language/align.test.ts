@@ -277,4 +277,41 @@ describe("withAlignedWords", () => {
     withAlignedWords(koreanLine);
     expect(koreanLine).toEqual(before);
   });
+
+  it("moves readings held without a romanization into a newly typed one, and clears background ones as before", () => {
+    const line = legacyLine({
+      id: "l1",
+      agentId: "v1",
+      text: "하|늘",
+      words: [
+        {
+          id: "w1",
+          text: "하",
+          sep: "",
+          begin: 0,
+          end: 0.5,
+          transliteration: "h",
+          transliterationJoinerAfter: "",
+          joinsNext: true,
+        },
+        { id: "w2", text: "늘", sep: "", begin: 0.5, end: 1, transliteration: "aneul", joinsNext: false },
+      ],
+      backgroundText: "바다",
+      backgroundWords: [
+        { id: "w3", text: "바다", sep: "", begin: 0, end: 1, transliteration: "bada", joinsNext: false },
+      ],
+    });
+    const typed: LineLanguage = {
+      language: "ko-Latn",
+      main: { text: "haneul" },
+      origin: "manual",
+      sourceFingerprint: "",
+    };
+    const { languages } = alignTrackToLine(line, typed);
+    expect(languages?.transliteration?.main.pieces).toEqual({
+      w1: { text: "h", joinerAfter: "" },
+      w2: { text: "aneul" },
+    });
+    expect(languages?.heldReadings).toBeUndefined();
+  });
 });

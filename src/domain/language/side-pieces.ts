@@ -56,6 +56,20 @@ function withPiecesOn(
   return Object.keys(next).length ? next : undefined;
 }
 
+// A romanization set on a line takes the readings held for each side it has, unless that side already has its own.
+function withHeldReadingsPlaced(languages: LineLanguages): LineLanguages {
+  const track = languages.transliteration;
+  const held = languages.heldReadings;
+  if (!track || !held) return languages;
+  let placed = languages;
+  for (const side of ["main", "bg"] as const) {
+    const pieces = held[side];
+    if (pieces && hasTrackSide(track, side))
+      placed = withPiecesOn(placed, side, track[side]?.pieces ?? pieces) ?? placed;
+  }
+  return placed;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { sidePieces, withoutPieces, withPiecesOn, withSidePieces, withTrackPieces };
+export { sidePieces, withHeldReadingsPlaced, withoutPieces, withPiecesOn, withSidePieces, withTrackPieces };

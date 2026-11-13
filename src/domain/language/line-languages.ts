@@ -1,4 +1,5 @@
 import type { LineLanguage, LineLanguages, LineTranslations } from "@/domain/language/model";
+import { withHeldReadingsPlaced } from "@/domain/language/side-pieces";
 import type { LyricLine } from "@/domain/line/model";
 
 // -- Reads --------------------------------------------------------------------
@@ -19,7 +20,7 @@ function languagesWith(languages: LineLanguages | undefined, patch: Partial<Line
   if (next.translations === undefined) delete next.translations;
   if (next.transliteration === undefined) delete next.transliteration;
   if (next.heldReadings === undefined) delete next.heldReadings;
-  return Object.keys(next).length ? next : undefined;
+  return Object.keys(next).length ? withHeldReadingsPlaced(next) : undefined;
 }
 
 function withLanguages(

@@ -6,8 +6,8 @@ import type {
   LineLanguage,
   TransliterationAlignmentStatus,
 } from "@/domain/language/model";
-import { mappedTransliteration, slicedPieces } from "@/domain/language/pieces";
-import { withSidePieces, withTrackPieces } from "@/domain/language/side-pieces";
+import { mappedTransliteration, slicedPieces, trackPieces } from "@/domain/language/pieces";
+import { withPiecesOn, withSidePieces, withTrackPieces } from "@/domain/language/side-pieces";
 import {
   normalizeTransliterationForEditing,
   sourceWordCount,
@@ -216,7 +216,7 @@ function sidePlan(
 ): TransliterationAlignmentPlan | null {
   const { text, words } = sideSource(line, side);
   if (!words?.length) return null;
-  const pieces = lineTransliteration(line)?.[side]?.pieces;
+  const pieces = trackPieces(line, side);
   return planTransliterationAlignment(words, pieces, timedPrefixText(text, words, track?.text ?? ""), status);
 }
 
@@ -267,7 +267,9 @@ function alignTrackToLine(line: LyricLine, track: LineLanguage): Pick<LyricLine,
   const bgPlan = sidePlanKeepingReview(line, track.bg, "bg");
   const bg = track.bg && alignedSide(track.bg, bgPlan, track.bg.text ? (bgPlan?.status ?? "inferred") : undefined);
   const { bg: _bg, ...rest } = track;
-  return withLanguages(line, { transliteration: { ...rest, main, ...(bg && { bg }) } });
+  const { languages } = withLanguages(line, { transliteration: { ...rest, main, ...(bg && { bg }) } });
+  const planned = mainPlan ? withPiecesOn(languages, "main", mainPlan.pieces) : languages;
+  return { languages: bgPlan && !bg ? withPiecesOn(planned, "bg", bgPlan.pieces) : planned };
 }
 
 function withAlignedWords(line: LyricLine): LyricLine {
