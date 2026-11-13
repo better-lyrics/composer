@@ -15,23 +15,19 @@ describe("createWordTimingOps: setBoundary", () => {
     minDuration?: number;
     duration?: number;
     line?: LyricLine;
-    lines?: LyricLine[];
   }
 
   function run(boundaryCase: BoundaryCase) {
-    const target = (boundaryCase.lines ?? [boundaryCase.line ?? makeLine()])[0];
-    const edit =
-      target &&
-      wordsOps.boundaryEdit({
-        line: target,
-        wordIdx: boundaryCase.wordIdx,
-        edge: boundaryCase.edge,
-        time: boundaryCase.time,
-        minDuration: boundaryCase.minDuration ?? 0.05,
-        rolling: boundaryCase.rolling,
-        syllablesFollowRolling: boundaryCase.syllablesFollowRolling ?? false,
-        ...(boundaryCase.duration !== undefined ? { range: { min: 0, max: boundaryCase.duration } } : {}),
-      });
+    const edit = wordsOps.boundaryEdit({
+      line: boundaryCase.line ?? makeLine(),
+      wordIdx: boundaryCase.wordIdx,
+      edge: boundaryCase.edge,
+      time: boundaryCase.time,
+      minDuration: boundaryCase.minDuration ?? 0.05,
+      rolling: boundaryCase.rolling,
+      syllablesFollowRolling: boundaryCase.syllablesFollowRolling ?? false,
+      ...(boundaryCase.duration !== undefined ? { range: { min: 0, max: boundaryCase.duration } } : {}),
+    });
     const calls = edit ? [edit] : [];
     return { calls, words: calls[0]?.updates.words ?? [] };
   }
@@ -174,10 +170,6 @@ describe("createWordTimingOps: setBoundary", () => {
   });
 
   describe("edge cases", () => {
-    it("no-ops when the line is missing", () => {
-      expect(run({ lines: [], wordIdx: 0, edge: "begin", time: 1, rolling: true }).calls).toHaveLength(0);
-    });
-
     it("no-ops when the word index is out of range", () => {
       expect(run({ wordIdx: 9, edge: "begin", time: 1, rolling: true }).calls).toHaveLength(0);
     });
