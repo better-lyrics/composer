@@ -1,5 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
 import type { SyncGranularity } from "@/domain/line/sync-progress";
+import { syncAddressPosition } from "@/domain/sync/address";
 import { storedSyncPosition } from "@/domain/sync/anchor-gesture";
 import { resolveSyncCursor } from "@/domain/sync/cursor";
 import type { SyncCursor } from "@/domain/sync/cursor";
@@ -51,7 +52,7 @@ function useSyncCursor(lines: readonly LyricLine[], syncState: SyncState, granul
       syncPositionPastSkipped(
         lines,
         skippedInstances,
-        resolveSyncCursor(lines, stored.position, stored.jumped, granularity),
+        resolveSyncCursor(lines, syncAddressPosition(lines, stored.position), stored.jumped, granularity),
         stored.jumped,
         reRecording,
       ),

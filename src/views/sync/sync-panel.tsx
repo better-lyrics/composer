@@ -2,6 +2,7 @@ import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } fro
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import { playingLineIndex } from "@/domain/line/playing-line";
 import { isProjectFullySynced, syncProgress } from "@/domain/line/sync-progress";
+import { SYNC_START } from "@/domain/sync/address";
 import { previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
@@ -58,7 +59,7 @@ const SyncPanel: React.FC = () => {
   const displayLines = useDisplayLines(lines, textVariant);
 
   const [syncState, setSyncState] = useState<SyncState>({
-    position: { lineIndex: 0, wordIndex: 0 },
+    position: SYNC_START,
     isActive: false,
   });
   const [showPulse, setShowPulse] = useState(false);

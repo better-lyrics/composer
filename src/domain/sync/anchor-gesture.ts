@@ -3,6 +3,7 @@ import { isAttachedToInstance } from "@/domain/instance/predicates";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { type SyncAddress, sameSyncAddress } from "@/domain/sync/address";
 import { type GestureContext, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { type SyncCursor, advanceCursor } from "@/domain/sync/cursor";
 import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
@@ -20,8 +21,8 @@ interface AnchorGesture {
 }
 
 interface AnchorUndo {
-  resume: SyncCursor;
-  anchor: SyncCursor;
+  resume: SyncAddress;
+  anchor: SyncAddress;
   jumped: boolean;
   placedEntry: object;
   previousEntry: object | undefined;
@@ -33,7 +34,7 @@ interface HistoryPosition {
 }
 
 interface StoredSyncPosition {
-  position: SyncCursor;
+  position: SyncAddress;
   jumpedToPosition?: boolean;
   anchorUndo?: AnchorUndo;
 }
@@ -84,11 +85,9 @@ function isPlacingUndone(undo: AnchorUndo, { history, historyIndex }: HistoryPos
 function storedSyncPosition(
   state: StoredSyncPosition,
   position: HistoryPosition,
-): { position: SyncCursor; jumped: boolean } {
+): { position: SyncAddress; jumped: boolean } {
   const undo = state.anchorUndo;
-  const atResume =
-    undo?.resume.lineIndex === state.position.lineIndex && undo.resume.wordIndex === state.position.wordIndex;
-  if (undo && atResume && isPlacingUndone(undo, position)) {
+  if (undo && sameSyncAddress(undo.resume, state.position) && isPlacingUndone(undo, position)) {
     return { position: undo.anchor, jumped: undo.jumped };
   }
   return { position: state.position, jumped: !!state.jumpedToPosition };
