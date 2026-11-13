@@ -42,14 +42,17 @@ function withManualBackgroundWords(line: LyricLine, words: readonly WordTiming[]
   return withBackground(line, { words, source: "manual" });
 }
 
-// Untimed background lyrics are timed over the second half of a timed line, keeping their syllables.
-function withSeededBackground(line: LyricLine): LyricLine {
+function secondHalf(line: LyricLine): { begin: number; end?: number } | null {
+  const bounds = effectiveBounds(line);
+  return bounds && bounds.end > bounds.begin ? { begin: (bounds.begin + bounds.end) / 2, end: bounds.end } : null;
+}
+
+// The one seeding of untimed background lyrics: syllables keep their ids when the seeded words match them.
+function seededBackground(line: LyricLine, span: { begin: number; end?: number } | null): LyricLine {
   const background = backgroundTrack(line);
   const text = backgroundText(line);
-  if (!background || !text || timedSyllables(background).length > 0) return line;
-  const bounds = effectiveBounds(line);
-  if (!bounds || !(bounds.end > bounds.begin)) return line;
-  const words = createInitialBgWords(text, (bounds.begin + bounds.end) / 2, bounds.end);
+  if (!background || !text || !span || timedSyllables(background).length > 0) return line;
+  const words = createInitialBgWords(text, span.begin, span.end);
   if (words.length === 0) return line;
   const untimed = background.syllables.map(untimedSyllable);
   const seeded =
@@ -59,7 +62,17 @@ function withSeededBackground(line: LyricLine): LyricLine {
   return withBackgroundTrack(line, withTrackSyllables(background, seeded));
 }
 
+// Untimed background lyrics are timed over the second half of a timed line.
+function withSeededBackground(line: LyricLine): LyricLine {
+  return seededBackground(line, secondHalf(line));
+}
+
+// Untimed background lyrics are timed from where the line's first syllable was tapped.
+function withBackgroundSeededFrom(line: LyricLine, begin: number): LyricLine {
+  return seededBackground(line, { begin });
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { withBackground, withManualBackgroundWords, withSeededBackground, withoutBackground };
+export { withBackground, withBackgroundSeededFrom, withManualBackgroundWords, withSeededBackground, withoutBackground };
 export type { BackgroundSource, BackgroundParams };

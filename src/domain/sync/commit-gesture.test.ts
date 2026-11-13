@@ -179,6 +179,13 @@ describe("tap-word", () => {
     expect(roleWords(updatedLine(updates), "bg")?.[0].begin).toBe(5);
   });
 
+  it("regression: the first tap times the untimed background syllables in place, keeping their ids", () => {
+    const lines = [createLine({ id: "l0", text: "hello world", backgroundText: "oh yeah" })];
+    const before = backgroundTrack(lines[0])!.syllables.map((syllable) => syllable.id);
+    const after = apply(lines, run(lines, "tap-word", [0, 0], 1));
+    expect(timedSyllables(backgroundTrack(after[0])).map((syllable) => syllable.id)).toEqual(before);
+  });
+
   it("P3: re-writing slot 0 of a timed line shifts background words by the main delta", () => {
     const lines = [
       createLine({

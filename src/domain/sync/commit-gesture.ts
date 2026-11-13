@@ -2,10 +2,9 @@ import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing"
 import type { LinkGroup } from "@/domain/group/template";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "@/domain/line/bounds";
-import { withSeededBackground } from "@/domain/line/background";
+import { withBackgroundSeededFrom, withSeededBackground } from "@/domain/line/background";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
-import { backgroundText } from "@/domain/line/text";
 import { backgroundTrack, isSpanTimed, mainTrack, timedSyllables } from "@/domain/line/track";
 import { withMainTrack, withRoleWords, withTrackSpan } from "@/domain/line/track-writes";
 import { isSyncableLine } from "@/domain/line/sync-progress";
@@ -15,7 +14,6 @@ import { withSlotWord } from "@/domain/sync/slot-words";
 import type { Bounds } from "@/domain/word/bounds";
 import { enforceOrderAround } from "@/domain/word/order";
 import type { WordTiming } from "@/domain/word/timing";
-import { createInitialBgWords } from "@/utils/sync-helpers";
 
 // -- Types --------------------------------------------------------------------
 
@@ -128,8 +126,7 @@ function closingUpdate(lines: readonly LyricLine[], slot: SyncSlot | null, end: 
 function withBackgroundFrom(line: LyricLine, begin: number, oldMain: Bounds | null): LyricLine {
   const words = timedSyllables(backgroundTrack(line));
   if (words.length) return oldMain ? withRoleWords(line, "bg", shiftWords(words, begin - oldMain.begin)) : line;
-  const text = backgroundText(line);
-  return text ? withRoleWords(line, "bg", createInitialBgWords(text, begin)) : line;
+  return withBackgroundSeededFrom(line, begin);
 }
 
 // -- Word slot writing ----------------------------------------------------------
