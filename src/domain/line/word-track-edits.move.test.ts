@@ -1,6 +1,6 @@
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { newWordId } from "@/domain/word/id";
-import { applyMoveFromBg, applyMoveToBg } from "@/stores/project/lines-slice-helpers";
+import { applyMoveFromBg, applyMoveToBg } from "@/domain/line/word-track-edits";
 /**
  * @vitest-environment node
  */

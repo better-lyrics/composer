@@ -24,11 +24,12 @@ type Refusal =
   | { reason: "needs-one-run" };
 
 // Refusals are returned, never thrown, so a caller cannot drop one without the type saying so.
-type Outcome = { root: LyricRoot; touched: string[] } | { refused: Refusal };
+type Applied = { root: LyricRoot; touched: string[] };
+type Outcome = Applied | { refused: Refusal };
 
 // -- Functions ----------------------------------------------------------------
 
-function applied(root: LyricRoot, touched: string[]): Outcome {
+function applied(root: LyricRoot, touched: string[]): Applied {
   return { root, touched };
 }
 
@@ -53,5 +54,5 @@ function withLines(root: LyricRoot, lines: RawLine[] | null): Outcome {
 
 // -- Exports ------------------------------------------------------------------
 
-export type { LyricRoot, Outcome, Refusal };
+export type { Applied, LyricRoot, Outcome, Refusal };
 export { applied, changedLineIds, isRefused, refused, withLines };

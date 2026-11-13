@@ -1,5 +1,5 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { commitHistory } from "@/stores/project/history-helpers";
+import { removeSinger } from "@/domain/commands/lyrics-replace";
 import type { AgentActions, AgentsState, ProjectStore } from "@/stores/project/types";
 import type { StateCreator } from "zustand";
 
@@ -13,7 +13,7 @@ function createAgentsInitialState(): AgentsState {
 
 // -- Slice --------------------------------------------------------------------
 
-const createAgentsSlice: StateCreator<ProjectStore, [], [], AgentsState & AgentActions> = (set) => ({
+const createAgentsSlice: StateCreator<ProjectStore, [], [], AgentsState & AgentActions> = (set, get) => ({
   ...createAgentsInitialState(),
 
   addAgent: (agent) =>
@@ -30,19 +30,9 @@ const createAgentsSlice: StateCreator<ProjectStore, [], [], AgentsState & AgentA
       isDirtySinceHistory: true,
     })),
 
-  removeAgentWithHistory: (id) =>
-    set((state) => {
-      const fallback = state.agents.find((agent) => agent.id !== id);
-      if (!fallback) return state;
-      return commitHistory(
-        state,
-        {
-          agents: state.agents.filter((agent) => agent.id !== id),
-          lines: state.lines.map((line) => (line.agentId === id ? { ...line, agentId: fallback.id } : line)),
-        },
-        { deriveText: false },
-      );
-    }),
+  removeAgentWithHistory: (id) => {
+    get().commit(removeSinger(id));
+  },
 
   setAgents: (agents) => set({ agents, isDirty: true, isDirtySinceHistory: true }),
 });
