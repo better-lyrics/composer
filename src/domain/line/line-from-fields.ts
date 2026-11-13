@@ -53,11 +53,12 @@ function textAfterWords(text: string, count: number): string {
 
 // The text after the timed words, matched letter by letter (any case, any normal form) so split marks of any
 // character and unmarked splits still line up. A load never drops or repeats text: words that cover as many text
-// words as the text has leave no rest, and words that do not spell the text keep the text words after theirs.
+// words as the text has leave only letters they did not spell, and words that do not spell the text keep the text
+// words after theirs.
 function untimedRest(text: string, words: readonly WordTiming[], splitChar: string): string {
   const spelled = words.map((word) => word.text + word.sep).join("");
   const covered = [...spelled.matchAll(TEXT_WORD)].length;
-  if ([...text.matchAll(TEXT_WORD)].length <= covered) return "";
+  const coversEveryTextWord = [...text.matchAll(TEXT_WORD)].length <= covered;
   const letters = folded(spelled.replace(/\s+/g, ""));
   let at = 0;
   for (const { 0: original, index } of text.matchAll(TEXT_WORD)) {
@@ -71,9 +72,10 @@ function untimedRest(text: string, words: readonly WordTiming[], splitChar: stri
     }
     if (at < letters.length) continue;
     const rest = text.slice(index + original.length);
-    if (offset === token.length) return rest.trim() === "" ? "" : rest;
     const remainder = original.normalize("NFC").slice(offset);
-    return isLetter(remainder[0]) ? splitChar + remainder + rest : remainder + rest;
+    const untimed = remainder + rest;
+    if (untimed.trim() === "" || (coversEveryTextWord && !LETTER.test(untimed))) return "";
+    return isLetter(remainder[0]) ? splitChar + untimed : untimed;
   }
   return "";
 }

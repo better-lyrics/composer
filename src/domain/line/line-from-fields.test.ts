@@ -59,6 +59,14 @@ describe("a load never drops the untimed rest", () => {
     expect(syllableTexts(line)).toEqual(["hel", "lo", "world"]);
   });
 
+  it("regression: keeps the untimed rest of unspaced CJK text", () => {
+    const timed = createWords(
+      ["我", "们", "今", "天"].map((text, index) => ({ text, sep: "", begin: index, end: index + 1, joinsNext: true })),
+    );
+    const line = lineFromFields({ id: "l1", agentId: "v1", text: "我们今天好", words: timed }, "|");
+    expect(syllableTexts(line)).toEqual(["我", "们", "今", "天", "好"]);
+  });
+
   it("keeps the text words after the ones the timed words cover when the words do not spell them", () => {
     const line = lineFromFields({ id: "l1", agentId: "v1", text: "goodbye moon tonight", words: helLo() }, "|");
     expect(syllableTexts(line)).toEqual(["hel", "lo", "moon", "tonight"]);
