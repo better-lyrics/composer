@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { reconcileLine } from "@/domain/line/model";
-import { editTextWithRewrittenRows, linesToEditText, shiftCaretPastRewrittenRows } from "@/views/edit/edit-text";
+import { editTextWithRewrittenRows, linesToEditText, shiftCaretPastRewrittenRows } from "@/domain/edit-text/edit-text";
 
 const line = (id: string, text: string) => reconcileLine({ id, text, agentId: "v1" });
 

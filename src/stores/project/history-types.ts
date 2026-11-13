@@ -33,6 +33,12 @@ interface HistoryState {
   pendingNote: HistoryNote | null;
 }
 
+// The lyrics a typing burst started from, and whether an earlier write was still pending then.
+interface LyricBurst {
+  lines: LyricLine[];
+  wasPending: boolean;
+}
+
 interface HistoryActions {
   commit: (command: LyricCommand, mode?: CommitMode) => Outcome;
   undo: () => void;
@@ -42,10 +48,12 @@ interface HistoryActions {
   clearHistory: () => void;
   markDirty: () => void;
   markClean: () => void;
-  commitPendingLineEdit: (baseline: LyricLine[], baselineWasDirty?: boolean) => void;
+  beginLyricBurst: () => LyricBurst;
+  closeLyricBurst: (burst: LyricBurst) => void;
+  isCurrentStep: (entry: HistoryEntry | undefined) => boolean;
   applyLineUpdatesToCurrentStep: (updates: LineUpdate[]) => void;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export type { CommitMode, HistoryActions, HistoryEntry, HistoryState };
+export type { CommitMode, HistoryActions, HistoryEntry, HistoryState, LyricBurst };

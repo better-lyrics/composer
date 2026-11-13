@@ -190,9 +190,9 @@ describe("updateLinesWithHistory", () => {
   });
 });
 
-// -- commitPendingLineEdit -----------------------------------------------------
+// -- closeLyricBurst ------------------------------------------------------------
 
-describe("commitPendingLineEdit", () => {
+describe("closeLyricBurst", () => {
   it("records a typing run as a single undo entry", () => {
     useProjectStore.getState().setLines([seedLine("a", { text: "hello" })]);
     const baseline = useProjectStore.getState().lines;
@@ -200,7 +200,7 @@ describe("commitPendingLineEdit", () => {
     useProjectStore.getState().setLines([seedLine("a", { text: "hello wor" })]);
     useProjectStore.getState().setLines([seedLine("a", { text: "hello world" })]);
 
-    useProjectStore.getState().commitPendingLineEdit(baseline);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
 
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines[0].text).toBe("hello");
@@ -212,7 +212,7 @@ describe("commitPendingLineEdit", () => {
   it("is a no-op when nothing changed since the last history entry", () => {
     useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "hello" })]);
     const indexBefore = useProjectStore.getState().historyIndex;
-    useProjectStore.getState().commitPendingLineEdit(useProjectStore.getState().lines);
+    useProjectStore.getState().closeLyricBurst({ lines: useProjectStore.getState().lines, wasPending: false });
     expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
   });
 
@@ -227,7 +227,7 @@ describe("commitPendingLineEdit", () => {
 
     const baseline = useProjectStore.getState().lines;
     useProjectStore.getState().setLines([seedLine("a", { text: "one edited" })]);
-    useProjectStore.getState().commitPendingLineEdit(baseline);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
 
     expect(useProjectStore.getState().lines[0].text).toBe("one edited");
     expect(useProjectStore.getState().canRedo()).toBe(false);
@@ -244,7 +244,7 @@ describe("commitPendingLineEdit", () => {
     useProjectStore.getState().setLines(baseline);
     useProjectStore.getState().setLines([seedLine("a", { text: "start typed" })]);
 
-    useProjectStore.getState().commitPendingLineEdit(baseline);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
 
     expect(useProjectStore.getState().canUndo()).toBe(true);
     expect(useProjectStore.getState().lines[0].text).toBe("start typed");
@@ -259,7 +259,7 @@ describe("commitPendingLineEdit", () => {
     const baselineSnapshot = structuredClone(baseline);
 
     useProjectStore.getState().setLines([seedLine("a", { text: "frozen edited" })]);
-    useProjectStore.getState().commitPendingLineEdit(baseline);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
 
     expect(baseline).toEqual(baselineSnapshot);
   });
@@ -269,7 +269,7 @@ describe("commitPendingLineEdit", () => {
     const baseline = useProjectStore.getState().lines;
 
     useProjectStore.getState().setLines([seedLine("a", { text: "clone me edited" })]);
-    useProjectStore.getState().commitPendingLineEdit(baseline);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
 
     const committedIndex = useProjectStore.getState().historyIndex;
     const live = useProjectStore.getState().lines[0];
@@ -284,7 +284,7 @@ describe("commitPendingLineEdit", () => {
     for (let i = 0; i < MAX_HISTORY_SIZE + 50; i++) {
       const baseline = useProjectStore.getState().lines;
       useProjectStore.getState().setLines([seedLine("a", { text: `edit ${i}` })]);
-      useProjectStore.getState().commitPendingLineEdit(baseline);
+      useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
     }
     expect(useProjectStore.getState().history.length).toBeLessThanOrEqual(MAX_HISTORY_SIZE);
     expect(useProjectStore.getState().historyIndex).toBe(useProjectStore.getState().history.length - 1);
@@ -295,7 +295,7 @@ describe("commitPendingLineEdit", () => {
     const baseline = useProjectStore.getState().lines;
 
     useProjectStore.getState().setLines([seedLine("a", { text: "base typed" })]);
-    useProjectStore.getState().commitPendingLineEdit(baseline);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
 
     expect(useProjectStore.getState().canUndo()).toBe(true);
     expect(useProjectStore.getState().canRedo()).toBe(false);
@@ -308,7 +308,7 @@ describe("commitPendingLineEdit", () => {
     useProjectStore.getState().setLines([seedLine("a", { text: "dirty typed" })]);
     expect(useProjectStore.getState().isDirtySinceHistory).toBe(true);
 
-    useProjectStore.getState().commitPendingLineEdit(baseline);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
     expect(useProjectStore.getState().isDirtySinceHistory).toBe(false);
   });
 
@@ -318,7 +318,7 @@ describe("commitPendingLineEdit", () => {
     const indexBefore = useProjectStore.getState().historyIndex;
     const dirtyBefore = useProjectStore.getState().isDirtySinceHistory;
 
-    useProjectStore.getState().commitPendingLineEdit(useProjectStore.getState().lines);
+    useProjectStore.getState().closeLyricBurst({ lines: useProjectStore.getState().lines, wasPending: false });
 
     expect(useProjectStore.getState().history).toBe(historyBefore);
     expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
@@ -326,9 +326,9 @@ describe("commitPendingLineEdit", () => {
   });
 });
 
-// -- commitPendingLineEdit · pre-dirty baseline seeding -----------------------
+// -- closeLyricBurst · pre-dirty baseline seeding ----------------------------
 
-describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
+describe("closeLyricBurst · pre-dirty baseline seeding", () => {
   it("seeds the baseline when a non-history mutation dirtied the store before the run", () => {
     useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "A" })]);
     useProjectStore.getState().setLines([seedLine("a", { text: "B" })]);
@@ -337,7 +337,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     expect(baselineWasDirty).toBe(true);
 
     useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
-    useProjectStore.getState().commitPendingLineEdit(baseline, baselineWasDirty);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: baselineWasDirty });
 
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines[0].text).toBe("B");
@@ -353,7 +353,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     const lengthBefore = useProjectStore.getState().history.length;
 
     useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
-    useProjectStore.getState().commitPendingLineEdit(baseline, baselineWasDirty);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: baselineWasDirty });
 
     expect(useProjectStore.getState().history.length).toBe(lengthBefore + 1);
     useProjectStore.getState().undo();
@@ -366,7 +366,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     const lengthBefore = useProjectStore.getState().history.length;
 
     useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
-    useProjectStore.getState().commitPendingLineEdit(baseline);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
 
     expect(useProjectStore.getState().history.length).toBe(lengthBefore + 1);
   });
@@ -377,7 +377,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     useProjectStore.getState().setLines(baseline);
     useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
 
-    useProjectStore.getState().commitPendingLineEdit(baseline, true);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: true });
 
     expect(useProjectStore.getState().history).toHaveLength(2);
     useProjectStore.getState().undo();
@@ -395,7 +395,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     useProjectStore.getState().setLines([seedLine("a", { text: "one cross-view" })]);
     const baseline = useProjectStore.getState().lines;
     useProjectStore.getState().setLines([seedLine("a", { text: "one typed" })]);
-    useProjectStore.getState().commitPendingLineEdit(baseline, true);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: true });
 
     expect(useProjectStore.getState().canRedo()).toBe(false);
     expect(useProjectStore.getState().lines[0].text).toBe("one typed");
@@ -412,7 +412,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     const baselineSnapshot = structuredClone(baseline);
 
     useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
-    useProjectStore.getState().commitPendingLineEdit(baseline, true);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: true });
 
     expect(baseline).toEqual(baselineSnapshot);
   });
@@ -423,7 +423,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     const baseline = useProjectStore.getState().lines;
 
     useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
-    useProjectStore.getState().commitPendingLineEdit(baseline, true);
+    useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: true });
 
     expect(() => {
       baseline[0].text = "live mutation";
@@ -436,7 +436,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "A" })]);
     const indexBefore = useProjectStore.getState().historyIndex;
 
-    useProjectStore.getState().commitPendingLineEdit(useProjectStore.getState().lines, true);
+    useProjectStore.getState().closeLyricBurst({ lines: useProjectStore.getState().lines, wasPending: true });
 
     expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
   });
