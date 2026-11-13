@@ -1,5 +1,5 @@
 import { lineTransliteration } from "@/domain/language/line-languages";
-import { withoutPieces } from "@/domain/language/pieces";
+import { withoutPieces } from "@/domain/language/side-pieces";
 import type { LyricLine } from "@/domain/line/model";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 

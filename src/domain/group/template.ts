@@ -1,5 +1,6 @@
 import type { LanguagePiece, LanguagePieces, LineLanguages } from "@/domain/language/model";
-import { keyedPieces, pieceOf, withTrackPieces, withoutPieces } from "@/domain/language/pieces";
+import { keyedPieces, pieceOf } from "@/domain/language/pieces";
+import { withPiecesOn } from "@/domain/language/side-pieces";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -52,9 +53,8 @@ function wordsToTemplate(words: WordTiming[], instanceStart: number, pieces?: La
 }
 
 function languagesToTemplate(languages: LineLanguages | undefined): LineLanguages | undefined {
-  const transliteration = languages?.transliteration;
-  if (!languages || !transliteration) return languages && structuredClone(languages);
-  return structuredClone({ ...languages, transliteration: withoutPieces(transliteration) });
+  const withoutReadings = withPiecesOn(withPiecesOn(languages, "main", undefined), "bg", undefined);
+  return withoutReadings && structuredClone(withoutReadings);
 }
 
 function templateLanguages(
@@ -62,21 +62,16 @@ function templateLanguages(
   words: readonly WordTiming[] | undefined,
   backgroundWords: readonly WordTiming[] | undefined,
 ): LineLanguages | undefined {
-  const languages = template.languages && structuredClone(template.languages);
-  const transliteration = languages?.transliteration;
-  if (!languages || !transliteration) return languages;
-  const sidePieces = (side: readonly WordTiming[] | undefined, tpl: WordTemplate[] | undefined) =>
+  const piecesOf = (side: readonly WordTiming[] | undefined, tpl: WordTemplate[] | undefined) =>
     side && tpl
       ? keyedPieces(
           side,
           tpl.map((word) => word.piece),
         )
       : undefined;
-  const main = withTrackPieces(transliteration, "main", sidePieces(words, template.words));
-  return {
-    ...languages,
-    transliteration: withTrackPieces(main, "bg", sidePieces(backgroundWords, template.backgroundWords)),
-  };
+  const languages = template.languages && structuredClone(template.languages);
+  const main = withPiecesOn(languages, "main", piecesOf(words, template.words));
+  return withPiecesOn(main, "bg", piecesOf(backgroundWords, template.backgroundWords));
 }
 
 function offsetTemplateWords(words: WordTemplate[], instanceStart: number): WordTiming[] {

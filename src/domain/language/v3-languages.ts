@@ -10,6 +10,7 @@ import type {
   TransliterationSegment,
 } from "@/domain/language/model";
 import { keyedPieces, type PositionalPieces, positionalPieces } from "@/domain/language/pieces";
+import { sidePieces, withPiecesOn } from "@/domain/language/side-pieces";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -86,8 +87,7 @@ function v3WordPieces(
   languages: LineLanguages | undefined,
   side: LanguageSide,
 ): V3Piece[] | undefined {
-  const pieces = languages?.transliteration?.[side]?.pieces ?? languages?.heldReadings?.[side];
-  return words && positionalPieces(words, pieces).map(v3Piece);
+  return words && positionalPieces(words, sidePieces(languages, side)).map(v3Piece);
 }
 
 // -- Tracks -------------------------------------------------------------------
@@ -154,29 +154,17 @@ function languagesFromV3(
   pieces: V3TrackPieces,
   words: StoreWords,
 ): LineLanguages | undefined {
-  const lineTransliteration = transliteration && lineLanguageFromV3(transliteration);
-  const mainPieces = words.words && pieces.main && keyedPieces(words.words, pieces.main);
-  const bgPieces = words.backgroundWords && pieces.bg && keyedPieces(words.backgroundWords, pieces.bg);
-  const bg = lineTransliteration?.bg ?? (bgPieces && {});
-  const withPieces = lineTransliteration && {
-    ...lineTransliteration,
-    main: { ...lineTransliteration.main, ...(mainPieces && { pieces: mainPieces }) },
-    ...(bg && { bg: { ...bg, ...(bgPieces && { pieces: bgPieces }) } }),
-  };
-  const heldReadings = !lineTransliteration && (mainPieces || bgPieces) && {
-    ...(mainPieces && { main: mainPieces }),
-    ...(bgPieces && { bg: bgPieces }),
-  };
-  if (!translations && !withPieces && !heldReadings) return undefined;
-  return {
+  const languages: LineLanguages = {
     ...(translations && {
       translations: Object.fromEntries(
         Object.entries(translations).map(([tag, track]) => [tag, lineLanguageFromV3(track)]),
       ),
     }),
-    ...(withPieces && { transliteration: withPieces }),
-    ...(heldReadings && { heldReadings }),
+    ...(transliteration && { transliteration: lineLanguageFromV3(transliteration) }),
   };
+  const mainPieces = words.words && pieces.main && keyedPieces(words.words, pieces.main);
+  const bgPieces = words.backgroundWords && pieces.bg && keyedPieces(words.backgroundWords, pieces.bg);
+  return withPiecesOn(withPiecesOn(languages, "main", mainPieces), "bg", bgPieces);
 }
 
 function v3Languages(languages: LineLanguages | undefined): V3LanguageFields {

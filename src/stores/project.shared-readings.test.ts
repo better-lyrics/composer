@@ -20,7 +20,10 @@ function chorusLine(id: string, instanceIdx: number, begin: number): RawLine {
       main: { text: "haneul", pieces: { [sky.id]: { text: "haneul" } } },
     },
   };
-  return { ...createLine({ id, text: "하늘", words: [sky], groupId: "g1", instanceIdx, templateLineIdx: 0 }), languages };
+  return {
+    ...createLine({ id, text: "하늘", words: [sky], groupId: "g1", instanceIdx, templateLineIdx: 0 }),
+    languages,
+  };
 }
 
 function romanSpans(ttml: string, key: string): string | undefined {
@@ -41,7 +44,9 @@ describe("readings of instances sharing timing", () => {
       createWord({ text: "하", begin: 1, end: 1.5, joinsNext: true }),
       createWord({ text: "늘", begin: 1.5, end: 2 }),
     ];
-    useProjectStore.getState().commit(splitSyncWord("a", 0, split, [{ text: "ha", joinerAfter: "" }, { text: "neul" }]));
+    useProjectStore
+      .getState()
+      .commit(splitSyncWord("a", 0, split, [{ text: "ha", joinerAfter: "" }, { text: "neul" }]));
 
     const [, b] = useProjectStore.getState().lines;
     const pieces = trackPieces(b, "main");
@@ -53,5 +58,42 @@ describe("readings of instances sharing timing", () => {
     });
     expect(romanSpans(ttml, "L2")).toBe(romanSpans(ttml, "L1"));
     expect(romanSpans(ttml, "L1")).toContain(">neul<");
+  });
+});
+
+describe("readings of linked lines", () => {
+  it("keeps a linked line's own readings when a word of its source is split", () => {
+    const linkedLine = (id: string, instanceIdx: number, begin: number): RawLine => {
+      const sky = createWord({ text: "하늘 ", begin, end: begin + 1 });
+      const sea = createWord({ text: "바다", begin: begin + 1, end: begin + 2 });
+      const line = createLine({
+        id,
+        text: "하늘 바다",
+        words: [sky, sea],
+        groupId: "g1",
+        instanceIdx,
+        templateLineIdx: 0,
+      });
+      return {
+        ...line,
+        languages: { heldReadings: { main: { [sky.id]: { text: "haneul" }, [sea.id]: { text: `bada ${id}` } } } },
+      };
+    };
+    useProjectStore.getState().reset();
+    useProjectStore.setState({
+      lines: [linkedLine("a", 0, 1), linkedLine("b", 1, 11)],
+      groups: [createGroup({ id: "g1" })],
+    });
+    const split = [
+      createWord({ text: "하", begin: 1, end: 1.5, joinsNext: true }),
+      createWord({ text: "늘 ", begin: 1.5, end: 2 }),
+    ];
+    useProjectStore
+      .getState()
+      .commit(splitSyncWord("a", 0, split, [{ text: "ha", joinerAfter: "" }, { text: "neul" }]));
+
+    const [, b] = useProjectStore.getState().lines;
+    const sea = b.words?.at(-1);
+    expect(sea && trackPieces(b, "main")?.[sea.id]).toEqual({ text: "bada b" });
   });
 });

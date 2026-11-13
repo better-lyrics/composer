@@ -18,8 +18,8 @@ import {
   pieceOf,
   positionalPieces,
   trackPieces,
-  withTrackPieces,
 } from "@/domain/language/pieces";
+import { withPiecesOn, withTrackPieces } from "@/domain/language/side-pieces";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
@@ -115,13 +115,12 @@ function splitLanguages(
   split: PiecedSplit,
   written: LineLanguage | null,
 ): LineLanguages | undefined {
-  const stored = lineTransliteration(line);
-  const base = written ?? stored;
-  if (!base) return line.languages;
   const side = languageSide(type);
   const other = side === "main" ? "bg" : "main";
-  const transliteration = withTrackPieces(withTrackPieces(base, side, split.pieces), other, trackPieces(line, other));
-  return languagesWith(line.languages, { transliteration });
+  const languages = written
+    ? languagesWith(line.languages, { transliteration: withTrackPieces(written, other, trackPieces(line, other)) })
+    : line.languages;
+  return withPiecesOn(languages, side, split.pieces);
 }
 
 function splitWordsKeepingTransliteration(

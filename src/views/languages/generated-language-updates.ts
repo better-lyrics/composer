@@ -2,7 +2,7 @@ import { alignTrackToLine } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { lineTranslations, lineTransliteration, withLanguages } from "@/domain/language/line-languages";
 import type { LineLanguage, LineTranslations, TransliterationSegment } from "@/domain/language/model";
-import { withoutPieces } from "@/domain/language/pieces";
+import { withoutPieces } from "@/domain/language/side-pieces";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
 import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";

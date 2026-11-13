@@ -6,7 +6,8 @@ import type {
   LineLanguage,
   TransliterationAlignmentStatus,
 } from "@/domain/language/model";
-import { mappedTransliteration, slicedPieces, withSidePieces, withTrackPieces } from "@/domain/language/pieces";
+import { mappedTransliteration, slicedPieces } from "@/domain/language/pieces";
+import { withSidePieces, withTrackPieces } from "@/domain/language/side-pieces";
 import {
   normalizeTransliterationForEditing,
   sourceWordCount,

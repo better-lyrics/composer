@@ -6,7 +6,8 @@ import type {
   LineLanguages,
   LineTranslations,
 } from "@/domain/language/model";
-import { keyedPieces, pieceOf, trackPieces, withTrackPieces } from "@/domain/language/pieces";
+import { keyedPieces, pieceOf, trackPieces } from "@/domain/language/pieces";
+import { withoutPieces, withPiecesOn } from "@/domain/language/side-pieces";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { hasAlternateText } from "@/utils/ttml-alternate-content";
@@ -87,14 +88,9 @@ function mergedSidePieces(
 function mergedLanguages(stored: LyricLine, edited: LyricLine, merged: MergedWords): LineLanguages | undefined {
   const translations = mergedTranslations(stored, edited);
   const chosen = mergedTransliteration(stored, edited);
-  const transliteration =
-    chosen &&
-    withTrackPieces(
-      withTrackPieces(chosen, "main", mergedSidePieces(stored, edited, "main", merged.words)),
-      "bg",
-      mergedSidePieces(stored, edited, "bg", merged.backgroundWords),
-    );
-  return languagesWith(undefined, { translations, transliteration });
+  const languages = languagesWith(undefined, { translations, transliteration: chosen && withoutPieces(chosen) });
+  const main = withPiecesOn(languages, "main", mergedSidePieces(stored, edited, "main", merged.words));
+  return withPiecesOn(main, "bg", mergedSidePieces(stored, edited, "bg", merged.backgroundWords));
 }
 
 // -- Exports ------------------------------------------------------------------

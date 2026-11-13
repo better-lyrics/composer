@@ -93,4 +93,24 @@ describe("word move commands", () => {
       { text: "dorifuto" },
     ]);
   });
+
+  it("carries a reading held without a romanization onto another line", () => {
+    const [a, b] = useProjectStore.getState().lines;
+    useProjectStore.setState({
+      lines: [{ ...a, languages: { heldReadings: { main: { [drift.id]: { text: "dorifuto" } } } } }, b],
+    });
+    useProjectStore.getState().commit(
+      moveWordsAcrossLines({
+        addresses: [addressOf({ id: "a" }, "word", drift)],
+        fromLineId: "a",
+        targetLineId: "b",
+        targetTrack: "word",
+        timeDelta: 2,
+        duration: 60,
+      }),
+    );
+    const [movedFrom, movedTo] = useProjectStore.getState().lines;
+    expect(pieceOf(trackPieces(movedTo, "main"), drift)).toEqual({ text: "dorifuto" });
+    expect(movedFrom.languages).toBeUndefined();
+  });
 });

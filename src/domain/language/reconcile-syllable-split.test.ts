@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { planTransliterationAlignment } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import { positionalPieces, withoutPieces } from "@/domain/language/pieces";
+import { positionalPieces } from "@/domain/language/pieces";
+import { withoutPieces } from "@/domain/language/side-pieces";
 import {
   splitWordIntoWordsKeepingTransliteration,
   splitWordsKeepingTransliteration,

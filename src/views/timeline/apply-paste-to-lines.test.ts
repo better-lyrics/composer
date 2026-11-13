@@ -19,7 +19,7 @@ const wholeSong = (duration: number) => timeRangeResolver([], [], duration);
 
 describe("applyPasteToLines", () => {
   describe("happy paths", () => {
-    it("gives a pasted syllable its reading only on a line that has a romanization", () => {
+    it("gives a pasted syllable its reading on lines with and without a romanization", () => {
       const reading = {
         language: "ja-Latn",
         origin: "manual" as const,
@@ -45,7 +45,8 @@ describe("applyPasteToLines", () => {
       });
       const [word] = updates?.[0].updates.words ?? [];
       expect(pieceOf(updates?.[0].updates.languages?.transliteration?.main.pieces, word)).toEqual({ text: "umi" });
-      expect(updates?.[1].updates.languages).toBeUndefined();
+      const [plainWord] = updates?.[1].updates.words ?? [];
+      expect(pieceOf(updates?.[1].updates.languages?.heldReadings?.main, plainWord)).toEqual({ text: "umi" });
     });
 
     it("re-derives main text from the new words after pasting onto an existing line", () => {

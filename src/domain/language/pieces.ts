@@ -1,12 +1,5 @@
-import { languagesWith, lineTransliteration } from "@/domain/language/line-languages";
-import type {
-  BackgroundLanguage,
-  LanguagePiece,
-  LanguagePieces,
-  LanguageSide,
-  LineLanguage,
-  LineLanguages,
-} from "@/domain/language/model";
+import type { LanguagePiece, LanguagePieces, LanguageSide, LineLanguages } from "@/domain/language/model";
+import { sidePieces, withPiecesOn } from "@/domain/language/side-pieces";
 import { hasLexicalBoundaryAfter, type TransliterationSlice } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTrack } from "@/domain/line/tracks";
@@ -22,26 +15,8 @@ function languageSide(type: WordTrack): LanguageSide {
   return type === "word" ? "main" : "bg";
 }
 
-function trackPieces(line: LyricLine, side: LanguageSide): LanguagePieces | undefined {
-  return line.languages?.transliteration?.[side]?.pieces;
-}
-
-function withSidePieces<T extends BackgroundLanguage>(track: T, pieces: LanguagePieces | undefined): T {
-  const { pieces: _old, ...rest } = track;
-  return (pieces ? { ...rest, pieces } : rest) as T;
-}
-
-// A side the language does not have holds no pieces, and a background side left with nothing is no side.
-function withTrackPieces(language: LineLanguage, side: LanguageSide, pieces: LanguagePieces | undefined): LineLanguage {
-  if (side === "main") return { ...language, main: withSidePieces(language.main, pieces) };
-  if (!language.bg) return language;
-  const { bg: _bg, ...rest } = language;
-  const bg = withSidePieces(language.bg, pieces);
-  return Object.keys(bg).length ? { ...rest, bg } : rest;
-}
-
-function withoutPieces(language: LineLanguage): LineLanguage {
-  return withTrackPieces(withTrackPieces(language, "main", undefined), "bg", undefined);
+function trackPieces(line: Pick<LyricLine, "languages">, side: LanguageSide): LanguagePieces | undefined {
+  return sidePieces(line.languages, side);
 }
 
 // -- Reads --------------------------------------------------------------------
@@ -141,10 +116,7 @@ function regroupedLanguages(
   before: readonly WordTiming[],
   after: readonly WordTiming[],
 ): LineLanguages | undefined {
-  const track = lineTransliteration(line);
-  if (!track) return line.languages;
-  const pieces = regroupedPieces(before, after, trackPieces(aligned, side));
-  return languagesWith(line.languages, { transliteration: withTrackPieces(track, side, pieces) });
+  return withPiecesOn(line.languages, side, regroupedPieces(before, after, trackPieces(aligned, side)));
 }
 
 // A write that replaced some syllables drops their pieces; syllables it kept as they were keep theirs.
@@ -154,22 +126,16 @@ function withKeptSyllablePieces(
   before: readonly WordTiming[],
   after: readonly WordTiming[],
 ): LineLanguages | undefined {
-  const track = lineTransliteration(line);
-  if (!track) return line.languages;
   const kept = new Set(before);
   const pieces = trackPieces(line, side);
   const positional = after.map((word) => (kept.has(word) ? pieceOf(pieces, word) : undefined));
-  return languagesWith(line.languages, {
-    transliteration: withTrackPieces(track, side, keyedPieces(after, positional)),
-  });
+  return withPiecesOn(line.languages, side, keyedPieces(after, positional));
 }
 
 // Languages copied to a linked line keep that line's own pieces: they are keyed to its own syllables.
 function withOwnPieces(languages: LineLanguages | undefined, line: LyricLine): LineLanguages | undefined {
-  const track = languages?.transliteration;
-  if (!track) return languages;
-  const main = withTrackPieces(track, "main", trackPieces(line, "main"));
-  return { ...languages, transliteration: withTrackPieces(main, "bg", trackPieces(line, "bg")) };
+  const main = withPiecesOn(withPiecesOn(languages, "main", undefined), "main", trackPieces(line, "main"));
+  return withPiecesOn(withPiecesOn(main, "bg", undefined), "bg", trackPieces(line, "bg"));
 }
 
 function withAddedPieces(
@@ -177,28 +143,19 @@ function withAddedPieces(
   side: LanguageSide,
   added: LanguagePieces,
 ): LineLanguages | undefined {
-  const track = languages?.transliteration;
-  if (!track || Object.keys(added).length === 0) return languages;
-  const sideTrack = side === "main" ? track.main : (track.bg ?? {});
-  const pieces = { ...sideTrack.pieces, ...added };
-  const transliteration =
-    side === "main"
-      ? { ...track, main: withSidePieces(track.main, pieces) }
-      : { ...track, bg: withSidePieces(sideTrack, pieces) };
-  return { ...languages, transliteration };
+  if (Object.keys(added).length === 0) return languages;
+  return withPiecesOn(languages, side, { ...sidePieces(languages, side), ...added });
 }
 
 // A line given another line's syllables takes that line's readings too, by position.
 function withReadingsOf(line: LyricLine, source: LyricLine): LineLanguages | undefined {
-  const track = lineTransliteration(line);
-  if (!track) return line.languages;
-  const main = keyedPieces(line.words ?? [], positionalPieces(source.words ?? [], trackPieces(source, "main")));
-  const bg = keyedPieces(
-    line.backgroundWords ?? [],
-    positionalPieces(source.backgroundWords ?? [], trackPieces(source, "bg")),
-  );
-  const copied = withTrackPieces(withTrackPieces(track, "main", main), "bg", bg);
-  return languagesWith(line.languages, { transliteration: copied });
+  const copied = (
+    side: LanguageSide,
+    words: readonly WordTiming[] | undefined,
+    from: readonly WordTiming[] | undefined,
+  ) => keyedPieces(words ?? [], positionalPieces(from ?? [], trackPieces(source, side)));
+  const main = withPiecesOn(line.languages, "main", copied("main", line.words, source.words));
+  return withPiecesOn(main, "bg", copied("bg", line.backgroundWords, source.backgroundWords));
 }
 
 // -- Orphans ------------------------------------------------------------------
@@ -215,25 +172,14 @@ function ownedPieces(
   return kept.length ? Object.fromEntries(kept.map((id) => [id, pieces[id]])) : undefined;
 }
 
-function withoutOrphanHeldReadings<T extends LyricLine>(line: T): T {
-  const held = line.languages?.heldReadings;
-  if (!held) return line;
-  const main = ownedPieces(held.main, line.words);
-  const bg = ownedPieces(held.bg, line.backgroundWords);
-  if (main === held.main && bg === held.bg) return line;
-  const heldReadings = main || bg ? { ...(main && { main }), ...(bg && { bg }) } : undefined;
-  return { ...line, languages: languagesWith(line.languages, { heldReadings }) };
-}
-
 // A piece is kept only while its syllable is on that side of the line.
 function withoutOrphanPieces<T extends LyricLine>(line: T): T {
-  const track = lineTransliteration(line);
-  if (!track) return withoutOrphanHeldReadings(line);
-  const main = ownedPieces(track.main.pieces, line.words);
-  const bg = track.bg && ownedPieces(track.bg.pieces, line.backgroundWords);
-  if (main === track.main.pieces && bg === track.bg?.pieces) return line;
-  const kept = withTrackPieces(withTrackPieces(track, "main", main), "bg", bg);
-  return { ...line, languages: languagesWith(line.languages, { transliteration: kept }) };
+  const main = trackPieces(line, "main");
+  const bg = trackPieces(line, "bg");
+  const ownedMain = ownedPieces(main, line.words);
+  const ownedBg = ownedPieces(bg, line.backgroundWords);
+  if (ownedMain === main && ownedBg === bg) return line;
+  return { ...line, languages: withPiecesOn(withPiecesOn(line.languages, "main", ownedMain), "bg", ownedBg) };
 }
 
 // -- Exports ------------------------------------------------------------------
@@ -254,8 +200,5 @@ export {
   withKeptSyllablePieces,
   withOwnPieces,
   withoutOrphanPieces,
-  withoutPieces,
   withReadingsOf,
-  withSidePieces,
-  withTrackPieces,
 };

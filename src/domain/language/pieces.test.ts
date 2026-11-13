@@ -5,6 +5,8 @@ import {
   mergedPiece,
   positionalPieces,
   regroupedPieces,
+  trackPieces,
+  withReadingsOf,
 } from "@/domain/language/pieces";
 import { mergeWordRun } from "@/domain/word/merge-run";
 import type { WordTiming } from "@/domain/word/timing";
@@ -65,5 +67,27 @@ describe("language pieces", () => {
     const pair = [word("w1", "a", "", 0), word("w2", "b", " ", 1)];
     const missing = mergeWordRun(pair, [0, 1]) ?? [];
     expect(regroupedPieces(pair, missing, { w1: { text: "a" } })?.w1?.text).toBeUndefined();
+  });
+
+  it("give a line the background readings of the line it copies when its romanization has no background", () => {
+    const source = {
+      id: "a",
+      agentId: "v1",
+      text: "",
+      backgroundWords: [word("s1", "sora", "", 1)],
+      languages: { heldReadings: { bg: { s1: { text: "sora" } } } },
+    };
+    const target = {
+      id: "b",
+      agentId: "v1",
+      text: "",
+      backgroundWords: [word("t1", "sora", "", 11)],
+      languages: {
+        transliteration: { language: "ja-Latn", origin: "manual" as const, sourceFingerprint: "", main: { text: "" } },
+      },
+    };
+    expect(trackPieces({ ...target, languages: withReadingsOf(target, source) }, "bg")).toEqual({
+      t1: { text: "sora" },
+    });
   });
 });
