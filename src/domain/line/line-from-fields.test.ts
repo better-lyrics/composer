@@ -66,7 +66,9 @@ describe("a load never drops the untimed rest", () => {
 
   describe("a fully synced line adds nothing", () => {
     const words = (...texts: string[]) =>
-      createWords(texts.map((text, index) => ({ text, sep: index < texts.length - 1 ? " " : "", begin: index, end: index + 1 })));
+      createWords(
+        texts.map((text, index) => ({ text, sep: index < texts.length - 1 ? " " : "", begin: index, end: index + 1 })),
+      );
     const loaded = (text: string, timed: ReturnType<typeof words>) =>
       syllableTexts(lineFromFields({ id: "l1", agentId: "v1", text, words: timed }, "|"));
 
