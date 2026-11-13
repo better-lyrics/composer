@@ -1,4 +1,4 @@
-import { sharedCopyTargets } from "@/domain/group/shared-copy-targets";
+import { sharedCopyTargetFinder } from "@/domain/group/shared-copy-targets";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceKey } from "@/domain/instance/key";
@@ -189,20 +189,14 @@ function sharedTimingFanOut(
   const indexById = new Map(after.map((line, index) => [line.id, index]));
   const claimedTemplateLines = new Set<string>();
   const touchedGroupIds = new Set<string>();
-  const offsets = new Map<string, number | null>();
-  const offsetBefore = (groupId: string, from: number, to: number) => {
-    const key = `${groupId}:${from}:${to}`;
-    if (!offsets.has(key)) offsets.set(key, instanceOffset(before, groupId, from, to));
-    return offsets.get(key) ?? null;
-  };
+  const copyTargets = sharedCopyTargetFinder(after, (groupId, from, to) => instanceOffset(before, groupId, from, to));
   let lines = after;
 
   for (const { line: source, group, instanceOrder } of sources) {
     const claimKey = `${group.id}:${source.templateLineIdx}`;
     if (claimedTemplateLines.has(claimKey)) continue;
     claimedTemplateLines.add(claimKey);
-    const offsetTo = (targetIdx: number) => offsetBefore(group.id, source.instanceIdx, targetIdx);
-    for (const { target, offset } of sharedCopyTargets(after, source, instanceOrder, offsetTo)) {
+    for (const { target, offset } of copyTargets(source, instanceOrder)) {
       const updates = offsetTimingFields(source, offset);
       if (hasNegativeTime(updates)) return { ...unchanged, rejected: true };
       const copied = reconcileLine({ ...target, ...updates });

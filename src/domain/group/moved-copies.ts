@@ -1,4 +1,4 @@
-import { sharedCopyTargets } from "@/domain/group/shared-copy-targets";
+import { sharedCopyTargetFinder } from "@/domain/group/shared-copy-targets";
 import { instanceOffset, isSharedLine, sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceKey } from "@/domain/instance/key";
@@ -31,23 +31,18 @@ function copiesMovedWith(
   const namesByInstance = new Map<string, string>();
   const lineIdsBySource = new Map<string, string[]>();
   const instancesByGroup = new Map<string, ReturnType<typeof sharedInstancesInLineOrder>>();
-  const offsets = new Map<string, number | null>();
+  const copyTargets = sharedCopyTargetFinder(lines, (groupId, from, to) => instanceOffset(lines, groupId, from, to));
   for (const sourceId of sources) {
     const source = linesById.get(sourceId);
     if (!source || !isLinked(source) || !isSharedLine(source, groupsById)) continue;
     const group = groupsById.get(source.groupId);
     if (!group) continue;
-    const offsetTo = (targetIdx: number) => {
-      const key = `${group.id}:${source.instanceIdx}:${targetIdx}`;
-      if (!offsets.has(key)) offsets.set(key, instanceOffset(lines, group.id, source.instanceIdx, targetIdx));
-      return offsets.get(key) ?? null;
-    };
     let instances = instancesByGroup.get(group.id);
     if (!instances) {
       instances = sharedInstancesInLineOrder(lines, group);
       instancesByGroup.set(group.id, instances);
     }
-    const targets = sharedCopyTargets(lines, source, instances, offsetTo)
+    const targets = copyTargets(source, instances)
       .map(({ target }) => target)
       .filter((target) => !sources.has(target.id));
     if (targets.length === 0) continue;
