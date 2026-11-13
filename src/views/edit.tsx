@@ -429,7 +429,7 @@ const EditPanel: React.FC = () => {
         <div className="flex flex-1 min-w-0 items-center justify-end gap-3">
           <EditNotices parsed={parsed} isTyping={isTypingLyrics} />
           <Tooltip content="No parentheses to extract" disabled={canExtractBackgroundVocals}>
-            <span className="inline-flex">
+            <span className="inline-flex rounded-xl" tabIndex={canExtractBackgroundVocals ? undefined : 0}>
               <Button
                 hasIcon
                 size="lg"

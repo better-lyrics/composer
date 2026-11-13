@@ -97,7 +97,7 @@ const BridgeSection: React.FC = () => {
     if (health.data) markBridgeDetected();
   }, [health.data]);
 
-  const state: "checking" | "ok" | "error" = health.isPending ? "checking" : health.data ? "ok" : "error";
+  const state: "checking" | "ok" | "error" = health.isPending ? "checking" : health.isError ? "error" : "ok";
   const errorMessage = health.error instanceof Error ? health.error.message : undefined;
 
   return (

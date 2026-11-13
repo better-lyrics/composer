@@ -111,7 +111,10 @@ async function commitPasteAt(target: PasteTarget): Promise<PasteOutcome> {
           { value: "link", label: "Link as instance", variant: "primary" },
         ],
       });
-      if (answer === "cancel") return "cancelled";
+      if (answer === "cancel") {
+        useTimelineStore.getState().setPasteMode({ status: "idle" });
+        return "cancelled";
+      }
       if (answer === "link") {
         const sourceIdx = templateSourceInstance(lines, group, match.instanceIdx);
         const template = instanceToTemplate(lines, match.groupId, sourceIdx);
