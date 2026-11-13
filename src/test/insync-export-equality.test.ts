@@ -1,4 +1,4 @@
-import { syllablesFromWords } from "insync/from-words";
+import { joinsFromWords, syllablesFromWords } from "insync/from-words";
 import { wordsFromSyllables } from "insync/to-words";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -109,6 +109,21 @@ function throughSyllables(line: LyricLine): LyricLine {
   return reconcileLine({ ...line, ...(words && { words }), ...(backgroundWords && { backgroundWords }) });
 }
 
+function withoutGroupIds(line: SavedLine): SavedLine {
+  const strip = (words: SavedLine["words"]) => words?.map(({ syllableGroupId: _id, ...word }) => word);
+  return {
+    ...line,
+    ...(line.words && { words: strip(line.words) }),
+    ...(line.backgroundWords && { backgroundWords: strip(line.backgroundWords) }),
+  };
+}
+
+// Saved ids are rewritten one per word run, so a reload must read the same joins the record spelled.
+function expectSameJoins(resaved: SavedLine, saved: SavedLine, name: string): void {
+  expect(joinsFromWords(resaved.words ?? []), name).toEqual(joinsFromWords(saved.words ?? []));
+  expect(joinsFromWords(resaved.backgroundWords ?? []), name).toEqual(joinsFromWords(saved.backgroundWords ?? []));
+}
+
 // A load may only put back syllable marks: everything else, the language fingerprint and the export stay.
 function expectSaveAndLoadKeepEverything(project: EditedTtmlProject, record: SavedRecord): number {
   const storeLines = linesFromSaved(record.lines);
@@ -117,7 +132,10 @@ function expectSaveAndLoadKeepEverything(project: EditedTtmlProject, record: Sav
   let repaired = 0;
   resaved.forEach((line, index) => {
     const saved = record.lines[index];
-    expect({ ...line, text: saved.text, backgroundText: saved.backgroundText }, record.name).toEqual(saved);
+    expect(withoutGroupIds({ ...line, text: saved.text, backgroundText: saved.backgroundText }), record.name).toEqual(
+      withoutGroupIds(saved),
+    );
+    expectSameJoins(line, saved, record.name);
     expect(stripSplitCharacter(line.text), record.name).toBe(stripSplitCharacter(saved.text));
     expect(stripSplitCharacter(line.backgroundText ?? ""), record.name).toBe(
       stripSplitCharacter(saved.backgroundText ?? ""),
