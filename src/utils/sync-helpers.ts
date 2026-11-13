@@ -2,7 +2,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { lineTimingWordId } from "@/domain/word/id";
 import { trackWords } from "@/domain/line/tracks";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
-import type { SyncCursor } from "@/domain/sync/cursor";
+import type { SyncAddress } from "@/domain/sync/address";
 import type { ReRecording } from "@/domain/sync/skipped-instances";
 import { wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
@@ -17,7 +17,7 @@ interface SyncReRecording extends ReRecording {
 }
 
 interface SyncState {
-  position: SyncCursor;
+  position: SyncAddress;
   isActive: boolean;
   // True when the cursor was placed by a jump rather than by advancing through
   // the song. Tapping the first word of a line closes the previous line so the

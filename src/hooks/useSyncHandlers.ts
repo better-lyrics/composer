@@ -5,6 +5,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { shiftLineTiming } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
+import { SYNC_START, syncAddressAt } from "@/domain/sync/address";
 import { anchorGesture } from "@/domain/sync/anchor-gesture";
 import { type PlacementSkip, placementSkipTarget } from "@/domain/sync/placement-skip";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
@@ -107,9 +108,10 @@ function useSyncHandlers({
           seekTo(skip.seekTo);
           onPlacementSkip?.(skip, anchor.resumeCursor.lineIndex);
         }
+        const resume = syncAddressAt(placed.lines, anchor.resumeCursor);
         const anchorUndo = {
-          resume: anchor.resumeCursor,
-          anchor: anchor.anchorCursor,
+          resume,
+          anchor: syncAddressAt(lines, anchor.anchorCursor),
           jumped,
           placedEntry: placed.history[placed.historyIndex],
           previousEntry: placed.history[placed.historyIndex - 1],
@@ -117,7 +119,7 @@ function useSyncHandlers({
         // Jumped, so the next tap trims an overlap with the placed instance instead of stretching its shared last word.
         setSyncState((prev) => ({
           ...prev,
-          position: anchor.resumeCursor,
+          position: resume,
           jumpedToPosition: true,
           anchorUndo,
           reRecording: keptSyncReRecording(prev.reRecording, lines, anchor.resumeCursor),
@@ -129,9 +131,10 @@ function useSyncHandlers({
       const commit = commitGesture(lines, gesture, ctx);
       if (!commit) return false;
       updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
+      const position = syncAddressAt(useProjectStore.getState().lines, commit.nextCursor);
       setSyncState((prev) => ({
         ...prev,
-        position: commit.nextCursor,
+        position,
         jumpedToPosition: commit.nextJumped,
         reRecording: keptSyncReRecording(prev.reRecording, lines, commit.nextCursor),
       }));
@@ -190,7 +193,7 @@ function useSyncHandlers({
       },
     }));
     useProjectStore.getState().updateLinesWithHistory(updates, { propagateToSiblings: false });
-    setSyncState({ position: { lineIndex: 0, wordIndex: 0 }, isActive: false });
+    setSyncState({ position: SYNC_START, isActive: false });
   }, [lines, setSyncState, confirm]);
 
   const handleStartSync = useCallback(() => {
@@ -202,7 +205,7 @@ function useSyncHandlers({
     // forward pass.
     setSyncState((prev) => ({
       ...prev,
-      position: { lineIndex: startLine, wordIndex: startWord },
+      position: syncAddressAt(lines, { lineIndex: startLine, wordIndex: startWord }),
       isActive: true,
       jumpedToPosition: startLine === cursorLine ? jumped : false,
     }));
@@ -229,7 +232,7 @@ function useSyncHandlers({
     (index: number) => {
       setSyncState((prev) => ({
         ...prev,
-        position: { lineIndex: index, wordIndex: 0 },
+        position: syncAddressAt(lines, { lineIndex: index, wordIndex: 0 }),
         jumpedToPosition: true,
         reRecording: syncReRecordingAt(skippedInstances, lines, index),
       }));
@@ -250,7 +253,7 @@ function useSyncHandlers({
       if (!word) return;
       setSyncState((prev) => ({
         ...prev,
-        position: { lineIndex: lineIdx, wordIndex: wordIdx },
+        position: syncAddressAt(lines, { lineIndex: lineIdx, wordIndex: wordIdx }),
         jumpedToPosition: true,
         reRecording: syncReRecordingAt(skippedInstances, lines, lineIdx),
       }));

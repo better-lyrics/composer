@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { type SyncAddress, syncAddressAt } from "@/domain/sync/address";
 import { type AnchorUndo, anchorGesture, storedSyncPosition } from "@/domain/sync/anchor-gesture";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import type { SyncCursor } from "@/domain/sync/cursor";
@@ -138,12 +139,14 @@ describe("anchorGesture", () => {
 });
 
 describe("storedSyncPosition", () => {
-  const resume = { lineIndex: 5, wordIndex: 0 };
+  const lines = song();
+  const resume = syncAddressAt(lines, { lineIndex: 5, wordIndex: 0 });
+  const anchorSlot = syncAddressAt(lines, { lineIndex: 3, wordIndex: 0 });
   const before = { name: "before placing" };
   const placed = { name: "placed" };
   const anchorUndo: AnchorUndo = {
     resume,
-    anchor: { lineIndex: 3, wordIndex: 0 },
+    anchor: anchorSlot,
     jumped: false,
     placedEntry: placed,
     previousEntry: before,
@@ -152,16 +155,16 @@ describe("storedSyncPosition", () => {
 
   it("returns the anchor slot once the placing is undone", () => {
     expect(
-      storedSyncPosition({ position: resume, jumpedToPosition: true, anchorUndo }, at([before, placed], 0)),
+      storedSyncPosition({ position: resume, jumpedToPosition: true, anchorUndo }, lines, at([before, placed], 0)),
     ).toEqual({
-      position: { lineIndex: 3, wordIndex: 0 },
+      position: anchorSlot,
       jumped: false,
     });
   });
 
   it("keeps the resume position while the placing stands", () => {
     expect(
-      storedSyncPosition({ position: resume, jumpedToPosition: true, anchorUndo }, at([before, placed], 1)),
+      storedSyncPosition({ position: resume, jumpedToPosition: true, anchorUndo }, lines, at([before, placed], 1)),
     ).toEqual({
       position: resume,
       jumped: true,
@@ -170,46 +173,54 @@ describe("storedSyncPosition", () => {
 
   it("keeps the resume position after later edits", () => {
     const state = { position: resume, jumpedToPosition: true, anchorUndo };
-    expect(storedSyncPosition(state, at([before, placed, { name: "edit" }], 2)).position).toBe(resume);
+    expect(storedSyncPosition(state, lines, at([before, placed, { name: "edit" }], 2)).position).toBe(resume);
   });
 
   describe("regressions", () => {
     it("regression: returns the anchor slot when an edit follows the undo", () => {
       const state = { position: resume, jumpedToPosition: true, anchorUndo };
-      expect(storedSyncPosition(state, at([before, { name: "edit" }], 1)).position).toEqual({
-        lineIndex: 3,
-        wordIndex: 0,
-      });
+      expect(storedSyncPosition(state, lines, at([before, { name: "edit" }], 1)).position).toBe(anchorSlot);
     });
 
     it("regression: keeps the resume position when a full history undoes a later edit", () => {
       const state = { position: resume, jumpedToPosition: true, anchorUndo };
-      expect(storedSyncPosition(state, at([placed, { name: "a" }, { name: "b" }], 1)).position).toBe(resume);
+      expect(storedSyncPosition(state, lines, at([placed, { name: "a" }, { name: "b" }], 1)).position).toBe(resume);
     });
 
     it("regression: returns the anchor slot when the resume position was rebuilt with the same place", () => {
-      const rebuilt = { lineIndex: resume.lineIndex, wordIndex: resume.wordIndex };
+      const rebuilt: SyncAddress = { ...resume, at: { ...resume.at }, storedAt: { ...resume.storedAt } };
       const state = { position: rebuilt, jumpedToPosition: true, anchorUndo };
-      expect(storedSyncPosition(state, at([before, placed], 0)).position).toEqual({ lineIndex: 3, wordIndex: 0 });
+      expect(storedSyncPosition(state, lines, at([before, placed], 0)).position).toBe(anchorSlot);
+    });
+
+    it("regression: returns the anchor slot after an undone hold made the resume slot a timed word", () => {
+      const heldLines = [...lines.slice(0, 5), verse("v2", 60)];
+      const held = syncAddressAt(heldLines, { lineIndex: 5, wordIndex: 0 });
+      const state = { position: held, jumpedToPosition: true, anchorUndo };
+      expect(storedSyncPosition(state, lines, at([before, placed, { name: "held" }], 0)).position).toBe(anchorSlot);
     });
 
     it("keeps the resume position once the placing is too old to undo", () => {
       const state = { position: resume, jumpedToPosition: true, anchorUndo };
-      expect(storedSyncPosition(state, at([{ name: "a" }, { name: "b" }], 0)).position).toBe(resume);
+      expect(storedSyncPosition(state, lines, at([{ name: "a" }, { name: "b" }], 0)).position).toBe(resume);
     });
   });
 
   describe("invariants", () => {
     it("ignores the record once the cursor has moved", () => {
-      const moved = { lineIndex: 6, wordIndex: 1 };
-      expect(storedSyncPosition({ position: moved, anchorUndo }, at([before, placed], 0))).toEqual({
+      const moved: SyncAddress = {
+        lineId: "bridge",
+        at: { syllableId: "y4" },
+        storedAt: { lineIndex: 6, wordIndex: 1 },
+      };
+      expect(storedSyncPosition({ position: moved, anchorUndo }, lines, at([before, placed], 0))).toEqual({
         position: moved,
         jumped: false,
       });
     });
 
     it("reads the stored position when there is no record", () => {
-      expect(storedSyncPosition({ position: resume }, at([], 0))).toEqual({ position: resume, jumped: false });
+      expect(storedSyncPosition({ position: resume }, lines, at([], 0))).toEqual({ position: resume, jumped: false });
     });
   });
 });
