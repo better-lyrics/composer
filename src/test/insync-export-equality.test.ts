@@ -2,6 +2,7 @@ import { syllablesFromWords } from "insync/from-words";
 import { wordsFromSyllables } from "insync/to-words";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { spacedFromWords, wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
@@ -17,6 +18,7 @@ import {
   buildSyncedTtml,
 } from "@/test/ttml-fixtures";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
+import { stripSplitCharacter } from "@/utils/split-character";
 import { generateProjectTtml } from "@/utils/ttml";
 
 // -- Constants ----------------------------------------------------------------
@@ -57,13 +59,25 @@ function realRecords(): SavedRecord[] {
   });
 }
 
+// The load before split marks were restored, so real exports are compared with what 3.x exported.
+function linesLoadedAsSaved(lines: readonly SavedLine[]): LyricLine[] {
+  const storeWords = (words: SavedLine["words"]) => words && wordsFromSpaced(words.map(({ id: _id, ...word }) => word));
+  return lines.map(({ words, backgroundWords, ...fields }) =>
+    reconcileLine({
+      ...fields,
+      words: storeWords(words),
+      ...(backgroundWords && { backgroundWords: storeWords(backgroundWords) }),
+    }),
+  );
+}
+
 function realProjects(): EditedTtmlProject[] {
   return REAL_PROJECT_FILES.flatMap((path) => {
     const contents = parseProjectFileContents(readFileSync(path, "utf8"));
     const files = contents.kind === "bundle" ? contents.projects : [contents.project];
     return files.map(({ metadata, lines, groups, agents }) => ({
       name: `${path}: ${metadata.title}`,
-      lines: linesFromSaved(lines),
+      lines: linesLoadedAsSaved(lines),
       groups: groups ?? [],
       agents,
       metadata,
@@ -95,10 +109,26 @@ function throughSyllables(line: LyricLine): LyricLine {
   return reconcileLine({ ...line, ...(words && { words }), ...(backgroundWords && { backgroundWords }) });
 }
 
-function expectSaveAndLoadKeepEverything(project: EditedTtmlProject, record: SavedRecord): void {
+// A load may only put back syllable marks: everything else, the language fingerprint and the export stay.
+function expectSaveAndLoadKeepEverything(project: EditedTtmlProject, record: SavedRecord): number {
   const storeLines = linesFromSaved(record.lines);
-  expect(savedLines(storeLines), record.name).toEqual(record.lines);
+  const resaved = savedLines(storeLines);
+  expect(savedLines(linesFromSaved(resaved)), record.name).toEqual(resaved);
+  let repaired = 0;
+  resaved.forEach((line, index) => {
+    const saved = record.lines[index];
+    expect({ ...line, text: saved.text, backgroundText: saved.backgroundText }, record.name).toEqual(saved);
+    expect(stripSplitCharacter(line.text), record.name).toBe(stripSplitCharacter(saved.text));
+    expect(stripSplitCharacter(line.backgroundText ?? ""), record.name).toBe(
+      stripSplitCharacter(saved.backgroundText ?? ""),
+    );
+    expect(languageSourceFingerprint(line.text, line.backgroundText), record.name).toBe(
+      languageSourceFingerprint(saved.text, saved.backgroundText),
+    );
+    if (line.text !== saved.text || line.backgroundText !== saved.backgroundText) repaired++;
+  });
   expect(exportOf({ ...project, lines: storeLines }), record.name).toBe(exportOf(project));
+  return repaired;
 }
 
 function exportOf(project: EditedTtmlProject): string {
@@ -124,10 +154,11 @@ describe("insync export equality", () => {
     const records = realRecords();
     const projects = realProjects();
     expect(records.length).toBeGreaterThan(0);
-    records.forEach((record, index) => {
-      const reloaded = { ...projects[index], lines: linesFromSaved(savedLines(projects[index].lines)) };
-      expectSaveAndLoadKeepEverything(reloaded, record);
-    });
+    const repaired = records.reduce(
+      (count, record, index) => count + expectSaveAndLoadKeepEverything(projects[index], record),
+      0,
+    );
+    console.info(`[insync] lines with restored syllable marks: ${repaired}`);
   });
 
   it.runIf(REAL_PROJECT_FILES.length > 0)("syllable round trip keeps the export of real projects", () => {
