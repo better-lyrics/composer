@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { wordAddress } from "@/test/word-address";
 import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tracks";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -148,7 +149,7 @@ describe("EmptyBgTrack", () => {
     const after = useProjectStore.getState().lines[0];
     expect(after.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["..."]);
     expect(after.backgroundTextSource).toBe("manual");
-    expect(useTimelineStore.getState().editingWord).toEqual({ lineId: "l1", wordIndex: 0, type: "bg" });
+    expect(useTimelineStore.getState().editingWord).toEqual(wordAddress(after, 0, "bg"));
   });
 
   it("opens a bg track context menu at the pointer time", async () => {

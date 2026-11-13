@@ -4,6 +4,7 @@ import { hasAnyTiming } from "@/domain/line/predicates";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { describe, expect, it } from "vitest";
@@ -13,9 +14,8 @@ import { describe, expect, it } from "vitest";
 function seed(lines: LyricLine[], lineId: string, wordIndex: number, type: "word" | "bg" = "word") {
   useProjectStore.setState({ groups: [], lines });
   useProjectStore.getState().clearHistory();
-  const lineIndex = lines.findIndex((line) => line.id === lineId);
   useTimelineStore.setState({
-    contextMenu: { x: 100, y: 100, target: { kind: "word", lineId, lineIndex, wordIndex, type } },
+    contextMenu: { x: 100, y: 100, target: { kind: "word", ...storedWordAddress(lineId, wordIndex, type) } },
     selectedWords: [],
   });
 }
@@ -120,10 +120,7 @@ describe("TimelineContextMenu · delete word", () => {
     it("regression: deletes the whole selection when the clicked word is in it", async () => {
       seed([threeWords()], "l1", 1);
       useTimelineStore.setState({
-        selectedWords: [
-          { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" },
-          { lineId: "l1", lineIndex: 0, wordIndex: 1, type: "word" },
-        ],
+        selectedWords: [storedWordAddress("l1", 0, "word"), storedWordAddress("l1", 1, "word")],
       });
       await clickDelete("Delete 2 words");
 
@@ -134,10 +131,7 @@ describe("TimelineContextMenu · delete word", () => {
     it("regression: deletes only the clicked word outside the selection and drops the stale selection", async () => {
       seed([threeWords()], "l1", 2);
       useTimelineStore.setState({
-        selectedWords: [
-          { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" },
-          { lineId: "l1", lineIndex: 0, wordIndex: 1, type: "word" },
-        ],
+        selectedWords: [storedWordAddress("l1", 0, "word"), storedWordAddress("l1", 1, "word")],
       });
       await clickDelete();
 

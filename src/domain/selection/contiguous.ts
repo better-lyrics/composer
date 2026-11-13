@@ -1,4 +1,4 @@
-import type { WordSelection } from "@/domain/selection/model";
+import type { ResolvedAddress } from "@/domain/selection/resolve";
 
 // -- Types --------------------------------------------------------------------
 
@@ -13,7 +13,7 @@ interface SelectionRun {
 // Returns the merge-ready run when the selection is two or more words on a
 // single line and track with consecutive word indices; null otherwise. Indices
 // are returned in ascending order.
-function contiguousSelectionRun(selections: WordSelection[]): SelectionRun | null {
+function contiguousSelectionRun(selections: readonly ResolvedAddress[]): SelectionRun | null {
   if (selections.length < 2) return null;
   const first = selections[0];
   if (!selections.every((w) => w.lineId === first.lineId && w.type === first.type)) return null;
@@ -27,5 +27,5 @@ function contiguousSelectionRun(selections: WordSelection[]): SelectionRun | nul
 
 // -- Exports ------------------------------------------------------------------
 
-export { contiguousSelectionRun };
 export type { SelectionRun };
+export { contiguousSelectionRun };

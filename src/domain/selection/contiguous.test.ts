@@ -1,11 +1,11 @@
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
-import type { WordSelection } from "@/domain/selection/model";
+import type { ResolvedAddress } from "@/domain/selection/resolve";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
-function sel(wordIndex: number, extras: Partial<WordSelection> = {}): WordSelection {
-  return { lineId: "l1", lineIndex: 0, wordIndex, type: "word", ...extras };
+function sel(wordIndex: number, extras: Partial<ResolvedAddress> = {}): ResolvedAddress {
+  return { lineId: "l1", lineIndex: 0, wordIndex, type: "word", syllableId: `w${wordIndex}`, ...extras };
 }
 
 // -- contiguousSelectionRun ---------------------------------------------------

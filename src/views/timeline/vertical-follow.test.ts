@@ -1,7 +1,8 @@
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { createLine } from "@/test/factories";
+import { wordAddress } from "@/test/word-address";
 import { computeRowLayout } from "@/views/timeline/utils";
 import {
   type FollowInput,
@@ -53,13 +54,15 @@ function layoutOf(lines: LyricLine[], collapsedInstances: Record<string, boolean
   });
 }
 
-function word(lines: LyricLine[], lineId: string, wordIndex: number): WordSelection {
-  return { lineId, lineIndex: lines.findIndex((line) => line.id === lineId), wordIndex, type: "word" };
+function word(lines: LyricLine[], lineId: string, wordIndex: number): SyllableAddress {
+  const line = lines.find((candidate) => candidate.id === lineId);
+  if (!line) throw new Error(`No line ${lineId}`);
+  return wordAddress(line, wordIndex);
 }
 
 interface PlaybackOptions {
   lines?: LyricLine[];
-  selection?: WordSelection[] | null;
+  selection?: SyllableAddress[] | null;
   viewportHeight?: number;
   collapsedInstances?: Record<string, boolean>;
 }

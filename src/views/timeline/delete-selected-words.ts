@@ -1,3 +1,4 @@
+import { resolveAddresses } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
 import { applyWordDeletion } from "@/views/timeline/apply-word-deletion";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -9,7 +10,7 @@ function deleteSelectedWords() {
   if (selectedWords.length === 0) return;
 
   const rawLines = useProjectStore.getState().lines;
-  const newLines = applyWordDeletion(rawLines, selectedWords);
+  const newLines = applyWordDeletion(rawLines, resolveAddresses(rawLines, selectedWords));
   if (newLines === rawLines) return;
 
   useProjectStore.getState().setLinesWithHistory(newLines);

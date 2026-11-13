@@ -61,8 +61,7 @@ function revealLine(
   focusedGroup: GroupFocus | null,
   collapsedInstances: Record<string, boolean>,
 ): boolean {
-  const lineIndex = lines.findIndex((line) => line.id === request.lineId);
-  const line = lines[lineIndex];
+  const line = lines.find((candidate) => candidate.id === request.lineId);
   if (!line) return true;
   if (!isInFocus(line, focusedGroup)) {
     useTimelineStore.getState().closeGroup();
@@ -81,7 +80,7 @@ function revealLine(
     const track = request.track;
     useTimelineStore
       .getState()
-      .setSelectedWords(lineWordSelections(line, lineIndex).filter((selection) => selection.type === track));
+      .setSelectedWords(lineWordSelections(line).filter((selection) => selection.type === track));
   }
   return true;
 }

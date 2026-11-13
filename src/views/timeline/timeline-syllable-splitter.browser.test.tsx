@@ -5,6 +5,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -27,7 +28,7 @@ describe("TimelineSyllableSplitter", () => {
     const line = createLine({ words: [createWord({ text: "hello", begin: 0, end: 1 })] });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const screen = await render(<TimelineSyllableSplitter />);
     window.dispatchEvent(new Event("timeline:split-syllable"));
@@ -38,7 +39,7 @@ describe("TimelineSyllableSplitter", () => {
     const line = createLine({ words: [createWord({ text: "a", begin: 0, end: 1 })] });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     await render(<TimelineSyllableSplitter />);
     window.dispatchEvent(new Event("timeline:split-syllable"));
@@ -49,7 +50,7 @@ describe("TimelineSyllableSplitter", () => {
     const line = createLine({ words: [createWord({ text: "every", begin: 0, end: 1 })] });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const screen = await render(<TimelineSyllableSplitter />);
     window.dispatchEvent(new Event("timeline:split-syllable"));
@@ -87,7 +88,7 @@ describe("TimelineSyllableSplitter", () => {
     });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const screen = await render(<TimelineSyllableSplitter />);
     window.dispatchEvent(new Event("timeline:split-syllable"));
@@ -115,7 +116,7 @@ describe("TimelineSyllableSplitter", () => {
     const line = createLine({ words: [createWord({ text: "hello", begin: 0, end: 1 })] });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const screen = await render(<TimelineSyllableSplitter />);
     window.dispatchEvent(new Event("timeline:split-word"));
@@ -144,7 +145,7 @@ describe("TimelineSyllableSplitter", () => {
     const line = createLine({ words: [createWord({ text: "a", begin: 0, end: 1 })] });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     await render(<TimelineSyllableSplitter />);
     window.dispatchEvent(new Event("timeline:split-word"));
@@ -155,7 +156,7 @@ describe("TimelineSyllableSplitter", () => {
     const line = createLine({ words: [createWord({ text: "hello", begin: 0, end: 1 })] });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const screen = await render(<TimelineSyllableSplitter />);
     window.dispatchEvent(new Event("timeline:split-word"));
@@ -169,7 +170,7 @@ describe("TimelineSyllableSplitter", () => {
       const line = createLine({ text: "It hurts for me", begin: 107.9, end: 110.4 });
       useProjectStore.setState({ lines: [line] });
       useTimelineStore.setState({
-        selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+        selectedWords: [storedWordAddress(line.id, 0, "word")],
       });
       const screen = await render(<TimelineSyllableSplitter />);
       window.dispatchEvent(new Event("timeline:split-word"));
@@ -182,7 +183,7 @@ describe("TimelineSyllableSplitter", () => {
       const line = createLine({ text: "It hurts", begin: 10, end: 12 });
       useProjectStore.setState({ lines: [line] });
       useTimelineStore.setState({
-        selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+        selectedWords: [storedWordAddress(line.id, 0, "word")],
       });
       const screen = await render(<TimelineSyllableSplitter />);
       window.dispatchEvent(new Event("timeline:split-word"));
@@ -206,7 +207,7 @@ describe("TimelineSyllableSplitter", () => {
       const line = createLine({ text: "forever", begin: 1, end: 2 });
       useProjectStore.setState({ lines: [line] });
       useTimelineStore.setState({
-        selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+        selectedWords: [storedWordAddress(line.id, 0, "word")],
       });
       const screen = await render(<TimelineSyllableSplitter />);
       window.dispatchEvent(new Event("timeline:split-syllable"));
@@ -217,7 +218,7 @@ describe("TimelineSyllableSplitter", () => {
       const line = createLine({ text: "no timing here" });
       useProjectStore.setState({ lines: [line] });
       useTimelineStore.setState({
-        selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+        selectedWords: [storedWordAddress(line.id, 0, "word")],
       });
       await render(<TimelineSyllableSplitter />);
       window.dispatchEvent(new Event("timeline:split-word"));
@@ -232,7 +233,7 @@ describe("TimelineSyllableSplitter", () => {
     });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const screen = await render(<TimelineSyllableSplitter />);
     window.dispatchEvent(new Event("timeline:split-syllable"));
@@ -274,7 +275,7 @@ describe("TimelineSyllableSplitter", () => {
     };
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const screen = await render(<TimelineSyllableSplitter />);
     window.dispatchEvent(new Event("timeline:split-syllable"));
@@ -308,7 +309,7 @@ describe("TimelineSyllableSplitter", () => {
     };
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const screen = await render(<TimelineSyllableSplitter />);
     window.dispatchEvent(new Event("timeline:split-word"));
@@ -340,7 +341,7 @@ describe("TimelineSyllableSplitter", () => {
     };
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     const screen = await render(<TimelineSyllableSplitter />);
     window.dispatchEvent(new Event("timeline:split-word"));
@@ -370,7 +371,7 @@ describe("TimelineSyllableSplitter", () => {
     };
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
-      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      selectedWords: [storedWordAddress(line.id, 0, "word")],
     });
     useAudioStore.getState().setCurrentTime(0.5);
     const screen = await render(<TimelineSyllableSplitter />);

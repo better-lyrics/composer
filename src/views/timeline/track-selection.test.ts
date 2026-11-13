@@ -1,11 +1,11 @@
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { nextTrackSelection } from "@/views/timeline/track-selection";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
-function word(lineId: string, wordIndex: number): WordSelection {
-  return { lineId, lineIndex: lineId === "verse" ? 0 : 1, wordIndex, type: "word" };
+function word(lineId: string, wordIndex: number): SyllableAddress {
+  return { lineId, type: "word", syllableId: `${lineId}-${wordIndex}` };
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -21,7 +21,7 @@ describe("nextTrackSelection", () => {
     const verse = nextTrackSelection([word("verse", 0)], "verse", "word", null);
     const next = nextTrackSelection([word("verse", 0), word("verse", 1)], "verse", "word", verse);
     expect(next).not.toBe(verse);
-    expect([...next.selectedIndices]).toEqual([0, 1]);
+    expect([...next.selectedIds]).toEqual(["verse-0", "verse-1"]);
   });
 
   it("changes when the whole selection goes from empty to non-empty and back", () => {

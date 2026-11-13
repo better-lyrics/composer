@@ -1,7 +1,6 @@
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { shiftLineTiming } from "@/domain/line/shift";
-import type { WordSelection } from "@/domain/selection/model";
 import { commitGesture } from "@/domain/sync/commit-gesture";
 import { clampBoundaryTime } from "@/domain/word/boundary";
 import { boundsOverlap } from "@/domain/word/overlap";
@@ -71,8 +70,8 @@ function commit(updates: LineUpdate[]): void {
   store().updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
 }
 
-function selectWords(lineId: string, count: number): WordSelection[] {
-  return Array.from({ length: count }, (_, wordIndex) => ({ lineId, lineIndex: 0, wordIndex, type: "word" as const }));
+function selectWords(lineId: string, count: number) {
+  return Array.from({ length: count }, (_, wordIndex) => ({ lineId, wordIndex, type: "word" as const }));
 }
 
 function expectTrackClean(track: readonly WordTiming[] | undefined, label: string): void {

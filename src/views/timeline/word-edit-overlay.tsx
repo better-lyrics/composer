@@ -5,6 +5,7 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveWordTextEdit, getEffectiveLine } from "@/domain/line/effective-words";
 import { trackWords } from "@/domain/line/tracks";
+import { wordBlockId } from "@/views/timeline/word-block-id";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
@@ -12,14 +13,14 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 
 interface WordEditOverlayProps {
   lineId: string;
-  wordIndex: number;
+  syllableId: string;
   type: "word" | "bg";
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 // -- Component ----------------------------------------------------------------
 
-const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, type, scrollContainerRef }) => {
+const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, syllableId, type, scrollContainerRef }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const rawLines = useProjectStore((s) => s.lines);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
@@ -28,6 +29,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
   const rawLine = rawLines.find((l) => l.id === lineId);
   const line = rawLine ? getEffectiveLine(rawLine) : undefined;
   const wordsArray = line ? trackWords(line, type) : undefined;
+  const wordIndex = wordsArray?.findIndex((candidate) => candidate.id === syllableId) ?? -1;
   const word = wordsArray?.[wordIndex];
 
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -36,7 +38,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
     const container = scrollContainerRef.current;
     if (!container || !word) return;
 
-    const key = `${lineId}-${type}-${wordIndex}`;
+    const key = wordBlockId(lineId, type, wordIndex);
 
     const zoom = useTimelineStore.getState().zoom;
     const expectedLeft = word.begin * zoom;

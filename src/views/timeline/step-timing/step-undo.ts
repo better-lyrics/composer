@@ -1,4 +1,4 @@
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { useProjectStore } from "@/stores/project";
 import type { HistoryEntry } from "@/stores/project/types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -6,8 +6,8 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 // -- Types --------------------------------------------------------------------
 
 interface StepSpot {
-  selectedWords: WordSelection[];
-  stepQueue: WordSelection[] | null;
+  selectedWords: SyllableAddress[];
+  stepQueue: SyllableAddress[] | null;
 }
 
 // -- State --------------------------------------------------------------------

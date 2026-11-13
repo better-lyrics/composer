@@ -12,7 +12,8 @@ import { effectiveBounds } from "@/domain/line/bounds";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
-import type { WordSelection } from "@/domain/selection/model";
+import { lineWordSelections } from "@/domain/selection/line-selections";
+import { resolveAddress, resolveAddresses } from "@/domain/selection/resolve";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { notePlacement } from "@/lib/replay-cue";
@@ -86,7 +87,7 @@ function useTimelineKeyboard(
       const currentTime = playheadTime();
 
       const { selectedWords, zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
-      const selectedWord = selectedWords[0] ?? null;
+      const selectedWord = selectedWords[0] ? resolveAddress(lines, selectedWords[0]) : null;
       const fromPlayhead = !selectedWord;
       const targetWord = selectedWord ?? findBoundaryTarget(lines, currentTime, edge, currentEffectiveFocus());
       if (!targetWord) {
@@ -161,7 +162,7 @@ function useTimelineKeyboard(
         updateLineWithHistory: useProjectStore.getState().updateLineWithHistory,
       });
       noteGuideSignal("timeline.resize");
-      showLoupeAfterKeyEdit({ lineId: line.id, wordIndex, type: targetWord.type }, edge, word[edge]);
+      showLoupeAfterKeyEdit(targetWord, edge, word[edge]);
     },
     [lines, duration, scrollContainerRef],
   );
@@ -194,17 +195,9 @@ function useTimelineKeyboard(
       if (!claimedByUser) {
         if (e.code === "KeyA" && (e.metaKey || e.ctrlKey) && !e.repeat) {
           e.preventDefault();
-          const allSelections: WordSelection[] = [];
           const focus = currentEffectiveFocus();
-          for (let li = 0; li < lines.length; li++) {
-            const line = lines[li];
-            if (!isInFocus(line, focus)) continue;
-            for (let wi = 0; wi < (line.words?.length ?? 0); wi++)
-              allSelections.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "word" });
-            for (let wi = 0; wi < (line.backgroundWords?.length ?? 0); wi++)
-              allSelections.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "bg" });
-          }
-          useTimelineStore.getState().setSelectedWords(allSelections);
+          const inFocus = lines.filter((line) => isInFocus(line, focus));
+          useTimelineStore.getState().setSelectedWords(inFocus.flatMap(lineWordSelections));
           return;
         }
 
@@ -225,11 +218,7 @@ function useTimelineKeyboard(
           const { selectedWords: eSel } = useTimelineStore.getState();
           if (eSel.length === 1) {
             e.preventDefault();
-            useTimelineStore.getState().setEditingWord({
-              lineId: eSel[0].lineId,
-              wordIndex: eSel[0].wordIndex,
-              type: eSel[0].type,
-            });
+            useTimelineStore.getState().setEditingWord(eSel[0]);
             noteGuideSignal("timeline.editTextDirect");
           }
           return;
@@ -369,9 +358,7 @@ function useTimelineKeyboard(
           const editable = singleSelectedWord(useTimelineStore.getState().selectedWords);
           if (!editable) break;
           e.preventDefault();
-          useTimelineStore
-            .getState()
-            .setEditingWord({ lineId: editable.lineId, wordIndex: editable.wordIndex, type: editable.type });
+          useTimelineStore.getState().setEditingWord(editable);
           noteGuideSignal("timeline.editTextDirect");
           break;
         }
@@ -592,7 +579,7 @@ function useTimelineKeyboard(
           const nudgeAmount = useSettingsStore.getState().nudgeAmount;
           const requestedDelta = matched === "timeline.nudgeLeft" ? -nudgeAmount : nudgeAmount;
           const { lines: rawLines, groups } = useProjectStore.getState();
-          const partitioned = partitionNudgeSelections(rawLines, nudgeSel);
+          const partitioned = partitionNudgeSelections(rawLines, resolveAddresses(rawLines, nudgeSel));
           const rangeOf = timeRangeResolver(rawLines, groups, duration);
           const result = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, rangeOf);
           if (Math.abs(result.appliedDelta) < Math.abs(requestedDelta)) {

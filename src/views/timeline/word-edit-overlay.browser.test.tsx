@@ -6,12 +6,18 @@ import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { wordAddress } from "@/test/word-address";
+
+function firstWordId(lineId: string): string {
+  const line = useProjectStore.getState().lines.find((candidate) => candidate.id === lineId);
+  return line ? wordAddress(line, 0).syllableId : `${lineId}-missing`;
+}
 
 function BareHarness({ lineId }: { lineId: string }) {
   const ref = useRef<HTMLDivElement>(null);
   return (
     <div ref={ref}>
-      <WordEditOverlay lineId={lineId} wordIndex={0} type="word" scrollContainerRef={ref} />
+      <WordEditOverlay lineId={lineId} syllableId={firstWordId(lineId)} type="word" scrollContainerRef={ref} />
     </div>
   );
 }
@@ -29,7 +35,9 @@ function PositionedHarness({ lineId, wordKey }: { lineId: string; wordKey: strin
         id={wordKey}
         style={{ position: "absolute", left: "0px", top: "100px", width: "60px", height: "20px" }}
       />
-      {mounted && <WordEditOverlay lineId={lineId} wordIndex={0} type="word" scrollContainerRef={ref} />}
+      {mounted && (
+        <WordEditOverlay lineId={lineId} syllableId={firstWordId(lineId)} type="word" scrollContainerRef={ref} />
+      )}
     </div>
   );
 }

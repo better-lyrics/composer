@@ -1,6 +1,7 @@
 import type { LyricLine } from "@/domain/line/model";
 import { trackField, trackWords } from "@/domain/line/tracks";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
+import { resolveAddresses } from "@/domain/selection/resolve";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 
 // -- Types ---------------------------------------------------------------------
@@ -18,11 +19,14 @@ interface ExplicitToggleResolution {
 
 // -- Functions -----------------------------------------------------------------
 
-function resolveExplicitSelectionToggle(lines: LyricLine[], selection: WordSelection[]): ExplicitToggleResolution {
+function resolveExplicitSelectionToggle(
+  lines: LyricLine[],
+  selection: readonly SyllableAddress[],
+): ExplicitToggleResolution {
   const linesById = new Map(lines.map((l) => [l.id, l]));
   const groups = new Map<string, { lineId: string; field: "words" | "backgroundWords"; indices: number[] }>();
 
-  for (const w of selection) {
+  for (const w of resolveAddresses(lines, selection)) {
     const field = trackField(w.type);
     const line = linesById.get(w.lineId);
     const wordsArr = line ? trackWords(line, w.type) : undefined;
