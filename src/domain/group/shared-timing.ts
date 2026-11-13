@@ -215,9 +215,10 @@ function sharedTimingFanOut(
       const updates = offsetTimingFields(source, offset, target);
       if (hasNegativeTime(updates)) return { ...unchanged, rejected: true };
       const retimed = reconcileLine({ ...target, ...updates });
-      const languages = withReadingsOf(retimed, source);
-      if (!timingChanged(target, retimed) && isStructurallyEqual(languages, target.languages)) continue;
-      const copied = languages === retimed.languages ? retimed : { ...retimed, languages };
+      const reread = withReadingsOf(retimed, source);
+      const sameReadings = isStructurallyEqual(reread, target.languages);
+      if (!timingChanged(target, retimed) && sameReadings) continue;
+      const copied = sameReadings ? retimed : { ...retimed, languages: reread };
       const targetIndex = indexById.get(target.id);
       if (targetIndex === undefined) continue;
       if (lines === after) lines = [...after];
