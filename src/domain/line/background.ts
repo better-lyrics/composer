@@ -3,7 +3,12 @@ import { syllablesFromFields } from "@/domain/line/line-from-fields";
 import type { BackgroundSource, BackgroundTrack, LyricLine } from "@/domain/line/model";
 import { backgroundText } from "@/domain/line/text";
 import { backgroundTrack, timedSyllables, untimedSyllable } from "@/domain/line/track";
-import { newBackgroundTrack, withBackgroundTrack, withTrackSyllables } from "@/domain/line/track-writes";
+import {
+  newBackgroundTrack,
+  withBackgroundTrack,
+  withTrackSyllables,
+  withTrackWords,
+} from "@/domain/line/track-writes";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
 import { createInitialBgWords } from "@/utils/sync-helpers";
@@ -37,9 +42,12 @@ function withoutBackground(line: LyricLine): LyricLine {
 }
 
 // Any timeline edit of a line's background words (retime, split, merge, add, delete, drag) is manual
-// curation: a re-paste or re-extraction must not silently overwrite it. The words become the whole track.
+// curation: a re-paste or re-extraction must not silently overwrite it. The untimed rest stays.
 function withManualBackgroundWords(line: LyricLine, words: readonly WordTiming[]): LyricLine {
-  return withBackground(line, { words, source: "manual" });
+  const background = backgroundTrack(line);
+  if (!background) return withBackground(line, { words, source: "manual" });
+  const written = withTrackWords(background, words);
+  return withBackgroundTrack(line, written.syllables.length > 0 ? { ...written, source: "manual" } : undefined);
 }
 
 function secondHalf(line: LyricLine): { begin: number; end?: number } | null {

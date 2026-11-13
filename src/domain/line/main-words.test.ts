@@ -7,7 +7,14 @@ import { createLine } from "@/test/factories";
 import { updatedLine } from "@/test/field-updates";
 import { getSplitCharacter } from "@/utils/split-character";
 
-const line = createLine({ id: "l1", text: "old words here" });
+const line = createLine({
+  id: "l1",
+  text: "old words",
+  words: [
+    { text: "old", sep: " ", begin: 0, end: 0.5 },
+    { text: "words", begin: 0.5, end: 1 },
+  ],
+});
 
 describe("mainWordEditFields", () => {
   describe("happy paths", () => {

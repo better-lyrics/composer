@@ -212,7 +212,7 @@ describe("mergeSyllableGroupIntoWord", () => {
             { id: "w13", text: "oo", sep: "", begin: 1, end: 1.2, joinsNext: true },
             { id: "w14", text: "oh", sep: "", begin: 1.2, end: 1.5, joinsNext: false },
           ],
-          backgroundText: "ooh",
+          backgroundText: "oo|oh",
         }),
       ],
     });

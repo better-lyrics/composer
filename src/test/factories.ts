@@ -59,7 +59,7 @@ function createWord(opts: FactoryWordOptions): WordTiming {
 
 function createLine(opts: FactoryLineOptions = {}): LyricLine {
   const id = opts.id ?? `line-${++lineCounter}`;
-  const text = opts.text ?? "Test lyric line";
+  const text = opts.text ?? (opts.words ? "" : "Test lyric line");
   const agentId = opts.agentId ?? DEFAULT_AGENTS[0]?.id ?? "v1";
   return lineFromFields({
     id,

@@ -850,3 +850,38 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
     expect(roleWords(updatedLine(toB), "bg")?.map((w) => w.text)).toEqual(["lead"]);
   });
 });
+
+describe("applyWordMoveAcrossLines: partly synced lines", () => {
+  it("regression: a word moved into a partly synced line keeps its untimed rest", () => {
+    const lineA = createLine({ id: "A", words: [{ text: "lanterns", begin: 0, end: 0.5 }] });
+    const lineB = createLine({
+      id: "B",
+      text: "Paper boats drift away",
+      words: [{ text: "Paper", sep: " ", begin: 2, end: 2.5 }],
+    });
+    const moved: WordTiming = { id: "w99", text: "lanterns", sep: "", begin: 2.6, end: 3, joinsNext: false };
+    const result = applyWordMoveAcrossLines(
+      [lineA, lineB],
+      [
+        {
+          sourceLineId: "A",
+          sourceWordIndex: 0,
+          sourceTrack: "word",
+          targetLineId: "B",
+          targetTrack: "word",
+          word: moved,
+        },
+      ],
+      wholeSong,
+    );
+    if (!result.ok) throw new Error("expected ok");
+    const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
+    expect(mainTrack(b).syllables.map((syllable) => syllable.text)).toEqual([
+      "Paper",
+      "lanterns",
+      "boats",
+      "drift",
+      "away",
+    ]);
+  });
+});

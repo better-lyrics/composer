@@ -242,3 +242,21 @@ describe("withSeededBackground", () => {
       expect(withSeededBackground(candidate)).toBe(candidate);
   });
 });
+
+describe("withManualBackgroundWords on a partly synced background", () => {
+  it("regression: retiming the timed background words keeps the untimed rest", () => {
+    const line = lineFromFields({
+      id: "l1",
+      text: "Main",
+      agentId: "v1",
+      begin: 1,
+      end: 4,
+      backgroundText: "ooh yeah baby",
+      backgroundWords: [{ id: "b1", text: "ooh", sep: " ", begin: 1, end: 1.5, joinsNext: false }],
+    });
+    const [ooh] = timedSyllables(backgroundTrack(line));
+    const edited = withManualBackgroundWords(line, [{ ...ooh, end: 1.8 }]);
+    expect(backgroundText(edited)).toBe("ooh yeah baby");
+    expect(timedSyllables(backgroundTrack(edited))[0].end).toBe(1.8);
+  });
+});
