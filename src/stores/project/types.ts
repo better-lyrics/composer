@@ -12,6 +12,7 @@ import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
 import type { WordTiming } from "@/domain/word/timing";
+import type { HistoryActions, HistoryState } from "@/stores/project/history-types";
 import type { UnisonLinkActions, UnisonLinkState } from "@/stores/project/unison-link-slice";
 
 // -- Store-local Types --------------------------------------------------------
@@ -19,15 +20,6 @@ import type { UnisonLinkActions, UnisonLinkState } from "@/stores/project/unison
 type GranularityMode = "line" | "word";
 type EditorMode = "simple" | "advanced";
 type TtmlEditState = { source: string; content: string; lyricsChanged?: true } | null;
-
-interface HistoryEntry {
-  lines: LyricLine[];
-  groups: LinkGroup[];
-  agents: Agent[];
-  customSnapPoints: SnapPoint[];
-  beatGrid: BeatGrid | null;
-  timestamp: number;
-}
 
 // -- Segregated State Slices --------------------------------------------------
 
@@ -81,17 +73,6 @@ interface SnapPointsState {
 
 interface BeatGridState {
   beatGrid: BeatGrid | null;
-}
-
-interface HistoryState {
-  isDirty: boolean;
-  history: HistoryEntry[];
-  historyIndex: number;
-  // True when any snapshotted state (lines, groups, agents) has changed since
-  // the last history entry was written (e.g., per-keystroke setLines from the
-  // Edit textarea). The next history-aware mutator, and undo itself, snapshot
-  // this state first so undo lands on the pending edit instead of skipping it.
-  isDirtySinceHistory: boolean;
 }
 
 // -- Segregated Action Slices -------------------------------------------------
@@ -159,18 +140,6 @@ interface BeatGridActions {
   applyBeatGridWithHistory: (grid: BeatGrid | null) => void;
   nudgeBeatGridOffsetWithHistory: (grid: BeatGrid) => void;
   clearBeatGrid: () => void;
-}
-
-interface HistoryActions {
-  undo: () => void;
-  redo: () => void;
-  canUndo: () => boolean;
-  canRedo: () => boolean;
-  clearHistory: () => void;
-  markDirty: () => void;
-  markClean: () => void;
-  commitPendingLineEdit: (baseline: LyricLine[], baselineWasDirty?: boolean) => void;
-  applyLineUpdatesToCurrentStep: (updates: LineUpdate[]) => void;
 }
 
 interface LineActions {
@@ -281,15 +250,12 @@ export type {
   DismissalsState,
   SnapPointsState,
   BeatGridState,
-  HistoryEntry,
-  HistoryState,
   MetadataActions,
   AgentActions,
   UiActions,
   DismissalActions,
   SnapPointActions,
   BeatGridActions,
-  HistoryActions,
   LineActions,
   GroupActions,
   ProjectState,

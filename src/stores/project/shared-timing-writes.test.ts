@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+import { editLines } from "@/domain/commands/line-edits";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -100,6 +101,15 @@ describe("shared timing in history writes", () => {
       const after = useProjectStore.getState();
       expect(after.lines).toBe(before.lines);
       expect(after.history).toBe(before.history);
+    });
+
+    it("types the refusal of a copy below zero", () => {
+      seed(createGroup({ id: "g1", sharesTiming: true }), [chorus(0, 10), chorus(1, 0.05)]);
+      const before = useProjectStore.getState();
+      const words = (before.lines[0].words ?? []).map((word, i) => (i === 0 ? { ...word, begin: 9.8 } : word));
+      const outcome = before.commit(editLines([{ id: "c0", updates: { words } }], { derivesText: false }));
+      expect(outcome).toEqual({ refused: { reason: "copy-below-zero" } });
+      expect(useProjectStore.getState().history).toBe(before.history);
     });
 
     it("does not notify when nothing is copied", () => {
