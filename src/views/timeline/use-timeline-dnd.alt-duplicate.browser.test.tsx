@@ -1,11 +1,12 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { makeAltDuplicateEvent } from "@/views/timeline/use-timeline-dnd.test-helpers";
-import { beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 
 describe("useTimelineDnd · alt-drag duplicate", () => {
   beforeEach(() => {
@@ -32,7 +33,7 @@ describe("useTimelineDnd · alt-drag duplicate", () => {
 
     result.current.handleDragEnd(makeAltDuplicateEvent(1, -100));
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words.map((w) => w.text + w.sep)).toEqual(["Hello ", "world ", "world"]);
     const groups = computeSyllableGroups(words);
     expect(groups.some((g) => g.startIndex <= 1 && g.endIndex >= 2)).toBe(false);

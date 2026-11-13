@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { beforeEach, describe, expect, it, onTestFinished } from "vitest";
 import { userEvent } from "vitest/browser";
 import type { LyricLine } from "@/domain/line/model";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -121,7 +122,7 @@ const pasteOnEmptyRow = (screen: Awaited<ReturnType<typeof render>>) => pasteOnR
 const store = () => useProjectStore.getState();
 const lineById = (id: string) => store().lines.find((line) => line.id === id);
 const entriesOf = (line: LyricLine) =>
-  (line.words ?? []).map((word) => ({ word, lineOffset: 0, trackType: "word" as const }));
+  timedSyllables(mainTrack(line)).map((word) => ({ word, lineOffset: 0, trackType: "word" as const }));
 
 // -- Tests --------------------------------------------------------------------
 
@@ -149,7 +150,7 @@ describe("PastePreview · paste into a group that shares timing", () => {
     await screen.getByRole("button", { name: "Link as instance" }).click();
 
     await expect.poll(() => lineById("e")?.instanceIdx).toBe(1);
-    expect(lineById("e")?.words?.[1].begin).toBe(PASTE_TIME + 1);
+    expect(timedSyllables(mainTrack(lineById("e")!))[1].begin).toBe(PASTE_TIME + 1);
   });
 
   it("gives an instance pasted from an own-timing copy the shared timing", async () => {
@@ -159,7 +160,7 @@ describe("PastePreview · paste into a group that shares timing", () => {
     await pasteOnEmptyRow(screen);
 
     await expect.poll(() => lineById("e")?.instanceIdx).toBe(1);
-    expect(lineById("e")?.words?.[1].begin).toBe(PASTE_TIME + 1);
+    expect(timedSyllables(mainTrack(lineById("e")!))[1].begin).toBe(PASTE_TIME + 1);
   });
 
   describe("regressions", () => {
@@ -230,9 +231,9 @@ describe("PastePreview · paste words onto a line of a group that shares timing"
     await pasteOnRow(screen, "c0", 12.5);
 
     await expect.poll(() => lineById("c0")?.words).toHaveLength(3);
-    expect(lineById("c0")?.words?.[2].begin).toBeCloseTo(12.5, 5);
-    expect(lineById("c0")?.words?.[2].end).toBeCloseTo(13, 5);
-    expect(lineById("c1")?.words?.[2].end).toBeCloseTo(20, 5);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[2].begin).toBeCloseTo(12.5, 5);
+    expect(timedSyllables(mainTrack(lineById("c0")!))[2].end).toBeCloseTo(13, 5);
+    expect(timedSyllables(mainTrack(lineById("c1")!))[2].end).toBeCloseTo(20, 5);
   });
 
   it("previews the pasted word cut at the range end", async () => {
@@ -254,7 +255,7 @@ describe("PastePreview · paste words onto a line of a group that shares timing"
       await pasteOnRow(screen, "c0", 12.5);
 
       await expect.poll(() => lineById("c0")?.words).toHaveLength(3);
-      expect(lineById("c0")?.words?.[2].end).toBeCloseTo(13.5, 5);
+      expect(timedSyllables(mainTrack(lineById("c0")!))[2].end).toBeCloseTo(13.5, 5);
     });
   });
 });
@@ -271,7 +272,7 @@ describe("PastePreview · paste into the hovered lane", () => {
     await pasteOnRow(screen, "l", 10, "bg");
 
     await expect.poll(() => lineById("l")?.backgroundWords?.map((word) => word.text + word.sep)).toEqual(["you"]);
-    expect(lineById("l")?.words).toEqual(ownTimingChorus.words);
+    expect(timedSyllables(mainTrack(lineById("l")!))).toEqual(timedSyllables(mainTrack(ownTimingChorus)));
   });
 });
 

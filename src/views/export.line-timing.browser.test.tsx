@@ -1,9 +1,10 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { stubClipboard } from "@/test/clipboard";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { ExportPanel } from "@/views/export";
-import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -53,7 +54,7 @@ describe("ExportPanel · line timing", () => {
       await expect.poll(() => shownTtml(screen.container)).toContain('itunes:timing="Line"');
       expect(shownTtml(screen.container)).toMatch(/end="0:03.012" itunes:key="L1"[^>]*>Comin' at you, baby<\/p>/);
       expect(useProjectStore.getState().exportTiming).toBe("line");
-      expect(useProjectStore.getState().lines[0].words).toHaveLength(4);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toHaveLength(4);
     });
 
     it("copies the line-synced TTML", async () => {

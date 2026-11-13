@@ -1,9 +1,12 @@
 /**
  * @vitest-environment node
  */
+import { beforeEach, describe, expect, it } from "vitest";
+import { addInstance } from "@/domain/commands/instance-edits";
 import { withAlignedTransliteration } from "@/domain/language/align";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
@@ -11,8 +14,6 @@ import { getSplitCharacter } from "@/utils/split-character";
 import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { fillEmptyLinesWithInstance } from "@/views/timeline/fill-empty-lines-with-instance";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
-import { beforeEach, describe, expect, it } from "vitest";
-import { addInstance } from "@/domain/commands/instance-edits";
 
 function mappedWords(fragments: string[], start: number): WordTiming[] {
   const joiners = ["", "-", "", "  "];
@@ -152,7 +153,11 @@ describe("linked group alternate-language mappings", () => {
     expect(result.ok).toBe(true);
     expect(result.updatedLines![1].transliteration).toBeUndefined();
     expect(result.updatedLines![1].translations).toBeUndefined();
-    expect(result.updatedLines![1].words?.every((word) => word.transliteration === undefined)).toBe(true);
-    expect(result.updatedLines![1].backgroundWords?.every((word) => word.transliteration === undefined)).toBe(true);
+    expect(timedSyllables(mainTrack(result.updatedLines![1])).every((word) => word.transliteration === undefined)).toBe(
+      true,
+    );
+    expect(
+      timedSyllables(backgroundTrack(result.updatedLines![1])).every((word) => word.transliteration === undefined),
+    ).toBe(true);
   });
 });

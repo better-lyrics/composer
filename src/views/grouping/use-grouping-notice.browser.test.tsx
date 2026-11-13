@@ -1,13 +1,14 @@
+import { Toaster, toast } from "sonner";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
-import { render } from "@/test/render";
 import { GroupingNotices } from "@/test/grouping-notices";
-import { Toaster, toast } from "sonner";
-import { beforeEach, describe, expect, it } from "vitest";
+import { render } from "@/test/render";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -78,14 +79,14 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
     await expect.poll(() => store().groups.length).toBe(1);
     expect(store().groups[0].sharesTiming).toBe(true);
     expect(store().groups[0].ownTimingInstances).toBeUndefined();
-    expect(lineById("two-a")?.words?.[1].begin).toBe(41);
+    expect(timedSyllables(mainTrack(lineById("two-a")!))[1].begin).toBe(41);
     await expect.element(screen.getByRole("button", { name: "Share anyway" })).not.toBeInTheDocument();
     await expect.element(screen.getByText(/kept (its|their) own timing/)).not.toBeInTheDocument();
     await expect.element(screen.getByText("The own timing of 1 instance was replaced.")).toBeVisible();
 
     await screen.getByRole("button", { name: "Undo" }).click();
     await expect.poll(() => store().groups).toEqual([]);
-    expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
+    expect(timedSyllables(mainTrack(lineById("two-a")!))[1].begin).toBe(41.5);
   });
 
   it("regression: shares a partly synced instance mid-sync, so sync skips it", async () => {
@@ -136,13 +137,13 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
     const screen = await renderBanner();
     await screen.getByRole("button", { name: "Group them" }).click();
     await expect.poll(() => store().groups.length).toBe(1);
-    expect(lineById("two-a")?.words?.[1].begin).toBe(41);
+    expect(timedSyllables(mainTrack(lineById("two-a")!))[1].begin).toBe(41);
 
     store().undo();
 
     expect(store().groups).toEqual([]);
     expect(lineById("two-a")?.groupId).toBeUndefined();
-    expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
+    expect(timedSyllables(mainTrack(lineById("two-a")!))[1].begin).toBe(41.5);
   });
 
   it("shares every group made by Group all", async () => {
@@ -159,7 +160,7 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
     await screen.getByRole("button", { name: "Group all" }).click();
 
     await expect.poll(() => store().groups.map((group) => group.ownTimingInstances)).toEqual([undefined, undefined]);
-    expect(lineById("four-a")?.words?.[1].begin).toBe(81);
+    expect(timedSyllables(mainTrack(lineById("four-a")!))[1].begin).toBe(81);
     await expect.element(screen.getByText("The own timing of 2 instances was replaced.")).toBeVisible();
   });
 
@@ -209,7 +210,7 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
         )
         .toBeInTheDocument();
       expect(store().groups[0].ownTimingInstances).toEqual([1]);
-      expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
+      expect(timedSyllables(mainTrack(lineById("two-a")!))[1].begin).toBe(41.5);
     });
 
     it("keeps the own timing of an instance that would run past the end of the song and says why", async () => {
@@ -273,7 +274,7 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
 
       await expect.poll(() => store().groups.length).toBe(1);
       expect(store().groups[0].sharesTiming).toBeUndefined();
-      expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
+      expect(timedSyllables(mainTrack(lineById("two-a")!))[1].begin).toBe(41.5);
       await expect.element(screen.getByText(/kept (its|their) own timing/)).not.toBeInTheDocument();
     });
   });

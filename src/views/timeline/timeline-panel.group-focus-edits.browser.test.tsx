@@ -1,3 +1,6 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { storedWordAddress } from "@/test/word-address";
 import {
   focus,
@@ -8,8 +11,6 @@ import {
   store,
 } from "@/views/timeline/group-focus.test-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { beforeEach, describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -66,7 +67,7 @@ describe("TimelinePanel · editing lines in an open group", () => {
 
       await expect.poll(() => document.body.style.cursor).not.toBe("grabbing");
       expect(focus()).toEqual({ groupId: "g1", hearInstanceIdx: 1 });
-      expect(store().lines.find((line) => line.id === "c1")?.words?.[0].begin).toBe(40);
+      expect(timedSyllables(mainTrack(store().lines.find((line) => line.id === "c1")!))[0].begin).toBe(40);
 
       await userEvent.keyboard("{Escape}");
 

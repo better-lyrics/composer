@@ -2,11 +2,12 @@
  * @vitest-environment node
  */
 
-import type { LyricLine } from "@/domain/line/model";
+import { beforeEach, describe, expect, it } from "vitest";
 import { getEffectiveLines } from "@/domain/line/effective-words";
+import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { beforeEach, describe, expect, it } from "vitest";
 import {
   computeSplitIntoWordsUpdates,
   computeSplitSelections,
@@ -121,7 +122,9 @@ describe("splitLinesIntoWords (store-mutating)", () => {
 
     splitLinesIntoWords(main("L2"), effective);
 
-    expect(useProjectStore.getState().lines[0].words).toEqual(wordSynced.words);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toEqual(
+      timedSyllables(mainTrack(wordSynced)),
+    );
     expect(useTimelineStore.getState().selectedWords).toHaveLength(0);
   });
 });
@@ -359,8 +362,8 @@ describe("splitLinesIntoWords · regressions", () => {
     splitLinesIntoWords(bg("L4"), effective);
 
     const after = useProjectStore.getState().lines[0];
-    expect(after.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["ooh ", "yeah ", "baby"]);
-    expect(after.words).toEqual(sentenceBg.words);
+    expect(timedSyllables(backgroundTrack(after)).map((w) => w.text + w.sep)).toEqual(["ooh ", "yeah ", "baby"]);
+    expect(timedSyllables(mainTrack(after))).toEqual(timedSyllables(mainTrack(sentenceBg)));
     expect(useTimelineStore.getState().selectedWords.every((s) => s.type === "bg")).toBe(true);
     expect(useTimelineStore.getState().selectedWords).toHaveLength(3);
   });

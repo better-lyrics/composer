@@ -1,5 +1,8 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { lineEditCommand } from "@/domain/commands/line-edits";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import { useProjectStore } from "@/stores/project";
 import {
   createRefresher,
@@ -10,8 +13,6 @@ import {
   timedLine,
 } from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { lineEditCommand } from "@/domain/commands/line-edits";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -43,7 +44,7 @@ describe("createLanguageAutoRefresh", () => {
 
     const line = lineById("a");
     expect(line.transliteration?.text).toBe("Zdravstvuy  moy  drug");
-    expect(line.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint(line.text));
+    expect(line.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint(lineText(line)));
     expect(line.translations?.en.text).toBe("Hello my friend");
     expect(romanizedWords("a")).toEqual(["Zdravstvuy", "moy", "drug"]);
   });

@@ -1,8 +1,10 @@
+import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import { usePersistence } from "@/hooks/usePersistence";
 import { createProject, restoreOpenProject } from "@/lib/open-project";
-import { PROJECT_INDEX_STORE_NAME, setInStore } from "@/lib/persistence-idb";
 import { flushPendingSave } from "@/lib/persistence-debounce";
+import { PROJECT_INDEX_STORE_NAME, setInStore } from "@/lib/persistence-idb";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import {
   loadProjectIndexEntry,
@@ -20,8 +22,8 @@ import {
   loadProjectForRestore,
 } from "@/lib/project-restore";
 import { loadProjectRecord } from "@/lib/project-storage";
-import { SAVED_PROJECT_VERSION } from "@/lib/saved-project";
 import { getSaveStatus } from "@/lib/save-status";
+import { SAVED_PROJECT_VERSION } from "@/lib/saved-project";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
@@ -29,10 +31,9 @@ import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
-import { render } from "@/test/render";
 import { seedStoredProject } from "@/test/projects";
+import { render } from "@/test/render";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -106,7 +107,7 @@ describe("project-restore", () => {
     applyProjectToStores(await loadProjectForRestore("p1"));
     const project = useProjectStore.getState();
     expect(project.metadata.title).toBe("Midnight City");
-    expect(project.lines.map((line) => line.text)).toEqual(["Waiting in a car", "Waiting for a ride"]);
+    expect(project.lines.map((line) => lineText(line))).toEqual(["Waiting in a car", "Waiting for a ride"]);
     expect(project.activeTab).toBe("timeline");
     expect(project.isDirty).toBe(false);
     expect(useSeparationStore.getState().currentStem).toBe("vocals");

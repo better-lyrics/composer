@@ -1,9 +1,10 @@
+import { describe, expect, it } from "vitest";
+import { lineText } from "@/domain/line/text";
 import { GENIUS_PAGE_COPY, TAGGED_LYRICS } from "@/test/genius-fixtures";
 import { SINGER_TAGGED_LRC } from "@/test/lrc-fixtures";
 import { backupText, projectFileText } from "@/test/project-file-fixtures";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { classifyPastedText } from "@/views/edit/smart-paste";
-import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -70,7 +71,7 @@ describe("classifyPastedText", () => {
   describe("whole files only", () => {
     it("hands back the parsed lyrics so the import does not parse them again", () => {
       const pasted = classifyPastedText(LRC);
-      expect(pasted.kind === "lyrics-file" && pasted.parsed.lines.map((line) => line.text)).toEqual([
+      expect(pasted.kind === "lyrics-file" && pasted.parsed.lines.map((line) => lineText(line))).toEqual([
         "Is this the real life",
         "Is this just fantasy",
       ]);

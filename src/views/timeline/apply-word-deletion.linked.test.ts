@@ -1,11 +1,13 @@
 /**
  * @vitest-environment node
  */
+import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { applyWordDeletion, type DeletionSelection } from "@/domain/word/apply-word-deletion";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
-import { applyWordDeletion, type DeletionSelection } from "@/domain/word/apply-word-deletion";
-import { describe, expect, it } from "vitest";
 
 const SPLIT_CHAR = "|";
 
@@ -53,7 +55,7 @@ describe("applyWordDeletion · linked instances", () => {
 
     for (const id of ["c0-0", "c1-0", "c2-0"]) {
       expect(texts(byId(result, id))).toEqual(["hold ", "now"]);
-      expect(byId(result, id)?.text).toBe("hold now");
+      expect(lineText(byId(result, id)!)).toBe("hold now");
     }
   });
 
@@ -62,7 +64,7 @@ describe("applyWordDeletion · linked instances", () => {
 
     const result = applyWordDeletion(lines, [del("c0-0", 0)], SPLIT_CHAR);
 
-    expect(byId(result, "c1-0")?.words).toEqual([
+    expect(timedSyllables(mainTrack(byId(result, "c1-0")!))).toEqual([
       { text: "me", sep: " ", begin: 40.5, end: 41 },
       { text: "now", sep: "", begin: 41, end: 41.5 },
     ]);
@@ -81,7 +83,7 @@ describe("applyWordDeletion · linked instances", () => {
 
     const result = applyWordDeletion(lines, [del("c0-0", 0, "bg")], SPLIT_CHAR);
 
-    expect(byId(result, "c1-0")?.backgroundWords?.map((word) => word.text)).toEqual(["yeah"]);
+    expect(timedSyllables(backgroundTrack(byId(result, "c1-0")!)).map((word) => word.text)).toEqual(["yeah"]);
     expect(texts(byId(result, "c1-0"))).toHaveLength(3);
   });
 
@@ -94,8 +96,8 @@ describe("applyWordDeletion · linked instances", () => {
 
     const result = applyWordDeletion(lines, [del("c0-0", 1)], SPLIT_CHAR);
 
-    expect(byId(result, "c1-0")?.words).toHaveLength(1);
-    expect(byId(result, "c1-0")?.words?.[0]).toMatchObject({ begin: 40, end: 41 });
+    expect(timedSyllables(mainTrack(byId(result, "c1-0")!))).toHaveLength(1);
+    expect(timedSyllables(mainTrack(byId(result, "c1-0")!))[0]).toMatchObject({ begin: 40, end: 41 });
   });
 
   describe("an instance the delete empties", () => {

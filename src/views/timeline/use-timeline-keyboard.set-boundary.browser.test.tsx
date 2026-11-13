@@ -1,4 +1,8 @@
+import { createRef } from "react";
+import { describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -6,9 +10,6 @@ import { createLine } from "@/test/factories";
 import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
-import { createRef } from "react";
-import { describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -62,7 +63,7 @@ function pressBoundaryKey(key: "[" | "]") {
 }
 
 function currentWords(lineIndex = 0) {
-  return useProjectStore.getState().lines[lineIndex].words ?? [];
+  return timedSyllables(mainTrack(useProjectStore.getState().lines[lineIndex]));
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -157,8 +158,8 @@ describe("useTimelineKeyboard · set boundary to playhead", () => {
     pressBoundaryKey("[");
 
     await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.[1].begin).toBeCloseTo(1.7, 10);
-    expect(useProjectStore.getState().lines[0].backgroundWords?.[0].end).toBeCloseTo(1.7, 10);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    expect(timedSyllables(backgroundTrack(useProjectStore.getState().lines[0]))[0].end).toBeCloseTo(1.7, 10);
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
   it("threads the configured minimum word duration into the clamp", async () => {

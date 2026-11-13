@@ -1,9 +1,11 @@
+import { describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
-import { describe, expect, it } from "vitest";
 
 const baseMetadata: ProjectMetadata = { title: "Test", artists: [], album: "", duration: 60 };
 const baseAgents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];
@@ -228,7 +230,7 @@ describe("ttml import · per-line group attrs", () => {
       </div></body>
     </tt>`;
     const result = parseLyricsFile("flat.ttml", flatTtml);
-    expect(result.lines[0].text).toBe("Hello");
+    expect(lineText(result.lines[0])).toBe("Hello");
     expect(result.lines[0].groupId).toBeUndefined();
     expect(result.groups).toBeUndefined();
   });
@@ -317,7 +319,7 @@ describe("ttml export · explicit word attribute", () => {
   it("round-trip: AMLL amll:obscene import → export normalizes to composer:explicit", () => {
     const amll = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1"><span begin="00:01.000" end="00:01.500">clean</span> <span begin="00:01.500" end="00:02.000" amll:obscene="true">dirty</span></p></div></body></tt>`;
     const imported = parseLyricsFile("amll.ttml", amll);
-    expect(imported.lines[0].words![1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(imported.lines[0]))[1].explicit).toBe(true);
 
     const exported = generateTTML({
       metadata: baseMetadata,
@@ -328,6 +330,6 @@ describe("ttml export · explicit word attribute", () => {
     expect(exported).not.toContain("amll:obscene");
 
     const reimported = parseLyricsFile("re.ttml", exported);
-    expect(reimported.lines[0].words![1].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(reimported.lines[0]))[1].explicit).toBe(true);
   });
 });

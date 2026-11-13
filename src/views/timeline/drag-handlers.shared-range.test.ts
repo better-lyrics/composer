@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { applyCrossLineMove, applySameLineReorder, type DragData } from "@/views/timeline/drag-handlers";
@@ -51,8 +52,8 @@ describe("applySameLineReorder with a shared time range", () => {
 
     reorderFirstWord(-9);
 
-    expect(lineById("c1")?.words?.[0]).toMatchObject({ begin: 7, end: 8 });
-    expect(lineById("c0")?.words?.[0]).toMatchObject({ begin: 0, end: 1 });
+    expect(timedSyllables(mainTrack(lineById("c1")!))[0]).toMatchObject({ begin: 7, end: 8 });
+    expect(timedSyllables(mainTrack(lineById("c0")!))[0]).toMatchObject({ begin: 0, end: 1 });
   });
 
   describe("regressions", () => {
@@ -61,8 +62,8 @@ describe("applySameLineReorder with a shared time range", () => {
 
       reorderFirstWord(-15);
 
-      expect(lineById("c1")?.words?.[0]).toMatchObject({ begin: 0, end: 1 });
-      expect(lineById("c0")?.words?.[0]).toMatchObject({ begin: 3, end: 4 });
+      expect(timedSyllables(mainTrack(lineById("c1")!))[0]).toMatchObject({ begin: 0, end: 1 });
+      expect(timedSyllables(mainTrack(lineById("c0")!))[0]).toMatchObject({ begin: 3, end: 4 });
     });
   });
 });

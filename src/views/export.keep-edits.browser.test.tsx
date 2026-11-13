@@ -1,11 +1,12 @@
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { ExportPanel } from "@/views/export";
-import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -181,8 +182,8 @@ describe("ExportPanel · Done after the lyrics changed under an edit", () => {
       await screen.getByRole("button", { name: "Done" }).click();
 
       await expect.element(screen.getByText(APPLIED)).toBeInTheDocument();
-      expect(byId("c")?.text).toBe("Charlie!");
-      expect(byId("e")?.text).toBe("Echo!");
+      expect(lineText(byId("c")!)).toBe("Charlie!");
+      expect(lineText(byId("e")!)).toBe("Echo!");
       expect(useProjectStore.getState().ttmlEditState).toBeNull();
     });
   });

@@ -1,4 +1,6 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import { App } from "@/App";
+import { lineText } from "@/domain/line/text";
 import { removeProjectData } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { getSaveStatus } from "@/lib/save-status";
@@ -10,7 +12,6 @@ import { LocationProbe } from "@/test/location-probe";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
-import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -44,7 +45,7 @@ async function openEditTab(screen: Awaited<ReturnType<typeof renderApp>>): Promi
   const lyrics = screen.getByRole("textbox", { name: "Paste or type lyrics" });
   await lyrics.fill("Typed before the delay");
   await expect
-    .poll(() => useProjectStore.getState().lines.map((line) => line.text))
+    .poll(() => useProjectStore.getState().lines.map((line) => lineText(line)))
     .toContain("Typed before the delay");
   return lyrics.element() as HTMLTextAreaElement;
 }

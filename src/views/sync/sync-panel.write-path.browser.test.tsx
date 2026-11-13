@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
-import { useSettingsStore } from "@/stores/settings";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
@@ -53,13 +55,13 @@ function lines(): LyricLine[] {
 }
 
 function wordTexts(i: number): string[] {
-  return (lines()[i].words ?? []).map((w) => w.text + w.sep);
+  return timedSyllables(mainTrack(lines()[i])).map((w) => w.text + w.sep);
 }
 
 function assertMonotonic(allLines: LyricLine[]): void {
   const flat = allLines.flatMap((l) => {
     if (l.words) return l.words;
-    if (isLineSynced(l)) return [{ text: l.text, begin: l.begin, end: l.end }];
+    if (isLineSynced(l)) return [{ text: lineText(l), begin: l.begin, end: l.end }];
     return [];
   });
   for (let i = 0; i < flat.length; i++) {
@@ -95,7 +97,7 @@ describe("D2 undo mid word-sync", () => {
     await tapAt(4);
     key({ key: "ArrowLeft", code: "ArrowLeft" });
     await settle();
-    expect(lines()[0].text).toContain("the rumors");
+    expect(lineText(lines()[0])).toContain("the rumors");
   });
 });
 
@@ -106,7 +108,7 @@ describe("sibling: nudge mid-sync truncates untapped text", () => {
     await tapAt(1);
     key({ key: "ArrowLeft", code: "ArrowLeft" });
     await settle();
-    expect(lines()[0].text).toBe("one two three");
+    expect(lineText(lines()[0])).toBe("one two three");
   });
 });
 
@@ -131,7 +133,7 @@ describe("D3 re-record from a clicked word", () => {
     expect(useAudioStore.getState().isPlaying).toBe(true);
     await tapAt(2.6);
     await tapAt(2.9);
-    const words = lines()[0].words ?? [];
+    const words = timedSyllables(mainTrack(lines()[0]));
     expect(words.map((w) => w.text + w.sep)).toEqual(["I ", "heard ", "the ", "rumors ", "going ", "round"]);
     for (const w of words.slice(0, 3)) expect(w.end - w.begin, `${w.text} keeps duration`).toBeGreaterThan(0);
   });
@@ -153,7 +155,7 @@ describe("D3 re-record from a clicked word", () => {
     key({ key: " ", code: "Space" });
     await tapAt(1.6);
 
-    expect(lines()[0].words?.map((w) => [w.begin, w.end])).toEqual([
+    expect(timedSyllables(mainTrack(lines()[0])).map((w) => [w.begin, w.end])).toEqual([
       [1, 1.6],
       [1.6, 1.6 + 0.3],
       [3, 3.3],
@@ -216,7 +218,7 @@ describe("T3 tap then hold across a line boundary", () => {
     await settle();
     key({ key: "f", code: "KeyF" });
     await settle();
-    expect(lines()[0].words?.[1].end).toBe(6.1);
+    expect(timedSyllables(mainTrack(lines()[0]))[1].end).toBe(6.1);
   });
 
   it("sibling: hold-tap that crosses into an already synced line keeps that line's other words", async () => {
@@ -272,8 +274,8 @@ describe("T4 nudge targets the last tapped word", () => {
     await tapAt(1);
     key({ key: "ArrowRight", code: "ArrowRight" });
     await settle();
-    expect(lines()[1].words?.[1].begin).toBe(11);
-    expect(lines()[0].words?.[0].begin).toBeGreaterThan(1);
+    expect(timedSyllables(mainTrack(lines()[1]))[1].begin).toBe(11);
+    expect(timedSyllables(mainTrack(lines()[0]))[0].begin).toBeGreaterThan(1);
   });
 });
 

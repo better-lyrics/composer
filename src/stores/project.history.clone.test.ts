@@ -1,18 +1,20 @@
 /**
  * @vitest-environment node
  */
+import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLyrics } from "@/domain/commands/edit-text";
+import { addGroupWithLines, removeGroup } from "@/domain/commands/group-edits";
+import { pasteLines } from "@/domain/commands/instance-rows";
+import { refreshGeneratedLanguages } from "@/domain/commands/languages";
+import { lineEditCommand } from "@/domain/commands/line-edits";
+import { removeSinger, replaceLyrics } from "@/domain/commands/lyrics-replace";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { detectedGrid } from "@/domain/tempo/beat-grid";
 import { withOffset } from "@/domain/tempo/grid-edits";
 import { useProjectStore } from "@/stores/project";
 import type { ProjectState } from "@/stores/project/types";
 import { createGroup, createLine } from "@/test/factories";
-import { beforeEach, describe, expect, it } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
-import { pasteLines } from "@/domain/commands/instance-rows";
-import { addGroupWithLines, removeGroup } from "@/domain/commands/group-edits";
-import { removeSinger, replaceLyrics } from "@/domain/commands/lyrics-replace";
-import { lineEditCommand } from "@/domain/commands/line-edits";
-import { refreshGeneratedLanguages } from "@/domain/commands/languages";
 
 // Pins the contract that history entries round-trip exactly and are never
 // changed by later edits. Entries share the store's immutable objects, so a
@@ -68,15 +70,15 @@ describe("history snapshot integrity", () => {
     const beforeUndo = useProjectStore.getState().lines[0].words?.[0].text;
     expect(beforeUndo).toBe("hello!");
     store.undo();
-    expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("hello");
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].text).toBe("hello");
     const restored = useProjectStore.getState().lines[0].words;
     expect(() => {
       if (restored) restored[0].text = "MUTATED";
     }).toThrow(TypeError);
     store.redo();
-    expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("hello!");
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].text).toBe("hello!");
     store.undo();
-    expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("hello");
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].text).toBe("hello");
   });
 
   it("undo restores groups[] alongside lines[]", () => {
@@ -119,13 +121,13 @@ describe("history snapshot integrity", () => {
     store.commit(pasteLines([{ id: "A", updates: { words: [{ id: "w5", text: "ab", sep: "", begin: 0, end: 1 }] } }]));
     store.commit(pasteLines([{ id: "A", updates: { words: [{ id: "w6", text: "ABC", sep: "", begin: 0, end: 1 }] } }]));
     store.undo();
-    expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("ab");
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].text).toBe("ab");
     store.undo();
     expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
     store.redo();
-    expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("ab");
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].text).toBe("ab");
     store.redo();
-    expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("ABC");
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].text).toBe("ABC");
   });
 
   it("undo and redo return every snapshotted field to its exact recorded state", () => {
@@ -187,14 +189,14 @@ describe("history snapshot integrity", () => {
     const committedIndex = store().historyIndex;
     const committed = structuredClone(store().history[committedIndex]);
 
-    const nudged = (store().lines[0].words ?? []).map((word) => ({ ...word, begin: word.begin + 0.2 }));
+    const nudged = timedSyllables(mainTrack(store().lines[0])).map((word) => ({ ...word, begin: word.begin + 0.2 }));
     store().commit(
       lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "c0", updates: { words: nudged } }], {
         derivesText: false,
         propagateToSiblings: false,
       }),
     );
-    expect(store().lines[1].words?.[0].begin).toBeCloseTo(40.2, 6);
+    expect(timedSyllables(mainTrack(store().lines[1]))[0].begin).toBeCloseTo(40.2, 6);
     store().commit(refreshGeneratedLanguages([{ id: "c1", updates: { agentId: "v2" } }]), "amend");
     store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 10));
     store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 20));
@@ -211,7 +213,7 @@ describe("history snapshot integrity", () => {
       line.text = "changed in place";
     }).toThrow(TypeError);
     expect(() => store().lines.push(createLine({ id: "b" }))).toThrow(TypeError);
-    expect(store().lines.map((entry) => entry.text)).toEqual(["kept"]);
+    expect(store().lines.map((entry) => lineText(entry))).toEqual(["kept"]);
   });
 
   it("an in-place write to a committed store line throws, and undo then redo give back the same objects", () => {
@@ -228,6 +230,6 @@ describe("history snapshot integrity", () => {
 
     expect(store().lines).toBe(committedLines);
     expect(store().lines[0]).toBe(committedLines[0]);
-    expect(store().lines[0].text).toBe("second");
+    expect(lineText(store().lines[0])).toBe("second");
   });
 });

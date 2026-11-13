@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readExportTiming, withExportTiming } from "@/domain/alignment/export-timing";
 import type { LyricLine } from "@/domain/line/model";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createLine } from "@/test/factories";
 import { generateTTML } from "@/utils/ttml";
@@ -44,8 +45,8 @@ describe("withExportTiming", () => {
   it("marks only the given lines and keeps every word within 3 ms, ordered and never overlapping", () => {
     const [settled, hand] = withExportTiming([ALIGNED, HAND], new Set(["a"]));
     expect(hand).toBe(HAND);
-    const before = ALIGNED.words ?? [];
-    const after = settled.words ?? [];
+    const before = timedSyllables(mainTrack(ALIGNED));
+    const after = timedSyllables(mainTrack(settled));
     after.forEach((word, i) => {
       expect(Math.abs(word.begin - before[i].begin)).toBeLessThanOrEqual(3 * MS);
       expect(Math.abs(word.end - before[i].end)).toBeLessThanOrEqual(3 * MS);

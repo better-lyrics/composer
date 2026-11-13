@@ -1,9 +1,10 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { wholeLineSegments } from "@/domain/language/manual-segments";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import { alignTrackToLine } from "@/domain/language/align";
+import { wholeLineSegments } from "@/domain/language/manual-segments";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { createGroup, createLine } from "@/test/factories";
 
@@ -25,7 +26,7 @@ function withTransliteration(line: LyricLine, text: string): LyricLine {
     text,
     origin: "manual" as const,
     sourceFingerprint: `fp-${line.id}`,
-    segments: wholeLineSegments(line.text, text),
+    segments: wholeLineSegments(lineText(line), text),
   };
   return reconcileLine({ ...line, ...alignTrackToLine(line, track) });
 }

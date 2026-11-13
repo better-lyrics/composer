@@ -1,14 +1,16 @@
-import { getLanguageReviewTracks } from "@/domain/language/review";
+import { describe, expect, it, vi } from "vitest";
+import { userEvent } from "vitest/browser";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import { getLanguageReviewTracks } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
 import { render } from "@/test/render";
 import { TransliterationAlignmentModal } from "@/views/languages/transliteration-alignment-modal";
-import { describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -67,8 +69,8 @@ describe("TransliterationAlignmentModal", () => {
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
       await screen.getByRole("button", { name: "Save", exact: true }).click();
       const saved = useProjectStore.getState().lines[0];
-      expect(saved.words?.[0].transliteration).toBe("ga");
-      expect(saved.words?.[1].transliteration).toBe("na");
+      expect(timedSyllables(mainTrack(saved))[0].transliteration).toBe("ga");
+      expect(timedSyllables(mainTrack(saved))[1].transliteration).toBe("na");
       expect(saved.transliteration?.alignmentStatus).toBe("confirmed");
     });
 
@@ -88,7 +90,7 @@ describe("TransliterationAlignmentModal", () => {
       const repeat: LyricLine = {
         id: "l2",
         agentId: "v1",
-        text: line.text,
+        text: lineText(line),
         transliteration: line.transliteration,
         groupId: "g1",
         instanceIdx: 1,
@@ -102,8 +104,10 @@ describe("TransliterationAlignmentModal", () => {
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
       await screen.getByRole("button", { name: "Save", exact: true }).click();
 
-      expect(useProjectStore.getState().lines[0].words?.[0].transliteration).toBe("ga");
-      expect(useProjectStore.getState().lines[1].words?.map((word) => word.transliteration)).toEqual(["gan", "a"]);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].transliteration).toBe("ga");
+      expect(
+        timedSyllables(mainTrack(useProjectStore.getState().lines[1])).map((word) => word.transliteration),
+      ).toEqual(["gan", "a"]);
     });
   });
 
@@ -197,7 +201,7 @@ describe("TransliterationAlignmentModal", () => {
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
       await screen.getByRole("button", { name: "Save", exact: true }).click();
       const saved = useProjectStore.getState().lines[0];
-      expect(saved.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint(line.text));
+      expect(saved.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint(lineText(line)));
       expect(getLanguageReviewTracks(saved)).toEqual([]);
     });
 
@@ -235,7 +239,7 @@ describe("TransliterationAlignmentModal", () => {
 
       await screen.getByRole("button", { name: "Save", exact: true }).click();
       const saved = useProjectStore.getState().lines[0];
-      expect(saved.words).toEqual(words);
+      expect(timedSyllables(mainTrack(saved))).toEqual(words);
     });
   });
 

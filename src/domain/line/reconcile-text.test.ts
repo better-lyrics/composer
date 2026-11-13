@@ -1,6 +1,8 @@
+import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
-import { describe, expect, it } from "vitest";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 
 describe("reconcileMatchedTiming", () => {
   it("returns the same reference when the typed text is identical", () => {
@@ -48,10 +50,10 @@ describe("reconcileMatchedTiming", () => {
       ],
     };
     const result = reconcileMatchedTiming(line, "Dengar|lah rin|du");
-    expect(result.text).toBe("Dengar|lah rin|du");
-    expect(result.words?.map((w) => w.begin)).toEqual([0, 0.5, 1, 1.5]);
-    expect(result.words?.map((w) => w.end)).toEqual([0.5, 1, 1.5, 2]);
-    expect(result.words?.map((w) => w.text + w.sep)).toEqual(["Dengar", "lah ", "rin", "du"]);
+    expect(lineText(result)).toBe("Dengar|lah rin|du");
+    expect(timedSyllables(mainTrack(result)).map((w) => w.begin)).toEqual([0, 0.5, 1, 1.5]);
+    expect(timedSyllables(mainTrack(result)).map((w) => w.end)).toEqual([0.5, 1, 1.5, 2]);
+    expect(timedSyllables(mainTrack(result)).map((w) => w.text + w.sep)).toEqual(["Dengar", "lah ", "rin", "du"]);
   });
 
   it("keeps untouched syllable timing when the syllable count changes", () => {
@@ -65,10 +67,10 @@ describe("reconcileMatchedTiming", () => {
       ],
     };
     const result = reconcileMatchedTiming(line, "Dengar|lah|extra");
-    expect(result.text).toBe("Dengar|lah|extra");
-    expect(result.words?.map((w) => w.text)).toEqual(["Dengar", "lah", "extra"]);
-    expect(result.words?.[0]).toEqual({ text: "Dengar", sep: "", begin: 0, end: 0.5 });
-    expect(result.words?.[2].end).toBe(1);
+    expect(lineText(result)).toBe("Dengar|lah|extra");
+    expect(timedSyllables(mainTrack(result)).map((w) => w.text)).toEqual(["Dengar", "lah", "extra"]);
+    expect(timedSyllables(mainTrack(result))[0]).toEqual({ text: "Dengar", sep: "", begin: 0, end: 0.5 });
+    expect(timedSyllables(mainTrack(result))[2].end).toBe(1);
   });
 
   it("keeps begin/end on a line-synced line whose text content changed", () => {
@@ -80,7 +82,7 @@ describe("reconcileMatchedTiming", () => {
       end: 2,
     };
     const result = reconcileMatchedTiming(line, "Dengarlah rindu sayang");
-    expect(result.text).toBe("Dengarlah rindu sayang");
+    expect(lineText(result)).toBe("Dengarlah rindu sayang");
     expect(result.begin).toBe(1);
     expect(result.end).toBe(2);
     expect(result.words).toBeUndefined();
@@ -97,7 +99,7 @@ describe("reconcileMatchedTiming", () => {
       ],
     };
     const result = reconcileMatchedTiming(line, "");
-    expect(result.text).toBe("");
+    expect(lineText(result)).toBe("");
     expect(result.words).toBeUndefined();
   });
 
@@ -119,7 +121,7 @@ describe("reconcileMatchedTiming · edge cases", () => {
   it("updates text on an untimed line whose text changed", () => {
     const line: LyricLine = { id: "L0", text: "old", agentId: "v1" };
     const result = reconcileMatchedTiming(line, "new");
-    expect(result.text).toBe("new");
+    expect(lineText(result)).toBe("new");
     expect(result.words).toBeUndefined();
     expect(result.begin).toBeUndefined();
     expect(result.end).toBeUndefined();
@@ -133,7 +135,7 @@ describe("reconcileMatchedTiming · edge cases", () => {
       words: [],
     };
     const result = reconcileMatchedTiming(line, "Dengar|lah|extra");
-    expect(result.text).toBe("Dengar|lah|extra");
+    expect(lineText(result)).toBe("Dengar|lah|extra");
     expect(result.words).toBeUndefined();
     expect(result.begin).toBeUndefined();
     expect(result.end).toBeUndefined();
@@ -152,13 +154,13 @@ describe("reconcileMatchedTiming · edge cases", () => {
       agentId: "v1",
       words: originalWords,
     };
-    const beforeText = line.text;
-    const beforeWords = line.words;
-    const beforeWordsSnapshot = JSON.parse(JSON.stringify(line.words));
+    const beforeText = lineText(line);
+    const beforeWords = timedSyllables(mainTrack(line));
+    const beforeWordsSnapshot = JSON.parse(JSON.stringify(timedSyllables(mainTrack(line))));
     reconcileMatchedTiming(line, "Dengar|lah rin|du");
-    expect(line.text).toBe(beforeText);
-    expect(line.words).toBe(beforeWords);
-    expect(line.words).toEqual(beforeWordsSnapshot);
+    expect(lineText(line)).toBe(beforeText);
+    expect(timedSyllables(mainTrack(line))).toBe(beforeWords);
+    expect(timedSyllables(mainTrack(line))).toEqual(beforeWordsSnapshot);
   });
 
   it("preserves background-vocal fields on the remap path", () => {
@@ -177,9 +179,9 @@ describe("reconcileMatchedTiming · edge cases", () => {
       backgroundTextSource: "manual",
     };
     const result = reconcileMatchedTiming(line, "Dengar|lah rin|du");
-    expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundWords).toEqual([{ text: "ooh", sep: "", begin: 0.2, end: 0.8 }]);
-    expect(result.backgroundTextSource).toBe("manual");
+    expect(backgroundText(result)).toBe("ooh");
+    expect(timedSyllables(backgroundTrack(result))).toEqual([{ text: "ooh", sep: "", begin: 0.2, end: 0.8 }]);
+    expect(backgroundTrack(result)?.source).toBe("manual");
   });
 
   it("preserves background-vocal fields on the clear path", () => {
@@ -196,9 +198,9 @@ describe("reconcileMatchedTiming · edge cases", () => {
       backgroundTextSource: "extraction",
     };
     const result = reconcileMatchedTiming(line, "");
-    expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundWords).toEqual([{ text: "ooh", sep: "", begin: 0.2, end: 0.8 }]);
-    expect(result.backgroundTextSource).toBe("extraction");
+    expect(backgroundText(result)).toBe("ooh");
+    expect(timedSyllables(backgroundTrack(result))).toEqual([{ text: "ooh", sep: "", begin: 0.2, end: 0.8 }]);
+    expect(backgroundTrack(result)?.source).toBe("extraction");
   });
 
   it("preserves group fields (groupId, instanceIdx, templateLineIdx) on both paths", () => {
@@ -248,12 +250,18 @@ describe("reconcileMatchedTiming · regressions", () => {
       ],
     };
     const result = reconcileMatchedTiming(line, "Wish I could get it");
-    expect(result.words?.slice(0, 2)).toEqual([
+    expect(timedSyllables(mainTrack(result)).slice(0, 2)).toEqual([
       { text: "Wish", sep: " ", begin: 1, end: 2 },
       { text: "I", sep: " ", begin: 2, end: 3 },
     ]);
-    expect(result.words?.map((w) => w.text + w.sep)).toEqual(["Wish ", "I ", "could ", "get ", "it"]);
-    expect(result.words?.[4].end).toBe(4);
+    expect(timedSyllables(mainTrack(result)).map((w) => w.text + w.sep)).toEqual([
+      "Wish ",
+      "I ",
+      "could ",
+      "get ",
+      "it",
+    ]);
+    expect(timedSyllables(mainTrack(result))[4].end).toBe(4);
   });
 
   it("regression: deleting a word from a word-synced line keeps the remaining timing exactly", () => {
@@ -268,7 +276,7 @@ describe("reconcileMatchedTiming · regressions", () => {
       ],
     };
     const result = reconcileMatchedTiming(line, "Wish could");
-    expect(result.words).toEqual([
+    expect(timedSyllables(mainTrack(result))).toEqual([
       { text: "Wish", sep: " ", begin: 1, end: 2 },
       { text: "could", sep: "", begin: 3, end: 4 },
     ]);

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { createLine } from "@/test/factories";
 import {
   classifyLine,
@@ -355,8 +357,8 @@ describe("extractInlineFromLine", () => {
   it("extracts an inline group from an untimed line", () => {
     const line: LyricLine = { id: "1", text: "Hello (ooh) world", agentId: "v1" };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.text).toBe("Hello world");
-    expect(result.backgroundText).toBe("ooh");
+    expect(lineText(result)).toBe("Hello world");
+    expect(backgroundText(result)).toBe("ooh");
   });
 
   it("appends to existing backgroundText on an untimed line", () => {
@@ -367,8 +369,8 @@ describe("extractInlineFromLine", () => {
       backgroundText: "ah",
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.text).toBe("Hello");
-    expect(result.backgroundText).toBe("ah ooh");
+    expect(lineText(result)).toBe("Hello");
+    expect(backgroundText(result)).toBe("ah ooh");
   });
 
   it("sets backgroundText to just the extracted text when none exists", () => {
@@ -379,7 +381,7 @@ describe("extractInlineFromLine", () => {
       backgroundText: undefined,
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.backgroundText).toBe("ooh");
+    expect(backgroundText(result)).toBe("ooh");
   });
 
   it("returns the same reference for a line with no parentheses", () => {
@@ -406,8 +408,8 @@ describe("extractInlineFromLine", () => {
       end: 3,
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.text).toBe("Hi there");
-    expect(result.backgroundText).toBe("ooh");
+    expect(lineText(result)).toBe("Hi there");
+    expect(backgroundText(result)).toBe("ooh");
     expect(result.begin).toBe(1);
     expect(result.end).toBe(3);
     expect(result.words).toBeUndefined();
@@ -426,10 +428,10 @@ describe("extractInlineFromLine", () => {
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(result).not.toBe(line);
-    expect(result.text).toBe("Hi there");
-    expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundWords).toEqual([{ text: "ooh", sep: "", begin: 1, end: 2 }]);
-    expect(result.words).toEqual([
+    expect(lineText(result)).toBe("Hi there");
+    expect(backgroundText(result)).toBe("ooh");
+    expect(timedSyllables(backgroundTrack(result))).toEqual([{ text: "ooh", sep: "", begin: 1, end: 2 }]);
+    expect(timedSyllables(mainTrack(result))).toEqual([
       { text: "Hi", sep: " ", begin: 0, end: 1 },
       { text: "there", sep: "", begin: 2, end: 3 },
     ]);
@@ -443,8 +445,8 @@ describe("extractInlineFromLine", () => {
       backgroundText: "ah",
     };
     extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(line.text).toBe("Hello (ooh) world");
-    expect(line.backgroundText).toBe("ah");
+    expect(lineText(line)).toBe("Hello (ooh) world");
+    expect(backgroundText(line)).toBe("ah");
   });
 
   it("returns the same reference for a line-synced line carrying manual background words", () => {
@@ -479,8 +481,8 @@ describe("extractInlineFromLine", () => {
       backgroundWords: [],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.text).toBe("Hi there");
-    expect(result.backgroundText).toBe("ooh");
+    expect(lineText(result)).toBe("Hi there");
+    expect(backgroundText(result)).toBe("ooh");
   });
 });
 
@@ -500,10 +502,10 @@ describe("extractInlineFromLine: word-synced extraction", () => {
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(result).not.toBe(line);
-    expect(result.text).toBe("Hello world");
-    expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundWords).toEqual([{ text: "ooh", sep: "", begin: 1.2, end: 1.9 }]);
-    expect(result.words).toEqual([
+    expect(lineText(result)).toBe("Hello world");
+    expect(backgroundText(result)).toBe("ooh");
+    expect(timedSyllables(backgroundTrack(result))).toEqual([{ text: "ooh", sep: "", begin: 1.2, end: 1.9 }]);
+    expect(timedSyllables(mainTrack(result))).toEqual([
       { text: "Hello", sep: " ", begin: 0.5, end: 1.2 },
       { text: "world", sep: "", begin: 1.9, end: 2.7 },
     ]);
@@ -521,9 +523,9 @@ describe("extractInlineFromLine: word-synced extraction", () => {
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(result).not.toBe(line);
-    expect(result.text).toBe("Hello");
-    expect(result.backgroundText).toBe("ooh");
-    expect(result.words).toEqual([{ text: "Hello", sep: "", begin: 0, end: 1 }]);
+    expect(lineText(result)).toBe("Hello");
+    expect(backgroundText(result)).toBe("ooh");
+    expect(timedSyllables(mainTrack(result))).toEqual([{ text: "Hello", sep: "", begin: 0, end: 1 }]);
   });
 
   it("extracts a multi-token group spanning several words", () => {
@@ -540,9 +542,9 @@ describe("extractInlineFromLine: word-synced extraction", () => {
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(result).not.toBe(line);
-    expect(result.text).toBe("Hello world");
-    expect(result.backgroundText).toBe("ooh yeah");
-    expect(result.words).toEqual([
+    expect(lineText(result)).toBe("Hello world");
+    expect(backgroundText(result)).toBe("ooh yeah");
+    expect(timedSyllables(mainTrack(result))).toEqual([
       { text: "Hello", sep: " ", begin: 0, end: 1 },
       { text: "world", sep: "", begin: 2, end: 3 },
     ]);
@@ -573,7 +575,7 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.words).toEqual([
+    expect(timedSyllables(mainTrack(result))).toEqual([
       { text: "Hello", sep: " ", begin: 0, end: 1, explicit: true, syllableGroupId: "g1" },
       { text: "world", sep: "", begin: 2, end: 3, explicit: true, syllableGroupId: "g2" },
     ]);
@@ -593,9 +595,9 @@ describe("extractInlineFromLine: word-synced extraction", () => {
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(result).not.toBe(line);
-    expect(result.text).toBe("Hel|lo world");
-    expect(result.backgroundText).toBe("ooh");
-    expect(result.words).toEqual([
+    expect(lineText(result)).toBe("Hel|lo world");
+    expect(backgroundText(result)).toBe("ooh");
+    expect(timedSyllables(mainTrack(result))).toEqual([
       { text: "Hel", sep: "", begin: 0, end: 0.5 },
       { text: "lo", sep: " ", begin: 0.5, end: 1 },
       { text: "world", sep: "", begin: 2, end: 3 },
@@ -630,7 +632,7 @@ describe("extractInlineFromLine: word-synced extraction", () => {
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.backgroundText).toBe("ah ooh");
+    expect(backgroundText(result)).toBe("ah ooh");
   });
 
   it("does not mutate the input line or its words array", () => {
@@ -641,9 +643,9 @@ describe("extractInlineFromLine: word-synced extraction", () => {
     ];
     const line: LyricLine = { id: "1", text: "Hello (ooh) world", agentId: "v1", words };
     extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(line.text).toBe("Hello (ooh) world");
-    expect(line.words).toBe(words);
-    expect(line.words).toEqual([
+    expect(lineText(line)).toBe("Hello (ooh) world");
+    expect(timedSyllables(mainTrack(line))).toBe(words);
+    expect(timedSyllables(mainTrack(line))).toEqual([
       { text: "Hello", sep: " ", begin: 0, end: 1 },
       { text: "(ooh)", sep: " ", begin: 1, end: 2 },
       { text: "world", sep: "", begin: 2, end: 3 },
@@ -672,8 +674,8 @@ describe("extractBackgroundVocals: specification table", () => {
       const lines = [createLine({ id: "1", text: "A (ooh) B" })];
       const result = extractBackgroundVocals(lines, { mergeStandaloneLines, preserveBrackets: false });
       expect(result).toHaveLength(1);
-      expect(result[0].text).toBe("A B");
-      expect(result[0].backgroundText).toBe("ooh");
+      expect(lineText(result[0])).toBe("A B");
+      expect(backgroundText(result[0])).toBe("ooh");
     }
   });
 
@@ -682,8 +684,8 @@ describe("extractBackgroundVocals: specification table", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("1");
-    expect(result[0].text).toBe("Real line");
-    expect(result[0].backgroundText).toBe("ooh yeah");
+    expect(lineText(result[0])).toBe("Real line");
+    expect(backgroundText(result[0])).toBe("ooh yeah");
   });
 
   it("leaves a standalone line in place when merge is disabled", () => {
@@ -703,8 +705,8 @@ describe("extractBackgroundVocals: specification table", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("1");
-    expect(result[0].text).toBe("Real line");
-    expect(result[0].backgroundText).toBe("ooh yeah");
+    expect(lineText(result[0])).toBe("Real line");
+    expect(backgroundText(result[0])).toBe("ooh yeah");
   });
 
   it("does not merge a leading standalone line with no valid predecessor", () => {
@@ -755,8 +757,8 @@ describe("extractBackgroundVocals: specification table", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("1");
-    expect(result[0].text).toBe("A B");
-    expect(result[0].backgroundText).toBe("ooh yeah");
+    expect(lineText(result[0])).toBe("A B");
+    expect(backgroundText(result[0])).toBe("ooh yeah");
   });
 });
 
@@ -794,7 +796,7 @@ describe("extractBackgroundVocals: timing-aware standalone merge", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("1");
-    expect(result[0].backgroundText).toBe("ooh yeah");
+    expect(backgroundText(result[0])).toBe("ooh yeah");
     expect(result[0].backgroundWords).toBeUndefined();
   });
 
@@ -813,11 +815,11 @@ describe("extractBackgroundVocals: timing-aware standalone merge", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("1");
-    expect(result[0].backgroundWords).toEqual([
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
       { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
       { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
     ]);
-    expect(result[0].backgroundText).toBe("ooh yeah");
+    expect(backgroundText(result[0])).toBe("ooh yeah");
   });
 
   it("appends carried words after the predecessor's existing background words", () => {
@@ -839,12 +841,12 @@ describe("extractBackgroundVocals: timing-aware standalone merge", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundWords).toEqual([
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
       { text: "ah", sep: " ", begin: 1.0, end: 1.5 },
       { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
       { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
     ]);
-    expect(result[0].backgroundText).toBe("ah ooh yeah");
+    expect(backgroundText(result[0])).toBe("ah ooh yeah");
   });
 
   it("falls back to text-only when predecessor has background text but no words", () => {
@@ -861,7 +863,7 @@ describe("extractBackgroundVocals: timing-aware standalone merge", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundText).toBe("ah ooh yeah");
+    expect(backgroundText(result[0])).toBe("ah ooh yeah");
     expect(result[0].backgroundWords).toBeUndefined();
   });
 
@@ -872,7 +874,7 @@ describe("extractBackgroundVocals: timing-aware standalone merge", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundText).toBe("ooh");
+    expect(backgroundText(result[0])).toBe("ooh");
     const bgWords = result[0].backgroundWords;
     expect(bgWords).toHaveLength(1);
     expect(bgWords?.[0].text).toBe("ooh");
@@ -906,7 +908,7 @@ describe("extractBackgroundVocals: timing-aware standalone merge", () => {
     expect(result).toHaveLength(2);
     expect(result[0]).toBe(lines[0]);
     expect(result[1]).toBe(lines[1]);
-    expect(result[0].backgroundWords).toEqual([{ text: "ah", sep: "", begin: 1.0, end: 1.5 }]);
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([{ text: "ah", sep: "", begin: 1.0, end: 1.5 }]);
   });
 
   it("carries matching word timing when standalone word count does not match bg text", () => {
@@ -925,8 +927,8 @@ describe("extractBackgroundVocals: timing-aware standalone merge", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundText).toBe("ooh yeah");
-    expect(result[0].backgroundWords).toEqual([
+    expect(backgroundText(result[0])).toBe("ooh yeah");
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
       { text: "ooh", sep: " ", begin: 5.2, end: 5.6 },
       { text: "yeah", sep: "", begin: 5.6, end: 6.0 },
     ]);
@@ -953,8 +955,8 @@ describe("extractBackgroundVocals: merge gate", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("1");
-    expect(result[0].text).toBe("Real");
-    expect(result[0].backgroundText).toBe("ooh yeah");
+    expect(lineText(result[0])).toBe("Real");
+    expect(backgroundText(result[0])).toBe("ooh yeah");
   });
 });
 
@@ -987,7 +989,7 @@ describe("extractBackgroundVocals: existing backgroundText", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundText).toBe("ah ooh");
+    expect(backgroundText(result[0])).toBe("ah ooh");
   });
 });
 
@@ -1003,10 +1005,10 @@ describe("extractBackgroundVocals: input not mutated", () => {
     const originalLength = lines.length;
     extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(lines).toHaveLength(originalLength);
-    expect(lines[0].text).toBe("A (ooh) B");
-    expect(lines[0].backgroundText).toBe("ah");
-    expect(lines[1].text).toBe("(yeah)");
-    expect(lines[2].text).toBe("Plain");
+    expect(lineText(lines[0])).toBe("A (ooh) B");
+    expect(backgroundText(lines[0])).toBe("ah");
+    expect(lineText(lines[1])).toBe("(yeah)");
+    expect(lineText(lines[2])).toBe("Plain");
   });
 
   it("does not mutate a timed standalone line or its words array", () => {
@@ -1021,9 +1023,9 @@ describe("extractBackgroundVocals: input not mutated", () => {
     const standaloneWordsRef = lines[1].words;
     extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(lines).toHaveLength(2);
-    expect(lines[1].text).toBe("(ooh yeah)");
-    expect(lines[1].words).toBe(standaloneWordsRef);
-    expect(lines[1].words).toEqual([
+    expect(lineText(lines[1])).toBe("(ooh yeah)");
+    expect(timedSyllables(mainTrack(lines[1]))).toBe(standaloneWordsRef);
+    expect(timedSyllables(mainTrack(lines[1]))).toEqual([
       { text: "(ooh", sep: " ", begin: 5.0, end: 5.6 },
       { text: "yeah)", sep: "", begin: 5.6, end: 6.2 },
     ]);
@@ -1046,8 +1048,8 @@ describe("extractBackgroundVocals: idempotence", () => {
     expect(second).toHaveLength(first.length);
     for (let i = 0; i < first.length; i++) {
       expect(second[i]).toBe(first[i]);
-      expect(second[i].text).toBe(first[i].text);
-      expect(second[i].backgroundText).toBe(first[i].backgroundText);
+      expect(lineText(second[i])).toBe(lineText(first[i]));
+      expect(backgroundText(second[i])).toBe(backgroundText(first[i]));
     }
   });
 
@@ -1076,8 +1078,8 @@ describe("extractBackgroundVocals: idempotence", () => {
     expect(second).toHaveLength(first.length);
     for (let i = 0; i < first.length; i++) {
       expect(second[i]).toBe(first[i]);
-      expect(second[i].backgroundText).toBe(first[i].backgroundText);
-      expect(second[i].backgroundWords).toEqual(first[i].backgroundWords);
+      expect(backgroundText(second[i])).toBe(backgroundText(first[i]));
+      expect(timedSyllables(backgroundTrack(second[i]))).toEqual(timedSyllables(backgroundTrack(first[i])));
     }
   });
 });
@@ -1094,15 +1096,15 @@ describe("re-paste doubling", () => {
       { mergeStandaloneLines: true, preserveBrackets: false },
     );
     expect(first).toHaveLength(1);
-    expect(first[0].backgroundText).toBe("ooh");
-    expect(first[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundText(first[0])).toBe("ooh");
+    expect(backgroundTrack(first[0])?.source).toBe("extraction");
 
     const second = extractBackgroundVocals([first[0], { id: "b", text: "(ooh)", agentId: "v1" }], {
       mergeStandaloneLines: true,
       preserveBrackets: false,
     });
     expect(second).toHaveLength(1);
-    expect(second[0].backgroundText).toBe("ooh");
+    expect(backgroundText(second[0])).toBe("ooh");
   });
 
   it("keeps manually entered background when a standalone line merges in", () => {
@@ -1113,8 +1115,8 @@ describe("re-paste doubling", () => {
       ],
       { mergeStandaloneLines: true, preserveBrackets: false },
     );
-    expect(merged[0].backgroundText).toBe("clap ooh");
-    expect(merged[0].backgroundTextSource).toBe("manual");
+    expect(backgroundText(merged[0])).toBe("clap ooh");
+    expect(backgroundTrack(merged[0])?.source).toBe("manual");
   });
 });
 
@@ -1124,8 +1126,8 @@ describe("extractInlineFromLine: provenance", () => {
   it("stamps extraction source on a freshly extracted untimed line", () => {
     const line: LyricLine = { id: "1", text: "Hello (ooh) world", agentId: "v1" };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundTextSource).toBe("extraction");
+    expect(backgroundText(result)).toBe("ooh");
+    expect(backgroundTrack(result)?.source).toBe("extraction");
   });
 
   it("replaces extraction-sourced background instead of appending on re-paste", () => {
@@ -1137,9 +1139,9 @@ describe("extractInlineFromLine: provenance", () => {
       backgroundTextSource: "extraction",
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.text).toBe("Hello");
-    expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundTextSource).toBe("extraction");
+    expect(lineText(result)).toBe("Hello");
+    expect(backgroundText(result)).toBe("ooh");
+    expect(backgroundTrack(result)?.source).toBe("extraction");
   });
 
   it("appends onto manual background and keeps the manual source", () => {
@@ -1151,8 +1153,8 @@ describe("extractInlineFromLine: provenance", () => {
       backgroundTextSource: "manual",
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.backgroundText).toBe("clap ooh");
-    expect(result.backgroundTextSource).toBe("manual");
+    expect(backgroundText(result)).toBe("clap ooh");
+    expect(backgroundTrack(result)?.source).toBe("manual");
   });
 
   it("treats undefined provenance as manual and appends conservatively", () => {
@@ -1163,8 +1165,8 @@ describe("extractInlineFromLine: provenance", () => {
       backgroundText: "clap",
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.backgroundText).toBe("clap ooh");
-    expect(result.backgroundTextSource).toBe("manual");
+    expect(backgroundText(result)).toBe("clap ooh");
+    expect(backgroundTrack(result)?.source).toBe("manual");
   });
 
   it("stamps extraction source on a freshly extracted word-synced line", () => {
@@ -1179,8 +1181,8 @@ describe("extractInlineFromLine: provenance", () => {
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundTextSource).toBe("extraction");
+    expect(backgroundText(result)).toBe("ooh");
+    expect(backgroundTrack(result)?.source).toBe("extraction");
   });
 
   it("replaces extraction-sourced background on a word-synced re-paste", () => {
@@ -1197,8 +1199,8 @@ describe("extractInlineFromLine: provenance", () => {
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.backgroundText).toBe("ooh");
-    expect(result.backgroundTextSource).toBe("extraction");
+    expect(backgroundText(result)).toBe("ooh");
+    expect(backgroundTrack(result)?.source).toBe("extraction");
   });
 
   it("appends onto manual background on a word-synced line", () => {
@@ -1215,8 +1217,8 @@ describe("extractInlineFromLine: provenance", () => {
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.backgroundText).toBe("clap ooh");
-    expect(result.backgroundTextSource).toBe("manual");
+    expect(backgroundText(result)).toBe("clap ooh");
+    expect(backgroundTrack(result)?.source).toBe("manual");
   });
 });
 
@@ -1226,8 +1228,8 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
   it("stamps extraction source when an untimed standalone merges into a clean predecessor", () => {
     const lines = [createLine({ id: "1", text: "Real line" }), createLine({ id: "2", text: "(ooh)" })];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
-    expect(result[0].backgroundText).toBe("ooh");
-    expect(result[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundText(result[0])).toBe("ooh");
+    expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 
   it("keeps manual source when a standalone merges into a manual-background predecessor", () => {
@@ -1236,8 +1238,8 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
       createLine({ id: "2", text: "(ooh)" }),
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
-    expect(result[0].backgroundText).toBe("ah ooh");
-    expect(result[0].backgroundTextSource).toBe("manual");
+    expect(backgroundText(result[0])).toBe("ah ooh");
+    expect(backgroundTrack(result[0])?.source).toBe("manual");
   });
 
   it("treats undefined-provenance background text as manual on standalone merge", () => {
@@ -1246,8 +1248,8 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
       createLine({ id: "2", text: "(ooh)" }),
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
-    expect(result[0].backgroundText).toBe("ah ooh");
-    expect(result[0].backgroundTextSource).toBe("manual");
+    expect(backgroundText(result[0])).toBe("ah ooh");
+    expect(backgroundTrack(result[0])?.source).toBe("manual");
   });
 
   it("replaces extraction-sourced background text on standalone re-merge", () => {
@@ -1256,8 +1258,8 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
       createLine({ id: "2", text: "(ooh)" }),
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
-    expect(result[0].backgroundText).toBe("ooh");
-    expect(result[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundText(result[0])).toBe("ooh");
+    expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 
   it("merges two standalone lines into a clean predecessor within one pass", () => {
@@ -1268,8 +1270,8 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundText).toBe("ooh ah");
-    expect(result[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundText(result[0])).toBe("ooh ah");
+    expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 
   it("carries timed standalone words and stamps extraction source on a clean predecessor", () => {
@@ -1285,11 +1287,11 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
       }),
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
-    expect(result[0].backgroundWords).toEqual([
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
       { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
       { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
     ]);
-    expect(result[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 
   it("combines timed standalone words onto manual background words and keeps manual source", () => {
@@ -1311,12 +1313,12 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
       }),
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
-    expect(result[0].backgroundWords).toEqual([
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
       { text: "ah", sep: " ", begin: 1.0, end: 1.5 },
       { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
       { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
     ]);
-    expect(result[0].backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(result[0])?.source).toBe("manual");
   });
 
   it("replaces extraction-sourced background words when a timed standalone re-merges", () => {
@@ -1342,11 +1344,11 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundWords).toEqual([
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
       { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
       { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
     ]);
-    expect(result[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 
   it("merges a timed standalone into an untimed extraction-sourced predecessor by replacement", () => {
@@ -1362,12 +1364,12 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
       }),
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
-    expect(result[0].backgroundText).toBe("ooh yeah");
-    expect(result[0].backgroundWords).toEqual([
+    expect(backgroundText(result[0])).toBe("ooh yeah");
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
       { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
       { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
     ]);
-    expect(result[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 
   it("merges an untimed standalone into a predecessor with extraction-sourced background words", () => {
@@ -1383,9 +1385,9 @@ describe("extractBackgroundVocals: standalone merge provenance", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundText).toBe("ooh");
+    expect(backgroundText(result[0])).toBe("ooh");
     expect(result[0].backgroundWords).toBeUndefined();
-    expect(result[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 });
 
@@ -1396,9 +1398,9 @@ describe("extractBackgroundVocals: standalone merge disabled", () => {
     const lines = [createLine({ id: "1", text: "A (ooh) B" }), createLine({ id: "2", text: "(yeah)" })];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(result).toHaveLength(2);
-    expect(result[0].text).toBe("A B");
-    expect(result[0].backgroundText).toBe("ooh");
-    expect(result[0].backgroundTextSource).toBe("extraction");
+    expect(lineText(result[0])).toBe("A B");
+    expect(backgroundText(result[0])).toBe("ooh");
+    expect(backgroundTrack(result[0])?.source).toBe("extraction");
     expect(result[1]).toBe(lines[1]);
   });
 });
@@ -1421,8 +1423,8 @@ describe("extractBackgroundVocals: re-paste idempotence with provenance", () => 
     const first = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     const second = extractBackgroundVocals(first, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(second[0]).toBe(first[0]);
-    expect(second[0].backgroundText).toBe(first[0].backgroundText);
-    expect(second[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundText(second[0])).toBe(backgroundText(first[0]));
+    expect(backgroundTrack(second[0])?.source).toBe("extraction");
   });
 });
 
@@ -1445,8 +1447,8 @@ describe("extractInlineFromLine: linked lines", () => {
       templateLineIdx: 0,
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.text).toBe("Hello");
-    expect(result.backgroundText).toBe("ooh");
+    expect(lineText(result)).toBe("Hello");
+    expect(backgroundText(result)).toBe("ooh");
     expect(result.groupId).toBe("g1");
     expect(result.instanceIdx).toBe(0);
     expect(result.templateLineIdx).toBe(0);
@@ -1466,9 +1468,9 @@ describe("extractInlineFromLine: linked lines", () => {
       ],
     };
     const result = extractInlineFromLine(line, { mergeStandaloneLines: false, preserveBrackets: false });
-    expect(result.text).toBe("Hello");
-    expect(result.backgroundText).toBe("ooh");
-    expect(result.words).toEqual([{ text: "Hello", sep: "", begin: 30, end: 31 }]);
+    expect(lineText(result)).toBe("Hello");
+    expect(backgroundText(result)).toBe("ooh");
+    expect(timedSyllables(mainTrack(result))).toEqual([{ text: "Hello", sep: "", begin: 30, end: 31 }]);
     expect(result.groupId).toBe("g1");
     expect(result.instanceIdx).toBe(1);
     expect(result.templateLineIdx).toBe(2);
@@ -1486,8 +1488,8 @@ describe("extractBackgroundVocals: linked sibling lines", () => {
 
     expect(result).toHaveLength(2);
     for (const line of result) {
-      expect(line.text).toBe("Hello");
-      expect(line.backgroundText).toBe("ooh");
+      expect(lineText(line)).toBe("Hello");
+      expect(backgroundText(line)).toBe("ooh");
       expect(line.groupId).toBe("g1");
       expect(line.templateLineIdx).toBe(0);
     }
@@ -1524,12 +1526,12 @@ describe("extractBackgroundVocals: linked sibling lines", () => {
     const result = extractBackgroundVocals([s0, s1], { mergeStandaloneLines: true, preserveBrackets: false });
 
     expect(result).toHaveLength(2);
-    expect(result[0].text).toBe("Hello");
-    expect(result[1].text).toBe("Hello");
-    expect(result[0].backgroundText).toBe("ooh");
-    expect(result[1].backgroundText).toBe("ooh");
-    expect(result[0].words).toEqual([{ text: "Hello", sep: "", begin: 0, end: 1 }]);
-    expect(result[1].words).toEqual([{ text: "Hello", sep: "", begin: 30, end: 31.5 }]);
+    expect(lineText(result[0])).toBe("Hello");
+    expect(lineText(result[1])).toBe("Hello");
+    expect(backgroundText(result[0])).toBe("ooh");
+    expect(backgroundText(result[1])).toBe("ooh");
+    expect(timedSyllables(mainTrack(result[0]))).toEqual([{ text: "Hello", sep: "", begin: 0, end: 1 }]);
+    expect(timedSyllables(mainTrack(result[1]))).toEqual([{ text: "Hello", sep: "", begin: 30, end: 31.5 }]);
     expect(result[0].groupId).toBe("g1");
     expect(result[1].groupId).toBe("g1");
     expect(result[0].templateLineIdx).toBe(0);
@@ -1564,22 +1566,22 @@ describe("preserveBrackets: text-only bg", () => {
     const lines = [createLine({ id: "1", text: "A (ooh) B" })];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
-    expect(result[0].text).toBe("A B");
-    expect(result[0].backgroundText).toBe("(ooh)");
+    expect(lineText(result[0])).toBe("A B");
+    expect(backgroundText(result[0])).toBe("(ooh)");
   });
 
   it("wraps multiple inline groups on the same line in one outer pair", () => {
     const lines = [createLine({ id: "1", text: "A (ooh) (yeah) B" })];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
-    expect(result[0].text).toBe("A B");
-    expect(result[0].backgroundText).toBe("(ooh yeah)");
+    expect(lineText(result[0])).toBe("A B");
+    expect(backgroundText(result[0])).toBe("(ooh yeah)");
   });
 
   it("merges a standalone into prev with one outer pair", () => {
     const lines = [createLine({ id: "1", text: "Real line" }), createLine({ id: "2", text: "(ooh yeah)" })];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundText).toBe("(ooh yeah)");
+    expect(backgroundText(result[0])).toBe("(ooh yeah)");
   });
 
   it("merges multiple consecutive standalones into one outer pair", () => {
@@ -1590,15 +1592,15 @@ describe("preserveBrackets: text-only bg", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundText).toBe("(ooh yeah)");
+    expect(backgroundText(result[0])).toBe("(ooh yeah)");
   });
 
   it("merges inline-then-standalone same-pass into one outer pair", () => {
     const lines = [createLine({ id: "1", text: "A (ooh) B" }), createLine({ id: "2", text: "(yeah)" })];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
-    expect(result[0].text).toBe("A B");
-    expect(result[0].backgroundText).toBe("(ooh yeah)");
+    expect(lineText(result[0])).toBe("A B");
+    expect(backgroundText(result[0])).toBe("(ooh yeah)");
   });
 
   it("appends a bracketed addition next to existing manual bg text", () => {
@@ -1613,7 +1615,7 @@ describe("preserveBrackets: text-only bg", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundText).toBe("ah (ooh)");
+    expect(backgroundText(result[0])).toBe("ah (ooh)");
   });
 
   it("groups multiple bracketed additions inside one pair after manual bg", () => {
@@ -1629,27 +1631,27 @@ describe("preserveBrackets: text-only bg", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundText).toBe("ah (ooh yeah)");
+    expect(backgroundText(result[0])).toBe("ah (ooh yeah)");
   });
 
   it("preserves backgroundTextSource as extraction for fresh additions", () => {
     const lines = [createLine({ id: "1", text: "A (ooh) B" })];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
-    expect(result[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 
   it("is idempotent on already-bracketed extracted bg (no double wrap)", () => {
     const lines = [createLine({ id: "1", text: "A (ooh) B" })];
     const once = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     const twice = extractBackgroundVocals(once, { mergeStandaloneLines: true, preserveBrackets: true });
-    expect(twice[0].backgroundText).toBe("(ooh)");
-    expect(twice[0].text).toBe("A B");
+    expect(backgroundText(twice[0])).toBe("(ooh)");
+    expect(lineText(twice[0])).toBe("A B");
   });
 
   it("does not change main text under preserveBrackets", () => {
     const lines = [createLine({ id: "1", text: "A (ooh) (yeah) B" })];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
-    expect(result[0].text).toBe("A B");
+    expect(lineText(result[0])).toBe("A B");
   });
 
   it("does not peel a trailing ')' from manual bg text", () => {
@@ -1664,7 +1666,7 @@ describe("preserveBrackets: text-only bg", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundText).toBe("my note) (ooh)");
+    expect(backgroundText(result[0])).toBe("my note) (ooh)");
   });
 });
 
@@ -1675,25 +1677,25 @@ describe("preserveBrackets: invariants", () => {
     const lines = [createLine({ id: "1", text: "A (ooh) B" })];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
-    expect(result[0].text).toBe("A B");
-    expect(result[0].backgroundText).toBe("ooh");
+    expect(lineText(result[0])).toBe("A B");
+    expect(backgroundText(result[0])).toBe("ooh");
   });
 
   it("regression: off-state standalone merge matches pre-task output", () => {
     const lines = [createLine({ id: "1", text: "Real line" }), createLine({ id: "2", text: "(ooh yeah)" })];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
-    expect(result[0].text).toBe("Real line");
-    expect(result[0].backgroundText).toBe("ooh yeah");
+    expect(lineText(result[0])).toBe("Real line");
+    expect(backgroundText(result[0])).toBe("ooh yeah");
   });
 
   it("off-state and on-state produce different bg text for inline parens", () => {
     const lines = [createLine({ id: "1", text: "A (ooh) B" })];
     const off = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     const on = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
-    expect(off[0].backgroundText).toBe("ooh");
-    expect(on[0].backgroundText).toBe("(ooh)");
-    expect(off[0].backgroundText).not.toBe(on[0].backgroundText);
+    expect(backgroundText(off[0])).toBe("ooh");
+    expect(backgroundText(on[0])).toBe("(ooh)");
+    expect(backgroundText(off[0])).not.toBe(backgroundText(on[0]));
   });
 
   it("paren-free line is reference-equality pass-through regardless of flag", () => {
@@ -1708,7 +1710,7 @@ describe("preserveBrackets: invariants", () => {
     const lines = [createLine({ id: "1", text: "A (ooh) (yeah) B" }), createLine({ id: "2", text: "(la)" })];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
-    const bg = result[0].backgroundText ?? "";
+    const bg = backgroundText(result[0]) ?? "";
     expect((bg.match(/\(/g) ?? []).length).toBe(1);
     expect((bg.match(/\)/g) ?? []).length).toBe(1);
     expect(bg).toBe("(ooh yeah la)");
@@ -1730,11 +1732,11 @@ describe("preserveBrackets: word-synced bg", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundWords).toEqual([
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
       { text: "(ooh", sep: " ", begin: 5.0, end: 5.6 },
       { text: "yeah)", sep: "", begin: 5.6, end: 6.2 },
     ]);
-    expect(result[0].backgroundText).toBe("(ooh yeah)");
+    expect(backgroundText(result[0])).toBe("(ooh yeah)");
   });
 
   it("brackets a single-word standalone", () => {
@@ -1747,8 +1749,8 @@ describe("preserveBrackets: word-synced bg", () => {
       }),
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
-    expect(result[0].backgroundWords).toEqual([{ text: "(ooh)", sep: "", begin: 5.0, end: 5.6 }]);
-    expect(result[0].backgroundText).toBe("(ooh)");
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([{ text: "(ooh)", sep: "", begin: 5.0, end: 5.6 }]);
+    expect(backgroundText(result[0])).toBe("(ooh)");
   });
 
   it("merges a second standalone into the same outer pair, stripping seam brackets", () => {
@@ -1767,11 +1769,11 @@ describe("preserveBrackets: word-synced bg", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundWords).toEqual([
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
       { text: "(ooh", sep: " ", begin: 5.0, end: 5.5 },
       { text: "yeah)", sep: "", begin: 5.6, end: 6.1 },
     ]);
-    expect(result[0].backgroundText).toBe("(ooh yeah)");
+    expect(backgroundText(result[0])).toBe("(ooh yeah)");
   });
 
   it("appends bracketed carry next to existing manual bg words without merging into manual pair", () => {
@@ -1791,7 +1793,7 @@ describe("preserveBrackets: word-synced bg", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundWords).toEqual([
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
       { text: "ah", sep: " ", begin: 1.0, end: 1.5 },
       { text: "(ooh)", sep: "", begin: 5.0, end: 5.5 },
     ]);
@@ -1801,7 +1803,7 @@ describe("preserveBrackets: word-synced bg", () => {
     const lines = [createLine({ id: "1", text: "Real line" }), createLine({ id: "2", text: "(ooh)" })];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result[0].backgroundWords).toBeUndefined();
-    expect(result[0].backgroundText).toBe("(ooh)");
+    expect(backgroundText(result[0])).toBe("(ooh)");
   });
 
   it("off-state: word carry is unchanged (regression guard)", () => {
@@ -1817,11 +1819,11 @@ describe("preserveBrackets: word-synced bg", () => {
       }),
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
-    expect(result[0].backgroundWords).toEqual([
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
       { text: "ooh", sep: " ", begin: 5.0, end: 5.6 },
       { text: "yeah", sep: "", begin: 5.6, end: 6.2 },
     ]);
-    expect(result[0].backgroundText).toBe("ooh yeah");
+    expect(backgroundText(result[0])).toBe("ooh yeah");
   });
 
   it("does not fuse a manually-bracketed bg with a fresh bracketed carry", () => {
@@ -1841,7 +1843,7 @@ describe("preserveBrackets: word-synced bg", () => {
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundWords).toEqual([
+    expect(timedSyllables(backgroundTrack(result[0]))).toEqual([
       { text: "(clap)", sep: " ", begin: 1.0, end: 1.5 },
       { text: "(ooh)", sep: "", begin: 5.0, end: 5.5 },
     ]);
@@ -1862,7 +1864,7 @@ describe("preserveBrackets: word-synced invariants", () => {
       }),
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
-    const w = result[0].backgroundWords ?? [];
+    const w = timedSyllables(backgroundTrack(result[0]));
     expect(w[0].begin).toBe(5.123);
     expect(w[0].end).toBe(5.617);
     expect(w[1].begin).toBe(5.617);
@@ -1884,7 +1886,7 @@ describe("preserveBrackets: word-synced invariants", () => {
       }),
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
-    expect(result[0].backgroundText).toBe("(ooh yeah)");
+    expect(backgroundText(result[0])).toBe("(ooh yeah)");
   });
 
   it("does not introduce parens in the main line text", () => {
@@ -1897,7 +1899,7 @@ describe("preserveBrackets: word-synced invariants", () => {
       }),
     ];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
-    expect(result[0].text).toBe("Real line");
+    expect(lineText(result[0])).toBe("Real line");
   });
 });
 
@@ -1907,15 +1909,15 @@ describe("regressions", () => {
   it("regression: background vocals extracted on a synced line are stored timed", () => {
     const line = createLine({ id: "a", text: "hello (ooh)", begin: 10, end: 14 });
     const [extracted] = extractBackgroundVocals([line], options);
-    expect(extracted.backgroundText).toBe("ooh");
-    expect(extracted.backgroundWords?.[0].begin).toBe(12);
+    expect(backgroundText(extracted)).toBe("ooh");
+    expect(timedSyllables(backgroundTrack(extracted))[0].begin).toBe(12);
   });
 
   it("regression: an untimed standalone line merged into a synced line is stored timed", () => {
     const lines = [createLine({ id: "a", text: "hello", begin: 10, end: 14 }), createLine({ id: "b", text: "(ooh)" })];
     const [merged] = extractBackgroundVocals(lines, options);
-    expect(merged.backgroundText).toBe("ooh");
-    expect(merged.backgroundWords?.[0].begin).toBe(12);
+    expect(backgroundText(merged)).toBe("ooh");
+    expect(timedSyllables(backgroundTrack(merged))[0].begin).toBe(12);
   });
 
   it("regression: several untimed standalone lines all merge into one synced line", () => {
@@ -1926,7 +1928,7 @@ describe("regressions", () => {
     ];
     const extracted = extractBackgroundVocals(lines, options);
     expect(extracted).toHaveLength(1);
-    expect(extracted[0].backgroundWords?.map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
+    expect(timedSyllables(backgroundTrack(extracted[0])).map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
   });
 
   it("regression: empty parentheses do not change the timing pulled from a word-synced line", () => {
@@ -1940,7 +1942,7 @@ describe("regressions", () => {
       ],
     });
     const extracted = extractInlineFromLine(line, options);
-    expect(extracted.backgroundWords).toEqual([{ text: "ooh", sep: "", begin: 5, end: 6 }]);
+    expect(timedSyllables(backgroundTrack(extracted))).toEqual([{ text: "ooh", sep: "", begin: 5, end: 6 }]);
   });
 
   it("regression: a timed standalone after an untimed one keeps its own timing", () => {
@@ -1950,8 +1952,8 @@ describe("regressions", () => {
       createLine({ id: "c", text: "(yeah)", begin: 15, end: 16 }),
     ];
     const [merged] = extractBackgroundVocals(lines, options);
-    expect(merged.backgroundText).toBe("ooh yeah");
-    expect(merged.backgroundWords?.at(-1)).toEqual({ text: "yeah", sep: "", begin: 15, end: 16 });
+    expect(backgroundText(merged)).toBe("ooh yeah");
+    expect(timedSyllables(backgroundTrack(merged)).at(-1)).toEqual({ text: "yeah", sep: "", begin: 15, end: 16 });
   });
 
   it("regression: an untimed standalone line after an inline word-synced extraction keeps the carried timing", () => {
@@ -1968,8 +1970,8 @@ describe("regressions", () => {
     ];
     const extracted = extractBackgroundVocals(lines, options);
     expect(extracted).toHaveLength(1);
-    expect(extracted[0].backgroundWords?.[0]).toEqual({ text: "ooh", sep: " ", begin: 1, end: 2 });
-    expect(extracted[0].backgroundText).toBe("ooh yeah");
-    expect(extracted[0].backgroundWords?.map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
+    expect(timedSyllables(backgroundTrack(extracted[0]))[0]).toEqual({ text: "ooh", sep: " ", begin: 1, end: 2 });
+    expect(backgroundText(extracted[0])).toBe("ooh yeah");
+    expect(timedSyllables(backgroundTrack(extracted[0])).map((word) => word.text.trim())).toEqual(["ooh", "yeah"]);
   });
 });

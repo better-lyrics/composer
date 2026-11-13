@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -62,9 +64,9 @@ describe("EmptyWordTrack", () => {
     track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 3) }));
 
     const after = useProjectStore.getState().lines[0];
-    expect(after.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
-    expect(after.words?.[0].begin).toBeLessThanOrEqual(3);
-    expect(after.text).toBe("hello world");
+    expect(timedSyllables(mainTrack(after)).map((w) => w.text + w.sep)).toEqual(["hello ", "world"]);
+    expect(timedSyllables(mainTrack(after))[0].begin).toBeLessThanOrEqual(3);
+    expect(lineText(after)).toBe("hello world");
     expect(useTimelineStore.getState().editingWord).toBeNull();
   });
 
@@ -90,8 +92,8 @@ describe("EmptyWordTrack", () => {
 
       track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 1) }));
       const after = useProjectStore.getState().lines[0];
-      expect(after.words?.map((w) => w.text + w.sep)).toEqual(["hel", "lo"]);
-      expect(after.text).toBe("hel|lo");
+      expect(timedSyllables(mainTrack(after)).map((w) => w.text + w.sep)).toEqual(["hel", "lo"]);
+      expect(lineText(after)).toBe("hel|lo");
     });
 
     it("truncates labels longer than 60 characters but keeps the created word text whole", async () => {
@@ -100,7 +102,7 @@ describe("EmptyWordTrack", () => {
       expect(track.textContent).toContain(`${"x".repeat(60)}...`);
 
       track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 1) }));
-      expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("x".repeat(70));
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].text).toBe("x".repeat(70));
     });
 
     it("uses a placeholder word and hides Place for an empty line", async () => {
@@ -109,7 +111,7 @@ describe("EmptyWordTrack", () => {
       expect(track.querySelector("button")).toBeNull();
 
       track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 1) }));
-      expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("...");
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].text).toBe("...");
     });
 
     it("does nothing when no slot fits the minimum word duration", async () => {
@@ -147,8 +149,8 @@ describe("EmptyBgTrack", () => {
     zone.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(zone, 2) }));
 
     const after = useProjectStore.getState().lines[0];
-    expect(after.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["..."]);
-    expect(after.backgroundTextSource).toBe("manual");
+    expect(timedSyllables(backgroundTrack(after)).map((w) => w.text + w.sep)).toEqual(["..."]);
+    expect(backgroundTrack(after)?.source).toBe("manual");
     expect(useTimelineStore.getState().editingWord).toEqual(wordAddress(after, 0, "bg"));
   });
 
@@ -173,8 +175,8 @@ describe("EmptyBgTrack", () => {
       zone.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(zone, 2) }));
 
       const after = useProjectStore.getState().lines[0];
-      expect(after.backgroundWords?.map((w) => w.text + w.sep)).toEqual(["ooh ", "ah"]);
-      expect(after.backgroundText).toBe("ooh ah");
+      expect(timedSyllables(backgroundTrack(after)).map((w) => w.text + w.sep)).toEqual(["ooh ", "ah"]);
+      expect(backgroundText(after)).toBe("ooh ah");
       expect(useTimelineStore.getState().editingWord).toBeNull();
     });
   });
@@ -199,7 +201,7 @@ describe("EmptyBgTrack", () => {
 
       zone.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(zone, 2) }));
 
-      expect(useProjectStore.getState().lines[0].words).toEqual(line.words);
+      expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toEqual(timedSyllables(mainTrack(line)));
     });
   });
 });
@@ -251,10 +253,10 @@ describe("empty tracks in a group that shares timing", () => {
     track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 12.9) }));
 
     await expect.poll(() => lineById("b0")?.words?.length).toBe(3);
-    expect(lineById("b0")?.words?.[0].begin).toBe(12);
-    expect(lineById("b0")?.words?.at(-1)?.end).toBeLessThanOrEqual(13);
-    expect(lineById("b1")?.words?.[0].begin).toBe(19);
-    expect(lineById("b1")?.words?.at(-1)?.end).toBeLessThanOrEqual(20);
+    expect(timedSyllables(mainTrack(lineById("b0")!))[0].begin).toBe(12);
+    expect(timedSyllables(mainTrack(lineById("b0")!)).at(-1)?.end).toBeLessThanOrEqual(13);
+    expect(timedSyllables(mainTrack(lineById("b1")!))[0].begin).toBe(19);
+    expect(timedSyllables(mainTrack(lineById("b1")!)).at(-1)?.end).toBeLessThanOrEqual(20);
   });
 
   it("ends timed background text where the latest instance reaches the song end", async () => {
@@ -264,8 +266,8 @@ describe("empty tracks in a group that shares timing", () => {
     track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 12.9) }));
 
     await expect.poll(() => lineById("b0")?.backgroundWords?.length).toBe(3);
-    expect(lineById("b0")?.backgroundWords?.at(-1)?.end).toBeLessThanOrEqual(13);
-    expect(lineById("b1")?.backgroundWords?.at(-1)?.end).toBeLessThanOrEqual(20);
+    expect(timedSyllables(backgroundTrack(lineById("b0")!)).at(-1)?.end).toBeLessThanOrEqual(13);
+    expect(timedSyllables(backgroundTrack(lineById("b1")!)).at(-1)?.end).toBeLessThanOrEqual(20);
   });
 
   describe("regressions", () => {
@@ -275,8 +277,8 @@ describe("empty tracks in a group that shares timing", () => {
       track.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: clientXAtTime(track, 12.9) }));
 
       await expect.poll(() => lineById("b0")?.words?.length).toBe(3);
-      expect(lineById("b0")?.words?.[0].begin).toBeCloseTo(12.9, 5);
-      expect(lineById("b0")?.words?.at(-1)?.end).toBeCloseTo(15.9, 5);
+      expect(timedSyllables(mainTrack(lineById("b0")!))[0].begin).toBeCloseTo(12.9, 5);
+      expect(timedSyllables(mainTrack(lineById("b0")!)).at(-1)?.end).toBeCloseTo(15.9, 5);
       expect(lineById("b1")?.words).toBeUndefined();
     });
   });

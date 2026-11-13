@@ -1,14 +1,16 @@
+import { describe, expect, it } from "vitest";
+import { backgroundText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { applySyllableSplitToLines } from "@/domain/word/identical-syllable-split";
 import { createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
 
 describe("applySyllableSplitToLines", () => {
   it("splits the source word", () => {
     const lines = [createLine({ id: "l1", words: [{ text: "running", begin: 0, end: 1 }] })];
     const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "word" }, [3], false);
-    expect(result[0].words).toHaveLength(2);
-    expect(result[0].words?.[0].text).toBe("run");
-    expect(result[0].words?.[1].text).toBe("ning");
+    expect(timedSyllables(mainTrack(result[0]))).toHaveLength(2);
+    expect(timedSyllables(mainTrack(result[0]))[0].text).toBe("run");
+    expect(timedSyllables(mainTrack(result[0]))[1].text).toBe("ning");
   });
 
   it("splits identical words in other lines too", () => {
@@ -17,8 +19,8 @@ describe("applySyllableSplitToLines", () => {
       createLine({ id: "l2", words: [{ text: "running", begin: 2, end: 3 }] }),
     ];
     const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "word" }, [3], false);
-    expect(result[0].words).toHaveLength(2);
-    expect(result[1].words).toHaveLength(2);
+    expect(timedSyllables(mainTrack(result[0]))).toHaveLength(2);
+    expect(timedSyllables(mainTrack(result[1]))).toHaveLength(2);
   });
 
   it("gives each split word its own syllableGroupId", () => {
@@ -37,7 +39,7 @@ describe("applySyllableSplitToLines", () => {
   it("preserves trailing space on the last syllable when the source had one", () => {
     const lines = [createLine({ id: "l1", words: [{ text: "running", sep: " ", begin: 0, end: 1 }] })];
     const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "word" }, [3], false);
-    expect(result[0].words?.[1]).toMatchObject({ text: "ning", sep: " " });
+    expect(timedSyllables(mainTrack(result[0]))[1]).toMatchObject({ text: "ning", sep: " " });
   });
 
   it("case-insensitive flag finds Capitalized matches", () => {
@@ -46,9 +48,9 @@ describe("applySyllableSplitToLines", () => {
       createLine({ id: "l2", words: [{ text: "Running", begin: 2, end: 3 }] }),
     ];
     const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "word" }, [3], true);
-    expect(result[1].words).toHaveLength(2);
-    expect(result[1].words?.[0].text).toBe("Run");
-    expect(result[1].words?.[1].text).toBe("ning");
+    expect(timedSyllables(mainTrack(result[1]))).toHaveLength(2);
+    expect(timedSyllables(mainTrack(result[1]))[0].text).toBe("Run");
+    expect(timedSyllables(mainTrack(result[1]))[1].text).toBe("ning");
   });
 
   it("returns the original lines reference unchanged when source line doesn't exist", () => {
@@ -69,7 +71,7 @@ describe("applySyllableSplitToLines", () => {
       }),
     ];
     const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "word" }, [1], false);
-    expect(result[0].words?.map((w) => w.text)).toEqual(["g", "o", "stop", "g", "o"]);
+    expect(timedSyllables(mainTrack(result[0])).map((w) => w.text)).toEqual(["g", "o", "stop", "g", "o"]);
   });
 
   it("includes background-word matches", () => {
@@ -81,8 +83,8 @@ describe("applySyllableSplitToLines", () => {
       }),
     ];
     const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "word" }, [2], false);
-    expect(result[0].words).toHaveLength(2);
-    expect(result[0].backgroundWords).toHaveLength(2);
+    expect(timedSyllables(mainTrack(result[0]))).toHaveLength(2);
+    expect(timedSyllables(backgroundTrack(result[0]))).toHaveLength(2);
   });
 });
 
@@ -98,9 +100,9 @@ describe("applySyllableSplitToLines · background provenance", () => {
       }),
     ];
     const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "bg" }, [3], false);
-    expect(result[0].backgroundWords).toHaveLength(2);
-    expect(result[0].backgroundTextSource).toBe("manual");
-    expect(result[0].backgroundText).toBe("run|ning");
+    expect(timedSyllables(backgroundTrack(result[0]))).toHaveLength(2);
+    expect(backgroundTrack(result[0])?.source).toBe("manual");
+    expect(backgroundText(result[0])).toBe("run|ning");
   });
 
   it("flips backgroundTextSource to manual when a main-word split also splits a matching background word", () => {
@@ -114,8 +116,8 @@ describe("applySyllableSplitToLines · background provenance", () => {
       }),
     ];
     const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "word" }, [2], false);
-    expect(result[0].backgroundWords).toHaveLength(2);
-    expect(result[0].backgroundTextSource).toBe("manual");
+    expect(timedSyllables(backgroundTrack(result[0]))).toHaveLength(2);
+    expect(backgroundTrack(result[0])?.source).toBe("manual");
   });
 
   it("leaves backgroundTextSource untouched when only the main track is split", () => {
@@ -129,8 +131,8 @@ describe("applySyllableSplitToLines · background provenance", () => {
       }),
     ];
     const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "word" }, [3], false);
-    expect(result[0].words).toHaveLength(2);
-    expect(result[0].backgroundTextSource).toBe("extraction");
+    expect(timedSyllables(mainTrack(result[0]))).toHaveLength(2);
+    expect(backgroundTrack(result[0])?.source).toBe("extraction");
   });
 
   it("flips a matching identical-word line's background track to manual", () => {
@@ -151,8 +153,8 @@ describe("applySyllableSplitToLines · background provenance", () => {
       }),
     ];
     const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "bg" }, [3], false);
-    expect(result[0].backgroundTextSource).toBe("manual");
-    expect(result[1].backgroundTextSource).toBe("manual");
-    expect(result[1].backgroundWords).toHaveLength(2);
+    expect(backgroundTrack(result[0])?.source).toBe("manual");
+    expect(backgroundTrack(result[1])?.source).toBe("manual");
+    expect(timedSyllables(backgroundTrack(result[1]))).toHaveLength(2);
   });
 });

@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TransliterationTrack } from "@/domain/language/model";
 import {
@@ -8,7 +9,7 @@ import {
   isTransliterationSourceStale,
 } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
-import { describe, expect, it } from "vitest";
+import { backgroundText, lineText } from "@/domain/line/text";
 
 describe("getLanguageReviewItems", () => {
   it("reports stale alternate-language tracks by line", () => {
@@ -133,7 +134,7 @@ function reviewLine(): LyricLine {
 describe("transliteration review", () => {
   it("distinguishes inferred alignment from alignment needing review", () => {
     const line = reviewLine();
-    line.transliteration!.sourceFingerprint = languageSourceFingerprint(line.text, line.backgroundText);
+    line.transliteration!.sourceFingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
     expect(getLanguageReviewTracks(line)).toEqual([{ kind: "transliteration", reasons: ["alignment"] }]);
     line.transliteration!.alignmentStatus = "inferred";
     expect(getLanguageReviewTracks(line)).toEqual([]);
@@ -160,7 +161,9 @@ describe("transliteration review", () => {
       const line = reviewLine();
       line.transliteration = confirmTransliterationAlignment(line, first);
       line.transliteration = confirmTransliterationAlignment(line, first === "words" ? "backgroundWords" : "words");
-      expect(line.transliteration!.sourceFingerprint).toBe(languageSourceFingerprint(line.text, line.backgroundText));
+      expect(line.transliteration!.sourceFingerprint).toBe(
+        languageSourceFingerprint(lineText(line), backgroundText(line)),
+      );
       expect(line.transliteration!.reviewedSourceFingerprint).toBeUndefined();
       expect(line.transliteration!.backgroundReviewedSourceFingerprint).toBeUndefined();
       expect(line.transliteration!.stale).toBeUndefined();
@@ -170,7 +173,7 @@ describe("transliteration review", () => {
 
   it("does not clear an independent alignment warning when the source is already current", () => {
     const line = reviewLine();
-    line.transliteration!.sourceFingerprint = languageSourceFingerprint(line.text, line.backgroundText);
+    line.transliteration!.sourceFingerprint = languageSourceFingerprint(lineText(line), backgroundText(line));
     line.transliteration!.backgroundAlignmentStatus = "needs-review";
     line.transliteration = confirmTransliterationAlignment(line, "words");
     expect(getLanguageReviewTracks(line)).toEqual([{ kind: "transliteration", reasons: ["alignment"] }]);
@@ -180,7 +183,9 @@ describe("transliteration review", () => {
     const line = reviewLine();
     line.transliteration!.backgroundText = undefined;
     line.transliteration = confirmTransliterationAlignment(line, "words");
-    expect(line.transliteration!.sourceFingerprint).toBe(languageSourceFingerprint(line.text, line.backgroundText));
+    expect(line.transliteration!.sourceFingerprint).toBe(
+      languageSourceFingerprint(lineText(line), backgroundText(line)),
+    );
     expect(getLanguageReviewTracks(line)).toEqual([]);
   });
 

@@ -1,7 +1,9 @@
+import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -28,7 +30,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
       expect(words[0]).toBe(stored[0]?.words?.[0]);
       expect(words[2]).toBe(stored[0]?.words?.[2]);
       expect(words[1]).toEqual({ text: "lo", sep: " ", begin: 1.6, end: 2, syllableGroupId: "s1" });
-      expect(merged[0]?.text).toBe("Hel|lo world");
+      expect(lineText(merged[0]!)).toBe("Hel|lo world");
     });
 
     it("regression: editing one background word timing keeps the other background words as stored", () => {
@@ -78,7 +80,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
       expect(words[0]).toBe(stored[0]?.backgroundWords?.[0]);
       expect(words[1]).toBe(stored[0]?.backgroundWords?.[1]);
       expect(words[2]).toEqual({ text: "ohh", sep: "", begin: 1.8, end: 2, syllableGroupId: "b1" });
-      expect(merged[0]?.backgroundText).toBe("yeah o|ohh");
+      expect(backgroundText(merged[0]!)).toBe("yeah o|ohh");
     });
   });
 
@@ -86,7 +88,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
     it("takes every edited word when the edit changes the number of words", () => {
       const stored = [syllableLine()];
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace(/<span begin="0:02.000"[^>]*>world<\/span>/, ""));
-      expect(merged[0]?.words?.map((word) => word.text.trim())).toEqual(["Hel", "lo"]);
+      expect(timedSyllables(mainTrack(merged[0]!)).map((word) => word.text.trim())).toEqual(["Hel", "lo"]);
     });
 
     it("takes every edited word when the edit changes where the spaces are", () => {
@@ -102,7 +104,7 @@ describe("mergeEditedTtmlLines · word timing", () => {
     it("keeps the stored word array when no word changed", () => {
       const stored = [syllableLine(), createLine({ id: "b", text: "Other", begin: 3, end: 4 })];
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">Other<", ">Other2<"));
-      expect(merged[0]?.words).toBe(stored[0]?.words);
+      expect(timedSyllables(mainTrack(merged[0]!))).toBe(timedSyllables(mainTrack(stored[0])));
     });
   });
 });

@@ -1,13 +1,15 @@
 /**
  * @vitest-environment node
  */
+import { describe, expect, it } from "vitest";
 import type { TimeRange } from "@/domain/group/shared-timing";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { createLine } from "@/test/factories";
-import { describe, expect, it } from "vitest";
 import { applyWordMoveAcrossLines } from "./move-across-lines";
 
 // -- Helpers ------------------------------------------------------------------
@@ -66,8 +68,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["hello"]);
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["foo", "bar", "world"]);
+    expect(timedSyllables(mainTrack(a)).map((w) => w.text.trimEnd())).toEqual(["hello"]);
+    expect(timedSyllables(mainTrack(b)).map((w) => w.text.trimEnd())).toEqual(["foo", "bar", "world"]);
   });
 
   it("moves a main word into the background track (main -> bg)", () => {
@@ -105,9 +107,9 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["hello"]);
-    expect(b.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["ooh", "world"]);
-    expect(b.backgroundTextSource).toBe("manual");
+    expect(timedSyllables(mainTrack(a)).map((w) => w.text.trimEnd())).toEqual(["hello"]);
+    expect(timedSyllables(backgroundTrack(b)).map((w) => w.text.trimEnd())).toEqual(["ooh", "world"]);
+    expect(backgroundTrack(b)?.source).toBe("manual");
   });
 
   it("moves a background word from line A to line B (bg -> bg)", () => {
@@ -148,8 +150,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(a.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["ooh"]);
-    expect(b.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["yeah", "ahh"]);
+    expect(timedSyllables(backgroundTrack(a)).map((w) => w.text.trimEnd())).toEqual(["ooh"]);
+    expect(timedSyllables(backgroundTrack(b)).map((w) => w.text.trimEnd())).toEqual(["yeah", "ahh"]);
   });
 
   it("moves a background word into the main track (bg -> main)", () => {
@@ -187,8 +189,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(a.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["ooh"]);
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["first", "ahh"]);
+    expect(timedSyllables(backgroundTrack(a)).map((w) => w.text.trimEnd())).toEqual(["ooh"]);
+    expect(timedSyllables(mainTrack(b)).map((w) => w.text.trimEnd())).toEqual(["first", "ahh"]);
   });
 
   it("moves two main words from one source into one target", () => {
@@ -233,8 +235,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["three"]);
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["alpha", "one", "two"]);
+    expect(timedSyllables(mainTrack(a)).map((w) => w.text.trimEnd())).toEqual(["three"]);
+    expect(timedSyllables(mainTrack(b)).map((w) => w.text.trimEnd())).toEqual(["alpha", "one", "two"]);
   });
 
   it("moves words from two different source lines into one target line", () => {
@@ -286,9 +288,9 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     const a = findById(applyUpdates([lineA, lineB, lineC], result.updates), "A");
     const b = findById(applyUpdates([lineA, lineB, lineC], result.updates), "B");
     const c = findById(applyUpdates([lineA, lineB, lineC], result.updates), "C");
-    expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["a1"]);
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["b2"]);
-    expect(c.words?.map((w) => w.text.trimEnd())).toEqual(["c1", "a2", "b1"]);
+    expect(timedSyllables(mainTrack(a)).map((w) => w.text.trimEnd())).toEqual(["a1"]);
+    expect(timedSyllables(mainTrack(b)).map((w) => w.text.trimEnd())).toEqual(["b2"]);
+    expect(timedSyllables(mainTrack(c)).map((w) => w.text.trimEnd())).toEqual(["c1", "a2", "b1"]);
   });
 });
 
@@ -471,7 +473,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
-    expect(a.text).toBe("alpha gamma");
+    expect(lineText(a)).toBe("alpha gamma");
   });
 
   it("re-derives target-line text after merge", () => {
@@ -504,7 +506,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(b.text).toBe("foo world");
+    expect(lineText(b)).toBe("foo world");
   });
 
   it("regenerates syllable group ids on inserted words", () => {
@@ -680,7 +682,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["world"]);
+    expect(timedSyllables(mainTrack(b)).map((w) => w.text.trimEnd())).toEqual(["world"]);
   });
 
   it("rejects when target line is line-synced and target track is word", () => {

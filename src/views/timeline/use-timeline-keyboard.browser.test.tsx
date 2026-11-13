@@ -1,3 +1,7 @@
+import { createRef } from "react";
+import { describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -7,9 +11,6 @@ import { createLine } from "@/test/factories";
 import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
-import { createRef } from "react";
-import { describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 
 describe("useTimelineKeyboard", () => {
   it("toggles snap when the snap shortcut is pressed in the timeline scope", async () => {
@@ -162,7 +163,7 @@ describe("useTimelineKeyboard", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "m", bubbles: true }));
 
     const mergedLine = useProjectStore.getState().lines[0];
-    expect(mergedLine.words).toEqual([{ text: "everyday", sep: "", begin: 1, end: 2 }]);
+    expect(timedSyllables(mainTrack(mergedLine))).toEqual([{ text: "everyday", sep: "", begin: 1, end: 2 }]);
   });
 
   it("regression: a remapped import lyrics binding opens the import", async () => {
@@ -351,7 +352,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
 
     expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([12]);
-    expect(useProjectStore.getState().lines[0].words).toHaveLength(2);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toHaveLength(2);
     expect(useTimelineStore.getState().selectedWords).toHaveLength(1);
   });
 
@@ -394,7 +395,9 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "F2", bubbles: true }));
 
     expect(useTimelineStore.getState().editingWord).toBeNull();
-    expect(useProjectStore.getState().lines[0].words?.map((word) => word.text + word.sep)).toEqual(["there"]);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((word) => word.text + word.sep)).toEqual([
+      "there",
+    ]);
   });
 });
 
@@ -418,8 +421,8 @@ describe("useTimelineKeyboard · background provenance", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "[", bubbles: true }));
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundTextSource).toBe("manual");
-    expect(updated.backgroundWords?.[0].begin).toBeCloseTo(1.2);
+    expect(backgroundTrack(updated)?.source).toBe("manual");
+    expect(timedSyllables(backgroundTrack(updated))[0].begin).toBeCloseTo(1.2);
   });
 
   it("stamps backgroundTextSource manual when bg words are merged", async () => {
@@ -443,8 +446,8 @@ describe("useTimelineKeyboard · background provenance", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "m", bubbles: true }));
 
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.backgroundWords).toEqual([{ text: "oohaah", sep: "", begin: 1, end: 2 }]);
-    expect(updated.backgroundTextSource).toBe("manual");
+    expect(timedSyllables(backgroundTrack(updated))).toEqual([{ text: "oohaah", sep: "", begin: 1, end: 2 }]);
+    expect(backgroundTrack(updated)?.source).toBe("manual");
   });
 
   it("leaves background provenance untouched when a main word's timing is set", async () => {
@@ -465,6 +468,6 @@ describe("useTimelineKeyboard · background provenance", () => {
 
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "[", bubbles: true }));
 
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 });

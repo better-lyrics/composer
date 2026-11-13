@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { INITIAL_STATE as IMPORT_MODAL_INITIAL_STATE, useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -72,8 +74,8 @@ describe("background vocal extraction", () => {
 
     await expect.poll(() => previewMainTexts(screen.container)).toContain("Hello world");
     await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("(ooh)");
-    expect(useProjectStore.getState().lines[0].text).toBe("Hello world");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(ooh)");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
+    expect(backgroundText(useProjectStore.getState().lines[0])).toBe("(ooh)");
   });
 
   it("merges a standalone parenthesis line into the line above on bulk extract", async () => {
@@ -88,7 +90,7 @@ describe("background vocal extraction", () => {
     await button.click();
 
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(ooh yeah)");
+    expect(backgroundText(useProjectStore.getState().lines[0])).toBe("(ooh yeah)");
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Real lyric line"]);
     await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("(ooh yeah)");
   });
@@ -104,9 +106,9 @@ describe("background vocal extraction", () => {
     await expect.element(pullButton).toBeInTheDocument();
     await pullButton.click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(ooh)");
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
+    expect(backgroundText(useProjectStore.getState().lines[0])).toBe("(ooh)");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("extraction");
   });
 
   it("hides the per-line pull action when the line has no parentheses", async () => {
@@ -134,9 +136,9 @@ describe("background vocal extraction", () => {
     pasteIntoTextarea(textarea, "Hello (ooh) world\nSecond (ah) line");
 
     await expect
-      .poll(() => useProjectStore.getState().lines.map((l) => l.text))
+      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l)))
       .toEqual(["Hello world", "Second line"]);
-    expect(useProjectStore.getState().lines.map((l) => l.backgroundText)).toEqual(["(ooh)", "(ah)"]);
+    expect(useProjectStore.getState().lines.map((l) => backgroundText(l))).toEqual(["(ooh)", "(ah)"]);
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Hello world", "Second line"]);
     await expect.poll(() => previewBackgroundTexts(screen.container)).toEqual(["(ooh)", "(ah)"]);
   });
@@ -152,9 +154,9 @@ describe("background vocal extraction", () => {
     pasteIntoTextarea(textarea, "Hello (ooh) world\nSecond (ah) line");
 
     await expect
-      .poll(() => useProjectStore.getState().lines.map((l) => l.text))
+      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l)))
       .toEqual(["Hello (ooh) world", "Second (ah) line"]);
-    expect(useProjectStore.getState().lines.every((l) => l.backgroundText === undefined)).toBe(true);
+    expect(useProjectStore.getState().lines.every((l) => backgroundText(l) === undefined)).toBe(true);
   });
 });
 
@@ -193,8 +195,8 @@ describe("manual background vocal editing", () => {
     await input.fill("ooh");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBe("ooh");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
   it("flips an extraction-sourced background to manual when edited in the popover", async () => {
@@ -210,8 +212,8 @@ describe("manual background vocal editing", () => {
     await input.fill("aah");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("aah");
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBe("aah");
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBe("manual");
   });
 
   it("clears all three background fields when the popover text is emptied", async () => {
@@ -227,9 +229,9 @@ describe("manual background vocal editing", () => {
     await input.fill("");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBeUndefined();
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBeUndefined();
     expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBeUndefined();
+    expect(backgroundTrack(useProjectStore.getState().lines[0])?.source).toBeUndefined();
   });
 });
 
@@ -306,7 +308,7 @@ describe("regressions: hand edits keep sync", () => {
 
     await typeAtEndOfTextarea(" to wait");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("It hurts for me to wait");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("It hurts for me to wait");
     const line = useProjectStore.getState().lines[0];
     expect(line.begin).toBe(107.9);
     expect(line.end).toBe(110.425);
@@ -330,8 +332,8 @@ describe("regressions: hand edits keep sync", () => {
 
     await typeAtEndOfTextarea(" now");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Wish I could now");
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Wish I could now");
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words.map((w) => w.text + w.sep)).toEqual(["Wish ", "I ", "could ", "now"]);
     expect(words.slice(0, 2)).toEqual([
       { text: "Wish", sep: " ", begin: 1, end: 2 },
@@ -366,8 +368,8 @@ describe("regressions: hand edits keep sync", () => {
     await screen.getByPlaceholder("ooh, ah, etc.").fill("ooh ah yeah");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("ooh ah yeah");
-    const bg = useProjectStore.getState().lines[0].backgroundWords ?? [];
+    await expect.poll(() => backgroundText(useProjectStore.getState().lines[0])).toBe("ooh ah yeah");
+    const bg = timedSyllables(backgroundTrack(useProjectStore.getState().lines[0]));
     expect(bg.map((w) => w.text + w.sep)).toEqual(["ooh ", "ah ", "yeah"]);
     expect(bg[0]).toEqual({ text: "ooh", sep: " ", begin: 0.5, end: 1 });
     expect(bg[2].end).toBe(1.5);
@@ -398,10 +400,10 @@ describe("regressions: typing does not reshuffle duplicate lines", () => {
     textarea.setSelectionRange("Always".length, "Always".length);
     await userEvent.keyboard(" yeah");
 
-    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Always yeah");
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Always yeah");
     const [, chorus1, chorus2] = useProjectStore.getState().lines;
     expect(chorus1.id).toBe("chorus-1");
-    expect(chorus1.words?.map((w) => w.begin)).toEqual([49, 50, 51]);
+    expect(timedSyllables(mainTrack(chorus1)).map((w) => w.begin)).toEqual([49, 50, 51]);
     expect(chorus2.id).toBe("chorus-2");
     expect(chorus2.begin).toBe(116);
   });

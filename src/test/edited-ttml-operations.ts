@@ -1,6 +1,9 @@
+import { expect } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { isLineTimed } from "@/domain/line/sync-progress";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
 import { timingGranularityOf } from "@/domain/project/timing-granularity";
 import { useProjectStore } from "@/stores/project";
 import {
@@ -17,7 +20,6 @@ import {
 } from "@/test/edited-ttml-edits";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { formatTime } from "@/utils/format-time";
-import { expect } from "vitest";
 
 // -- Operations ---------------------------------------------------------------
 
@@ -61,7 +63,7 @@ const OPERATIONS: readonly EditOperation[] = [
       lossless: true,
       expectTaken: (lines) => {
         const added = required(
-          lines.find((line) => line.text === "Brand new line"),
+          lines.find((line) => lineText(line) === "Brand new line"),
           "added line",
         );
         expect(added).toMatchObject({ begin: 30, end: 31, backgroundText: "new ooh" });
@@ -124,16 +126,16 @@ const OPERATIONS: readonly EditOperation[] = [
     name: "edit a background",
     edit: (project, ttml) => {
       const line = required(
-        project.lines.find((candidate) => candidate.backgroundText),
+        project.lines.find((candidate) => backgroundText(candidate)),
         "background",
       );
-      const last = line.backgroundWords?.at(-1)?.text.trimEnd() ?? line.backgroundText;
+      const last = timedSyllables(backgroundTrack(line)).at(-1)?.text.trimEnd() ?? backgroundText(line);
       return {
         edited: editParagraph(ttml, project, line, (p) =>
           p.replace(`>${last}</span></span>`, `>${last}h</span></span>`),
         ),
         touched: [line.id],
-        expectTaken: (lines) => expect(lineById(lines, line.id).backgroundText).toBe(`${line.backgroundText}h`),
+        expectTaken: (lines) => expect(backgroundText(lineById(lines, line.id))).toBe(`${backgroundText(line)}h`),
       };
     },
   },
@@ -174,7 +176,9 @@ const COMBINED_OPERATIONS: readonly EditOperation[] = [
         expectTaken: (lines) => {
           textEdit.expectTaken(lines);
           const ids = lines.map((candidate) => candidate.id);
-          expect(ids.indexOf(line.id)).toBe(lines.findIndex((candidate) => candidate.text === "Brand new line") + 1);
+          expect(ids.indexOf(line.id)).toBe(
+            lines.findIndex((candidate) => lineText(candidate) === "Brand new line") + 1,
+          );
         },
       };
     },

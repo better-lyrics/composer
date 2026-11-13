@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText, withDerivedText, wordContentSpans } from "@/domain/line/reconstruct-text";
+import { lineText } from "@/domain/line/text";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -129,8 +130,8 @@ describe("wordContentSpans", () => {
 
 describe("withDerivedText on a partly synced line", () => {
   const partly = (text: string, words: string[]): LyricLine => ({ id: "l1", agentId: "v1", text, words: words.map(w) });
-  const derivedText = (previous: LyricLine, words: string[], text = previous.text) =>
-    withDerivedText(reconcileLine({ ...previous, text, words: words.map(w) }), "|", previous).text;
+  const derivedText = (previous: LyricLine, words: string[], text = lineText(previous)) =>
+    lineText(withDerivedText(reconcileLine({ ...previous, text, words: words.map(w) }), "|", previous));
 
   it("keeps the untimed words when the timed words only change in place", () => {
     const previous = partly("la la la", ["la "]);

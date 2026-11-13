@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
@@ -14,11 +16,11 @@ describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
     const firstLine = result.lines[0];
     expect(firstLine.words).toBeDefined();
     expect(firstLine.words?.length).toBe(7);
-    expect(firstLine.words?.[0]).toMatchObject({ text: "Hell", sep: " " });
-    expect(firstLine.words?.[0].begin).toBeCloseTo(1.277, 3);
-    expect(firstLine.words?.[6].text).toBe("man");
-    expect(firstLine.words?.[6].end).toBeCloseTo(2.621, 3);
-    expect(firstLine.text).toBe("Hell no, I can't be your man");
+    expect(timedSyllables(mainTrack(firstLine))[0]).toMatchObject({ text: "Hell", sep: " " });
+    expect(timedSyllables(mainTrack(firstLine))[0].begin).toBeCloseTo(1.277, 3);
+    expect(timedSyllables(mainTrack(firstLine))[6].text).toBe("man");
+    expect(timedSyllables(mainTrack(firstLine))[6].end).toBeCloseTo(2.621, 3);
+    expect(lineText(firstLine)).toBe("Hell no, I can't be your man");
     expect(result.metadata).toMatchObject({
       title: "It Aint Nun",
       artists: ["CHRIST DILLINGER, Acid Souljah"],
@@ -32,9 +34,9 @@ describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
     const result = parseLyricsFile("song.ttml", content);
 
     expect(result.lines).toHaveLength(1);
-    expect(result.lines[0].text).toBe("Hello");
-    expect(result.lines[0].text).not.toContain("LEAKED_TITLE");
-    expect(result.lines[0].text).not.toContain("LEAKED_ARTIST");
+    expect(lineText(result.lines[0])).toBe("Hello");
+    expect(lineText(result.lines[0])).not.toContain("LEAKED_TITLE");
+    expect(lineText(result.lines[0])).not.toContain("LEAKED_ARTIST");
   });
 
   it("parses well-formed TTML identically (regression guard)", () => {
@@ -42,10 +44,10 @@ describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
     const result = parseLyricsFile("song.ttml", content);
 
     expect(result.lines).toHaveLength(1);
-    expect(result.lines[0].text).toBe("Hello world");
-    expect(result.lines[0].words).toHaveLength(2);
-    expect(result.lines[0].words?.[0].begin).toBeCloseTo(1.0, 3);
-    expect(result.lines[0].words?.[1].end).toBeCloseTo(2.0, 3);
+    expect(lineText(result.lines[0])).toBe("Hello world");
+    expect(timedSyllables(mainTrack(result.lines[0]))).toHaveLength(2);
+    expect(timedSyllables(mainTrack(result.lines[0]))[0].begin).toBeCloseTo(1.0, 3);
+    expect(timedSyllables(mainTrack(result.lines[0]))[1].end).toBeCloseTo(2.0, 3);
     expect(result.madeInAmllTool).toBeFalsy();
   });
 
@@ -54,7 +56,7 @@ describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
     const result = parseLyricsFile("song.ttml", content);
 
     expect(result.lines).toHaveLength(1);
-    expect(result.lines[0].text).toBe("Hello");
+    expect(lineText(result.lines[0])).toBe("Hello");
   });
 });
 
@@ -62,7 +64,7 @@ describe("parseLyricsFile - TTML word explicit attribute", () => {
   it('recognizes amll:obscene="true" on a word span', () => {
     const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:44.055" end="00:45.861" ttm:agent="v1"><span begin="00:44.055" end="00:44.192">Bot</span> <span begin="00:44.192" end="00:44.370">tom</span> <span begin="00:44.370" end="00:44.601">lip</span> <span begin="00:44.601" end="00:44.832" amll:obscene="true">curlin'</span></p></div></body></tt>`;
     const result = parseLyricsFile("song.ttml", content);
-    const words = result.lines[0].words!;
+    const words = timedSyllables(mainTrack(result.lines[0]));
     expect(words[0].explicit).toBeUndefined();
     expect(words[3].text).toBe("curlin'");
     expect(words[3].explicit).toBe(true);
@@ -71,7 +73,7 @@ describe("parseLyricsFile - TTML word explicit attribute", () => {
   it('recognizes composer:explicit="true" on a word span', () => {
     const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:composer="https://composer.betterlyrics.org/ttml"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1"><span begin="00:01.000" end="00:01.500">clean</span> <span begin="00:01.500" end="00:02.000" composer:explicit="true">dirty</span></p></div></body></tt>`;
     const result = parseLyricsFile("song.ttml", content);
-    const words = result.lines[0].words!;
+    const words = timedSyllables(mainTrack(result.lines[0]));
     expect(words[0].explicit).toBeUndefined();
     expect(words[1].explicit).toBe(true);
   });
@@ -79,13 +81,13 @@ describe("parseLyricsFile - TTML word explicit attribute", () => {
   it("recognizes an unprefixed obscene attribute", () => {
     const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1"><span begin="00:01.000" end="00:02.000" obscene="1">dirty</span></p></div></body></tt>`;
     const result = parseLyricsFile("song.ttml", content);
-    expect(result.lines[0].words![0].explicit).toBe(true);
+    expect(timedSyllables(mainTrack(result.lines[0]))[0].explicit).toBe(true);
   });
 
   it('treats explicit="false" / "0" as not explicit', () => {
     const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:composer="https://composer.betterlyrics.org/ttml"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1"><span begin="00:01.000" end="00:01.500" composer:explicit="false">clean</span> <span begin="00:01.500" end="00:02.000" composer:explicit="0">also</span></p></div></body></tt>`;
     const result = parseLyricsFile("song.ttml", content);
-    const words = result.lines[0].words!;
+    const words = timedSyllables(mainTrack(result.lines[0]));
     expect(words[0].explicit).toBeUndefined();
     expect(words[1].explicit).toBeUndefined();
   });
@@ -94,11 +96,11 @@ describe("parseLyricsFile - TTML word explicit attribute", () => {
     const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:composer="https://composer.betterlyrics.org/ttml"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.500" ttm:agent="v1"><span begin="00:01.000" end="00:02.000">main</span><span ttm:role="x-bg"><span begin="00:02.000" end="00:02.250">oh</span> <span begin="00:02.250" end="00:02.500" composer:explicit="true">shit</span></span></p></div></body></tt>`;
     const result = parseLyricsFile("song.ttml", content);
     const line = result.lines[0];
-    expect(line.words![0].explicit).toBeUndefined();
+    expect(timedSyllables(mainTrack(line))[0].explicit).toBeUndefined();
     expect(line.backgroundWords).toBeDefined();
-    expect(line.backgroundWords![0].explicit).toBeUndefined();
-    expect(line.backgroundWords![1].text).toContain("shit");
-    expect(line.backgroundWords![1].explicit).toBe(true);
+    expect(timedSyllables(backgroundTrack(line))[0].explicit).toBeUndefined();
+    expect(timedSyllables(backgroundTrack(line))[1].text).toContain("shit");
+    expect(timedSyllables(backgroundTrack(line))[1].explicit).toBe(true);
   });
 });
 
@@ -108,30 +110,30 @@ describe("parseLyricsFile - TTML background provenance", () => {
     const result = parseLyricsFile("song.ttml", content);
     const line = result.lines[0];
     expect(line.backgroundWords).toBeDefined();
-    expect(line.backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(line)?.source).toBe("manual");
   });
 
   it("stamps backgroundTextSource as manual on a line-synced line with x-bg text", () => {
     const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:03.000" ttm:agent="v1">main line<span ttm:role="x-bg">backing vocal</span></p></div></body></tt>`;
     const result = parseLyricsFile("song.ttml", content);
     const line = result.lines[0];
-    expect(line.text).toBe("main line");
-    expect(line.backgroundText).toBe("backing vocal");
-    expect(line.backgroundTextSource).toBe("manual");
+    expect(lineText(line)).toBe("main line");
+    expect(backgroundText(line)).toBe("backing vocal");
+    expect(backgroundTrack(line)?.source).toBe("manual");
   });
 
   it("leaves backgroundTextSource undefined on a line with no x-bg content", () => {
     const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1"><span begin="00:01.000" end="00:01.500">Hello</span> <span begin="00:01.500" end="00:02.000">world</span></p></div></body></tt>`;
     const result = parseLyricsFile("song.ttml", content);
-    expect(result.lines[0].backgroundText).toBeUndefined();
-    expect(result.lines[0].backgroundTextSource).toBeUndefined();
+    expect(backgroundText(result.lines[0])).toBeUndefined();
+    expect(backgroundTrack(result.lines[0])?.source).toBeUndefined();
   });
 
   it("leaves backgroundTextSource undefined on a line-synced line with no x-bg content", () => {
     const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:03.000" ttm:agent="v1">just a plain line</p></div></body></tt>`;
     const result = parseLyricsFile("song.ttml", content);
-    expect(result.lines[0].backgroundText).toBeUndefined();
-    expect(result.lines[0].backgroundTextSource).toBeUndefined();
+    expect(backgroundText(result.lines[0])).toBeUndefined();
+    expect(backgroundTrack(result.lines[0])?.source).toBeUndefined();
   });
 });
 

@@ -1,5 +1,7 @@
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundText, lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 /**
  * @vitest-environment node
  */
@@ -206,7 +208,7 @@ describe("project store · group registry mutators", () => {
     expect(useProjectStore.getState().lines[0].groupId).toBeUndefined();
     expect(useProjectStore.getState().lines[0].instanceIdx).toBeUndefined();
     expect(useProjectStore.getState().lines[0].templateLineIdx).toBeUndefined();
-    expect(useProjectStore.getState().lines[1].text).toBe("untouched");
+    expect(lineText(useProjectStore.getState().lines[1])).toBe("untouched");
   });
 
   it("removeGroup is undoable (group + line fields restored together)", () => {
@@ -258,9 +260,9 @@ describe("project store · instance mutators", () => {
     expect(created[0].instanceIdx).toBe(0);
     expect(created[0].templateLineIdx).toBe(0);
     expect(created[0].begin).toBeUndefined();
-    expect(created[0].words?.[0].begin).toBeCloseTo(30);
-    expect(created[0].words?.[1].begin).toBeCloseTo(30.4);
-    expect(created[0].words?.[2].end).toBeCloseTo(31.2);
+    expect(timedSyllables(mainTrack(created[0]))[0].begin).toBeCloseTo(30);
+    expect(timedSyllables(mainTrack(created[0]))[1].begin).toBeCloseTo(30.4);
+    expect(timedSyllables(mainTrack(created[0]))[2].end).toBeCloseTo(31.2);
   });
 
   it("addInstance carries backgroundText/backgroundWords/backgroundTextSource from the template", () => {
@@ -280,9 +282,9 @@ describe("project store · instance mutators", () => {
 
     const created = useProjectStore.getState().lines.filter((l) => l.groupId === "g1");
     expect(created).toHaveLength(1);
-    expect(created[0].backgroundText).toBe("ooh");
-    expect(created[0].backgroundWords?.[0].begin).toBeCloseTo(30);
-    expect(created[0].backgroundTextSource).toBe("extraction");
+    expect(backgroundText(created[0])).toBe("ooh");
+    expect(timedSyllables(backgroundTrack(created[0]))[0].begin).toBeCloseTo(30);
+    expect(backgroundTrack(created[0])?.source).toBe("extraction");
   });
 
   it("addInstance carries a manual-sourced background flag", () => {
@@ -300,7 +302,7 @@ describe("project store · instance mutators", () => {
     useProjectStore.getState().commit(addInstance("g1", structure, 0));
 
     const created = useProjectStore.getState().lines.filter((l) => l.groupId === "g1");
-    expect(created[0].backgroundTextSource).toBe("manual");
+    expect(backgroundTrack(created[0])?.source).toBe("manual");
   });
 
   it("addInstance leaves backgroundTextSource undefined for a template with no background", () => {
@@ -310,7 +312,7 @@ describe("project store · instance mutators", () => {
     useProjectStore.getState().commit(addInstance("g1", structure, 0));
 
     const created = useProjectStore.getState().lines.filter((l) => l.groupId === "g1");
-    expect(created[0].backgroundTextSource).toBeUndefined();
+    expect(backgroundTrack(created[0])?.source).toBeUndefined();
   });
 
   it("addInstance picks the next unused instanceIdx", () => {
@@ -386,8 +388,8 @@ describe("project store · instance mutators", () => {
     expect(line.groupId).toBeUndefined();
     expect(line.instanceIdx).toBeUndefined();
     expect(line.templateLineIdx).toBeUndefined();
-    expect(line.text).toBe("I love you");
-    expect(line.words?.[0].begin).toBeCloseTo(30);
+    expect(lineText(line)).toBe("I love you");
+    expect(timedSyllables(mainTrack(line))[0].begin).toBeCloseTo(30);
   });
 
   it("instance mutators are undoable", () => {
@@ -440,11 +442,11 @@ describe("project store · shiftInstance", () => {
     const i0 = lines.find((l) => l.id === "a0");
     const i1 = lines.find((l) => l.id === "a1");
 
-    expect(i0?.words?.[0].begin).toBeCloseTo(30);
-    expect(i0?.words?.[1].end).toBeCloseTo(32);
+    expect(timedSyllables(mainTrack(i0!))[0].begin).toBeCloseTo(30);
+    expect(timedSyllables(mainTrack(i0!))[1].end).toBeCloseTo(32);
 
-    expect(i1?.words?.[0].begin).toBeCloseTo(65);
-    expect(i1?.words?.[1].end).toBeCloseTo(67);
+    expect(timedSyllables(mainTrack(i1!))[0].begin).toBeCloseTo(65);
+    expect(timedSyllables(mainTrack(i1!))[1].end).toBeCloseTo(67);
   });
 
   it("shifts background words too", () => {
@@ -633,8 +635,8 @@ describe("project store · shiftInstance", () => {
 
     useProjectStore.getState().commit(shiftInstance("g1", 0, 0.5, SONG_LENGTH));
     const after = useProjectStore.getState().lines;
-    expect(after.find((l) => l.id === "live")?.words?.[0].begin).toBeCloseTo(10.5);
-    expect(after.find((l) => l.id === "stale-detached")?.words?.[0].begin).toBeCloseTo(10);
+    expect(timedSyllables(mainTrack(after.find((l) => l.id === "live")!))[0].begin).toBeCloseTo(10.5);
+    expect(timedSyllables(mainTrack(after.find((l) => l.id === "stale-detached")!))[0].begin).toBeCloseTo(10);
   });
 });
 
@@ -672,8 +674,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { text: "I really love you" } }]));
 
     const lines = useProjectStore.getState().lines;
-    expect(lines.find((l) => l.id === "a0")?.text).toBe("I really love you");
-    expect(lines.find((l) => l.id === "a1")?.text).toBe("I really love you");
+    expect(lineText(lines.find((l) => l.id === "a0")!)).toBe("I really love you");
+    expect(lineText(lines.find((l) => l.id === "a1")!)).toBe("I really love you");
   });
 
   it("propagates agentId edits", () => {
@@ -705,8 +707,8 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { text: "new text" } }]));
 
     const lines = useProjectStore.getState().lines;
-    expect(lines.find((l) => l.id === "a0")?.text).toBe("new text");
-    expect(lines.find((l) => l.id === "a1")?.text).toBe("I love you");
+    expect(lineText(lines.find((l) => l.id === "a0")!)).toBe("new text");
+    expect(lineText(lines.find((l) => l.id === "a1")!)).toBe("I love you");
   });
 
   it("does not affect lines from other groups", () => {
@@ -720,7 +722,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
     useProjectStore.getState().commit(pasteLines([{ id: "a0", updates: { text: "changed" } }]));
 
-    expect(useProjectStore.getState().lines.find((l) => l.id === "x")?.text).toBe("other group");
+    expect(lineText(useProjectStore.getState().lines.find((l) => l.id === "x")!)).toBe("other group");
   });
 
   it("standalone (non-grouped) edits work as before (regression)", () => {
@@ -730,7 +732,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
     useProjectStore.getState().commit(pasteLines([{ id: "s", updates: { text: "edited" } }]));
 
-    expect(useProjectStore.getState().lines[0].text).toBe("edited");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("edited");
   });
 
   it("propagates word text edits to siblings while preserving sibling timing", () => {
@@ -783,11 +785,11 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
     const lines = useProjectStore.getState().lines;
     const a1 = lines.find((l) => l.id === "a1");
-    expect(a1?.words?.[1]).toMatchObject({ text: "really", sep: " " });
-    expect(a1?.words?.[1].begin).toBe(60.5);
-    expect(a1?.words?.[1].end).toBe(61.0);
-    expect(a1?.words?.[0].begin).toBe(60);
-    expect(a1?.words?.[2].end).toBe(61.5);
+    expect(timedSyllables(mainTrack(a1!))[1]).toMatchObject({ text: "really", sep: " " });
+    expect(timedSyllables(mainTrack(a1!))[1].begin).toBe(60.5);
+    expect(timedSyllables(mainTrack(a1!))[1].end).toBe(61.0);
+    expect(timedSyllables(mainTrack(a1!))[0].begin).toBe(60);
+    expect(timedSyllables(mainTrack(a1!))[2].end).toBe(61.5);
   });
 
   it("propagates background word text edits to siblings", () => {
@@ -838,10 +840,10 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(a1?.backgroundWords?.[0]).toMatchObject({ text: "ooh", sep: " " });
-    expect(a1?.backgroundWords?.[1].text).toBe("yeah");
-    expect(a1?.backgroundWords?.[0].begin).toBe(60);
-    expect(a1?.backgroundWords?.[1].end).toBe(61.4);
+    expect(timedSyllables(backgroundTrack(a1!))[0]).toMatchObject({ text: "ooh", sep: " " });
+    expect(timedSyllables(backgroundTrack(a1!))[1].text).toBe("yeah");
+    expect(timedSyllables(backgroundTrack(a1!))[0].begin).toBe(60);
+    expect(timedSyllables(backgroundTrack(a1!))[1].end).toBe(61.4);
   });
 
   it("propagates word splits to siblings, scaling timing to sibling span", () => {
@@ -892,13 +894,13 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(a1?.words?.length).toBe(3);
-    expect(a1?.words?.map((w) => w.text + w.sep)).toEqual(["lov", "ing ", "you"]);
-    expect(a1?.words?.[0].begin).toBe(10);
-    expect(a1?.words?.[0].end).toBe(11);
-    expect(a1?.words?.[1].begin).toBe(11);
-    expect(a1?.words?.[1].end).toBe(12);
-    expect(a1?.words?.[2].begin).toBe(12);
-    expect(a1?.words?.[2].end).toBe(14);
+    expect(timedSyllables(mainTrack(a1!)).map((w) => w.text + w.sep)).toEqual(["lov", "ing ", "you"]);
+    expect(timedSyllables(mainTrack(a1!))[0].begin).toBe(10);
+    expect(timedSyllables(mainTrack(a1!))[0].end).toBe(11);
+    expect(timedSyllables(mainTrack(a1!))[1].begin).toBe(11);
+    expect(timedSyllables(mainTrack(a1!))[1].end).toBe(12);
+    expect(timedSyllables(mainTrack(a1!))[2].begin).toBe(12);
+    expect(timedSyllables(mainTrack(a1!))[2].end).toBe(14);
   });
 
   it("propagates word merges (count decreases) to siblings", () => {
@@ -950,11 +952,11 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(a1?.words?.length).toBe(2);
-    expect(a1?.words?.map((w) => w.text + w.sep)).toEqual(["loving ", "you"]);
-    expect(a1?.words?.[0].begin).toBe(10);
-    expect(a1?.words?.[0].end).toBe(12);
-    expect(a1?.words?.[1].begin).toBe(12);
-    expect(a1?.words?.[1].end).toBe(14);
+    expect(timedSyllables(mainTrack(a1!)).map((w) => w.text + w.sep)).toEqual(["loving ", "you"]);
+    expect(timedSyllables(mainTrack(a1!))[0].begin).toBe(10);
+    expect(timedSyllables(mainTrack(a1!))[0].end).toBe(12);
+    expect(timedSyllables(mainTrack(a1!))[1].begin).toBe(12);
+    expect(timedSyllables(mainTrack(a1!))[1].end).toBe(14);
   });
 
   it("does not propagate structural changes to detached siblings", () => {
@@ -999,7 +1001,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(a1?.words?.length).toBe(1);
-    expect(a1?.words?.[0].text).toBe("hi");
+    expect(timedSyllables(mainTrack(a1!))[0].text).toBe("hi");
   });
 
   it("clears sibling words/begin/end when source explicitly clears them with a text edit", () => {
@@ -1052,11 +1054,11 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     const lines = useProjectStore.getState().lines;
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
-    expect(a0?.text).toBe("I luv you");
+    expect(lineText(a0!)).toBe("I luv you");
     expect(a0?.words).toBeUndefined();
     expect(a0?.begin).toBeUndefined();
     expect(a0?.end).toBeUndefined();
-    expect(a1?.text).toBe("I luv you");
+    expect(lineText(a1!)).toBe("I luv you");
     expect(a1?.words).toBeUndefined();
     expect(a1?.begin).toBeUndefined();
     expect(a1?.end).toBeUndefined();
@@ -1108,7 +1110,7 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(a1?.backgroundText).toBe("yeah");
+    expect(backgroundText(a1!)).toBe("yeah");
     expect(a1?.backgroundWords).toBeUndefined();
   });
 });
@@ -1177,18 +1179,18 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
     );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
-    expect(b?.words).toHaveLength(4);
+    expect(timedSyllables(mainTrack(b!))).toHaveLength(4);
     // Sibling B's "I" preserved exactly
-    expect(b?.words?.[0]).toEqual({ text: "I", sep: " ", begin: 30, end: 30.4 });
+    expect(timedSyllables(mainTrack(b!))[0]).toEqual({ text: "I", sep: " ", begin: 30, end: 30.4 });
     // Sibling B's "you" preserved exactly
-    expect(b?.words?.[3]).toEqual({ text: "you", sep: "", begin: 30.7, end: 31.2 });
+    expect(timedSyllables(mainTrack(b!))[3]).toEqual({ text: "you", sep: "", begin: 30.7, end: 31.2 });
     // The split lands inside B's love-slot proportionally
-    expect(b?.words?.[1].text).toBe("lo");
-    expect(b?.words?.[1].begin).toBeCloseTo(30.4);
-    expect(b?.words?.[1].end).toBeCloseTo(30.55);
-    expect(b?.words?.[2]).toMatchObject({ text: "ve", sep: " " });
-    expect(b?.words?.[2].begin).toBeCloseTo(30.55);
-    expect(b?.words?.[2].end).toBeCloseTo(30.7);
+    expect(timedSyllables(mainTrack(b!))[1].text).toBe("lo");
+    expect(timedSyllables(mainTrack(b!))[1].begin).toBeCloseTo(30.4);
+    expect(timedSyllables(mainTrack(b!))[1].end).toBeCloseTo(30.55);
+    expect(timedSyllables(mainTrack(b!))[2]).toMatchObject({ text: "ve", sep: " " });
+    expect(timedSyllables(mainTrack(b!))[2].begin).toBeCloseTo(30.55);
+    expect(timedSyllables(mainTrack(b!))[2].end).toBeCloseTo(30.7);
   });
 
   it("merge on source: sibling unchanged words keep their original timings", () => {
@@ -1239,9 +1241,9 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
     );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
-    expect(b?.words).toHaveLength(2);
-    expect(b?.words?.[0]).toEqual({ text: "I", sep: " ", begin: 30, end: 30.4 });
-    expect(b?.words?.[1]).toEqual({ text: "loveyou", sep: "", begin: 30.4, end: 31.2 });
+    expect(timedSyllables(mainTrack(b!))).toHaveLength(2);
+    expect(timedSyllables(mainTrack(b!))[0]).toEqual({ text: "I", sep: " ", begin: 30, end: 30.4 });
+    expect(timedSyllables(mainTrack(b!))[1]).toEqual({ text: "loveyou", sep: "", begin: 30.4, end: 31.2 });
   });
 
   it("identical-rhythm siblings: unchanged-word timing preserved (matches source rhythm)", () => {
@@ -1294,9 +1296,9 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
     );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
-    expect(b?.words).toHaveLength(4);
-    expect(b?.words?.[0]).toEqual({ text: "I", sep: " ", begin: 30, end: 30.3 });
-    expect(b?.words?.[3]).toEqual({ text: "you", sep: "", begin: 30.6, end: 31 });
+    expect(timedSyllables(mainTrack(b!))).toHaveLength(4);
+    expect(timedSyllables(mainTrack(b!))[0]).toEqual({ text: "I", sep: " ", begin: 30, end: 30.3 });
+    expect(timedSyllables(mainTrack(b!))[3]).toEqual({ text: "you", sep: "", begin: 30.6, end: 31 });
   });
 
   it("BG word split on source: sibling BG words preserve unchanged-word timings", () => {
@@ -1348,16 +1350,16 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
     );
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
-    expect(b?.backgroundWords).toHaveLength(3);
+    expect(timedSyllables(backgroundTrack(b!))).toHaveLength(3);
     // First "ah" preserved on sibling B
-    expect(b?.backgroundWords?.[0]).toEqual({ text: "ah", sep: " ", begin: 30, end: 30.4 });
+    expect(timedSyllables(backgroundTrack(b!))[0]).toEqual({ text: "ah", sep: " ", begin: 30, end: 30.4 });
     // The new "a" + "h" split inside B's old second-ah slot
-    expect(b?.backgroundWords?.[1].text).toBe("a");
-    expect(b?.backgroundWords?.[1].begin).toBeCloseTo(30.4);
-    expect(b?.backgroundWords?.[1].end).toBeCloseTo(30.6);
-    expect(b?.backgroundWords?.[2].text).toBe("h");
-    expect(b?.backgroundWords?.[2].begin).toBeCloseTo(30.6);
-    expect(b?.backgroundWords?.[2].end).toBeCloseTo(30.8);
+    expect(timedSyllables(backgroundTrack(b!))[1].text).toBe("a");
+    expect(timedSyllables(backgroundTrack(b!))[1].begin).toBeCloseTo(30.4);
+    expect(timedSyllables(backgroundTrack(b!))[1].end).toBeCloseTo(30.6);
+    expect(timedSyllables(backgroundTrack(b!))[2].text).toBe("h");
+    expect(timedSyllables(backgroundTrack(b!))[2].begin).toBeCloseTo(30.6);
+    expect(timedSyllables(backgroundTrack(b!))[2].end).toBeCloseTo(30.8);
   });
 
   it("detached siblings are NOT touched by structural propagation", () => {
@@ -1412,8 +1414,8 @@ describe("propagateWordChanges · smart sync preserves unchanged-word timing", (
 
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
     // Detached sibling untouched: original 3-word array preserved
-    expect(b?.words).toHaveLength(3);
-    expect(b?.words?.[1]).toMatchObject({ text: "love", sep: " " });
+    expect(timedSyllables(mainTrack(b!))).toHaveLength(3);
+    expect(timedSyllables(mainTrack(b!))[1]).toMatchObject({ text: "love", sep: " " });
     expect(b?.detached).toBe(true);
   });
 });
@@ -1473,11 +1475,11 @@ describe("applyWordCountChange · resolutions", () => {
     const after = useProjectStore.getState().lines;
     const a = after.find((l) => l.id === "A");
     const b = after.find((l) => l.id === "B");
-    expect(a?.words).toHaveLength(4);
-    expect(b?.words).toHaveLength(4);
+    expect(timedSyllables(mainTrack(a!))).toHaveLength(4);
+    expect(timedSyllables(mainTrack(b!))).toHaveLength(4);
     // Sibling B's "I" and "you" preserved
-    expect(b?.words?.[0]).toEqual({ text: "I", sep: " ", begin: 30, end: 30.4 });
-    expect(b?.words?.[3]).toEqual({ text: "you", sep: "", begin: 30.7, end: 31.2 });
+    expect(timedSyllables(mainTrack(b!))[0]).toEqual({ text: "I", sep: " ", begin: 30, end: 30.4 });
+    expect(timedSyllables(mainTrack(b!))[3]).toEqual({ text: "you", sep: "", begin: 30.7, end: 31.2 });
     // Neither is detached
     expect(a?.detached).toBeUndefined();
     expect(b?.detached).toBeUndefined();
@@ -1493,9 +1495,9 @@ describe("applyWordCountChange · resolutions", () => {
     expect(a?.instanceIdx).toBeUndefined();
     expect(a?.templateLineIdx).toBeUndefined();
     expect(a?.detached).toBeUndefined();
-    expect(a?.words).toHaveLength(4);
-    expect(b?.words).toHaveLength(3);
-    expect(b?.words?.[0]).toEqual({ text: "I", sep: " ", begin: 30, end: 30.4 });
+    expect(timedSyllables(mainTrack(a!))).toHaveLength(4);
+    expect(timedSyllables(mainTrack(b!))).toHaveLength(3);
+    expect(timedSyllables(mainTrack(b!))[0]).toEqual({ text: "I", sep: " ", begin: 30, end: 30.4 });
   });
 
   it("'detach' clears stale begin/end when promoting a line-synced row to word-synced", () => {
@@ -1527,7 +1529,7 @@ describe("applyWordCountChange · resolutions", () => {
     const newWords = [{ id: "w113", text: "verse", sep: "", begin: 5, end: 7 }];
     useProjectStore.getState().commit(applyWordCountChange("L1", newWords, "words", "detach"));
     const after = useProjectStore.getState().lines.find((l) => l.id === "L1");
-    expect(after?.words).toEqual(newWords);
+    expect(timedSyllables(mainTrack(after!))).toEqual(newWords);
     expect(after?.begin).toBeUndefined();
     expect(after?.end).toBeUndefined();
   });
@@ -1547,8 +1549,8 @@ describe("applyWordCountChange · resolutions", () => {
     ];
     useProjectStore.getState().commit(applyWordCountChange("A", mergedWords, "words", "apply", { text: "I loveyou" }));
     const after = useProjectStore.getState().lines;
-    expect(after.find((l) => l.id === "A")?.text).toBe("I loveyou");
-    expect(after.find((l) => l.id === "B")?.text).toBe("I loveyou");
+    expect(lineText(after.find((l) => l.id === "A")!)).toBe("I loveyou");
+    expect(lineText(after.find((l) => l.id === "B")!)).toBe("I loveyou");
   });
 
   it("detach with extraUpdates: text only changes on source, not siblings", () => {
@@ -1559,8 +1561,8 @@ describe("applyWordCountChange · resolutions", () => {
     ];
     useProjectStore.getState().commit(applyWordCountChange("A", mergedWords, "words", "detach", { text: "I loveyou" }));
     const after = useProjectStore.getState().lines;
-    expect(after.find((l) => l.id === "A")?.text).toBe("I loveyou");
-    expect(after.find((l) => l.id === "B")?.text).toBe("I love you"); // unchanged
+    expect(lineText(after.find((l) => l.id === "A")!)).toBe("I loveyou");
+    expect(lineText(after.find((l) => l.id === "B")!)).toBe("I love you"); // unchanged
   });
 
   it("detached siblings are skipped on apply", () => {
@@ -1571,7 +1573,7 @@ describe("applyWordCountChange · resolutions", () => {
     }));
     useProjectStore.getState().commit(applyWordCountChange("A", splitWords, "words", "apply"));
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
-    expect(b?.words).toHaveLength(3); // untouched, still 3 words
+    expect(timedSyllables(mainTrack(b!))).toHaveLength(3); // untouched, still 3 words
     expect(b?.detached).toBe(true);
   });
 
@@ -1603,7 +1605,7 @@ describe("applyWordCountChange · resolutions", () => {
       ),
     );
     const x = useProjectStore.getState().lines.find((l) => l.id === "X");
-    expect(x?.words).toHaveLength(3);
+    expect(timedSyllables(mainTrack(x!))).toHaveLength(3);
   });
 
   it("backgroundWords field: 'apply' propagates BG structural change with smart-sync", () => {
@@ -1651,19 +1653,19 @@ describe("applyWordCountChange · resolutions", () => {
       ),
     );
     const b = useProjectStore.getState().lines.find((l) => l.id === "B");
-    expect(b?.backgroundWords).toHaveLength(3);
-    expect(b?.backgroundWords?.[0]).toEqual({ text: "ah", sep: " ", begin: 30, end: 30.4 });
+    expect(timedSyllables(backgroundTrack(b!))).toHaveLength(3);
+    expect(timedSyllables(backgroundTrack(b!))[0]).toEqual({ text: "ah", sep: " ", begin: 30, end: 30.4 });
   });
 
   it("apply produces a single history entry covering source + all siblings (single undo restores)", () => {
     setupChorus();
     useProjectStore.getState().commit(applyWordCountChange("A", splitWords, "words", "apply"));
     const before = useProjectStore.getState().lines;
-    expect(before.find((l) => l.id === "A")?.words).toHaveLength(4);
-    expect(before.find((l) => l.id === "B")?.words).toHaveLength(4);
+    expect(timedSyllables(mainTrack(before.find((l) => l.id === "A")!))).toHaveLength(4);
+    expect(timedSyllables(mainTrack(before.find((l) => l.id === "B")!))).toHaveLength(4);
     useProjectStore.getState().undo();
     const after = useProjectStore.getState().lines;
-    expect(after.find((l) => l.id === "A")?.words).toHaveLength(3);
-    expect(after.find((l) => l.id === "B")?.words).toHaveLength(3);
+    expect(timedSyllables(mainTrack(after.find((l) => l.id === "A")!))).toHaveLength(3);
+    expect(timedSyllables(mainTrack(after.find((l) => l.id === "B")!))).toHaveLength(3);
   });
 });

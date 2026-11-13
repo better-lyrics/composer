@@ -1,13 +1,15 @@
 /**
  * @vitest-environment node
  */
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { pasteLyrics } from "@/domain/commands/edit-text";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import { useAlignmentStore } from "@/stores/alignment";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { createGroup } from "@/test/factories";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { pasteLyrics } from "@/domain/commands/edit-text";
 
 const cached = vi.hoisted(() => ({ value: true }));
 const seen = vi.hoisted(() => ({
@@ -99,9 +101,9 @@ describe("alignment store", () => {
 
     expect(result).toEqual({ aligned: 1, skipped: 0, fellBack: 0, unknownWords: [], guessedWords: [] });
     const [line, empty] = useProjectStore.getState().lines;
-    expect(line.words?.map((w) => w.text + w.sep)).toEqual(["hello ", "there"]);
-    expect(line.words?.[0].begin).toBeGreaterThanOrEqual(10);
-    expect(line.words?.[1].end).toBeLessThanOrEqual(12);
+    expect(timedSyllables(mainTrack(line)).map((w) => w.text + w.sep)).toEqual(["hello ", "there"]);
+    expect(timedSyllables(mainTrack(line))[0].begin).toBeGreaterThanOrEqual(10);
+    expect(timedSyllables(mainTrack(line))[1].end).toBeLessThanOrEqual(12);
     expect(empty.words).toBeUndefined();
   });
 
@@ -116,7 +118,7 @@ describe("alignment store", () => {
     const result = await useAlignmentStore.getState().alignLines();
 
     expect(result).toMatchObject({ aligned: 2 });
-    const last = useProjectStore.getState().lines[1].words!;
+    const last = timedSyllables(mainTrack(useProjectStore.getState().lines[1]));
     expect(last.map((w) => w.text + w.sep)).toEqual(["last ", "line"]);
     expect(last[0].begin).toBeGreaterThanOrEqual(11.4);
     expect(last[1].end).toBeGreaterThan(last[0].begin);
@@ -134,8 +136,8 @@ describe("alignment store", () => {
     await useAlignmentStore.getState().alignLines();
 
     const [before, skipped] = useProjectStore.getState().lines;
-    expect(before.words?.[0].begin).toBeGreaterThanOrEqual(0.4);
-    expect(before.words?.at(-1)?.end).toBeLessThanOrEqual(10.15);
+    expect(timedSyllables(mainTrack(before))[0].begin).toBeGreaterThanOrEqual(0.4);
+    expect(timedSyllables(mainTrack(before)).at(-1)?.end).toBeLessThanOrEqual(10.15);
     expect(skipped.words).toBeUndefined();
   });
 
@@ -158,7 +160,7 @@ describe("alignment store", () => {
       { line: "five", anchor: null },
       { line: "seven", anchor: "six" },
     ]);
-    const firstLine = useProjectStore.getState().lines[0].words!;
+    const firstLine = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(firstLine.map((w) => [w.begin, w.end])).toEqual([
       [10, 10.75],
       [10.75, 11.5],
@@ -184,7 +186,11 @@ describe("alignment store", () => {
       .getState()
       .restoreLyrics({ lines: [{ id: "L1", text: "hel|lo you", agentId: "v1", begin: 1, end: 2 }] });
     await useAlignmentStore.getState().alignLines();
-    expect(useProjectStore.getState().lines[0].words?.map((w) => w.text + w.sep)).toEqual(["hel", "lo ", "you"]);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((w) => w.text + w.sep)).toEqual([
+      "hel",
+      "lo ",
+      "you",
+    ]);
   });
 
   it("regression: groups every split word it writes, from the lyrics or from the audio, separately", async () => {
@@ -193,7 +199,7 @@ describe("alignment store", () => {
       .restoreLyrics({ lines: [{ id: "L1", text: "hel|lo yellow there", agentId: "v1", begin: 1, end: 4 }] });
     await useAlignmentStore.getState().alignLines();
 
-    const words = useProjectStore.getState().lines[0].words!;
+    const words = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(words.map((w) => w.text + w.sep)).toEqual(["hel", "lo ", "yel", "low ", "there"]);
     const [a, b, c, d, e] = words.map((w) => w.syllableGroupId);
     expect(a).toBeDefined();
@@ -214,9 +220,9 @@ describe("alignment store", () => {
     await useAlignmentStore.getState().alignLines(["L1", "L3"]);
 
     const [first, second, third] = useProjectStore.getState().lines;
-    expect(first.words).toEqual(words);
+    expect(timedSyllables(mainTrack(first))).toEqual(words);
     expect(second.words).toBeUndefined();
-    expect(third.words?.map((w) => w.text)).toEqual(["chosen"]);
+    expect(timedSyllables(mainTrack(third)).map((w) => w.text)).toEqual(["chosen"]);
   });
 
   it("re-aligns word-synced lines, keeping each part and only changing its times", async () => {
@@ -230,7 +236,7 @@ describe("alignment store", () => {
     const result = await useAlignmentStore.getState().alignLines(undefined, { realign: true });
 
     expect(result).toMatchObject({ aligned: 1 });
-    const after = useProjectStore.getState().lines[0].words!;
+    const after = timedSyllables(mainTrack(useProjectStore.getState().lines[0]));
     expect(after.map((w) => w.text + w.sep)).toEqual(["hel", "lo ", "you"]);
     expect(after[0].syllableGroupId).toBe("g1");
     expect(after[2].explicit).toBe(true);
@@ -339,7 +345,7 @@ describe("alignment store", () => {
 
     await useAlignmentStore.getState().alignLines(["L1"]);
 
-    expect(useProjectStore.getState().lines[1].text).toBe("one more line");
+    expect(lineText(useProjectStore.getState().lines[1])).toBe("one more line");
   });
 
   it("regression: a split and the syllable timing that follows it undo in one step", async () => {
@@ -369,7 +375,7 @@ describe("alignment store", () => {
     expect(useProjectStore.getState().lines[0].words?.[0].end).not.toBe(1.9);
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].words).toEqual([whole]);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))).toEqual([whole]);
   });
 
   it("regression: syllable timing found for one shared instance reaches the others", async () => {
@@ -425,8 +431,8 @@ describe("alignment store", () => {
     await useAlignmentStore.getState().retimeNewSyllables(before);
 
     const [first, second] = useProjectStore.getState().lines;
-    expect(first.words![0].end).not.toBeCloseTo(10.9, 6);
-    expect(second.words![0].end - 40).toBeCloseTo(first.words![0].end - 10, 6);
+    expect(timedSyllables(mainTrack(first))[0].end).not.toBeCloseTo(10.9, 6);
+    expect(timedSyllables(mainTrack(second))[0].end - 40).toBeCloseTo(timedSyllables(mainTrack(first))[0].end - 10, 6);
   });
 
   it("refuses without separated vocals", async () => {
@@ -446,7 +452,11 @@ describe("alignment store", () => {
 
     expect(seen.segments[0]).toEqual({ hanReading: "zh", parts: [["我", "爱", "你"]] });
     expect(seen.japanese).toEqual([false]);
-    expect(useProjectStore.getState().lines[0].words?.map((w) => w.text)).toEqual(["我", "爱", "你"]);
+    expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0])).map((w) => w.text)).toEqual([
+      "我",
+      "爱",
+      "你",
+    ]);
   });
 
   it("reads kanji as Japanese when any line has kana, and loads the kanji dictionary", async () => {

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { generateProjectTtml, generateTTML } from "@/utils/ttml";
@@ -50,7 +52,7 @@ describe("generateTTML line timing", () => {
         text: "Com|in' at you, baby",
         words: [
           { id: "w5", text: "Com", sep: "", begin: 1, end: 1.2 },
-          ...wordSynced.words!.map((word) => ({ ...word })),
+          ...timedSyllables(mainTrack(wordSynced)).map((word) => ({ ...word })),
         ],
       };
       const [paragraph] = paragraphs(generateTTML({ metadata, agents, lines: [split], timing: "line" }));
@@ -148,7 +150,7 @@ describe("generateTTML line timing", () => {
     it("reads back as line-synced lines with the same bounds", () => {
       const ttml = generateTTML({ metadata, agents, lines: [wordSynced, lineSynced], timing: "line" });
       const parsed = parseTtml(ttml).lines;
-      expect(parsed.map((line) => [line.text, line.words, line.begin, line.end])).toEqual([
+      expect(parsed.map((line) => [lineText(line), line.words, line.begin, line.end])).toEqual([
         ["Comin' at you, baby", undefined, 1.437, 3.012],
         ["It's been too long", undefined, 6.833, 8.893],
       ]);

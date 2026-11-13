@@ -1,10 +1,12 @@
 /**
  * @vitest-environment node
  */
+import { describe, expect, it } from "vitest";
 import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
-import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -76,8 +78,8 @@ describe("conformLinesToInstance · happy path", () => {
     const updated = result.updatedLines ?? [];
     expect(updated[1].groupId).toBe("g1");
     expect(updated[2].groupId).toBe("g1");
-    expect(updated[1].text).toBe("We were dancing in the dark");
-    expect(updated[2].text).toBe("Till the morning came");
+    expect(lineText(updated[1])).toBe("We were dancing in the dark");
+    expect(lineText(updated[2])).toBe("Till the morning came");
     expect(updated[2].agentId).toBe("v2");
     expect(updated[1].id).toBe("loose1");
     expect(updated[2].id).toBe("loose2");
@@ -126,10 +128,10 @@ describe("conformLinesToInstance · happy path", () => {
       playheadTime: 99,
     });
 
-    expect(result.updatedLines?.[1].words?.[0].begin).toBe(20);
-    expect(result.updatedLines?.[1].words?.[1].end).toBe(22);
-    expect(result.updatedLines?.[2].words?.[0].begin).toBe(22.5);
-    expect(result.updatedLines?.[2].words?.[0].end).toBe(24);
+    expect(timedSyllables(mainTrack(result.updatedLines![1]))[0].begin).toBe(20);
+    expect(timedSyllables(mainTrack(result.updatedLines![1]))[1].end).toBe(22);
+    expect(timedSyllables(mainTrack(result.updatedLines![2]))[0].begin).toBe(22.5);
+    expect(timedSyllables(mainTrack(result.updatedLines![2]))[0].end).toBe(24);
   });
 
   it("falls back to the playhead when the selected lines carry no timing", () => {
@@ -145,8 +147,8 @@ describe("conformLinesToInstance · happy path", () => {
       playheadTime: 42,
     });
 
-    expect(result.updatedLines?.[0].words?.[0].begin).toBe(42);
-    expect(result.updatedLines?.[1].words?.[0].end).toBe(46);
+    expect(timedSyllables(mainTrack(result.updatedLines![0]))[0].begin).toBe(42);
+    expect(timedSyllables(mainTrack(result.updatedLines![1]))[0].end).toBe(46);
   });
 });
 

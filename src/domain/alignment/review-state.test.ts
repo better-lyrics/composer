@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { fingerprintChanged, readAlignedTimings, timingFingerprint } from "@/domain/alignment/fingerprint";
 import { alignmentBreakdown, alignmentReview } from "@/domain/alignment/review-state";
 import type { LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { newWordId } from "@/domain/word/id";
 import { createLine } from "@/test/factories";
 
@@ -26,8 +28,8 @@ function fingerprintsOf(lines: LyricLine[]): Record<string, string> {
 }
 
 function nudged(line: LyricLine, by: number): LyricLine {
-  const [first, ...rest] = line.words ?? [];
-  return createLine({ id: line.id, text: line.text, words: [{ ...first, begin: first.begin + by }, ...rest] });
+  const [first, ...rest] = timedSyllables(mainTrack(line));
+  return createLine({ id: line.id, text: lineText(line), words: [{ ...first, begin: first.begin + by }, ...rest] });
 }
 
 const SONG = Array.from({ length: 8 }, (_, i) => alignedLine(`L${i + 1}`, i * 4));

@@ -1,10 +1,12 @@
+import { describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
 import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { newWordId } from "@/domain/word/id";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
-import { describe, expect, it } from "vitest";
 
 const metadata: ProjectMetadata = { title: "Languages", artists: [], album: "", duration: 10, language: "ja" };
 const agents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];
@@ -66,10 +68,10 @@ describe("TTML alternate-language sidecars", () => {
     expect(ttml).toContain('<text for="L1"><span ttm:role="x-bg">Sky</span></text>');
     expect(ttml).not.toContain("stale");
     const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
-    expect(parsed.text).toBe("Hello");
+    expect(lineText(parsed)).toBe("Hello");
     expect(parsed.translations?.en).toMatchObject({ text: "", backgroundText: "Sky" });
     expect(parsed.transliteration).toMatchObject({ text: "", backgroundText: "sora" });
-    expect(parsed.backgroundWords?.[0].transliteration).toBe("sora");
+    expect(timedSyllables(backgroundTrack(parsed))[0].transliteration).toBe("sora");
   });
 
   it("emits line keys, translations, timed transliterations, and untimed spaces", () => {
@@ -124,7 +126,7 @@ describe("TTML alternate-language sidecars", () => {
     expect(parsed.translations?.en.backgroundText).toBe("Sky");
     expect(parsed.transliteration?.text).toBe("kyou hi");
     expect(parsed.transliteration?.backgroundText).toBe("sora");
-    expect(parsed.words?.map((word) => word.transliteration)).toEqual(["kyou", "hi"]);
+    expect(timedSyllables(mainTrack(parsed)).map((word) => word.transliteration)).toEqual(["kyou", "hi"]);
   });
 
   it("exports pronunciation spaces as untimed text and word boundaries as two spaces", () => {
@@ -158,8 +160,8 @@ describe("TTML alternate-language sidecars", () => {
     expect(ttml).toMatch(/>kyou<\/span><span[^>]*>hi<\/span>/);
     const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
     expect(parsed.transliteration?.text).toBe("kyouhi");
-    expect(parsed.words?.map((word) => word.transliteration)).toEqual(["kyou", "hi"]);
-    expect(parsed.words?.[0].transliterationJoinerAfter).toBe("");
+    expect(timedSyllables(mainTrack(parsed)).map((word) => word.transliteration)).toEqual(["kyou", "hi"]);
+    expect(timedSyllables(mainTrack(parsed))[0].transliterationJoinerAfter).toBe("");
   });
 
   it("gives a literal dash the preceding syllable's timing without changing stored mappings", () => {
@@ -181,7 +183,9 @@ describe("TTML alternate-language sidecars", () => {
     expect(line).toEqual(before);
     const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
     expect(parsed.transliteration?.text).toBe("to-do");
-    expect(parsed.words?.map(({ begin, end, transliteration }) => ({ begin, end, transliteration }))).toEqual([
+    expect(
+      timedSyllables(mainTrack(parsed)).map(({ begin, end, transliteration }) => ({ begin, end, transliteration })),
+    ).toEqual([
       { begin: 1, end: 1.5, transliteration: "to-" },
       { begin: 1.5, end: 2, transliteration: "do" },
     ]);
@@ -212,7 +216,7 @@ describe("TTML alternate-language sidecars", () => {
     expect(line).toEqual(before);
     const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
     expect(parsed.transliteration?.backgroundText).toBe(`sora${joiner}kaze`);
-    expect(parsed.backgroundWords?.map(({ begin, end }) => ({ begin, end }))).toEqual([
+    expect(timedSyllables(backgroundTrack(parsed)).map(({ begin, end }) => ({ begin, end }))).toEqual([
       { begin: 1.25, end: 1.5 },
       { begin: 1.5, end: 1.75 },
     ]);

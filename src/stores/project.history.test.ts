@@ -1,5 +1,7 @@
 import type { LinkGroup } from "@/domain/group/template";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { lineText } from "@/domain/line/text";
+import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 /**
  * @vitest-environment node
  */
@@ -164,16 +166,16 @@ describe("updateLinesWithHistory", () => {
     useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [seedLine("a", { text: "" })]));
 
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "our favorite song is on" })] });
-    expect(useProjectStore.getState().lines[0].text).toBe("our favorite song is on");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("our favorite song is on");
 
     useProjectStore.getState().commit(pasteLines([{ id: "a", updates: { begin: 5, end: 7 } }]));
     const placed = useProjectStore.getState().lines[0];
-    expect(placed.text).toBe("our favorite song is on");
+    expect(lineText(placed)).toBe("our favorite song is on");
     expect(placed.begin).toBe(5);
 
     useProjectStore.getState().undo();
     const afterUndo = useProjectStore.getState().lines[0];
-    expect(afterUndo.text).toBe("our favorite song is on");
+    expect(lineText(afterUndo)).toBe("our favorite song is on");
     expect(afterUndo.begin).toBeUndefined();
   });
 
@@ -184,7 +186,7 @@ describe("updateLinesWithHistory", () => {
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "alpha edited" })] });
     useProjectStore.getState().commit(pasteLines([{ id: "a", updates: { begin: 1, end: 2 } }]));
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("alpha edited");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("alpha edited");
     expect(useProjectStore.getState().lines[0].begin).toBeUndefined();
   });
 
@@ -214,8 +216,8 @@ describe("updateLinesWithHistory", () => {
 
     useProjectStore.getState().undo();
     const restored = useProjectStore.getState().lines[0];
-    expect(restored.words).toEqual([{ text: "hi", sep: "", begin: 0, end: 1 }]);
-    expect(restored.backgroundWords).toEqual([{ text: "ah", sep: "", begin: 0, end: 0.5 }]);
+    expect(timedSyllables(mainTrack(restored))).toEqual([{ text: "hi", sep: "", begin: 0, end: 1 }]);
+    expect(timedSyllables(backgroundTrack(restored))).toEqual([{ text: "ah", sep: "", begin: 0, end: 0.5 }]);
   });
 });
 
@@ -232,10 +234,10 @@ describe("closeLyricBurst", () => {
     useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("hello");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("hello");
 
     useProjectStore.getState().redo();
-    expect(useProjectStore.getState().lines[0].text).toBe("hello world");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("hello world");
   });
 
   it("is a no-op when nothing changed since the last history entry", () => {
@@ -256,18 +258,18 @@ describe("closeLyricBurst", () => {
 
     useProjectStore.getState().undo();
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("one");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one");
 
     const baseline = useProjectStore.getState().lines;
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "one edited" })] });
     useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
 
-    expect(useProjectStore.getState().lines[0].text).toBe("one edited");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one edited");
     expect(useProjectStore.getState().canRedo()).toBe(false);
     expect(useProjectStore.getState().historyIndex).toBe(useProjectStore.getState().history.length - 1);
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("one");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one");
   });
 
   it("seeds the baseline entry when history is empty so undo can return to it", () => {
@@ -280,10 +282,10 @@ describe("closeLyricBurst", () => {
     useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: false });
 
     expect(useProjectStore.getState().canUndo()).toBe(true);
-    expect(useProjectStore.getState().lines[0].text).toBe("start typed");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("start typed");
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("start");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("start");
   });
 
   it("does not mutate the baseline array passed in", () => {
@@ -310,7 +312,7 @@ describe("closeLyricBurst", () => {
       live.text = "live mutation";
     }).toThrow(TypeError);
 
-    expect(useProjectStore.getState().history[committedIndex].lines[0].text).toBe("clone me edited");
+    expect(lineText(useProjectStore.getState().history[committedIndex].lines[0])).toBe("clone me edited");
   });
 
   it("never lets history exceed MAX_HISTORY_SIZE", () => {
@@ -375,9 +377,9 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
     useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: baselineWasDirty });
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("B");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("B");
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("A");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("A");
   });
 
   it("does not seed a duplicate baseline when the store was clean before the run", () => {
@@ -392,7 +394,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
 
     expect(useProjectStore.getState().history.length).toBe(lengthBefore + 1);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("A");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("A");
   });
 
   it("treats an omitted baselineWasDirty as clean", () => {
@@ -416,7 +418,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
 
     expect(useProjectStore.getState().history).toHaveLength(2);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("A");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("A");
   });
 
   it("truncates the redo branch when the dirty path commits mid-history", () => {
@@ -427,7 +429,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
       .commit(pasteLyrics(useProjectStore.getState().lines, [seedLine("a", { text: "three" })]));
     useProjectStore.getState().undo();
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("one");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one");
 
     useProjectStore.getState().restoreLyrics({ lines: [seedLine("a", { text: "one cross-view" })] });
     const baseline = useProjectStore.getState().lines;
@@ -435,11 +437,11 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
     useProjectStore.getState().closeLyricBurst({ lines: baseline, wasPending: true });
 
     expect(useProjectStore.getState().canRedo()).toBe(false);
-    expect(useProjectStore.getState().lines[0].text).toBe("one typed");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one typed");
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("one cross-view");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one cross-view");
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("one");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one");
   });
 
   it("does not mutate the baseline array on the dirty path", () => {
@@ -466,7 +468,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
       baseline[0].text = "live mutation";
     }).toThrow(TypeError);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("B");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("B");
   });
 
   it("no-ops when isDirtySinceHistory is false even if baselineWasDirty is true", () => {
@@ -482,7 +484,7 @@ describe("closeLyricBurst · pre-dirty baseline seeding", () => {
 // -- Undo with a pending non-history edit -------------------------------------
 
 describe("undo with a pending non-history edit", () => {
-  const texts = () => useProjectStore.getState().lines.map((line) => line.text);
+  const texts = () => useProjectStore.getState().lines.map((line) => lineText(line));
 
   describe("regressions", () => {
     it("regression: undo after a non-history replace returns to the last committed state and redo returns to the replace", () => {

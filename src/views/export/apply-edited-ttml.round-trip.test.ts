@@ -1,13 +1,15 @@
+import { describe, expect, it } from "vitest";
+import { lineText } from "@/domain/line/text";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
-import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
 function lineTexts(): string[] {
-  return useProjectStore.getState().lines.map((line) => line.text);
+  return useProjectStore.getState().lines.map((line) => lineText(line));
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -135,7 +137,7 @@ describe("applyEditedTtml · whether the export holds the project", () => {
       const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">now<", ">no|w<");
       expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied" });
       const applied = useProjectStore.getState().lines;
-      expect(applied[0]?.words?.map((word) => word.text + word.sep)).toEqual(["End ", "no|w"]);
+      expect(timedSyllables(mainTrack(applied[0]!)).map((word) => word.text + word.sep)).toEqual(["End ", "no|w"]);
 
       const again = generateProjectTtml(useProjectStore.getState(), 0);
       expect(applyEditedTtml(again, 0)).toEqual({ status: "export-only", reason: "not-synced" });

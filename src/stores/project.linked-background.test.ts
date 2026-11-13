@@ -1,13 +1,15 @@
 /**
  * @vitest-environment node
  */
-import type { LinkGroup } from "@/domain/group/template";
-import { backgroundFields, manualBackgroundWordEdit, withSeededBackground } from "@/domain/line/background";
-import type { LyricLine } from "@/domain/line/model";
-import { useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 import { pasteLines } from "@/domain/commands/instance-rows";
 import { applyWordCountChange } from "@/domain/commands/word-edits";
+import type { LinkGroup } from "@/domain/group/template";
+import { backgroundFields, manualBackgroundWordEdit, withSeededBackground } from "@/domain/line/background";
+import type { LyricLine } from "@/domain/line/model";
+import { backgroundText } from "@/domain/line/text";
+import { backgroundTrack, timedSyllables } from "@/domain/line/track";
+import { useProjectStore } from "@/stores/project";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -62,10 +64,14 @@ describe("project store · background vocals across linked instances", () => {
       );
 
     const sibling = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(sibling?.backgroundText).toBe("ooh yeah");
-    expect(sibling?.backgroundWords?.map((w) => w.text + w.sep).join("")).toBe("ooh yeah");
-    expect(sibling?.backgroundWords?.[0].begin).toBeGreaterThanOrEqual(60);
-    expect(sibling?.backgroundWords?.at(-1)?.end).toBeLessThanOrEqual(62);
+    expect(backgroundText(sibling!)).toBe("ooh yeah");
+    expect(
+      timedSyllables(backgroundTrack(sibling!))
+        .map((w) => w.text + w.sep)
+        .join(""),
+    ).toBe("ooh yeah");
+    expect(timedSyllables(backgroundTrack(sibling!))[0].begin).toBeGreaterThanOrEqual(60);
+    expect(timedSyllables(backgroundTrack(sibling!)).at(-1)?.end).toBeLessThanOrEqual(62);
   });
 
   it("regression: a background edit reaches an instance with a diverged split, and later splits stay in step", () => {
@@ -115,10 +121,10 @@ describe("project store · background vocals across linked instances", () => {
     );
 
     const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(a1?.backgroundText).toBe("ahh yeah");
+    expect(backgroundText(a1!)).toBe("ahh yeah");
     expect(bgTexts("a1")).toEqual(["ahh ", "yeah"]);
-    expect(a1?.backgroundWords?.[0].begin).toBe(60);
-    expect(a1?.backgroundWords?.at(-1)?.end).toBe(61.5);
+    expect(timedSyllables(backgroundTrack(a1!))[0].begin).toBe(60);
+    expect(timedSyllables(backgroundTrack(a1!)).at(-1)?.end).toBe(61.5);
 
     const split = [
       { id: "w8", text: "ahh", sep: " ", begin: 10, end: 10.5 },
