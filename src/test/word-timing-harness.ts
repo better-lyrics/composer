@@ -1,26 +1,27 @@
 import { effectiveTimingWrite } from "@/domain/line/effective-words";
-import type { LyricLine } from "@/domain/line/model";
+import { UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { BoundaryEdge } from "@/domain/word/boundary";
 import { createLine } from "@/test/factories";
-import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
+import { type RetimeChange, createWordTimingOps } from "@/utils/timing/word-timing-ops";
 
-// -- Store write seam ---------------------------------------------------------
+// -- Retime seam --------------------------------------------------------------
 
-interface CapturedUpdate {
-  id: string;
-  updates: Partial<LyricLine>;
-  options?: { propagateToSiblings?: boolean };
-}
+type RetimeEdit = ReturnType<typeof createWordTimingOps>["retimeEdit"];
 
-function captureUpdates() {
-  const calls: CapturedUpdate[] = [];
-  const updateLineWithHistory = (
-    id: string,
-    updates: Partial<LyricLine>,
-    options?: { propagateToSiblings?: boolean },
-  ) => {
-    calls.push({ id, updates, options });
-  };
-  return { calls, updateLineWithHistory };
+// Plans one Sync retime with no shared range and collects the update it writes.
+function retimeInto(
+  calls: LineUpdate[],
+  retimeEdit: RetimeEdit,
+  edge: BoundaryEdge,
+  change: RetimeChange,
+  lines: readonly LyricLine[],
+  lineIdx: number,
+  wordIdx: number,
+): void {
+  const line = lines[lineIdx];
+  const update = line ? retimeEdit({ line, wordIdx, edge, change, range: UNBOUNDED_TIME_RANGE }) : null;
+  if (update) calls.push(update);
 }
 
 // -- Factory instances --------------------------------------------------------
@@ -48,4 +49,4 @@ function makeLine() {
 
 // -- Exports ------------------------------------------------------------------
 
-export { bgOps, captureUpdates, makeLine, wordsOps };
+export { bgOps, makeLine, retimeInto, wordsOps };
