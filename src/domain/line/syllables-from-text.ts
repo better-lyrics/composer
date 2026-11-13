@@ -1,9 +1,9 @@
 import type { LineTrack, Syllable, UntimedSyllable } from "@/domain/line/model";
-import { syllablesText } from "@/domain/line/text";
-import { isTimedSyllable, timedSyllables } from "@/domain/line/track";
+import { timedSyllables } from "@/domain/line/track";
 import { lcsPairs, wordKey } from "@/domain/word/alignment";
 import { newWordId } from "@/domain/word/id";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
+import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Tokens -------------------------------------------------------------------
@@ -49,22 +49,21 @@ function untimedKeepingIds(
   });
 }
 
-// The typed parts end at the one aligned with the last timed syllable. When that syllable lost its match, the
-// typed parts in its place replace it only if the run they replace was all timed; otherwise nothing new is timed.
-function lastTimedPart(old: readonly Syllable[], oldIndexOf: readonly (number | undefined)[]): number {
-  const lastTimed = old.findLastIndex(isTimedSyllable);
-  const aligned = oldIndexOf.indexOf(lastTimed);
-  if (aligned !== -1) return aligned;
-  const before = oldIndexOf.findLastIndex((oldIndex) => oldIndex !== undefined && oldIndex < lastTimed);
-  const after = oldIndexOf.findIndex((oldIndex) => oldIndex !== undefined && oldIndex > lastTimed);
-  const replacedRunEnd = (oldIndexOf[after] ?? old.length) - 1;
-  if (replacedRunEnd !== lastTimed) return before;
-  return (after === -1 ? oldIndexOf.length : after) - 1;
+// A word placed after every timed word, with no time of its own, is what the timed words never reached.
+function timedLength(remapped: readonly WordTiming[], timedIds: ReadonlySet<string>): number {
+  let length = remapped.length;
+  while (length > 0) {
+    const word = remapped[length - 1];
+    if (timedIds.has(word.id) || word.end > word.begin) break;
+    length--;
+  }
+  return length;
 }
 
 // -- Functions ----------------------------------------------------------------
 
-// Matched syllables keep id and timing; parts typed inside the timed run get today's rule, so untimed stay a tail.
+// The timed syllables take the typed text the way timed words always have; the parts they never reach stay an untimed
+// tail, keeping the ids of the untimed syllables they match.
 function syllablesFromText(text: string, track: LineTrack | undefined, splitChar = getSplitCharacter()): Syllable[] {
   const next = textSyllables(text, splitChar);
   const old = track?.syllables ?? [];
@@ -73,13 +72,9 @@ function syllablesFromText(text: string, track: LineTrack | undefined, splitChar
   const oldIndexOf = matchedOldIndices(old, next);
   const untimed = untimedKeepingIds(next, old, oldIndexOf);
   if (timed.length === 0) return untimed;
-  const boundary = lastTimedPart(old, oldIndexOf);
-  if (boundary < 0) return untimed;
-  const typedTimed = syllablesText(next.slice(0, boundary + 1), splitChar).trimEnd();
-  const remapped = remapWordTextsPreservingTiming(timed, typedTimed, splitChar);
-  const last = remapped.length - 1;
-  const closing = { ...remapped[last], sep: next[boundary].sep, joinsNext: next[boundary].joinsNext };
-  return [...remapped.with(last, closing), ...untimed.slice(boundary + 1)];
+  const remapped = remapWordTextsPreservingTiming(timed, text, splitChar);
+  const length = timedLength(remapped, new Set(timed.map((syllable) => syllable.id)));
+  return [...remapped.slice(0, length), ...untimed.slice(length)];
 }
 
 // -- Exports ------------------------------------------------------------------

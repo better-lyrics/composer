@@ -5,6 +5,9 @@ import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { backgroundTrack, mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
 
+const timedSpans = (line: LyricLine) =>
+  timedSyllables(mainTrack(line)).map((word) => [word.text, +word.begin.toFixed(3), +word.end.toFixed(3)]);
+
 describe("reconcileMatchedTiming", () => {
   it("returns the same reference when the typed text is identical", () => {
     const line: LyricLine = lineFromFields({
@@ -321,16 +324,20 @@ describe("reconcileMatchedTiming · regressions", () => {
       expect(timed[1].end).toBeLessThanOrEqual(71.386);
     });
 
-    it("regression: keystrokes inside a timed word keep the words after it timed inside its time", () => {
+    it("regression: keystrokes inside a timed word spread the words typed over it inside its time", () => {
       const line = typed(partlySynced(), [
         "Да, mтвои глаза как море",
         "Да, myтвои глаза как море",
         "Да, my твои глаза как море",
       ]);
-      const timed = timedSyllables(mainTrack(line));
-      expect(timed.map((word) => word.text)).toEqual(["Да,", "my", "твои"]);
-      expect(timed[1].begin).toBeGreaterThanOrEqual(71.386);
-      expect(timed[2].end).toBe(71.686);
+      expect(timedSpans(line)).toEqual([
+        ["Да,", 70.9, 71.3],
+        ["my", 71.386, 71.423],
+        ["твои", 71.423, 71.461],
+        ["глаза", 71.461, 71.536],
+        ["как", 71.536, 71.611],
+        ["море", 71.611, 71.686],
+      ]);
     });
 
     it("keeps a word typed in the untimed tail untimed", () => {
@@ -355,19 +362,42 @@ describe("reconcileMatchedTiming · regressions", () => {
           { id: "w2", text: "rain", sep: " ", begin: 4.5, end: 5, joinsNext: false },
         ],
       });
-    const timedTexts = (text: string) =>
-      timedSyllables(mainTrack(reconcileMatchedTiming(halfSynced(), text))).map((word) => word.text);
+    const typedOver = (text: string) => timedSpans(reconcileMatchedTiming(halfSynced(), text));
 
     it("regression: a word typed after the last timed word stays untimed when an earlier timed word changed", () => {
-      expect(timedTexts("steadier rain now falls slow")).toEqual(["steadier", "rain"]);
+      expect(typedOver("steadier rain now falls slow")).toEqual([
+        ["steadier", 4, 4.5],
+        ["rain", 4.5, 5],
+      ]);
     });
 
-    it("regression: words typed over the timed and untimed parts at once stay untimed", () => {
-      expect(timedTexts("steady snow drifts slow")).toEqual(["steady"]);
+    it("regression: words typed over the last timed word share its time", () => {
+      expect(typedOver("steady snow drifts slow")).toEqual([
+        ["steady", 4, 4.5],
+        ["snow", 4.5, 4.667],
+        ["drifts", 4.667, 4.833],
+        ["slow", 4.833, 5],
+      ]);
     });
 
     it("regression: words typed over the untimed tail stay untimed when an earlier timed word changed", () => {
-      expect(timedTexts("steadier rain now here")).toEqual(["steadier", "rain"]);
+      expect(typedOver("steadier rain now here")).toEqual([
+        ["steadier", 4, 4.5],
+        ["rain", 4.5, 5],
+      ]);
+    });
+
+    it("regression: words typed over the only timed word keep its time", () => {
+      const line = lineFromFields({
+        id: "h",
+        text: "hello world",
+        agentId: "v1",
+        words: [{ id: "w1", text: "hello", sep: " ", begin: 1, end: 2, joinsNext: false }],
+      });
+      expect(timedSpans(reconcileMatchedTiming(line, "hey yo"))).toEqual([
+        ["hey", 1, 1.5],
+        ["yo", 1.5, 2],
+      ]);
     });
   });
 });
