@@ -6,6 +6,7 @@ import { render } from "@/test/render";
 import { TabBar } from "@/ui/tab-bar";
 import { isMac } from "@/utils/platform";
 import { EditorScreen } from "@/views/editor-screen";
+import { pasteLines } from "@/domain/commands/instance-rows";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -58,7 +59,7 @@ describe("EditorScreen", () => {
       activeTab: "export",
       lines: [createLine({ id: "line", text: "Before", begin: 0, end: 1 })],
     });
-    useProjectStore.getState().updateLineWithHistory("line", { text: "After" });
+    useProjectStore.getState().commit(pasteLines([{ id: "line", updates: { text: "After" } }]));
     const screen = await render(<EditorScreen />, { withRouter: true });
 
     await screen.getByRole("button", { name: /Edit$/ }).click();

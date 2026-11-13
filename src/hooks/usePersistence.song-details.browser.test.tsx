@@ -52,7 +52,7 @@ describe("usePersistence · unexported imported song details", () => {
     await render(<PersistenceHost />);
     await getPersistenceSettled();
 
-    useProjectStore.getState().setLines([{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }]);
+    useProjectStore.getState().restoreLyrics({ lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }] });
     useProjectStore.getState().markSongDetailsImported();
 
     await expect.poll(async () => (await loadOpenProjectRecord())?.hasUnexportedImport, { timeout: 2000 }).toBe(true);

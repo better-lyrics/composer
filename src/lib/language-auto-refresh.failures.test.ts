@@ -2,6 +2,7 @@ import { useProjectStore } from "@/stores/project";
 import { createRefresher, disposeRefreshers, gate, lineById, timedLine } from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { lineEditCommand } from "@/domain/commands/line-edits";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -33,7 +34,14 @@ describe("createLanguageAutoRefresh failures", () => {
     await refresher.refreshNow();
     expect(requests.length).toBe(failedRequests);
 
-    useProjectStore.getState().updateLine("a", { text: "Сильный дождь" }, { deriveText: false });
+    useProjectStore.getState().commit(
+      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "a", updates: { text: "Сильный дождь" } }], {
+        derivesText: false,
+        propagateToSiblings: false,
+        copiesSharedTiming: false,
+      }),
+      "pending",
+    );
     await refresher.refreshNow();
     expect(lineById("a").transliteration?.text).toBe("Silnyy  dozhd");
   });

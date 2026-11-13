@@ -1,3 +1,6 @@
+import { shareGroupTiming } from "@/domain/commands/group-edits";
+import { NOTHING_SHARED } from "@/domain/group/group-plans";
+import type { SharingOutcome } from "@/domain/group/shared-placement";
 import { type SharedTimingSuggestion, sharedTimingSuggestions } from "@/domain/group/shared-timing-suggestions";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -20,9 +23,11 @@ function detailText(suggestion: SharedTimingSuggestion): string {
 
 function shareAll(visible: readonly SharedTimingSuggestion[]): void {
   const { duration } = useAudioStore.getState();
-  const outcomes = visible.map((suggestion) =>
-    useProjectStore.getState().shareGroupTiming(suggestion.groupId, duration),
-  );
+  const outcomes = visible.map((suggestion) => {
+    let sharing: SharingOutcome = NOTHING_SHARED;
+    useProjectStore.getState().commit(shareGroupTiming(suggestion.groupId, duration, (planned) => (sharing = planned)));
+    return sharing;
+  });
   showKeptOwnTimingToast(
     outcomes.flatMap((outcome) => outcome.keptOwnTiming),
     "timeline",

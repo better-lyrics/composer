@@ -48,12 +48,12 @@ const COMMIT_FACTOR_EPS = 1e-3;
 
 // -- Helpers -------------------------------------------------------------------
 
-// Preview writes go through setTransientLines: transient states that must not
+// Preview writes go through previewLines: transient states that must not
 // mark the project dirty. The committed result goes through the stretch
 // command, which owns history and dirty flags. The action keeps
 // the array reference, which the drag relies on for its external-writer check.
 function writePreviewLines(lines: LyricLine[]): void {
-  useProjectStore.getState().setTransientLines(lines);
+  useProjectStore.getState().previewLines(lines);
 }
 
 // Applies stretch updates to the pre-drag snapshot the way the stretch command will commit them: each line
@@ -217,7 +217,7 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
         if (stillOurs) {
           // Restore the snapshot first so the history entry below captures the
           // true pre-drag state (and a discarded drag leaves no trace at all).
-          useProjectStore.getState().restoreTransientLines(snapshotLines);
+          useProjectStore.getState().restorePreviewLines(snapshotLines);
         }
         teardown();
         if (stillOurs && commit && dragged && Math.abs(currentFactor - 1) >= COMMIT_FACTOR_EPS) {

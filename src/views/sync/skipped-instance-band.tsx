@@ -1,3 +1,4 @@
+import { setInstanceOwnTiming } from "@/domain/commands/instance-edits";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -25,7 +26,9 @@ const SkippedInstanceBand: React.FC<SkippedInstanceBandProps> = ({
   onJumpToLine,
 }) => {
   const handleSyncAnyway = () => {
-    useProjectStore.getState().setInstanceOwnTiming(groupId, instanceIdx, true, useAudioStore.getState().duration);
+    useProjectStore
+      .getState()
+      .commit(setInstanceOwnTiming(groupId, instanceIdx, true, useAudioStore.getState().duration));
     onJumpToLine(firstLineIndex);
   };
 

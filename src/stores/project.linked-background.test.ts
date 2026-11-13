@@ -6,6 +6,8 @@ import { backgroundFields, manualBackgroundWordEdit, withSeededBackground } from
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLines } from "@/domain/commands/instance-rows";
+import { applyWordCountChange } from "@/domain/commands/word-edits";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -53,7 +55,11 @@ describe("project store · background vocals across linked instances", () => {
 
     useProjectStore
       .getState()
-      .updateLineWithHistory("a0", backgroundFields({ text: "ooh yeah", words: seededWords, source: "manual" }));
+      .commit(
+        pasteLines([
+          { id: "a0", updates: backgroundFields({ text: "ooh yeah", words: seededWords, source: "manual" }) },
+        ]),
+      );
 
     const sibling = useProjectStore.getState().lines.find((l) => l.id === "a1");
     expect(sibling?.backgroundText).toBe("ooh yeah");
@@ -96,11 +102,15 @@ describe("project store · background vocals across linked instances", () => {
         .lines.find((l) => l.id === id)
         ?.backgroundWords?.map((w) => w.text + w.sep);
 
-    useProjectStore.getState().updateLineWithHistory(
-      "a0",
-      manualBackgroundWordEdit([
-        { id: "w6", text: "ahh", sep: " ", begin: 10, end: 10.5 },
-        { id: "w7", text: "yeah", sep: "", begin: 10.5, end: 11 },
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "a0",
+          updates: manualBackgroundWordEdit([
+            { id: "w6", text: "ahh", sep: " ", begin: 10, end: 10.5 },
+            { id: "w7", text: "yeah", sep: "", begin: 10.5, end: 11 },
+          ]),
+        },
       ]),
     );
 
@@ -117,7 +127,7 @@ describe("project store · background vocals across linked instances", () => {
     ];
     useProjectStore
       .getState()
-      .applyWordCountChange("a0", split, "backgroundWords", "apply", manualBackgroundWordEdit(split));
+      .commit(applyWordCountChange("a0", split, "backgroundWords", "apply", manualBackgroundWordEdit(split)));
 
     expect(bgTexts("a1")).toEqual(["ahh ", "ye", "ah"]);
   });

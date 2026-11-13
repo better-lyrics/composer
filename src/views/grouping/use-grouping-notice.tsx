@@ -1,3 +1,6 @@
+import { groupRepeatingSections } from "@/domain/commands/group-edits";
+import { NOTHING_SHARED } from "@/domain/group/group-plans";
+import type { SharingOutcome } from "@/domain/group/shared-placement";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -73,8 +76,12 @@ function dismissFingerprints(fingerprints: readonly string[]): void {
 
 function groupSections(sections: readonly RepeatingSection[]): number {
   const { duration } = useAudioStore.getState();
-  const { groupRepeatingSections } = useProjectStore.getState();
-  const outcomes = sections.map((section) => groupRepeatingSections(section.starts, section.length, { duration }));
+  const outcomes = sections.map((section) => {
+    let sharing: SharingOutcome = NOTHING_SHARED;
+    const grouping = { starts: section.starts, length: section.length, duration };
+    useProjectStore.getState().commit(groupRepeatingSections(grouping, (planned) => (sharing = planned)));
+    return sharing;
+  });
   noteGuideSignal("edit.group");
   showKeptOwnTimingToast(
     outcomes.flatMap((outcome) => outcome.keptOwnTiming),

@@ -30,7 +30,7 @@ async function renderSettled(): Promise<void> {
 }
 
 function editLyrics(): void {
-  useProjectStore.getState().setLines([createLine({ text: "Hello world", begin: 1, end: 2 })]);
+  useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Hello world", begin: 1, end: 2 })] });
 }
 
 // -- Tests --------------------------------------------------------------------

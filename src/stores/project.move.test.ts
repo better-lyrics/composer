@@ -32,7 +32,7 @@ beforeEach(() => {
 
 describe("moveWordToBg", () => {
   it("moves a single word and applies timeDelta", () => {
-    useProjectStore.getState().setLines([seedLine()]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedLine()] });
 
     useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
 
@@ -44,7 +44,7 @@ describe("moveWordToBg", () => {
   });
 
   it("trims trailing space from the new last main word", () => {
-    useProjectStore.getState().setLines([seedLine()]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedLine()] });
 
     useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
 
@@ -53,7 +53,7 @@ describe("moveWordToBg", () => {
   });
 
   it("moves multiple selected words at once", () => {
-    useProjectStore.getState().setLines([seedLine()]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedLine()] });
 
     useProjectStore.getState().moveWordToBg("line-1", [0, 2], 0, DURATION);
 
@@ -64,15 +64,17 @@ describe("moveWordToBg", () => {
   });
 
   it("adds a trailing space to the previous last bg word when a new word lands at the end without breaking syllable bonds before it", () => {
-    useProjectStore.getState().setLines([
-      seedLine({
-        backgroundWords: [
-          { id: "w1", text: "ah", sep: "", begin: 0, end: 0.5 },
-          { id: "w2", text: "ooh", sep: "", begin: 0.5, end: 1 },
-        ],
-        backgroundText: "ah|ooh",
-      }),
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        seedLine({
+          backgroundWords: [
+            { id: "w1", text: "ah", sep: "", begin: 0, end: 0.5 },
+            { id: "w2", text: "ooh", sep: "", begin: 0.5, end: 1 },
+          ],
+          backgroundText: "ah|ooh",
+        }),
+      ],
+    });
 
     useProjectStore.getState().moveWordToBg("line-1", [2], 7, DURATION);
 
@@ -82,12 +84,14 @@ describe("moveWordToBg", () => {
   });
 
   it("resolves overlap when moved word collides with an existing bg word", () => {
-    useProjectStore.getState().setLines([
-      seedLine({
-        backgroundWords: [{ id: "w3", text: "yeah", sep: "", begin: 5, end: 6 }],
-        backgroundText: "yeah",
-      }),
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        seedLine({
+          backgroundWords: [{ id: "w3", text: "yeah", sep: "", begin: 5, end: 6 }],
+          backgroundText: "yeah",
+        }),
+      ],
+    });
 
     useProjectStore.getState().moveWordToBg("line-1", [2], 3, DURATION);
 
@@ -103,7 +107,7 @@ describe("moveWordToBg", () => {
 
 describe("moveWordToBg · background provenance", () => {
   it("stamps backgroundTextSource manual when creating a fresh background", () => {
-    useProjectStore.getState().setLines([seedLine()]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedLine()] });
 
     useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
 
@@ -112,13 +116,15 @@ describe("moveWordToBg · background provenance", () => {
   });
 
   it("flips an extraction-sourced background to manual when more words are moved in", () => {
-    useProjectStore.getState().setLines([
-      seedLine({
-        backgroundWords: [{ id: "w4", text: "yeah", sep: "", begin: 5, end: 6 }],
-        backgroundText: "yeah",
-        backgroundTextSource: "extraction",
-      }),
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        seedLine({
+          backgroundWords: [{ id: "w4", text: "yeah", sep: "", begin: 5, end: 6 }],
+          backgroundText: "yeah",
+          backgroundTextSource: "extraction",
+        }),
+      ],
+    });
 
     useProjectStore.getState().moveWordToBg("line-1", [2], 0, DURATION);
 
@@ -131,12 +137,14 @@ describe("moveWordToBg · background provenance", () => {
 
 describe("moveWordFromBg", () => {
   it("moves a single bg word back to main and applies timeDelta", () => {
-    useProjectStore.getState().setLines([
-      seedLine({
-        backgroundWords: [{ id: "w5", text: "ooh", sep: "", begin: 10, end: 11 }],
-        backgroundText: "ooh",
-      }),
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        seedLine({
+          backgroundWords: [{ id: "w5", text: "ooh", sep: "", begin: 10, end: 11 }],
+          backgroundText: "ooh",
+        }),
+      ],
+    });
 
     useProjectStore.getState().moveWordFromBg("line-1", [0], -7, DURATION);
 
@@ -150,15 +158,17 @@ describe("moveWordFromBg", () => {
   });
 
   it("clears bg fields only when no bg words remain", () => {
-    useProjectStore.getState().setLines([
-      seedLine({
-        backgroundWords: [
-          { id: "w6", text: "ah", sep: " ", begin: 5, end: 6 },
-          { id: "w7", text: "ooh", sep: "", begin: 6, end: 7 },
-        ],
-        backgroundText: "ahooh",
-      }),
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        seedLine({
+          backgroundWords: [
+            { id: "w6", text: "ah", sep: " ", begin: 5, end: 6 },
+            { id: "w7", text: "ooh", sep: "", begin: 6, end: 7 },
+          ],
+          backgroundText: "ahooh",
+        }),
+      ],
+    });
 
     useProjectStore.getState().moveWordFromBg("line-1", [1], 3, DURATION);
 
@@ -168,17 +178,19 @@ describe("moveWordFromBg", () => {
   });
 
   it("moves multiple selected bg words at once", () => {
-    useProjectStore.getState().setLines([
-      seedLine({
-        words: [],
-        backgroundWords: [
-          { id: "w8", text: "ah", sep: " ", begin: 5, end: 6 },
-          { id: "w9", text: "ooh", sep: " ", begin: 6, end: 7 },
-          { id: "w10", text: "yeah", sep: "", begin: 7, end: 8 },
-        ],
-        backgroundText: "ah ooh yeah",
-      }),
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        seedLine({
+          words: [],
+          backgroundWords: [
+            { id: "w8", text: "ah", sep: " ", begin: 5, end: 6 },
+            { id: "w9", text: "ooh", sep: " ", begin: 6, end: 7 },
+            { id: "w10", text: "yeah", sep: "", begin: 7, end: 8 },
+          ],
+          backgroundText: "ah ooh yeah",
+        }),
+      ],
+    });
 
     useProjectStore.getState().moveWordFromBg("line-1", [0, 2], 0, DURATION);
 
@@ -190,13 +202,15 @@ describe("moveWordFromBg", () => {
 
 describe("moveWordFromBg · background provenance", () => {
   it("clears backgroundTextSource when no background words remain", () => {
-    useProjectStore.getState().setLines([
-      seedLine({
-        backgroundWords: [{ id: "w11", text: "ooh", sep: "", begin: 10, end: 11 }],
-        backgroundText: "ooh",
-        backgroundTextSource: "extraction",
-      }),
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        seedLine({
+          backgroundWords: [{ id: "w11", text: "ooh", sep: "", begin: 10, end: 11 }],
+          backgroundText: "ooh",
+          backgroundTextSource: "extraction",
+        }),
+      ],
+    });
 
     useProjectStore.getState().moveWordFromBg("line-1", [0], -7, DURATION);
 
@@ -207,16 +221,18 @@ describe("moveWordFromBg · background provenance", () => {
   });
 
   it("stamps backgroundTextSource manual on the remaining background", () => {
-    useProjectStore.getState().setLines([
-      seedLine({
-        backgroundWords: [
-          { id: "w12", text: "ah", sep: " ", begin: 5, end: 6 },
-          { id: "w13", text: "ooh", sep: "", begin: 6, end: 7 },
-        ],
-        backgroundText: "ahooh",
-        backgroundTextSource: "extraction",
-      }),
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        seedLine({
+          backgroundWords: [
+            { id: "w12", text: "ah", sep: " ", begin: 5, end: 6 },
+            { id: "w13", text: "ooh", sep: "", begin: 6, end: 7 },
+          ],
+          backgroundText: "ahooh",
+          backgroundTextSource: "extraction",
+        }),
+      ],
+    });
 
     useProjectStore.getState().moveWordFromBg("line-1", [1], 3, DURATION);
 
@@ -230,7 +246,7 @@ describe("moveWordFromBg · background provenance", () => {
 
 describe("cross-track moves and history", () => {
   it("moveWordToBg is undoable", () => {
-    useProjectStore.getState().setLines([seedLine()]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedLine()] });
     const before = useProjectStore.getState().lines[0];
 
     useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
@@ -244,12 +260,14 @@ describe("cross-track moves and history", () => {
   });
 
   it("moveWordFromBg is undoable and redoable", () => {
-    useProjectStore.getState().setLines([
-      seedLine({
-        backgroundWords: [{ id: "w14", text: "ooh", sep: "", begin: 10, end: 11 }],
-        backgroundText: "ooh",
-      }),
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        seedLine({
+          backgroundWords: [{ id: "w14", text: "ooh", sep: "", begin: 10, end: 11 }],
+          backgroundText: "ooh",
+        }),
+      ],
+    });
 
     useProjectStore.getState().moveWordFromBg("line-1", [0], -7, DURATION);
     const after = useProjectStore.getState().lines[0];
@@ -267,7 +285,7 @@ describe("cross-track moves and history", () => {
   });
 
   it("does not push history when no words match the indices", () => {
-    useProjectStore.getState().setLines([seedLine()]);
+    useProjectStore.getState().restoreLyrics({ lines: [seedLine()] });
     const beforeIndex = useProjectStore.getState().historyIndex;
 
     useProjectStore.getState().moveWordToBg("line-1", [], 0, DURATION);
@@ -278,19 +296,21 @@ describe("cross-track moves and history", () => {
   });
 
   it("preserves pre-existing intra-group gaps when applyMoveToBg leaves group syllables behind", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "every world",
-        agentId: "v1",
-        words: [
-          { id: "w15", text: "ev", sep: "", begin: 0, end: 0.2, syllableGroupId: "g1" },
-          { id: "w16", text: "er", sep: "", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
-          { id: "w17", text: "y", sep: "", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
-          { id: "w18", text: "world", sep: "", begin: 0.7, end: 1 },
-        ],
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "every world",
+          agentId: "v1",
+          words: [
+            { id: "w15", text: "ev", sep: "", begin: 0, end: 0.2, syllableGroupId: "g1" },
+            { id: "w16", text: "er", sep: "", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
+            { id: "w17", text: "y", sep: "", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
+            { id: "w18", text: "world", sep: "", begin: 0.7, end: 1 },
+          ],
+        },
+      ],
+    });
 
     useProjectStore.getState().moveWordToBg("line-1", [3], 10, DURATION);
 
@@ -300,20 +320,22 @@ describe("cross-track moves and history", () => {
   });
 
   it("preserves pre-existing intra-group gaps when a move passes through applyMoveFromBg", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "every world",
-        agentId: "v1",
-        words: [
-          { id: "w19", text: "ev", sep: "", begin: 0, end: 0.2, syllableGroupId: "g1" },
-          { id: "w20", text: "er", sep: "", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
-          { id: "w21", text: "y", sep: "", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
-        ],
-        backgroundWords: [{ id: "w22", text: "ah", sep: "", begin: 5, end: 5.5 }],
-        backgroundText: "ah",
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "every world",
+          agentId: "v1",
+          words: [
+            { id: "w19", text: "ev", sep: "", begin: 0, end: 0.2, syllableGroupId: "g1" },
+            { id: "w20", text: "er", sep: "", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
+            { id: "w21", text: "y", sep: "", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
+          ],
+          backgroundWords: [{ id: "w22", text: "ah", sep: "", begin: 5, end: 5.5 }],
+          backgroundText: "ah",
+        },
+      ],
+    });
 
     useProjectStore.getState().moveWordFromBg("line-1", [0], 10, DURATION);
 
@@ -323,17 +345,19 @@ describe("cross-track moves and history", () => {
   });
 
   it("clears line.begin/end when bg→main populates main from empty", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "ooh",
-        agentId: "v1",
-        begin: 5,
-        end: 10,
-        backgroundWords: [{ id: "w23", text: "ooh", sep: "", begin: 6, end: 7 }],
-        backgroundText: "ooh",
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "ooh",
+          agentId: "v1",
+          begin: 5,
+          end: 10,
+          backgroundWords: [{ id: "w23", text: "ooh", sep: "", begin: 6, end: 7 }],
+          backgroundText: "ooh",
+        },
+      ],
+    });
 
     useProjectStore.getState().moveWordFromBg("line-1", [0], 0, DURATION);
 
@@ -349,34 +373,36 @@ describe("cross-track moves and history", () => {
 describe("moveWordToBg · linked propagation", () => {
   function seedTwoLinkedInstances() {
     useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
-    useProjectStore.getState().setLines([
-      {
-        id: "a0",
-        text: "hello world goodbye",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { id: "w24", text: "hello", sep: " ", begin: 0, end: 1 },
-          { id: "w25", text: "world", sep: " ", begin: 1, end: 2 },
-          { id: "w26", text: "goodbye", sep: "", begin: 2, end: 3 },
-        ],
-      },
-      {
-        id: "a1",
-        text: "hello world goodbye",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [
-          { id: "w27", text: "hello", sep: " ", begin: 10, end: 11 },
-          { id: "w28", text: "world", sep: " ", begin: 11, end: 12 },
-          { id: "w29", text: "goodbye", sep: "", begin: 12, end: 13 },
-        ],
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "a0",
+          text: "hello world goodbye",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w24", text: "hello", sep: " ", begin: 0, end: 1 },
+            { id: "w25", text: "world", sep: " ", begin: 1, end: 2 },
+            { id: "w26", text: "goodbye", sep: "", begin: 2, end: 3 },
+          ],
+        },
+        {
+          id: "a1",
+          text: "hello world goodbye",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [
+            { id: "w27", text: "hello", sep: " ", begin: 10, end: 11 },
+            { id: "w28", text: "world", sep: " ", begin: 11, end: 12 },
+            { id: "w29", text: "goodbye", sep: "", begin: 12, end: 13 },
+          ],
+        },
+      ],
+    });
   }
 
   it("moves the same word to BG in all linked siblings, using each sibling's local timing", () => {
@@ -458,34 +484,36 @@ describe("moveWordToBg · linked propagation", () => {
 
   it("expands the syllable group per-sibling, not against the source layout", () => {
     useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
-    useProjectStore.getState().setLines([
-      {
-        id: "a0",
-        text: "every",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { id: "w30", text: "ev", sep: "", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
-          { id: "w31", text: "er", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g_a0" },
-          { id: "w32", text: "y", sep: "", begin: 0.6, end: 1, syllableGroupId: "g_a0" },
-        ],
-      },
-      {
-        id: "a1",
-        text: "ev er y",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [
-          { id: "w33", text: "ev", sep: " ", begin: 10, end: 10.3 },
-          { id: "w34", text: "er", sep: " ", begin: 10.3, end: 10.6 },
-          { id: "w35", text: "y", sep: "", begin: 10.6, end: 11 },
-        ],
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "a0",
+          text: "every",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w30", text: "ev", sep: "", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
+            { id: "w31", text: "er", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g_a0" },
+            { id: "w32", text: "y", sep: "", begin: 0.6, end: 1, syllableGroupId: "g_a0" },
+          ],
+        },
+        {
+          id: "a1",
+          text: "ev er y",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [
+            { id: "w33", text: "ev", sep: " ", begin: 10, end: 10.3 },
+            { id: "w34", text: "er", sep: " ", begin: 10.3, end: 10.6 },
+            { id: "w35", text: "y", sep: "", begin: 10.6, end: 11 },
+          ],
+        },
+      ],
+    });
 
     useProjectStore.getState().moveWordToBg("a0", [1], 5, DURATION);
 
@@ -505,20 +533,22 @@ describe("moveWordToBg · linked propagation", () => {
 
 describe("cross-track moves auto-expand to syllable groupmates", () => {
   it("moveWordToBg expands a single-syllable selection to the whole syllable group", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "hello every world",
-        agentId: "v1",
-        words: [
-          { id: "w36", text: "hello", sep: " ", begin: 0, end: 1 },
-          { id: "w37", text: "ev", sep: "", begin: 1, end: 1.2, syllableGroupId: "g_every" },
-          { id: "w38", text: "er", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "g_every" },
-          { id: "w39", text: "y", sep: "", begin: 1.5, end: 1.8, syllableGroupId: "g_every" },
-          { id: "w40", text: "world", sep: "", begin: 1.8, end: 2.5 },
-        ],
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "hello every world",
+          agentId: "v1",
+          words: [
+            { id: "w36", text: "hello", sep: " ", begin: 0, end: 1 },
+            { id: "w37", text: "ev", sep: "", begin: 1, end: 1.2, syllableGroupId: "g_every" },
+            { id: "w38", text: "er", sep: "", begin: 1.2, end: 1.5, syllableGroupId: "g_every" },
+            { id: "w39", text: "y", sep: "", begin: 1.5, end: 1.8, syllableGroupId: "g_every" },
+            { id: "w40", text: "world", sep: "", begin: 1.8, end: 2.5 },
+          ],
+        },
+      ],
+    });
 
     useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
 
@@ -529,20 +559,22 @@ describe("cross-track moves auto-expand to syllable groupmates", () => {
   });
 
   it("moveWordFromBg expands a single-syllable bg selection to the whole syllable group", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "every",
-        agentId: "v1",
-        words: [],
-        backgroundWords: [
-          { id: "w41", text: "ev", sep: "", begin: 5, end: 5.2, syllableGroupId: "g_every" },
-          { id: "w42", text: "er", sep: "", begin: 5.2, end: 5.5, syllableGroupId: "g_every" },
-          { id: "w43", text: "y", sep: "", begin: 5.5, end: 5.8, syllableGroupId: "g_every" },
-        ],
-        backgroundText: "every",
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "every",
+          agentId: "v1",
+          words: [],
+          backgroundWords: [
+            { id: "w41", text: "ev", sep: "", begin: 5, end: 5.2, syllableGroupId: "g_every" },
+            { id: "w42", text: "er", sep: "", begin: 5.2, end: 5.5, syllableGroupId: "g_every" },
+            { id: "w43", text: "y", sep: "", begin: 5.5, end: 5.8, syllableGroupId: "g_every" },
+          ],
+          backgroundText: "every",
+        },
+      ],
+    });
 
     useProjectStore.getState().moveWordFromBg("line-1", [1], -4, DURATION);
 
@@ -555,18 +587,20 @@ describe("cross-track moves auto-expand to syllable groupmates", () => {
 
 describe("moveWordToBg clears line.begin/end when main empties", () => {
   it("clears begin/end on a TTML-imported line whose whole syllable-grouped word is moved to bg", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "beautiful",
-        agentId: "v1",
-        words: [
-          { id: "w44", text: "beau", sep: "", begin: 9.51, end: 11.463, syllableGroupId: "g_beautiful" },
-          { id: "w45", text: "ti", sep: "", begin: 11.463, end: 13.58, syllableGroupId: "g_beautiful" },
-          { id: "w46", text: "ful", sep: "", begin: 13.58, end: 15.335, syllableGroupId: "g_beautiful" },
-        ],
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "beautiful",
+          agentId: "v1",
+          words: [
+            { id: "w44", text: "beau", sep: "", begin: 9.51, end: 11.463, syllableGroupId: "g_beautiful" },
+            { id: "w45", text: "ti", sep: "", begin: 11.463, end: 13.58, syllableGroupId: "g_beautiful" },
+            { id: "w46", text: "ful", sep: "", begin: 13.58, end: 15.335, syllableGroupId: "g_beautiful" },
+          ],
+        },
+      ],
+    });
 
     useProjectStore.getState().moveWordToBg("line-1", [1], 5, DURATION);
 
@@ -580,20 +614,22 @@ describe("moveWordToBg clears line.begin/end when main empties", () => {
 
 describe("cross-track moves preserve syllable bonds", () => {
   it("moveWordToBg keeps remaining split-word syllables bonded", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "hello every world",
-        agentId: "v1",
-        words: [
-          { id: "w47", text: "hello", sep: " ", begin: 0, end: 1 },
-          { id: "w48", text: "ev", sep: "", begin: 1, end: 1.2 },
-          { id: "w49", text: "er", sep: "", begin: 1.2, end: 1.5 },
-          { id: "w50", text: "y", sep: " ", begin: 1.5, end: 1.8 },
-          { id: "w51", text: "world", sep: "", begin: 1.8, end: 2.5 },
-        ],
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "hello every world",
+          agentId: "v1",
+          words: [
+            { id: "w47", text: "hello", sep: " ", begin: 0, end: 1 },
+            { id: "w48", text: "ev", sep: "", begin: 1, end: 1.2 },
+            { id: "w49", text: "er", sep: "", begin: 1.2, end: 1.5 },
+            { id: "w50", text: "y", sep: " ", begin: 1.5, end: 1.8 },
+            { id: "w51", text: "world", sep: "", begin: 1.8, end: 2.5 },
+          ],
+        },
+      ],
+    });
 
     useProjectStore.getState().moveWordToBg("line-1", [4], 5, DURATION);
 
@@ -603,20 +639,22 @@ describe("cross-track moves preserve syllable bonds", () => {
   });
 
   it("moveWordToBg keeps a whole syllable group bonded when all its indices move together", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "hello every world",
-        agentId: "v1",
-        words: [
-          { id: "w52", text: "hello", sep: " ", begin: 0, end: 1 },
-          { id: "w53", text: "ev", sep: "", begin: 1, end: 1.2 },
-          { id: "w54", text: "er", sep: "", begin: 1.2, end: 1.5 },
-          { id: "w55", text: "y", sep: " ", begin: 1.5, end: 1.8 },
-          { id: "w56", text: "world", sep: "", begin: 1.8, end: 2.5 },
-        ],
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "hello every world",
+          agentId: "v1",
+          words: [
+            { id: "w52", text: "hello", sep: " ", begin: 0, end: 1 },
+            { id: "w53", text: "ev", sep: "", begin: 1, end: 1.2 },
+            { id: "w54", text: "er", sep: "", begin: 1.2, end: 1.5 },
+            { id: "w55", text: "y", sep: " ", begin: 1.5, end: 1.8 },
+            { id: "w56", text: "world", sep: "", begin: 1.8, end: 2.5 },
+          ],
+        },
+      ],
+    });
 
     useProjectStore.getState().moveWordToBg("line-1", [1, 2, 3], 5, DURATION);
 
@@ -627,16 +665,18 @@ describe("cross-track moves preserve syllable bonds", () => {
   });
 
   it("moveWordFromBg adds trailing space to previously-last main word when receiving a new tail", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "hello",
-        agentId: "v1",
-        words: [{ id: "w57", text: "hello", sep: "", begin: 0, end: 1 }],
-        backgroundWords: [{ id: "w58", text: "world", sep: "", begin: 2, end: 3 }],
-        backgroundText: "world",
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "hello",
+          agentId: "v1",
+          words: [{ id: "w57", text: "hello", sep: "", begin: 0, end: 1 }],
+          backgroundWords: [{ id: "w58", text: "world", sep: "", begin: 2, end: 3 }],
+          backgroundText: "world",
+        },
+      ],
+    });
 
     useProjectStore.getState().moveWordFromBg("line-1", [0], 0, DURATION);
 
@@ -646,20 +686,22 @@ describe("cross-track moves preserve syllable bonds", () => {
   });
 
   it("moveWordFromBg returns a syllable group from bg intact when the whole group flips", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "every",
-        agentId: "v1",
-        words: [],
-        backgroundWords: [
-          { id: "w59", text: "ev", sep: "", begin: 5, end: 5.2 },
-          { id: "w60", text: "er", sep: "", begin: 5.2, end: 5.5 },
-          { id: "w61", text: "y", sep: "", begin: 5.5, end: 5.8 },
-        ],
-        backgroundText: "every",
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "line-1",
+          text: "every",
+          agentId: "v1",
+          words: [],
+          backgroundWords: [
+            { id: "w59", text: "ev", sep: "", begin: 5, end: 5.2 },
+            { id: "w60", text: "er", sep: "", begin: 5.2, end: 5.5 },
+            { id: "w61", text: "y", sep: "", begin: 5.5, end: 5.8 },
+          ],
+          backgroundText: "every",
+        },
+      ],
+    });
 
     useProjectStore.getState().moveWordFromBg("line-1", [0, 1, 2], -4, DURATION);
 
@@ -673,36 +715,38 @@ describe("cross-track moves preserve syllable bonds", () => {
 describe("moveWordFromBg · linked propagation", () => {
   function seedTwoLinkedInstancesWithBg() {
     useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
-    useProjectStore.getState().setLines([
-      {
-        id: "a0",
-        text: "hello world",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { id: "w62", text: "hello", sep: " ", begin: 0, end: 1 },
-          { id: "w63", text: "world", sep: "", begin: 1, end: 2 },
-        ],
-        backgroundWords: [{ id: "w64", text: "ooh", sep: "", begin: 2, end: 3 }],
-        backgroundText: "ooh",
-      },
-      {
-        id: "a1",
-        text: "hello world",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [
-          { id: "w65", text: "hello", sep: " ", begin: 10, end: 11 },
-          { id: "w66", text: "world", sep: "", begin: 11, end: 12 },
-        ],
-        backgroundWords: [{ id: "w67", text: "ooh", sep: "", begin: 12, end: 13 }],
-        backgroundText: "ooh",
-      },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        {
+          id: "a0",
+          text: "hello world",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { id: "w62", text: "hello", sep: " ", begin: 0, end: 1 },
+            { id: "w63", text: "world", sep: "", begin: 1, end: 2 },
+          ],
+          backgroundWords: [{ id: "w64", text: "ooh", sep: "", begin: 2, end: 3 }],
+          backgroundText: "ooh",
+        },
+        {
+          id: "a1",
+          text: "hello world",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [
+            { id: "w65", text: "hello", sep: " ", begin: 10, end: 11 },
+            { id: "w66", text: "world", sep: "", begin: 11, end: 12 },
+          ],
+          backgroundWords: [{ id: "w67", text: "ooh", sep: "", begin: 12, end: 13 }],
+          backgroundText: "ooh",
+        },
+      ],
+    });
   }
 
   it("flips a BG word back to main in all siblings", () => {
@@ -726,15 +770,17 @@ describe("moveWordFromBg · linked propagation", () => {
 
 describe("cross-track moves space the merge seam", () => {
   it("keeps a word boundary when a moved word lands before the last bg word", () => {
-    useProjectStore.getState().setLines([
-      seedLine({
-        backgroundWords: [
-          { id: "w68", text: "ah", sep: " ", begin: 0, end: 0.5 },
-          { id: "w69", text: "ooh", sep: "", begin: 5, end: 5.5 },
-        ],
-        backgroundText: "ah ooh",
-      }),
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        seedLine({
+          backgroundWords: [
+            { id: "w68", text: "ah", sep: " ", begin: 0, end: 0.5 },
+            { id: "w69", text: "ooh", sep: "", begin: 5, end: 5.5 },
+          ],
+          backgroundText: "ah ooh",
+        }),
+      ],
+    });
 
     useProjectStore.getState().moveWordToBg("line-1", [2], 0, DURATION);
 
@@ -745,16 +791,18 @@ describe("cross-track moves space the merge seam", () => {
   });
 
   it("keeps a word boundary when a bg word moves into main before the last main word", () => {
-    useProjectStore.getState().setLines([
-      seedLine({
-        words: [
-          { id: "w70", text: "hello", sep: " ", begin: 0, end: 1 },
-          { id: "w71", text: "world", sep: "", begin: 2, end: 3 },
-        ],
-        backgroundWords: [{ id: "w72", text: "ooh", sep: "", begin: 1.2, end: 1.6 }],
-        backgroundText: "ooh",
-      }),
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      lines: [
+        seedLine({
+          words: [
+            { id: "w70", text: "hello", sep: " ", begin: 0, end: 1 },
+            { id: "w71", text: "world", sep: "", begin: 2, end: 3 },
+          ],
+          backgroundWords: [{ id: "w72", text: "ooh", sep: "", begin: 1.2, end: 1.6 }],
+          backgroundText: "ooh",
+        }),
+      ],
+    });
 
     useProjectStore.getState().moveWordFromBg("line-1", [0], 0, DURATION);
 

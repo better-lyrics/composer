@@ -1,3 +1,5 @@
+import { detachLine, placeInstance } from "@/domain/commands/instance-edits";
+import { isRefused } from "@/domain/commands/outcome";
 import { deleteLine } from "@/domain/commands/instance-rows";
 import { placeLineAt } from "@/domain/commands/line-timing";
 import { assignSinger } from "@/domain/commands/singer";
@@ -54,7 +56,9 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const audio = useAudioStore.getState();
     const playheadTime = livePlaybackTime();
     const { groupId, instanceIdx } = placeAtPlayheadInfo;
-    if (!useProjectStore.getState().placeInstance(groupId, instanceIdx, playheadTime, audio.duration)) {
+    if (
+      isRefused(useProjectStore.getState().commit(placeInstance(groupId, instanceIdx, playheadTime, audio.duration)))
+    ) {
       showPlacementBlockedToast();
     }
     clearContextMenu();
@@ -80,7 +84,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
   const handleDetachLine = useCallback(() => {
     if (!gutterLineGroupInfo) return;
-    useProjectStore.getState().detachLine(gutterLineGroupInfo.lineId);
+    useProjectStore.getState().commit(detachLine(gutterLineGroupInfo.lineId));
     showGroupActionToast("Line detached");
     clearContextMenu();
   }, [gutterLineGroupInfo, clearContextMenu]);

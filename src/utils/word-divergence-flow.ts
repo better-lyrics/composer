@@ -1,3 +1,4 @@
+import { applyWordCountChange } from "@/domain/commands/word-edits";
 import { splitWord } from "@/domain/commands/word-structure";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -35,7 +36,7 @@ async function handleWordChangeWithDivergenceCheck(
   }
 
   if (!wouldDivergenceCauseRetiming(lines, lineId, newWords, field)) {
-    useProjectStore.getState().applyWordCountChange(lineId, newWords, field, "apply", extraUpdates);
+    useProjectStore.getState().commit(applyWordCountChange(lineId, newWords, field, "apply", extraUpdates));
     return true;
   }
 
@@ -47,7 +48,7 @@ async function handleWordChangeWithDivergenceCheck(
   const groupLabel = useProjectStore.getState().groups.find((g) => g.id === groupId)?.label;
 
   const resolution = await askWordDivergence({ affectedSiblingCount, groupLabel });
-  useProjectStore.getState().applyWordCountChange(lineId, newWords, field, resolution, extraUpdates);
+  useProjectStore.getState().commit(applyWordCountChange(lineId, newWords, field, resolution, extraUpdates));
   if (resolution === "apply") showGroupActionToast("Word structure synced across instances");
   else if (resolution === "detach") showGroupActionToast("Line detached from group");
   return resolution !== "cancel";

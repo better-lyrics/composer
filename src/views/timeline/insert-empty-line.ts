@@ -1,10 +1,11 @@
+import { insertEmptyLine as insertEmptyLineCommand } from "@/domain/commands/line-edits";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Functions ----------------------------------------------------------------
 
 function insertEmptyLine(anchorLineId: string, position: "above" | "below"): void {
-  useProjectStore.getState().insertEmptyLineWithHistory(anchorLineId, position);
+  useProjectStore.getState().commit(insertEmptyLineCommand({ anchorLineId, position }));
   const timeline = useTimelineStore.getState();
   if (timeline.focusedGroup !== null) timeline.closeGroup();
 }

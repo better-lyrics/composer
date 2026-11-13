@@ -10,6 +10,7 @@ import { jumpToRow } from "@/test/shared-timing-sync";
 import { setCurrentTime } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { describe, expect, it } from "vitest";
+import { groupRepeatingSections, removeGroup } from "@/domain/commands/group-edits";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -126,7 +127,7 @@ describe("SyncPanel · re-recording a placed shared instance", () => {
     await jumpToRow(screen, 2);
     await tapAt(40, () => firstBegin("two-a"));
 
-    useProjectStore.getState().groupRepeatingSections([0, 2], 2);
+    useProjectStore.getState().commit(groupRepeatingSections({ starts: [0, 2], length: 2 }));
     expect(firstBegin("two-b")).toBe(43);
 
     await tapAt(44.5, () => firstBegin("verse"));
@@ -160,7 +161,7 @@ describe("SyncPanel · re-recording a placed shared instance", () => {
       adoptOpenProjectId("project-b");
       load(otherSong(), "line", []);
       await tapAt(40, () => firstBegin("two-a"));
-      useProjectStore.getState().groupRepeatingSections([0, 2], 2);
+      useProjectStore.getState().commit(groupRepeatingSections({ starts: [0, 2], length: 2 }));
       expect(useProjectStore.getState().groups[0].id).toBe("g1");
 
       await tapAt(44.5, () => firstBegin("verse"));
@@ -182,13 +183,13 @@ describe("SyncPanel · re-recording a placed shared instance", () => {
       );
       const screen = await render(<SyncPanel />);
       await reRecordChorusTwoToItsEnd(screen);
-      useProjectStore.getState().removeGroup("g1");
+      useProjectStore.getState().commit(removeGroup("g1"));
 
       await tapAt(50, () => firstBegin("v2"));
       await tapAt(60, () => firstBegin("p-a"));
       await tapAt(63, () => firstBegin("p-b"));
       await tapAt(90, () => firstBegin("q-a"));
-      useProjectStore.getState().groupRepeatingSections([8, 10], 2);
+      useProjectStore.getState().commit(groupRepeatingSections({ starts: [8, 10], length: 2 }));
       expect(useProjectStore.getState().groups[0].id).toBe("g1");
 
       await tapAt(94.5, () => firstBegin("end"));

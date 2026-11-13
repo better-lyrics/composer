@@ -4,6 +4,7 @@ import { lineById, romanizedWords, timedLine } from "@/test/generated-language-l
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "vitest-browser-react";
+import { pasteLines } from "@/domain/commands/instance-rows";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -30,14 +31,21 @@ describe("useLanguageAutoRefresh", () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect(requests).toEqual([]);
 
-    useProjectStore.getState().updateLineWithHistory("a", {
-      text: "Где ты сейчас",
-      words: [
-        { id: "w1", text: "Где", sep: " ", begin: 1, end: 2, transliteration: "Gde" },
-        { id: "w2", text: "ты", sep: " ", begin: 2, end: 3, transliteration: "ty" },
-        { id: "w3", text: "сейчас", sep: "", begin: 3, end: 4 },
-      ],
-    });
+    useProjectStore.getState().commit(
+      pasteLines([
+        {
+          id: "a",
+          updates: {
+            text: "Где ты сейчас",
+            words: [
+              { id: "w1", text: "Где", sep: " ", begin: 1, end: 2, transliteration: "Gde" },
+              { id: "w2", text: "ты", sep: " ", begin: 2, end: 3, transliteration: "ty" },
+              { id: "w3", text: "сейчас", sep: "", begin: 3, end: 4 },
+            ],
+          },
+        },
+      ]),
+    );
 
     await vi.advanceTimersByTimeAsync(1000);
     await expect.poll(() => romanizedWords("a"), REFRESH_WAIT).toEqual(["Gde", "ty", "seychas"]);

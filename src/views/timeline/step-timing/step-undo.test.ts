@@ -4,6 +4,8 @@ import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { followStepUndo, rememberStepPress } from "@/views/timeline/step-timing/step-undo";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { pasteLyrics } from "@/domain/commands/edit-text";
+import { refreshGeneratedLanguages } from "@/domain/commands/languages";
 
 const WORD_IDS = ["paper", "boats"];
 const slot = (wordIndex: number): SyllableAddress => ({ lineId: "a", type: "word", syllableId: WORD_IDS[wordIndex] });
@@ -21,7 +23,7 @@ let stopFollowing = () => {};
 beforeEach(() => {
   useProjectStore.getState().reset();
   useProjectStore.getState().clearHistory();
-  useProjectStore.getState().setLinesWithHistory([line(1.4)]);
+  useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [line(1.4)]));
   useTimelineStore.getState().setStepTiming(true);
   stopFollowing = followStepUndo();
 });
@@ -31,7 +33,7 @@ it("undo puts the cursor back on the word the press timed, and redo moves it on 
   const queue = [slot(0), slot(1)];
   useTimelineStore.setState({ selectedWords: [slot(0)], stepQueue: queue });
   const before = { selectedWords: [slot(0)], stepQueue: queue };
-  useProjectStore.getState().setLinesWithHistory([line(1.5)]);
+  useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [line(1.5)]));
   useTimelineStore.setState({ selectedWords: [slot(1)] });
   rememberStepPress(before);
 
@@ -45,10 +47,10 @@ it("undo puts the cursor back on the word the press timed, and redo moves it on 
 
 it("regression: undo still puts the cursor back after a language refresh amends the press", () => {
   useTimelineStore.setState({ selectedWords: [slot(0)], stepQueue: null });
-  useProjectStore.getState().setLinesWithHistory([line(1.5)]);
+  useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [line(1.5)]));
   useTimelineStore.setState({ selectedWords: [slot(1)] });
   rememberStepPress({ selectedWords: [slot(0)], stepQueue: null });
-  useProjectStore.getState().applyLineUpdatesToCurrentStep([{ id: "a", updates: { agentId: "v2" } }]);
+  useProjectStore.getState().commit(refreshGeneratedLanguages([{ id: "a", updates: { agentId: "v2" } }]), "amend");
 
   useProjectStore.getState().undo();
   expect(useTimelineStore.getState().selectedWords).toEqual([slot(0)]);

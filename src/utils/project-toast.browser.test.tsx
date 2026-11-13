@@ -22,7 +22,7 @@ async function openAlphaThenCreateNewProject(): Promise<string> {
 describe("showNewProjectToast", () => {
   it("keeps the new project when Switch back is clicked and it has lyrics", async () => {
     const newId = await openAlphaThenCreateNewProject();
-    useProjectStore.getState().setLines([createLine({ text: "New words" })]);
+    useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "New words" })] });
     const screen = await render(<Toaster />);
     showNewProjectToast("b-side", "Alpha", "a", newId);
     await screen.getByRole("button", { name: "Switch back" }).click();
@@ -78,7 +78,7 @@ describe("showLinkedProjectToast", () => {
 
   it("keeps the new project on Switch back when it has lyrics", async () => {
     const newId = await openAlphaThenCreateNewProject();
-    useProjectStore.getState().setLines([createLine({ text: "New words" })]);
+    useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "New words" })] });
     const screen = await render(<Toaster />);
     showLinkedProjectToast("Blinding Lights", "Alpha", "a", newId);
     await screen.getByRole("button", { name: "Switch back" }).click();

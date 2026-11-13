@@ -1,3 +1,4 @@
+import { addInstance } from "@/domain/commands/instance-edits";
 import { toast } from "sonner";
 import { fillInstanceRows, pasteLines } from "@/domain/commands/instance-rows";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
@@ -77,7 +78,7 @@ async function placeInstance(
     useTimelineStore.getState().setPasteMode({ status: "idle" });
     return "cancelled";
   }
-  useProjectStore.getState().addInstance(groupId, template, decision.instanceStart, decision.insertAt);
+  useProjectStore.getState().commit(addInstance(groupId, template, decision.instanceStart, decision.insertAt));
   finishPaste();
   toast.success(successMessage);
   return "pasted";

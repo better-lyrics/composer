@@ -13,7 +13,7 @@ beforeEach(() => {
     begin: index,
     end: index + 1,
   }));
-  useProjectStore.getState().setLines([createLine({ id: "l0", text: "Bright side now", words })]);
+  useProjectStore.getState().restoreLyrics({ lines: [createLine({ id: "l0", text: "Bright side now", words })] });
 });
 
 describe("step selection", () => {

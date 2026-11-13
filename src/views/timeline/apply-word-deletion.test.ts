@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { applyWordDeletion, type DeletionSelection } from "@/domain/word/apply-word-deletion";
+import { pasteLines } from "@/domain/commands/instance-rows";
 
 const SPLIT_CHAR = "|";
 
@@ -609,7 +610,7 @@ describe("applyWordDeletion · regressions", () => {
     );
     useProjectStore.setState({ lines: deleted, groups: [] });
 
-    useProjectStore.getState().updateLineWithHistory("c1", { begin: 7, end: 8 });
+    useProjectStore.getState().commit(pasteLines([{ id: "c1", updates: { begin: 7, end: 8 } }]));
 
     expect(useProjectStore.getState().lines[0]).toMatchObject({ begin: 7, end: 8 });
     expect(useProjectStore.getState().lines[0].words).toBeUndefined();
