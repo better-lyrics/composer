@@ -62,6 +62,11 @@ function untimedSyllable({ begin: _begin, end: _end, ...syllable }: Syllable): U
   return syllable;
 }
 
+// The untimed syllables of a role's track, the ones new words must not take the ids of.
+function untimedSyllablesOf(line: LyricLine, role: TrackRole): Syllable[] {
+  return trackOf(line, role)?.syllables.filter((syllable) => !isTimedSyllable(syllable)) ?? [];
+}
+
 // -- Lanes --------------------------------------------------------------------
 
 function trackRole(type: WordTrack): TrackRole {
@@ -105,5 +110,6 @@ export {
   trackRole,
   trackWords,
   untimedSyllable,
+  untimedSyllablesOf,
 };
 export type { TrackField, WordTrack };

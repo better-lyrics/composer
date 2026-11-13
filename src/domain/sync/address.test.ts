@@ -1,4 +1,6 @@
 import { decideEditTextAction } from "@/domain/edit-text/decide-edit-text-action";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { withRoleWords } from "@/domain/line/track-writes";
 import { syncAddressAt, syncAddressPosition } from "@/domain/sync/address";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
@@ -7,18 +9,20 @@ const SLOW = { id: "y1", text: "Slow ", begin: 1, end: 2 };
 const TIDE = { id: "y2", text: "tide ", begin: 2, end: 3 };
 const PULLS = { id: "y3", text: "pulls ", begin: 3, end: 4 };
 
-const tideLine = (
-  words: { id: string; text: string; sep?: string; begin: number; end: number }[],
-  text = "Slow tide pulls the harbour lights",
-) => createLine({ id: "tide", text, words });
+const tideLine = (words: { id: string; text: string; sep?: string; begin: number; end: number }[]) =>
+  createLine({ id: "tide", text: "Slow tide pulls the harbour lights", words });
 
 describe("syncAddressPosition", () => {
   it("stays on the next untimed word when a timed word before it is split", () => {
-    const stored = syncAddressAt([tideLine([SLOW, TIDE, PULLS])], { lineIndex: 0, wordIndex: 3 });
-    const split = tideLine(
-      [SLOW, TIDE, { ...PULLS, text: "pu", sep: "", end: 3.5 }, { ...PULLS, id: "y9", begin: 3.5, text: "lls " }],
-      "Slow tide pu|lls the harbour lights",
-    );
+    const line = tideLine([SLOW, TIDE, PULLS]);
+    const stored = syncAddressAt([line], { lineIndex: 0, wordIndex: 3 });
+    const [slow, tide, pulls] = timedSyllables(mainTrack(line));
+    const split = withRoleWords(line, "main", [
+      slow,
+      tide,
+      { ...pulls, text: "pu", sep: "", joinsNext: true, end: 3.5 },
+      { ...pulls, id: "y9", begin: 3.5, text: "lls" },
+    ]);
     expect(syncAddressPosition([split], stored)).toEqual({ lineIndex: 0, wordIndex: 4 });
   });
 

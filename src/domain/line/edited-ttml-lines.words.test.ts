@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { backgroundText, lineText } from "@/domain/line/text";
 import { mainTrack, roleWords, timedSyllables } from "@/domain/line/track";
+import { withMainTrack, withRoleWords, withTrackText } from "@/domain/line/track-writes";
 import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 
@@ -106,5 +107,18 @@ describe("mergeEditedTtmlLines · word timing", () => {
       const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">Other<", ">Other2<"));
       expect(timedSyllables(mainTrack(merged[0]!))).toBe(timedSyllables(mainTrack(stored[0])));
     });
+  });
+
+  it("regression: a partly synced line typed longer keeps every syllable and no two share an id", () => {
+    const loaded = createLine({ id: "a", text: "a b" });
+    const [first] = mainTrack(loaded).syllables;
+    const tapped = withRoleWords(loaded, "main", [{ ...first, begin: 1, end: 2 }]);
+    const typed = withMainTrack(tapped, withTrackText(mainTrack(tapped), "a b c d"));
+
+    const merged = mergeEditedExport([typed], (ttml) => ttml.replace('end="0:02.000"', 'end="0:02.500"'))[0]!;
+
+    const ids = mainTrack(merged).syllables.map((syllable) => syllable.id);
+    expect(lineText(merged)).toBe("a b c d");
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

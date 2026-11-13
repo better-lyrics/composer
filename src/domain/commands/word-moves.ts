@@ -4,10 +4,10 @@ import { refused } from "@/domain/commands/outcome";
 import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LanguagePieces, LanguageSide } from "@/domain/language/model";
 import { languageSide, pieceOf, trackPieces, withAddedPieces } from "@/domain/language/pieces";
-import { type ReadableLine, effectiveMainWordEdit, getEffectiveLines } from "@/domain/line/effective-words";
+import { type ReadableLine, effectiveMainWordEdit, getEffectiveLines, rawLineOf } from "@/domain/line/effective-words";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LineUpdate, LyricLine, RawLine } from "@/domain/line/model";
-import { roleWords, trackWords, type WordTrack } from "@/domain/line/track";
+import { roleWords, trackWords, type WordTrack, untimedSyllablesOf } from "@/domain/line/track";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { type ResolvedAddress, resolveAddresses } from "@/domain/selection/resolve";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
@@ -189,13 +189,20 @@ function planDuplicate(
     const lineUpdates: Partial<LyricLine> = {};
     const existingWords = roleWords(line, "main") ?? [];
     if (wordDups.length > 0 && !overlapsAny(wordDups, existingWords)) {
-      const edit = effectiveMainWordEdit(line, mergeWordsIntoTrack(existingWords, wordDups));
+      const edit = effectiveMainWordEdit(
+        line,
+        mergeWordsIntoTrack(existingWords, wordDups, untimedSyllablesOf(rawLineOf(line), "main")),
+      );
       if (edit) Object.assign(lineUpdates, edit);
       else rejectedLineSynced = true;
     }
     const existingBg = roleWords(line, "bg") ?? [];
     if (bgDups.length > 0 && !overlapsAny(bgDups, existingBg)) {
-      Object.assign(lineUpdates, manualBackgroundWordEdit(line, mergeWordsIntoTrack(existingBg, bgDups), lineUpdates));
+      Object.assign(lineUpdates, manualBackgroundWordEdit(
+          line,
+          mergeWordsIntoTrack(existingBg, bgDups, untimedSyllablesOf(rawLineOf(line), "bg")),
+          lineUpdates,
+        ));
     }
     if (Object.keys(lineUpdates).length > 0 && readings.length > 0) {
       lineUpdates.languages = readings.reduce(

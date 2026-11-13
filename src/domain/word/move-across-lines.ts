@@ -4,7 +4,7 @@ import { withoutBackground } from "@/domain/line/background";
 import { manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import { type ReadableLine, effectiveMainWordEdit, isLineSyncedSource, rawLineOf } from "@/domain/line/effective-words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { roleWords, trackWords } from "@/domain/line/track";
+import { roleWords, trackWords, untimedSyllablesOf } from "@/domain/line/track";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
@@ -121,11 +121,11 @@ function lineUpdateFor(
     bgChanged = true;
   }
   if (inserts?.word.length) {
-    words = resolveOverlapsForward(mergeWordsIntoTrack(words ?? [], inserts.word), rangeEnd);
+    words = resolveOverlapsForward(mergeWordsIntoTrack(words ?? [], inserts.word, untimedSyllablesOf(rawLineOf(line), "main")), rangeEnd);
     mainChanged = true;
   }
   if (inserts?.bg.length) {
-    backgroundWords = resolveOverlapsForward(mergeWordsIntoTrack(backgroundWords ?? [], inserts.bg), rangeEnd);
+    backgroundWords = resolveOverlapsForward(mergeWordsIntoTrack(backgroundWords ?? [], inserts.bg, untimedSyllablesOf(rawLineOf(line), "bg")), rangeEnd);
     bgChanged = true;
   }
 

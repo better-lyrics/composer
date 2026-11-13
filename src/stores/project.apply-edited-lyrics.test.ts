@@ -53,7 +53,7 @@ describe("applyEditedLyricsWithHistory", () => {
       seedProject();
       useProjectStore.setState({ agents: DEFAULT_AGENTS, groups: [], isDirty: false });
       const before = useProjectStore.getState();
-      apply({ lines: [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })] });
+      apply({ lines: structuredClone(before.lines) });
       const after = useProjectStore.getState();
       expect(after.lines).toBe(before.lines);
       expect(after.metadata).toBe(before.metadata);

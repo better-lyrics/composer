@@ -6,7 +6,7 @@ import { withBackground, withSeededBackground, withoutBackground } from "@/domai
 import { effectiveWordTextEdit, getEffectiveLine } from "@/domain/line/effective-words";
 import { mainWordsEdit, manualBackgroundWordEdit } from "@/domain/line/lane-word-edits";
 import type { LyricLine } from "@/domain/line/model";
-import { trackWords, type TrackField, type WordTrack } from "@/domain/line/track";
+import { trackWords, type TrackField, type WordTrack, untimedSyllablesOf, trackRole } from "@/domain/line/track";
 import { withFieldWords } from "@/domain/line/word-track-edits";
 import type { SyllableAddress } from "@/domain/selection/model";
 import { resolveAddresses } from "@/domain/selection/resolve";
@@ -66,7 +66,7 @@ function insertWord(lineId: string, type: WordTrack, word: WordTiming): LyricCom
     const raw = lineOf(root.lines, lineId);
     if (!raw) return refused({ reason: "line-gone", lineId });
     const words = trackWords(getEffectiveLine(raw), type) ?? [];
-    return [{ id: lineId, updates: trackWrite(raw, type, mergeWordsIntoTrack(words, [word])) }];
+    return [{ id: lineId, updates: trackWrite(raw, type, mergeWordsIntoTrack(words, [word], untimedSyllablesOf(raw, trackRole(type)))) }];
   });
 }
 

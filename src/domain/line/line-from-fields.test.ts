@@ -64,3 +64,15 @@ describe("a load never drops the untimed rest", () => {
     expect(syllableTexts(line)).toEqual(["hel", "lo", "goodbye", "moon"]);
   });
 });
+
+describe("syllable ids", () => {
+  it("regression: untimed syllables never take the id of a timed syllable rebuilt with them", () => {
+    const loaded = lineFromFields({ id: "l1", agentId: "v1", text: "a b" });
+    const [first] = mainTrack(loaded).syllables;
+    const words = [{ ...first, begin: 1, end: 2 }];
+    const rebuilt = lineFromFields({ id: "l1", agentId: "v1", text: "a b c d", words });
+    const ids = mainTrack(rebuilt).syllables.map((syllable) => syllable.id);
+    expect(mainTrack(rebuilt).syllables.map((syllable) => syllable.text)).toEqual(["a", "b", "c", "d"]);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});

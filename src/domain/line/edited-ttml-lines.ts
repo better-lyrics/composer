@@ -2,6 +2,9 @@ import { mergedLanguages } from "@/domain/line/edited-ttml-languages";
 import { pairEditedLines } from "@/domain/line/edited-ttml-pairing";
 import { type LineFields, fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
+import { backgroundTrack } from "@/domain/line/track";
+import { trackText } from "@/domain/line/text";
+import { withBackgroundTrack, withoutTrackTiming, withTrackText } from "@/domain/line/track-writes";
 import { withUntimedIdsOf } from "@/domain/line/untimed-ids";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import type { WordTiming } from "@/domain/word/timing";
@@ -98,10 +101,9 @@ function mergedBackground(stored: LineFields, edited: LineFields): Partial<LineF
 }
 
 function withoutSeededBackground(line: LyricLine): LyricLine {
-  const fields = fieldsOfLine(line);
-  if (!hasSeededBackgroundWords(undefined, fields)) return line;
-  const { backgroundWords: _seeded, ...rest } = fields;
-  return lineFromFields(rest);
+  const background = backgroundTrack(line);
+  if (!background || !hasSeededBackgroundWords(undefined, fieldsOfLine(line))) return line;
+  return withBackgroundTrack(line, withTrackText(withoutTrackTiming(background), trackText(background)));
 }
 
 function mergedTiming(stored: LineFields, edited: LineFields): Pick<LineFields, "words" | "begin" | "end"> {

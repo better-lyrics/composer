@@ -73,18 +73,11 @@ function withClosingJoint(words: readonly WordTiming[], rest: string, splitChar:
   return words.with(last, { ...closing, sep, joinsNext });
 }
 
-// Untimed syllables built here are new to the session. Ids count back from the end of the track, so separately built
-// lines stay comparable and an untimed syllable keeps its id when more of the line before it is timed.
-function untimedFromText(text: string, splitChar: string): Syllable[] {
-  const syllables = textSyllables(text, splitChar);
-  return syllables.map((syllable, index) => ({ ...syllable, id: `untimed-${syllables.length - 1 - index}` }));
-}
-
 function syllablesFromFields(text: string, words: readonly WordTiming[] | undefined, splitChar: string): Syllable[] {
-  if (!words?.length) return untimedFromText(text, splitChar);
+  if (!words?.length) return textSyllables(text, splitChar);
   const rest = untimedRest(text, words, splitChar);
   if (rest === "") return [...words];
-  return [...withClosingJoint(words, rest, splitChar), ...untimedFromText(rest, splitChar)];
+  return [...withClosingJoint(words, rest, splitChar), ...textSyllables(rest, splitChar)];
 }
 
 // -- Tracks -------------------------------------------------------------------

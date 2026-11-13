@@ -21,7 +21,7 @@ function withSplitIds(pieces: readonly WordTiming[]): WordTiming[] {
 }
 
 // Words joining a track keep their ids; one the track already holds becomes a new word.
-function withFreeIds(incoming: WordTiming[], existing: readonly WordTiming[]): WordTiming[] {
+function withFreeIds(incoming: WordTiming[], existing: readonly { id: string }[]): WordTiming[] {
   const taken = new Set(existing.map((word) => word.id));
   let changed = false;
   const result = incoming.map((word) => {

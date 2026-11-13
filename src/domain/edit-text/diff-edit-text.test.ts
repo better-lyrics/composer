@@ -162,10 +162,7 @@ describe("diffEditTextChange", () => {
       lineFromFields({ id: "L1", text: "first", agentId: "v1" }),
       lineFromFields({ id: "L2", text: "second", agentId: "v1" }),
     ];
-    const next: LyricLine[] = [
-      lineFromFields({ id: "L1", text: "first edit", agentId: "v1" }),
-      lineFromFields({ id: "L2", text: "second", agentId: "v1" }),
-    ];
+    const next: LyricLine[] = [withFields(old[0], { text: "first edit" }), structuredClone(old[1])];
     const result = diffEditTextChange(old, next);
     expect(result.hasStructuralChange).toBe(false);
     expect(changedFields(result.contentUpdates, old)).toEqual([{ id: "L1", updates: { text: "first edit" } }]);
