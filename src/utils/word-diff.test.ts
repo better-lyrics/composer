@@ -293,7 +293,7 @@ describe("applySiblingWords · syllable joins", () => {
       { id: "w102", text: "er", sep: "", begin: 0.3, end: 0.6, joinsNext: false },
     ];
     const sibling: WordTiming[] = [
-      { id: "w103", text: "ev", sep: "", begin: 30, end: 30.3, joinsNext: true },
+      { id: "w103", text: "ev", sep: "", begin: 30, end: 30.3, joinsNext: false },
       { id: "w104", text: "er", sep: "", begin: 30.3, end: 30.6, joinsNext: false },
     ];
     const result = applySiblingWords(sourceAfter, sourceBefore, sibling);
