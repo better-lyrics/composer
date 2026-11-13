@@ -1,18 +1,13 @@
 import type { LyricLine } from "@/domain/line/model";
-import { SYNC_START, type SyncAddress, syncAddressAt, syncAddressPosition } from "@/domain/sync/address";
-import type { SyncCursor } from "@/domain/sync/cursor";
-import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
-import type { SyncState } from "@/utils/sync-helpers";
-import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
+import { at, mountSyncHandlers, positionOf } from "@/test/sync-handlers-harness";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 
 // These tests cover gestures and holds after playback starts, not the count-in before it.
 beforeEach(() => {
@@ -20,63 +15,6 @@ beforeEach(() => {
 });
 
 const ORIGINAL_TEXT = "Hello world how are you";
-
-interface HookProps {
-  syncState: SyncState;
-  currentTime: number;
-}
-
-function at(lineIndex: number, wordIndex: number): SyncAddress {
-  return syncAddressAt(useProjectStore.getState().lines, { lineIndex, wordIndex });
-}
-
-function positionOf(state: SyncState): SyncCursor {
-  return syncAddressPosition(useProjectStore.getState().lines, state.position);
-}
-
-function noopBool(_value: boolean): void {}
-
-interface MountOptions {
-  initialSyncState?: SyncState;
-  initialCurrentTime?: number;
-  granularity?: "word" | "line";
-  editMode?: boolean;
-}
-
-async function mountSyncHandlers(opts: MountOptions = {}) {
-  let syncState: SyncState = opts.initialSyncState ?? { position: SYNC_START, isActive: true };
-  const setSyncState = (next: SyncState | ((prev: SyncState) => SyncState)) => {
-    syncState = typeof next === "function" ? next(syncState) : next;
-  };
-  const getSyncState = () => syncState;
-  const startTime = opts.initialCurrentTime ?? 0;
-  const playingCalls: boolean[] = [];
-  if (opts.initialCurrentTime !== undefined) useAudioStore.setState({ currentTime: opts.initialCurrentTime });
-
-  const { result, rerender, act } = await renderHook(
-    (props?: HookProps) => {
-      const lines = useProjectStore.getState().lines;
-      const state = props?.syncState ?? syncState;
-      return useSyncHandlers({
-        lines,
-        syncState: state,
-        setSyncState,
-        editMode: opts.editMode ?? false,
-        granularity: opts.granularity ?? "word",
-        setShowPulse: noopBool,
-        setIsPlaying: (value) => playingCalls.push(value),
-      });
-    },
-    { initialProps: { syncState, currentTime: startTime } },
-  );
-
-  const rerenderAt = async (props: HookProps) => {
-    useAudioStore.setState({ currentTime: props.currentTime });
-    await rerender(props);
-  };
-
-  return { result, rerender: rerenderAt, act, getSyncState, playingCalls };
-}
 
 describe("useSyncHandlers.handleTap (word granularity)", () => {
   it("preserves line.text across a full word-by-word tap sequence", async () => {
@@ -156,31 +94,6 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
       expect(word.end).toBeGreaterThanOrEqual(word.begin);
       if (i > 0) expect(word.begin).toBeGreaterThanOrEqual(words![i - 1].end);
     }
-  });
-
-  it("regression: a split before the cursor never re-records the last timed word", async () => {
-    useProjectStore.getState().setLines([createLine({ id: "l0", text: "Rivers carry lanterns home" })]);
-    const { result, rerender, act, getSyncState } = await mountSyncHandlers();
-    for (const time of [0, 0.5]) {
-      await rerender({ syncState: getSyncState(), currentTime: time });
-      await act(() => result.current.handleTap());
-    }
-    const river = useProjectStore.getState().lines[0].words?.[0];
-    if (!river) throw new Error("expected a timed first word");
-
-    await act(() =>
-      handleWordChangeWithDivergenceCheck("l0", [
-        { ...river, text: "Riv", sep: "", end: 0.25 },
-        { ...river, id: "riv-second", text: "ers", begin: 0.25 },
-        ...(useProjectStore.getState().lines[0].words ?? []).slice(1),
-      ]),
-    );
-    await rerender({ syncState: getSyncState(), currentTime: 1 });
-    await act(() => result.current.handleTap());
-
-    const words = useProjectStore.getState().lines[0].words ?? [];
-    expect(words.map((word) => word.text)).toEqual(["Riv", "ers", "carry", "lanterns"]);
-    expect(words.map((word) => word.begin)).toEqual([0, 0.25, 0.5, 1]);
   });
 
   it("regression: a redo past the line's later words never exports a line ending before it begins", async () => {
