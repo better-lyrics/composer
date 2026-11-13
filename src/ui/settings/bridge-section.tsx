@@ -19,8 +19,7 @@ const HEALTH_REFETCH_INTERVAL = 8000;
 const StatusBadge: React.FC<{
   state: "checking" | "ok" | "error";
   data: BridgeHealth | undefined;
-  errorMessage: string | undefined;
-}> = ({ state, data, errorMessage }) => {
+}> = ({ state, data }) => {
   if (state === "checking") {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-composer-text-muted">
@@ -38,10 +37,7 @@ const StatusBadge: React.FC<{
     );
   }
   return (
-    <span
-      className="inline-flex items-center gap-1.5 text-xs text-rose-500"
-      title={errorMessage ?? "bridge unreachable"}
-    >
+    <span className="inline-flex items-center gap-1.5 text-xs text-rose-500">
       <IconExclamationCircle size={12} />
       Not running
     </span>
@@ -101,8 +97,7 @@ const BridgeSection: React.FC = () => {
     if (health.data) markBridgeDetected();
   }, [health.data]);
 
-  const state: "checking" | "ok" | "error" =
-    health.isFetching && !health.data ? "checking" : health.data ? "ok" : "error";
+  const state: "checking" | "ok" | "error" = health.isPending ? "checking" : health.data ? "ok" : "error";
   const errorMessage = health.error instanceof Error ? health.error.message : undefined;
 
   return (
@@ -134,7 +129,7 @@ const BridgeSection: React.FC = () => {
         <div className="flex flex-col gap-2 px-3 py-3 rounded-md bg-(--well) border border-(--edge)">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-composer-text">Bridge status</span>
-            <StatusBadge state={state} data={health.data} errorMessage={errorMessage} />
+            <StatusBadge state={state} data={health.data} />
           </div>
 
           <BridgeUrlField
@@ -144,6 +139,9 @@ const BridgeSection: React.FC = () => {
             onReset={() => setSetting("composerBridgeUrl", DEFAULT_BRIDGE_URL)}
           />
 
+          {state === "error" && errorMessage && (
+            <p className="text-xs text-rose-500 select-text break-words">{errorMessage}</p>
+          )}
           {state === "error" &&
             (everDetectedAtMount ? <BridgeStoppedHint /> : <BridgeInstallGuide onCheckNow={() => health.refetch()} />)}
         </div>
