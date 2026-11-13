@@ -22,7 +22,6 @@ function slotWords(line: LyricLine): SlotWord[] {
   }));
 }
 
-// A save drops a trailing join, so appending a slot also restores the join of the word before it.
 function withSlotWord(
   existing: readonly WordTiming[],
   slots: readonly SlotWord[],
@@ -32,9 +31,6 @@ function withSlotWord(
   const words = [...existing];
   const written = existing.at(index) ?? { id: newWordId(), joinsNext: slots[index].joinsNext };
   words[index] = { ...written, ...splitTrailingWhitespace(slots[index].text), ...timing };
-  const previous = index === existing.length ? existing.at(-1) : undefined;
-  const previousSlot = slots[index - 1];
-  if (previous && previousSlot) words[index - 1] = { ...previous, joinsNext: previousSlot.joinsNext };
   return words;
 }
 

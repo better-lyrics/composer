@@ -2,6 +2,7 @@ import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
+import { withTrailingJoinFromText } from "@/domain/line/line-from-fields";
 import { type LineFields, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { withSplitMarksFromWords } from "@/domain/line/reconstruct-text";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
@@ -89,15 +90,19 @@ function storeLine(line: SavedLine, splitChar: string): LyricLine {
   const { words, backgroundWords, ...fields } = line;
   const storeWords = words && wordsFromSaved(words);
   const storeBackgroundWords = backgroundWords && wordsFromSaved(backgroundWords);
+  const text = storeWords?.length ? withSplitMarksFromWords(fields.text, storeWords, splitChar) : fields.text;
+  const backgroundText =
+    storeBackgroundWords?.length && fields.backgroundText !== undefined
+      ? withSplitMarksFromWords(fields.backgroundText, storeBackgroundWords, splitChar)
+      : fields.backgroundText;
   return reconcileLine({
     ...fields,
-    ...(storeWords?.length && { text: withSplitMarksFromWords(fields.text, storeWords, splitChar) }),
-    ...(storeBackgroundWords?.length &&
-      fields.backgroundText !== undefined && {
-        backgroundText: withSplitMarksFromWords(fields.backgroundText, storeBackgroundWords, splitChar),
-      }),
-    words: storeWords,
-    ...(storeBackgroundWords && { backgroundWords: storeBackgroundWords }),
+    text,
+    ...(backgroundText !== undefined && { backgroundText }),
+    words: storeWords && withTrailingJoinFromText(text, storeWords),
+    ...(storeBackgroundWords && {
+      backgroundWords: withTrailingJoinFromText(backgroundText ?? "", storeBackgroundWords),
+    }),
   });
 }
 

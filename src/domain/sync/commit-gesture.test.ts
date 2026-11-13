@@ -3,6 +3,7 @@ import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
 import { type GestureCommit, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { wordFromSpaced } from "@/domain/word/spaced-words";
+import { linesFromSaved } from "@/lib/saved-project";
 import { createLine } from "@/test/factories";
 
 const word = (text: string, begin: number, end: number) => wordFromSpaced({ text, begin, end });
@@ -48,7 +49,9 @@ describe("tap-word", () => {
   });
 
   it("regression: a tap after a reload joins the syllable before it again", () => {
-    const lines = [createLine({ id: "l0", text: "hel|lo you", words: [{ text: "hel", begin: 1, end: 1.3 }] })];
+    const lines = linesFromSaved([
+      { id: "l0", text: "hel|lo you", agentId: "v1", words: [{ text: "hel", begin: 1, end: 1.3 }] },
+    ]);
     const words = apply(lines, run(lines, "tap-word", [0, 1], 2))[0].words;
     expect(words?.map((w) => [w.text, w.joinsNext])).toEqual([
       ["hel", true],

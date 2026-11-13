@@ -115,4 +115,19 @@ describe("linesFromSaved", () => {
     const [reloaded] = linesFromSaved(savedLines([line]));
     expect([reloaded.text, reloaded.backgroundText]).toEqual(["Pa|per lanterns", "drif|ting"]);
   });
+
+  it("regression: a partly synced line's last timed syllable joins the untimed part after it", () => {
+    const [line] = linesFromSaved([
+      {
+        id: "line-1",
+        text: "hel|lo you",
+        agentId: "v1",
+        words: [{ text: "hel", begin: 1, end: 1.3 }],
+        backgroundText: "o|oh yeah",
+        backgroundWords: [{ text: "o", begin: 1, end: 1.2 }],
+      },
+    ]);
+    expect(line.words?.map((word) => word.joinsNext)).toEqual([true]);
+    expect(line.backgroundWords?.map((word) => word.joinsNext)).toEqual([true]);
+  });
 });
