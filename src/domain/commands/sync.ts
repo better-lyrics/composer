@@ -124,5 +124,4 @@ function splitSyncWord(lineId: string, wordIndex: number, newWords: WordTiming[]
 
 // -- Exports ------------------------------------------------------------------
 
-export type { SyncWordTarget };
 export { resetSync, retimeSyncWord, shiftSyncLine, splitSyncWord, syncGesture };
