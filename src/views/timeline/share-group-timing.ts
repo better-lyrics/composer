@@ -1,3 +1,6 @@
+import { shareGroupTiming } from "@/domain/commands/group-edits";
+import { NOTHING_SHARED } from "@/domain/group/group-plans";
+import type { SharingOutcome } from "@/domain/group/shared-placement";
 import { sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -8,7 +11,9 @@ import { pluralize } from "@/utils/pluralize";
 
 function shareGroupTimingWithUndo(groupId: string): void {
   const before = useProjectStore.getState();
-  const { keptOwnTiming, replaced } = before.shareGroupTiming(groupId, useAudioStore.getState().duration);
+  let sharing: SharingOutcome = NOTHING_SHARED;
+  before.commit(shareGroupTiming(groupId, useAudioStore.getState().duration, (planned) => (sharing = planned)));
+  const { keptOwnTiming, replaced } = sharing;
   const { lines, groups } = useProjectStore.getState();
   const group = groups.find((candidate) => candidate.id === groupId);
   if (!group) return;

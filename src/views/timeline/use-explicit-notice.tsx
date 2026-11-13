@@ -1,3 +1,4 @@
+import { markWordsExplicit, toggleWordExplicit } from "@/domain/commands/word-edits";
 import { useProjectStore } from "@/stores/project";
 import { type ExplicitSuggestion, findExplicitWords } from "@/utils/explicit-detection";
 import { getExplicitSnippet } from "@/utils/explicit-snippet";
@@ -63,13 +64,15 @@ function useExplicitNotice(): NoticeKind | null {
 }
 
 function markOne(suggestion: ExplicitSuggestion): void {
-  useProjectStore.getState().toggleWordExplicit(suggestion.lineId, suggestion.field, suggestion.wordIndices);
+  useProjectStore.getState().commit(toggleWordExplicit(suggestion.lineId, suggestion.field, suggestion.wordIndices));
 }
 
 function markAll(visible: readonly ExplicitSuggestion[]): void {
-  useProjectStore.getState().markWordsExplicit(
-    visible.flatMap((s) => s.wordIndices.map((wordIndex) => ({ lineId: s.lineId, field: s.field, wordIndex }))),
-    true,
+  useProjectStore.getState().commit(
+    markWordsExplicit(
+      visible.flatMap((s) => s.wordIndices.map((wordIndex) => ({ lineId: s.lineId, field: s.field, wordIndex }))),
+      true,
+    ),
   );
 }
 

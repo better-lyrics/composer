@@ -7,6 +7,12 @@ import { useProjectStore } from "@/stores/project";
 import type { ProjectState } from "@/stores/project/types";
 import { createGroup, createLine } from "@/test/factories";
 import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLyrics } from "@/domain/commands/edit-text";
+import { pasteLines } from "@/domain/commands/instance-rows";
+import { addGroupWithLines, removeGroup } from "@/domain/commands/group-edits";
+import { removeSinger, replaceLyrics } from "@/domain/commands/lyrics-replace";
+import { lineEditCommand } from "@/domain/commands/line-edits";
+import { refreshGeneratedLanguages } from "@/domain/commands/languages";
 
 // Pins the contract that history entries round-trip exactly and are never
 // changed by later edits. Entries share the store's immutable objects, so a
@@ -46,15 +52,19 @@ const chorus = (instanceIdx: number, begin: number) =>
 describe("history snapshot integrity", () => {
   it("undo restores nested word arrays without aliasing the post-state", () => {
     const store = useProjectStore.getState();
-    store.setLinesWithHistory([
-      {
-        id: "L1",
-        text: "hello",
-        agentId: "v1",
-        words: [{ id: "w1", text: "hello", sep: "", begin: 0, end: 1 }],
-      },
-    ]);
-    store.updateLineWithHistory("L1", { words: [{ id: "w2", text: "hello!", sep: "", begin: 0, end: 1 }] });
+    store.commit(
+      pasteLyrics(useProjectStore.getState().lines, [
+        {
+          id: "L1",
+          text: "hello",
+          agentId: "v1",
+          words: [{ id: "w1", text: "hello", sep: "", begin: 0, end: 1 }],
+        },
+      ]),
+    );
+    store.commit(
+      pasteLines([{ id: "L1", updates: { words: [{ id: "w2", text: "hello!", sep: "", begin: 0, end: 1 }] } }]),
+    );
     const beforeUndo = useProjectStore.getState().lines[0].words?.[0].text;
     expect(beforeUndo).toBe("hello!");
     store.undo();
@@ -71,18 +81,20 @@ describe("history snapshot integrity", () => {
 
   it("undo restores groups[] alongside lines[]", () => {
     const store = useProjectStore.getState();
-    store.addGroupWithLines({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }, [
-      {
-        id: "L1",
-        text: "x",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-      },
-    ]);
+    store.commit(
+      addGroupWithLines({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }, [
+        {
+          id: "L1",
+          text: "x",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+        },
+      ]),
+    );
     expect(useProjectStore.getState().groups).toHaveLength(1);
-    store.removeGroup("g1");
+    store.commit(removeGroup("g1"));
     expect(useProjectStore.getState().groups).toHaveLength(0);
     store.undo();
     expect(useProjectStore.getState().groups).toHaveLength(1);
@@ -91,19 +103,21 @@ describe("history snapshot integrity", () => {
 
   it("undo and redo preserve identity of nested structures across multiple steps", () => {
     const store = useProjectStore.getState();
-    store.setLinesWithHistory([
-      {
-        id: "A",
-        text: "a",
-        agentId: "v1",
-        words: [
-          { id: "w3", text: "a", sep: " ", begin: 0, end: 0.5 },
-          { id: "w4", text: "b", sep: "", begin: 0.5, end: 1 },
-        ],
-      },
-    ]);
-    store.updateLineWithHistory("A", { words: [{ id: "w5", text: "ab", sep: "", begin: 0, end: 1 }] });
-    store.updateLineWithHistory("A", { words: [{ id: "w6", text: "ABC", sep: "", begin: 0, end: 1 }] });
+    store.commit(
+      pasteLyrics(useProjectStore.getState().lines, [
+        {
+          id: "A",
+          text: "a",
+          agentId: "v1",
+          words: [
+            { id: "w3", text: "a", sep: " ", begin: 0, end: 0.5 },
+            { id: "w4", text: "b", sep: "", begin: 0.5, end: 1 },
+          ],
+        },
+      ]),
+    );
+    store.commit(pasteLines([{ id: "A", updates: { words: [{ id: "w5", text: "ab", sep: "", begin: 0, end: 1 }] } }]));
+    store.commit(pasteLines([{ id: "A", updates: { words: [{ id: "w6", text: "ABC", sep: "", begin: 0, end: 1 }] } }]));
     store.undo();
     expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("ab");
     store.undo();
@@ -116,18 +130,18 @@ describe("history snapshot integrity", () => {
 
   it("undo and redo return every snapshotted field to its exact recorded state", () => {
     const store = useProjectStore.getState;
-    store().setLines([createLine({ id: "a", text: "first" }), createLine({ id: "b", text: "second" })]);
+    store().restoreLyrics({ lines: [createLine({ id: "a", text: "first" }), createLine({ id: "b", text: "second" })] });
     store().setCustomSnapPoints([2, 5]);
     store().setBeatGrid(grid);
     store().addAgent({ id: "v2", type: "person", name: "Second" });
-    store().setLinesWithHistory(store().lines, [createGroup({ id: "g1" })]);
+    store().commit(replaceLyrics(store().lines, [createGroup({ id: "g1" })], useProjectStore.getState().agents));
     const start = recorded(store());
 
-    store().updateLineWithHistory("a", { text: "first edited" });
+    store().commit(pasteLines([{ id: "a", updates: { text: "first edited" } }]));
     store().applyBeatGridWithHistory(withOffset(grid, 20));
     const afterA = recorded(store());
 
-    store().removeAgentWithHistory("v2");
+    store().commit(removeSinger("v2"));
     const afterB = recorded(store());
 
     store().undo();
@@ -144,10 +158,15 @@ describe("history snapshot integrity", () => {
 
   it("undo gives back the same objects for lines the undone step did not change", () => {
     const store = useProjectStore.getState;
-    store().setLinesWithHistory([createLine({ id: "a", text: "one" }), createLine({ id: "b", text: "two" })]);
+    store().commit(
+      pasteLyrics(useProjectStore.getState().lines, [
+        createLine({ id: "a", text: "one" }),
+        createLine({ id: "b", text: "two" }),
+      ]),
+    );
     const before = store().lines;
 
-    store().updateLineWithHistory("a", { text: "one edited" });
+    store().commit(pasteLines([{ id: "a", updates: { text: "one edited" } }]));
     expect(store().lines[1]).toBe(before[1]);
     store().undo();
 
@@ -164,17 +183,19 @@ describe("history snapshot integrity", () => {
       isDirtySinceHistory: true,
     });
     store().setBeatGrid(grid);
-    store().updateLineWithHistory("c0", { text: "I want it" });
+    store().commit(pasteLines([{ id: "c0", updates: { text: "I want it" } }]));
     const committedIndex = store().historyIndex;
     const committed = structuredClone(store().history[committedIndex]);
 
     const nudged = (store().lines[0].words ?? []).map((word) => ({ ...word, begin: word.begin + 0.2 }));
-    store().updateLinesWithHistory([{ id: "c0", updates: { words: nudged } }], {
-      deriveText: false,
-      propagateToSiblings: false,
-    });
+    store().commit(
+      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "c0", updates: { words: nudged } }], {
+        derivesText: false,
+        propagateToSiblings: false,
+      }),
+    );
     expect(store().lines[1].words?.[0].begin).toBeCloseTo(40.2, 6);
-    store().applyLineUpdatesToCurrentStep([{ id: "c1", updates: { agentId: "v2" } }]);
+    store().commit(refreshGeneratedLanguages([{ id: "c1", updates: { agentId: "v2" } }]), "amend");
     store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 10));
     store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 20));
 
@@ -183,7 +204,7 @@ describe("history snapshot integrity", () => {
 
   it("mutating a line that is in history throws", () => {
     const store = useProjectStore.getState;
-    store().setLinesWithHistory([createLine({ id: "a", text: "kept" })]);
+    store().commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a", text: "kept" })]));
     const line = store().history[store().historyIndex].lines[0];
 
     expect(() => {
@@ -195,8 +216,8 @@ describe("history snapshot integrity", () => {
 
   it("an in-place write to a committed store line throws, and undo then redo give back the same objects", () => {
     const store = useProjectStore.getState;
-    store().setLinesWithHistory([createLine({ id: "a", text: "first" })]);
-    store().updateLineWithHistory("a", { text: "second" });
+    store().commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a", text: "first" })]));
+    store().commit(pasteLines([{ id: "a", updates: { text: "second" } }]));
     const committedLines = store().lines;
 
     expect(() => {

@@ -2,14 +2,16 @@
  * @vitest-environment node
  */
 import { deleteLine } from "@/domain/commands/instance-rows";
-import { replaceLines } from "@/domain/commands/line-edits";
+import { pasteLyrics } from "@/domain/commands/edit-text";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { beforeEach, describe, expect, it } from "vitest";
 
 beforeEach(() => {
   useProjectStore.getState().reset();
-  useProjectStore.getState().commit(replaceLines([createLine({ id: "l1", text: "Over the hills" })]));
+  useProjectStore
+    .getState()
+    .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "l1", text: "Over the hills" })]));
 });
 
 describe("line commands", () => {

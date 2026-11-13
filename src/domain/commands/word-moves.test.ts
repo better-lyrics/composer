@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { replaceLines } from "@/domain/commands/line-edits";
+import { pasteLyrics } from "@/domain/commands/edit-text";
 import { moveWordsAcrossLines } from "@/domain/commands/word-moves";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
@@ -15,7 +15,7 @@ beforeEach(() => {
   useProjectStore
     .getState()
     .commit(
-      replaceLines([
+      pasteLyrics(useProjectStore.getState().lines, [
         createLine({ id: "a", text: "drift", words: [drift] }),
         createLine({ id: "b", text: "harbour", words: [createWord({ text: "harbour", begin: 2.1, end: 3 })] }),
       ]),

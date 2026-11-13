@@ -1,15 +1,18 @@
 import type { LyricLine } from "@/domain/line/model";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
+import { groupRepeatingSections } from "@/domain/commands/group-edits";
 
 describe("setAgents", () => {
   beforeEach(() => useProjectStore.setState(INITIAL_STATE));
 
   it("replaces the agents list entirely", () => {
-    useProjectStore.getState().setAgents([
-      { id: "v1", type: "person", name: "Lead Vocals" },
-      { id: "v2", type: "person", name: "Backing" },
-    ]);
+    useProjectStore.getState().restoreLyrics({
+      agents: [
+        { id: "v1", type: "person", name: "Lead Vocals" },
+        { id: "v2", type: "person", name: "Backing" },
+      ],
+    });
     const agents = useProjectStore.getState().agents;
     expect(agents).toEqual([
       { id: "v1", type: "person", name: "Lead Vocals" },
@@ -18,13 +21,13 @@ describe("setAgents", () => {
   });
 
   it("overwrites the name of an agent that shared an id with the previous list", () => {
-    useProjectStore.getState().setAgents([{ id: "v1", type: "person", name: "Lead Vocals" }]);
+    useProjectStore.getState().restoreLyrics({ agents: [{ id: "v1", type: "person", name: "Lead Vocals" }] });
     expect(useProjectStore.getState().agents[0].name).toBe("Lead Vocals");
   });
 
   it("removes agents that are not in the new list", () => {
     useProjectStore.getState().addAgent({ id: "vNew", type: "person", name: "Custom" });
-    useProjectStore.getState().setAgents([{ id: "v1", type: "person", name: "Singer" }]);
+    useProjectStore.getState().restoreLyrics({ agents: [{ id: "v1", type: "person", name: "Singer" }] });
     expect(useProjectStore.getState().agents.find((a) => a.id === "vNew")).toBeUndefined();
   });
 });
@@ -45,8 +48,8 @@ describe("groupRepeatingSections", () => {
       plain("d1", "chorus 1"),
       plain("d2", "chorus 2"),
     ];
-    useProjectStore.getState().setLines(lines);
-    useProjectStore.getState().groupRepeatingSections([1, 4], 2, { label: "Chorus" });
+    useProjectStore.getState().restoreLyrics({ lines: lines });
+    useProjectStore.getState().commit(groupRepeatingSections({ starts: [1, 4], length: 2, ...{ label: "Chorus" } }));
 
     const state = useProjectStore.getState();
     expect(state.groups).toHaveLength(1);
@@ -75,8 +78,8 @@ describe("groupRepeatingSections", () => {
       plain("d1", "chorus 1"),
       plain("d2", "chorus 2"),
     ];
-    useProjectStore.getState().setLines(lines);
-    useProjectStore.getState().groupRepeatingSections([0, 2], 2);
+    useProjectStore.getState().restoreLyrics({ lines: lines });
+    useProjectStore.getState().commit(groupRepeatingSections({ starts: [0, 2], length: 2 }));
 
     expect(useProjectStore.getState().groups).toHaveLength(1);
     expect(useProjectStore.getState().lines[0].groupId).toBeDefined();
@@ -93,8 +96,8 @@ describe("groupRepeatingSections", () => {
       plain("c", "x"),
       plain("d", "y"),
     ];
-    useProjectStore.getState().setLines(lines);
-    useProjectStore.getState().groupRepeatingSections([0, 2], 2);
+    useProjectStore.getState().restoreLyrics({ lines: lines });
+    useProjectStore.getState().commit(groupRepeatingSections({ starts: [0, 2], length: 2 }));
     expect(useProjectStore.getState().groups).toHaveLength(0);
   });
 });

@@ -5,6 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
+import { pasteLyrics } from "@/domain/commands/edit-text";
 
 async function openAgents(screen: Awaited<ReturnType<typeof render>>): Promise<void> {
   await screen.getByRole("button", { name: /^Agents/ }).click();
@@ -50,7 +51,9 @@ describe("AgentManager", () => {
         { id: "v3", name: "Carol", type: "person" },
       ],
     });
-    useProjectStore.getState().setLinesWithHistory([createLine({ id: "a", agentId: "v3" })]);
+    useProjectStore
+      .getState()
+      .commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ id: "a", agentId: "v3" })]));
     const screen = await render(<AgentManager />);
 
     await openAgents(screen);

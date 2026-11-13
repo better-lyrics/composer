@@ -1,3 +1,4 @@
+import { updateGroup } from "@/domain/commands/group-edits";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceKey } from "@/domain/instance/key";
 import { useProjectStore } from "@/stores/project";
@@ -109,7 +110,7 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
     (nextValue: string) => {
       const trimmed = nextValue.trim();
       if (trimmed.length > 0 && trimmed !== group.label) {
-        useProjectStore.getState().updateGroup(group.id, { label: trimmed });
+        useProjectStore.getState().commit(updateGroup(group.id, { label: trimmed }));
       }
       setRenamingGroupId(null);
     },

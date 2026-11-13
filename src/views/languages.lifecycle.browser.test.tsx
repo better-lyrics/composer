@@ -6,6 +6,7 @@ import { LanguagesPanel } from "@/views/languages";
 import { Activity } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "@/test/render";
+import { lineEditCommand } from "@/domain/commands/line-edits";
 
 const source = "こんにちは";
 const GENERATE_ALL = /^(Generate|Regenerate) all$/;
@@ -42,7 +43,7 @@ describe("language generation lifecycle", () => {
     transliterationRequests = 0;
     defer = false;
     useProjectStore.getState().setMetadata({ language: "ja" });
-    useProjectStore.getState().setLines([{ id: "line", text: source, agentId: "v1" }]);
+    useProjectStore.getState().restoreLyrics({ lines: [{ id: "line", text: source, agentId: "v1" }] });
     useProjectStore.getState().setActiveTab("languages");
     // Deliberately ignore AbortSignal: completion guards must protect the store
     // even if a response has already arrived when the request is cancelled.
@@ -171,7 +172,14 @@ describe("language generation lifecycle", () => {
     const screen = await render(<LanguagesPanel />);
     await regenerateAll(screen);
     await expect.poll(() => pending.length).toBe(2);
-    useProjectStore.getState().updateLine("line", { text: "別の歌詞" });
+    useProjectStore.getState().commit(
+      lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "line", updates: { text: "別の歌詞" } }], {
+        derivesText: true,
+        propagateToSiblings: false,
+        copiesSharedTiming: false,
+      }),
+      "pending",
+    );
     await releaseRequests();
     await expect.element(screen.getByRole("button", { name: GENERATE_ALL })).toBeEnabled();
     expect(useProjectStore.getState().lines[0].translations).toBeUndefined();
@@ -184,7 +192,7 @@ describe("language generation lifecycle", () => {
     const screen = await render(<LanguagesPanel />);
     await regenerateAll(screen);
     await expect.poll(() => pending.length).toBe(2);
-    useProjectStore.getState().setLines([translatedLine("es", "Hola", "replacement")]);
+    useProjectStore.getState().restoreLyrics({ lines: [translatedLine("es", "Hola", "replacement")] });
     await expect.element(screen.getByRole("textbox", { name: "Spanish", exact: true })).toHaveValue("Hola");
     await releaseRequests();
     await expect.element(screen.getByRole("button", { name: GENERATE_ALL })).toBeEnabled();
@@ -194,13 +202,13 @@ describe("language generation lifecycle", () => {
   });
 
   it("resynchronizes imported target languages while Activity is hidden, including reused line IDs", async () => {
-    useProjectStore.getState().setLines([translatedLine("fr", "Bonjour")]);
+    useProjectStore.getState().restoreLyrics({ lines: [translatedLine("fr", "Bonjour")] });
     const screen = await render(<ActivityPanel />);
     await expect.element(screen.getByRole("textbox", { name: "French", exact: true })).toHaveValue("Bonjour");
     useProjectStore.getState().setActiveTab("edit");
     await expect.element(screen.getByRole("textbox", { name: "French", exact: true })).not.toBeInTheDocument();
     useProjectStore.getState().startProjectSession();
-    useProjectStore.getState().setLines([translatedLine("es", "Hola")]);
+    useProjectStore.getState().restoreLyrics({ lines: [translatedLine("es", "Hola")] });
     useProjectStore.getState().setActiveTab("languages");
     await expect.element(screen.getByRole("textbox", { name: "Spanish", exact: true })).toHaveValue("Hola");
     await expect.element(screen.getByRole("button", { name: "Remove French", exact: true })).not.toBeInTheDocument();
@@ -228,7 +236,7 @@ describe("language generation lifecycle", () => {
     useProjectStore.getState().setActiveTab("edit");
     await expect.element(screen.getByRole("button", { name: "Remove Spanish", exact: true })).not.toBeInTheDocument();
     useProjectStore.getState().startProjectSession();
-    useProjectStore.getState().setLines([{ id: "line", text: source, agentId: "v1" }]);
+    useProjectStore.getState().restoreLyrics({ lines: [{ id: "line", text: source, agentId: "v1" }] });
     await releaseRequests();
     requestedTargets = [];
     useProjectStore.getState().setActiveTab("languages");

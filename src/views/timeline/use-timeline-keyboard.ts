@@ -1,3 +1,5 @@
+import { addInstance, removeInstance, shiftInstance } from "@/domain/commands/instance-edits";
+import { addGroupWithLines } from "@/domain/commands/group-edits";
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { type NudgeReport, nudgeSelection, setWordBoundary } from "@/domain/commands/word-timing";
@@ -419,7 +421,7 @@ function useTimelineKeyboard(
             toast.error("Could not create group from this selection");
             break;
           }
-          projectState.addGroupWithLines(result.group, result.updatedLines);
+          projectState.commit(addGroupWithLines(result.group, result.updatedLines));
           noteGuideSignal("edit.group");
           showGroupedToast(result.group, filled.expanded.size, filled.addedCount);
           break;
@@ -466,7 +468,7 @@ function useTimelineKeyboard(
             projectState.commit(fillInstanceRows(groupId, placement.instanceIdx, placement.updatedLines));
             toast.success("Linked instance placed in empty rows");
           } else if (placement.kind === "insert") {
-            projectState.addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);
+            projectState.commit(addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex));
             toast.success("Linked instance added at playhead");
           } else {
             copyInstanceToClipboardAndPreview(projectState.lines, groupId, sourceInstanceIdx);
@@ -534,7 +536,7 @@ function useTimelineKeyboard(
             break;
           }
           e.preventDefault();
-          useProjectStore.getState().removeInstance(inst.groupId, inst.instanceIdx);
+          useProjectStore.getState().commit(removeInstance(inst.groupId, inst.instanceIdx));
           showGroupActionToast("Instance detached");
           break;
         }
@@ -626,7 +628,7 @@ function useTimelineKeyboard(
           e.preventDefault();
           useProjectStore
             .getState()
-            .shiftInstance(inst.groupId, inst.instanceIdx, delta, useAudioStore.getState().duration);
+            .commit(shiftInstance(inst.groupId, inst.instanceIdx, delta, useAudioStore.getState().duration));
           break;
         }
         case "timeline.jumpPrevBar":

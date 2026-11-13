@@ -45,7 +45,7 @@ function setupLine({
         }
       : {}),
   };
-  useProjectStore.getState().setLines([line]);
+  useProjectStore.getState().restoreLyrics({ lines: [line] });
   return line;
 }
 
@@ -193,7 +193,7 @@ describe("TransliterationAlignmentModal", () => {
       const line = setupLine();
       line.transliteration!.sourceFingerprint = "old-source";
       line.transliteration!.stale = true;
-      useProjectStore.getState().setLines([line]);
+      useProjectStore.getState().restoreLyrics({ lines: [line] });
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
       await screen.getByRole("button", { name: "Save", exact: true }).click();
       const saved = useProjectStore.getState().lines[0];
@@ -220,7 +220,7 @@ describe("TransliterationAlignmentModal", () => {
           sourceFingerprint: languageSourceFingerprint("밤하늘"),
         },
       };
-      useProjectStore.getState().setLines([line]);
+      useProjectStore.getState().restoreLyrics({ lines: [line] });
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
 
       const pronunciationBreak = screen.getByRole("button", {

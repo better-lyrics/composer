@@ -5,6 +5,7 @@ import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
 import { EditPanel } from "@/views/edit";
+import { pasteLines } from "@/domain/commands/instance-rows";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -22,8 +23,8 @@ function press(target: EventTarget, init: KeyboardEventInit): KeyboardEvent {
 async function renderWithTwoAgentChanges(): Promise<HTMLTextAreaElement> {
   useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
   const screen = await render(<EditPanel />);
-  useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
-  useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v3" });
+  useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v2" } }]));
+  useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v3" } }]));
   await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v3");
   return screen.container.querySelector("textarea") as HTMLTextAreaElement;
 }

@@ -1,3 +1,4 @@
+import { mergeSyllableGroup } from "@/domain/commands/word-edits";
 import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";
 import { IconArrowMerge } from "@tabler/icons-react";
@@ -35,7 +36,7 @@ const SyllableGroup: React.FC<SyllableGroupProps> = ({ label, merge, children })
             icon={<IconArrowMerge className="size-3" />}
             onClick={(event) => {
               event.stopPropagation();
-              useProjectStore.getState().mergeSyllableGroupIntoWord(merge.lineId, "words", [merge.wordIndex]);
+              useProjectStore.getState().commit(mergeSyllableGroup(merge.lineId, "words", [merge.wordIndex]));
             }}
             onKeyDown={(event) => event.stopPropagation()}
           />

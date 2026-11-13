@@ -7,6 +7,7 @@ import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import { generateTTML } from "@/utils/ttml";
 import { type ImportContext, importLyrics } from "@/views/lyrics-import-modal/import-lyrics";
 import { describe, expect, it } from "vitest";
+import { pasteLyrics } from "@/domain/commands/edit-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -98,7 +99,7 @@ describe("importLyrics confirm flow", () => {
   });
 
   it("prompts when existing lines are present and rejects the import on cancel", async () => {
-    useProjectStore.getState().setLines([lineFactory("existing", "Old")]);
+    useProjectStore.getState().restoreLyrics({ lines: [lineFactory("existing", "Old")] });
     let promptCount = 0;
     const result = await importLyrics(
       HELLO_WORLD,
@@ -116,7 +117,7 @@ describe("importLyrics confirm flow", () => {
   });
 
   it("replaces lines when the user confirms", async () => {
-    useProjectStore.getState().setLines([lineFactory("existing", "Old")]);
+    useProjectStore.getState().restoreLyrics({ lines: [lineFactory("existing", "Old")] });
     const result = await importLyrics(HELLO_WORLD, buildContext({ confirm: async () => true }));
     expect(result).toBe(true);
     expect(useProjectStore.getState().lines.length).toBe(2);
@@ -124,7 +125,7 @@ describe("importLyrics confirm flow", () => {
   });
 
   it("says the replace can be undone instead of claiming it cannot", async () => {
-    useProjectStore.getState().setLines([lineFactory("a", "Old"), lineFactory("b", "Older")]);
+    useProjectStore.getState().restoreLyrics({ lines: [lineFactory("a", "Old"), lineFactory("b", "Older")] });
     const prompts: ConfirmOptions[] = [];
     await importLyrics(
       HELLO_WORLD,
@@ -142,7 +143,7 @@ describe("importLyrics confirm flow", () => {
   });
 
   it("uses the singular for one existing line", async () => {
-    useProjectStore.getState().setLines([lineFactory("a", "Old")]);
+    useProjectStore.getState().restoreLyrics({ lines: [lineFactory("a", "Old")] });
     const prompts: ConfirmOptions[] = [];
     await importLyrics(
       HELLO_WORLD,
@@ -157,7 +158,7 @@ describe("importLyrics confirm flow", () => {
   });
 
   it("undoes the whole import in one step", async () => {
-    useProjectStore.getState().setLinesWithHistory([lineFactory("existing", "Old")]);
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [lineFactory("existing", "Old")]));
     await importLyrics(HELLO_WORLD, buildContext());
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines.map((l) => l.text)).toEqual(["Old"]);
@@ -269,7 +270,7 @@ describe("importLyrics agents", () => {
 
 describe("importLyrics default singer", () => {
   it("gives lyrics without singers the first singer of the project", async () => {
-    useProjectStore.getState().setAgents([{ id: "v2", type: "person", name: "Bob" }]);
+    useProjectStore.getState().restoreLyrics({ agents: [{ id: "v2", type: "person", name: "Bob" }] });
     await importLyrics(HELLO_WORLD, buildContext());
     const { lines, agents } = useProjectStore.getState();
     expect(lines.map((line) => line.agentId)).toEqual(["v2", "v2"]);
@@ -353,7 +354,7 @@ describe("importLyrics metadata", () => {
     });
 
     it("does not mark song details when the import is rejected", async () => {
-      useProjectStore.getState().setLines([lineFactory("existing", "Old")]);
+      useProjectStore.getState().restoreLyrics({ lines: [lineFactory("existing", "Old")] });
       await importLyrics(
         { filename: "a.lrc", content: `[ti:Bohemian Rhapsody]\n${LRC_WITHOUT_TAGS}` },
         buildContext({ confirm: async () => false }),
@@ -387,7 +388,9 @@ describe("importLyrics metadata", () => {
 
 describe("importLyrics groups", () => {
   it("writes empty groups when not provided", async () => {
-    useProjectStore.getState().setGroups([{ id: "g0", label: "Old", color: "#a3c9ff", templateVersion: 0 }]);
+    useProjectStore
+      .getState()
+      .restoreLyrics({ groups: [{ id: "g0", label: "Old", color: "#a3c9ff", templateVersion: 0 }] });
     await importLyrics(HELLO_WORLD, buildContext());
     expect(useProjectStore.getState().groups).toEqual([]);
   });
@@ -459,7 +462,7 @@ describe("importLyrics onResult", () => {
   });
 
   it("does not call onResult when import was rejected via confirm", async () => {
-    useProjectStore.getState().setLines([lineFactory("existing", "Old")]);
+    useProjectStore.getState().restoreLyrics({ lines: [lineFactory("existing", "Old")] });
     let calls = 0;
     await importLyrics(
       HELLO_WORLD,

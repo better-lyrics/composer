@@ -19,6 +19,7 @@ const OWNED_CALLS = [
   "contiguousSelectionRun(",
   "mergeSelectedWords(",
   "mergeSyllableGroupIntoWord(",
+  "mergeSyllableGroup(",
   "markWordsExplicit(",
   "toggleWordExplicit(",
   "resolveExplicitSelectionToggle(",

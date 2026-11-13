@@ -11,6 +11,7 @@ import {
 } from "@/test/generated-language-lines";
 import { stubGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { lineEditCommand } from "@/domain/commands/line-edits";
 
 // -- Setup --------------------------------------------------------------------
 
@@ -115,7 +116,14 @@ describe("createLanguageAutoRefresh", () => {
 
       const refreshing = createRefresher().refreshNow();
       await vi.waitFor(() => expect(requests.length).toBeGreaterThan(0));
-      useProjectStore.getState().updateLine("a", { text: "Летний ливень" }, { deriveText: false });
+      useProjectStore.getState().commit(
+        lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: "a", updates: { text: "Летний ливень" } }], {
+          derivesText: false,
+          propagateToSiblings: false,
+          copiesSharedTiming: false,
+        }),
+        "pending",
+      );
       answer.open();
       await refreshing;
 
@@ -238,13 +246,25 @@ describe("createLanguageAutoRefresh", () => {
         translations: { "Здравствуй, мир": "Hello, world" },
       });
       useProjectStore.setState({ lines: [timedLine("a", ["Привет,", "мир"], ["Privet,", "mir"])] });
-      useProjectStore.getState().updateLine("a", {
-        text: "Здравствуй, мир",
-        words: [
-          { id: "w1", text: "Здравствуй,", sep: " ", begin: 1, end: 2, transliteration: "Privet," },
-          { id: "w2", text: "мир", sep: "", begin: 2, end: 3, transliteration: "mir" },
-        ],
-      });
+      useProjectStore.getState().commit(
+        lineEditCommand(
+          { command: "edit lines", args: [] },
+          () => [
+            {
+              id: "a",
+              updates: {
+                text: "Здравствуй, мир",
+                words: [
+                  { id: "w1", text: "Здравствуй,", sep: " ", begin: 1, end: 2, transliteration: "Privet," },
+                  { id: "w2", text: "мир", sep: "", begin: 2, end: 3, transliteration: "mir" },
+                ],
+              },
+            },
+          ],
+          { derivesText: true, propagateToSiblings: false, copiesSharedTiming: false },
+        ),
+        "pending",
+      );
 
       await createRefresher().refreshNow();
 

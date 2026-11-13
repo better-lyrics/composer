@@ -1,9 +1,8 @@
 import type { AlignmentReviewActions, AlignmentReviewState } from "@/stores/project/alignment-review-slice";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricRoot } from "@/domain/commands/outcome";
-import type { RealignRefusal, SharingOutcome } from "@/domain/group/shared-placement";
-import type { LineTemplate, LinkGroup } from "@/domain/group/template";
-import type { LineUpdate, LyricLine, RawLine } from "@/domain/line/model";
+import type { LinkGroup } from "@/domain/group/template";
+import type { LyricLine, RawLine } from "@/domain/line/model";
 import type { EditedLyrics } from "@/domain/project/edited-lyrics";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
@@ -12,7 +11,6 @@ import type { ProjectTab } from "@/domain/project/tab";
 import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { BeatGrid } from "@/domain/tempo/beat-grid";
-import type { WordTiming } from "@/domain/word/timing";
 import type { HistoryActions, HistoryState } from "@/stores/project/history-types";
 import type { UnisonLinkActions, UnisonLinkState } from "@/stores/project/unison-link-slice";
 
@@ -100,8 +98,6 @@ interface MetadataActions {
 interface AgentActions {
   addAgent: (agent: Agent) => void;
   updateAgent: (id: string, updates: Partial<Agent>) => void;
-  removeAgentWithHistory: (id: string) => void;
-  setAgents: (agents: Agent[]) => void;
 }
 
 interface UiActions {
@@ -144,70 +140,16 @@ interface BeatGridActions {
 }
 
 interface LineActions {
-  setLines: (lines: RawLine[]) => void;
   // Loads and restores only: the one write of lines, groups and agents outside commands.
   restoreLyrics: (root: Partial<LyricRoot>) => void;
   previewLines: (lines: RawLine[]) => void;
   restorePreviewLines: (lines: RawLine[]) => void;
-  setLinesWithHistory: (lines: RawLine[], groups?: LinkGroup[]) => void;
-  insertEmptyLineWithHistory: (anchorLineId: string, position: "above" | "below") => void;
-  updateLine: (id: string, updates: Partial<LyricLine>, options?: { deriveText?: boolean }) => void;
-  updateLineWithHistory: (
-    id: string,
-    updates: Partial<LyricLine>,
-    options?: { deriveText?: boolean; propagateToSiblings?: boolean },
-  ) => void;
-  updateLinesWithHistory: (
-    updates: LineUpdate[],
-    options?: { deriveText?: boolean; propagateToSiblings?: boolean },
-  ) => void;
   moveWordToBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
   moveWordFromBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
-  applyWordCountChange: (
-    lineId: string,
-    newWords: WordTiming[],
-    field: "words" | "backgroundWords",
-    resolution: "apply" | "detach" | "cancel",
-    extraUpdates?: Partial<LyricLine>,
-  ) => void;
-  toggleWordExplicit: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
-  mergeSyllableGroupIntoWord: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
-  snapSyllablesFlush: (lineId: string, field: "words" | "backgroundWords") => void;
-  markWordsExplicit: (
-    targets: Array<{ lineId: string; field: "words" | "backgroundWords"; wordIndex: number }>,
-    value: boolean,
-  ) => void;
-  splitSyllablesAcrossIdenticalWordsWithHistory: (params: {
-    source: { lineId: string; wordIndex: number; type: "word" | "bg" };
-    splitPoints: number[];
-    caseInsensitive: boolean;
-  }) => void;
 }
 
 interface GroupActions {
-  setGroups: (groups: LinkGroup[]) => void;
   addGroup: (group: LinkGroup) => void;
-  addGroupWithLines: (group: LinkGroup, lines: LyricLine[]) => void;
-  groupRepeatingSections: (
-    starts: number[],
-    length: number,
-    options?: { label?: string; color?: string; duration?: number },
-  ) => SharingOutcome;
-  updateGroup: (id: string, updates: Partial<LinkGroup>) => void;
-  removeGroup: (id: string) => void;
-  addInstance: (groupId: string, structure: LineTemplate[], instanceStart: number, insertAtIndex?: number) => void;
-  removeInstance: (groupId: string, instanceIdx: number) => void;
-  detachLine: (lineId: string) => void;
-  shiftInstance: (groupId: string, instanceIdx: number, deltaSeconds: number, duration: number) => void;
-  setInstanceOwnTiming: (groupId: string, instanceIdx: number, own: boolean, duration: number) => RealignRefusal | null;
-  shareGroupTiming: (groupId: string, duration: number) => SharingOutcome;
-  placeInstance: (
-    groupId: string,
-    instanceIdx: number,
-    start: number,
-    duration: number,
-    precedingUpdates?: LineUpdate[],
-  ) => boolean;
 }
 
 // -- Composed Store -----------------------------------------------------------

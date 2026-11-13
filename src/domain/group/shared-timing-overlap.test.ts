@@ -10,6 +10,7 @@ import { createGroup, createLine, createWord } from "@/test/factories";
 import { stretchSelections } from "@/domain/selection/stretch";
 import { nudgeSelectedWords } from "@/domain/selection/nudge";
 import { beforeEach, describe, expect, it } from "vitest";
+import { lineEditCommand } from "@/domain/commands/line-edits";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -67,7 +68,12 @@ const lineById = (id: string): LyricLine => {
 const rangeOf = () => timeRangeResolver(store().lines, store().groups, DURATION);
 
 function commit(updates: LineUpdate[]): void {
-  store().updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+  store().commit(
+    lineEditCommand({ command: "edit lines", args: [] }, () => updates, {
+      derivesText: false,
+      propagateToSiblings: false,
+    }),
+  );
 }
 
 function selectWords(lineId: string, count: number) {

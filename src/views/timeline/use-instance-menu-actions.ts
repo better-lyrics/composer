@@ -1,3 +1,4 @@
+import { addInstance, removeInstance, shiftInstance } from "@/domain/commands/instance-edits";
 import { fillInstanceRows } from "@/domain/commands/instance-rows";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
@@ -24,7 +25,7 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
   const handleDetachInstance = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
     const { groupId, instanceIdx } = contextMenu.target;
-    useProjectStore.getState().removeInstance(groupId, instanceIdx);
+    useProjectStore.getState().commit(removeInstance(groupId, instanceIdx));
     showGroupActionToast("Instance detached");
     clearContextMenu();
   }, [contextMenu, clearContextMenu]);
@@ -58,7 +59,9 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
       useProjectStore.getState().commit(fillInstanceRows(groupId, placement.instanceIdx, placement.updatedLines));
       toast.success("Linked instance placed in empty rows");
     } else if (placement.kind === "insert") {
-      useProjectStore.getState().addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);
+      useProjectStore
+        .getState()
+        .commit(addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex));
       toast.success("Linked instance added at playhead");
     } else {
       copyInstanceToClipboardAndPreview(projectLines, groupId, instanceIdx);
@@ -75,7 +78,7 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
     const bounds = instanceBounds(instanceLines);
     if (!bounds) return;
     const delta = playheadTime - bounds.begin;
-    useProjectStore.getState().shiftInstance(groupId, instanceIdx, delta, useAudioStore.getState().duration);
+    useProjectStore.getState().commit(shiftInstance(groupId, instanceIdx, delta, useAudioStore.getState().duration));
     clearContextMenu();
   }, [contextMenu, clearContextMenu]);
 

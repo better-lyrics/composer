@@ -45,7 +45,7 @@ describe("usePersistence · hand-edited TTML", () => {
   it("saves the edit with the project", async () => {
     await mountPersistence();
 
-    useProjectStore.getState().setLines([{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }]);
+    useProjectStore.getState().restoreLyrics({ lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }] });
     useProjectStore.getState().setTtmlEditState(EDIT);
 
     await expect.poll(async () => (await loadOpenProjectRecord())?.ttmlEditState, { timeout: 2000 }).toEqual(EDIT);

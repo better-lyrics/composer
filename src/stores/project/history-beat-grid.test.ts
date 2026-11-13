@@ -3,6 +3,7 @@ import { resetGrid, withBarOneAt, withOffset } from "@/domain/tempo/grid-edits";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLyrics } from "@/domain/commands/edit-text";
 
 const beats = Array.from({ length: 17 }, (_, i) => i * 0.5);
 const grid = detectedGrid({ beats, downbeats: beats.filter((_, i) => i % 4 === 0) });
@@ -44,7 +45,7 @@ describe("project history snapshots the beat grid", () => {
 
   it("undoing a lyrics edit leaves the grid alone", () => {
     useProjectStore.getState().applyBeatGridWithHistory(grid);
-    useProjectStore.getState().setLinesWithHistory([createLine({ text: "b" })]);
+    useProjectStore.getState().commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ text: "b" })]));
 
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().beatGrid).toEqual(grid);
@@ -91,7 +92,7 @@ describe("project history snapshots the beat grid", () => {
     const store = useProjectStore.getState;
     store().applyBeatGridWithHistory(grid);
     store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 10));
-    store().setLinesWithHistory([createLine({ text: "b" })]);
+    store().commit(pasteLyrics(useProjectStore.getState().lines, [createLine({ text: "b" })]));
     store().nudgeBeatGridOffsetWithHistory(withOffset(grid, 20));
 
     store().undo();

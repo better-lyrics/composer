@@ -6,6 +6,7 @@ import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { createLine } from "@/test/factories";
 import { isMac } from "@/utils/platform";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
+import { pasteLines } from "@/domain/commands/instance-rows";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -24,8 +25,8 @@ async function renderWithTwoAgentChanges(): Promise<void> {
   useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world" })], activeTab: "timeline" });
   const scrollContainerRef = createRef<HTMLDivElement | null>();
   await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
-  useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
-  useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v3" });
+  useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v2" } }]));
+  useProjectStore.getState().commit(pasteLines([{ id: "l1", updates: { agentId: "v3" } }]));
 }
 
 function agentId(): string | undefined {

@@ -159,7 +159,7 @@ describe("useLoadAudioFile · projects", () => {
 
   it("replace keeps what the user typed and singer names, and swaps what the old file provided", async () => {
     await openAlpha({ lyrics: true, audio: true });
-    useProjectStore.getState().setAgents([{ id: "v1", name: "Gonzalez", type: "person" }]);
+    useProjectStore.getState().restoreLyrics({ agents: [{ id: "v1", name: "Gonzalez", type: "person" }] });
     const agentsBefore = useProjectStore.getState().agents;
     const load = await loader();
     await load(createAudioFile("alpha-remaster.wav"), "replace");
@@ -239,7 +239,7 @@ describe("useLoadAudioFile · projects", () => {
       const screen = await render(<PersistenceHost />);
       await getPersistenceSettled();
       useAudioStore.getState().setSource({ type: "file", file: createAudioFile("alpha.wav") });
-      useProjectStore.getState().setLines([createLine({ text: "Waiting in a car" })]);
+      useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Waiting in a car" })] });
       useProjectStore.getState().setMetadata({ title: "Alpha" });
       expect(openProjectIdSnapshot()).toBeUndefined();
       const load = await loader();
@@ -256,7 +256,7 @@ describe("useLoadAudioFile · projects", () => {
     it("falls back to an in-place load when the previous project id cannot be resolved", async () => {
       allowConsole(/could not resolve the previous project/);
       useAudioStore.getState().setSource({ type: "file", file: createAudioFile("alpha.wav") });
-      useProjectStore.getState().setLines([createLine({ text: "Waiting in a car" })]);
+      useProjectStore.getState().restoreLyrics({ lines: [createLine({ text: "Waiting in a car" })] });
       useProjectStore.getState().setMetadata({ title: "Alpha" });
       await openAndCloseAtVersion(DB_NAME, DB_VERSION + 1);
       const load = await loader();

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { replaceLines } from "@/domain/commands/line-edits";
+import { pasteLyrics } from "@/domain/commands/edit-text";
 import { mergeWords } from "@/domain/commands/word-merge";
 import { deleteWords } from "@/domain/commands/word-structure";
 import { addressOf } from "@/domain/selection/resolve";
@@ -17,7 +17,11 @@ beforeEach(() => {
   useProjectStore.getState().reset();
   useProjectStore
     .getState()
-    .commit(replaceLines([createLine({ id: "l1", text: "still water", words: [still, water] })]));
+    .commit(
+      pasteLyrics(useProjectStore.getState().lines, [
+        createLine({ id: "l1", text: "still water", words: [still, water] }),
+      ]),
+    );
 });
 
 describe("word merge command", () => {

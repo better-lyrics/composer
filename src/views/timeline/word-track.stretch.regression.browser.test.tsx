@@ -10,6 +10,7 @@ import {
   storeWords,
 } from "@/views/timeline/word-track.stretch-harness";
 import { describe, expect, it } from "vitest";
+import { lineEditCommand } from "@/domain/commands/line-edits";
 
 // Regressions for two logic bugs found in the original stretch gesture, both
 // reproduced deterministically through the real WordTrack gesture.
@@ -26,9 +27,13 @@ describe("WordTrack selection stretch regressions", () => {
     // Commit an edit (only the unselected word[2] moves) so there is a real
     // undo target that differs from the pre-drag state.
     const sB = [sA[0], sA[1], { ...sA[2], end: 7 }];
-    useProjectStore.getState().updateLinesWithHistory([{ id: lineId, updates: { words: sB } }], {
-      propagateToSiblings: false,
-    });
+    useProjectStore
+      .getState()
+      .commit(
+        lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: lineId, updates: { words: sB } }], {
+          propagateToSiblings: false,
+        }),
+      );
 
     pressEdge(blocks[1], "right");
     movePointer(100);

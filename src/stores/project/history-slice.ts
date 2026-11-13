@@ -1,4 +1,3 @@
-import { patchLines } from "@/domain/commands/line-edits";
 import { notifySharedTimingCopied } from "@/lib/shared-timing-signals";
 import { commitCommand } from "@/stores/project/commit";
 import { canUndoFrom, commitPendingEdit, redoState, undoState } from "@/stores/project/history-helpers";
@@ -45,10 +44,6 @@ const createHistorySlice: StateCreator<ProjectStore, [], [], HistoryState & Hist
   isCurrentStep: (entry) => {
     const { history, historyIndex, isDirtySinceHistory } = get();
     return history[historyIndex] === entry && !isDirtySinceHistory;
-  },
-
-  applyLineUpdatesToCurrentStep: (updates) => {
-    get().commit(patchLines(updates), "amend");
   },
 
   canUndo: () => canUndoFrom(get()),

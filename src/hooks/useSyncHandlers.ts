@@ -1,3 +1,5 @@
+import { placeInstance } from "@/domain/commands/instance-edits";
+import { isRefused } from "@/domain/commands/outcome";
 import { resetSync, retimeSyncWord, shiftSyncLine, splitSyncWord, syncGesture } from "@/domain/commands/sync";
 import type { WordTrack } from "@/domain/line/tracks";
 import type { BoundaryEdge } from "@/domain/word/boundary";
@@ -111,11 +113,14 @@ function useSyncHandlers({
         skippedInstances,
       };
       const anchor = anchorGesture(lines, gesture, { ...ctx, groups: useProjectStore.getState().groups });
-      const { placeInstance } = useProjectStore.getState();
       const duration = useAudioStore.getState().duration;
       if (
         anchor &&
-        !placeInstance(anchor.groupId, anchor.instanceIdx, anchor.start, duration, anchor.precedingUpdates)
+        isRefused(
+          useProjectStore
+            .getState()
+            .commit(placeInstance(anchor.groupId, anchor.instanceIdx, anchor.start, duration, anchor.precedingUpdates)),
+        )
       ) {
         showPlacementBlockedToast();
         return false;

@@ -9,6 +9,7 @@ import { applyWordPatch } from "@/utils/word-patch";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 import { beforeEach, describe, expect, it } from "vitest";
+import { lineEditCommand } from "@/domain/commands/line-edits";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -23,7 +24,14 @@ const START_X = 200;
 function writeWordToStore(index: number, updates: Partial<WordTiming>): void {
   const line = useProjectStore.getState().lines[0];
   const words = line.words && applyWordPatch(line.words, index, updates);
-  if (words) useProjectStore.getState().updateLineWithHistory(line.id, { words }, { propagateToSiblings: false });
+  if (words)
+    useProjectStore
+      .getState()
+      .commit(
+        lineEditCommand({ command: "edit lines", args: [] }, () => [{ id: line.id, updates: { words } }], {
+          propagateToSiblings: false,
+        }),
+      );
 }
 
 function dragEndEdgeBy(offsetPx: number): void {

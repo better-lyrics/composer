@@ -69,7 +69,7 @@ describe("useResolveYouTubeTunnel · projects", () => {
       const loading = result.current(VIDEO_ID);
       const newId = openProjectIdSnapshot() ?? "";
       expect(newId).not.toBe("a");
-      useProjectStore.getState().setLines([{ id: "n1", text: "New words", agentId: "v1" }]);
+      useProjectStore.getState().restoreLyrics({ lines: [{ id: "n1", text: "New words", agentId: "v1" }] });
       await expect(loading).rejects.toThrow();
       expect(useAudioStore.getState().source).toBeNull();
       await flushPendingSave();

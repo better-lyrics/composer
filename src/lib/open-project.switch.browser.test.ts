@@ -17,6 +17,7 @@ import { sleep } from "@/test/async";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { beforeEach, describe, expect, it } from "vitest";
+import { pasteLyrics } from "@/domain/commands/edit-text";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -139,7 +140,9 @@ describe("openProject", () => {
 
     it("the stores hold no history from the previous project", async () => {
       await seedTwoProjects();
-      useProjectStore.getState().setLinesWithHistory(useProjectStore.getState().lines);
+      useProjectStore
+        .getState()
+        .commit(pasteLyrics(useProjectStore.getState().lines, useProjectStore.getState().lines));
       expect(useProjectStore.getState().history.length).toBeGreaterThan(0);
       await openProject("b");
       expect(useProjectStore.getState().history).toEqual([]);
