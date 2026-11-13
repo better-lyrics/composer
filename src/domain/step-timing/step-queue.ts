@@ -1,21 +1,33 @@
 import type { LyricLine } from "@/domain/line/model";
-import { sameAddress } from "@/domain/selection/identity";
+import { addressKey, sameAddress } from "@/domain/selection/identity";
 import type { SyllableAddress } from "@/domain/selection/model";
-import { resolveAddresses } from "@/domain/selection/resolve";
+import { type ResolvedAddress, resolveAddresses } from "@/domain/selection/resolve";
 
 // -- Functions ----------------------------------------------------------------
 
 // Structural order, never time order: the timing being fixed is the stale part. Words that are gone drop.
+function compareQueued(a: ResolvedAddress, b: ResolvedAddress): number {
+  return a.lineIndex - b.lineIndex || Number(a.type === "bg") - Number(b.type === "bg") || a.wordIndex - b.wordIndex;
+}
+
 function queueOrder(lines: readonly LyricLine[], selections: readonly SyllableAddress[]): SyllableAddress[] {
-  const unique = selections.filter(
-    (selection, index) => selections.findIndex((other) => sameAddress(other, selection)) === index,
-  );
+  const seen = new Set<string>();
+  const unique = selections.filter((selection) => {
+    const key = addressKey(selection);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
   return resolveAddresses(lines, unique)
-    .sort(
-      (a, b) =>
-        a.lineIndex - b.lineIndex || Number(a.type === "bg") - Number(b.type === "bg") || a.wordIndex - b.wordIndex,
-    )
+    .sort(compareQueued)
     .map(({ lineId, type, syllableId }) => ({ lineId, type, syllableId }));
+}
+
+// True when every queued word still resolves and the queue already runs in structural order.
+function isInQueueOrder(lines: readonly LyricLine[], queue: readonly SyllableAddress[]): boolean {
+  const resolved = resolveAddresses(lines, queue);
+  if (resolved.length !== queue.length) return false;
+  return resolved.every((address, index) => index === 0 || compareQueued(resolved[index - 1], address) < 0);
 }
 
 function nextInQueue(queue: readonly SyllableAddress[], cursor: SyllableAddress): SyllableAddress | null {
@@ -37,4 +49,4 @@ function chainedNext<A extends SyllableAddress>(
 
 // -- Exports ------------------------------------------------------------------
 
-export { chainedNext, nextInQueue, queueOrder };
+export { chainedNext, isInQueueOrder, nextInQueue, queueOrder };

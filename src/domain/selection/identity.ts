@@ -7,6 +7,10 @@ function sameAddress(a: SyllableAddress, b: SyllableAddress): boolean {
   return a.syllableId === b.syllableId && a.lineId === b.lineId && a.type === b.type;
 }
 
+function addressKey(address: SyllableAddress): string {
+  return `${address.lineId}\u0000${address.type}\u0000${address.syllableId}`;
+}
+
 function isAddressed(
   addresses: readonly SyllableAddress[],
   lineId: string,
@@ -18,4 +22,4 @@ function isAddressed(
 
 // -- Exports ------------------------------------------------------------------
 
-export { isAddressed, sameAddress };
+export { addressKey, isAddressed, sameAddress };
