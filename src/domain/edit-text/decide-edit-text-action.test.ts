@@ -8,6 +8,7 @@ import { fieldsOfLine, lineFromFields } from "@/domain/line/line-from-fields";
 import type { LyricLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { decideEditTextAction } from "./decide-edit-text-action";
 
@@ -236,6 +237,35 @@ describe("decideEditTextAction", () => {
 });
 
 describe("regressions", () => {
+  it("regression: text written with the previous split character keeps every split word's syllables", () => {
+    useSettingsStore.setState({ splitCharacter: "|" });
+    const line = createLine({
+      id: "l1",
+      text: "hel|lo world",
+      words: [
+        { text: "hel", sep: "", begin: 1, end: 1.4, joinsNext: true },
+        { text: "lo", sep: " ", begin: 1.4, end: 2 },
+        { text: "world", begin: 2, end: 3 },
+      ],
+    });
+    useSettingsStore.setState({ splitCharacter: "/" });
+    const action = decideEditTextAction({
+      text: "hel|lo world!",
+      defaultAgentId: "v1",
+      lines: [line],
+      groups: [],
+      modalPending: false,
+      splitCharacter: "|",
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    const syllables = timedSyllables(mainTrack(action.finalLines[0]));
+    expect(syllables.map(({ text, begin, end }) => [text, begin, end])).toEqual([
+      ["hel", 1, 1.4],
+      ["lo", 1.4, 2],
+      ["world!", 2, 3],
+    ]);
+  });
+
   it("regression: restores the neighbour word timing after the added word is removed", () => {
     const words = [
       { id: "w7", text: "one", sep: " ", begin: 0, end: 1, joinsNext: false },

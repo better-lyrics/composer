@@ -71,14 +71,14 @@ function syllablesFromText(text: string, track: LineTrack | undefined, splitChar
   const next = textSyllables(text, splitChar);
   const old = track?.syllables ?? [];
   const timed = timedSyllables(track);
-  if (timed.length === old.length && timed.length > 0) return remapWordTextsPreservingTiming(timed, text);
+  if (timed.length === old.length && timed.length > 0) return remapWordTextsPreservingTiming(timed, text, splitChar);
   const oldIndexOf = matchedOldIndices(old, next);
   const untimed = untimedKeepingIds(next, old, oldIndexOf);
   if (timed.length === 0) return untimed;
   const boundary = lastTimedPart(old, oldIndexOf);
   if (boundary < 0) return untimed;
   const typedTimed = syllablesText(next.slice(0, boundary + 1), splitChar).trimEnd();
-  const remapped = remapWordTextsPreservingTiming(timed, typedTimed);
+  const remapped = remapWordTextsPreservingTiming(timed, typedTimed, splitChar);
   const last = remapped.length - 1;
   const closing = { ...remapped[last], sep: next[boundary].sep, joinsNext: next[boundary].joinsNext };
   return [...remapped.with(last, closing), ...untimed.slice(boundary + 1)];

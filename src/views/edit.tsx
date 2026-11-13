@@ -36,6 +36,7 @@ import { EditNotices } from "@/views/edit/edit-notices";
 import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { LinePreviewList } from "@/views/edit/line-preview-list";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
+import { useRenderedSplitCharacter } from "@/views/edit/use-rendered-split-character";
 import { PreviewSelectionBar } from "@/views/edit/preview-selection-bar";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import { useFocusLyricsShortcut } from "@/views/edit/use-focus-lyrics-shortcut";
@@ -79,6 +80,7 @@ const EditPanel: React.FC = () => {
   const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
   const [rawText, setRawText] = useState(() => linesToEditText(lines));
+  const renderedSplitCharacterRef = useRenderedSplitCharacter(setRawText);
   const { textareaRef, showEditText } = useEditTextCaret(rawText, setRawText);
   useFocusLyricsShortcut(textareaRef, isActive);
   const linesSetByUs = useRef<LyricLine[] | null>(null);
@@ -287,6 +289,7 @@ const EditPanel: React.FC = () => {
         lines,
         groups,
         modalPending: modalPendingRef.current,
+        splitCharacter: renderedSplitCharacterRef.current,
       });
 
       // Snap the controlled DOM input back to the source-of-truth rawText whenever

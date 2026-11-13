@@ -42,8 +42,10 @@ function splitIntoWords(text: string): string[] {
   return text.split(/\s+/).flatMap((w) => (w.length > 0 ? w.split(char).filter((p) => p.length > 0) : []));
 }
 
-function splitIntoWordsWithMeta(text: string): { parts: string[]; trailingSpace: boolean[] } {
-  const char = getSplitCharacter();
+function splitIntoWordsWithMeta(
+  text: string,
+  char = getSplitCharacter(),
+): { parts: string[]; trailingSpace: boolean[] } {
   const tokens = text.split(/\s+/).filter((w) => w.length > 0);
   const parts: string[] = [];
   const trailingSpace: boolean[] = [];
