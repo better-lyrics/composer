@@ -10,6 +10,10 @@ interface LyricChange {
   cause: LyricChangeCause;
 }
 
+interface LyricState {
+  lines: readonly LyricLine[];
+}
+
 type LyricChangeListener = (change: LyricChange) => void;
 
 // -- State --------------------------------------------------------------------
@@ -26,10 +30,10 @@ function onLyricsChanged(listener: LyricChangeListener): () => void {
 }
 
 // Every store write that can replace the lines runs through here, so listeners see each change once, after its set.
-function writingLyrics<T>(readLines: () => readonly LyricLine[], cause: LyricChangeCause, write: () => T): T {
-  const before = readLines();
+function writingLyrics<T>(read: () => LyricState, cause: LyricChangeCause, write: () => T): T {
+  const before = read().lines;
   const result = write();
-  const after = readLines();
+  const after = read().lines;
   if (after !== before) for (const listener of listeners) listener({ before, after, cause });
   return result;
 }

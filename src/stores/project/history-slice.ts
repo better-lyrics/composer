@@ -1,5 +1,6 @@
 import { notifySharedTimingCopied } from "@/lib/shared-timing-signals";
 import { commitCommand } from "@/stores/project/commit";
+import { writingLyrics } from "@/stores/project/lyric-change-listeners";
 import { canUndoFrom, commitPendingEdit, redoState, undoState } from "@/stores/project/history-helpers";
 import type { HistoryActions, HistoryState } from "@/stores/project/history-types";
 import type { ProjectStore } from "@/stores/project/types";
@@ -28,14 +29,14 @@ const createHistorySlice: StateCreator<ProjectStore, [], [], HistoryState & Hist
 
   commit: (command, mode = "step") => {
     const { patch, outcome, copiedGroupIds } = commitCommand(get(), command, mode);
-    if (patch) set(patch);
+    if (patch) writingLyrics(get, "command", () => set(patch));
     if (copiedGroupIds.length) notifySharedTimingCopied(copiedGroupIds);
     return outcome;
   },
 
-  undo: () => set(undoState),
+  undo: () => writingLyrics(get, "undo", () => set(undoState)),
 
-  redo: () => set(redoState),
+  redo: () => writingLyrics(get, "redo", () => set(redoState)),
 
   beginLyricBurst: () => ({ lines: get().lines, wasPending: get().isDirtySinceHistory }),
 

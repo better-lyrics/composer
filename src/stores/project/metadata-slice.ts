@@ -14,6 +14,7 @@ import { createSnapPointsInitialState } from "@/stores/project/snap-points-slice
 import type { MetadataActions, MetadataState, ProjectState, ProjectStore } from "@/stores/project/types";
 import { createUiInitialState } from "@/stores/project/ui-slice";
 import { createUnisonLinkInitialState } from "@/stores/project/unison-link-slice";
+import { writingLyrics } from "@/stores/project/lyric-change-listeners";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import type { StateCreator } from "zustand";
 
@@ -52,7 +53,7 @@ function createProjectInitialState(): ProjectState {
 
 // -- Slice --------------------------------------------------------------------
 
-const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & MetadataActions> = (set) => ({
+const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & MetadataActions> = (set, get) => ({
   ...createMetadataInitialState(),
 
   setMetadata: (metadata) =>
@@ -64,7 +65,10 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
 
   startProjectSession: () => set((state) => ({ projectSession: state.projectSession + 1 })),
 
-  reset: () => set((state) => ({ ...createProjectInitialState(), projectSession: state.projectSession + 1 })),
+  reset: () =>
+    writingLyrics(get, "restore", () =>
+      set((state) => ({ ...createProjectInitialState(), projectSession: state.projectSession + 1 })),
+    ),
   resetSongIdentity: (title) =>
     set((state) => ({
       metadata: normalizeLoadedMetadata({ title }),
@@ -78,31 +82,35 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
   restoreSongIdentity: (identity) => set({ ...identity, isDirty: true, isDirtySinceHistory: true }),
 
   replaceLyricsWithHistory: ({ lines, groups, agents, metadata }) =>
-    set((state) => {
-      const { patch } = commitCommand(state, replaceLyrics(lines, groups, agents), "step");
-      if (!patch) return state;
-      const next = metadataAfterImport(state.metadata, state.importedMetadataKeys, metadata);
-      const importsSongDetails = next.importedKeys.length > 0 || (agents?.length ?? 0) > 0;
-      return {
-        ...patch,
-        metadata: next.metadata,
-        importedMetadataKeys: next.importedKeys,
-        hasUnexportedImport: importsSongDetails || state.hasUnexportedImport,
-        ttmlEditState: null,
-      };
-    }),
+    writingLyrics(get, "command", () =>
+      set((state) => {
+        const { patch } = commitCommand(state, replaceLyrics(lines, groups, agents), "step");
+        if (!patch) return state;
+        const next = metadataAfterImport(state.metadata, state.importedMetadataKeys, metadata);
+        const importsSongDetails = next.importedKeys.length > 0 || (agents?.length ?? 0) > 0;
+        return {
+          ...patch,
+          metadata: next.metadata,
+          importedMetadataKeys: next.importedKeys,
+          hasUnexportedImport: importsSongDetails || state.hasUnexportedImport,
+          ttmlEditState: null,
+        };
+      }),
+    ),
 
   applyEditedLyricsWithHistory: (edited) =>
-    set((state) => {
-      const { patch } = commitCommand(state, applyEditedLyrics(edited, state.metadata), "step");
-      if (!patch) return state;
-      const metadata = changedMetadata(state.metadata, edited.metadata);
-      return {
-        ...patch,
-        metadata: { ...state.metadata, ...metadata },
-        importedMetadataKeys: importedKeysAfterWrite(state.importedMetadataKeys, metadata),
-      };
-    }),
+    writingLyrics(get, "command", () =>
+      set((state) => {
+        const { patch } = commitCommand(state, applyEditedLyrics(edited, state.metadata), "step");
+        if (!patch) return state;
+        const metadata = changedMetadata(state.metadata, edited.metadata);
+        return {
+          ...patch,
+          metadata: { ...state.metadata, ...metadata },
+          importedMetadataKeys: importedKeysAfterWrite(state.importedMetadataKeys, metadata),
+        };
+      }),
+    ),
 
   markSongDetailsImported: () => set({ hasUnexportedImport: true, isDirty: true }),
 

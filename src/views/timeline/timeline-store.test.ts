@@ -230,6 +230,14 @@ describe("selection after a lines change", () => {
     expect(useTimelineStore.getState().selectedWords).toBe(kept);
   });
 
+  it("a restore drops every address whose word the restored lyrics do not have", () => {
+    useTimelineStore.getState().setSelectedWords([address("w1"), address("w3")]);
+    useTimelineStore.getState().setEditingWord(address("w3"));
+    useProjectStore.getState().restoreLyrics({ lines: [createLine({ id: "a", text: "Rise up" })] });
+    expect(useTimelineStore.getState().selectedWords).toEqual([]);
+    expect(useTimelineStore.getState().editingWord).toBeNull();
+  });
+
   it("regression: a Step cursor that undo removed moves to the first queued word left", () => {
     splitFirstWord();
     const piece = useProjectStore.getState().lines[0].words?.[1];
