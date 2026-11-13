@@ -119,7 +119,7 @@ function offsetWords(words: readonly WordTiming[] | undefined, offset: number, t
   );
 }
 
-function offsetTimingFields(source: LyricLine, offset: number, target: LyricLine): LineUpdate["updates"] {
+function offsetTiming(source: LyricLine, offset: number, target: LyricLine): LineUpdate["updates"] {
   const backgroundWords = offsetWords(source.backgroundWords, offset, target.backgroundWords);
   const words = offsetWords(source.words, offset, target.words);
   if (words) return { words, backgroundWords, begin: undefined, end: undefined };
@@ -127,6 +127,13 @@ function offsetTimingFields(source: LyricLine, offset: number, target: LyricLine
     return { begin: source.begin + offset, end: source.end + offset, backgroundWords, words: undefined };
   }
   return { words: undefined, begin: undefined, end: undefined, backgroundWords };
+}
+
+// The copied syllables bring their readings, as words carrying them always did.
+function offsetTimingFields(source: LyricLine, offset: number, target: LyricLine): LineUpdate["updates"] {
+  const timing = offsetTiming(source, offset, target);
+  const languages = withReadingsOf(reconcileLine({ ...target, ...timing }), source);
+  return { ...timing, languages: isStructurallyEqual(languages, target.languages) ? target.languages : languages };
 }
 
 // -- Fan out ------------------------------------------------------------------
@@ -214,11 +221,8 @@ function sharedTimingFanOut(
       if (!target) continue;
       const updates = offsetTimingFields(source, offset, target);
       if (hasNegativeTime(updates)) return { ...unchanged, rejected: true };
-      const retimed = reconcileLine({ ...target, ...updates });
-      const reread = withReadingsOf(retimed, source);
-      const sameReadings = isStructurallyEqual(reread, target.languages);
-      if (!timingChanged(target, retimed) && sameReadings) continue;
-      const copied = sameReadings ? retimed : { ...retimed, languages: reread };
+      const copied = reconcileLine({ ...target, ...updates });
+      if (!timingChanged(target, copied) && copied.languages === target.languages) continue;
       const targetIndex = indexById.get(target.id);
       if (targetIndex === undefined) continue;
       if (lines === after) lines = [...after];

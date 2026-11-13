@@ -3,6 +3,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { splitSyncWord } from "@/domain/commands/sync";
+import { realignSharedInstance } from "@/domain/group/shared-placement";
 import type { LineLanguages } from "@/domain/language/model";
 import { trackPieces } from "@/domain/language/pieces";
 import type { RawLine } from "@/domain/line/model";
@@ -58,6 +59,37 @@ describe("readings of instances sharing timing", () => {
     });
     expect(romanSpans(ttml, "L2")).toBe(romanSpans(ttml, "L1"));
     expect(romanSpans(ttml, "L1")).toContain(">neul<");
+  });
+});
+
+describe("readings when an instance takes the shared timing again", () => {
+  it("regression: the realigned instance gets the reference's chosen readings", () => {
+    const syllables = [
+      createWord({ text: "하", begin: 1, end: 1.5, joinsNext: true }),
+      createWord({ text: "늘", begin: 1.5, end: 2 }),
+    ];
+    const reference: RawLine = {
+      ...createLine({ id: "a", text: "하|늘", words: syllables, groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+      languages: {
+        transliteration: {
+          language: "ko-Latn",
+          origin: "manual",
+          sourceFingerprint: "",
+          main: {
+            text: "haneul",
+            pieces: { [syllables[0].id]: { text: "h", joinerAfter: "" }, [syllables[1].id]: { text: "aneul" } },
+          },
+        },
+      },
+    };
+    const own = chorusLine("b", 1, 11);
+    const groups = [createGroup({ id: "g1", sharesTiming: true })];
+
+    const realigned = realignSharedInstance([reference, own], groups, "g1", 1);
+    const update = "updates" in realigned ? realigned.updates[0] : undefined;
+    const b = { ...own, ...update?.updates };
+    const pieces = trackPieces(b, "main");
+    expect(b.words?.map((word) => pieces?.[word.id]?.text)).toEqual(["h", "aneul"]);
   });
 });
 
