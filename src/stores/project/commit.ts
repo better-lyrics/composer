@@ -32,11 +32,12 @@ function withChangedLinesSettled(
   if (before === after) return after;
   const unchangedLines = new Set<RawLine>(before);
   const previousById = derivesText ? new Map(before.map((line) => [line.id, line])) : undefined;
-  return after.map((line) => {
+  const settled = after.map((line) => {
     if (unchangedLines.has(line)) return line;
     const derived = previousById ? withDerivedText(line, splitChar, previousById.get(line.id)) : line;
     return withoutOrphanPieces(derived);
   });
+  return settled.every((line, index) => line === after[index]) ? after : settled;
 }
 
 // A command that touched no line keeps the lines array, so line subscribers and history sharing see no change.
