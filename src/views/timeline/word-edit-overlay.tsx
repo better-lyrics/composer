@@ -2,9 +2,10 @@ import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { effectiveWordTextEdit, getEffectiveLine } from "@/domain/line/effective-words";
+import { typeWordText } from "@/domain/commands/word-structure";
+import { getEffectiveLine } from "@/domain/line/effective-words";
 import { trackWords } from "@/domain/line/tracks";
+import { addressOf } from "@/domain/selection/resolve";
 import { wordBlockId } from "@/views/timeline/word-block-id";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -23,7 +24,6 @@ interface WordEditOverlayProps {
 const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, syllableId, type, scrollContainerRef }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const rawLines = useProjectStore((s) => s.lines);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const clearEditingWord = useTimelineStore((s) => s.clearEditingWord);
 
   const rawLine = rawLines.find((l) => l.id === lineId);
@@ -80,20 +80,15 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, syllableId, t
 
   const handleCommit = useCallback(
     (value: string) => {
-      if (!line || !wordsArray || !word) return;
+      if (!line || !word) return;
       const trimmed = value.trim();
       if (trimmed && trimmed !== word.text) {
-        const updatedWords = [...wordsArray];
-        updatedWords[wordIndex] = { ...word, text: trimmed, sep: word.sep.endsWith(" ") ? " " : "" };
-        updateLineWithHistory(
-          lineId,
-          type === "word" ? effectiveWordTextEdit(line, updatedWords) : manualBackgroundWordEdit(updatedWords),
-        );
+        useProjectStore.getState().commit(typeWordText(addressOf(line, type, word), trimmed));
         noteGuideSignal("timeline.editText");
       }
       clearEditingWord();
     },
-    [line, wordsArray, word, wordIndex, type, lineId, updateLineWithHistory, clearEditingWord],
+    [line, word, type, clearEditingWord],
   );
 
   const handleKeyDown = useCallback(

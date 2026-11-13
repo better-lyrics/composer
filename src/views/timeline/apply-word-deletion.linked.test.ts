@@ -4,7 +4,7 @@
 import type { LyricLine } from "@/domain/line/model";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
-import { applyWordDeletion, type DeletionSelection } from "@/views/timeline/apply-word-deletion";
+import { applyWordDeletion, type DeletionSelection } from "@/domain/word/apply-word-deletion";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------

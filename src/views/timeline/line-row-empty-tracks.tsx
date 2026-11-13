@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { IconPlus } from "@tabler/icons-react";
 import type { TimeRange } from "@/domain/group/shared-timing";
-import { backgroundFields, manualBackgroundWordEdit } from "@/domain/line/background";
+import { fillEmptyTrack } from "@/domain/commands/word-structure";
 import type { LyricLine } from "@/domain/line/model";
 import { addressOf } from "@/domain/selection/resolve";
 import { newWordId } from "@/domain/word/id";
@@ -68,14 +68,14 @@ function addWordAt(line: LyricLine, time: number): void {
   const range = lineRangeOf(line);
   const slot = insertionSlotAt(range, time);
   if (!slot) return;
-  const { updateLineWithHistory } = useProjectStore.getState();
+  const { commit } = useProjectStore.getState();
   const timedText = createTrackWordsFromTextAt(line, "word", slot.begin, range.max);
   if (timedText) {
-    updateLineWithHistory(line.id, { words: timedText });
+    commit(fillEmptyTrack({ lineId: line.id, type: "word", timedText }));
     return;
   }
   const placeholder: WordTiming = { id: newWordId(), text: "...", sep: "", begin: slot.begin, end: slot.end };
-  updateLineWithHistory(line.id, { words: [placeholder] });
+  commit(fillEmptyTrack({ lineId: line.id, type: "word", placeholder }));
   useTimelineStore.getState().setEditingWord(addressOf(line, "word", placeholder));
 }
 
@@ -83,14 +83,14 @@ function addBackgroundWordAt(line: LyricLine, time: number): void {
   const range = lineRangeOf(line);
   const slot = insertionSlotAt(range, time);
   if (!slot) return;
-  const { updateLineWithHistory } = useProjectStore.getState();
+  const { commit } = useProjectStore.getState();
   const timedText = createTrackWordsFromTextAt(line, "bg", slot.begin, range.max);
   if (timedText) {
-    updateLineWithHistory(line.id, manualBackgroundWordEdit(timedText));
+    commit(fillEmptyTrack({ lineId: line.id, type: "bg", timedText }));
     return;
   }
   const placeholder: WordTiming = { id: newWordId(), text: "...", sep: "", begin: slot.begin, end: slot.end };
-  updateLineWithHistory(line.id, backgroundFields({ text: placeholder.text, words: [placeholder], source: "manual" }));
+  commit(fillEmptyTrack({ lineId: line.id, type: "bg", placeholder }));
   useTimelineStore.getState().setEditingWord(addressOf(line, "bg", placeholder));
 }
 

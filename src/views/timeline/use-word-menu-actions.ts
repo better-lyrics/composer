@@ -1,9 +1,8 @@
 import { useCallback } from "react";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
+import { fillEmptyTrack, insertWord } from "@/domain/commands/word-structure";
 import { trackWords } from "@/domain/line/tracks";
 import { addressOf, toAddress } from "@/domain/selection/resolve";
 import { newWordId } from "@/domain/word/id";
-import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { useAudioStore } from "@/stores/audio";
@@ -22,7 +21,6 @@ import { runExplicitToggle, runSyllableMerge, runWordMerge } from "@/views/timel
 function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () => void) {
   const { lines, explicitToggle, wordCommandTargets, mergeInfo, groupedWordInfo, clickedSelectionCount } = targets;
   const contextMenu = useTimelineStore((s) => s.contextMenu);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
 
   const handleEditWord = useCallback(() => {
@@ -79,24 +77,18 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
     const timedText = createTrackWordsFromTextAt(line, type, slot.begin, range.max);
     if (timedText) {
-      updateLineWithHistory(lineId, type === "word" ? { words: timedText } : manualBackgroundWordEdit(timedText));
+      useProjectStore.getState().commit(fillEmptyTrack({ lineId, type, timedText }));
       clearContextMenu();
       return;
     }
 
     const newWord: WordTiming = { id: newWordId(), text: "...", sep: " ", begin: slot.begin, end: slot.end };
-    const words = mergeWordsIntoTrack(existingWords ?? [], [newWord]);
-
-    if (type === "word") {
-      updateLineWithHistory(lineId, { words });
-    } else {
-      updateLineWithHistory(lineId, manualBackgroundWordEdit(words));
-    }
+    useProjectStore.getState().commit(insertWord(lineId, type, newWord));
     const timeline = useTimelineStore.getState();
     timeline.clearSelection();
     timeline.setEditingWord(addressOf(line, type, newWord));
     clearContextMenu();
-  }, [contextMenu, lines, duration, updateLineWithHistory, clearContextMenu]);
+  }, [contextMenu, lines, duration, clearContextMenu]);
 
   const handleMergeSyllables = useCallback(() => {
     const syllableMerge = wordCommandTargets?.syllableMerge;

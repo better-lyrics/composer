@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
-import { applyWordDeletion, type DeletionSelection } from "./apply-word-deletion";
+import { applyWordDeletion, type DeletionSelection } from "@/domain/word/apply-word-deletion";
 
 describe("applyWordDeletion", () => {
   it("regression: deleting a timed word on a partly synced line keeps the untimed lyrics", () => {
