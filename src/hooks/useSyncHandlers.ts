@@ -113,15 +113,10 @@ function useSyncHandlers({
         skippedInstances,
       };
       const anchor = anchorGesture(lines, gesture, { ...ctx, groups: useProjectStore.getState().groups });
-      const duration = useAudioStore.getState().duration;
-      if (
-        anchor &&
-        isRefused(
-          useProjectStore
-            .getState()
-            .commit(placeInstance(anchor.groupId, anchor.instanceIdx, anchor.start, duration, anchor.precedingUpdates)),
-        )
-      ) {
+      const { duration } = useAudioStore.getState();
+      const placing =
+        anchor && placeInstance(anchor.groupId, anchor.instanceIdx, anchor.start, duration, anchor.precedingUpdates);
+      if (placing && isRefused(useProjectStore.getState().commit(placing))) {
         showPlacementBlockedToast();
         return false;
       }
