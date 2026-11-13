@@ -18,18 +18,10 @@ const LYRIC_FIELD = /\b(?:lines|groups|agents)\b/;
 const GENERIC_LINE_SETTER =
   /\b(?:setLines|setLinesWithHistory|updateLine|updateLineWithHistory|updateLinesWithHistory|editLines|patchLines|replaceLines)\b/;
 const BURST_INTERNALS = /\b(?:commitPendingLineEdit|applyLineUpdatesToCurrentStep|isDirtySinceHistory)\b/;
-const NAMED_COMMAND_VIEWS = [
-  "views/edit",
-  "views/languages",
-  "views/sync",
-  "views/lyrics-import-modal",
-  "views/export",
-  "views/grouping",
-  "hooks/useSyncHandlers.ts",
-  "lib/language-auto-refresh.ts",
-  "stores/alignment",
-  "utils/timing",
-];
+const RAW_LYRIC_STATE_WRITE = /useProjectStore\.setState\([^;]*\b(?:lines|groups|agents)\b/;
+const LYRIC_PATH_OWNERS = ["stores/project/", "domain/commands/"];
+// Test fixtures seed the store directly; they never ship.
+const TEST_FIXTURE = /^test\/|\.test-helpers\.tsx?$|-harness\.tsx?$/;
 const LYRIC_WRITE_OWNERS = new Set(["stores/project/commit.ts", "stores/project/history-helpers.ts"]);
 const NON_LYRIC_HISTORY_WRITERS = new Map<string, string>([
   ["stores/project/beat-grid-slice.ts", "writes the beat grid only"],
@@ -84,23 +76,16 @@ describe("lyric edits reach history only through commit", () => {
   });
 });
 
-describe("the Timeline changes lyrics only through named commands", () => {
-  it("never calls the generic line setters", () => {
-    const offenders = productionSources("views/timeline").flatMap(({ relPath, code }) =>
-      matchLines(code, GENERIC_LINE_SETTER).map((line) => `${relPath}:${line}`),
-    );
-    expect(offenders).toEqual([]);
-  });
-});
-
-describe("the other views change lyrics only through named commands", () => {
-  it("never call the generic line setters or read the pending burst", () => {
+describe("outside the project store, lyrics change only through commit and restoreLyrics", () => {
+  it("never calls a generic line setter, reads the pending burst or sets lyric state directly", () => {
     const offenders = productionSources("")
-      .filter(({ relPath }) => NAMED_COMMAND_VIEWS.some((prefix) => relPath.startsWith(prefix)))
+      .filter(
+        ({ relPath }) => !TEST_FIXTURE.test(relPath) && !LYRIC_PATH_OWNERS.some((prefix) => relPath.startsWith(prefix)),
+      )
       .flatMap(({ relPath, code }) =>
-        [...matchLines(code, GENERIC_LINE_SETTER), ...matchLines(code, BURST_INTERNALS)].map(
-          (line) => `${relPath}:${line}`,
-        ),
+        [GENERIC_LINE_SETTER, BURST_INTERNALS, RAW_LYRIC_STATE_WRITE]
+          .flatMap((pattern) => matchLines(code, pattern))
+          .map((line) => `${relPath}:${line}`),
       );
     expect(offenders).toEqual([]);
   });
