@@ -146,6 +146,12 @@ function boundariesHandedBack(words: WordTiming[], deleted: Set<number>): Map<nu
   return handed;
 }
 
+// A copy of a syllable whose next groupmate stays behind joins nothing, so a paste never glues it to a stranger.
+function copiedSyllable(words: readonly WordTiming[], index: number, copied: ReadonlySet<number>): WordTiming {
+  const word = words[index];
+  return joinsNextAt(words, index) && copied.has(index + 1) ? { ...word } : { ...word, joinsNext: false };
+}
+
 function hasIntraGroupGap(words: WordTiming[]): boolean {
   for (let i = 0; i < words.length - 1; i++) {
     if (words[i].joinsNext && words[i].end < words[i + 1].begin) return true;
@@ -173,6 +179,7 @@ export {
   absorbDeletedSyllablesIntoNeighbors,
   closeIntraGroupGaps,
   computeSyllableGroups,
+  copiedSyllable,
   expandSelectionToGroupmates,
   getSyllablePositions,
   hasIntraGroupGap,

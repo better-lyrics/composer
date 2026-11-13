@@ -7,6 +7,7 @@ import {
   absorbDeletedSyllablesIntoNeighbors,
   closeIntraGroupGaps,
   computeSyllableGroups,
+  copiedSyllable,
   expandSelectionToGroupmates,
   getSyllablePositions,
   hasIntraGroupGap,
@@ -389,5 +390,23 @@ describe("hasIntraGroupGap", () => {
 
   it("returns false for an empty array", () => {
     expect(hasIntraGroupGap([])).toBe(false);
+  });
+});
+
+// -- copiedSyllable ------------------------------------------------------------
+
+describe("copiedSyllable", () => {
+  const words = [
+    { id: "w110", text: "hel", sep: "", begin: 0, end: 0.3, joinsNext: true },
+    { id: "w111", text: "lo", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+    { id: "w112", text: "world", sep: "", begin: 0.6, end: 1, joinsNext: false },
+  ];
+
+  it("stops joining when its next groupmate is not copied with it", () => {
+    expect(copiedSyllable(words, 0, new Set([0, 2])).joinsNext).toBe(false);
+  });
+
+  it("keeps the join when the next groupmate is copied too", () => {
+    expect(copiedSyllable(words, 0, new Set([0, 1])).joinsNext).toBe(true);
   });
 });
