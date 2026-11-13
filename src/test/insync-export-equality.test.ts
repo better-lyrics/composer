@@ -120,8 +120,17 @@ function withoutGroupIds(line: SavedLine): SavedLine {
 
 // Saved ids are rewritten one per word run, so a reload must read the same joins the record spelled.
 function expectSameJoins(resaved: SavedLine, saved: SavedLine, name: string): void {
-  expect(joinsFromWords(resaved.words ?? []), name).toEqual(joinsFromWords(saved.words ?? []));
-  expect(joinsFromWords(resaved.backgroundWords ?? []), name).toEqual(joinsFromWords(saved.backgroundWords ?? []));
+  for (const track of ["words", "backgroundWords"] as const) {
+    const before = saved[track] ?? [];
+    const after = resaved[track] ?? [];
+    expect(joinsFromWords(after), name).toEqual(joinsFromWords(before));
+    if (!before.some((word) => word.syllableGroupId !== undefined)) {
+      expect(
+        after.some((word) => word.syllableGroupId !== undefined),
+        name,
+      ).toBe(false);
+    }
+  }
 }
 
 // A load may only put back syllable marks: everything else, the language fingerprint and the export stay.

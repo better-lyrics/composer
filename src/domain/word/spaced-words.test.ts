@@ -53,6 +53,36 @@ describe("spaced words", () => {
     );
   });
 
+  it("writes no group ids when the spacing already reads back the same joins", () => {
+    const words = wordsFromSpaced([
+      { text: "Pa", begin: 1, end: 1.2 },
+      { text: "per ", begin: 1.2, end: 1.5 },
+      { text: "boats", begin: 1.6, end: 2 },
+    ]);
+    expect(spacedFromWords(words).some((word) => "syllableGroupId" in word)).toBe(false);
+  });
+
+  it("puts group ids only on joined runs when the spacing would misread a join", () => {
+    const words = wordsFromSpaced([
+      { text: "far ", begin: 1, end: 1.2, syllableGroupId: "x" },
+      { text: "away", begin: 1.2, end: 1.5, syllableGroupId: "x" },
+      { text: "夜", begin: 1.6, end: 2 },
+      { text: "空", begin: 2, end: 2.4 },
+    ]);
+    expect(spacedFromWords(words).map((word) => word.syllableGroupId)).toEqual(["w0", "w0", undefined, undefined]);
+  });
+
+  it("marks only the first misread word when nothing joins", () => {
+    const words = wordsFromSpaced([
+      { text: "夜", begin: 1, end: 1.5, syllableGroupId: "a" },
+      { text: "空", begin: 1.5, end: 2, syllableGroupId: "b" },
+      { text: "星", begin: 2, end: 2.5, syllableGroupId: "c" },
+    ]);
+    const saved = spacedFromWords(words);
+    expect(saved.map((word) => word.syllableGroupId)).toEqual(["w0", undefined, undefined]);
+    expect(wordsFromSpaced(saved).map((word) => word.joinsNext)).toEqual([false, false, false]);
+  });
+
   it("never writes ids into saved words", () => {
     const words = wordsFromSpaced([
       { text: "Paper ", begin: 1, end: 2 },
