@@ -21,6 +21,7 @@ function mappedWords(fragments: string[], start: number): WordTiming[] {
     id: newWordId(),
     text: ["あ", "い", "う", "え", "お"][index],
     sep: index === 3 ? " " : "",
+    joinsNext: index !== 3 && index < fragments.length - 1,
     begin: start + index,
     end: start + index + 0.75,
     explicit: true,

@@ -3,7 +3,7 @@ import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track"
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { storedWordAddress } from "@/test/word-address";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
@@ -21,7 +21,10 @@ function flushPairLine() {
   return createLine({
     id: "l1",
     text: "hello world",
-    words: [createWord({ text: "hello", sep: " ", begin: 0, end: 1 }), createWord({ text: "world", begin: 1, end: 2 })],
+    words: createWords([
+      { text: "hello", sep: " ", begin: 0, end: 1 },
+      { text: "world", begin: 1, end: 2 },
+    ]),
   });
 }
 
@@ -174,7 +177,10 @@ describe("TimelineInfoPanel cursor buttons · rolling edit", () => {
         createLine({
           id: "l1",
           text: "ever",
-          words: [createWord({ text: "ev", begin: 0, end: 1 }), createWord({ text: "er", begin: 1, end: 2 })],
+          words: createWords([
+            { text: "ev", begin: 0, end: 1 },
+            { text: "er", begin: 1, end: 2 },
+          ]),
         }),
       ],
     });
@@ -241,7 +247,10 @@ describe("TimelineInfoPanel selection copy", () => {
         createLine({
           id: "w",
           text: "a b",
-          words: [createWord({ text: "a", sep: " ", begin: 0, end: 1 }), createWord({ text: "b", begin: 1, end: 2 })],
+          words: createWords([
+            { text: "a", sep: " ", begin: 0, end: 1 },
+            { text: "b", begin: 1, end: 2 },
+          ]),
         }),
         { id: "ls", text: "line synced", agentId: "v1", begin: 3, end: 5 },
       ],

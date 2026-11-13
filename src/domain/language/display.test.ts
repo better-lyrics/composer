@@ -9,10 +9,10 @@ const line: LyricLine = {
   agentId: "v1",
   text: "걸음은 Like a dance",
   words: [
-    { id: "w1", text: "걸음은", sep: " ", begin: 0, end: 1 },
-    { id: "w2", text: "Like", sep: " ", begin: 1, end: 2 },
-    { id: "w3", text: "a", sep: " ", begin: 2, end: 3 },
-    { id: "w4", text: "dance", sep: "", begin: 3, end: 4 },
+    { id: "w1", text: "걸음은", sep: " ", begin: 0, end: 1, joinsNext: false },
+    { id: "w2", text: "Like", sep: " ", begin: 1, end: 2, joinsNext: false },
+    { id: "w3", text: "a", sep: " ", begin: 2, end: 3, joinsNext: false },
+    { id: "w4", text: "dance", sep: "", begin: 3, end: 4, joinsNext: false },
   ],
   transliteration: {
     language: "ko-Latn",
@@ -26,8 +26,17 @@ const line: LyricLine = {
 describe("language display alignment", () => {
   it("includes literal dashes in untimed Sync labels as well as timed foreground and background slots", () => {
     const words = [
-      { id: "w5", text: "空", sep: "", begin: 0, end: 1, transliteration: "so", transliterationJoinerAfter: "-" },
-      { id: "w6", text: "風", sep: "", begin: 1, end: 2, transliteration: "ra" },
+      {
+        id: "w5",
+        text: "空",
+        sep: "",
+        begin: 0,
+        end: 1,
+        transliteration: "so",
+        transliterationJoinerAfter: "-",
+        joinsNext: true,
+      },
+      { id: "w6", text: "風", sep: "", begin: 1, end: 2, transliteration: "ra", joinsNext: false },
     ];
     const dashed: LyricLine = {
       ...line,
@@ -50,9 +59,9 @@ describe("language display alignment", () => {
     const backgroundOnly: LyricLine = {
       ...line,
       text: "Hello",
-      words: [{ id: "w7", text: "Hello", sep: "", begin: 1, end: 2, transliteration: "stale" }],
+      words: [{ id: "w7", text: "Hello", sep: "", begin: 1, end: 2, transliteration: "stale", joinsNext: false }],
       backgroundText: "空",
-      backgroundWords: [{ id: "w8", text: "空", sep: "", begin: 1, end: 2 }],
+      backgroundWords: [{ id: "w8", text: "空", sep: "", begin: 1, end: 2, joinsNext: false }],
       transliteration: { ...line.transliteration!, text: "", backgroundText: "sora", segments: [] },
     };
     const display = getLanguageDisplayLine(backgroundOnly, "transliteration");
@@ -91,8 +100,8 @@ describe("language display alignment", () => {
       agentId: "v1",
       text: "한국 노래",
       words: [
-        { id: "w9", text: "한국", sep: " ", transliteration: "hanguk", begin: 0, end: 1 },
-        { id: "w10", text: "노래", sep: "", transliteration: "norae", begin: 1, end: 2 },
+        { id: "w9", text: "한국", sep: " ", transliteration: "hanguk", begin: 0, end: 1, joinsNext: false },
+        { id: "w10", text: "노래", sep: "", transliteration: "norae", begin: 1, end: 2, joinsNext: false },
       ],
       transliteration: {
         language: "ko-Latn",

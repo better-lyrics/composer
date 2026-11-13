@@ -83,7 +83,14 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
       return;
     }
 
-    const newWord: WordTiming = { id: newWordId(), text: "...", sep: " ", begin: slot.begin, end: slot.end };
+    const newWord: WordTiming = {
+      id: newWordId(),
+      text: "...",
+      sep: " ",
+      begin: slot.begin,
+      end: slot.end,
+      joinsNext: false,
+    };
     useProjectStore.getState().commit(insertWord(lineId, type, newWord));
     const timeline = useTimelineStore.getState();
     timeline.clearSelection();

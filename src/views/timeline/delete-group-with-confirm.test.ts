@@ -30,9 +30,9 @@ function seedChorusGroup() {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { id: "w1", text: "I", sep: " ", begin: 30, end: 30.4 },
-          { id: "w2", text: "love", sep: " ", begin: 30.4, end: 30.8 },
-          { id: "w3", text: "you", sep: "", begin: 30.8, end: 31.2 },
+          { id: "w1", text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false },
+          { id: "w2", text: "love", sep: " ", begin: 30.4, end: 30.8, joinsNext: false },
+          { id: "w3", text: "you", sep: "", begin: 30.8, end: 31.2, joinsNext: false },
         ],
       },
       {
@@ -43,9 +43,9 @@ function seedChorusGroup() {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { id: "w4", text: "I", sep: " ", begin: 60, end: 60.4 },
-          { id: "w5", text: "love", sep: " ", begin: 60.4, end: 60.8 },
-          { id: "w6", text: "you", sep: "", begin: 60.8, end: 61.2 },
+          { id: "w4", text: "I", sep: " ", begin: 60, end: 60.4, joinsNext: false },
+          { id: "w5", text: "love", sep: " ", begin: 60.4, end: 60.8, joinsNext: false },
+          { id: "w6", text: "you", sep: "", begin: 60.8, end: 61.2, joinsNext: false },
         ],
       },
     ],

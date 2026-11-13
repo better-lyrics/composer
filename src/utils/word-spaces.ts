@@ -18,8 +18,10 @@ function trimTrailingSpaceFromLast(words: WordTiming[]): WordTiming[] {
 
 function withTrailingSpace(words: WordTiming[]): WordTiming[] {
   const last = words.at(-1);
-  if (!last || last.sep.endsWith(" ")) return words;
-  return [...words.slice(0, -1), { ...last, sep: `${last.sep} ` }];
+  if (!last) return words;
+  const { sep, joinsNext } = last;
+  if (sep.endsWith(" ") && !joinsNext) return words;
+  return [...words.slice(0, -1), { ...last, sep: sep.endsWith(" ") ? sep : `${sep} `, joinsNext: false }];
 }
 
 function resolveOverlapsForward(words: WordTiming[], duration: number): WordTiming[] {

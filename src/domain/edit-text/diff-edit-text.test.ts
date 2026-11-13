@@ -37,7 +37,7 @@ describe("diffEditTextChange", () => {
         id: "L1",
         text: "I love",
         agentId: "v1",
-        words: [{ id: "w1", text: "I love", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w1", text: "I love", sep: "", begin: 0, end: 1, joinsNext: false }],
       },
     ];
     const next: LyricLine[] = [{ id: "L1", text: "I luv", agentId: "v1" }];
@@ -195,7 +195,7 @@ describe("propagateContentUpdates", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        words: [{ id: "w2", text: "I love", sep: "", begin: 10, end: 11 }],
+        words: [{ id: "w2", text: "I love", sep: "", begin: 10, end: 11, joinsNext: false }],
       },
     ];
     const out = propagateContentUpdates(lines, lines, [
@@ -250,9 +250,9 @@ describe("propagateContentUpdates", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { id: "w3", text: "I", sep: " ", begin: 10, end: 10.4 },
-          { id: "w4", text: "love", sep: " ", begin: 10.4, end: 10.8 },
-          { id: "w5", text: "you", sep: "", begin: 10.8, end: 11.2 },
+          { id: "w3", text: "I", sep: " ", begin: 10, end: 10.4, joinsNext: false },
+          { id: "w4", text: "love", sep: " ", begin: 10.4, end: 10.8, joinsNext: false },
+          { id: "w5", text: "you", sep: "", begin: 10.8, end: 11.2, joinsNext: false },
         ],
       },
       {
@@ -263,9 +263,9 @@ describe("propagateContentUpdates", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { id: "w6", text: "I", sep: " ", begin: 30, end: 30.5 },
-          { id: "w7", text: "love", sep: " ", begin: 30.5, end: 31.0 },
-          { id: "w8", text: "you", sep: "", begin: 31.0, end: 31.5 },
+          { id: "w6", text: "I", sep: " ", begin: 30, end: 30.5, joinsNext: false },
+          { id: "w7", text: "love", sep: " ", begin: 30.5, end: 31.0, joinsNext: false },
+          { id: "w8", text: "you", sep: "", begin: 31.0, end: 31.5, joinsNext: false },
         ],
       },
     ];
@@ -274,9 +274,9 @@ describe("propagateContentUpdates", () => {
         ...oldLines[0],
         text: "I luv you",
         words: [
-          { id: "w9", text: "I", sep: " ", begin: 10, end: 10.4 },
-          { id: "w10", text: "luv", sep: " ", begin: 10.4, end: 10.8 },
-          { id: "w11", text: "you", sep: "", begin: 10.8, end: 11.2 },
+          { id: "w9", text: "I", sep: " ", begin: 10, end: 10.4, joinsNext: false },
+          { id: "w10", text: "luv", sep: " ", begin: 10.4, end: 10.8, joinsNext: false },
+          { id: "w11", text: "you", sep: "", begin: 10.8, end: 11.2, joinsNext: false },
         ],
       }),
       oldLines[1],

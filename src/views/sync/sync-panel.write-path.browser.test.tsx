@@ -9,7 +9,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { isMac } from "@/utils/platform";
@@ -288,10 +288,10 @@ describe("T5 background vocals after re-syncing the main line", () => {
         begin: 26,
         end: 28,
         backgroundText: "oh oh",
-        backgroundWords: [
-          createWord({ text: "oh", sep: " ", begin: 26.5, end: 27.25 }),
-          createWord({ text: "oh", begin: 27.25, end: 28 }),
-        ],
+        backgroundWords: createWords([
+          { text: "oh", sep: " ", begin: 26.5, end: 27.25 },
+          { text: "oh", begin: 27.25, end: 28 },
+        ]),
       }),
     ]);
     await render(<SyncPanel />);

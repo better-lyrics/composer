@@ -1,5 +1,5 @@
 import { splitTrailingWhitespace } from "insync/from-words";
-import { computeByGroupId } from "@/domain/word/syllable-groups";
+import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -41,7 +41,7 @@ function runSpan(words: WordTiming[], indices: number[]): IndexSpan | null {
 }
 
 function groupSpanAt(words: WordTiming[], index: number): IndexSpan | null {
-  const group = computeByGroupId(words).find((g) => index >= g.startIndex && index <= g.endIndex);
+  const group = computeSyllableGroups(words).find((g) => index >= g.startIndex && index <= g.endIndex);
   return group ? { start: group.startIndex, end: group.endIndex } : null;
 }
 
@@ -67,22 +67,18 @@ function expandedToWholeGroups(words: WordTiming[], span: IndexSpan): IndexSpan 
   };
 }
 
-function mergedWord(run: WordTiming[], syllableGroupId: string | undefined): WordTiming {
+// A merged run ends where its last word ended, so it joins the next word only when that one did.
+function mergedWord(run: WordTiming[]): WordTiming {
   const first = run[0];
   const last = run[run.length - 1];
-  const {
-    syllableGroupId: _group,
-    transliteration: _transliteration,
-    transliterationJoinerAfter: _joiner,
-    ...rest
-  } = first;
+  const { transliteration: _transliteration, transliterationJoinerAfter: _joiner, ...rest } = first;
   const transliteration = mergedTransliteration(run);
   return {
     ...rest,
     ...splitTrailingWhitespace(mergeWordText(run.map((word) => word.text + word.sep))),
     begin: first.begin,
     end: last.end,
-    ...(syllableGroupId !== undefined ? { syllableGroupId } : {}),
+    joinsNext: last.joinsNext,
     ...(transliteration ? { transliteration } : {}),
     ...(last.transliterationJoinerAfter !== undefined
       ? { transliterationJoinerAfter: last.transliterationJoinerAfter }
@@ -100,8 +96,7 @@ function mergeWordRun(words: WordTiming[], indices: number[]): WordTiming[] | nu
   const span = mergedSpan(words, indices);
   if (!span) return null;
   const { start, end } = span;
-  const groupId = isPartialSyllableRun(words, indices) ? words[start].syllableGroupId : undefined;
-  const merged = mergedWord(words.slice(start, end + 1), groupId);
+  const merged = mergedWord(words.slice(start, end + 1));
   return [...words.slice(0, start), merged, ...words.slice(end + 1)];
 }
 

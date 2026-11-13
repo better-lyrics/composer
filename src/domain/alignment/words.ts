@@ -2,7 +2,6 @@ import { splitCjkPart } from "@/domain/alignment/cjk";
 import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { splitTrailingWhitespace } from "insync/from-words";
-import { nanoid } from "nanoid";
 
 // -- Types --------------------------------------------------------------------
 
@@ -53,14 +52,14 @@ function groupAlignmentWords(parts: string[], trailingSpace: boolean[]): Alignme
 }
 
 // Regroups a word-synced line's timings into whole words: a word runs until a
-// part ends with a space, so hand-split syllables stay together.
+// part stops joining the next, so hand-split syllables stay together.
 function groupTimedWords(timings: readonly WordTiming[]): AlignmentWord[] {
   const words: AlignmentWord[] = [];
   let current: string[] = [];
   for (let i = 0; i < timings.length; i++) {
     current.push(timings[i].text);
     const trailingSpace = timings[i].sep !== "";
-    if (trailingSpace || i === timings.length - 1) {
+    if (!timings[i].joinsNext || i === timings.length - 1) {
       words.push({ text: current.join(""), parts: current, trailingSpace });
       current = [];
     }
@@ -96,9 +95,8 @@ function partPieces(part: string, interval: WordInterval, split: PartSplit | und
 }
 
 // Word timings for a line-timed line, one per part (or per syllable of a part
-// the audio split), with the space after each word kept on its last piece.
-// Every split word gets its own syllable group: a line groups syllables by id
-// as soon as any word has one, so a word without one would come apart.
+// the audio split), with the space after each word kept on its last piece and
+// every piece of a split word joined to the next.
 function timingsFromParts(
   words: AlignmentWord[],
   partIntervals: WordInterval[],
@@ -109,7 +107,6 @@ function timingsFromParts(
   let index = 0;
   for (const { parts, trailingSpace } of words) {
     const pieces = parts.flatMap((part) => partPieces(part, partIntervals[index], splitOf.get(index++)));
-    const groupId = pieces.length > 1 ? nanoid(8) : undefined;
     pieces.forEach((piece, k) => {
       const text = k === pieces.length - 1 && trailingSpace ? `${piece.text} ` : piece.text;
       timings.push({
@@ -117,7 +114,7 @@ function timingsFromParts(
         ...splitTrailingWhitespace(text),
         begin: piece.begin,
         end: piece.end,
-        ...(groupId ? { syllableGroupId: groupId } : {}),
+        joinsNext: k < pieces.length - 1,
       });
     });
   }

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
-import { backgroundTrack, mainTrack, timedSyllables } from "@/domain/line/track";
+import { mainTrack, timedSyllables } from "@/domain/line/track";
+import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -26,9 +27,9 @@ describe("useTimelineDnd · live shift state", () => {
           text: "every",
           agentId: "v1",
           words: [
-            { id: "w1", text: "ev", sep: "", begin: 0, end: 0.3, syllableGroupId: "g" },
-            { id: "w2", text: "er", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g" },
-            { id: "w3", text: "y", sep: " ", begin: 0.6, end: 0.9, syllableGroupId: "g" },
+            { id: "w1", text: "ev", sep: "", begin: 0, end: 0.3, joinsNext: true },
+            { id: "w2", text: "er", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+            { id: "w3", text: "y", sep: " ", begin: 0.6, end: 0.9, joinsNext: false },
           ],
         },
       ],
@@ -54,10 +55,7 @@ describe("useTimelineDnd · live shift state", () => {
     const after = useProjectStore.getState().lines[0];
     expect(timedSyllables(mainTrack(after)).length).toBe(0);
     expect(after.backgroundWords?.length).toBe(3);
-    const sharedId = after.backgroundWords?.[0].syllableGroupId;
-    expect(sharedId).toBeDefined();
-    expect(timedSyllables(backgroundTrack(after))[1].syllableGroupId).toBe(sharedId);
-    expect(timedSyllables(backgroundTrack(after))[2].syllableGroupId).toBe(sharedId);
+    expect(computeSyllableGroups(after.backgroundWords ?? [])).toMatchObject([{ startIndex: 0, endIndex: 2 }]);
   });
 
   it("shifts every groupmate by the same delta when a non-leading syllable is shift-dragged", async () => {
@@ -94,10 +92,7 @@ describe("useTimelineDnd · live shift state", () => {
     for (let i = 1; i < words.length; i++) {
       expect(words[i].begin).toBeCloseTo(words[i - 1].end, 5);
     }
-    const sharedId = words[0].syllableGroupId;
-    expect(sharedId).toBeDefined();
-    expect(words[1].syllableGroupId).toBe(sharedId);
-    expect(words[2].syllableGroupId).toBe(sharedId);
+    expect(computeSyllableGroups(words)).toMatchObject([{ startIndex: 0, endIndex: 2 }]);
   });
 
   it("moves the whole group when shift is released mid-drag, even though pointerdown had shift", async () => {
@@ -114,9 +109,6 @@ describe("useTimelineDnd · live shift state", () => {
     const after = useProjectStore.getState().lines[0];
     expect(timedSyllables(mainTrack(after)).length).toBe(0);
     expect(after.backgroundWords?.length).toBe(3);
-    const sharedId = after.backgroundWords?.[0].syllableGroupId;
-    expect(sharedId).toBeDefined();
-    expect(timedSyllables(backgroundTrack(after))[1].syllableGroupId).toBe(sharedId);
-    expect(timedSyllables(backgroundTrack(after))[2].syllableGroupId).toBe(sharedId);
+    expect(computeSyllableGroups(after.backgroundWords ?? [])).toMatchObject([{ startIndex: 0, endIndex: 2 }]);
   });
 });

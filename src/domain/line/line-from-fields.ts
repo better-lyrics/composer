@@ -61,7 +61,12 @@ function untimedRest(text: string, words: WordTiming[]): string {
 
 function untimedSyllables(text: string): UntimedSyllable[] {
   const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
-  return parts.map((part, index) => ({ id: newWordId(), text: part, sep: trailingSpace[index] ? " " : "" }));
+  return parts.map((part, index) => ({
+    id: newWordId(),
+    text: part,
+    sep: trailingSpace[index] ? " " : "",
+    joinsNext: !trailingSpace[index] && index < parts.length - 1,
+  }));
 }
 
 function syllablesOf(text: string, words: WordTiming[] | undefined): readonly Syllable[] {

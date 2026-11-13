@@ -50,9 +50,9 @@ describe("history writes derive text only for the lines they change", () => {
           text: "beautiful",
           agentId: "v1",
           words: [
-            { id: "w1", text: "beau", sep: "", begin: 0, end: 0.3, syllableGroupId: "g1" },
-            { id: "w2", text: "ti", sep: "", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
-            { id: "w3", text: "ful", sep: "", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+            { id: "w1", text: "beau", sep: "", begin: 0, end: 0.3, joinsNext: true },
+            { id: "w2", text: "ti", sep: "", begin: 0.3, end: 0.6, joinsNext: true },
+            { id: "w3", text: "ful", sep: "", begin: 0.6, end: 0.9, joinsNext: false },
           ],
         }),
         reconcileLine({ id: "partial", text: "hello world", agentId: "v1", words: [w("hello ", 1, 1.5)] }),

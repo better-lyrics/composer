@@ -40,8 +40,9 @@ describe("legacy transliteration migration", () => {
             end: 0.5,
             transliteration: "kyou",
             transliterationJoinerAfter: "",
+            joinsNext: true,
           },
-          { id: "w2", text: "日", sep: "", begin: 0.5, end: 1, transliteration: "hi" },
+          { id: "w2", text: "日", sep: "", begin: 0.5, end: 1, transliteration: "hi", joinsNext: false },
         ],
         transliteration: {
           language: "ja-Latn",
@@ -79,7 +80,7 @@ describe("legacy transliteration migration", () => {
     const migrated = migrateLegacyTransliterationLine(
       legacyLine({
         text: "안녕 하세요",
-        words: [{ id: "w3", text: "안녕", sep: " ", begin: 0, end: 1, transliteration: "stale" }],
+        words: [{ id: "w3", text: "안녕", sep: " ", begin: 0, end: 1, transliteration: "stale", joinsNext: false }],
         transliteration: {
           language: "ko-Latn",
           text: "an-nyeong haseyo",

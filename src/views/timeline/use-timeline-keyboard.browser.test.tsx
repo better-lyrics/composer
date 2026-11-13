@@ -163,7 +163,9 @@ describe("useTimelineKeyboard", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "m", bubbles: true }));
 
     const mergedLine = useProjectStore.getState().lines[0];
-    expect(timedSyllables(mainTrack(mergedLine))).toEqual([{ text: "everyday", sep: "", begin: 1, end: 2 }]);
+    expect(timedSyllables(mainTrack(mergedLine))).toEqual([
+      { text: "everyday", sep: "", begin: 1, end: 2, joinsNext: false },
+    ]);
   });
 
   it("regression: a remapped import lyrics binding opens the import", async () => {
@@ -446,7 +448,9 @@ describe("useTimelineKeyboard · background provenance", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "m", bubbles: true }));
 
     const updated = useProjectStore.getState().lines[0];
-    expect(timedSyllables(backgroundTrack(updated))).toEqual([{ text: "oohaah", sep: "", begin: 1, end: 2 }]);
+    expect(timedSyllables(backgroundTrack(updated))).toEqual([
+      { text: "oohaah", sep: "", begin: 1, end: 2, joinsNext: false },
+    ]);
     expect(backgroundTrack(updated)?.source).toBe("manual");
   });
 

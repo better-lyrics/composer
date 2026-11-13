@@ -1,4 +1,3 @@
-import { nanoid } from "nanoid";
 import { describe, expect, it } from "vitest";
 import { createLine } from "@/test/factories";
 import { findIdenticalWords } from "@/utils/identical-word-matcher";
@@ -48,12 +47,15 @@ describe("findIdenticalWords", () => {
     ).toHaveLength(2);
   });
 
-  it("skips words with an existing syllableGroupId", () => {
+  it("skips words that are syllables of a longer word", () => {
     const lines = [
       createLine({ id: "l1", words: [{ text: "running", begin: 0, end: 1 }] }),
       createLine({
         id: "l2",
-        words: [{ text: "running", begin: 2, end: 3, syllableGroupId: nanoid(8) }],
+        words: [
+          { text: "running", begin: 2, end: 3, joinsNext: true },
+          { text: "ly", begin: 3, end: 3.5 },
+        ],
       }),
     ];
     expect(
@@ -112,7 +114,7 @@ describe("findIdenticalWords", () => {
       createLine({
         id: "l1",
         words: [
-          { text: "go", begin: 0, end: 1 },
+          { text: "go ", begin: 0, end: 1 },
           { text: "go", begin: 1, end: 2 },
         ],
         backgroundWords: [{ text: "go", begin: 0.5, end: 1.5 }],

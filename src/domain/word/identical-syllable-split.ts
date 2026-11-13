@@ -12,7 +12,6 @@ interface SplitTarget {
   wordIndex: number;
   type: "word" | "bg";
   word: WordTiming;
-  reuseGroupId: boolean;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -32,7 +31,6 @@ function applyTargetsToLine(line: LyricLine, targets: SplitTarget[], splitPoints
     const replacement = splitWordIntoSyllables({
       word: target.word,
       splitPoints,
-      reuseGroupId: target.reuseGroupId,
     });
     if (target.type === "word" && mainTrack) {
       mainTrack = replaceWordsAt(mainTrack, target.wordIndex, replacement);
@@ -54,7 +52,7 @@ function findSourceTarget(lines: LyricLine[], source: IdenticalMatchSource): Spl
   const track = trackWords(sourceLine, source.type);
   const word = track?.[source.wordIndex];
   if (!word) return null;
-  return { lineId: source.lineId, wordIndex: source.wordIndex, type: source.type, word, reuseGroupId: true };
+  return { lineId: source.lineId, wordIndex: source.wordIndex, type: source.type, word };
 }
 
 function applySyllableSplitToLines(
@@ -86,7 +84,6 @@ function applySyllableSplitToLines(
       wordIndex: match.wordIndex,
       type: match.type,
       word: match.word,
-      reuseGroupId: false,
     });
   }
 

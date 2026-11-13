@@ -46,9 +46,9 @@ describe("findExplicitWords", () => {
   it("skips a word that is already marked explicit", () => {
     const result = findExplicitWords([
       lineWithText("L1", "I fuck you", [
-        { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3 },
-        { id: "w2", text: "fuck", sep: " ", begin: 0.3, end: 0.6, explicit: true },
-        { id: "w3", text: "you", sep: "", begin: 0.6, end: 1 },
+        { id: "w1", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+        { id: "w2", text: "fuck", sep: " ", begin: 0.3, end: 0.6, explicit: true, joinsNext: false },
+        { id: "w3", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
       ]),
     ]);
     expect(result).toHaveLength(0);
@@ -142,11 +142,11 @@ describe("findExplicitWords · syllable-split words", () => {
   it("skips a syllable-split word when all of its syllables are already marked", () => {
     const result = findExplicitWords([
       lineWithText("L1", "I fu|cking love it", [
-        { id: "w4", text: "I", sep: " ", begin: 0, end: 0.3 },
-        { id: "w5", text: "fu", sep: "", begin: 0.3, end: 0.4, explicit: true },
-        { id: "w6", text: "cking", sep: " ", begin: 0.4, end: 0.6, explicit: true },
-        { id: "w7", text: "love", sep: " ", begin: 0.6, end: 0.8 },
-        { id: "w8", text: "it", sep: "", begin: 0.8, end: 1 },
+        { id: "w4", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+        { id: "w5", text: "fu", sep: "", begin: 0.3, end: 0.4, explicit: true, joinsNext: true },
+        { id: "w6", text: "cking", sep: " ", begin: 0.4, end: 0.6, explicit: true, joinsNext: false },
+        { id: "w7", text: "love", sep: " ", begin: 0.6, end: 0.8, joinsNext: false },
+        { id: "w8", text: "it", sep: "", begin: 0.8, end: 1, joinsNext: false },
       ]),
     ]);
     expect(result).toHaveLength(0);
@@ -155,11 +155,11 @@ describe("findExplicitWords · syllable-split words", () => {
   it("emits a suggestion when at least one syllable of a profane word is unmarked", () => {
     const result = findExplicitWords([
       lineWithText("L1", "I fu|cking love it", [
-        { id: "w9", text: "I", sep: " ", begin: 0, end: 0.3 },
-        { id: "w10", text: "fu", sep: "", begin: 0.3, end: 0.4, explicit: true },
-        { id: "w11", text: "cking", sep: " ", begin: 0.4, end: 0.6 },
-        { id: "w12", text: "love", sep: " ", begin: 0.6, end: 0.8 },
-        { id: "w13", text: "it", sep: "", begin: 0.8, end: 1 },
+        { id: "w9", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+        { id: "w10", text: "fu", sep: "", begin: 0.3, end: 0.4, explicit: true, joinsNext: true },
+        { id: "w11", text: "cking", sep: " ", begin: 0.4, end: 0.6, joinsNext: false },
+        { id: "w12", text: "love", sep: " ", begin: 0.6, end: 0.8, joinsNext: false },
+        { id: "w13", text: "it", sep: "", begin: 0.8, end: 1, joinsNext: false },
       ]),
     ]);
     expect(result).toHaveLength(1);
@@ -186,9 +186,9 @@ describe("findExplicitWords · linked instances", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [
-          { id: "w14", text: "I", sep: " ", begin: 0, end: 0.3 },
-          { id: "w15", text: "fuck", sep: " ", begin: 0.3, end: 0.6 },
-          { id: "w16", text: "you", sep: "", begin: 0.6, end: 1 },
+          { id: "w14", text: "I", sep: " ", begin: 0, end: 0.3, joinsNext: false },
+          { id: "w15", text: "fuck", sep: " ", begin: 0.3, end: 0.6, joinsNext: false },
+          { id: "w16", text: "you", sep: "", begin: 0.6, end: 1, joinsNext: false },
         ],
       },
       {
@@ -199,9 +199,9 @@ describe("findExplicitWords · linked instances", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { id: "w17", text: "I", sep: " ", begin: 30, end: 30.4 },
-          { id: "w18", text: "fuck", sep: " ", begin: 30.4, end: 30.7 },
-          { id: "w19", text: "you", sep: "", begin: 30.7, end: 31.2 },
+          { id: "w17", text: "I", sep: " ", begin: 30, end: 30.4, joinsNext: false },
+          { id: "w18", text: "fuck", sep: " ", begin: 30.4, end: 30.7, joinsNext: false },
+          { id: "w19", text: "you", sep: "", begin: 30.7, end: 31.2, joinsNext: false },
         ],
       },
       {
@@ -212,9 +212,9 @@ describe("findExplicitWords · linked instances", () => {
         instanceIdx: 2,
         templateLineIdx: 0,
         words: [
-          { id: "w20", text: "I", sep: " ", begin: 60, end: 60.4 },
-          { id: "w21", text: "fuck", sep: " ", begin: 60.4, end: 60.7 },
-          { id: "w22", text: "you", sep: "", begin: 60.7, end: 61.2 },
+          { id: "w20", text: "I", sep: " ", begin: 60, end: 60.4, joinsNext: false },
+          { id: "w21", text: "fuck", sep: " ", begin: 60.4, end: 60.7, joinsNext: false },
+          { id: "w22", text: "you", sep: "", begin: 60.7, end: 61.2, joinsNext: false },
         ],
       },
     ];

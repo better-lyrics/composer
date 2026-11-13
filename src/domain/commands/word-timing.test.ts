@@ -8,7 +8,7 @@ import { lineText } from "@/domain/line/text";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { addressOf } from "@/domain/selection/resolve";
 import { useProjectStore } from "@/stores/project";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 
 const ember = createWord({ text: "Ember ", begin: 1, end: 1.6 });
 const verse = (id: string) =>
@@ -74,7 +74,10 @@ describe("word timing commands", () => {
       id: "c1",
       instanceIdx: 1,
       text: "Ember glow!",
-      words: [createWord({ text: "Ember ", begin: 9, end: 9.6 }), createWord({ text: "glow!", begin: 9.7, end: 10.4 })],
+      words: createWords([
+        { text: "Ember ", begin: 9, end: 9.6 },
+        { text: "glow!", begin: 9.7, end: 10.4 },
+      ]),
     });
     useProjectStore.setState({ lines: [first, second], groups: [group] });
     const copyBefore = lineById("c1");

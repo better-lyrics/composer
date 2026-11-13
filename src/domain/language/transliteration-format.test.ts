@@ -59,10 +59,10 @@ describe("transliteration display format", () => {
 
   it("uses source spaces rather than syllable group IDs as lexical boundaries", () => {
     const groups = timingLexicalWordGroups([
-      { id: "w1", text: "風", sep: "", begin: 0, end: 1, syllableGroupId: "first" },
-      { id: "w2", text: "は", sep: " ", begin: 1, end: 2, syllableGroupId: "second" },
-      { id: "w3", text: "強", sep: "", begin: 2, end: 3, syllableGroupId: "second" },
-      { id: "w4", text: "い", sep: "", begin: 3, end: 4, syllableGroupId: "third" },
+      { id: "w1", text: "風", sep: "", begin: 0, end: 1, joinsNext: false },
+      { id: "w2", text: "は", sep: " ", begin: 1, end: 2, joinsNext: true },
+      { id: "w3", text: "強", sep: "", begin: 2, end: 3, joinsNext: false },
+      { id: "w4", text: "い", sep: "", begin: 3, end: 4, joinsNext: false },
     ]);
     expect(groups.map((group) => group.words.map((word) => word.text + word.sep).join(""))).toEqual(["風は ", "強い"]);
   });

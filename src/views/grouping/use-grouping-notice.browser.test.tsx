@@ -6,7 +6,7 @@ import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWords } from "@/test/factories";
 import { GroupingNotices } from "@/test/grouping-notices";
 import { render } from "@/test/render";
 
@@ -16,10 +16,10 @@ function twoWordLine(id: string, [first, second]: [string, string], begin: numbe
   return createLine({
     id,
     text: `${first}${second}`,
-    words: [
-      createWord({ text: first, begin, end: begin + 1 }),
-      createWord({ text: second, begin: begin + 1 + secondWordShift, end: begin + 2 + secondWordShift }),
-    ],
+    words: createWords([
+      { text: first, begin, end: begin + 1 },
+      { text: second, begin: begin + 1 + secondWordShift, end: begin + 2 + secondWordShift },
+    ]),
   });
 }
 

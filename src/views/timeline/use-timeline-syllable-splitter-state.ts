@@ -20,7 +20,6 @@ import { getSplitCharacter } from "@/utils/split-character";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { splitWordIntoWords } from "@/utils/word-split";
 import { splitSourceWord } from "@/utils/word-timing";
-import { nanoid } from "nanoid";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -104,19 +103,17 @@ function useTimelineSyllableSplitterState({
 
       if (playheadOnWord && splitPoints.length === 1) {
         placedByEar = true;
-        const groupId = word.syllableGroupId ?? nanoid(8);
-        const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
         const partitions = [
           { text: trimmedText.slice(0, splitPoints[0]), begin: word.begin, end: currentTime },
           { text: trimmedText.slice(splitPoints[0]), begin: currentTime, end: word.end },
         ];
-        newWords = splitSourceWord(sourceForSplit, partitions);
+        newWords = splitSourceWord(word, partitions);
         if (word.sep.endsWith(" ") && newWords.length > 0) {
           const last = newWords[newWords.length - 1];
           newWords[newWords.length - 1] = { ...last, sep: `${last.sep} ` };
         }
       } else {
-        newWords = splitWordIntoSyllables({ word, splitPoints, transliterationSplitPoints, reuseGroupId: true });
+        newWords = splitWordIntoSyllables({ word, splitPoints, transliterationSplitPoints });
       }
     }
 

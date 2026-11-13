@@ -6,7 +6,6 @@ import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { fromComposerMeta } from "@/domain/project/metadata-ttml";
-import { inferSyllableGroupIds } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
@@ -168,7 +167,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     let backgroundWords: WordTiming[] | undefined;
 
     if (bgContainer) {
-      backgroundWords = inferSyllableGroupIds(extractTimedWords(bgContainer, null));
+      backgroundWords = extractTimedWords(bgContainer, null);
       if (backgroundWords.length > 0) {
         backgroundText = reconstructLineText(backgroundWords, getSplitCharacter());
       } else {
@@ -190,7 +189,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
       backgroundText || (backgroundWords && backgroundWords.length > 0) ? "manual" : undefined;
 
     // Check for word-level timing (span elements NOT inside x-bg)
-    const words = inferSyllableGroupIds(extractTimedWords(p, bgContainer));
+    const words = extractTimedWords(p, bgContainer);
 
     if (words.length > 0) {
       lines.push(

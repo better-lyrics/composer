@@ -17,8 +17,8 @@ import { TransliterationAlignmentModal } from "@/views/languages/transliteration
 function setupLine({
   text = "가나",
   words = [
-    { id: newWordId(), text: "가", sep: "", begin: 0, end: 0.5 },
-    { id: newWordId(), text: "나", sep: "", begin: 0.5, end: 1 },
+    { id: newWordId(), text: "가", sep: "", begin: 0, end: 0.5, joinsNext: true },
+    { id: newWordId(), text: "나", sep: "", begin: 0.5, end: 1, joinsNext: false },
   ],
   language = "ko-Latn",
   transliterationText,
@@ -96,8 +96,8 @@ describe("TransliterationAlignmentModal", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [
-          { id: "w1", text: "가", sep: "", begin: 10, end: 10.5, transliteration: "gan" },
-          { id: "w2", text: "나", sep: "", begin: 10.5, end: 11, transliteration: "a" },
+          { id: "w1", text: "가", sep: "", begin: 10, end: 10.5, transliteration: "gan", joinsNext: true },
+          { id: "w2", text: "나", sep: "", begin: 10.5, end: 11, transliteration: "a", joinsNext: false },
         ],
       };
       useProjectStore.setState({ lines: [line, repeat], groups: [createGroup({ id: "g1", sharesTiming: true })] });
@@ -115,7 +115,7 @@ describe("TransliterationAlignmentModal", () => {
     it("needs no split point for a single-syllable word", async () => {
       const line = setupLine({
         text: "가",
-        words: [{ id: "w3", text: "가", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w3", text: "가", sep: "", begin: 0, end: 1, joinsNext: false }],
         transliterationText: "ga",
       });
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
@@ -137,8 +137,8 @@ describe("TransliterationAlignmentModal", () => {
       const line = setupLine({
         text: "to-do",
         words: [
-          { id: "w4", text: "to-", sep: "", begin: 0, end: 0.5 },
-          { id: "w5", text: "do", sep: "", begin: 0.5, end: 1 },
+          { id: "w4", text: "to-", sep: "", begin: 0, end: 0.5, joinsNext: true },
+          { id: "w5", text: "do", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
         language: "en-Latn",
         transliterationText: "to-do",
@@ -161,8 +161,9 @@ describe("TransliterationAlignmentModal", () => {
             end: 0.5,
             transliteration: "ab",
             transliterationJoinerAfter: "  ",
+            joinsNext: true,
           },
-          { id: "w7", text: "cd", sep: "", begin: 0.5, end: 1, transliteration: "cd" },
+          { id: "w7", text: "cd", sep: "", begin: 0.5, end: 1, transliteration: "cd", joinsNext: false },
         ],
         language: "en-Latn",
         transliterationText: "ab  cd",
@@ -207,9 +208,27 @@ describe("TransliterationAlignmentModal", () => {
 
     it("regression: saves per-word transliteration and joiners for a pronunciation break inside one lexical group", async () => {
       const words: WordTiming[] = [
-        { id: "w8", text: "밤", sep: "", begin: 0, end: 0.5, transliteration: "bam", transliterationJoinerAfter: " " },
-        { id: "w9", text: "하", sep: "", begin: 0.5, end: 1, transliteration: "ha", transliterationJoinerAfter: "  " },
-        { id: "w10", text: "늘", sep: "", begin: 1, end: 1.5, transliteration: "neul" },
+        {
+          id: "w8",
+          text: "밤",
+          sep: "",
+          begin: 0,
+          end: 0.5,
+          transliteration: "bam",
+          transliterationJoinerAfter: " ",
+          joinsNext: true,
+        },
+        {
+          id: "w9",
+          text: "하",
+          sep: "",
+          begin: 0.5,
+          end: 1,
+          transliteration: "ha",
+          transliterationJoinerAfter: "  ",
+          joinsNext: true,
+        },
+        { id: "w10", text: "늘", sep: "", begin: 1, end: 1.5, transliteration: "neul", joinsNext: false },
       ];
       const line: LyricLine = {
         id: "bam-ha-neul",

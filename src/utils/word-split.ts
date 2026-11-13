@@ -7,12 +7,7 @@ import { distributeTiming } from "@/utils/syllable-utils";
 function splitWordIntoWords(word: WordTiming, splitPoints: number[]): WordTiming[] {
   const trimmed = word.text;
   const hadTrailingSpace = word.sep.endsWith(" ");
-  const {
-    syllableGroupId: _group,
-    transliteration: _transliteration,
-    transliterationJoinerAfter: _joiner,
-    ...base
-  } = word;
+  const { transliteration: _transliteration, transliterationJoinerAfter: _joiner, joinsNext, ...base } = word;
 
   const parts: Array<{ text: string; begin: number; end: number }> = [];
   let orphanBegin: number | null = null;
@@ -32,7 +27,7 @@ function splitWordIntoWords(word: WordTiming, splitPoints: number[]): WordTiming
     parts.map((part, index) => {
       const isLast = index === parts.length - 1;
       const sep = isLast ? (hadTrailingSpace ? " " : "") : " ";
-      return { ...base, text: part.text, sep, begin: part.begin, end: part.end };
+      return { ...base, text: part.text, sep, begin: part.begin, end: part.end, joinsNext: isLast && joinsNext };
     }),
   );
 }

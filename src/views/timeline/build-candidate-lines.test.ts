@@ -13,9 +13,9 @@ const lineA: LyricLine = {
   text: "I love you",
   agentId: "v1",
   words: [
-    { id: "w1", text: "I", sep: " ", begin: 0, end: 1 },
-    { id: "w2", text: "love", sep: " ", begin: 1, end: 2 },
-    { id: "w3", text: "you", sep: "", begin: 2, end: 3 },
+    { id: "w1", text: "I", sep: " ", begin: 0, end: 1, joinsNext: false },
+    { id: "w2", text: "love", sep: " ", begin: 1, end: 2, joinsNext: false },
+    { id: "w3", text: "you", sep: "", begin: 2, end: 3, joinsNext: false },
   ],
 };
 
@@ -24,10 +24,10 @@ const lineB: LyricLine = {
   text: "and so do I",
   agentId: "v1",
   words: [
-    { id: "w4", text: "and", sep: " ", begin: 3, end: 4 },
-    { id: "w5", text: "so", sep: " ", begin: 4, end: 5 },
-    { id: "w6", text: "do", sep: " ", begin: 5, end: 6 },
-    { id: "w7", text: "I", sep: "", begin: 6, end: 7 },
+    { id: "w4", text: "and", sep: " ", begin: 3, end: 4, joinsNext: false },
+    { id: "w5", text: "so", sep: " ", begin: 4, end: 5, joinsNext: false },
+    { id: "w6", text: "do", sep: " ", begin: 5, end: 6, joinsNext: false },
+    { id: "w7", text: "I", sep: "", begin: 6, end: 7, joinsNext: false },
   ],
 };
 
@@ -35,9 +35,9 @@ const lineWithBg: LyricLine = {
   id: "c",
   text: "main",
   agentId: "v1",
-  words: [{ id: "w8", text: "main", sep: "", begin: 0, end: 1 }],
+  words: [{ id: "w8", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
   backgroundText: "bg",
-  backgroundWords: [{ id: "w9", text: "bg", sep: "", begin: 0.5, end: 1 }],
+  backgroundWords: [{ id: "w9", text: "bg", sep: "", begin: 0.5, end: 1, joinsNext: false }],
 };
 
 function selectAll(line: LyricLine): SyllableAddress[] {

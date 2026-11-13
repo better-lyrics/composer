@@ -1,9 +1,8 @@
-import { splitTrailingWhitespace } from "insync/from-words";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { type SnapPoint, toSnapPoints } from "@/domain/snap-point/model";
-import { newWordId } from "@/domain/word/id";
+import { wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import type { ProjectSaveInput } from "@/lib/persistence";
 
@@ -22,15 +21,14 @@ interface FactoryLineOptions {
   templateLineIdx?: number;
 }
 
-interface FactoryWordOptions {
+// Words as tests spell them: without `sep` the text's trailing whitespace is the separator, and
+// without `joinsNext` the joins follow ids or spacing exactly as a saved track loads.
+type FactoryWordOptions = Omit<WordTiming, "id" | "sep" | "joinsNext"> & {
   id?: string;
-  text: string;
   sep?: string;
-  begin: number;
-  end: number;
-  explicit?: true;
+  joinsNext?: boolean;
   syllableGroupId?: string;
-}
+};
 
 interface FactoryGroupOptions {
   id?: string;
@@ -44,19 +42,18 @@ interface FactoryGroupOptions {
 let lineCounter = 0;
 let groupCounter = 0;
 
-// Without an explicit sep, the text is read as saved words spell it: trailing whitespace is the separator.
+function createWords(words: readonly FactoryWordOptions[]): WordTiming[] {
+  const spaced = words.map(({ sep, joinsNext: _joins, ...word }) =>
+    sep === undefined ? word : { ...word, text: word.text + sep },
+  );
+  return wordsFromSpaced(spaced).map((word, index) => {
+    const joinsNext = words[index].joinsNext;
+    return joinsNext === undefined ? word : { ...word, joinsNext };
+  });
+}
+
 function createWord(opts: FactoryWordOptions): WordTiming {
-  const { text, sep } =
-    opts.sep === undefined ? splitTrailingWhitespace(opts.text) : { text: opts.text, sep: opts.sep };
-  return {
-    id: opts.id ?? newWordId(),
-    text,
-    sep,
-    begin: opts.begin,
-    end: opts.end,
-    ...(opts.explicit ? { explicit: opts.explicit } : {}),
-    ...(opts.syllableGroupId ? { syllableGroupId: opts.syllableGroupId } : {}),
-  };
+  return createWords([opts])[0];
 }
 
 function createLine(opts: FactoryLineOptions = {}): LyricLine {
@@ -69,9 +66,9 @@ function createLine(opts: FactoryLineOptions = {}): LyricLine {
     agentId,
     ...(opts.begin !== undefined ? { begin: opts.begin } : {}),
     ...(opts.end !== undefined ? { end: opts.end } : {}),
-    ...(opts.words ? { words: opts.words.map(createWord) } : {}),
+    ...(opts.words ? { words: createWords(opts.words) } : {}),
     ...(opts.backgroundText ? { backgroundText: opts.backgroundText } : {}),
-    ...(opts.backgroundWords ? { backgroundWords: opts.backgroundWords.map(createWord) } : {}),
+    ...(opts.backgroundWords ? { backgroundWords: createWords(opts.backgroundWords) } : {}),
     ...(opts.backgroundTextSource ? { backgroundTextSource: opts.backgroundTextSource } : {}),
     ...(opts.groupId ? { groupId: opts.groupId } : {}),
     ...(opts.instanceIdx !== undefined ? { instanceIdx: opts.instanceIdx } : {}),
@@ -124,4 +121,4 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
   };
 }
 
-export { createGroup, createLine, createProjectSaveInput, createWord, snapPoints };
+export { createGroup, createLine, createProjectSaveInput, createWord, createWords, snapPoints };

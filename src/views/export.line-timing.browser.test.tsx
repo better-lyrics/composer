@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { mainTrack, timedSyllables } from "@/domain/line/track";
 import { useProjectStore } from "@/stores/project";
 import { stubClipboard } from "@/test/clipboard";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWords } from "@/test/factories";
 import { render } from "@/test/render";
 import { ExportPanel } from "@/views/export";
 
@@ -13,12 +13,12 @@ function wordSyncedLines() {
     createLine({
       id: "L1",
       text: "Comin' at you, baby",
-      words: [
-        createWord({ text: "Comin'", sep: " ", begin: 1.437, end: 2.067 }),
-        createWord({ text: "at", sep: " ", begin: 2.067, end: 2.382 }),
-        createWord({ text: "you,", sep: " ", begin: 2.382, end: 2.649 }),
-        createWord({ text: "baby", begin: 2.649, end: 3.012 }),
-      ],
+      words: createWords([
+        { text: "Comin'", sep: " ", begin: 1.437, end: 2.067 },
+        { text: "at", sep: " ", begin: 2.067, end: 2.382 },
+        { text: "you,", sep: " ", begin: 2.382, end: 2.649 },
+        { text: "baby", begin: 2.649, end: 3.012 },
+      ]),
     }),
   ];
 }

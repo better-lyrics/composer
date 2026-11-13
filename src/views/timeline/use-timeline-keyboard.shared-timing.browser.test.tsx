@@ -8,7 +8,7 @@ import type { SyllableAddress } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createGroup, createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord, createWords } from "@/test/factories";
 import { storedWordAddress, wordAddress } from "@/test/word-address";
 import { isMac } from "@/utils/platform";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -24,7 +24,10 @@ const chorus = createLine({
   groupId: "g1",
   instanceIdx: 0,
   templateLineIdx: 0,
-  words: [createWord({ text: "go", sep: " ", begin: 3, end: 4 }), createWord({ text: "now", begin: 4, end: 5 })],
+  words: createWords([
+    { text: "go", sep: " ", begin: 3, end: 4 },
+    { text: "now", begin: 4, end: 5 },
+  ]),
 });
 
 const chorusSelection: SyllableAddress[] = [wordAddress(chorus, 0), wordAddress(chorus, 1)];
@@ -97,10 +100,10 @@ describe("useTimelineKeyboard · shared timing", () => {
       groupId: "g1",
       instanceIdx: 2,
       templateLineIdx: 0,
-      words: [
-        createWord({ text: "go", sep: " ", begin: 40, end: 41 }),
-        createWord({ text: "now", begin: 41.5, end: 42.5 }),
-      ],
+      words: createWords([
+        { text: "go", sep: " ", begin: 40, end: 41 },
+        { text: "now", begin: 41.5, end: 42.5 },
+      ]),
     });
     await armTimeline({
       lines: [chorus, createLine({ id: "e", text: "" }), sharedChorus],

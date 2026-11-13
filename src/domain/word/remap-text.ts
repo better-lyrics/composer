@@ -11,19 +11,25 @@ function tokenizeWordTexts(text: string): string[] {
   return parts.map((part, i) => part + (trailingSpace[i] ? " " : ""));
 }
 
+// A boundary the edit left alone keeps its join (a word can end without a space); elsewhere the typed
+// text decides: a part runs into the next one unless a space ends it.
+function joinedToTypedText(
+  words: WordTiming[],
+  texts: readonly string[],
+  oldWords: readonly WordTiming[],
+  oldIndexOf: readonly (number | undefined)[],
+): WordTiming[] {
+  return words.map((word, i) => {
+    const old = oldIndexOf[i];
+    const untouched = old !== undefined && oldIndexOf[i + 1] === old + 1 && oldWords[old].sep === word.sep;
+    if (untouched) return word;
+    return { ...word, joinsNext: i < texts.length - 1 && !texts[i].endsWith(" ") };
+  });
+}
+
 function spreadEvenly(texts: string[], begin: number, end: number) {
   const step = (end - begin) / texts.length;
   return texts.map((text, k) => ({ text, begin: begin + step * k, end: begin + step * (k + 1) }));
-}
-
-function gluedToRightBracket(texts: string[]): boolean[] {
-  const glued = new Array<boolean>(texts.length);
-  let chainOpen = true;
-  for (let k = texts.length - 1; k >= 0; k--) {
-    chainOpen = chainOpen && !texts[k].endsWith(" ");
-    glued[k] = chainOpen;
-  }
-  return glued;
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -35,7 +41,13 @@ function insertSlot(prevEnd: number, nextBegin: number): { begin: number; end: n
 function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string): WordTiming[] {
   const texts = tokenizeWordTexts(newText);
   if (texts.length === oldWords.length) {
-    return oldWords.map((oldWord, i) => ({ ...oldWord, ...splitTrailingWhitespace(texts[i]) }));
+    const remapped = oldWords.map((oldWord, i) => ({ ...oldWord, ...splitTrailingWhitespace(texts[i]) }));
+    return joinedToTypedText(
+      remapped,
+      texts,
+      oldWords,
+      oldWords.map((_, i) => i),
+    );
   }
 
   const oldIndexOf: Array<number | undefined> = new Array(texts.length);
@@ -72,25 +84,15 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string)
       slot = insertSlot(prevEnd, rightBracket ? rightBracket.begin : prevEnd);
     }
 
-    const gluedToRight = gluedToRightBracket(runTexts);
-    let gluedToLeft = i > 0 && !texts[i - 1].endsWith(" ");
-    for (const [k, { text, begin, end }] of spreadEvenly(runTexts, slot.begin, slot.end).entries()) {
+    for (const { text, begin, end } of spreadEvenly(runTexts, slot.begin, slot.end)) {
       result.push(
-        synthesizeBracketedWord({
-          ...splitTrailingWhitespace(text),
-          begin,
-          end,
-          leftBracket: gluedToLeft ? leftBracket : undefined,
-          rightBracket: gluedToRight[k] ? rightBracket : undefined,
-          explicit: false,
-        }),
+        synthesizeBracketedWord({ ...splitTrailingWhitespace(text), begin, end, joinsNext: false, explicit: false }),
       );
-      gluedToLeft = gluedToLeft && !text.endsWith(" ");
     }
     i = runEnd;
   }
 
-  return result;
+  return joinedToTypedText(result, texts, oldWords, oldIndexOf);
 }
 
 // -- Exports ------------------------------------------------------------------

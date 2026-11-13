@@ -1,6 +1,6 @@
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { createWord } from "@/test/factories";
+import { createWords } from "@/test/factories";
 import { scrollTrackHost } from "@/test/timeline-scroll";
 import {
   movePointer,
@@ -17,11 +17,11 @@ import { lineEditCommand } from "@/domain/commands/line-edits";
 
 describe("WordTrack selection stretch regressions", () => {
   it("regression: keeps a mid-drag undo when the drag continues", async () => {
-    const sA = [
-      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
-      createWord({ text: "爱", sep: " ", begin: 1, end: 2 }),
-      createWord({ text: "你", begin: 5, end: 6 }),
-    ];
+    const sA = createWords([
+      { text: "我", sep: " ", begin: 0, end: 1 },
+      { text: "爱", sep: " ", begin: 1, end: 2 },
+      { text: "你", begin: 5, end: 6 },
+    ]);
     const { blocks, lineId } = await renderStretchTrack(sA, [0, 1]);
 
     // Commit an edit (only the unselected word[2] moves) so there is a real
@@ -49,11 +49,11 @@ describe("WordTrack selection stretch regressions", () => {
   });
 
   it("regression: a re-entrant drag baselines off committed state, not a transient", async () => {
-    const l0 = [
-      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
-      createWord({ text: "爱", sep: " ", begin: 1, end: 2 }),
-      createWord({ text: "你", begin: 5, end: 6 }),
-    ];
+    const l0 = createWords([
+      { text: "我", sep: " ", begin: 0, end: 1 },
+      { text: "爱", sep: " ", begin: 1, end: 2 },
+      { text: "你", begin: 5, end: 6 },
+    ]);
     const { blocks } = await renderStretchTrack(l0, [0, 1]);
 
     // Gesture A leaves a transient preview in the store, then a second pointerdown
@@ -79,11 +79,11 @@ describe("WordTrack selection stretch regressions", () => {
   });
 
   it("regression: follows a timeline scroll that happens mid-drag", async () => {
-    const words = [
-      createWord({ text: "我", sep: " ", begin: 0, end: 1 }),
-      createWord({ text: "爱", sep: " ", begin: 1, end: 2 }),
-      createWord({ text: "你", begin: 5, end: 6 }),
-    ];
+    const words = createWords([
+      { text: "我", sep: " ", begin: 0, end: 1 },
+      { text: "爱", sep: " ", begin: 1, end: 2 },
+      { text: "你", begin: 5, end: 6 },
+    ]);
     useTimelineStore.setState({ scrollLeft: 0 });
     const { blocks } = await renderStretchTrack(words, [0, 1]);
 

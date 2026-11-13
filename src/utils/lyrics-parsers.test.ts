@@ -151,7 +151,7 @@ describe("parseLyricsFile - enhanced LRC (eLRC)", () => {
 });
 
 describe("parseLyricsFile - TTML syllable-group inference", () => {
-  it("stamps a shared syllableGroupId on a multi-syllable word in TTML", () => {
+  it("joins the syllables of a multi-syllable word in TTML", () => {
     const content = `<?xml version="1.0" encoding="UTF-8"?>
 <tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata">
   <body>
@@ -171,14 +171,10 @@ describe("parseLyricsFile - TTML syllable-group inference", () => {
     if (!words) return;
     expect(words.map((w) => w.text.trimEnd())).toEqual(["hello", "ev", "er", "y", "world"]);
 
-    expect(words[0].syllableGroupId).toBeUndefined();
-    expect(words[1].syllableGroupId).toBeDefined();
-    expect(words[1].syllableGroupId).toBe(words[2].syllableGroupId);
-    expect(words[2].syllableGroupId).toBe(words[3].syllableGroupId);
-    expect(words[4].syllableGroupId).toBeUndefined();
+    expect(words.map((w) => w.joinsNext)).toEqual([false, true, true, false, false]);
   });
 
-  it("does not assign syllable ids when every word in a TTML line is standalone", () => {
+  it("joins nothing when every word in a TTML line is standalone", () => {
     const content = `<?xml version="1.0" encoding="UTF-8"?>
 <tt xmlns="http://www.w3.org/ns/ttml">
   <body>
@@ -194,7 +190,7 @@ describe("parseLyricsFile - TTML syllable-group inference", () => {
     const words = result.lines[0].words;
     expect(words).toBeDefined();
     if (!words) return;
-    expect(words.every((w) => w.syllableGroupId === undefined)).toBe(true);
+    expect(words.every((w) => !w.joinsNext)).toBe(true);
   });
 });
 

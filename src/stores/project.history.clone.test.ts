@@ -60,12 +60,14 @@ describe("history snapshot integrity", () => {
           id: "L1",
           text: "hello",
           agentId: "v1",
-          words: [{ id: "w1", text: "hello", sep: "", begin: 0, end: 1 }],
+          words: [{ id: "w1", text: "hello", sep: "", begin: 0, end: 1, joinsNext: false }],
         },
       ]),
     );
     store.commit(
-      pasteLines([{ id: "L1", updates: { words: [{ id: "w2", text: "hello!", sep: "", begin: 0, end: 1 }] } }]),
+      pasteLines([
+        { id: "L1", updates: { words: [{ id: "w2", text: "hello!", sep: "", begin: 0, end: 1, joinsNext: false }] } },
+      ]),
     );
     const beforeUndo = useProjectStore.getState().lines[0].words?.[0].text;
     expect(beforeUndo).toBe("hello!");
@@ -112,14 +114,22 @@ describe("history snapshot integrity", () => {
           text: "a",
           agentId: "v1",
           words: [
-            { id: "w3", text: "a", sep: " ", begin: 0, end: 0.5 },
-            { id: "w4", text: "b", sep: "", begin: 0.5, end: 1 },
+            { id: "w3", text: "a", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+            { id: "w4", text: "b", sep: "", begin: 0.5, end: 1, joinsNext: false },
           ],
         },
       ]),
     );
-    store.commit(pasteLines([{ id: "A", updates: { words: [{ id: "w5", text: "ab", sep: "", begin: 0, end: 1 }] } }]));
-    store.commit(pasteLines([{ id: "A", updates: { words: [{ id: "w6", text: "ABC", sep: "", begin: 0, end: 1 }] } }]));
+    store.commit(
+      pasteLines([
+        { id: "A", updates: { words: [{ id: "w5", text: "ab", sep: "", begin: 0, end: 1, joinsNext: false }] } },
+      ]),
+    );
+    store.commit(
+      pasteLines([
+        { id: "A", updates: { words: [{ id: "w6", text: "ABC", sep: "", begin: 0, end: 1, joinsNext: false }] } },
+      ]),
+    );
     store.undo();
     expect(timedSyllables(mainTrack(useProjectStore.getState().lines[0]))[0].text).toBe("ab");
     store.undo();

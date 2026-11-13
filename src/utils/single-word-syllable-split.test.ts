@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 describe("splitWordIntoSyllables", () => {
   it("splits paired transliteration text into the same canonical timing slots", () => {
     const result = splitWordIntoSyllables({
-      word: { id: "w1", text: "今日", sep: "", transliteration: "kyouhi", begin: 0, end: 1 },
+      word: { id: "w1", text: "今日", sep: "", transliteration: "kyouhi", begin: 0, end: 1, joinsNext: true },
       splitPoints: [1],
       transliterationSplitPoints: [4],
     });
@@ -15,7 +15,7 @@ describe("splitWordIntoSyllables", () => {
   });
   it("removes untimed spaces at selected transliteration boundaries", () => {
     const result = splitWordIntoSyllables({
-      word: { id: "w2", text: "걸음은", sep: "", transliteration: "geol eum eun", begin: 0, end: 1 },
+      word: { id: "w2", text: "걸음은", sep: "", transliteration: "geol eum eun", begin: 0, end: 1, joinsNext: true },
       splitPoints: [1, 2],
       transliterationSplitPoints: [5, 9],
     });
@@ -25,7 +25,7 @@ describe("splitWordIntoSyllables", () => {
 
   it("preserves dash separators for a later merge", () => {
     const result = splitWordIntoSyllables({
-      word: { id: "w3", text: "to-do", sep: "", transliteration: "to-do", begin: 0, end: 1 },
+      word: { id: "w3", text: "to-do", sep: "", transliteration: "to-do", begin: 0, end: 1, joinsNext: true },
       splitPoints: [3],
       transliterationSplitPoints: [3],
     });
@@ -36,7 +36,7 @@ describe("splitWordIntoSyllables", () => {
 
   it("moves an outer transliteration separator to the last fragment of a nested split", () => {
     const firstSplit = splitWordIntoSyllables({
-      word: { id: "w4", text: "abcd", sep: "", transliteration: "ab cd", begin: 0, end: 1 },
+      word: { id: "w4", text: "abcd", sep: "", transliteration: "ab cd", begin: 0, end: 1, joinsNext: true },
       splitPoints: [2],
       transliterationSplitPoints: [3],
     });
@@ -44,14 +44,13 @@ describe("splitWordIntoSyllables", () => {
       word: firstSplit[0],
       splitPoints: [1],
       transliterationSplitPoints: [1],
-      reuseGroupId: true,
     });
 
     expect(nested.map((word) => word.transliterationJoinerAfter)).toEqual(["", " "]);
   });
   it("trims trailing space before computing per-character durations", () => {
     const result = splitWordIntoSyllables({
-      word: { id: "w5", text: "running", sep: " ", begin: 0, end: 8 },
+      word: { id: "w5", text: "running", sep: " ", begin: 0, end: 8, joinsNext: false },
       splitPoints: [3],
     });
     expect(result).toHaveLength(2);
@@ -62,38 +61,36 @@ describe("splitWordIntoSyllables", () => {
     expect(result[1].end).toBe(8);
   });
 
-  it("generates a fresh syllableGroupId when reuseGroupId is false (default)", () => {
+  it("joins the pieces of a standalone word and ends the last one", () => {
     const result = splitWordIntoSyllables({
-      word: { id: "w6", text: "abc", sep: "", begin: 0, end: 1, syllableGroupId: "existing-id" },
+      word: { id: "w6", text: "abc", sep: "", begin: 0, end: 1, joinsNext: false },
       splitPoints: [1],
     });
-    expect(result[0].syllableGroupId).not.toBe("existing-id");
-    expect(result[0].syllableGroupId).toBe(result[1].syllableGroupId);
+    expect(result.map((word) => word.joinsNext)).toEqual([true, false]);
   });
 
-  it("reuses syllableGroupId when reuseGroupId is true and word has one", () => {
+  it("keeps the source word's join on the last piece", () => {
     const result = splitWordIntoSyllables({
-      word: { id: "w7", text: "abc", sep: "", begin: 0, end: 1, syllableGroupId: "existing-id" },
+      word: { id: "w7", text: "abc", sep: "", begin: 0, end: 1, joinsNext: true },
       splitPoints: [1],
-      reuseGroupId: true,
     });
-    expect(result[0].syllableGroupId).toBe("existing-id");
-    expect(result[1].syllableGroupId).toBe("existing-id");
+    expect(result.map((word) => word.joinsNext)).toEqual([true, true]);
   });
 
-  it("generates a fresh syllableGroupId when reuseGroupId is true but word has none", () => {
+  it("ends the last piece where a spaced word ended", () => {
     const result = splitWordIntoSyllables({
-      word: { id: "w8", text: "abc", sep: "", begin: 0, end: 1 },
+      word: { id: "w8", text: "abc", sep: " ", begin: 0, end: 1, joinsNext: false },
       splitPoints: [1],
-      reuseGroupId: true,
     });
-    expect(result[0].syllableGroupId).toBeTruthy();
-    expect(result[0].syllableGroupId).toBe(result[1].syllableGroupId);
+    expect(result.map((word) => [word.sep, word.joinsNext])).toEqual([
+      ["", true],
+      [" ", false],
+    ]);
   });
 
   it("does not append a trailing space when the source had none", () => {
     const result = splitWordIntoSyllables({
-      word: { id: "w9", text: "abc", sep: "", begin: 0, end: 1 },
+      word: { id: "w9", text: "abc", sep: "", begin: 0, end: 1, joinsNext: true },
       splitPoints: [1],
     });
     expect(result[1]).toMatchObject({ text: "bc", sep: "" });

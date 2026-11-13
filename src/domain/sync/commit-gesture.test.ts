@@ -47,6 +47,15 @@ describe("tap-word", () => {
     expect(commit?.clampedTo).toBeNull();
   });
 
+  it("regression: a tap after a reload joins the syllable before it again", () => {
+    const lines = [createLine({ id: "l0", text: "hel|lo you", words: [{ text: "hel", begin: 1, end: 1.3 }] })];
+    const words = apply(lines, run(lines, "tap-word", [0, 1], 2))[0].words;
+    expect(words?.map((w) => [w.text, w.joinsNext])).toEqual([
+      ["hel", true],
+      ["lo", false],
+    ]);
+  });
+
   it("closes the previous word in the same line with one update", () => {
     const lines = [createLine({ id: "l0", text: "one two", words: [word("one ", 1, 1.3)] })];
     const commit = run(lines, "tap-word", [0, 1], 2);
@@ -433,20 +442,16 @@ describe("ported behaviour", () => {
     expect(timedSyllables(mainTrack(after[0]))).toEqual([word("one ", 0, 1), word("two ", 5, 5), word("three", 5, 5)]);
   });
 
-  it("regression: preserves explicit and syllableGroupId when re-holding a mid-line word", () => {
+  it("regression: preserves explicit and joinsNext when re-holding a mid-line word", () => {
     const lines = [
       createLine({
         id: "l0",
         text: "one two three",
-        words: [
-          word("one ", 0, 1),
-          word("two ", 1, 2),
-          { ...word("three", 2, 3), explicit: true, syllableGroupId: "g1" },
-        ],
+        words: [word("one ", 0, 1), word("two ", 1, 2), { ...word("three", 2, 3), explicit: true, joinsNext: true }],
       }),
     ];
     const after = apply(lines, run(lines, "hold-start", [0, 2], 5, true));
-    expect(timedSyllables(mainTrack(after[0]))[2]).toMatchObject({ explicit: true, syllableGroupId: "g1" });
+    expect(timedSyllables(mainTrack(after[0]))[2]).toMatchObject({ explicit: true, joinsNext: true });
   });
 
   it("regression: hold and tap agree on which metadata survives a mid-line redo", () => {
@@ -454,13 +459,13 @@ describe("ported behaviour", () => {
       createLine({
         id: "l0",
         text: "one two",
-        words: [word("one ", 0, 1), { ...word("two ", 1, 2), explicit: true, syllableGroupId: "g1" }],
+        words: [word("one ", 0, 1), { ...word("two ", 1, 2), explicit: true, joinsNext: true }],
       }),
     ];
     const held = apply(lines, run(lines, "hold-start", [0, 1], 5, true))[0].words?.[1];
     const tapped = apply(lines, run(lines, "tap-word", [0, 1], 5, true))[0].words?.[1];
     expect(held?.explicit).toBe(tapped?.explicit);
-    expect(held?.syllableGroupId).toBe(tapped?.syllableGroupId);
+    expect(held?.joinsNext).toBe(tapped?.joinsNext);
   });
 
   it("squeezes later words forward when the closed word overruns them", () => {
@@ -475,9 +480,9 @@ describe("ported behaviour", () => {
     expect(timedSyllables(mainTrack(after[0]))).toEqual([word("one ", 0, 1), word("two ", 1, 5), word("three", 5, 5)]);
   });
 
-  it("preserves explicit and syllableGroupId on the word hold-end closes", () => {
+  it("preserves explicit and joinsNext on the word hold-end closes", () => {
     const lines = [
-      createLine({ id: "l0", text: "one", words: [{ ...word("one", 5, 5), explicit: true, syllableGroupId: "g1" }] }),
+      createLine({ id: "l0", text: "one", words: [{ ...word("one", 5, 5), explicit: true, joinsNext: true }] }),
     ];
     const after = apply(lines, run(lines, "hold-end", [0, 0], 6));
     expect(timedSyllables(mainTrack(after[0]))[0]).toEqual({
@@ -486,7 +491,7 @@ describe("ported behaviour", () => {
       begin: 5,
       end: 6,
       explicit: true,
-      syllableGroupId: "g1",
+      joinsNext: true,
     });
   });
 });

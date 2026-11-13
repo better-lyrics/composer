@@ -2,15 +2,16 @@
  * @vitest-environment node
  */
 
-import { newWordId } from "@/domain/word/id";
-import { useProjectStore } from "@/stores/project";
+import { beforeEach, describe, expect, it } from "vitest";
+import { markWordsExplicit } from "@/domain/commands/word-edits";
 import type { LinkGroup } from "@/domain/group/template";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import type { SyllableAddress } from "@/domain/selection/model";
-import { beforeEach, describe, expect, it } from "vitest";
-import { markWordsExplicit } from "@/domain/commands/word-edits";
+import { newWordId } from "@/domain/word/id";
+import { useProjectStore } from "@/stores/project";
+import { createWords } from "@/test/factories";
+import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 
 function sel(lines: LyricLine[], lineId: string, wordIndex: number, type: "word" | "bg" = "word"): SyllableAddress {
   const line = lines.find((candidate) => candidate.id === lineId);
@@ -26,9 +27,9 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fu|cking yeah",
         agentId: "v1",
         words: [
-          { id: "w1", text: "fu", sep: "", begin: 0, end: 0.2, explicit: true },
-          { id: "w2", text: "cking", sep: " ", begin: 0.2, end: 0.5 },
-          { id: "w3", text: "yeah", sep: "", begin: 0.5, end: 1 },
+          { id: "w1", text: "fu", sep: "", begin: 0, end: 0.2, explicit: true, joinsNext: true },
+          { id: "w2", text: "cking", sep: " ", begin: 0.2, end: 0.5, joinsNext: false },
+          { id: "w3", text: "yeah", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
       },
     ];
@@ -44,9 +45,9 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fu|cking yeah",
         agentId: "v1",
         words: [
-          { id: "w4", text: "fu", sep: "", begin: 0, end: 0.2, explicit: true },
-          { id: "w5", text: "cking", sep: " ", begin: 0.2, end: 0.5, explicit: true },
-          { id: "w6", text: "yeah", sep: "", begin: 0.5, end: 1 },
+          { id: "w4", text: "fu", sep: "", begin: 0, end: 0.2, explicit: true, joinsNext: true },
+          { id: "w5", text: "cking", sep: " ", begin: 0.2, end: 0.5, explicit: true, joinsNext: false },
+          { id: "w6", text: "yeah", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
       },
     ];
@@ -62,8 +63,8 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fuck this",
         agentId: "v1",
         words: [
-          { id: "w7", text: "fuck", sep: " ", begin: 0, end: 0.5 },
-          { id: "w8", text: "this", sep: "", begin: 0.5, end: 1 },
+          { id: "w7", text: "fuck", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+          { id: "w8", text: "this", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
       },
     ];
@@ -79,8 +80,8 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fuck this",
         agentId: "v1",
         words: [
-          { id: "w9", text: "fuck", sep: " ", begin: 0, end: 0.5, explicit: true },
-          { id: "w10", text: "this", sep: "", begin: 0.5, end: 1 },
+          { id: "w9", text: "fuck", sep: " ", begin: 0, end: 0.5, explicit: true, joinsNext: false },
+          { id: "w10", text: "this", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
       },
       {
@@ -88,8 +89,8 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "shit happens",
         agentId: "v1",
         words: [
-          { id: "w11", text: "shit", sep: " ", begin: 1, end: 1.5 },
-          { id: "w12", text: "happens", sep: "", begin: 1.5, end: 2 },
+          { id: "w11", text: "shit", sep: " ", begin: 1, end: 1.5, joinsNext: false },
+          { id: "w12", text: "happens", sep: "", begin: 1.5, end: 2, joinsNext: false },
         ],
       },
     ];
@@ -107,11 +108,11 @@ describe("resolveExplicitSelectionToggle", () => {
         id: "L1",
         text: "main",
         agentId: "v1",
-        words: [{ id: "w13", text: "main", sep: "", begin: 0, end: 1 }],
+        words: [{ id: "w13", text: "main", sep: "", begin: 0, end: 1, joinsNext: false }],
         backgroundText: "oh shit",
         backgroundWords: [
-          { id: "w14", text: "oh", sep: " ", begin: 1, end: 1.25 },
-          { id: "w15", text: "shit", sep: "", begin: 1.25, end: 1.5 },
+          { id: "w14", text: "oh", sep: " ", begin: 1, end: 1.25, joinsNext: false },
+          { id: "w15", text: "shit", sep: "", begin: 1.25, end: 1.5, joinsNext: false },
         ],
       },
     ];
@@ -127,8 +128,8 @@ describe("resolveExplicitSelectionToggle", () => {
         text: "fuck this",
         agentId: "v1",
         words: [
-          { id: "w16", text: "fuck", sep: " ", begin: 0, end: 0.5 },
-          { id: "w17", text: "this", sep: "", begin: 0.5, end: 1 },
+          { id: "w16", text: "fuck", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+          { id: "w17", text: "this", sep: "", begin: 0.5, end: 1, joinsNext: false },
         ],
       },
     ];
@@ -163,7 +164,7 @@ describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, i
         groupId: "g1",
         instanceIdx: idx,
         templateLineIdx: 0,
-        words: [
+        words: createWords([
           {
             id: newWordId(),
             text: "fuck",
@@ -173,7 +174,7 @@ describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, i
             ...(explicit ? { explicit: true as const } : {}),
           },
           { id: newWordId(), text: "this", sep: "", begin: idx * 30 + 0.5, end: idx * 30 + 1 },
-        ],
+        ]),
       })),
     });
   }

@@ -152,7 +152,7 @@ async function openSplitterFor(lineId: string, wordText: string) {
       <SyllableSplitter
         lineId={lineId}
         type="word"
-        word={{ id: newWordId(), text: wordText, sep: "", begin: 0, end: 1 }}
+        word={{ id: newWordId(), text: wordText, sep: "", begin: 0, end: 1, joinsNext: false }}
         wordIndex={0}
         onSplit={() => {}}
       />
@@ -254,7 +254,7 @@ describe("SyllableSplitter wiring", () => {
         <SyllableSplitter
           lineId="l1"
           type="word"
-          word={{ id: "w1", text: "running", sep: "", begin: 0, end: 1 }}
+          word={{ id: "w1", text: "running", sep: "", begin: 0, end: 1, joinsNext: true }}
           wordIndex={0}
           onSplit={onSplit}
         />
@@ -296,7 +296,7 @@ describe("regressions: apply-to-all confirm stacking", () => {
         <SyllableSplitter
           lineId="l1"
           type="word"
-          word={{ id: "w2", text: "running", sep: "", begin: 0, end: 1 }}
+          word={{ id: "w2", text: "running", sep: "", begin: 0, end: 1, joinsNext: true }}
           wordIndex={0}
           onSplit={() => {}}
         />

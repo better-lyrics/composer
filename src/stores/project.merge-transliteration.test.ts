@@ -33,10 +33,10 @@ function splitKoreanLine(overrides: Partial<LooseLine> = {}): LyricLine {
     agentId: "v1",
     text: "Uh 일|단은 나",
     words: [
-      { id: newWordId(), text: "Uh", sep: " ", begin: 0, end: 0.5 },
-      { id: newWordId(), text: "일", sep: "", begin: 0.5, end: 0.8, syllableGroupId: "g1" },
-      { id: newWordId(), text: "단은", sep: " ", begin: 0.8, end: 1.5, syllableGroupId: "g1" },
-      { id: newWordId(), text: "나", sep: "", begin: 1.5, end: 2 },
+      { id: newWordId(), text: "Uh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+      { id: newWordId(), text: "일", sep: "", begin: 0.5, end: 0.8, joinsNext: true },
+      { id: newWordId(), text: "단은", sep: " ", begin: 0.8, end: 1.5, joinsNext: false },
+      { id: newWordId(), text: "나", sep: "", begin: 1.5, end: 2, joinsNext: false },
     ],
     transliteration: track,
     ...overrides,
@@ -73,6 +73,7 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
             end: 0.5,
             transliteration: "Uh",
             transliterationJoinerAfter: "  ",
+            joinsNext: false,
           },
           {
             id: "w2",
@@ -80,9 +81,9 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
             sep: "",
             begin: 0.5,
             end: 0.8,
-            syllableGroupId: "g1",
             transliteration: "il",
             transliterationJoinerAfter: "",
+            joinsNext: true,
           },
           {
             id: "w3",
@@ -90,11 +91,11 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
             sep: " ",
             begin: 0.8,
             end: 1.5,
-            syllableGroupId: "g1",
             transliteration: "dan eun",
             transliterationJoinerAfter: "  ",
+            joinsNext: false,
           },
-          { id: "w4", text: "나", sep: "", begin: 1.5, end: 2, transliteration: "na" },
+          { id: "w4", text: "나", sep: "", begin: 1.5, end: 2, transliteration: "na", joinsNext: false },
         ],
       });
       useProjectStore.getState().restoreLyrics({ lines: [line] });
@@ -112,9 +113,9 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
           splitKoreanLine({
             backgroundText: "그|래 yeah",
             backgroundWords: [
-              { id: "w5", text: "그", sep: "", begin: 2, end: 2.2, syllableGroupId: "b1" },
-              { id: "w6", text: "래", sep: " ", begin: 2.2, end: 2.5, syllableGroupId: "b1" },
-              { id: "w7", text: "yeah", sep: "", begin: 2.5, end: 3 },
+              { id: "w5", text: "그", sep: "", begin: 2, end: 2.2, joinsNext: true },
+              { id: "w6", text: "래", sep: " ", begin: 2.2, end: 2.5, joinsNext: false },
+              { id: "w7", text: "yeah", sep: "", begin: 2.5, end: 3, joinsNext: false },
             ],
           }),
         ],
@@ -143,10 +144,10 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
             instanceIdx: 1,
             ...linked,
             words: [
-              { id: "w8", text: "Uh", sep: " ", begin: 10, end: 10.5 },
-              { id: "w9", text: "일", sep: "", begin: 10.5, end: 10.8, syllableGroupId: "g2" },
-              { id: "w10", text: "단은", sep: " ", begin: 10.8, end: 11.5, syllableGroupId: "g2" },
-              { id: "w11", text: "나", sep: "", begin: 11.5, end: 12 },
+              { id: "w8", text: "Uh", sep: " ", begin: 10, end: 10.5, joinsNext: false },
+              { id: "w9", text: "일", sep: "", begin: 10.5, end: 10.8, joinsNext: true },
+              { id: "w10", text: "단은", sep: " ", begin: 10.8, end: 11.5, joinsNext: false },
+              { id: "w11", text: "나", sep: "", begin: 11.5, end: 12, joinsNext: false },
             ],
             transliteration: { ...track, text: "Uh  ilttan eun  na" },
           }),
@@ -173,9 +174,9 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
       useProjectStore.getState().commit(mergeSyllableGroup("line-1", "words", [1]));
 
       expect(timedSyllables(mainTrack(lineById("line-1")!))).toEqual([
-        { text: "Uh", sep: " ", begin: 0, end: 0.5 },
-        { text: "일단은", sep: " ", begin: 0.5, end: 1.5 },
-        { text: "나", sep: "", begin: 1.5, end: 2 },
+        { text: "Uh", sep: " ", begin: 0, end: 0.5, joinsNext: false },
+        { text: "일단은", sep: " ", begin: 0.5, end: 1.5, joinsNext: false },
+        { text: "나", sep: "", begin: 1.5, end: 2, joinsNext: false },
       ]);
     });
   });

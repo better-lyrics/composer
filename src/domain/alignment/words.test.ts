@@ -5,6 +5,7 @@ import {
   sanitizeIntervals,
   timingsFromParts,
 } from "@/domain/alignment/words";
+import { createWords } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
 // -- groupAlignmentWords ------------------------------------------------------
@@ -87,13 +88,13 @@ describe("timingsFromParts", () => {
       { begin: 1.3, end: 1.5 },
       { begin: 2, end: 2.4 },
     ]);
-    const group = timings[0].syllableGroupId;
-    expect(group).toBeDefined();
-    expect(timings).toEqual([
-      { text: "hel", sep: "", begin: 1, end: 1.3, syllableGroupId: group },
-      { text: "lo", sep: " ", begin: 1.3, end: 1.5, syllableGroupId: group },
-      { text: "you", sep: "", begin: 2, end: 2.4 },
-    ]);
+    expect(timings).toEqual(
+      createWords([
+        { text: "hel", sep: "", begin: 1, end: 1.3, joinsNext: true },
+        { text: "lo", sep: " ", begin: 1.3, end: 1.5, joinsNext: false },
+        { text: "you", sep: "", begin: 2, end: 2.4 },
+      ]),
+    );
   });
 
   it("splits unspaced Chinese and Japanese into one part per character", () => {
@@ -108,9 +109,9 @@ describe("timingsFromParts", () => {
 describe("retimeWords", () => {
   it("keeps every part's metadata and only changes its times", () => {
     const existing = [
-      { id: "w1", text: "hel", sep: "", begin: 0, end: 1, transliteration: "x" },
-      { id: "w2", text: "lo", sep: " ", begin: 1, end: 2 },
-      { id: "w3", text: "you", sep: "", begin: 2, end: 3 },
+      { id: "w1", text: "hel", sep: "", begin: 0, end: 1, transliteration: "x", joinsNext: true },
+      { id: "w2", text: "lo", sep: " ", begin: 1, end: 2, joinsNext: false },
+      { id: "w3", text: "you", sep: "", begin: 2, end: 3, joinsNext: false },
     ];
     expect(groupTimedWords(existing).map((w) => w.text)).toEqual(["hello", "you"]);
     const retimed = retimeWords(existing, [
