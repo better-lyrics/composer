@@ -5,6 +5,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -75,7 +76,7 @@ function seedSecondGroup() {
 function openGutterMenu(lineIds: string[]) {
   useTimelineStore.setState({
     contextMenu: { x: 100, y: 100, target: { kind: "gutter", lineId: lineIds[0], lineIndex: 2 } },
-    selectedWords: lineIds.map((lineId, i) => ({ lineId, lineIndex: 2 + i, wordIndex: 0, type: "word" as const })),
+    selectedWords: lineIds.map((lineId) => storedWordAddress(lineId, 0, "word")),
   });
 }
 
@@ -113,10 +114,7 @@ describe("TimelineContextMenu conform to group", () => {
   it("hides the action when a selected line already belongs to a group", async () => {
     useTimelineStore.setState({
       contextMenu: { x: 100, y: 100, target: { kind: "gutter", lineId: "c2", lineIndex: 1 } },
-      selectedWords: [
-        { lineId: "c2", lineIndex: 1, wordIndex: 0, type: "word" },
-        { lineId: "l3", lineIndex: 2, wordIndex: 0, type: "word" },
-      ],
+      selectedWords: [storedWordAddress("c2", 0, "word"), storedWordAddress("l3", 0, "word")],
     });
     const screen = await renderMenu();
 

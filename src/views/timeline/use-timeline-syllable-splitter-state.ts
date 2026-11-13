@@ -4,6 +4,8 @@ import {
 } from "@/domain/language/reconcile-syllable-split";
 import { splitTransliterationAtBoundaries } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
+import type { SyllableAddress } from "@/domain/selection/model";
+import { resolveAddress } from "@/domain/selection/resolve";
 import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
 import { livePlaybackTime } from "@/stores/audio";
@@ -24,10 +26,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 type SplitMode = "syllable" | "word";
 
-interface SplitterTarget {
-  lineId: string;
-  wordIndex: number;
-  type: "word" | "bg";
+interface SplitterTarget extends SyllableAddress {
   word: WordTiming;
   mode: SplitMode;
 }
@@ -63,7 +62,7 @@ function useTimelineSyllableSplitterState({
   const [applyToAll, setApplyToAll] = useState(initialDefaults.applyToAll);
   const [caseInsensitive, setCaseInsensitive] = useState(initialDefaults.caseInsensitive);
 
-  const targetKey = target ? `${target.lineId}:${target.wordIndex}:${target.type}` : null;
+  const targetKey = target ? `${target.lineId}:${target.syllableId}:${target.type}` : null;
 
   useEffect(() => {
     if (!targetKey) return;
@@ -76,10 +75,11 @@ function useTimelineSyllableSplitterState({
   const confirm = useConfirm();
 
   const identicalCount = useMemo(() => {
-    if (!target || target.mode === "word") return 0;
+    const source = target?.mode === "syllable" ? resolveAddress(lines, target) : null;
+    if (!source) return 0;
     return findIdenticalWords(
       lines,
-      { lineId: target.lineId, wordIndex: target.wordIndex, type: target.type },
+      { lineId: source.lineId, wordIndex: source.wordIndex, type: source.type },
       { caseInsensitive, excludeSource: true, splitPoints },
     ).length;
   }, [lines, target, caseInsensitive, splitPoints]);
@@ -88,7 +88,7 @@ function useTimelineSyllableSplitterState({
 
   const applySingleWordSplit = useCallback(() => {
     if (!target || splitPoints.length === 0) return;
-    const { lineId, wordIndex, type, word, mode } = target;
+    const { lineId, type, word, mode } = target;
     const trimmedText = word.text;
 
     let newWords: WordTiming[];
@@ -139,8 +139,10 @@ function useTimelineSyllableSplitterState({
     }
 
     const currentLines = useProjectStore.getState().lines;
-    const line = currentLines.find((l) => l.id === lineId);
-    if (!line) return;
+    const source = resolveAddress(currentLines, target);
+    if (!source) return;
+    const line = currentLines[source.lineIndex];
+    const { wordIndex } = source;
 
     const split =
       mode === "word"
@@ -174,8 +176,10 @@ function useTimelineSyllableSplitterState({
     if (target.mode === "syllable" && !target.word.transliteration && applyToAll && identicalCount > 0) {
       const ok = await confirm(buildApplyToAllConfirmOptions({ identicalCount, sourceText }));
       if (!ok) return;
+      const source = resolveAddress(useProjectStore.getState().lines, target);
+      if (!source) return;
       useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
-        source: { lineId: target.lineId, wordIndex: target.wordIndex, type: target.type },
+        source: { lineId: source.lineId, wordIndex: source.wordIndex, type: source.type },
         splitPoints,
         caseInsensitive,
       });
@@ -215,5 +219,5 @@ function useTimelineSyllableSplitterState({
 
 // -- Exports ------------------------------------------------------------------
 
-export { useTimelineSyllableSplitterState };
 export type { SplitterTarget };
+export { useTimelineSyllableSplitterState };

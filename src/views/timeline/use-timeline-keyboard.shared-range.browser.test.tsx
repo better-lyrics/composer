@@ -1,9 +1,9 @@
 import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine, createWord } from "@/test/factories";
+import { storedWordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { createRef } from "react";
@@ -28,7 +28,12 @@ function chorus(id: string, instanceIdx: number, begin: number): LyricLine {
   });
 }
 
-async function armSharedTimeline(options: { sharesTiming: boolean; selection: WordSelection[]; currentTime?: number }) {
+interface WordAt {
+  lineId: string;
+  wordIndex: number;
+}
+
+async function armSharedTimeline(options: { sharesTiming: boolean; selection: WordAt[]; currentTime?: number }) {
   useAudioStore.setState({ currentTime: options.currentTime ?? 0, duration: DURATION });
   useProjectStore.setState({
     activeTab: "timeline",
@@ -36,7 +41,9 @@ async function armSharedTimeline(options: { sharesTiming: boolean; selection: Wo
     groups: [createGroup({ id: "g1", ...(options.sharesTiming ? { sharesTiming: true } : {}) })],
   });
   useSettingsStore.setState({ rollingEdit: false });
-  useTimelineStore.setState({ selectedWords: options.selection });
+  useTimelineStore.setState({
+    selectedWords: options.selection.map(({ lineId, wordIndex }) => storedWordAddress(lineId, wordIndex)),
+  });
   const scrollContainerRef = createRef<HTMLDivElement | null>();
   await renderHook(() =>
     useTimelineKeyboard(
@@ -52,12 +59,7 @@ function pressKey(key: string) {
 }
 
 const lineById = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id);
-const firstWordOf = (lineId: string, lineIndex: number): WordSelection => ({
-  lineId,
-  lineIndex,
-  wordIndex: 0,
-  type: "word",
-});
+const firstWordOf = (lineId: string, _lineIndex: number): WordAt => ({ lineId, wordIndex: 0 });
 
 // -- Tests --------------------------------------------------------------------
 

@@ -1,10 +1,11 @@
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
+import { storedWordAddress } from "@/test/word-address";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -100,8 +101,8 @@ async function dragWithin(element: HTMLElement, fromX: number, toX: number, from
 }
 
 const selected = () => useTimelineStore.getState().selectedWords;
-const words = (lineId: string, lineIndex: number, type: "word" | "bg", indices: number[]): WordSelection[] =>
-  indices.map((wordIndex) => ({ lineId, lineIndex, wordIndex, type }));
+const words = (lineId: string, _lineIndex: number, type: "word" | "bg", indices: number[]): SyllableAddress[] =>
+  indices.map((wordIndex) => storedWordAddress(lineId, wordIndex, type));
 
 // -- Tests --------------------------------------------------------------------
 

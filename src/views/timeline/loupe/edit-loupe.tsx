@@ -1,6 +1,7 @@
 import { LOUPE_FIXED, type LoupeSize, clampLoupeSize, fitLoupeSize } from "@/domain/spectrum/loupe-size";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useWindowSize } from "@/hooks/use-window-size";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { loupeReducedVariants, loupeVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
@@ -9,6 +10,7 @@ import { LOUPE_CARD_SURFACE, LoupeCardBody } from "@/views/timeline/loupe/loupe-
 import type { LoupeTarget } from "@/views/timeline/loupe/loupe-target";
 import { placeLoupe } from "@/views/timeline/loupe/place-loupe";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { addressedBlockId } from "@/views/timeline/word-block-id";
 import { FloatingPortal } from "@floating-ui/react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { type RefObject, useCallback, useLayoutEffect, useMemo, useRef } from "react";
@@ -30,8 +32,8 @@ function placeCard(card: HTMLDivElement, container: HTMLElement, target: LoupeTa
   if (card.firstElementChild instanceof HTMLElement) {
     card.firstElementChild.style.width = `${loupeCanvas(size).width + LOUPE_FIXED.cardX}px`;
   }
-  const key = `${target.lineId}-${target.track}-${target.wordIndex}`;
-  const block = container.querySelector<HTMLElement>(`[data-word-block][id="${CSS.escape(key)}"]`);
+  const key = addressedBlockId(useProjectStore.getState().lines, target);
+  const block = key ? container.querySelector<HTMLElement>(`[data-word-block][id="${CSS.escape(key)}"]`) : null;
   const lane = block?.parentElement;
   if (!block || !lane) {
     card.style.visibility = "hidden";

@@ -1,7 +1,7 @@
 import { isLinked } from "@/domain/instance/predicates";
 import type { ReadableLine } from "@/domain/line/effective-words";
-import { isWordSelected } from "@/domain/selection/identity";
-import type { WordSelection } from "@/domain/selection/model";
+import { isAddressed } from "@/domain/selection/identity";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { getWordsInInstance } from "@/views/timeline/utils";
 
 // -- Types --------------------------------------------------------------------
@@ -13,7 +13,10 @@ interface InstanceRef {
 
 // -- Functions ----------------------------------------------------------------
 
-function selectedBannerInstance(lines: readonly ReadableLine[], selectedWords: WordSelection[]): InstanceRef | null {
+function selectedBannerInstance(
+  lines: readonly ReadableLine[],
+  selectedWords: readonly SyllableAddress[],
+): InstanceRef | null {
   const first = selectedWords[0];
   if (!first) return null;
   const line = lines.find((candidate) => candidate.id === first.lineId);
@@ -21,12 +24,12 @@ function selectedBannerInstance(lines: readonly ReadableLine[], selectedWords: W
   const instanceWords = getWordsInInstance(lines, line.groupId, line.instanceIdx);
   if (instanceWords.length !== selectedWords.length) return null;
   const selectsWholeInstance = instanceWords.every((word) =>
-    isWordSelected(selectedWords, word.lineId, word.wordIndex, word.type),
+    isAddressed(selectedWords, word.lineId, word.type, word.syllableId),
   );
   return selectsWholeInstance ? { groupId: line.groupId, instanceIdx: line.instanceIdx } : null;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { selectedBannerInstance };
 export type { InstanceRef };
+export { selectedBannerInstance };

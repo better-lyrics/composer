@@ -28,9 +28,9 @@ describe("markerMode", () => {
 describe("resetProjectScope", () => {
   it("clears the selection, menus, word editing, paste mode and scroll", () => {
     const store = useTimelineStore.getState();
-    store.setSelectedWords([{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" }]);
+    store.setSelectedWords([{ lineId: "l1", type: "word", syllableId: "w0" }]);
     store.setContextMenu({ x: 1, y: 2, target: { kind: "gutter", lineId: "l1", lineIndex: 0 } });
-    store.setEditingWord({ lineId: "l1", wordIndex: 0, type: "word" });
+    store.setEditingWord({ lineId: "l1", type: "word", syllableId: "w0" });
     store.setScrollLeft(240);
     store.resetProjectScope();
     const state = useTimelineStore.getState();
@@ -92,7 +92,7 @@ describe("group focus", () => {
   describe("invariants", () => {
     it("openGroup clears the selection and the menu so hidden words are never acted on", () => {
       const store = useTimelineStore.getState();
-      store.setSelectedWords([{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" }]);
+      store.setSelectedWords([{ lineId: "l1", type: "word", syllableId: "w0" }]);
       store.setContextMenu({ x: 1, y: 2, target: { kind: "gutter", lineId: "l1", lineIndex: 0 } });
       store.openGroup("g1", 0);
 
@@ -103,7 +103,7 @@ describe("group focus", () => {
     it("closeGroup keeps the selection", () => {
       const store = useTimelineStore.getState();
       store.openGroup("g1", 0);
-      store.setSelectedWords([{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" }]);
+      store.setSelectedWords([{ lineId: "l1", type: "word", syllableId: "w0" }]);
       store.closeGroup();
 
       expect(useTimelineStore.getState().selectedWords).toHaveLength(1);
@@ -112,7 +112,7 @@ describe("group focus", () => {
 });
 
 describe("loopRegion", () => {
-  const word = { lineId: "a", lineIndex: 0, wordIndex: 0, type: "word" as const };
+  const word = { lineId: "a", type: "word" as const, syllableId: "w0" };
   const region = { begin: 1, end: 2, loops: true };
 
   beforeEach(() => {

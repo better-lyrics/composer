@@ -1,6 +1,7 @@
 import { getEffectiveLines } from "@/domain/line/effective-words";
-import type { WordSelection } from "@/domain/selection/model";
-import { mergeWordSelections } from "@/domain/selection/set-ops";
+import type { SyllableAddress } from "@/domain/selection/model";
+import { addressOf } from "@/domain/selection/resolve";
+import { mergeAddresses } from "@/domain/selection/set-ops";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { holdFrames } from "@/lib/frame-loop";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -90,7 +91,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
   // the loop awake and let effect cleanup guarantee the release.
   useEffect(() => (autoScrolling ? holdFrames(AUTO_SCROLL_LABEL) : undefined), [autoScrolling]);
 
-  const computeSelection = useCallback((rect: MarqueeRect): WordSelection[] => {
+  const computeSelection = useCallback((rect: MarqueeRect): SyllableAddress[] => {
     const lines = getEffectiveLines(useProjectStore.getState().lines);
     const { zoom, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
     const layout = computeRowLayout({
@@ -103,12 +104,11 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       groupHeaderHeight: GROUP_HEADER_HEIGHT,
     });
 
-    const selections: WordSelection[] = [];
+    const selections: SyllableAddress[] = [];
     const rectBottom = rect.y + rect.height;
     const rectRight = rect.x + rect.width;
 
-    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-      const line = lines[lineIndex];
+    for (const line of lines) {
       const pos = layout.lineTops.get(line.id);
       if (!pos) continue;
 
@@ -118,13 +118,10 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       const mainBottom = mainTop + mainHeight;
 
       if (mainTop < rectBottom && mainBottom > rect.y && line.words) {
-        for (let wordIndex = 0; wordIndex < line.words.length; wordIndex++) {
-          const word = line.words[wordIndex];
+        for (const word of line.words) {
           const wordLeft = GUTTER_WIDTH + word.begin * zoom;
           const wordRight = GUTTER_WIDTH + word.end * zoom;
-          if (wordLeft < rectRight && wordRight > rect.x) {
-            selections.push({ lineId: line.id, lineIndex, wordIndex, type: "word" });
-          }
+          if (wordLeft < rectRight && wordRight > rect.x) selections.push(addressOf(line, "word", word));
         }
       }
 
@@ -133,13 +130,10 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
         const bgTop = mainBottom;
         const bgBottom = bgTop + bgHeight;
         if (bgTop < rectBottom && bgBottom > rect.y) {
-          for (let wordIndex = 0; wordIndex < line.backgroundWords.length; wordIndex++) {
-            const word = line.backgroundWords[wordIndex];
+          for (const word of line.backgroundWords) {
             const wordLeft = GUTTER_WIDTH + word.begin * zoom;
             const wordRight = GUTTER_WIDTH + word.end * zoom;
-            if (wordLeft < rectRight && wordRight > rect.x) {
-              selections.push({ lineId: line.id, lineIndex, wordIndex, type: "bg" });
-            }
+            if (wordLeft < rectRight && wordRight > rect.x) selections.push(addressOf(line, "bg", word));
           }
         }
       }
@@ -200,7 +194,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
           if (shiftRef.current) {
             const { stepQueue, selectedWords } = useTimelineStore.getState();
             const existing = stepQueue ?? selectedWords;
-            useTimelineStore.getState().setSelectedWords(mergeWordSelections(existing, newSelections));
+            useTimelineStore.getState().setSelectedWords(mergeAddresses(existing, newSelections));
           } else {
             useTimelineStore.getState().setSelectedWords(newSelections);
           }
@@ -230,5 +224,5 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
 // -- Exports -------------------------------------------------------------------
 
-export { useMarquee };
 export type { MarqueeRect };
+export { useMarquee };

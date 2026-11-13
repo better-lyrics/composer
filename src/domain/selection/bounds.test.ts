@@ -1,12 +1,15 @@
+import { effectiveTrackWords } from "@/domain/line/effective-words";
 import { selectionBounds } from "@/domain/selection/bounds";
-import type { WordSelection } from "@/domain/selection/model";
+import type { SyllableAddress } from "@/domain/selection/model";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
-function sel(lineId: string, wordIndex: number, type: "word" | "bg" = "word"): WordSelection {
-  return { lineId, lineIndex: 0, wordIndex, type };
+function sel(lineId: string, wordIndex: number, type: "word" | "bg" = "word"): SyllableAddress {
+  const line = [wordLine, nextLine, lineSynced].find((candidate) => candidate.id === lineId);
+  const word = line ? effectiveTrackWords(line, type)?.[wordIndex] : undefined;
+  return { lineId, type, syllableId: word?.id ?? `missing-${wordIndex}` };
 }
 
 const wordLine = createLine({

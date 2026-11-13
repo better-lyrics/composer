@@ -1,4 +1,5 @@
-import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-words";
+import { getEffectiveLines } from "@/domain/line/effective-words";
+import { toAddress, wordAt } from "@/domain/selection/resolve";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { Modal } from "@/ui/modal";
@@ -40,10 +41,10 @@ const TimelineSyllableSplitter: React.FC = () => {
       const line = lines.find((l) => l.id === sel.lineId);
       if (!line) return;
 
-      const word: WordTiming | undefined = effectiveTrackWords(line, sel.type)?.[sel.wordIndex];
+      const word: WordTiming | null = wordAt([line], sel);
       if (!word || word.text.length < 2) return;
 
-      setTarget({ lineId: sel.lineId, wordIndex: sel.wordIndex, type: sel.type, word, mode });
+      setTarget({ ...toAddress(sel), word, mode });
       setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
       setIsOpen(true);
     };

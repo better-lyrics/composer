@@ -17,6 +17,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import { hasTransliteration } from "@/domain/language/has-transliteration";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
+import { addressOf } from "@/domain/selection/resolve";
 import { wordsFromSpaced } from "@/domain/word/spaced-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { noteGuideSignal } from "@/lib/guide-signals";
@@ -118,16 +119,9 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
     if (updates.length > 0) {
       updateLinesWithHistory(updates);
 
-      const lineIndexById = new Map<string, number>();
-      for (let i = 0; i < lines.length; i++) lineIndexById.set(lines[i].id, i);
-      const newSelections: Array<{ lineId: string; lineIndex: number; wordIndex: number; type: "word" | "bg" }> = [];
-      for (const u of updates) {
-        const lineIndex = lineIndexById.get(u.id);
-        if (lineIndex === undefined || !u.updates.words) continue;
-        for (let wi = 0; wi < u.updates.words.length; wi++) {
-          newSelections.push({ lineId: u.id, lineIndex, wordIndex: wi, type: "word" });
-        }
-      }
+      const newSelections = updates.flatMap((u) =>
+        (u.updates.words ?? []).map((word) => addressOf({ id: u.id }, "word", word)),
+      );
       if (newSelections.length > 0) {
         useTimelineStore.getState().setSelectedWords(newSelections);
       }

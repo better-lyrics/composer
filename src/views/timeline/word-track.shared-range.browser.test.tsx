@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { wordAddress } from "@/test/word-address";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 import { describe, expect, it } from "vitest";
@@ -28,12 +29,7 @@ const chorus = (id: string, instanceIdx: number, begin: number) =>
 async function renderSharedTrack(sharesTiming: boolean, selectWholeLine = false) {
   const calls: Partial<WordTiming>[] = [];
   useSettingsStore.setState({ rollingEdit: false });
-  useTimelineStore.setState({
-    zoom: 100,
-    selectedWords: selectWholeLine
-      ? [0, 1].map((wordIndex) => ({ lineId: "c1", lineIndex: 1, wordIndex, type: "word" as const }))
-      : [],
-  });
+  useTimelineStore.setState({ zoom: 100, selectedWords: [] });
   useAudioStore.setState({ duration: 20 });
   useSettingsStore.setState({ minWordDuration: 0.1, defaultWordDuration: 1 });
   const source = chorus("c1", 1, 10);
@@ -41,6 +37,7 @@ async function renderSharedTrack(sharesTiming: boolean, selectWholeLine = false)
     lines: [chorus("c0", 0, 3), source, chorus("c2", 2, 16)],
     groups: [createGroup({ id: "g1", ...(sharesTiming ? { sharesTiming: true } : {}) })],
   });
+  if (selectWholeLine) useTimelineStore.setState({ selectedWords: [0, 1].map((index) => wordAddress(source, index)) });
   const screen = await render(
     <WordTrack
       lineId={source.id}
