@@ -67,7 +67,7 @@ function pasteLyrics(baseLines: readonly RawLine[], lines: RawLine[]): LyricComm
 }
 
 // Decided again after the detach prompt, so lyrics that changed while it was open are not overwritten.
-function applyEditTextDetaching(text: string, defaultAgentId: string): LyricCommand {
+function applyEditTextDetaching(text: string, defaultAgentId: string, splitCharacter?: string): LyricCommand {
   return wholeLinesEdit({ command: "detach and apply text", args: [] }, (root) => {
     const action = decideEditTextAction({
       text,
@@ -75,6 +75,7 @@ function applyEditTextDetaching(text: string, defaultAgentId: string): LyricComm
       lines: root.lines,
       groups: root.groups,
       modalPending: false,
+      splitCharacter,
     });
     if (action.kind === "apply") return { lines: action.finalLines };
     if (action.kind !== "needs-confirm") return null;
