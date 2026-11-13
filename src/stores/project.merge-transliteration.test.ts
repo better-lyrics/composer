@@ -3,6 +3,7 @@
  */
 import type { TransliterationTrack } from "@/domain/language/model";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -29,10 +30,10 @@ function splitKoreanLine(overrides: Partial<LooseLine> = {}): LyricLine {
     agentId: "v1",
     text: "Uh 일|단은 나",
     words: [
-      { text: "Uh", sep: " ", begin: 0, end: 0.5 },
-      { text: "일", sep: "", begin: 0.5, end: 0.8, syllableGroupId: "g1" },
-      { text: "단은", sep: " ", begin: 0.8, end: 1.5, syllableGroupId: "g1" },
-      { text: "나", sep: "", begin: 1.5, end: 2 },
+      { id: newWordId(), text: "Uh", sep: " ", begin: 0, end: 0.5 },
+      { id: newWordId(), text: "일", sep: "", begin: 0.5, end: 0.8, syllableGroupId: "g1" },
+      { id: newWordId(), text: "단은", sep: " ", begin: 0.8, end: 1.5, syllableGroupId: "g1" },
+      { id: newWordId(), text: "나", sep: "", begin: 1.5, end: 2 },
     ],
     transliteration: track,
     ...overrides,
@@ -61,8 +62,17 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
     it("regression: keeps the last syllable's joiner on the merged word (#283)", () => {
       const line = splitKoreanLine({
         words: [
-          { text: "Uh", sep: " ", begin: 0, end: 0.5, transliteration: "Uh", transliterationJoinerAfter: "  " },
           {
+            id: "w1",
+            text: "Uh",
+            sep: " ",
+            begin: 0,
+            end: 0.5,
+            transliteration: "Uh",
+            transliterationJoinerAfter: "  ",
+          },
+          {
+            id: "w2",
             text: "일",
             sep: "",
             begin: 0.5,
@@ -72,6 +82,7 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
             transliterationJoinerAfter: "",
           },
           {
+            id: "w3",
             text: "단은",
             sep: " ",
             begin: 0.8,
@@ -80,7 +91,7 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
             transliteration: "dan eun",
             transliterationJoinerAfter: "  ",
           },
-          { text: "나", sep: "", begin: 1.5, end: 2, transliteration: "na" },
+          { id: "w4", text: "나", sep: "", begin: 1.5, end: 2, transliteration: "na" },
         ],
       });
       useProjectStore.getState().setLines([line]);
@@ -97,9 +108,9 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
         splitKoreanLine({
           backgroundText: "그|래 yeah",
           backgroundWords: [
-            { text: "그", sep: "", begin: 2, end: 2.2, syllableGroupId: "b1" },
-            { text: "래", sep: " ", begin: 2.2, end: 2.5, syllableGroupId: "b1" },
-            { text: "yeah", sep: "", begin: 2.5, end: 3 },
+            { id: "w5", text: "그", sep: "", begin: 2, end: 2.2, syllableGroupId: "b1" },
+            { id: "w6", text: "래", sep: " ", begin: 2.2, end: 2.5, syllableGroupId: "b1" },
+            { id: "w7", text: "yeah", sep: "", begin: 2.5, end: 3 },
           ],
         }),
       ]);
@@ -124,10 +135,10 @@ describe("mergeSyllableGroupIntoWord · transliteration", () => {
           instanceIdx: 1,
           ...linked,
           words: [
-            { text: "Uh", sep: " ", begin: 10, end: 10.5 },
-            { text: "일", sep: "", begin: 10.5, end: 10.8, syllableGroupId: "g2" },
-            { text: "단은", sep: " ", begin: 10.8, end: 11.5, syllableGroupId: "g2" },
-            { text: "나", sep: "", begin: 11.5, end: 12 },
+            { id: "w8", text: "Uh", sep: " ", begin: 10, end: 10.5 },
+            { id: "w9", text: "일", sep: "", begin: 10.5, end: 10.8, syllableGroupId: "g2" },
+            { id: "w10", text: "단은", sep: " ", begin: 10.8, end: 11.5, syllableGroupId: "g2" },
+            { id: "w11", text: "나", sep: "", begin: 11.5, end: 12 },
           ],
           transliteration: { ...track, text: "Uh  ilttan eun  na" },
         }),

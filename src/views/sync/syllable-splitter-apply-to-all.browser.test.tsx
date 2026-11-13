@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { newWordId } from "@/domain/word/id";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
@@ -151,7 +152,7 @@ async function openSplitterFor(lineId: string, wordText: string) {
       <SyllableSplitter
         lineId={lineId}
         type="word"
-        word={{ text: wordText, sep: "", begin: 0, end: 1 }}
+        word={{ id: newWordId(), text: wordText, sep: "", begin: 0, end: 1 }}
         wordIndex={0}
         onSplit={() => {}}
       />
@@ -253,7 +254,7 @@ describe("SyllableSplitter wiring", () => {
         <SyllableSplitter
           lineId="l1"
           type="word"
-          word={{ text: "running", sep: "", begin: 0, end: 1 }}
+          word={{ id: "w1", text: "running", sep: "", begin: 0, end: 1 }}
           wordIndex={0}
           onSplit={onSplit}
         />
@@ -295,7 +296,7 @@ describe("regressions: apply-to-all confirm stacking", () => {
         <SyllableSplitter
           lineId="l1"
           type="word"
-          word={{ text: "running", sep: "", begin: 0, end: 1 }}
+          word={{ id: "w2", text: "running", sep: "", begin: 0, end: 1 }}
           wordIndex={0}
           onSplit={() => {}}
         />

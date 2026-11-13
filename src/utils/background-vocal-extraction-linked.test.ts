@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
+import { newWordId } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { extractInlineAcrossLinkedLines } from "@/utils/background-vocal-extraction";
 
@@ -8,6 +9,7 @@ const OPTIONS = { mergeStandaloneLines: false, preserveBrackets: false };
 function wordsAt(texts: string[], begin: number, end: number): WordTiming[] {
   const step = (end - begin) / texts.length;
   return texts.map((text, i) => ({
+    id: newWordId(),
     text,
     sep: i < texts.length - 1 ? " " : "",
     begin: begin + i * step,

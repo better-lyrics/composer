@@ -31,8 +31,16 @@ describe("legacy transliteration migration", () => {
       legacyLine({
         text: "今日",
         words: [
-          { text: "今", sep: "", begin: 0, end: 0.5, transliteration: "kyou", transliterationJoinerAfter: "" },
-          { text: "日", sep: "", begin: 0.5, end: 1, transliteration: "hi" },
+          {
+            id: "w1",
+            text: "今",
+            sep: "",
+            begin: 0,
+            end: 0.5,
+            transliteration: "kyou",
+            transliterationJoinerAfter: "",
+          },
+          { id: "w2", text: "日", sep: "", begin: 0.5, end: 1, transliteration: "hi" },
         ],
         transliteration: {
           language: "ja-Latn",
@@ -70,7 +78,7 @@ describe("legacy transliteration migration", () => {
     const migrated = migrateLegacyTransliterationLine(
       legacyLine({
         text: "안녕 하세요",
-        words: [{ text: "안녕", sep: " ", begin: 0, end: 1, transliteration: "stale" }],
+        words: [{ id: "w3", text: "안녕", sep: " ", begin: 0, end: 1, transliteration: "stale" }],
         transliteration: {
           language: "ko-Latn",
           text: "an-nyeong haseyo",

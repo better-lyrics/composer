@@ -263,7 +263,7 @@ describe("TimelineSyllableSplitter", () => {
       id: "line-transliteration-split",
       agentId: "v1",
       text: "일단은",
-      words: [{ text: "일단은", sep: "", begin: 0, end: 1, transliteration: "ildan eun" }],
+      words: [{ id: "w1", text: "일단은", sep: "", begin: 0, end: 1, transliteration: "ildan eun" }],
       transliteration: {
         language: "ko-Latn",
         text: "ildan eun",
@@ -297,7 +297,7 @@ describe("TimelineSyllableSplitter", () => {
       id: "line-word-split",
       agentId: "v1",
       text: "хорошо",
-      words: [{ text: "хорошо", sep: "", begin: 0, end: 1 }],
+      words: [{ id: "w2", text: "хорошо", sep: "", begin: 0, end: 1 }],
       transliteration: {
         language: "ru-Latn",
         text: "khorosho",
@@ -329,7 +329,7 @@ describe("TimelineSyllableSplitter", () => {
       id: "line-dash-word-split",
       agentId: "v1",
       text: "to-do",
-      words: [{ text: "to-do", sep: "", begin: 0, end: 1, transliteration: "to-do" }],
+      words: [{ id: "w3", text: "to-do", sep: "", begin: 0, end: 1, transliteration: "to-do" }],
       transliteration: {
         language: "en-Latn",
         text: "to-do",
@@ -359,7 +359,7 @@ describe("TimelineSyllableSplitter", () => {
       id: "line-dash-split",
       agentId: "v1",
       text: "to-do",
-      words: [{ text: "to-do", sep: "", begin: 0, end: 1, transliteration: "to-do" }],
+      words: [{ id: "w4", text: "to-do", sep: "", begin: 0, end: 1, transliteration: "to-do" }],
       transliteration: {
         language: "en-Latn",
         text: "to-do",

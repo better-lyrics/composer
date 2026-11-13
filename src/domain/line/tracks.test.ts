@@ -8,10 +8,10 @@ function line(extras: Partial<LooseLine> = {}): LyricLine {
 }
 
 const mainWords = [
-  { text: "Hello", sep: " ", begin: 0, end: 1 },
-  { text: "world", sep: "", begin: 1, end: 2 },
+  { id: "w1", text: "Hello", sep: " ", begin: 0, end: 1 },
+  { id: "w2", text: "world", sep: "", begin: 1, end: 2 },
 ];
-const bgWords = [{ text: "ooh", sep: "", begin: 1.2, end: 1.8 }];
+const bgWords = [{ id: "w3", text: "ooh", sep: "", begin: 1.2, end: 1.8 }];
 
 describe("trackWords", () => {
   it("returns the main words for the word track", () => {

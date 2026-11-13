@@ -1,4 +1,5 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { newWordId } from "@/domain/word/id";
 import { type ProjectSaveInput, saveCurrentProject } from "@/lib/persistence";
 import { loadProjectForRestore } from "@/lib/project-restore";
 import { getOpenProjectId } from "@/lib/project-storage";
@@ -19,8 +20,8 @@ function seedSavedProject(
           text: "hello world",
           agentId: DEFAULT_AGENTS[0].id,
           words: [
-            { text: "hello", sep: "", begin: 1.0, end: 1.5 },
-            { text: "world", sep: "", begin: 1.5, end: 2.0 },
+            { id: newWordId(), text: "hello", sep: "", begin: 1.0, end: 1.5 },
+            { id: newWordId(), text: "world", sep: "", begin: 1.5, end: 2.0 },
           ],
         },
       ],

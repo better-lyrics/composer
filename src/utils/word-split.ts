@@ -1,3 +1,4 @@
+import { withSplitIds } from "@/domain/word/id";
 import type { WordTiming } from "@/domain/word/timing";
 import { distributeTiming } from "@/utils/syllable-utils";
 
@@ -27,11 +28,13 @@ function splitWordIntoWords(word: WordTiming, splitPoints: number[]): WordTiming
     orphanBegin = null;
   }
 
-  return parts.map((part, index) => {
-    const isLast = index === parts.length - 1;
-    const sep = isLast ? (hadTrailingSpace ? " " : "") : " ";
-    return { ...base, text: part.text, sep, begin: part.begin, end: part.end };
-  });
+  return withSplitIds(
+    parts.map((part, index) => {
+      const isLast = index === parts.length - 1;
+      const sep = isLast ? (hadTrailingSpace ? " " : "") : " ";
+      return { ...base, text: part.text, sep, begin: part.begin, end: part.end };
+    }),
+  );
 }
 
 // -- Exports -------------------------------------------------------------------

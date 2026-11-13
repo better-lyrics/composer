@@ -7,7 +7,7 @@ import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
-import { cloneWord } from "@/utils/word-timing";
+import { duplicateWord } from "@/utils/word-timing";
 import {
   DRAG_X_MIN_THRESHOLD,
   type DragData,
@@ -61,7 +61,7 @@ function handleAltDuplicate(
       const newEnd = Math.min(range.max, word.end + timeDelta);
       if (newEnd <= newBegin) continue;
 
-      const dup = cloneWord(word, { begin: newBegin, end: newEnd });
+      const dup = duplicateWord(word, { begin: newBegin, end: newEnd });
       if (sel.type === "word") wordDups.push(dup);
       else bgDups.push(dup);
     }

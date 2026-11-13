@@ -10,6 +10,7 @@ import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shif
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import { newWordId } from "@/domain/word/id";
 import { enforceOrderAround } from "@/domain/word/order";
 import type { WordTiming } from "@/domain/word/timing";
 import { createInitialBgWords, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -158,7 +159,8 @@ function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open
   const end = nextWord && nextWord.begin >= begin ? Math.min(provisional, nextWord.begin) : provisional;
 
   let words = [...existing];
-  words[cursor.wordIndex] = { ...existing[cursor.wordIndex], ...splitTrailingWhitespace(text), begin, end };
+  const id = existing[cursor.wordIndex]?.id ?? newWordId();
+  words[cursor.wordIndex] = { ...existing[cursor.wordIndex], id, ...splitTrailingWhitespace(text), begin, end };
 
   const closeAt = closingTime(lines, slot, begin, { open, jumped: ctx.jumped });
   const sameLine = slot && slot.lineIndex === cursor.lineIndex ? slot : null;

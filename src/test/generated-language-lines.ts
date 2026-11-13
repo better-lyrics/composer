@@ -1,5 +1,6 @@
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { LyricLine } from "@/domain/line/model";
+import { newWordId } from "@/domain/word/id";
 import { createLanguageAutoRefresh } from "@/lib/language-auto-refresh";
 import { useProjectStore } from "@/stores/project";
 
@@ -13,6 +14,7 @@ function timedLine(id: string, words: string[], romanized: string[], romanizedFr
     agentId: "v1",
     text: words.join(" "),
     words: words.map((text, index) => ({
+      id: newWordId(),
       text,
       sep: index < words.length - 1 ? " " : "",
       begin: index + 1,
